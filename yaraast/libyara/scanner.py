@@ -3,10 +3,11 @@
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 try:
     import yara
+
     YARA_AVAILABLE = True
 except ImportError:
     yara = None
@@ -16,14 +17,15 @@ except ImportError:
 @dataclass
 class MatchInfo:
     """Information about a rule match."""
+
     rule: str
     namespace: str
-    tags: List[str]
-    meta: Dict[str, Any]
-    strings: List[Dict[str, Any]]
+    tags: list[str]
+    meta: dict[str, Any]
+    strings: list[dict[str, Any]]
 
     @classmethod
-    def from_yara_match(cls, match) -> 'MatchInfo':
+    def from_yara_match(cls, match) -> "MatchInfo":
         """Create from yara match object."""
         return cls(
             rule=match.rule,
@@ -31,22 +33,19 @@ class MatchInfo:
             tags=list(match.tags),
             meta=dict(match.meta),
             strings=[
-                {
-                    'offset': offset,
-                    'identifier': identifier,
-                    'data': data
-                }
+                {"offset": offset, "identifier": identifier, "data": data}
                 for offset, identifier, data in match.strings
-            ]
+            ],
         )
 
 
 @dataclass
 class ScanResult:
     """Result of scanning with libyara."""
+
     success: bool
-    matches: List[MatchInfo] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    matches: list[MatchInfo] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     scan_time: float = 0.0
     data_size: int = 0
 
@@ -56,7 +55,7 @@ class ScanResult:
         return len(self.matches) > 0
 
     @property
-    def matched_rules(self) -> List[str]:
+    def matched_rules(self) -> list[str]:
         """Get list of matched rule names."""
         return [m.rule for m in self.matches]
 
@@ -64,7 +63,7 @@ class ScanResult:
 class LibyaraScanner:
     """Scanner using libyara backend."""
 
-    def __init__(self, timeout: Optional[int] = None):
+    def __init__(self, timeout: int | None = None):
         """Initialize scanner.
 
         Args:
@@ -72,14 +71,12 @@ class LibyaraScanner:
         """
         if not YARA_AVAILABLE:
             raise ImportError(
-                "yara-python is not installed. "
-                "Install it with: pip install yara-python"
+                "yara-python is not installed. " "Install it with: pip install yara-python"
             )
 
         self.timeout = timeout
 
-    def scan_data(self, rules: Any, data: bytes,
-                  fast_mode: bool = False) -> ScanResult:
+    def scan_data(self, rules: Any, data: bytes, fast_mode: bool = False) -> ScanResult:
         """Scan data using compiled rules.
 
         Args:
@@ -96,11 +93,7 @@ class LibyaraScanner:
 
         try:
             # Perform scan
-            yara_matches = rules.match(
-                data=data,
-                timeout=self.timeout,
-                fast=fast_mode
-            )
+            yara_matches = rules.match(data=data, timeout=self.timeout, fast=fast_mode)
 
             # Convert matches
             for match in yara_matches:
@@ -109,30 +102,21 @@ class LibyaraScanner:
             scan_time = time.time() - start_time
 
             return ScanResult(
-                success=True,
-                matches=matches,
-                scan_time=scan_time,
-                data_size=len(data)
+                success=True, matches=matches, scan_time=scan_time, data_size=len(data)
             )
 
         except yara.TimeoutError:
             errors.append(f"Scan timeout after {self.timeout} seconds")
         except yara.Error as e:
-            errors.append(f"Scan error: {str(e)}")
+            errors.append(f"Scan error: {e!s}")
         except Exception as e:
-            errors.append(f"Unexpected error: {str(e)}")
+            errors.append(f"Unexpected error: {e!s}")
 
         scan_time = time.time() - start_time
 
-        return ScanResult(
-            success=False,
-            errors=errors,
-            scan_time=scan_time,
-            data_size=len(data)
-        )
+        return ScanResult(success=False, errors=errors, scan_time=scan_time, data_size=len(data))
 
-    def scan_file(self, rules: Any, filepath: Union[str, Path],
-                  fast_mode: bool = False) -> ScanResult:
+    def scan_file(self, rules: Any, filepath: str | Path, fast_mode: bool = False) -> ScanResult:
         """Scan file using compiled rules.
 
         Args:
@@ -146,10 +130,7 @@ class LibyaraScanner:
         filepath = Path(filepath)
 
         if not filepath.exists():
-            return ScanResult(
-                success=False,
-                errors=[f"File not found: {filepath}"]
-            )
+            return ScanResult(success=False, errors=[f"File not found: {filepath}"])
 
         start_time = time.time()
         errors = []
@@ -160,11 +141,7 @@ class LibyaraScanner:
             file_size = filepath.stat().st_size
 
             # Perform scan
-            yara_matches = rules.match(
-                filepath=str(filepath),
-                timeout=self.timeout,
-                fast=fast_mode
-            )
+            yara_matches = rules.match(filepath=str(filepath), timeout=self.timeout, fast=fast_mode)
 
             # Convert matches
             for match in yara_matches:
@@ -173,26 +150,19 @@ class LibyaraScanner:
             scan_time = time.time() - start_time
 
             return ScanResult(
-                success=True,
-                matches=matches,
-                scan_time=scan_time,
-                data_size=file_size
+                success=True, matches=matches, scan_time=scan_time, data_size=file_size
             )
 
         except yara.TimeoutError:
             errors.append(f"Scan timeout after {self.timeout} seconds")
         except yara.Error as e:
-            errors.append(f"Scan error: {str(e)}")
+            errors.append(f"Scan error: {e!s}")
         except Exception as e:
-            errors.append(f"Unexpected error: {str(e)}")
+            errors.append(f"Unexpected error: {e!s}")
 
         scan_time = time.time() - start_time
 
-        return ScanResult(
-            success=False,
-            errors=errors,
-            scan_time=scan_time
-        )
+        return ScanResult(success=False, errors=errors, scan_time=scan_time)
 
     def scan_process(self, rules: Any, pid: int) -> ScanResult:
         """Scan process memory using compiled rules.
@@ -218,21 +188,13 @@ class LibyaraScanner:
 
             scan_time = time.time() - start_time
 
-            return ScanResult(
-                success=True,
-                matches=matches,
-                scan_time=scan_time
-            )
+            return ScanResult(success=True, matches=matches, scan_time=scan_time)
 
         except yara.Error as e:
-            errors.append(f"Process scan error: {str(e)}")
+            errors.append(f"Process scan error: {e!s}")
         except Exception as e:
-            errors.append(f"Unexpected error: {str(e)}")
+            errors.append(f"Unexpected error: {e!s}")
 
         scan_time = time.time() - start_time
 
-        return ScanResult(
-            success=False,
-            errors=errors,
-            scan_time=scan_time
-        )
+        return ScanResult(success=False, errors=errors, scan_time=scan_time)

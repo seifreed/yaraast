@@ -1,9 +1,8 @@
 """YARA condition evaluator."""
 
-import operator
 import struct
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import *
@@ -17,12 +16,13 @@ from yaraast.visitor import ASTVisitor
 @dataclass
 class EvaluationContext:
     """Context for evaluating YARA conditions."""
+
     data: bytes
     filesize: int = field(init=False)
     entrypoint: int = 0
-    string_matches: Dict[str, List] = field(default_factory=dict)
-    modules: Dict[str, Any] = field(default_factory=dict)
-    variables: Dict[str, Any] = field(default_factory=dict)
+    string_matches: dict[str, list] = field(default_factory=dict)
+    modules: dict[str, Any] = field(default_factory=dict)
+    variables: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         self.filesize = len(self.data)
@@ -31,14 +31,14 @@ class EvaluationContext:
 class YaraEvaluator(ASTVisitor[Any]):
     """Evaluate YARA conditions against byte data."""
 
-    def __init__(self, data: bytes, modules: Optional[MockModuleRegistry] = None):
+    def __init__(self, data: bytes, modules: MockModuleRegistry | None = None):
         self.data = data
         self.context = EvaluationContext(data=data)
         self.string_matcher = StringMatcher()
         self.module_registry = modules or MockModuleRegistry()
-        self._current_rule: Optional[Rule] = None
+        self._current_rule: Rule | None = None
 
-    def evaluate_file(self, yara_file: YaraFile) -> Dict[str, bool]:
+    def evaluate_file(self, yara_file: YaraFile) -> dict[str, bool]:
         """Evaluate all rules in a YARA file."""
         results = {}
 
@@ -92,13 +92,13 @@ class YaraEvaluator(ASTVisitor[Any]):
         # Check for built-in identifiers
         if node.name == "filesize":
             return self.context.filesize
-        elif node.name == "entrypoint":
+        if node.name == "entrypoint":
             return self.context.entrypoint
-        elif node.name == "all":
+        if node.name == "all":
             return "all"
-        elif node.name == "any":
+        if node.name == "any":
             return "any"
-        elif node.name == "them":
+        if node.name == "them":
             return list(self.context.string_matches.keys())
 
         # Check variables
@@ -113,24 +113,26 @@ class YaraEvaluator(ASTVisitor[Any]):
 
     def visit_string_identifier(self, node: StringIdentifier) -> bool:
         """String identifier evaluates to whether it matched."""
-        return node.name in self.context.string_matches and \
-               len(self.context.string_matches[node.name]) > 0
+        return (
+            node.name in self.context.string_matches
+            and len(self.context.string_matches[node.name]) > 0
+        )
 
     def visit_string_count(self, node: StringCount) -> int:
         """Get count of string matches."""
-        string_id = f"${node.string_id}" if not node.string_id.startswith('$') else node.string_id
+        string_id = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
         return self.string_matcher.get_match_count(string_id)
 
     def visit_string_offset(self, node: StringOffset) -> int:
         """Get offset of string match."""
-        string_id = f"${node.string_id}" if not node.string_id.startswith('$') else node.string_id
+        string_id = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
         index = self.visit(node.index) if node.index else 0
         offset = self.string_matcher.get_match_offset(string_id, index)
         return offset if offset is not None else -1
 
     def visit_string_length(self, node: StringLength) -> int:
         """Get length of string match."""
-        string_id = f"${node.string_id}" if not node.string_id.startswith('$') else node.string_id
+        string_id = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
         index = self.visit(node.index) if node.index else 0
         length = self.string_matcher.get_match_length(string_id, index)
         return length if length is not None else 0
@@ -144,7 +146,7 @@ class YaraEvaluator(ASTVisitor[Any]):
             if not left:
                 return False
             return self.visit(node.right)
-        elif node.operator == "or":
+        if node.operator == "or":
             if left:
                 return True
             return self.visit(node.right)
@@ -154,57 +156,58 @@ class YaraEvaluator(ASTVisitor[Any]):
         # Arithmetic operators
         if node.operator == "+":
             return left + right
-        elif node.operator == "-":
+        if node.operator == "-":
             return left - right
-        elif node.operator == "*":
+        if node.operator == "*":
             return left * right
-        elif node.operator == "/":
+        if node.operator == "/":
             return left // right if isinstance(left, int) else left / right
-        elif node.operator == "%":
+        if node.operator == "%":
             return left % right
-        elif node.operator == "<<":
+        if node.operator == "<<":
             return left << right
-        elif node.operator == ">>":
+        if node.operator == ">>":
             return left >> right
-        elif node.operator == "&":
+        if node.operator == "&":
             return left & right
-        elif node.operator == "|":
+        if node.operator == "|":
             return left | right
-        elif node.operator == "^":
+        if node.operator == "^":
             return left ^ right
 
         # Comparison operators
-        elif node.operator == "==":
+        if node.operator == "==":
             return left == right
-        elif node.operator == "!=":
+        if node.operator == "!=":
             return left != right
-        elif node.operator == "<":
+        if node.operator == "<":
             return left < right
-        elif node.operator == "<=":
+        if node.operator == "<=":
             return left <= right
-        elif node.operator == ">":
+        if node.operator == ">":
             return left > right
-        elif node.operator == ">=":
+        if node.operator == ">=":
             return left >= right
 
         # String operators
-        elif node.operator == "contains":
+        if node.operator == "contains":
             return right in left
-        elif node.operator == "icontains":
+        if node.operator == "icontains":
             return right.lower() in left.lower()
-        elif node.operator == "startswith":
+        if node.operator == "startswith":
             return left.startswith(right)
-        elif node.operator == "istartswith":
+        if node.operator == "istartswith":
             return left.lower().startswith(right.lower())
-        elif node.operator == "endswith":
+        if node.operator == "endswith":
             return left.endswith(right)
-        elif node.operator == "iendswith":
+        if node.operator == "iendswith":
             return left.lower().endswith(right.lower())
-        elif node.operator == "iequals":
+        if node.operator == "iequals":
             return left.lower() == right.lower()
-        elif node.operator == "matches":
+        if node.operator == "matches":
             # Simplified regex matching
             import re
+
             try:
                 return bool(re.search(right, left))
             except:
@@ -219,18 +222,17 @@ class YaraEvaluator(ASTVisitor[Any]):
 
         if node.operator == "not":
             return not operand
-        elif node.operator == "-":
+        if node.operator == "-":
             return -operand
-        elif node.operator == "~":
+        if node.operator == "~":
             return ~operand
-        else:
-            raise ValueError(f"Unknown unary operator: {node.operator}")
+        raise ValueError(f"Unknown unary operator: {node.operator}")
 
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> Any:
         """Evaluate parentheses expression."""
         return self.visit(node.expression)
 
-    def visit_set_expression(self, node: SetExpression) -> Set:
+    def visit_set_expression(self, node: SetExpression) -> set:
         """Evaluate set expression."""
         return {self.visit(elem) for elem in node.elements}
 
@@ -248,35 +250,37 @@ class YaraEvaluator(ASTVisitor[Any]):
         # Built-in functions
         if node.function == "uint8":
             return self._read_uint8(args[0]) if args else 0
-        elif node.function == "uint16":
+        if node.function == "uint16":
             return self._read_uint16(args[0]) if args else 0
-        elif node.function == "uint32":
+        if node.function == "uint32":
             return self._read_uint32(args[0]) if args else 0
-        elif node.function == "int8":
+        if node.function == "int8":
             return self._read_int8(args[0]) if args else 0
-        elif node.function == "int16":
+        if node.function == "int16":
             return self._read_int16(args[0]) if args else 0
-        elif node.function == "int32":
+        if node.function == "int32":
             return self._read_int32(args[0]) if args else 0
 
         # Big-endian variants
-        elif node.function == "uint16be":
+        if node.function == "uint16be":
             return self._read_uint16_be(args[0]) if args else 0
-        elif node.function == "uint32be":
+        if node.function == "uint32be":
             return self._read_uint32_be(args[0]) if args else 0
-        elif node.function == "int16be":
+        if node.function == "int16be":
             return self._read_int16_be(args[0]) if args else 0
-        elif node.function == "int32be":
+        if node.function == "int32be":
             return self._read_int32_be(args[0]) if args else 0
 
         # Little-endian variants (same as normal for x86)
-        elif node.function in ["uint16le", "uint32le", "int16le", "int32le"]:
+        if node.function in ["uint16le", "uint32le", "int16le", "int32le"]:
             base_func = node.function[:-2]  # Remove 'le'
-            return self.visit_function_call(FunctionCall(function=base_func, arguments=node.arguments))
+            return self.visit_function_call(
+                FunctionCall(function=base_func, arguments=node.arguments)
+            )
 
         # Module functions
-        elif '.' in node.function:
-            module_name, func_name = node.function.split('.', 1)
+        if "." in node.function:
+            module_name, func_name = node.function.split(".", 1)
             if module_name in self.context.modules:
                 module = self.context.modules[module_name]
                 if hasattr(module, func_name):
@@ -291,7 +295,7 @@ class YaraEvaluator(ASTVisitor[Any]):
 
         if hasattr(obj, node.member):
             return getattr(obj, node.member)
-        elif hasattr(obj, '__getitem__'):
+        if hasattr(obj, "__getitem__"):
             try:
                 return obj[node.member]
             except:
@@ -326,7 +330,7 @@ class YaraEvaluator(ASTVisitor[Any]):
     def visit_of_expression(self, node: OfExpression) -> bool:
         """Evaluate 'of' expression."""
         # Get quantifier value - could be int, string ("all", "any"), or expression
-        if isinstance(node.quantifier, (int, str)):
+        if isinstance(node.quantifier, int | str):
             quantifier = node.quantifier
         else:
             quantifier = self.visit(node.quantifier)
@@ -346,9 +350,9 @@ class YaraEvaluator(ASTVisitor[Any]):
         if isinstance(quantifier, str):
             if quantifier == "all":
                 return matched == len(string_set)
-            elif quantifier == "any":
+            if quantifier == "any":
                 return matched > 0
-            elif quantifier == "none":
+            if quantifier == "none":
                 return matched == 0
         elif isinstance(quantifier, int):
             return matched >= quantifier
@@ -358,7 +362,7 @@ class YaraEvaluator(ASTVisitor[Any]):
     def visit_for_expression(self, node: ForExpression) -> bool:
         """Evaluate 'for' expression."""
         # Get quantifier value - could be int, string ("all", "any"), or expression
-        if isinstance(node.quantifier, (int, str)):
+        if isinstance(node.quantifier, int | str):
             quantifier = node.quantifier
         else:
             quantifier = self.visit(node.quantifier)
@@ -386,9 +390,9 @@ class YaraEvaluator(ASTVisitor[Any]):
         if isinstance(quantifier, str):
             if quantifier == "all":
                 return true_count == len(iterable)
-            elif quantifier == "any":
+            if quantifier == "any":
                 return true_count > 0
-            elif quantifier == "none":
+            if quantifier == "none":
                 return true_count == 0
         elif isinstance(quantifier, int):
             return true_count >= quantifier
@@ -404,47 +408,47 @@ class YaraEvaluator(ASTVisitor[Any]):
 
     def _read_uint16(self, offset: int) -> int:
         if 0 <= offset <= len(self.data) - 2:
-            return struct.unpack('<H', self.data[offset:offset+2])[0]
+            return struct.unpack("<H", self.data[offset : offset + 2])[0]
         return 0
 
     def _read_uint32(self, offset: int) -> int:
         if 0 <= offset <= len(self.data) - 4:
-            return struct.unpack('<I', self.data[offset:offset+4])[0]
+            return struct.unpack("<I", self.data[offset : offset + 4])[0]
         return 0
 
     def _read_int8(self, offset: int) -> int:
         if 0 <= offset < len(self.data):
-            return struct.unpack('b', bytes([self.data[offset]]))[0]
+            return struct.unpack("b", bytes([self.data[offset]]))[0]
         return 0
 
     def _read_int16(self, offset: int) -> int:
         if 0 <= offset <= len(self.data) - 2:
-            return struct.unpack('<h', self.data[offset:offset+2])[0]
+            return struct.unpack("<h", self.data[offset : offset + 2])[0]
         return 0
 
     def _read_int32(self, offset: int) -> int:
         if 0 <= offset <= len(self.data) - 4:
-            return struct.unpack('<i', self.data[offset:offset+4])[0]
+            return struct.unpack("<i", self.data[offset : offset + 4])[0]
         return 0
 
     def _read_uint16_be(self, offset: int) -> int:
         if 0 <= offset <= len(self.data) - 2:
-            return struct.unpack('>H', self.data[offset:offset+2])[0]
+            return struct.unpack(">H", self.data[offset : offset + 2])[0]
         return 0
 
     def _read_uint32_be(self, offset: int) -> int:
         if 0 <= offset <= len(self.data) - 4:
-            return struct.unpack('>I', self.data[offset:offset+4])[0]
+            return struct.unpack(">I", self.data[offset : offset + 4])[0]
         return 0
 
     def _read_int16_be(self, offset: int) -> int:
         if 0 <= offset <= len(self.data) - 2:
-            return struct.unpack('>h', self.data[offset:offset+2])[0]
+            return struct.unpack(">h", self.data[offset : offset + 2])[0]
         return 0
 
     def _read_int32_be(self, offset: int) -> int:
         if 0 <= offset <= len(self.data) - 4:
-            return struct.unpack('>i', self.data[offset:offset+4])[0]
+            return struct.unpack(">i", self.data[offset : offset + 4])[0]
         return 0
 
     # Base expression visitor (dispatch to specific expression types)
@@ -454,25 +458,63 @@ class YaraEvaluator(ASTVisitor[Any]):
         return self.visit(node)
 
     # Visit method stubs for completeness
-    def visit_yara_file(self, node): pass
-    def visit_import(self, node): pass
-    def visit_include(self, node): pass
-    def visit_rule(self, node): pass
-    def visit_tag(self, node): pass
-    def visit_string_definition(self, node): pass
-    def visit_plain_string(self, node): pass
-    def visit_hex_string(self, node): pass
-    def visit_regex_string(self, node): pass
-    def visit_string_modifier(self, node): pass
-    def visit_hex_token(self, node): pass
-    def visit_hex_byte(self, node): pass
-    def visit_hex_wildcard(self, node): pass
-    def visit_hex_jump(self, node): pass
-    def visit_hex_alternative(self, node): pass
-    def visit_meta(self, node): pass
-    def visit_module_reference(self, node): pass
-    def visit_dictionary_access(self, node): pass
-    def visit_condition(self, node): pass
+    def visit_yara_file(self, node):
+        pass
+
+    def visit_import(self, node):
+        pass
+
+    def visit_include(self, node):
+        pass
+
+    def visit_rule(self, node):
+        pass
+
+    def visit_tag(self, node):
+        pass
+
+    def visit_string_definition(self, node):
+        pass
+
+    def visit_plain_string(self, node):
+        pass
+
+    def visit_hex_string(self, node):
+        pass
+
+    def visit_regex_string(self, node):
+        pass
+
+    def visit_string_modifier(self, node):
+        pass
+
+    def visit_hex_token(self, node):
+        pass
+
+    def visit_hex_byte(self, node):
+        pass
+
+    def visit_hex_wildcard(self, node):
+        pass
+
+    def visit_hex_jump(self, node):
+        pass
+
+    def visit_hex_alternative(self, node):
+        pass
+
+    def visit_meta(self, node):
+        pass
+
+    def visit_module_reference(self, node):
+        pass
+
+    def visit_dictionary_access(self, node):
+        pass
+
+    def visit_condition(self, node):
+        pass
+
     def visit_for_of_expression(self, node) -> bool:
         """Evaluate 'for ... of' expression."""
         # This is similar to for_expression but specifically for strings
@@ -503,9 +545,9 @@ class YaraEvaluator(ASTVisitor[Any]):
         if isinstance(quantifier, str):
             if quantifier == "all":
                 return matches == len(string_set)
-            elif quantifier == "any":
+            if quantifier == "any":
                 return matches > 0
-            elif quantifier == "none":
+            if quantifier == "none":
                 return matches == 0
         elif isinstance(quantifier, int):
             return matches >= quantifier
@@ -515,6 +557,7 @@ class YaraEvaluator(ASTVisitor[Any]):
             return matches >= required
 
         return False
+
     def visit_regex_literal(self, node) -> str:
         """Return regex pattern string."""
         # For regex literals, we'll return the pattern
@@ -541,9 +584,16 @@ class YaraEvaluator(ASTVisitor[Any]):
                         return True
 
         return False
-    def visit_hex_nibble(self, node): pass
-    def visit_comment(self, node): pass
-    def visit_comment_group(self, node): pass
+
+    def visit_hex_nibble(self, node):
+        pass
+
+    def visit_comment(self, node):
+        pass
+
+    def visit_comment_group(self, node):
+        pass
+
     def visit_string_operator_expression(self, node) -> Any:
         """Evaluate string-specific operators like contains, startswith, etc."""
         # This is handled in binary_expression for string operators

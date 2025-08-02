@@ -13,15 +13,15 @@ from yaraast.performance.parallel_analyzer import AnalysisJob, JobStatus, Parall
 from yaraast.performance.streaming_parser import ParseResult, ParseStatus, StreamingParser
 
 __all__ = [
-    "StreamingParser",
-    "ParseResult",
-    "ParseStatus",
+    "AnalysisJob",
+    "BatchOperation",
     "BatchProcessor",
     "BatchResult",
-    "BatchOperation",
-    "ParallelAnalyzer",
-    "AnalysisJob",
     "JobStatus",
     "MemoryOptimizer",
-    "MemoryStats"
+    "MemoryStats",
+    "ParallelAnalyzer",
+    "ParseResult",
+    "ParseStatus",
+    "StreamingParser",
 ]

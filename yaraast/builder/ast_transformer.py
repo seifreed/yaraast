@@ -1,13 +1,12 @@
 """AST cloning and transformation utilities."""
 
+from collections.abc import Callable
 from copy import deepcopy
-from typing import Any, Callable, Dict, List, Optional, Union
 
 from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.ast.expressions import Expression, Identifier, StringIdentifier
+from yaraast.ast.expressions import Expression, StringIdentifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
-from yaraast.visitor import ASTTransformer
+from yaraast.ast.strings import StringDefinition
 
 
 class CloneTransformer:
@@ -28,7 +27,7 @@ class CloneTransformer:
             meta=rule.meta.copy() if isinstance(rule.meta, dict) else rule.meta.copy(),
             strings=[CloneTransformer.clone(s) for s in rule.strings],
             condition=CloneTransformer.clone(rule.condition) if rule.condition else None,
-            location=rule.location
+            location=rule.location,
         )
 
     @staticmethod
@@ -42,7 +41,7 @@ class CloneTransformer:
             extern_imports=[CloneTransformer.clone(imp) for imp in yara_file.extern_imports],
             pragmas=[CloneTransformer.clone(pragma) for pragma in yara_file.pragmas],
             namespaces=[CloneTransformer.clone(ns) for ns in yara_file.namespaces],
-            location=yara_file.location
+            location=yara_file.location,
         )
 
 
@@ -52,87 +51,87 @@ class RuleTransformer:
     def __init__(self, rule: Rule):
         self.rule = CloneTransformer.clone_rule(rule)
 
-    def rename(self, new_name: str) -> 'RuleTransformer':
+    def rename(self, new_name: str) -> "RuleTransformer":
         """Rename the rule."""
         self.rule.name = new_name
         return self
 
-    def add_prefix(self, prefix: str) -> 'RuleTransformer':
+    def add_prefix(self, prefix: str) -> "RuleTransformer":
         """Add prefix to rule name."""
         self.rule.name = f"{prefix}{self.rule.name}"
         return self
 
-    def add_suffix(self, suffix: str) -> 'RuleTransformer':
+    def add_suffix(self, suffix: str) -> "RuleTransformer":
         """Add suffix to rule name."""
         self.rule.name = f"{self.rule.name}{suffix}"
         return self
 
-    def add_tag(self, tag: str) -> 'RuleTransformer':
+    def add_tag(self, tag: str) -> "RuleTransformer":
         """Add a tag to the rule."""
         if not any(t.name == tag for t in self.rule.tags):
             self.rule.tags.append(Tag(name=tag))
         return self
 
-    def remove_tag(self, tag: str) -> 'RuleTransformer':
+    def remove_tag(self, tag: str) -> "RuleTransformer":
         """Remove a tag from the rule."""
         self.rule.tags = [t for t in self.rule.tags if t.name != tag]
         return self
 
-    def replace_tag(self, old_tag: str, new_tag: str) -> 'RuleTransformer':
+    def replace_tag(self, old_tag: str, new_tag: str) -> "RuleTransformer":
         """Replace a tag."""
         for tag in self.rule.tags:
             if tag.name == old_tag:
                 tag.name = new_tag
         return self
 
-    def add_modifier(self, modifier: str) -> 'RuleTransformer':
+    def add_modifier(self, modifier: str) -> "RuleTransformer":
         """Add a modifier to the rule."""
         if modifier not in self.rule.modifiers:
             self.rule.modifiers.append(modifier)
         return self
 
-    def remove_modifier(self, modifier: str) -> 'RuleTransformer':
+    def remove_modifier(self, modifier: str) -> "RuleTransformer":
         """Remove a modifier from the rule."""
         self.rule.modifiers = [m for m in self.rule.modifiers if m != modifier]
         return self
 
-    def make_private(self) -> 'RuleTransformer':
+    def make_private(self) -> "RuleTransformer":
         """Make the rule private."""
         return self.add_modifier("private")
 
-    def make_global(self) -> 'RuleTransformer':
+    def make_global(self) -> "RuleTransformer":
         """Make the rule global."""
         return self.add_modifier("global")
 
-    def make_public(self) -> 'RuleTransformer':
+    def make_public(self) -> "RuleTransformer":
         """Make the rule public (remove private)."""
         return self.remove_modifier("private")
 
-    def add_meta(self, key: str, value: Union[str, int, bool]) -> 'RuleTransformer':
+    def add_meta(self, key: str, value: str | int | bool) -> "RuleTransformer":
         """Add metadata."""
         if isinstance(self.rule.meta, dict):
             self.rule.meta[key] = value
         return self
 
-    def remove_meta(self, key: str) -> 'RuleTransformer':
+    def remove_meta(self, key: str) -> "RuleTransformer":
         """Remove metadata."""
         if isinstance(self.rule.meta, dict) and key in self.rule.meta:
             del self.rule.meta[key]
         return self
 
-    def set_author(self, author: str) -> 'RuleTransformer':
+    def set_author(self, author: str) -> "RuleTransformer":
         """Set author metadata."""
         return self.add_meta("author", author)
 
-    def set_description(self, description: str) -> 'RuleTransformer':
+    def set_description(self, description: str) -> "RuleTransformer":
         """Set description metadata."""
         return self.add_meta("description", description)
 
-    def set_version(self, version: int) -> 'RuleTransformer':
+    def set_version(self, version: int) -> "RuleTransformer":
         """Set version metadata."""
         return self.add_meta("version", version)
 
-    def rename_strings(self, mapping: Dict[str, str]) -> 'RuleTransformer':
+    def rename_strings(self, mapping: dict[str, str]) -> "RuleTransformer":
         """Rename string identifiers based on mapping."""
         # Update string definitions
         for string_def in self.rule.strings:
@@ -141,56 +140,50 @@ class RuleTransformer:
 
         # Update string references in condition
         if self.rule.condition:
-            self.rule.condition = self._rename_strings_in_expression(
-                self.rule.condition, mapping
-            )
+            self.rule.condition = self._rename_strings_in_expression(self.rule.condition, mapping)
 
         return self
 
-    def prefix_strings(self, prefix: str) -> 'RuleTransformer':
+    def prefix_strings(self, prefix: str) -> "RuleTransformer":
         """Add prefix to all string identifiers."""
         mapping = {}
         for string_def in self.rule.strings:
             old_id = string_def.identifier
             # Handle $ prefix
-            if old_id.startswith('$'):
-                new_id = f"${prefix}{old_id[1:]}"
-            else:
-                new_id = f"{prefix}{old_id}"
+            new_id = f"${prefix}{old_id[1:]}" if old_id.startswith("$") else f"{prefix}{old_id}"
             mapping[old_id] = new_id
 
         return self.rename_strings(mapping)
 
-    def suffix_strings(self, suffix: str) -> 'RuleTransformer':
+    def suffix_strings(self, suffix: str) -> "RuleTransformer":
         """Add suffix to all string identifiers."""
         mapping = {}
         for string_def in self.rule.strings:
             old_id = string_def.identifier
             # Handle $ prefix
-            if old_id.startswith('$'):
-                new_id = f"${old_id[1:]}{suffix}"
-            else:
-                new_id = f"{old_id}{suffix}"
+            new_id = f"${old_id[1:]}{suffix}" if old_id.startswith("$") else f"{old_id}{suffix}"
             mapping[old_id] = new_id
 
         return self.rename_strings(mapping)
 
-    def add_string(self, string_def: StringDefinition) -> 'RuleTransformer':
+    def add_string(self, string_def: StringDefinition) -> "RuleTransformer":
         """Add a string definition."""
         self.rule.strings.append(string_def)
         return self
 
-    def remove_string(self, identifier: str) -> 'RuleTransformer':
+    def remove_string(self, identifier: str) -> "RuleTransformer":
         """Remove a string definition by identifier."""
         self.rule.strings = [s for s in self.rule.strings if s.identifier != identifier]
         return self
 
-    def replace_condition(self, new_condition: Expression) -> 'RuleTransformer':
+    def replace_condition(self, new_condition: Expression) -> "RuleTransformer":
         """Replace the rule condition."""
         self.rule.condition = new_condition
         return self
 
-    def transform_condition(self, transformer_func: Callable[[Expression], Expression]) -> 'RuleTransformer':
+    def transform_condition(
+        self, transformer_func: Callable[[Expression], Expression]
+    ) -> "RuleTransformer":
         """Transform the condition using a function."""
         if self.rule.condition:
             self.rule.condition = transformer_func(self.rule.condition)
@@ -201,7 +194,9 @@ class RuleTransformer:
         return self.rule
 
     # Helper methods
-    def _rename_strings_in_expression(self, expr: Expression, mapping: Dict[str, str]) -> Expression:
+    def _rename_strings_in_expression(
+        self, expr: Expression, mapping: dict[str, str]
+    ) -> Expression:
         """Recursively rename string identifiers in expression."""
         if isinstance(expr, StringIdentifier):
             if expr.name in mapping:
@@ -219,51 +214,43 @@ class YaraFileTransformer:
     def __init__(self, yara_file: YaraFile):
         self.yara_file = CloneTransformer.clone_yara_file(yara_file)
 
-    def add_import(self, module: str, alias: Optional[str] = None) -> 'YaraFileTransformer':
+    def add_import(self, module: str, alias: str | None = None) -> "YaraFileTransformer":
         """Add an import statement."""
         # Check if already imported
         if not any(imp.module == module for imp in self.yara_file.imports):
             self.yara_file.imports.append(Import(module=module, alias=alias))
         return self
 
-    def remove_import(self, module: str) -> 'YaraFileTransformer':
+    def remove_import(self, module: str) -> "YaraFileTransformer":
         """Remove an import statement."""
-        self.yara_file.imports = [
-            imp for imp in self.yara_file.imports
-            if imp.module != module
-        ]
+        self.yara_file.imports = [imp for imp in self.yara_file.imports if imp.module != module]
         return self
 
-    def add_include(self, path: str) -> 'YaraFileTransformer':
+    def add_include(self, path: str) -> "YaraFileTransformer":
         """Add an include statement."""
         # Check if already included
         if not any(inc.path == path for inc in self.yara_file.includes):
             self.yara_file.includes.append(Include(path=path))
         return self
 
-    def remove_include(self, path: str) -> 'YaraFileTransformer':
+    def remove_include(self, path: str) -> "YaraFileTransformer":
         """Remove an include statement."""
-        self.yara_file.includes = [
-            inc for inc in self.yara_file.includes
-            if inc.path != path
-        ]
+        self.yara_file.includes = [inc for inc in self.yara_file.includes if inc.path != path]
         return self
 
-    def add_rule(self, rule: Rule) -> 'YaraFileTransformer':
+    def add_rule(self, rule: Rule) -> "YaraFileTransformer":
         """Add a rule to the file."""
         self.yara_file.rules.append(CloneTransformer.clone_rule(rule))
         return self
 
-    def remove_rule(self, rule_name: str) -> 'YaraFileTransformer':
+    def remove_rule(self, rule_name: str) -> "YaraFileTransformer":
         """Remove a rule by name."""
-        self.yara_file.rules = [
-            rule for rule in self.yara_file.rules
-            if rule.name != rule_name
-        ]
+        self.yara_file.rules = [rule for rule in self.yara_file.rules if rule.name != rule_name]
         return self
 
-    def transform_rule(self, rule_name: str,
-                      transformer_func: Callable[[Rule], Rule]) -> 'YaraFileTransformer':
+    def transform_rule(
+        self, rule_name: str, transformer_func: Callable[[Rule], Rule]
+    ) -> "YaraFileTransformer":
         """Transform a specific rule."""
         for i, rule in enumerate(self.yara_file.rules):
             if rule.name == rule_name:
@@ -271,62 +258,51 @@ class YaraFileTransformer:
                 break
         return self
 
-    def transform_all_rules(self,
-                           transformer_func: Callable[[Rule], Rule]) -> 'YaraFileTransformer':
+    def transform_all_rules(
+        self, transformer_func: Callable[[Rule], Rule]
+    ) -> "YaraFileTransformer":
         """Transform all rules."""
-        self.yara_file.rules = [
-            transformer_func(rule) for rule in self.yara_file.rules
-        ]
+        self.yara_file.rules = [transformer_func(rule) for rule in self.yara_file.rules]
         return self
 
-    def prefix_all_rules(self, prefix: str) -> 'YaraFileTransformer':
+    def prefix_all_rules(self, prefix: str) -> "YaraFileTransformer":
         """Add prefix to all rule names."""
         return self.transform_all_rules(
             lambda rule: RuleTransformer(rule).add_prefix(prefix).build()
         )
 
-    def suffix_all_rules(self, suffix: str) -> 'YaraFileTransformer':
+    def suffix_all_rules(self, suffix: str) -> "YaraFileTransformer":
         """Add suffix to all rule names."""
         return self.transform_all_rules(
             lambda rule: RuleTransformer(rule).add_suffix(suffix).build()
         )
 
-    def add_tag_to_all_rules(self, tag: str) -> 'YaraFileTransformer':
+    def add_tag_to_all_rules(self, tag: str) -> "YaraFileTransformer":
         """Add tag to all rules."""
-        return self.transform_all_rules(
-            lambda rule: RuleTransformer(rule).add_tag(tag).build()
-        )
+        return self.transform_all_rules(lambda rule: RuleTransformer(rule).add_tag(tag).build())
 
-    def make_all_rules_private(self) -> 'YaraFileTransformer':
+    def make_all_rules_private(self) -> "YaraFileTransformer":
         """Make all rules private."""
-        return self.transform_all_rules(
-            lambda rule: RuleTransformer(rule).make_private().build()
-        )
+        return self.transform_all_rules(lambda rule: RuleTransformer(rule).make_private().build())
 
-    def set_author_for_all_rules(self, author: str) -> 'YaraFileTransformer':
+    def set_author_for_all_rules(self, author: str) -> "YaraFileTransformer":
         """Set author for all rules."""
         return self.transform_all_rules(
             lambda rule: RuleTransformer(rule).set_author(author).build()
         )
 
-    def filter_rules(self, predicate: Callable[[Rule], bool]) -> 'YaraFileTransformer':
+    def filter_rules(self, predicate: Callable[[Rule], bool]) -> "YaraFileTransformer":
         """Filter rules based on predicate."""
-        self.yara_file.rules = [
-            rule for rule in self.yara_file.rules if predicate(rule)
-        ]
+        self.yara_file.rules = [rule for rule in self.yara_file.rules if predicate(rule)]
         return self
 
-    def filter_by_tag(self, tag: str) -> 'YaraFileTransformer':
+    def filter_by_tag(self, tag: str) -> "YaraFileTransformer":
         """Filter rules that have a specific tag."""
-        return self.filter_rules(
-            lambda rule: any(t.name == tag for t in rule.tags)
-        )
+        return self.filter_rules(lambda rule: any(t.name == tag for t in rule.tags))
 
-    def filter_by_modifier(self, modifier: str) -> 'YaraFileTransformer':
+    def filter_by_modifier(self, modifier: str) -> "YaraFileTransformer":
         """Filter rules that have a specific modifier."""
-        return self.filter_rules(
-            lambda rule: modifier in rule.modifiers
-        )
+        return self.filter_rules(lambda rule: modifier in rule.modifiers)
 
     def build(self) -> YaraFile:
         """Build the transformed YARA file."""
@@ -338,40 +314,45 @@ def clone_rule(rule: Rule) -> Rule:
     """Clone a rule."""
     return CloneTransformer.clone_rule(rule)
 
+
 def clone_yara_file(yara_file: YaraFile) -> YaraFile:
     """Clone a YARA file."""
     return CloneTransformer.clone_yara_file(yara_file)
+
 
 def transform_rule(rule: Rule) -> RuleTransformer:
     """Create a rule transformer."""
     return RuleTransformer(rule)
 
+
 def transform_yara_file(yara_file: YaraFile) -> YaraFileTransformer:
     """Create a YARA file transformer."""
     return YaraFileTransformer(yara_file)
+
 
 # Factory functions for common transformations
 def create_variant_rule(rule: Rule, variant_name: str, **changes) -> Rule:
     """Create a variant of a rule with changes."""
     transformer = RuleTransformer(rule).rename(variant_name)
 
-    if 'prefix' in changes:
-        transformer = transformer.add_prefix(changes['prefix'])
-    if 'suffix' in changes:
-        transformer = transformer.add_suffix(changes['suffix'])
-    if 'tags' in changes:
-        for tag in changes['tags']:
+    if "prefix" in changes:
+        transformer = transformer.add_prefix(changes["prefix"])
+    if "suffix" in changes:
+        transformer = transformer.add_suffix(changes["suffix"])
+    if "tags" in changes:
+        for tag in changes["tags"]:
             transformer = transformer.add_tag(tag)
-    if 'author' in changes:
-        transformer = transformer.set_author(changes['author'])
-    if 'description' in changes:
-        transformer = transformer.set_description(changes['description'])
-    if 'private' in changes and changes['private']:
+    if "author" in changes:
+        transformer = transformer.set_author(changes["author"])
+    if "description" in changes:
+        transformer = transformer.set_description(changes["description"])
+    if changes.get("private"):
         transformer = transformer.make_private()
 
     return transformer.build()
 
-def create_rule_collection(rules: List[Rule], collection_name: str) -> YaraFile:
+
+def create_rule_collection(rules: list[Rule], collection_name: str) -> YaraFile:
     """Create a YARA file from a collection of rules."""
     yara_file = YaraFile()
     transformer = YaraFileTransformer(yara_file)
@@ -382,6 +363,7 @@ def create_rule_collection(rules: List[Rule], collection_name: str) -> YaraFile:
         transformer = transformer.add_rule(new_rule)
 
     return transformer.build()
+
 
 def merge_yara_files(*yara_files: YaraFile) -> YaraFile:
     """Merge multiple YARA files into one."""

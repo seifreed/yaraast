@@ -1,7 +1,6 @@
 """CLI commands for AST-based analysis."""
 
 import sys
-from pathlib import Path
 
 import click
 from rich.console import Console
@@ -17,15 +16,18 @@ console = Console()
 @click.group()
 def analyze():
     """AST-based analysis commands."""
-    pass
 
 
 @analyze.command()
-@click.argument('rule_file', type=click.Path(exists=True))
-@click.option('-v', '--verbose', is_flag=True, help='Show all suggestions')
-@click.option('-c', '--category',
-              type=click.Choice(['style', 'optimization', 'structure', 'all']),
-              default='all', help='Filter by category')
+@click.argument("rule_file", type=click.Path(exists=True))
+@click.option("-v", "--verbose", is_flag=True, help="Show all suggestions")
+@click.option(
+    "-c",
+    "--category",
+    type=click.Choice(["style", "optimization", "structure", "all"]),
+    default="all",
+    help="Filter by category",
+)
 def best_practices(rule_file: str, verbose: bool, category: str):
     """Analyze YARA rules for best practices using AST.
 
@@ -38,7 +40,7 @@ def best_practices(rule_file: str, verbose: bool, category: str):
     """
     try:
         # Parse rules
-        with open(rule_file, 'r') as f:
+        with open(rule_file) as f:
             content = f.read()
 
         parser = Parser()
@@ -52,9 +54,9 @@ def best_practices(rule_file: str, verbose: bool, category: str):
         console.print(f"\n[bold]Best Practices Analysis:[/bold] {rule_file}\n")
 
         # Summary
-        errors = report.get_by_severity('error')
-        warnings = report.get_by_severity('warning')
-        info = report.get_by_severity('info')
+        errors = report.get_by_severity("error")
+        warnings = report.get_by_severity("warning")
+        info = report.get_by_severity("info")
 
         summary = Table(show_header=False, box=None)
         summary.add_row("✗ Errors:", f"[red]{len(errors)}[/red]")
@@ -64,11 +66,11 @@ def best_practices(rule_file: str, verbose: bool, category: str):
 
         # Filter suggestions
         suggestions = report.suggestions
-        if category != 'all':
+        if category != "all":
             suggestions = [s for s in suggestions if s.category == category]
 
         # Show errors and warnings always
-        important = [s for s in suggestions if s.severity in ('error', 'warning')]
+        important = [s for s in suggestions if s.severity in ("error", "warning")]
         if important:
             console.print("\n[bold red]Issues:[/bold red]")
             for suggestion in important:
@@ -76,7 +78,7 @@ def best_practices(rule_file: str, verbose: bool, category: str):
 
         # Show info only in verbose mode
         if verbose:
-            info_items = [s for s in suggestions if s.severity == 'info']
+            info_items = [s for s in suggestions if s.severity == "info"]
             if info_items:
                 console.print("\n[bold blue]Suggestions:[/bold blue]")
                 for suggestion in info_items:
@@ -84,7 +86,7 @@ def best_practices(rule_file: str, verbose: bool, category: str):
 
         # Statistics
         if verbose and report.statistics:
-            console.print(f"\n[dim]Statistics:[/dim]")
+            console.print("\n[dim]Statistics:[/dim]")
             for key, value in report.statistics.items():
                 console.print(f"  {key}: {value}")
 
@@ -104,11 +106,15 @@ def best_practices(rule_file: str, verbose: bool, category: str):
 
 
 @analyze.command()
-@click.argument('rule_file', type=click.Path(exists=True))
-@click.option('-v', '--verbose', is_flag=True, help='Show all optimizations')
-@click.option('-i', '--impact',
-              type=click.Choice(['low', 'medium', 'high', 'all']),
-              default='all', help='Filter by impact level')
+@click.argument("rule_file", type=click.Path(exists=True))
+@click.option("-v", "--verbose", is_flag=True, help="Show all optimizations")
+@click.option(
+    "-i",
+    "--impact",
+    type=click.Choice(["low", "medium", "high", "all"]),
+    default="all",
+    help="Filter by impact level",
+)
 def optimize(rule_file: str, verbose: bool, impact: str):
     """Analyze YARA rules for optimization opportunities.
 
@@ -121,7 +127,7 @@ def optimize(rule_file: str, verbose: bool, impact: str):
     """
     try:
         # Parse rules
-        with open(rule_file, 'r') as f:
+        with open(rule_file) as f:
             content = f.read()
 
         parser = Parser()
@@ -139,26 +145,23 @@ def optimize(rule_file: str, verbose: bool, impact: str):
         table.add_column("Impact", style="cyan")
         table.add_column("Count", justify="right")
 
-        for level in ['high', 'medium', 'low']:
-            count = report.statistics['by_impact'].get(level, 0)
-            style = {'high': 'red', 'medium': 'yellow', 'low': 'green'}.get(level, 'white')
-            table.add_row(
-                f"[{style}]{level.capitalize()}[/{style}]",
-                str(count)
-            )
+        for level in ["high", "medium", "low"]:
+            count = report.statistics["by_impact"].get(level, 0)
+            style = {"high": "red", "medium": "yellow", "low": "green"}.get(level, "white")
+            table.add_row(f"[{style}]{level.capitalize()}[/{style}]", str(count))
 
         console.print(table)
 
         # Filter suggestions
         suggestions = report.suggestions
-        if impact != 'all':
+        if impact != "all":
             suggestions = [s for s in suggestions if s.impact == impact]
 
         # Group by impact
-        for level in ['high', 'medium', 'low']:
+        for level in ["high", "medium", "low"]:
             level_suggestions = [s for s in suggestions if s.impact == level]
             if level_suggestions:
-                style = {'high': 'red', 'medium': 'yellow', 'low': 'blue'}.get(level, 'white')
+                style = {"high": "red", "medium": "yellow", "low": "blue"}.get(level, "white")
                 console.print(f"\n[bold {style}]{level.capitalize()} Impact:[/bold {style}]")
 
                 for suggestion in level_suggestions:
@@ -173,15 +176,19 @@ def optimize(rule_file: str, verbose: bool, impact: str):
 
         # Additional statistics
         if verbose and report.statistics:
-            console.print(f"\n[dim]Analysis Statistics:[/dim]")
+            console.print("\n[dim]Analysis Statistics:[/dim]")
             console.print(f"  Total suggestions: {report.statistics['total_suggestions']}")
 
         # Summary
         if report.high_impact_count > 0:
-            console.print(f"\n[yellow]⚠ Found {report.high_impact_count} high-impact optimization opportunities[/yellow]")
+            console.print(
+                f"\n[yellow]⚠ Found {report.high_impact_count} high-impact optimization opportunities[/yellow]"
+            )
             sys.exit(1)
         elif len(report.suggestions) > 0:
-            console.print(f"\n[blue]ℹ Found {len(report.suggestions)} optimization suggestions[/blue]")
+            console.print(
+                f"\n[blue]ℹ Found {len(report.suggestions)} optimization suggestions[/blue]"
+            )
             sys.exit(0)
         else:
             console.print("\n[green]✓ No optimization opportunities found[/green]")
@@ -193,11 +200,11 @@ def optimize(rule_file: str, verbose: bool, impact: str):
 
 
 @analyze.command()
-@click.argument('rule_file', type=click.Path(exists=True))
-@click.option('-o', '--output', type=click.Path(), help='Save report to file')
-@click.option('-f', '--format',
-              type=click.Choice(['text', 'json']),
-              default='text', help='Output format')
+@click.argument("rule_file", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), help="Save report to file")
+@click.option(
+    "-f", "--format", type=click.Choice(["text", "json"]), default="text", help="Output format"
+)
 def full(rule_file: str, output: str, format: str):
     """Run full AST-based analysis (best practices + optimizations).
 
@@ -210,7 +217,7 @@ def full(rule_file: str, output: str, format: str):
     """
     try:
         # Parse rules
-        with open(rule_file, 'r') as f:
+        with open(rule_file) as f:
             content = f.read()
 
         parser = Parser()
@@ -223,39 +230,40 @@ def full(rule_file: str, output: str, format: str):
         opt_analyzer = OptimizationAnalyzer()
         opt_report = opt_analyzer.analyze(ast)
 
-        if format == 'json':
+        if format == "json":
             import json
+
             report_data = {
-                'file': rule_file,
-                'best_practices': {
-                    'suggestions': [
+                "file": rule_file,
+                "best_practices": {
+                    "suggestions": [
                         {
-                            'rule': s.rule_name,
-                            'category': s.category,
-                            'severity': s.severity,
-                            'message': s.message,
-                            'location': s.location
+                            "rule": s.rule_name,
+                            "category": s.category,
+                            "severity": s.severity,
+                            "message": s.message,
+                            "location": s.location,
                         }
                         for s in bp_report.suggestions
                     ],
-                    'statistics': bp_report.statistics
+                    "statistics": bp_report.statistics,
                 },
-                'optimizations': {
-                    'suggestions': [
+                "optimizations": {
+                    "suggestions": [
                         {
-                            'rule': s.rule_name,
-                            'type': s.optimization_type,
-                            'impact': s.impact,
-                            'description': s.description
+                            "rule": s.rule_name,
+                            "type": s.optimization_type,
+                            "impact": s.impact,
+                            "description": s.description,
                         }
                         for s in opt_report.suggestions
                     ],
-                    'statistics': opt_report.statistics
-                }
+                    "statistics": opt_report.statistics,
+                },
             }
 
             if output:
-                with open(output, 'w') as f:
+                with open(output, "w") as f:
                     json.dump(report_data, f, indent=2)
                 console.print(f"[green]Report saved to {output}[/green]")
             else:
@@ -271,7 +279,7 @@ def full(rule_file: str, output: str, format: str):
             lines.append("\nBEST PRACTICES")
             lines.append("-" * 20)
 
-            for severity in ['error', 'warning', 'info']:
+            for severity in ["error", "warning", "info"]:
                 items = bp_report.get_by_severity(severity)
                 if items:
                     lines.append(f"\n{severity.upper()}S ({len(items)}):")
@@ -282,7 +290,7 @@ def full(rule_file: str, output: str, format: str):
             lines.append("\n\nOPTIMIZATIONS")
             lines.append("-" * 20)
 
-            for impact_level in ['high', 'medium', 'low']:
+            for impact_level in ["high", "medium", "low"]:
                 items = [s for s in opt_report.suggestions if s.impact == impact_level]
                 if items:
                     lines.append(f"\n{impact_level.upper()} IMPACT ({len(items)}):")
@@ -292,20 +300,24 @@ def full(rule_file: str, output: str, format: str):
             # Summary
             lines.append("\n\nSUMMARY")
             lines.append("-" * 20)
-            lines.append(f"Total issues: {len(bp_report.get_by_severity('error')) + len(bp_report.get_by_severity('warning'))}")
-            lines.append(f"Total suggestions: {len(bp_report.suggestions) + len(opt_report.suggestions)}")
+            lines.append(
+                f"Total issues: {len(bp_report.get_by_severity('error')) + len(bp_report.get_by_severity('warning'))}"
+            )
+            lines.append(
+                f"Total suggestions: {len(bp_report.suggestions) + len(opt_report.suggestions)}"
+            )
 
             report_text = "\n".join(lines)
 
             if output:
-                with open(output, 'w') as f:
+                with open(output, "w") as f:
                     f.write(report_text)
                 console.print(f"[green]Report saved to {output}[/green]")
             else:
                 console.print(report_text)
 
         # Exit code based on issues
-        has_errors = len(bp_report.get_by_severity('error')) > 0
+        has_errors = len(bp_report.get_by_severity("error")) > 0
         has_high_impact = opt_report.high_impact_count > 0
 
         if has_errors:

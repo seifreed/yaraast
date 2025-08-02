@@ -3,7 +3,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from yaraast.types.type_system import FunctionDefinition, ModuleDefinition, YaraType
 
@@ -12,7 +12,7 @@ class ModuleLoader:
     """Load YARA module definitions from JSON files."""
 
     def __init__(self):
-        self.modules: Dict[str, ModuleDefinition] = {}
+        self.modules: dict[str, ModuleDefinition] = {}
         self._load_builtin_modules()
         self._load_json_modules()
 
@@ -37,13 +37,17 @@ class ModuleLoader:
             "characteristics": IntegerType(),
             "entry_point": IntegerType(),
             "image_base": IntegerType(),
-            "sections": ArrayType(StructType({
-                "name": StringType(),
-                "virtual_address": IntegerType(),
-                "virtual_size": IntegerType(),
-                "raw_size": IntegerType(),
-                "characteristics": IntegerType()
-            })),
+            "sections": ArrayType(
+                StructType(
+                    {
+                        "name": StringType(),
+                        "virtual_address": IntegerType(),
+                        "virtual_size": IntegerType(),
+                        "raw_size": IntegerType(),
+                        "characteristics": IntegerType(),
+                    }
+                )
+            ),
             "version_info": DictionaryType(StringType(), StringType()),
             "number_of_resources": IntegerType(),
             "resource_timestamp": IntegerType(),
@@ -52,15 +56,19 @@ class ModuleLoader:
             "is_pe": BooleanType(),
             "is_dll": BooleanType(),
             "is_32bit": BooleanType(),
-            "is_64bit": BooleanType()
+            "is_64bit": BooleanType(),
         }
         pe.functions = {
             "imphash": FunctionDefinition("imphash", StringType()),
-            "section_index": FunctionDefinition("section_index", IntegerType(), [("name", StringType())]),
+            "section_index": FunctionDefinition(
+                "section_index", IntegerType(), [("name", StringType())]
+            ),
             "exports": FunctionDefinition("exports", BooleanType(), [("name", StringType())]),
-            "imports": FunctionDefinition("imports", BooleanType(), [("dll", StringType()), ("function", StringType())]),
+            "imports": FunctionDefinition(
+                "imports", BooleanType(), [("dll", StringType()), ("function", StringType())]
+            ),
             "locale": FunctionDefinition("locale", BooleanType(), [("locale", IntegerType())]),
-            "language": FunctionDefinition("language", BooleanType(), [("lang", IntegerType())])
+            "language": FunctionDefinition("language", BooleanType(), [("lang", IntegerType())]),
         }
         self.modules["pe"] = pe
 
@@ -68,15 +76,23 @@ class ModuleLoader:
         math = ModuleDefinition(name="math")
         math.functions = {
             "abs": FunctionDefinition("abs", IntegerType(), [("x", IntegerType())]),
-            "min": FunctionDefinition("min", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]),
-            "max": FunctionDefinition("max", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]),
-            "to_string": FunctionDefinition("to_string", StringType(), [("n", IntegerType()), ("base", IntegerType())]),
+            "min": FunctionDefinition(
+                "min", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
+            ),
+            "max": FunctionDefinition(
+                "max", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
+            ),
+            "to_string": FunctionDefinition(
+                "to_string", StringType(), [("n", IntegerType()), ("base", IntegerType())]
+            ),
             "to_number": FunctionDefinition("to_number", IntegerType(), [("s", StringType())]),
             "log": FunctionDefinition("log", DoubleType(), [("x", DoubleType())]),
             "log2": FunctionDefinition("log2", DoubleType(), [("x", DoubleType())]),
             "log10": FunctionDefinition("log10", DoubleType(), [("x", DoubleType())]),
             "sqrt": FunctionDefinition("sqrt", DoubleType(), [("x", DoubleType())]),
-            "entropy": FunctionDefinition("entropy", DoubleType(), [("offset", IntegerType()), ("size", IntegerType())])
+            "entropy": FunctionDefinition(
+                "entropy", DoubleType(), [("offset", IntegerType()), ("size", IntegerType())]
+            ),
         }
         self.modules["math"] = math
 
@@ -86,31 +102,47 @@ class ModuleLoader:
             "type": IntegerType(),
             "machine": IntegerType(),
             "entry_point": IntegerType(),
-            "sections": ArrayType(StructType({
-                "name": StringType(),
-                "type": IntegerType(),
-                "address": IntegerType(),
-                "size": IntegerType(),
-                "offset": IntegerType()
-            })),
-            "segments": ArrayType(StructType({
-                "type": IntegerType(),
-                "offset": IntegerType(),
-                "virtual_address": IntegerType(),
-                "physical_address": IntegerType(),
-                "file_size": IntegerType(),
-                "memory_size": IntegerType()
-            }))
+            "sections": ArrayType(
+                StructType(
+                    {
+                        "name": StringType(),
+                        "type": IntegerType(),
+                        "address": IntegerType(),
+                        "size": IntegerType(),
+                        "offset": IntegerType(),
+                    }
+                )
+            ),
+            "segments": ArrayType(
+                StructType(
+                    {
+                        "type": IntegerType(),
+                        "offset": IntegerType(),
+                        "virtual_address": IntegerType(),
+                        "physical_address": IntegerType(),
+                        "file_size": IntegerType(),
+                        "memory_size": IntegerType(),
+                    }
+                )
+            ),
         }
         self.modules["elf"] = elf
 
         # Hash module
         hash_mod = ModuleDefinition(name="hash")
         hash_mod.functions = {
-            "md5": FunctionDefinition("md5", StringType(), [("offset", IntegerType()), ("size", IntegerType())]),
-            "sha1": FunctionDefinition("sha1", StringType(), [("offset", IntegerType()), ("size", IntegerType())]),
-            "sha256": FunctionDefinition("sha256", StringType(), [("offset", IntegerType()), ("size", IntegerType())]),
-            "crc32": FunctionDefinition("crc32", IntegerType(), [("offset", IntegerType()), ("size", IntegerType())])
+            "md5": FunctionDefinition(
+                "md5", StringType(), [("offset", IntegerType()), ("size", IntegerType())]
+            ),
+            "sha1": FunctionDefinition(
+                "sha1", StringType(), [("offset", IntegerType()), ("size", IntegerType())]
+            ),
+            "sha256": FunctionDefinition(
+                "sha256", StringType(), [("offset", IntegerType()), ("size", IntegerType())]
+            ),
+            "crc32": FunctionDefinition(
+                "crc32", IntegerType(), [("offset", IntegerType()), ("size", IntegerType())]
+            ),
         }
         self.modules["hash"] = hash_mod
 
@@ -121,7 +153,7 @@ class ModuleLoader:
             "module_name": StringType(),
             "assembly": DictionaryType(StringType(), StringType()),
             "resources": ArrayType(DictionaryType(StringType(), IntegerType())),
-            "streams": ArrayType(DictionaryType(StringType(), IntegerType()))
+            "streams": ArrayType(DictionaryType(StringType(), IntegerType())),
         }
         self.modules["dotnet"] = dotnet
 
@@ -161,7 +193,7 @@ class ModuleLoader:
     def _load_module_file(self, path: Path) -> None:
         """Load a single module definition from JSON file."""
         try:
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
 
             if isinstance(data, dict):
@@ -176,10 +208,10 @@ class ModuleLoader:
                         module = self._parse_module(module_data["name"], module_data)
                         if module:
                             self.modules[module.name] = module
-        except Exception as e:
-            print(f"Warning: Failed to load module from {path}: {e}")
+        except Exception:
+            pass
 
-    def _parse_module(self, name: str, data: Dict[str, Any]) -> Optional[ModuleDefinition]:
+    def _parse_module(self, name: str, data: dict[str, Any]) -> ModuleDefinition | None:
         """Parse module definition from JSON data."""
         try:
             module = ModuleDefinition(name=data.get("name", name))
@@ -196,7 +228,7 @@ class ModuleLoader:
                         func_def = FunctionDefinition(
                             name=func_name,
                             return_type=self._parse_type(func_data.get("return", "any")),
-                            parameters=self._parse_parameters(func_data.get("parameters", []))
+                            parameters=self._parse_parameters(func_data.get("parameters", [])),
                         )
                         module.functions[func_name] = func_def
 
@@ -207,11 +239,10 @@ class ModuleLoader:
 
             return module
 
-        except Exception as e:
-            print(f"Warning: Failed to parse module '{name}': {e}")
+        except Exception:
             return None
 
-    def _parse_type(self, type_str: Union[str, Dict]) -> YaraType:
+    def _parse_type(self, type_str: str | dict) -> YaraType:
         """Parse type from string or dict representation."""
         from yaraast.types.type_system import (
             AnyType,
@@ -245,16 +276,16 @@ class ModuleLoader:
 
             return type_map.get(type_str.lower(), AnyType())
 
-        elif isinstance(type_str, dict):
+        if isinstance(type_str, dict):
             # Complex types
             if type_str.get("type") == "array":
                 return ArrayType(self._parse_type(type_str.get("element", "any")))
-            elif type_str.get("type") == "dict":
+            if type_str.get("type") == "dict":
                 return DictionaryType(
                     self._parse_type(type_str.get("key", "string")),
-                    self._parse_type(type_str.get("value", "any"))
+                    self._parse_type(type_str.get("value", "any")),
                 )
-            elif type_str.get("type") == "struct":
+            if type_str.get("type") == "struct":
                 fields = {}
                 for field_name, field_type in type_str.get("fields", {}).items():
                     fields[field_name] = self._parse_type(field_type)
@@ -262,7 +293,7 @@ class ModuleLoader:
 
         return AnyType()
 
-    def _parse_parameters(self, params: Union[List, Dict]) -> List[tuple[str, YaraType]]:
+    def _parse_parameters(self, params: list | dict) -> list[tuple[str, YaraType]]:
         """Parse function parameters."""
         result = []
 
@@ -283,11 +314,11 @@ class ModuleLoader:
 
         return result
 
-    def get_module(self, name: str) -> Optional[ModuleDefinition]:
+    def get_module(self, name: str) -> ModuleDefinition | None:
         """Get module definition by name."""
         return self.modules.get(name)
 
-    def list_modules(self) -> List[str]:
+    def list_modules(self) -> list[str]:
         """List all available module names."""
         return sorted(self.modules.keys())
 

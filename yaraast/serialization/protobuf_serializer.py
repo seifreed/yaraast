@@ -2,7 +2,7 @@
 
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.visitor import ASTVisitor
@@ -19,37 +19,40 @@ class ProtobufSerializer(ASTVisitor[Any]):
 
     def __init__(self, include_metadata: bool = True):
         if yara_ast_pb2 is None:
-            raise ImportError("Protobuf schema not compiled. Run: protoc --python_out=. yara_ast.proto")
+            raise ImportError(
+                "Protobuf schema not compiled. Run: protoc --python_out=. yara_ast.proto"
+            )
 
         self.include_metadata = include_metadata
 
-    def serialize(self, ast: YaraFile, output_path: Optional[Union[str, Path]] = None) -> bytes:
+    def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> bytes:
         """Serialize AST to Protobuf binary format."""
         pb_yara_file = self._ast_to_protobuf(ast)
         binary_data = pb_yara_file.SerializeToString()
 
         if output_path:
-            with open(output_path, 'wb') as f:
+            with open(output_path, "wb") as f:
                 f.write(binary_data)
 
         return binary_data
 
-    def serialize_text(self, ast: YaraFile, output_path: Optional[Union[str, Path]] = None) -> str:
+    def serialize_text(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to Protobuf text format (for debugging)."""
         pb_yara_file = self._ast_to_protobuf(ast)
         text_data = str(pb_yara_file)
 
         if output_path:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(text_data)
 
         return text_data
 
-    def deserialize(self, binary_data: Optional[bytes] = None,
-                   input_path: Optional[Union[str, Path]] = None) -> YaraFile:
+    def deserialize(
+        self, binary_data: bytes | None = None, input_path: str | Path | None = None
+    ) -> YaraFile:
         """Deserialize Protobuf binary to AST."""
         if input_path:
-            with open(input_path, 'rb') as f:
+            with open(input_path, "rb") as f:
                 binary_data = f.read()
 
         if not binary_data:
@@ -60,7 +63,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
 
         return self._protobuf_to_ast(pb_yara_file)
 
-    def _ast_to_protobuf(self, ast: YaraFile) -> 'yara_ast_pb2.YaraFile':
+    def _ast_to_protobuf(self, ast: YaraFile) -> "yara_ast_pb2.YaraFile":
         """Convert AST to Protobuf message."""
         pb_file = yara_ast_pb2.YaraFile()
 
@@ -68,7 +71,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
         for imp in ast.imports:
             pb_import = pb_file.imports.add()
             pb_import.module = imp.module
-            if hasattr(imp, 'alias') and imp.alias:
+            if hasattr(imp, "alias") and imp.alias:
                 pb_import.alias = imp.alias
 
         # Convert includes
@@ -158,7 +161,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
 
     def _convert_hex_token_to_protobuf(self, token, pb_token) -> None:
         """Convert hex token to Protobuf."""
-        from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexWildcard
+        from yaraast.ast.strings import HexByte, HexJump, HexWildcard
         from yaraast.builder.hex_string_builder import HexNibble
 
         if isinstance(token, HexByte):
@@ -183,9 +186,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
             IntegerLiteral,
             StringCount,
             StringIdentifier,
-            StringLength,
             StringLiteral,
-            StringOffset,
             UnaryExpression,
         )
 
@@ -212,14 +213,15 @@ class ProtobufSerializer(ASTVisitor[Any]):
             self._convert_expression_to_protobuf(expr.operand, pb_expr.unary_expression.operand)
         # Add more expression types as needed
 
-    def _protobuf_to_ast(self, pb_file: 'yara_ast_pb2.YaraFile') -> YaraFile:
+    def _protobuf_to_ast(self, pb_file: "yara_ast_pb2.YaraFile") -> YaraFile:
         """Convert Protobuf message to AST."""
         # Basic reconstruction - would need full implementation
         # For now, return empty YaraFile as placeholder
         from yaraast.ast.base import YaraFile
+
         return YaraFile(imports=[], includes=[], rules=[])
 
-    def get_serialization_stats(self, ast: YaraFile) -> Dict[str, Any]:
+    def get_serialization_stats(self, ast: YaraFile) -> dict[str, Any]:
         """Get statistics about the serialization."""
         pb_file = self._ast_to_protobuf(ast)
         binary_size = len(pb_file.SerializeToString())
@@ -231,7 +233,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
             "compression_ratio": text_size / binary_size if binary_size > 0 else 0,
             "rules_count": len(ast.rules),
             "imports_count": len(ast.imports),
-            "includes_count": len(ast.includes)
+            "includes_count": len(ast.includes),
         }
 
     # Required visitor methods (simplified for now)

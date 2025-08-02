@@ -1,8 +1,6 @@
 """Expression optimizer for simplifying YARA expressions."""
 
-from typing import Any, Dict, List, Optional, Tuple
-
-from yaraast.ast.base import ASTNode, Location, YaraFile
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
     Condition,
@@ -56,7 +54,7 @@ class ExpressionOptimizer(ASTTransformer):
     def __init__(self):
         self.optimizations_made = 0
 
-    def optimize(self, yara_file: YaraFile) -> Tuple[YaraFile, int]:
+    def optimize(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
         """Optimize a YARA file and return (optimized_file, optimization_count)."""
         self.optimizations_made = 0
         optimized = self.visit(yara_file)
@@ -111,13 +109,13 @@ class ExpressionOptimizer(ASTTransformer):
                 self.optimizations_made += 1
                 if node.operator == "+":
                     return IntegerLiteral(value=left.value + right.value)
-                elif node.operator == "-":
+                if node.operator == "-":
                     return IntegerLiteral(value=left.value - right.value)
-                elif node.operator == "*":
+                if node.operator == "*":
                     return IntegerLiteral(value=left.value * right.value)
-                elif node.operator == "/" and right.value != 0:
+                if node.operator == "/" and right.value != 0:
                     return IntegerLiteral(value=left.value // right.value)
-                elif node.operator == "%" and right.value != 0:
+                if node.operator == "%" and right.value != 0:
                     return IntegerLiteral(value=left.value % right.value)
 
         # Comparison constant folding
@@ -126,15 +124,15 @@ class ExpressionOptimizer(ASTTransformer):
                 self.optimizations_made += 1
                 if node.operator == "<":
                     return BooleanLiteral(value=left.value < right.value)
-                elif node.operator == "<=":
+                if node.operator == "<=":
                     return BooleanLiteral(value=left.value <= right.value)
-                elif node.operator == ">":
+                if node.operator == ">":
                     return BooleanLiteral(value=left.value > right.value)
-                elif node.operator == ">=":
+                if node.operator == ">=":
                     return BooleanLiteral(value=left.value >= right.value)
-                elif node.operator == "==":
+                if node.operator == "==":
                     return BooleanLiteral(value=left.value == right.value)
-                elif node.operator == "!=":
+                if node.operator == "!=":
                     return BooleanLiteral(value=left.value != right.value)
 
         # No optimization possible
@@ -174,7 +172,7 @@ class ExpressionOptimizer(ASTTransformer):
         inner = self.visit(node.expression)
 
         # Remove parentheses around literals
-        if isinstance(inner, (IntegerLiteral, BooleanLiteral, StringLiteral, Identifier)):
+        if isinstance(inner, IntegerLiteral | BooleanLiteral | StringLiteral | Identifier):
             self.optimizations_made += 1
             return inner
 

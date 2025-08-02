@@ -1,8 +1,8 @@
 """String modifiers and other AST modifiers as proper enums."""
 
 from dataclasses import dataclass
-from enum import Enum, Flag
-from typing import Any, Optional, Union
+from enum import Enum
+from typing import Any
 
 
 class StringModifierType(Enum):
@@ -34,7 +34,7 @@ class StringModifierType(Enum):
     PRIVATE = "private"
 
     @classmethod
-    def from_string(cls, modifier_str: str) -> 'StringModifierType':
+    def from_string(cls, modifier_str: str) -> "StringModifierType":
         """Convert string to modifier enum, handling case insensitivity."""
         try:
             return cls(modifier_str.lower())
@@ -54,7 +54,7 @@ class RuleModifierType(Enum):
     GLOBAL = "global"
 
     @classmethod
-    def from_string(cls, modifier_str: str) -> 'RuleModifierType':
+    def from_string(cls, modifier_str: str) -> "RuleModifierType":
         """Convert string to rule modifier enum."""
         try:
             return cls(modifier_str.lower())
@@ -68,12 +68,12 @@ class RuleModifierType(Enum):
 class MetaScope(Enum):
     """Enumeration of meta key scopes."""
 
-    PUBLIC = "public"    # Default scope - accessible from other rules
+    PUBLIC = "public"  # Default scope - accessible from other rules
     PRIVATE = "private"  # Private scope - only accessible within the rule
     PROTECTED = "protected"  # Protected scope - accessible within module
 
     @classmethod
-    def from_string(cls, scope_str: str) -> 'MetaScope':
+    def from_string(cls, scope_str: str) -> "MetaScope":
         """Convert string to meta scope enum."""
         try:
             return cls(scope_str.lower())
@@ -89,10 +89,10 @@ class StringModifier:
     """Enhanced string modifier with proper type safety."""
 
     modifier_type: StringModifierType
-    value: Optional[Union[str, int, float]] = None  # For modifiers that take parameters
+    value: str | int | float | None = None  # For modifiers that take parameters
 
     @classmethod
-    def from_name_value(cls, name: str, value: Optional[Any] = None) -> 'StringModifier':
+    def from_name_value(cls, name: str, value: Any | None = None) -> "StringModifier":
         """Create StringModifier from name and optional value."""
         modifier_type = StringModifierType.from_string(name)
         return cls(modifier_type=modifier_type, value=value)
@@ -116,7 +116,7 @@ class RuleModifier:
     modifier_type: RuleModifierType
 
     @classmethod
-    def from_string(cls, modifier_str: str) -> 'RuleModifier':
+    def from_string(cls, modifier_str: str) -> "RuleModifier":
         """Create RuleModifier from string."""
         modifier_type = RuleModifierType.from_string(modifier_str)
         return cls(modifier_type=modifier_type)
@@ -139,7 +139,7 @@ class MetaEntry:
     scope: MetaScope = MetaScope.PUBLIC
 
     @classmethod
-    def from_key_value(cls, key: str, value: Any, scope: Optional[str] = None) -> 'MetaEntry':
+    def from_key_value(cls, key: str, value: Any, scope: str | None = None) -> "MetaEntry":
         """Create MetaEntry from key, value, and optional scope."""
         meta_scope = MetaScope.from_string(scope) if scope else MetaScope.PUBLIC
         return cls(key=key, value=value, scope=meta_scope)
@@ -159,12 +159,11 @@ class MetaEntry:
         scope_prefix = f"{self.scope.value}:" if self.scope != MetaScope.PUBLIC else ""
         if isinstance(self.value, str):
             return f'{scope_prefix}{self.key} = "{self.value}"'
-        else:
-            return f'{scope_prefix}{self.key} = {self.value}'
+        return f"{scope_prefix}{self.key} = {self.value}"
 
 
 # Convenience functions for creating modifiers
-def create_string_modifier(name: str, value: Optional[Any] = None) -> StringModifier:
+def create_string_modifier(name: str, value: Any | None = None) -> StringModifier:
     """Create a string modifier from name and optional value."""
     return StringModifier.from_name_value(name, value)
 
@@ -174,7 +173,7 @@ def create_rule_modifier(name: str) -> RuleModifier:
     return RuleModifier.from_string(name)
 
 
-def create_meta_entry(key: str, value: Any, scope: Optional[str] = None) -> MetaEntry:
+def create_meta_entry(key: str, value: Any, scope: str | None = None) -> MetaEntry:
     """Create a meta entry with optional scope."""
     return MetaEntry.from_key_value(key, value, scope)
 

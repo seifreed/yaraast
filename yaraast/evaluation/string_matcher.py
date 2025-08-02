@@ -2,14 +2,14 @@
 
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple, Union
 
-from yaraast.ast.strings import HexString, PlainString, RegexString, StringModifier
+from yaraast.ast.strings import HexString, PlainString, RegexString
 
 
 @dataclass
 class MatchResult:
     """Result of a string match."""
+
     identifier: str
     offset: int
     length: int
@@ -23,10 +23,10 @@ class StringMatcher:
     """Match YARA strings against byte data."""
 
     def __init__(self):
-        self.matches: Dict[str, List[MatchResult]] = {}
-        self._cache: Dict[str, any] = {}
+        self.matches: dict[str, list[MatchResult]] = {}
+        self._cache: dict[str, any] = {}
 
-    def match_all(self, data: bytes, strings: List) -> Dict[str, List[MatchResult]]:
+    def match_all(self, data: bytes, strings: list) -> dict[str, list[MatchResult]]:
         """Match all strings against data."""
         self.matches.clear()
 
@@ -43,13 +43,13 @@ class StringMatcher:
     def _match_plain_string(self, data: bytes, string_def: PlainString):
         """Match plain string against data."""
         matches = []
-        pattern = string_def.value.encode('utf-8')
+        pattern = string_def.value.encode("utf-8")
 
         # Apply modifiers
-        nocase = any(m.name == 'nocase' for m in string_def.modifiers)
-        wide = any(m.name == 'wide' for m in string_def.modifiers)
-        ascii_mod = any(m.name == 'ascii' for m in string_def.modifiers)
-        fullword = any(m.name == 'fullword' for m in string_def.modifiers)
+        nocase = any(m.name == "nocase" for m in string_def.modifiers)
+        wide = any(m.name == "wide" for m in string_def.modifiers)
+        ascii_mod = any(m.name == "ascii" for m in string_def.modifiers)
+        fullword = any(m.name == "fullword" for m in string_def.modifiers)
 
         patterns_to_check = []
 
@@ -59,7 +59,7 @@ class StringMatcher:
 
         # Wide version (UTF-16LE)
         if wide:
-            wide_pattern = b''
+            wide_pattern = b""
             for byte in pattern:
                 wide_pattern += bytes([byte, 0])
             patterns_to_check.append(wide_pattern)
@@ -79,7 +79,7 @@ class StringMatcher:
 
         # Store results
         self.matches[string_def.identifier] = [
-            MatchResult(string_def.identifier, offset, length, data[offset:offset+length])
+            MatchResult(string_def.identifier, offset, length, data[offset : offset + length])
             for offset, length in matches
         ]
 
@@ -89,8 +89,8 @@ class StringMatcher:
         pattern_bytes = []
         wildcards = []
 
-        for i, token in enumerate(string_def.tokens):
-            if hasattr(token, 'value'):
+        for _i, token in enumerate(string_def.tokens):
+            if hasattr(token, "value"):
                 # Hex byte
                 if isinstance(token.value, str):
                     pattern_bytes.append(int(token.value, 16))
@@ -107,8 +107,12 @@ class StringMatcher:
 
         # Store results
         self.matches[string_def.identifier] = [
-            MatchResult(string_def.identifier, offset, len(pattern_bytes),
-                       data[offset:offset+len(pattern_bytes)])
+            MatchResult(
+                string_def.identifier,
+                offset,
+                len(pattern_bytes),
+                data[offset : offset + len(pattern_bytes)],
+            )
             for offset in matches
         ]
 
@@ -120,14 +124,14 @@ class StringMatcher:
 
         # Check modifiers
         for modifier in string_def.modifiers:
-            if modifier.name == 'nocase':
+            if modifier.name == "nocase":
                 flags |= re.IGNORECASE
-            elif modifier.name == 'dotall':
+            elif modifier.name == "dotall":
                 flags |= re.DOTALL
 
         # Compile regex
         try:
-            regex = re.compile(pattern.encode('utf-8'), flags)
+            regex = re.compile(pattern.encode("utf-8"), flags)
         except Exception:
             # Invalid regex, no matches
             self.matches[string_def.identifier] = []
@@ -136,16 +140,18 @@ class StringMatcher:
         # Find all matches
         matches = []
         for match in regex.finditer(data):
-            matches.append(MatchResult(
-                string_def.identifier,
-                match.start(),
-                match.end() - match.start(),
-                match.group(0)
-            ))
+            matches.append(
+                MatchResult(
+                    string_def.identifier,
+                    match.start(),
+                    match.end() - match.start(),
+                    match.group(0),
+                )
+            )
 
         self.matches[string_def.identifier] = matches
 
-    def _find_all(self, data: bytes, pattern: bytes) -> List[Tuple[int, int]]:
+    def _find_all(self, data: bytes, pattern: bytes) -> list[tuple[int, int]]:
         """Find all occurrences of pattern in data."""
         matches = []
         start = 0
@@ -160,7 +166,7 @@ class StringMatcher:
 
         return matches
 
-    def _find_all_nocase(self, data: bytes, pattern: bytes) -> List[Tuple[int, int]]:
+    def _find_all_nocase(self, data: bytes, pattern: bytes) -> list[tuple[int, int]]:
         """Find all occurrences of pattern in data (case-insensitive)."""
         matches = []
         data_lower = data.lower()
@@ -177,7 +183,9 @@ class StringMatcher:
 
         return matches
 
-    def _find_hex_pattern(self, data: bytes, pattern: List[int], wildcards: List[bool]) -> List[int]:
+    def _find_hex_pattern(
+        self, data: bytes, pattern: list[int], wildcards: list[bool]
+    ) -> list[int]:
         """Find hex pattern with wildcards."""
         matches = []
         data_len = len(data)
@@ -202,14 +210,14 @@ class StringMatcher:
         # Check character before
         if offset > 0:
             prev_char = data[offset - 1]
-            if prev_char.isalnum() or prev_char == ord('_'):
+            if prev_char.isalnum() or prev_char == ord("_"):
                 return False
 
         # Check character after
         end = offset + length
         if end < len(data):
             next_char = data[end]
-            if next_char.isalnum() or next_char == ord('_'):
+            if next_char.isalnum() or next_char == ord("_"):
                 return False
 
         return True
@@ -218,14 +226,14 @@ class StringMatcher:
         """Get number of matches for a string."""
         return len(self.matches.get(identifier, []))
 
-    def get_match_offset(self, identifier: str, index: int = 0) -> Optional[int]:
+    def get_match_offset(self, identifier: str, index: int = 0) -> int | None:
         """Get offset of a specific match."""
         matches = self.matches.get(identifier, [])
         if 0 <= index < len(matches):
             return matches[index].offset
         return None
 
-    def get_match_length(self, identifier: str, index: int = 0) -> Optional[int]:
+    def get_match_length(self, identifier: str, index: int = 0) -> int | None:
         """Get length of a specific match."""
         matches = self.matches.get(identifier, [])
         if 0 <= index < len(matches):

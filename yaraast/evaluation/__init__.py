@@ -5,13 +5,13 @@ from .mock_modules import MockDotNet, MockELF, MockMath, MockModuleRegistry, Moc
 from .string_matcher import MatchResult, StringMatcher
 
 __all__ = [
-    'YaraEvaluator',
-    'EvaluationContext',
-    'StringMatcher',
-    'MatchResult',
-    'MockPE',
-    'MockELF',
-    'MockMath',
-    'MockDotNet',
-    'MockModuleRegistry'
+    "EvaluationContext",
+    "MatchResult",
+    "MockDotNet",
+    "MockELF",
+    "MockMath",
+    "MockModuleRegistry",
+    "MockPE",
+    "StringMatcher",
+    "YaraEvaluator",
 ]

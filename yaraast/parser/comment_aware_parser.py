@@ -1,57 +1,15 @@
 """Comment-aware YARA parser."""
 
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-
 from yaraast.ast.base import ASTNode, Location, YaraFile
-from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.conditions import (
-    AtExpression,
-    Condition,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
-    OfExpression,
-)
-from yaraast.ast.expressions import (
-    ArrayAccess,
-    BinaryExpression,
-    BooleanLiteral,
-    DoubleLiteral,
-    Expression,
-    FunctionCall,
-    Identifier,
-    IntegerLiteral,
-    MemberAccess,
-    ParenthesesExpression,
-    RangeExpression,
-    SetExpression,
-    StringCount,
-    StringIdentifier,
-    StringLength,
-    StringLiteral,
-    StringOffset,
-    UnaryExpression,
-)
+from yaraast.ast.comments import Comment
 from yaraast.ast.meta import Meta
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import (
-    HexAlternative,
-    HexByte,
-    HexJump,
-    HexNibble,
-    HexString,
-    HexToken,
-    HexWildcard,
-    PlainString,
-    RegexString,
     StringDefinition,
-    StringModifier,
 )
 from yaraast.lexer import Token, TokenType
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.parser.better_parser import Parser
-from yaraast.parser.parser import ParserError
 
 
 class CommentAwareParser(Parser):
@@ -59,7 +17,7 @@ class CommentAwareParser(Parser):
 
     def __init__(self):
         super().__init__()
-        self.pending_comments: List[Comment] = []
+        self.pending_comments: list[Comment] = []
 
     def parse(self, text: str) -> YaraFile:
         """Parse YARA rule text with comment preservation."""
@@ -79,7 +37,7 @@ class CommentAwareParser(Parser):
 
         return yara_file
 
-    def _current_token(self) -> Optional[Token]:
+    def _current_token(self) -> Token | None:
         """Get current token, skipping comments but collecting them."""
         while self.position < len(self.tokens):
             token = self.tokens[self.position]
@@ -90,7 +48,7 @@ class CommentAwareParser(Parser):
                 return token
         return None
 
-    def _peek_token(self, offset: int = 1) -> Optional[Token]:
+    def _peek_token(self, offset: int = 1) -> Token | None:
         """Peek at token, handling comments."""
         saved_pos = self.position
         saved_comments = list(self.pending_comments)
@@ -114,7 +72,10 @@ class CommentAwareParser(Parser):
                 self.position += 1
 
             # Collect any comments after advancing
-            while self.position < len(self.tokens) and self.tokens[self.position].type == TokenType.COMMENT:
+            while (
+                self.position < len(self.tokens)
+                and self.tokens[self.position].type == TokenType.COMMENT
+            ):
                 self._collect_comment(self.tokens[self.position])
                 self.position += 1
 
@@ -135,7 +96,10 @@ class CommentAwareParser(Parser):
 
     def _collect_leading_comments(self) -> None:
         """Collect leading comments before any code."""
-        while self.position < len(self.tokens) and self.tokens[self.position].type == TokenType.COMMENT:
+        while (
+            self.position < len(self.tokens)
+            and self.tokens[self.position].type == TokenType.COMMENT
+        ):
             self._collect_comment(self.tokens[self.position])
             self.position += 1
 
@@ -145,7 +109,7 @@ class CommentAwareParser(Parser):
             node.leading_comments = list(self.pending_comments)
             self.pending_comments.clear()
 
-    def _make_comment_group(self) -> Optional[Comment]:
+    def _make_comment_group(self) -> Comment | None:
         """Create a comment from pending comments."""
         if not self.pending_comments:
             return None
@@ -180,8 +144,12 @@ class CommentAwareParser(Parser):
             self.position += 1
 
             comment = Comment(
-                text=comment_token.value[2:].strip() if comment_token.value.startswith("//") else comment_token.value[2:-2].strip(),
-                is_multiline=comment_token.value.startswith("/*")
+                text=(
+                    comment_token.value[2:].strip()
+                    if comment_token.value.startswith("//")
+                    else comment_token.value[2:-2].strip()
+                ),
+                is_multiline=comment_token.value.startswith("/*"),
             )
             comment.location = Location(line=comment_token.line, column=comment_token.column)
             string_def.trailing_comment = comment
@@ -199,9 +167,7 @@ class CommentAwareParser(Parser):
             raise Exception("Expected '=' in meta")
 
         # Parse value
-        if self._match(TokenType.STRING):
-            value = self._previous().value
-        elif self._match(TokenType.INTEGER):
+        if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
             value = self._previous().value
         elif self._match(TokenType.BOOLEAN_TRUE):
             value = True
@@ -218,8 +184,12 @@ class CommentAwareParser(Parser):
             self.position += 1
 
             comment = Comment(
-                text=comment_token.value[2:].strip() if comment_token.value.startswith("//") else comment_token.value[2:-2].strip(),
-                is_multiline=comment_token.value.startswith("/*")
+                text=(
+                    comment_token.value[2:].strip()
+                    if comment_token.value.startswith("//")
+                    else comment_token.value[2:-2].strip()
+                ),
+                is_multiline=comment_token.value.startswith("/*"),
             )
             comment.location = Location(line=comment_token.line, column=comment_token.column)
             meta.trailing_comment = comment

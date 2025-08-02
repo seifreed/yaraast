@@ -1,11 +1,8 @@
 """Expression builder utilities."""
 
-from typing import List, Optional, Union
-
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
-    ForOfExpression,
     InExpression,
     OfExpression,
 )
@@ -22,11 +19,8 @@ from yaraast.ast.expressions import (
     ParenthesesExpression,
     RangeExpression,
     SetExpression,
-    StringCount,
     StringIdentifier,
-    StringLength,
     StringLiteral,
-    StringOffset,
     UnaryExpression,
 )
 
@@ -85,7 +79,7 @@ class ExpressionBuilder:
         return Identifier(name="them")
 
     @staticmethod
-    def range(low: Union[int, Expression], high: Union[int, Expression]) -> RangeExpression:
+    def range(low: int | Expression, high: int | Expression) -> RangeExpression:
         """Create range expression."""
         low_expr = IntegerLiteral(value=low) if isinstance(low, int) else low
         high_expr = IntegerLiteral(value=high) if isinstance(high, int) else high
@@ -106,44 +100,33 @@ class ExpressionBuilder:
     def any_of_them() -> OfExpression:
         """Create 'any of them' expression."""
         return OfExpression(
-            quantifier=StringLiteral(value="any"),
-            string_set=Identifier(name="them")
+            quantifier=StringLiteral(value="any"), string_set=Identifier(name="them")
         )
 
     @staticmethod
     def all_of_them() -> OfExpression:
         """Create 'all of them' expression."""
         return OfExpression(
-            quantifier=StringLiteral(value="all"),
-            string_set=Identifier(name="them")
+            quantifier=StringLiteral(value="all"), string_set=Identifier(name="them")
         )
 
     @staticmethod
     def any_of(*strings: str) -> OfExpression:
         """Create 'any of (...)' expression."""
         string_set = ExpressionBuilder.string_set(*strings)
-        return OfExpression(
-            quantifier=StringLiteral(value="any"),
-            string_set=string_set
-        )
+        return OfExpression(quantifier=StringLiteral(value="any"), string_set=string_set)
 
     @staticmethod
     def all_of(*strings: str) -> OfExpression:
         """Create 'all of (...)' expression."""
         string_set = ExpressionBuilder.string_set(*strings)
-        return OfExpression(
-            quantifier=StringLiteral(value="all"),
-            string_set=string_set
-        )
+        return OfExpression(quantifier=StringLiteral(value="all"), string_set=string_set)
 
     @staticmethod
     def n_of(n: int, *strings: str) -> OfExpression:
         """Create 'n of (...)' expression."""
         string_set = ExpressionBuilder.string_set(*strings)
-        return OfExpression(
-            quantifier=IntegerLiteral(value=n),
-            string_set=string_set
-        )
+        return OfExpression(quantifier=IntegerLiteral(value=n), string_set=string_set)
 
     @staticmethod
     def and_(*expressions: Expression) -> Expression:
@@ -180,14 +163,13 @@ class ExpressionBuilder:
         return ParenthesesExpression(expression=expression)
 
     @staticmethod
-    def at(string_id: str, offset: Union[int, Expression]) -> AtExpression:
+    def at(string_id: str, offset: int | Expression) -> AtExpression:
         """Create 'at' expression."""
         offset_expr = IntegerLiteral(value=offset) if isinstance(offset, int) else offset
         return AtExpression(string_id=string_id, offset=offset_expr)
 
     @staticmethod
-    def in_(string_id: str, start: Union[int, Expression],
-            end: Union[int, Expression]) -> InExpression:
+    def in_(string_id: str, start: int | Expression, end: int | Expression) -> InExpression:
         """Create 'in' expression."""
         range_expr = ExpressionBuilder.range(start, end)
         return InExpression(string_id=string_id, range=range_expr)
@@ -195,22 +177,12 @@ class ExpressionBuilder:
     @staticmethod
     def for_any(var: str, iterable: Expression, body: Expression) -> ForExpression:
         """Create 'for any' expression."""
-        return ForExpression(
-            quantifier="any",
-            variable=var,
-            iterable=iterable,
-            body=body
-        )
+        return ForExpression(quantifier="any", variable=var, iterable=iterable, body=body)
 
     @staticmethod
     def for_all(var: str, iterable: Expression, body: Expression) -> ForExpression:
         """Create 'for all' expression."""
-        return ForExpression(
-            quantifier="all",
-            variable=var,
-            iterable=iterable,
-            body=body
-        )
+        return ForExpression(quantifier="all", variable=var, iterable=iterable, body=body)
 
     @staticmethod
     def function_call(name: str, *args: Expression) -> FunctionCall:
@@ -223,7 +195,7 @@ class ExpressionBuilder:
         return MemberAccess(object=obj, member=member)
 
     @staticmethod
-    def array_access(array: Expression, index: Union[int, Expression]) -> ArrayAccess:
+    def array_access(array: Expression, index: int | Expression) -> ArrayAccess:
         """Create array access."""
         index_expr = IntegerLiteral(value=index) if isinstance(index, int) else index
         return ArrayAccess(array=array, index=index_expr)

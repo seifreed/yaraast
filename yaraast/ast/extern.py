@@ -1,7 +1,7 @@
 """External rule declarations and references."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.modifiers import RuleModifier
@@ -16,8 +16,8 @@ class ExternRule(ASTNode):
     """
 
     name: str
-    modifiers: List[RuleModifier] = field(default_factory=list)
-    namespace: Optional[str] = None  # Optional namespace for rule
+    modifiers: list[RuleModifier] = field(default_factory=list)
+    namespace: str | None = None  # Optional namespace for rule
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_extern_rule(self)
@@ -26,12 +26,14 @@ class ExternRule(ASTNode):
     def is_private(self) -> bool:
         """Check if extern rule is private."""
         from yaraast.ast.modifiers import RuleModifierType
+
         return any(mod.modifier_type == RuleModifierType.PRIVATE for mod in self.modifiers)
 
     @property
     def is_global(self) -> bool:
         """Check if extern rule is global."""
         from yaraast.ast.modifiers import RuleModifierType
+
         return any(mod.modifier_type == RuleModifierType.GLOBAL for mod in self.modifiers)
 
     def __str__(self) -> str:
@@ -50,7 +52,7 @@ class ExternRuleReference(ASTNode):
     """
 
     rule_name: str
-    namespace: Optional[str] = None
+    namespace: str | None = None
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_extern_rule_reference(self)
@@ -75,8 +77,8 @@ class ExternImport(ASTNode):
     """
 
     module_path: str
-    alias: Optional[str] = None
-    rules: List[str] = field(default_factory=list)  # Specific rules to import
+    alias: str | None = None
+    rules: list[str] = field(default_factory=list)  # Specific rules to import
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_extern_import(self)
@@ -108,7 +110,7 @@ class ExternNamespace(ASTNode):
     """
 
     name: str
-    extern_rules: List[ExternRule] = field(default_factory=list)
+    extern_rules: list[ExternRule] = field(default_factory=list)
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_extern_namespace(self)
@@ -118,7 +120,7 @@ class ExternNamespace(ASTNode):
         extern_rule.namespace = self.name
         self.extern_rules.append(extern_rule)
 
-    def get_rule_by_name(self, name: str) -> Optional[ExternRule]:
+    def get_rule_by_name(self, name: str) -> ExternRule | None:
         """Get extern rule by name within this namespace."""
         for rule in self.extern_rules:
             if rule.name == name:
@@ -131,9 +133,10 @@ class ExternNamespace(ASTNode):
 
 # Convenience functions for creating extern constructs
 
-def create_extern_rule(name: str,
-                      modifiers: Optional[List[str]] = None,
-                      namespace: Optional[str] = None) -> ExternRule:
+
+def create_extern_rule(
+    name: str, modifiers: list[str] | None = None, namespace: str | None = None
+) -> ExternRule:
     """Create an extern rule with string modifiers."""
     from yaraast.ast.modifiers import RuleModifier
 
@@ -145,17 +148,13 @@ def create_extern_rule(name: str,
     return ExternRule(name=name, modifiers=rule_modifiers, namespace=namespace)
 
 
-def create_extern_reference(rule_name: str, namespace: Optional[str] = None) -> ExternRuleReference:
+def create_extern_reference(rule_name: str, namespace: str | None = None) -> ExternRuleReference:
     """Create an extern rule reference."""
     return ExternRuleReference(rule_name=rule_name, namespace=namespace)
 
 
-def create_extern_import(module_path: str,
-                        alias: Optional[str] = None,
-                        rules: Optional[List[str]] = None) -> ExternImport:
+def create_extern_import(
+    module_path: str, alias: str | None = None, rules: list[str] | None = None
+) -> ExternImport:
     """Create an extern import statement."""
-    return ExternImport(
-        module_path=module_path,
-        alias=alias,
-        rules=rules or []
-    )
+    return ExternImport(module_path=module_path, alias=alias, rules=rules or [])

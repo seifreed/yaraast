@@ -1,6 +1,6 @@
 """Main rule optimizer combining all optimization passes."""
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
@@ -13,9 +13,9 @@ class RuleOptimizer:
     def __init__(self):
         self.expression_optimizer = ExpressionOptimizer()
         self.dead_code_eliminator = DeadCodeEliminator()
-        self.optimization_stats: Dict[str, int] = {}
+        self.optimization_stats: dict[str, int] = {}
 
-    def optimize(self, yara_file: YaraFile, passes: int = 3) -> Tuple[YaraFile, Dict[str, Any]]:
+    def optimize(self, yara_file: YaraFile, passes: int = 3) -> tuple[YaraFile, dict[str, Any]]:
         """
         Perform multiple optimization passes on YARA file.
 
@@ -51,12 +51,12 @@ class RuleOptimizer:
             "total_optimizations": total_expr_opts + total_dead_elims,
             "rules_before": len(yara_file.rules),
             "rules_after": len(current.rules),
-            "rules_eliminated": len(yara_file.rules) - len(current.rules)
+            "rules_eliminated": len(yara_file.rules) - len(current.rules),
         }
 
         return current, stats
 
-    def get_optimization_report(self, yara_file: YaraFile) -> Dict[str, Any]:
+    def get_optimization_report(self, yara_file: YaraFile) -> dict[str, Any]:
         """Generate a detailed optimization report."""
         # Perform optimization
         optimized, stats = self.optimize(yara_file)
@@ -70,14 +70,18 @@ class RuleOptimizer:
             "size_reduction": {
                 "rules": f"{stats['rules_eliminated']} rules removed",
                 "strings": f"{original_strings - optimized_strings} strings removed",
-                "percentage": f"{(1 - len(optimized.rules)/len(yara_file.rules))*100:.1f}%" if yara_file.rules else "0%"
+                "percentage": (
+                    f"{(1 - len(optimized.rules)/len(yara_file.rules))*100:.1f}%"
+                    if yara_file.rules
+                    else "0%"
+                ),
             },
             "optimization_breakdown": {
                 "constant_folding": "Evaluated constant expressions",
                 "boolean_simplification": "Simplified boolean logic",
                 "dead_code_removal": "Removed unreachable code",
-                "unused_string_removal": "Removed unused string definitions"
-            }
+                "unused_string_removal": "Removed unused string definitions",
+            },
         }
 
         return report

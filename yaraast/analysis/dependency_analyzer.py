@@ -1,12 +1,10 @@
 """Dependency analyzer for YARA rules."""
 
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
-    Condition,
     ForExpression,
     ForOfExpression,
     InExpression,
@@ -33,7 +31,6 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.meta import Meta
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
@@ -55,13 +52,13 @@ class DependencyAnalyzer(ASTVisitor[None]):
     """Analyze dependencies between YARA rules."""
 
     def __init__(self):
-        self.rule_names: Set[str] = set()
-        self.dependencies: Dict[str, Set[str]] = defaultdict(set)  # rule -> rules it depends on
-        self.current_rule: Optional[str] = None
-        self.imported_modules: Set[str] = set()
-        self.included_files: Set[str] = set()
+        self.rule_names: set[str] = set()
+        self.dependencies: dict[str, set[str]] = defaultdict(set)  # rule -> rules it depends on
+        self.current_rule: str | None = None
+        self.imported_modules: set[str] = set()
+        self.included_files: set[str] = set()
 
-    def analyze(self, yara_file: YaraFile) -> Dict[str, any]:
+    def analyze(self, yara_file: YaraFile) -> dict[str, any]:
         """Analyze dependencies in YARA file."""
         self.rule_names.clear()
         self.dependencies.clear()
@@ -90,14 +87,14 @@ class DependencyAnalyzer(ASTVisitor[None]):
             "circular_dependencies": self._find_circular_dependencies(),
             "dependency_order": self._topological_sort(),
             "imported_modules": list(self.imported_modules),
-            "included_files": list(self.included_files)
+            "included_files": list(self.included_files),
         }
 
-    def get_dependencies(self, rule_name: str) -> List[str]:
+    def get_dependencies(self, rule_name: str) -> list[str]:
         """Get direct dependencies of a rule."""
         return list(self.dependencies.get(rule_name, set()))
 
-    def get_dependents(self, rule_name: str) -> List[str]:
+    def get_dependents(self, rule_name: str) -> list[str]:
         """Get rules that depend on the given rule."""
         dependents = []
         for rule, deps in self.dependencies.items():
@@ -105,7 +102,7 @@ class DependencyAnalyzer(ASTVisitor[None]):
                 dependents.append(rule)
         return dependents
 
-    def get_transitive_dependencies(self, rule_name: str) -> Set[str]:
+    def get_transitive_dependencies(self, rule_name: str) -> set[str]:
         """Get all transitive dependencies of a rule."""
         visited = set()
         to_visit = [rule_name]
@@ -122,7 +119,7 @@ class DependencyAnalyzer(ASTVisitor[None]):
         visited.remove(rule_name)  # Don't include self
         return visited
 
-    def _build_dependency_graph(self) -> Dict[str, Dict[str, List[str]]]:
+    def _build_dependency_graph(self) -> dict[str, dict[str, list[str]]]:
         """Build a dependency graph."""
         graph = {}
 
@@ -135,15 +132,15 @@ class DependencyAnalyzer(ASTVisitor[None]):
                 "depends_on": list(deps),
                 "depended_by": dependents,
                 "transitive_dependencies": list(transitive),
-                "is_independent": len(deps) == 0 and len(dependents) == 0
+                "is_independent": len(deps) == 0 and len(dependents) == 0,
             }
 
         return graph
 
-    def _find_circular_dependencies(self) -> List[List[str]]:
+    def _find_circular_dependencies(self) -> list[list[str]]:
         """Find circular dependencies using DFS."""
         WHITE, GRAY, BLACK = 0, 1, 2
-        color = {rule: WHITE for rule in self.rule_names}
+        color = dict.fromkeys(self.rule_names, WHITE)
         cycles = []
         path = []
 
@@ -156,7 +153,7 @@ class DependencyAnalyzer(ASTVisitor[None]):
                     if color[neighbor] == GRAY:
                         # Found cycle
                         cycle_start = path.index(neighbor)
-                        cycle = path[cycle_start:] + [neighbor]
+                        cycle = [*path[cycle_start:], neighbor]
                         cycles.append(cycle)
                     elif color[neighbor] == WHITE:
                         dfs(neighbor)
@@ -177,13 +174,13 @@ class DependencyAnalyzer(ASTVisitor[None]):
 
         return unique_cycles
 
-    def _topological_sort(self) -> Optional[List[str]]:
+    def _topological_sort(self) -> list[str] | None:
         """Perform topological sort on rules."""
         # Check for cycles first
         if self._find_circular_dependencies():
             return None
 
-        in_degree = {rule: 0 for rule in self.rule_names}
+        in_degree = dict.fromkeys(self.rule_names, 0)
 
         # Calculate in-degrees
         for rule, deps in self.dependencies.items():
@@ -293,33 +290,92 @@ class DependencyAnalyzer(ASTVisitor[None]):
         self.visit(node.string_set)
 
     # No-op visitor methods
-    def visit_tag(self, node: Tag) -> None: pass
-    def visit_string_definition(self, node: StringDefinition) -> None: pass
-    def visit_plain_string(self, node: PlainString) -> None: pass
-    def visit_hex_string(self, node: HexString) -> None: pass
-    def visit_regex_string(self, node: RegexString) -> None: pass
-    def visit_string_modifier(self, node: StringModifier) -> None: pass
-    def visit_hex_token(self, node: HexToken) -> None: pass
-    def visit_hex_byte(self, node: HexByte) -> None: pass
-    def visit_hex_wildcard(self, node: HexWildcard) -> None: pass
-    def visit_hex_jump(self, node: HexJump) -> None: pass
-    def visit_hex_alternative(self, node: HexAlternative) -> None: pass
-    def visit_hex_nibble(self, node: HexNibble) -> None: pass
-    def visit_expression(self, node: Expression) -> None: pass
-    def visit_string_identifier(self, node: StringIdentifier) -> None: pass
-    def visit_string_count(self, node: StringCount) -> None: pass
-    def visit_string_offset(self, node: StringOffset) -> None: pass
-    def visit_string_length(self, node: StringLength) -> None: pass
-    def visit_integer_literal(self, node: IntegerLiteral) -> None: pass
-    def visit_double_literal(self, node: DoubleLiteral) -> None: pass
-    def visit_string_literal(self, node: StringLiteral) -> None: pass
-    def visit_boolean_literal(self, node: BooleanLiteral) -> None: pass
-    def visit_meta(self, node: Meta) -> None: pass
-    def visit_meta_statement(self, node) -> None: pass
-    def visit_condition(self, node) -> None: pass
-    def visit_comment(self, node) -> None: pass
-    def visit_comment_group(self, node) -> None: pass
-    def visit_module_reference(self, node) -> None: pass
-    def visit_dictionary_access(self, node) -> None: pass
-    def visit_defined_expression(self, node) -> None: pass
-    def visit_string_operator_expression(self, node) -> None: pass
+    def visit_tag(self, node: Tag) -> None:
+        pass
+
+    def visit_string_definition(self, node: StringDefinition) -> None:
+        pass
+
+    def visit_plain_string(self, node: PlainString) -> None:
+        pass
+
+    def visit_hex_string(self, node: HexString) -> None:
+        pass
+
+    def visit_regex_string(self, node: RegexString) -> None:
+        pass
+
+    def visit_string_modifier(self, node: StringModifier) -> None:
+        pass
+
+    def visit_hex_token(self, node: HexToken) -> None:
+        pass
+
+    def visit_hex_byte(self, node: HexByte) -> None:
+        pass
+
+    def visit_hex_wildcard(self, node: HexWildcard) -> None:
+        pass
+
+    def visit_hex_jump(self, node: HexJump) -> None:
+        pass
+
+    def visit_hex_alternative(self, node: HexAlternative) -> None:
+        pass
+
+    def visit_hex_nibble(self, node: HexNibble) -> None:
+        pass
+
+    def visit_expression(self, node: Expression) -> None:
+        pass
+
+    def visit_string_identifier(self, node: StringIdentifier) -> None:
+        pass
+
+    def visit_string_count(self, node: StringCount) -> None:
+        pass
+
+    def visit_string_offset(self, node: StringOffset) -> None:
+        pass
+
+    def visit_string_length(self, node: StringLength) -> None:
+        pass
+
+    def visit_integer_literal(self, node: IntegerLiteral) -> None:
+        pass
+
+    def visit_double_literal(self, node: DoubleLiteral) -> None:
+        pass
+
+    def visit_string_literal(self, node: StringLiteral) -> None:
+        pass
+
+    def visit_boolean_literal(self, node: BooleanLiteral) -> None:
+        pass
+
+    def visit_meta(self, node: Meta) -> None:
+        pass
+
+    def visit_meta_statement(self, node) -> None:
+        pass
+
+    def visit_condition(self, node) -> None:
+        pass
+
+    def visit_comment(self, node) -> None:
+        pass
+
+    def visit_comment_group(self, node) -> None:
+        pass
+
+    def visit_module_reference(self, node) -> None:
+        pass
+
+    def visit_dictionary_access(self, node) -> None:
+        pass
+
+    def visit_defined_expression(self, node) -> None:
+        pass
+
+    def visit_string_operator_expression(self, node) -> None:
+        pass

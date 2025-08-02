@@ -1,6 +1,8 @@
 """Fluent builder for hex strings."""
 
-from typing import Any, List, Optional, Self, Tuple, Union
+import builtins
+import contextlib
+from typing import Self, Union
 
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexToken, HexWildcard
 
@@ -9,9 +11,9 @@ class HexStringBuilder:
     """Fluent builder for constructing hex strings."""
 
     def __init__(self):
-        self._tokens: List[HexToken] = []
+        self._tokens: list[HexToken] = []
 
-    def add(self, value: Union[int, str, HexToken]) -> Self:
+    def add(self, value: int | str | HexToken) -> Self:
         """Add a hex byte or token."""
         if isinstance(value, int):
             if 0 <= value <= 255:
@@ -36,7 +38,7 @@ class HexStringBuilder:
 
         return self
 
-    def add_bytes(self, *values: Union[int, str]) -> Self:
+    def add_bytes(self, *values: int | str) -> Self:
         """Add multiple hex bytes."""
         for value in values:
             self.add(value)
@@ -53,14 +55,14 @@ class HexStringBuilder:
         if len(value) != 2:
             raise ValueError("Nibble must be 2 characters")
 
-        if value[0] == '?' and value[1] != '?':
+        if value[0] == "?" and value[1] != "?":
             # ?X pattern - low nibble
             try:
                 nibble_val = int(value[1], 16)
                 self._tokens.append(HexNibble(high=False, value=nibble_val))
             except ValueError:
                 raise ValueError(f"Invalid nibble pattern: {value}")
-        elif value[0] != '?' and value[1] == '?':
+        elif value[0] != "?" and value[1] == "?":
             # X? pattern - high nibble
             try:
                 nibble_val = int(value[0], 16)
@@ -72,7 +74,7 @@ class HexStringBuilder:
 
         return self
 
-    def jump(self, min_jump: Optional[int] = None, max_jump: Optional[int] = None) -> Self:
+    def jump(self, min_jump: int | None = None, max_jump: int | None = None) -> Self:
         """Add a jump [n-m]."""
         self._tokens.append(HexJump(min_jump=min_jump, max_jump=max_jump))
         return self
@@ -97,7 +99,7 @@ class HexStringBuilder:
         """Add an unlimited jump [-]."""
         return self.jump(None, None)
 
-    def alternative(self, *alternatives: List[Union[int, str, 'HexStringBuilder']]) -> Self:
+    def alternative(self, *alternatives: list[Union[int, str, "HexStringBuilder"]]) -> Self:
         """Add an alternative group (a|b|c)."""
         alt_tokens = []
 
@@ -136,36 +138,34 @@ class HexStringBuilder:
         parts = pattern.split()
 
         for part in parts:
-            if part == '??':
+            if part == "??":
                 self.wildcard()
-            elif part.startswith('[') and part.endswith(']'):
+            elif part.startswith("[") and part.endswith("]"):
                 # Jump pattern
                 jump_str = part[1:-1]
-                if '-' in jump_str:
-                    parts = jump_str.split('-')
+                if "-" in jump_str:
+                    parts = jump_str.split("-")
                     min_j = int(parts[0]) if parts[0] else None
                     max_j = int(parts[1]) if parts[1] else None
                     self.jump(min_j, max_j)
                 else:
                     self.jump_exact(int(jump_str))
-            elif len(part) == 2 and '?' in part:
+            elif len(part) == 2 and "?" in part:
                 # Nibble pattern
                 self.nibble(part)
             elif len(part) == 2:
                 # Regular hex byte
-                try:
+                with contextlib.suppress(builtins.BaseException):
                     self.add(part)
-                except:
-                    pass
 
         return self
 
-    def build(self) -> List[HexToken]:
+    def build(self) -> list[HexToken]:
         """Build the list of hex tokens."""
         return self._tokens
 
     @staticmethod
-    def from_bytes(data: bytes) -> 'HexStringBuilder':
+    def from_bytes(data: bytes) -> "HexStringBuilder":
         """Create builder from raw bytes."""
         builder = HexStringBuilder()
         for byte in data:
@@ -173,13 +173,13 @@ class HexStringBuilder:
         return builder
 
     @staticmethod
-    def from_hex_string(hex_str: str) -> 'HexStringBuilder':
+    def from_hex_string(hex_str: str) -> "HexStringBuilder":
         """Create builder from hex string."""
         builder = HexStringBuilder()
         hex_str = hex_str.replace(" ", "").upper()
 
         for i in range(0, len(hex_str), 2):
             if i + 1 < len(hex_str):
-                builder.add(hex_str[i:i+2])
+                builder.add(hex_str[i : i + 2])
 
         return builder

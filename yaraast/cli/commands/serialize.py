@@ -6,7 +6,6 @@ from pathlib import Path
 import click
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.syntax import Syntax
 from rich.table import Table
 
@@ -25,17 +24,20 @@ console = Console()
 @click.group()
 def serialize():
     """AST serialization commands for export/import and versioning."""
-    pass
 
 
 @serialize.command()
-@click.argument('input_file', type=click.Path(exists=True))
-@click.option('-o', '--output', type=click.Path(), help='Output file path')
-@click.option('-f', '--format',
-              type=click.Choice(['json', 'yaml', 'protobuf']),
-              default='json', help='Serialization format')
-@click.option('--minimal', is_flag=True, help='Minimal output (no metadata)')
-@click.option('--pretty', is_flag=True, help='Pretty print output to console')
+@click.argument("input_file", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), help="Output file path")
+@click.option(
+    "-f",
+    "--format",
+    type=click.Choice(["json", "yaml", "protobuf"]),
+    default="json",
+    help="Serialization format",
+)
+@click.option("--minimal", is_flag=True, help="Minimal output (no metadata)")
+@click.option("--pretty", is_flag=True, help="Pretty print output to console")
 def export(input_file: str, output: str, format: str, minimal: bool, pretty: bool):
     """Export YARA AST to various serialization formats.
 
@@ -50,21 +52,21 @@ def export(input_file: str, output: str, format: str, minimal: bool, pretty: boo
     try:
         # Parse YARA file
         with console.status(f"[bold green]Parsing {input_file}..."):
-            with open(input_file, 'r') as f:
+            with open(input_file) as f:
                 content = f.read()
 
             parser = Parser()
             ast = parser.parse(content)
 
         # Choose serializer
-        if format == 'json':
+        if format == "json":
             serializer = JsonSerializer(include_metadata=not minimal)
             result = serializer.serialize(ast, output)
             if pretty and not output:
                 syntax = Syntax(result, "json", theme="monokai", line_numbers=True)
                 console.print(syntax)
 
-        elif format == 'yaml':
+        elif format == "yaml":
             serializer = YamlSerializer(include_metadata=not minimal)
             if minimal:
                 result = serializer.serialize_minimal(ast, output)
@@ -74,17 +76,17 @@ def export(input_file: str, output: str, format: str, minimal: bool, pretty: boo
                 syntax = Syntax(result, "yaml", theme="monokai", line_numbers=True)
                 console.print(syntax)
 
-        elif format == 'protobuf':
+        elif format == "protobuf":
             serializer = ProtobufSerializer(include_metadata=not minimal)
 
-            if output and output.endswith('.txt'):
+            if output and output.endswith(".txt"):
                 # Text format for debugging
                 result = serializer.serialize_text(ast, output)
                 if pretty:
                     console.print(result)
             else:
                 # Binary format
-                binary_data = serializer.serialize(ast, output)
+                serializer.serialize(ast, output)
                 stats = serializer.get_serialization_stats(ast)
 
                 # Show statistics
@@ -95,8 +97,8 @@ def export(input_file: str, output: str, format: str, minimal: bool, pretty: boo
                 table.add_row("Binary Size", f"{stats['binary_size_bytes']:,} bytes")
                 table.add_row("Text Size", f"{stats['text_size_bytes']:,} bytes")
                 table.add_row("Compression Ratio", f"{stats['compression_ratio']:.2f}x")
-                table.add_row("Rules Count", str(stats['rules_count']))
-                table.add_row("Imports Count", str(stats['imports_count']))
+                table.add_row("Rules Count", str(stats["rules_count"]))
+                table.add_row("Imports Count", str(stats["imports_count"]))
 
                 console.print(table)
 
@@ -111,11 +113,15 @@ def export(input_file: str, output: str, format: str, minimal: bool, pretty: boo
 
 
 @serialize.command()
-@click.argument('input_file', type=click.Path(exists=True))
-@click.option('-f', '--format',
-              type=click.Choice(['json', 'yaml', 'protobuf']),
-              default='json', help='Input serialization format')
-@click.option('-o', '--output', type=click.Path(), help='Output YARA file')
+@click.argument("input_file", type=click.Path(exists=True))
+@click.option(
+    "-f",
+    "--format",
+    type=click.Choice(["json", "yaml", "protobuf"]),
+    default="json",
+    help="Input serialization format",
+)
+@click.option("-o", "--output", type=click.Path(), help="Output YARA file")
 def import_ast(input_file: str, format: str, output: str):
     """Import AST from serialized format back to YARA code.
 
@@ -128,13 +134,13 @@ def import_ast(input_file: str, format: str, output: str):
     """
     try:
         # Choose serializer
-        if format == 'json':
+        if format == "json":
             serializer = JsonSerializer()
             ast = serializer.deserialize(input_path=input_file)
-        elif format == 'yaml':
+        elif format == "yaml":
             serializer = YamlSerializer()
             ast = serializer.deserialize(input_path=input_file)
-        elif format == 'protobuf':
+        elif format == "protobuf":
             serializer = ProtobufSerializer()
             ast = serializer.deserialize(input_path=input_file)
 
@@ -143,7 +149,7 @@ def import_ast(input_file: str, format: str, output: str):
 
         if output:
             # Would generate YARA code here
-            console.print(f"⚠️  Code generation not yet implemented")
+            console.print("⚠️  Code generation not yet implemented")
 
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
@@ -151,14 +157,14 @@ def import_ast(input_file: str, format: str, output: str):
 
 
 @serialize.command()
-@click.argument('old_file', type=click.Path(exists=True))
-@click.argument('new_file', type=click.Path(exists=True))
-@click.option('-o', '--output', type=click.Path(), help='Output diff file')
-@click.option('-f', '--format',
-              type=click.Choice(['json', 'yaml']),
-              default='json', help='Diff output format')
-@click.option('--patch', is_flag=True, help='Create patch file')
-@click.option('--stats', is_flag=True, help='Show detailed statistics')
+@click.argument("old_file", type=click.Path(exists=True))
+@click.argument("new_file", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), help="Output diff file")
+@click.option(
+    "-f", "--format", type=click.Choice(["json", "yaml"]), default="json", help="Diff output format"
+)
+@click.option("--patch", is_flag=True, help="Create patch file")
+@click.option("--stats", is_flag=True, help="Show detailed statistics")
 def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, stats: bool):
     """Compare two YARA files and show AST differences.
 
@@ -175,10 +181,10 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
         with console.status("[bold green]Parsing files..."):
             parser = Parser()
 
-            with open(old_file, 'r') as f:
+            with open(old_file) as f:
                 old_ast = parser.parse(f.read())
 
-            with open(new_file, 'r') as f:
+            with open(new_file) as f:
                 new_ast = parser.parse(f.read())
 
         # Compare ASTs
@@ -200,33 +206,35 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
         for change_type, count in summary.items():
             if count > 0:
                 icon = {
-                    'added': '➕',
-                    'removed': '➖',
-                    'modified': '📝',
-                    'moved': '↔️',
-                    'unchanged': '✅'
-                }.get(change_type, '•')
+                    "added": "➕",
+                    "removed": "➖",
+                    "modified": "📝",
+                    "moved": "↔️",
+                    "unchanged": "✅",
+                }.get(change_type, "•")
                 table.add_row(f"{icon} {change_type.title()}", str(count))
 
         console.print(table)
 
         # Detailed changes
         if len(diff_result.differences) <= 20:  # Show details for small diffs
-            console.print(f"\n[bold]Detailed Changes:[/bold]")
+            console.print("\n[bold]Detailed Changes:[/bold]")
             for diff_node in diff_result.differences:
                 icon = {
-                    DiffType.ADDED: '[green]➕[/green]',
-                    DiffType.REMOVED: '[red]➖[/red]',
-                    DiffType.MODIFIED: '[yellow]📝[/yellow]',
-                    DiffType.MOVED: '[blue]↔️[/blue]'
-                }.get(diff_node.diff_type, '•')
+                    DiffType.ADDED: "[green]➕[/green]",
+                    DiffType.REMOVED: "[red]➖[/red]",
+                    DiffType.MODIFIED: "[yellow]📝[/yellow]",
+                    DiffType.MOVED: "[blue]↔️[/blue]",
+                }.get(diff_node.diff_type, "•")
 
                 console.print(f"  {icon} {diff_node.path} ({diff_node.node_type})")
                 if diff_node.diff_type == DiffType.MODIFIED:
                     console.print(f"    [dim]Old:[/dim] {diff_node.old_value}")
                     console.print(f"    [dim]New:[/dim] {diff_node.new_value}")
         else:
-            console.print(f"\n[dim]Use --output to save detailed changes ({len(diff_result.differences)} total)[/dim]")
+            console.print(
+                f"\n[dim]Use --output to save detailed changes ({len(diff_result.differences)} total)[/dim]"
+            )
 
         # Statistics
         if stats:
@@ -235,10 +243,16 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
             stats_table.add_column("Old", style="red", justify="right")
             stats_table.add_column("New", style="green", justify="right")
 
-            stats_table.add_row("Rules", str(diff_result.statistics['old_rules_count']),
-                               str(diff_result.statistics['new_rules_count']))
-            stats_table.add_row("Imports", str(diff_result.statistics['old_imports_count']),
-                               str(diff_result.statistics['new_imports_count']))
+            stats_table.add_row(
+                "Rules",
+                str(diff_result.statistics["old_rules_count"]),
+                str(diff_result.statistics["new_rules_count"]),
+            )
+            stats_table.add_row(
+                "Imports",
+                str(diff_result.statistics["old_imports_count"]),
+                str(diff_result.statistics["new_imports_count"]),
+            )
             stats_table.add_row("AST Hash", diff_result.old_ast_hash, diff_result.new_ast_hash)
 
             console.print(stats_table)
@@ -248,18 +262,20 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
             output_path = output or f"diff_{Path(old_file).stem}_to_{Path(new_file).stem}.{format}"
 
             if patch:
-                patch_data = differ.create_patch(diff_result, output_path)
+                differ.create_patch(diff_result, output_path)
                 console.print(f"✅ Patch file created: {output_path}")
             else:
                 diff_data = diff_result.to_dict()
 
-                if format == 'json':
+                if format == "json":
                     import json
-                    with open(output_path, 'w') as f:
+
+                    with open(output_path, "w") as f:
                         json.dump(diff_data, f, indent=2)
-                elif format == 'yaml':
+                elif format == "yaml":
                     import yaml
-                    with open(output_path, 'w') as f:
+
+                    with open(output_path, "w") as f:
                         yaml.dump(diff_data, f, default_flow_style=False, indent=2)
 
                 console.print(f"✅ Diff saved to: {output_path}")
@@ -270,10 +286,14 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
 
 
 @serialize.command()
-@click.argument('input_file', type=click.Path(exists=True))
-@click.option('-f', '--format',
-              type=click.Choice(['json', 'yaml', 'protobuf']),
-              default='json', help='Serialization format to validate')
+@click.argument("input_file", type=click.Path(exists=True))
+@click.option(
+    "-f",
+    "--format",
+    type=click.Choice(["json", "yaml", "protobuf"]),
+    default="json",
+    help="Serialization format to validate",
+)
 def validate(input_file: str, format: str):
     """Validate serialized AST format.
 
@@ -285,38 +305,41 @@ def validate(input_file: str, format: str):
         yaraast serialize validate rules.yaml -f yaml
     """
     try:
-        if format == 'json':
+        if format == "json":
             serializer = JsonSerializer()
             ast = serializer.deserialize(input_path=input_file)
-        elif format == 'yaml':
+        elif format == "yaml":
             serializer = YamlSerializer()
             ast = serializer.deserialize(input_path=input_file)
-        elif format == 'protobuf':
+        elif format == "protobuf":
             serializer = ProtobufSerializer()
             ast = serializer.deserialize(input_path=input_file)
 
-        console.print(Panel(
-            f"[green]✅ Valid {format.upper()} serialization[/green]\n\n"
-            f"📊 Structure:\n"
-            f"  • Rules: {len(ast.rules)}\n"
-            f"  • Imports: {len(ast.imports)}\n"
-            f"  • Includes: {len(ast.includes)}",
-            title=f"Validation Result: {Path(input_file).name}",
-            border_style="green"
-        ))
+        console.print(
+            Panel(
+                f"[green]✅ Valid {format.upper()} serialization[/green]\n\n"
+                f"📊 Structure:\n"
+                f"  • Rules: {len(ast.rules)}\n"
+                f"  • Imports: {len(ast.imports)}\n"
+                f"  • Includes: {len(ast.includes)}",
+                title=f"Validation Result: {Path(input_file).name}",
+                border_style="green",
+            )
+        )
 
     except Exception as e:
-        console.print(Panel(
-            f"[red]❌ Invalid {format.upper()} serialization[/red]\n\n"
-            f"Error: {e}",
-            title=f"Validation Result: {Path(input_file).name}",
-            border_style="red"
-        ))
+        console.print(
+            Panel(
+                f"[red]❌ Invalid {format.upper()} serialization[/red]\n\n" f"Error: {e}",
+                title=f"Validation Result: {Path(input_file).name}",
+                border_style="red",
+            )
+        )
         sys.exit(1)
 
 
 @serialize.command()
-@click.argument('input_file', type=click.Path(exists=True))
+@click.argument("input_file", type=click.Path(exists=True))
 def info(input_file: str):
     """Show information about a YARA file's AST structure.
 
@@ -328,7 +351,7 @@ def info(input_file: str):
     """
     try:
         # Parse file
-        with open(input_file, 'r') as f:
+        with open(input_file) as f:
             content = f.read()
 
         parser = Parser()
@@ -340,13 +363,17 @@ def info(input_file: str):
         info_table.add_column("Count", style="green", justify="right")
         info_table.add_column("Details", style="dim")
 
-        info_table.add_row("Rules", str(len(ast.rules)),
-                          ", ".join(rule.name for rule in ast.rules[:3]) +
-                          ("..." if len(ast.rules) > 3 else ""))
-        info_table.add_row("Imports", str(len(ast.imports)),
-                          ", ".join(imp.module for imp in ast.imports))
-        info_table.add_row("Includes", str(len(ast.includes)),
-                          ", ".join(inc.path for inc in ast.includes))
+        info_table.add_row(
+            "Rules",
+            str(len(ast.rules)),
+            ", ".join(rule.name for rule in ast.rules[:3]) + ("..." if len(ast.rules) > 3 else ""),
+        )
+        info_table.add_row(
+            "Imports", str(len(ast.imports)), ", ".join(imp.module for imp in ast.imports)
+        )
+        info_table.add_row(
+            "Includes", str(len(ast.includes)), ", ".join(inc.path for inc in ast.includes)
+        )
 
         console.print(info_table)
 
@@ -365,17 +392,23 @@ def info(input_file: str):
                     str(len(rule.strings)),
                     str(len(rule.tags)),
                     str(len(rule.meta)),
-                    ", ".join(rule.modifiers) if rule.modifiers else "none"
+                    ", ".join(rule.modifiers) if rule.modifiers else "none",
                 )
 
             if len(ast.rules) > 10:
-                rule_table.add_row("[dim]...[/dim]", "[dim]...[/dim]",
-                                  "[dim]...[/dim]", "[dim]...[/dim]", "[dim]...[/dim]")
+                rule_table.add_row(
+                    "[dim]...[/dim]",
+                    "[dim]...[/dim]",
+                    "[dim]...[/dim]",
+                    "[dim]...[/dim]",
+                    "[dim]...[/dim]",
+                )
 
             console.print(rule_table)
 
         # Hash info
         from yaraast.serialization.ast_diff import AstHasher
+
         hasher = AstHasher()
         ast_hash = hasher.hash_ast(ast)
 

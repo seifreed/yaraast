@@ -3,17 +3,19 @@
 import gc
 import os
 import re
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Union
+from typing import Any
 
 from yaraast.ast.base import YaraFile
-from yaraast.parser import Parser, ParserError
+from yaraast.parser import Parser
 
 
 class ParseStatus(Enum):
     """Parse result status."""
+
     SUCCESS = "success"
     ERROR = "error"
     SKIPPED = "skipped"
@@ -23,11 +25,11 @@ class ParseStatus(Enum):
 class ParseResult:
     """Result of parsing a single YARA file or rule."""
 
-    file_path: Optional[str] = None
-    rule_name: Optional[str] = None
-    ast: Optional[YaraFile] = None
+    file_path: str | None = None
+    rule_name: str | None = None
+    ast: YaraFile | None = None
     status: ParseStatus = ParseStatus.SUCCESS
-    error: Optional[str] = None
+    error: str | None = None
     parse_time: float = 0.0
     memory_usage: int = 0  # Bytes
     rule_count: int = 0
@@ -45,11 +47,13 @@ class StreamingParser:
     - Memory management with automatic cleanup
     """
 
-    def __init__(self,
-                 max_memory_mb: int = 500,
-                 enable_gc: bool = True,
-                 progress_callback: Optional[Callable[[int, int, str], None]] = None,
-                 error_callback: Optional[Callable[[str, Exception], None]] = None):
+    def __init__(
+        self,
+        max_memory_mb: int = 500,
+        enable_gc: bool = True,
+        progress_callback: Callable[[int, int, str], None] | None = None,
+        error_callback: Callable[[str, Exception], None] | None = None,
+    ):
         """Initialize streaming parser.
 
         Args:
@@ -67,19 +71,19 @@ class StreamingParser:
 
         # Statistics
         self.stats = {
-            'files_processed': 0,
-            'files_successful': 0,
-            'files_failed': 0,
-            'rules_parsed': 0,
-            'total_parse_time': 0.0,
-            'peak_memory_mb': 0
+            "files_processed": 0,
+            "files_successful": 0,
+            "files_failed": 0,
+            "rules_parsed": 0,
+            "total_parse_time": 0.0,
+            "peak_memory_mb": 0,
         }
 
     def cancel(self) -> None:
         """Cancel ongoing parsing operation."""
         self._cancelled = True
 
-    def parse_files(self, file_paths: List[Union[str, Path]]) -> Iterator[ParseResult]:
+    def parse_files(self, file_paths: list[str | Path]) -> Iterator[ParseResult]:
         """Parse multiple YARA files incrementally.
 
         Args:
@@ -112,10 +116,9 @@ class StreamingParser:
 
             yield result
 
-    def parse_directory(self,
-                       directory: Union[str, Path],
-                       pattern: str = "*.yar",
-                       recursive: bool = True) -> Iterator[ParseResult]:
+    def parse_directory(
+        self, directory: str | Path, pattern: str = "*.yar", recursive: bool = True
+    ) -> Iterator[ParseResult]:
         """Parse all YARA files in a directory.
 
         Args:
@@ -132,10 +135,7 @@ class StreamingParser:
             raise ValueError(f"Directory does not exist: {directory}")
 
         # Find all matching files
-        if recursive:
-            file_paths = list(directory.rglob(pattern))
-        else:
-            file_paths = list(directory.glob(pattern))
+        file_paths = list(directory.rglob(pattern)) if recursive else list(directory.glob(pattern))
 
         # Filter to only YARA files
         yara_files = [f for f in file_paths if self._is_yara_file(f)]
@@ -143,7 +143,7 @@ class StreamingParser:
         # Parse files incrementally
         yield from self.parse_files(yara_files)
 
-    def parse_rules_from_file(self, file_path: Union[str, Path]) -> Iterator[ParseResult]:
+    def parse_rules_from_file(self, file_path: str | Path) -> Iterator[ParseResult]:
         """Parse individual rules from a multi-rule YARA file.
 
         This method splits a file into individual rules and parses each separately,
@@ -158,26 +158,23 @@ class StreamingParser:
         file_path = Path(file_path)
 
         try:
-            content = file_path.read_text(encoding='utf-8')
+            content = file_path.read_text(encoding="utf-8")
         except Exception as e:
             yield ParseResult(
                 file_path=str(file_path),
                 status=ParseStatus.ERROR,
-                error=f"Failed to read file: {e}"
+                error=f"Failed to read file: {e}",
             )
             return
 
         # Extract individual rules using regex
         rule_blocks = self._extract_rule_blocks(content)
 
-        for i, (rule_name, rule_content) in enumerate(rule_blocks):
+        for _i, (rule_name, rule_content) in enumerate(rule_blocks):
             if self._cancelled:
                 break
 
-            result = ParseResult(
-                file_path=str(file_path),
-                rule_name=rule_name
-            )
+            result = ParseResult(file_path=str(file_path), rule_name=rule_name)
 
             try:
                 # Parse individual rule
@@ -196,13 +193,12 @@ class StreamingParser:
 
             yield result
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get parsing statistics."""
         return self.stats.copy()
 
     def _parse_single_file(self, file_path: Path) -> ParseResult:
         """Parse a single YARA file."""
-        import os
         import time
 
         import psutil
@@ -221,7 +217,7 @@ class StreamingParser:
                 return result
 
             # Read and parse file
-            content = file_path.read_text(encoding='utf-8', errors='ignore')
+            content = file_path.read_text(encoding="utf-8", errors="ignore")
             ast = self._parser.parse(content)
 
             result.ast = ast
@@ -244,7 +240,7 @@ class StreamingParser:
 
         return result
 
-    def _extract_rule_blocks(self, content: str) -> List[tuple]:
+    def _extract_rule_blocks(self, content: str) -> list[tuple]:
         """Extract individual rule blocks from YARA content.
 
         Returns:
@@ -254,15 +250,15 @@ class StreamingParser:
 
         # Find all imports first
         import_lines = []
-        for line in content.split('\n'):
+        for line in content.split("\n"):
             line = line.strip()
-            if line.startswith('import ') or line.startswith('include '):
+            if line.startswith(("import ", "include ")):
                 import_lines.append(line)
 
-        imports_text = '\n'.join(import_lines) + '\n\n' if import_lines else ''
+        imports_text = "\n".join(import_lines) + "\n\n" if import_lines else ""
 
         # Regex to find rule blocks
-        rule_pattern = r'((?:private\s+|global\s+)*rule\s+(\w+)(?:\s*:\s*[\w\s]+)?\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\})'
+        rule_pattern = r"((?:private\s+|global\s+)*rule\s+(\w+)(?:\s*:\s*[\w\s]+)?\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\})"
 
         for match in re.finditer(rule_pattern, content, re.MULTILINE | re.DOTALL):
             rule_content = match.group(1)
@@ -280,34 +276,36 @@ class StreamingParser:
             return False
 
         # Check extension
-        if file_path.suffix.lower() in ['.yar', '.yara', '.rule']:
+        if file_path.suffix.lower() in [".yar", ".yara", ".rule"]:
             return True
 
         # Check content (first few lines)
         try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(file_path, encoding="utf-8", errors="ignore") as f:
                 first_lines = f.read(1024).lower()
-                return any(keyword in first_lines for keyword in
-                          ['rule ', 'import ', 'condition:', 'strings:', 'meta:'])
+                return any(
+                    keyword in first_lines
+                    for keyword in ["rule ", "import ", "condition:", "strings:", "meta:"]
+                )
         except:
             return False
 
     def _update_stats(self, result: ParseResult) -> None:
         """Update parsing statistics."""
-        self.stats['files_processed'] += 1
+        self.stats["files_processed"] += 1
 
         if result.status == ParseStatus.SUCCESS:
-            self.stats['files_successful'] += 1
-            self.stats['rules_parsed'] += result.rule_count
+            self.stats["files_successful"] += 1
+            self.stats["rules_parsed"] += result.rule_count
         elif result.status == ParseStatus.ERROR:
-            self.stats['files_failed'] += 1
+            self.stats["files_failed"] += 1
 
-        self.stats['total_parse_time'] += result.parse_time
+        self.stats["total_parse_time"] += result.parse_time
 
         # Update peak memory
         if result.memory_usage > 0:
             memory_mb = result.memory_usage / (1024 * 1024)
-            self.stats['peak_memory_mb'] = max(self.stats['peak_memory_mb'], memory_mb)
+            self.stats["peak_memory_mb"] = max(self.stats["peak_memory_mb"], memory_mb)
 
     def _check_memory_usage(self) -> None:
         """Check memory usage and trigger cleanup if needed."""
@@ -324,7 +322,7 @@ class StreamingParser:
                 gc.collect()
 
                 # Update peak memory
-                self.stats['peak_memory_mb'] = max(self.stats['peak_memory_mb'], memory_mb)
+                self.stats["peak_memory_mb"] = max(self.stats["peak_memory_mb"], memory_mb)
 
         except ImportError:
             # psutil not available, just run GC
@@ -342,9 +340,9 @@ class BatchFileProcessor:
         """
         self.batch_size = batch_size
 
-    def process_in_batches(self,
-                          file_paths: List[Union[str, Path]],
-                          processor_func: Callable[[List[Path]], Any]) -> Iterator[Any]:
+    def process_in_batches(
+        self, file_paths: list[str | Path], processor_func: Callable[[list[Path]], Any]
+    ) -> Iterator[Any]:
         """Process files in batches.
 
         Args:
@@ -357,5 +355,5 @@ class BatchFileProcessor:
         file_paths = [Path(p) for p in file_paths]
 
         for i in range(0, len(file_paths), self.batch_size):
-            batch = file_paths[i:i + self.batch_size]
+            batch = file_paths[i : i + self.batch_size]
             yield processor_func(batch)

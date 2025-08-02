@@ -1,62 +1,21 @@
 """YARA-X syntax adapter for converting between YARA and YARA-X syntax."""
 
-import re
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-
-from yaraast.ast.base import ASTNode, Location, YaraFile
-from yaraast.ast.conditions import (
-    AtExpression,
-    Condition,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
-    OfExpression,
-)
-from yaraast.ast.expressions import (
-    ArrayAccess,
-    BinaryExpression,
-    BooleanLiteral,
-    DoubleLiteral,
-    Expression,
-    FunctionCall,
-    Identifier,
-    IntegerLiteral,
-    MemberAccess,
-    ParenthesesExpression,
-    RangeExpression,
-    SetExpression,
-    StringCount,
-    StringIdentifier,
-    StringLength,
-    StringLiteral,
-    StringOffset,
-    UnaryExpression,
-)
-from yaraast.ast.meta import Meta
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import (
-    HexAlternative,
-    HexByte,
     HexJump,
-    HexNibble,
     HexString,
-    HexToken,
-    HexWildcard,
     PlainString,
     RegexString,
-    StringDefinition,
-    StringModifier,
 )
-from yaraast.visitor import ASTTransformer, ASTVisitor
+from yaraast.visitor import ASTTransformer
 from yaraast.yarax.feature_flags import YaraXFeatures
 
 
 class YaraXSyntaxAdapter(ASTTransformer):
     """Adapt YARA rules to YARA-X syntax."""
 
-    def __init__(self, features: Optional[YaraXFeatures] = None,
-                 target: str = "yarax"):
+    def __init__(self, features: YaraXFeatures | None = None, target: str = "yarax"):
         """
         Initialize adapter.
 
@@ -68,7 +27,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
         self.target = target
         self.adaptations_count = 0
 
-    def adapt(self, yara_file: YaraFile) -> Tuple[YaraFile, int]:
+    def adapt(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
         """Adapt YARA file syntax and return adapted file with adaptation count."""
         self.adaptations_count = 0
         adapted = self.visit(yara_file)
@@ -95,7 +54,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
             tags=node.tags,
             meta=meta,
             strings=strings,
-            condition=condition
+            condition=condition,
         )
 
     def visit_plain_string(self, node: PlainString) -> PlainString:
@@ -110,11 +69,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
                 padding_needed = self.features.minimum_base64_length - len(node.value)
                 new_value = node.value + "A" * padding_needed
                 self.adaptations_count += 1
-                return PlainString(
-                    identifier=node.identifier,
-                    value=new_value,
-                    modifiers=modifiers
-                )
+                return PlainString(identifier=node.identifier, value=new_value, modifiers=modifiers)
 
         return node
 
@@ -126,9 +81,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
             if adapted_regex != node.regex:
                 self.adaptations_count += 1
                 return RegexString(
-                    identifier=node.identifier,
-                    regex=adapted_regex,
-                    modifiers=node.modifiers
+                    identifier=node.identifier, regex=adapted_regex, modifiers=node.modifiers
                 )
 
         elif self.target == "yara" and not self.features.strict_regex_escaping:
@@ -137,9 +90,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
             if adapted_regex != node.regex:
                 self.adaptations_count += 1
                 return RegexString(
-                    identifier=node.identifier,
-                    regex=adapted_regex,
-                    modifiers=node.modifiers
+                    identifier=node.identifier, regex=adapted_regex, modifiers=node.modifiers
                 )
 
         return node
@@ -149,28 +100,28 @@ class YaraXSyntaxAdapter(ASTTransformer):
         result = []
         i = 0
         while i < len(regex):
-            if regex[i] == '\\':
+            if regex[i] == "\\":
                 # Already escaped, skip next char
-                result.append(regex[i:i+2])
+                result.append(regex[i : i + 2])
                 i += 2
-            elif regex[i] == '{':
+            elif regex[i] == "{":
                 # Check if this is a repetition quantifier
                 if self._is_quantifier_brace(regex, i):
                     result.append(regex[i])
                 else:
                     # Escape it
-                    result.append('\\{')
+                    result.append("\\{")
                 i += 1
             else:
                 result.append(regex[i])
                 i += 1
 
-        return ''.join(result)
+        return "".join(result)
 
     def _unescape_braces(self, regex: str) -> str:
         """Unescape braces for YARA compatibility."""
         # Only unescape braces that aren't part of quantifiers
-        return regex.replace('\\{', '{').replace('\\}', '}')
+        return regex.replace("\\{", "{").replace("\\}", "}")
 
     def _is_quantifier_brace(self, regex: str, pos: int) -> bool:
         """Check if brace at position is part of a quantifier."""
@@ -182,25 +133,25 @@ class YaraXSyntaxAdapter(ASTTransformer):
         prev = pos - 1
 
         # Skip back to find the atom
-        if regex[prev] in ')]}':
+        if regex[prev] in ")]}":
             return True  # After group/class
 
-        if regex[prev].isalnum() or regex[prev] in '.\\':
+        if regex[prev].isalnum() or regex[prev] in ".\\":
             # Look ahead for valid quantifier
             j = pos + 1
             digits = 0
             comma = False
 
-            while j < len(regex) and regex[j] != '}':
+            while j < len(regex) and regex[j] != "}":
                 if regex[j].isdigit():
                     digits += 1
-                elif regex[j] == ',' and not comma:
+                elif regex[j] == "," and not comma:
                     comma = True
                 else:
                     return False  # Invalid quantifier content
                 j += 1
 
-            return j < len(regex) and regex[j] == '}' and digits > 0
+            return j < len(regex) and regex[j] == "}" and digits > 0
 
         return False
 
@@ -208,11 +159,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
         """Adapt hex string syntax."""
         tokens = [self.visit(token) for token in node.tokens]
 
-        return HexString(
-            identifier=node.identifier,
-            tokens=tokens,
-            modifiers=node.modifiers
-        )
+        return HexString(identifier=node.identifier, tokens=tokens, modifiers=node.modifiers)
 
     def visit_hex_jump(self, node: HexJump) -> HexJump:
         """Adapt hex jump syntax."""
@@ -220,7 +167,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
         # This is actually an enhancement, no adaptation needed
         return node
 
-    def generate_migration_guide(self, issues: List['CompatibilityIssue']) -> str:
+    def generate_migration_guide(self, issues: list["CompatibilityIssue"]) -> str:
         """Generate a migration guide based on compatibility issues."""
         guide = ["# YARA to YARA-X Migration Guide\n"]
 
@@ -256,7 +203,9 @@ class YaraXSyntaxAdapter(ASTTransformer):
 
         if "base64_too_short" in by_type:
             guide.append("## Base64 Pattern Length\n")
-            guide.append(f"YARA-X requires base64 patterns to be at least {self.features.minimum_base64_length} characters.\n")
+            guide.append(
+                f"YARA-X requires base64 patterns to be at least {self.features.minimum_base64_length} characters.\n"
+            )
             guide.append("Short patterns should be padded or reconsidered.\n\n")
 
         if "duplicate_modifier" in by_type:
@@ -272,4 +221,4 @@ class YaraXSyntaxAdapter(ASTTransformer):
                 guide.append(f"- {feature}\n")
             guide.append("\nThese features are not backward compatible with YARA.\n")
 
-        return ''.join(guide)
+        return "".join(guide)

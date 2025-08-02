@@ -3,11 +3,12 @@
 import gc
 import sys
 import weakref
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterator, List, Optional, Set
+from typing import Any
 
-from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.base import YaraFile
 
 
 @dataclass
@@ -32,10 +33,9 @@ class MemoryOptimizer:
     - AST object pooling
     """
 
-    def __init__(self,
-                 memory_limit_mb: int = 1000,
-                 gc_threshold: int = 1000,
-                 enable_tracking: bool = True):
+    def __init__(
+        self, memory_limit_mb: int = 1000, gc_threshold: int = 1000, enable_tracking: bool = True
+    ):
         """Initialize memory optimizer.
 
         Args:
@@ -48,12 +48,12 @@ class MemoryOptimizer:
         self.enable_tracking = enable_tracking
 
         # Tracking
-        self._tracked_objects: Set[weakref.ref] = set()
+        self._tracked_objects: set[weakref.ref] = set()
         self._stats = MemoryStats()
         self._object_counter = 0
 
         # AST object pool for reuse
-        self._ast_pool: List[YaraFile] = []
+        self._ast_pool: list[YaraFile] = []
         self._pool_size_limit = 100
 
     @contextmanager
@@ -70,7 +70,7 @@ class MemoryOptimizer:
 
             memory_diff = final_memory - initial_memory
             if memory_diff > 0:
-                print(f"Memory usage increased by {memory_diff:.1f} MB during processing")
+                pass
 
     def track_object(self, obj: Any) -> None:
         """Track an object for memory monitoring."""
@@ -99,10 +99,9 @@ class MemoryOptimizer:
             ast.includes.clear()
             ast.rules.clear()
             return ast
-        else:
-            ast = YaraFile(imports=[], includes=[], rules=[])
-            self.track_object(ast)
-            return ast
+        ast = YaraFile(imports=[], includes=[], rules=[])
+        self.track_object(ast)
+        return ast
 
     def return_ast_to_pool(self, ast: YaraFile) -> None:
         """Return an AST object to the pool for reuse."""
@@ -113,12 +112,12 @@ class MemoryOptimizer:
             ast.rules.clear()
             self._ast_pool.append(ast)
 
-    def memory_efficient_iterator(self,
-                                 items: List[Any],
-                                 batch_size: int = 10) -> Iterator[List[Any]]:
+    def memory_efficient_iterator(
+        self, items: list[Any], batch_size: int = 10
+    ) -> Iterator[list[Any]]:
         """Create memory-efficient iterator that processes items in batches."""
         for i in range(0, len(items), batch_size):
-            batch = items[i:i + batch_size]
+            batch = items[i : i + batch_size]
             yield batch
 
             # Check memory usage after each batch
@@ -144,17 +143,16 @@ class MemoryOptimizer:
                 tags=rule.tags.copy() if rule.tags else [],
                 meta=rule.meta.copy() if rule.meta else {},
                 strings=rule.strings.copy() if rule.strings else [],
-                condition=rule.condition
+                condition=rule.condition,
             )
             minimal_ast.rules.append(minimal_rule)
 
         self.track_object(minimal_ast)
         return minimal_ast
 
-    def batch_process_with_memory_limit(self,
-                                       items: List[Any],
-                                       processor_func: Callable[[Any], Any],
-                                       batch_size: int = 50) -> Iterator[Any]:
+    def batch_process_with_memory_limit(
+        self, items: list[Any], processor_func: Callable[[Any], Any], batch_size: int = 50
+    ) -> Iterator[Any]:
         """Process items in batches with memory management."""
         processed_count = 0
 
@@ -168,7 +166,7 @@ class MemoryOptimizer:
                     processed_count += 1
 
                     # Track memory usage
-                    if hasattr(result, '__dict__'):
+                    if hasattr(result, "__dict__"):
                         self.track_object(result)
 
                 except Exception as e:
@@ -185,8 +183,9 @@ class MemoryOptimizer:
     def get_memory_stats(self) -> MemoryStats:
         """Get current memory statistics."""
         self._stats.total_objects = len(self._tracked_objects)
-        self._stats.ast_objects = len([ref for ref in self._tracked_objects
-                                     if ref() and isinstance(ref(), YaraFile)])
+        self._stats.ast_objects = len(
+            [ref for ref in self._tracked_objects if ref() and isinstance(ref(), YaraFile)]
+        )
         self._stats.memory_mb = self._get_memory_usage()
 
         return self._stats
@@ -218,22 +217,22 @@ class MemoryOptimizer:
         # Force garbage collection
         self.force_cleanup()
 
-    def optimize_for_large_collection(self, collection_size: int) -> Dict[str, Any]:
+    def optimize_for_large_collection(self, collection_size: int) -> dict[str, Any]:
         """Optimize settings based on collection size."""
         recommendations = {
-            'batch_size': min(50, max(10, collection_size // 100)),
-            'gc_threshold': min(1000, max(100, collection_size // 10)),
-            'memory_limit_mb': max(500, min(2000, collection_size // 100)),
-            'enable_pooling': collection_size > 100,
-            'use_streaming': collection_size > 500
+            "batch_size": min(50, max(10, collection_size // 100)),
+            "gc_threshold": min(1000, max(100, collection_size // 10)),
+            "memory_limit_mb": max(500, min(2000, collection_size // 100)),
+            "enable_pooling": collection_size > 100,
+            "use_streaming": collection_size > 500,
         }
 
         # Apply recommendations
-        if recommendations['enable_pooling']:
+        if recommendations["enable_pooling"]:
             self._pool_size_limit = min(200, collection_size // 50)
 
-        self.gc_threshold = recommendations['gc_threshold']
-        self.memory_limit_mb = recommendations['memory_limit_mb']
+        self.gc_threshold = recommendations["gc_threshold"]
+        self.memory_limit_mb = recommendations["memory_limit_mb"]
 
         return recommendations
 
@@ -260,14 +259,14 @@ class MemoryOptimizer:
 class LazyASTLoader:
     """Lazy loader for AST objects to minimize memory usage."""
 
-    def __init__(self, optimizer: Optional[MemoryOptimizer] = None):
+    def __init__(self, optimizer: MemoryOptimizer | None = None):
         """Initialize lazy loader.
 
         Args:
             optimizer: Memory optimizer instance to use
         """
         self.optimizer = optimizer or MemoryOptimizer()
-        self._cache: Dict[str, weakref.ref] = {}
+        self._cache: dict[str, weakref.ref] = {}
         self._cache_hits = 0
         self._cache_misses = 0
 
@@ -289,9 +288,8 @@ class LazyASTLoader:
             if cached_ast is not None:
                 self._cache_hits += 1
                 return cached_ast
-            else:
-                # Dead reference, remove from cache
-                del self._cache[identifier]
+            # Dead reference, remove from cache
+            del self._cache[identifier]
 
         # Load AST
         self._cache_misses += 1
@@ -305,17 +303,17 @@ class LazyASTLoader:
 
         return ast
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         total_requests = self._cache_hits + self._cache_misses
         hit_rate = (self._cache_hits / total_requests * 100) if total_requests > 0 else 0
 
         return {
-            'cache_hits': self._cache_hits,
-            'cache_misses': self._cache_misses,
-            'hit_rate_percent': hit_rate,
-            'cached_objects': len(self._cache),
-            'live_objects': len([ref for ref in self._cache.values() if ref() is not None])
+            "cache_hits": self._cache_hits,
+            "cache_misses": self._cache_misses,
+            "hit_rate_percent": hit_rate,
+            "cached_objects": len(self._cache),
+            "live_objects": len([ref for ref in self._cache.values() if ref() is not None]),
         }
 
     def clear_cache(self) -> None:
@@ -335,10 +333,9 @@ class MemoryEfficientProcessor:
         self.optimizer = MemoryOptimizer(memory_limit_mb=memory_limit_mb)
         self.loader = LazyASTLoader(self.optimizer)
 
-    def process_collection(self,
-                          items: List[Any],
-                          processor_func: Callable[[Any], Any],
-                          batch_size: Optional[int] = None) -> Iterator[Any]:
+    def process_collection(
+        self, items: list[Any], processor_func: Callable[[Any], Any], batch_size: int | None = None
+    ) -> Iterator[Any]:
         """Process a collection with automatic memory management.
 
         Args:
@@ -352,25 +349,25 @@ class MemoryEfficientProcessor:
         # Optimize settings based on collection size
         if batch_size is None:
             settings = self.optimizer.optimize_for_large_collection(len(items))
-            batch_size = settings['batch_size']
+            batch_size = settings["batch_size"]
 
         with self.optimizer.memory_managed_context():
             yield from self.optimizer.batch_process_with_memory_limit(
                 items, processor_func, batch_size
             )
 
-    def get_processing_stats(self) -> Dict[str, Any]:
+    def get_processing_stats(self) -> dict[str, Any]:
         """Get comprehensive processing statistics."""
         memory_stats = self.optimizer.get_memory_stats()
         cache_stats = self.loader.get_cache_stats()
 
         return {
-            'memory': {
-                'current_mb': memory_stats.memory_mb,
-                'peak_mb': memory_stats.peak_memory_mb,
-                'tracked_objects': memory_stats.total_objects,
-                'ast_objects': memory_stats.ast_objects,
-                'gc_collections': memory_stats.gc_collections
+            "memory": {
+                "current_mb": memory_stats.memory_mb,
+                "peak_mb": memory_stats.peak_memory_mb,
+                "tracked_objects": memory_stats.total_objects,
+                "ast_objects": memory_stats.ast_objects,
+                "gc_collections": memory_stats.gc_collections,
             },
-            'cache': cache_stats
+            "cache": cache_stats,
         }

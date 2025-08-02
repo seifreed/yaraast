@@ -1,7 +1,7 @@
 """YARA-X feature flags and configuration."""
 
 from dataclasses import dataclass
-from typing import Any, Dict, Set
+from typing import Any
 
 
 @dataclass
@@ -25,7 +25,7 @@ class YaraXFeatures:
     modular_parser: bool = True
 
     # Deprecated features
-    deprecated_features: Set[str] = None
+    deprecated_features: set[str] = None
 
     def __post_init__(self):
         if self.deprecated_features is None:
@@ -35,7 +35,7 @@ class YaraXFeatures:
             }
 
     @classmethod
-    def yara_compatible(cls) -> 'YaraXFeatures':
+    def yara_compatible(cls) -> "YaraXFeatures":
         """Create configuration for YARA compatibility mode."""
         return cls(
             strict_regex_escaping=False,
@@ -47,15 +47,15 @@ class YaraXFeatures:
             strict_xor_fullword=False,
             validate_hex_bounds=False,
             enhanced_error_messages=False,
-            modular_parser=False
+            modular_parser=False,
         )
 
     @classmethod
-    def yarax_strict(cls) -> 'YaraXFeatures':
+    def yarax_strict(cls) -> "YaraXFeatures":
         """Create configuration for strict YARA-X mode."""
         return cls()  # All defaults are YARA-X strict
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "strict_regex_escaping": self.strict_regex_escaping,
@@ -68,5 +68,5 @@ class YaraXFeatures:
             "validate_hex_bounds": self.validate_hex_bounds,
             "enhanced_error_messages": self.enhanced_error_messages,
             "modular_parser": self.modular_parser,
-            "deprecated_features": list(self.deprecated_features)
+            "deprecated_features": list(self.deprecated_features),
         }

@@ -1,7 +1,5 @@
 """Dead code eliminator for YARA rules."""
 
-from typing import Dict, List, Optional, Set, Tuple
-
 from yaraast.analysis.string_usage import StringUsageAnalyzer
 from yaraast.ast.base import *
 from yaraast.ast.conditions import *
@@ -17,15 +15,15 @@ class DeadCodeEliminator(ASTTransformer):
     def __init__(self):
         self.eliminations_count = 0
         self.string_usage_analyzer = StringUsageAnalyzer()
-        self.used_strings: Set[str] = set()
-        self.always_false_rules: Set[str] = set()
+        self.used_strings: set[str] = set()
+        self.always_false_rules: set[str] = set()
 
-    def eliminate(self, yara_file: YaraFile) -> Tuple[YaraFile, int]:
+    def eliminate(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
         """Eliminate dead code and return optimized file with elimination count."""
         self.eliminations_count = 0
 
         # First pass: analyze string usage
-        usage_analysis = self.string_usage_analyzer.analyze(yara_file)
+        self.string_usage_analyzer.analyze(yara_file)
 
         # Second pass: check for always-false conditions
         self._identify_always_false_rules(yara_file)
@@ -50,7 +48,7 @@ class DeadCodeEliminator(ASTTransformer):
             if expr.operator == "and":
                 # If either side is always false, the whole expression is false
                 return self._is_always_false(expr.left) or self._is_always_false(expr.right)
-            elif expr.operator == "or":
+            if expr.operator == "or":
                 # Both sides must be false for OR to be false
                 return self._is_always_false(expr.left) and self._is_always_false(expr.right)
 
@@ -68,7 +66,7 @@ class DeadCodeEliminator(ASTTransformer):
             if expr.operator == "or":
                 # If either side is always true, the whole expression is true
                 return self._is_always_true(expr.left) or self._is_always_true(expr.right)
-            elif expr.operator == "and":
+            if expr.operator == "and":
                 # Both sides must be true for AND to be true
                 return self._is_always_true(expr.left) and self._is_always_true(expr.right)
 
@@ -124,18 +122,18 @@ class DeadCodeEliminator(ASTTransformer):
             tags=node.tags,
             meta=meta,
             strings=used_string_defs,
-            condition=self.visit(node.condition)
+            condition=self.visit(node.condition),
         )
 
     def _collect_used_strings(self, expr: Expression) -> None:
         """Collect all string identifiers used in expression."""
         if isinstance(expr, StringIdentifier):
             self.used_strings.add(expr.name)
-        elif isinstance(expr, (StringCount, StringOffset, StringLength)):
+        elif isinstance(expr, StringCount | StringOffset | StringLength):
             self.used_strings.add(expr.string_id)
-        elif isinstance(expr, (AtExpression, InExpression)):
+        elif isinstance(expr, AtExpression | InExpression):
             self.used_strings.add(expr.string_id)
-            self._collect_used_strings(expr.offset if hasattr(expr, 'offset') else expr.range)
+            self._collect_used_strings(expr.offset if hasattr(expr, "offset") else expr.range)
         elif isinstance(expr, BinaryExpression):
             self._collect_used_strings(expr.left)
             self._collect_used_strings(expr.right)

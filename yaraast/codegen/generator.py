@@ -1,7 +1,6 @@
 """Code generator for converting AST back to YARA rules."""
 
 from io import StringIO
-from typing import Any, List
 
 from yaraast.ast.base import *
 from yaraast.ast.conditions import *
@@ -78,7 +77,7 @@ class CodeGenerator(ASTVisitor[str]):
         """Generate code for Import."""
         self._write(f'import "{node.module}"')
         if node.alias:
-            self._write(f' as {node.alias}')
+            self._write(f" as {node.alias}")
         return ""
 
     def visit_include(self, node: Include) -> str:
@@ -113,7 +112,7 @@ class CodeGenerator(ASTVisitor[str]):
                 elif isinstance(value, bool):
                     self._writeline(f'{key} = {"true" if value else "false"}')
                 else:
-                    self._writeline(f'{key} = {value}')
+                    self._writeline(f"{key} = {value}")
             self._dedent()
             self._writeline()
 
@@ -190,8 +189,7 @@ class CodeGenerator(ASTVisitor[str]):
         if node.value is not None:
             if isinstance(node.value, tuple):
                 return f"{node.name}({node.value[0]}-{node.value[1]})"
-            else:
-                return f"{node.name}({node.value})"
+            return f"{node.name}({node.value})"
         return node.name
 
     def visit_hex_token(self, node: HexToken) -> str:
@@ -203,8 +201,7 @@ class CodeGenerator(ASTVisitor[str]):
         # Handle both string and int values
         if isinstance(node.value, str):
             return node.value.upper()
-        else:
-            return f"{node.value:02X}"
+        return f"{node.value:02X}"
 
     def visit_hex_wildcard(self, node: HexWildcard) -> str:
         """Generate code for HexWildcard."""
@@ -214,14 +211,13 @@ class CodeGenerator(ASTVisitor[str]):
         """Generate code for HexJump."""
         if node.min_jump is None and node.max_jump is None:
             return "[-]"
-        elif node.min_jump == node.max_jump:
+        if node.min_jump == node.max_jump:
             return f"[{node.min_jump}]"
-        elif node.min_jump is None:
+        if node.min_jump is None:
             return f"[-{node.max_jump}]"
-        elif node.max_jump is None:
+        if node.max_jump is None:
             return f"[{node.min_jump}-]"
-        else:
-            return f"[{node.min_jump}-{node.max_jump}]"
+        return f"[{node.min_jump}-{node.max_jump}]"
 
     def visit_hex_alternative(self, node: HexAlternative) -> str:
         """Generate code for HexAlternative."""
@@ -236,9 +232,8 @@ class CodeGenerator(ASTVisitor[str]):
         if node.high:
             # X? pattern
             return f"{node.value:X}?"
-        else:
-            # ?X pattern
-            return f"?{node.value:X}"
+        # ?X pattern
+        return f"?{node.value:X}"
 
     def visit_expression(self, node: Expression) -> str:
         """Generate code for Expression."""
@@ -277,9 +272,7 @@ class CodeGenerator(ASTVisitor[str]):
             0x00004550: "0x00004550",  # PE header
             0x50450000: "0x50450000",  # PE header big-endian
             0x14C: "0x14c",  # PE machine type
-            0x3C: "0x3c",  # PE offset location
-            60: "0x3c",  # PE offset location (decimal)
-            332: "0x14c",  # PE machine type (decimal)
+            0x3C: "0x3c",  # PE machine type (decimal)
             1024: "0x400",  # 1KB
         }
 
@@ -291,7 +284,7 @@ class CodeGenerator(ASTVisitor[str]):
             # Check if it's a round hex number
             if node.value == 1024:
                 return "1024"  # Keep 1024 as decimal for readability
-            elif node.value % 256 == 0 or node.value % 16 == 0:
+            if node.value % 256 == 0 or node.value % 16 == 0:
                 return hex(node.value)
 
         return str(node.value)
@@ -306,7 +299,7 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_regex_literal(self, node: RegexLiteral) -> str:
         """Generate code for RegexLiteral."""
-        return f'/{node.pattern}/{node.modifiers}'
+        return f"/{node.pattern}/{node.modifiers}"
 
     def visit_boolean_literal(self, node: BooleanLiteral) -> str:
         """Generate code for BooleanLiteral."""
@@ -395,10 +388,9 @@ class CodeGenerator(ASTVisitor[str]):
         """Generate code for Meta."""
         if isinstance(node.value, str):
             return f'{node.key} = "{node.value}"'
-        elif isinstance(node.value, bool):
+        if isinstance(node.value, bool):
             return f'{node.key} = {"true" if node.value else "false"}'
-        else:
-            return f'{node.key} = {node.value}'
+        return f"{node.key} = {node.value}"
 
     def visit_module_reference(self, node) -> str:
         """Generate code for ModuleReference."""
@@ -409,9 +401,8 @@ class CodeGenerator(ASTVisitor[str]):
         obj = self.visit(node.object)
         if isinstance(node.key, str):
             return f'{obj}["{node.key}"]'
-        else:
-            key = self.visit(node.key)
-            return f'{obj}[{key}]'
+        key = self.visit(node.key)
+        return f"{obj}[{key}]"
 
     def visit_defined_expression(self, node: DefinedExpression) -> str:
         """Generate code for DefinedExpression."""
@@ -436,5 +427,4 @@ class CodeGenerator(ASTVisitor[str]):
         """Generate code for Meta."""
         if isinstance(node.value, str):
             return f'{node.key} = "{node.value}"'
-        else:
-            return f'{node.key} = {node.value}'
+        return f"{node.key} = {node.value}"

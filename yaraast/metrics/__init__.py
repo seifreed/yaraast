@@ -14,5 +14,5 @@ __all__ = [
     "ComplexityMetrics",
     "DependencyGraphGenerator",
     "HtmlTreeGenerator",
-    "StringDiagramGenerator"
+    "StringDiagramGenerator",
 ]

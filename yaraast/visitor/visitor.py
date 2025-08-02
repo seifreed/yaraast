@@ -1,7 +1,7 @@
 """Visitor pattern implementation for AST traversal."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from yaraast.ast.base import *
 from yaraast.ast.comments import *
@@ -16,10 +16,10 @@ from yaraast.ast.pragmas import *
 from yaraast.ast.rules import *
 from yaraast.ast.strings import *
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
-class ASTVisitor(ABC, Generic[T]):
+class ASTVisitor[T](ABC):
     """Base visitor class for traversing AST nodes."""
 
     def visit(self, node: ASTNode) -> T:
@@ -30,287 +30,232 @@ class ASTVisitor(ABC, Generic[T]):
     @abstractmethod
     def visit_yara_file(self, node: YaraFile) -> T:
         """Visit YaraFile node."""
-        pass
 
     @abstractmethod
     def visit_import(self, node: Import) -> T:
         """Visit Import node."""
-        pass
 
     @abstractmethod
     def visit_include(self, node: Include) -> T:
         """Visit Include node."""
-        pass
 
     @abstractmethod
     def visit_rule(self, node: Rule) -> T:
         """Visit Rule node."""
-        pass
 
     @abstractmethod
     def visit_tag(self, node: Tag) -> T:
         """Visit Tag node."""
-        pass
 
     # String definitions
     @abstractmethod
     def visit_string_definition(self, node: StringDefinition) -> T:
         """Visit StringDefinition node."""
-        pass
 
     @abstractmethod
     def visit_plain_string(self, node: PlainString) -> T:
         """Visit PlainString node."""
-        pass
 
     @abstractmethod
     def visit_hex_string(self, node: HexString) -> T:
         """Visit HexString node."""
-        pass
 
     @abstractmethod
     def visit_regex_string(self, node: RegexString) -> T:
         """Visit RegexString node."""
-        pass
 
     @abstractmethod
     def visit_string_modifier(self, node: StringModifier) -> T:
         """Visit StringModifier node."""
-        pass
 
     # Hex tokens
     @abstractmethod
     def visit_hex_token(self, node: HexToken) -> T:
         """Visit HexToken node."""
-        pass
 
     @abstractmethod
     def visit_hex_byte(self, node: HexByte) -> T:
         """Visit HexByte node."""
-        pass
 
     @abstractmethod
     def visit_hex_wildcard(self, node: HexWildcard) -> T:
         """Visit HexWildcard node."""
-        pass
 
     @abstractmethod
     def visit_hex_jump(self, node: HexJump) -> T:
         """Visit HexJump node."""
-        pass
 
     @abstractmethod
     def visit_hex_alternative(self, node: HexAlternative) -> T:
         """Visit HexAlternative node."""
-        pass
 
     @abstractmethod
     def visit_hex_nibble(self, node) -> T:
         """Visit HexNibble node."""
-        pass
 
     # Expressions
     @abstractmethod
     def visit_expression(self, node: Expression) -> T:
         """Visit Expression node."""
-        pass
 
     @abstractmethod
     def visit_identifier(self, node: Identifier) -> T:
         """Visit Identifier node."""
-        pass
 
     @abstractmethod
     def visit_string_identifier(self, node: StringIdentifier) -> T:
         """Visit StringIdentifier node."""
-        pass
 
     @abstractmethod
     def visit_string_count(self, node: StringCount) -> T:
         """Visit StringCount node."""
-        pass
 
     @abstractmethod
     def visit_string_offset(self, node: StringOffset) -> T:
         """Visit StringOffset node."""
-        pass
 
     @abstractmethod
     def visit_string_length(self, node: StringLength) -> T:
         """Visit StringLength node."""
-        pass
 
     @abstractmethod
     def visit_integer_literal(self, node: IntegerLiteral) -> T:
         """Visit IntegerLiteral node."""
-        pass
 
     @abstractmethod
     def visit_double_literal(self, node: DoubleLiteral) -> T:
         """Visit DoubleLiteral node."""
-        pass
 
     @abstractmethod
     def visit_string_literal(self, node: StringLiteral) -> T:
         """Visit StringLiteral node."""
-        pass
 
     @abstractmethod
     def visit_regex_literal(self, node: RegexLiteral) -> T:
         """Visit RegexLiteral node."""
-        pass
 
     @abstractmethod
     def visit_boolean_literal(self, node: BooleanLiteral) -> T:
         """Visit BooleanLiteral node."""
-        pass
 
     @abstractmethod
     def visit_binary_expression(self, node: BinaryExpression) -> T:
         """Visit BinaryExpression node."""
-        pass
 
     @abstractmethod
     def visit_unary_expression(self, node: UnaryExpression) -> T:
         """Visit UnaryExpression node."""
-        pass
 
     @abstractmethod
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> T:
         """Visit ParenthesesExpression node."""
-        pass
 
     @abstractmethod
     def visit_set_expression(self, node: SetExpression) -> T:
         """Visit SetExpression node."""
-        pass
 
     @abstractmethod
     def visit_range_expression(self, node: RangeExpression) -> T:
         """Visit RangeExpression node."""
-        pass
 
     @abstractmethod
     def visit_function_call(self, node: FunctionCall) -> T:
         """Visit FunctionCall node."""
-        pass
 
     @abstractmethod
     def visit_array_access(self, node: ArrayAccess) -> T:
         """Visit ArrayAccess node."""
-        pass
 
     @abstractmethod
     def visit_member_access(self, node: MemberAccess) -> T:
         """Visit MemberAccess node."""
-        pass
 
     # Conditions
     @abstractmethod
     def visit_condition(self, node: Condition) -> T:
         """Visit Condition node."""
-        pass
 
     @abstractmethod
     def visit_for_expression(self, node: ForExpression) -> T:
         """Visit ForExpression node."""
-        pass
 
     @abstractmethod
     def visit_for_of_expression(self, node: ForOfExpression) -> T:
         """Visit ForOfExpression node."""
-        pass
 
     @abstractmethod
     def visit_at_expression(self, node: AtExpression) -> T:
         """Visit AtExpression node."""
-        pass
 
     @abstractmethod
     def visit_in_expression(self, node: InExpression) -> T:
         """Visit InExpression node."""
-        pass
 
     @abstractmethod
     def visit_of_expression(self, node: OfExpression) -> T:
         """Visit OfExpression node."""
-        pass
 
     # Meta
     @abstractmethod
     def visit_meta(self, node: Meta) -> T:
         """Visit Meta node."""
-        pass
 
     # Modules
     @abstractmethod
     def visit_module_reference(self, node) -> T:
         """Visit ModuleReference node."""
-        pass
 
     @abstractmethod
     def visit_dictionary_access(self, node) -> T:
         """Visit DictionaryAccess node."""
-        pass
 
     # Comments
     @abstractmethod
     def visit_comment(self, node: Comment) -> T:
         """Visit Comment node."""
-        pass
 
     @abstractmethod
     def visit_comment_group(self, node: CommentGroup) -> T:
         """Visit CommentGroup node."""
-        pass
 
     # Operators
     @abstractmethod
     def visit_defined_expression(self, node: DefinedExpression) -> T:
         """Visit DefinedExpression node."""
-        pass
 
     @abstractmethod
     def visit_string_operator_expression(self, node: StringOperatorExpression) -> T:
         """Visit StringOperatorExpression node."""
-        pass
 
     # Extern rules and references
     @abstractmethod
     def visit_extern_rule(self, node: ExternRule) -> T:
         """Visit ExternRule node."""
-        pass
 
     @abstractmethod
     def visit_extern_rule_reference(self, node: ExternRuleReference) -> T:
         """Visit ExternRuleReference node."""
-        pass
 
     @abstractmethod
     def visit_extern_import(self, node: ExternImport) -> T:
         """Visit ExternImport node."""
-        pass
 
     @abstractmethod
     def visit_extern_namespace(self, node: ExternNamespace) -> T:
         """Visit ExternNamespace node."""
-        pass
 
     # Pragmas and directives
     @abstractmethod
     def visit_pragma(self, node: Pragma) -> T:
         """Visit Pragma node."""
-        pass
 
     @abstractmethod
     def visit_in_rule_pragma(self, node: InRulePragma) -> T:
         """Visit InRulePragma node."""
-        pass
 
     @abstractmethod
     def visit_pragma_block(self, node: PragmaBlock) -> T:
         """Visit PragmaBlock node."""
-        pass
 
 
 class ASTTransformer(ASTVisitor[ASTNode]):
@@ -334,7 +279,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             extern_imports=extern_imports,
             pragmas=pragmas,
             namespaces=namespaces,
-            location=node.location
+            location=node.location,
         )
 
     def visit_import(self, node: Import) -> Import:
@@ -353,10 +298,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
         pragmas = [self.visit(pragma) for pragma in node.pragmas]
 
         # Handle enhanced meta entries
-        if isinstance(node.meta, list):
-            meta = node.meta.copy()
-        else:
-            meta = dict(node.meta)
+        meta = node.meta.copy() if isinstance(node.meta, list) else dict(node.meta)
 
         return Rule(
             name=node.name,
@@ -366,7 +308,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             strings=strings,
             condition=condition,
             pragmas=pragmas,
-            location=node.location
+            location=node.location,
         )
 
     def visit_tag(self, node: Tag) -> Tag:
@@ -384,7 +326,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             identifier=node.identifier,
             value=node.value,
             modifiers=modifiers,
-            location=node.location
+            location=node.location,
         )
 
     def visit_hex_string(self, node: HexString) -> HexString:
@@ -392,10 +334,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
         tokens = [self.visit(token) for token in node.tokens]
         modifiers = [self.visit(mod) for mod in node.modifiers]
         return HexString(
-            identifier=node.identifier,
-            tokens=tokens,
-            modifiers=modifiers,
-            location=node.location
+            identifier=node.identifier, tokens=tokens, modifiers=modifiers, location=node.location
         )
 
     def visit_regex_string(self, node: RegexString) -> RegexString:
@@ -405,16 +344,12 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             identifier=node.identifier,
             regex=node.regex,
             modifiers=modifiers,
-            location=node.location
+            location=node.location,
         )
 
     def visit_string_modifier(self, node: StringModifier) -> StringModifier:
         """Transform StringModifier node."""
-        return StringModifier(
-            name=node.name,
-            value=node.value,
-            location=node.location
-        )
+        return StringModifier(name=node.name, value=node.value, location=node.location)
 
     def visit_hex_token(self, node: HexToken) -> HexToken:
         """Transform HexToken node."""
@@ -430,31 +365,18 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_hex_jump(self, node: HexJump) -> HexJump:
         """Transform HexJump node."""
-        return HexJump(
-            min_jump=node.min_jump,
-            max_jump=node.max_jump,
-            location=node.location
-        )
+        return HexJump(min_jump=node.min_jump, max_jump=node.max_jump, location=node.location)
 
     def visit_hex_alternative(self, node: HexAlternative) -> HexAlternative:
         """Transform HexAlternative node."""
-        alternatives = [
-            [self.visit(token) for token in alt]
-            for alt in node.alternatives
-        ]
-        return HexAlternative(
-            alternatives=alternatives,
-            location=node.location
-        )
+        alternatives = [[self.visit(token) for token in alt] for alt in node.alternatives]
+        return HexAlternative(alternatives=alternatives, location=node.location)
 
     def visit_hex_nibble(self, node) -> Any:
         """Transform HexNibble node."""
         from yaraast.builder.hex_string_builder import HexNibble
-        return HexNibble(
-            high=node.high,
-            value=node.value,
-            location=node.location
-        )
+
+        return HexNibble(high=node.high, value=node.value, location=node.location)
 
     def visit_expression(self, node: Expression) -> Expression:
         """Transform Expression node."""
@@ -475,20 +397,12 @@ class ASTTransformer(ASTVisitor[ASTNode]):
     def visit_string_offset(self, node: StringOffset) -> StringOffset:
         """Transform StringOffset node."""
         index = self.visit(node.index) if node.index else None
-        return StringOffset(
-            string_id=node.string_id,
-            index=index,
-            location=node.location
-        )
+        return StringOffset(string_id=node.string_id, index=index, location=node.location)
 
     def visit_string_length(self, node: StringLength) -> StringLength:
         """Transform StringLength node."""
         index = self.visit(node.index) if node.index else None
-        return StringLength(
-            string_id=node.string_id,
-            index=index,
-            location=node.location
-        )
+        return StringLength(string_id=node.string_id, index=index, location=node.location)
 
     def visit_integer_literal(self, node: IntegerLiteral) -> IntegerLiteral:
         """Transform IntegerLiteral node."""
@@ -515,74 +429,45 @@ class ASTTransformer(ASTVisitor[ASTNode]):
         left = self.visit(node.left)
         right = self.visit(node.right)
         return BinaryExpression(
-            left=left,
-            operator=node.operator,
-            right=right,
-            location=node.location
+            left=left, operator=node.operator, right=right, location=node.location
         )
 
     def visit_unary_expression(self, node: UnaryExpression) -> UnaryExpression:
         """Transform UnaryExpression node."""
         operand = self.visit(node.operand)
-        return UnaryExpression(
-            operator=node.operator,
-            operand=operand,
-            location=node.location
-        )
+        return UnaryExpression(operator=node.operator, operand=operand, location=node.location)
 
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> ParenthesesExpression:
         """Transform ParenthesesExpression node."""
         expression = self.visit(node.expression)
-        return ParenthesesExpression(
-            expression=expression,
-            location=node.location
-        )
+        return ParenthesesExpression(expression=expression, location=node.location)
 
     def visit_set_expression(self, node: SetExpression) -> SetExpression:
         """Transform SetExpression node."""
         elements = [self.visit(elem) for elem in node.elements]
-        return SetExpression(
-            elements=elements,
-            location=node.location
-        )
+        return SetExpression(elements=elements, location=node.location)
 
     def visit_range_expression(self, node: RangeExpression) -> RangeExpression:
         """Transform RangeExpression node."""
         low = self.visit(node.low)
         high = self.visit(node.high)
-        return RangeExpression(
-            low=low,
-            high=high,
-            location=node.location
-        )
+        return RangeExpression(low=low, high=high, location=node.location)
 
     def visit_function_call(self, node: FunctionCall) -> FunctionCall:
         """Transform FunctionCall node."""
         arguments = [self.visit(arg) for arg in node.arguments]
-        return FunctionCall(
-            function=node.function,
-            arguments=arguments,
-            location=node.location
-        )
+        return FunctionCall(function=node.function, arguments=arguments, location=node.location)
 
     def visit_array_access(self, node: ArrayAccess) -> ArrayAccess:
         """Transform ArrayAccess node."""
         array = self.visit(node.array)
         index = self.visit(node.index)
-        return ArrayAccess(
-            array=array,
-            index=index,
-            location=node.location
-        )
+        return ArrayAccess(array=array, index=index, location=node.location)
 
     def visit_member_access(self, node: MemberAccess) -> MemberAccess:
         """Transform MemberAccess node."""
         object = self.visit(node.object)
-        return MemberAccess(
-            object=object,
-            member=node.member,
-            location=node.location
-        )
+        return MemberAccess(object=object, member=node.member, location=node.location)
 
     def visit_condition(self, node: Condition) -> Condition:
         """Transform Condition node."""
@@ -597,7 +482,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             variable=node.variable,
             iterable=iterable,
             body=body,
-            location=node.location
+            location=node.location,
         )
 
     def visit_for_of_expression(self, node: ForOfExpression) -> ForOfExpression:
@@ -608,70 +493,46 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             quantifier=node.quantifier,
             string_set=string_set,
             condition=condition,
-            location=node.location
+            location=node.location,
         )
 
     def visit_at_expression(self, node: AtExpression) -> AtExpression:
         """Transform AtExpression node."""
         offset = self.visit(node.offset)
-        return AtExpression(
-            string_id=node.string_id,
-            offset=offset,
-            location=node.location
-        )
+        return AtExpression(string_id=node.string_id, offset=offset, location=node.location)
 
     def visit_in_expression(self, node: InExpression) -> InExpression:
         """Transform InExpression node."""
         range = self.visit(node.range)
-        return InExpression(
-            string_id=node.string_id,
-            range=range,
-            location=node.location
-        )
+        return InExpression(string_id=node.string_id, range=range, location=node.location)
 
     def visit_of_expression(self, node: OfExpression) -> OfExpression:
         """Transform OfExpression node."""
         quantifier = self.visit(node.quantifier)
         string_set = self.visit(node.string_set)
-        return OfExpression(
-            quantifier=quantifier,
-            string_set=string_set,
-            location=node.location
-        )
+        return OfExpression(quantifier=quantifier, string_set=string_set, location=node.location)
 
     def visit_meta(self, node: Meta) -> Meta:
         """Transform Meta node."""
-        return Meta(
-            key=node.key,
-            value=node.value,
-            location=node.location
-        )
+        return Meta(key=node.key, value=node.value, location=node.location)
 
     def visit_module_reference(self, node) -> Any:
         """Transform ModuleReference node."""
         from yaraast.ast.modules import ModuleReference
-        return ModuleReference(
-            module=node.module,
-            location=node.location
-        )
+
+        return ModuleReference(module=node.module, location=node.location)
 
     def visit_dictionary_access(self, node) -> Any:
         """Transform DictionaryAccess node."""
         from yaraast.ast.modules import DictionaryAccess
+
         obj = self.visit(node.object)
         key = self.visit(node.key) if isinstance(node.key, Expression) else node.key
-        return DictionaryAccess(
-            object=obj,
-            key=key,
-            location=node.location
-        )
+        return DictionaryAccess(object=obj, key=key, location=node.location)
 
     def visit_comment(self, node: Comment) -> Comment:
         """Transform Comment node."""
-        return Comment(
-            text=node.text,
-            is_multiline=node.is_multiline
-        )
+        return Comment(text=node.text, is_multiline=node.is_multiline)
 
     def visit_comment_group(self, node: CommentGroup) -> CommentGroup:
         """Transform CommentGroup node."""
@@ -683,15 +544,13 @@ class ASTTransformer(ASTVisitor[ASTNode]):
         expression = self.visit(node.expression)
         return DefinedExpression(expression=expression)
 
-    def visit_string_operator_expression(self, node: StringOperatorExpression) -> StringOperatorExpression:
+    def visit_string_operator_expression(
+        self, node: StringOperatorExpression
+    ) -> StringOperatorExpression:
         """Transform StringOperatorExpression node."""
         left = self.visit(node.left)
         right = self.visit(node.right)
-        return StringOperatorExpression(
-            left=left,
-            operator=node.operator,
-            right=right
-        )
+        return StringOperatorExpression(left=left, operator=node.operator, right=right)
 
     # Extern rules and references
     def visit_extern_rule(self, node: ExternRule) -> ExternRule:
@@ -700,15 +559,13 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             name=node.name,
             modifiers=node.modifiers[:],
             namespace=node.namespace,
-            location=node.location
+            location=node.location,
         )
 
     def visit_extern_rule_reference(self, node: ExternRuleReference) -> ExternRuleReference:
         """Transform ExternRuleReference node."""
         return ExternRuleReference(
-            rule_name=node.rule_name,
-            namespace=node.namespace,
-            location=node.location
+            rule_name=node.rule_name, namespace=node.namespace, location=node.location
         )
 
     def visit_extern_import(self, node: ExternImport) -> ExternImport:
@@ -717,15 +574,12 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             module_path=node.module_path,
             alias=node.alias,
             namespace=node.namespace,
-            location=node.location
+            location=node.location,
         )
 
     def visit_extern_namespace(self, node: ExternNamespace) -> ExternNamespace:
         """Transform ExternNamespace node."""
-        return ExternNamespace(
-            name=node.name,
-            location=node.location
-        )
+        return ExternNamespace(name=node.name, location=node.location)
 
     # Pragmas and directives
     def visit_pragma(self, node: Pragma) -> Pragma:
@@ -735,23 +589,15 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             name=node.name,
             arguments=node.arguments[:],
             scope=node.scope,
-            location=node.location
+            location=node.location,
         )
 
     def visit_in_rule_pragma(self, node: InRulePragma) -> InRulePragma:
         """Transform InRulePragma node."""
         pragma = self.visit(node.pragma)
-        return InRulePragma(
-            pragma=pragma,
-            position=node.position,
-            location=node.location
-        )
+        return InRulePragma(pragma=pragma, position=node.position, location=node.location)
 
     def visit_pragma_block(self, node: PragmaBlock) -> PragmaBlock:
         """Transform PragmaBlock node."""
         pragmas = [self.visit(pragma) for pragma in node.pragmas]
-        return PragmaBlock(
-            pragmas=pragmas,
-            scope=node.scope,
-            location=node.location
-        )
+        return PragmaBlock(pragmas=pragmas, scope=node.scope, location=node.location)

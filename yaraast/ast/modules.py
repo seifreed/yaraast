@@ -1,9 +1,8 @@
 """Module-related AST nodes."""
 
-from dataclasses import dataclass, field
-from typing import Any, List, Optional, Union
+from dataclasses import dataclass
+from typing import Any
 
-from yaraast.ast.base import ASTNode
 from yaraast.ast.expressions import Expression
 
 
@@ -22,7 +21,7 @@ class DictionaryAccess(Expression):
     """Dictionary-style access (e.g., pe.version_info["CompanyName"])."""
 
     object: Expression
-    key: Union[str, Expression]
+    key: str | Expression
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_dictionary_access(self)

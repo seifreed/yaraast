@@ -19,19 +19,19 @@ from yaraast.types.type_system import (
 )
 
 __all__ = [
-    "YaraType",
-    "IntegerType",
-    "DoubleType",
-    "StringType",
-    "BooleanType",
-    "StringSetType",
-    "RangeType",
-    "ModuleType",
     "ArrayType",
+    "BooleanType",
     "DictionaryType",
+    "DoubleType",
     "FunctionType",
-    "UnknownType",
+    "IntegerType",
+    "ModuleType",
+    "RangeType",
+    "StringSetType",
+    "StringType",
     "TypeChecker",
     "TypeInference",
-    "TypeValidator"
+    "TypeValidator",
+    "UnknownType",
+    "YaraType",
 ]

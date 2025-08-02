@@ -1,16 +1,13 @@
 """Enhanced fluent condition builder with comprehensive helpers."""
 
-from typing import Any, Dict, List, Optional, Self, Union
+from typing import Self
 
 from yaraast.ast.conditions import (
     AtExpression,
-    ForExpression,
-    ForOfExpression,
     InExpression,
     OfExpression,
 )
 from yaraast.ast.expressions import (
-    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
@@ -19,14 +16,11 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     MemberAccess,
-    ParenthesesExpression,
     RangeExpression,
     SetExpression,
     StringCount,
     StringIdentifier,
-    StringLength,
     StringLiteral,
-    StringOffset,
     UnaryExpression,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
@@ -35,33 +29,32 @@ from yaraast.builder.condition_builder import ConditionBuilder
 class FluentConditionBuilder(ConditionBuilder):
     """Enhanced fluent condition builder with common pattern helpers."""
 
-    def __init__(self, expr: Optional[Expression] = None):
+    def __init__(self, expr: Expression | None = None):
         super().__init__(expr)
 
     # Enhanced quantifier methods
     def any_of_them(self) -> Self:
         """Any of them - common pattern."""
-        return FluentConditionBuilder(OfExpression(
-            quantifier=StringLiteral(value="any"),
-            string_set=Identifier(name="them")
-        ))
+        return FluentConditionBuilder(
+            OfExpression(quantifier=StringLiteral(value="any"), string_set=Identifier(name="them"))
+        )
 
     def all_of_them(self) -> Self:
         """All of them - common pattern."""
-        return FluentConditionBuilder(OfExpression(
-            quantifier=StringLiteral(value="all"),
-            string_set=Identifier(name="them")
-        ))
+        return FluentConditionBuilder(
+            OfExpression(quantifier=StringLiteral(value="all"), string_set=Identifier(name="them"))
+        )
 
     def not_them(self) -> Self:
         """Not any of them - negated pattern."""
-        return FluentConditionBuilder(UnaryExpression(
-            operator="not",
-            operand=OfExpression(
-                quantifier=StringLiteral(value="any"),
-                string_set=Identifier(name="them")
+        return FluentConditionBuilder(
+            UnaryExpression(
+                operator="not",
+                operand=OfExpression(
+                    quantifier=StringLiteral(value="any"), string_set=Identifier(name="them")
+                ),
             )
-        ))
+        )
 
     def one_of(self, *strings: str) -> Self:
         """Exactly one of the specified strings."""
@@ -106,7 +99,7 @@ class FluentConditionBuilder(ConditionBuilder):
         """At most N of the specified strings."""
         # Create condition: 0_of OR 1_of OR ... OR n_of
         conditions = []
-        for i in range(0, n + 1):
+        for i in range(n + 1):
             conditions.append(self._create_n_of(i, *strings))
 
         # Chain with OR
@@ -136,106 +129,113 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def string_count_eq(self, string_id: str, count: int) -> Self:
         """String count equals N."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=StringCount(string_id=string_id.lstrip('#')),
-            operator="==",
-            right=IntegerLiteral(value=count)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=StringCount(string_id=string_id.lstrip("#")),
+                operator="==",
+                right=IntegerLiteral(value=count),
+            )
+        )
 
     def string_count_gt(self, string_id: str, count: int) -> Self:
         """String count greater than N."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=StringCount(string_id=string_id.lstrip('#')),
-            operator=">",
-            right=IntegerLiteral(value=count)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=StringCount(string_id=string_id.lstrip("#")),
+                operator=">",
+                right=IntegerLiteral(value=count),
+            )
+        )
 
     def string_count_ge(self, string_id: str, count: int) -> Self:
         """String count greater than or equal to N."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=StringCount(string_id=string_id.lstrip('#')),
-            operator=">=",
-            right=IntegerLiteral(value=count)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=StringCount(string_id=string_id.lstrip("#")),
+                operator=">=",
+                right=IntegerLiteral(value=count),
+            )
+        )
 
     def string_at_entrypoint(self, string_id: str) -> Self:
         """String at entrypoint."""
-        return FluentConditionBuilder(AtExpression(
-            string_id=string_id,
-            offset=Identifier(name="entrypoint")
-        ))
+        return FluentConditionBuilder(
+            AtExpression(string_id=string_id, offset=Identifier(name="entrypoint"))
+        )
 
     def string_at_offset(self, string_id: str, offset: int) -> Self:
         """String at specific offset."""
-        return FluentConditionBuilder(AtExpression(
-            string_id=string_id,
-            offset=IntegerLiteral(value=offset)
-        ))
+        return FluentConditionBuilder(
+            AtExpression(string_id=string_id, offset=IntegerLiteral(value=offset))
+        )
 
     def string_in_first_kb(self, string_id: str) -> Self:
         """String in first 1KB of file."""
-        return FluentConditionBuilder(InExpression(
-            string_id=string_id,
-            range=RangeExpression(
-                low=IntegerLiteral(value=0),
-                high=IntegerLiteral(value=1024)
+        return FluentConditionBuilder(
+            InExpression(
+                string_id=string_id,
+                range=RangeExpression(low=IntegerLiteral(value=0), high=IntegerLiteral(value=1024)),
             )
-        ))
+        )
 
     def string_in_last_kb(self, string_id: str) -> Self:
         """String in last 1KB of file."""
-        return FluentConditionBuilder(InExpression(
-            string_id=string_id,
-            range=RangeExpression(
-                low=BinaryExpression(
-                    left=Identifier(name="filesize"),
-                    operator="-",
-                    right=IntegerLiteral(value=1024)
+        return FluentConditionBuilder(
+            InExpression(
+                string_id=string_id,
+                range=RangeExpression(
+                    low=BinaryExpression(
+                        left=Identifier(name="filesize"),
+                        operator="-",
+                        right=IntegerLiteral(value=1024),
+                    ),
+                    high=Identifier(name="filesize"),
                 ),
-                high=Identifier(name="filesize")
             )
-        ))
+        )
 
     # File property helpers
     def filesize_eq(self, size: int) -> Self:
         """File size equals specific value."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=Identifier(name="filesize"),
-            operator="==",
-            right=IntegerLiteral(value=size)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=Identifier(name="filesize"), operator="==", right=IntegerLiteral(value=size)
+            )
+        )
 
     def filesize_gt(self, size: int) -> Self:
         """File size greater than."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=Identifier(name="filesize"),
-            operator=">",
-            right=IntegerLiteral(value=size)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=Identifier(name="filesize"), operator=">", right=IntegerLiteral(value=size)
+            )
+        )
 
     def filesize_lt(self, size: int) -> Self:
         """File size less than."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=Identifier(name="filesize"),
-            operator="<",
-            right=IntegerLiteral(value=size)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=Identifier(name="filesize"), operator="<", right=IntegerLiteral(value=size)
+            )
+        )
 
     def filesize_between(self, min_size: int, max_size: int) -> Self:
         """File size between min and max."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=BinaryExpression(
-                left=Identifier(name="filesize"),
-                operator=">=",
-                right=IntegerLiteral(value=min_size)
-            ),
-            operator="and",
-            right=BinaryExpression(
-                left=Identifier(name="filesize"),
-                operator="<=",
-                right=IntegerLiteral(value=max_size)
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=BinaryExpression(
+                    left=Identifier(name="filesize"),
+                    operator=">=",
+                    right=IntegerLiteral(value=min_size),
+                ),
+                operator="and",
+                right=BinaryExpression(
+                    left=Identifier(name="filesize"),
+                    operator="<=",
+                    right=IntegerLiteral(value=max_size),
+                ),
             )
-        ))
+        )
 
     def small_file(self) -> Self:
         """Small file (< 1MB)."""
@@ -260,88 +260,72 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def pe_is_dll(self) -> Self:
         """PE is DLL."""
-        return FluentConditionBuilder(MemberAccess(
-            object=Identifier(name="pe"),
-            member="is_dll"
-        ))
+        return FluentConditionBuilder(MemberAccess(object=Identifier(name="pe"), member="is_dll"))
 
     def pe_is_exe(self) -> Self:
         """PE is executable (not DLL)."""
-        return FluentConditionBuilder(UnaryExpression(
-            operator="not",
-            operand=MemberAccess(
-                object=Identifier(name="pe"),
-                member="is_dll"
+        return FluentConditionBuilder(
+            UnaryExpression(
+                operator="not", operand=MemberAccess(object=Identifier(name="pe"), member="is_dll")
             )
-        ))
+        )
 
     def pe_is_32bit(self) -> Self:
         """PE is 32-bit."""
-        return FluentConditionBuilder(MemberAccess(
-            object=Identifier(name="pe"),
-            member="is_32bit"
-        ))
+        return FluentConditionBuilder(MemberAccess(object=Identifier(name="pe"), member="is_32bit"))
 
     def pe_is_64bit(self) -> Self:
         """PE is 64-bit."""
-        return FluentConditionBuilder(MemberAccess(
-            object=Identifier(name="pe"),
-            member="is_64bit"
-        ))
+        return FluentConditionBuilder(MemberAccess(object=Identifier(name="pe"), member="is_64bit"))
 
     def pe_section_count_eq(self, count: int) -> Self:
         """PE section count equals."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=MemberAccess(
-                object=Identifier(name="pe"),
-                member="number_of_sections"
-            ),
-            operator="==",
-            right=IntegerLiteral(value=count)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=MemberAccess(object=Identifier(name="pe"), member="number_of_sections"),
+                operator="==",
+                right=IntegerLiteral(value=count),
+            )
+        )
 
     def pe_imphash_eq(self, hash_value: str) -> Self:
         """PE import hash equals."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=FunctionCall(
-                function="pe.imphash",
-                arguments=[]
-            ),
-            operator="==",
-            right=StringLiteral(value=hash_value)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=FunctionCall(function="pe.imphash", arguments=[]),
+                operator="==",
+                right=StringLiteral(value=hash_value),
+            )
+        )
 
     def pe_exports(self, function_name: str) -> Self:
         """PE exports function."""
-        return FluentConditionBuilder(FunctionCall(
-            function="pe.exports",
-            arguments=[StringLiteral(value=function_name)]
-        ))
+        return FluentConditionBuilder(
+            FunctionCall(function="pe.exports", arguments=[StringLiteral(value=function_name)])
+        )
 
     def pe_imports(self, dll_name: str, function_name: str) -> Self:
         """PE imports function from DLL."""
-        return FluentConditionBuilder(FunctionCall(
-            function="pe.imports",
-            arguments=[
-                StringLiteral(value=dll_name),
-                StringLiteral(value=function_name)
-            ]
-        ))
+        return FluentConditionBuilder(
+            FunctionCall(
+                function="pe.imports",
+                arguments=[StringLiteral(value=dll_name), StringLiteral(value=function_name)],
+            )
+        )
 
     # Math module helpers
     def entropy_gt(self, offset: int, size: int, threshold: float) -> Self:
         """Entropy greater than threshold."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=FunctionCall(
-                function="math.entropy",
-                arguments=[
-                    IntegerLiteral(value=offset),
-                    IntegerLiteral(value=size)
-                ]
-            ),
-            operator=">",
-            right=DoubleLiteral(value=threshold)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=FunctionCall(
+                    function="math.entropy",
+                    arguments=[IntegerLiteral(value=offset), IntegerLiteral(value=size)],
+                ),
+                operator=">",
+                right=DoubleLiteral(value=threshold),
+            )
+        )
 
     def high_entropy(self, offset: int = 0, size: int = 1024) -> Self:
         """High entropy section (> 7.0)."""
@@ -349,61 +333,57 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def low_entropy(self, offset: int = 0, size: int = 1024) -> Self:
         """Low entropy section (< 3.0)."""
-        return FluentConditionBuilder(BinaryExpression(
-            left=FunctionCall(
-                function="math.entropy",
-                arguments=[
-                    IntegerLiteral(value=offset),
-                    IntegerLiteral(value=size)
-                ]
-            ),
-            operator="<",
-            right=DoubleLiteral(value=3.0)
-        ))
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=FunctionCall(
+                    function="math.entropy",
+                    arguments=[IntegerLiteral(value=offset), IntegerLiteral(value=size)],
+                ),
+                operator="<",
+                right=DoubleLiteral(value=3.0),
+            )
+        )
 
     # Composite helpers
     def executable_file(self) -> Self:
         """Common executable file patterns."""
-        mz_at_0 = FluentConditionBuilder(AtExpression(
-            string_id="mz_header",
-            offset=IntegerLiteral(value=0)
-        ))
+        mz_at_0 = FluentConditionBuilder(
+            AtExpression(string_id="mz_header", offset=IntegerLiteral(value=0))
+        )
 
         return mz_at_0.and_(
-            FluentConditionBuilder(BinaryExpression(
-                left=Identifier(name="filesize"),
-                operator=">",
-                right=IntegerLiteral(value=1024)
-            ))
+            FluentConditionBuilder(
+                BinaryExpression(
+                    left=Identifier(name="filesize"), operator=">", right=IntegerLiteral(value=1024)
+                )
+            )
         )
 
     def suspicious_entropy(self) -> Self:
         """Suspicious entropy patterns."""
         return self.high_entropy().or_(
-            FluentConditionBuilder(BinaryExpression(
-                left=FunctionCall(
-                    function="math.entropy",
-                    arguments=[
-                        IntegerLiteral(value=0),
-                        IntegerLiteral(value=512)
-                    ]
-                ),
-                operator=">",
-                right=DoubleLiteral(value=7.5)
-            ))
+            FluentConditionBuilder(
+                BinaryExpression(
+                    left=FunctionCall(
+                        function="math.entropy",
+                        arguments=[IntegerLiteral(value=0), IntegerLiteral(value=512)],
+                    ),
+                    operator=">",
+                    right=DoubleLiteral(value=7.5),
+                )
+            )
         )
 
     def packed_executable(self) -> Self:
         """Common packed executable indicators."""
         return self.suspicious_entropy().and_(
-            FluentConditionBuilder(BinaryExpression(
-                left=MemberAccess(
-                    object=Identifier(name="pe"),
-                    member="number_of_sections"
-                ),
-                operator="<",
-                right=IntegerLiteral(value=5)
-            ))
+            FluentConditionBuilder(
+                BinaryExpression(
+                    left=MemberAccess(object=Identifier(name="pe"), member="number_of_sections"),
+                    operator="<",
+                    right=IntegerLiteral(value=5),
+                )
+            )
         )
 
     # Helper methods
@@ -415,29 +395,26 @@ class FluentConditionBuilder(ConditionBuilder):
             elements = [StringIdentifier(name=s) for s in strings]
             string_set = SetExpression(elements=elements)
 
-        return OfExpression(
-            quantifier=IntegerLiteral(value=n),
-            string_set=string_set
-        )
+        return OfExpression(quantifier=IntegerLiteral(value=n), string_set=string_set)
 
     # Factory methods
     @staticmethod
-    def create() -> 'FluentConditionBuilder':
+    def create() -> "FluentConditionBuilder":
         """Create empty fluent condition builder."""
         return FluentConditionBuilder()
 
     @staticmethod
-    def match_string(string_id: str) -> 'FluentConditionBuilder':
+    def match_string(string_id: str) -> "FluentConditionBuilder":
         """Create condition matching a string."""
         return FluentConditionBuilder(StringIdentifier(name=string_id))
 
     @staticmethod
-    def always_true() -> 'FluentConditionBuilder':
+    def always_true() -> "FluentConditionBuilder":
         """Always true condition."""
         return FluentConditionBuilder(BooleanLiteral(value=True))
 
     @staticmethod
-    def always_false() -> 'FluentConditionBuilder':
+    def always_false() -> "FluentConditionBuilder":
         """Always false condition."""
         return FluentConditionBuilder(BooleanLiteral(value=False))
 
@@ -447,49 +424,61 @@ def condition() -> FluentConditionBuilder:
     """Create a new fluent condition builder."""
     return FluentConditionBuilder.create()
 
+
 def match(string_id: str) -> FluentConditionBuilder:
     """Match a string identifier."""
     return FluentConditionBuilder.match_string(string_id)
+
 
 def any_of_them() -> FluentConditionBuilder:
     """Any of them condition."""
     return FluentConditionBuilder().any_of_them()
 
+
 def all_of_them() -> FluentConditionBuilder:
     """All of them condition."""
     return FluentConditionBuilder().all_of_them()
+
 
 def not_them() -> FluentConditionBuilder:
     """Not any of them condition."""
     return FluentConditionBuilder().not_them()
 
+
 def one_of(*strings: str) -> FluentConditionBuilder:
     """One of specified strings."""
     return FluentConditionBuilder().one_of(*strings)
+
 
 def any_of(*strings: str) -> FluentConditionBuilder:
     """Any of specified strings."""
     return FluentConditionBuilder().any_of(*strings)
 
+
 def all_of(*strings: str) -> FluentConditionBuilder:
     """All of specified strings."""
     return FluentConditionBuilder().all_of(*strings)
+
 
 def filesize_gt(size: int) -> FluentConditionBuilder:
     """File size greater than."""
     return FluentConditionBuilder().filesize_gt(size)
 
+
 def small_file() -> FluentConditionBuilder:
     """Small file condition."""
     return FluentConditionBuilder().small_file()
+
 
 def large_file() -> FluentConditionBuilder:
     """Large file condition."""
     return FluentConditionBuilder().large_file()
 
+
 def pe_is_dll() -> FluentConditionBuilder:
     """PE is DLL condition."""
     return FluentConditionBuilder().pe_is_dll()
+
 
 def high_entropy(offset: int = 0, size: int = 1024) -> FluentConditionBuilder:
     """High entropy condition."""

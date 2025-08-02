@@ -1,9 +1,8 @@
 """Condition-related AST nodes."""
 
-from dataclasses import dataclass, field
-from typing import Any, List, Optional
+from dataclasses import dataclass
+from typing import Any
 
-from yaraast.ast.base import ASTNode
 from yaraast.ast.expressions import Expression
 
 
@@ -34,7 +33,7 @@ class ForOfExpression(Condition):
 
     quantifier: str
     string_set: Expression
-    condition: Optional[Expression] = None
+    condition: Expression | None = None
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_for_of_expression(self)

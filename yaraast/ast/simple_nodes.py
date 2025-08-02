@@ -1,19 +1,18 @@
 """Simple AST nodes without dataclass complexity."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 
 class ASTNode(ABC):
     """Base class for all AST nodes."""
 
     def __init__(self, **kwargs):
-        self.location = kwargs.get('location')
+        self.location = kwargs.get("location")
 
     @abstractmethod
     def accept(self, visitor: Any) -> Any:
         """Accept a visitor for the visitor pattern."""
-        pass
 
 
 class Expression(ASTNode):
@@ -106,7 +105,7 @@ class StringModifier(ASTNode):
 class StringDefinition(ASTNode):
     """Base string definition."""
 
-    def __init__(self, identifier: str, modifiers: List[StringModifier] = None, **kwargs):
+    def __init__(self, identifier: str, modifiers: list[StringModifier] | None = None, **kwargs):
         super().__init__(**kwargs)
         self.identifier = identifier
         self.modifiers = modifiers or []
@@ -118,7 +117,9 @@ class StringDefinition(ASTNode):
 class PlainString(StringDefinition):
     """Plain string."""
 
-    def __init__(self, identifier: str, value: str, modifiers: List[StringModifier] = None, **kwargs):
+    def __init__(
+        self, identifier: str, value: str, modifiers: list[StringModifier] | None = None, **kwargs
+    ):
         super().__init__(identifier, modifiers, **kwargs)
         self.value = value
 
@@ -154,7 +155,13 @@ class HexWildcard(HexToken):
 class HexString(StringDefinition):
     """Hex string."""
 
-    def __init__(self, identifier: str, tokens: List[HexToken], modifiers: List[StringModifier] = None, **kwargs):
+    def __init__(
+        self,
+        identifier: str,
+        tokens: list[HexToken],
+        modifiers: list[StringModifier] | None = None,
+        **kwargs,
+    ):
         super().__init__(identifier, modifiers, **kwargs)
         self.tokens = tokens
 
@@ -165,7 +172,9 @@ class HexString(StringDefinition):
 class RegexString(StringDefinition):
     """Regex string."""
 
-    def __init__(self, identifier: str, regex: str, modifiers: List[StringModifier] = None, **kwargs):
+    def __init__(
+        self, identifier: str, regex: str, modifiers: list[StringModifier] | None = None, **kwargs
+    ):
         super().__init__(identifier, modifiers, **kwargs)
         self.regex = regex
 
@@ -176,9 +185,16 @@ class RegexString(StringDefinition):
 class Rule(ASTNode):
     """YARA rule."""
 
-    def __init__(self, name: str, modifiers: List[str] = None, tags: List[Tag] = None,
-                 meta: Dict[str, Any] = None, strings: List[StringDefinition] = None,
-                 condition: Expression = None, **kwargs):
+    def __init__(
+        self,
+        name: str,
+        modifiers: list[str] | None = None,
+        tags: list[Tag] | None = None,
+        meta: dict[str, Any] | None = None,
+        strings: list[StringDefinition] | None = None,
+        condition: Expression = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.name = name
         self.modifiers = modifiers or []

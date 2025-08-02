@@ -1,53 +1,12 @@
 """Comment-aware code generator for YARA rules."""
 
-from io import StringIO
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-
-from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.comments import Comment
-from yaraast.ast.conditions import (
-    AtExpression,
-    Condition,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
-    OfExpression,
-)
-from yaraast.ast.expressions import (
-    ArrayAccess,
-    BinaryExpression,
-    BooleanLiteral,
-    DoubleLiteral,
-    Expression,
-    FunctionCall,
-    Identifier,
-    IntegerLiteral,
-    MemberAccess,
-    ParenthesesExpression,
-    RangeExpression,
-    SetExpression,
-    StringCount,
-    StringIdentifier,
-    StringLength,
-    StringLiteral,
-    StringOffset,
-    UnaryExpression,
-)
 from yaraast.ast.meta import Meta
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import (
-    HexAlternative,
-    HexByte,
-    HexJump,
-    HexNibble,
     HexString,
-    HexToken,
-    HexWildcard,
     PlainString,
     RegexString,
-    StringDefinition,
-    StringModifier,
 )
 from yaraast.codegen.generator import CodeGenerator
 
@@ -59,7 +18,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         super().__init__(indent_size)
         self.preserve_comments = preserve_comments
 
-    def _write_comments(self, comments: List[Comment], inline: bool = False) -> None:
+    def _write_comments(self, comments: list[Comment], inline: bool = False) -> None:
         """Write comments to output."""
         if not self.preserve_comments or not comments:
             return
@@ -73,7 +32,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
                 else:
                     self._writeline(f"// {comment.text}")
 
-    def _write_trailing_comment(self, comment: Optional[Comment]) -> None:
+    def _write_trailing_comment(self, comment: Comment | None) -> None:
         """Write trailing comment."""
         if not self.preserve_comments or not comment:
             return
@@ -115,13 +74,13 @@ class CommentAwareCodeGenerator(CodeGenerator):
             self._indent()
             for string in node.strings:
                 # Check for leading comments on string definition
-                if hasattr(string, 'leading_comments'):
+                if hasattr(string, "leading_comments"):
                     self._write_comments(string.leading_comments)
 
                 self.visit(string)
 
                 # Check for trailing comment on string definition
-                if hasattr(string, 'trailing_comment') and string.trailing_comment:
+                if hasattr(string, "trailing_comment") and string.trailing_comment:
                     self._write_trailing_comment(string.trailing_comment)
 
                 self._writeline()
@@ -184,7 +143,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_regex_string(self, node: RegexString) -> str:
         """Generate code for RegexString with comments."""
-        self._write(f'{node.identifier} = /{node.regex}/')
+        self._write(f"{node.identifier} = /{node.regex}/")
 
         if node.modifiers:
             for modifier in node.modifiers:

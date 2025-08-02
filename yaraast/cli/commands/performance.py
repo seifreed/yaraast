@@ -3,7 +3,6 @@
 import json
 import time
 from pathlib import Path
-from typing import List, Optional
 
 import click
 
@@ -19,23 +18,36 @@ from yaraast.performance import (
 @click.group()
 def performance():
     """Performance tools for large YARA rule collections."""
-    pass
 
 
 @performance.command()
-@click.argument('input_path', type=click.Path(exists=True))
-@click.option('--output-dir', '-o', type=click.Path(), help='Output directory')
-@click.option('--batch-size', '-b', type=int, default=50, help='Batch size for processing')
-@click.option('--max-workers', '-w', type=int, help='Maximum worker threads')
-@click.option('--memory-limit', '-m', type=int, default=1000, help='Memory limit in MB')
-@click.option('--operations', '-op', multiple=True,
-              type=click.Choice(['parse', 'complexity', 'dependency_graph', 'html_tree', 'serialize']),
-              default=['parse', 'complexity'], help='Operations to perform')
-@click.option('--recursive', '-r', is_flag=True, help='Process directories recursively')
-@click.option('--pattern', '-p', default='*.yar', help='File pattern to match')
-@click.option('--progress', is_flag=True, help='Show progress information')
-def batch(input_path: str, output_dir: Optional[str], batch_size: int, max_workers: Optional[int],
-          memory_limit: int, operations: tuple, recursive: bool, pattern: str, progress: bool):
+@click.argument("input_path", type=click.Path(exists=True))
+@click.option("--output-dir", "-o", type=click.Path(), help="Output directory")
+@click.option("--batch-size", "-b", type=int, default=50, help="Batch size for processing")
+@click.option("--max-workers", "-w", type=int, help="Maximum worker threads")
+@click.option("--memory-limit", "-m", type=int, default=1000, help="Memory limit in MB")
+@click.option(
+    "--operations",
+    "-op",
+    multiple=True,
+    type=click.Choice(["parse", "complexity", "dependency_graph", "html_tree", "serialize"]),
+    default=["parse", "complexity"],
+    help="Operations to perform",
+)
+@click.option("--recursive", "-r", is_flag=True, help="Process directories recursively")
+@click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
+@click.option("--progress", is_flag=True, help="Show progress information")
+def batch(
+    input_path: str,
+    output_dir: str | None,
+    batch_size: int,
+    max_workers: int | None,
+    memory_limit: int,
+    operations: tuple,
+    recursive: bool,
+    pattern: str,
+    progress: bool,
+):
     """Process large collections of YARA files in batches."""
     input_path = Path(input_path)
 
@@ -46,11 +58,11 @@ def batch(input_path: str, output_dir: Optional[str], batch_size: int, max_worke
     # Convert operation strings to enums
     batch_operations = []
     operation_map = {
-        'parse': BatchOperation.PARSE,
-        'complexity': BatchOperation.COMPLEXITY,
-        'dependency_graph': BatchOperation.DEPENDENCY_GRAPH,
-        'html_tree': BatchOperation.HTML_TREE,
-        'serialize': BatchOperation.SERIALIZE
+        "parse": BatchOperation.PARSE,
+        "complexity": BatchOperation.COMPLEXITY,
+        "dependency_graph": BatchOperation.DEPENDENCY_GRAPH,
+        "html_tree": BatchOperation.HTML_TREE,
+        "serialize": BatchOperation.SERIALIZE,
     }
 
     for op in operations:
@@ -68,7 +80,7 @@ def batch(input_path: str, output_dir: Optional[str], batch_size: int, max_worke
         max_workers=max_workers,
         max_memory_mb=memory_limit,
         batch_size=batch_size,
-        progress_callback=progress_callback
+        progress_callback=progress_callback,
     )
 
     start_time = time.time()
@@ -106,7 +118,9 @@ def batch(input_path: str, output_dir: Optional[str], batch_size: int, max_worke
                     for file_path in result.output_files:
                         click.echo(f"    - {file_path}")
                 else:
-                    click.echo(f"    - {result.output_files[0]} (and {len(result.output_files)-1} more)")
+                    click.echo(
+                        f"    - {result.output_files[0]} (and {len(result.output_files)-1} more)"
+                    )
 
             if result.errors:
                 click.echo(f"  Errors: {len(result.errors)}")
@@ -120,48 +134,57 @@ def batch(input_path: str, output_dir: Optional[str], batch_size: int, max_worke
         results_file = output_dir / "batch_results.json"
         results_data = {
             operation.value: {
-                'input_count': result.input_count,
-                'successful_count': result.successful_count,
-                'failed_count': result.failed_count,
-                'success_rate': result.success_rate,
-                'total_time': result.total_time,
-                'output_files': result.output_files,
-                'errors': result.errors,
-                'summary': result.summary
+                "input_count": result.input_count,
+                "successful_count": result.successful_count,
+                "failed_count": result.failed_count,
+                "success_rate": result.success_rate,
+                "total_time": result.total_time,
+                "output_files": result.output_files,
+                "errors": result.errors,
+                "summary": result.summary,
             }
             for operation, result in results.items()
         }
 
-        with open(results_file, 'w') as f:
+        with open(results_file, "w") as f:
             json.dump(results_data, f, indent=2)
 
         click.echo(f"\n📁 Detailed results saved to: {results_file}")
 
         # Overall statistics
         stats = processor.get_statistics()
-        if stats['total_files'] > 0:
-            click.echo(f"\n📈 Overall Statistics:")
+        if stats["total_files"] > 0:
+            click.echo("\n📈 Overall Statistics:")
             click.echo(f"  Total files processed: {stats['total_files']}")
             click.echo(f"  Total rules parsed: {stats['total_rules']}")
-            click.echo(f"  Average rules per file: {stats['total_rules'] / stats['total_files']:.1f}")
-            if stats['peak_memory_mb'] > 0:
+            click.echo(
+                f"  Average rules per file: {stats['total_rules'] / stats['total_files']:.1f}"
+            )
+            if stats["peak_memory_mb"] > 0:
                 click.echo(f"  Peak memory usage: {stats['peak_memory_mb']:.1f} MB")
 
     except Exception as e:
         click.echo(f"\n❌ Error during batch processing: {e}", err=True)
-        raise click.Abort()
+        raise click.Abort
 
 
 @performance.command()
-@click.argument('input_path', type=click.Path(exists=True))
-@click.option('--output', '-o', type=click.Path(), help='Output file for parsing statistics')
-@click.option('--memory-limit', '-m', type=int, default=500, help='Memory limit in MB')
-@click.option('--pattern', '-p', default='*.yar', help='File pattern to match')
-@click.option('--recursive', '-r', is_flag=True, help='Process directories recursively')
-@click.option('--split-rules', is_flag=True, help='Parse individual rules from large files')
-@click.option('--progress', is_flag=True, help='Show progress information')
-def stream(input_path: str, output: Optional[str], memory_limit: int, pattern: str,
-          recursive: bool, split_rules: bool, progress: bool):
+@click.argument("input_path", type=click.Path(exists=True))
+@click.option("--output", "-o", type=click.Path(), help="Output file for parsing statistics")
+@click.option("--memory-limit", "-m", type=int, default=500, help="Memory limit in MB")
+@click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
+@click.option("--recursive", "-r", is_flag=True, help="Process directories recursively")
+@click.option("--split-rules", is_flag=True, help="Parse individual rules from large files")
+@click.option("--progress", is_flag=True, help="Show progress information")
+def stream(
+    input_path: str,
+    output: str | None,
+    memory_limit: int,
+    pattern: str,
+    recursive: bool,
+    split_rules: bool,
+    progress: bool,
+):
     """Stream-parse large YARA collections with minimal memory usage."""
     input_path = Path(input_path)
 
@@ -174,9 +197,7 @@ def stream(input_path: str, output: Optional[str], memory_limit: int, pattern: s
 
     # Initialize streaming parser
     parser = StreamingParser(
-        max_memory_mb=memory_limit,
-        enable_gc=True,
-        progress_callback=progress_callback
+        max_memory_mb=memory_limit, enable_gc=True, progress_callback=progress_callback
     )
 
     start_time = time.time()
@@ -225,11 +246,11 @@ def stream(input_path: str, output: Optional[str], memory_limit: int, pattern: s
 
         # Parser statistics
         parser_stats = parser.get_statistics()
-        if parser_stats['peak_memory_mb'] > 0:
+        if parser_stats["peak_memory_mb"] > 0:
             click.echo(f"Peak memory usage: {parser_stats['peak_memory_mb']:.1f} MB")
 
         if failed:
-            click.echo(f"\n❌ Failed files:")
+            click.echo("\n❌ Failed files:")
             for result in failed[:5]:  # Show first 5 failures
                 file_name = Path(result.file_path or "unknown").name
                 click.echo(f"  - {file_name}: {result.error}")
@@ -240,29 +261,29 @@ def stream(input_path: str, output: Optional[str], memory_limit: int, pattern: s
         # Save results if requested
         if output:
             output_data = {
-                'summary': {
-                    'total_processed': len(results),
-                    'successful': len(successful),
-                    'failed': len(failed),
-                    'success_rate': len(successful) / len(results) * 100,
-                    'total_time': total_time,
-                    'parser_stats': parser_stats
+                "summary": {
+                    "total_processed": len(results),
+                    "successful": len(successful),
+                    "failed": len(failed),
+                    "success_rate": len(successful) / len(results) * 100,
+                    "total_time": total_time,
+                    "parser_stats": parser_stats,
                 },
-                'results': [
+                "results": [
                     {
-                        'file_path': r.file_path,
-                        'rule_name': r.rule_name,
-                        'status': r.status.value,
-                        'error': r.error,
-                        'parse_time': r.parse_time,
-                        'rule_count': r.rule_count,
-                        'import_count': r.import_count
+                        "file_path": r.file_path,
+                        "rule_name": r.rule_name,
+                        "status": r.status.value,
+                        "error": r.error,
+                        "parse_time": r.parse_time,
+                        "rule_count": r.rule_count,
+                        "import_count": r.import_count,
                     }
                     for r in results
-                ]
+                ],
             }
 
-            with open(output, 'w') as f:
+            with open(output, "w") as f:
                 json.dump(output_data, f, indent=2)
 
             click.echo(f"\n📁 Detailed results saved to: {output}")
@@ -272,20 +293,30 @@ def stream(input_path: str, output: Optional[str], memory_limit: int, pattern: s
         click.echo("\n⏹️  Parsing cancelled by user")
     except Exception as e:
         click.echo(f"\n❌ Error during streaming parse: {e}", err=True)
-        raise click.Abort()
+        raise click.Abort
 
 
 @performance.command()
-@click.argument('input_paths', nargs=-1, required=True, type=click.Path(exists=True))
-@click.option('--output-dir', '-o', type=click.Path(), help='Output directory')
-@click.option('--max-workers', '-w', type=int, help='Maximum worker threads')
-@click.option('--timeout', '-t', type=float, default=300.0, help='Job timeout in seconds')
-@click.option('--analysis-type', '-a',
-              type=click.Choice(['complexity', 'dependency', 'all']),
-              default='complexity', help='Type of analysis to perform')
-@click.option('--chunk-size', '-c', type=int, default=10, help='Files per processing chunk')
-def parallel(input_paths: tuple, output_dir: Optional[str], max_workers: Optional[int],
-            timeout: float, analysis_type: str, chunk_size: int):
+@click.argument("input_paths", nargs=-1, required=True, type=click.Path(exists=True))
+@click.option("--output-dir", "-o", type=click.Path(), help="Output directory")
+@click.option("--max-workers", "-w", type=int, help="Maximum worker threads")
+@click.option("--timeout", "-t", type=float, default=300.0, help="Job timeout in seconds")
+@click.option(
+    "--analysis-type",
+    "-a",
+    type=click.Choice(["complexity", "dependency", "all"]),
+    default="complexity",
+    help="Type of analysis to perform",
+)
+@click.option("--chunk-size", "-c", type=int, default=10, help="Files per processing chunk")
+def parallel(
+    input_paths: tuple,
+    output_dir: str | None,
+    max_workers: int | None,
+    timeout: float,
+    analysis_type: str,
+    chunk_size: int,
+):
     """Analyze YARA files in parallel using thread pooling."""
     file_paths = []
     for path in input_paths:
@@ -324,7 +355,7 @@ def parallel(input_paths: tuple, output_dir: Optional[str], max_workers: Optiona
             for job in parse_jobs:
                 if job.status.value == "completed" and job.result:
                     for i, ast in enumerate(job.result):
-                        if not hasattr(ast, '_parse_error'):
+                        if not hasattr(ast, "_parse_error"):
                             successful_asts.append(ast)
                             # Get corresponding file name
                             job_index = parse_jobs.index(job)
@@ -340,7 +371,7 @@ def parallel(input_paths: tuple, output_dir: Optional[str], max_workers: Optiona
                 return
 
             # Step 2: Perform analysis
-            if analysis_type in ['complexity', 'all']:
+            if analysis_type in ["complexity", "all"]:
                 click.echo("\n🧮 Analyzing complexity...")
                 complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts, file_names)
 
@@ -352,24 +383,24 @@ def parallel(input_paths: tuple, output_dir: Optional[str], max_workers: Optiona
 
                 if complexity_results:
                     complexity_file = output_dir / "complexity_analysis.json"
-                    with open(complexity_file, 'w') as f:
+                    with open(complexity_file, "w") as f:
                         json.dump(complexity_results, f, indent=2)
 
                     click.echo(f"📊 Complexity analysis saved to: {complexity_file}")
 
                     # Show summary statistics
-                    quality_scores = [r['quality_score'] for r in complexity_results]
+                    quality_scores = [r["quality_score"] for r in complexity_results]
                     avg_quality = sum(quality_scores) / len(quality_scores)
 
                     click.echo(f"   Average quality score: {avg_quality:.1f}")
-                    click.echo(f"   Quality range: {min(quality_scores):.1f} - {max(quality_scores):.1f}")
+                    click.echo(
+                        f"   Quality range: {min(quality_scores):.1f} - {max(quality_scores):.1f}"
+                    )
 
-            if analysis_type in ['dependency', 'all']:
+            if analysis_type in ["dependency", "all"]:
                 click.echo("\n🕸️  Generating dependency graphs...")
                 graph_jobs = analyzer.generate_graphs_parallel(
-                    successful_asts,
-                    output_dir / "graphs",
-                    ['full', 'rules']
+                    successful_asts, output_dir / "graphs", ["full", "rules"]
                 )
 
                 successful_graphs = [job for job in graph_jobs if job.status.value == "completed"]
@@ -391,8 +422,8 @@ def parallel(input_paths: tuple, output_dir: Optional[str], max_workers: Optiona
         click.echo(f"Workers used: {analyzer_stats['workers_created']}")
 
         # Speedup calculation
-        if analyzer_stats['jobs_completed'] > 0:
-            sequential_estimate = analyzer_stats['total_processing_time']
+        if analyzer_stats["jobs_completed"] > 0:
+            sequential_estimate = analyzer_stats["total_processing_time"]
             speedup = sequential_estimate / total_time if total_time > 0 else 1
             click.echo(f"Estimated speedup: {speedup:.1f}x")
 
@@ -400,14 +431,14 @@ def parallel(input_paths: tuple, output_dir: Optional[str], max_workers: Optiona
         click.echo("\n⏹️  Analysis cancelled by user")
     except Exception as e:
         click.echo(f"\n❌ Error during parallel analysis: {e}", err=True)
-        raise click.Abort()
+        raise click.Abort
 
 
 @performance.command()
-@click.argument('collection_size', type=int)
-@click.option('--memory-mb', type=int, help='Available memory in MB')
-@click.option('--target-time', type=int, help='Target processing time in seconds')
-def optimize(collection_size: int, memory_mb: Optional[int], target_time: Optional[int]):
+@click.argument("collection_size", type=int)
+@click.option("--memory-mb", type=int, help="Available memory in MB")
+@click.option("--target-time", type=int, help="Target processing time in seconds")
+def optimize(collection_size: int, memory_mb: int | None, target_time: int | None):
     """Get optimization recommendations for processing large collections."""
     optimizer = MemoryOptimizer()
 
@@ -416,14 +447,14 @@ def optimize(collection_size: int, memory_mb: Optional[int], target_time: Option
     click.echo(f"🎯 Optimization Recommendations for {collection_size:,} files")
     click.echo("=" * 55)
 
-    click.echo(f"\n📊 Recommended Settings:")
+    click.echo("\n📊 Recommended Settings:")
     click.echo(f"  Batch size: {recommendations['batch_size']}")
     click.echo(f"  GC threshold: {recommendations['gc_threshold']}")
     click.echo(f"  Memory limit: {recommendations['memory_limit_mb']} MB")
     click.echo(f"  Enable pooling: {'Yes' if recommendations['enable_pooling'] else 'No'}")
     click.echo(f"  Use streaming: {'Yes' if recommendations['use_streaming'] else 'No'}")
 
-    click.echo(f"\n🚀 Performance Strategy:")
+    click.echo("\n🚀 Performance Strategy:")
     if collection_size < 100:
         click.echo("  • Use standard parallel processing")
         click.echo("  • Memory optimization not critical")
@@ -444,10 +475,12 @@ def optimize(collection_size: int, memory_mb: Optional[int], target_time: Option
 
         if estimated_memory > memory_mb:
             click.echo(f"  ⚠️  Estimated memory need: {estimated_memory:.0f} MB")
-            click.echo(f"  🔧 Use streaming with batch size: {max(1, (memory_mb * 2) // collection_size)}")
-            click.echo(f"  🔧 Enable aggressive garbage collection")
+            click.echo(
+                f"  🔧 Use streaming with batch size: {max(1, (memory_mb * 2) // collection_size)}"
+            )
+            click.echo("  🔧 Enable aggressive garbage collection")
         else:
-            click.echo(f"  ✅ Memory sufficient for batch processing")
+            click.echo("  ✅ Memory sufficient for batch processing")
             click.echo(f"  💡 Can use batch size up to: {recommendations['batch_size'] * 2}")
 
     # Time recommendations
@@ -463,18 +496,18 @@ def optimize(collection_size: int, memory_mb: Optional[int], target_time: Option
             needed_workers = int(estimated_time_sequential / target_time)
             click.echo(f"  ⚠️  Estimated time: {estimated_time_parallel:.0f}s")
             click.echo(f"  🔧 Consider {min(needed_workers, 32)} workers")
-            click.echo(f"  🔧 Use smaller analysis operations")
+            click.echo("  🔧 Use smaller analysis operations")
         else:
             click.echo(f"  ✅ Target time achievable with {max_workers} workers")
 
-    click.echo(f"\n📋 Command Examples:")
-    click.echo(f"  # Batch processing:")
-    click.echo(f"  yaraast performance batch /path/to/rules \\")
+    click.echo("\n📋 Command Examples:")
+    click.echo("  # Batch processing:")
+    click.echo("  yaraast performance batch /path/to/rules \\")
     click.echo(f"    --batch-size {recommendations['batch_size']} \\")
     click.echo(f"    --memory-limit {recommendations['memory_limit_mb']} \\")
     click.echo(f"    --max-workers {min(8, max(2, collection_size // 100))}")
 
-    click.echo(f"\n  # Streaming parsing:")
-    click.echo(f"  yaraast performance stream /path/to/rules \\")
+    click.echo("\n  # Streaming parsing:")
+    click.echo("  yaraast performance stream /path/to/rules \\")
     click.echo(f"    --memory-limit {recommendations['memory_limit_mb'] // 2} \\")
-    click.echo(f"    --progress")
+    click.echo("    --progress")

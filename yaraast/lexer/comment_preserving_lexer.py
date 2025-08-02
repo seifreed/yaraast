@@ -1,9 +1,6 @@
 """Comment-preserving YARA lexer implementation."""
 
-import re
-from typing import Iterator, List, Optional, Tuple
-
-from yaraast.lexer.lexer import Lexer, LexerError
+from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.tokens import Token, TokenType
 
 
@@ -14,7 +11,7 @@ class CommentPreservingLexer(Lexer):
         super().__init__(text)
         self.preserve_comments = True
 
-    def tokenize(self) -> List[Token]:
+    def tokenize(self) -> list[Token]:
         """Tokenize input text and preserve comments."""
         tokens = []
 
@@ -41,30 +38,36 @@ class CommentPreservingLexer(Lexer):
     def _check_comment(self) -> bool:
         """Check if current position starts a comment."""
         char = self._current_char()
-        return char == '/' and (self._peek_char() == '/' or self._peek_char() == '*')
+        return char == "/" and (self._peek_char() == "/" or self._peek_char() == "*")
 
-    def _read_comment(self) -> Optional[Token]:
+    def _read_comment(self) -> Token | None:
         """Read a comment token."""
         start_line = self.line
         start_column = self.column
 
-        if self._current_char() == '/' and self._peek_char() == '/':
+        if self._current_char() == "/" and self._peek_char() == "/":
             # Single-line comment
             self._advance()  # skip first /
             self._advance()  # skip second /
 
             comment_text = ""
-            while self._current_char() and self._current_char() != '\n':
+            while self._current_char() and self._current_char() != "\n":
                 comment_text += self._current_char()
                 self._advance()
 
             # Include the newline in tokenization
-            if self._current_char() == '\n':
+            if self._current_char() == "\n":
                 self._advance()
 
-            return Token(TokenType.COMMENT, f"//{comment_text}", start_line, start_column, len(comment_text) + 2)
+            return Token(
+                TokenType.COMMENT,
+                f"//{comment_text}",
+                start_line,
+                start_column,
+                len(comment_text) + 2,
+            )
 
-        elif self._current_char() == '/' and self._peek_char() == '*':
+        if self._current_char() == "/" and self._peek_char() == "*":
             # Multi-line comment
             self._advance()  # skip /
             self._advance()  # skip *
@@ -72,14 +75,16 @@ class CommentPreservingLexer(Lexer):
             comment_text = "/*"
             while self.position < len(self.text) - 1:
                 comment_text += self._current_char()
-                if self._current_char() == '*' and self._peek_char() == '/':
+                if self._current_char() == "*" and self._peek_char() == "/":
                     self._advance()  # skip *
                     comment_text += self._current_char()  # add /
                     self._advance()  # skip /
                     break
                 self._advance()
 
-            return Token(TokenType.COMMENT, comment_text, start_line, start_column, len(comment_text))
+            return Token(
+                TokenType.COMMENT, comment_text, start_line, start_column, len(comment_text)
+            )
 
         return None
 
@@ -87,7 +92,7 @@ class CommentPreservingLexer(Lexer):
         """Skip only whitespace, not comments."""
         while self.position < len(self.text):
             char = self._current_char()
-            if char in ' \t\r\n':
+            if char in " \t\r\n":
                 self._advance()
             else:
                 break

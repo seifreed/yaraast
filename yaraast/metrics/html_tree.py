@@ -1,8 +1,6 @@
 """HTML collapsible tree visualization for YARA AST."""
 
-import json
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from jinja2 import Template
 
@@ -12,15 +10,16 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.visitor import ASTVisitor
 
 
-class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
+class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
     """Generates HTML collapsible tree visualization from YARA AST."""
 
     def __init__(self, include_metadata: bool = True):
         self.include_metadata = include_metadata
         self.node_counter = 0
 
-    def generate_html(self, ast: YaraFile, output_path: Optional[str] = None,
-                     title: str = "YARA AST Visualization") -> str:
+    def generate_html(
+        self, ast: YaraFile, output_path: str | None = None, title: str = "YARA AST Visualization"
+    ) -> str:
         """Generate HTML tree visualization."""
         self.node_counter = 0
         tree_data = self.visit(ast)
@@ -28,13 +27,14 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
         html_content = self._render_html_template(tree_data, title)
 
         if output_path:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
         return html_content
 
-    def generate_interactive_html(self, ast: YaraFile, output_path: Optional[str] = None,
-                                 title: str = "Interactive YARA AST") -> str:
+    def generate_interactive_html(
+        self, ast: YaraFile, output_path: str | None = None, title: str = "Interactive YARA AST"
+    ) -> str:
         """Generate interactive HTML with search and filtering."""
         self.node_counter = 0
         tree_data = self.visit(ast)
@@ -42,7 +42,7 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
         html_content = self._render_interactive_template(tree_data, title)
 
         if output_path:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
         return html_content
@@ -52,9 +52,10 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
         self.node_counter += 1
         return f"node_{self.node_counter}"
 
-    def _render_html_template(self, tree_data: Dict[str, Any], title: str) -> str:
+    def _render_html_template(self, tree_data: dict[str, Any], title: str) -> str:
         """Render HTML template with tree data."""
-        template = Template('''
+        template = Template(
+            """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -256,21 +257,20 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
         {% endif %}
     </div>
 {% endmacro %}
-        ''')
+        """
+        )
 
         # Calculate statistics
         stats = self._calculate_stats(tree_data) if self.include_metadata else None
 
         return template.render(
-            title=title,
-            tree_data=tree_data,
-            stats=stats,
-            render_node=self._create_render_macro()
+            title=title, tree_data=tree_data, stats=stats, render_node=self._create_render_macro()
         )
 
-    def _render_interactive_template(self, tree_data: Dict[str, Any], title: str) -> str:
+    def _render_interactive_template(self, tree_data: dict[str, Any], title: str) -> str:
         """Render interactive HTML template with search and filtering."""
-        template = Template('''
+        template = Template(
+            """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -557,12 +557,14 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
     </script>
 </body>
 </html>
-        ''')
+        """
+        )
 
         return template.render(title=title, tree_data=tree_data)
 
     def _create_render_macro(self):
         """Create render macro function for Jinja2."""
+
         def render_node(node, depth):
             html = f'<div class="tree-node {node["node_class"]}">'
 
@@ -578,20 +580,20 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
             if node.get("details"):
                 html += f'<div class="node-details">{node["details"]}</div>'
 
-            html += '</div>'
+            html += "</div>"
 
             if node.get("children"):
                 html += f'<div class="children" id="{node["id"]}_children">'
                 for child in node["children"]:
                     html += render_node(child, depth + 1)
-                html += '</div>'
+                html += "</div>"
 
-            html += '</div>'
+            html += "</div>"
             return html
 
         return render_node
 
-    def _calculate_stats(self, tree_data: Dict[str, Any]) -> Dict[str, int]:
+    def _calculate_stats(self, tree_data: dict[str, Any]) -> dict[str, int]:
         """Calculate tree statistics."""
         stats = {"rules": 0, "imports": 0, "strings": 0, "nodes": 0}
 
@@ -615,7 +617,7 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
         return stats
 
     # Visitor methods
-    def visit_yara_file(self, node: YaraFile) -> Dict[str, Any]:
+    def visit_yara_file(self, node: YaraFile) -> dict[str, Any]:
         """Visit YARA file node."""
         children = []
 
@@ -633,112 +635,124 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
             "label": "YARA File",
             "node_class": "yara-file",
             "details": f"{len(node.rules)} rules, {len(node.imports)} imports, {len(node.includes)} includes",
-            "children": children
+            "children": children,
         }
 
-    def visit_import(self, node) -> Dict[str, Any]:
+    def visit_import(self, node) -> dict[str, Any]:
         """Visit import node."""
         label = f'Import: "{node.module}"'
-        if hasattr(node, 'alias') and node.alias:
+        if hasattr(node, "alias") and node.alias:
             label += f" as {node.alias}"
 
         return {
             "id": self._get_node_id(),
             "label": label,
             "node_class": "import",
-            "value": node.module
+            "value": node.module,
         }
 
-    def visit_include(self, node) -> Dict[str, Any]:
+    def visit_include(self, node) -> dict[str, Any]:
         """Visit include node."""
         return {
             "id": self._get_node_id(),
             "label": f'Include: "{node.path}"',
             "node_class": "include",
-            "value": node.path
+            "value": node.path,
         }
 
-    def visit_rule(self, node: Rule) -> Dict[str, Any]:
+    def visit_rule(self, node: Rule) -> dict[str, Any]:
         """Visit rule node."""
         children = []
 
         # Add modifiers
         if node.modifiers:
-            children.append({
-                "id": self._get_node_id(),
-                "label": "Modifiers",
-                "node_class": "modifiers",
-                "value": ", ".join(node.modifiers)
-            })
+            children.append(
+                {
+                    "id": self._get_node_id(),
+                    "label": "Modifiers",
+                    "node_class": "modifiers",
+                    "value": ", ".join(node.modifiers),
+                }
+            )
 
         # Add tags
         if node.tags:
             tag_children = []
             for tag in node.tags:
                 tag_children.append(self.visit(tag))
-            children.append({
-                "id": self._get_node_id(),
-                "label": "Tags",
-                "node_class": "tags",
-                "children": tag_children
-            })
+            children.append(
+                {
+                    "id": self._get_node_id(),
+                    "label": "Tags",
+                    "node_class": "tags",
+                    "children": tag_children,
+                }
+            )
 
         # Add meta
         if node.meta:
             meta_children = []
             for key, value in node.meta.items():
-                meta_children.append({
+                meta_children.append(
+                    {
+                        "id": self._get_node_id(),
+                        "label": f"Meta: {key}",
+                        "node_class": "meta",
+                        "value": str(value),
+                    }
+                )
+            children.append(
+                {
                     "id": self._get_node_id(),
-                    "label": f"Meta: {key}",
-                    "node_class": "meta",
-                    "value": str(value)
-                })
-            children.append({
-                "id": self._get_node_id(),
-                "label": "Meta",
-                "node_class": "meta-section",
-                "children": meta_children
-            })
+                    "label": "Meta",
+                    "node_class": "meta-section",
+                    "children": meta_children,
+                }
+            )
 
         # Add strings
         if node.strings:
             string_children = []
             for string_def in node.strings:
                 string_children.append(self.visit(string_def))
-            children.append({
-                "id": self._get_node_id(),
-                "label": "Strings",
-                "node_class": "strings-section",
-                "children": string_children
-            })
+            children.append(
+                {
+                    "id": self._get_node_id(),
+                    "label": "Strings",
+                    "node_class": "strings-section",
+                    "children": string_children,
+                }
+            )
 
         # Add condition
         if node.condition:
-            children.append({
-                "id": self._get_node_id(),
-                "label": "Condition",
-                "node_class": "condition-section",
-                "children": [self.visit(node.condition)]
-            })
+            children.append(
+                {
+                    "id": self._get_node_id(),
+                    "label": "Condition",
+                    "node_class": "condition-section",
+                    "children": [self.visit(node.condition)],
+                }
+            )
 
         return {
             "id": self._get_node_id(),
             "label": f"Rule: {node.name}",
             "node_class": "rule",
             "details": f"{len(node.strings)} strings, {len(node.meta)} meta",
-            "children": children
+            "children": children,
         }
 
-    def visit_tag(self, node) -> Dict[str, Any]:
+    def visit_tag(self, node) -> dict[str, Any]:
         """Visit tag node."""
         return {
             "id": self._get_node_id(),
             "label": f"Tag: {node.name}",
             "node_class": "tag",
-            "value": node.name
+            "value": node.name,
         }
 
-    def visit_plain_string(self, node: PlainString) -> Dict[str, Any]:
+    def visit_plain_string(self, node: PlainString) -> dict[str, Any]:
         """Visit plain string node."""
         children = []
 
@@ -746,22 +760,24 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
             mod_children = []
             for mod in node.modifiers:
                 mod_children.append(self.visit(mod))
-            children.append({
-                "id": self._get_node_id(),
-                "label": "Modifiers",
-                "node_class": "modifiers",
-                "children": mod_children
-            })
+            children.append(
+                {
+                    "id": self._get_node_id(),
+                    "label": "Modifiers",
+                    "node_class": "modifiers",
+                    "children": mod_children,
+                }
+            )
 
         return {
             "id": self._get_node_id(),
             "label": f"Plain String: {node.identifier}",
             "node_class": "string",
             "value": f'"{node.value}"',
-            "children": children if children else None
+            "children": children if children else None,
         }
 
-    def visit_hex_string(self, node: HexString) -> Dict[str, Any]:
+    def visit_hex_string(self, node: HexString) -> dict[str, Any]:
         """Visit hex string node."""
         children = []
 
@@ -770,33 +786,37 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
             token_children = []
             for token in node.tokens:
                 token_children.append(self.visit(token))
-            children.append({
-                "id": self._get_node_id(),
-                "label": "Hex Tokens",
-                "node_class": "hex-tokens",
-                "children": token_children
-            })
+            children.append(
+                {
+                    "id": self._get_node_id(),
+                    "label": "Hex Tokens",
+                    "node_class": "hex-tokens",
+                    "children": token_children,
+                }
+            )
 
         if node.modifiers:
             mod_children = []
             for mod in node.modifiers:
                 mod_children.append(self.visit(mod))
-            children.append({
-                "id": self._get_node_id(),
-                "label": "Modifiers",
-                "node_class": "modifiers",
-                "children": mod_children
-            })
+            children.append(
+                {
+                    "id": self._get_node_id(),
+                    "label": "Modifiers",
+                    "node_class": "modifiers",
+                    "children": mod_children,
+                }
+            )
 
         return {
             "id": self._get_node_id(),
             "label": f"Hex String: {node.identifier}",
             "node_class": "string",
             "details": f"{len(node.tokens)} tokens",
-            "children": children if children else None
+            "children": children if children else None,
         }
 
-    def visit_regex_string(self, node: RegexString) -> Dict[str, Any]:
+    def visit_regex_string(self, node: RegexString) -> dict[str, Any]:
         """Visit regex string node."""
         children = []
 
@@ -804,22 +824,24 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
             mod_children = []
             for mod in node.modifiers:
                 mod_children.append(self.visit(mod))
-            children.append({
-                "id": self._get_node_id(),
-                "label": "Modifiers",
-                "node_class": "modifiers",
-                "children": mod_children
-            })
+            children.append(
+                {
+                    "id": self._get_node_id(),
+                    "label": "Modifiers",
+                    "node_class": "modifiers",
+                    "children": mod_children,
+                }
+            )
 
         return {
             "id": self._get_node_id(),
             "label": f"Regex String: {node.identifier}",
             "node_class": "string",
             "value": f"/{node.regex}/",
-            "children": children if children else None
+            "children": children if children else None,
         }
 
-    def visit_string_modifier(self, node) -> Dict[str, Any]:
+    def visit_string_modifier(self, node) -> dict[str, Any]:
         """Visit string modifier node."""
         value = f"{node.name}"
         if node.value:
@@ -829,28 +851,28 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
             "id": self._get_node_id(),
             "label": "Modifier",
             "node_class": "modifier",
-            "value": value
+            "value": value,
         }
 
-    def visit_hex_byte(self, node) -> Dict[str, Any]:
+    def visit_hex_byte(self, node) -> dict[str, Any]:
         """Visit hex byte node."""
         return {
             "id": self._get_node_id(),
             "label": "Hex Byte",
             "node_class": "hex-byte",
-            "value": str(node.value)
+            "value": str(node.value),
         }
 
-    def visit_hex_wildcard(self, node) -> Dict[str, Any]:
+    def visit_hex_wildcard(self, node) -> dict[str, Any]:
         """Visit hex wildcard node."""
         return {
             "id": self._get_node_id(),
             "label": "Hex Wildcard",
             "node_class": "hex-wildcard",
-            "value": "??"
+            "value": "??",
         }
 
-    def visit_binary_expression(self, node) -> Dict[str, Any]:
+    def visit_binary_expression(self, node) -> dict[str, Any]:
         """Visit binary expression node."""
         children = [
             self.visit(node.left),
@@ -858,9 +880,9 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
                 "id": self._get_node_id(),
                 "label": "Operator",
                 "node_class": "operator",
-                "value": node.operator
+                "value": node.operator,
             },
-            self.visit(node.right)
+            self.visit(node.right),
         ]
 
         return {
@@ -868,132 +890,149 @@ class HtmlTreeGenerator(ASTVisitor[Dict[str, Any]]):
             "label": "Binary Expression",
             "node_class": "expression",
             "details": f"Operator: {node.operator}",
-            "children": children
+            "children": children,
         }
 
-    def visit_string_identifier(self, node) -> Dict[str, Any]:
+    def visit_string_identifier(self, node) -> dict[str, Any]:
         """Visit string identifier node."""
         return {
             "id": self._get_node_id(),
             "label": "String Identifier",
             "node_class": "expression",
-            "value": node.name
+            "value": node.name,
         }
 
-    def visit_boolean_literal(self, node) -> Dict[str, Any]:
+    def visit_boolean_literal(self, node) -> dict[str, Any]:
         """Visit boolean literal node."""
         return {
             "id": self._get_node_id(),
             "label": "Boolean Literal",
             "node_class": "literal",
-            "value": str(node.value).lower()
+            "value": str(node.value).lower(),
         }
 
-    def visit_integer_literal(self, node) -> Dict[str, Any]:
+    def visit_integer_literal(self, node) -> dict[str, Any]:
         """Visit integer literal node."""
         return {
             "id": self._get_node_id(),
             "label": "Integer Literal",
             "node_class": "literal",
-            "value": str(node.value)
+            "value": str(node.value),
         }
 
     # Required visitor methods (minimal implementations)
-    def visit_string_definition(self, node) -> Dict[str, Any]:
+    def visit_string_definition(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "String Definition", "node_class": "string"}
 
-    def visit_hex_token(self, node) -> Dict[str, Any]:
+    def visit_hex_token(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Hex Token", "node_class": "hex-token"}
 
-    def visit_hex_jump(self, node) -> Dict[str, Any]:
+    def visit_hex_jump(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Hex Jump", "node_class": "hex-jump"}
 
-    def visit_hex_alternative(self, node) -> Dict[str, Any]:
+    def visit_hex_alternative(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Hex Alternative", "node_class": "hex-alt"}
 
-    def visit_hex_nibble(self, node) -> Dict[str, Any]:
+    def visit_hex_nibble(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Hex Nibble", "node_class": "hex-nibble"}
 
-    def visit_expression(self, node) -> Dict[str, Any]:
+    def visit_expression(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Expression", "node_class": "expression"}
 
-    def visit_identifier(self, node) -> Dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Identifier", "node_class": "expression", "value": node.name}
+    def visit_identifier(self, node) -> dict[str, Any]:
+        return {
+            "id": self._get_node_id(),
+            "label": "Identifier",
+            "node_class": "expression",
+            "value": node.name,
+        }
 
-    def visit_string_count(self, node) -> Dict[str, Any]:
+    def visit_string_count(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "String Count", "node_class": "expression"}
 
-    def visit_string_offset(self, node) -> Dict[str, Any]:
+    def visit_string_offset(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "String Offset", "node_class": "expression"}
 
-    def visit_string_length(self, node) -> Dict[str, Any]:
+    def visit_string_length(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "String Length", "node_class": "expression"}
 
-    def visit_double_literal(self, node) -> Dict[str, Any]:
+    def visit_double_literal(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Double Literal", "node_class": "literal"}
 
-    def visit_string_literal(self, node) -> Dict[str, Any]:
+    def visit_string_literal(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "String Literal", "node_class": "literal"}
 
-    def visit_regex_literal(self, node) -> Dict[str, Any]:
+    def visit_regex_literal(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Regex Literal", "node_class": "literal"}
 
-    def visit_unary_expression(self, node) -> Dict[str, Any]:
+    def visit_unary_expression(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Unary Expression", "node_class": "expression"}
 
-    def visit_parentheses_expression(self, node) -> Dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Parentheses Expression", "node_class": "expression"}
+    def visit_parentheses_expression(self, node) -> dict[str, Any]:
+        return {
+            "id": self._get_node_id(),
+            "label": "Parentheses Expression",
+            "node_class": "expression",
+        }
 
-    def visit_set_expression(self, node) -> Dict[str, Any]:
+    def visit_set_expression(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Set Expression", "node_class": "expression"}
 
-    def visit_range_expression(self, node) -> Dict[str, Any]:
+    def visit_range_expression(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Range Expression", "node_class": "expression"}
 
-    def visit_function_call(self, node) -> Dict[str, Any]:
+    def visit_function_call(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Function Call", "node_class": "expression"}
 
-    def visit_array_access(self, node) -> Dict[str, Any]:
+    def visit_array_access(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Array Access", "node_class": "expression"}
 
-    def visit_member_access(self, node) -> Dict[str, Any]:
+    def visit_member_access(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Member Access", "node_class": "expression"}
 
-    def visit_condition(self, node) -> Dict[str, Any]:
+    def visit_condition(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Condition", "node_class": "condition"}
 
-    def visit_for_expression(self, node) -> Dict[str, Any]:
+    def visit_for_expression(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "For Expression", "node_class": "expression"}
 
-    def visit_for_of_expression(self, node) -> Dict[str, Any]:
+    def visit_for_of_expression(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "For-Of Expression", "node_class": "expression"}
 
-    def visit_at_expression(self, node) -> Dict[str, Any]:
+    def visit_at_expression(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "At Expression", "node_class": "expression"}
 
-    def visit_in_expression(self, node) -> Dict[str, Any]:
+    def visit_in_expression(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "In Expression", "node_class": "expression"}
 
-    def visit_of_expression(self, node) -> Dict[str, Any]:
+    def visit_of_expression(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Of Expression", "node_class": "expression"}
 
-    def visit_meta(self, node) -> Dict[str, Any]:
+    def visit_meta(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Meta", "node_class": "meta"}
 
-    def visit_module_reference(self, node) -> Dict[str, Any]:
+    def visit_module_reference(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Module Reference", "node_class": "expression"}
 
-    def visit_dictionary_access(self, node) -> Dict[str, Any]:
+    def visit_dictionary_access(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Dictionary Access", "node_class": "expression"}
 
-    def visit_comment(self, node) -> Dict[str, Any]:
+    def visit_comment(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Comment", "node_class": "comment"}
 
-    def visit_comment_group(self, node) -> Dict[str, Any]:
+    def visit_comment_group(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Comment Group", "node_class": "comment"}
 
-    def visit_defined_expression(self, node) -> Dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Defined Expression", "node_class": "expression"}
+    def visit_defined_expression(self, node) -> dict[str, Any]:
+        return {
+            "id": self._get_node_id(),
+            "label": "Defined Expression",
+            "node_class": "expression",
+        }
 
-    def visit_string_operator_expression(self, node) -> Dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "String Operator Expression", "node_class": "expression"}
+    def visit_string_operator_expression(self, node) -> dict[str, Any]:
+        return {
+            "id": self._get_node_id(),
+            "label": "String Operator Expression",
+            "node_class": "expression",
+        }

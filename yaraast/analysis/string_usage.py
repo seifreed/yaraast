@@ -1,7 +1,5 @@
 """String usage analyzer for YARA rules."""
 
-from typing import Dict, List, Optional, Set, Tuple
-
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
@@ -52,12 +50,12 @@ class StringUsageAnalyzer(ASTVisitor[None]):
     """Analyze string usage in YARA rules."""
 
     def __init__(self):
-        self.defined_strings: Dict[str, Set[str]] = {}  # rule_name -> set of string ids
-        self.used_strings: Dict[str, Set[str]] = {}     # rule_name -> set of string ids
-        self.current_rule: Optional[str] = None
+        self.defined_strings: dict[str, set[str]] = {}  # rule_name -> set of string ids
+        self.used_strings: dict[str, set[str]] = {}  # rule_name -> set of string ids
+        self.current_rule: str | None = None
         self.in_condition: bool = False
 
-    def analyze(self, yara_file: YaraFile) -> Dict[str, Dict[str, any]]:
+    def analyze(self, yara_file: YaraFile) -> dict[str, dict[str, any]]:
         """Analyze string usage in YARA file."""
         self.defined_strings.clear()
         self.used_strings.clear()
@@ -78,12 +76,12 @@ class StringUsageAnalyzer(ASTVisitor[None]):
                 "used": list(used),
                 "unused": list(unused),
                 "undefined": list(undefined),
-                "usage_rate": len(used) / len(defined) if defined else 0
+                "usage_rate": len(used) / len(defined) if defined else 0,
             }
 
         return results
 
-    def get_unused_strings(self, rule_name: Optional[str] = None) -> Dict[str, List[str]]:
+    def get_unused_strings(self, rule_name: str | None = None) -> dict[str, list[str]]:
         """Get unused strings for a specific rule or all rules."""
         if rule_name:
             defined = self.defined_strings.get(rule_name, set())
@@ -100,7 +98,7 @@ class StringUsageAnalyzer(ASTVisitor[None]):
 
         return unused
 
-    def get_undefined_strings(self, rule_name: Optional[str] = None) -> Dict[str, List[str]]:
+    def get_undefined_strings(self, rule_name: str | None = None) -> dict[str, list[str]]:
         """Get undefined but used strings for a specific rule or all rules."""
         if rule_name:
             defined = self.defined_strings.get(rule_name, set())
@@ -199,29 +197,74 @@ class StringUsageAnalyzer(ASTVisitor[None]):
             self.visit(element)
 
     # Default implementations for other visit methods
-    def visit_import(self, node: Import) -> None: pass
-    def visit_include(self, node: Include) -> None: pass
-    def visit_tag(self, node: Tag) -> None: pass
-    def visit_string_modifier(self, node: StringModifier) -> None: pass
-    def visit_hex_token(self, node: HexToken) -> None: pass
-    def visit_hex_byte(self, node: HexByte) -> None: pass
-    def visit_hex_wildcard(self, node: HexWildcard) -> None: pass
-    def visit_hex_jump(self, node: HexJump) -> None: pass
-    def visit_hex_alternative(self, node: HexAlternative) -> None: pass
-    def visit_hex_nibble(self, node: HexNibble) -> None: pass
-    def visit_expression(self, node: Expression) -> None: pass
-    def visit_identifier(self, node: Identifier) -> None: pass
-    def visit_integer_literal(self, node: IntegerLiteral) -> None: pass
-    def visit_double_literal(self, node: DoubleLiteral) -> None: pass
-    def visit_string_literal(self, node: StringLiteral) -> None: pass
-    def visit_boolean_literal(self, node: BooleanLiteral) -> None: pass
-    def visit_meta(self, node: Meta) -> None: pass
-    def visit_meta_statement(self, node) -> None: pass
-    def visit_condition(self, node) -> None: pass
-    def visit_comment(self, node) -> None: pass
-    def visit_comment_group(self, node) -> None: pass
-    def visit_module_reference(self, node) -> None: pass
-    def visit_dictionary_access(self, node) -> None: pass
+    def visit_import(self, node: Import) -> None:
+        pass
+
+    def visit_include(self, node: Include) -> None:
+        pass
+
+    def visit_tag(self, node: Tag) -> None:
+        pass
+
+    def visit_string_modifier(self, node: StringModifier) -> None:
+        pass
+
+    def visit_hex_token(self, node: HexToken) -> None:
+        pass
+
+    def visit_hex_byte(self, node: HexByte) -> None:
+        pass
+
+    def visit_hex_wildcard(self, node: HexWildcard) -> None:
+        pass
+
+    def visit_hex_jump(self, node: HexJump) -> None:
+        pass
+
+    def visit_hex_alternative(self, node: HexAlternative) -> None:
+        pass
+
+    def visit_hex_nibble(self, node: HexNibble) -> None:
+        pass
+
+    def visit_expression(self, node: Expression) -> None:
+        pass
+
+    def visit_identifier(self, node: Identifier) -> None:
+        pass
+
+    def visit_integer_literal(self, node: IntegerLiteral) -> None:
+        pass
+
+    def visit_double_literal(self, node: DoubleLiteral) -> None:
+        pass
+
+    def visit_string_literal(self, node: StringLiteral) -> None:
+        pass
+
+    def visit_boolean_literal(self, node: BooleanLiteral) -> None:
+        pass
+
+    def visit_meta(self, node: Meta) -> None:
+        pass
+
+    def visit_meta_statement(self, node) -> None:
+        pass
+
+    def visit_condition(self, node) -> None:
+        pass
+
+    def visit_comment(self, node) -> None:
+        pass
+
+    def visit_comment_group(self, node) -> None:
+        pass
+
+    def visit_module_reference(self, node) -> None:
+        pass
+
+    def visit_dictionary_access(self, node) -> None:
+        pass
 
     def visit_binary_expression(self, node: BinaryExpression) -> None:
         self.visit(node.left)
@@ -252,5 +295,8 @@ class StringUsageAnalyzer(ASTVisitor[None]):
         self.visit(node.iterable)
         self.visit(node.body)
 
-    def visit_defined_expression(self, node) -> None: pass
-    def visit_string_operator_expression(self, node) -> None: pass
+    def visit_defined_expression(self, node) -> None:
+        pass
+
+    def visit_string_operator_expression(self, node) -> None:
+        pass

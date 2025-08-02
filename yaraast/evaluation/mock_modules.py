@@ -2,13 +2,14 @@
 
 import math
 import struct
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
+from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
 class Section:
     """Mock PE/ELF section."""
+
     name: str
     virtual_address: int
     virtual_size: int
@@ -32,7 +33,7 @@ class MockPE:
     def _parse_headers(self):
         """Parse PE headers from data."""
         # Default values
-        self.machine = 0x14c  # IMAGE_FILE_MACHINE_I386
+        self.machine = 0x14C  # IMAGE_FILE_MACHINE_I386
         self.number_of_sections = 0
         self.timestamp = 0
         self.characteristics = 0
@@ -50,23 +51,31 @@ class MockPE:
         self.is_64bit = False
 
         # Check MZ header
-        if len(self.data) >= 2 and self.data[:2] == b'MZ':
+        if len(self.data) >= 2 and self.data[:2] == b"MZ":
             self.is_pe = True
 
             # Get PE header offset
             if len(self.data) >= 0x40:
-                pe_offset = struct.unpack('<I', self.data[0x3c:0x40])[0]
+                pe_offset = struct.unpack("<I", self.data[0x3C:0x40])[0]
 
                 # Check PE signature
                 if len(self.data) >= pe_offset + 4:
-                    if self.data[pe_offset:pe_offset+4] == b'PE\x00\x00':
+                    if self.data[pe_offset : pe_offset + 4] == b"PE\x00\x00":
                         # Parse COFF header
                         if len(self.data) >= pe_offset + 24:
                             coff_offset = pe_offset + 4
-                            self.machine = struct.unpack('<H', self.data[coff_offset:coff_offset+2])[0]
-                            self.number_of_sections = struct.unpack('<H', self.data[coff_offset+2:coff_offset+4])[0]
-                            self.timestamp = struct.unpack('<I', self.data[coff_offset+4:coff_offset+8])[0]
-                            self.characteristics = struct.unpack('<H', self.data[coff_offset+18:coff_offset+20])[0]
+                            self.machine = struct.unpack(
+                                "<H", self.data[coff_offset : coff_offset + 2]
+                            )[0]
+                            self.number_of_sections = struct.unpack(
+                                "<H", self.data[coff_offset + 2 : coff_offset + 4]
+                            )[0]
+                            self.timestamp = struct.unpack(
+                                "<I", self.data[coff_offset + 4 : coff_offset + 8]
+                            )[0]
+                            self.characteristics = struct.unpack(
+                                "<H", self.data[coff_offset + 18 : coff_offset + 20]
+                            )[0]
 
                             # Check if DLL
                             self.is_dll = bool(self.characteristics & 0x2000)
@@ -74,13 +83,19 @@ class MockPE:
                             # Parse optional header
                             opt_offset = coff_offset + 20
                             if len(self.data) >= opt_offset + 2:
-                                magic = struct.unpack('<H', self.data[opt_offset:opt_offset+2])[0]
-                                self.is_32bit = (magic == 0x10b)
-                                self.is_64bit = (magic == 0x20b)
+                                magic = struct.unpack("<H", self.data[opt_offset : opt_offset + 2])[
+                                    0
+                                ]
+                                self.is_32bit = magic == 0x10B
+                                self.is_64bit = magic == 0x20B
 
                                 if self.is_32bit and len(self.data) >= opt_offset + 28:
-                                    self.entry_point = struct.unpack('<I', self.data[opt_offset+16:opt_offset+20])[0]
-                                    self.image_base = struct.unpack('<I', self.data[opt_offset+28:opt_offset+32])[0]
+                                    self.entry_point = struct.unpack(
+                                        "<I", self.data[opt_offset + 16 : opt_offset + 20]
+                                    )[0]
+                                    self.image_base = struct.unpack(
+                                        "<I", self.data[opt_offset + 28 : opt_offset + 32]
+                                    )[0]
 
     def imphash(self) -> str:
         """Return import hash."""
@@ -97,7 +112,7 @@ class MockPE:
         """Check if export exists."""
         return name in self.exports
 
-    def imports(self, dll: str, function: str = None) -> bool:
+    def imports(self, dll: str, function: str | None = None) -> bool:
         """Check if import exists."""
         if function:
             return f"{dll}:{function}" in self.imports
@@ -129,11 +144,11 @@ class MockELF:
         self.segments = []
 
         # Check ELF magic
-        if len(self.data) >= 4 and self.data[:4] == b'\x7fELF':
+        if len(self.data) >= 4 and self.data[:4] == b"\x7fELF":
             # Parse basic header fields
             if len(self.data) >= 20:
-                self.type = struct.unpack('<H', self.data[16:18])[0]
-                self.machine = struct.unpack('<H', self.data[18:20])[0]
+                self.type = struct.unpack("<H", self.data[16:18])[0]
+                self.machine = struct.unpack("<H", self.data[18:20])[0]
 
 
 class MockMath:
@@ -158,9 +173,9 @@ class MockMath:
         """Convert number to string."""
         if base == 16:
             return hex(n)[2:]
-        elif base == 8:
+        if base == 8:
             return oct(n)[2:]
-        elif base == 2:
+        if base == 2:
             return bin(n)[2:]
         return str(n)
 
@@ -173,19 +188,19 @@ class MockMath:
 
     def log(self, x: float) -> float:
         """Natural logarithm."""
-        return math.log(x) if x > 0 else float('-inf')
+        return math.log(x) if x > 0 else float("-inf")
 
     def log2(self, x: float) -> float:
         """Base-2 logarithm."""
-        return math.log2(x) if x > 0 else float('-inf')
+        return math.log2(x) if x > 0 else float("-inf")
 
     def log10(self, x: float) -> float:
         """Base-10 logarithm."""
-        return math.log10(x) if x > 0 else float('-inf')
+        return math.log10(x) if x > 0 else float("-inf")
 
     def sqrt(self, x: float) -> float:
         """Square root."""
-        return math.sqrt(x) if x >= 0 else float('nan')
+        return math.sqrt(x) if x >= 0 else float("nan")
 
     def entropy(self, offset: int, size: int) -> float:
         """Calculate entropy of data region."""
@@ -230,12 +245,7 @@ class MockModuleRegistry:
     """Registry of mock modules."""
 
     def __init__(self):
-        self.modules = {
-            'pe': MockPE,
-            'elf': MockELF,
-            'math': MockMath,
-            'dotnet': MockDotNet
-        }
+        self.modules = {"pe": MockPE, "elf": MockELF, "math": MockMath, "dotnet": MockDotNet}
         self.instances = {}
 
     def create_module(self, name: str, data: bytes) -> Any:

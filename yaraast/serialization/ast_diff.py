@@ -5,7 +5,7 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.visitor import ASTVisitor
@@ -13,6 +13,7 @@ from yaraast.visitor import ASTVisitor
 
 class DiffType(Enum):
     """Type of difference between AST nodes."""
+
     ADDED = "added"
     REMOVED = "removed"
     MODIFIED = "modified"
@@ -23,21 +24,23 @@ class DiffType(Enum):
 @dataclass
 class DiffNode:
     """Represents a difference in the AST."""
+
     path: str  # XPath-like path to the node
     diff_type: DiffType
-    old_value: Optional[Any] = None
-    new_value: Optional[Any] = None
-    node_type: Optional[str] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    old_value: Any | None = None
+    new_value: Any | None = None
+    node_type: str | None = None
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class DiffResult:
     """Result of AST comparison."""
+
     old_ast_hash: str
     new_ast_hash: str
-    differences: List[DiffNode] = field(default_factory=list)
-    statistics: Dict[str, int] = field(default_factory=dict)
+    differences: list[DiffNode] = field(default_factory=list)
+    statistics: dict[str, int] = field(default_factory=dict)
 
     @property
     def has_changes(self) -> bool:
@@ -45,18 +48,18 @@ class DiffResult:
         return len(self.differences) > 0
 
     @property
-    def change_summary(self) -> Dict[str, int]:
+    def change_summary(self) -> dict[str, int]:
         """Get summary of changes by type."""
         summary = {diff_type.value: 0 for diff_type in DiffType}
         for diff in self.differences:
             summary[diff.diff_type.value] += 1
         return summary
 
-    def get_changes_by_type(self, diff_type: DiffType) -> List[DiffNode]:
+    def get_changes_by_type(self, diff_type: DiffType) -> list[DiffNode]:
         """Get all changes of a specific type."""
         return [diff for diff in self.differences if diff.diff_type == diff_type]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "old_ast_hash": self.old_ast_hash,
@@ -70,11 +73,11 @@ class DiffResult:
                     "old_value": diff.old_value,
                     "new_value": diff.new_value,
                     "node_type": diff.node_type,
-                    "details": diff.details
+                    "details": diff.details,
                 }
                 for diff in self.differences
             ],
-            "statistics": self.statistics
+            "statistics": self.statistics,
         }
 
 
@@ -82,7 +85,7 @@ class AstHasher(ASTVisitor[str]):
     """Creates structural hashes of AST nodes."""
 
     def __init__(self):
-        self._node_hashes: Dict[str, str] = {}
+        self._node_hashes: dict[str, str] = {}
 
     def hash_ast(self, ast: YaraFile) -> str:
         """Create a hash of the entire AST."""
@@ -105,7 +108,7 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_import(self, node) -> str:
         """Hash Import node."""
-        alias = getattr(node, 'alias', None)
+        alias = getattr(node, "alias", None)
         return f"Import({node.module},{alias})"
 
     def visit_include(self, node) -> str:
@@ -253,8 +256,16 @@ class AstHasher(ASTVisitor[str]):
         return f"In({node.string_id},{self.visit(node.range)})"
 
     def visit_of_expression(self, node) -> str:
-        quant = self.visit(node.quantifier) if hasattr(node.quantifier, 'accept') else str(node.quantifier)
-        string_set = self.visit(node.string_set) if hasattr(node.string_set, 'accept') else str(node.string_set)
+        quant = (
+            self.visit(node.quantifier)
+            if hasattr(node.quantifier, "accept")
+            else str(node.quantifier)
+        )
+        string_set = (
+            self.visit(node.string_set)
+            if hasattr(node.string_set, "accept")
+            else str(node.string_set)
+        )
         return f"Of({quant},{string_set})"
 
     def visit_meta(self, node) -> str:
@@ -308,12 +319,12 @@ class AstDiff:
             "old_rules_count": len(old_ast.rules),
             "new_rules_count": len(new_ast.rules),
             "old_imports_count": len(old_ast.imports),
-            "new_imports_count": len(new_ast.imports)
+            "new_imports_count": len(new_ast.imports),
         }
 
         return result
 
-    def _compare_imports(self, old_imports: List, new_imports: List, result: DiffResult) -> None:
+    def _compare_imports(self, old_imports: list, new_imports: list, result: DiffResult) -> None:
         """Compare import lists."""
         old_modules = {imp.module: imp for imp in old_imports}
         new_modules = {imp.module: imp for imp in new_imports}
@@ -321,61 +332,71 @@ class AstDiff:
         # Find added imports
         for module in new_modules:
             if module not in old_modules:
-                result.differences.append(DiffNode(
-                    path=f"/imports/{module}",
-                    diff_type=DiffType.ADDED,
-                    new_value=module,
-                    node_type="Import"
-                ))
+                result.differences.append(
+                    DiffNode(
+                        path=f"/imports/{module}",
+                        diff_type=DiffType.ADDED,
+                        new_value=module,
+                        node_type="Import",
+                    )
+                )
 
         # Find removed imports
         for module in old_modules:
             if module not in new_modules:
-                result.differences.append(DiffNode(
-                    path=f"/imports/{module}",
-                    diff_type=DiffType.REMOVED,
-                    old_value=module,
-                    node_type="Import"
-                ))
+                result.differences.append(
+                    DiffNode(
+                        path=f"/imports/{module}",
+                        diff_type=DiffType.REMOVED,
+                        old_value=module,
+                        node_type="Import",
+                    )
+                )
 
         # Find modified imports (alias changes)
         for module in old_modules:
             if module in new_modules:
-                old_alias = getattr(old_modules[module], 'alias', None)
-                new_alias = getattr(new_modules[module], 'alias', None)
+                old_alias = getattr(old_modules[module], "alias", None)
+                new_alias = getattr(new_modules[module], "alias", None)
                 if old_alias != new_alias:
-                    result.differences.append(DiffNode(
-                        path=f"/imports/{module}/alias",
-                        diff_type=DiffType.MODIFIED,
-                        old_value=old_alias,
-                        new_value=new_alias,
-                        node_type="Import"
-                    ))
+                    result.differences.append(
+                        DiffNode(
+                            path=f"/imports/{module}/alias",
+                            diff_type=DiffType.MODIFIED,
+                            old_value=old_alias,
+                            new_value=new_alias,
+                            node_type="Import",
+                        )
+                    )
 
-    def _compare_includes(self, old_includes: List, new_includes: List, result: DiffResult) -> None:
+    def _compare_includes(self, old_includes: list, new_includes: list, result: DiffResult) -> None:
         """Compare include lists."""
         old_paths = {inc.path for inc in old_includes}
         new_paths = {inc.path for inc in new_includes}
 
         # Find added includes
         for path in new_paths - old_paths:
-            result.differences.append(DiffNode(
-                path=f"/includes/{path}",
-                diff_type=DiffType.ADDED,
-                new_value=path,
-                node_type="Include"
-            ))
+            result.differences.append(
+                DiffNode(
+                    path=f"/includes/{path}",
+                    diff_type=DiffType.ADDED,
+                    new_value=path,
+                    node_type="Include",
+                )
+            )
 
         # Find removed includes
         for path in old_paths - new_paths:
-            result.differences.append(DiffNode(
-                path=f"/includes/{path}",
-                diff_type=DiffType.REMOVED,
-                old_value=path,
-                node_type="Include"
-            ))
+            result.differences.append(
+                DiffNode(
+                    path=f"/includes/{path}",
+                    diff_type=DiffType.REMOVED,
+                    old_value=path,
+                    node_type="Include",
+                )
+            )
 
-    def _compare_rules(self, old_rules: List, new_rules: List, result: DiffResult) -> None:
+    def _compare_rules(self, old_rules: list, new_rules: list, result: DiffResult) -> None:
         """Compare rule lists."""
         old_rule_map = {rule.name: rule for rule in old_rules}
         new_rule_map = {rule.name: rule for rule in new_rules}
@@ -383,85 +404,98 @@ class AstDiff:
         # Find added rules
         for name in new_rule_map:
             if name not in old_rule_map:
-                result.differences.append(DiffNode(
-                    path=f"/rules/{name}",
-                    diff_type=DiffType.ADDED,
-                    new_value=name,
-                    node_type="Rule",
-                    details={"rule_summary": self._get_rule_summary(new_rule_map[name])}
-                ))
+                result.differences.append(
+                    DiffNode(
+                        path=f"/rules/{name}",
+                        diff_type=DiffType.ADDED,
+                        new_value=name,
+                        node_type="Rule",
+                        details={"rule_summary": self._get_rule_summary(new_rule_map[name])},
+                    )
+                )
 
         # Find removed rules
         for name in old_rule_map:
             if name not in new_rule_map:
-                result.differences.append(DiffNode(
-                    path=f"/rules/{name}",
-                    diff_type=DiffType.REMOVED,
-                    old_value=name,
-                    node_type="Rule",
-                    details={"rule_summary": self._get_rule_summary(old_rule_map[name])}
-                ))
+                result.differences.append(
+                    DiffNode(
+                        path=f"/rules/{name}",
+                        diff_type=DiffType.REMOVED,
+                        old_value=name,
+                        node_type="Rule",
+                        details={"rule_summary": self._get_rule_summary(old_rule_map[name])},
+                    )
+                )
 
         # Find modified rules
         for name in old_rule_map:
             if name in new_rule_map:
                 self._compare_rule_content(
-                    old_rule_map[name],
-                    new_rule_map[name],
-                    f"/rules/{name}",
-                    result
+                    old_rule_map[name], new_rule_map[name], f"/rules/{name}", result
                 )
 
     def _compare_rule_content(self, old_rule, new_rule, base_path: str, result: DiffResult) -> None:
         """Compare content of two rules."""
         # Compare modifiers
         if set(old_rule.modifiers) != set(new_rule.modifiers):
-            result.differences.append(DiffNode(
-                path=f"{base_path}/modifiers",
-                diff_type=DiffType.MODIFIED,
-                old_value=list(old_rule.modifiers),
-                new_value=list(new_rule.modifiers),
-                node_type="RuleModifiers"
-            ))
+            result.differences.append(
+                DiffNode(
+                    path=f"{base_path}/modifiers",
+                    diff_type=DiffType.MODIFIED,
+                    old_value=list(old_rule.modifiers),
+                    new_value=list(new_rule.modifiers),
+                    node_type="RuleModifiers",
+                )
+            )
 
         # Compare tags
         old_tag_names = {tag.name for tag in old_rule.tags}
         new_tag_names = {tag.name for tag in new_rule.tags}
         if old_tag_names != new_tag_names:
-            result.differences.append(DiffNode(
-                path=f"{base_path}/tags",
-                diff_type=DiffType.MODIFIED,
-                old_value=list(old_tag_names),
-                new_value=list(new_tag_names),
-                node_type="RuleTags"
-            ))
+            result.differences.append(
+                DiffNode(
+                    path=f"{base_path}/tags",
+                    diff_type=DiffType.MODIFIED,
+                    old_value=list(old_tag_names),
+                    new_value=list(new_tag_names),
+                    node_type="RuleTags",
+                )
+            )
 
         # Compare meta
         if old_rule.meta != new_rule.meta:
-            result.differences.append(DiffNode(
-                path=f"{base_path}/meta",
-                diff_type=DiffType.MODIFIED,
-                old_value=dict(old_rule.meta),
-                new_value=dict(new_rule.meta),
-                node_type="RuleMeta"
-            ))
+            result.differences.append(
+                DiffNode(
+                    path=f"{base_path}/meta",
+                    diff_type=DiffType.MODIFIED,
+                    old_value=dict(old_rule.meta),
+                    new_value=dict(new_rule.meta),
+                    node_type="RuleMeta",
+                )
+            )
 
         # Compare strings
-        self._compare_rule_strings(old_rule.strings, new_rule.strings, f"{base_path}/strings", result)
+        self._compare_rule_strings(
+            old_rule.strings, new_rule.strings, f"{base_path}/strings", result
+        )
 
         # Compare condition (simplified)
         old_condition_hash = self.hasher.visit(old_rule.condition) if old_rule.condition else ""
         new_condition_hash = self.hasher.visit(new_rule.condition) if new_rule.condition else ""
         if old_condition_hash != new_condition_hash:
-            result.differences.append(DiffNode(
-                path=f"{base_path}/condition",
-                diff_type=DiffType.MODIFIED,
-                old_value=old_condition_hash,
-                new_value=new_condition_hash,
-                node_type="RuleCondition"
-            ))
+            result.differences.append(
+                DiffNode(
+                    path=f"{base_path}/condition",
+                    diff_type=DiffType.MODIFIED,
+                    old_value=old_condition_hash,
+                    new_value=new_condition_hash,
+                    node_type="RuleCondition",
+                )
+            )
 
-    def _compare_rule_strings(self, old_strings: List, new_strings: List, base_path: str, result: DiffResult) -> None:
+    def _compare_rule_strings(
+        self, old_strings: list, new_strings: list, base_path: str, result: DiffResult
+    ) -> None:
         """Compare string definitions in rules."""
         old_string_map = {s.identifier: s for s in old_strings}
         new_string_map = {s.identifier: s for s in new_strings}
@@ -469,22 +503,26 @@ class AstDiff:
         # Find added strings
         for identifier in new_string_map:
             if identifier not in old_string_map:
-                result.differences.append(DiffNode(
-                    path=f"{base_path}/{identifier}",
-                    diff_type=DiffType.ADDED,
-                    new_value=identifier,
-                    node_type="StringDefinition"
-                ))
+                result.differences.append(
+                    DiffNode(
+                        path=f"{base_path}/{identifier}",
+                        diff_type=DiffType.ADDED,
+                        new_value=identifier,
+                        node_type="StringDefinition",
+                    )
+                )
 
         # Find removed strings
         for identifier in old_string_map:
             if identifier not in new_string_map:
-                result.differences.append(DiffNode(
-                    path=f"{base_path}/{identifier}",
-                    diff_type=DiffType.REMOVED,
-                    old_value=identifier,
-                    node_type="StringDefinition"
-                ))
+                result.differences.append(
+                    DiffNode(
+                        path=f"{base_path}/{identifier}",
+                        diff_type=DiffType.REMOVED,
+                        old_value=identifier,
+                        node_type="StringDefinition",
+                    )
+                )
 
         # Find modified strings
         for identifier in old_string_map:
@@ -492,15 +530,17 @@ class AstDiff:
                 old_hash = self.hasher.visit(old_string_map[identifier])
                 new_hash = self.hasher.visit(new_string_map[identifier])
                 if old_hash != new_hash:
-                    result.differences.append(DiffNode(
-                        path=f"{base_path}/{identifier}",
-                        diff_type=DiffType.MODIFIED,
-                        old_value=old_hash,
-                        new_value=new_hash,
-                        node_type="StringDefinition"
-                    ))
+                    result.differences.append(
+                        DiffNode(
+                            path=f"{base_path}/{identifier}",
+                            diff_type=DiffType.MODIFIED,
+                            old_value=old_hash,
+                            new_value=new_hash,
+                            node_type="StringDefinition",
+                        )
+                    )
 
-    def _get_rule_summary(self, rule) -> Dict[str, Any]:
+    def _get_rule_summary(self, rule) -> dict[str, Any]:
         """Get a summary of a rule for diff details."""
         return {
             "name": rule.name,
@@ -508,22 +548,25 @@ class AstDiff:
             "tags_count": len(rule.tags),
             "meta_count": len(rule.meta),
             "strings_count": len(rule.strings),
-            "has_condition": rule.condition is not None
+            "has_condition": rule.condition is not None,
         }
 
-    def create_patch(self, diff_result: DiffResult, output_path: Optional[Union[str, Path]] = None) -> Dict[str, Any]:
+    def create_patch(
+        self, diff_result: DiffResult, output_path: str | Path | None = None
+    ) -> dict[str, Any]:
         """Create a patch file from diff result."""
         patch = {
             "patch_format": "yaraast-diff-v1",
             "old_hash": diff_result.old_ast_hash,
             "new_hash": diff_result.new_ast_hash,
             "timestamp": int(time.time()),
-            "changes": diff_result.to_dict()
+            "changes": diff_result.to_dict(),
         }
 
         if output_path:
             import json
-            with open(output_path, 'w') as f:
+
+            with open(output_path, "w") as f:
                 json.dump(patch, f, indent=2)
 
         return patch

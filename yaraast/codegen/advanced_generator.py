@@ -1,53 +1,26 @@
 """Advanced code generator with formatting options."""
 
 from io import StringIO
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
-from yaraast.ast.base import ASTNode, Location, YaraFile
-from yaraast.ast.comments import Comment
-from yaraast.ast.conditions import (
-    AtExpression,
-    Condition,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
-    OfExpression,
-)
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.expressions import (
-    ArrayAccess,
     BinaryExpression,
-    BooleanLiteral,
-    DoubleLiteral,
     Expression,
-    FunctionCall,
-    Identifier,
-    IntegerLiteral,
-    MemberAccess,
-    ParenthesesExpression,
-    RangeExpression,
     SetExpression,
-    StringCount,
-    StringIdentifier,
-    StringLength,
-    StringLiteral,
-    StringOffset,
-    UnaryExpression,
 )
 from yaraast.ast.meta import Meta
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
-    HexNibble,
     HexString,
     HexToken,
     HexWildcard,
     PlainString,
     RegexString,
     StringDefinition,
-    StringModifier,
 )
 from yaraast.codegen.formatting import (
     BraceStyle,
@@ -62,10 +35,10 @@ from yaraast.codegen.generator import CodeGenerator
 class AdvancedCodeGenerator(CodeGenerator):
     """Advanced code generator with configurable formatting."""
 
-    def __init__(self, config: Optional[FormattingConfig] = None):
+    def __init__(self, config: FormattingConfig | None = None):
         self.config = config or FormattingConfig()
         super().__init__(self.config.indent_size)
-        self._string_definitions: List[Tuple[str, Any]] = []
+        self._string_definitions: list[tuple[str, Any]] = []
 
     def generate(self, node: ASTNode) -> str:
         """Generate code with advanced formatting."""
@@ -79,8 +52,7 @@ class AdvancedCodeGenerator(CodeGenerator):
         """Get indentation string."""
         if self.config.indent_style == IndentStyle.TABS:
             return "\t" * self.indent_level
-        else:
-            return " " * (self.indent_level * self.config.indent_size)
+        return " " * (self.indent_level * self.config.indent_size)
 
     def _write(self, text: str) -> None:
         """Write text to buffer."""
@@ -187,7 +159,7 @@ class AdvancedCodeGenerator(CodeGenerator):
 
         return self.buffer.getvalue()
 
-    def _write_meta_section(self, meta_list: List[Meta]) -> None:
+    def _write_meta_section(self, meta_list: list[Meta]) -> None:
         """Write meta section with formatting."""
         self._writeline("meta:")
         self._indent()
@@ -220,7 +192,7 @@ class AdvancedCodeGenerator(CodeGenerator):
 
         self._dedent()
 
-    def _write_strings_section(self, strings: List[StringDefinition]) -> None:
+    def _write_strings_section(self, strings: list[StringDefinition]) -> None:
         """Write strings section with formatting."""
         self._writeline("strings:")
         self._indent()
@@ -241,7 +213,7 @@ class AdvancedCodeGenerator(CodeGenerator):
 
         self._dedent()
 
-    def _collect_string_definitions(self, strings: List[StringDefinition]) -> None:
+    def _collect_string_definitions(self, strings: list[StringDefinition]) -> None:
         """Collect string definitions for alignment."""
         self._string_definitions = []
 
@@ -253,7 +225,7 @@ class AdvancedCodeGenerator(CodeGenerator):
             elif isinstance(string_def, HexString):
                 value = self._format_hex_string(string_def)
             elif isinstance(string_def, RegexString):
-                value = f'/{string_def.regex}/'
+                value = f"/{string_def.regex}/"
             else:
                 value = ""
 
@@ -326,7 +298,7 @@ class AdvancedCodeGenerator(CodeGenerator):
                     alt_str = " ".join(self._format_hex_token(t) for t in alt)
                     alt_parts.append(alt_str)
                 parts.append(f"({' | '.join(alt_parts)})")
-            elif hasattr(token, 'high') and hasattr(token, 'value'):  # HexNibble
+            elif hasattr(token, "high") and hasattr(token, "value"):  # HexNibble
                 nibble_str = f"{token.value:X}"
                 if token.high:
                     parts.append(f"{nibble_str}?")
@@ -337,7 +309,7 @@ class AdvancedCodeGenerator(CodeGenerator):
         if self.config.hex_group_size > 0:
             grouped_parts = []
             for i in range(0, len(parts), self.config.hex_group_size):
-                group = parts[i:i + self.config.hex_group_size]
+                group = parts[i : i + self.config.hex_group_size]
                 grouped_parts.append("".join(group))
             hex_content = " ".join(grouped_parts)
         else:
@@ -352,10 +324,9 @@ class AdvancedCodeGenerator(CodeGenerator):
             if self.config.hex_style == HexStyle.UPPERCASE:
                 hex_val = hex_val.upper()
             return hex_val
-        elif isinstance(token, HexWildcard):
+        if isinstance(token, HexWildcard):
             return "??"
-        else:
-            return ""
+        return ""
 
     def _write_condition_section(self, condition: Expression) -> None:
         """Write condition section."""
@@ -449,9 +420,9 @@ class AdvancedCodeGenerator(CodeGenerator):
 
     def visit_regex_string(self, node: RegexString) -> str:
         if self.config.string_style == StringStyle.COMPACT:
-            self._write(f'{node.identifier}=/{node.regex}/')
+            self._write(f"{node.identifier}=/{node.regex}/")
         else:
-            self._write(f'{node.identifier} = /{node.regex}/')
+            self._write(f"{node.identifier} = /{node.regex}/")
 
         for modifier in node.modifiers:
             self._write(" ")

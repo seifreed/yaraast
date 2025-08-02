@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from yaraast.ast.base import ASTNode
 
@@ -25,7 +25,7 @@ class PragmaType(Enum):
     CUSTOM = "custom"
 
     @classmethod
-    def from_string(cls, pragma_str: str) -> 'PragmaType':
+    def from_string(cls, pragma_str: str) -> "PragmaType":
         """Convert string to pragma type."""
         try:
             return cls(pragma_str.lower())
@@ -36,10 +36,10 @@ class PragmaType(Enum):
 class PragmaScope(Enum):
     """Scope where pragma applies."""
 
-    FILE = "file"        # File-level pragma
-    RULE = "rule"        # Rule-level pragma
-    BLOCK = "block"      # Block-level pragma
-    LOCAL = "local"      # Local scope pragma
+    FILE = "file"  # File-level pragma
+    RULE = "rule"  # Rule-level pragma
+    BLOCK = "block"  # Block-level pragma
+    LOCAL = "local"  # Local scope pragma
 
 
 @dataclass
@@ -48,7 +48,7 @@ class Pragma(ASTNode):
 
     pragma_type: PragmaType
     name: str
-    arguments: List[str] = field(default_factory=list)
+    arguments: list[str] = field(default_factory=list)
     scope: PragmaScope = PragmaScope.FILE
 
     def accept(self, visitor: Any) -> Any:
@@ -66,15 +66,11 @@ class Pragma(ASTNode):
 
     def __str__(self) -> str:
         """String representation of pragma."""
-        if self.arguments:
-            args_str = " " + " ".join(self.arguments)
-        else:
-            args_str = ""
+        args_str = " " + " ".join(self.arguments) if self.arguments else ""
 
         if self.pragma_type == PragmaType.PRAGMA:
             return f"#pragma {self.name}{args_str}"
-        else:
-            return f"#{self.name}{args_str}"
+        return f"#{self.name}{args_str}"
 
 
 @dataclass
@@ -83,9 +79,7 @@ class IncludeOncePragma(Pragma):
 
     def __init__(self):
         super().__init__(
-            pragma_type=PragmaType.INCLUDE_ONCE,
-            name="include_once",
-            scope=PragmaScope.FILE
+            pragma_type=PragmaType.INCLUDE_ONCE, name="include_once", scope=PragmaScope.FILE
         )
 
     def __str__(self) -> str:
@@ -97,13 +91,13 @@ class DefineDirective(Pragma):
     """Define directive for macro definitions."""
 
     macro_name: str
-    macro_value: Optional[str] = None
+    macro_value: str | None = None
 
-    def __init__(self, macro_name: str, macro_value: Optional[str] = None):
+    def __init__(self, macro_name: str, macro_value: str | None = None):
         super().__init__(
             pragma_type=PragmaType.DEFINE,
             name="define",
-            arguments=[macro_name] + ([macro_value] if macro_value else [])
+            arguments=[macro_name] + ([macro_value] if macro_value else []),
         )
         self.macro_name = macro_name
         self.macro_value = macro_value
@@ -121,11 +115,7 @@ class UndefDirective(Pragma):
     macro_name: str
 
     def __init__(self, macro_name: str):
-        super().__init__(
-            pragma_type=PragmaType.UNDEF,
-            name="undef",
-            arguments=[macro_name]
-        )
+        super().__init__(pragma_type=PragmaType.UNDEF, name="undef", arguments=[macro_name])
         self.macro_name = macro_name
 
     def __str__(self) -> str:
@@ -136,30 +126,26 @@ class UndefDirective(Pragma):
 class ConditionalDirective(Pragma):
     """Conditional compilation directives (ifdef, ifndef, endif)."""
 
-    condition: Optional[str] = None
+    condition: str | None = None
 
-    def __init__(self, pragma_type: PragmaType, condition: Optional[str] = None):
+    def __init__(self, pragma_type: PragmaType, condition: str | None = None):
         name = pragma_type.value
         args = [condition] if condition else []
-        super().__init__(
-            pragma_type=pragma_type,
-            name=name,
-            arguments=args
-        )
+        super().__init__(pragma_type=pragma_type, name=name, arguments=args)
         self.condition = condition
 
     @classmethod
-    def ifdef(cls, condition: str) -> 'ConditionalDirective':
+    def ifdef(cls, condition: str) -> "ConditionalDirective":
         """Create an ifdef directive."""
         return cls(PragmaType.IFDEF, condition)
 
     @classmethod
-    def ifndef(cls, condition: str) -> 'ConditionalDirective':
+    def ifndef(cls, condition: str) -> "ConditionalDirective":
         """Create an ifndef directive."""
         return cls(PragmaType.IFNDEF, condition)
 
     @classmethod
-    def endif(cls) -> 'ConditionalDirective':
+    def endif(cls) -> "ConditionalDirective":
         """Create an endif directive."""
         return cls(PragmaType.ENDIF)
 
@@ -173,16 +159,17 @@ class ConditionalDirective(Pragma):
 class CustomPragma(Pragma):
     """Custom pragma for vendor-specific or extended functionality."""
 
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
-    def __init__(self, name: str, arguments: Optional[List[str]] = None,
-                 parameters: Optional[Dict[str, Any]] = None,
-                 scope: PragmaScope = PragmaScope.FILE):
+    def __init__(
+        self,
+        name: str,
+        arguments: list[str] | None = None,
+        parameters: dict[str, Any] | None = None,
+        scope: PragmaScope = PragmaScope.FILE,
+    ):
         super().__init__(
-            pragma_type=PragmaType.CUSTOM,
-            name=name,
-            arguments=arguments or [],
-            scope=scope
+            pragma_type=PragmaType.CUSTOM, name=name, arguments=arguments or [], scope=scope
         )
         self.parameters = parameters or {}
 
@@ -232,7 +219,7 @@ class InRulePragma(ASTNode):
 class PragmaBlock(ASTNode):
     """Block of pragmas that should be processed together."""
 
-    pragmas: List[Pragma] = field(default_factory=list)
+    pragmas: list[Pragma] = field(default_factory=list)
     scope: PragmaScope = PragmaScope.FILE
 
     def accept(self, visitor: Any) -> Any:
@@ -243,7 +230,7 @@ class PragmaBlock(ASTNode):
         pragma.scope = self.scope
         self.pragmas.append(pragma)
 
-    def get_pragmas_by_type(self, pragma_type: PragmaType) -> List[Pragma]:
+    def get_pragmas_by_type(self, pragma_type: PragmaType) -> list[Pragma]:
         """Get all pragmas of a specific type."""
         return [p for p in self.pragmas if p.pragma_type == pragma_type]
 
@@ -257,15 +244,15 @@ class PragmaBlock(ASTNode):
 
 # Convenience functions for creating pragmas
 
-def create_pragma(name: str,
-                 arguments: Optional[List[str]] = None,
-                 scope: PragmaScope = PragmaScope.FILE) -> Pragma:
+
+def create_pragma(
+    name: str, arguments: list[str] | None = None, scope: PragmaScope = PragmaScope.FILE
+) -> Pragma:
     """Create a generic pragma."""
     pragma_type = PragmaType.from_string(name)
     if pragma_type == PragmaType.CUSTOM:
         return CustomPragma(name, arguments, scope=scope)
-    else:
-        return Pragma(pragma_type, name, arguments or [], scope)
+    return Pragma(pragma_type, name, arguments or [], scope)
 
 
 def create_include_once() -> IncludeOncePragma:
@@ -273,7 +260,7 @@ def create_include_once() -> IncludeOncePragma:
     return IncludeOncePragma()
 
 
-def create_define(macro_name: str, macro_value: Optional[str] = None) -> DefineDirective:
+def create_define(macro_name: str, macro_value: str | None = None) -> DefineDirective:
     """Create a define directive."""
     return DefineDirective(macro_name, macro_value)
 

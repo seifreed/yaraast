@@ -1,7 +1,7 @@
 """Token definitions for YARA lexer."""
 
 from enum import Enum, auto
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 

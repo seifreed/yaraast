@@ -1,7 +1,5 @@
 """Better parser implementation that merges old logic."""
 
-from typing import Any, Dict, List, Optional, Union
-
 from yaraast.ast.base import *
 from yaraast.ast.conditions import *
 from yaraast.ast.expressions import *
@@ -17,7 +15,7 @@ class Parser:
     """Better YARA parser implementation."""
 
     def __init__(self):
-        self.tokens: List[Token] = []
+        self.tokens: list[Token] = []
         self.position = 0
         self.text = ""
 
@@ -59,7 +57,10 @@ class Parser:
         modifiers = []
 
         # Parse modifiers
-        while self._current_token() and self._current_token().type in (TokenType.PRIVATE, TokenType.GLOBAL):
+        while self._current_token() and self._current_token().type in (
+            TokenType.PRIVATE,
+            TokenType.GLOBAL,
+        ):
             modifiers.append(self._current_token().value)
             self._advance()
 
@@ -79,6 +80,7 @@ class Parser:
         if self._match(TokenType.COLON):
             while self._current_token() and self._current_token().type == TokenType.IDENTIFIER:
                 from yaraast.ast.rules import Tag
+
                 tags.append(Tag(name=self._current_token().value))
                 self._advance()
 
@@ -113,7 +115,9 @@ class Parser:
         # Expect '}'
         if not self._match(TokenType.RBRACE):
             current = self._current_token()
-            raise Exception(f"Expected '}}' but found {current.type if current else 'EOF'} at position {self.position}")
+            raise Exception(
+                f"Expected '}}' but found {current.type if current else 'EOF'} at position {self.position}"
+            )
 
         # Condition is required
         if condition is None:
@@ -125,7 +129,7 @@ class Parser:
             tags=tags,
             meta=meta,
             strings=strings,
-            condition=condition
+            condition=condition,
         )
 
     def _parse_condition(self) -> Expression:
@@ -144,6 +148,7 @@ class Parser:
         if self._match(TokenType.DOUBLE_DOT):
             high = self._parse_and_expression()
             from yaraast.ast.expressions import RangeExpression
+
             return RangeExpression(low=expr, high=high)
 
         return expr
@@ -171,11 +176,22 @@ class Parser:
         expr = self._parse_primary_expression()
 
         while True:
-            if self._match(TokenType.LT, TokenType.LE, TokenType.GT, TokenType.GE,
-                          TokenType.EQ, TokenType.NEQ, TokenType.CONTAINS,
-                          TokenType.MATCHES, TokenType.STARTSWITH, TokenType.ENDSWITH,
-                          TokenType.ICONTAINS, TokenType.ISTARTSWITH, TokenType.IENDSWITH,
-                          TokenType.IEQUALS):
+            if self._match(
+                TokenType.LT,
+                TokenType.LE,
+                TokenType.GT,
+                TokenType.GE,
+                TokenType.EQ,
+                TokenType.NEQ,
+                TokenType.CONTAINS,
+                TokenType.MATCHES,
+                TokenType.STARTSWITH,
+                TokenType.ENDSWITH,
+                TokenType.ICONTAINS,
+                TokenType.ISTARTSWITH,
+                TokenType.IENDSWITH,
+                TokenType.IEQUALS,
+            ):
                 operator = self._previous().value.lower()
                 right = self._parse_primary_expression()
                 expr = BinaryExpression(left=expr, operator=operator, right=right)
@@ -184,6 +200,7 @@ class Parser:
                 if isinstance(expr, StringIdentifier):
                     offset = self._parse_primary_expression()
                     from yaraast.ast.conditions import AtExpression
+
                     expr = AtExpression(string_id=expr.name, offset=offset)
                 else:
                     raise Exception("'at' operator requires string identifier on left side")
@@ -200,11 +217,10 @@ class Parser:
             if self._match(TokenType.IDENTIFIER):
                 expr = Identifier(name=self._previous().value)
                 return DefinedExpression(expression=expr)
-            elif self._match(TokenType.STRING_IDENTIFIER):
+            if self._match(TokenType.STRING_IDENTIFIER):
                 expr = StringIdentifier(name=self._previous().value)
                 return DefinedExpression(expression=expr)
-            else:
-                raise Exception("Expected identifier after 'defined'")
+            raise Exception("Expected identifier after 'defined'")
 
         # String identifiers
         if self._match(TokenType.STRING_IDENTIFIER):
@@ -214,7 +230,7 @@ class Parser:
         if self._match(TokenType.STRING_COUNT):
             string_id = self._previous().value  # e.g., "#a"
             # Remove the # prefix to get just the identifier
-            if string_id.startswith('#'):
+            if string_id.startswith("#"):
                 string_id = string_id[1:]
             return StringCount(string_id=string_id)
 
@@ -222,7 +238,7 @@ class Parser:
         if self._match(TokenType.STRING_OFFSET):
             string_id = self._previous().value  # e.g., "@a"
             # Remove the @ prefix to get just the identifier
-            if string_id.startswith('@'):
+            if string_id.startswith("@"):
                 string_id = string_id[1:]
             index = None
             if self._match(TokenType.LBRACKET):
@@ -235,7 +251,7 @@ class Parser:
         if self._match(TokenType.STRING_LENGTH):
             string_id = self._previous().value  # e.g., "!a"
             # Remove the ! prefix to get just the identifier
-            if string_id.startswith('!'):
+            if string_id.startswith("!"):
                 string_id = string_id[1:]
             index = None
             if self._match(TokenType.LBRACKET):
@@ -266,8 +282,8 @@ class Parser:
             modifiers = ""
 
             # The lexer returns pattern or pattern\x00modifiers
-            if '\x00' in regex_val:
-                parts = regex_val.split('\x00', 1)
+            if "\x00" in regex_val:
+                parts = regex_val.split("\x00", 1)
                 pattern = parts[0]
                 modifiers = parts[1] if len(parts) > 1 else ""
 
@@ -292,10 +308,9 @@ class Parser:
         if self._match(TokenType.MINUS):
             if self._match(TokenType.INTEGER):
                 return IntegerLiteral(value=-self._previous().value)
-            elif self._match(TokenType.DOUBLE):
+            if self._match(TokenType.DOUBLE):
                 return DoubleLiteral(value=-self._previous().value)
-            else:
-                raise Exception("Expected number after '-'")
+            raise Exception("Expected number after '-'")
 
         # Special expressions: for
         if self._match(TokenType.FOR):
@@ -306,10 +321,9 @@ class Parser:
             quantifier = self._previous().value
             if self._match(TokenType.OF):
                 return self._parse_of_expression(quantifier)
-            else:
-                # Put the token back, it's just an identifier
-                self.position -= 1
-                return Identifier(name=quantifier)
+            # Put the token back, it's just an identifier
+            self.position -= 1
+            return Identifier(name=quantifier)
 
         # Check for integer - might be part of "N of" expression
         if self._match(TokenType.INTEGER):
@@ -317,9 +331,8 @@ class Parser:
             # Look ahead to see if "of" follows
             if self._match(TokenType.OF):
                 return self._parse_of_expression(value)
-            else:
-                # Just a regular integer literal
-                return IntegerLiteral(value=value)
+            # Just a regular integer literal
+            return IntegerLiteral(value=value)
 
         raise Exception(f"Unexpected token in expression: {self._current_token()}")
 
@@ -375,13 +388,16 @@ class Parser:
         """Get full name from member access chain."""
         if isinstance(expr, Identifier):
             return expr.name
-        elif isinstance(expr, MemberAccess):
-            obj_name = self._get_full_name(expr.object) if isinstance(expr.object, (Identifier, MemberAccess)) else str(expr.object)
+        if isinstance(expr, MemberAccess):
+            obj_name = (
+                self._get_full_name(expr.object)
+                if isinstance(expr.object, Identifier | MemberAccess)
+                else str(expr.object)
+            )
             return f"{obj_name}.{expr.member}"
-        else:
-            return str(expr)
+        return str(expr)
 
-    def _parse_meta_section(self) -> List[Meta]:
+    def _parse_meta_section(self) -> list[Meta]:
         """Parse meta section."""
         meta_list = []
 
@@ -393,9 +409,7 @@ class Parser:
                 raise Exception("Expected '=' in meta")
 
             # Parse value
-            if self._match(TokenType.STRING):
-                value = self._previous().value
-            elif self._match(TokenType.INTEGER):
+            if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
                 value = self._previous().value
             elif self._match(TokenType.BOOLEAN_TRUE):
                 value = True
@@ -408,7 +422,7 @@ class Parser:
 
         return meta_list
 
-    def _parse_strings_section(self) -> List[StringDefinition]:
+    def _parse_strings_section(self) -> list[StringDefinition]:
         """Parse strings section."""
         strings = []
 
@@ -425,8 +439,13 @@ class Parser:
                 # Parse modifiers
                 modifiers = []
                 while self._current_token() and self._current_token().type in (
-                    TokenType.NOCASE, TokenType.WIDE, TokenType.ASCII,
-                    TokenType.FULLWORD, TokenType.BASE64, TokenType.BASE64WIDE):
+                    TokenType.NOCASE,
+                    TokenType.WIDE,
+                    TokenType.ASCII,
+                    TokenType.FULLWORD,
+                    TokenType.BASE64,
+                    TokenType.BASE64WIDE,
+                ):
                     modifiers.append(StringModifier(name=self._current_token().value))
                     self._advance()
                 strings.append(PlainString(identifier=identifier, value=value, modifiers=modifiers))
@@ -437,12 +456,13 @@ class Parser:
 
                 # Parse hex string content including wildcards
                 from yaraast.ast.strings import HexByte, HexWildcard
+
                 parts = hex_content.split()
                 for part in parts:
-                    if part == '??':
+                    if part == "??":
                         # Wildcard
                         hex_tokens.append(HexWildcard())
-                    elif len(part) == 2 and all(c in '0123456789ABCDEFabcdef' for c in part):
+                    elif len(part) == 2 and all(c in "0123456789ABCDEFabcdef" for c in part):
                         # Hex byte
                         hex_tokens.append(HexByte(value=part))
                     # Add more complex parsing for jumps and alternatives if needed
@@ -456,24 +476,31 @@ class Parser:
                 pattern = regex_val
 
                 # The lexer returns pattern or pattern\x00modifiers
-                if '\x00' in regex_val:
-                    parts = regex_val.split('\x00', 1)
+                if "\x00" in regex_val:
+                    parts = regex_val.split("\x00", 1)
                     pattern = parts[0]
                     mod_str = parts[1] if len(parts) > 1 else ""
                     for m in mod_str:
-                        if m == 'i':
-                            modifiers.append(StringModifier(name='nocase'))
-                        elif m == 's':
-                            modifiers.append(StringModifier(name='dotall'))
+                        if m == "i":
+                            modifiers.append(StringModifier(name="nocase"))
+                        elif m == "s":
+                            modifiers.append(StringModifier(name="dotall"))
 
                 # Parse YARA modifiers (nocase, wide, etc.) after the regex
                 while self._current_token() and self._current_token().type in (
-                    TokenType.NOCASE, TokenType.WIDE, TokenType.ASCII,
-                    TokenType.FULLWORD, TokenType.BASE64, TokenType.BASE64WIDE):
+                    TokenType.NOCASE,
+                    TokenType.WIDE,
+                    TokenType.ASCII,
+                    TokenType.FULLWORD,
+                    TokenType.BASE64,
+                    TokenType.BASE64WIDE,
+                ):
                     modifiers.append(StringModifier(name=self._current_token().value))
                     self._advance()
 
-                strings.append(RegexString(identifier=identifier, regex=pattern, modifiers=modifiers))
+                strings.append(
+                    RegexString(identifier=identifier, regex=pattern, modifiers=modifiers)
+                )
             else:
                 raise Exception("Expected string value")
 
@@ -503,7 +530,7 @@ class Parser:
         return Include(path=self._previous().value)
 
     # Helper methods
-    def _current_token(self) -> Optional[Token]:
+    def _current_token(self) -> Token | None:
         """Get current token."""
         if self.position < len(self.tokens):
             return self.tokens[self.position]
@@ -537,19 +564,19 @@ class Parser:
 
             # Optional condition
             body = None
-            if self._match(TokenType.COLON):
-                if self._match(TokenType.LPAREN):
-                    body = self._parse_expression()
-                    if not self._match(TokenType.RPAREN):
-                        raise Exception("Expected ')' after condition")
+            if self._match(TokenType.COLON) and self._match(TokenType.LPAREN):
+                body = self._parse_expression()
+                if not self._match(TokenType.RPAREN):
+                    raise Exception("Expected ')' after condition")
 
             # Create ForOfExpression
             from yaraast.ast.conditions import ForOfExpression
+
             return ForOfExpression(
                 quantifier=quantifier,
                 variable="",  # No variable in simple for...of
                 string_set=string_set,
-                body=body
+                body=body,
             )
 
         # Otherwise it's a regular for expression (for all i in (0..10) : (...))
@@ -575,12 +602,8 @@ class Parser:
             raise Exception("Expected ')' after for body")
 
         from yaraast.ast.conditions import ForExpression
-        return ForExpression(
-            quantifier=quantifier,
-            variable=variable,
-            iterable=iterable,
-            body=body
-        )
+
+        return ForExpression(quantifier=quantifier, variable=variable, iterable=iterable, body=body)
 
     def _parse_of_expression(self, quantifier) -> Expression:
         """Parse of expression (e.g., '2 of them')."""
@@ -597,7 +620,9 @@ class Parser:
                     # Handle wildcards like ($a*)
                     string_ids.append(StringIdentifier(name="*"))
                 else:
-                    raise Exception(f"Expected string identifier in set, got {self._current_token()}")
+                    raise Exception(
+                        f"Expected string identifier in set, got {self._current_token()}"
+                    )
 
                 if not self._match(TokenType.COMMA):
                     break
@@ -606,16 +631,15 @@ class Parser:
                 raise Exception("Expected ')' after string set")
 
             from yaraast.ast.expressions import SetExpression
+
             string_set = SetExpression(elements=string_ids)
         else:
             # Try to parse a primary expression
             string_set = self._parse_primary_expression()
 
         from yaraast.ast.conditions import OfExpression
-        return OfExpression(
-            quantifier=quantifier,
-            string_set=string_set
-        )
+
+        return OfExpression(quantifier=quantifier, string_set=string_set)
 
     def _parse_expression(self) -> Expression:
         """Parse a general expression."""

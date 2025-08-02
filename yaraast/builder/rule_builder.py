@@ -1,46 +1,21 @@
 """Fluent builder for YARA rules."""
 
-from typing import Any, Dict, List, Optional, Self, Set, Tuple, Union
+from typing import Any, Self
 
-from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.conditions import (
-    AtExpression,
-    Condition,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
     OfExpression,
 )
 from yaraast.ast.expressions import (
-    ArrayAccess,
-    BinaryExpression,
     BooleanLiteral,
-    DoubleLiteral,
     Expression,
-    FunctionCall,
     Identifier,
-    IntegerLiteral,
-    MemberAccess,
-    ParenthesesExpression,
-    RangeExpression,
-    SetExpression,
-    StringCount,
     StringIdentifier,
-    StringLength,
     StringLiteral,
-    StringOffset,
-    UnaryExpression,
 )
-from yaraast.ast.meta import Meta
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import (
-    HexAlternative,
     HexByte,
-    HexJump,
-    HexNibble,
     HexString,
-    HexToken,
     HexWildcard,
     PlainString,
     RegexString,
@@ -55,12 +30,12 @@ class RuleBuilder:
     """Fluent builder for constructing YARA rules."""
 
     def __init__(self):
-        self._name: Optional[str] = None
-        self._modifiers: List[str] = []
-        self._tags: List[str] = []
-        self._meta: Dict[str, Any] = {}
-        self._strings: List[StringDefinition] = []
-        self._condition: Optional[Expression] = None
+        self._name: str | None = None
+        self._modifiers: list[str] = []
+        self._tags: list[str] = []
+        self._meta: dict[str, Any] = {}
+        self._strings: list[StringDefinition] = []
+        self._condition: Expression | None = None
 
     def with_name(self, name: str) -> Self:
         """Set the rule name."""
@@ -87,11 +62,7 @@ class RuleBuilder:
     def with_regex_string(self, identifier: str, pattern: str, **modifiers) -> Self:
         """Add a regex string with modifiers."""
         mod_list = [StringModifier(name=k) for k, v in modifiers.items() if v]
-        self._strings.append(RegexString(
-            identifier=identifier,
-            regex=pattern,
-            modifiers=mod_list
-        ))
+        self._strings.append(RegexString(identifier=identifier, regex=pattern, modifiers=mod_list))
         return self
 
     def with_tags(self, *tags: str) -> Self:
@@ -99,7 +70,7 @@ class RuleBuilder:
         self._tags.extend(tags)
         return self
 
-    def with_meta(self, key: str, value: Union[str, int, bool]) -> Self:
+    def with_meta(self, key: str, value: str | int | bool) -> Self:
         """Add a meta field."""
         self._meta[key] = value
         return self
@@ -116,9 +87,15 @@ class RuleBuilder:
         """Add version meta field."""
         return self.with_meta("version", version)
 
-    def with_plain_string(self, identifier: str, value: str,
-                         nocase: bool = False, wide: bool = False,
-                         ascii: bool = False, fullword: bool = False) -> Self:
+    def with_plain_string(
+        self,
+        identifier: str,
+        value: str,
+        nocase: bool = False,
+        wide: bool = False,
+        ascii: bool = False,
+        fullword: bool = False,
+    ) -> Self:
         """Add a plain string."""
         modifiers = []
         if nocase:
@@ -130,20 +107,12 @@ class RuleBuilder:
         if fullword:
             modifiers.append(StringModifier(name="fullword"))
 
-        self._strings.append(PlainString(
-            identifier=identifier,
-            value=value,
-            modifiers=modifiers
-        ))
+        self._strings.append(PlainString(identifier=identifier, value=value, modifiers=modifiers))
         return self
 
     def with_hex_string(self, identifier: str, builder: HexStringBuilder) -> Self:
         """Add a hex string using a builder."""
-        self._strings.append(HexString(
-            identifier=identifier,
-            tokens=builder.build(),
-            modifiers=[]
-        ))
+        self._strings.append(HexString(identifier=identifier, tokens=builder.build(), modifiers=[]))
         return self
 
     def with_hex_string_raw(self, identifier: str, hex_pattern: str) -> Self:
@@ -154,12 +123,12 @@ class RuleBuilder:
         hex_chars = hex_pattern.replace(" ", "").upper()
 
         while i < len(hex_chars):
-            if i + 1 < len(hex_chars) and hex_chars[i:i+2] == "??":
+            if i + 1 < len(hex_chars) and hex_chars[i : i + 2] == "??":
                 tokens.append(HexWildcard())
                 i += 2
             elif i + 1 < len(hex_chars):
                 try:
-                    byte_val = int(hex_chars[i:i+2], 16)
+                    byte_val = int(hex_chars[i : i + 2], 16)
                     tokens.append(HexByte(value=byte_val))
                     i += 2
                 except ValueError:
@@ -167,17 +136,17 @@ class RuleBuilder:
             else:
                 i += 1
 
-        self._strings.append(HexString(
-            identifier=identifier,
-            tokens=tokens,
-            modifiers=[]
-        ))
+        self._strings.append(HexString(identifier=identifier, tokens=tokens, modifiers=[]))
         return self
 
-    def with_regex(self, identifier: str, pattern: str,
-                   case_insensitive: bool = False,
-                   dotall: bool = False,
-                   multiline: bool = False) -> Self:
+    def with_regex(
+        self,
+        identifier: str,
+        pattern: str,
+        case_insensitive: bool = False,
+        dotall: bool = False,
+        multiline: bool = False,
+    ) -> Self:
         """Add a regex string."""
         # Add modifiers to pattern
         if case_insensitive or dotall or multiline:
@@ -190,14 +159,10 @@ class RuleBuilder:
                 modifiers += "m"
             pattern = pattern + modifiers
 
-        self._strings.append(RegexString(
-            identifier=identifier,
-            regex=pattern,
-            modifiers=[]
-        ))
+        self._strings.append(RegexString(identifier=identifier, regex=pattern, modifiers=[]))
         return self
 
-    def with_condition(self, condition: Union[Expression, ConditionBuilder, str]) -> Self:
+    def with_condition(self, condition: Expression | ConditionBuilder | str) -> Self:
         """Set the rule condition."""
         if isinstance(condition, str):
             # Simple conditions
@@ -207,13 +172,11 @@ class RuleBuilder:
                 self._condition = BooleanLiteral(value=False)
             elif condition == "any of them":
                 self._condition = OfExpression(
-                    quantifier=StringLiteral(value="any"),
-                    string_set=Identifier(name="them")
+                    quantifier=StringLiteral(value="any"), string_set=Identifier(name="them")
                 )
             elif condition == "all of them":
                 self._condition = OfExpression(
-                    quantifier=StringLiteral(value="all"),
-                    string_set=Identifier(name="them")
+                    quantifier=StringLiteral(value="all"), string_set=Identifier(name="them")
                 )
             elif condition.startswith("$"):
                 self._condition = StringIdentifier(name=condition)
@@ -248,5 +211,5 @@ class RuleBuilder:
             tags=[Tag(name=tag) for tag in self._tags],
             meta=self._meta,
             strings=self._strings,
-            condition=self._condition
+            condition=self._condition,
         )

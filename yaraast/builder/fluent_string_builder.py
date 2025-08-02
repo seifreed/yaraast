@@ -1,10 +1,9 @@
 """Fluent string builder with comprehensive modifier support."""
 
-from typing import Any, Dict, List, Optional, Self, Union
+from typing import Self
 
 from yaraast.ast.modifiers import EnhancedStringModifier, StringModifierType
 from yaraast.ast.strings import (
-    HexAlternative,
     HexByte,
     HexJump,
     HexNibble,
@@ -23,10 +22,10 @@ class FluentStringBuilder:
 
     def __init__(self, identifier: str):
         self.identifier = identifier
-        self._content: Optional[Union[str, List[HexToken]]] = None
+        self._content: str | list[HexToken] | None = None
         self._string_type: str = "plain"  # "plain", "hex", "regex"
-        self._modifiers: List[EnhancedStringModifier] = []
-        self._hex_builder: Optional[HexStringBuilder] = None
+        self._modifiers: list[EnhancedStringModifier] = []
+        self._hex_builder: HexStringBuilder | None = None
 
     # String content methods
     def literal(self, content: str) -> Self:
@@ -45,7 +44,7 @@ class FluentStringBuilder:
         self._string_type = "hex"
         return self
 
-    def hex_bytes(self, *bytes_values: Union[int, str]) -> Self:
+    def hex_bytes(self, *bytes_values: int | str) -> Self:
         """Set as hex string from byte values."""
         tokens = []
         for byte_val in bytes_values:
@@ -123,7 +122,7 @@ class FluentStringBuilder:
         self._add_modifier(StringModifierType.BASE64WIDE)
         return self
 
-    def xor(self, key: Optional[Union[int, str]] = None) -> Self:
+    def xor(self, key: int | str | None = None) -> Self:
         """Add XOR modifier with optional key."""
         if key is not None:
             if isinstance(key, str):
@@ -133,10 +132,7 @@ class FluentStringBuilder:
                 except ValueError:
                     key = None
 
-            modifier = EnhancedStringModifier(
-                modifier_type=StringModifierType.XOR,
-                value=key
-            )
+            modifier = EnhancedStringModifier(modifier_type=StringModifierType.XOR, value=key)
         else:
             modifier = EnhancedStringModifier(modifier_type=StringModifierType.XOR)
 
@@ -146,8 +142,7 @@ class FluentStringBuilder:
     def xor_range(self, min_key: int, max_key: int) -> Self:
         """Add XOR modifier with key range."""
         modifier = EnhancedStringModifier(
-            modifier_type=StringModifierType.XOR,
-            value={"min": min_key, "max": max_key}
+            modifier_type=StringModifierType.XOR, value={"min": min_key, "max": max_key}
         )
         self._modifiers.append(modifier)
         return self
@@ -156,8 +151,9 @@ class FluentStringBuilder:
     def case_sensitive(self) -> Self:
         """Mark regex as case sensitive (default)."""
         # Remove nocase if present
-        self._modifiers = [m for m in self._modifiers
-                          if m.modifier_type != StringModifierType.NOCASE]
+        self._modifiers = [
+            m for m in self._modifiers if m.modifier_type != StringModifierType.NOCASE
+        ]
         return self
 
     def dotall(self) -> Self:
@@ -221,7 +217,7 @@ class FluentStringBuilder:
         self._string_type = "hex"
         return self
 
-    def jump_pattern(self, min_bytes: int, max_bytes: Optional[int] = None) -> Self:
+    def jump_pattern(self, min_bytes: int, max_bytes: int | None = None) -> Self:
         """Create hex jump pattern [min-max]."""
         if max_bytes is None:
             max_bytes = min_bytes
@@ -244,24 +240,19 @@ class FluentStringBuilder:
 
         if self._string_type == "plain":
             return PlainString(
-                identifier=self.identifier,
-                value=str(self._content),
-                modifiers=legacy_modifiers
+                identifier=self.identifier, value=str(self._content), modifiers=legacy_modifiers
             )
-        elif self._string_type == "hex":
+        if self._string_type == "hex":
             return HexString(
                 identifier=self.identifier,
                 tokens=self._content if isinstance(self._content, list) else [],
-                modifiers=legacy_modifiers
+                modifiers=legacy_modifiers,
             )
-        elif self._string_type == "regex":
+        if self._string_type == "regex":
             return RegexString(
-                identifier=self.identifier,
-                regex=str(self._content),
-                modifiers=legacy_modifiers
+                identifier=self.identifier, regex=str(self._content), modifiers=legacy_modifiers
             )
-        else:
-            raise ValueError(f"Unknown string type: {self._string_type}")
+        raise ValueError(f"Unknown string type: {self._string_type}")
 
     # Helper methods
     def _add_modifier(self, modifier_type: StringModifierType) -> None:
@@ -271,7 +262,7 @@ class FluentStringBuilder:
         # Add new modifier
         self._modifiers.append(EnhancedStringModifier(modifier_type=modifier_type))
 
-    def _parse_hex_pattern(self, pattern: str) -> List[HexToken]:
+    def _parse_hex_pattern(self, pattern: str) -> list[HexToken]:
         """Parse hex pattern string into tokens."""
         tokens = []
         # Remove spaces and normalize
@@ -280,7 +271,7 @@ class FluentStringBuilder:
         i = 0
         while i < len(hex_chars):
             if i + 1 < len(hex_chars):
-                two_char = hex_chars[i:i+2]
+                two_char = hex_chars[i : i + 2]
                 if two_char == "??":
                     tokens.append(HexWildcard())
                     i += 2
@@ -306,22 +297,22 @@ class FluentStringBuilder:
 
     # Static factory methods
     @staticmethod
-    def string(identifier: str) -> 'FluentStringBuilder':
+    def string(identifier: str) -> "FluentStringBuilder":
         """Create a new string builder."""
         return FluentStringBuilder(identifier)
 
     @staticmethod
-    def text_string(identifier: str, content: str) -> 'FluentStringBuilder':
+    def text_string(identifier: str, content: str) -> "FluentStringBuilder":
         """Create a text string builder."""
         return FluentStringBuilder(identifier).literal(content)
 
     @staticmethod
-    def hex_string(identifier: str, pattern: str) -> 'FluentStringBuilder':
+    def hex_string(identifier: str, pattern: str) -> "FluentStringBuilder":
         """Create a hex string builder."""
         return FluentStringBuilder(identifier).hex(pattern)
 
     @staticmethod
-    def regex_string(identifier: str, pattern: str) -> 'FluentStringBuilder':
+    def regex_string(identifier: str, pattern: str) -> "FluentStringBuilder":
         """Create a regex string builder."""
         return FluentStringBuilder(identifier).regex(pattern)
 
@@ -331,38 +322,47 @@ def string(identifier: str) -> FluentStringBuilder:
     """Create a new fluent string builder."""
     return FluentStringBuilder.string(identifier)
 
+
 def text(identifier: str, content: str) -> FluentStringBuilder:
     """Create a text string with content."""
     return FluentStringBuilder.text_string(identifier, content)
+
 
 def hex_pattern(identifier: str, pattern: str) -> FluentStringBuilder:
     """Create a hex string with pattern."""
     return FluentStringBuilder.hex_string(identifier, pattern)
 
+
 def regex(identifier: str, pattern: str) -> FluentStringBuilder:
     """Create a regex string with pattern."""
     return FluentStringBuilder.regex_string(identifier, pattern)
+
 
 # Common pattern builders
 def mz_header(identifier: str = "$mz") -> FluentStringBuilder:
     """MZ header string."""
     return FluentStringBuilder.string(identifier).mz_header()
 
+
 def pe_header(identifier: str = "$pe") -> FluentStringBuilder:
     """PE header string."""
     return FluentStringBuilder.string(identifier).pe_header()
+
 
 def elf_header(identifier: str = "$elf") -> FluentStringBuilder:
     """ELF header string."""
     return FluentStringBuilder.string(identifier).elf_header()
 
+
 def email_regex(identifier: str = "$email") -> FluentStringBuilder:
     """Email regex string."""
     return FluentStringBuilder.string(identifier).email_pattern()
 
+
 def ip_regex(identifier: str = "$ip") -> FluentStringBuilder:
     """IP address regex string."""
     return FluentStringBuilder.string(identifier).ip_address_pattern()
+
 
 def url_regex(identifier: str = "$url") -> FluentStringBuilder:
     """URL regex string."""

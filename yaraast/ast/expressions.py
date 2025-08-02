@@ -1,7 +1,7 @@
 """Expression AST nodes."""
 
-from dataclasses import dataclass, field
-from typing import Any, List, Optional, Union
+from dataclasses import dataclass
+from typing import Any
 
 from yaraast.ast.base import ASTNode
 
@@ -49,7 +49,7 @@ class StringOffset(Expression):
     """String offset expression (@str or @str[i])."""
 
     string_id: str
-    index: Optional[Expression] = None
+    index: Expression | None = None
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_string_offset(self)
@@ -60,7 +60,7 @@ class StringLength(Expression):
     """String length expression (!str or !str[i])."""
 
     string_id: str
-    index: Optional[Expression] = None
+    index: Expression | None = None
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_string_length(self)
@@ -154,7 +154,7 @@ class ParenthesesExpression(Expression):
 class SetExpression(Expression):
     """Set expression (a, b, c)."""
 
-    elements: List[Expression]
+    elements: list[Expression]
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_set_expression(self)
@@ -176,7 +176,7 @@ class FunctionCall(Expression):
     """Function call expression."""
 
     function: str
-    arguments: List[Expression]
+    arguments: list[Expression]
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_function_call(self)

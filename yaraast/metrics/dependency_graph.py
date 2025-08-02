@@ -2,13 +2,12 @@
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 import graphviz
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.visitor import ASTVisitor
 
 
@@ -16,16 +15,21 @@ class DependencyGraphGenerator(ASTVisitor[None]):
     """Generates dependency graphs from YARA AST."""
 
     def __init__(self):
-        self.dependencies: Dict[str, Set[str]] = defaultdict(set)
-        self.imports: Set[str] = set()
-        self.includes: Set[str] = set()
-        self.rules: Dict[str, Dict[str, Any]] = {}
-        self.string_references: Dict[str, Set[str]] = defaultdict(set)  # rule -> strings
-        self.module_references: Dict[str, Set[str]] = defaultdict(set)  # rule -> modules
-        self._current_rule: Optional[str] = None
+        self.dependencies: dict[str, set[str]] = defaultdict(set)
+        self.imports: set[str] = set()
+        self.includes: set[str] = set()
+        self.rules: dict[str, dict[str, Any]] = {}
+        self.string_references: dict[str, set[str]] = defaultdict(set)  # rule -> strings
+        self.module_references: dict[str, set[str]] = defaultdict(set)  # rule -> modules
+        self._current_rule: str | None = None
 
-    def generate_graph(self, ast: YaraFile, output_path: Optional[str] = None,
-                      format: str = 'svg', engine: str = 'dot') -> str:
+    def generate_graph(
+        self,
+        ast: YaraFile,
+        output_path: str | None = None,
+        format: str = "svg",
+        engine: str = "dot",
+    ) -> str:
         """Generate dependency graph from AST."""
         # Reset state
         self.dependencies.clear()
@@ -39,68 +43,68 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         self.visit(ast)
 
         # Create GraphViz graph
-        dot = graphviz.Digraph(comment='YARA Dependencies', engine=engine)
-        dot.attr(rankdir='TB', bgcolor='white', fontname='Arial')
+        dot = graphviz.Digraph(comment="YARA Dependencies", engine=engine)
+        dot.attr(rankdir="TB", bgcolor="white", fontname="Arial")
 
         self._add_nodes(dot)
         self._add_edges(dot)
 
         # Render graph
         if output_path:
-            output_file = str(Path(output_path).with_suffix(''))
+            output_file = str(Path(output_path).with_suffix(""))
             dot.render(output_file, format=format, cleanup=True)
             return f"{output_file}.{format}"
-        else:
-            return dot.source
+        return dot.source
 
-    def generate_rule_graph(self, ast: YaraFile, output_path: Optional[str] = None,
-                           format: str = 'svg') -> str:
+    def generate_rule_graph(
+        self, ast: YaraFile, output_path: str | None = None, format: str = "svg"
+    ) -> str:
         """Generate rule-only dependency graph."""
         self.visit(ast)
 
-        dot = graphviz.Digraph(comment='YARA Rule Dependencies')
-        dot.attr(rankdir='LR', bgcolor='white', fontname='Arial')
-        dot.attr('node', shape='box', style='rounded,filled', fillcolor='lightblue')
+        dot = graphviz.Digraph(comment="YARA Rule Dependencies")
+        dot.attr(rankdir="LR", bgcolor="white", fontname="Arial")
+        dot.attr("node", shape="box", style="rounded,filled", fillcolor="lightblue")
 
         # Add rule nodes
         for rule_name, rule_info in self.rules.items():
             label = f"{rule_name}\\n"
-            if rule_info.get('tags'):
+            if rule_info.get("tags"):
                 label += f"Tags: {', '.join(rule_info['tags'])}\\n"
             label += f"Strings: {rule_info['string_count']}"
 
-            color = 'lightgreen' if rule_info['string_count'] > 0 else 'lightcoral'
+            color = "lightgreen" if rule_info["string_count"] > 0 else "lightcoral"
             dot.node(rule_name, label, fillcolor=color)
 
         # Add string dependencies (simplified)
         for rule_name, strings in self.string_references.items():
             for string_id in strings:
                 # Create virtual string nodes
-                dot.node(string_id, string_id, shape='ellipse', fillcolor='lightyellow')
-                dot.edge(rule_name, string_id, label='uses')
+                dot.node(string_id, string_id, shape="ellipse", fillcolor="lightyellow")
+                dot.edge(rule_name, string_id, label="uses")
 
         if output_path:
-            output_file = str(Path(output_path).with_suffix(''))
+            output_file = str(Path(output_path).with_suffix(""))
             dot.render(output_file, format=format, cleanup=True)
             return f"{output_file}.{format}"
-        else:
-            return dot.source
+        return dot.source
 
-    def generate_module_graph(self, ast: YaraFile, output_path: Optional[str] = None,
-                             format: str = 'svg') -> str:
+    def generate_module_graph(
+        self, ast: YaraFile, output_path: str | None = None, format: str = "svg"
+    ) -> str:
         """Generate module dependency graph."""
         self.visit(ast)
 
-        dot = graphviz.Digraph(comment='YARA Module Dependencies')
-        dot.attr(rankdir='TB', bgcolor='white', fontname='Arial')
+        dot = graphviz.Digraph(comment="YARA Module Dependencies")
+        dot.attr(rankdir="TB", bgcolor="white", fontname="Arial")
 
         # Add module nodes
-        dot.attr('node', shape='box', style='rounded,filled', fillcolor='lightcyan')
+        dot.attr("node", shape="box", style="rounded,filled", fillcolor="lightcyan")
         for module in self.imports:
-            dot.node(f"mod_{module}", f"Module: {module}", fillcolor='lightcyan')
+            dot.node(f"mod_{module}", f"Module: {module}", fillcolor="lightcyan")
 
         # Add rule nodes
-        dot.attr('node', shape='ellipse', fillcolor='lightblue')
+        dot.attr("node", shape="ellipse", fillcolor="lightblue")
         for rule_name in self.rules:
             dot.node(rule_name, rule_name)
 
@@ -108,22 +112,26 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         for rule_name, modules in self.module_references.items():
             for module in modules:
                 if module in self.imports:
-                    dot.edge(f"mod_{module}", rule_name, label='imported by')
+                    dot.edge(f"mod_{module}", rule_name, label="imported by")
 
         if output_path:
-            output_file = str(Path(output_path).with_suffix(''))
+            output_file = str(Path(output_path).with_suffix(""))
             dot.render(output_file, format=format, cleanup=True)
             return f"{output_file}.{format}"
-        else:
-            return dot.source
+        return dot.source
 
-    def generate_complexity_graph(self, ast: YaraFile, complexity_metrics: Dict[str, int],
-                                 output_path: Optional[str] = None, format: str = 'svg') -> str:
+    def generate_complexity_graph(
+        self,
+        ast: YaraFile,
+        complexity_metrics: dict[str, int],
+        output_path: str | None = None,
+        format: str = "svg",
+    ) -> str:
         """Generate complexity visualization graph."""
         self.visit(ast)
 
-        dot = graphviz.Digraph(comment='YARA Complexity Visualization')
-        dot.attr(rankdir='TB', bgcolor='white', fontname='Arial')
+        dot = graphviz.Digraph(comment="YARA Complexity Visualization")
+        dot.attr(rankdir="TB", bgcolor="white", fontname="Arial")
 
         # Color rules by complexity
         for rule_name, rule_info in self.rules.items():
@@ -131,61 +139,60 @@ class DependencyGraphGenerator(ASTVisitor[None]):
 
             # Choose color based on complexity
             if complexity <= 5:
-                color = 'lightgreen'
+                color = "lightgreen"
             elif complexity <= 10:
-                color = 'yellow'
+                color = "yellow"
             else:
-                color = 'lightcoral'
+                color = "lightcoral"
 
             label = f"{rule_name}\\nComplexity: {complexity}\\nStrings: {rule_info['string_count']}"
-            dot.node(rule_name, label, style='filled', fillcolor=color, shape='box')
+            dot.node(rule_name, label, style="filled", fillcolor=color, shape="box")
 
         # Add complexity legend
-        with dot.subgraph(name='cluster_legend') as legend:
-            legend.attr(label='Complexity Legend', style='filled', fillcolor='white')
-            legend.node('low', 'Low (≤5)', fillcolor='lightgreen', shape='box')
-            legend.node('med', 'Medium (6-10)', fillcolor='yellow', shape='box')
-            legend.node('high', 'High (>10)', fillcolor='lightcoral', shape='box')
+        with dot.subgraph(name="cluster_legend") as legend:
+            legend.attr(label="Complexity Legend", style="filled", fillcolor="white")
+            legend.node("low", "Low (≤5)", fillcolor="lightgreen", shape="box")
+            legend.node("med", "Medium (6-10)", fillcolor="yellow", shape="box")
+            legend.node("high", "High (>10)", fillcolor="lightcoral", shape="box")
 
         if output_path:
-            output_file = str(Path(output_path).with_suffix(''))
+            output_file = str(Path(output_path).with_suffix(""))
             dot.render(output_file, format=format, cleanup=True)
             return f"{output_file}.{format}"
-        else:
-            return dot.source
+        return dot.source
 
     def _add_nodes(self, dot: graphviz.Digraph) -> None:
         """Add nodes to the graph."""
         # Import nodes
         if self.imports:
-            with dot.subgraph(name='cluster_imports') as imports_cluster:
-                imports_cluster.attr(label='Imports', style='filled', fillcolor='lightcyan')
-                imports_cluster.attr('node', shape='box', fillcolor='lightblue')
+            with dot.subgraph(name="cluster_imports") as imports_cluster:
+                imports_cluster.attr(label="Imports", style="filled", fillcolor="lightcyan")
+                imports_cluster.attr("node", shape="box", fillcolor="lightblue")
                 for imp in self.imports:
                     imports_cluster.node(f"import_{imp}", f'"{imp}"')
 
         # Include nodes
         if self.includes:
-            with dot.subgraph(name='cluster_includes') as includes_cluster:
-                includes_cluster.attr(label='Includes', style='filled', fillcolor='lightyellow')
-                includes_cluster.attr('node', shape='note', fillcolor='yellow')
+            with dot.subgraph(name="cluster_includes") as includes_cluster:
+                includes_cluster.attr(label="Includes", style="filled", fillcolor="lightyellow")
+                includes_cluster.attr("node", shape="note", fillcolor="yellow")
                 for inc in self.includes:
                     includes_cluster.node(f"include_{inc}", f'"{inc}"')
 
         # Rule nodes
         if self.rules:
-            with dot.subgraph(name='cluster_rules') as rules_cluster:
-                rules_cluster.attr(label='Rules', style='filled', fillcolor='lightgray')
-                rules_cluster.attr('node', shape='ellipse', fillcolor='white')
+            with dot.subgraph(name="cluster_rules") as rules_cluster:
+                rules_cluster.attr(label="Rules", style="filled", fillcolor="lightgray")
+                rules_cluster.attr("node", shape="ellipse", fillcolor="white")
 
                 for rule_name, rule_info in self.rules.items():
                     label = rule_name
-                    if rule_info.get('modifiers'):
+                    if rule_info.get("modifiers"):
                         label += f"\\n[{', '.join(rule_info['modifiers'])}]"
-                    if rule_info.get('tags'):
+                    if rule_info.get("tags"):
                         label += f"\\n:{', '.join(rule_info['tags'])}"
 
-                    color = 'lightgreen' if rule_info['string_count'] > 0 else 'lightcoral'
+                    color = "lightgreen" if rule_info["string_count"] > 0 else "lightcoral"
                     rules_cluster.node(rule_name, label, fillcolor=color)
 
     def _add_edges(self, dot: graphviz.Digraph) -> None:
@@ -194,33 +201,47 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         for rule_name, modules in self.module_references.items():
             for module in modules:
                 if module in self.imports:
-                    dot.edge(f"import_{module}", rule_name,
-                           label='uses', style='dashed', color='blue')
+                    dot.edge(
+                        f"import_{module}", rule_name, label="uses", style="dashed", color="blue"
+                    )
 
         # String reference edges (conceptual)
         for rule_name, strings in self.string_references.items():
             if strings:
                 # Create a virtual "strings" node for this rule
                 strings_node = f"{rule_name}_strings"
-                dot.node(strings_node, f"Strings\\n({len(strings)})",
-                        shape='box', style='filled', fillcolor='lightyellow')
-                dot.edge(rule_name, strings_node, label='defines', color='green')
+                dot.node(
+                    strings_node,
+                    f"Strings\\n({len(strings)})",
+                    shape="box",
+                    style="filled",
+                    fillcolor="lightyellow",
+                )
+                dot.edge(rule_name, strings_node, label="defines", color="green")
 
-    def get_dependency_stats(self) -> Dict[str, Any]:
+    def get_dependency_stats(self) -> dict[str, Any]:
         """Get dependency statistics."""
         return {
             "total_rules": len(self.rules),
             "total_imports": len(self.imports),
             "total_includes": len(self.includes),
-            "rules_with_strings": sum(1 for r in self.rules.values() if r['string_count'] > 0),
-            "rules_using_modules": len([r for r in self.module_references if self.module_references[r]]),
+            "rules_with_strings": sum(1 for r in self.rules.values() if r["string_count"] > 0),
+            "rules_using_modules": len(
+                [r for r in self.module_references if self.module_references[r]]
+            ),
             "most_used_modules": sorted(
-                [(mod, len([r for refs in self.module_references.values() if mod in refs]))
-                 for mod in self.imports],
-                key=lambda x: x[1], reverse=True
+                [
+                    (mod, len([r for refs in self.module_references.values() if mod in refs]))
+                    for mod in self.imports
+                ],
+                key=lambda x: x[1],
+                reverse=True,
             )[:5],
-            "average_strings_per_rule": sum(r['string_count'] for r in self.rules.values()) / max(1, len(self.rules)),
-            "complex_rules": [name for name, info in self.rules.items() if info['string_count'] > 10]
+            "average_strings_per_rule": sum(r["string_count"] for r in self.rules.values())
+            / max(1, len(self.rules)),
+            "complex_rules": [
+                name for name, info in self.rules.items() if info["string_count"] > 10
+            ],
         }
 
     # Visitor methods
@@ -240,11 +261,11 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         self._current_rule = node.name
 
         self.rules[node.name] = {
-            'modifiers': node.modifiers,
-            'tags': [tag.name for tag in node.tags],
-            'string_count': len(node.strings),
-            'has_meta': bool(node.meta),
-            'has_condition': node.condition is not None
+            "modifiers": node.modifiers,
+            "tags": [tag.name for tag in node.tags],
+            "string_count": len(node.strings),
+            "has_meta": bool(node.meta),
+            "has_condition": node.condition is not None,
         }
 
         # Visit strings to track references
@@ -259,7 +280,7 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         """Track module usage in member access."""
         if self._current_rule:
             # Extract module name from member access
-            if hasattr(node.object, 'name'):
+            if hasattr(node.object, "name"):
                 module_name = node.object.name
                 if module_name in self.imports:
                     self.module_references[self._current_rule].add(module_name)
@@ -396,9 +417,9 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         self.visit(node.range)
 
     def visit_of_expression(self, node) -> None:
-        if hasattr(node.quantifier, 'accept'):
+        if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
-        if hasattr(node.string_set, 'accept'):
+        if hasattr(node.string_set, "accept"):
             self.visit(node.string_set)
 
     def visit_meta(self, node) -> None:

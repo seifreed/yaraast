@@ -2,4 +2,4 @@
 
 from yaraast.visitor.visitor import ASTTransformer, ASTVisitor
 
-__all__ = ["ASTVisitor", "ASTTransformer"]
+__all__ = ["ASTTransformer", "ASTVisitor"]

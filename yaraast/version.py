@@ -20,9 +20,11 @@ YARAX_COMPATIBLE = True
 BUILD_DATE = "2024-01-01"
 BUILD_COMMIT = "unknown"
 
+
 def get_version_string() -> str:
     """Get full version string."""
     return f"YARAAST {YARAAST_VERSION} (YARA {YARA_SYNTAX_VERSION} compatible)"
+
 
 def get_version_info() -> dict:
     """Get version information as dictionary."""
@@ -31,20 +33,14 @@ def get_version_info() -> dict:
             "major": YARAAST_VERSION_MAJOR,
             "minor": YARAAST_VERSION_MINOR,
             "patch": YARAAST_VERSION_PATCH,
-            "version": YARAAST_VERSION
+            "version": YARAAST_VERSION,
         },
         "yara": {
             "major": YARA_SYNTAX_VERSION_MAJOR,
             "minor": YARA_SYNTAX_VERSION_MINOR,
             "patch": YARA_SYNTAX_VERSION_PATCH,
-            "version": YARA_SYNTAX_VERSION
+            "version": YARA_SYNTAX_VERSION,
         },
-        "yarax": {
-            "version": YARAX_SYNTAX_VERSION,
-            "compatible": YARAX_COMPATIBLE
-        },
-        "build": {
-            "date": BUILD_DATE,
-            "commit": BUILD_COMMIT
-        }
+        "yarax": {"version": YARAX_SYNTAX_VERSION, "compatible": YARAX_COMPATIBLE},
+        "build": {"date": BUILD_DATE, "commit": BUILD_COMMIT},
     }

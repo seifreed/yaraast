@@ -7,11 +7,11 @@ from yaraast.analysis.rule_analyzer import RuleAnalyzer
 from yaraast.analysis.string_usage import StringUsageAnalyzer
 
 __all__ = [
+    "AnalysisReport",
+    "BestPracticesAnalyzer",
+    "DependencyAnalyzer",
+    "OptimizationAnalyzer",
+    "OptimizationReport",
     "RuleAnalyzer",
     "StringUsageAnalyzer",
-    "DependencyAnalyzer",
-    "BestPracticesAnalyzer",
-    "AnalysisReport",
-    "OptimizationAnalyzer",
-    "OptimizationReport"
 ]

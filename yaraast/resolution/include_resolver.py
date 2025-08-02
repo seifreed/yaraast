@@ -4,21 +4,20 @@ import hashlib
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.rules import Include
 from yaraast.parser import Parser
 
 
 @dataclass
 class ResolvedFile:
     """Represents a resolved YARA file."""
+
     path: Path
     content: str
     ast: YaraFile
     checksum: str
-    includes: List['ResolvedFile'] = field(default_factory=list)
+    includes: list["ResolvedFile"] = field(default_factory=list)
 
     def get_all_rules(self):
         """Get all rules including from includes."""
@@ -31,7 +30,7 @@ class ResolvedFile:
 class IncludeResolver:
     """Resolves YARA include statements with caching and cycle detection."""
 
-    def __init__(self, search_paths: Optional[List[str]] = None):
+    def __init__(self, search_paths: list[str] | None = None):
         """
         Initialize include resolver.
 
@@ -40,11 +39,11 @@ class IncludeResolver:
                          If None, uses current directory and YARA_INCLUDE_PATH env var.
         """
         self.search_paths = self._init_search_paths(search_paths)
-        self.cache: Dict[str, ResolvedFile] = {}
-        self.resolution_stack: List[Path] = []
+        self.cache: dict[str, ResolvedFile] = {}
+        self.resolution_stack: list[Path] = []
         self.parser = Parser()
 
-    def _init_search_paths(self, search_paths: Optional[List[str]]) -> List[Path]:
+    def _init_search_paths(self, search_paths: list[str] | None) -> list[Path]:
         """Initialize search paths from config and environment."""
         paths = []
 
@@ -56,7 +55,7 @@ class IncludeResolver:
         paths.append(Path.cwd())
 
         # Add paths from environment variable
-        env_paths = os.environ.get('YARA_INCLUDE_PATH', '')
+        env_paths = os.environ.get("YARA_INCLUDE_PATH", "")
         if env_paths:
             for path in env_paths.split(os.pathsep):
                 if path:
@@ -72,7 +71,7 @@ class IncludeResolver:
 
         return unique_paths
 
-    def resolve_file(self, file_path: str, base_path: Optional[Path] = None) -> ResolvedFile:
+    def resolve_file(self, file_path: str, base_path: Path | None = None) -> ResolvedFile:
         """
         Resolve a YARA file and all its includes.
 
@@ -115,24 +114,16 @@ class IncludeResolver:
             checksum = self._calculate_checksum_from_content(content)
 
             # Create resolved file
-            resolved = ResolvedFile(
-                path=resolved_path,
-                content=content,
-                ast=ast,
-                checksum=checksum
-            )
+            resolved = ResolvedFile(path=resolved_path, content=content, ast=ast, checksum=checksum)
 
             # Resolve includes
             for include in ast.includes:
                 try:
-                    included_file = self.resolve_file(
-                        include.path,
-                        base_path=resolved_path.parent
-                    )
+                    included_file = self.resolve_file(include.path, base_path=resolved_path.parent)
                     resolved.includes.append(included_file)
-                except (FileNotFoundError, RecursionError) as e:
+                except (FileNotFoundError, RecursionError):
                     # Log error but continue parsing other includes
-                    print(f"Warning: Failed to resolve include '{include.path}': {e}")
+                    pass
 
             # Cache the result
             self.cache[cache_key] = resolved
@@ -143,7 +134,7 @@ class IncludeResolver:
             # Remove from resolution stack
             self.resolution_stack.pop()
 
-    def _find_file(self, file_path: str, base_path: Optional[Path] = None) -> Path:
+    def _find_file(self, file_path: str, base_path: Path | None = None) -> Path:
         """
         Find a file in search paths.
 
@@ -182,8 +173,7 @@ class IncludeResolver:
         # Not found
         searched = [str(d) for d in search_dirs]
         raise FileNotFoundError(
-            f"Cannot find include file '{file_path}'. "
-            f"Searched in: {', '.join(searched)}"
+            f"Cannot find include file '{file_path}'. " f"Searched in: {', '.join(searched)}"
         )
 
     def _calculate_checksum(self, file_path: Path) -> str:
@@ -199,11 +189,11 @@ class IncludeResolver:
         """Clear the file cache."""
         self.cache.clear()
 
-    def get_all_resolved_files(self) -> List[ResolvedFile]:
+    def get_all_resolved_files(self) -> list[ResolvedFile]:
         """Get all resolved files from cache."""
         return list(self.cache.values())
 
-    def get_include_tree(self, file_path: str) -> Dict:
+    def get_include_tree(self, file_path: str) -> dict:
         """
         Get include tree structure for a file.
 
@@ -213,14 +203,11 @@ class IncludeResolver:
         resolved = self.resolve_file(file_path)
         return self._build_include_tree(resolved)
 
-    def _build_include_tree(self, resolved: ResolvedFile) -> Dict:
+    def _build_include_tree(self, resolved: ResolvedFile) -> dict:
         """Build include tree structure."""
-        tree = {
-            'path': str(resolved.path),
-            'includes': []
-        }
+        tree = {"path": str(resolved.path), "includes": []}
 
         for include in resolved.includes:
-            tree['includes'].append(self._build_include_tree(include))
+            tree["includes"].append(self._build_include_tree(include))
 
         return tree

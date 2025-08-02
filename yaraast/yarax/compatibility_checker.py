@@ -1,52 +1,23 @@
 """YARA-X compatibility checker."""
 
 import re
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
-from yaraast.ast.base import ASTNode, Location, YaraFile
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.conditions import (
-    AtExpression,
-    Condition,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
     OfExpression,
 )
 from yaraast.ast.expressions import (
-    ArrayAccess,
     BinaryExpression,
-    BooleanLiteral,
-    DoubleLiteral,
-    Expression,
-    FunctionCall,
     Identifier,
-    IntegerLiteral,
-    MemberAccess,
-    ParenthesesExpression,
-    RangeExpression,
     SetExpression,
-    StringCount,
-    StringIdentifier,
-    StringLength,
-    StringLiteral,
-    StringOffset,
-    UnaryExpression,
 )
-from yaraast.ast.meta import Meta
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import (
-    HexAlternative,
-    HexByte,
     HexJump,
-    HexNibble,
     HexString,
-    HexToken,
-    HexWildcard,
     PlainString,
     RegexString,
-    StringDefinition,
-    StringModifier,
 )
 from yaraast.visitor import ASTVisitor
 from yaraast.yarax.feature_flags import YaraXFeatures
@@ -55,8 +26,14 @@ from yaraast.yarax.feature_flags import YaraXFeatures
 class CompatibilityIssue:
     """Represents a compatibility issue between YARA and YARA-X."""
 
-    def __init__(self, severity: str, location: Optional[Location],
-                 issue_type: str, message: str, suggestion: str = ""):
+    def __init__(
+        self,
+        severity: str,
+        location: Location | None,
+        issue_type: str,
+        message: str,
+        suggestion: str = "",
+    ):
         self.severity = severity  # "error", "warning", "info"
         self.location = location
         self.issue_type = issue_type
@@ -71,27 +48,35 @@ class CompatibilityIssue:
 class YaraXCompatibilityChecker(ASTVisitor[None]):
     """Check YARA rules for YARA-X compatibility."""
 
-    def __init__(self, features: Optional[YaraXFeatures] = None):
+    def __init__(self, features: YaraXFeatures | None = None):
         self.features = features or YaraXFeatures.yarax_strict()
-        self.issues: List[CompatibilityIssue] = []
-        self.current_rule: Optional[str] = None
+        self.issues: list[CompatibilityIssue] = []
+        self.current_rule: str | None = None
 
-    def check(self, yara_file: YaraFile) -> List[CompatibilityIssue]:
+    def check(self, yara_file: YaraFile) -> list[CompatibilityIssue]:
         """Check YARA file for compatibility issues."""
         self.issues.clear()
         self.visit(yara_file)
         return self.issues
 
-    def _add_issue(self, severity: str, issue_type: str, message: str,
-                   suggestion: str = "", location: Optional[Location] = None):
+    def _add_issue(
+        self,
+        severity: str,
+        issue_type: str,
+        message: str,
+        suggestion: str = "",
+        location: Location | None = None,
+    ):
         """Add a compatibility issue."""
-        self.issues.append(CompatibilityIssue(
-            severity=severity,
-            location=location,
-            issue_type=issue_type,
-            message=message,
-            suggestion=suggestion
-        ))
+        self.issues.append(
+            CompatibilityIssue(
+                severity=severity,
+                location=location,
+                issue_type=issue_type,
+                message=message,
+                suggestion=suggestion,
+            )
+        )
 
     def visit_rule(self, node: Rule) -> None:
         """Check rule for compatibility issues."""
@@ -107,7 +92,7 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
                         "duplicate_modifier",
                         f"Duplicate '{modifier}' modifier in rule '{node.name}'",
                         f"Remove duplicate '{modifier}' modifier",
-                        node.location
+                        node.location,
                     )
                 seen_modifiers.add(modifier)
 
@@ -133,7 +118,7 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
                     "base64_too_short",
                     f"Base64 pattern '{node.value}' is shorter than minimum length {self.features.minimum_base64_length}",
                     f"Use a base64 pattern with at least {self.features.minimum_base64_length} characters",
-                    node.location
+                    node.location,
                 )
 
         # Check XOR with fullword
@@ -142,13 +127,13 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
 
         if has_xor and has_fullword and self.features.strict_xor_fullword:
             # Check if string has alphanumeric boundaries
-            if not re.match(r'^[a-zA-Z0-9].*[a-zA-Z0-9]$', node.value):
+            if not re.match(r"^[a-zA-Z0-9].*[a-zA-Z0-9]$", node.value):
                 self._add_issue(
                     "warning",
                     "xor_fullword_boundary",
                     f"String '{node.value}' with XOR and fullword may have stricter boundary checking in YARA-X",
                     "Ensure string has proper alphanumeric boundaries",
-                    node.location
+                    node.location,
                 )
 
     def visit_regex_string(self, node: RegexString) -> None:
@@ -158,32 +143,32 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
             pattern = node.regex
             i = 0
             while i < len(pattern):
-                if pattern[i] == '\\':
+                if pattern[i] == "\\":
                     # Skip escaped character
                     i += 2
                     continue
-                elif pattern[i] == '{':
+                if pattern[i] == "{":
                     # Check if this is part of a repetition {n,m}
-                    if i == 0 or pattern[i-1] in '({|':
+                    if i == 0 or pattern[i - 1] in "({|":
                         self._add_issue(
                             "error",
                             "unescaped_brace",
-                            f"Unescaped '{{' in regex pattern",
+                            "Unescaped '{' in regex pattern",
                             "Escape the brace with '\\{'",
-                            node.location
+                            node.location,
                         )
                 i += 1
 
         if self.features.validate_escape_sequences:
             # Check for invalid escape sequences
-            invalid_escapes = re.findall(r'\\([^\\abfnrtv0-7xdDsSwW.*+?{}()\[\]|^$])', node.regex)
+            invalid_escapes = re.findall(r"\\([^\\abfnrtv0-7xdDsSwW.*+?{}()\[\]|^$])", node.regex)
             for escape in invalid_escapes:
                 self._add_issue(
                     "error",
                     "invalid_escape",
                     f"Invalid escape sequence '\\{escape}' in regex",
-                    f"Remove or fix the escape sequence",
-                    node.location
+                    "Remove or fix the escape sequence",
+                    node.location,
                 )
 
     def visit_hex_string(self, node: HexString) -> None:
@@ -211,7 +196,7 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
                             "yarax_feature",
                             "Using YARA-X feature: boolean expressions in 'of' statement",
                             "This feature is not available in original YARA",
-                            node.location
+                            node.location,
                         )
                         break
 
@@ -228,10 +213,10 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
                     "unsupported_feature",
                     "'with' statement is only available in YARA-X",
                     "Rewrite without using 'with' statement for YARA compatibility",
-                    node.location
+                    node.location,
                 )
 
-    def get_report(self) -> Dict[str, Any]:
+    def get_report(self) -> dict[str, Any]:
         """Generate compatibility report."""
         errors = [i for i in self.issues if i.severity == "error"]
         warnings = [i for i in self.issues if i.severity == "warning"]
@@ -245,10 +230,10 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
             "info": len(infos),
             "issues_by_type": self._group_by_type(),
             "yarax_features_used": self._get_yarax_features_used(),
-            "migration_difficulty": self._assess_migration_difficulty()
+            "migration_difficulty": self._assess_migration_difficulty(),
         }
 
-    def _group_by_type(self) -> Dict[str, List[CompatibilityIssue]]:
+    def _group_by_type(self) -> dict[str, list[CompatibilityIssue]]:
         """Group issues by type."""
         grouped = {}
         for issue in self.issues:
@@ -257,7 +242,7 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
             grouped[issue.issue_type].append(issue)
         return grouped
 
-    def _get_yarax_features_used(self) -> List[str]:
+    def _get_yarax_features_used(self) -> list[str]:
         """Get list of YARA-X specific features used."""
         features = []
         for issue in self.issues:
@@ -272,9 +257,8 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
 
         if errors == 0 and warnings == 0:
             return "trivial"
-        elif errors == 0:
+        if errors == 0:
             return "easy"
-        elif errors <= 5:
+        if errors <= 5:
             return "moderate"
-        else:
-            return "difficult"
+        return "difficult"

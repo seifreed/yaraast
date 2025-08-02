@@ -3,22 +3,15 @@
 import json
 import sys
 from pathlib import Path
-from typing import Optional
 
 import click
 
 from yaraast.codegen.pretty_printer import (
     PrettyPrinter,
-    PrettyPrintOptions,
     StylePresets,
-    pretty_print_compact,
-    pretty_print_dense,
-    pretty_print_readable,
-    pretty_print_verbose,
 )
 from yaraast.parser import YaraParser
 from yaraast.serialization.roundtrip_serializer import (
-    EnhancedYamlSerializer,
     RoundTripSerializer,
     create_rules_manifest,
     roundtrip_yara,
@@ -37,21 +30,35 @@ def roundtrip():
     - Enhanced pretty printing with multiple styles
     - Formatting preservation and comment handling
     """
-    pass
 
 
 @roundtrip.command()
-@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
-@click.option('--format', '-f', type=click.Choice(['json', 'yaml']),
-              default='json', help='Serialization format')
-@click.option('--output', '-o', type=click.Path(path_type=Path),
-              help='Output file for serialized data')
-@click.option('--preserve-comments/--no-comments', default=True,
-              help='Preserve comments in serialization')
-@click.option('--preserve-formatting/--no-formatting', default=True,
-              help='Preserve original formatting information')
-def serialize(input_file: Path, format: str, output: Optional[Path],
-              preserve_comments: bool, preserve_formatting: bool):
+@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["json", "yaml"]),
+    default="json",
+    help="Serialization format",
+)
+@click.option(
+    "--output", "-o", type=click.Path(path_type=Path), help="Output file for serialized data"
+)
+@click.option(
+    "--preserve-comments/--no-comments", default=True, help="Preserve comments in serialization"
+)
+@click.option(
+    "--preserve-formatting/--no-formatting",
+    default=True,
+    help="Preserve original formatting information",
+)
+def serialize(
+    input_file: Path,
+    format: str,
+    output: Path | None,
+    preserve_comments: bool,
+    preserve_formatting: bool,
+):
     """
     Serialize YARA file to JSON/YAML with round-trip metadata.
 
@@ -72,25 +79,22 @@ def serialize(input_file: Path, format: str, output: Optional[Path],
     """
     try:
         # Read input file
-        with open(input_file, 'r', encoding='utf-8') as f:
+        with open(input_file, encoding="utf-8") as f:
             yara_source = f.read()
 
         # Create serializer
         serializer = RoundTripSerializer(
-            preserve_comments=preserve_comments,
-            preserve_formatting=preserve_formatting
+            preserve_comments=preserve_comments, preserve_formatting=preserve_formatting
         )
 
         # Parse and serialize
         ast, serialized = serializer.parse_and_serialize(
-            yara_source,
-            source_file=str(input_file),
-            format=format
+            yara_source, source_file=str(input_file), format=format
         )
 
         # Output result
         if output:
-            with open(output, 'w', encoding='utf-8') as f:
+            with open(output, "w", encoding="utf-8") as f:
                 f.write(serialized)
             click.echo(f"✅ Serialized to {output}")
             click.echo(f"   Format: {format.upper()}")
@@ -106,15 +110,23 @@ def serialize(input_file: Path, format: str, output: Optional[Path],
 
 
 @roundtrip.command()
-@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
-@click.option('--format', '-f', type=click.Choice(['json', 'yaml']),
-              default='json', help='Input serialization format')
-@click.option('--output', '-o', type=click.Path(path_type=Path),
-              help='Output file for generated YARA code')
-@click.option('--preserve-formatting/--default-formatting', default=True,
-              help='Use original formatting if available')
-def deserialize(input_file: Path, format: str, output: Optional[Path],
-                preserve_formatting: bool):
+@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["json", "yaml"]),
+    default="json",
+    help="Input serialization format",
+)
+@click.option(
+    "--output", "-o", type=click.Path(path_type=Path), help="Output file for generated YARA code"
+)
+@click.option(
+    "--preserve-formatting/--default-formatting",
+    default=True,
+    help="Use original formatting if available",
+)
+def deserialize(input_file: Path, format: str, output: Path | None, preserve_formatting: bool):
     """
     Deserialize JSON/YAML back to YARA code.
 
@@ -131,7 +143,7 @@ def deserialize(input_file: Path, format: str, output: Optional[Path],
     """
     try:
         # Read serialized data
-        with open(input_file, 'r', encoding='utf-8') as f:
+        with open(input_file, encoding="utf-8") as f:
             serialized_data = f.read()
 
         # Create serializer
@@ -139,14 +151,12 @@ def deserialize(input_file: Path, format: str, output: Optional[Path],
 
         # Deserialize and generate
         ast, yara_code = serializer.deserialize_and_generate(
-            serialized_data,
-            format=format,
-            preserve_original_formatting=preserve_formatting
+            serialized_data, format=format, preserve_original_formatting=preserve_formatting
         )
 
         # Output result
         if output:
-            with open(output, 'w', encoding='utf-8') as f:
+            with open(output, "w", encoding="utf-8") as f:
                 f.write(yara_code)
             click.echo(f"✅ Generated YARA code to {output}")
             click.echo(f"   Rules: {len(ast.rules)}")
@@ -160,14 +170,19 @@ def deserialize(input_file: Path, format: str, output: Optional[Path],
 
 
 @roundtrip.command()
-@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
-@click.option('--format', '-f', type=click.Choice(['json', 'yaml']),
-              default='json', help='Serialization format for testing')
-@click.option('--output', '-o', type=click.Path(path_type=Path),
-              help='Output file for test results')
-@click.option('--verbose', '-v', is_flag=True,
-              help='Show detailed comparison results')
-def test(input_file: Path, format: str, output: Optional[Path], verbose: bool):
+@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["json", "yaml"]),
+    default="json",
+    help="Serialization format for testing",
+)
+@click.option(
+    "--output", "-o", type=click.Path(path_type=Path), help="Output file for test results"
+)
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed comparison results")
+def test(input_file: Path, format: str, output: Path | None, verbose: bool):
     """
     Test round-trip conversion fidelity.
 
@@ -187,7 +202,7 @@ def test(input_file: Path, format: str, output: Optional[Path], verbose: bool):
     """
     try:
         # Read input file
-        with open(input_file, 'r', encoding='utf-8') as f:
+        with open(input_file, encoding="utf-8") as f:
             yara_source = f.read()
 
         # Perform round-trip test
@@ -205,25 +220,27 @@ def test(input_file: Path, format: str, output: Optional[Path], verbose: bool):
 
             if verbose:
                 click.echo("\nDifferences:")
-                for diff in result['differences']:
+                for diff in result["differences"]:
                     click.echo(f"   • {diff}")
 
         if verbose:
             click.echo(f"\nOriginal source ({len(result['original_source'].splitlines())} lines):")
-            for i, line in enumerate(result['original_source'].splitlines()[:10], 1):
+            for i, line in enumerate(result["original_source"].splitlines()[:10], 1):
                 click.echo(f"   {i:2d}: {line}")
-            if len(result['original_source'].splitlines()) > 10:
+            if len(result["original_source"].splitlines()) > 10:
                 click.echo("      ... (truncated)")
 
-            click.echo(f"\nReconstructed source ({len(result['reconstructed_source'].splitlines())} lines):")
-            for i, line in enumerate(result['reconstructed_source'].splitlines()[:10], 1):
+            click.echo(
+                f"\nReconstructed source ({len(result['reconstructed_source'].splitlines())} lines):"
+            )
+            for i, line in enumerate(result["reconstructed_source"].splitlines()[:10], 1):
                 click.echo(f"   {i:2d}: {line}")
-            if len(result['reconstructed_source'].splitlines()) > 10:
+            if len(result["reconstructed_source"].splitlines()) > 10:
                 click.echo("      ... (truncated)")
 
         # Save detailed results if requested
         if output:
-            with open(output, 'w', encoding='utf-8') as f:
+            with open(output, "w", encoding="utf-8") as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
             click.echo(f"\nDetailed results saved to {output}")
 
@@ -237,25 +254,33 @@ def test(input_file: Path, format: str, output: Optional[Path], verbose: bool):
 
 
 @roundtrip.command()
-@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
-@click.option('--output', '-o', type=click.Path(path_type=Path),
-              help='Output file for formatted YARA code')
-@click.option('--style', type=click.Choice(['compact', 'readable', 'dense', 'verbose']),
-              default='readable', help='Pretty printing style preset')
-@click.option('--indent-size', type=int, default=4, help='Indentation size')
-@click.option('--max-line-length', type=int, default=120, help='Maximum line length')
-@click.option('--align-strings/--no-align-strings', default=True,
-              help='Align string definitions')
-@click.option('--align-meta/--no-align-meta', default=True,
-              help='Align meta values')
-@click.option('--sort-imports/--preserve-import-order', default=True,
-              help='Sort import statements')
-@click.option('--sort-tags/--preserve-tag-order', default=True,
-              help='Sort rule tags')
-def pretty(input_file: Path, output: Optional[Path], style: str,
-           indent_size: int, max_line_length: int,
-           align_strings: bool, align_meta: bool,
-           sort_imports: bool, sort_tags: bool):
+@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--output", "-o", type=click.Path(path_type=Path), help="Output file for formatted YARA code"
+)
+@click.option(
+    "--style",
+    type=click.Choice(["compact", "readable", "dense", "verbose"]),
+    default="readable",
+    help="Pretty printing style preset",
+)
+@click.option("--indent-size", type=int, default=4, help="Indentation size")
+@click.option("--max-line-length", type=int, default=120, help="Maximum line length")
+@click.option("--align-strings/--no-align-strings", default=True, help="Align string definitions")
+@click.option("--align-meta/--no-align-meta", default=True, help="Align meta values")
+@click.option("--sort-imports/--preserve-import-order", default=True, help="Sort import statements")
+@click.option("--sort-tags/--preserve-tag-order", default=True, help="Sort rule tags")
+def pretty(
+    input_file: Path,
+    output: Path | None,
+    style: str,
+    indent_size: int,
+    max_line_length: int,
+    align_strings: bool,
+    align_meta: bool,
+    sort_imports: bool,
+    sort_tags: bool,
+):
     """
     Pretty print YARA file with advanced formatting.
 
@@ -276,7 +301,7 @@ def pretty(input_file: Path, output: Optional[Path], style: str,
     try:
         # Parse input file
         parser = YaraParser()
-        with open(input_file, 'r', encoding='utf-8') as f:
+        with open(input_file, encoding="utf-8") as f:
             yara_source = f.read()
 
         ast = parser.parse(yara_source)
@@ -284,11 +309,11 @@ def pretty(input_file: Path, output: Optional[Path], style: str,
             raise ValueError("Failed to parse YARA file")
 
         # Create pretty print options
-        if style == 'compact':
+        if style == "compact":
             options = StylePresets.compact()
-        elif style == 'dense':
+        elif style == "dense":
             options = StylePresets.dense()
-        elif style == 'verbose':
+        elif style == "verbose":
             options = StylePresets.verbose()
         else:  # readable
             options = StylePresets.readable()
@@ -307,7 +332,7 @@ def pretty(input_file: Path, output: Optional[Path], style: str,
 
         # Output result
         if output:
-            with open(output, 'w', encoding='utf-8') as f:
+            with open(output, "w", encoding="utf-8") as f:
                 f.write(formatted_code)
             click.echo(f"✅ Pretty printed to {output}")
             click.echo(f"   Style: {style}")
@@ -323,15 +348,19 @@ def pretty(input_file: Path, output: Optional[Path], style: str,
 
 
 @roundtrip.command()
-@click.argument('input_file', type=click.Path(exists=True, path_type=Path))
-@click.option('--output', '-o', type=click.Path(path_type=Path),
-              help='Output file for pipeline YAML')
-@click.option('--pipeline-info', type=str,
-              help='JSON string with pipeline information')
-@click.option('--include-manifest/--no-manifest', default=False,
-              help='Generate rules manifest alongside serialization')
-def pipeline(input_file: Path, output: Optional[Path],
-             pipeline_info: Optional[str], include_manifest: bool):
+@click.argument("input_file", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--output", "-o", type=click.Path(path_type=Path), help="Output file for pipeline YAML"
+)
+@click.option("--pipeline-info", type=str, help="JSON string with pipeline information")
+@click.option(
+    "--include-manifest/--no-manifest",
+    default=False,
+    help="Generate rules manifest alongside serialization",
+)
+def pipeline(
+    input_file: Path, output: Path | None, pipeline_info: str | None, include_manifest: bool
+):
     """
     Serialize YARA file for CI/CD pipeline use.
 
@@ -352,7 +381,7 @@ def pipeline(input_file: Path, output: Optional[Path],
     try:
         # Parse input file
         parser = YaraParser()
-        with open(input_file, 'r', encoding='utf-8') as f:
+        with open(input_file, encoding="utf-8") as f:
             yara_source = f.read()
 
         ast = parser.parse(yara_source)
@@ -369,7 +398,7 @@ def pipeline(input_file: Path, output: Optional[Path],
 
         # Output main file
         if output:
-            with open(output, 'w', encoding='utf-8') as f:
+            with open(output, "w", encoding="utf-8") as f:
                 f.write(yaml_content)
             click.echo(f"✅ Pipeline YAML written to {output}")
         else:
@@ -378,10 +407,10 @@ def pipeline(input_file: Path, output: Optional[Path],
         # Generate manifest if requested
         if include_manifest:
             manifest_content = create_rules_manifest(ast)
-            manifest_path = output.with_suffix('.manifest.yaml') if output else None
+            manifest_path = output.with_suffix(".manifest.yaml") if output else None
 
             if manifest_path:
-                with open(manifest_path, 'w', encoding='utf-8') as f:
+                with open(manifest_path, "w", encoding="utf-8") as f:
                     f.write(manifest_content)
                 click.echo(f"✅ Rules manifest written to {manifest_path}")
             else:
@@ -389,7 +418,7 @@ def pipeline(input_file: Path, output: Optional[Path],
                 click.echo(manifest_content)
 
         # Show statistics
-        click.echo(f"\nStatistics:")
+        click.echo("\nStatistics:")
         click.echo(f"   Rules: {len(ast.rules)}")
         click.echo(f"   Imports: {len(ast.imports)}")
         click.echo(f"   Includes: {len(ast.includes)}")

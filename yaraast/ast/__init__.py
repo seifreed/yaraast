@@ -10,15 +10,15 @@ from yaraast.ast.strings import *
 
 __all__ = [
     "ASTNode",
-    "YaraFile",
-    "Rule",
+    "Condition",
+    "DictionaryAccess",
+    "Expression",
     "Import",
     "Include",
-    "StringDefinition",
-    "Expression",
-    "Condition",
     "Meta",
-    "Tag",
     "ModuleReference",
-    "DictionaryAccess",
+    "Rule",
+    "StringDefinition",
+    "Tag",
+    "YaraFile",
 ]

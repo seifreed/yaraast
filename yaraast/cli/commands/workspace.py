@@ -11,16 +11,21 @@ from yaraast.resolution import Workspace
 @click.group()
 def workspace():
     """Workspace commands for multi-file analysis."""
-    pass
 
 
 @workspace.command()
-@click.argument('directory', type=click.Path(exists=True))
-@click.option('--pattern', '-p', default='*.yar', help='File pattern to match')
-@click.option('--recursive/--no-recursive', '-r/-R', default=True, help='Scan subdirectories')
-@click.option('--output', '-o', type=click.Path(), help='Output file for report')
-@click.option('--format', '-f', type=click.Choice(['json', 'text', 'dot']), default='text', help='Output format')
-@click.option('--parallel/--sequential', default=True, help='Analyze files in parallel')
+@click.argument("directory", type=click.Path(exists=True))
+@click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
+@click.option("--recursive/--no-recursive", "-r/-R", default=True, help="Scan subdirectories")
+@click.option("--output", "-o", type=click.Path(), help="Output file for report")
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["json", "text", "dot"]),
+    default="text",
+    help="Output format",
+)
+@click.option("--parallel/--sequential", default=True, help="Analyze files in parallel")
 def analyze(directory, pattern, recursive, output, format, parallel):
     """Analyze all YARA files in a directory."""
     click.echo(f"Analyzing directory: {directory}")
@@ -35,23 +40,23 @@ def analyze(directory, pattern, recursive, output, format, parallel):
     report = ws.analyze(parallel=parallel)
 
     # Format output
-    if format == 'json':
+    if format == "json":
         output_data = {
-            'statistics': report.statistics,
-            'files': {
+            "statistics": report.statistics,
+            "files": {
                 path: {
-                    'errors': result.errors,
-                    'warnings': result.warnings,
-                    'type_errors': result.type_errors,
-                    'analysis': result.analysis_results
+                    "errors": result.errors,
+                    "warnings": result.warnings,
+                    "type_errors": result.type_errors,
+                    "analysis": result.analysis_results,
                 }
                 for path, result in report.file_results.items()
             },
-            'global_errors': report.global_errors
+            "global_errors": report.global_errors,
         }
         output_text = json.dumps(output_data, indent=2)
 
-    elif format == 'dot':
+    elif format == "dot":
         output_text = report.dependency_graph.export_dot()
 
     else:  # text format
@@ -100,7 +105,7 @@ def analyze(directory, pattern, recursive, output, format, parallel):
         lines.append(f"  Dependency cycles: {report.statistics.get('cycles', 0)}")
         lines.append(f"  Rule name conflicts: {report.statistics.get('rule_name_conflicts', 0)}")
 
-        output_text = '\n'.join(lines)
+        output_text = "\n".join(lines)
 
     # Output
     if output:
@@ -111,9 +116,9 @@ def analyze(directory, pattern, recursive, output, format, parallel):
 
 
 @workspace.command()
-@click.argument('file', type=click.Path(exists=True))
-@click.option('--search-path', '-I', multiple=True, help='Additional include search paths')
-@click.option('--show-tree/--no-tree', default=True, help='Show include tree')
+@click.argument("file", type=click.Path(exists=True))
+@click.option("--search-path", "-I", multiple=True, help="Additional include search paths")
+@click.option("--show-tree/--no-tree", default=True, help="Show include tree")
 def resolve(file, search_path, show_tree):
     """Resolve all includes for a YARA file."""
     from yaraast.resolution import IncludeResolver
@@ -142,16 +147,18 @@ def resolve(file, search_path, show_tree):
 
     except FileNotFoundError as e:
         click.echo(f"Error: {e}", err=True)
-        raise click.Abort()
+        raise click.Abort
     except RecursionError as e:
         click.echo(f"Error: {e}", err=True)
-        raise click.Abort()
+        raise click.Abort
 
 
 @workspace.command()
-@click.argument('directory', type=click.Path(exists=True))
-@click.option('--output', '-o', type=click.Path(), help='Output file for graph')
-@click.option('--format', '-f', type=click.Choice(['dot', 'json']), default='dot', help='Output format')
+@click.argument("directory", type=click.Path(exists=True))
+@click.option("--output", "-o", type=click.Path(), help="Output file for graph")
+@click.option(
+    "--format", "-f", type=click.Choice(["dot", "json"]), default="dot", help="Output format"
+)
 def graph(directory, output, format):
     """Generate dependency graph for YARA files."""
     click.echo(f"Building dependency graph for: {directory}")
@@ -164,24 +171,24 @@ def graph(directory, output, format):
     report = ws.analyze(parallel=True)
 
     # Generate output
-    if format == 'dot':
+    if format == "dot":
         output_text = report.dependency_graph.export_dot()
     else:  # json
         nodes = {}
         for key, node in report.dependency_graph.nodes.items():
             nodes[key] = {
-                'type': node.type,
-                'dependencies': list(node.dependencies),
-                'dependents': list(node.dependents),
-                'metadata': node.metadata
+                "type": node.type,
+                "dependencies": list(node.dependencies),
+                "dependents": list(node.dependents),
+                "metadata": node.metadata,
             }
-        output_text = json.dumps({'nodes': nodes}, indent=2)
+        output_text = json.dumps({"nodes": nodes}, indent=2)
 
     # Output
     if output:
         Path(output).write_text(output_text)
         click.echo(f"Graph written to: {output}")
-        if format == 'dot':
+        if format == "dot":
             click.echo(f"Visualize with: dot -Tpng {output} -o graph.png")
     else:
         click.echo(output_text)
@@ -191,5 +198,5 @@ def _print_tree(tree, indent=0):
     """Print include tree."""
     prefix = "  " * indent
     click.echo(f"{prefix}- {Path(tree['path']).name}")
-    for include in tree['includes']:
+    for include in tree["includes"]:
         _print_tree(include, indent + 1)

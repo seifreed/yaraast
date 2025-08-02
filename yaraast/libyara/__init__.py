@@ -2,6 +2,7 @@
 
 try:
     import yara
+
     YARA_AVAILABLE = True
 except ImportError:
     YARA_AVAILABLE = False
@@ -19,25 +20,24 @@ if YARA_AVAILABLE:
     from .scanner import LibyaraScanner, ScanResult
 
     __all__ = [
-        'YARA_AVAILABLE',
-        'LibyaraCompiler',
-        'CompilationResult',
-        'LibyaraScanner',
-        'ScanResult',
-        'EquivalenceTester',
-        'EquivalenceResult',
-        'DirectASTCompiler',
-        'OptimizedMatcher',
-        'DirectCompilationResult',
-        'ASTOptimizer',
-        'OptimizationStats'
+        "YARA_AVAILABLE",
+        "ASTOptimizer",
+        "CompilationResult",
+        "DirectASTCompiler",
+        "DirectCompilationResult",
+        "EquivalenceResult",
+        "EquivalenceTester",
+        "LibyaraCompiler",
+        "LibyaraScanner",
+        "OptimizationStats",
+        "OptimizedMatcher",
+        "ScanResult",
     ]
 else:
     # Provide stub message when yara-python is not installed
-    __all__ = ['YARA_AVAILABLE']
+    __all__ = ["YARA_AVAILABLE"]
 
     def __getattr__(name):
         raise ImportError(
-            f"'{name}' requires yara-python. "
-            "Install with: pip install yaraast[libyara]"
+            f"'{name}' requires yara-python. " "Install with: pip install yaraast[libyara]"
         )

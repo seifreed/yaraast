@@ -1,46 +1,44 @@
 """Equivalence testing for AST round-trip validation."""
 
-import os
-import tempfile
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 
 from yaraast.ast.base import YaraFile
 from yaraast.codegen import CodeGenerator
 from yaraast.evaluation import YaraEvaluator
 from yaraast.parser import Parser
 
-from .compiler import CompilationResult, LibyaraCompiler
+from .compiler import LibyaraCompiler
 from .scanner import LibyaraScanner, ScanResult
 
 
 @dataclass
 class EquivalenceResult:
     """Result of equivalence testing."""
+
     # Overall result
     equivalent: bool
 
     # AST comparison
     ast_equivalent: bool = True
-    ast_differences: List[str] = field(default_factory=list)
+    ast_differences: list[str] = field(default_factory=list)
 
     # Code generation comparison
     code_equivalent: bool = True
-    original_code: Optional[str] = None
-    regenerated_code: Optional[str] = None
+    original_code: str | None = None
+    regenerated_code: str | None = None
 
     # Compilation results
     original_compiles: bool = True
     regenerated_compiles: bool = True
-    compilation_errors: List[str] = field(default_factory=list)
+    compilation_errors: list[str] = field(default_factory=list)
 
     # Scanning results
     scan_equivalent: bool = True
-    scan_differences: List[str] = field(default_factory=list)
+    scan_differences: list[str] = field(default_factory=list)
 
     # Evaluation results
     eval_equivalent: bool = True
-    eval_differences: List[str] = field(default_factory=list)
+    eval_differences: list[str] = field(default_factory=list)
 
 
 class EquivalenceTester:
@@ -53,8 +51,9 @@ class EquivalenceTester:
         self.compiler = LibyaraCompiler()
         self.scanner = LibyaraScanner()
 
-    def test_round_trip(self, original_ast: YaraFile,
-                       test_data: Optional[bytes] = None) -> EquivalenceResult:
+    def test_round_trip(
+        self, original_ast: YaraFile, test_data: bytes | None = None
+    ) -> EquivalenceResult:
         """Test AST → code → libyara → re-parse round trip.
 
         Args:
@@ -73,7 +72,7 @@ class EquivalenceTester:
         except Exception as e:
             result.equivalent = False
             result.code_equivalent = False
-            result.ast_differences.append(f"Code generation failed: {str(e)}")
+            result.ast_differences.append(f"Code generation failed: {e!s}")
             return result
 
         # Step 2: Parse the generated code
@@ -82,7 +81,7 @@ class EquivalenceTester:
         except Exception as e:
             result.equivalent = False
             result.ast_equivalent = False
-            result.ast_differences.append(f"Re-parsing failed: {str(e)}")
+            result.ast_differences.append(f"Re-parsing failed: {e!s}")
             return result
 
         # Step 3: Generate code from re-parsed AST
@@ -92,7 +91,7 @@ class EquivalenceTester:
         except Exception as e:
             result.equivalent = False
             result.code_equivalent = False
-            result.ast_differences.append(f"Re-generation failed: {str(e)}")
+            result.ast_differences.append(f"Re-generation failed: {e!s}")
             return result
 
         # Step 4: Compare generated code (normalized)
@@ -141,8 +140,9 @@ class EquivalenceTester:
 
         return result
 
-    def test_file_round_trip(self, filepath: str,
-                           test_data: Optional[bytes] = None) -> EquivalenceResult:
+    def test_file_round_trip(
+        self, filepath: str, test_data: bytes | None = None
+    ) -> EquivalenceResult:
         """Test round-trip starting from a file.
 
         Args:
@@ -153,25 +153,24 @@ class EquivalenceTester:
             EquivalenceResult
         """
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath) as f:
                 original_code = f.read()
 
             original_ast = self.parser.parse(original_code)
             return self.test_round_trip(original_ast, test_data)
         except Exception as e:
             return EquivalenceResult(
-                equivalent=False,
-                ast_differences=[f"Failed to parse file: {str(e)}"]
+                equivalent=False, ast_differences=[f"Failed to parse file: {e!s}"]
             )
 
     def _compare_code(self, code1: str, code2: str) -> bool:
         """Compare two code strings (normalized)."""
         # Normalize whitespace and line endings
-        norm1 = '\n'.join(line.strip() for line in code1.strip().split('\n') if line.strip())
-        norm2 = '\n'.join(line.strip() for line in code2.strip().split('\n') if line.strip())
+        norm1 = "\n".join(line.strip() for line in code1.strip().split("\n") if line.strip())
+        norm2 = "\n".join(line.strip() for line in code2.strip().split("\n") if line.strip())
         return norm1 == norm2
 
-    def _compare_ast(self, ast1: YaraFile, ast2: YaraFile) -> List[str]:
+    def _compare_ast(self, ast1: YaraFile, ast2: YaraFile) -> list[str]:
         """Compare two ASTs and return differences."""
         differences = []
 
@@ -183,7 +182,7 @@ class EquivalenceTester:
         if len(ast1.rules) != len(ast2.rules):
             differences.append(f"Rule count differs: {len(ast1.rules)} vs {len(ast2.rules)}")
         else:
-            for i, (rule1, rule2) in enumerate(zip(ast1.rules, ast2.rules)):
+            for i, (rule1, rule2) in enumerate(zip(ast1.rules, ast2.rules, strict=False)):
                 if rule1.name != rule2.name:
                     differences.append(f"Rule {i} name differs: {rule1.name} vs {rule2.name}")
 
@@ -196,7 +195,7 @@ class EquivalenceTester:
 
         return differences
 
-    def _compare_scans(self, scan1: ScanResult, scan2: ScanResult) -> List[str]:
+    def _compare_scans(self, scan1: ScanResult, scan2: ScanResult) -> list[str]:
         """Compare two scan results."""
         differences = []
 
@@ -217,8 +216,7 @@ class EquivalenceTester:
 
         return differences
 
-    def _compare_evaluation(self, ast1: YaraFile, ast2: YaraFile,
-                          test_data: bytes) -> List[str]:
+    def _compare_evaluation(self, ast1: YaraFile, ast2: YaraFile, test_data: bytes) -> list[str]:
         """Compare evaluation results."""
         differences = []
 
@@ -243,6 +241,6 @@ class EquivalenceTester:
                     )
 
         except Exception as e:
-            differences.append(f"Evaluation comparison failed: {str(e)}")
+            differences.append(f"Evaluation comparison failed: {e!s}")
 
         return differences

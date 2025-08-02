@@ -3,7 +3,6 @@
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 import click
 
@@ -17,25 +16,35 @@ try:
 except ImportError:
     # Fallback for running within the package
     from ...parser import YaraParser
-    from ...types.semantic_validator import SemanticValidator, ValidationError, ValidationResult
+    from ...types.semantic_validator import SemanticValidator, ValidationResult
 
 
 @click.command()
-@click.argument('files', nargs=-1, type=click.Path(exists=True, path_type=Path))
-@click.option('--output', '-o', type=click.Path(path_type=Path),
-              help='Output file for validation results (JSON format)')
-@click.option('--format', '-f', type=click.Choice(['text', 'json']),
-              default='text', help='Output format')
-@click.option('--warnings/--no-warnings', default=True,
-              help='Include warnings in output')
-@click.option('--suggestions/--no-suggestions', default=True,
-              help='Include suggestions in output')
-@click.option('--strict', is_flag=True,
-              help='Treat warnings as errors (exit with non-zero code)')
-@click.option('--quiet', '-q', is_flag=True,
-              help='Only show errors and warnings, not success messages')
-def semantic(files: tuple[Path, ...], output: Optional[Path], format: str,
-            warnings: bool, suggestions: bool, strict: bool, quiet: bool):
+@click.argument("files", nargs=-1, type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file for validation results (JSON format)",
+)
+@click.option(
+    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
+)
+@click.option("--warnings/--no-warnings", default=True, help="Include warnings in output")
+@click.option("--suggestions/--no-suggestions", default=True, help="Include suggestions in output")
+@click.option("--strict", is_flag=True, help="Treat warnings as errors (exit with non-zero code)")
+@click.option(
+    "--quiet", "-q", is_flag=True, help="Only show errors and warnings, not success messages"
+)
+def semantic(
+    files: tuple[Path, ...],
+    output: Path | None,
+    format: str,
+    warnings: bool,
+    suggestions: bool,
+    strict: bool,
+    quiet: bool,
+):
     """
     Perform semantic validation on YARA files.
 
@@ -75,7 +84,7 @@ def semantic(files: tuple[Path, ...], output: Optional[Path], format: str,
 
         try:
             # Parse the file
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding="utf-8") as f:
                 content = f.read()
 
             ast = parser.parse(content)
@@ -84,7 +93,7 @@ def semantic(files: tuple[Path, ...], output: Optional[Path], format: str,
                 continue
 
             # Set file location for better error reporting
-            if hasattr(ast, 'location') and ast.location:
+            if hasattr(ast, "location") and ast.location:
                 ast.location.file = str(file_path)
 
             # Validate semantics
@@ -96,6 +105,7 @@ def semantic(files: tuple[Path, ...], output: Optional[Path], format: str,
                     error.location.file = str(file_path)
                 else:
                     from yaraast.ast.base import Location
+
                     error.location = Location(line=1, column=1, file=str(file_path))
 
             for warning in result.warnings:
@@ -103,22 +113,25 @@ def semantic(files: tuple[Path, ...], output: Optional[Path], format: str,
                     warning.location.file = str(file_path)
                 else:
                     from yaraast.ast.base import Location
+
                     warning.location = Location(line=1, column=1, file=str(file_path))
 
             # Store results
-            all_results.append({
-                'file': str(file_path),
-                'is_valid': result.is_valid,
-                'errors': [error.to_dict() for error in result.errors],
-                'warnings': [warning.to_dict() for warning in result.warnings],
-                'total_issues': result.total_issues
-            })
+            all_results.append(
+                {
+                    "file": str(file_path),
+                    "is_valid": result.is_valid,
+                    "errors": [error.to_dict() for error in result.errors],
+                    "warnings": [warning.to_dict() for warning in result.warnings],
+                    "total_issues": result.total_issues,
+                }
+            )
 
             total_errors += len(result.errors)
             total_warnings += len(result.warnings)
 
             # Display results for this file
-            if format == 'text':
+            if format == "text":
                 _display_text_results(file_path, result, warnings, suggestions, quiet)
 
         except Exception as e:
@@ -126,7 +139,7 @@ def semantic(files: tuple[Path, ...], output: Optional[Path], format: str,
             continue
 
     # Output summary
-    if not quiet and format == 'text':
+    if not quiet and format == "text":
         _display_summary(len(files), total_errors, total_warnings)
 
     # Write output file if requested
@@ -134,41 +147,48 @@ def semantic(files: tuple[Path, ...], output: Optional[Path], format: str,
         _write_output_file(output, all_results, format)
 
     # Output JSON to stdout if requested and no output file
-    if format == 'json' and not output:
+    if format == "json" and not output:
         click.echo(json.dumps(all_results, indent=2))
 
     # Exit with appropriate code
     exit_code = 0
-    if total_errors > 0:
-        exit_code = 1
-    elif strict and total_warnings > 0:
+    if total_errors > 0 or (strict and total_warnings > 0):
         exit_code = 1
 
     sys.exit(exit_code)
 
 
-def _display_text_results(file_path: Path, result: ValidationResult,
-                         show_warnings: bool, show_suggestions: bool, quiet: bool):
+def _display_text_results(
+    file_path: Path,
+    result: ValidationResult,
+    show_warnings: bool,
+    show_suggestions: bool,
+    quiet: bool,
+):
     """Display validation results in text format."""
     if result.errors:
         for error in result.errors:
-            click.echo(click.style(str(error), fg='red'), err=True)
+            click.echo(click.style(str(error), fg="red"), err=True)
             if show_suggestions and error.suggestion:
-                click.echo(click.style(f"  Suggestion: {error.suggestion}", fg='blue'))
+                click.echo(click.style(f"  Suggestion: {error.suggestion}", fg="blue"))
 
     if show_warnings and result.warnings:
         for warning in result.warnings:
-            click.echo(click.style(str(warning), fg='yellow'))
+            click.echo(click.style(str(warning), fg="yellow"))
             if show_suggestions and warning.suggestion:
-                click.echo(click.style(f"  Suggestion: {warning.suggestion}", fg='blue'))
+                click.echo(click.style(f"  Suggestion: {warning.suggestion}", fg="blue"))
 
     if not quiet:
         if result.is_valid and not result.warnings:
-            click.echo(click.style(f"✓ {file_path}: All checks passed", fg='green'))
+            click.echo(click.style(f"✓ {file_path}: All checks passed", fg="green"))
         elif result.is_valid:
-            click.echo(click.style(f"✓ {file_path}: Valid with {len(result.warnings)} warnings", fg='yellow'))
+            click.echo(
+                click.style(
+                    f"✓ {file_path}: Valid with {len(result.warnings)} warnings", fg="yellow"
+                )
+            )
         else:
-            click.echo(click.style(f"✗ {file_path}: {len(result.errors)} errors", fg='red'))
+            click.echo(click.style(f"✗ {file_path}: {len(result.errors)} errors", fg="red"))
 
 
 def _display_summary(total_files: int, total_errors: int, total_warnings: int):
@@ -177,19 +197,19 @@ def _display_summary(total_files: int, total_errors: int, total_warnings: int):
     click.echo(f"Validated {total_files} file(s)")
 
     if total_errors > 0:
-        click.echo(click.style(f"Found {total_errors} errors", fg='red'))
+        click.echo(click.style(f"Found {total_errors} errors", fg="red"))
 
     if total_warnings > 0:
-        click.echo(click.style(f"Found {total_warnings} warnings", fg='yellow'))
+        click.echo(click.style(f"Found {total_warnings} warnings", fg="yellow"))
 
     if total_errors == 0 and total_warnings == 0:
-        click.echo(click.style("All files passed validation", fg='green'))
+        click.echo(click.style("All files passed validation", fg="green"))
 
 
-def _write_output_file(output_path: Path, results: List[dict], format: str):
+def _write_output_file(output_path: Path, results: list[dict], format: str):
     """Write validation results to output file."""
-    with open(output_path, 'w', encoding='utf-8') as f:
-        if format == 'json':
+    with open(output_path, "w", encoding="utf-8") as f:
+        if format == "json":
             json.dump(results, f, indent=2)
         else:
             # Text format
@@ -199,20 +219,24 @@ def _write_output_file(output_path: Path, results: List[dict], format: str):
                 f.write(f"Errors: {len(result['errors'])}\n")
                 f.write(f"Warnings: {len(result['warnings'])}\n")
 
-                for error in result['errors']:
+                for error in result["errors"]:
                     f.write(f"ERROR: {error['message']}\n")
-                    if error.get('location'):
-                        loc = error['location']
-                        f.write(f"  Location: {loc.get('file', 'unknown')}:{loc.get('line', 0)}:{loc.get('column', 0)}\n")
-                    if error.get('suggestion'):
+                    if error.get("location"):
+                        loc = error["location"]
+                        f.write(
+                            f"  Location: {loc.get('file', 'unknown')}:{loc.get('line', 0)}:{loc.get('column', 0)}\n"
+                        )
+                    if error.get("suggestion"):
                         f.write(f"  Suggestion: {error['suggestion']}\n")
 
-                for warning in result['warnings']:
+                for warning in result["warnings"]:
                     f.write(f"WARNING: {warning['message']}\n")
-                    if warning.get('location'):
-                        loc = warning['location']
-                        f.write(f"  Location: {loc.get('file', 'unknown')}:{loc.get('line', 0)}:{loc.get('column', 0)}\n")
-                    if warning.get('suggestion'):
+                    if warning.get("location"):
+                        loc = warning["location"]
+                        f.write(
+                            f"  Location: {loc.get('file', 'unknown')}:{loc.get('line', 0)}:{loc.get('column', 0)}\n"
+                        )
+                    if warning.get("suggestion"):
                         f.write(f"  Suggestion: {warning['suggestion']}\n")
 
                 f.write("\n")

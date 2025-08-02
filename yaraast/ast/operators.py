@@ -1,9 +1,8 @@
 """Operator-specific AST nodes."""
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
-from yaraast.ast.base import ASTNode
 from yaraast.ast.expressions import Expression
 
 

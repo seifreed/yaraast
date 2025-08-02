@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
@@ -52,35 +52,35 @@ class ComplexityMetrics:
     regex_quantifiers: int = 0
 
     # Quality metrics
-    unused_strings: List[str] = field(default_factory=list)
-    complex_rules: List[str] = field(default_factory=list)  # Rules exceeding thresholds
-    cyclomatic_complexity: Dict[str, int] = field(default_factory=dict)
+    unused_strings: list[str] = field(default_factory=list)
+    complex_rules: list[str] = field(default_factory=list)  # Rules exceeding thresholds
+    cyclomatic_complexity: dict[str, int] = field(default_factory=dict)
 
     # Dependencies
-    string_dependencies: Dict[str, Set[str]] = field(default_factory=dict)
-    module_usage: Dict[str, int] = field(default_factory=dict)
+    string_dependencies: dict[str, set[str]] = field(default_factory=dict)
+    module_usage: dict[str, int] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metrics to dictionary for serialization."""
         return {
             "file_metrics": {
                 "total_rules": self.total_rules,
                 "total_imports": self.total_imports,
-                "total_includes": self.total_includes
+                "total_includes": self.total_includes,
             },
             "rule_metrics": {
                 "rules_with_strings": self.rules_with_strings,
                 "rules_with_meta": self.rules_with_meta,
                 "rules_with_tags": self.rules_with_tags,
                 "private_rules": self.private_rules,
-                "global_rules": self.global_rules
+                "global_rules": self.global_rules,
             },
             "string_metrics": {
                 "total_strings": self.total_strings,
                 "plain_strings": self.plain_strings,
                 "hex_strings": self.hex_strings,
                 "regex_strings": self.regex_strings,
-                "strings_with_modifiers": self.strings_with_modifiers
+                "strings_with_modifiers": self.strings_with_modifiers,
             },
             "condition_metrics": {
                 "max_condition_depth": self.max_condition_depth,
@@ -89,24 +89,24 @@ class ComplexityMetrics:
                 "total_unary_ops": self.total_unary_ops,
                 "for_expressions": self.for_expressions,
                 "for_of_expressions": self.for_of_expressions,
-                "of_expressions": self.of_expressions
+                "of_expressions": self.of_expressions,
             },
             "pattern_metrics": {
                 "hex_wildcards": self.hex_wildcards,
                 "hex_jumps": self.hex_jumps,
                 "hex_alternatives": self.hex_alternatives,
                 "regex_groups": self.regex_groups,
-                "regex_quantifiers": self.regex_quantifiers
+                "regex_quantifiers": self.regex_quantifiers,
             },
             "quality_metrics": {
                 "unused_strings": self.unused_strings,
                 "complex_rules": self.complex_rules,
-                "cyclomatic_complexity": self.cyclomatic_complexity
+                "cyclomatic_complexity": self.cyclomatic_complexity,
             },
             "dependencies": {
                 "string_dependencies": {k: list(v) for k, v in self.string_dependencies.items()},
-                "module_usage": self.module_usage
-            }
+                "module_usage": self.module_usage,
+            },
         }
 
     def get_quality_score(self) -> float:
@@ -138,14 +138,13 @@ class ComplexityMetrics:
         score = self.get_quality_score()
         if score >= 90:
             return "A"
-        elif score >= 80:
+        if score >= 80:
             return "B"
-        elif score >= 70:
+        if score >= 70:
             return "C"
-        elif score >= 60:
+        if score >= 60:
             return "D"
-        else:
-            return "F"
+        return "F"
 
 
 class ComplexityAnalyzer(ASTVisitor[None]):
@@ -153,11 +152,11 @@ class ComplexityAnalyzer(ASTVisitor[None]):
 
     def __init__(self):
         self.metrics = ComplexityMetrics()
-        self._current_rule: Optional[Rule] = None
-        self._condition_depths: List[int] = []
+        self._current_rule: Rule | None = None
+        self._condition_depths: list[int] = []
         self._current_depth = 0
-        self._string_usage: Dict[str, Set[str]] = defaultdict(set)  # string_id -> rule_names
-        self._rule_strings: Dict[str, Set[str]] = defaultdict(set)  # rule_name -> string_ids
+        self._string_usage: dict[str, set[str]] = defaultdict(set)  # string_id -> rule_names
+        self._rule_strings: dict[str, set[str]] = defaultdict(set)  # rule_name -> string_ids
 
     def analyze(self, ast: YaraFile) -> ComplexityMetrics:
         """Analyze AST and return complexity metrics."""
@@ -247,7 +246,7 @@ class ComplexityAnalyzer(ASTVisitor[None]):
                 # Analyze regex complexity
                 self._analyze_regex_complexity(string_def.regex)
 
-    def _analyze_hex_tokens(self, tokens: List) -> None:
+    def _analyze_hex_tokens(self, tokens: list) -> None:
         """Analyze hex string tokens."""
         from yaraast.ast.strings import HexAlternative, HexJump, HexWildcard
 
@@ -264,10 +263,10 @@ class ComplexityAnalyzer(ASTVisitor[None]):
         import re
 
         # Count groups
-        self.metrics.regex_groups += len(re.findall(r'\([^?]', regex))
+        self.metrics.regex_groups += len(re.findall(r"\([^?]", regex))
 
         # Count quantifiers
-        quantifiers = r'[*+?{]'
+        quantifiers = r"[*+?{]"
         self.metrics.regex_quantifiers += len(re.findall(quantifiers, regex))
 
     def _calculate_cyclomatic_complexity(self) -> int:
@@ -287,7 +286,9 @@ class ComplexityAnalyzer(ASTVisitor[None]):
         """Calculate derived metrics after analysis."""
         # Average condition depth
         if self._condition_depths:
-            self.metrics.avg_condition_depth = sum(self._condition_depths) / len(self._condition_depths)
+            self.metrics.avg_condition_depth = sum(self._condition_depths) / len(
+                self._condition_depths
+            )
 
         # Find unused strings
         for rule_name, string_ids in self._rule_strings.items():
@@ -342,9 +343,9 @@ class ComplexityAnalyzer(ASTVisitor[None]):
         """Visit of expression."""
         self.metrics.of_expressions += 1
 
-        if hasattr(node.quantifier, 'accept'):
+        if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
-        if hasattr(node.string_set, 'accept'):
+        if hasattr(node.string_set, "accept"):
             self.visit(node.string_set)
 
     def visit_string_identifier(self, node) -> None:

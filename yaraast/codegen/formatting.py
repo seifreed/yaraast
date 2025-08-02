@@ -1,36 +1,40 @@
 """Formatting configuration for code generation."""
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
-from typing import Any, Dict, Optional
+from enum import Enum
+from typing import Any
 
 
 class IndentStyle(Enum):
     """Indentation style."""
+
     SPACES = "spaces"
     TABS = "tabs"
 
 
 class BraceStyle(Enum):
     """Brace placement style."""
-    SAME_LINE = "same_line"      # rule test {
-    NEW_LINE = "new_line"        # rule test\n{
-    K_AND_R = "k_and_r"          # rule test\n{
+
+    SAME_LINE = "same_line"  # rule test {
+    NEW_LINE = "new_line"  # rule test\n{
+    K_AND_R = "k_and_r"  # rule test\n{
 
 
 class StringStyle(Enum):
     """String definition style."""
-    COMPACT = "compact"          # $a="test" $b="test2"
-    ALIGNED = "aligned"          # $a = "test"\n$b = "test2"
-    TABULAR = "tabular"          # $a     = "test"\n$long  = "test2"
+
+    COMPACT = "compact"  # $a="test" $b="test2"
+    ALIGNED = "aligned"  # $a = "test"\n$b = "test2"
+    TABULAR = "tabular"  # $a     = "test"\n$long  = "test2"
 
 
 class HexStyle(Enum):
     """Hex string formatting style."""
-    UPPERCASE = "uppercase"      # { 48 45 4C 4C 4F }
-    LOWERCASE = "lowercase"      # { 48 65 6c 6c 6f }
-    GROUPED = "grouped"          # { 48656C6C 6F }
-    SPACED = "spaced"           # { 48 65 6C 6C 6F }
+
+    UPPERCASE = "uppercase"  # { 48 45 4C 4C 4F }
+    LOWERCASE = "lowercase"  # { 48 65 6c 6c 6f }
+    GROUPED = "grouped"  # { 48656C6C 6F }
+    SPACED = "spaced"  # { 48 65 6C 6C 6F }
 
 
 @dataclass
@@ -46,10 +50,10 @@ class FormattingConfig:
     brace_style: BraceStyle = BraceStyle.SAME_LINE
 
     # Spacing
-    space_before_colon: bool = True       # rule test : tag
-    space_after_colon: bool = True        # rule : tag
-    space_around_operators: bool = True   # a and b vs a and b
-    space_after_comma: bool = True        # (a, b) vs (a,b)
+    space_before_colon: bool = True  # rule test : tag
+    space_after_colon: bool = True  # rule : tag
+    space_around_operators: bool = True  # a and b vs a and b
+    space_after_comma: bool = True  # (a, b) vs (a,b)
     blank_lines_between_rules: int = 2
     blank_lines_between_sections: int = 1
 
@@ -78,37 +82,37 @@ class FormattingConfig:
     require_all_sections: bool = False
 
     @classmethod
-    def compact(cls) -> 'FormattingConfig':
+    def compact(cls) -> "FormattingConfig":
         """Create compact formatting config."""
         return cls(
             indent_size=2,
             blank_lines_between_rules=1,
             blank_lines_between_sections=0,
             string_style=StringStyle.COMPACT,
-            max_line_length=120
+            max_line_length=120,
         )
 
     @classmethod
-    def expanded(cls) -> 'FormattingConfig':
+    def expanded(cls) -> "FormattingConfig":
         """Create expanded formatting config."""
         return cls(
             indent_size=4,
             blank_lines_between_rules=3,
             blank_lines_between_sections=2,
             string_style=StringStyle.TABULAR,
-            brace_style=BraceStyle.NEW_LINE
+            brace_style=BraceStyle.NEW_LINE,
         )
 
     @classmethod
-    def k_and_r(cls) -> 'FormattingConfig':
+    def k_and_r(cls) -> "FormattingConfig":
         """Create K&R style formatting config."""
         return cls(
             brace_style=BraceStyle.K_AND_R,
             space_before_colon=True,
-            string_style=StringStyle.ALIGNED
+            string_style=StringStyle.ALIGNED,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert config to dictionary."""
         return {
             "indent_style": self.indent_style.value,
@@ -134,11 +138,11 @@ class FormattingConfig:
             "sort_strings": self.sort_strings,
             "sort_meta": self.sort_meta,
             "section_order": self.section_order,
-            "require_all_sections": self.require_all_sections
+            "require_all_sections": self.require_all_sections,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'FormattingConfig':
+    def from_dict(cls, data: dict[str, Any]) -> "FormattingConfig":
         """Create config from dictionary."""
         config = cls()
 

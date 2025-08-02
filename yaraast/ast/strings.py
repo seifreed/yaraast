@@ -1,7 +1,7 @@
 """String-related AST nodes."""
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.modifiers import StringModifier as EnhancedStringModifier
@@ -13,7 +13,7 @@ class StringModifier(ASTNode):
     """Legacy string modifier for backward compatibility."""
 
     name: str
-    value: Optional[Any] = None
+    value: Any | None = None
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_string_modifier(self)
@@ -28,7 +28,7 @@ class StringDefinition(ASTNode):
     """Base class for string definitions."""
 
     identifier: str
-    modifiers: List[StringModifier] = field(default_factory=list)
+    modifiers: list[StringModifier] = field(default_factory=list)
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_string_definition(self)
@@ -48,7 +48,7 @@ class PlainString(StringDefinition):
 class HexString(StringDefinition):
     """Hex string definition."""
 
-    tokens: List["HexToken"] = field(default_factory=list)  # Add default
+    tokens: list["HexToken"] = field(default_factory=list)  # Add default
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_hex_string(self)
@@ -84,8 +84,8 @@ class HexWildcard(HexToken):
 class HexJump(HexToken):
     """Hex jump [n-m]."""
 
-    min_jump: Optional[int] = None
-    max_jump: Optional[int] = None
+    min_jump: int | None = None
+    max_jump: int | None = None
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_hex_jump(self)
@@ -95,7 +95,7 @@ class HexJump(HexToken):
 class HexAlternative(HexToken):
     """Hex alternative (a|b|c)."""
 
-    alternatives: List[List[HexToken]] = field(default_factory=list)  # Add default
+    alternatives: list[list[HexToken]] = field(default_factory=list)  # Add default
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_hex_alternative(self)

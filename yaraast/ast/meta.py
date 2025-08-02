@@ -1,7 +1,7 @@
 """Meta-related AST nodes."""
 
-from dataclasses import dataclass, field
-from typing import Any, Union
+from dataclasses import dataclass
+from typing import Any
 
 from yaraast.ast.base import ASTNode
 
@@ -11,7 +11,7 @@ class Meta(ASTNode):
     """Meta information node."""
 
     key: str
-    value: Union[str, int, bool]
+    value: str | int | bool
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_meta(self)

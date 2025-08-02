@@ -1,52 +1,9 @@
 """Fluent builder for YARA files."""
 
-from typing import Any, Dict, List, Optional, Self, Set, Tuple, Union
+from typing import Self
 
-from yaraast.ast.base import ASTNode, Location, YaraFile
-from yaraast.ast.conditions import (
-    AtExpression,
-    Condition,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
-    OfExpression,
-)
-from yaraast.ast.expressions import (
-    ArrayAccess,
-    BinaryExpression,
-    BooleanLiteral,
-    DoubleLiteral,
-    Expression,
-    FunctionCall,
-    Identifier,
-    IntegerLiteral,
-    MemberAccess,
-    ParenthesesExpression,
-    RangeExpression,
-    SetExpression,
-    StringCount,
-    StringIdentifier,
-    StringLength,
-    StringLiteral,
-    StringOffset,
-    UnaryExpression,
-)
-from yaraast.ast.meta import Meta
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import (
-    HexAlternative,
-    HexByte,
-    HexJump,
-    HexNibble,
-    HexString,
-    HexToken,
-    HexWildcard,
-    PlainString,
-    RegexString,
-    StringDefinition,
-    StringModifier,
-)
+from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Import, Include, Rule
 from yaraast.builder.rule_builder import RuleBuilder
 
 
@@ -54,9 +11,9 @@ class YaraFileBuilder:
     """Fluent builder for constructing YARA files."""
 
     def __init__(self):
-        self._imports: List[str] = []
-        self._includes: List[str] = []
-        self._rules: List[Rule] = []
+        self._imports: list[str] = []
+        self._includes: list[str] = []
+        self._rules: list[Rule] = []
 
     def with_import(self, module: str) -> Self:
         """Add an import."""
@@ -78,7 +35,7 @@ class YaraFileBuilder:
         self._includes.extend(paths)
         return self
 
-    def with_rule(self, rule: Union[Rule, RuleBuilder]) -> Self:
+    def with_rule(self, rule: Rule | RuleBuilder) -> Self:
         """Add a rule."""
         if isinstance(rule, RuleBuilder):
             rule = rule.build()
@@ -92,7 +49,7 @@ class YaraFileBuilder:
         self._rules.append(builder.build())
         return self
 
-    def with_rules(self, *rules: Union[Rule, RuleBuilder]) -> Self:
+    def with_rules(self, *rules: Rule | RuleBuilder) -> Self:
         """Add multiple rules."""
         for rule in rules:
             self.with_rule(rule)
@@ -103,17 +60,17 @@ class YaraFileBuilder:
         return YaraFile(
             imports=[Import(module=module) for module in self._imports],
             includes=[Include(path=path) for path in self._includes],
-            rules=self._rules
+            rules=self._rules,
         )
 
     # Convenience static methods
     @staticmethod
-    def create() -> 'YaraFileBuilder':
+    def create() -> "YaraFileBuilder":
         """Create a new file builder."""
         return YaraFileBuilder()
 
     @staticmethod
-    def from_rules(*rules: Union[Rule, RuleBuilder]) -> YaraFile:
+    def from_rules(*rules: Rule | RuleBuilder) -> YaraFile:
         """Create a YARA file from rules."""
         builder = YaraFileBuilder()
         builder.with_rules(*rules)

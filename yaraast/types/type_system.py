@@ -4,41 +4,41 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING
 
-import attrs
-
-from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.ast.conditions import (
-    AtExpression,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
-    OfExpression,
-)
-from yaraast.ast.expressions import (
-    ArrayAccess,
-    BinaryExpression,
-    BooleanLiteral,
-    DoubleLiteral,
-    Expression,
-    FunctionCall,
-    Identifier,
-    IntegerLiteral,
-    MemberAccess,
-    ParenthesesExpression,
-    RangeExpression,
-    RegexLiteral,
-    SetExpression,
-    StringCount,
-    StringIdentifier,
-    StringLength,
-    StringLiteral,
-    StringOffset,
-    UnaryExpression,
-)
-from yaraast.ast.rules import Import, Rule
 from yaraast.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.conditions import (
+        AtExpression,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
+    from yaraast.ast.expressions import (
+        ArrayAccess,
+        BinaryExpression,
+        BooleanLiteral,
+        DoubleLiteral,
+        Expression,
+        FunctionCall,
+        Identifier,
+        IntegerLiteral,
+        MemberAccess,
+        ParenthesesExpression,
+        RangeExpression,
+        RegexLiteral,
+        SetExpression,
+        StringCount,
+        StringIdentifier,
+        StringLength,
+        StringLiteral,
+        StringOffset,
+        UnaryExpression,
+    )
+    from yaraast.ast.rules import Import, Rule
 
 
 class YaraType(ABC):
@@ -47,12 +47,10 @@ class YaraType(ABC):
     @abstractmethod
     def __str__(self) -> str:
         """String representation of the type."""
-        pass
 
     @abstractmethod
-    def is_compatible_with(self, other: 'YaraType') -> bool:
+    def is_compatible_with(self, other: YaraType) -> bool:
         """Check if this type is compatible with another."""
-        pass
 
     def is_numeric(self) -> bool:
         """Check if this is a numeric type."""
@@ -71,7 +69,7 @@ class IntegerType(YaraType):
         return "integer"
 
     def is_compatible_with(self, other: YaraType) -> bool:
-        return isinstance(other, (IntegerType, DoubleType))
+        return isinstance(other, IntegerType | DoubleType)
 
     def is_numeric(self) -> bool:
         return True
@@ -85,7 +83,7 @@ class DoubleType(YaraType):
         return "double"
 
     def is_compatible_with(self, other: YaraType) -> bool:
-        return isinstance(other, (IntegerType, DoubleType))
+        return isinstance(other, IntegerType | DoubleType)
 
     def is_numeric(self) -> bool:
         return True
@@ -143,7 +141,7 @@ class ModuleType(YaraType):
     """Module type with attributes."""
 
     module_name: str
-    attributes: Dict[str, YaraType]
+    attributes: dict[str, YaraType]
 
     def __str__(self) -> str:
         return f"module({self.module_name})"
@@ -151,7 +149,7 @@ class ModuleType(YaraType):
     def is_compatible_with(self, other: YaraType) -> bool:
         return isinstance(other, ModuleType) and other.module_name == self.module_name
 
-    def get_attribute_type(self, attr: str) -> Optional[YaraType]:
+    def get_attribute_type(self, attr: str) -> YaraType | None:
         """Get type of module attribute."""
         return self.attributes.get(attr)
 
@@ -166,8 +164,9 @@ class ArrayType(YaraType):
         return f"array[{self.element_type}]"
 
     def is_compatible_with(self, other: YaraType) -> bool:
-        return (isinstance(other, ArrayType) and
-                self.element_type.is_compatible_with(other.element_type))
+        return isinstance(other, ArrayType) and self.element_type.is_compatible_with(
+            other.element_type
+        )
 
 
 @dataclass
@@ -181,9 +180,11 @@ class DictionaryType(YaraType):
         return f"dict[{self.key_type}, {self.value_type}]"
 
     def is_compatible_with(self, other: YaraType) -> bool:
-        return (isinstance(other, DictionaryType) and
-                self.key_type.is_compatible_with(other.key_type) and
-                self.value_type.is_compatible_with(other.value_type))
+        return (
+            isinstance(other, DictionaryType)
+            and self.key_type.is_compatible_with(other.key_type)
+            and self.value_type.is_compatible_with(other.value_type)
+        )
 
 
 @dataclass
@@ -191,7 +192,7 @@ class FunctionType(YaraType):
     """Function type."""
 
     name: str
-    param_types: List[YaraType]
+    param_types: list[YaraType]
     return_type: YaraType
 
     def __str__(self) -> str:
@@ -221,7 +222,7 @@ class RegexType(YaraType):
         return "regex"
 
     def is_compatible_with(self, other: YaraType) -> bool:
-        return isinstance(other, (RegexType, StringType))
+        return isinstance(other, RegexType | StringType)
 
     def is_string_like(self) -> bool:
         return True
@@ -235,7 +236,7 @@ class StringIdentifierType(YaraType):
         return "string_identifier"
 
     def is_compatible_with(self, other: YaraType) -> bool:
-        return isinstance(other, (StringType, RegexType, StringIdentifierType, BooleanType))
+        return isinstance(other, StringType | RegexType | StringIdentifierType | BooleanType)
 
     def is_string_like(self) -> bool:
         return True
@@ -260,7 +261,7 @@ class FloatType(YaraType):
         return "float"
 
     def is_compatible_with(self, other: YaraType) -> bool:
-        return isinstance(other, (FloatType, DoubleType, IntegerType))
+        return isinstance(other, FloatType | DoubleType | IntegerType)
 
     def is_numeric(self) -> bool:
         return True
@@ -269,7 +270,8 @@ class FloatType(YaraType):
 @dataclass
 class StructType(YaraType):
     """Struct type with named fields."""
-    fields: Dict[str, YaraType] = field(default_factory=dict)
+
+    fields: dict[str, YaraType] = field(default_factory=dict)
 
     def __str__(self) -> str:
         return f"struct({', '.join(f'{k}: {v}' for k, v in self.fields.items())})"
@@ -289,31 +291,34 @@ class StructType(YaraType):
 @dataclass
 class FunctionDefinition:
     """Definition of a module function."""
+
     name: str
     return_type: YaraType
-    parameters: List[Tuple[str, YaraType]] = field(default_factory=list)
+    parameters: list[tuple[str, YaraType]] = field(default_factory=list)
 
 
 @dataclass
 class ModuleDefinition:
     """Definition of a YARA module."""
+
     name: str
-    attributes: Dict[str, YaraType] = field(default_factory=dict)
-    functions: Dict[str, FunctionDefinition] = field(default_factory=dict)
-    constants: Dict[str, YaraType] = field(default_factory=dict)
+    attributes: dict[str, YaraType] = field(default_factory=dict)
+    functions: dict[str, FunctionDefinition] = field(default_factory=dict)
+    constants: dict[str, YaraType] = field(default_factory=dict)
 
 
 class TypeSystem:
     """Type system with module support."""
 
     def __init__(self):
-        self.modules: Dict[str, ModuleDefinition] = {}
+        self.modules: dict[str, ModuleDefinition] = {}
         self._init_modules()
 
     def _init_modules(self):
         """Initialize modules using ModuleLoader."""
         try:
             from yaraast.types.module_loader import ModuleLoader
+
             loader = ModuleLoader()
             self.modules = loader.modules
         except ImportError:
@@ -331,13 +336,17 @@ class TypeSystem:
             "characteristics": IntegerType(),
             "entry_point": IntegerType(),
             "image_base": IntegerType(),
-            "sections": ArrayType(StructType({
-                "name": StringType(),
-                "virtual_address": IntegerType(),
-                "virtual_size": IntegerType(),
-                "raw_size": IntegerType(),
-                "characteristics": IntegerType()
-            })),
+            "sections": ArrayType(
+                StructType(
+                    {
+                        "name": StringType(),
+                        "virtual_address": IntegerType(),
+                        "virtual_size": IntegerType(),
+                        "raw_size": IntegerType(),
+                        "characteristics": IntegerType(),
+                    }
+                )
+            ),
             "version_info": DictionaryType(StringType(), StringType()),
             "number_of_resources": IntegerType(),
             "resource_timestamp": IntegerType(),
@@ -346,15 +355,19 @@ class TypeSystem:
             "is_pe": BooleanType(),
             "is_dll": BooleanType(),
             "is_32bit": BooleanType(),
-            "is_64bit": BooleanType()
+            "is_64bit": BooleanType(),
         }
         pe.functions = {
             "imphash": FunctionDefinition("imphash", StringType()),
-            "section_index": FunctionDefinition("section_index", IntegerType(), [("name", StringType())]),
+            "section_index": FunctionDefinition(
+                "section_index", IntegerType(), [("name", StringType())]
+            ),
             "exports": FunctionDefinition("exports", BooleanType(), [("name", StringType())]),
-            "imports": FunctionDefinition("imports", BooleanType(), [("dll", StringType()), ("function", StringType())]),
+            "imports": FunctionDefinition(
+                "imports", BooleanType(), [("dll", StringType()), ("function", StringType())]
+            ),
             "locale": FunctionDefinition("locale", BooleanType(), [("locale", IntegerType())]),
-            "language": FunctionDefinition("language", BooleanType(), [("lang", IntegerType())])
+            "language": FunctionDefinition("language", BooleanType(), [("lang", IntegerType())]),
         }
         self.modules["pe"] = pe
 
@@ -362,68 +375,95 @@ class TypeSystem:
         math = ModuleDefinition(name="math")
         math.functions = {
             "abs": FunctionDefinition("abs", IntegerType(), [("x", IntegerType())]),
-            "min": FunctionDefinition("min", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]),
-            "max": FunctionDefinition("max", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]),
-            "to_string": FunctionDefinition("to_string", StringType(), [("n", IntegerType()), ("base", IntegerType())]),
+            "min": FunctionDefinition(
+                "min", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
+            ),
+            "max": FunctionDefinition(
+                "max", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
+            ),
+            "to_string": FunctionDefinition(
+                "to_string", StringType(), [("n", IntegerType()), ("base", IntegerType())]
+            ),
             "to_number": FunctionDefinition("to_number", IntegerType(), [("s", StringType())]),
             "log": FunctionDefinition("log", DoubleType(), [("x", DoubleType())]),
             "log2": FunctionDefinition("log2", DoubleType(), [("x", DoubleType())]),
             "log10": FunctionDefinition("log10", DoubleType(), [("x", DoubleType())]),
-            "sqrt": FunctionDefinition("sqrt", DoubleType(), [("x", DoubleType())])
+            "sqrt": FunctionDefinition("sqrt", DoubleType(), [("x", DoubleType())]),
         }
         self.modules["math"] = math
 
         # Add more modules as needed...
 
-    def get_module(self, name: str) -> Optional[ModuleDefinition]:
+    def get_module(self, name: str) -> ModuleDefinition | None:
         """Get module definition by name."""
         return self.modules.get(name)
 
 
 # Module definitions (deprecated - use TypeSystem instead)
 MODULE_DEFINITIONS = {
-    "pe": ModuleType("pe", {
-        "machine": IntegerType(),
-        "number_of_sections": IntegerType(),
-        "timestamp": IntegerType(),
-        "characteristics": IntegerType(),
-        "entry_point": IntegerType(),
-        "image_base": IntegerType(),
-        "sections": ArrayType(DictionaryType(StringType(), IntegerType())),
-        "version_info": DictionaryType(StringType(), StringType()),
-        "exports": ArrayType(StringType()),
-        "imports": ArrayType(DictionaryType(StringType(), ArrayType(StringType()))),
-        "is_dll": BooleanType(),
-        "is_32bit": BooleanType(),
-        "is_64bit": BooleanType(),
-    }),
-    "elf": ModuleType("elf", {
-        "type": IntegerType(),
-        "machine": IntegerType(),
-        "entry_point": IntegerType(),
-        "sections": ArrayType(DictionaryType(StringType(), IntegerType())),
-        "segments": ArrayType(DictionaryType(StringType(), IntegerType())),
-    }),
-    "math": ModuleType("math", {
-        "entropy": FunctionType("entropy", [IntegerType(), IntegerType()], DoubleType()),
-        "serial_correlation": FunctionType("serial_correlation", [IntegerType(), IntegerType()], DoubleType()),
-        "monte_carlo_pi": FunctionType("monte_carlo_pi", [IntegerType(), IntegerType()], DoubleType()),
-        "mean": FunctionType("mean", [IntegerType(), IntegerType()], DoubleType()),
-        "deviation": FunctionType("deviation", [IntegerType(), IntegerType(), DoubleType()], DoubleType()),
-    }),
-    "dotnet": ModuleType("dotnet", {
-        "version": StringType(),
-        "module_name": StringType(),
-        "assembly": DictionaryType(StringType(), StringType()),
-        "resources": ArrayType(DictionaryType(StringType(), IntegerType())),
-        "streams": ArrayType(DictionaryType(StringType(), IntegerType())),
-    }),
-    "hash": ModuleType("hash", {
-        "md5": FunctionType("md5", [IntegerType(), IntegerType()], StringType()),
-        "sha1": FunctionType("sha1", [IntegerType(), IntegerType()], StringType()),
-        "sha256": FunctionType("sha256", [IntegerType(), IntegerType()], StringType()),
-        "crc32": FunctionType("crc32", [IntegerType(), IntegerType()], IntegerType()),
-    }),
+    "pe": ModuleType(
+        "pe",
+        {
+            "machine": IntegerType(),
+            "number_of_sections": IntegerType(),
+            "timestamp": IntegerType(),
+            "characteristics": IntegerType(),
+            "entry_point": IntegerType(),
+            "image_base": IntegerType(),
+            "sections": ArrayType(DictionaryType(StringType(), IntegerType())),
+            "version_info": DictionaryType(StringType(), StringType()),
+            "exports": ArrayType(StringType()),
+            "imports": ArrayType(DictionaryType(StringType(), ArrayType(StringType()))),
+            "is_dll": BooleanType(),
+            "is_32bit": BooleanType(),
+            "is_64bit": BooleanType(),
+        },
+    ),
+    "elf": ModuleType(
+        "elf",
+        {
+            "type": IntegerType(),
+            "machine": IntegerType(),
+            "entry_point": IntegerType(),
+            "sections": ArrayType(DictionaryType(StringType(), IntegerType())),
+            "segments": ArrayType(DictionaryType(StringType(), IntegerType())),
+        },
+    ),
+    "math": ModuleType(
+        "math",
+        {
+            "entropy": FunctionType("entropy", [IntegerType(), IntegerType()], DoubleType()),
+            "serial_correlation": FunctionType(
+                "serial_correlation", [IntegerType(), IntegerType()], DoubleType()
+            ),
+            "monte_carlo_pi": FunctionType(
+                "monte_carlo_pi", [IntegerType(), IntegerType()], DoubleType()
+            ),
+            "mean": FunctionType("mean", [IntegerType(), IntegerType()], DoubleType()),
+            "deviation": FunctionType(
+                "deviation", [IntegerType(), IntegerType(), DoubleType()], DoubleType()
+            ),
+        },
+    ),
+    "dotnet": ModuleType(
+        "dotnet",
+        {
+            "version": StringType(),
+            "module_name": StringType(),
+            "assembly": DictionaryType(StringType(), StringType()),
+            "resources": ArrayType(DictionaryType(StringType(), IntegerType())),
+            "streams": ArrayType(DictionaryType(StringType(), IntegerType())),
+        },
+    ),
+    "hash": ModuleType(
+        "hash",
+        {
+            "md5": FunctionType("md5", [IntegerType(), IntegerType()], StringType()),
+            "sha1": FunctionType("sha1", [IntegerType(), IntegerType()], StringType()),
+            "sha256": FunctionType("sha256", [IntegerType(), IntegerType()], StringType()),
+            "crc32": FunctionType("crc32", [IntegerType(), IntegerType()], IntegerType()),
+        },
+    ),
 }
 
 
@@ -431,10 +471,10 @@ class TypeEnvironment:
     """Type environment for tracking variable types."""
 
     def __init__(self):
-        self.scopes: List[Dict[str, YaraType]] = [{}]
-        self.modules: Set[str] = set()
-        self.module_aliases: Dict[str, str] = {}  # alias -> actual module name
-        self.strings: Set[str] = set()
+        self.scopes: list[dict[str, YaraType]] = [{}]
+        self.modules: set[str] = set()
+        self.module_aliases: dict[str, str] = {}  # alias -> actual module name
+        self.strings: set[str] = set()
 
     def push_scope(self):
         """Push a new scope."""
@@ -449,14 +489,14 @@ class TypeEnvironment:
         """Define a variable in the current scope."""
         self.scopes[-1][name] = type
 
-    def lookup(self, name: str) -> Optional[YaraType]:
+    def lookup(self, name: str) -> YaraType | None:
         """Look up a variable type."""
         for scope in reversed(self.scopes):
             if name in scope:
                 return scope[name]
         return None
 
-    def add_module(self, alias: str, module: str = None):
+    def add_module(self, alias: str, module: str | None = None):
         """Add an imported module with optional alias."""
         if module is None:
             # No alias, just module name
@@ -478,7 +518,7 @@ class TypeEnvironment:
         # Check if it's an alias
         return name in self.module_aliases
 
-    def get_module_name(self, name: str) -> Optional[str]:
+    def get_module_name(self, name: str) -> str | None:
         """Get actual module name from alias or name."""
         if name in self.module_aliases:
             return self.module_aliases[name]
@@ -496,7 +536,7 @@ class TypeInference(ASTVisitor[YaraType]):
 
     def __init__(self, env: TypeEnvironment):
         self.env = env
-        self.errors: List[str] = []
+        self.errors: list[str] = []
 
     def infer(self, node: Expression) -> YaraType:
         """Infer type of expression."""
@@ -520,11 +560,9 @@ class TypeInference(ASTVisitor[YaraType]):
 
     # Identifiers
     def visit_identifier(self, node: Identifier) -> YaraType:
-        if node.name == "filesize":
+        if node.name == "filesize" or node.name == "entrypoint":
             return IntegerType()
-        elif node.name == "entrypoint":
-            return IntegerType()
-        elif node.name == "them":
+        if node.name == "them":
             return StringSetType()
 
         # Check if it's a module name or alias
@@ -534,6 +572,7 @@ class TypeInference(ASTVisitor[YaraType]):
             if actual_module:
                 # Return module type based on module loader
                 from yaraast.types.module_loader import ModuleLoader
+
                 loader = ModuleLoader()
                 module_def = loader.get_module(actual_module)
                 if module_def:
@@ -578,62 +617,88 @@ class TypeInference(ASTVisitor[YaraType]):
         # Logical operators
         if node.operator in ["and", "or"]:
             if not isinstance(left_type, BooleanType):
-                self.errors.append(f"Left operand of '{node.operator}' must be boolean, got {left_type}")
+                self.errors.append(
+                    f"Left operand of '{node.operator}' must be boolean, got {left_type}"
+                )
             if not isinstance(right_type, BooleanType):
-                self.errors.append(f"Right operand of '{node.operator}' must be boolean, got {right_type}")
+                self.errors.append(
+                    f"Right operand of '{node.operator}' must be boolean, got {right_type}"
+                )
             return BooleanType()
 
         # Comparison operators
-        elif node.operator in ["<", "<=", ">", ">=", "==", "!="]:
-            if left_type.is_numeric() and right_type.is_numeric():
+        if node.operator in ["<", "<=", ">", ">=", "==", "!="]:
+            if (left_type.is_numeric() and right_type.is_numeric()) or isinstance(
+                left_type, type(right_type)
+            ):
                 return BooleanType()
-            elif isinstance(left_type, type(right_type)):
-                return BooleanType()
-            else:
-                self.errors.append(f"Incompatible types for '{node.operator}': {left_type} and {right_type}")
-                return BooleanType()
+            self.errors.append(
+                f"Incompatible types for '{node.operator}': {left_type} and {right_type}"
+            )
+            return BooleanType()
 
         # String operators
-        elif node.operator in ["contains", "matches", "startswith", "endswith",
-                               "icontains", "istartswith", "iendswith", "iequals"]:
+        if node.operator in [
+            "contains",
+            "matches",
+            "startswith",
+            "endswith",
+            "icontains",
+            "istartswith",
+            "iendswith",
+            "iequals",
+        ]:
             if not left_type.is_string_like():
-                self.errors.append(f"Left operand of '{node.operator}' must be string-like, got {left_type}")
+                self.errors.append(
+                    f"Left operand of '{node.operator}' must be string-like, got {left_type}"
+                )
             # For matches, right side can be string or regex
             if node.operator == "matches":
-                if not isinstance(right_type, (StringType, RegexType)):
-                    self.errors.append(f"Right operand of 'matches' must be string or regex, got {right_type}")
+                if not isinstance(right_type, StringType | RegexType):
+                    self.errors.append(
+                        f"Right operand of 'matches' must be string or regex, got {right_type}"
+                    )
             else:
                 if not isinstance(right_type, StringType):
-                    self.errors.append(f"Right operand of '{node.operator}' must be string, got {right_type}")
+                    self.errors.append(
+                        f"Right operand of '{node.operator}' must be string, got {right_type}"
+                    )
             return BooleanType()
 
         # Arithmetic operators
-        elif node.operator in ["+", "-", "*", "/", "%"]:
+        if node.operator in ["+", "-", "*", "/", "%"]:
             if not left_type.is_numeric():
-                self.errors.append(f"Left operand of '{node.operator}' must be numeric, got {left_type}")
+                self.errors.append(
+                    f"Left operand of '{node.operator}' must be numeric, got {left_type}"
+                )
             if not right_type.is_numeric():
-                self.errors.append(f"Right operand of '{node.operator}' must be numeric, got {right_type}")
+                self.errors.append(
+                    f"Right operand of '{node.operator}' must be numeric, got {right_type}"
+                )
 
             # Division always returns double
-            if node.operator == "/":
+            if (
+                node.operator == "/"
+                or isinstance(left_type, DoubleType)
+                or isinstance(right_type, DoubleType)
+            ):
                 return DoubleType()
-            # If either operand is double, result is double
-            elif isinstance(left_type, DoubleType) or isinstance(right_type, DoubleType):
-                return DoubleType()
-            else:
-                return IntegerType()
-
-        # Bitwise operators
-        elif node.operator in ["&", "|", "^", "<<", ">>"]:
-            if not isinstance(left_type, IntegerType):
-                self.errors.append(f"Left operand of '{node.operator}' must be integer, got {left_type}")
-            if not isinstance(right_type, IntegerType):
-                self.errors.append(f"Right operand of '{node.operator}' must be integer, got {right_type}")
             return IntegerType()
 
-        else:
-            self.errors.append(f"Unknown binary operator: {node.operator}")
-            return UnknownType()
+        # Bitwise operators
+        if node.operator in ["&", "|", "^", "<<", ">>"]:
+            if not isinstance(left_type, IntegerType):
+                self.errors.append(
+                    f"Left operand of '{node.operator}' must be integer, got {left_type}"
+                )
+            if not isinstance(right_type, IntegerType):
+                self.errors.append(
+                    f"Right operand of '{node.operator}' must be integer, got {right_type}"
+                )
+            return IntegerType()
+
+        self.errors.append(f"Unknown binary operator: {node.operator}")
+        return UnknownType()
 
     def visit_unary_expression(self, node: UnaryExpression) -> YaraType:
         operand_type = self.visit(node.operand)
@@ -642,17 +707,16 @@ class TypeInference(ASTVisitor[YaraType]):
             if not isinstance(operand_type, BooleanType):
                 self.errors.append(f"Operand of 'not' must be boolean, got {operand_type}")
             return BooleanType()
-        elif node.operator == "-":
+        if node.operator == "-":
             if not operand_type.is_numeric():
                 self.errors.append(f"Operand of '-' must be numeric, got {operand_type}")
             return operand_type
-        elif node.operator == "~":
+        if node.operator == "~":
             if not isinstance(operand_type, IntegerType):
                 self.errors.append(f"Operand of '~' must be integer, got {operand_type}")
             return IntegerType()
-        else:
-            self.errors.append(f"Unknown unary operator: {node.operator}")
-            return UnknownType()
+        self.errors.append(f"Unknown unary operator: {node.operator}")
+        return UnknownType()
 
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> YaraType:
         return self.visit(node.expression)
@@ -664,7 +728,9 @@ class TypeInference(ASTVisitor[YaraType]):
             for elem in node.elements[1:]:
                 elem_type = self.visit(elem)
                 if not first_type.is_compatible_with(elem_type):
-                    self.errors.append(f"Set elements must have same type: {first_type} vs {elem_type}")
+                    self.errors.append(
+                        f"Set elements must have same type: {first_type} vs {elem_type}"
+                    )
 
         return StringSetType()  # Sets are typically string sets in YARA
 
@@ -681,8 +747,8 @@ class TypeInference(ASTVisitor[YaraType]):
 
     def visit_function_call(self, node: FunctionCall) -> YaraType:
         # Check if it's a module function call (e.g., m.entropy)
-        if '.' in node.function:
-            parts = node.function.split('.', 1)
+        if "." in node.function:
+            parts = node.function.split(".", 1)
             if len(parts) == 2:
                 module_name, func_name = parts
                 if self.env.has_module(module_name):
@@ -690,80 +756,82 @@ class TypeInference(ASTVisitor[YaraType]):
                     actual_module = self.env.get_module_name(module_name)
                     if actual_module:
                         from yaraast.types.module_loader import ModuleLoader
+
                         loader = ModuleLoader()
                         module_def = loader.get_module(actual_module)
                         if module_def and func_name in module_def.functions:
                             func_def = module_def.functions[func_name]
                             # TODO: Validate argument types
                             return func_def.return_type
-                        else:
-                            self.errors.append(f"Module '{actual_module}' has no function '{func_name}'")
-                            return UnknownType()
+                        self.errors.append(
+                            f"Module '{actual_module}' has no function '{func_name}'"
+                        )
+                        return UnknownType()
 
         # Built-in functions
         if node.function == "uint8":
             if len(node.arguments) != 1:
                 self.errors.append("uint8() expects 1 argument")
             return IntegerType()
-        elif node.function == "uint16":
+        if node.function == "uint16":
             if len(node.arguments) != 1:
                 self.errors.append("uint16() expects 1 argument")
             return IntegerType()
-        elif node.function == "uint32":
+        if node.function == "uint32":
             if len(node.arguments) != 1:
                 self.errors.append("uint32() expects 1 argument")
             return IntegerType()
-        elif node.function == "int8":
+        if node.function == "int8":
             if len(node.arguments) != 1:
                 self.errors.append("int8() expects 1 argument")
             return IntegerType()
-        elif node.function == "int16":
+        if node.function == "int16":
             if len(node.arguments) != 1:
                 self.errors.append("int16() expects 1 argument")
             return IntegerType()
-        elif node.function == "int32":
+        if node.function == "int32":
             if len(node.arguments) != 1:
                 self.errors.append("int32() expects 1 argument")
             return IntegerType()
         # Big-endian variants
-        elif node.function == "uint8be":
+        if node.function == "uint8be":
             if len(node.arguments) != 1:
                 self.errors.append("uint8be() expects 1 argument")
             return IntegerType()
-        elif node.function == "uint16be":
+        if node.function == "uint16be":
             if len(node.arguments) != 1:
                 self.errors.append("uint16be() expects 1 argument")
             return IntegerType()
-        elif node.function == "uint32be":
+        if node.function == "uint32be":
             if len(node.arguments) != 1:
                 self.errors.append("uint32be() expects 1 argument")
             return IntegerType()
-        elif node.function == "int8be":
+        if node.function == "int8be":
             if len(node.arguments) != 1:
                 self.errors.append("int8be() expects 1 argument")
             return IntegerType()
-        elif node.function == "int16be":
+        if node.function == "int16be":
             if len(node.arguments) != 1:
                 self.errors.append("int16be() expects 1 argument")
             return IntegerType()
-        elif node.function == "int32be":
+        if node.function == "int32be":
             if len(node.arguments) != 1:
                 self.errors.append("int32be() expects 1 argument")
             return IntegerType()
         # Little-endian variants (explicit)
-        elif node.function == "uint16le":
+        if node.function == "uint16le":
             if len(node.arguments) != 1:
                 self.errors.append("uint16le() expects 1 argument")
             return IntegerType()
-        elif node.function == "uint32le":
+        if node.function == "uint32le":
             if len(node.arguments) != 1:
                 self.errors.append("uint32le() expects 1 argument")
             return IntegerType()
-        elif node.function == "int16le":
+        if node.function == "int16le":
             if len(node.arguments) != 1:
                 self.errors.append("int16le() expects 1 argument")
             return IntegerType()
-        elif node.function == "int32le":
+        if node.function == "int32le":
             if len(node.arguments) != 1:
                 self.errors.append("int32le() expects 1 argument")
             return IntegerType()
@@ -779,9 +847,8 @@ class TypeInference(ASTVisitor[YaraType]):
 
         if isinstance(array_type, ArrayType):
             return array_type.element_type
-        else:
-            self.errors.append(f"Cannot index non-array type: {array_type}")
-            return UnknownType()
+        self.errors.append(f"Cannot index non-array type: {array_type}")
+        return UnknownType()
 
     def visit_member_access(self, node: MemberAccess) -> YaraType:
         obj_type = self.visit(node.object)
@@ -790,19 +857,16 @@ class TypeInference(ASTVisitor[YaraType]):
             attr_type = obj_type.get_attribute_type(node.member)
             if attr_type:
                 return attr_type
-            else:
-                self.errors.append(f"Module '{obj_type.module_name}' has no attribute '{node.member}'")
-                return UnknownType()
-        else:
-            self.errors.append(f"Cannot access member of non-module type: {obj_type}")
+            self.errors.append(f"Module '{obj_type.module_name}' has no attribute '{node.member}'")
             return UnknownType()
+        self.errors.append(f"Cannot access member of non-module type: {obj_type}")
+        return UnknownType()
 
     def visit_module_reference(self, node) -> YaraType:
         if self.env.has_module(node.module):
             return MODULE_DEFINITIONS.get(node.module, UnknownType())
-        else:
-            self.errors.append(f"Module '{node.module}' not imported")
-            return UnknownType()
+        self.errors.append(f"Module '{node.module}' not imported")
+        return UnknownType()
 
     def visit_dictionary_access(self, node) -> YaraType:
         dict_type = self.visit(node.object)
@@ -810,9 +874,8 @@ class TypeInference(ASTVisitor[YaraType]):
         if isinstance(dict_type, DictionaryType):
             # TODO: Check key type
             return dict_type.value_type
-        else:
-            self.errors.append(f"Cannot access dictionary on non-dict type: {dict_type}")
-            return UnknownType()
+        self.errors.append(f"Cannot access dictionary on non-dict type: {dict_type}")
+        return UnknownType()
 
     # Conditions
     def visit_at_expression(self, node: AtExpression) -> YaraType:
@@ -830,7 +893,7 @@ class TypeInference(ASTVisitor[YaraType]):
     def visit_of_expression(self, node: OfExpression) -> YaraType:
         # Quantifier should be string ("any", "all") or integer
         quant_type = self.visit(node.quantifier)
-        if not isinstance(quant_type, (StringType, IntegerType)):
+        if not isinstance(quant_type, StringType | IntegerType):
             self.errors.append(f"'of' quantifier must be string or integer, got {quant_type}")
 
         # String set should be StringSetType
@@ -879,29 +942,74 @@ class TypeInference(ASTVisitor[YaraType]):
         return BooleanType()
 
     # Default implementations for other visit methods
-    def visit_yara_file(self, node): return UnknownType()
-    def visit_import(self, node): return UnknownType()
-    def visit_include(self, node): return UnknownType()
-    def visit_rule(self, node): return UnknownType()
-    def visit_tag(self, node): return UnknownType()
-    def visit_string_definition(self, node): return UnknownType()
-    def visit_plain_string(self, node): return UnknownType()
-    def visit_hex_string(self, node): return UnknownType()
-    def visit_regex_string(self, node): return UnknownType()
-    def visit_string_modifier(self, node): return UnknownType()
-    def visit_hex_token(self, node): return UnknownType()
-    def visit_hex_byte(self, node): return UnknownType()
-    def visit_hex_wildcard(self, node): return UnknownType()
-    def visit_hex_jump(self, node): return UnknownType()
-    def visit_hex_alternative(self, node): return UnknownType()
-    def visit_hex_nibble(self, node): return UnknownType()
-    def visit_expression(self, node): return UnknownType()
-    def visit_condition(self, node): return UnknownType()
-    def visit_meta(self, node): return UnknownType()
-    def visit_comment(self, node): return UnknownType()
-    def visit_comment_group(self, node): return UnknownType()
-    def visit_defined_expression(self, node): return BooleanType()
-    def visit_string_operator_expression(self, node): return BooleanType()
+    def visit_yara_file(self, node):
+        return UnknownType()
+
+    def visit_import(self, node):
+        return UnknownType()
+
+    def visit_include(self, node):
+        return UnknownType()
+
+    def visit_rule(self, node):
+        return UnknownType()
+
+    def visit_tag(self, node):
+        return UnknownType()
+
+    def visit_string_definition(self, node):
+        return UnknownType()
+
+    def visit_plain_string(self, node):
+        return UnknownType()
+
+    def visit_hex_string(self, node):
+        return UnknownType()
+
+    def visit_regex_string(self, node):
+        return UnknownType()
+
+    def visit_string_modifier(self, node):
+        return UnknownType()
+
+    def visit_hex_token(self, node):
+        return UnknownType()
+
+    def visit_hex_byte(self, node):
+        return UnknownType()
+
+    def visit_hex_wildcard(self, node):
+        return UnknownType()
+
+    def visit_hex_jump(self, node):
+        return UnknownType()
+
+    def visit_hex_alternative(self, node):
+        return UnknownType()
+
+    def visit_hex_nibble(self, node):
+        return UnknownType()
+
+    def visit_expression(self, node):
+        return UnknownType()
+
+    def visit_condition(self, node):
+        return UnknownType()
+
+    def visit_meta(self, node):
+        return UnknownType()
+
+    def visit_comment(self, node):
+        return UnknownType()
+
+    def visit_comment_group(self, node):
+        return UnknownType()
+
+    def visit_defined_expression(self, node):
+        return BooleanType()
+
+    def visit_string_operator_expression(self, node):
+        return BooleanType()
 
 
 class TypeChecker(ASTVisitor[None]):
@@ -910,9 +1018,9 @@ class TypeChecker(ASTVisitor[None]):
     def __init__(self):
         self.env = TypeEnvironment()
         self.inference = TypeInference(self.env)
-        self.errors: List[str] = []
+        self.errors: list[str] = []
 
-    def check(self, ast: YaraFile) -> List[str]:
+    def check(self, ast: YaraFile) -> list[str]:
         """Type check a YARA file and return errors."""
         self.errors = []
         self.visit(ast)
@@ -945,65 +1053,156 @@ class TypeChecker(ASTVisitor[None]):
                 self.errors.append(f"Rule condition must be boolean, got {cond_type}")
 
     # Other visit methods with pass
-    def visit_include(self, node): pass
-    def visit_tag(self, node): pass
-    def visit_string_definition(self, node): pass
-    def visit_plain_string(self, node): pass
-    def visit_hex_string(self, node): pass
-    def visit_regex_string(self, node): pass
-    def visit_string_modifier(self, node): pass
-    def visit_hex_token(self, node): pass
-    def visit_hex_byte(self, node): pass
-    def visit_hex_wildcard(self, node): pass
-    def visit_hex_jump(self, node): pass
-    def visit_hex_alternative(self, node): pass
-    def visit_hex_nibble(self, node): pass
-    def visit_expression(self, node): pass
-    def visit_identifier(self, node): pass
-    def visit_string_identifier(self, node): pass
-    def visit_string_count(self, node): pass
-    def visit_string_offset(self, node): pass
-    def visit_string_length(self, node): pass
-    def visit_integer_literal(self, node): pass
-    def visit_double_literal(self, node): pass
-    def visit_string_literal(self, node): pass
-    def visit_boolean_literal(self, node): pass
-    def visit_binary_expression(self, node): pass
-    def visit_unary_expression(self, node): pass
-    def visit_parentheses_expression(self, node): pass
-    def visit_set_expression(self, node): pass
-    def visit_range_expression(self, node): pass
-    def visit_function_call(self, node): pass
-    def visit_array_access(self, node): pass
-    def visit_member_access(self, node): pass
-    def visit_condition(self, node): pass
-    def visit_for_expression(self, node): pass
-    def visit_for_of_expression(self, node): pass
-    def visit_at_expression(self, node): pass
-    def visit_in_expression(self, node): pass
-    def visit_of_expression(self, node): pass
-    def visit_meta(self, node): pass
-    def visit_module_reference(self, node): pass
-    def visit_dictionary_access(self, node): pass
-    def visit_comment(self, node): pass
-    def visit_comment_group(self, node): pass
-    def visit_defined_expression(self, node): pass
-    def visit_regex_literal(self, node): pass
-    def visit_string_operator_expression(self, node): pass
+    def visit_include(self, node):
+        pass
+
+    def visit_tag(self, node):
+        pass
+
+    def visit_string_definition(self, node):
+        pass
+
+    def visit_plain_string(self, node):
+        pass
+
+    def visit_hex_string(self, node):
+        pass
+
+    def visit_regex_string(self, node):
+        pass
+
+    def visit_string_modifier(self, node):
+        pass
+
+    def visit_hex_token(self, node):
+        pass
+
+    def visit_hex_byte(self, node):
+        pass
+
+    def visit_hex_wildcard(self, node):
+        pass
+
+    def visit_hex_jump(self, node):
+        pass
+
+    def visit_hex_alternative(self, node):
+        pass
+
+    def visit_hex_nibble(self, node):
+        pass
+
+    def visit_expression(self, node):
+        pass
+
+    def visit_identifier(self, node):
+        pass
+
+    def visit_string_identifier(self, node):
+        pass
+
+    def visit_string_count(self, node):
+        pass
+
+    def visit_string_offset(self, node):
+        pass
+
+    def visit_string_length(self, node):
+        pass
+
+    def visit_integer_literal(self, node):
+        pass
+
+    def visit_double_literal(self, node):
+        pass
+
+    def visit_string_literal(self, node):
+        pass
+
+    def visit_boolean_literal(self, node):
+        pass
+
+    def visit_binary_expression(self, node):
+        pass
+
+    def visit_unary_expression(self, node):
+        pass
+
+    def visit_parentheses_expression(self, node):
+        pass
+
+    def visit_set_expression(self, node):
+        pass
+
+    def visit_range_expression(self, node):
+        pass
+
+    def visit_function_call(self, node):
+        pass
+
+    def visit_array_access(self, node):
+        pass
+
+    def visit_member_access(self, node):
+        pass
+
+    def visit_condition(self, node):
+        pass
+
+    def visit_for_expression(self, node):
+        pass
+
+    def visit_for_of_expression(self, node):
+        pass
+
+    def visit_at_expression(self, node):
+        pass
+
+    def visit_in_expression(self, node):
+        pass
+
+    def visit_of_expression(self, node):
+        pass
+
+    def visit_meta(self, node):
+        pass
+
+    def visit_module_reference(self, node):
+        pass
+
+    def visit_dictionary_access(self, node):
+        pass
+
+    def visit_comment(self, node):
+        pass
+
+    def visit_comment_group(self, node):
+        pass
+
+    def visit_defined_expression(self, node):
+        pass
+
+    def visit_regex_literal(self, node):
+        pass
+
+    def visit_string_operator_expression(self, node):
+        pass
 
 
 class TypeValidator:
     """High-level type validation API."""
 
     @staticmethod
-    def validate(ast: YaraFile) -> Tuple[bool, List[str]]:
+    def validate(ast: YaraFile) -> tuple[bool, list[str]]:
         """Validate types in YARA file. Returns (is_valid, errors)."""
         checker = TypeChecker()
         errors = checker.check(ast)
         return len(errors) == 0, errors
 
     @staticmethod
-    def validate_expression(expr: Expression, env: Optional[TypeEnvironment] = None) -> Tuple[YaraType, List[str]]:
+    def validate_expression(
+        expr: Expression, env: TypeEnvironment | None = None
+    ) -> tuple[YaraType, list[str]]:
         """Validate and infer type of expression."""
         if env is None:
             env = TypeEnvironment()

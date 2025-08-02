@@ -1,13 +1,12 @@
 """Direct AST to libyara compilation bypassing text generation."""
 
-import os
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any
 
 try:
     import yara
+
     YARA_AVAILABLE = True
 except ImportError:
     yara = None
@@ -15,21 +14,14 @@ except ImportError:
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.expressions import BinaryOperation, Identifier, IntegerLiteral, UnaryOperation
-from yaraast.ast.imports import Import
-from yaraast.ast.rules import Rule, RuleModifier
-from yaraast.ast.strings import (
-    HexString,
-    RegexString,
-    StringDefinition,
-    StringLiteral,
-    StringModifier,
-)
+from yaraast.ast.rules import Rule
 from yaraast.visitor.visitor import ASTVisitor
 
 
 @dataclass
 class OptimizationStats:
     """Statistics about AST optimizations performed."""
+
     rules_optimized: int = 0
     strings_optimized: int = 0
     conditions_simplified: int = 0
@@ -40,14 +32,15 @@ class OptimizationStats:
 @dataclass
 class DirectCompilationResult:
     """Result of direct AST compilation."""
+
     success: bool
-    compiled_rules: Optional[Any] = None  # yara.Rules object
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    optimization_stats: Optional[OptimizationStats] = None
+    compiled_rules: Any | None = None  # yara.Rules object
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    optimization_stats: OptimizationStats | None = None
     compilation_time: float = 0.0
     ast_node_count: int = 0
-    generated_source: Optional[str] = None  # For debugging
+    generated_source: str | None = None  # For debugging
 
     @property
     def optimized(self) -> bool:
@@ -55,11 +48,13 @@ class DirectCompilationResult:
         if not self.optimization_stats:
             return False
         stats = self.optimization_stats
-        return (stats.rules_optimized > 0 or
-                stats.strings_optimized > 0 or
-                stats.conditions_simplified > 0 or
-                stats.dead_code_removed > 0 or
-                stats.constant_folded > 0)
+        return (
+            stats.rules_optimized > 0
+            or stats.strings_optimized > 0
+            or stats.conditions_simplified > 0
+            or stats.dead_code_removed > 0
+            or stats.constant_folded > 0
+        )
 
 
 class ASTOptimizer(ASTVisitor):
@@ -88,7 +83,9 @@ class ASTOptimizer(ASTVisitor):
 
         if len(rule.strings) < original_string_count:
             self.stats.strings_optimized += original_string_count - len(rule.strings)
-            self.optimizations_applied.append(f"Removed {original_string_count - len(rule.strings)} unused strings from rule '{rule.name}'")
+            self.optimizations_applied.append(
+                f"Removed {original_string_count - len(rule.strings)} unused strings from rule '{rule.name}'"
+            )
 
         # Optimize condition
         if rule.condition:
@@ -114,8 +111,8 @@ class ASTOptimizer(ASTVisitor):
         """Extract string identifiers from condition."""
         identifiers = set()
 
-        if hasattr(node, 'name') and isinstance(node, Identifier):
-            if node.name.startswith('$'):
+        if hasattr(node, "name") and isinstance(node, Identifier):
+            if node.name.startswith("$"):
                 identifiers.add(node.name)
 
         # Recursively check children
@@ -132,8 +129,7 @@ class ASTOptimizer(ASTVisitor):
             right_opt = self._optimize_condition(condition.right)
 
             # Try constant folding
-            if (isinstance(left_opt, IntegerLiteral) and
-                isinstance(right_opt, IntegerLiteral)):
+            if isinstance(left_opt, IntegerLiteral) and isinstance(right_opt, IntegerLiteral):
 
                 result = self._fold_constants(left_opt, condition.operator, right_opt)
                 if result is not None:
@@ -148,21 +144,23 @@ class ASTOptimizer(ASTVisitor):
 
         return condition
 
-    def _fold_constants(self, left: IntegerLiteral, op: str, right: IntegerLiteral) -> Optional[IntegerLiteral]:
+    def _fold_constants(
+        self, left: IntegerLiteral, op: str, right: IntegerLiteral
+    ) -> IntegerLiteral | None:
         """Fold constant expressions."""
         try:
             left_val = int(left.value)
             right_val = int(right.value)
 
-            if op == '+':
+            if op == "+":
                 return IntegerLiteral(value=str(left_val + right_val))
-            elif op == '-':
+            if op == "-":
                 return IntegerLiteral(value=str(left_val - right_val))
-            elif op == '*':
+            if op == "*":
                 return IntegerLiteral(value=str(left_val * right_val))
-            elif op == '/' and right_val != 0:
+            if op == "/" and right_val != 0:
                 return IntegerLiteral(value=str(left_val // right_val))
-            elif op == '%' and right_val != 0:
+            if op == "%" and right_val != 0:
                 return IntegerLiteral(value=str(left_val % right_val))
         except (ValueError, ZeroDivisionError):
             pass
@@ -173,10 +171,12 @@ class ASTOptimizer(ASTVisitor):
 class DirectASTCompiler:
     """Compile yaraast AST directly to libyara rules without text generation."""
 
-    def __init__(self,
-                 externals: Optional[Dict[str, Any]] = None,
-                 enable_optimization: bool = True,
-                 debug_mode: bool = False):
+    def __init__(
+        self,
+        externals: dict[str, Any] | None = None,
+        enable_optimization: bool = True,
+        debug_mode: bool = False,
+    ):
         """Initialize direct compiler.
 
         Args:
@@ -186,8 +186,7 @@ class DirectASTCompiler:
         """
         if not YARA_AVAILABLE:
             raise ImportError(
-                "yara-python is not installed. "
-                "Install it with: pip install yara-python"
+                "yara-python is not installed. " "Install it with: pip install yara-python"
             )
 
         self.externals = externals or {}
@@ -197,18 +196,17 @@ class DirectASTCompiler:
 
         # Compile-time statistics
         self.compilation_stats = {
-            'total_compilations': 0,
-            'successful_compilations': 0,
-            'failed_compilations': 0,
-            'total_rules_compiled': 0,
-            'total_optimization_time': 0.0,
-            'total_compilation_time': 0.0
+            "total_compilations": 0,
+            "successful_compilations": 0,
+            "failed_compilations": 0,
+            "total_rules_compiled": 0,
+            "total_optimization_time": 0.0,
+            "total_compilation_time": 0.0,
         }
 
-    def compile_ast(self,
-                    ast: YaraFile,
-                    includes: Optional[Dict[str, str]] = None,
-                    error_on_warning: bool = False) -> DirectCompilationResult:
+    def compile_ast(
+        self, ast: YaraFile, includes: dict[str, str] | None = None, error_on_warning: bool = False
+    ) -> DirectCompilationResult:
         """Compile AST directly to libyara rules.
 
         Args:
@@ -220,10 +218,11 @@ class DirectASTCompiler:
             DirectCompilationResult with compiled rules or errors
         """
         import time
+
         start_time = time.time()
 
         try:
-            self.compilation_stats['total_compilations'] += 1
+            self.compilation_stats["total_compilations"] += 1
 
             # Step 1: Apply optimizations if enabled
             optimization_stats = None
@@ -233,7 +232,7 @@ class DirectASTCompiler:
                 opt_time = time.time() - opt_start
 
                 optimization_stats = self.optimizer.stats
-                self.compilation_stats['total_optimization_time'] += opt_time
+                self.compilation_stats["total_optimization_time"] += opt_time
             else:
                 optimized_ast = ast
 
@@ -246,19 +245,17 @@ class DirectASTCompiler:
             # Step 4: Compile using libyara with generated source
             # (For now, still uses text compilation but with optimized AST)
             compile_result = self._compile_optimized_source(
-                source_code,
-                includes=includes,
-                error_on_warning=error_on_warning
+                source_code, includes=includes, error_on_warning=error_on_warning
             )
 
             compilation_time = time.time() - start_time
-            self.compilation_stats['total_compilation_time'] += compilation_time
+            self.compilation_stats["total_compilation_time"] += compilation_time
 
             if compile_result.success:
-                self.compilation_stats['successful_compilations'] += 1
-                self.compilation_stats['total_rules_compiled'] += len(optimized_ast.rules)
+                self.compilation_stats["successful_compilations"] += 1
+                self.compilation_stats["total_rules_compiled"] += len(optimized_ast.rules)
             else:
-                self.compilation_stats['failed_compilations'] += 1
+                self.compilation_stats["failed_compilations"] += 1
 
             return DirectCompilationResult(
                 success=compile_result.success,
@@ -268,17 +265,17 @@ class DirectASTCompiler:
                 optimization_stats=optimization_stats,
                 compilation_time=compilation_time,
                 ast_node_count=node_count,
-                generated_source=source_code if self.debug_mode else None
+                generated_source=source_code if self.debug_mode else None,
             )
 
         except Exception as e:
             compilation_time = time.time() - start_time
-            self.compilation_stats['failed_compilations'] += 1
+            self.compilation_stats["failed_compilations"] += 1
 
             return DirectCompilationResult(
                 success=False,
-                errors=[f"Direct compilation error: {str(e)}"],
-                compilation_time=compilation_time
+                errors=[f"Direct compilation error: {e!s}"],
+                compilation_time=compilation_time,
             )
 
     def _generate_optimized_source(self, ast: YaraFile) -> str:
@@ -288,10 +285,9 @@ class DirectASTCompiler:
         generator = CodeGenerator()
         return generator.generate(ast)
 
-    def _compile_optimized_source(self,
-                                  source: str,
-                                  includes: Optional[Dict[str, str]] = None,
-                                  error_on_warning: bool = False) -> 'DirectCompilationResult':
+    def _compile_optimized_source(
+        self, source: str, includes: dict[str, str] | None = None, error_on_warning: bool = False
+    ) -> "DirectCompilationResult":
         """Compile optimized source using libyara."""
         from yaraast.libyara.compiler import LibyaraCompiler
 
@@ -302,7 +298,7 @@ class DirectASTCompiler:
             success=result.success,
             compiled_rules=result.compiled_rules,
             errors=result.errors,
-            warnings=result.warnings
+            warnings=result.warnings,
         )
 
     def _count_ast_nodes(self, ast: YaraFile) -> int:
@@ -320,26 +316,26 @@ class DirectASTCompiler:
 
         return count
 
-    def get_compilation_stats(self) -> Dict[str, Any]:
+    def get_compilation_stats(self) -> dict[str, Any]:
         """Get compilation statistics."""
         return self.compilation_stats.copy()
 
     def reset_stats(self) -> None:
         """Reset compilation statistics."""
         self.compilation_stats = {
-            'total_compilations': 0,
-            'successful_compilations': 0,
-            'failed_compilations': 0,
-            'total_rules_compiled': 0,
-            'total_optimization_time': 0.0,
-            'total_compilation_time': 0.0
+            "total_compilations": 0,
+            "successful_compilations": 0,
+            "failed_compilations": 0,
+            "total_rules_compiled": 0,
+            "total_optimization_time": 0.0,
+            "total_compilation_time": 0.0,
         }
 
 
 class OptimizedMatcher:
     """Optimized matcher using AST structure for efficient scanning."""
 
-    def __init__(self, rules: Any, ast: Optional[YaraFile] = None):
+    def __init__(self, rules: Any, ast: YaraFile | None = None):
         """Initialize optimized matcher.
 
         Args:
@@ -352,17 +348,19 @@ class OptimizedMatcher:
         self.rules = rules
         self.ast = ast
         self.scan_stats = {
-            'total_scans': 0,
-            'successful_scans': 0,
-            'total_scan_time': 0.0,
-            'total_data_scanned': 0
+            "total_scans": 0,
+            "successful_scans": 0,
+            "total_scan_time": 0.0,
+            "total_data_scanned": 0,
         }
 
-    def scan(self,
-             data: Union[bytes, str, Path],
-             timeout: Optional[int] = None,
-             fast_mode: bool = False,
-             **kwargs) -> Dict[str, Any]:
+    def scan(
+        self,
+        data: bytes | str | Path,
+        timeout: int | None = None,
+        fast_mode: bool = False,
+        **kwargs,
+    ) -> dict[str, Any]:
         """Optimized scan using AST structure.
 
         Args:
@@ -375,27 +373,24 @@ class OptimizedMatcher:
             Enhanced scan result with AST context
         """
         import time
+
         start_time = time.time()
 
         try:
-            self.scan_stats['total_scans'] += 1
+            self.scan_stats["total_scans"] += 1
 
             # Prepare scan arguments
-            scan_args = {
-                'timeout': timeout,
-                'fast': fast_mode,
-                **kwargs
-            }
+            scan_args = {"timeout": timeout, "fast": fast_mode, **kwargs}
 
             # Determine scan type and execute
             if isinstance(data, bytes):
-                scan_args['data'] = data
+                scan_args["data"] = data
                 data_size = len(data)
-            elif isinstance(data, (str, Path)):
-                scan_args['filepath'] = str(data)
+            elif isinstance(data, str | Path):
+                scan_args["filepath"] = str(data)
                 data_size = Path(data).stat().st_size if Path(data).exists() else 0
             elif isinstance(data, int):  # PID
-                scan_args['pid'] = data
+                scan_args["pid"] = data
                 data_size = 0  # Unknown for process scans
             else:
                 raise ValueError(f"Unsupported data type: {type(data)}")
@@ -407,54 +402,50 @@ class OptimizedMatcher:
             enhanced_matches = self._enhance_matches_with_ast(matches)
 
             scan_time = time.time() - start_time
-            self.scan_stats['successful_scans'] += 1
-            self.scan_stats['total_scan_time'] += scan_time
-            self.scan_stats['total_data_scanned'] += data_size
+            self.scan_stats["successful_scans"] += 1
+            self.scan_stats["total_scan_time"] += scan_time
+            self.scan_stats["total_data_scanned"] += data_size
 
             return {
-                'success': True,
-                'matches': enhanced_matches,
-                'scan_time': scan_time,
-                'data_size': data_size,
-                'ast_enhanced': self.ast is not None,
-                'rule_count': len(self.ast.rules) if self.ast else 0,
-                'optimization_hints': self._get_optimization_hints(enhanced_matches)
+                "success": True,
+                "matches": enhanced_matches,
+                "scan_time": scan_time,
+                "data_size": data_size,
+                "ast_enhanced": self.ast is not None,
+                "rule_count": len(self.ast.rules) if self.ast else 0,
+                "optimization_hints": self._get_optimization_hints(enhanced_matches),
             }
 
         except Exception as e:
             scan_time = time.time() - start_time
             return {
-                'success': False,
-                'error': str(e),
-                'scan_time': scan_time,
-                'ast_enhanced': False
+                "success": False,
+                "error": str(e),
+                "scan_time": scan_time,
+                "ast_enhanced": False,
             }
 
-    def _enhance_matches_with_ast(self, matches: List[Any]) -> List[Dict[str, Any]]:
+    def _enhance_matches_with_ast(self, matches: list[Any]) -> list[dict[str, Any]]:
         """Enhance yara matches with AST context."""
         enhanced = []
 
         for match in matches:
             enhanced_match = {
-                'rule': match.rule,
-                'namespace': match.namespace,
-                'tags': list(match.tags),
-                'meta': dict(match.meta),
-                'strings': [
-                    {
-                        'offset': offset,
-                        'identifier': identifier,
-                        'data': data
-                    }
+                "rule": match.rule,
+                "namespace": match.namespace,
+                "tags": list(match.tags),
+                "meta": dict(match.meta),
+                "strings": [
+                    {"offset": offset, "identifier": identifier, "data": data}
                     for offset, identifier, data in match.strings
                 ],
-                'ast_context': self._get_ast_context_for_rule(match.rule)
+                "ast_context": self._get_ast_context_for_rule(match.rule),
             }
             enhanced.append(enhanced_match)
 
         return enhanced
 
-    def _get_ast_context_for_rule(self, rule_name: str) -> Optional[Dict[str, Any]]:
+    def _get_ast_context_for_rule(self, rule_name: str) -> dict[str, Any] | None:
         """Get AST context for a specific rule."""
         if not self.ast:
             return None
@@ -462,11 +453,11 @@ class OptimizedMatcher:
         for rule in self.ast.rules:
             if rule.name == rule_name:
                 return {
-                    'rule_type': 'regular' if not rule.modifiers else str(rule.modifiers),
-                    'string_count': len(rule.strings),
-                    'has_meta': len(rule.meta) > 0,
-                    'has_tags': len(rule.tags) > 0,
-                    'condition_complexity': self._estimate_condition_complexity(rule.condition)
+                    "rule_type": "regular" if not rule.modifiers else str(rule.modifiers),
+                    "string_count": len(rule.strings),
+                    "has_meta": len(rule.meta) > 0,
+                    "has_tags": len(rule.tags) > 0,
+                    "condition_complexity": self._estimate_condition_complexity(rule.condition),
                 }
 
         return None
@@ -482,7 +473,7 @@ class OptimizedMatcher:
 
         return complexity
 
-    def _get_optimization_hints(self, matches: List[Dict[str, Any]]) -> List[str]:
+    def _get_optimization_hints(self, matches: list[dict[str, Any]]) -> list[str]:
         """Generate optimization hints based on scan results."""
         hints = []
 
@@ -490,23 +481,27 @@ class OptimizedMatcher:
             hints.append("No matches found - consider rule optimization")
 
         for match in matches:
-            if 'ast_context' in match and match['ast_context']:
-                ctx = match['ast_context']
-                if ctx.get('condition_complexity', 0) > 10:
-                    hints.append(f"Rule '{match['rule']}' has complex condition - consider simplification")
-                if ctx.get('string_count', 0) > 20:
-                    hints.append(f"Rule '{match['rule']}' has many strings - check for unused strings")
+            if match.get("ast_context"):
+                ctx = match["ast_context"]
+                if ctx.get("condition_complexity", 0) > 10:
+                    hints.append(
+                        f"Rule '{match['rule']}' has complex condition - consider simplification"
+                    )
+                if ctx.get("string_count", 0) > 20:
+                    hints.append(
+                        f"Rule '{match['rule']}' has many strings - check for unused strings"
+                    )
 
         return hints
 
-    def get_scan_stats(self) -> Dict[str, Any]:
+    def get_scan_stats(self) -> dict[str, Any]:
         """Get scan statistics."""
         stats = self.scan_stats.copy()
-        if stats['total_scans'] > 0:
-            stats['average_scan_time'] = stats['total_scan_time'] / stats['total_scans']
-            stats['success_rate'] = stats['successful_scans'] / stats['total_scans']
+        if stats["total_scans"] > 0:
+            stats["average_scan_time"] = stats["total_scan_time"] / stats["total_scans"]
+            stats["success_rate"] = stats["successful_scans"] / stats["total_scans"]
         else:
-            stats['average_scan_time'] = 0.0
-            stats['success_rate'] = 0.0
+            stats["average_scan_time"] = 0.0
+            stats["success_rate"] = 0.0
 
         return stats

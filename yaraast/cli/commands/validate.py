@@ -1,8 +1,6 @@
 """CLI command for cross-validation with libyara."""
 
 import sys
-from pathlib import Path
-from typing import Optional
 
 import click
 
@@ -15,16 +13,13 @@ from yaraast.parser import Parser
 @click.group()
 def validate():
     """Cross-validation commands."""
-    pass
 
 
 @validate.command()
-@click.argument('rule_file', type=click.Path(exists=True))
-@click.argument('test_file', type=click.Path(exists=True))
-@click.option('-e', '--external', multiple=True,
-              help='External variables (key=value)')
-@click.option('-v', '--verbose', is_flag=True,
-              help='Show detailed results')
+@click.argument("rule_file", type=click.Path(exists=True))
+@click.argument("test_file", type=click.Path(exists=True))
+@click.option("-e", "--external", multiple=True, help="External variables (key=value)")
+@click.option("-v", "--verbose", is_flag=True, help="Show detailed results")
 def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
     """Cross-validate YARA rules between yaraast and libyara.
 
@@ -40,16 +35,16 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
     # Parse externals
     externals = {}
     for ext in external:
-        if '=' not in ext:
+        if "=" not in ext:
             click.echo(f"Invalid external format: {ext}", err=True)
             click.echo("Use format: key=value", err=True)
             sys.exit(1)
-        key, value = ext.split('=', 1)
+        key, value = ext.split("=", 1)
         externals[key] = value
 
     # Parse rules
     try:
-        with open(rule_file, 'r') as f:
+        with open(rule_file) as f:
             rule_content = f.read()
 
         parser = Parser()
@@ -60,7 +55,7 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
 
     # Read test data
     try:
-        with open(test_file, 'rb') as f:
+        with open(test_file, "rb") as f:
             test_data = f.read()
     except Exception as e:
         click.echo(f"Error reading test file: {e}", err=True)
@@ -72,9 +67,9 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
 
     # Display results
     if result.valid:
-        click.echo(click.style("✓ Validation PASSED", fg='green', bold=True))
+        click.echo(click.style("✓ Validation PASSED", fg="green", bold=True))
     else:
-        click.echo(click.style("✗ Validation FAILED", fg='red', bold=True))
+        click.echo(click.style("✗ Validation FAILED", fg="red", bold=True))
 
     click.echo(f"\nRules tested: {result.rules_tested}")
     click.echo(f"Rules matched: {result.rules_matched} ({result.match_rate:.1f}%)")
@@ -100,12 +95,12 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
 
 
 @validate.command()
-@click.argument('rule_file', type=click.Path(exists=True))
-@click.option('-d', '--test-data', type=click.Path(exists=True),
-              help='Test data for scanning comparison')
-@click.option('-v', '--verbose', is_flag=True,
-              help='Show detailed results')
-def roundtrip(rule_file: str, test_data: Optional[str], verbose: bool):
+@click.argument("rule_file", type=click.Path(exists=True))
+@click.option(
+    "-d", "--test-data", type=click.Path(exists=True), help="Test data for scanning comparison"
+)
+@click.option("-v", "--verbose", is_flag=True, help="Show detailed results")
+def roundtrip(rule_file: str, test_data: str | None, verbose: bool):
     """Test AST round-trip equivalence.
 
     Tests: AST → code → libyara → re-parse
@@ -123,7 +118,7 @@ def roundtrip(rule_file: str, test_data: Optional[str], verbose: bool):
     data = None
     if test_data:
         try:
-            with open(test_data, 'rb') as f:
+            with open(test_data, "rb") as f:
                 data = f.read()
         except Exception as e:
             click.echo(f"Error reading test data: {e}", err=True)
@@ -135,12 +130,13 @@ def roundtrip(rule_file: str, test_data: Optional[str], verbose: bool):
 
     # Display results
     if result.equivalent:
-        click.echo(click.style("✓ Round-trip PASSED", fg='green', bold=True))
+        click.echo(click.style("✓ Round-trip PASSED", fg="green", bold=True))
     else:
-        click.echo(click.style("✗ Round-trip FAILED", fg='red', bold=True))
+        click.echo(click.style("✗ Round-trip FAILED", fg="red", bold=True))
 
     # Show details
-    status = lambda x: click.style("✓", fg='green') if x else click.style("✗", fg='red')
+    def status(x):
+        return click.style("✓", fg="green") if x else click.style("✗", fg="red")
 
     click.echo(f"\n{status(result.ast_equivalent)} AST equivalence")
     click.echo(f"{status(result.code_equivalent)} Code generation equivalence")

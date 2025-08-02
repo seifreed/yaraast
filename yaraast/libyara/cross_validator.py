@@ -2,7 +2,7 @@
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.evaluation import YaraEvaluator
@@ -14,16 +14,17 @@ from .scanner import LibyaraScanner
 @dataclass
 class ValidationResult:
     """Result of cross-validation."""
+
     valid: bool
 
     # Rule-level results
     rules_tested: int = 0
     rules_matched: int = 0
-    rules_differ: List[str] = field(default_factory=list)
+    rules_differ: list[str] = field(default_factory=list)
 
     # Detailed comparisons
-    yaraast_results: Dict[str, bool] = field(default_factory=dict)
-    libyara_results: Dict[str, bool] = field(default_factory=dict)
+    yaraast_results: dict[str, bool] = field(default_factory=dict)
+    libyara_results: dict[str, bool] = field(default_factory=dict)
 
     # Performance metrics
     yaraast_time: float = 0.0
@@ -31,7 +32,7 @@ class ValidationResult:
     libyara_scan_time: float = 0.0
 
     # Errors
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
     @property
     def total_time(self) -> float:
@@ -54,8 +55,9 @@ class CrossValidator:
         self.compiler = LibyaraCompiler()
         self.scanner = LibyaraScanner()
 
-    def validate(self, ast: YaraFile, test_data: bytes,
-                externals: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def validate(
+        self, ast: YaraFile, test_data: bytes, externals: dict[str, Any] | None = None
+    ) -> ValidationResult:
         """Cross-validate AST against libyara.
 
         Args:
@@ -77,7 +79,7 @@ class CrossValidator:
             result.yaraast_time = time.time() - start_time
         except Exception as e:
             result.valid = False
-            result.errors.append(f"YaraAST evaluation failed: {str(e)}")
+            result.errors.append(f"YaraAST evaluation failed: {e!s}")
             return result
 
         # Step 2: Compile with libyara
@@ -95,7 +97,7 @@ class CrossValidator:
                 return result
         except Exception as e:
             result.valid = False
-            result.errors.append(f"LibYARA compilation failed: {str(e)}")
+            result.errors.append(f"LibYARA compilation failed: {e!s}")
             return result
 
         # Step 3: Scan with libyara
@@ -116,7 +118,7 @@ class CrossValidator:
 
         except Exception as e:
             result.valid = False
-            result.errors.append(f"LibYARA scanning failed: {str(e)}")
+            result.errors.append(f"LibYARA scanning failed: {e!s}")
             return result
 
         # Step 4: Compare results
@@ -136,9 +138,9 @@ class CrossValidator:
 
         return result
 
-    def validate_batch(self, ast: YaraFile,
-                      test_data_list: List[bytes],
-                      externals: Optional[Dict[str, Any]] = None) -> List[ValidationResult]:
+    def validate_batch(
+        self, ast: YaraFile, test_data_list: list[bytes], externals: dict[str, Any] | None = None
+    ) -> list[ValidationResult]:
         """Validate AST against multiple test data samples.
 
         Args:
@@ -163,16 +165,18 @@ class CrossValidator:
 
         # Test each sample
         for test_data in test_data_list:
-            result = self._validate_single(ast, test_data,
-                                         compilation.compiled_rules,
-                                         externals)
+            result = self._validate_single(ast, test_data, compilation.compiled_rules, externals)
             results.append(result)
 
         return results
 
-    def _validate_single(self, ast: YaraFile, test_data: bytes,
-                        compiled_rules: Any,
-                        externals: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def _validate_single(
+        self,
+        ast: YaraFile,
+        test_data: bytes,
+        compiled_rules: Any,
+        externals: dict[str, Any] | None = None,
+    ) -> ValidationResult:
         """Validate single sample with pre-compiled rules."""
         result = ValidationResult(valid=True)
 
@@ -185,7 +189,7 @@ class CrossValidator:
             result.yaraast_time = time.time() - start_time
         except Exception as e:
             result.valid = False
-            result.errors.append(f"YaraAST evaluation failed: {str(e)}")
+            result.errors.append(f"YaraAST evaluation failed: {e!s}")
             return result
 
         # Scan with libyara
@@ -206,7 +210,7 @@ class CrossValidator:
 
         except Exception as e:
             result.valid = False
-            result.errors.append(f"LibYARA scanning failed: {str(e)}")
+            result.errors.append(f"LibYARA scanning failed: {e!s}")
             return result
 
         # Compare results

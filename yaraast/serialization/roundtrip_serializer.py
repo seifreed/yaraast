@@ -4,12 +4,11 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import yaml
 
-from yaraast.ast.base import ASTNode, Location, YaraFile
-from yaraast.ast.comments import Comment, CommentGroup
+from yaraast.ast.base import YaraFile
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.parser import YaraParser
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -30,7 +29,7 @@ class FormattingInfo:
     preserve_spacing: bool = True
     preserve_alignment: bool = True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "indent_size": self.indent_size,
@@ -45,7 +44,7 @@ class FormattingInfo:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'FormattingInfo':
+    def from_dict(cls, data: dict[str, Any]) -> "FormattingInfo":
         """Create from dictionary."""
         return cls(**data)
 
@@ -54,16 +53,16 @@ class FormattingInfo:
 class RoundTripMetadata:
     """Metadata for round-trip serialization."""
 
-    original_source: Optional[str] = None
-    source_file: Optional[str] = None
-    parsed_at: Optional[str] = None
+    original_source: str | None = None
+    source_file: str | None = None
+    parsed_at: str | None = None
     serializer_version: str = "1.0.0"
     formatting: FormattingInfo = field(default_factory=FormattingInfo)
     comments_preserved: bool = True
     formatting_preserved: bool = True
-    parser_version: Optional[str] = None
+    parser_version: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
             "original_source": self.original_source,
@@ -77,7 +76,7 @@ class RoundTripMetadata:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'RoundTripMetadata':
+    def from_dict(cls, data: dict[str, Any]) -> "RoundTripMetadata":
         """Create from dictionary."""
         formatting_data = data.get("formatting", {})
         formatting = FormattingInfo.from_dict(formatting_data)
@@ -104,9 +103,9 @@ class RoundTripSerializer:
         self.yaml_serializer = YamlSerializer(include_metadata=True)
         self.parser = YaraParser()
 
-    def parse_and_serialize(self, yara_source: str,
-                          source_file: Optional[str] = None,
-                          format: str = "json") -> Tuple[YaraFile, str]:
+    def parse_and_serialize(
+        self, yara_source: str, source_file: str | None = None, format: str = "json"
+    ) -> tuple[YaraFile, str]:
         """Parse YARA source and serialize with metadata."""
         # Detect formatting info from source
         formatting = self._detect_formatting(yara_source)
@@ -118,12 +117,14 @@ class RoundTripSerializer:
 
         # Create round-trip metadata
         metadata = RoundTripMetadata(
-            original_source=yara_source if len(yara_source) < 10000 else None,  # Store if not too large
+            original_source=(
+                yara_source if len(yara_source) < 10000 else None
+            ),  # Store if not too large
             source_file=source_file,
             parsed_at=datetime.now().isoformat(),
             formatting=formatting,
             comments_preserved=self.preserve_comments,
-            formatting_preserved=self.preserve_formatting
+            formatting_preserved=self.preserve_formatting,
         )
 
         # Serialize with metadata
@@ -134,9 +135,9 @@ class RoundTripSerializer:
 
         return ast, serialized
 
-    def deserialize_and_generate(self, serialized_data: str,
-                                format: str = "json",
-                                preserve_original_formatting: bool = True) -> Tuple[YaraFile, str]:
+    def deserialize_and_generate(
+        self, serialized_data: str, format: str = "json", preserve_original_formatting: bool = True
+    ) -> tuple[YaraFile, str]:
         """Deserialize and generate YARA code with preserved formatting."""
         # Load serialized data
         if format.lower() == "yaml":
@@ -161,13 +162,15 @@ class RoundTripSerializer:
 
         return ast, yara_code
 
-    def roundtrip_test(self, yara_source: str, format: str = "json") -> Dict[str, Any]:
+    def roundtrip_test(self, yara_source: str, format: str = "json") -> dict[str, Any]:
         """Test round-trip conversion and report differences."""
         # Original → AST → Serialized
         original_ast, serialized = self.parse_and_serialize(yara_source, format=format)
 
         # Serialized → AST → YARA
-        reconstructed_ast, reconstructed_yara = self.deserialize_and_generate(serialized, format=format)
+        reconstructed_ast, reconstructed_yara = self.deserialize_and_generate(
+            serialized, format=format
+        )
 
         # Compare results
         result = {
@@ -177,20 +180,24 @@ class RoundTripSerializer:
             "format": format,
             "round_trip_successful": True,
             "differences": [],
-            "metadata": {}
+            "metadata": {},
         }
 
         # Basic comparison (could be enhanced with AST structural comparison)
-        original_lines = yara_source.strip().split('\n')
-        reconstructed_lines = reconstructed_yara.strip().split('\n')
+        original_lines = yara_source.strip().split("\n")
+        reconstructed_lines = reconstructed_yara.strip().split("\n")
 
         if len(original_lines) != len(reconstructed_lines):
-            result["differences"].append(f"Line count differs: {len(original_lines)} vs {len(reconstructed_lines)}")
+            result["differences"].append(
+                f"Line count differs: {len(original_lines)} vs {len(reconstructed_lines)}"
+            )
 
         # Line-by-line comparison (simplified)
-        for i, (orig, recon) in enumerate(zip(original_lines, reconstructed_lines)):
+        for i, (orig, recon) in enumerate(zip(original_lines, reconstructed_lines, strict=False)):
             if orig.strip() != recon.strip():
-                result["differences"].append(f"Line {i+1} differs: '{orig.strip()}' vs '{recon.strip()}'")
+                result["differences"].append(
+                    f"Line {i+1} differs: '{orig.strip()}' vs '{recon.strip()}'"
+                )
 
         result["round_trip_successful"] = len(result["differences"]) == 0
         result["metadata"]["original_rule_count"] = len(original_ast.rules)
@@ -202,44 +209,45 @@ class RoundTripSerializer:
         """Detect formatting characteristics from source code."""
         formatting = FormattingInfo()
 
-        lines = source.split('\n')
+        lines = source.split("\n")
 
         # Detect line endings
-        if '\r\n' in source:
-            formatting.line_endings = '\r\n'
-        elif '\r' in source:
-            formatting.line_endings = '\r'
+        if "\r\n" in source:
+            formatting.line_endings = "\r\n"
+        elif "\r" in source:
+            formatting.line_endings = "\r"
         else:
-            formatting.line_endings = '\n'
+            formatting.line_endings = "\n"
 
         # Detect indentation
         indent_sizes = []
         for line in lines:
-            if line.strip() and line.startswith(' '):
+            if line.strip() and line.startswith(" "):
                 # Count leading spaces
-                leading_spaces = len(line) - len(line.lstrip(' '))
+                leading_spaces = len(line) - len(line.lstrip(" "))
                 if leading_spaces > 0:
                     indent_sizes.append(leading_spaces)
-            elif line.strip() and line.startswith('\t'):
+            elif line.strip() and line.startswith("\t"):
                 formatting.indent_style = "tabs"
 
         if indent_sizes:
             # Find most common indent size
             from collections import Counter
+
             indent_counter = Counter(indent_sizes)
             formatting.indent_size = indent_counter.most_common(1)[0][0]
 
         # Detect comment style
-        if '/*' in source and '*/' in source:
+        if "/*" in source and "*/" in source:
             formatting.comment_style = "block"
-        elif '//' in source:
+        elif "//" in source:
             formatting.comment_style = "line"
 
         return formatting
 
-    def _serialize_with_roundtrip_metadata(self, ast: YaraFile,
-                                         metadata: RoundTripMetadata,
-                                         format: str) -> str:
+    def _serialize_with_roundtrip_metadata(
+        self, ast: YaraFile, metadata: RoundTripMetadata, format: str
+    ) -> str:
         """Serialize AST with round-trip metadata."""
         if format == "yaml":
             # Get standard YAML serialization
@@ -253,13 +261,18 @@ class RoundTripSerializer:
 
         # Serialize final result
         if format == "yaml":
-            return yaml.dump(standard_data, default_flow_style=False,
-                           allow_unicode=True, sort_keys=False, indent=2)
-        else:
-            return json.dumps(standard_data, indent=2, ensure_ascii=False)
+            return yaml.dump(
+                standard_data,
+                default_flow_style=False,
+                allow_unicode=True,
+                sort_keys=False,
+                indent=2,
+            )
+        return json.dumps(standard_data, indent=2, ensure_ascii=False)
 
-    def _create_generator(self, metadata: Optional[RoundTripMetadata],
-                         preserve_original_formatting: bool) -> CommentAwareCodeGenerator:
+    def _create_generator(
+        self, metadata: RoundTripMetadata | None, preserve_original_formatting: bool
+    ) -> CommentAwareCodeGenerator:
         """Create code generator with appropriate formatting settings."""
         if metadata and preserve_original_formatting:
             # Use original formatting settings
@@ -271,23 +284,28 @@ class RoundTripSerializer:
             preserve_comments = self.preserve_comments
 
         return CommentAwareCodeGenerator(
-            indent_size=indent_size,
-            preserve_comments=preserve_comments
+            indent_size=indent_size, preserve_comments=preserve_comments
         )
 
 
 class EnhancedYamlSerializer(YamlSerializer):
     """Enhanced YAML serializer with CI/CD pipeline features."""
 
-    def __init__(self, include_metadata: bool = True,
-                 flow_style: bool = False,
-                 include_pipeline_metadata: bool = True):
+    def __init__(
+        self,
+        include_metadata: bool = True,
+        flow_style: bool = False,
+        include_pipeline_metadata: bool = True,
+    ):
         super().__init__(include_metadata, flow_style)
         self.include_pipeline_metadata = include_pipeline_metadata
 
-    def serialize_for_pipeline(self, ast: YaraFile,
-                             pipeline_info: Optional[Dict[str, Any]] = None,
-                             output_path: Optional[Union[str, Path]] = None) -> str:
+    def serialize_for_pipeline(
+        self,
+        ast: YaraFile,
+        pipeline_info: dict[str, Any] | None = None,
+        output_path: str | Path | None = None,
+    ) -> str:
         """Serialize for CI/CD pipeline with additional metadata."""
         serialized = self._serialize_with_metadata(ast)
 
@@ -300,8 +318,8 @@ class EnhancedYamlSerializer(YamlSerializer):
                     "rule_validation": True,
                     "dependency_tracking": True,
                     "change_detection": True,
-                    "automated_testing": True
-                }
+                    "automated_testing": True,
+                },
             }
 
             if pipeline_info:
@@ -314,7 +332,7 @@ class EnhancedYamlSerializer(YamlSerializer):
             "total_rules": len(ast.rules),
             "imports": [imp.module for imp in ast.imports],
             "rule_tags": self._collect_all_tags(ast),
-            "string_patterns": self._count_string_types(ast)
+            "string_patterns": self._count_string_types(ast),
         }
 
         # YAML output optimized for readability in CI/CD
@@ -326,22 +344,21 @@ class EnhancedYamlSerializer(YamlSerializer):
             indent=2,
             width=100,  # Narrower for CI logs
             explicit_start=True,  # Add --- at start
-            explicit_end=True     # Add ... at end
+            explicit_end=True,  # Add ... at end
         )
 
         if output_path:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str
 
-    def serialize_rules_manifest(self, ast: YaraFile,
-                               output_path: Optional[Union[str, Path]] = None) -> str:
+    def serialize_rules_manifest(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Create a rules manifest for pipeline automation."""
         manifest = {
             "manifest_version": "1.0",
             "generated_at": datetime.now().isoformat(),
-            "rules": []
+            "rules": [],
         }
 
         for rule in ast.rules:
@@ -351,7 +368,7 @@ class EnhancedYamlSerializer(YamlSerializer):
                 "tags": [tag.name for tag in rule.tags],
                 "meta": dict(rule.meta) if isinstance(rule.meta, dict) else {},
                 "string_count": len(rule.strings),
-                "has_condition": rule.condition is not None
+                "has_condition": rule.condition is not None,
             }
             manifest["rules"].append(rule_info)
 
@@ -362,52 +379,55 @@ class EnhancedYamlSerializer(YamlSerializer):
             "global_rules": len([r for r in ast.rules if "global" in r.modifiers]),
             "tagged_rules": len([r for r in ast.rules if r.tags]),
             "imports": [imp.module for imp in ast.imports],
-            "includes": [inc.path for inc in ast.includes]
+            "includes": [inc.path for inc in ast.includes],
         }
 
-        yaml_str = yaml.dump(manifest, default_flow_style=False,
-                           allow_unicode=True, sort_keys=False, indent=2)
+        yaml_str = yaml.dump(
+            manifest, default_flow_style=False, allow_unicode=True, sort_keys=False, indent=2
+        )
 
         if output_path:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str
 
-    def _collect_all_tags(self, ast: YaraFile) -> List[str]:
+    def _collect_all_tags(self, ast: YaraFile) -> list[str]:
         """Collect all unique tags from rules."""
         tags = set()
         for rule in ast.rules:
             for tag in rule.tags:
                 tags.add(tag.name)
-        return sorted(list(tags))
+        return sorted(tags)
 
-    def _count_string_types(self, ast: YaraFile) -> Dict[str, int]:
+    def _count_string_types(self, ast: YaraFile) -> dict[str, int]:
         """Count different types of string patterns."""
         counts = {"plain": 0, "hex": 0, "regex": 0}
 
         for rule in ast.rules:
             for string_def in rule.strings:
-                if hasattr(string_def, 'value'):  # PlainString
+                if hasattr(string_def, "value"):  # PlainString
                     counts["plain"] += 1
-                elif hasattr(string_def, 'tokens'):  # HexString
+                elif hasattr(string_def, "tokens"):  # HexString
                     counts["hex"] += 1
-                elif hasattr(string_def, 'regex'):  # RegexString
+                elif hasattr(string_def, "regex"):  # RegexString
                     counts["regex"] += 1
 
         return counts
 
 
 # Convenience functions
-def roundtrip_yara(yara_source: str, format: str = "json") -> Dict[str, Any]:
+def roundtrip_yara(yara_source: str, format: str = "json") -> dict[str, Any]:
     """Perform round-trip conversion test on YARA source."""
     serializer = RoundTripSerializer()
     return serializer.roundtrip_test(yara_source, format)
 
-def serialize_for_pipeline(ast: YaraFile, pipeline_info: Optional[Dict[str, Any]] = None) -> str:
+
+def serialize_for_pipeline(ast: YaraFile, pipeline_info: dict[str, Any] | None = None) -> str:
     """Serialize AST for CI/CD pipeline."""
     serializer = EnhancedYamlSerializer(include_pipeline_metadata=True)
     return serializer.serialize_for_pipeline(ast, pipeline_info)
+
 
 def create_rules_manifest(ast: YaraFile) -> str:
     """Create rules manifest for pipeline automation."""

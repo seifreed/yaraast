@@ -1,13 +1,12 @@
 """Compiler that converts yaraast AST to libyara rules."""
 
-import os
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 try:
     import yara
+
     YARA_AVAILABLE = True
 except ImportError:
     yara = None
@@ -20,11 +19,12 @@ from yaraast.codegen import CodeGenerator
 @dataclass
 class CompilationResult:
     """Result of compiling AST to libyara."""
+
     success: bool
-    compiled_rules: Optional[Any] = None  # yara.Rules object
-    errors: List[str] = None
-    warnings: List[str] = None
-    source_code: Optional[str] = None
+    compiled_rules: Any | None = None  # yara.Rules object
+    errors: list[str] = None
+    warnings: list[str] = None
+    source_code: str | None = None
 
     def __post_init__(self):
         if self.errors is None:
@@ -36,7 +36,7 @@ class CompilationResult:
 class LibyaraCompiler:
     """Compile yaraast AST to libyara rules."""
 
-    def __init__(self, externals: Optional[Dict[str, Any]] = None):
+    def __init__(self, externals: dict[str, Any] | None = None):
         """Initialize compiler.
 
         Args:
@@ -44,16 +44,15 @@ class LibyaraCompiler:
         """
         if not YARA_AVAILABLE:
             raise ImportError(
-                "yara-python is not installed. "
-                "Install it with: pip install yara-python"
+                "yara-python is not installed. " "Install it with: pip install yara-python"
             )
 
         self.externals = externals or {}
         self.code_generator = CodeGenerator()
 
-    def compile_ast(self, ast: YaraFile,
-                    includes: Optional[Dict[str, str]] = None,
-                    error_on_warning: bool = False) -> CompilationResult:
+    def compile_ast(
+        self, ast: YaraFile, includes: dict[str, str] | None = None, error_on_warning: bool = False
+    ) -> CompilationResult:
         """Compile AST to libyara rules.
 
         Args:
@@ -70,21 +69,19 @@ class LibyaraCompiler:
 
             # Compile using libyara
             return self.compile_source(
-                source_code,
-                includes=includes,
-                error_on_warning=error_on_warning
+                source_code, includes=includes, error_on_warning=error_on_warning
             )
 
         except Exception as e:
             return CompilationResult(
                 success=False,
-                errors=[f"AST compilation error: {str(e)}"],
-                source_code=source_code if 'source_code' in locals() else None
+                errors=[f"AST compilation error: {e!s}"],
+                source_code=source_code if "source_code" in locals() else None,
             )
 
-    def compile_source(self, source: str,
-                      includes: Optional[Dict[str, str]] = None,
-                      error_on_warning: bool = False) -> CompilationResult:
+    def compile_source(
+        self, source: str, includes: dict[str, str] | None = None, error_on_warning: bool = False
+    ) -> CompilationResult:
         """Compile YARA source code using libyara.
 
         Args:
@@ -100,7 +97,7 @@ class LibyaraCompiler:
 
         def error_callback(error_data):
             """Callback for compilation errors."""
-            if error_data.get('warning', False):
+            if error_data.get("warning", False):
                 warnings.append(
                     f"{error_data.get('filename', 'unknown')}:"
                     f"{error_data.get('line_number', 0)}: "
@@ -120,41 +117,33 @@ class LibyaraCompiler:
                 externals=self.externals,
                 includes=includes or {},
                 error_on_warning=error_on_warning,
-                error_callback=error_callback
+                error_callback=error_callback,
             )
 
             # Check if compilation succeeded
             if errors or (error_on_warning and warnings):
                 return CompilationResult(
-                    success=False,
-                    errors=errors,
-                    warnings=warnings,
-                    source_code=source
+                    success=False, errors=errors, warnings=warnings, source_code=source
                 )
 
             return CompilationResult(
-                success=True,
-                compiled_rules=compiler,
-                warnings=warnings,
-                source_code=source
+                success=True, compiled_rules=compiler, warnings=warnings, source_code=source
             )
 
         except yara.SyntaxError as e:
-            errors.append(f"Syntax error: {str(e)}")
+            errors.append(f"Syntax error: {e!s}")
         except yara.Error as e:
-            errors.append(f"Compilation error: {str(e)}")
+            errors.append(f"Compilation error: {e!s}")
         except Exception as e:
-            errors.append(f"Unexpected error: {str(e)}")
+            errors.append(f"Unexpected error: {e!s}")
 
         return CompilationResult(
-            success=False,
-            errors=errors,
-            warnings=warnings,
-            source_code=source
+            success=False, errors=errors, warnings=warnings, source_code=source
         )
 
-    def compile_file(self, filepath: Union[str, Path],
-                    error_on_warning: bool = False) -> CompilationResult:
+    def compile_file(
+        self, filepath: str | Path, error_on_warning: bool = False
+    ) -> CompilationResult:
         """Compile YARA file using libyara.
 
         Args:
@@ -167,21 +156,15 @@ class LibyaraCompiler:
         filepath = Path(filepath)
 
         if not filepath.exists():
-            return CompilationResult(
-                success=False,
-                errors=[f"File not found: {filepath}"]
-            )
+            return CompilationResult(success=False, errors=[f"File not found: {filepath}"])
 
         try:
             source = filepath.read_text()
             return self.compile_source(source, error_on_warning=error_on_warning)
         except Exception as e:
-            return CompilationResult(
-                success=False,
-                errors=[f"Error reading file: {str(e)}"]
-            )
+            return CompilationResult(success=False, errors=[f"Error reading file: {e!s}"])
 
-    def save_compiled_rules(self, rules: Any, filepath: Union[str, Path]) -> bool:
+    def save_compiled_rules(self, rules: Any, filepath: str | Path) -> bool:
         """Save compiled rules to file.
 
         Args:

@@ -1,7 +1,7 @@
 """YAML serialization for YARA AST."""
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import yaml
 
@@ -16,7 +16,7 @@ class YamlSerializer(JsonSerializer):
         super().__init__(include_metadata)
         self.flow_style = flow_style
 
-    def serialize(self, ast: YaraFile, output_path: Optional[Union[str, Path]] = None) -> str:
+    def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to YAML format."""
         serialized = self._serialize_with_metadata(ast)
 
@@ -27,20 +27,21 @@ class YamlSerializer(JsonSerializer):
             allow_unicode=True,
             sort_keys=False,
             indent=2,
-            width=120
+            width=120,
         )
 
         if output_path:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str
 
-    def deserialize(self, yaml_str: Optional[str] = None,
-                   input_path: Optional[Union[str, Path]] = None) -> YaraFile:
+    def deserialize(
+        self, yaml_str: str | None = None, input_path: str | Path | None = None
+    ) -> YaraFile:
         """Deserialize YAML to AST."""
         if input_path:
-            with open(input_path, 'r', encoding='utf-8') as f:
+            with open(input_path, encoding="utf-8") as f:
                 yaml_str = f.read()
 
         if not yaml_str:
@@ -49,7 +50,7 @@ class YamlSerializer(JsonSerializer):
         data = yaml.safe_load(yaml_str)
         return self._deserialize_ast(data)
 
-    def _serialize_with_metadata(self, ast: YaraFile) -> Dict[str, Any]:
+    def _serialize_with_metadata(self, ast: YaraFile) -> dict[str, Any]:
         """Serialize with YAML-specific metadata."""
         result = super()._serialize_with_metadata(ast)
 
@@ -61,46 +62,38 @@ class YamlSerializer(JsonSerializer):
             result["metadata"]["yaml_features"] = {
                 "flow_style": self.flow_style,
                 "human_readable": True,
-                "preserves_order": True
+                "preserves_order": True,
             }
 
         return result
 
-    def serialize_minimal(self, ast: YaraFile, output_path: Optional[Union[str, Path]] = None) -> str:
+    def serialize_minimal(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to minimal YAML format (AST only, no metadata)."""
         ast_data = self.visit(ast)
 
         yaml_str = yaml.dump(
-            ast_data,
-            default_flow_style=False,
-            allow_unicode=True,
-            sort_keys=False,
-            indent=2
+            ast_data, default_flow_style=False, allow_unicode=True, sort_keys=False, indent=2
         )
 
         if output_path:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str
 
-    def serialize_rules_only(self, ast: YaraFile, output_path: Optional[Union[str, Path]] = None) -> str:
+    def serialize_rules_only(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize only the rules section to YAML (useful for rule analysis)."""
         rules_data = {
             "rules": [self.visit(rule) for rule in ast.rules],
-            "rule_count": len(ast.rules)
+            "rule_count": len(ast.rules),
         }
 
         yaml_str = yaml.dump(
-            rules_data,
-            default_flow_style=False,
-            allow_unicode=True,
-            sort_keys=False,
-            indent=2
+            rules_data, default_flow_style=False, allow_unicode=True, sort_keys=False, indent=2
         )
 
         if output_path:
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str

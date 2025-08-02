@@ -22,8 +22,18 @@ from yaraast.version import (
 from yaraast.visitor import ASTVisitor
 
 __version__ = YARAAST_VERSION
-__all__ = ["Lexer", "Parser", "ASTVisitor", "CodeGenerator",
-           "RuleBuilder", "YaraFileBuilder", "HexStringBuilder",
-           "ConditionBuilder", "ExpressionBuilder",
-           "YARAAST_VERSION", "YARA_SYNTAX_VERSION",
-           "get_version_string", "get_version_info"]
+__all__ = [
+    "YARAAST_VERSION",
+    "YARA_SYNTAX_VERSION",
+    "ASTVisitor",
+    "CodeGenerator",
+    "ConditionBuilder",
+    "ExpressionBuilder",
+    "HexStringBuilder",
+    "Lexer",
+    "Parser",
+    "RuleBuilder",
+    "YaraFileBuilder",
+    "get_version_info",
+    "get_version_string",
+]

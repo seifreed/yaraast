@@ -5,9 +5,9 @@ from .include_resolver import IncludeResolver
 from .workspace import Workspace, WorkspaceAnalyzer
 
 __all__ = [
-    'IncludeResolver',
-    'Workspace',
-    'WorkspaceAnalyzer',
-    'DependencyGraph',
-    'DependencyNode',
+    "DependencyGraph",
+    "DependencyNode",
+    "IncludeResolver",
+    "Workspace",
+    "WorkspaceAnalyzer",
 ]

@@ -1,6 +1,6 @@
 """YARA parser implementation."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from yaraast.ast.base import *
 from yaraast.ast.conditions import *
@@ -42,7 +42,11 @@ class Parser:
                 imports.append(self._parse_import())
             elif self._match(TokenType.INCLUDE):
                 includes.append(self._parse_include())
-            elif self._check(TokenType.RULE) or self._check(TokenType.PRIVATE) or self._check(TokenType.GLOBAL):
+            elif (
+                self._check(TokenType.RULE)
+                or self._check(TokenType.PRIVATE)
+                or self._check(TokenType.GLOBAL)
+            ):
                 rules.append(self._parse_rule())
             else:
                 raise ParserError(f"Unexpected token: {self._peek().value}", self._peek())
@@ -129,10 +133,10 @@ class Parser:
             tags=tags,
             meta=meta,
             strings=strings,
-            condition=condition
+            condition=condition,
         )
 
-    def _parse_meta_section(self) -> Dict[str, Any]:
+    def _parse_meta_section(self) -> dict[str, Any]:
         """Parse meta section."""
         meta = {}
 
@@ -146,9 +150,7 @@ class Parser:
                 raise ParserError("Expected '=' after meta key", self._peek())
 
             # Parse meta value
-            if self._match(TokenType.STRING):
-                value = self._previous().value
-            elif self._match(TokenType.INTEGER):
+            if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
                 value = self._previous().value
             elif self._match(TokenType.BOOLEAN_TRUE):
                 value = True
@@ -161,7 +163,7 @@ class Parser:
 
         return meta
 
-    def _parse_strings_section(self) -> List[StringDefinition]:
+    def _parse_strings_section(self) -> list[StringDefinition]:
         """Parse strings section."""
         strings = []
 
@@ -193,13 +195,19 @@ class Parser:
 
         return strings
 
-    def _parse_string_modifiers(self) -> List[StringModifier]:
+    def _parse_string_modifiers(self) -> list[StringModifier]:
         """Parse string modifiers."""
         modifiers = []
 
-        while self._check_any(TokenType.NOCASE, TokenType.WIDE, TokenType.ASCII,
-                              TokenType.XOR_MOD, TokenType.BASE64, TokenType.BASE64WIDE,
-                              TokenType.FULLWORD):
+        while self._check_any(
+            TokenType.NOCASE,
+            TokenType.WIDE,
+            TokenType.ASCII,
+            TokenType.XOR_MOD,
+            TokenType.BASE64,
+            TokenType.BASE64WIDE,
+            TokenType.FULLWORD,
+        ):
             mod_token = self._advance()
             mod_name = mod_token.value.lower()
 
@@ -228,14 +236,14 @@ class Parser:
 
         return modifiers
 
-    def _parse_hex_string(self, hex_content: str) -> List[HexToken]:
+    def _parse_hex_string(self, hex_content: str) -> list[HexToken]:
         """Parse hex string content into tokens."""
         tokens = []
         i = 0
 
         while i < len(hex_content):
             # Skip whitespace
-            while i < len(hex_content) and hex_content[i] in ' \t\n\r':
+            while i < len(hex_content) and hex_content[i] in " \t\n\r":
                 i += 1
 
             if i >= len(hex_content):
@@ -244,10 +252,10 @@ class Parser:
             char = hex_content[i]
 
             # Jump
-            if char == '[':
+            if char == "[":
                 i += 1
                 jump_str = ""
-                while i < len(hex_content) and hex_content[i] != ']':
+                while i < len(hex_content) and hex_content[i] != "]":
                     jump_str += hex_content[i]
                     i += 1
 
@@ -258,8 +266,8 @@ class Parser:
 
                 # Parse jump range
                 jump_str = jump_str.strip()
-                if '-' in jump_str:
-                    parts = jump_str.split('-')
+                if "-" in jump_str:
+                    parts = jump_str.split("-")
                     if len(parts) == 2:
                         min_jump = int(parts[0]) if parts[0].strip() else None
                         max_jump = int(parts[1]) if parts[1].strip() else None
@@ -271,26 +279,26 @@ class Parser:
                     tokens.append(HexJump(min_jump=val, max_jump=val))
 
             # Alternative (with nested support)
-            elif char == '(':
+            elif char == "(":
                 alt_tokens = self._parse_hex_alternative(hex_content[i:])
                 tokens.append(alt_tokens[0])  # Add the alternative token
                 # Skip past the parsed alternative
                 paren_count = 1
                 i += 1
                 while i < len(hex_content) and paren_count > 0:
-                    if hex_content[i] == '(':
+                    if hex_content[i] == "(":
                         paren_count += 1
-                    elif hex_content[i] == ')':
+                    elif hex_content[i] == ")":
                         paren_count -= 1
                     i += 1
 
             # Wildcard or nibble
-            elif char == '?':
-                if i + 1 < len(hex_content) and hex_content[i + 1] == '?':
+            elif char == "?":
+                if i + 1 < len(hex_content) and hex_content[i + 1] == "?":
                     # Full wildcard
                     tokens.append(HexWildcard())
                     i += 2
-                elif i + 1 < len(hex_content) and hex_content[i + 1] in '0123456789ABCDEFabcdef':
+                elif i + 1 < len(hex_content) and hex_content[i + 1] in "0123456789ABCDEFabcdef":
                     # ?X pattern - low nibble
                     nibble_val = int(hex_content[i + 1], 16)
                     tokens.append(HexNibble(high=False, value=nibble_val))
@@ -299,17 +307,17 @@ class Parser:
                     raise ParserError(f"Invalid wildcard at position {i}", self._peek())
 
             # Hex byte or nibble
-            elif char in '0123456789ABCDEFabcdef':
+            elif char in "0123456789ABCDEFabcdef":
                 if i + 1 < len(hex_content):
                     next_char = hex_content[i + 1]
-                    if next_char == '?':
+                    if next_char == "?":
                         # X? pattern - high nibble
                         nibble_val = int(char, 16)
                         tokens.append(HexNibble(high=True, value=nibble_val))
                         i += 2
-                    elif next_char in '0123456789ABCDEFabcdef':
+                    elif next_char in "0123456789ABCDEFabcdef":
                         # Regular hex byte
-                        byte_val = int(hex_content[i:i+2], 16)
+                        byte_val = int(hex_content[i : i + 2], 16)
                         tokens.append(HexByte(value=byte_val))
                         i += 2
                     else:
@@ -322,9 +330,9 @@ class Parser:
 
         return tokens
 
-    def _parse_hex_alternative(self, hex_content: str) -> List[HexToken]:
+    def _parse_hex_alternative(self, hex_content: str) -> list[HexToken]:
         """Parse hex alternative with nested support."""
-        if not hex_content.startswith('('):
+        if not hex_content.startswith("("):
             raise ParserError("Expected '(' at start of alternative", self._peek())
 
         i = 1  # Skip opening (
@@ -334,7 +342,7 @@ class Parser:
 
         while i < len(hex_content):
             # Skip whitespace
-            while i < len(hex_content) and hex_content[i] in ' \t\n\r':
+            while i < len(hex_content) and hex_content[i] in " \t\n\r":
                 i += 1
 
             if i >= len(hex_content):
@@ -343,7 +351,7 @@ class Parser:
             char = hex_content[i]
 
             # Handle nested parentheses
-            if char == '(':
+            if char == "(":
                 # Nested alternative
                 nested_alt = self._parse_hex_alternative(hex_content[i:])
                 current_alt.extend(nested_alt)
@@ -351,31 +359,31 @@ class Parser:
                 nested_depth = 1
                 i += 1
                 while i < len(hex_content) and nested_depth > 0:
-                    if hex_content[i] == '(':
+                    if hex_content[i] == "(":
                         nested_depth += 1
-                    elif hex_content[i] == ')':
+                    elif hex_content[i] == ")":
                         nested_depth -= 1
                     i += 1
 
-            elif char == ')' and paren_depth == 0:
+            elif char == ")" and paren_depth == 0:
                 # End of this alternative group
                 if current_alt:
                     alternatives.append(current_alt)
                 i += 1
                 break
 
-            elif char == '|' and paren_depth == 0:
+            elif char == "|" and paren_depth == 0:
                 # Alternative separator
                 if current_alt:
                     alternatives.append(current_alt)
                 current_alt = []
                 i += 1
 
-            elif char == '[':
+            elif char == "[":
                 # Jump in alternative
                 jump_i = i + 1
                 jump_str = ""
-                while jump_i < len(hex_content) and hex_content[jump_i] != ']':
+                while jump_i < len(hex_content) and hex_content[jump_i] != "]":
                     jump_str += hex_content[jump_i]
                     jump_i += 1
 
@@ -384,8 +392,8 @@ class Parser:
 
                 # Parse jump
                 jump_str = jump_str.strip()
-                if '-' in jump_str:
-                    parts = jump_str.split('-')
+                if "-" in jump_str:
+                    parts = jump_str.split("-")
                     min_jump = int(parts[0]) if parts[0].strip() else None
                     max_jump = int(parts[1]) if parts[1].strip() else None
                     current_alt.append(HexJump(min_jump=min_jump, max_jump=max_jump))
@@ -395,26 +403,26 @@ class Parser:
 
                 i = jump_i + 1
 
-            elif char == '?':
-                if i + 1 < len(hex_content) and hex_content[i + 1] == '?':
+            elif char == "?":
+                if i + 1 < len(hex_content) and hex_content[i + 1] == "?":
                     current_alt.append(HexWildcard())
                     i += 2
-                elif i + 1 < len(hex_content) and hex_content[i + 1] in '0123456789ABCDEFabcdef':
+                elif i + 1 < len(hex_content) and hex_content[i + 1] in "0123456789ABCDEFabcdef":
                     nibble_val = int(hex_content[i + 1], 16)
                     current_alt.append(HexNibble(high=False, value=nibble_val))
                     i += 2
                 else:
                     raise ParserError("Invalid wildcard in alternative", self._peek())
 
-            elif char in '0123456789ABCDEFabcdef':
+            elif char in "0123456789ABCDEFabcdef":
                 if i + 1 < len(hex_content):
                     next_char = hex_content[i + 1]
-                    if next_char == '?':
+                    if next_char == "?":
                         nibble_val = int(char, 16)
                         current_alt.append(HexNibble(high=True, value=nibble_val))
                         i += 2
-                    elif next_char in '0123456789ABCDEFabcdef':
-                        byte_val = int(hex_content[i:i+2], 16)
+                    elif next_char in "0123456789ABCDEFabcdef":
+                        byte_val = int(hex_content[i : i + 2], 16)
                         current_alt.append(HexByte(value=byte_val))
                         i += 2
                     else:
@@ -468,11 +476,22 @@ class Parser:
         """Parse relational expression."""
         expr = self._parse_bitwise_expression()
 
-        while self._match(TokenType.LT, TokenType.LE, TokenType.GT, TokenType.GE,
-                           TokenType.EQ, TokenType.NEQ, TokenType.CONTAINS,
-                           TokenType.MATCHES, TokenType.STARTSWITH, TokenType.ENDSWITH,
-                           TokenType.ICONTAINS, TokenType.ISTARTSWITH, TokenType.IENDSWITH,
-                           TokenType.IEQUALS):
+        while self._match(
+            TokenType.LT,
+            TokenType.LE,
+            TokenType.GT,
+            TokenType.GE,
+            TokenType.EQ,
+            TokenType.NEQ,
+            TokenType.CONTAINS,
+            TokenType.MATCHES,
+            TokenType.STARTSWITH,
+            TokenType.ENDSWITH,
+            TokenType.ICONTAINS,
+            TokenType.ISTARTSWITH,
+            TokenType.IENDSWITH,
+            TokenType.IEQUALS,
+        ):
             operator = self._previous().value.lower()
             right = self._parse_bitwise_expression()
             expr = BinaryExpression(left=expr, operator=operator, right=right)
@@ -555,7 +574,7 @@ class Parser:
                     expr = DictionaryAccess(object=expr, key=index.value)
                 else:
                     expr = ArrayAccess(array=expr, index=index)
-            elif self._match(TokenType.LPAREN) and not isinstance(expr, (MemberAccess, ArrayAccess)):
+            elif self._match(TokenType.LPAREN) and not isinstance(expr, MemberAccess | ArrayAccess):
                 # Function call (but not for member/array access which might be dictionary key)
                 args = []
                 while not self._check(TokenType.RPAREN) and not self._is_at_end():
@@ -632,8 +651,19 @@ class Parser:
         if self._match(TokenType.IDENTIFIER):
             name = self._previous().value
             # Check if it's a known module
-            if name in ["pe", "elf", "math", "dotnet", "cuckoo", "magic", "hash",
-                       "console", "string", "time", "vt"]:
+            if name in [
+                "pe",
+                "elf",
+                "math",
+                "dotnet",
+                "cuckoo",
+                "magic",
+                "hash",
+                "console",
+                "string",
+                "time",
+                "vt",
+            ]:
                 return ModuleReference(module=name)
             return Identifier(name=name)
 
@@ -653,12 +683,11 @@ class Parser:
                     raise ParserError("Expected ')' after set elements", self._peek())
 
                 return SetExpression(elements=exprs)
-            else:
-                # It's a parenthesized expression
-                if not self._match(TokenType.RPAREN):
-                    raise ParserError("Expected ')' after expression", self._peek())
+            # It's a parenthesized expression
+            if not self._match(TokenType.RPAREN):
+                raise ParserError("Expected ')' after expression", self._peek())
 
-                return ParenthesesExpression(expression=exprs[0])
+            return ParenthesesExpression(expression=exprs[0])
 
         # Range
         if self._check(TokenType.INTEGER) or self._check(TokenType.IDENTIFIER):
@@ -732,28 +761,24 @@ class Parser:
         if not self._match(TokenType.RPAREN):
             raise ParserError("Expected ')' after for body", self._peek())
 
-        return ForExpression(quantifier=quantifier, variable=variable,
-                           iterable=iterable, body=body)
+        return ForExpression(quantifier=quantifier, variable=variable, iterable=iterable, body=body)
 
     def _parse_for_of_expression(self, quantifier: str) -> ForOfExpression:
         """Parse for...of expression."""
         string_set = self._parse_expression()
 
         condition = None
-        if self._match(TokenType.COLON):
-            if self._match(TokenType.LPAREN):
-                condition = self._parse_expression()
-                if not self._match(TokenType.RPAREN):
-                    raise ParserError("Expected ')' after condition", self._peek())
+        if self._match(TokenType.COLON) and self._match(TokenType.LPAREN):
+            condition = self._parse_expression()
+            if not self._match(TokenType.RPAREN):
+                raise ParserError("Expected ')' after condition", self._peek())
 
-        return ForOfExpression(quantifier=quantifier, string_set=string_set,
-                             condition=condition)
+        return ForOfExpression(quantifier=quantifier, string_set=string_set, condition=condition)
 
     def _parse_of_expression(self, quantifier: str) -> OfExpression:
         """Parse of expression."""
         string_set = self._parse_expression()
-        return OfExpression(quantifier=StringLiteral(value=quantifier),
-                          string_set=string_set)
+        return OfExpression(quantifier=StringLiteral(value=quantifier), string_set=string_set)
 
     def _parse_expression(self) -> Expression:
         """Parse general expression."""
