@@ -2,7 +2,7 @@
 name = "yaraast"
 version = "0.1.0"
 description = "A Python library for parsing and manipulating YARA rules using Abstract Syntax Trees"
-authors = [{name = "Marc Rivero", email = "seifreed@example.com"}]
+authors = [{name = "Marc Rivero", email = "mriverolopez@gmail.com"}]
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.13"

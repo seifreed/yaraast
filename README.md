@@ -21,7 +21,9 @@ YARA AST provides a complete Abstract Syntax Tree implementation for YARA rules,
 
 ## Installation
 
-The library is currently available for installation from source. PyPI package distribution is planned for future release.
+```bash
+pip install yaraast
+```
 
 ### From Source
 
@@ -29,13 +31,6 @@ The library is currently available for installation from source. PyPI package di
 git clone https://github.com/seifreed/yaraast
 cd yaraast
 pip install -e .
-```
-
-### PyPI (Coming Soon)
-
-```bash
-# Future installation method
-pip install yaraast
 ```
 
 ## Usage Examples
