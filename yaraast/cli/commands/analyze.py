@@ -180,6 +180,16 @@ def _optimize_display_suggestions(suggestions, verbose):
                     console.print(f"    After:  [green]{suggestion.code_after}[/green]")
 
 
+@analyze.command()
+@click.argument("rule_file", type=click.Path(exists=True))
+@click.option("-v", "--verbose", is_flag=True, help="Show all optimizations")
+@click.option(
+    "-i",
+    "--impact",
+    type=click.Choice(["low", "medium", "high", "all"]),
+    default="all",
+    help="Filter by impact level",
+)
 def optimize(rule_file: str, verbose: bool, impact: str):
     """Analyze YARA rules for optimization opportunities.
 

@@ -524,3 +524,24 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
         """Visit StringOperatorExpression node."""
         self.visit(node.left)
         self.visit(node.right)
+
+    def visit_extern_import(self, node) -> None:
+        """Visit ExternImport node."""
+
+    def visit_extern_namespace(self, node) -> None:
+        """Visit ExternNamespace node."""
+
+    def visit_extern_rule(self, node) -> None:
+        """Visit ExternRule node."""
+
+    def visit_extern_rule_reference(self, node) -> None:
+        """Visit ExternRuleReference node."""
+
+    def visit_in_rule_pragma(self, node) -> None:
+        """Visit InRulePragma node."""
+
+    def visit_pragma(self, node) -> None:
+        """Visit Pragma node."""
+
+    def visit_pragma_block(self, node) -> None:
+        """Visit PragmaBlock node."""
