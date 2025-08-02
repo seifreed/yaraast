@@ -264,4 +264,16 @@ Contributions are welcome! Please check the GitHub repository for guidelines.
 
 ## License
 
-MIT License
+This project is licensed under the MIT License with an attribution requirement.
+
+### License Summary
+
+- **Free to use**: You can use this software freely for any purpose (commercial or non-commercial)
+- **Attribution required**: You must include attribution to the original author when using this software
+- **Attribution format**: "YARA AST by Marc Rivero (@seifreed) - https://github.com/seifreed/yaraast"
+
+### Full License
+
+See the [LICENSE](LICENSE) file for the complete license text.
+
+Copyright (c) 2024 Marc Rivero (@seifreed)
