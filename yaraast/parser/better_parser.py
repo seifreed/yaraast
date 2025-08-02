@@ -302,9 +302,23 @@ class Parser:
         # Parentheses
         if self._match(TokenType.LPAREN):
             expr = self._parse_or_expression()
+            
+            # Handle range with dash syntax (0-100) as alternative to (0..100)
+            if self._current_token() and self._current_token().type == TokenType.MINUS:
+                self._advance()
+                high = self._parse_or_expression()
+                from yaraast.ast.expressions import RangeExpression
+                expr = RangeExpression(low=expr, high=high)
+            
             if not self._match(TokenType.RPAREN):
                 current = self._current_token()
-                raise Exception(f"Expected ')' in parentheses at position {self.position}, got {current.type if current else 'EOF'}")
+                # Try to recover by skipping unexpected tokens
+                while not self._is_at_end() and not self._check(TokenType.RPAREN):
+                    self._advance()
+                    if self._match(TokenType.RPAREN):
+                        break
+                else:
+                    raise Exception(f"Expected ')' in parentheses at position {self.position}, got {current.type if current else 'EOF'}")
             return ParenthesesExpression(expression=expr)
 
         # Unary minus for negative numbers
