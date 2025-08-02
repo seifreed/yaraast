@@ -1,0 +1,16 @@
+# Core dependencies for YARA AST
+click>=8.1.0
+rich>=13.0.0
+attrs>=23.0.0
+
+# Optional: YARA integration
+# Uncomment if you need libyara integration
+# yara-python>=4.5.0
+
+# Optional: Performance monitoring
+# Uncomment if you need performance features
+# psutil>=5.9.0
+
+# Optional: Visualization
+# Uncomment if you need graph visualization
+# graphviz>=0.20.0

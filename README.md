@@ -30,6 +30,13 @@ pip install yaraast
 ```bash
 git clone https://github.com/seifreed/yaraast
 cd yaraast
+
+# Install core dependencies only
+pip install -r requirements.txt
+pip install -e .
+
+# Or install with all development dependencies
+pip install -r requirements-dev.txt
 pip install -e .
 ```
 
