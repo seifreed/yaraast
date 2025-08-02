@@ -13,6 +13,80 @@ def workspace():
     """Workspace commands for multi-file analysis."""
 
 
+def _format_json_output(report):
+    """Format report as JSON."""
+    output_data = {
+        "statistics": report.statistics,
+        "files": {
+            path: {
+                "errors": result.errors,
+                "warnings": result.warnings,
+                "type_errors": result.type_errors,
+                "analysis": result.analysis_results,
+            }
+            for path, result in report.file_results.items()
+        },
+        "global_errors": report.global_errors,
+    }
+    return json.dumps(output_data, indent=2)
+
+
+def _format_text_output(report):
+    """Format report as text."""
+    lines = []
+    lines.append("Workspace Analysis Report")
+    lines.append("=" * 50)
+    lines.append(f"Files analyzed: {report.files_analyzed}")
+    lines.append(f"Total rules: {report.total_rules}")
+    lines.append(f"Total includes: {report.total_includes}")
+    lines.append(f"Total imports: {report.total_imports}")
+    lines.append("")
+
+    if report.global_errors:
+        lines.append("Global Errors:")
+        for error in report.global_errors:
+            lines.append(f"  - {error}")
+        lines.append("")
+
+    # File-specific issues
+    for file_path, result in report.file_results.items():
+        if result.errors or result.warnings or result.type_errors:
+            lines.extend(_format_file_issues(file_path, result))
+
+    # Statistics
+    lines.append("Statistics:")
+    lines.append(f"  Total errors: {report.statistics.get('total_errors', 0)}")
+    lines.append(f"  Total warnings: {report.statistics.get('total_warnings', 0)}")
+    lines.append(f"  Total type errors: {report.statistics.get('total_type_errors', 0)}")
+    lines.append(f"  Dependency cycles: {report.statistics.get('cycles', 0)}")
+    lines.append(f"  Rule name conflicts: {report.statistics.get('rule_name_conflicts', 0)}")
+
+    return "\n".join(lines)
+
+
+def _format_file_issues(file_path, result):
+    """Format issues for a single file."""
+    lines = [f"File: {file_path}"]
+
+    if result.errors:
+        lines.append("  Errors:")
+        for error in result.errors:
+            lines.append(f"    - {error}")
+
+    if result.warnings:
+        lines.append("  Warnings:")
+        for warning in result.warnings:
+            lines.append(f"    - {warning}")
+
+    if result.type_errors:
+        lines.append("  Type Errors:")
+        for error in result.type_errors:
+            lines.append(f"    - {error}")
+
+    lines.append("")
+    return lines
+
+
 @workspace.command()
 @click.argument("directory", type=click.Path(exists=True))
 @click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
@@ -41,71 +115,11 @@ def analyze(directory, pattern, recursive, output, format, parallel):
 
     # Format output
     if format == "json":
-        output_data = {
-            "statistics": report.statistics,
-            "files": {
-                path: {
-                    "errors": result.errors,
-                    "warnings": result.warnings,
-                    "type_errors": result.type_errors,
-                    "analysis": result.analysis_results,
-                }
-                for path, result in report.file_results.items()
-            },
-            "global_errors": report.global_errors,
-        }
-        output_text = json.dumps(output_data, indent=2)
-
+        output_text = _format_json_output(report)
     elif format == "dot":
         output_text = report.dependency_graph.export_dot()
-
     else:  # text format
-        lines = []
-        lines.append("Workspace Analysis Report")
-        lines.append("=" * 50)
-        lines.append(f"Files analyzed: {report.files_analyzed}")
-        lines.append(f"Total rules: {report.total_rules}")
-        lines.append(f"Total includes: {report.total_includes}")
-        lines.append(f"Total imports: {report.total_imports}")
-        lines.append("")
-
-        if report.global_errors:
-            lines.append("Global Errors:")
-            for error in report.global_errors:
-                lines.append(f"  - {error}")
-            lines.append("")
-
-        # File-specific issues
-        for file_path, result in report.file_results.items():
-            if result.errors or result.warnings or result.type_errors:
-                lines.append(f"File: {file_path}")
-
-                if result.errors:
-                    lines.append("  Errors:")
-                    for error in result.errors:
-                        lines.append(f"    - {error}")
-
-                if result.warnings:
-                    lines.append("  Warnings:")
-                    for warning in result.warnings:
-                        lines.append(f"    - {warning}")
-
-                if result.type_errors:
-                    lines.append("  Type Errors:")
-                    for error in result.type_errors:
-                        lines.append(f"    - {error}")
-
-                lines.append("")
-
-        # Statistics
-        lines.append("Statistics:")
-        lines.append(f"  Total errors: {report.statistics.get('total_errors', 0)}")
-        lines.append(f"  Total warnings: {report.statistics.get('total_warnings', 0)}")
-        lines.append(f"  Total type errors: {report.statistics.get('total_type_errors', 0)}")
-        lines.append(f"  Dependency cycles: {report.statistics.get('cycles', 0)}")
-        lines.append(f"  Rule name conflicts: {report.statistics.get('rule_name_conflicts', 0)}")
-
-        output_text = "\n".join(lines)
+        output_text = _format_text_output(report)
 
     # Output
     if output:

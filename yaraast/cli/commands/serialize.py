@@ -26,6 +26,58 @@ def serialize():
     """AST serialization commands for export/import and versioning."""
 
 
+def _export_json(ast, output: str, minimal: bool, pretty: bool):
+    """Export AST to JSON format."""
+    serializer = JsonSerializer(include_metadata=not minimal)
+    result = serializer.serialize(ast, output)
+    if pretty and not output:
+        syntax = Syntax(result, "json", theme="monokai", line_numbers=True)
+        console.print(syntax)
+
+
+def _export_yaml(ast, output: str, minimal: bool, pretty: bool):
+    """Export AST to YAML format."""
+    serializer = YamlSerializer(include_metadata=not minimal)
+    if minimal:
+        result = serializer.serialize_minimal(ast, output)
+    else:
+        result = serializer.serialize(ast, output)
+    if pretty and not output:
+        syntax = Syntax(result, "yaml", theme="monokai", line_numbers=True)
+        console.print(syntax)
+
+
+def _export_protobuf(ast, output: str, minimal: bool, pretty: bool):
+    """Export AST to Protobuf format."""
+    serializer = ProtobufSerializer(include_metadata=not minimal)
+
+    if output and output.endswith(".txt"):
+        # Text format for debugging
+        result = serializer.serialize_text(ast, output)
+        if pretty:
+            console.print(result)
+    else:
+        # Binary format
+        serializer.serialize(ast, output)
+        stats = serializer.get_serialization_stats(ast)
+        _display_protobuf_stats(stats)
+
+
+def _display_protobuf_stats(stats: dict):
+    """Display Protobuf serialization statistics."""
+    table = Table(title="Protobuf Serialization Stats")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="green")
+
+    table.add_row("Binary Size", f"{stats['binary_size_bytes']:,} bytes")
+    table.add_row("Text Size", f"{stats['text_size_bytes']:,} bytes")
+    table.add_row("Compression Ratio", f"{stats['compression_ratio']:.2f}x")
+    table.add_row("Rules Count", str(stats["rules_count"]))
+    table.add_row("Imports Count", str(stats["imports_count"]))
+
+    console.print(table)
+
+
 @serialize.command()
 @click.argument("input_file", type=click.Path(exists=True))
 @click.option("-o", "--output", type=click.Path(), help="Output file path")
@@ -60,47 +112,11 @@ def export(input_file: str, output: str, format: str, minimal: bool, pretty: boo
 
         # Choose serializer
         if format == "json":
-            serializer = JsonSerializer(include_metadata=not minimal)
-            result = serializer.serialize(ast, output)
-            if pretty and not output:
-                syntax = Syntax(result, "json", theme="monokai", line_numbers=True)
-                console.print(syntax)
-
+            _export_json(ast, output, minimal, pretty)
         elif format == "yaml":
-            serializer = YamlSerializer(include_metadata=not minimal)
-            if minimal:
-                result = serializer.serialize_minimal(ast, output)
-            else:
-                result = serializer.serialize(ast, output)
-            if pretty and not output:
-                syntax = Syntax(result, "yaml", theme="monokai", line_numbers=True)
-                console.print(syntax)
-
+            _export_yaml(ast, output, minimal, pretty)
         elif format == "protobuf":
-            serializer = ProtobufSerializer(include_metadata=not minimal)
-
-            if output and output.endswith(".txt"):
-                # Text format for debugging
-                result = serializer.serialize_text(ast, output)
-                if pretty:
-                    console.print(result)
-            else:
-                # Binary format
-                serializer.serialize(ast, output)
-                stats = serializer.get_serialization_stats(ast)
-
-                # Show statistics
-                table = Table(title="Protobuf Serialization Stats")
-                table.add_column("Metric", style="cyan")
-                table.add_column("Value", style="green")
-
-                table.add_row("Binary Size", f"{stats['binary_size_bytes']:,} bytes")
-                table.add_row("Text Size", f"{stats['text_size_bytes']:,} bytes")
-                table.add_row("Compression Ratio", f"{stats['compression_ratio']:.2f}x")
-                table.add_row("Rules Count", str(stats["rules_count"]))
-                table.add_row("Imports Count", str(stats["imports_count"]))
-
-                console.print(table)
+            _export_protobuf(ast, output, minimal, pretty)
 
         if output:
             console.print(f"✅ AST exported to {output} ({format} format)")
@@ -156,6 +172,71 @@ def import_ast(input_file: str, format: str, output: str):
         sys.exit(1)
 
 
+def _display_diff_summary(diff_result):
+    """Display difference summary table."""
+    table = Table(title="AST Differences Summary")
+    table.add_column("Change Type", style="cyan")
+    table.add_column("Count", style="green", justify="right")
+
+    summary = diff_result.change_summary
+    for change_type, count in summary.items():
+        if count > 0:
+            icon = {
+                "added": "+",
+                "removed": "-",
+                "modified": "📝",
+                "moved": "↔️",
+                "unchanged": "✅",
+            }.get(change_type, "•")
+            table.add_row(f"{icon} {change_type.title()}", str(count))
+
+    console.print(table)
+
+
+def _display_detailed_changes(diff_result):
+    """Display detailed changes if not too many."""
+    if len(diff_result.differences) <= 20:  # Show details for small diffs
+        console.print("\n[bold]Detailed Changes:[/bold]")
+        for diff_node in diff_result.differences:
+            icon = {
+                DiffType.ADDED: "[green]+[/green]",
+                DiffType.REMOVED: "[red]-[/red]",
+                DiffType.MODIFIED: "[yellow]📝[/yellow]",
+                DiffType.MOVED: "[blue]↔️[/blue]",
+            }.get(diff_node.diff_type, "•")
+
+            console.print(f"  {icon} {diff_node.path} ({diff_node.node_type})")
+            if diff_node.diff_type == DiffType.MODIFIED:
+                console.print(f"    [dim]Old:[/dim] {diff_node.old_value}")
+                console.print(f"    [dim]New:[/dim] {diff_node.new_value}")
+    else:
+        console.print(
+            f"\n[dim]Use --output to save detailed changes ({len(diff_result.differences)} total)[/dim]"
+        )
+
+
+def _display_diff_statistics(diff_result):
+    """Display comparison statistics."""
+    stats_table = Table(title="Comparison Statistics")
+    stats_table.add_column("Metric", style="cyan")
+    stats_table.add_column("Old", style="red", justify="right")
+    stats_table.add_column("New", style="green", justify="right")
+
+    stats_table.add_row(
+        "Rules",
+        str(diff_result.statistics["old_rules_count"]),
+        str(diff_result.statistics["new_rules_count"]),
+    )
+    stats_table.add_row(
+        "Imports",
+        str(diff_result.statistics["old_imports_count"]),
+        str(diff_result.statistics["new_imports_count"]),
+    )
+    stats_table.add_row("AST Hash", diff_result.old_ast_hash, diff_result.new_ast_hash)
+
+    console.print(stats_table)
+
+
 @serialize.command()
 @click.argument("old_file", type=click.Path(exists=True))
 @click.argument("new_file", type=click.Path(exists=True))
@@ -197,65 +278,11 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
             console.print("✅ No differences found - ASTs are identical")
             return
 
-        # Summary table
-        table = Table(title="AST Differences Summary")
-        table.add_column("Change Type", style="cyan")
-        table.add_column("Count", style="green", justify="right")
+        _display_diff_summary(diff_result)
+        _display_detailed_changes(diff_result)
 
-        summary = diff_result.change_summary
-        for change_type, count in summary.items():
-            if count > 0:
-                icon = {
-                    "added": "+",
-                    "removed": "-",
-                    "modified": "📝",
-                    "moved": "↔️",
-                    "unchanged": "✅",
-                }.get(change_type, "•")
-                table.add_row(f"{icon} {change_type.title()}", str(count))
-
-        console.print(table)
-
-        # Detailed changes
-        if len(diff_result.differences) <= 20:  # Show details for small diffs
-            console.print("\n[bold]Detailed Changes:[/bold]")
-            for diff_node in diff_result.differences:
-                icon = {
-                    DiffType.ADDED: "[green]+[/green]",
-                    DiffType.REMOVED: "[red]-[/red]",
-                    DiffType.MODIFIED: "[yellow]📝[/yellow]",
-                    DiffType.MOVED: "[blue]↔️[/blue]",
-                }.get(diff_node.diff_type, "•")
-
-                console.print(f"  {icon} {diff_node.path} ({diff_node.node_type})")
-                if diff_node.diff_type == DiffType.MODIFIED:
-                    console.print(f"    [dim]Old:[/dim] {diff_node.old_value}")
-                    console.print(f"    [dim]New:[/dim] {diff_node.new_value}")
-        else:
-            console.print(
-                f"\n[dim]Use --output to save detailed changes ({len(diff_result.differences)} total)[/dim]"
-            )
-
-        # Statistics
         if stats:
-            stats_table = Table(title="Comparison Statistics")
-            stats_table.add_column("Metric", style="cyan")
-            stats_table.add_column("Old", style="red", justify="right")
-            stats_table.add_column("New", style="green", justify="right")
-
-            stats_table.add_row(
-                "Rules",
-                str(diff_result.statistics["old_rules_count"]),
-                str(diff_result.statistics["new_rules_count"]),
-            )
-            stats_table.add_row(
-                "Imports",
-                str(diff_result.statistics["old_imports_count"]),
-                str(diff_result.statistics["new_imports_count"]),
-            )
-            stats_table.add_row("AST Hash", diff_result.old_ast_hash, diff_result.new_ast_hash)
-
-            console.print(stats_table)
+            _display_diff_statistics(diff_result)
 
         # Save output
         if output or patch:

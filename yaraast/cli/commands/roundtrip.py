@@ -166,6 +166,42 @@ def deserialize(input_file: Path, format: str, output: Path | None, preserve_for
         sys.exit(1)
 
 
+def _display_test_success(input_file: Path, result: dict, format: str):
+    """Display successful test results."""
+    click.echo(f"✅ Round-trip test PASSED for {input_file}")
+    click.echo(f"   Format: {format.upper()}")
+    click.echo(f"   Original rules: {result['metadata']['original_rule_count']}")
+    click.echo(f"   Reconstructed rules: {result['metadata']['reconstructed_rule_count']}")
+
+
+def _display_test_failure(input_file: Path, result: dict, verbose: bool):
+    """Display failed test results."""
+    click.echo(f"❌ Round-trip test FAILED for {input_file}")
+    click.echo(f"   Differences found: {len(result['differences'])}")
+
+    if verbose:
+        click.echo("\nDifferences:")
+        for diff in result["differences"]:
+            click.echo(f"   • {diff}")
+
+
+def _display_verbose_source(result: dict):
+    """Display verbose source comparison."""
+    click.echo(f"\nOriginal source ({len(result['original_source'].splitlines())} lines):")
+    for i, line in enumerate(result["original_source"].splitlines()[:10], 1):
+        click.echo(f"   {i:2d}: {line}")
+    if len(result["original_source"].splitlines()) > 10:
+        click.echo("      ... (truncated)")
+
+    click.echo(
+        f"\nReconstructed source ({len(result['reconstructed_source'].splitlines())} lines):"
+    )
+    for i, line in enumerate(result["reconstructed_source"].splitlines()[:10], 1):
+        click.echo(f"   {i:2d}: {line}")
+    if len(result["reconstructed_source"].splitlines()) > 10:
+        click.echo("      ... (truncated)")
+
+
 @roundtrip.command()
 @click.argument("input_file", type=click.Path(exists=True, path_type=Path))
 @click.option(
@@ -207,33 +243,12 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool):
 
         # Display results
         if result["round_trip_successful"]:
-            click.echo(f"✅ Round-trip test PASSED for {input_file}")
-            click.echo(f"   Format: {format.upper()}")
-            click.echo(f"   Original rules: {result['metadata']['original_rule_count']}")
-            click.echo(f"   Reconstructed rules: {result['metadata']['reconstructed_rule_count']}")
+            _display_test_success(input_file, result, format)
         else:
-            click.echo(f"❌ Round-trip test FAILED for {input_file}")
-            click.echo(f"   Differences found: {len(result['differences'])}")
-
-            if verbose:
-                click.echo("\nDifferences:")
-                for diff in result["differences"]:
-                    click.echo(f"   • {diff}")
+            _display_test_failure(input_file, result, verbose)
 
         if verbose:
-            click.echo(f"\nOriginal source ({len(result['original_source'].splitlines())} lines):")
-            for i, line in enumerate(result["original_source"].splitlines()[:10], 1):
-                click.echo(f"   {i:2d}: {line}")
-            if len(result["original_source"].splitlines()) > 10:
-                click.echo("      ... (truncated)")
-
-            click.echo(
-                f"\nReconstructed source ({len(result['reconstructed_source'].splitlines())} lines):"
-            )
-            for i, line in enumerate(result["reconstructed_source"].splitlines()[:10], 1):
-                click.echo(f"   {i:2d}: {line}")
-            if len(result["reconstructed_source"].splitlines()) > 10:
-                click.echo("      ... (truncated)")
+            _display_verbose_source(result)
 
         # Save detailed results if requested
         if output:

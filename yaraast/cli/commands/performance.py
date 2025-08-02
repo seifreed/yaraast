@@ -37,6 +37,63 @@ def performance():
 @click.option("--recursive", "-r", is_flag=True, help="Process directories recursively")
 @click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
 @click.option("--progress", is_flag=True, help="Show progress information")
+def _convert_operations(operations):
+    """Convert operation strings to enums."""
+    batch_operations = []
+    operation_map = {
+        "parse": BatchOperation.PARSE,
+        "complexity": BatchOperation.COMPLEXITY,
+        "dependency_graph": BatchOperation.DEPENDENCY_GRAPH,
+        "html_tree": BatchOperation.HTML_TREE,
+        "serialize": BatchOperation.SERIALIZE,
+    }
+
+    for op in operations:
+        if op in operation_map:
+            batch_operations.append(operation_map[op])
+
+    return batch_operations
+
+
+def _display_operation_result(operation, result):
+    """Display results for a single operation."""
+    click.echo(f"\n{operation.value.upper()}:")
+    click.echo(f"  Input items: {result.input_count}")
+    click.echo(f"  Successful: {result.successful_count}")
+    click.echo(f"  Failed: {result.failed_count}")
+    click.echo(f"  Success rate: {result.success_rate:.1f}%")
+    click.echo(f"  Processing time: {result.total_time:.2f}s")
+
+    _display_output_files(result)
+    _display_errors(result)
+
+
+def _display_output_files(result):
+    """Display output files for a result."""
+    if not result.output_files:
+        return
+
+    click.echo(f"  Output files: {len(result.output_files)}")
+    if len(result.output_files) <= 5:
+        for file_path in result.output_files:
+            click.echo(f"    - {file_path}")
+    else:
+        click.echo(f"    - {result.output_files[0]} (and {len(result.output_files)-1} more)")
+
+
+def _display_errors(result):
+    """Display errors for a result."""
+    if not result.errors:
+        return
+
+    click.echo(f"  Errors: {len(result.errors)}")
+    if len(result.errors) <= 3:
+        for error in result.errors:
+            click.echo(f"    - {error}")
+    else:
+        click.echo(f"    - {result.errors[0]} (and {len(result.errors)-1} more)")
+
+
 def batch(
     input_path: str,
     output_dir: str | None,
@@ -55,19 +112,7 @@ def batch(
         output_dir = input_path.parent / f"{input_path.name}_batch_output"
     output_dir = Path(output_dir)
 
-    # Convert operation strings to enums
-    batch_operations = []
-    operation_map = {
-        "parse": BatchOperation.PARSE,
-        "complexity": BatchOperation.COMPLEXITY,
-        "dependency_graph": BatchOperation.DEPENDENCY_GRAPH,
-        "html_tree": BatchOperation.HTML_TREE,
-        "serialize": BatchOperation.SERIALIZE,
-    }
-
-    for op in operations:
-        if op in operation_map:
-            batch_operations.append(operation_map[op])
+    batch_operations = _convert_operations(operations)
 
     # Progress callback
     def progress_callback(operation: str, current: int, total: int):
@@ -75,7 +120,6 @@ def batch(
             percentage = (current / total * 100) if total > 0 else 0
             click.echo(f"\r{operation}: {current}/{total} ({percentage:.1f}%)", nl=False)
 
-    # Initialize batch processor
     processor = BatchProcessor(
         max_workers=max_workers,
         max_memory_mb=memory_limit,
@@ -87,10 +131,8 @@ def batch(
 
     try:
         if input_path.is_file():
-            # Process single large file
             results = processor.process_large_file(input_path, batch_operations, output_dir)
         else:
-            # Process directory
             results = processor.process_directory(
                 input_path, batch_operations, output_dir, pattern, recursive
             )
@@ -100,72 +142,38 @@ def batch(
         if progress:
             click.echo()  # New line after progress
 
-        # Display results
         click.echo(f"\n📊 Batch Processing Results ({total_time:.2f}s)")
         click.echo("=" * 50)
 
         for operation, result in results.items():
-            click.echo(f"\n{operation.value.upper()}:")
-            click.echo(f"  Input items: {result.input_count}")
-            click.echo(f"  Successful: {result.successful_count}")
-            click.echo(f"  Failed: {result.failed_count}")
-            click.echo(f"  Success rate: {result.success_rate:.1f}%")
-            click.echo(f"  Processing time: {result.total_time:.2f}s")
+            _display_operation_result(operation, result)
 
-            if result.output_files:
-                click.echo(f"  Output files: {len(result.output_files)}")
-                if len(result.output_files) <= 5:
-                    for file_path in result.output_files:
-                        click.echo(f"    - {file_path}")
-                else:
-                    click.echo(
-                        f"    - {result.output_files[0]} (and {len(result.output_files)-1} more)"
-                    )
-
-            if result.errors:
-                click.echo(f"  Errors: {len(result.errors)}")
-                if len(result.errors) <= 3:
-                    for error in result.errors:
-                        click.echo(f"    - {error}")
-                else:
-                    click.echo(f"    - {result.errors[0]} (and {len(result.errors)-1} more)")
-
-        # Save detailed results
-        results_file = output_dir / "batch_results.json"
-        results_data = {
-            operation.value: {
-                "input_count": result.input_count,
-                "successful_count": result.successful_count,
-                "failed_count": result.failed_count,
-                "success_rate": result.success_rate,
-                "total_time": result.total_time,
-                "output_files": result.output_files,
-                "errors": result.errors,
-                "summary": result.summary,
-            }
-            for operation, result in results.items()
-        }
-
-        with Path(results_file).open("w") as f:
-            json.dump(results_data, f, indent=2)
-
-        click.echo(f"\n📁 Detailed results saved to: {results_file}")
-
-        # Overall statistics
-        stats = processor.get_statistics()
-        if stats["total_files"] > 0:
-            click.echo("\n📈 Overall Statistics:")
-            click.echo(f"  Total files processed: {stats['total_files']}")
-            click.echo(f"  Total rules parsed: {stats['total_rules']}")
-            click.echo(
-                f"  Average rules per file: {stats['total_rules'] / stats['total_files']:.1f}"
-            )
-            if stats["peak_memory_mb"] > 0:
-                click.echo(f"  Peak memory usage: {stats['peak_memory_mb']:.1f} MB")
-
+        _save_batch_results(results, output_dir)
+        click.echo(f"\n✅ Results saved to: {output_dir}")
     except Exception as e:
         click.echo(f"\n❌ Error during batch processing: {e}", err=True)
         raise click.Abort from None
+
+
+def _save_batch_results(results, output_dir):
+    """Save batch processing results to JSON."""
+    results_file = output_dir / "batch_results.json"
+    results_data = {
+        operation.value: {
+            "input_count": result.input_count,
+            "successful_count": result.successful_count,
+            "failed_count": result.failed_count,
+            "success_rate": result.success_rate,
+            "total_time": result.total_time,
+            "output_files": result.output_files,
+            "errors": result.errors,
+            "summary": result.summary,
+        }
+        for operation, result in results.items()
+    }
+
+    with Path(results_file).open("w") as f:
+        json.dump(results_data, f, indent=2)
 
 
 @performance.command()

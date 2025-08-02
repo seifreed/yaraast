@@ -15,6 +15,45 @@ except ImportError:
     from ...types.semantic_validator import SemanticValidator, ValidationResult
 
 
+def _process_file(file_path: Path, parser, validator, quiet: bool):
+    """Process a single file and return results."""
+    if not quiet:
+        click.echo(f"Validating {file_path}...")
+
+    # Parse the file
+    with Path(file_path).open(encoding="utf-8") as f:
+        content = f.read()
+
+    ast = parser.parse(content)
+    if not ast:
+        click.echo(f"Error: Failed to parse {file_path}", err=True)
+        return None
+
+    # Set file location for better error reporting
+    if hasattr(ast, "location") and ast.location:
+        ast.location.file = str(file_path)
+
+    # Validate semantics
+    result = validator.validate(ast)
+
+    # Add file path to all errors and warnings
+    _add_file_to_issues(result.errors, file_path)
+    _add_file_to_issues(result.warnings, file_path)
+
+    return result
+
+
+def _add_file_to_issues(issues, file_path: Path):
+    """Add file path to all issues."""
+    from yaraast.ast.base import Location
+
+    for issue in issues:
+        if issue.location:
+            issue.location.file = str(file_path)
+        else:
+            issue.location = Location(line=1, column=1, file=str(file_path))
+
+
 @click.command()
 @click.argument("files", nargs=-1, type=click.Path(exists=True, path_type=Path))
 @click.option(
@@ -75,42 +114,10 @@ def semantic(
     total_warnings = 0
 
     for file_path in files:
-        if not quiet:
-            click.echo(f"Validating {file_path}...")
-
         try:
-            # Parse the file
-            with Path(file_path).open(encoding="utf-8") as f:
-                content = f.read()
-
-            ast = parser.parse(content)
-            if not ast:
-                click.echo(f"Error: Failed to parse {file_path}", err=True)
+            result = _process_file(file_path, parser, validator, quiet)
+            if not result:
                 continue
-
-            # Set file location for better error reporting
-            if hasattr(ast, "location") and ast.location:
-                ast.location.file = str(file_path)
-
-            # Validate semantics
-            result = validator.validate(ast)
-
-            # Add file path to all errors and warnings
-            for error in result.errors:
-                if error.location:
-                    error.location.file = str(file_path)
-                else:
-                    from yaraast.ast.base import Location
-
-                    error.location = Location(line=1, column=1, file=str(file_path))
-
-            for warning in result.warnings:
-                if warning.location:
-                    warning.location.file = str(file_path)
-                else:
-                    from yaraast.ast.base import Location
-
-                    warning.location = Location(line=1, column=1, file=str(file_path))
 
             # Store results
             all_results.append(
@@ -129,7 +136,6 @@ def semantic(
             # Display results for this file
             if format == "text":
                 _display_text_results(file_path, result, warnings, suggestions, quiet)
-
         except Exception as e:
             click.echo(f"Error processing {file_path}: {e}", err=True)
             continue

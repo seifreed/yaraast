@@ -108,50 +108,65 @@ class RuleAnalyzer:
         """Generate recommendations for improving the rules."""
         recommendations = []
 
-        # Check for unused strings
+        recommendations.extend(self._check_unused_strings())
+        recommendations.extend(self._check_undefined_strings())
+        recommendations.extend(self._check_circular_dependencies(dependency_analysis))
+        recommendations.extend(self._check_high_dependencies(dependency_analysis))
+        recommendations.extend(self._check_low_string_usage(string_analysis))
+
+        return recommendations
+
+    def _check_unused_strings(self) -> list[dict[str, str]]:
+        """Check for unused strings."""
+        recommendations = []
         unused_by_rule = self.string_analyzer.get_unused_strings()
-        if unused_by_rule:
-            for rule, strings in unused_by_rule.items():
-                recommendations.append(
-                    {
-                        "type": "unused_strings",
-                        "severity": "warning",
-                        "rule": rule,
-                        "message": f"Rule '{rule}' has {len(strings)} unused string(s): {', '.join(strings)}",
-                        "suggestion": "Consider removing unused strings or updating the condition to use them",
-                    }
-                )
+        for rule, strings in unused_by_rule.items():
+            recommendations.append(
+                {
+                    "type": "unused_strings",
+                    "severity": "warning",
+                    "rule": rule,
+                    "message": f"Rule '{rule}' has {len(strings)} unused string(s): {', '.join(strings)}",
+                    "suggestion": "Consider removing unused strings or updating the condition to use them",
+                }
+            )
+        return recommendations
 
-        # Check for undefined strings
+    def _check_undefined_strings(self) -> list[dict[str, str]]:
+        """Check for undefined strings."""
+        recommendations = []
         undefined_by_rule = self.string_analyzer.get_undefined_strings()
-        if undefined_by_rule:
-            for rule, strings in undefined_by_rule.items():
-                recommendations.append(
-                    {
-                        "type": "undefined_strings",
-                        "severity": "error",
-                        "rule": rule,
-                        "message": f"Rule '{rule}' references undefined string(s): {', '.join(strings)}",
-                        "suggestion": "Define the missing strings or fix the string identifiers",
-                    }
-                )
+        for rule, strings in undefined_by_rule.items():
+            recommendations.append(
+                {
+                    "type": "undefined_strings",
+                    "severity": "error",
+                    "rule": rule,
+                    "message": f"Rule '{rule}' references undefined string(s): {', '.join(strings)}",
+                    "suggestion": "Define the missing strings or fix the string identifiers",
+                }
+            )
+        return recommendations
 
-        # Check for circular dependencies
-        circular_deps = dependency_analysis["circular_dependencies"]
-        if circular_deps:
-            for cycle in circular_deps:
-                recommendations.append(
-                    {
-                        "type": "circular_dependency",
-                        "severity": "error",
-                        "rule": cycle[0],
-                        "message": f"Circular dependency detected: {' -> '.join(cycle)}",
-                        "suggestion": "Refactor rules to eliminate circular dependencies",
-                    }
-                )
+    def _check_circular_dependencies(self, dependency_analysis: dict) -> list[dict[str, str]]:
+        """Check for circular dependencies."""
+        recommendations = []
+        for cycle in dependency_analysis.get("circular_dependencies", []):
+            recommendations.append(
+                {
+                    "type": "circular_dependency",
+                    "severity": "error",
+                    "rule": cycle[0],
+                    "message": f"Circular dependency detected: {' -> '.join(cycle)}",
+                    "suggestion": "Refactor rules to eliminate circular dependencies",
+                }
+            )
+        return recommendations
 
-        # Check for highly dependent rules
-        for rule, info in dependency_analysis["dependency_graph"].items():
+    def _check_high_dependencies(self, dependency_analysis: dict) -> list[dict[str, str]]:
+        """Check for highly dependent rules."""
+        recommendations = []
+        for rule, info in dependency_analysis.get("dependency_graph", {}).items():
             dep_count = len(info["depends_on"])
             if dep_count > 5:
                 recommendations.append(
@@ -163,8 +178,11 @@ class RuleAnalyzer:
                         "suggestion": "Consider breaking down the rule or reducing dependencies",
                     }
                 )
+        return recommendations
 
-        # Check for low string usage
+    def _check_low_string_usage(self, string_analysis: dict) -> list[dict[str, str]]:
+        """Check for low string usage."""
+        recommendations = []
         for rule, analysis in string_analysis.items():
             usage_rate = analysis["usage_rate"]
             if usage_rate < 0.5 and len(analysis["defined"]) > 2:
@@ -177,7 +195,6 @@ class RuleAnalyzer:
                         "suggestion": "Review if all strings are necessary for the rule's purpose",
                     }
                 )
-
         return recommendations
 
     def get_rule_report(self, rule_name: str, yara_file: YaraFile) -> dict[str, Any] | None:
