@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 try:
-    from yaraast.parser import YaraParser
+    from yaraast.parser import Parser
     from yaraast.types.semantic_validator import SemanticValidator, ValidationResult
 except ImportError:
     # Fallback for running within the package
@@ -107,7 +107,7 @@ def semantic(
         click.echo("Error: No files provided", err=True)
         sys.exit(1)
 
-    parser = YaraParser()
+    parser = Parser()
     validator = SemanticValidator()
     all_results = []
     total_errors = 0

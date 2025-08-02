@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 import yaml
 
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
-from yaraast.parser import YaraParser
+from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.yaml_serializer import YamlSerializer
 
@@ -106,7 +106,7 @@ class RoundTripSerializer:
         self.preserve_formatting = preserve_formatting
         self.json_serializer = JsonSerializer(include_metadata=True)
         self.yaml_serializer = YamlSerializer(include_metadata=True)
-        self.parser = YaraParser()
+        self.parser = Parser()
 
     def parse_and_serialize(
         self, yara_source: str, source_file: str | None = None, format: str = "json"

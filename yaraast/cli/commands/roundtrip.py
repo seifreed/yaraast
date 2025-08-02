@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from yaraast.codegen.pretty_printer import PrettyPrinter, StylePresets
-from yaraast.parser import YaraParser
+from yaraast.parser import Parser
 from yaraast.serialization.roundtrip_serializer import (
     RoundTripSerializer,
     create_rules_manifest,
@@ -312,7 +312,7 @@ def pretty(
     """
     try:
         # Parse input file
-        parser = YaraParser()
+        parser = Parser()
         with Path(input_file).open(encoding="utf-8") as f:
             yara_source = f.read()
 
@@ -392,7 +392,7 @@ def pipeline(
     """
     try:
         # Parse input file
-        parser = YaraParser()
+        parser = Parser()
         with Path(input_file).open(encoding="utf-8") as f:
             yara_source = f.read()
 

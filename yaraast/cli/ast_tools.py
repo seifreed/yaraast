@@ -11,7 +11,7 @@ from typing import Any
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.codegen import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter, StylePresets
-from yaraast.parser import YaraParser
+from yaraast.parser import Parser
 from yaraast.visitor.visitor import ASTVisitor
 
 
@@ -176,7 +176,7 @@ class ASTDiffer:
         """Compare two YARA files at AST level."""
         try:
             # Parse both files
-            parser = YaraParser()
+            parser = Parser()
 
             with Path(file1_path).open() as f:
                 ast1 = parser.parse(f.read())
@@ -319,7 +319,7 @@ class ASTFormatter:
         """Format YARA file using AST regeneration."""
         try:
             # Parse file
-            parser = YaraParser()
+            parser = Parser()
             with Path(input_path).open() as f:
                 content = f.read()
 
@@ -353,7 +353,7 @@ class ASTFormatter:
                 original = f.read()
 
             # Parse and regenerate
-            parser = YaraParser()
+            parser = Parser()
             ast = parser.parse(original)
             formatted = self.pretty_printer.pretty_print(ast)
 
@@ -389,7 +389,7 @@ class ASTBenchmarker:
                 content = f.read()
 
             file_size = len(content.encode())
-            parser = YaraParser()
+            parser = Parser()
 
             # Warm up
             ast = parser.parse(content)
@@ -401,7 +401,7 @@ class ASTBenchmarker:
             times = []
             for _ in range(iterations):
                 start = time.perf_counter()
-                parser = YaraParser()
+                parser = Parser()
                 ast = parser.parse(content)
                 end = time.perf_counter()
                 times.append(end - start)
@@ -439,7 +439,7 @@ class ASTBenchmarker:
         """Benchmark code generation performance."""
         try:
             # Parse file once
-            parser = YaraParser()
+            parser = Parser()
             with Path(file_path).open() as f:
                 content = f.read()
 
@@ -503,7 +503,7 @@ class ASTBenchmarker:
             for _ in range(iterations):
                 start = time.perf_counter()
 
-                parser = YaraParser()
+                parser = Parser()
                 ast = parser.parse(content)
 
                 generator = CodeGenerator()
@@ -515,7 +515,7 @@ class ASTBenchmarker:
             avg_time = statistics.mean(times)
 
             # Parse once more for statistics
-            parser = YaraParser()
+            parser = Parser()
             ast = parser.parse(content)
             rules_count = len(ast.rules)
             strings_count = sum(len(rule.strings) for rule in ast.rules)
