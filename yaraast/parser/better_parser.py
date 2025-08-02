@@ -651,20 +651,30 @@ class Parser:
             string_ids = []
             while not self._check(TokenType.RPAREN) and not self._is_at_end():
                 if self._match(TokenType.STRING_IDENTIFIER):
-                    string_ids.append(StringIdentifier(name=self._previous().value))
+                    string_name = self._previous().value
+                    # Check for wildcard pattern (e.g., $a*)
+                    if self._match(TokenType.MULTIPLY):
+                        string_name += "*"
+                    string_ids.append(StringIdentifier(name=string_name))
                 elif self._match(TokenType.MULTIPLY):
-                    # Handle wildcards like ($a*)
+                    # Handle standalone wildcards (*)
                     string_ids.append(StringIdentifier(name="*"))
                 else:
-                    raise Exception(
-                        f"Expected string identifier in set, got {self._current_token()}"
-                    )
+                    # Skip unexpected tokens and try to continue
+                    # This helps with parsing files with unsupported syntax
+                    if self._current_token():
+                        self._advance()
+                    continue
 
                 if not self._match(TokenType.COMMA):
                     break
 
             if not self._match(TokenType.RPAREN):
-                raise Exception("Expected ')' after string set")
+                # Try to recover by finding the closing parenthesis
+                while not self._is_at_end() and not self._check(TokenType.RPAREN):
+                    self._advance()
+                if not self._match(TokenType.RPAREN):
+                    raise Exception("Expected ')' after string set")
 
             from yaraast.ast.expressions import SetExpression
 
