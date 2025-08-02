@@ -1,11 +1,16 @@
 """Protobuf serialization for YARA AST."""
 
+from __future__ import annotations
+
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
 from yaraast.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+
+    from yaraast.ast.base import YaraFile
 
 try:
     from yaraast.serialization import yara_ast_pb2
@@ -31,7 +36,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
         binary_data = pb_yara_file.SerializeToString()
 
         if output_path:
-            with open(output_path, "wb") as f:
+            with Path(output_path).open("wb") as f:
                 f.write(binary_data)
 
         return binary_data
@@ -42,7 +47,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
         text_data = str(pb_yara_file)
 
         if output_path:
-            with open(output_path, "w", encoding="utf-8") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 f.write(text_data)
 
         return text_data
@@ -52,7 +57,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
     ) -> YaraFile:
         """Deserialize Protobuf binary to AST."""
         if input_path:
-            with open(input_path, "rb") as f:
+            with Path(input_path).open("rb") as f:
                 binary_data = f.read()
 
         if not binary_data:
@@ -63,7 +68,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
 
         return self._protobuf_to_ast(pb_yara_file)
 
-    def _ast_to_protobuf(self, ast: YaraFile) -> "yara_ast_pb2.YaraFile":
+    def _ast_to_protobuf(self, ast: YaraFile) -> yara_ast_pb2.YaraFile:
         """Convert AST to Protobuf message."""
         pb_file = yara_ast_pb2.YaraFile()
 
@@ -213,7 +218,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
             self._convert_expression_to_protobuf(expr.operand, pb_expr.unary_expression.operand)
         # Add more expression types as needed
 
-    def _protobuf_to_ast(self, pb_file: "yara_ast_pb2.YaraFile") -> YaraFile:
+    def _protobuf_to_ast(self, pb_file: yara_ast_pb2.YaraFile) -> YaraFile:
         """Convert Protobuf message to AST."""
         # Basic reconstruction - would need full implementation
         # For now, return empty YaraFile as placeholder

@@ -1,5 +1,7 @@
 """Module loader for loading YARA module definitions from JSON."""
 
+from __future__ import annotations
+
 import json
 import os
 from pathlib import Path
@@ -193,7 +195,7 @@ class ModuleLoader:
     def _load_module_file(self, path: Path) -> None:
         """Load a single module definition from JSON file."""
         try:
-            with open(path, encoding="utf-8") as f:
+            with Path(path).open(encoding="utf-8") as f:
                 data = json.load(f)
 
             if isinstance(data, dict):
@@ -301,7 +303,7 @@ class ModuleLoader:
             # List of parameter names (assume any type)
             for param in params:
                 if isinstance(param, str):
-                    result.append((param, AnyType()))
+                    result.append((param, self._parse_type("any")))
                 elif isinstance(param, dict):
                     name = param.get("name", "param")
                     type_ = self._parse_type(param.get("type", "any"))

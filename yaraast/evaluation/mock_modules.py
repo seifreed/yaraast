@@ -1,5 +1,7 @@
 """Mock module implementations for YARA evaluation."""
 
+from __future__ import annotations
+
 import math
 import struct
 from dataclasses import dataclass
@@ -59,43 +61,40 @@ class MockPE:
                 pe_offset = struct.unpack("<I", self.data[0x3C:0x40])[0]
 
                 # Check PE signature
-                if len(self.data) >= pe_offset + 4:
-                    if self.data[pe_offset : pe_offset + 4] == b"PE\x00\x00":
-                        # Parse COFF header
-                        if len(self.data) >= pe_offset + 24:
-                            coff_offset = pe_offset + 4
-                            self.machine = struct.unpack(
-                                "<H", self.data[coff_offset : coff_offset + 2]
-                            )[0]
-                            self.number_of_sections = struct.unpack(
-                                "<H", self.data[coff_offset + 2 : coff_offset + 4]
-                            )[0]
-                            self.timestamp = struct.unpack(
-                                "<I", self.data[coff_offset + 4 : coff_offset + 8]
-                            )[0]
-                            self.characteristics = struct.unpack(
-                                "<H", self.data[coff_offset + 18 : coff_offset + 20]
-                            )[0]
+                if (
+                    len(self.data) >= pe_offset + 4
+                    and self.data[pe_offset : pe_offset + 4] == b"PE\x00\x00"
+                    and len(self.data) >= pe_offset + 24
+                ):
+                    coff_offset = pe_offset + 4
+                    self.machine = struct.unpack("<H", self.data[coff_offset : coff_offset + 2])[0]
+                    self.number_of_sections = struct.unpack(
+                        "<H", self.data[coff_offset + 2 : coff_offset + 4]
+                    )[0]
+                    self.timestamp = struct.unpack(
+                        "<I", self.data[coff_offset + 4 : coff_offset + 8]
+                    )[0]
+                    self.characteristics = struct.unpack(
+                        "<H", self.data[coff_offset + 18 : coff_offset + 20]
+                    )[0]
 
-                            # Check if DLL
-                            self.is_dll = bool(self.characteristics & 0x2000)
+                    # Check if DLL
+                    self.is_dll = bool(self.characteristics & 0x2000)
 
-                            # Parse optional header
-                            opt_offset = coff_offset + 20
-                            if len(self.data) >= opt_offset + 2:
-                                magic = struct.unpack("<H", self.data[opt_offset : opt_offset + 2])[
-                                    0
-                                ]
-                                self.is_32bit = magic == 0x10B
-                                self.is_64bit = magic == 0x20B
+                    # Parse optional header
+                    opt_offset = coff_offset + 20
+                    if len(self.data) >= opt_offset + 2:
+                        magic = struct.unpack("<H", self.data[opt_offset : opt_offset + 2])[0]
+                        self.is_32bit = magic == 0x10B
+                        self.is_64bit = magic == 0x20B
 
-                                if self.is_32bit and len(self.data) >= opt_offset + 28:
-                                    self.entry_point = struct.unpack(
-                                        "<I", self.data[opt_offset + 16 : opt_offset + 20]
-                                    )[0]
-                                    self.image_base = struct.unpack(
-                                        "<I", self.data[opt_offset + 28 : opt_offset + 32]
-                                    )[0]
+                        if self.is_32bit and len(self.data) >= opt_offset + 28:
+                            self.entry_point = struct.unpack(
+                                "<I", self.data[opt_offset + 16 : opt_offset + 20]
+                            )[0]
+                            self.image_base = struct.unpack(
+                                "<I", self.data[opt_offset + 28 : opt_offset + 32]
+                            )[0]
 
     def imphash(self) -> str:
         """Return import hash."""
@@ -144,11 +143,9 @@ class MockELF:
         self.segments = []
 
         # Check ELF magic
-        if len(self.data) >= 4 and self.data[:4] == b"\x7fELF":
-            # Parse basic header fields
-            if len(self.data) >= 20:
-                self.type = struct.unpack("<H", self.data[16:18])[0]
-                self.machine = struct.unpack("<H", self.data[18:20])[0]
+        if len(self.data) >= 20 and self.data[:4] == b"\x7fELF":
+            self.type = struct.unpack("<H", self.data[16:18])[0]
+            self.machine = struct.unpack("<H", self.data[18:20])[0]
 
 
 class MockMath:
@@ -183,7 +180,7 @@ class MockMath:
         """Convert string to number."""
         try:
             return int(s, 0)  # Auto-detect base
-        except:
+        except Exception:
             return 0
 
     def log(self, x: float) -> float:

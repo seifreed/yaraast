@@ -1,14 +1,16 @@
 """Comment-aware code generator for YARA rules."""
 
-from yaraast.ast.comments import Comment
-from yaraast.ast.meta import Meta
-from yaraast.ast.rules import Rule
-from yaraast.ast.strings import (
-    HexString,
-    PlainString,
-    RegexString,
-)
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from yaraast.codegen.generator import CodeGenerator
+
+if TYPE_CHECKING:
+    from yaraast.ast.comments import Comment
+    from yaraast.ast.meta import Meta
+    from yaraast.ast.rules import Rule
+    from yaraast.ast.strings import HexString, PlainString, RegexString
 
 
 class CommentAwareCodeGenerator(CodeGenerator):

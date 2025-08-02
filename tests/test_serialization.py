@@ -22,14 +22,14 @@ class TestJsonSerializer:
 
     def test_serialize_simple_rule(self):
         """Test JSON serialization of simple rule."""
-        rule_text = '''
+        rule_text = """
         rule test_rule {
             strings:
                 $a = "test"
             condition:
                 $a
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -48,7 +48,7 @@ class TestJsonSerializer:
 
     def test_serialize_with_metadata(self):
         """Test serialization with metadata."""
-        rule_text = 'rule test { condition: true }'
+        rule_text = "rule test { condition: true }"
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -63,7 +63,7 @@ class TestJsonSerializer:
 
     def test_serialize_without_metadata(self):
         """Test serialization without metadata."""
-        rule_text = 'rule test { condition: true }'
+        rule_text = "rule test { condition: true }"
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -77,12 +77,12 @@ class TestJsonSerializer:
 
     def test_serialize_to_file(self):
         """Test serialization to file."""
-        rule_text = 'rule test { condition: true }'
+        rule_text = "rule test { condition: true }"
 
         parser = Parser()
         ast = parser.parse(rule_text)
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             temp_path = f.name
 
         try:
@@ -90,7 +90,7 @@ class TestJsonSerializer:
             serializer.serialize(ast, temp_path)
 
             # Verify file was created and contains valid JSON
-            with open(temp_path, 'r') as f:
+            with Path(temp_path).open() as f:
                 data = json.load(f)
 
             assert data["ast"]["type"] == "YaraFile"
@@ -104,14 +104,14 @@ class TestYamlSerializer:
 
     def test_serialize_simple_rule(self):
         """Test YAML serialization of simple rule."""
-        rule_text = '''
+        rule_text = """
         rule test_rule {
             strings:
                 $a = "test"
             condition:
                 $a
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -130,7 +130,7 @@ class TestYamlSerializer:
 
     def test_serialize_minimal(self):
         """Test minimal YAML serialization."""
-        rule_text = 'rule test { condition: true }'
+        rule_text = "rule test { condition: true }"
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -145,10 +145,10 @@ class TestYamlSerializer:
 
     def test_serialize_rules_only(self):
         """Test rules-only YAML serialization."""
-        rule_text = '''
+        rule_text = """
         rule rule1 { condition: true }
         rule rule2 { condition: false }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -170,7 +170,7 @@ class TestProtobufSerializer:
     def test_protobuf_available(self):
         """Test if protobuf serialization is available."""
         try:
-            serializer = ProtobufSerializer()
+            ProtobufSerializer()
             # If we get here, protobuf is available
             assert True
         except ImportError:
@@ -180,7 +180,7 @@ class TestProtobufSerializer:
     def test_serialize_simple_rule(self):
         """Test Protobuf serialization of simple rule."""
         try:
-            rule_text = 'rule test { condition: true }'
+            rule_text = "rule test { condition: true }"
 
             parser = Parser()
             ast = parser.parse(rule_text)
@@ -197,7 +197,7 @@ class TestProtobufSerializer:
     def test_serialize_text_format(self):
         """Test Protobuf text serialization."""
         try:
-            rule_text = 'rule test { condition: true }'
+            rule_text = "rule test { condition: true }"
 
             parser = Parser()
             ast = parser.parse(rule_text)
@@ -214,10 +214,10 @@ class TestProtobufSerializer:
     def test_serialization_stats(self):
         """Test serialization statistics."""
         try:
-            rule_text = '''
+            rule_text = """
             rule test1 { condition: true }
             rule test2 { condition: false }
-            '''
+            """
 
             parser = Parser()
             ast = parser.parse(rule_text)
@@ -240,7 +240,7 @@ class TestAstDiff:
 
     def test_identical_asts(self):
         """Test diff of identical ASTs."""
-        rule_text = 'rule test { condition: true }'
+        rule_text = "rule test { condition: true }"
 
         parser = Parser()
         ast1 = parser.parse(rule_text)
@@ -255,11 +255,11 @@ class TestAstDiff:
 
     def test_rule_added(self):
         """Test detection of added rule."""
-        old_text = 'rule test1 { condition: true }'
-        new_text = '''
+        old_text = "rule test1 { condition: true }"
+        new_text = """
         rule test1 { condition: true }
         rule test2 { condition: false }
-        '''
+        """
 
         parser = Parser()
         old_ast = parser.parse(old_text)
@@ -278,11 +278,11 @@ class TestAstDiff:
 
     def test_rule_removed(self):
         """Test detection of removed rule."""
-        old_text = '''
+        old_text = """
         rule test1 { condition: true }
         rule test2 { condition: false }
-        '''
-        new_text = 'rule test1 { condition: true }'
+        """
+        new_text = "rule test1 { condition: true }"
 
         parser = Parser()
         old_ast = parser.parse(old_text)
@@ -300,22 +300,22 @@ class TestAstDiff:
 
     def test_rule_modified(self):
         """Test detection of modified rule."""
-        old_text = '''
+        old_text = """
         rule test {
             strings:
                 $a = "old"
             condition:
                 $a
         }
-        '''
-        new_text = '''
+        """
+        new_text = """
         rule test {
             strings:
                 $a = "new"
             condition:
                 $a
         }
-        '''
+        """
 
         parser = Parser()
         old_ast = parser.parse(old_text)
@@ -327,18 +327,17 @@ class TestAstDiff:
         assert result.has_changes
 
         # Should detect string modification
-        string_changes = [d for d in result.differences
-                         if d.path.startswith("/rules/test/strings")]
+        string_changes = [d for d in result.differences if d.path.startswith("/rules/test/strings")]
         assert len(string_changes) > 0
 
     def test_import_changes(self):
         """Test detection of import changes."""
         old_text = 'import "pe" rule test { condition: true }'
-        new_text = '''
+        new_text = """
         import "pe"
         import "elf"
         rule test { condition: true }
-        '''
+        """
 
         parser = Parser()
         old_ast = parser.parse(old_text)
@@ -349,18 +348,21 @@ class TestAstDiff:
 
         assert result.has_changes
 
-        added_imports = [d for d in result.differences
-                        if d.path.startswith("/imports") and d.diff_type == DiffType.ADDED]
+        added_imports = [
+            d
+            for d in result.differences
+            if d.path.startswith("/imports") and d.diff_type == DiffType.ADDED
+        ]
         assert len(added_imports) == 1
         assert added_imports[0].new_value == "elf"
 
     def test_change_summary(self):
         """Test change summary generation."""
-        old_text = 'rule test1 { condition: true }'
-        new_text = '''
+        old_text = "rule test1 { condition: true }"
+        new_text = """
         rule test1 { condition: false }
         rule test2 { condition: true }
-        '''
+        """
 
         parser = Parser()
         old_ast = parser.parse(old_text)
@@ -377,8 +379,8 @@ class TestAstDiff:
 
     def test_create_patch(self):
         """Test patch creation."""
-        old_text = 'rule test1 { condition: true }'
-        new_text = 'rule test2 { condition: false }'
+        old_text = "rule test1 { condition: true }"
+        new_text = "rule test2 { condition: false }"
 
         parser = Parser()
         old_ast = parser.parse(old_text)
@@ -398,8 +400,8 @@ class TestAstDiff:
 
     def test_diff_to_dict(self):
         """Test diff result serialization."""
-        old_text = 'rule test1 { condition: true }'
-        new_text = 'rule test2 { condition: false }'
+        old_text = "rule test1 { condition: true }"
+        new_text = "rule test2 { condition: false }"
 
         parser = Parser()
         old_ast = parser.parse(old_text)
@@ -427,7 +429,7 @@ class TestSerializationRoundTrip:
 
     def test_json_roundtrip_structure(self):
         """Test JSON serialization preserves structure."""
-        rule_text = '''
+        rule_text = """
         import "pe"
 
         rule complex_rule : tag1 tag2 {
@@ -441,7 +443,7 @@ class TestSerializationRoundTrip:
             condition:
                 $hex and $str and $regex
         }
-        '''
+        """
 
         parser = Parser()
         original_ast = parser.parse(rule_text)
@@ -468,7 +470,7 @@ class TestSerializationRoundTrip:
 
     def test_yaml_preserves_readability(self):
         """Test YAML serialization preserves human readability."""
-        rule_text = '''
+        rule_text = """
         rule readable_rule {
             meta:
                 description = "Human readable"
@@ -477,7 +479,7 @@ class TestSerializationRoundTrip:
             condition:
                 $a
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -491,5 +493,5 @@ class TestSerializationRoundTrip:
         assert "test" in yaml_str
 
         # Should not be minified/compact
-        lines = yaml_str.split('\n')
+        lines = yaml_str.split("\n")
         assert len(lines) > 10  # Should be well formatted

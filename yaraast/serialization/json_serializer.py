@@ -1,11 +1,16 @@
 """Enhanced JSON serialization for YARA AST."""
 
-import json
-from pathlib import Path
-from typing import Any
+from __future__ import annotations
 
-from yaraast.ast.base import YaraFile
+import json
+from typing import TYPE_CHECKING, Any
+
 from yaraast.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+
+from pathlib import Path
 
 
 class JsonSerializer(ASTVisitor[dict[str, Any]]):
@@ -20,7 +25,7 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
         json_str = json.dumps(serialized, indent=2, ensure_ascii=False)
 
         if output_path:
-            with open(output_path, "w", encoding="utf-8") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 f.write(json_str)
 
         return json_str
@@ -30,7 +35,7 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
     ) -> YaraFile:
         """Deserialize JSON to AST."""
         if input_path:
-            with open(input_path, encoding="utf-8") as f:
+            with Path(input_path).open(encoding="utf-8") as f:
                 json_str = f.read()
 
         if not json_str:

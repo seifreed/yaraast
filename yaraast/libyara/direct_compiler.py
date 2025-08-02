@@ -1,8 +1,10 @@
 """Direct AST to libyara compilation bypassing text generation."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 try:
     import yara
@@ -12,10 +14,12 @@ except ImportError:
     yara = None
     YARA_AVAILABLE = False
 
-from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.expressions import BinaryOperation, Identifier, IntegerLiteral, UnaryOperation
-from yaraast.ast.rules import Rule
 from yaraast.visitor.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import ASTNode, YaraFile
+    from yaraast.ast.rules import Rule
 
 
 @dataclass
@@ -111,9 +115,8 @@ class ASTOptimizer(ASTVisitor):
         """Extract string identifiers from condition."""
         identifiers = set()
 
-        if hasattr(node, "name") and isinstance(node, Identifier):
-            if node.name.startswith("$"):
-                identifiers.add(node.name)
+        if hasattr(node, "name") and isinstance(node, Identifier) and node.name.startswith("$"):
+            identifiers.add(node.name)
 
         # Recursively check children
         for child in node.children():
@@ -287,7 +290,7 @@ class DirectASTCompiler:
 
     def _compile_optimized_source(
         self, source: str, includes: dict[str, str] | None = None, error_on_warning: bool = False
-    ) -> "DirectCompilationResult":
+    ) -> DirectCompilationResult:
         """Compile optimized source using libyara."""
         from yaraast.libyara.compiler import LibyaraCompiler
 

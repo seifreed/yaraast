@@ -1,7 +1,5 @@
 """Test comment preservation in AST."""
 
-import pytest
-
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 

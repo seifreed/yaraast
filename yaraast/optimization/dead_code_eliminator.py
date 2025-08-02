@@ -1,5 +1,7 @@
 """Dead code eliminator for YARA rules."""
 
+from __future__ import annotations
+
 from yaraast.analysis.string_usage import StringUsageAnalyzer
 from yaraast.ast.base import *
 from yaraast.ast.conditions import *

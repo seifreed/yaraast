@@ -1,17 +1,21 @@
 """Parallel AST analysis using thread pooling for performance optimization."""
 
+from __future__ import annotations
+
 import threading
 import time
-from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from yaraast.ast.base import YaraFile
 from yaraast.metrics import ComplexityAnalyzer, DependencyGraphGenerator
 from yaraast.parser import Parser
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 T = TypeVar("T")
 

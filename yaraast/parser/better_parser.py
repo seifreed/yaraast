@@ -1,5 +1,7 @@
 """Better parser implementation that merges old logic."""
 
+from __future__ import annotations
+
 from yaraast.ast.base import *
 from yaraast.ast.conditions import *
 from yaraast.ast.expressions import *

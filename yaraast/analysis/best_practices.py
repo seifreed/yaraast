@@ -28,7 +28,7 @@ class Suggestion:
 
     def format(self) -> str:
         """Format suggestion for display."""
-        prefix = {"info": "ℹ", "warning": "⚠", "error": "✗"}.get(self.severity, "•")
+        prefix = {"info": "i", "warning": "⚠", "error": "✗"}.get(self.severity, "•")
 
         location = f" ({self.location})" if self.location else ""
         return f"{prefix} [{self.category}] {self.rule_name}{location}: {self.message}"

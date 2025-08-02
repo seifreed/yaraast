@@ -8,11 +8,7 @@ import click
 
 try:
     from yaraast.parser import YaraParser
-    from yaraast.types.semantic_validator import (
-        SemanticValidator,
-        ValidationError,
-        ValidationResult,
-    )
+    from yaraast.types.semantic_validator import SemanticValidator, ValidationResult
 except ImportError:
     # Fallback for running within the package
     from ...parser import YaraParser
@@ -84,7 +80,7 @@ def semantic(
 
         try:
             # Parse the file
-            with open(file_path, encoding="utf-8") as f:
+            with Path(file_path).open(encoding="utf-8") as f:
                 content = f.read()
 
             ast = parser.parse(content)
@@ -208,7 +204,7 @@ def _display_summary(total_files: int, total_errors: int, total_warnings: int):
 
 def _write_output_file(output_path: Path, results: list[dict], format: str):
     """Write validation results to output file."""
-    with open(output_path, "w", encoding="utf-8") as f:
+    with Path(output_path).open("w", encoding="utf-8") as f:
         if format == "json":
             json.dump(results, f, indent=2)
         else:

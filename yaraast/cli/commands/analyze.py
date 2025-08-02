@@ -1,6 +1,7 @@
 """CLI commands for AST-based analysis."""
 
 import sys
+from pathlib import Path
 
 import click
 from rich.console import Console
@@ -40,7 +41,7 @@ def best_practices(rule_file: str, verbose: bool, category: str):
     """
     try:
         # Parse rules
-        with open(rule_file) as f:
+        with Path(rule_file).open() as f:
             content = f.read()
 
         parser = Parser()
@@ -61,7 +62,7 @@ def best_practices(rule_file: str, verbose: bool, category: str):
         summary = Table(show_header=False, box=None)
         summary.add_row("✗ Errors:", f"[red]{len(errors)}[/red]")
         summary.add_row("⚠ Warnings:", f"[yellow]{len(warnings)}[/yellow]")
-        summary.add_row("ℹ Info:", f"[blue]{len(info)}[/blue]")
+        summary.add_row("i Info:", f"[blue]{len(info)}[/blue]")
         console.print(Panel(summary, title="Summary", width=30))
 
         # Filter suggestions
@@ -127,7 +128,7 @@ def optimize(rule_file: str, verbose: bool, impact: str):
     """
     try:
         # Parse rules
-        with open(rule_file) as f:
+        with Path(rule_file).open() as f:
             content = f.read()
 
         parser = Parser()
@@ -187,7 +188,7 @@ def optimize(rule_file: str, verbose: bool, impact: str):
             sys.exit(1)
         elif len(report.suggestions) > 0:
             console.print(
-                f"\n[blue]ℹ Found {len(report.suggestions)} optimization suggestions[/blue]"
+                f"\n[blue]i Found {len(report.suggestions)} optimization suggestions[/blue]"
             )
             sys.exit(0)
         else:
@@ -217,7 +218,7 @@ def full(rule_file: str, output: str, format: str):
     """
     try:
         # Parse rules
-        with open(rule_file) as f:
+        with Path(rule_file).open() as f:
             content = f.read()
 
         parser = Parser()
@@ -263,7 +264,7 @@ def full(rule_file: str, output: str, format: str):
             }
 
             if output:
-                with open(output, "w") as f:
+                with Path(output).open("w") as f:
                     json.dump(report_data, f, indent=2)
                 console.print(f"[green]Report saved to {output}[/green]")
             else:
@@ -310,7 +311,7 @@ def full(rule_file: str, output: str, format: str):
             report_text = "\n".join(lines)
 
             if output:
-                with open(output, "w") as f:
+                with Path(output).open("w") as f:
                     f.write(report_text)
                 console.print(f"[green]Report saved to {output}[/green]")
             else:

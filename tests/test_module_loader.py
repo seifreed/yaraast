@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 from yaraast.types.module_loader import ModuleLoader
-from yaraast.types.type_system import ArrayType, IntegerType, StringType
+from yaraast.types.type_system import ArrayType, IntegerType
 
 
 def test_builtin_modules():
@@ -30,26 +30,16 @@ def test_load_json_module():
     # Create temporary JSON module
     module_json = {
         "name": "test_module",
-        "attributes": {
-            "version": "int",
-            "data": "string[]"
-        },
+        "attributes": {"version": "int", "data": "string[]"},
         "functions": {
-            "process": {
-                "return": "bool",
-                "parameters": [
-                    {"name": "input", "type": "string"}
-                ]
-            }
+            "process": {"return": "bool", "parameters": [{"name": "input", "type": "string"}]}
         },
-        "constants": {
-            "MAX_SIZE": "int"
-        }
+        "constants": {"MAX_SIZE": "int"},
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
         json_path = Path(tmpdir) / "test_module.json"
-        with open(json_path, 'w') as f:
+        with json_path.open("w") as f:
             json.dump(module_json, f)
 
         # Set environment variable
@@ -85,14 +75,11 @@ def test_load_json_module():
 
 def test_exclusive_module_path():
     """Test exclusive module loading (ignoring builtins)."""
-    module_json = [{
-        "name": "custom_only",
-        "attributes": {"test": "string"}
-    }]
+    module_json = [{"name": "custom_only", "attributes": {"test": "string"}}]
 
     with tempfile.TemporaryDirectory() as tmpdir:
         json_path = Path(tmpdir) / "modules.json"
-        with open(json_path, 'w') as f:
+        with json_path.open("w") as f:
             json.dump(module_json, f)
 
         # Set exclusive path
@@ -118,23 +105,15 @@ def test_complex_types():
             "simple_array": "int[]",
             "nested": {
                 "type": "struct",
-                "fields": {
-                    "name": "string",
-                    "values": "int[]",
-                    "enabled": "bool"
-                }
+                "fields": {"name": "string", "values": "int[]", "enabled": "bool"},
             },
-            "dictionary": {
-                "type": "dict",
-                "key": "string",
-                "value": "int"
-            }
-        }
+            "dictionary": {"type": "dict", "key": "string", "value": "int"},
+        },
     }
 
     with tempfile.TemporaryDirectory() as tmpdir:
         json_path = Path(tmpdir) / "complex.json"
-        with open(json_path, 'w') as f:
+        with json_path.open("w") as f:
             json.dump(module_json, f)
 
         os.environ["YARAAST_MODULE_SPEC_PATH"] = tmpdir

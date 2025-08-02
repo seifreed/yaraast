@@ -1,7 +1,5 @@
 """Test advanced code generator with formatting options."""
 
-import pytest
-
 from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.formatting import (
     BraceStyle,
@@ -115,11 +113,11 @@ rule test {
     output = generator.generate(ast)
 
     # Should align identifiers and values
-    lines = output.split('\n')
-    string_lines = [l for l in lines if '$' in l and '=' in l]
+    lines = output.split("\n")
+    string_lines = [line for line in lines if "$" in line and "=" in line]
     if string_lines:
         # Check that = signs are aligned
-        equals_positions = [l.index('=') for l in string_lines if '=' in l]
+        equals_positions = [line.index("=") for line in string_lines if "=" in line]
         assert len(set(equals_positions)) <= 2  # Allow some variance
 
 
@@ -183,7 +181,7 @@ rule mmm_middle {
     generator = AdvancedCodeGenerator(config)
     output = generator.generate(ast)
 
-    import_lines = [l for l in output.split('\n') if 'import' in l]
+    import_lines = [line for line in output.split("\n") if "import" in line]
     assert len(import_lines) == 3
     assert import_lines[0] < import_lines[1] < import_lines[2]  # Alphabetical order
 
@@ -201,8 +199,12 @@ rule mmm_middle {
     output = generator.generate(ast)
 
     # Meta should be sorted within the rule
-    meta_section = output[output.index("meta:"):output.index("condition:")]
-    assert meta_section.index("a_first") < meta_section.index("m_middle") < meta_section.index("z_last")
+    meta_section = output[output.index("meta:") : output.index("condition:")]
+    assert (
+        meta_section.index("a_first")
+        < meta_section.index("m_middle")
+        < meta_section.index("z_last")
+    )
 
 
 def test_spacing_options():
@@ -219,9 +221,7 @@ rule test : tag1 tag2 {
 
     # Test spacing around operators
     config = FormattingConfig(
-        space_before_colon=False,
-        space_after_colon=False,
-        space_around_operators=False
+        space_before_colon=False, space_after_colon=False, space_around_operators=False
     )
     generator = AdvancedCodeGenerator(config)
     output = generator.generate(ast)
@@ -249,7 +249,7 @@ rule test {
     output = generator.generate(ast)
 
     # Should contain tabs
-    assert '\t' in output
+    assert "\t" in output
 
     # Test space indentation
     config = FormattingConfig(indent_style=IndentStyle.SPACES, indent_size=3)
@@ -258,7 +258,7 @@ rule test {
 
     # Should contain 3-space indents
     assert "   " in output
-    assert '\t' not in output
+    assert "\t" not in output
 
 
 if __name__ == "__main__":

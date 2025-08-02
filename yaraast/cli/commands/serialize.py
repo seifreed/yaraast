@@ -52,7 +52,7 @@ def export(input_file: str, output: str, format: str, minimal: bool, pretty: boo
     try:
         # Parse YARA file
         with console.status(f"[bold green]Parsing {input_file}..."):
-            with open(input_file) as f:
+            with Path(input_file).open() as f:
                 content = f.read()
 
             parser = Parser()
@@ -181,10 +181,10 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
         with console.status("[bold green]Parsing files..."):
             parser = Parser()
 
-            with open(old_file) as f:
+            with Path(old_file).open() as f:
                 old_ast = parser.parse(f.read())
 
-            with open(new_file) as f:
+            with Path(new_file).open() as f:
                 new_ast = parser.parse(f.read())
 
         # Compare ASTs
@@ -206,8 +206,8 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
         for change_type, count in summary.items():
             if count > 0:
                 icon = {
-                    "added": "➕",
-                    "removed": "➖",
+                    "added": "+",
+                    "removed": "-",
                     "modified": "📝",
                     "moved": "↔️",
                     "unchanged": "✅",
@@ -221,8 +221,8 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
             console.print("\n[bold]Detailed Changes:[/bold]")
             for diff_node in diff_result.differences:
                 icon = {
-                    DiffType.ADDED: "[green]➕[/green]",
-                    DiffType.REMOVED: "[red]➖[/red]",
+                    DiffType.ADDED: "[green]+[/green]",
+                    DiffType.REMOVED: "[red]-[/red]",
                     DiffType.MODIFIED: "[yellow]📝[/yellow]",
                     DiffType.MOVED: "[blue]↔️[/blue]",
                 }.get(diff_node.diff_type, "•")
@@ -270,12 +270,12 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
                 if format == "json":
                     import json
 
-                    with open(output_path, "w") as f:
+                    with Path(output_path).open("w") as f:
                         json.dump(diff_data, f, indent=2)
                 elif format == "yaml":
                     import yaml
 
-                    with open(output_path, "w") as f:
+                    with Path(output_path).open("w") as f:
                         yaml.dump(diff_data, f, default_flow_style=False, indent=2)
 
                 console.print(f"✅ Diff saved to: {output_path}")
@@ -351,7 +351,7 @@ def info(input_file: str):
     """
     try:
         # Parse file
-        with open(input_file) as f:
+        with Path(input_file).open() as f:
             content = f.read()
 
         parser = Parser()

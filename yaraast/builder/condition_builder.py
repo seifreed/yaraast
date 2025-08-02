@@ -1,13 +1,10 @@
 """Fluent builder for conditions."""
 
-from typing import Self, Union
+from __future__ import annotations
 
-from yaraast.ast.conditions import (
-    AtExpression,
-    ForExpression,
-    InExpression,
-    OfExpression,
-)
+from typing import Self
+
+from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
@@ -78,23 +75,21 @@ class ConditionBuilder:
         """Generic identifier."""
         return ConditionBuilder(Identifier(name=name))
 
-    def range(
-        self, start: Union[int, "ConditionBuilder"], end: Union[int, "ConditionBuilder"]
-    ) -> Self:
+    def range(self, start: int | ConditionBuilder, end: int | ConditionBuilder) -> Self:
         """Create a range expression."""
         start_expr = self._to_expression(start)
         end_expr = self._to_expression(end)
         return ConditionBuilder(RangeExpression(low=start_expr, high=end_expr))
 
-    def member_access(self, obj: Union["ConditionBuilder", Expression], member: str) -> Self:
+    def member_access(self, obj: ConditionBuilder | Expression, member: str) -> Self:
         """Member access (obj.member)."""
         obj_expr = self._to_expression(obj)
         return ConditionBuilder(MemberAccess(object=obj_expr, member=member))
 
     def array_access(
         self,
-        array: Union["ConditionBuilder", Expression],
-        index: Union[int, "ConditionBuilder", Expression],
+        array: ConditionBuilder | Expression,
+        index: int | ConditionBuilder | Expression,
     ) -> Self:
         """Array access (array[index])."""
         array_expr = self._to_expression(array)
@@ -102,7 +97,7 @@ class ConditionBuilder:
         return ConditionBuilder(ArrayAccess(array=array_expr, index=index_expr))
 
     # Logical operators
-    def and_(self, other: Union["ConditionBuilder", Expression]) -> Self:
+    def and_(self, other: ConditionBuilder | Expression) -> Self:
         """Logical AND."""
         if not self._expression:
             raise ValueError("Cannot apply AND to empty expression")
@@ -112,7 +107,7 @@ class ConditionBuilder:
             BinaryExpression(left=self._expression, operator="and", right=right)
         )
 
-    def or_(self, other: Union["ConditionBuilder", Expression]) -> Self:
+    def or_(self, other: ConditionBuilder | Expression) -> Self:
         """Logical OR."""
         if not self._expression:
             raise ValueError("Cannot apply OR to empty expression")
@@ -128,57 +123,57 @@ class ConditionBuilder:
         return ConditionBuilder(UnaryExpression(operator="not", operand=self._expression))
 
     # Comparison operators
-    def eq(self, other: Union["ConditionBuilder", Expression, int, str]) -> Self:
+    def eq(self, other: ConditionBuilder | Expression | int | str) -> Self:
         """Equal comparison."""
         return self._binary_op("==", other)
 
-    def ne(self, other: Union["ConditionBuilder", Expression, int, str]) -> Self:
+    def ne(self, other: ConditionBuilder | Expression | int | str) -> Self:
         """Not equal comparison."""
         return self._binary_op("!=", other)
 
-    def lt(self, other: Union["ConditionBuilder", Expression, int]) -> Self:
+    def lt(self, other: ConditionBuilder | Expression | int) -> Self:
         """Less than comparison."""
         return self._binary_op("<", other)
 
-    def le(self, other: Union["ConditionBuilder", Expression, int]) -> Self:
+    def le(self, other: ConditionBuilder | Expression | int) -> Self:
         """Less than or equal comparison."""
         return self._binary_op("<=", other)
 
-    def gt(self, other: Union["ConditionBuilder", Expression, int]) -> Self:
+    def gt(self, other: ConditionBuilder | Expression | int) -> Self:
         """Greater than comparison."""
         return self._binary_op(">", other)
 
-    def ge(self, other: Union["ConditionBuilder", Expression, int]) -> Self:
+    def ge(self, other: ConditionBuilder | Expression | int) -> Self:
         """Greater than or equal comparison."""
         return self._binary_op(">=", other)
 
     # String operations
-    def contains(self, pattern: Union[str, "ConditionBuilder"]) -> Self:
+    def contains(self, pattern: str | ConditionBuilder) -> Self:
         """String contains."""
         return self._binary_op("contains", pattern)
 
-    def matches(self, pattern: Union[str, "ConditionBuilder"]) -> Self:
+    def matches(self, pattern: str | ConditionBuilder) -> Self:
         """String matches regex."""
         return self._binary_op("matches", pattern)
 
-    def startswith(self, pattern: Union[str, "ConditionBuilder"]) -> Self:
+    def startswith(self, pattern: str | ConditionBuilder) -> Self:
         """String starts with."""
         return self._binary_op("startswith", pattern)
 
-    def endswith(self, pattern: Union[str, "ConditionBuilder"]) -> Self:
+    def endswith(self, pattern: str | ConditionBuilder) -> Self:
         """String ends with."""
         return self._binary_op("endswith", pattern)
 
-    def icontains(self, pattern: Union[str, "ConditionBuilder"]) -> Self:
+    def icontains(self, pattern: str | ConditionBuilder) -> Self:
         """Case-insensitive contains."""
         return self._binary_op("icontains", pattern)
 
-    def iequals(self, pattern: Union[str, "ConditionBuilder"]) -> Self:
+    def iequals(self, pattern: str | ConditionBuilder) -> Self:
         """Case-insensitive equals."""
         return self._binary_op("iequals", pattern)
 
     # Special conditions
-    def at(self, offset: Union[int, "ConditionBuilder"]) -> Self:
+    def at(self, offset: int | ConditionBuilder) -> Self:
         """String at offset."""
         if not self._expression or not isinstance(self._expression, StringIdentifier):
             raise ValueError("'at' can only be used with string identifiers")
@@ -186,9 +181,7 @@ class ConditionBuilder:
         offset_expr = self._to_expression(offset)
         return ConditionBuilder(AtExpression(string_id=self._expression.name, offset=offset_expr))
 
-    def in_range(
-        self, start: Union[int, "ConditionBuilder"], end: Union[int, "ConditionBuilder"]
-    ) -> Self:
+    def in_range(self, start: int | ConditionBuilder, end: int | ConditionBuilder) -> Self:
         """String in range."""
         if not self._expression or not isinstance(self._expression, StringIdentifier):
             raise ValueError("'in' can only be used with string identifiers")
@@ -240,8 +233,8 @@ class ConditionBuilder:
     def for_any(
         self,
         var: str,
-        iterable: Union["ConditionBuilder", Expression],
-        condition: Union["ConditionBuilder", Expression],
+        iterable: ConditionBuilder | Expression,
+        condition: ConditionBuilder | Expression,
     ) -> Self:
         """For any loop."""
         iter_expr = self._to_expression(iterable)
@@ -254,8 +247,8 @@ class ConditionBuilder:
     def for_all(
         self,
         var: str,
-        iterable: Union["ConditionBuilder", Expression],
-        condition: Union["ConditionBuilder", Expression],
+        iterable: ConditionBuilder | Expression,
+        condition: ConditionBuilder | Expression,
     ) -> Self:
         """For all loop."""
         iter_expr = self._to_expression(iterable)
@@ -266,36 +259,36 @@ class ConditionBuilder:
         )
 
     # Arithmetic operations
-    def add(self, other: Union["ConditionBuilder", int]) -> Self:
+    def add(self, other: ConditionBuilder | int) -> Self:
         """Addition."""
         return self._binary_op("+", other)
 
-    def sub(self, other: Union["ConditionBuilder", int]) -> Self:
+    def sub(self, other: ConditionBuilder | int) -> Self:
         """Subtraction."""
         return self._binary_op("-", other)
 
-    def mul(self, other: Union["ConditionBuilder", int]) -> Self:
+    def mul(self, other: ConditionBuilder | int) -> Self:
         """Multiplication."""
         return self._binary_op("*", other)
 
-    def div(self, other: Union["ConditionBuilder", int]) -> Self:
+    def div(self, other: ConditionBuilder | int) -> Self:
         """Division."""
         return self._binary_op("/", other)
 
-    def mod(self, other: Union["ConditionBuilder", int]) -> Self:
+    def mod(self, other: ConditionBuilder | int) -> Self:
         """Modulo."""
         return self._binary_op("%", other)
 
     # Bitwise operations
-    def bitwise_and(self, other: Union["ConditionBuilder", int]) -> Self:
+    def bitwise_and(self, other: ConditionBuilder | int) -> Self:
         """Bitwise AND."""
         return self._binary_op("&", other)
 
-    def bitwise_or(self, other: Union["ConditionBuilder", int]) -> Self:
+    def bitwise_or(self, other: ConditionBuilder | int) -> Self:
         """Bitwise OR."""
         return self._binary_op("|", other)
 
-    def bitwise_xor(self, other: Union["ConditionBuilder", int]) -> Self:
+    def bitwise_xor(self, other: ConditionBuilder | int) -> Self:
         """Bitwise XOR."""
         return self._binary_op("^", other)
 
@@ -306,11 +299,11 @@ class ConditionBuilder:
 
         return ConditionBuilder(UnaryExpression(operator="~", operand=self._expression))
 
-    def shift_left(self, other: Union["ConditionBuilder", int]) -> Self:
+    def shift_left(self, other: ConditionBuilder | int) -> Self:
         """Shift left."""
         return self._binary_op("<<", other)
 
-    def shift_right(self, other: Union["ConditionBuilder", int]) -> Self:
+    def shift_right(self, other: ConditionBuilder | int) -> Self:
         """Shift right."""
         return self._binary_op(">>", other)
 
@@ -323,7 +316,7 @@ class ConditionBuilder:
         return ConditionBuilder(ParenthesesExpression(expression=self._expression))
 
     # Helper methods
-    def _binary_op(self, op: str, other: Union["ConditionBuilder", Expression, int, str]) -> Self:
+    def _binary_op(self, op: str, other: ConditionBuilder | Expression | int | str) -> Self:
         """Create binary expression."""
         if not self._expression:
             raise ValueError(f"Cannot apply {op} to empty expression")
@@ -331,7 +324,7 @@ class ConditionBuilder:
         right = self._to_expression(other)
         return ConditionBuilder(BinaryExpression(left=self._expression, operator=op, right=right))
 
-    def _to_expression(self, value: Union["ConditionBuilder", Expression, int, str]) -> Expression:
+    def _to_expression(self, value: ConditionBuilder | Expression | int | str) -> Expression:
         """Convert value to expression."""
         if isinstance(value, ConditionBuilder):
             if not value._expression:
@@ -355,11 +348,11 @@ class ConditionBuilder:
 
     # Static factory methods
     @staticmethod
-    def match(string_id: str) -> "ConditionBuilder":
+    def match(string_id: str) -> ConditionBuilder:
         """Create condition that matches a string."""
         return ConditionBuilder(StringIdentifier(name=string_id))
 
     @staticmethod
-    def them() -> "ConditionBuilder":
+    def them() -> ConditionBuilder:
         """Reference to 'them' keyword."""
         return ConditionBuilder(Identifier(name="them"))

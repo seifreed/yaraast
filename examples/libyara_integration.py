@@ -15,7 +15,7 @@ def example_compilation():
         return
 
     # Parse YARA rules
-    rule_text = '''
+    rule_text = """
     import "pe"
 
     rule malware_detection {
@@ -33,7 +33,7 @@ def example_compilation():
             ($suspicious or $registry) and
             pe.number_of_sections > 3
     }
-    '''
+    """
 
     parser = Parser()
     ast = parser.parse(rule_text)
@@ -64,7 +64,7 @@ def example_scanning():
         return
 
     # Simple rule
-    rule_text = '''
+    rule_text = """
     rule detect_patterns {
         strings:
             $a = "malicious"
@@ -74,7 +74,7 @@ def example_scanning():
         condition:
             any of them
     }
-    '''
+    """
 
     # Compile
     compiler = LibyaraCompiler()
@@ -89,7 +89,7 @@ def example_scanning():
         b"This is a malicious file",
         b"Hello world! Call me at 123-456-7890",
         b"Nothing suspicious here",
-        b"Another malicious sample with phone: 555-123-4567"
+        b"Another malicious sample with phone: 555-123-4567",
     ]
 
     # Scan each sample
@@ -98,13 +98,15 @@ def example_scanning():
     for i, data in enumerate(test_samples):
         result = scanner.scan_data(compilation.compiled_rules, data)
 
-        print(f"Sample {i+1}: ", end='')
+        print(f"Sample {i+1}: ", end="")
         if result.matched:
             print(f"MATCHED ({', '.join(result.matched_rules)})")
             for match in result.matches:
                 print(f"  - Rule: {match.rule}")
                 for string_match in match.strings:
-                    print(f"    String: {string_match['identifier']} at offset {string_match['offset']}")
+                    print(
+                        f"    String: {string_match['identifier']} at offset {string_match['offset']}"
+                    )
         else:
             print("No match")
 
@@ -117,7 +119,7 @@ def example_cross_validation():
         return
 
     # Complex rule to validate
-    rule_text = '''
+    rule_text = """
     rule validate_example {
         strings:
             $str1 = "test"
@@ -131,7 +133,7 @@ def example_cross_validation():
             @str1[1] > @str1[0] and
             filesize > 50
     }
-    '''
+    """
 
     parser = Parser()
     ast = parser.parse(rule_text)
@@ -154,7 +156,7 @@ def example_cross_validation():
         match = "✓" if yaraast == libyara else "✗"
         print(f"  {match} {rule_name}: yaraast={yaraast}, libyara={libyara}")
 
-    print(f"\nPerformance:")
+    print("\nPerformance:")
     print(f"  YaraAST: {result.yaraast_time*1000:.1f}ms")
     print(f"  LibYARA compile: {result.libyara_compile_time*1000:.1f}ms")
     print(f"  LibYARA scan: {result.libyara_scan_time*1000:.1f}ms")
@@ -168,7 +170,7 @@ def example_round_trip():
         return
 
     # Original rules
-    original_rules = '''
+    original_rules = """
     import "pe"
 
     rule round_trip_test {
@@ -186,7 +188,7 @@ def example_round_trip():
             $c and
             pe.is_pe
     }
-    '''
+    """
 
     parser = Parser()
     original_ast = parser.parse(original_rules)

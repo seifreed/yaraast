@@ -1,18 +1,23 @@
 """Round-trip serialization preserving comments and formatting."""
 
+from __future__ import annotations
+
 import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
-from yaraast.ast.base import YaraFile
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.parser import YaraParser
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.yaml_serializer import YamlSerializer
+
+if TYPE_CHECKING:
+
+    from yaraast.ast.base import YaraFile
 
 
 @dataclass
@@ -44,7 +49,7 @@ class FormattingInfo:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "FormattingInfo":
+    def from_dict(cls, data: dict[str, Any]) -> FormattingInfo:
         """Create from dictionary."""
         return cls(**data)
 
@@ -76,7 +81,7 @@ class RoundTripMetadata:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "RoundTripMetadata":
+    def from_dict(cls, data: dict[str, Any]) -> RoundTripMetadata:
         """Create from dictionary."""
         formatting_data = data.get("formatting", {})
         formatting = FormattingInfo.from_dict(formatting_data)
@@ -348,7 +353,7 @@ class EnhancedYamlSerializer(YamlSerializer):
         )
 
         if output_path:
-            with open(output_path, "w", encoding="utf-8") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str
@@ -387,7 +392,7 @@ class EnhancedYamlSerializer(YamlSerializer):
         )
 
         if output_path:
-            with open(output_path, "w", encoding="utf-8") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str

@@ -1,5 +1,7 @@
 """Code generator for converting AST back to YARA rules."""
 
+from __future__ import annotations
+
 from io import StringIO
 
 from yaraast.ast.base import *
@@ -422,9 +424,3 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_comment_group(self, node) -> str:
         """Generate code for CommentGroup."""
         return "\n".join(f"// {line}" for line in node.lines)
-
-    def visit_meta(self, node) -> str:
-        """Generate code for Meta."""
-        if isinstance(node.value, str):
-            return f'{node.key} = "{node.value}"'
-        return f"{node.key} = {node.value}"

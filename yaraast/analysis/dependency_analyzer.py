@@ -139,30 +139,30 @@ class DependencyAnalyzer(ASTVisitor[None]):
 
     def _find_circular_dependencies(self) -> list[list[str]]:
         """Find circular dependencies using DFS."""
-        WHITE, GRAY, BLACK = 0, 1, 2
-        color = dict.fromkeys(self.rule_names, WHITE)
+        white, gray, black = 0, 1, 2
+        color = dict.fromkeys(self.rule_names, white)
         cycles = []
         path = []
 
         def dfs(node: str) -> None:
-            color[node] = GRAY
+            color[node] = gray
             path.append(node)
 
             for neighbor in self.dependencies.get(node, set()):
                 if neighbor in self.rule_names:  # Only check internal rules
-                    if color[neighbor] == GRAY:
+                    if color[neighbor] == gray:
                         # Found cycle
                         cycle_start = path.index(neighbor)
                         cycle = [*path[cycle_start:], neighbor]
                         cycles.append(cycle)
-                    elif color[neighbor] == WHITE:
+                    elif color[neighbor] == white:
                         dfs(neighbor)
 
             path.pop()
-            color[node] = BLACK
+            color[node] = black
 
         for rule in self.rule_names:
-            if color[rule] == WHITE:
+            if color[rule] == white:
                 dfs(rule)
 
         # Remove duplicates
@@ -183,7 +183,7 @@ class DependencyAnalyzer(ASTVisitor[None]):
         in_degree = dict.fromkeys(self.rule_names, 0)
 
         # Calculate in-degrees
-        for rule, deps in self.dependencies.items():
+        for _rule, deps in self.dependencies.items():
             for dep in deps:
                 if dep in in_degree:  # Only count internal dependencies
                     in_degree[dep] += 1

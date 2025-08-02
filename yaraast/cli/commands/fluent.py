@@ -50,7 +50,7 @@ def examples(output: Path | None):
         yara_code = generator.generate(yara_ast)
 
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 f.write(yara_code)
             click.echo(f"✅ Example rules written to {output}")
         else:
@@ -141,7 +141,7 @@ def string_patterns(output: Path | None):
         yara_code = generator.generate(rule_ast)
 
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 f.write(yara_code)
             click.echo(f"✅ String pattern demo written to {output}")
         else:
@@ -237,7 +237,7 @@ def conditions(output: Path | None):
         yara_code = generator.generate(yara_ast.build())
 
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 f.write(yara_code)
             click.echo(f"✅ Condition demo written to {output}")
         else:
@@ -335,7 +335,7 @@ def transformations(output: Path | None):
         yara_code = generator.generate(yara_ast.build())
 
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 f.write(yara_code)
             click.echo(f"✅ Transformation demo written to {output}")
         else:
@@ -414,7 +414,7 @@ def template(rule_name: str, rule_type: str, author: str, tags: str | None, outp
         yara_code = generator.generate(built_rule)
 
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 f.write(yara_code)
             click.echo(f"✅ Rule template written to {output}")
         else:

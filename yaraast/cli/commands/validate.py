@@ -1,6 +1,7 @@
 """CLI command for cross-validation with libyara."""
 
 import sys
+from pathlib import Path
 
 import click
 
@@ -44,7 +45,7 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
 
     # Parse rules
     try:
-        with open(rule_file) as f:
+        with Path(rule_file).open() as f:
             rule_content = f.read()
 
         parser = Parser()
@@ -55,7 +56,7 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
 
     # Read test data
     try:
-        with open(test_file, "rb") as f:
+        with Path(test_file).open("rb") as f:
             test_data = f.read()
     except Exception as e:
         click.echo(f"Error reading test file: {e}", err=True)
@@ -118,7 +119,7 @@ def roundtrip(rule_file: str, test_data: str | None, verbose: bool):
     data = None
     if test_data:
         try:
-            with open(test_data, "rb") as f:
+            with Path(test_data).open("rb") as f:
                 data = f.read()
         except Exception as e:
             click.echo(f"Error reading test data: {e}", err=True)

@@ -494,12 +494,11 @@ class Lexer:
                     if len(non_comment_tokens) >= 2:
                         break
 
-            if len(non_comment_tokens) >= 2:
-                # Check for STRING_IDENTIFIER = pattern
-                if (
-                    non_comment_tokens[0].type == TokenType.ASSIGN
-                    and non_comment_tokens[1].type == TokenType.STRING_IDENTIFIER
-                ):
-                    return True
+            if (
+                len(non_comment_tokens) >= 2
+                and non_comment_tokens[0].type == TokenType.ASSIGN
+                and non_comment_tokens[1].type == TokenType.STRING_IDENTIFIER
+            ):
+                return True
 
         return False

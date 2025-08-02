@@ -147,10 +147,10 @@ def resolve(file, search_path, show_tree):
 
     except FileNotFoundError as e:
         click.echo(f"Error: {e}", err=True)
-        raise click.Abort
+        raise click.Abort from None
     except RecursionError as e:
         click.echo(f"Error: {e}", err=True)
-        raise click.Abort
+        raise click.Abort from None
 
 
 @workspace.command()

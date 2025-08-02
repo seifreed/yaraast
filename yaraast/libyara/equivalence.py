@@ -1,14 +1,20 @@
 """Equivalence testing for AST round-trip validation."""
 
-from dataclasses import dataclass, field
+from __future__ import annotations
 
-from yaraast.ast.base import YaraFile
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import TYPE_CHECKING
+
 from yaraast.codegen import CodeGenerator
 from yaraast.evaluation import YaraEvaluator
 from yaraast.parser import Parser
 
 from .compiler import LibyaraCompiler
 from .scanner import LibyaraScanner, ScanResult
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
 
 
 @dataclass
@@ -153,7 +159,7 @@ class EquivalenceTester:
             EquivalenceResult
         """
         try:
-            with open(filepath) as f:
+            with Path(filepath).open() as f:
                 original_code = f.read()
 
             original_ast = self.parser.parse(original_code)

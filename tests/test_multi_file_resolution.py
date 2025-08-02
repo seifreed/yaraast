@@ -1,6 +1,5 @@
 """Tests for multi-file resolution functionality."""
 
-import os
 import tempfile
 from pathlib import Path
 
@@ -25,23 +24,23 @@ class TestIncludeResolver:
             tmpdir = Path(tmpdir)
 
             # Create base rule
-            base_content = '''
+            base_content = """
 include "common.yar"
 
 rule base_rule {
     condition:
         true
 }
-'''
+"""
             # Create included file
-            common_content = '''
+            common_content = """
 rule common_rule {
     strings:
         $common = "common"
     condition:
         $common
 }
-'''
+"""
             base_file = create_temp_file(tmpdir, "base.yar", base_content)
             create_temp_file(tmpdir, "common.yar", common_content)
 
@@ -63,25 +62,25 @@ rule common_rule {
 
             # Create files with nested includes
             # main.yar -> lib1.yar -> lib2.yar
-            main_content = '''
+            main_content = """
 include "lib1.yar"
 
 rule main_rule {
     condition: true
 }
-'''
-            lib1_content = '''
+"""
+            lib1_content = """
 include "lib2.yar"
 
 rule lib1_rule {
     condition: true
 }
-'''
-            lib2_content = '''
+"""
+            lib2_content = """
 rule lib2_rule {
     condition: true
 }
-'''
+"""
             main_file = create_temp_file(tmpdir, "main.yar", main_content)
             create_temp_file(tmpdir, "lib1.yar", lib1_content)
             create_temp_file(tmpdir, "lib2.yar", lib2_content)
@@ -109,14 +108,14 @@ rule lib2_rule {
             tmpdir = Path(tmpdir)
 
             # Create circular includes: a.yar -> b.yar -> a.yar
-            a_content = '''
+            a_content = """
 include "b.yar"
 rule rule_a { condition: true }
-'''
-            b_content = '''
+"""
+            b_content = """
 include "a.yar"
 rule rule_b { condition: true }
-'''
+"""
             a_file = create_temp_file(tmpdir, "a.yar", a_content)
             create_temp_file(tmpdir, "b.yar", b_content)
 
@@ -137,13 +136,13 @@ rule rule_b { condition: true }
             lib_dir.mkdir()
 
             # Create files in different directories
-            main_content = '''
+            main_content = """
 include "library.yar"
 rule main_rule { condition: true }
-'''
-            lib_content = '''
+"""
+            lib_content = """
 rule library_rule { condition: true }
-'''
+"""
             main_file = create_temp_file(main_dir, "main.yar", main_content)
             create_temp_file(lib_dir, "library.yar", lib_content)
 
@@ -160,7 +159,7 @@ rule library_rule { condition: true }
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
 
-            content = 'rule test { condition: true }'
+            content = "rule test { condition: true }"
             test_file = create_temp_file(tmpdir, "test.yar", content)
 
             resolver = IncludeResolver()
@@ -175,7 +174,7 @@ rule library_rule { condition: true }
             assert resolved1 is resolved2
 
             # Modify file
-            test_file.write_text('rule modified { condition: false }')
+            test_file.write_text("rule modified { condition: false }")
 
             # Should get new object
             resolved3 = resolver.resolve_file(str(test_file))
@@ -192,14 +191,14 @@ class TestWorkspace:
             tmpdir = Path(tmpdir)
 
             # Create test file
-            content = '''
+            content = """
 rule test_rule {
     strings:
         $test = "test"
     condition:
         $test
 }
-'''
+"""
             test_file = create_temp_file(tmpdir, "test.yar", content)
 
             # Create workspace and add file
@@ -219,14 +218,14 @@ rule test_rule {
 
             # Create multiple files
             for i in range(3):
-                content = f'rule rule_{i} {{ condition: true }}'
+                content = f"rule rule_{i} {{ condition: true }}"
                 create_temp_file(tmpdir, f"file_{i}.yar", content)
 
             # Create subdirectory with more files
             subdir = tmpdir / "subdir"
             subdir.mkdir()
             for i in range(2):
-                content = f'rule sub_rule_{i} {{ condition: true }}'
+                content = f"rule sub_rule_{i} {{ condition: true }}"
                 create_temp_file(subdir, f"sub_{i}.yar", content)
 
             # Add directory
@@ -247,23 +246,23 @@ rule test_rule {
             tmpdir = Path(tmpdir)
 
             # Create files with various issues
-            good_content = '''
+            good_content = """
 rule good_rule {
     strings:
         $a = "test"
     condition:
         $a
 }
-'''
-            bad_content = '''
+"""
+            bad_content = """
 rule bad_rule {
     strings:
         $a = "test"
     condition:
         $b  // undefined string
 }
-'''
-            unused_content = '''
+"""
+            unused_content = """
 rule unused_strings {
     strings:
         $used = "used"
@@ -271,7 +270,7 @@ rule unused_strings {
     condition:
         $used
 }
-'''
+"""
             create_temp_file(tmpdir, "good.yar", good_content)
             create_temp_file(tmpdir, "bad.yar", bad_content)
             create_temp_file(tmpdir, "unused.yar", unused_content)
@@ -284,8 +283,8 @@ rule unused_strings {
             # Verify report
             assert report.files_analyzed == 3
             assert report.total_rules == 3
-            assert report.statistics['total_warnings'] > 0  # unused string warning
-            assert report.statistics['total_type_errors'] == 0  # type errors are different
+            assert report.statistics["total_warnings"] > 0  # unused string warning
+            assert report.statistics["total_type_errors"] == 0  # type errors are different
 
     def test_dependency_graph(self):
         """Test dependency graph building."""
@@ -293,7 +292,7 @@ rule unused_strings {
             tmpdir = Path(tmpdir)
 
             # Create files with dependencies
-            main_content = '''
+            main_content = """
 import "pe"
 include "lib.yar"
 
@@ -301,17 +300,17 @@ rule main_rule {
     condition:
         pe.sections[0].name == ".text"
 }
-'''
-            lib_content = '''
+"""
+            lib_content = """
 import "math"
 
 rule lib_rule {
     condition:
         math.entropy(0, 100) > 7.0
 }
-'''
+"""
             main_file = create_temp_file(tmpdir, "main.yar", main_content)
-            lib_file = create_temp_file(tmpdir, "lib.yar", lib_content)
+            create_temp_file(tmpdir, "lib.yar", lib_content)
 
             # Build workspace
             workspace = Workspace(str(tmpdir))
@@ -326,9 +325,9 @@ rule lib_rule {
 
             # Check graph statistics
             stats = graph.get_statistics()
-            assert stats['file_count'] >= 1
-            assert stats['module_count'] >= 1
-            assert stats['rule_count'] >= 1
+            assert stats["file_count"] >= 1
+            assert stats["module_count"] >= 1
+            assert stats["rule_count"] >= 1
 
     def test_find_rule(self):
         """Test finding rules in workspace."""
@@ -336,8 +335,8 @@ rule lib_rule {
             tmpdir = Path(tmpdir)
 
             # Create files with rules
-            content1 = 'rule unique_rule { condition: true }'
-            content2 = 'rule another_rule { condition: false }'
+            content1 = "rule unique_rule { condition: true }"
+            content2 = "rule another_rule { condition: false }"
 
             file1 = create_temp_file(tmpdir, "file1.yar", content1)
             file2 = create_temp_file(tmpdir, "file2.yar", content2)
@@ -369,6 +368,7 @@ class TestDependencyGraph:
 
         # Create nodes with cycle: A -> B -> C -> A
         from yaraast.resolution.dependency_graph import DependencyNode
+
         graph.nodes["A"] = graph.nodes.get("A", DependencyNode("A", "file"))
         graph.nodes["B"] = graph.nodes.get("B", DependencyNode("B", "file"))
         graph.nodes["C"] = graph.nodes.get("C", DependencyNode("C", "file"))
@@ -389,9 +389,13 @@ class TestDependencyGraph:
         from yaraast.ast.rules import Rule
 
         # Add a file node
-        ast = YaraFile(imports=[], includes=[], rules=[
-            Rule(name="test_rule", modifiers=[], tags=[], meta={}, strings=[], condition=None)
-        ])
+        ast = YaraFile(
+            imports=[],
+            includes=[],
+            rules=[
+                Rule(name="test_rule", modifiers=[], tags=[], meta={}, strings=[], condition=None)
+            ],
+        )
         graph.add_file(Path("test.yar"), ast)
 
         # Export to DOT

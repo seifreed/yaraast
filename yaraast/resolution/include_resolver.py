@@ -1,12 +1,17 @@
 """Include file resolver with path searching, caching, and cycle detection."""
 
+from __future__ import annotations
+
 import hashlib
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from yaraast.ast.base import YaraFile
 from yaraast.parser import Parser
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
 
 
 @dataclass
@@ -17,7 +22,7 @@ class ResolvedFile:
     content: str
     ast: YaraFile
     checksum: str
-    includes: list["ResolvedFile"] = field(default_factory=list)
+    includes: list[ResolvedFile] = field(default_factory=list)
 
     def get_all_rules(self):
         """Get all rules including from includes."""

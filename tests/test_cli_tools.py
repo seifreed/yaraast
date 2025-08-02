@@ -1,19 +1,9 @@
 """Tests for AST-based CLI tools."""
 
-import json
 import tempfile
 from pathlib import Path
 
-import pytest
-
-from yaraast.cli.ast_tools import (
-    AST_Formatter,
-    ASTBenchmarker,
-    ASTDiffer,
-    ASTDiffResult,
-    ASTStructuralAnalyzer,
-    BenchmarkResult,
-)
+from yaraast.cli.ast_tools import AST_Formatter, ASTBenchmarker, ASTDiffer, ASTStructuralAnalyzer
 from yaraast.parser import YaraParser
 
 
@@ -23,9 +13,9 @@ class TestASTFormatter:
     def test_basic_formatting(self):
         """Test basic file formatting."""
         # Unformatted YARA
-        unformatted = '''rule test{strings:$a="hello"condition:$a}'''
+        unformatted = """rule test{strings:$a="hello"condition:$a}"""
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(unformatted)
             test_file = Path(f.name)
 
@@ -37,23 +27,23 @@ class TestASTFormatter:
             assert "rule test" in formatted
             assert "strings:" in formatted
             assert "condition:" in formatted
-            assert formatted.count('\n') > unformatted.count('\n')  # More lines after formatting
+            assert formatted.count("\n") > unformatted.count("\n")  # More lines after formatting
 
         finally:
             test_file.unlink()
 
     def test_format_styles(self):
         """Test different formatting styles."""
-        yara_code = '''
+        yara_code = """
         rule style_test {
             strings:
                 $s = "test"
             condition:
                 $s
         }
-        '''
+        """
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -68,7 +58,7 @@ class TestASTFormatter:
             assert success_compact and success_pretty and success_verbose
 
             # Verbose should have more lines than compact
-            assert verbose.count('\n') >= pretty.count('\n') >= compact.count('\n')
+            assert verbose.count("\n") >= pretty.count("\n") >= compact.count("\n")
 
         finally:
             test_file.unlink()
@@ -76,20 +66,20 @@ class TestASTFormatter:
     def test_format_check(self):
         """Test format checking."""
         # Well-formatted YARA
-        well_formatted = '''rule test {
+        well_formatted = """rule test {
     strings:
         $a = "hello"
     condition:
         $a
-}'''
+}"""
 
         # Poorly formatted YARA
-        poorly_formatted = '''rule test{strings:$a="hello"condition:$a}'''
+        poorly_formatted = """rule test{strings:$a="hello"condition:$a}"""
 
         formatter = AST_Formatter()
 
         # Test well-formatted file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(well_formatted)
             good_file = Path(f.name)
 
@@ -102,7 +92,7 @@ class TestASTFormatter:
             good_file.unlink()
 
         # Test poorly formatted file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(poorly_formatted)
             bad_file = Path(f.name)
 
@@ -119,21 +109,21 @@ class TestASTDiffer:
 
     def test_no_differences(self):
         """Test files with no differences."""
-        yara_code = '''
+        yara_code = """
         rule test {
             strings:
                 $s = "hello"
             condition:
                 $s
         }
-        '''
+        """
 
         # Create two identical files
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f1:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
             f1.write(yara_code.strip())
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f2:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
             f2.write(yara_code.strip())
             file2 = Path(f2.name)
 
@@ -152,16 +142,16 @@ class TestASTDiffer:
 
     def test_rule_addition(self):
         """Test detecting added rules."""
-        original = '''
+        original = """
         rule test1 {
             strings:
                 $s = "hello"
             condition:
                 $s
         }
-        '''
+        """
 
-        modified = '''
+        modified = """
         rule test1 {
             strings:
                 $s = "hello"
@@ -175,13 +165,13 @@ class TestASTDiffer:
             condition:
                 $s
         }
-        '''
+        """
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f1:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
             f1.write(original.strip())
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f2:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
             f2.write(modified.strip())
             file2 = Path(f2.name)
 
@@ -192,7 +182,7 @@ class TestASTDiffer:
             assert result.has_changes is True
             assert "test2" in result.added_rules
             assert len(result.removed_rules) == 0
-            assert result.change_summary['added_rules'] == 1
+            assert result.change_summary["added_rules"] == 1
 
         finally:
             file1.unlink()
@@ -200,37 +190,37 @@ class TestASTDiffer:
 
     def test_logical_vs_style_changes(self):
         """Test distinguishing logical from style changes."""
-        original = '''rule test {
+        original = """rule test {
     strings:
         $s = "hello"
     condition:
         $s
-}'''
+}"""
 
         # Style change only (different spacing)
-        style_changed = '''rule test{
+        style_changed = """rule test{
 strings:
 $s="hello"
 condition:
 $s
-}'''
+}"""
 
         # Logical change (different string content)
-        logic_changed = '''rule test {
+        logic_changed = """rule test {
     strings:
         $s = "goodbye"
     condition:
         $s
-}'''
+}"""
 
         differ = ASTDiffer()
 
         # Test style-only change
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f1:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
             f1.write(original)
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f2:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
             f2.write(style_changed)
             file2 = Path(f2.name)
 
@@ -238,18 +228,20 @@ $s
             result = differ.diff_files(file1, file2)
 
             # Should detect minimal or no logical changes for style-only diff
-            assert result.change_summary['logical_changes'] <= 1  # May detect some structural differences
+            assert (
+                result.change_summary["logical_changes"] <= 1
+            )  # May detect some structural differences
 
         finally:
             file1.unlink()
             file2.unlink()
 
         # Test logical change
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f1:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
             f1.write(original)
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f2:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
             f2.write(logic_changed)
             file2 = Path(f2.name)
 
@@ -258,7 +250,10 @@ $s
 
             # Should detect logical changes
             assert result.has_changes is True
-            assert result.change_summary['logical_changes'] > 0 or result.change_summary['modified_rules'] > 0
+            assert (
+                result.change_summary["logical_changes"] > 0
+                or result.change_summary["modified_rules"] > 0
+            )
 
         finally:
             file1.unlink()
@@ -270,7 +265,7 @@ class TestASTStructuralAnalyzer:
 
     def test_rule_signature_generation(self):
         """Test rule signature generation."""
-        yara_code = '''
+        yara_code = """
         rule test_rule : tag1 tag2 {
             meta:
                 author = "test"
@@ -281,7 +276,7 @@ class TestASTStructuralAnalyzer:
             condition:
                 $s1 and $s2
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_code.strip())
@@ -289,22 +284,22 @@ class TestASTStructuralAnalyzer:
         analyzer = ASTStructuralAnalyzer()
         analysis = analyzer.analyze(ast)
 
-        assert 'test_rule' in analysis['rule_signatures']
-        assert analysis['total_rules'] == 1
-        assert len(analysis['string_signatures']) == 2
-        assert '$s1' in analysis['string_signatures']
-        assert '$s2' in analysis['string_signatures']
+        assert "test_rule" in analysis["rule_signatures"]
+        assert analysis["total_rules"] == 1
+        assert len(analysis["string_signatures"]) == 2
+        assert "$s1" in analysis["string_signatures"]
+        assert "$s2" in analysis["string_signatures"]
 
     def test_structural_hash_consistency(self):
         """Test that identical structures produce identical hashes."""
-        yara_code = '''
+        yara_code = """
         rule test {
             strings:
                 $s = "hello"
             condition:
                 $s
         }
-        '''
+        """
 
         parser = YaraParser()
         ast1 = parser.parse(yara_code.strip())
@@ -315,8 +310,8 @@ class TestASTStructuralAnalyzer:
         analysis2 = analyzer.analyze(ast2)
 
         # Same code should produce same signatures
-        assert analysis1['rule_signatures'] == analysis2['rule_signatures']
-        assert analysis1['structural_hash'] == analysis2['structural_hash']
+        assert analysis1["rule_signatures"] == analysis2["rule_signatures"]
+        assert analysis1["structural_hash"] == analysis2["structural_hash"]
 
 
 class TestASTBenchmarker:
@@ -324,16 +319,16 @@ class TestASTBenchmarker:
 
     def test_parsing_benchmark(self):
         """Test parsing benchmark."""
-        yara_code = '''
+        yara_code = """
         rule benchmark_test {
             strings:
                 $s = "test"
             condition:
                 $s
         }
-        '''
+        """
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -353,16 +348,16 @@ class TestASTBenchmarker:
 
     def test_codegen_benchmark(self):
         """Test code generation benchmark."""
-        yara_code = '''
+        yara_code = """
         rule codegen_test {
             strings:
                 $s = "test"
             condition:
                 $s
         }
-        '''
+        """
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -380,16 +375,16 @@ class TestASTBenchmarker:
 
     def test_roundtrip_benchmark(self):
         """Test roundtrip benchmark."""
-        yara_code = '''
+        yara_code = """
         rule roundtrip_test {
             strings:
                 $s = "test"
             condition:
                 $s
         }
-        '''
+        """
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -408,16 +403,16 @@ class TestASTBenchmarker:
 
     def test_benchmark_summary(self):
         """Test benchmark summary generation."""
-        yara_code = '''
+        yara_code = """
         rule summary_test {
             strings:
                 $s = "test"
             condition:
                 $s
         }
-        '''
+        """
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -430,12 +425,12 @@ class TestASTBenchmarker:
 
             summary = benchmarker.get_benchmark_summary()
 
-            assert 'parsing' in summary
-            assert 'codegen' in summary
-            assert summary['parsing']['count'] == 1
-            assert summary['codegen']['count'] == 1
-            assert summary['parsing']['avg_time'] > 0
-            assert summary['codegen']['avg_time'] > 0
+            assert "parsing" in summary
+            assert "codegen" in summary
+            assert summary["parsing"]["count"] == 1
+            assert summary["codegen"]["count"] == 1
+            assert summary["parsing"]["avg_time"] > 0
+            assert summary["codegen"]["avg_time"] > 0
 
         finally:
             test_file.unlink()
@@ -446,9 +441,9 @@ class TestIntegration:
 
     def test_format_and_diff_workflow(self):
         """Test formatting a file then diffing the changes."""
-        original = '''rule test{strings:$s="hello"condition:$s}'''
+        original = """rule test{strings:$s="hello"condition:$s}"""
 
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(original)
             original_file = Path(f.name)
 
@@ -459,7 +454,7 @@ class TestIntegration:
             assert success is True
 
             # Write formatted version to new file
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
                 f.write(formatted)
                 formatted_file = Path(f.name)
 
@@ -471,8 +466,8 @@ class TestIntegration:
                 # Should detect style changes but minimal logical changes
                 # (depending on implementation details, may detect some structural differences)
                 assert isinstance(result.has_changes, bool)
-                assert result.change_summary['added_rules'] == 0
-                assert result.change_summary['removed_rules'] == 0
+                assert result.change_summary["added_rules"] == 0
+                assert result.change_summary["removed_rules"] == 0
 
             finally:
                 formatted_file.unlink()
@@ -489,7 +484,7 @@ if __name__ == "__main__":
     formatter = AST_Formatter()
     yara_test = 'rule test{strings:$s="hello"condition:$s}'
 
-    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
         f.write(yara_test)
         test_file = Path(f.name)
 
@@ -498,7 +493,9 @@ if __name__ == "__main__":
         print(f"✓ Formatting: {'PASSED' if success else 'FAILED'}")
 
         if success:
-            print(f"✓ Formatted output contains proper structure: {'PASSED' if 'strings:' in formatted else 'FAILED'}")
+            print(
+                f"✓ Formatted output contains proper structure: {'PASSED' if 'strings:' in formatted else 'FAILED'}"
+            )
     finally:
         test_file.unlink()
 
@@ -506,25 +503,27 @@ if __name__ == "__main__":
     differ = ASTDiffer()
     analyzer = ASTStructuralAnalyzer()
 
-    yara_test = '''
+    yara_test = """
     rule differ_test {
         strings:
             $s = "test"
         condition:
             $s
     }
-    '''
+    """
 
     parser = YaraParser()
     ast = parser.parse(yara_test.strip())
     analysis = analyzer.analyze(ast)
 
-    print(f"✓ AST analysis: {'PASSED' if 'differ_test' in analysis['rule_signatures'] else 'FAILED'}")
+    print(
+        f"✓ AST analysis: {'PASSED' if 'differ_test' in analysis['rule_signatures'] else 'FAILED'}"
+    )
 
     # Test benchmarker
     benchmarker = ASTBenchmarker()
 
-    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yar') as f:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
         f.write(yara_test.strip())
         bench_file = Path(f.name)
 
@@ -533,7 +532,9 @@ if __name__ == "__main__":
         print(f"✓ Benchmarking: {'PASSED' if result.success else 'FAILED'}")
 
         if result.success:
-            print(f"✓ Benchmark captured metrics: {'PASSED' if result.execution_time > 0 and result.rules_count > 0 else 'FAILED'}")
+            print(
+                f"✓ Benchmark captured metrics: {'PASSED' if result.execution_time > 0 and result.rules_count > 0 else 'FAILED'}"
+            )
     finally:
         bench_file.unlink()
 

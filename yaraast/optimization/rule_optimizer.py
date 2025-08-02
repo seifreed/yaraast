@@ -1,10 +1,14 @@
 """Main rule optimizer combining all optimization passes."""
 
-from typing import Any
+from __future__ import annotations
 
-from yaraast.ast.base import YaraFile
+from typing import TYPE_CHECKING, Any
+
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
 
 
 class RuleOptimizer:
@@ -30,8 +34,9 @@ class RuleOptimizer:
         total_dead_elims = 0
 
         current = yara_file
+        passes_performed = 0
 
-        for pass_num in range(passes):
+        for _ in range(passes):
             # Expression optimization pass
             current, expr_opts = self.expression_optimizer.optimize(current)
             total_expr_opts += expr_opts
@@ -40,12 +45,14 @@ class RuleOptimizer:
             current, dead_elims = self.dead_code_eliminator.eliminate(current)
             total_dead_elims += dead_elims
 
+            passes_performed += 1
+
             # If no optimizations were made in this pass, we're done
             if expr_opts == 0 and dead_elims == 0:
                 break
 
         stats = {
-            "passes_performed": pass_num + 1,
+            "passes_performed": passes_performed,
             "expression_optimizations": total_expr_opts,
             "dead_code_eliminations": total_dead_elims,
             "total_optimizations": total_expr_opts + total_dead_elims,

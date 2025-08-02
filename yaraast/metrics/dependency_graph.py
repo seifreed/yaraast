@@ -1,14 +1,18 @@
 """Dependency graph generation for YARA AST using GraphViz."""
 
+from __future__ import annotations
+
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import graphviz
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.rules import Rule
 from yaraast.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.rules import Rule
 
 
 class DependencyGraphGenerator(ASTVisitor[None]):
@@ -231,7 +235,7 @@ class DependencyGraphGenerator(ASTVisitor[None]):
             ),
             "most_used_modules": sorted(
                 [
-                    (mod, len([r for refs in self.module_references.values() if mod in refs]))
+                    (mod, len([refs for refs in self.module_references.values() if mod in refs]))
                     for mod in self.imports
                 ],
                 key=lambda x: x[1],
@@ -278,12 +282,10 @@ class DependencyGraphGenerator(ASTVisitor[None]):
 
     def visit_member_access(self, node) -> None:
         """Track module usage in member access."""
-        if self._current_rule:
-            # Extract module name from member access
-            if hasattr(node.object, "name"):
-                module_name = node.object.name
-                if module_name in self.imports:
-                    self.module_references[self._current_rule].add(module_name)
+        if self._current_rule and hasattr(node.object, "name"):
+            module_name = node.object.name
+            if module_name in self.imports:
+                self.module_references[self._current_rule].add(module_name)
 
         self.visit(node.object)
 

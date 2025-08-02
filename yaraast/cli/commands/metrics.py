@@ -1,5 +1,6 @@
 """CLI commands for metrics and visualization."""
 
+import contextlib
 import json
 from pathlib import Path
 
@@ -28,7 +29,7 @@ def metrics():
 @click.option("--quality-gate", type=int, default=70, help="Quality gate threshold (0-100)")
 def complexity(yara_file: str, output: str | None, format: str, quality_gate: int):
     """Analyze YARA rule complexity metrics."""
-    with open(yara_file) as f:
+    with Path(yara_file).open() as f:
         content = f.read()
     parser = Parser()
     ast = parser.parse(content)
@@ -46,7 +47,7 @@ def complexity(yara_file: str, output: str | None, format: str, quality_gate: in
         output_text = _format_complexity_text(metrics)
 
     if output:
-        with open(output, "w") as f:
+        with Path(output).open("w") as f:
             f.write(output_text)
         click.echo(f"Complexity metrics written to {output}")
     else:
@@ -86,7 +87,7 @@ def complexity(yara_file: str, output: str | None, format: str, quality_gate: in
 )
 def graph(yara_file: str, output: str | None, format: str, type: str, engine: str):
     """Generate dependency graphs with GraphViz."""
-    with open(yara_file) as f:
+    with Path(yara_file).open() as f:
         content = f.read()
     parser = Parser()
     ast = parser.parse(content)
@@ -135,7 +136,7 @@ def graph(yara_file: str, output: str | None, format: str, type: str, engine: st
 @click.option("--no-metadata", is_flag=True, help="Exclude metadata from visualization")
 def tree(yara_file: str, output: str | None, interactive: bool, title: str, no_metadata: bool):
     """Generate HTML collapsible tree visualization."""
-    with open(yara_file) as f:
+    with Path(yara_file).open() as f:
         content = f.read()
     parser = Parser()
     ast = parser.parse(content)
@@ -181,7 +182,7 @@ def tree(yara_file: str, output: str | None, interactive: bool, title: str, no_m
 @click.option("--stats", is_flag=True, help="Show pattern statistics")
 def patterns(yara_file: str, output: str | None, type: str, format: str, stats: bool):
     """Generate string pattern analysis diagrams."""
-    with open(yara_file) as f:
+    with Path(yara_file).open() as f:
         content = f.read()
     parser = Parser()
     ast = parser.parse(content)
@@ -236,7 +237,7 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
 )
 def report(yara_file: str, output_dir: str | None, format: str):
     """Generate comprehensive metrics report with all visualizations."""
-    with open(yara_file) as f:
+    with Path(yara_file).open() as f:
         content = f.read()
     parser = Parser()
     ast = parser.parse(content)
@@ -262,10 +263,10 @@ def report(yara_file: str, output_dir: str | None, format: str):
     complexity_report["quality_score"] = metrics.get_quality_score()
     complexity_report["quality_grade"] = metrics.get_complexity_grade()
 
-    with open(output_path / f"{base_name}_complexity.json", "w") as f:
+    with Path(output_path / f"{base_name}_complexity.json").open("w") as f:
         json.dump(complexity_report, f, indent=2)
 
-    with open(output_path / f"{base_name}_complexity.txt", "w") as f:
+    with Path(output_path / f"{base_name}_complexity.txt").open("w") as f:
         f.write(_format_complexity_text(metrics))
 
     # 2. Dependency Graphs
@@ -300,12 +301,10 @@ def report(yara_file: str, output_dir: str | None, format: str):
     )
 
     # Try hex patterns (may be empty)
-    try:
+    with contextlib.suppress(BaseException):
         pattern_generator.generate_hex_pattern_diagram(
             ast, str(output_path / f"{base_name}_hex_patterns.{format}"), format
         )
-    except:
-        pass  # Skip if no hex patterns
 
     # 5. Summary Report
     click.echo("📋 Creating summary report...")
@@ -331,7 +330,7 @@ def report(yara_file: str, output_dir: str | None, format: str):
         },
     }
 
-    with open(output_path / "summary.json", "w") as f:
+    with Path(output_path / "summary.json").open("w") as f:
         json.dump(summary, f, indent=2)
 
     click.echo(f"\n✅ Comprehensive report generated in {output_path}/")

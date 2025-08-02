@@ -1,7 +1,7 @@
 """Test missing operators implementation."""
 
 # import pytest
-from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
+from yaraast.ast.operators import DefinedExpression
 from yaraast.codegen import CodeGenerator
 from yaraast.parser import Parser
 
@@ -15,7 +15,6 @@ rule test_defined {
 }
 """
 
-    from yaraast.parser import Parser
     parser = Parser()
     ast = parser.parse(yara_code)
 
@@ -43,7 +42,6 @@ rule test_iequals {
 }
 """
 
-    from yaraast.parser import Parser
     parser = Parser()
     ast = parser.parse(yara_code)
 
@@ -63,7 +61,6 @@ rule test_icontains {
 }
 """
 
-    from yaraast.parser import Parser
     parser = Parser()
     ast = parser.parse(yara_code)
 
@@ -84,7 +81,6 @@ rule test_complex_defined {
 }
 """
 
-    from yaraast.parser import Parser
     parser = Parser()
     ast = parser.parse(yara_code)
 
@@ -106,7 +102,6 @@ rule test_module_string_ops {
 }
 """
 
-    from yaraast.parser import Parser
     parser = Parser()
     ast = parser.parse(yara_code)
 
@@ -129,7 +124,6 @@ rule test_arrays {
 }
 """
 
-    from yaraast.parser import Parser
     parser = Parser()
     ast = parser.parse(yara_code)
 

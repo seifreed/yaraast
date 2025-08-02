@@ -1,10 +1,17 @@
 """Rule-related AST nodes."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
+
+if TYPE_CHECKING:
+    from yaraast.ast.expressions import Condition
+    from yaraast.ast.pragmas import InRulePragma
+    from yaraast.ast.strings import StringDefinition
 
 
 @dataclass
@@ -46,9 +53,9 @@ class Rule(ASTNode):
     modifiers: list[str | RuleModifier] = field(default_factory=list)  # Support both old and new
     tags: list[Tag] = field(default_factory=list)
     meta: dict[str, Any] | list[MetaEntry] = field(default_factory=dict)  # Support enhanced meta
-    strings: list["StringDefinition"] = field(default_factory=list)
-    condition: Optional["Condition"] = None
-    pragmas: list["InRulePragma"] = field(default_factory=list)  # In-rule pragmas
+    strings: list[StringDefinition] = field(default_factory=list)
+    condition: Condition | None = None
+    pragmas: list[InRulePragma] = field(default_factory=list)  # In-rule pragmas
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_rule(self)
@@ -96,10 +103,10 @@ class Rule(ASTNode):
         entries = self.get_meta_entries()
         return [entry for entry in entries if entry.is_public]
 
-    def add_pragma(self, pragma: "InRulePragma") -> None:
+    def add_pragma(self, pragma: InRulePragma) -> None:
         """Add a pragma to this rule."""
         self.pragmas.append(pragma)
 
-    def get_pragmas_by_position(self, position: str) -> list["InRulePragma"]:
+    def get_pragmas_by_position(self, position: str) -> list[InRulePragma]:
         """Get pragmas by their position in the rule."""
         return [p for p in self.pragmas if p.position == position]

@@ -1,14 +1,18 @@
 """Memory optimization utilities for processing large YARA rule collections."""
 
+from __future__ import annotations
+
 import gc
 import sys
 import weakref
-from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import YaraFile
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
 
 
 @dataclass

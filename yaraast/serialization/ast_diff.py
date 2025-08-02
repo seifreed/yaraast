@@ -1,14 +1,19 @@
 """AST diff functionality for incremental versioning."""
 
+from __future__ import annotations
+
 import hashlib
 import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+
+    from yaraast.ast.base import ASTNode, YaraFile
 
 
 class DiffType(Enum):
@@ -566,7 +571,7 @@ class AstDiff:
         if output_path:
             import json
 
-            with open(output_path, "w") as f:
+            with Path(output_path).open("w") as f:
                 json.dump(patch, f, indent=2)
 
         return patch

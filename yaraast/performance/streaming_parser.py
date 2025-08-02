@@ -1,16 +1,21 @@
 """Streaming parser for processing huge YARA rule collections incrementally."""
 
+from __future__ import annotations
+
 import gc
 import os
 import re
-from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
 from yaraast.parser import Parser
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+    from yaraast.ast.base import YaraFile
 
 
 class ParseStatus(Enum):
@@ -281,13 +286,13 @@ class StreamingParser:
 
         # Check content (first few lines)
         try:
-            with open(file_path, encoding="utf-8", errors="ignore") as f:
+            with Path(file_path).open(encoding="utf-8", errors="ignore") as f:
                 first_lines = f.read(1024).lower()
                 return any(
                     keyword in first_lines
                     for keyword in ["rule ", "import ", "condition:", "strings:", "meta:"]
                 )
-        except:
+        except Exception:
             return False
 
     def _update_stats(self, result: ParseResult) -> None:

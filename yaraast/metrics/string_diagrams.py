@@ -1,15 +1,19 @@
 """String pattern diagrams for YARA AST analysis."""
 
+from __future__ import annotations
+
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import graphviz
 
-from yaraast.ast.base import YaraFile
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
 
 
 class StringDiagramGenerator(ASTVisitor[None]):

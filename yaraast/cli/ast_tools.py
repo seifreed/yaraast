@@ -178,10 +178,10 @@ class ASTDiffer:
             # Parse both files
             parser = YaraParser()
 
-            with open(file1_path) as f:
+            with Path(file1_path).open() as f:
                 ast1 = parser.parse(f.read())
 
-            with open(file2_path) as f:
+            with Path(file2_path).open() as f:
                 ast2 = parser.parse(f.read())
 
             return self.diff_asts(ast1, ast2)
@@ -306,7 +306,7 @@ class ASTDiffer:
         return result
 
 
-class AST_Formatter:
+class ASTFormatter:
     """AST-based code formatter using CodeGenerator."""
 
     def __init__(self):
@@ -320,7 +320,7 @@ class AST_Formatter:
         try:
             # Parse file
             parser = YaraParser()
-            with open(input_path) as f:
+            with Path(input_path).open() as f:
                 content = f.read()
 
             ast = parser.parse(content)
@@ -337,7 +337,7 @@ class AST_Formatter:
 
             # Write output
             if output_path:
-                with open(output_path, "w") as f:
+                with Path(output_path).open("w") as f:
                     f.write(formatted)
                 return True, f"Formatted file written to {output_path}"
             return True, formatted
@@ -349,7 +349,7 @@ class AST_Formatter:
         """Check if file needs formatting."""
         try:
             # Read original
-            with open(file_path) as f:
+            with Path(file_path).open() as f:
                 original = f.read()
 
             # Parse and regenerate
@@ -385,7 +385,7 @@ class ASTBenchmarker:
         """Benchmark parsing performance."""
         try:
             # Read file once
-            with open(file_path) as f:
+            with Path(file_path).open() as f:
                 content = f.read()
 
             file_size = len(content.encode())
@@ -440,7 +440,7 @@ class ASTBenchmarker:
         try:
             # Parse file once
             parser = YaraParser()
-            with open(file_path) as f:
+            with Path(file_path).open() as f:
                 content = f.read()
 
             file_size = len(content.encode())
@@ -493,7 +493,7 @@ class ASTBenchmarker:
         results = []
 
         try:
-            with open(file_path) as f:
+            with Path(file_path).open() as f:
                 content = f.read()
 
             file_size = len(content.encode())

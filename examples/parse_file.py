@@ -3,7 +3,7 @@
 from yaraast import CodeGenerator, Parser
 
 # Example YARA rule
-yara_rule = '''
+yara_rule = r"""
 import "pe"
 import "math"
 
@@ -41,7 +41,7 @@ rule Ransomware_Detector {
     condition:
         any of them
 }
-'''
+"""
 
 # Parse the YARA rules
 parser = Parser(yara_rule)

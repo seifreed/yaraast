@@ -1,10 +1,14 @@
 """External rule declarations and references."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode
-from yaraast.ast.modifiers import RuleModifier
+
+if TYPE_CHECKING:
+    from yaraast.ast.modifiers import RuleModifier
 
 
 @dataclass

@@ -1,13 +1,18 @@
 """HTML collapsible tree visualization for YARA AST."""
 
-from typing import Any
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from jinja2 import Template
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.rules import Rule
+    from yaraast.ast.strings import HexString, PlainString, RegexString
 
 
 class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
@@ -27,7 +32,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
         html_content = self._render_html_template(tree_data, title)
 
         if output_path:
-            with open(output_path, "w", encoding="utf-8") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 f.write(html_content)
 
         return html_content
@@ -42,7 +47,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
         html_content = self._render_interactive_template(tree_data, title)
 
         if output_path:
-            with open(output_path, "w", encoding="utf-8") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 f.write(html_content)
 
         return html_content

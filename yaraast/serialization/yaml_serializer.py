@@ -1,12 +1,17 @@
 """YAML serialization for YARA AST."""
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
-from yaraast.ast.base import YaraFile
 from yaraast.serialization.json_serializer import JsonSerializer
+
+if TYPE_CHECKING:
+
+    from yaraast.ast.base import YaraFile
 
 
 class YamlSerializer(JsonSerializer):
@@ -31,7 +36,7 @@ class YamlSerializer(JsonSerializer):
         )
 
         if output_path:
-            with open(output_path, "w", encoding="utf-8") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str
@@ -41,7 +46,7 @@ class YamlSerializer(JsonSerializer):
     ) -> YaraFile:
         """Deserialize YAML to AST."""
         if input_path:
-            with open(input_path, encoding="utf-8") as f:
+            with Path(input_path).open(encoding="utf-8") as f:
                 yaml_str = f.read()
 
         if not yaml_str:
@@ -76,7 +81,7 @@ class YamlSerializer(JsonSerializer):
         )
 
         if output_path:
-            with open(output_path, "w", encoding="utf-8") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str
@@ -93,7 +98,7 @@ class YamlSerializer(JsonSerializer):
         )
 
         if output_path:
-            with open(output_path, "w", encoding="utf-8") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 f.write(yaml_str)
 
         return yaml_str

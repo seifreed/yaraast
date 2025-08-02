@@ -1,14 +1,18 @@
 """Enhanced pretty printer for YARA rules with formatting preservation."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from io import StringIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import Expression
-from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.expressions import Expression
+    from yaraast.ast.rules import Rule
 
 
 @dataclass

@@ -1,15 +1,19 @@
 """Comment-aware YARA parser."""
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.comments import Comment
 from yaraast.ast.meta import Meta
-from yaraast.ast.rules import Rule
-from yaraast.ast.strings import (
-    StringDefinition,
-)
 from yaraast.lexer import Token, TokenType
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.parser.better_parser import Parser
+
+if TYPE_CHECKING:
+    from yaraast.ast.rules import Rule
+    from yaraast.ast.strings import StringDefinition
 
 
 class CommentAwareParser(Parser):
@@ -85,10 +89,7 @@ class CommentAwareParser(Parser):
         is_multiline = text.startswith("/*")
 
         # Clean comment text
-        if is_multiline:
-            text = text[2:-2].strip()  # Remove /* and */
-        else:
-            text = text[2:].strip()  # Remove //
+        text = text[2:-2].strip() if is_multiline else text[2:].strip()
 
         comment = Comment(text=text, is_multiline=is_multiline)
         comment.location = Location(line=token.line, column=token.column)

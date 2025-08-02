@@ -1,15 +1,19 @@
 """AST-based complexity analysis for YARA rules."""
 
+from __future__ import annotations
+
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
-from yaraast.ast.expressions import BinaryExpression, UnaryExpression
-from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
+    from yaraast.ast.expressions import BinaryExpression, UnaryExpression
+    from yaraast.ast.rules import Rule
 
 
 @dataclass

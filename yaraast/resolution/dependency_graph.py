@@ -1,11 +1,15 @@
 """Dependency graph for YARA files and rules."""
 
+from __future__ import annotations
+
 import graphlib
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.rules import Rule
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.rules import Rule
 
 
 @dataclass

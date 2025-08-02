@@ -1,11 +1,8 @@
 """Expression builder utilities."""
 
-from yaraast.ast.conditions import (
-    AtExpression,
-    ForExpression,
-    InExpression,
-    OfExpression,
-)
+from __future__ import annotations
+
+from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,

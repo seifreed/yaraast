@@ -1,6 +1,7 @@
 """CLI interface for YARA AST."""
 
 import json
+import time
 from difflib import unified_diff
 from pathlib import Path
 
@@ -54,6 +55,17 @@ from yaraast.ast.strings import (
     StringDefinition,
     StringModifier,
 )
+
+# Import CLI commands
+from yaraast.cli.commands.analyze import analyze
+from yaraast.cli.commands.fluent import fluent
+from yaraast.cli.commands.metrics import metrics
+from yaraast.cli.commands.performance import performance
+from yaraast.cli.commands.roundtrip import roundtrip
+from yaraast.cli.commands.semantic import semantic
+from yaraast.cli.commands.serialize import serialize
+from yaraast.cli.commands.validate import validate
+from yaraast.cli.commands.workspace import workspace
 from yaraast.visitor import ASTVisitor
 
 console = Console()
@@ -302,7 +314,7 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
                 tags_tree.add(tag.name)
 
         if node.meta:
-            meta_tree = rule_tree.add("ℹ️  Meta")
+            meta_tree = rule_tree.add("i  Meta")
             for key, value in node.meta.items():
                 if isinstance(value, str):
                     meta_tree.add(f'{key} = "{value}"')
@@ -455,49 +467,15 @@ def cli():
     """YARA AST - Parse and manipulate YARA rules."""
 
 
-# Add workspace commands
-from yaraast.cli.commands.workspace import workspace
-
+# Add commands to CLI
 cli.add_command(workspace)
-
-# Add validation commands
-from yaraast.cli.commands.validate import validate
-
 cli.add_command(validate)
-
-# Add analysis commands
-from yaraast.cli.commands.analyze import analyze
-
 cli.add_command(analyze)
-
-# Add serialization commands
-from yaraast.cli.commands.serialize import serialize
-
 cli.add_command(serialize)
-
-# Add metrics commands
-from yaraast.cli.commands.metrics import metrics
-
 cli.add_command(metrics)
-
-# Add performance commands
-from yaraast.cli.commands.performance import performance
-
 cli.add_command(performance)
-
-# Add semantic validation commands
-from yaraast.cli.commands.semantic import semantic
-
 cli.add_command(semantic)
-
-# Add fluent API commands
-from yaraast.cli.commands.fluent import fluent
-
 cli.add_command(fluent)
-
-# Add round-trip serialization commands
-from yaraast.cli.commands.roundtrip import roundtrip
-
 cli.add_command(roundtrip)
 
 
@@ -515,7 +493,7 @@ def parse(input_file: str, output: str | None, format: str):
     """Parse a YARA file and output in various formats."""
     try:
         # Read input file
-        with open(input_file) as f:
+        with Path(input_file).open() as f:
             content = f.read()
 
         # Parse YARA file
@@ -527,7 +505,7 @@ def parse(input_file: str, output: str | None, format: str):
             generator = CodeGenerator()
             result = generator.generate(ast)
             if output:
-                with open(output, "w") as f:
+                with Path(output).open("w") as f:
                     f.write(result)
                 console.print(f"✅ Generated YARA code written to {output}")
             else:
@@ -539,7 +517,7 @@ def parse(input_file: str, output: str | None, format: str):
             result = dumper.visit(ast)
             json_str = json.dumps(result, indent=2)
             if output:
-                with open(output, "w") as f:
+                with Path(output).open("w") as f:
                     f.write(json_str)
                 console.print(f"✅ AST JSON written to {output}")
             else:
@@ -558,7 +536,7 @@ def parse(input_file: str, output: str | None, format: str):
 
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
 
 
 @cli.command()
@@ -566,7 +544,7 @@ def parse(input_file: str, output: str | None, format: str):
 def validate(input_file: str):
     """Validate a YARA file for syntax errors."""
     try:
-        with open(input_file) as f:
+        with Path(input_file).open() as f:
             content = f.read()
 
         parser = Parser()
@@ -595,7 +573,7 @@ def validate(input_file: str):
                 border_style="red",
             )
         )
-        raise click.Abort
+        raise click.Abort from None
 
 
 @cli.command()
@@ -604,7 +582,7 @@ def validate(input_file: str):
 def format(input_file: str, output_file: str):
     """Format a YARA file with consistent style."""
     try:
-        with open(input_file) as f:
+        with Path(input_file).open() as f:
             content = f.read()
 
         # Parse and regenerate
@@ -614,14 +592,14 @@ def format(input_file: str, output_file: str):
         generator = CodeGenerator()
         formatted = generator.generate(ast)
 
-        with open(output_file, "w") as f:
+        with Path(output_file).open("w") as f:
             f.write(formatted)
 
         console.print(f"✅ Formatted YARA file written to {output_file}")
 
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
 
 
 @cli.group()
@@ -643,10 +621,10 @@ def compile(input_file: str, output: str | None, optimize: bool, debug: bool, st
         if not YARA_AVAILABLE:
             console.print("[red]❌ yara-python is not installed[/red]")
             console.print("Install with: pip install yara-python")
-            raise click.Abort
+            raise click.Abort from None
 
         # Parse YARA file
-        with open(input_file) as f:
+        with Path(input_file).open() as f:
             content = f.read()
 
         parser = Parser()
@@ -694,14 +672,14 @@ def compile(input_file: str, output: str | None, optimize: bool, debug: bool, st
             console.print("[red]❌ Compilation failed[/red]")
             for error in result.errors:
                 console.print(f"[red]  • {error}[/red]")
-            raise click.Abort
+            raise click.Abort from None
 
     except ImportError as e:
         console.print(f"[red]❌ Import error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
 
 
 @libyara.command()
@@ -721,10 +699,10 @@ def scan(
         if not YARA_AVAILABLE:
             console.print("[red]❌ yara-python is not installed[/red]")
             console.print("Install with: pip install yara-python")
-            raise click.Abort
+            raise click.Abort from None
 
         # Parse and compile rules
-        with open(rules_file) as f:
+        with Path(rules_file).open() as f:
             content = f.read()
 
         parser = Parser()
@@ -738,7 +716,7 @@ def scan(
             console.print("[red]❌ Rule compilation failed[/red]")
             for error in compile_result.errors:
                 console.print(f"[red]  • {error}[/red]")
-            raise click.Abort
+            raise click.Abort from None
 
         # Create optimized matcher
         matcher = OptimizedMatcher(compile_result.compiled_rules, ast)
@@ -788,14 +766,14 @@ def scan(
 
         else:
             console.print(f"[red]❌ Scan failed: {scan_result.get('error', 'Unknown error')}[/red]")
-            raise click.Abort
+            raise click.Abort from None
 
     except ImportError as e:
         console.print(f"[red]❌ Import error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
 
 
 @libyara.command()
@@ -807,7 +785,7 @@ def optimize(input_file: str, show_optimizations: bool):
         from yaraast.libyara import ASTOptimizer
 
         # Parse YARA file
-        with open(input_file) as f:
+        with Path(input_file).open() as f:
             content = f.read()
 
         parser = Parser()
@@ -839,7 +817,7 @@ def optimize(input_file: str, show_optimizations: bool):
 
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
 
 
 @cli.command()
@@ -856,12 +834,12 @@ def optimize(input_file: str, show_optimizations: bool):
 def fmt(input_file: str, output: str | None, style: str, check: bool, diff: bool):
     """Format YARA file using AST-based formatting (like black for Python)."""
     try:
-        from yaraast.cli.ast_tools import AST_Formatter
+        from yaraast.cli.ast_tools import ASTFormatter
 
         input_path = Path(input_file)
         output_path = Path(output) if output else input_path
 
-        formatter = AST_Formatter()
+        formatter = ASTFormatter()
 
         if check:
             # Check formatting without modifying
@@ -874,19 +852,19 @@ def fmt(input_file: str, output: str | None, style: str, check: bool, diff: bool
                         console.print(f"[dim]  • {issue}[/dim]")
                     if len(issues) > 5:
                         console.print(f"[dim]  • ... and {len(issues) - 5} more issues[/dim]")
-                raise click.Abort
+                raise click.Abort from None
             console.print(f"[green]✅ {input_path.name} is already formatted[/green]")
             return
 
         if diff:
             # Show what would change
-            with open(input_path) as f:
+            with Path(input_path).open() as f:
                 original = f.read()
 
             success, formatted = formatter.format_file(input_path, None, style)
             if not success:
                 console.print(f"[red]❌ {formatted}[/red]")
-                raise click.Abort
+                raise click.Abort from None
 
             if original.strip() != formatted.strip():
                 console.print(f"[blue]📋 Formatting changes for {input_path.name}:[/blue]")
@@ -925,14 +903,14 @@ def fmt(input_file: str, output: str | None, style: str, check: bool, diff: bool
                     console.print(f"[green]✅ Formatted file written to {output_path}[/green]")
             else:
                 console.print(f"[red]❌ {result}[/red]")
-                raise click.Abort
+                raise click.Abort from None
 
     except ImportError as e:
         console.print(f"[red]❌ Import error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
 
 
 @cli.command()
@@ -971,12 +949,12 @@ def diff(file1: str, file2: str, logical_only: bool, summary: bool, no_style: bo
 
         # Show detailed changes
         if result.added_rules:
-            console.print(f"\n[green]➕ Added Rules ({len(result.added_rules)}):[/green]")
+            console.print(f"\n[green]+ Added Rules ({len(result.added_rules)}):[/green]")
             for rule in result.added_rules:
                 console.print(f"  + {rule}")
 
         if result.removed_rules:
-            console.print(f"\n[red]➖ Removed Rules ({len(result.removed_rules)}):[/red]")
+            console.print(f"\n[red]- Removed Rules ({len(result.removed_rules)}):[/red]")
             for rule in result.removed_rules:
                 console.print(f"  - {rule}")
 
@@ -1023,10 +1001,10 @@ def diff(file1: str, file2: str, logical_only: bool, summary: bool, no_style: bo
 
     except ImportError as e:
         console.print(f"[red]❌ Import error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
 
 
 @cli.command()
@@ -1145,7 +1123,7 @@ def bench(files: tuple[str], operations: str, iterations: int, output: str | Non
                 "summary": summary,
             }
 
-            with open(output, "w") as f:
+            with Path(output).open("w") as f:
                 json.dump(benchmark_data, f, indent=2, default=str)
 
             console.print(f"\n[green]💾 Benchmark results saved to {output}[/green]")
@@ -1154,10 +1132,10 @@ def bench(files: tuple[str], operations: str, iterations: int, output: str | Non
 
     except ImportError as e:
         console.print(f"[red]❌ Import error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")
-        raise click.Abort
+        raise click.Abort from None
 
 
 if __name__ == "__main__":

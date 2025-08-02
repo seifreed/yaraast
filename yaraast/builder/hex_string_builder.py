@@ -1,8 +1,10 @@
 """Fluent builder for hex strings."""
 
+from __future__ import annotations
+
 import builtins
 import contextlib
-from typing import Self, Union
+from typing import Self
 
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexToken, HexWildcard
 
@@ -28,7 +30,7 @@ class HexStringBuilder:
                     byte_val = int(hex_val, 16)
                     self._tokens.append(HexByte(value=byte_val))
                 except ValueError:
-                    raise ValueError(f"Invalid hex value: {value}")
+                    raise ValueError(f"Invalid hex value: {value}") from None
             else:
                 raise ValueError(f"Hex value must be 2 characters, got {value}")
         elif isinstance(value, HexToken):
@@ -61,14 +63,14 @@ class HexStringBuilder:
                 nibble_val = int(value[1], 16)
                 self._tokens.append(HexNibble(high=False, value=nibble_val))
             except ValueError:
-                raise ValueError(f"Invalid nibble pattern: {value}")
+                raise ValueError(f"Invalid nibble pattern: {value}") from None
         elif value[0] != "?" and value[1] == "?":
             # X? pattern - high nibble
             try:
                 nibble_val = int(value[0], 16)
                 self._tokens.append(HexNibble(high=True, value=nibble_val))
             except ValueError:
-                raise ValueError(f"Invalid nibble pattern: {value}")
+                raise ValueError(f"Invalid nibble pattern: {value}") from None
         else:
             raise ValueError(f"Invalid nibble pattern: {value}")
 
@@ -99,7 +101,7 @@ class HexStringBuilder:
         """Add an unlimited jump [-]."""
         return self.jump(None, None)
 
-    def alternative(self, *alternatives: list[Union[int, str, "HexStringBuilder"]]) -> Self:
+    def alternative(self, *alternatives: list[int | str | HexStringBuilder]) -> Self:
         """Add an alternative group (a|b|c)."""
         alt_tokens = []
 
@@ -165,7 +167,7 @@ class HexStringBuilder:
         return self._tokens
 
     @staticmethod
-    def from_bytes(data: bytes) -> "HexStringBuilder":
+    def from_bytes(data: bytes) -> HexStringBuilder:
         """Create builder from raw bytes."""
         builder = HexStringBuilder()
         for byte in data:
@@ -173,7 +175,7 @@ class HexStringBuilder:
         return builder
 
     @staticmethod
-    def from_hex_string(hex_str: str) -> "HexStringBuilder":
+    def from_hex_string(hex_str: str) -> HexStringBuilder:
         """Create builder from hex string."""
         builder = HexStringBuilder()
         hex_str = hex_str.replace(" ", "").upper()

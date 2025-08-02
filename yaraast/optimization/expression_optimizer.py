@@ -1,14 +1,9 @@
 """Expression optimizer for simplifying YARA expressions."""
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import (
-    AtExpression,
-    Condition,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
-    OfExpression,
-)
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
@@ -29,23 +24,34 @@ from yaraast.ast.expressions import (
     StringOffset,
     UnaryExpression,
 )
-from yaraast.ast.meta import Meta
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import (
-    HexAlternative,
-    HexByte,
-    HexJump,
-    HexNibble,
-    HexString,
-    HexToken,
-    HexWildcard,
-    PlainString,
-    RegexString,
-    StringDefinition,
-    StringModifier,
-)
 from yaraast.visitor import ASTTransformer
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.conditions import (
+        AtExpression,
+        Condition,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
+    from yaraast.ast.meta import Meta
+    from yaraast.ast.modules import DictionaryAccess, ModuleReference
+    from yaraast.ast.rules import Import, Include, Rule, Tag
+    from yaraast.ast.strings import (
+        HexAlternative,
+        HexByte,
+        HexJump,
+        HexNibble,
+        HexString,
+        HexToken,
+        HexWildcard,
+        PlainString,
+        RegexString,
+        StringDefinition,
+        StringModifier,
+    )
 
 
 class ExpressionOptimizer(ASTTransformer):

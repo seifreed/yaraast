@@ -1,12 +1,10 @@
 """Enhanced fluent condition builder with comprehensive helpers."""
 
+from __future__ import annotations
+
 from typing import Self
 
-from yaraast.ast.conditions import (
-    AtExpression,
-    InExpression,
-    OfExpression,
-)
+from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -399,22 +397,22 @@ class FluentConditionBuilder(ConditionBuilder):
 
     # Factory methods
     @staticmethod
-    def create() -> "FluentConditionBuilder":
+    def create() -> FluentConditionBuilder:
         """Create empty fluent condition builder."""
         return FluentConditionBuilder()
 
     @staticmethod
-    def match_string(string_id: str) -> "FluentConditionBuilder":
+    def match_string(string_id: str) -> FluentConditionBuilder:
         """Create condition matching a string."""
         return FluentConditionBuilder(StringIdentifier(name=string_id))
 
     @staticmethod
-    def always_true() -> "FluentConditionBuilder":
+    def always_true() -> FluentConditionBuilder:
         """Always true condition."""
         return FluentConditionBuilder(BooleanLiteral(value=True))
 
     @staticmethod
-    def always_false() -> "FluentConditionBuilder":
+    def always_false() -> FluentConditionBuilder:
         """Always false condition."""
         return FluentConditionBuilder(BooleanLiteral(value=False))
 

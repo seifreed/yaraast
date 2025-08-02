@@ -53,31 +53,19 @@ def demo_module_loading():
         "description": "Demo module for example",
         "attributes": {
             "version": "string",
-            "config": {
-                "type": "struct",
-                "fields": {
-                    "enabled": "bool",
-                    "threshold": "int"
-                }
-            }
+            "config": {"type": "struct", "fields": {"enabled": "bool", "threshold": "int"}},
         },
         "functions": {
             "analyze": {
                 "return": "int",
-                "parameters": [
-                    {"name": "data", "type": "string"},
-                    {"name": "mode", "type": "int"}
-                ]
+                "parameters": [{"name": "data", "type": "string"}, {"name": "mode", "type": "int"}],
             }
         },
-        "constants": {
-            "MAX_SIZE": "int",
-            "VERSION": "string"
-        }
+        "constants": {"MAX_SIZE": "int", "VERSION": "string"},
     }
 
     # Save to temporary file
-    with open("demo_module.json", "w") as f:
+    with Path("demo_module.json").open("w") as f:
         json.dump(custom_module, f, indent=2)
 
     # Load module
@@ -91,13 +79,13 @@ def demo_module_loading():
     # Check if our module was loaded
     if "demo_module" in loader.modules:
         module = loader.get_module("demo_module")
-        print(f"\nDemo module loaded successfully!")
+        print("\nDemo module loaded successfully!")
         print(f"  Attributes: {list(module.attributes.keys())}")
         print(f"  Functions: {list(module.functions.keys())}")
         print(f"  Constants: {list(module.constants.keys())}")
 
     # Clean up
-    os.remove("demo_module.json")
+    Path("demo_module.json").unlink()
     del os.environ["YARAAST_MODULE_SPEC_PATH"]
 
 
@@ -106,7 +94,8 @@ def demo_complete_features():
     print_section("Complete Feature Demonstration")
 
     # 1. Build a complex rule using fluent API
-    rule = (RuleBuilder()
+    rule = (
+        RuleBuilder()
         .with_name("comprehensive_malware_detector")
         .private()
         .global_()
@@ -116,19 +105,18 @@ def demo_complete_features():
         .with_meta("version", 1)
         .with_plain_string("$mz", "MZ", ascii=True, wide=True)
         .with_plain_string("$suspicious", "malicious", nocase=True)
-        .with_hex_string("$hex_pattern",
+        .with_hex_string(
+            "$hex_pattern",
             HexStringBuilder()
-                .add_bytes(0x4D, 0x5A)  # MZ
-                .nibble("F?")           # High nibble
-                .wildcard(4)            # ?? ?? ?? ??
-                .jump(10, 20)           # [10-20]
-                .alternative(
-                    [0x50, 0x45],     # PE
-                    [0x4E, 0x45]      # NE
-                )
+            .add_bytes(0x4D, 0x5A)  # MZ
+            .nibble("F?")  # High nibble
+            .wildcard(4)  # ?? ?? ?? ??
+            .jump(10, 20)  # [10-20]
+            .alternative([0x50, 0x45], [0x4E, 0x45]),  # PE  # NE
         )
         .with_regex_string("$url", r"https?://[a-z0-9\.\-]+", nocase=True)
-        .with_condition("""
+        .with_condition(
+            """
             $mz at 0 and
             $hex_pattern and
             (#suspicious > 5 or @suspicious[1] < 100) and
@@ -136,7 +124,8 @@ def demo_complete_features():
             pe.number_of_sections > 3 and
             defined pe.version_info["CompanyName"] and
             pe.version_info["CompanyName"] icontains "microsoft"
-        """)
+        """
+        )
         .build()
     )
 
@@ -144,10 +133,7 @@ def demo_complete_features():
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Import
 
-    yara_file = YaraFile(
-        imports=[Import(module="pe"), Import(module="math")],
-        rules=[rule]
-    )
+    yara_file = YaraFile(imports=[Import(module="pe"), Import(module="math")], rules=[rule])
 
     # 2. Analyze the rule
     print("\n--- Rule Analysis ---")
@@ -167,7 +153,7 @@ def demo_complete_features():
     # 4. Check YARA-X compatibility
     print("\n--- YARA-X Compatibility ---")
     checker = YaraXCompatibilityChecker()
-    issues = checker.check(optimized)
+    checker.check(optimized)
     report = checker.get_report()
 
     print(f"Compatible with YARA-X: {report['compatible']}")
@@ -194,7 +180,7 @@ def demo_complete_features():
         sort_imports=True,
         sort_strings=True,
         sort_meta=True,
-        string_style=FormattingConfig.StringStyle.TABULAR
+        string_style=FormattingConfig.StringStyle.TABULAR,
     )
     custom_gen = AdvancedCodeGenerator(custom_config)
     print(custom_gen.generate(optimized))
@@ -236,7 +222,7 @@ rule optimization_demo {
     print("\nOptimized rule:")
     print(gen.generate(optimized))
 
-    print(f"\nOptimization statistics:")
+    print("\nOptimization statistics:")
     print(f"  Expression optimizations: {stats['expression_optimizations']}")
     print(f"  Dead code eliminations: {stats['dead_code_eliminations']}")
     print(f"  Total optimizations: {stats['total_optimizations']}")

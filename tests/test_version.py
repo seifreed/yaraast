@@ -21,7 +21,10 @@ def test_version_constants():
     assert isinstance(YARAAST_VERSION_PATCH, int)
 
     # Check version string
-    assert YARAAST_VERSION == f"{YARAAST_VERSION_MAJOR}.{YARAAST_VERSION_MINOR}.{YARAAST_VERSION_PATCH}"
+    assert (
+        f"{YARAAST_VERSION_MAJOR}.{YARAAST_VERSION_MINOR}.{YARAAST_VERSION_PATCH}"
+        == YARAAST_VERSION
+    )
 
     # Check __version__ matches
     assert __version__ == YARAAST_VERSION
@@ -67,13 +70,13 @@ def test_version_format():
     import re
 
     # Test YARAAST version format
-    assert re.match(r'^\d+\.\d+\.\d+$', YARAAST_VERSION)
+    assert re.match(r"^\d+\.\d+\.\d+$", YARAAST_VERSION)
 
     # Test YARA syntax version format
-    assert re.match(r'^\d+\.\d+\.\d+$', YARA_SYNTAX_VERSION)
+    assert re.match(r"^\d+\.\d+\.\d+$", YARA_SYNTAX_VERSION)
 
     # Test YARA-X version format
-    assert re.match(r'^\d+\.\d+\.\d+$', YARAX_SYNTAX_VERSION)
+    assert re.match(r"^\d+\.\d+\.\d+$", YARAX_SYNTAX_VERSION)
 
 
 def test_version_comparison():

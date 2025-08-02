@@ -1,16 +1,6 @@
 """Test YARA evaluation API."""
 
-import pytest
-
-from yaraast.evaluation import (
-    EvaluationContext,
-    MockELF,
-    MockMath,
-    MockModuleRegistry,
-    MockPE,
-    StringMatcher,
-    YaraEvaluator,
-)
+from yaraast.evaluation import MockMath, MockModuleRegistry, MockPE, StringMatcher, YaraEvaluator
 from yaraast.parser import Parser
 
 
@@ -58,9 +48,7 @@ class TestStringMatcher:
 
         # Case-insensitive (match)
         string2 = PlainString(
-            identifier="$b",
-            value="hello",
-            modifiers=[StringModifier(name="nocase")]
+            identifier="$b", value="hello", modifiers=[StringModifier(name="nocase")]
         )
         matches = matcher.match_all(data, [string2])
         assert len(matches["$b"]) == 1
@@ -74,16 +62,14 @@ class TestStringMatcher:
         data = b"H\x00e\x00l\x00l\x00o\x00"
 
         string = PlainString(
-            identifier="$a",
-            value="Hello",
-            modifiers=[StringModifier(name="wide")]
+            identifier="$a", value="Hello", modifiers=[StringModifier(name="wide")]
         )
         matches = matcher.match_all(data, [string])
         assert len(matches["$a"]) == 1
 
     def test_hex_string_match(self):
         """Test hex string matching."""
-        from yaraast.ast.strings import HexByte, HexString, HexWildcard
+        from yaraast.ast.strings import HexByte, HexString
 
         matcher = StringMatcher()
         data = b"\x48\x65\x6c\x6c\x6f\x20\x57\x6f\x72\x6c\x64"  # "Hello World"
@@ -94,10 +80,10 @@ class TestStringMatcher:
             tokens=[
                 HexByte(value=0x48),
                 HexByte(value=0x65),
-                HexByte(value=0x6c),
-                HexByte(value=0x6c),
-                HexByte(value=0x6f)
-            ]
+                HexByte(value=0x6C),
+                HexByte(value=0x6C),
+                HexByte(value=0x6F),
+            ],
         )
 
         matches = matcher.match_all(data, [hex_string])
@@ -117,10 +103,10 @@ class TestStringMatcher:
             tokens=[
                 HexByte(value=0x48),
                 HexWildcard(),
-                HexByte(value=0x6c),
+                HexByte(value=0x6C),
                 HexWildcard(),
-                HexByte(value=0x6f)
-            ]
+                HexByte(value=0x6F),
+            ],
         )
 
         matches = matcher.match_all(data, [hex_string])
@@ -134,11 +120,7 @@ class TestStringMatcher:
         data = b"The quick brown fox jumps over the lazy dog"
 
         # /f[oO]x/
-        regex = RegexString(
-            identifier="$re1",
-            regex="f[oO]x",
-            modifiers=[]
-        )
+        regex = RegexString(identifier="$re1", regex="f[oO]x", modifiers=[])
 
         matches = matcher.match_all(data, [regex])
         assert len(matches["$re1"]) == 1
@@ -151,7 +133,7 @@ class TestYaraEvaluator:
     def test_simple_string_match(self):
         """Test simple string matching rule."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         rule test_rule {
             strings:
                 $a = "hello"
@@ -159,7 +141,7 @@ class TestYaraEvaluator:
             condition:
                 $a and $b
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # Test data containing both strings
@@ -179,14 +161,14 @@ class TestYaraEvaluator:
     def test_string_count(self):
         """Test string count functionality."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         rule count_test {
             strings:
                 $a = "test"
             condition:
                 #a > 2
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # Data with 3 occurrences
@@ -199,14 +181,14 @@ class TestYaraEvaluator:
     def test_string_at(self):
         """Test string at specific offset."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         rule at_test {
             strings:
                 $mz = "MZ"
             condition:
                 $mz at 0
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # MZ at beginning
@@ -222,7 +204,7 @@ class TestYaraEvaluator:
     def test_of_expression(self):
         """Test 'of' expression."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         rule of_test {
             strings:
                 $a = "one"
@@ -231,7 +213,7 @@ class TestYaraEvaluator:
             condition:
                 2 of them
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # Data with 2 strings
@@ -247,12 +229,12 @@ class TestYaraEvaluator:
     def test_filesize(self):
         """Test filesize built-in."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         rule size_test {
             condition:
                 filesize > 10 and filesize < 100
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # 50 bytes
@@ -268,13 +250,13 @@ class TestYaraEvaluator:
     def test_integer_functions(self):
         """Test integer reading functions."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         rule int_test {
             condition:
                 uint16(0) == 0x5A4D and
                 uint32(4) == 0x12345678
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # Little-endian data
@@ -285,7 +267,7 @@ class TestYaraEvaluator:
     def test_pe_module(self):
         """Test PE module functionality."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         import "pe"
 
         rule pe_test {
@@ -293,7 +275,7 @@ class TestYaraEvaluator:
                 pe.is_pe and
                 pe.machine == 0x14c
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # Minimal PE header
@@ -310,18 +292,19 @@ class TestYaraEvaluator:
     def test_math_module(self):
         """Test math module functionality."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         import "math"
 
         rule entropy_test {
             condition:
                 math.entropy(0, 100) > 3.0
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # High entropy data (random-looking)
         import random
+
         random.seed(42)
         data = bytes(random.randint(0, 255) for _ in range(200))
 
@@ -334,14 +317,14 @@ class TestYaraEvaluator:
     def test_for_expression(self):
         """Test for loop expression."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         rule for_test {
             strings:
                 $a = "test"
             condition:
                 for all i in (0..2): ( @a[i] < 100 )
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # Multiple matches within first 100 bytes
@@ -354,14 +337,14 @@ class TestYaraEvaluator:
     def test_module_alias(self):
         """Test module import with alias."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         import "pe" as windows
 
         rule alias_test {
             condition:
                 windows.is_pe
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         # PE file
@@ -374,7 +357,7 @@ class TestYaraEvaluator:
     def test_complex_condition(self):
         """Test complex nested conditions."""
         parser = Parser()
-        rule_text = '''
+        rule_text = """
         rule complex {
             strings:
                 $a = "foo"
@@ -385,7 +368,7 @@ class TestYaraEvaluator:
                 (@a < @b or not defined $b) and
                 filesize > 10
         }
-        '''
+        """
         ast = parser.parse(rule_text)
 
         data = b"foo something 12345 bar"
@@ -415,7 +398,7 @@ class TestMockModules:
         pe = MockPE(pe_data)
 
         assert pe.is_pe is True
-        assert pe.machine == 0x14c
+        assert pe.machine == 0x14C
         assert pe.number_of_sections == 3
         assert pe.is_dll is True  # 0x2000 bit is set
 

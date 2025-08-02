@@ -1,16 +1,10 @@
 """Advanced code generator with formatting options."""
 
-from io import StringIO
-from typing import Any
+from __future__ import annotations
 
-from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.ast.expressions import (
-    BinaryExpression,
-    Expression,
-    SetExpression,
-)
-from yaraast.ast.meta import Meta
-from yaraast.ast.rules import Import, Include, Rule
+from io import StringIO
+from typing import TYPE_CHECKING, Any
+
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
@@ -30,6 +24,12 @@ from yaraast.codegen.formatting import (
     StringStyle,
 )
 from yaraast.codegen.generator import CodeGenerator
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import ASTNode, YaraFile
+    from yaraast.ast.expressions import BinaryExpression, Expression, SetExpression
+    from yaraast.ast.meta import Meta
+    from yaraast.ast.rules import Import, Include, Rule
 
 
 class AdvancedCodeGenerator(CodeGenerator):

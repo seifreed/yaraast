@@ -1,7 +1,5 @@
 """Test rule analysis tools."""
 
-import pytest
-
 from yaraast.analysis import DependencyAnalyzer, RuleAnalyzer, StringUsageAnalyzer
 from yaraast.parser import Parser
 
@@ -103,8 +101,8 @@ rule independent {
 
     # Check dependency graph
     graph = results["dependency_graph"]
-    assert graph["base_rule"]["is_independent"] == False
-    assert graph["independent"]["is_independent"] == True
+    assert not graph["base_rule"]["is_independent"]
+    assert graph["independent"]["is_independent"]
 
     # Check topological sort
     order = results["dependency_order"]

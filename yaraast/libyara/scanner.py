@@ -1,5 +1,7 @@
 """Scanner using libyara for cross-validation."""
 
+from __future__ import annotations
+
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -25,7 +27,7 @@ class MatchInfo:
     strings: list[dict[str, Any]]
 
     @classmethod
-    def from_yara_match(cls, match) -> "MatchInfo":
+    def from_yara_match(cls, match) -> MatchInfo:
         """Create from yara match object."""
         return cls(
             rule=match.rule,

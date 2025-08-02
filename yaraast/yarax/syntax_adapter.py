@@ -1,15 +1,17 @@
 """YARA-X syntax adapter for converting between YARA and YARA-X syntax."""
 
-from yaraast.ast.base import YaraFile
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import (
-    HexJump,
-    HexString,
-    PlainString,
-    RegexString,
-)
+from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString
 from yaraast.visitor import ASTTransformer
 from yaraast.yarax.feature_flags import YaraXFeatures
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.yarax.compatibility_checker import CompatibilityIssue
 
 
 class YaraXSyntaxAdapter(ASTTransformer):
@@ -167,7 +169,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
         # This is actually an enhancement, no adaptation needed
         return node
 
-    def generate_migration_guide(self, issues: list["CompatibilityIssue"]) -> str:
+    def generate_migration_guide(self, issues: list[CompatibilityIssue]) -> str:
         """Generate a migration guide based on compatibility issues."""
         guide = ["# YARA to YARA-X Migration Guide\n"]
 

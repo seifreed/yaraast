@@ -1,8 +1,10 @@
 """Compiler that converts yaraast AST to libyara rules."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 try:
     import yara
@@ -12,8 +14,10 @@ except ImportError:
     yara = None
     YARA_AVAILABLE = False
 
-from yaraast.ast.base import YaraFile
 from yaraast.codegen import CodeGenerator
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
 
 
 @dataclass

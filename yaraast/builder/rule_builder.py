@@ -1,10 +1,10 @@
 """Fluent builder for YARA rules."""
 
-from typing import Any, Self
+from __future__ import annotations
 
-from yaraast.ast.conditions import (
-    OfExpression,
-)
+from typing import TYPE_CHECKING, Any, Self
+
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
     Expression,
@@ -23,7 +23,9 @@ from yaraast.ast.strings import (
     StringModifier,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
-from yaraast.builder.hex_string_builder import HexStringBuilder
+
+if TYPE_CHECKING:
+    from yaraast.builder.hex_string_builder import HexStringBuilder
 
 
 class RuleBuilder:

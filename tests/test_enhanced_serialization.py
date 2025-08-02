@@ -4,15 +4,9 @@ import json
 
 import yaml
 
-from yaraast.codegen import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter, PrettyPrintOptions, StylePresets
 from yaraast.parser import YaraParser
-from yaraast.serialization.roundtrip_serializer import (
-    EnhancedYamlSerializer,
-    FormattingInfo,
-    RoundTripMetadata,
-    RoundTripSerializer,
-)
+from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer, RoundTripSerializer
 
 
 class TestRoundTripSerializer:
@@ -20,7 +14,7 @@ class TestRoundTripSerializer:
 
     def test_basic_roundtrip_json(self):
         """Test basic round-trip with JSON."""
-        yara_source = '''
+        yara_source = """
         import "pe"
 
         rule test_rule {
@@ -33,7 +27,7 @@ class TestRoundTripSerializer:
             condition:
                 $a and $b
         }
-        '''
+        """
 
         serializer = RoundTripSerializer()
         result = serializer.roundtrip_test(yara_source.strip(), format="json")
@@ -46,14 +40,14 @@ class TestRoundTripSerializer:
 
     def test_basic_roundtrip_yaml(self):
         """Test basic round-trip with YAML."""
-        yara_source = '''
+        yara_source = """
         rule simple_rule {
             strings:
                 $test = "malware"
             condition:
                 $test
         }
-        '''
+        """
 
         serializer = RoundTripSerializer()
         result = serializer.roundtrip_test(yara_source.strip(), format="yaml")
@@ -63,23 +57,23 @@ class TestRoundTripSerializer:
 
     def test_formatting_detection(self):
         """Test formatting detection."""
-        yara_source_tabs = '''
+        yara_source_tabs = """
 \t\trule tab_indented {
 \t\t\tstrings:
 \t\t\t\t$a = "test"
 \t\t\tcondition:
 \t\t\t\t$a
 \t\t}
-        '''
+        """
 
-        yara_source_spaces = '''
+        yara_source_spaces = """
         rule space_indented {
             strings:
                 $a = "test"
             condition:
                 $a
         }
-        '''
+        """
 
         serializer = RoundTripSerializer()
 
@@ -94,14 +88,14 @@ class TestRoundTripSerializer:
 
     def test_serialization_with_metadata(self):
         """Test serialization includes round-trip metadata."""
-        yara_source = '''
+        yara_source = """
         rule metadata_test {
             strings:
                 $s = "test"
             condition:
                 $s
         }
-        '''
+        """
 
         serializer = RoundTripSerializer()
         ast, serialized = serializer.parse_and_serialize(yara_source.strip(), format="json")
@@ -122,7 +116,7 @@ class TestEnhancedYamlSerializer:
 
     def test_pipeline_serialization(self):
         """Test YAML serialization for pipelines."""
-        yara_source = '''
+        yara_source = """
         import "pe"
 
         rule pipeline_test : malware {
@@ -133,7 +127,7 @@ class TestEnhancedYamlSerializer:
             condition:
                 $mz at 0
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_source.strip())
@@ -152,7 +146,7 @@ class TestEnhancedYamlSerializer:
 
     def test_rules_manifest(self):
         """Test rules manifest generation."""
-        yara_source = '''
+        yara_source = """
         rule rule1 : tag1 tag2 {
             strings:
                 $a = "test1"
@@ -167,7 +161,7 @@ class TestEnhancedYamlSerializer:
             condition:
                 $b or $c
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_source.strip())
@@ -198,10 +192,10 @@ class TestPrettyPrinter:
 
     def test_basic_pretty_printing(self):
         """Test basic pretty printing."""
-        yara_source = '''
+        yara_source = """
 import "pe"
 rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_source.strip())
@@ -214,11 +208,11 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         assert "rule test" in formatted
         assert "strings:" in formatted
         assert "condition:" in formatted
-        assert formatted.count('\n') > yara_source.count('\n')
+        assert formatted.count("\n") > yara_source.count("\n")
 
     def test_style_presets(self):
         """Test different style presets."""
-        yara_source = '''
+        yara_source = """
         rule style_test {
             meta:
                 author = "Test"
@@ -227,7 +221,7 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
             condition:
                 $a
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_source.strip())
@@ -238,12 +232,12 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         verbose = PrettyPrinter(StylePresets.verbose()).pretty_print(ast)
 
         # Verbose should have more blank lines than compact
-        assert verbose.count('\n') > compact.count('\n')
-        assert readable.count('\n') >= compact.count('\n')
+        assert verbose.count("\n") > compact.count("\n")
+        assert readable.count("\n") >= compact.count("\n")
 
     def test_alignment_options(self):
         """Test string and meta alignment."""
-        yara_source = '''
+        yara_source = """
         rule alignment_test {
             meta:
                 author = "Test"
@@ -256,39 +250,36 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
             condition:
                 any of them
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_source.strip())
 
         # Test with alignment
-        options = PrettyPrintOptions(
-            align_string_definitions=True,
-            align_meta_values=True
-        )
+        options = PrettyPrintOptions(align_string_definitions=True, align_meta_values=True)
         printer = PrettyPrinter(options)
         formatted = printer.pretty_print(ast)
 
-        lines = formatted.split('\n')
+        lines = formatted.split("\n")
 
         # Find string lines and check alignment
-        string_lines = [line for line in lines if '= "' in line or '= {' in line]
+        string_lines = [line for line in lines if '= "' in line or "= {" in line]
         if len(string_lines) > 1:
             # Check that = signs are aligned (simplified check)
-            equals_positions = [line.find('=') for line in string_lines]
+            equals_positions = [line.find("=") for line in string_lines]
             # All should be at same position (or close for alignment)
             assert max(equals_positions) - min(equals_positions) <= 10
 
     def test_custom_formatting_options(self):
         """Test custom formatting options."""
-        yara_source = '''
+        yara_source = """
         rule custom_test {
             strings:
                 $a = "test"
             condition:
                 $a
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_source.strip())
@@ -298,8 +289,10 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         printer = PrettyPrinter(options)
         formatted = printer.pretty_print(ast)
 
-        lines = formatted.split('\n')
-        indented_lines = [line for line in lines if line.startswith('  ') and not line.startswith('    ')]
+        lines = formatted.split("\n")
+        indented_lines = [
+            line for line in lines if line.startswith("  ") and not line.startswith("    ")
+        ]
 
         # Should have lines with 2-space indent
         assert len(indented_lines) > 0
@@ -310,7 +303,7 @@ class TestIntegration:
 
     def test_complete_workflow(self):
         """Test complete workflow: parse -> serialize -> deserialize -> pretty print."""
-        yara_source = '''
+        yara_source = """
         import "pe"
 
         rule workflow_test : malware {
@@ -323,7 +316,7 @@ class TestIntegration:
             condition:
                 $mz at 0 and $string
         }
-        '''
+        """
 
         # Step 1: Parse
         parser = YaraParser()
@@ -346,7 +339,7 @@ class TestIntegration:
         # Verify results
         assert len(original_ast.rules) == len(reconstructed_ast.rules)
         assert original_ast.rules[0].name == reconstructed_ast.rules[0].name
-        assert len(pretty_output.split('\n')) > len(yara_source.split('\n'))
+        assert len(pretty_output.split("\n")) > len(yara_source.split("\n"))
 
         # Basic structure should be preserved
         assert 'import "pe"' in pretty_output
@@ -361,20 +354,20 @@ if __name__ == "__main__":
     print("Testing enhanced serialization...")
 
     # Test round-trip
-    yara_test = '''
+    yara_test = """
     rule test_enhanced {
         strings:
             $a = "hello world"
         condition:
             $a
     }
-    '''
+    """
 
     serializer = RoundTripSerializer()
     result = serializer.roundtrip_test(yara_test.strip())
 
     print(f"✓ Round-trip test: {'PASSED' if result['round_trip_successful'] else 'FAILED'}")
-    if result['differences']:
+    if result["differences"]:
         print(f"  Differences: {len(result['differences'])}")
 
     # Test pretty printing
@@ -386,7 +379,7 @@ if __name__ == "__main__":
 
     print("✓ Pretty printing test: PASSED")
     print("✓ Pretty formatted output:")
-    for i, line in enumerate(pretty.split('\n')[:10], 1):
+    for i, line in enumerate(pretty.split("\n")[:10], 1):
         print(f"  {i:2d}: {line}")
 
     print("✅ Enhanced serialization tests completed!")

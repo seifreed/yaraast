@@ -1,18 +1,23 @@
 """Batch processing utilities for large YARA rule collections."""
 
+from __future__ import annotations
+
 import json
 import tempfile
 import time
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
 from yaraast.metrics import HtmlTreeGenerator
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 from yaraast.performance.streaming_parser import StreamingParser
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from yaraast.ast.base import YaraFile
 
 
 class BatchOperation(Enum):
@@ -304,7 +309,7 @@ class BatchProcessor:
         # Save complexity report
         if complexity_results:
             output_file = output_dir / "complexity_analysis.json"
-            with open(output_file, "w") as f:
+            with Path(output_file).open("w") as f:
                 json.dump(complexity_results, f, indent=2)
             result.output_files.append(str(output_file))
 
@@ -435,7 +440,7 @@ class BatchProcessor:
         # Save validation report
         if validation_issues:
             output_file = output_dir / "validation_report.json"
-            with open(output_file, "w") as f:
+            with Path(output_file).open("w") as f:
                 json.dump(validation_issues, f, indent=2)
             result.output_files.append(str(output_file))
 

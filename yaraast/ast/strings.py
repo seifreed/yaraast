@@ -1,5 +1,7 @@
 """String-related AST nodes."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -48,7 +50,7 @@ class PlainString(StringDefinition):
 class HexString(StringDefinition):
     """Hex string definition."""
 
-    tokens: list["HexToken"] = field(default_factory=list)  # Add default
+    tokens: list[HexToken] = field(default_factory=list)  # Add default
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_hex_string(self)

@@ -40,7 +40,7 @@ class StringModifierType(Enum):
             return cls(modifier_str.lower())
         except ValueError:
             # For unknown modifiers, we could either raise an error or create a custom type
-            raise ValueError(f"Unknown string modifier: {modifier_str}")
+            raise ValueError(f"Unknown string modifier: {modifier_str}") from None
 
     def __str__(self) -> str:
         """Return the string representation."""
@@ -59,7 +59,7 @@ class RuleModifierType(Enum):
         try:
             return cls(modifier_str.lower())
         except ValueError:
-            raise ValueError(f"Unknown rule modifier: {modifier_str}")
+            raise ValueError(f"Unknown rule modifier: {modifier_str}") from None
 
     def __str__(self) -> str:
         return self.value

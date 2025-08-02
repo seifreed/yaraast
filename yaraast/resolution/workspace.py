@@ -1,5 +1,7 @@
 """Workspace for analyzing multiple YARA files."""
 
+from __future__ import annotations
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path

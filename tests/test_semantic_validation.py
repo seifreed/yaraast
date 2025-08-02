@@ -3,7 +3,7 @@
 import pytest
 
 from yaraast.ast.base import Location
-from yaraast.ast.expressions import FunctionCall, Identifier, StringIdentifier
+from yaraast.ast.expressions import FunctionCall, Identifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.parser import YaraParser
@@ -41,11 +41,7 @@ class TestValidationError:
     def test_validation_error_to_dict(self):
         """Test converting validation error to dictionary."""
         location = Location(line=10, column=5, file="test.yar")
-        error = ValidationError(
-            "Test error",
-            location=location,
-            suggestion="Try this fix"
-        )
+        error = ValidationError("Test error", location=location, suggestion="Try this fix")
 
         result = error.to_dict()
         assert result["message"] == "Test error"
@@ -155,10 +151,7 @@ class TestFunctionCallValidator:
 
     def test_builtin_function_valid_arity(self):
         """Test builtin function with correct arity."""
-        func_call = FunctionCall(
-            function="uint32",
-            arguments=[Identifier(name="offset")]
-        )
+        func_call = FunctionCall(function="uint32", arguments=[Identifier(name="offset")])
 
         env = TypeEnvironment()
         result = ValidationResult()
@@ -170,10 +163,7 @@ class TestFunctionCallValidator:
 
     def test_builtin_function_invalid_arity(self):
         """Test builtin function with incorrect arity."""
-        func_call = FunctionCall(
-            function="uint32",
-            arguments=[]  # Should have 1 argument
-        )
+        func_call = FunctionCall(function="uint32", arguments=[])  # Should have 1 argument
 
         env = TypeEnvironment()
         result = ValidationResult()
@@ -186,10 +176,7 @@ class TestFunctionCallValidator:
 
     def test_module_function_not_imported(self):
         """Test module function call without import."""
-        func_call = FunctionCall(
-            function="pe.imphash",
-            arguments=[]
-        )
+        func_call = FunctionCall(function="pe.imphash", arguments=[])
 
         env = TypeEnvironment()  # No modules imported
         result = ValidationResult()
@@ -202,10 +189,7 @@ class TestFunctionCallValidator:
 
     def test_module_function_imported(self):
         """Test module function call with import."""
-        func_call = FunctionCall(
-            function="pe.imphash",
-            arguments=[]
-        )
+        func_call = FunctionCall(function="pe.imphash", arguments=[])
 
         env = TypeEnvironment()
         env.add_module("pe")  # Import pe module
@@ -219,10 +203,7 @@ class TestFunctionCallValidator:
 
     def test_unknown_module_function(self):
         """Test unknown function in known module."""
-        func_call = FunctionCall(
-            function="pe.unknown_func",
-            arguments=[]
-        )
+        func_call = FunctionCall(function="pe.unknown_func", arguments=[])
 
         env = TypeEnvironment()
         env.add_module("pe")
@@ -236,10 +217,7 @@ class TestFunctionCallValidator:
 
     def test_unknown_function_warning(self):
         """Test unknown function generates warning."""
-        func_call = FunctionCall(
-            function="unknown_func",
-            arguments=[]
-        )
+        func_call = FunctionCall(function="unknown_func", arguments=[])
 
         env = TypeEnvironment()
         result = ValidationResult()
@@ -256,7 +234,7 @@ class TestSemanticValidator:
 
     def test_valid_yara_file(self):
         """Test validation of valid YARA file."""
-        yara_code = '''
+        yara_code = """
         import "pe"
 
         rule test_rule {
@@ -266,7 +244,7 @@ class TestSemanticValidator:
             condition:
                 $a and $b and pe.imphash() == "test"
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_code)
@@ -279,7 +257,7 @@ class TestSemanticValidator:
 
     def test_duplicate_strings_in_rule(self):
         """Test detection of duplicate string identifiers."""
-        yara_code = '''
+        yara_code = """
         rule test_rule {
             strings:
                 $a = "hello"
@@ -288,7 +266,7 @@ class TestSemanticValidator:
             condition:
                 $a and $b
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_code)
@@ -298,12 +276,11 @@ class TestSemanticValidator:
 
         # Should detect the duplicate string identifier
         assert result.is_valid is False
-        assert any("Duplicate string identifier" in error.message
-                  for error in result.errors)
+        assert any("Duplicate string identifier" in error.message for error in result.errors)
 
     def test_module_function_validation_integration(self):
         """Test integration of module function validation."""
-        yara_code = '''
+        yara_code = """
         import "pe"
 
         rule test_rule {
@@ -312,7 +289,7 @@ class TestSemanticValidator:
             condition:
                 $a and pe.unknown_function()
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_code)
@@ -322,8 +299,7 @@ class TestSemanticValidator:
 
         # Should detect unknown function
         assert result.is_valid is False
-        assert any("not found in module" in error.message
-                  for error in result.errors)
+        assert any("not found in module" in error.message for error in result.errors)
 
 
 if __name__ == "__main__":

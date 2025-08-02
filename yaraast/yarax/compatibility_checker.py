@@ -1,26 +1,19 @@
 """YARA-X compatibility checker."""
 
-import re
-from typing import Any
+from __future__ import annotations
 
-from yaraast.ast.base import Location, YaraFile
-from yaraast.ast.conditions import (
-    OfExpression,
-)
-from yaraast.ast.expressions import (
-    BinaryExpression,
-    Identifier,
-    SetExpression,
-)
-from yaraast.ast.rules import Rule
-from yaraast.ast.strings import (
-    HexJump,
-    HexString,
-    PlainString,
-    RegexString,
-)
+import re
+from typing import TYPE_CHECKING, Any
+
+from yaraast.ast.expressions import BinaryExpression, Identifier, SetExpression
 from yaraast.visitor import ASTVisitor
 from yaraast.yarax.feature_flags import YaraXFeatures
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import Location, YaraFile
+    from yaraast.ast.conditions import OfExpression
+    from yaraast.ast.rules import Rule
+    from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString
 
 
 class CompatibilityIssue:
@@ -111,30 +104,36 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
         """Check plain string compatibility."""
         # Check base64 modifier
         has_base64 = any(m.name in ("base64", "base64wide") for m in node.modifiers)
-        if has_base64 and self.features.minimum_base64_length > 0:
-            if len(node.value) < self.features.minimum_base64_length:
-                self._add_issue(
-                    "error",
-                    "base64_too_short",
-                    f"Base64 pattern '{node.value}' is shorter than minimum length {self.features.minimum_base64_length}",
-                    f"Use a base64 pattern with at least {self.features.minimum_base64_length} characters",
-                    node.location,
-                )
+        if (
+            has_base64
+            and self.features.minimum_base64_length > 0
+            and len(node.value) < self.features.minimum_base64_length
+        ):
+            self._add_issue(
+                "error",
+                "base64_too_short",
+                f"Base64 pattern '{node.value}' is shorter than minimum length {self.features.minimum_base64_length}",
+                f"Use a base64 pattern with at least {self.features.minimum_base64_length} characters",
+                node.location,
+            )
 
         # Check XOR with fullword
         has_xor = any(m.name == "xor" for m in node.modifiers)
         has_fullword = any(m.name == "fullword" for m in node.modifiers)
 
-        if has_xor and has_fullword and self.features.strict_xor_fullword:
-            # Check if string has alphanumeric boundaries
-            if not re.match(r"^[a-zA-Z0-9].*[a-zA-Z0-9]$", node.value):
-                self._add_issue(
-                    "warning",
-                    "xor_fullword_boundary",
-                    f"String '{node.value}' with XOR and fullword may have stricter boundary checking in YARA-X",
-                    "Ensure string has proper alphanumeric boundaries",
-                    node.location,
-                )
+        if (
+            has_xor
+            and has_fullword
+            and self.features.strict_xor_fullword
+            and not re.match(r"^[a-zA-Z0-9].*[a-zA-Z0-9]$", node.value)
+        ):
+            self._add_issue(
+                "warning",
+                "xor_fullword_boundary",
+                f"String '{node.value}' with XOR and fullword may have stricter boundary checking in YARA-X",
+                "Ensure string has proper alphanumeric boundaries",
+                node.location,
+            )
 
     def visit_regex_string(self, node: RegexString) -> None:
         """Check regex string compatibility."""
@@ -147,16 +146,14 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
                     # Skip escaped character
                     i += 2
                     continue
-                if pattern[i] == "{":
-                    # Check if this is part of a repetition {n,m}
-                    if i == 0 or pattern[i - 1] in "({|":
-                        self._add_issue(
-                            "error",
-                            "unescaped_brace",
-                            "Unescaped '{' in regex pattern",
-                            "Escape the brace with '\\{'",
-                            node.location,
-                        )
+                if pattern[i] == "{" and (i == 0 or pattern[i - 1] in "({|"):
+                    self._add_issue(
+                        "error",
+                        "unescaped_brace",
+                        "Unescaped '{' in regex pattern",
+                        "Escape the brace with '\\{'",
+                        node.location,
+                    )
                 i += 1
 
         if self.features.validate_escape_sequences:
@@ -186,19 +183,17 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
     def visit_of_expression(self, node: OfExpression) -> None:
         """Check 'of' expression compatibility."""
         # YARA-X allows tuples of boolean expressions
-        if self.features.allow_tuple_of_expressions:
-            # This is a new feature, check if it's being used
-            if isinstance(node.string_set, SetExpression):
-                for elem in node.string_set.elements:
-                    if isinstance(elem, BinaryExpression):
-                        self._add_issue(
-                            "info",
-                            "yarax_feature",
-                            "Using YARA-X feature: boolean expressions in 'of' statement",
-                            "This feature is not available in original YARA",
-                            node.location,
-                        )
-                        break
+        if self.features.allow_tuple_of_expressions and isinstance(node.string_set, SetExpression):
+            for elem in node.string_set.elements:
+                if isinstance(elem, BinaryExpression):
+                    self._add_issue(
+                        "info",
+                        "yarax_feature",
+                        "Using YARA-X feature: boolean expressions in 'of' statement",
+                        "This feature is not available in original YARA",
+                        node.location,
+                    )
+                    break
 
         self.visit(node.quantifier)
         self.visit(node.string_set)
@@ -206,15 +201,14 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
     def visit_identifier(self, node: Identifier) -> None:
         """Check for 'with' statement usage."""
         # The 'with' statement would be parsed differently, but we can detect attempts
-        if node.name == "with" and self.current_rule:
-            if not self.features.allow_with_statement:
-                self._add_issue(
-                    "error",
-                    "unsupported_feature",
-                    "'with' statement is only available in YARA-X",
-                    "Rewrite without using 'with' statement for YARA compatibility",
-                    node.location,
-                )
+        if node.name == "with" and self.current_rule and not self.features.allow_with_statement:
+            self._add_issue(
+                "error",
+                "unsupported_feature",
+                "'with' statement is only available in YARA-X",
+                "Rewrite without using 'with' statement for YARA compatibility",
+                node.location,
+            )
 
     def get_report(self) -> dict[str, Any]:
         """Generate compatibility report."""

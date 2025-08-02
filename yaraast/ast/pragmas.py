@@ -1,5 +1,7 @@
 """Pragma and directive support for YARA AST."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -25,7 +27,7 @@ class PragmaType(Enum):
     CUSTOM = "custom"
 
     @classmethod
-    def from_string(cls, pragma_str: str) -> "PragmaType":
+    def from_string(cls, pragma_str: str) -> PragmaType:
         """Convert string to pragma type."""
         try:
             return cls(pragma_str.lower())
@@ -135,17 +137,17 @@ class ConditionalDirective(Pragma):
         self.condition = condition
 
     @classmethod
-    def ifdef(cls, condition: str) -> "ConditionalDirective":
+    def ifdef(cls, condition: str) -> ConditionalDirective:
         """Create an ifdef directive."""
         return cls(PragmaType.IFDEF, condition)
 
     @classmethod
-    def ifndef(cls, condition: str) -> "ConditionalDirective":
+    def ifndef(cls, condition: str) -> ConditionalDirective:
         """Create an ifndef directive."""
         return cls(PragmaType.IFNDEF, condition)
 
     @classmethod
-    def endif(cls) -> "ConditionalDirective":
+    def endif(cls) -> ConditionalDirective:
         """Create an endif directive."""
         return cls(PragmaType.ENDIF)
 

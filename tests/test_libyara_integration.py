@@ -6,25 +6,23 @@ from pathlib import Path
 import pytest
 
 try:
-    import yara
+    import yara  # noqa: F401
+
     YARA_AVAILABLE = True
 except ImportError:
     YARA_AVAILABLE = False
 
-from yaraast.codegen import CodeGenerator
-from yaraast.parser import YaraParser
+from yaraast.parser import Parser, YaraParser
 
 if YARA_AVAILABLE:
     from yaraast.libyara import (
-        ASTOptimizer,
         DirectASTCompiler,
-        DirectCompilationResult,
         EquivalenceTester,
         LibyaraCompiler,
         LibyaraScanner,
-        OptimizationStats,
         OptimizedMatcher,
     )
+    from yaraast.libyara.cross_validator import CrossValidator
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
@@ -33,7 +31,7 @@ class TestDirectASTCompiler:
 
     def test_basic_compilation(self):
         """Test basic AST compilation to yara.Rules."""
-        yara_source = '''
+        yara_source = """
         rule test_rule {
             strings:
                 $a = "hello"
@@ -41,7 +39,7 @@ class TestDirectASTCompiler:
             condition:
                 $a and $b
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_source.strip())
@@ -57,7 +55,7 @@ class TestDirectASTCompiler:
 
     def test_compilation_with_optimization(self):
         """Test compilation with AST optimizations."""
-        yara_source = '''
+        yara_source = """
         rule test_rule {
             strings:
                 $used = "hello"
@@ -65,7 +63,7 @@ class TestDirectASTCompiler:
             condition:
                 $used
         }
-        '''
+        """
 
         parser = YaraParser()
         ast = parser.parse(yara_source.strip())
@@ -85,17 +83,17 @@ class TestOptimizedMatcher:
 
     def test_basic_scanning(self):
         """Test basic file scanning with optimized matcher."""
-        yara_source = '''
+        yara_source = """
         rule scan_test {
             strings:
                 $s = "test"
             condition:
                 $s
         }
-        '''
+        """
 
         # Create test file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
             f.write("This is a test file with the word test in it.")
             test_file = Path(f.name)
 
@@ -114,10 +112,10 @@ class TestOptimizedMatcher:
             # Scan file
             scan_result = matcher.scan(test_file)
 
-            assert scan_result['success'] is True
-            assert len(scan_result['matches']) == 1
-            assert scan_result['matches'][0]['rule'] == 'scan_test'
-            assert scan_result['ast_enhanced'] is True
+            assert scan_result["success"] is True
+            assert len(scan_result["matches"]) == 1
+            assert scan_result["matches"][0]["rule"] == "scan_test"
+            assert scan_result["ast_enhanced"] is True
 
         finally:
             test_file.unlink()
@@ -129,14 +127,14 @@ class TestLibyaraCompiler:
 
     def test_compile_simple_rule(self):
         """Test compiling a simple rule."""
-        rule_text = '''
+        rule_text = """
         rule test_rule {
             strings:
                 $a = "hello"
             condition:
                 $a
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -150,14 +148,14 @@ class TestLibyaraCompiler:
 
     def test_compile_with_imports(self):
         """Test compiling with module imports."""
-        rule_text = '''
+        rule_text = """
         import "pe"
 
         rule test_pe {
             condition:
                 pe.is_pe
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -179,14 +177,14 @@ class TestLibyaraCompiler:
 
     def test_compile_with_externals(self):
         """Test compilation with external variables."""
-        rule_text = '''
+        rule_text = """
         rule test_external {
             condition:
                 ext_var == "test"
         }
-        '''
+        """
 
-        compiler = LibyaraCompiler(externals={'ext_var': 'test'})
+        compiler = LibyaraCompiler(externals={"ext_var": "test"})
         result = compiler.compile_source(rule_text)
 
         assert result.success is True
@@ -197,14 +195,14 @@ class TestLibyaraScanner:
 
     def test_scan_matching_data(self):
         """Test scanning data that matches."""
-        rule_text = '''
+        rule_text = """
         rule test_match {
             strings:
                 $a = "hello"
             condition:
                 $a
         }
-        '''
+        """
 
         compiler = LibyaraCompiler()
         compilation = compiler.compile_source(rule_text)
@@ -219,14 +217,14 @@ class TestLibyaraScanner:
 
     def test_scan_non_matching_data(self):
         """Test scanning data that doesn't match."""
-        rule_text = '''
+        rule_text = """
         rule test_no_match {
             strings:
                 $a = "xyz"
             condition:
                 $a
         }
-        '''
+        """
 
         compiler = LibyaraCompiler()
         compilation = compiler.compile_source(rule_text)
@@ -241,12 +239,12 @@ class TestLibyaraScanner:
 
     def test_scan_with_timeout(self):
         """Test scanning with timeout."""
-        rule_text = '''
+        rule_text = """
         rule test_rule {
             condition:
                 true
         }
-        '''
+        """
 
         compiler = LibyaraCompiler()
         compilation = compiler.compile_source(rule_text)
@@ -263,7 +261,7 @@ class TestEquivalenceTester:
 
     def test_simple_round_trip(self):
         """Test simple AST round-trip."""
-        rule_text = '''
+        rule_text = """
         rule test_rule {
             strings:
                 $a = "test"
@@ -271,7 +269,7 @@ class TestEquivalenceTester:
             condition:
                 $a or $b
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -287,7 +285,7 @@ class TestEquivalenceTester:
 
     def test_complex_round_trip(self):
         """Test complex rule round-trip."""
-        rule_text = '''
+        rule_text = """
         import "pe"
 
         rule complex_rule {
@@ -303,7 +301,7 @@ class TestEquivalenceTester:
                 pe.is_pe and
                 filesize > 100
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -327,14 +325,14 @@ class TestCrossValidator:
 
     def test_simple_validation(self):
         """Test simple rule validation."""
-        rule_text = '''
+        rule_text = """
         rule test_rule {
             strings:
                 $a = "hello"
             condition:
                 $a
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -354,7 +352,7 @@ class TestCrossValidator:
         """Test when yaraast and libyara disagree."""
         # This is a synthetic test - in practice they should agree
         # We'll test with a complex condition to ensure both work
-        rule_text = '''
+        rule_text = """
         rule test_complex {
             strings:
                 $a = "test"
@@ -362,7 +360,7 @@ class TestCrossValidator:
             condition:
                 #a > 1 or $b at 0
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
@@ -378,26 +376,21 @@ class TestCrossValidator:
 
     def test_batch_validation(self):
         """Test batch validation."""
-        rule_text = '''
+        rule_text = """
         rule test_rule {
             strings:
                 $a = "mal"
             condition:
                 $a
         }
-        '''
+        """
 
         parser = Parser()
         ast = parser.parse(rule_text)
 
         validator = CrossValidator()
 
-        test_samples = [
-            b"malware",
-            b"normal file",
-            b"malicious",
-            b"benign"
-        ]
+        test_samples = [b"malware", b"normal file", b"malicious", b"benign"]
 
         results = validator.validate_batch(ast, test_samples)
 

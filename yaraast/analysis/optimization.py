@@ -154,7 +154,7 @@ class OptimizationAnalyzer(ASTVisitor[None]):
                 groups[prefix].append(hex_str)
 
         # Suggest consolidation for similar patterns
-        for prefix, similar in groups.items():
+        for _prefix, similar in groups.items():
             if len(similar) > 2:
                 names = [s.identifier for s in similar]
                 self.report.add_suggestion(
@@ -250,20 +250,22 @@ class OptimizationAnalyzer(ASTVisitor[None]):
         """Analyze 'of' expressions."""
         # Check for 'any of them' which could be more specific
         if (
-            hasattr(node.quantifier, "name")
-            and node.quantifier.name == "any"
-            and hasattr(node.string_set, "name")
-            and node.string_set.name == "them"
+            (
+                hasattr(node.quantifier, "name")
+                and node.quantifier.name == "any"
+                and hasattr(node.string_set, "name")
+                and node.string_set.name == "them"
+            )
+            and self._current_rule
+            and len(self._current_rule.strings) > 10
         ):
-
-            if self._current_rule and len(self._current_rule.strings) > 10:
-                self.report.add_suggestion(
-                    self._current_rule.name,
-                    "specificity",
-                    "'any of them' with many strings - consider grouping strings "
-                    "or being more specific",
-                    "low",
-                )
+            self.report.add_suggestion(
+                self._current_rule.name,
+                "specificity",
+                "'any of them' with many strings - consider grouping strings "
+                "or being more specific",
+                "low",
+            )
 
     def _analyze_cross_rule_patterns(self, rules: list[Rule]) -> None:
         """Analyze patterns across multiple rules."""

@@ -6,7 +6,6 @@ from yaraast.builder import (
     all_of_them,
     any_of_them,
     clone_rule,
-    condition,
     hex_pattern,
     malware_rule,
     match,
@@ -35,11 +34,7 @@ class TestFluentStringBuilder:
 
     def test_text_string_with_modifiers(self):
         """Test text string with modifiers."""
-        string_def = (text("$test", "malware")
-                     .nocase()
-                     .wide()
-                     .fullword()
-                     .build())
+        string_def = text("$test", "malware").nocase().wide().fullword().build()
 
         assert string_def.identifier == "$test"
         assert string_def.value == "malware"
@@ -86,10 +81,7 @@ class TestFluentConditionBuilder:
 
     def test_logical_operators(self):
         """Test logical operators."""
-        cond = (match("$a")
-               .and_(match("$b"))
-               .or_(match("$c"))
-               .build())
+        cond = match("$a").and_(match("$b")).or_(match("$c")).build()
         assert cond is not None
 
     def test_quantifiers(self):
@@ -117,12 +109,14 @@ class TestFluentRuleBuilder:
 
     def test_basic_rule(self):
         """Test basic rule creation."""
-        rule_ast = (rule("test_rule")
-                   .tagged("test")
-                   .authored_by("Test Author")
-                   .text_string("$test", "hello")
-                   .matches_any()
-                   .build())
+        rule_ast = (
+            rule("test_rule")
+            .tagged("test")
+            .authored_by("Test Author")
+            .text_string("$test", "hello")
+            .matches_any()
+            .build()
+        )
 
         assert isinstance(rule_ast, Rule)
         assert rule_ast.name == "test_rule"
@@ -135,12 +129,14 @@ class TestFluentRuleBuilder:
 
     def test_rule_with_multiple_strings(self):
         """Test rule with multiple strings."""
-        rule_ast = (rule("multi_string_rule")
-                   .text_string("$a", "hello")
-                   .text_string("$b", "world")
-                   .hex_string("$c", "4D 5A")
-                   .matches_any()
-                   .build())
+        rule_ast = (
+            rule("multi_string_rule")
+            .text_string("$a", "hello")
+            .text_string("$b", "world")
+            .hex_string("$c", "4D 5A")
+            .matches_any()
+            .build()
+        )
 
         assert len(rule_ast.strings) == 3
         assert rule_ast.strings[0].identifier == "$a"
@@ -149,12 +145,21 @@ class TestFluentRuleBuilder:
 
     def test_rule_with_fluent_strings(self):
         """Test rule with fluent string context."""
-        rule_ast = (rule("fluent_strings")
-                   .string("$a").text("malware").nocase().then()
-                   .string("$b").hex("4D 5A").then()
-                   .string("$c").regex(r"\d+\.\d+\.\d+\.\d+").then()
-                   .matches_any()
-                   .build())
+        rule_ast = (
+            rule("fluent_strings")
+            .string("$a")
+            .text("malware")
+            .nocase()
+            .then()
+            .string("$b")
+            .hex("4D 5A")
+            .then()
+            .string("$c")
+            .regex(r"\d+\.\d+\.\d+\.\d+")
+            .then()
+            .matches_any()
+            .build()
+        )
 
         assert len(rule_ast.strings) == 3
         assert rule_ast.strings[0].identifier == "$a"
@@ -185,11 +190,13 @@ class TestYaraFileBuilder:
 
     def test_basic_file(self):
         """Test basic YARA file creation."""
-        yara_ast = (yara_file()
-                   .import_module("pe")
-                   .import_module("math", "m")
-                   .include_file("common.yar")
-                   .build())
+        yara_ast = (
+            yara_file()
+            .import_module("pe")
+            .import_module("math", "m")
+            .include_file("common.yar")
+            .build()
+        )
 
         assert isinstance(yara_ast, YaraFile)
         assert len(yara_ast.imports) == 2
@@ -204,10 +211,7 @@ class TestYaraFileBuilder:
         rule1 = rule("rule1").text_string("$a", "test").matches_any().build()
         rule2 = rule("rule2").hex_string("$b", "4D 5A").matches_any().build()
 
-        yara_ast = (yara_file()
-                   .with_rule(rule1)
-                   .with_rule(rule2)
-                   .build())
+        yara_ast = yara_file().with_rule(rule1).with_rule(rule2).build()
 
         assert len(yara_ast.rules) == 2
         assert yara_ast.rules[0].name == "rule1"
@@ -215,15 +219,17 @@ class TestYaraFileBuilder:
 
     def test_chained_rule_building(self):
         """Test chained rule building in file."""
-        yara_ast = (yara_file()
-                   .import_module("pe")
-                   .rule("first_rule")
-                       .text_string("$a", "hello")
-                       .matches_any()
-                   .then_rule("second_rule")
-                       .hex_string("$b", "4D 5A")
-                       .matches_any()
-                   .then_build_file())
+        yara_ast = (
+            yara_file()
+            .import_module("pe")
+            .rule("first_rule")
+            .text_string("$a", "hello")
+            .matches_any()
+            .then_rule("second_rule")
+            .hex_string("$b", "4D 5A")
+            .matches_any()
+            .then_build_file()
+        )
 
         assert isinstance(yara_ast, YaraFile)
         assert len(yara_ast.imports) == 1
@@ -237,11 +243,7 @@ class TestRuleTransformations:
 
     def test_clone_rule(self):
         """Test rule cloning."""
-        original = (rule("original")
-                   .tagged("test")
-                   .text_string("$a", "hello")
-                   .matches_any()
-                   .build())
+        original = rule("original").tagged("test").text_string("$a", "hello").matches_any().build()
 
         cloned = clone_rule(original)
 
@@ -252,30 +254,18 @@ class TestRuleTransformations:
 
     def test_transform_rule_rename(self):
         """Test rule transformation - renaming."""
-        original = (rule("original")
-                   .text_string("$a", "hello")
-                   .matches_any()
-                   .build())
+        original = rule("original").text_string("$a", "hello").matches_any().build()
 
-        transformed = (transform_rule(original)
-                      .rename("transformed")
-                      .build())
+        transformed = transform_rule(original).rename("transformed").build()
 
         assert transformed.name == "transformed"
         assert original.name == "original"  # Original unchanged
 
     def test_transform_rule_tags(self):
         """Test rule transformation - tags."""
-        original = (rule("test")
-                   .tagged("original")
-                   .text_string("$a", "hello")
-                   .matches_any()
-                   .build())
+        original = rule("test").tagged("original").text_string("$a", "hello").matches_any().build()
 
-        transformed = (transform_rule(original)
-                      .add_tag("new")
-                      .remove_tag("original")
-                      .build())
+        transformed = transform_rule(original).add_tag("new").remove_tag("original").build()
 
         tag_names = [tag.name for tag in transformed.tags]
         assert "new" in tag_names
@@ -283,16 +273,11 @@ class TestRuleTransformations:
 
     def test_transform_rule_prefix(self):
         """Test rule transformation - prefix."""
-        original = (rule("test")
-                   .text_string("$a", "hello")
-                   .text_string("$b", "world")
-                   .matches_any()
-                   .build())
+        original = (
+            rule("test").text_string("$a", "hello").text_string("$b", "world").matches_any().build()
+        )
 
-        transformed = (transform_rule(original)
-                      .add_prefix("win32_")
-                      .prefix_strings("str_")
-                      .build())
+        transformed = transform_rule(original).add_prefix("win32_").prefix_strings("str_").build()
 
         assert transformed.name == "win32_test"
         string_ids = [s.identifier for s in transformed.strings]
@@ -305,10 +290,7 @@ class TestCodeGeneration:
 
     def test_generate_simple_rule(self):
         """Test generating code from simple rule."""
-        rule_ast = (rule("simple_test")
-                   .text_string("$test", "hello")
-                   .matches_any()
-                   .build())
+        rule_ast = rule("simple_test").text_string("$test", "hello").matches_any().build()
 
         generator = CodeGenerator()
         code = generator.generate(rule_ast)
@@ -319,19 +301,23 @@ class TestCodeGeneration:
 
     def test_generate_complex_file(self):
         """Test generating code from complex YARA file."""
-        yara_ast = (yara_file()
-                   .import_module("pe")
-                   .rule("complex_rule")
-                       .tagged("malware", "test")
-                       .authored_by("Test")
-                       .mz_header()
-                       .text_string("$str", "backdoor").nocase()
-                       .with_condition_builder(lambda c:
-                           c.string_matches("$mz").at(0)
-                           .and_(c.string_matches("$str"))
-                           .and_(c.filesize_gt(1024))
-                       )
-                   .then_build_file())
+        yara_ast = (
+            yara_file()
+            .import_module("pe")
+            .rule("complex_rule")
+            .tagged("malware", "test")
+            .authored_by("Test")
+            .mz_header()
+            .text_string("$str", "backdoor")
+            .nocase()
+            .with_condition_builder(
+                lambda c: c.string_matches("$mz")
+                .at(0)
+                .and_(c.string_matches("$str"))
+                .and_(c.filesize_gt(1024))
+            )
+            .then_build_file()
+        )
 
         generator = CodeGenerator()
         code = generator.generate(yara_ast)
@@ -352,19 +338,22 @@ if __name__ == "__main__":
     print("Testing fluent API...")
 
     # Create a test rule
-    rule_ast = (rule("fluent_test")
-               .tagged("test", "fluent")
-               .authored_by("Test Suite")
-               .described_as("Fluent API test rule")
-               .text_string("$hello", "hello world").nocase()
-               .hex_string("$mz", "4D 5A")
-               .regex_string("$email", r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-               .with_condition_builder(lambda c:
-                   c.string_matches("$hello")
-                   .and_(c.string_matches("$mz").at(0))
-                   .or_(c.string_matches("$email"))
-               )
-               .build())
+    rule_ast = (
+        rule("fluent_test")
+        .tagged("test", "fluent")
+        .authored_by("Test Suite")
+        .described_as("Fluent API test rule")
+        .text_string("$hello", "hello world")
+        .nocase()
+        .hex_string("$mz", "4D 5A")
+        .regex_string("$email", r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+        .with_condition_builder(
+            lambda c: c.string_matches("$hello")
+            .and_(c.string_matches("$mz").at(0))
+            .or_(c.string_matches("$email"))
+        )
+        .build()
+    )
 
     print(f"✓ Created rule: {rule_ast.name}")
     print(f"✓ Tags: {[tag.name for tag in rule_ast.tags]}")
@@ -372,10 +361,7 @@ if __name__ == "__main__":
     print(f"✓ Has condition: {rule_ast.condition is not None}")
 
     # Test transformation
-    transformed = (transform_rule(rule_ast)
-                  .add_prefix("test_")
-                  .add_tag("transformed")
-                  .build())
+    transformed = transform_rule(rule_ast).add_prefix("test_").add_tag("transformed").build()
 
     print(f"✓ Transformed rule: {transformed.name}")
     print(f"✓ New tags: {[tag.name for tag in transformed.tags]}")

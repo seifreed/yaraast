@@ -1,16 +1,20 @@
 """YARA condition evaluator."""
 
+from __future__ import annotations
+
 import struct
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import *
 from yaraast.ast.expressions import *
-from yaraast.ast.rules import Rule
 from yaraast.evaluation.mock_modules import MockModuleRegistry
 from yaraast.evaluation.string_matcher import StringMatcher
 from yaraast.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.rules import Rule
 
 
 @dataclass
@@ -210,7 +214,7 @@ class YaraEvaluator(ASTVisitor[Any]):
 
             try:
                 return bool(re.search(right, left))
-            except:
+            except Exception:
                 return False
 
         else:
@@ -298,7 +302,7 @@ class YaraEvaluator(ASTVisitor[Any]):
         if hasattr(obj, "__getitem__"):
             try:
                 return obj[node.member]
-            except:
+            except Exception:
                 pass
 
         raise ValueError(f"Cannot access member {node.member}")
@@ -310,7 +314,7 @@ class YaraEvaluator(ASTVisitor[Any]):
 
         try:
             return array[index]
-        except:
+        except Exception:
             return None
 
     # Condition evaluation

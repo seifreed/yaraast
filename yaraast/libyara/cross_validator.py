@@ -1,14 +1,18 @@
 """Cross-validation between yaraast evaluation and libyara."""
 
+from __future__ import annotations
+
 import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
 from yaraast.evaluation import YaraEvaluator
 
 from .compiler import LibyaraCompiler
 from .scanner import LibyaraScanner
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
 
 
 @dataclass

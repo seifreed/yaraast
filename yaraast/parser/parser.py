@@ -1,5 +1,7 @@
 """YARA parser implementation."""
 
+from __future__ import annotations
+
 from typing import Any
 
 from yaraast.ast.base import *

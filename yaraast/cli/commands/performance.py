@@ -146,7 +146,7 @@ def batch(
             for operation, result in results.items()
         }
 
-        with open(results_file, "w") as f:
+        with Path(results_file).open("w") as f:
             json.dump(results_data, f, indent=2)
 
         click.echo(f"\n📁 Detailed results saved to: {results_file}")
@@ -165,7 +165,7 @@ def batch(
 
     except Exception as e:
         click.echo(f"\n❌ Error during batch processing: {e}", err=True)
-        raise click.Abort
+        raise click.Abort from None
 
 
 @performance.command()
@@ -283,7 +283,7 @@ def stream(
                 ],
             }
 
-            with open(output, "w") as f:
+            with Path(output).open("w") as f:
                 json.dump(output_data, f, indent=2)
 
             click.echo(f"\n📁 Detailed results saved to: {output}")
@@ -293,7 +293,7 @@ def stream(
         click.echo("\n⏹️  Parsing cancelled by user")
     except Exception as e:
         click.echo(f"\n❌ Error during streaming parse: {e}", err=True)
-        raise click.Abort
+        raise click.Abort from None
 
 
 @performance.command()
@@ -383,7 +383,7 @@ def parallel(
 
                 if complexity_results:
                     complexity_file = output_dir / "complexity_analysis.json"
-                    with open(complexity_file, "w") as f:
+                    with Path(complexity_file).open("w") as f:
                         json.dump(complexity_results, f, indent=2)
 
                     click.echo(f"📊 Complexity analysis saved to: {complexity_file}")
@@ -431,7 +431,7 @@ def parallel(
         click.echo("\n⏹️  Analysis cancelled by user")
     except Exception as e:
         click.echo(f"\n❌ Error during parallel analysis: {e}", err=True)
-        raise click.Abort
+        raise click.Abort from None
 
 
 @performance.command()

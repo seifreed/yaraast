@@ -132,6 +132,7 @@ rule adapt_me {
 
     # Check adaptations were applied
     from yaraast.codegen import CodeGenerator
+
     generator = CodeGenerator()
     output = generator.generate(adapted)
 
@@ -161,7 +162,7 @@ private private rule complex_test {
     ast = parser.parse(yara_code)
 
     checker = YaraXCompatibilityChecker()
-    issues = checker.check(ast)
+    checker.check(ast)
     report = checker.get_report()
 
     # Check report structure

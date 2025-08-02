@@ -6,10 +6,7 @@ from pathlib import Path
 
 import click
 
-from yaraast.codegen.pretty_printer import (
-    PrettyPrinter,
-    StylePresets,
-)
+from yaraast.codegen.pretty_printer import PrettyPrinter, StylePresets
 from yaraast.parser import YaraParser
 from yaraast.serialization.roundtrip_serializer import (
     RoundTripSerializer,
@@ -79,7 +76,7 @@ def serialize(
     """
     try:
         # Read input file
-        with open(input_file, encoding="utf-8") as f:
+        with Path(input_file).open(encoding="utf-8") as f:
             yara_source = f.read()
 
         # Create serializer
@@ -94,7 +91,7 @@ def serialize(
 
         # Output result
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 f.write(serialized)
             click.echo(f"✅ Serialized to {output}")
             click.echo(f"   Format: {format.upper()}")
@@ -143,7 +140,7 @@ def deserialize(input_file: Path, format: str, output: Path | None, preserve_for
     """
     try:
         # Read serialized data
-        with open(input_file, encoding="utf-8") as f:
+        with Path(input_file).open(encoding="utf-8") as f:
             serialized_data = f.read()
 
         # Create serializer
@@ -156,7 +153,7 @@ def deserialize(input_file: Path, format: str, output: Path | None, preserve_for
 
         # Output result
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 f.write(yara_code)
             click.echo(f"✅ Generated YARA code to {output}")
             click.echo(f"   Rules: {len(ast.rules)}")
@@ -202,7 +199,7 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool):
     """
     try:
         # Read input file
-        with open(input_file, encoding="utf-8") as f:
+        with Path(input_file).open(encoding="utf-8") as f:
             yara_source = f.read()
 
         # Perform round-trip test
@@ -240,7 +237,7 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool):
 
         # Save detailed results if requested
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
             click.echo(f"\nDetailed results saved to {output}")
 
@@ -301,7 +298,7 @@ def pretty(
     try:
         # Parse input file
         parser = YaraParser()
-        with open(input_file, encoding="utf-8") as f:
+        with Path(input_file).open(encoding="utf-8") as f:
             yara_source = f.read()
 
         ast = parser.parse(yara_source)
@@ -332,7 +329,7 @@ def pretty(
 
         # Output result
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 f.write(formatted_code)
             click.echo(f"✅ Pretty printed to {output}")
             click.echo(f"   Style: {style}")
@@ -381,7 +378,7 @@ def pipeline(
     try:
         # Parse input file
         parser = YaraParser()
-        with open(input_file, encoding="utf-8") as f:
+        with Path(input_file).open(encoding="utf-8") as f:
             yara_source = f.read()
 
         ast = parser.parse(yara_source)
@@ -398,7 +395,7 @@ def pipeline(
 
         # Output main file
         if output:
-            with open(output, "w", encoding="utf-8") as f:
+            with Path(output).open("w", encoding="utf-8") as f:
                 f.write(yaml_content)
             click.echo(f"✅ Pipeline YAML written to {output}")
         else:
@@ -410,7 +407,7 @@ def pipeline(
             manifest_path = output.with_suffix(".manifest.yaml") if output else None
 
             if manifest_path:
-                with open(manifest_path, "w", encoding="utf-8") as f:
+                with Path(manifest_path).open("w", encoding="utf-8") as f:
                     f.write(manifest_content)
                 click.echo(f"✅ Rules manifest written to {manifest_path}")
             else:

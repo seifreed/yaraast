@@ -1,14 +1,19 @@
 """Enhanced fluent rule builder with comprehensive chaining support."""
 
-from collections.abc import Callable
-from typing import Self
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Self
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from yaraast.ast.expressions import Expression
 
 
 class FluentRuleBuilder:
@@ -78,7 +83,7 @@ class FluentRuleBuilder:
         self._string_builders.append(string_builder)
         return self
 
-    def string(self, identifier: str) -> "FluentStringContext":
+    def string(self, identifier: str) -> FluentStringContext:
         """Start defining a string (returns context for chaining)."""
         return FluentStringContext(self, identifier)
 
@@ -222,74 +227,74 @@ class FluentStringContext:
         self.string_builder = FluentStringBuilder(identifier)
 
     # String content methods
-    def literal(self, content: str) -> "FluentStringContext":
+    def literal(self, content: str) -> FluentStringContext:
         """Set string content as literal."""
         self.string_builder.literal(content)
         return self
 
-    def text(self, content: str) -> "FluentStringContext":
+    def text(self, content: str) -> FluentStringContext:
         """Set string content as text."""
         self.string_builder.text(content)
         return self
 
-    def hex(self, pattern: str) -> "FluentStringContext":
+    def hex(self, pattern: str) -> FluentStringContext:
         """Set string content as hex pattern."""
         self.string_builder.hex(pattern)
         return self
 
-    def regex(self, pattern: str) -> "FluentStringContext":
+    def regex(self, pattern: str) -> FluentStringContext:
         """Set string content as regex."""
         self.string_builder.regex(pattern)
         return self
 
     # String modifiers
-    def ascii(self) -> "FluentStringContext":
+    def ascii(self) -> FluentStringContext:
         """Add ASCII modifier."""
         self.string_builder.ascii()
         return self
 
-    def wide(self) -> "FluentStringContext":
+    def wide(self) -> FluentStringContext:
         """Add wide modifier."""
         self.string_builder.wide()
         return self
 
-    def nocase(self) -> "FluentStringContext":
+    def nocase(self) -> FluentStringContext:
         """Add nocase modifier."""
         self.string_builder.nocase()
         return self
 
-    def fullword(self) -> "FluentStringContext":
+    def fullword(self) -> FluentStringContext:
         """Add fullword modifier."""
         self.string_builder.fullword()
         return self
 
-    def private(self) -> "FluentStringContext":
+    def private(self) -> FluentStringContext:
         """Add private modifier."""
         self.string_builder.private()
         return self
 
-    def xor(self, key: int | str | None = None) -> "FluentStringContext":
+    def xor(self, key: int | str | None = None) -> FluentStringContext:
         """Add XOR modifier."""
         self.string_builder.xor(key)
         return self
 
-    def base64(self) -> "FluentStringContext":
+    def base64(self) -> FluentStringContext:
         """Add base64 modifier."""
         self.string_builder.base64()
         return self
 
     # Pattern helpers
-    def mz_header(self) -> "FluentStringContext":
+    def mz_header(self) -> FluentStringContext:
         """Set as MZ header pattern."""
         self.string_builder.mz_header()
         return self
 
-    def pe_header(self) -> "FluentStringContext":
+    def pe_header(self) -> FluentStringContext:
         """Set as PE header pattern."""
         self.string_builder.pe_header()
         return self
 
-    def email_pattern(self) -> "FluentStringContext":
+    def email_pattern(self) -> FluentStringContext:
         """Set as email regex pattern."""
         self.string_builder.email_pattern()
         return self
@@ -300,7 +305,7 @@ class FluentStringContext:
         self.rule_builder._string_builders.append(self.string_builder)
         return self.rule_builder
 
-    def and_string(self, identifier: str) -> "FluentStringContext":
+    def and_string(self, identifier: str) -> FluentStringContext:
         """Add this string and start another."""
         self.rule_builder._string_builders.append(self.string_builder)
         return FluentStringContext(self.rule_builder, identifier)
@@ -347,7 +352,7 @@ class FluentRuleBuilderWithFile(FluentRuleBuilder):
         super().__init__(name)
         self.file_builder = file_builder
 
-    def then_rule(self, name: str) -> "FluentRuleBuilderWithFile":
+    def then_rule(self, name: str) -> FluentRuleBuilderWithFile:
         """Add this rule and start another."""
         rule = self.build()
         self.file_builder.with_rule(rule)
