@@ -16,24 +16,8 @@ def validate():
     """Cross-validation commands."""
 
 
-@validate.command()
-@click.argument("rule_file", type=click.Path(exists=True))
-@click.argument("test_file", type=click.Path(exists=True))
-@click.option("-e", "--external", multiple=True, help="External variables (key=value)")
-@click.option("-v", "--verbose", is_flag=True, help="Show detailed results")
-def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
-    """Cross-validate YARA rules between yaraast and libyara.
-
-    Example:
-        yaraast validate cross rules.yar malware.bin
-        yaraast validate cross rules.yar sample.exe -e filename=sample.exe
-    """
-    if not YARA_AVAILABLE:
-        click.echo("Error: yara-python is not installed.", err=True)
-        click.echo("Install it with: pip install yara-python", err=True)
-        sys.exit(1)
-
-    # Parse externals
+def _parse_externals(external: tuple) -> dict:
+    """Parse external variables from command line."""
     externals = {}
     for ext in external:
         if "=" not in ext:
@@ -42,31 +26,11 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
             sys.exit(1)
         key, value = ext.split("=", 1)
         externals[key] = value
+    return externals
 
-    # Parse rules
-    try:
-        with Path(rule_file).open() as f:
-            rule_content = f.read()
 
-        parser = Parser()
-        ast = parser.parse(rule_content)
-    except Exception as e:
-        click.echo(f"Error parsing rules: {e}", err=True)
-        sys.exit(1)
-
-    # Read test data
-    try:
-        with Path(test_file).open("rb") as f:
-            test_data = f.read()
-    except Exception as e:
-        click.echo(f"Error reading test file: {e}", err=True)
-        sys.exit(1)
-
-    # Validate
-    validator = CrossValidator()
-    result = validator.validate(ast, test_data, externals)
-
-    # Display results
+def _display_cross_results(result, verbose: bool):
+    """Display cross-validation results."""
     if result.valid:
         click.echo(click.style("✓ Validation PASSED", fg="green", bold=True))
     else:
@@ -92,7 +56,123 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
         click.echo(f"  LibYARA scanning: {result.libyara_scan_time:.3f}s")
         click.echo(f"  Total time: {result.total_time:.3f}s")
 
+
+@validate.command()
+@click.argument("rule_file", type=click.Path(exists=True))
+@click.argument("test_file", type=click.Path(exists=True))
+@click.option("-e", "--external", multiple=True, help="External variables (key=value)")
+@click.option("-v", "--verbose", is_flag=True, help="Show detailed results")
+def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
+    """Cross-validate YARA rules between yaraast and libyara.
+
+    Example:
+        yaraast validate cross rules.yar malware.bin
+        yaraast validate cross rules.yar sample.exe -e filename=sample.exe
+    """
+    if not YARA_AVAILABLE:
+        click.echo("Error: yara-python is not installed.", err=True)
+        click.echo("Install it with: pip install yara-python", err=True)
+        sys.exit(1)
+
+    # Parse externals
+    externals = _parse_externals(external)
+
+    # Parse rules
+    try:
+        with Path(rule_file).open() as f:
+            rule_content = f.read()
+
+        parser = Parser()
+        ast = parser.parse(rule_content)
+    except Exception as e:
+        click.echo(f"Error parsing rules: {e}", err=True)
+        sys.exit(1)
+
+    # Read test data
+    try:
+        with Path(test_file).open("rb") as f:
+            test_data = f.read()
+    except Exception as e:
+        click.echo(f"Error reading test file: {e}", err=True)
+        sys.exit(1)
+
+    # Validate
+    validator = CrossValidator()
+    result = validator.validate(ast, test_data, externals)
+
+    # Display results
+    _display_cross_results(result, verbose)
+
     sys.exit(0 if result.valid else 1)
+
+
+def _read_test_data(test_data_path: str | None) -> bytes | None:
+    """Read test data if provided."""
+    if not test_data_path:
+        return None
+
+    try:
+        with Path(test_data_path).open("rb") as f:
+            return f.read()
+    except Exception as e:
+        click.echo(f"Error reading test data: {e}", err=True)
+        sys.exit(1)
+
+
+def _display_roundtrip_summary(result):
+    """Display round-trip test summary."""
+    if result.equivalent:
+        click.echo(click.style("✓ Round-trip PASSED", fg="green", bold=True))
+    else:
+        click.echo(click.style("✗ Round-trip FAILED", fg="red", bold=True))
+
+    # Show details
+    def status(x):
+        return click.style("✓", fg="green") if x else click.style("✗", fg="red")
+
+    click.echo(f"\n{status(result.ast_equivalent)} AST equivalence")
+    click.echo(f"{status(result.code_equivalent)} Code generation equivalence")
+    click.echo(f"{status(result.original_compiles)} Original compiles with libyara")
+    click.echo(f"{status(result.regenerated_compiles)} Regenerated compiles with libyara")
+
+    return status
+
+
+def _display_differences(title: str, differences: list):
+    """Display a list of differences."""
+    if differences:
+        click.echo(f"\n{title}:")
+        for diff in differences:
+            click.echo(f"  - {diff}")
+
+
+def _display_code_comparison(result, verbose: bool):
+    """Display original and regenerated code comparison."""
+    if verbose and result.original_code:
+        click.echo("\nOriginal code:")
+        click.echo("-" * 40)
+        click.echo(result.original_code)
+        click.echo("-" * 40)
+        
+        if result.regenerated_code:
+            click.echo("\nRegenerated code:")
+            click.echo("-" * 40)
+            click.echo(result.regenerated_code)
+            click.echo("-" * 40)
+
+
+def _display_roundtrip_details(result, status_fn, data, verbose: bool):
+    """Display detailed round-trip results."""
+    if data:
+        click.echo(f"{status_fn(result.scan_equivalent)} Scan results match")
+        click.echo(f"{status_fn(result.eval_equivalent)} Evaluation results match")
+
+    if verbose or not result.equivalent:
+        _display_differences("AST differences", result.ast_differences)
+        _display_differences("Compilation errors", result.compilation_errors)
+        _display_differences("Scan differences", result.scan_differences)
+        _display_differences("Evaluation differences", result.eval_differences)
+        _display_code_comparison(result, verbose)
 
 
 @validate.command()
@@ -116,69 +196,14 @@ def roundtrip(rule_file: str, test_data: str | None, verbose: bool):
         sys.exit(1)
 
     # Read test data if provided
-    data = None
-    if test_data:
-        try:
-            with Path(test_data).open("rb") as f:
-                data = f.read()
-        except Exception as e:
-            click.echo(f"Error reading test data: {e}", err=True)
-            sys.exit(1)
+    data = _read_test_data(test_data)
 
     # Test round-trip
     tester = EquivalenceTester()
     result = tester.test_file_round_trip(rule_file, data)
 
     # Display results
-    if result.equivalent:
-        click.echo(click.style("✓ Round-trip PASSED", fg="green", bold=True))
-    else:
-        click.echo(click.style("✗ Round-trip FAILED", fg="red", bold=True))
-
-    # Show details
-    def status(x):
-        return click.style("✓", fg="green") if x else click.style("✗", fg="red")
-
-    click.echo(f"\n{status(result.ast_equivalent)} AST equivalence")
-    click.echo(f"{status(result.code_equivalent)} Code generation equivalence")
-    click.echo(f"{status(result.original_compiles)} Original compiles with libyara")
-    click.echo(f"{status(result.regenerated_compiles)} Regenerated compiles with libyara")
-
-    if data:
-        click.echo(f"{status(result.scan_equivalent)} Scan results match")
-        click.echo(f"{status(result.eval_equivalent)} Evaluation results match")
-
-    if verbose or not result.equivalent:
-        if result.ast_differences:
-            click.echo("\nAST differences:")
-            for diff in result.ast_differences:
-                click.echo(f"  - {diff}")
-
-        if result.compilation_errors:
-            click.echo("\nCompilation errors:")
-            for error in result.compilation_errors:
-                click.echo(f"  - {error}")
-
-        if result.scan_differences:
-            click.echo("\nScan differences:")
-            for diff in result.scan_differences:
-                click.echo(f"  - {diff}")
-
-        if result.eval_differences:
-            click.echo("\nEvaluation differences:")
-            for diff in result.eval_differences:
-                click.echo(f"  - {diff}")
-
-        if verbose and result.original_code:
-            click.echo("\nOriginal code:")
-            click.echo("-" * 40)
-            click.echo(result.original_code)
-            click.echo("-" * 40)
-
-            if result.regenerated_code:
-                click.echo("\nRegenerated code:")
-                click.echo("-" * 40)
-                click.echo(result.regenerated_code)
-                click.echo("-" * 40)
+    status_fn = _display_roundtrip_summary(result)
+    _display_roundtrip_details(result, status_fn, data, verbose)
 
     sys.exit(0 if result.equivalent else 1)
