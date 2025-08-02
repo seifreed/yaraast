@@ -1,0 +1,277 @@
+syntax = "proto3";
+
+package yaraast;
+
+// Main YARA file structure
+message YaraFile {
+    repeated Import imports = 1;
+    repeated Include includes = 2;
+    repeated Rule rules = 3;
+    Metadata metadata = 4;
+}
+
+// Metadata for serialization
+message Metadata {
+    string format = 1;
+    string version = 2;
+    string ast_type = 3;
+    int32 rules_count = 4;
+    int32 imports_count = 5;
+    int32 includes_count = 6;
+    int64 timestamp = 7;
+    string source_file = 8;
+}
+
+// Import statement
+message Import {
+    string module = 1;
+    string alias = 2;
+}
+
+// Include statement
+message Include {
+    string path = 1;
+}
+
+// Rule definition
+message Rule {
+    string name = 1;
+    repeated string modifiers = 2;
+    repeated Tag tags = 3;
+    map<string, MetaValue> meta = 4;
+    repeated StringDefinition strings = 5;
+    Expression condition = 6;
+}
+
+// Tag
+message Tag {
+    string name = 1;
+}
+
+// Meta value (can be string, int, or bool)
+message MetaValue {
+    oneof value {
+        string string_value = 1;
+        int64 int_value = 2;
+        bool bool_value = 3;
+        double double_value = 4;
+    }
+}
+
+// String definitions
+message StringDefinition {
+    string identifier = 1;
+    oneof string_type {
+        PlainString plain = 2;
+        HexString hex = 3;
+        RegexString regex = 4;
+    }
+}
+
+message PlainString {
+    string value = 1;
+    repeated StringModifier modifiers = 2;
+}
+
+message HexString {
+    repeated HexToken tokens = 1;
+    repeated StringModifier modifiers = 2;
+}
+
+message RegexString {
+    string regex = 1;
+    repeated StringModifier modifiers = 2;
+}
+
+message StringModifier {
+    string name = 1;
+    string value = 2;
+}
+
+// Hex tokens
+message HexToken {
+    oneof token_type {
+        HexByte byte = 1;
+        HexWildcard wildcard = 2;
+        HexJump jump = 3;
+        HexAlternative alternative = 4;
+        HexNibble nibble = 5;
+    }
+}
+
+message HexByte {
+    string value = 1;
+}
+
+message HexWildcard {
+    // Empty - represents ??
+}
+
+message HexJump {
+    int32 min_jump = 1;
+    int32 max_jump = 2;
+}
+
+message HexAlternative {
+    repeated HexTokenList alternatives = 1;
+}
+
+message HexTokenList {
+    repeated HexToken tokens = 1;
+}
+
+message HexNibble {
+    bool high = 1;
+    int32 value = 2;
+}
+
+// Expressions
+message Expression {
+    oneof expression_type {
+        Identifier identifier = 1;
+        StringIdentifier string_identifier = 2;
+        StringCount string_count = 3;
+        StringOffset string_offset = 4;
+        StringLength string_length = 5;
+        IntegerLiteral integer_literal = 6;
+        DoubleLiteral double_literal = 7;
+        StringLiteral string_literal = 8;
+        RegexLiteral regex_literal = 9;
+        BooleanLiteral boolean_literal = 10;
+        BinaryExpression binary_expression = 11;
+        UnaryExpression unary_expression = 12;
+        ParenthesesExpression parentheses_expression = 13;
+        SetExpression set_expression = 14;
+        RangeExpression range_expression = 15;
+        FunctionCall function_call = 16;
+        ArrayAccess array_access = 17;
+        MemberAccess member_access = 18;
+        ForExpression for_expression = 19;
+        ForOfExpression for_of_expression = 20;
+        AtExpression at_expression = 21;
+        InExpression in_expression = 22;
+        OfExpression of_expression = 23;
+        DefinedExpression defined_expression = 24;
+        StringOperatorExpression string_operator_expression = 25;
+    }
+}
+
+message Identifier {
+    string name = 1;
+}
+
+message StringIdentifier {
+    string name = 1;
+}
+
+message StringCount {
+    string string_id = 1;
+}
+
+message StringOffset {
+    string string_id = 1;
+    Expression index = 2;
+}
+
+message StringLength {
+    string string_id = 1;
+    Expression index = 2;
+}
+
+message IntegerLiteral {
+    int64 value = 1;
+}
+
+message DoubleLiteral {
+    double value = 1;
+}
+
+message StringLiteral {
+    string value = 1;
+}
+
+message RegexLiteral {
+    string pattern = 1;
+    string modifiers = 2;
+}
+
+message BooleanLiteral {
+    bool value = 1;
+}
+
+message BinaryExpression {
+    Expression left = 1;
+    string operator = 2;
+    Expression right = 3;
+}
+
+message UnaryExpression {
+    string operator = 1;
+    Expression operand = 2;
+}
+
+message ParenthesesExpression {
+    Expression expression = 1;
+}
+
+message SetExpression {
+    repeated Expression elements = 1;
+}
+
+message RangeExpression {
+    Expression low = 1;
+    Expression high = 2;
+}
+
+message FunctionCall {
+    string function = 1;
+    repeated Expression arguments = 2;
+}
+
+message ArrayAccess {
+    Expression array = 1;
+    Expression index = 2;
+}
+
+message MemberAccess {
+    Expression object = 1;
+    string member = 2;
+}
+
+message ForExpression {
+    string quantifier = 1;
+    string variable = 2;
+    Expression iterable = 3;
+    Expression body = 4;
+}
+
+message ForOfExpression {
+    string quantifier = 1;
+    Expression string_set = 2;
+    Expression condition = 3;
+}
+
+message AtExpression {
+    string string_id = 1;
+    Expression offset = 2;
+}
+
+message InExpression {
+    string string_id = 1;
+    Expression range = 2;
+}
+
+message OfExpression {
+    Expression quantifier = 1;
+    Expression string_set = 2;
+}
+
+message DefinedExpression {
+    Expression expression = 1;
+}
+
+message StringOperatorExpression {
+    Expression left = 1;
+    string operator = 2;
+    Expression right = 3;
+}

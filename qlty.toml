@@ -1,0 +1,55 @@
+# Qlty configuration for yaraast
+# See https://qlty.sh/docs/configuration
+
+[project]
+name = "yaraast"
+language = "python"
+
+[plugins.ruff]
+enabled = true
+
+[plugins.mypy]
+enabled = true
+
+[plugins.bandit]
+enabled = true
+
+[plugins.coverage]
+enabled = true
+
+[plugins.complexity]
+enabled = true
+
+[plugins.duplication]
+enabled = true
+
+[plugins.security]
+enabled = true
+
+[plugins.documentation]
+enabled = true
+
+# Quality thresholds
+[thresholds]
+overall = 95.0
+maintainability = 90.0
+security = 95.0
+coverage = 90.0
+complexity = 85.0
+duplication = 95.0
+documentation = 80.0
+
+# File patterns to include/exclude
+[files]
+include = ["yaraast/**/*.py", "tests/**/*.py"]
+exclude = [
+    "venv/**/*",
+    "build/**/*",
+    "dist/**/*",
+    ".git/**/*",
+    "**/*_pb2.py",
+    "**/*_pb2_grpc.py",
+    ".pytest_cache/**/*",
+    ".mypy_cache/**/*",
+    "__pycache__/**/*"
+]

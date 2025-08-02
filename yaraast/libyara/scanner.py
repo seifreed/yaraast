@@ -1,0 +1,238 @@
+"""Scanner using libyara for cross-validation."""
+
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+try:
+    import yara
+    YARA_AVAILABLE = True
+except ImportError:
+    yara = None
+    YARA_AVAILABLE = False
+
+
+@dataclass
+class MatchInfo:
+    """Information about a rule match."""
+    rule: str
+    namespace: str
+    tags: List[str]
+    meta: Dict[str, Any]
+    strings: List[Dict[str, Any]]
+
+    @classmethod
+    def from_yara_match(cls, match) -> 'MatchInfo':
+        """Create from yara match object."""
+        return cls(
+            rule=match.rule,
+            namespace=match.namespace,
+            tags=list(match.tags),
+            meta=dict(match.meta),
+            strings=[
+                {
+                    'offset': offset,
+                    'identifier': identifier,
+                    'data': data
+                }
+                for offset, identifier, data in match.strings
+            ]
+        )
+
+
+@dataclass
+class ScanResult:
+    """Result of scanning with libyara."""
+    success: bool
+    matches: List[MatchInfo] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
+    scan_time: float = 0.0
+    data_size: int = 0
+
+    @property
+    def matched(self) -> bool:
+        """Check if any rules matched."""
+        return len(self.matches) > 0
+
+    @property
+    def matched_rules(self) -> List[str]:
+        """Get list of matched rule names."""
+        return [m.rule for m in self.matches]
+
+
+class LibyaraScanner:
+    """Scanner using libyara backend."""
+
+    def __init__(self, timeout: Optional[int] = None):
+        """Initialize scanner.
+
+        Args:
+            timeout: Scan timeout in seconds
+        """
+        if not YARA_AVAILABLE:
+            raise ImportError(
+                "yara-python is not installed. "
+                "Install it with: pip install yara-python"
+            )
+
+        self.timeout = timeout
+
+    def scan_data(self, rules: Any, data: bytes,
+                  fast_mode: bool = False) -> ScanResult:
+        """Scan data using compiled rules.
+
+        Args:
+            rules: Compiled yara.Rules object
+            data: Data to scan
+            fast_mode: Use fast mode (stop on first match)
+
+        Returns:
+            ScanResult with matches and timing
+        """
+        start_time = time.time()
+        errors = []
+        matches = []
+
+        try:
+            # Perform scan
+            yara_matches = rules.match(
+                data=data,
+                timeout=self.timeout,
+                fast=fast_mode
+            )
+
+            # Convert matches
+            for match in yara_matches:
+                matches.append(MatchInfo.from_yara_match(match))
+
+            scan_time = time.time() - start_time
+
+            return ScanResult(
+                success=True,
+                matches=matches,
+                scan_time=scan_time,
+                data_size=len(data)
+            )
+
+        except yara.TimeoutError:
+            errors.append(f"Scan timeout after {self.timeout} seconds")
+        except yara.Error as e:
+            errors.append(f"Scan error: {str(e)}")
+        except Exception as e:
+            errors.append(f"Unexpected error: {str(e)}")
+
+        scan_time = time.time() - start_time
+
+        return ScanResult(
+            success=False,
+            errors=errors,
+            scan_time=scan_time,
+            data_size=len(data)
+        )
+
+    def scan_file(self, rules: Any, filepath: Union[str, Path],
+                  fast_mode: bool = False) -> ScanResult:
+        """Scan file using compiled rules.
+
+        Args:
+            rules: Compiled yara.Rules object
+            filepath: Path to file to scan
+            fast_mode: Use fast mode (stop on first match)
+
+        Returns:
+            ScanResult with matches and timing
+        """
+        filepath = Path(filepath)
+
+        if not filepath.exists():
+            return ScanResult(
+                success=False,
+                errors=[f"File not found: {filepath}"]
+            )
+
+        start_time = time.time()
+        errors = []
+        matches = []
+
+        try:
+            # Get file size
+            file_size = filepath.stat().st_size
+
+            # Perform scan
+            yara_matches = rules.match(
+                filepath=str(filepath),
+                timeout=self.timeout,
+                fast=fast_mode
+            )
+
+            # Convert matches
+            for match in yara_matches:
+                matches.append(MatchInfo.from_yara_match(match))
+
+            scan_time = time.time() - start_time
+
+            return ScanResult(
+                success=True,
+                matches=matches,
+                scan_time=scan_time,
+                data_size=file_size
+            )
+
+        except yara.TimeoutError:
+            errors.append(f"Scan timeout after {self.timeout} seconds")
+        except yara.Error as e:
+            errors.append(f"Scan error: {str(e)}")
+        except Exception as e:
+            errors.append(f"Unexpected error: {str(e)}")
+
+        scan_time = time.time() - start_time
+
+        return ScanResult(
+            success=False,
+            errors=errors,
+            scan_time=scan_time
+        )
+
+    def scan_process(self, rules: Any, pid: int) -> ScanResult:
+        """Scan process memory using compiled rules.
+
+        Args:
+            rules: Compiled yara.Rules object
+            pid: Process ID to scan
+
+        Returns:
+            ScanResult with matches
+        """
+        start_time = time.time()
+        errors = []
+        matches = []
+
+        try:
+            # Perform scan
+            yara_matches = rules.match(pid=pid)
+
+            # Convert matches
+            for match in yara_matches:
+                matches.append(MatchInfo.from_yara_match(match))
+
+            scan_time = time.time() - start_time
+
+            return ScanResult(
+                success=True,
+                matches=matches,
+                scan_time=scan_time
+            )
+
+        except yara.Error as e:
+            errors.append(f"Process scan error: {str(e)}")
+        except Exception as e:
+            errors.append(f"Unexpected error: {str(e)}")
+
+        scan_time = time.time() - start_time
+
+        return ScanResult(
+            success=False,
+            errors=errors,
+            scan_time=scan_time
+        )
