@@ -92,7 +92,7 @@ class IncludeOncePragma(Pragma):
 class DefineDirective(Pragma):
     """Define directive for macro definitions."""
 
-    macro_name: str
+    macro_name: str = ""
     macro_value: str | None = None
 
     def __init__(self, macro_name: str, macro_value: str | None = None):
@@ -114,7 +114,7 @@ class DefineDirective(Pragma):
 class UndefDirective(Pragma):
     """Undefine directive for removing macro definitions."""
 
-    macro_name: str
+    macro_name: str = ""
 
     def __init__(self, macro_name: str):
         super().__init__(pragma_type=PragmaType.UNDEF, name="undef", arguments=[macro_name])
