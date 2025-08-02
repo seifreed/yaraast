@@ -176,6 +176,87 @@ def _save_batch_results(results, output_dir):
         json.dump(results_data, f, indent=2)
 
 
+def _get_parse_iterator(parser, input_path: Path, split_rules: bool, pattern: str, recursive: bool):
+    """Get appropriate parse iterator based on input type."""
+    if input_path.is_file():
+        if split_rules:
+            return parser.parse_rules_from_file(input_path)
+        else:
+            return parser.parse_files([input_path])
+    else:
+        return parser.parse_directory(input_path, pattern, recursive)
+
+
+def _display_stream_summary(results, total_time: float):
+    """Display streaming parse summary."""
+    successful = [r for r in results if r.status.value == "success"]
+    failed = [r for r in results if r.status.value == "error"]
+
+    click.echo(f"\n📊 Streaming Parse Results ({total_time:.2f}s)")
+    click.echo("=" * 40)
+    click.echo(f"Total files/rules processed: {len(results)}")
+    click.echo(f"Successful: {len(successful)}")
+    click.echo(f"Failed: {len(failed)}")
+    click.echo(f"Success rate: {len(successful) / len(results) * 100:.1f}%")
+
+    return successful, failed
+
+
+def _display_stream_details(successful, failed, parser_stats):
+    """Display detailed streaming statistics."""
+    if successful:
+        total_rules = sum(r.rule_count for r in successful)
+        total_imports = sum(r.import_count for r in successful)
+        avg_parse_time = sum(r.parse_time for r in successful) / len(successful)
+
+        click.echo(f"Total rules parsed: {total_rules}")
+        click.echo(f"Total imports: {total_imports}")
+        click.echo(f"Average parse time: {avg_parse_time * 1000:.2f}ms")
+
+    if parser_stats["peak_memory_mb"] > 0:
+        click.echo(f"Peak memory usage: {parser_stats['peak_memory_mb']:.1f} MB")
+
+    if failed:
+        click.echo("\n❌ Failed files:")
+        for result in failed[:5]:
+            file_name = Path(result.file_path or "unknown").name
+            click.echo(f"  - {file_name}: {result.error}")
+
+        if len(failed) > 5:
+            click.echo(f"  ... and {len(failed) - 5} more")
+
+
+def _save_stream_results(output: str, results, successful, failed, total_time: float, parser_stats):
+    """Save streaming results to file."""
+    output_data = {
+        "summary": {
+            "total_processed": len(results),
+            "successful": len(successful),
+            "failed": len(failed),
+            "success_rate": len(successful) / len(results) * 100,
+            "total_time": total_time,
+            "parser_stats": parser_stats,
+        },
+        "results": [
+            {
+                "file_path": r.file_path,
+                "rule_name": r.rule_name,
+                "status": r.status.value,
+                "error": r.error,
+                "parse_time": r.parse_time,
+                "rule_count": r.rule_count,
+                "import_count": r.import_count,
+            }
+            for r in results
+        ],
+    }
+
+    with Path(output).open("w") as f:
+        json.dump(output_data, f, indent=2)
+
+    click.echo(f"\n📁 Detailed results saved to: {output}")
+
+
 @performance.command()
 @click.argument("input_path", type=click.Path(exists=True))
 @click.option("--output", "-o", type=click.Path(), help="Output file for parsing statistics")
@@ -212,16 +293,7 @@ def stream(
     results = []
 
     try:
-        if input_path.is_file():
-            if split_rules:
-                # Parse individual rules from file
-                result_iter = parser.parse_rules_from_file(input_path)
-            else:
-                # Parse entire file
-                result_iter = parser.parse_files([input_path])
-        else:
-            # Parse directory
-            result_iter = parser.parse_directory(input_path, pattern, recursive)
+        result_iter = _get_parse_iterator(parser, input_path, split_rules, pattern, recursive)
 
         # Process results
         for result in result_iter:
@@ -233,68 +305,15 @@ def stream(
             click.echo()  # New line after progress
 
         # Display statistics
-        successful = [r for r in results if r.status.value == "success"]
-        failed = [r for r in results if r.status.value == "error"]
-
-        click.echo(f"\n📊 Streaming Parse Results ({total_time:.2f}s)")
-        click.echo("=" * 40)
-        click.echo(f"Total files/rules processed: {len(results)}")
-        click.echo(f"Successful: {len(successful)}")
-        click.echo(f"Failed: {len(failed)}")
-        click.echo(f"Success rate: {len(successful) / len(results) * 100:.1f}%")
-
-        if successful:
-            total_rules = sum(r.rule_count for r in successful)
-            total_imports = sum(r.import_count for r in successful)
-            avg_parse_time = sum(r.parse_time for r in successful) / len(successful)
-
-            click.echo(f"Total rules parsed: {total_rules}")
-            click.echo(f"Total imports: {total_imports}")
-            click.echo(f"Average parse time: {avg_parse_time * 1000:.2f}ms")
+        successful, failed = _display_stream_summary(results, total_time)
 
         # Parser statistics
         parser_stats = parser.get_statistics()
-        if parser_stats["peak_memory_mb"] > 0:
-            click.echo(f"Peak memory usage: {parser_stats['peak_memory_mb']:.1f} MB")
-
-        if failed:
-            click.echo("\n❌ Failed files:")
-            for result in failed[:5]:  # Show first 5 failures
-                file_name = Path(result.file_path or "unknown").name
-                click.echo(f"  - {file_name}: {result.error}")
-
-            if len(failed) > 5:
-                click.echo(f"  ... and {len(failed) - 5} more")
+        _display_stream_details(successful, failed, parser_stats)
 
         # Save results if requested
         if output:
-            output_data = {
-                "summary": {
-                    "total_processed": len(results),
-                    "successful": len(successful),
-                    "failed": len(failed),
-                    "success_rate": len(successful) / len(results) * 100,
-                    "total_time": total_time,
-                    "parser_stats": parser_stats,
-                },
-                "results": [
-                    {
-                        "file_path": r.file_path,
-                        "rule_name": r.rule_name,
-                        "status": r.status.value,
-                        "error": r.error,
-                        "parse_time": r.parse_time,
-                        "rule_count": r.rule_count,
-                        "import_count": r.import_count,
-                    }
-                    for r in results
-                ],
-            }
-
-            with Path(output).open("w") as f:
-                json.dump(output_data, f, indent=2)
-
-            click.echo(f"\n📁 Detailed results saved to: {output}")
+            _save_stream_results(output, results, successful, failed, total_time, parser_stats)
 
     except KeyboardInterrupt:
         parser.cancel()
@@ -317,6 +336,94 @@ def stream(
     help="Type of analysis to perform",
 )
 @click.option("--chunk-size", "-c", type=int, default=10, help="Files per processing chunk")
+def _collect_file_paths(input_paths: tuple) -> list[Path]:
+    """Collect all YARA files from input paths."""
+    file_paths = []
+    for path in input_paths:
+        path = Path(path)
+        if path.is_file():
+            file_paths.append(path)
+        elif path.is_dir():
+            file_paths.extend(path.rglob("*.yar"))
+    return file_paths
+
+
+def _extract_successful_asts(parse_jobs, file_paths: list[Path], chunk_size: int):
+    """Extract successful ASTs from parse jobs."""
+    successful_asts = []
+    file_names = []
+
+    for job in parse_jobs:
+        if job.status.value == "completed" and job.result:
+            for i, ast in enumerate(job.result):
+                if not hasattr(ast, "_parse_error"):
+                    successful_asts.append(ast)
+                    # Get corresponding file name
+                    job_index = parse_jobs.index(job)
+                    start_idx = job_index * chunk_size
+                    file_idx = start_idx + i
+                    if file_idx < len(file_paths):
+                        file_names.append(str(file_paths[file_idx]))
+
+    return successful_asts, file_names
+
+
+def _perform_complexity_analysis(analyzer, successful_asts, file_names, output_dir: Path):
+    """Perform complexity analysis and save results."""
+    click.echo("\n🧮 Analyzing complexity...")
+    complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts, file_names)
+
+    # Save complexity results
+    complexity_results = []
+    for job in complexity_jobs:
+        if job.status.value == "completed":
+            complexity_results.append(job.result)
+
+    if complexity_results:
+        complexity_file = output_dir / "complexity_analysis.json"
+        with Path(complexity_file).open("w") as f:
+            json.dump(complexity_results, f, indent=2)
+
+        click.echo(f"📊 Complexity analysis saved to: {complexity_file}")
+
+        # Show summary statistics
+        quality_scores = [r["quality_score"] for r in complexity_results]
+        avg_quality = sum(quality_scores) / len(quality_scores)
+
+        click.echo(f"   Average quality score: {avg_quality:.1f}")
+        click.echo(f"   Quality range: {min(quality_scores):.1f} - {max(quality_scores):.1f}")
+
+
+def _perform_dependency_analysis(analyzer, successful_asts, output_dir: Path):
+    """Perform dependency analysis and generate graphs."""
+    click.echo("\n🕸️  Generating dependency graphs...")
+    graph_jobs = analyzer.generate_graphs_parallel(
+        successful_asts, output_dir / "graphs", ["full", "rules"]
+    )
+
+    successful_graphs = [job for job in graph_jobs if job.status.value == "completed"]
+    click.echo(f"📈 Generated {len(successful_graphs)} dependency graphs")
+
+
+def _display_parallel_summary(file_paths, successful_asts, analyzer_stats, total_time: float):
+    """Display parallel processing summary."""
+    click.echo(f"\n📊 Parallel Processing Summary ({total_time:.2f}s)")
+    click.echo("=" * 45)
+    click.echo(f"Files processed: {len(file_paths)}")
+    click.echo(f"Successfully parsed: {len(successful_asts)}")
+    click.echo(f"Jobs submitted: {analyzer_stats['jobs_submitted']}")
+    click.echo(f"Jobs completed: {analyzer_stats['jobs_completed']}")
+    click.echo(f"Jobs failed: {analyzer_stats['jobs_failed']}")
+    click.echo(f"Average job time: {analyzer_stats['avg_job_time']:.3f}s")
+    click.echo(f"Workers used: {analyzer_stats['workers_created']}")
+
+    # Speedup calculation
+    if analyzer_stats["jobs_completed"] > 0:
+        sequential_estimate = analyzer_stats["total_processing_time"]
+        speedup = sequential_estimate / total_time if total_time > 0 else 1
+        click.echo(f"Estimated speedup: {speedup:.1f}x")
+
+
 def parallel(
     input_paths: tuple,
     output_dir: str | None,
@@ -326,13 +433,7 @@ def parallel(
     chunk_size: int,
 ):
     """Analyze YARA files in parallel using thread pooling."""
-    file_paths = []
-    for path in input_paths:
-        path = Path(path)
-        if path.is_file():
-            file_paths.append(path)
-        elif path.is_dir():
-            file_paths.extend(path.rglob("*.yar"))
+    file_paths = _collect_file_paths(input_paths)
 
     if not file_paths:
         click.echo("❌ No YARA files found to process")
@@ -357,20 +458,9 @@ def parallel(
             parse_jobs = analyzer.parse_files_parallel(file_paths, chunk_size)
 
             # Extract successful ASTs
-            successful_asts = []
-            file_names = []
-
-            for job in parse_jobs:
-                if job.status.value == "completed" and job.result:
-                    for i, ast in enumerate(job.result):
-                        if not hasattr(ast, "_parse_error"):
-                            successful_asts.append(ast)
-                            # Get corresponding file name
-                            job_index = parse_jobs.index(job)
-                            start_idx = job_index * chunk_size
-                            file_idx = start_idx + i
-                            if file_idx < len(file_paths):
-                                file_names.append(str(file_paths[file_idx]))
+            successful_asts, file_names = _extract_successful_asts(
+                parse_jobs, file_paths, chunk_size
+            )
 
             click.echo(f"✅ Successfully parsed {len(successful_asts)} files")
 
@@ -380,60 +470,16 @@ def parallel(
 
             # Step 2: Perform analysis
             if analysis_type in ["complexity", "all"]:
-                click.echo("\n🧮 Analyzing complexity...")
-                complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts, file_names)
-
-                # Save complexity results
-                complexity_results = []
-                for job in complexity_jobs:
-                    if job.status.value == "completed":
-                        complexity_results.append(job.result)
-
-                if complexity_results:
-                    complexity_file = output_dir / "complexity_analysis.json"
-                    with Path(complexity_file).open("w") as f:
-                        json.dump(complexity_results, f, indent=2)
-
-                    click.echo(f"📊 Complexity analysis saved to: {complexity_file}")
-
-                    # Show summary statistics
-                    quality_scores = [r["quality_score"] for r in complexity_results]
-                    avg_quality = sum(quality_scores) / len(quality_scores)
-
-                    click.echo(f"   Average quality score: {avg_quality:.1f}")
-                    click.echo(
-                        f"   Quality range: {min(quality_scores):.1f} - {max(quality_scores):.1f}"
-                    )
+                _perform_complexity_analysis(analyzer, successful_asts, file_names, output_dir)
 
             if analysis_type in ["dependency", "all"]:
-                click.echo("\n🕸️  Generating dependency graphs...")
-                graph_jobs = analyzer.generate_graphs_parallel(
-                    successful_asts, output_dir / "graphs", ["full", "rules"]
-                )
-
-                successful_graphs = [job for job in graph_jobs if job.status.value == "completed"]
-                click.echo(f"📈 Generated {len(successful_graphs)} dependency graphs")
+                _perform_dependency_analysis(analyzer, successful_asts, output_dir)
 
         total_time = time.time() - start_time
 
         # Overall statistics
         analyzer_stats = analyzer.get_statistics()
-
-        click.echo(f"\n📊 Parallel Processing Summary ({total_time:.2f}s)")
-        click.echo("=" * 45)
-        click.echo(f"Files processed: {len(file_paths)}")
-        click.echo(f"Successfully parsed: {len(successful_asts)}")
-        click.echo(f"Jobs submitted: {analyzer_stats['jobs_submitted']}")
-        click.echo(f"Jobs completed: {analyzer_stats['jobs_completed']}")
-        click.echo(f"Jobs failed: {analyzer_stats['jobs_failed']}")
-        click.echo(f"Average job time: {analyzer_stats['avg_job_time']:.3f}s")
-        click.echo(f"Workers used: {analyzer_stats['workers_created']}")
-
-        # Speedup calculation
-        if analyzer_stats["jobs_completed"] > 0:
-            sequential_estimate = analyzer_stats["total_processing_time"]
-            speedup = sequential_estimate / total_time if total_time > 0 else 1
-            click.echo(f"Estimated speedup: {speedup:.1f}x")
+        _display_parallel_summary(file_paths, successful_asts, analyzer_stats, total_time)
 
     except KeyboardInterrupt:
         click.echo("\n⏹️  Analysis cancelled by user")
