@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Self
 
-from yaraast.ast.modifiers import EnhancedStringModifier, StringModifierType
+from yaraast.ast.modifiers import StringModifier as EnhancedStringModifier, StringModifierType
 from yaraast.ast.strings import (
     HexByte,
     HexJump,
