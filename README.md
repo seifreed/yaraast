@@ -2,6 +2,9 @@
 
 A complete Python 3.13+ library for parsing, analyzing, optimizing, and generating YARA rules with advanced features and YARA-X compatibility.
 
+**Author:** Marc Rivero | @seifreed  
+**Repository:** [https://github.com/seifreed/yaraast](https://github.com/seifreed/yaraast)
+
 ## Features
 
 ### 🔴 Critical Features (Implemented)
