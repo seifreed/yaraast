@@ -303,7 +303,8 @@ class Parser:
         if self._match(TokenType.LPAREN):
             expr = self._parse_or_expression()
             if not self._match(TokenType.RPAREN):
-                raise Exception("Expected ')'")
+                current = self._current_token()
+                raise Exception(f"Expected ')' in parentheses at position {self.position}, got {current.type if current else 'EOF'}")
             return ParenthesesExpression(expression=expr)
 
         # Unary minus for negative numbers
@@ -372,7 +373,8 @@ class Parser:
                     if not self._match(TokenType.COMMA):
                         break
                 if not self._match(TokenType.RPAREN):
-                    raise Exception("Expected ')'")
+                    current = self._current_token()
+                    raise Exception(f"Expected ')' in function call at position {self.position}, got {current.type if current else 'EOF'}")
                 # Get function name from expression
                 if isinstance(expr, Identifier):
                     expr = FunctionCall(function=expr.name, arguments=args)
