@@ -395,12 +395,30 @@ class Parser:
                 # Function call
                 args = []
                 while not self._check(TokenType.RPAREN) and not self._is_at_end():
-                    args.append(self._parse_or_expression())
+                    # Try to parse argument, but be tolerant of errors
+                    try:
+                        args.append(self._parse_or_expression())
+                    except:
+                        # If parsing fails, try to recover by finding comma or closing paren
+                        while not self._is_at_end():
+                            if self._check(TokenType.COMMA) or self._check(TokenType.RPAREN):
+                                break
+                            self._advance()
+                    
                     if not self._match(TokenType.COMMA):
                         break
+                
                 if not self._match(TokenType.RPAREN):
+                    # Try to recover by finding the closing parenthesis
                     current = self._current_token()
-                    raise Exception(f"Expected ')' in function call at position {self.position}, got {current.type if current else 'EOF'}")
+                    attempts = 0
+                    while not self._is_at_end() and attempts < 100:
+                        if self._match(TokenType.RPAREN):
+                            break
+                        self._advance()
+                        attempts += 1
+                    else:
+                        raise Exception(f"Expected ')' in function call at position {self.position}, got {current.type if current else 'EOF'}")
                 # Get function name from expression
                 if isinstance(expr, Identifier):
                     expr = FunctionCall(function=expr.name, arguments=args)
