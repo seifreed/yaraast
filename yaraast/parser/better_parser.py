@@ -112,14 +112,26 @@ class Parser:
                     raise Exception("Expected ':' after 'condition'")
                 condition = self._parse_condition()
             else:
-                break  # Stop if we don't recognize the token
+                # Try to skip unrecognized tokens until we find something we know or '}'
+                if self._current_token() and self._current_token().type != TokenType.RBRACE:
+                    self._advance()
+                    continue
+                break  # Stop if we find '}' or reach end
 
         # Expect '}'
         if not self._match(TokenType.RBRACE):
+            # Try to recover by finding the closing brace
             current = self._current_token()
-            raise Exception(
-                f"Expected '}}' but found {current.type if current else 'EOF'} at position {self.position}"
-            )
+            attempts = 0
+            while not self._is_at_end() and attempts < 1000:
+                if self._match(TokenType.RBRACE):
+                    break
+                self._advance()
+                attempts += 1
+            else:
+                raise Exception(
+                    f"Expected '}}' but found {current.type if current else 'EOF'} at position {self.position}"
+                )
 
         # Condition is required
         if condition is None:
