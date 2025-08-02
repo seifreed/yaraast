@@ -137,21 +137,21 @@ def _handle_exit_code(errors, warnings, info, verbose):
         sys.exit(0)
 
 
-@analyze.command()
-@click.argument("rule_file", type=click.Path(exists=True))
-@click.option("-v", "--verbose", is_flag=True, help="Show all optimizations")
-@click.option(
-    "-i",
-    "--impact",
-    type=click.Choice(["low", "medium", "high", "all"]),
-    default="all",
-    help="Filter by impact level",
-)
 def _optimize_display_impact_summary(report):
     """Display impact summary table."""
     table = Table(title="Optimization Opportunities")
     table.add_column("Impact", style="cyan")
     table.add_column("Count", justify="right")
+
+    # Ensure statistics are populated
+    if not report.statistics:
+        report.statistics = {}
+    if "by_impact" not in report.statistics:
+        report.statistics["by_impact"] = {
+            "high": sum(1 for s in report.suggestions if s.impact == "high"),
+            "medium": sum(1 for s in report.suggestions if s.impact == "medium"),
+            "low": sum(1 for s in report.suggestions if s.impact == "low"),
+        }
 
     for level in ["high", "medium", "low"]:
         count = report.statistics["by_impact"].get(level, 0)
