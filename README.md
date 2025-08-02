@@ -121,7 +121,7 @@ from yaraast.builder import RuleBuilder, ConditionBuilder
 # Create a new rule using the builder API
 rule = (RuleBuilder("detect_suspicious_behavior")
     .add_meta("author", "Security Team")
-    .add_meta("date", "2024-01-01")
+    .add_meta("date", "2025-01-01")
     .add_string("$sus1", "suspicious.exe")
     .add_string("$sus2", { "48 8B 05 ?? ?? ?? ??" })
     .add_tag("malware")
@@ -276,4 +276,4 @@ This project is licensed under the MIT License with an attribution requirement.
 
 See the [LICENSE](LICENSE) file for the complete license text.
 
-Copyright (c) 2024 Marc Rivero (@seifreed)
+Copyright (c) 2025 Marc Rivero (@seifreed)
