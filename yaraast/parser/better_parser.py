@@ -610,9 +610,8 @@ class Parser:
 
             return ForOfExpression(
                 quantifier=quantifier,
-                variable="",  # No variable in simple for...of
                 string_set=string_set,
-                body=body,
+                condition=body,
             )
 
         # Otherwise it's a regular for expression (for all i in (0..10) : (...))
