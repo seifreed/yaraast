@@ -447,9 +447,26 @@ class Parser:
                     TokenType.FULLWORD,
                     TokenType.BASE64,
                     TokenType.BASE64WIDE,
+                    TokenType.XOR_MOD,
                 ):
-                    modifiers.append(StringModifier(name=self._current_token().value))
+                    mod_name = self._current_token().value
                     self._advance()
+                    
+                    # Handle XOR with optional parameters
+                    if mod_name.lower() == "xor" and self._current_token() and self._current_token().type == TokenType.LPAREN:
+                        self._advance()  # consume '('
+                        # Parse XOR parameter (can be single value or range)
+                        # For now, just skip to closing paren
+                        depth = 1
+                        while depth > 0 and self._current_token():
+                            if self._current_token().type == TokenType.LPAREN:
+                                depth += 1
+                            elif self._current_token().type == TokenType.RPAREN:
+                                depth -= 1
+                            self._advance()
+                        modifiers.append(StringModifier(name="xor"))
+                    else:
+                        modifiers.append(StringModifier(name=mod_name))
                 strings.append(PlainString(identifier=identifier, value=value, modifiers=modifiers))
             elif self._match(TokenType.HEX_STRING):
                 # Parse hex string content
@@ -496,9 +513,26 @@ class Parser:
                     TokenType.FULLWORD,
                     TokenType.BASE64,
                     TokenType.BASE64WIDE,
+                    TokenType.XOR_MOD,
                 ):
-                    modifiers.append(StringModifier(name=self._current_token().value))
+                    mod_name = self._current_token().value
                     self._advance()
+                    
+                    # Handle XOR with optional parameters
+                    if mod_name.lower() == "xor" and self._current_token() and self._current_token().type == TokenType.LPAREN:
+                        self._advance()  # consume '('
+                        # Parse XOR parameter (can be single value or range)
+                        # For now, just skip to closing paren
+                        depth = 1
+                        while depth > 0 and self._current_token():
+                            if self._current_token().type == TokenType.LPAREN:
+                                depth += 1
+                            elif self._current_token().type == TokenType.RPAREN:
+                                depth -= 1
+                            self._advance()
+                        modifiers.append(StringModifier(name="xor"))
+                    else:
+                        modifiers.append(StringModifier(name=mod_name))
 
                 strings.append(
                     RegexString(identifier=identifier, regex=pattern, modifiers=modifiers)
