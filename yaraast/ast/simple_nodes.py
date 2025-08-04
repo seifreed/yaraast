@@ -120,7 +120,11 @@ class PlainString(StringDefinition):
     """Plain string."""
 
     def __init__(
-        self, identifier: str, value: str, modifiers: list[StringModifier] | None = None, **kwargs
+        self,
+        identifier: str,
+        value: str,
+        modifiers: list[StringModifier] | None = None,
+        **kwargs,
     ):
         super().__init__(identifier, modifiers, **kwargs)
         self.value = value
@@ -175,7 +179,11 @@ class RegexString(StringDefinition):
     """Regex string."""
 
     def __init__(
-        self, identifier: str, regex: str, modifiers: list[StringModifier] | None = None, **kwargs
+        self,
+        identifier: str,
+        regex: str,
+        modifiers: list[StringModifier] | None = None,
+        **kwargs,
     ):
         super().__init__(identifier, modifiers, **kwargs)
         self.regex = regex

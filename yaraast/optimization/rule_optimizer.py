@@ -78,7 +78,7 @@ class RuleOptimizer:
                 "rules": f"{stats['rules_eliminated']} rules removed",
                 "strings": f"{original_strings - optimized_strings} strings removed",
                 "percentage": (
-                    f"{(1 - len(optimized.rules)/len(yara_file.rules))*100:.1f}%"
+                    f"{(1 - len(optimized.rules) / len(yara_file.rules)) * 100:.1f}%"
                     if yara_file.rules
                     else "0%"
                 ),

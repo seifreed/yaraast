@@ -34,13 +34,19 @@ class FluentConditionBuilder(ConditionBuilder):
     def any_of_them(self) -> Self:
         """Any of them - common pattern."""
         return FluentConditionBuilder(
-            OfExpression(quantifier=StringLiteral(value="any"), string_set=Identifier(name="them"))
+            OfExpression(
+                quantifier=StringLiteral(value="any"),
+                string_set=Identifier(name="them"),
+            )
         )
 
     def all_of_them(self) -> Self:
         """All of them - common pattern."""
         return FluentConditionBuilder(
-            OfExpression(quantifier=StringLiteral(value="all"), string_set=Identifier(name="them"))
+            OfExpression(
+                quantifier=StringLiteral(value="all"),
+                string_set=Identifier(name="them"),
+            )
         )
 
     def not_them(self) -> Self:
@@ -49,7 +55,8 @@ class FluentConditionBuilder(ConditionBuilder):
             UnaryExpression(
                 operator="not",
                 operand=OfExpression(
-                    quantifier=StringLiteral(value="any"), string_set=Identifier(name="them")
+                    quantifier=StringLiteral(value="any"),
+                    string_set=Identifier(name="them"),
                 ),
             )
         )
@@ -197,7 +204,9 @@ class FluentConditionBuilder(ConditionBuilder):
         """File size equals specific value."""
         return FluentConditionBuilder(
             BinaryExpression(
-                left=Identifier(name="filesize"), operator="==", right=IntegerLiteral(value=size)
+                left=Identifier(name="filesize"),
+                operator="==",
+                right=IntegerLiteral(value=size),
             )
         )
 
@@ -205,7 +214,9 @@ class FluentConditionBuilder(ConditionBuilder):
         """File size greater than."""
         return FluentConditionBuilder(
             BinaryExpression(
-                left=Identifier(name="filesize"), operator=">", right=IntegerLiteral(value=size)
+                left=Identifier(name="filesize"),
+                operator=">",
+                right=IntegerLiteral(value=size),
             )
         )
 
@@ -213,7 +224,9 @@ class FluentConditionBuilder(ConditionBuilder):
         """File size less than."""
         return FluentConditionBuilder(
             BinaryExpression(
-                left=Identifier(name="filesize"), operator="<", right=IntegerLiteral(value=size)
+                left=Identifier(name="filesize"),
+                operator="<",
+                right=IntegerLiteral(value=size),
             )
         )
 
@@ -264,7 +277,8 @@ class FluentConditionBuilder(ConditionBuilder):
         """PE is executable (not DLL)."""
         return FluentConditionBuilder(
             UnaryExpression(
-                operator="not", operand=MemberAccess(object=Identifier(name="pe"), member="is_dll")
+                operator="not",
+                operand=MemberAccess(object=Identifier(name="pe"), member="is_dll"),
             )
         )
 
@@ -307,7 +321,10 @@ class FluentConditionBuilder(ConditionBuilder):
         return FluentConditionBuilder(
             FunctionCall(
                 function="pe.imports",
-                arguments=[StringLiteral(value=dll_name), StringLiteral(value=function_name)],
+                arguments=[
+                    StringLiteral(value=dll_name),
+                    StringLiteral(value=function_name),
+                ],
             )
         )
 
@@ -318,7 +335,10 @@ class FluentConditionBuilder(ConditionBuilder):
             BinaryExpression(
                 left=FunctionCall(
                     function="math.entropy",
-                    arguments=[IntegerLiteral(value=offset), IntegerLiteral(value=size)],
+                    arguments=[
+                        IntegerLiteral(value=offset),
+                        IntegerLiteral(value=size),
+                    ],
                 ),
                 operator=">",
                 right=DoubleLiteral(value=threshold),
@@ -335,7 +355,10 @@ class FluentConditionBuilder(ConditionBuilder):
             BinaryExpression(
                 left=FunctionCall(
                     function="math.entropy",
-                    arguments=[IntegerLiteral(value=offset), IntegerLiteral(value=size)],
+                    arguments=[
+                        IntegerLiteral(value=offset),
+                        IntegerLiteral(value=size),
+                    ],
                 ),
                 operator="<",
                 right=DoubleLiteral(value=3.0),
@@ -352,7 +375,9 @@ class FluentConditionBuilder(ConditionBuilder):
         return mz_at_0.and_(
             FluentConditionBuilder(
                 BinaryExpression(
-                    left=Identifier(name="filesize"), operator=">", right=IntegerLiteral(value=1024)
+                    left=Identifier(name="filesize"),
+                    operator=">",
+                    right=IntegerLiteral(value=1024),
                 )
             )
         )

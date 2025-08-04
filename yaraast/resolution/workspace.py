@@ -226,7 +226,7 @@ class WorkspaceAnalyzer:
         # Rule analysis
         try:
             analyzer = RuleAnalyzer()
-            analysis = analyzer.analyze_file(ast)
+            analysis = analyzer.analyze(ast)
             result.analysis_results = {
                 "unused_strings": analysis.get("unused_strings", []),
                 "undefined_strings": analysis.get("undefined_strings", []),

@@ -32,7 +32,10 @@ def test_load_json_module():
         "name": "test_module",
         "attributes": {"version": "int", "data": "string[]"},
         "functions": {
-            "process": {"return": "bool", "parameters": [{"name": "input", "type": "string"}]}
+            "process": {
+                "return": "bool",
+                "parameters": [{"name": "input", "type": "string"}],
+            }
         },
         "constants": {"MAX_SIZE": "int"},
     }

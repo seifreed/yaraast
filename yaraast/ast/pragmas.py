@@ -81,7 +81,9 @@ class IncludeOncePragma(Pragma):
 
     def __init__(self):
         super().__init__(
-            pragma_type=PragmaType.INCLUDE_ONCE, name="include_once", scope=PragmaScope.FILE
+            pragma_type=PragmaType.INCLUDE_ONCE,
+            name="include_once",
+            scope=PragmaScope.FILE,
         )
 
     def __str__(self) -> str:
@@ -171,7 +173,10 @@ class CustomPragma(Pragma):
         scope: PragmaScope = PragmaScope.FILE,
     ):
         super().__init__(
-            pragma_type=PragmaType.CUSTOM, name=name, arguments=arguments or [], scope=scope
+            pragma_type=PragmaType.CUSTOM,
+            name=name,
+            arguments=arguments or [],
+            scope=scope,
         )
         self.parameters = parameters or {}
 

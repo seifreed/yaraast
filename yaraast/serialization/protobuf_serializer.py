@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any
 from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
-
     from yaraast.ast.base import YaraFile
 
 try:
@@ -53,7 +52,9 @@ class ProtobufSerializer(ASTVisitor[Any]):
         return text_data
 
     def deserialize(
-        self, binary_data: bytes | None = None, input_path: str | Path | None = None
+        self,
+        binary_data: bytes | None = None,
+        input_path: str | Path | None = None,
     ) -> YaraFile:
         """Deserialize Protobuf binary to AST."""
         if input_path:

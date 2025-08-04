@@ -20,6 +20,10 @@ class StringModifier(ASTNode):
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_string_modifier(self)
 
+    def to_legacy_modifier(self) -> StringModifier:
+        """Return self as already a legacy modifier."""
+        return self
+
     def to_enhanced_modifier(self) -> EnhancedStringModifier:
         """Convert to enhanced enum-based modifier."""
         return EnhancedStringModifier.from_name_value(self.name, self.value)

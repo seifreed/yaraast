@@ -73,7 +73,7 @@ class LibyaraScanner:
         """
         if not YARA_AVAILABLE:
             raise ImportError(
-                "yara-python is not installed. " "Install it with: pip install yara-python"
+                "yara-python is not installed. Install it with: pip install yara-python"
             )
 
         self.timeout = timeout

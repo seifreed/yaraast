@@ -42,7 +42,12 @@ class AnalysisReport:
     statistics: dict[str, int] = field(default_factory=dict)
 
     def add_suggestion(
-        self, rule: str, category: str, severity: str, message: str, location: str | None = None
+        self,
+        rule: str,
+        category: str,
+        severity: str,
+        message: str,
+        location: str | None = None,
     ):
         """Add a suggestion to the report."""
         self.suggestions.append(Suggestion(rule, category, severity, message, location))
@@ -137,7 +142,10 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
         if has_condition and has_strings and has_meta:
             # Test expects this suggestion for the specific test case
             self.report.add_suggestion(
-                node.name, "style", "info", "Consider section order: meta → strings → condition"
+                node.name,
+                "style",
+                "info",
+                "Consider section order: meta → strings → condition",
             )
 
         # Check for missing meta information
@@ -161,7 +169,10 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
                 term in condition_str for term in ["filesize", "entrypoint", "pe.", "elf.", "math."]
             ):
                 self.report.add_suggestion(
-                    node.name, "structure", "info", "Rule has no strings defined - intentional?"
+                    node.name,
+                    "structure",
+                    "info",
+                    "Rule has no strings defined - intentional?",
                 )
 
         # Visit condition to track string usage
@@ -200,7 +211,10 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
         if duplicates:
             for dup in set(duplicates):
                 self.report.add_suggestion(
-                    rule.name, "structure", "error", f"Duplicate string identifier '{dup}'"
+                    rule.name,
+                    "structure",
+                    "error",
+                    f"Duplicate string identifier '{dup}'",
                 )
 
         # Check for very similar string names
@@ -261,7 +275,14 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
             )
 
         # Check for catastrophic backtracking patterns
-        dangerous_patterns = [r"(.+)+", r"(.+)*", r"(.*)+", r"(.+)?+", r"([^x]+)+", r"([^x]*)*"]
+        dangerous_patterns = [
+            r"(.+)+",
+            r"(.+)*",
+            r"(.*)+",
+            r"(.+)?+",
+            r"([^x]+)+",
+            r"([^x]*)*",
+        ]
         for pattern in dangerous_patterns:
             if pattern in string.regex:
                 self.report.add_suggestion(

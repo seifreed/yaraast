@@ -41,7 +41,7 @@ class CompatibilityIssue:
 class YaraXCompatibilityChecker(ASTVisitor[None]):
     """Check YARA rules for YARA-X compatibility."""
 
-    def __init__(self, features: YaraXFeatures | None = None):
+    def __init__(self, features: YaraXFeatures | None = None) -> None:
         self.features = features or YaraXFeatures.yarax_strict()
         self.issues: list[CompatibilityIssue] = []
         self.current_rule: str | None = None
@@ -59,7 +59,7 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
         message: str,
         suggestion: str = "",
         location: Location | None = None,
-    ):
+    ) -> None:
         """Add a compatibility issue."""
         self.issues.append(
             CompatibilityIssue(
@@ -229,7 +229,7 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
 
     def _group_by_type(self) -> dict[str, list[CompatibilityIssue]]:
         """Group issues by type."""
-        grouped = {}
+        grouped: dict[str, list[CompatibilityIssue]] = {}
         for issue in self.issues:
             if issue.issue_type not in grouped:
                 grouped[issue.issue_type] = []

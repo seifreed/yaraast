@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any
 from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
-
     from yaraast.ast.base import ASTNode, YaraFile
 
 
@@ -294,6 +293,31 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_string_operator_expression(self, node) -> str:
         return f"StrOp({self.visit(node.left)},{node.operator},{self.visit(node.right)})"
+
+    # Add missing abstract methods
+    def visit_extern_import(self, node) -> str:
+        return f"ExternImport({node.module if hasattr(node, 'module') else ''})"
+
+    def visit_extern_namespace(self, node) -> str:
+        return f"ExternNamespace({node.name if hasattr(node, 'name') else ''})"
+
+    def visit_extern_rule(self, node) -> str:
+        return f"ExternRule({node.name if hasattr(node, 'name') else ''})"
+
+    def visit_extern_rule_reference(self, node) -> str:
+        return f"ExternRuleRef({node.name if hasattr(node, 'name') else ''})"
+
+    def visit_in_rule_pragma(self, node) -> str:
+        return f"InRulePragma({node.pragma if hasattr(node, 'pragma') else ''})"
+
+    def visit_pragma(self, node) -> str:
+        return f"Pragma({node.directive if hasattr(node, 'directive') else ''})"
+
+    def visit_pragma_block(self, node) -> str:
+        pragmas = (
+            ",".join([self.visit(p) for p in node.pragmas]) if hasattr(node, "pragmas") else ""
+        )
+        return f"PragmaBlock({pragmas})"
 
 
 class AstDiff:

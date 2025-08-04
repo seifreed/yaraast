@@ -242,7 +242,11 @@ def _display_diff_statistics(diff_result):
 @click.argument("new_file", type=click.Path(exists=True))
 @click.option("-o", "--output", type=click.Path(), help="Output diff file")
 @click.option(
-    "-f", "--format", type=click.Choice(["json", "yaml"]), default="json", help="Diff output format"
+    "-f",
+    "--format",
+    type=click.Choice(["json", "yaml"]),
+    default="json",
+    help="Diff output format",
 )
 @click.option("--patch", is_flag=True, help="Create patch file")
 @click.option("--stats", is_flag=True, help="Show detailed statistics")
@@ -357,7 +361,7 @@ def validate(input_file: str, format: str):
     except Exception as e:
         console.print(
             Panel(
-                f"[red]❌ Invalid {format.upper()} serialization[/red]\n\n" f"Error: {e}",
+                f"[red]❌ Invalid {format.upper()} serialization[/red]\n\nError: {e}",
                 title=f"Validation Result: {Path(input_file).name}",
                 border_style="red",
             )
@@ -396,10 +400,14 @@ def info(input_file: str):
             ", ".join(rule.name for rule in ast.rules[:3]) + ("..." if len(ast.rules) > 3 else ""),
         )
         info_table.add_row(
-            "Imports", str(len(ast.imports)), ", ".join(imp.module for imp in ast.imports)
+            "Imports",
+            str(len(ast.imports)),
+            ", ".join(imp.module for imp in ast.imports),
         )
         info_table.add_row(
-            "Includes", str(len(ast.includes)), ", ".join(inc.path for inc in ast.includes)
+            "Includes",
+            str(len(ast.includes)),
+            ", ".join(inc.path for inc in ast.includes),
         )
 
         console.print(info_table)

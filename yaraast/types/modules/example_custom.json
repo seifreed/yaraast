@@ -1,43 +1,41 @@
 {
-    "name": "custom",
-    "description": "Example custom module loaded from JSON",
-    "attributes": {
-        "api_version": "string",
-        "features": "string[]",
-        "metadata": {
-            "type": "struct",
-            "fields": {
-                "author": "string",
-                "version": "int",
-                "enabled": "bool"
-            }
-        }
-    },
-    "functions": {
-        "hash": {
-            "return": "string",
-            "parameters": [
-                {"name": "data", "type": "string"},
-                {"name": "algorithm", "type": "string"}
-            ]
-        },
-        "decrypt": {
-            "return": "string",
-            "parameters": {
-                "data": "string",
-                "key": "string"
-            }
-        },
-        "validate": {
-            "return": "bool",
-            "parameters": [
-                {"name": "input", "type": "any"}
-            ]
-        }
-    },
-    "constants": {
-        "MAX_BUFFER_SIZE": "int",
-        "SUPPORTED_ALGORITHMS": "string[]",
-        "VERSION": "string"
+  "name": "custom",
+  "description": "Example custom module loaded from JSON",
+  "attributes": {
+    "api_version": "string",
+    "features": "string[]",
+    "metadata": {
+      "type": "struct",
+      "fields": {
+        "author": "string",
+        "version": "int",
+        "enabled": "bool"
+      }
     }
+  },
+  "functions": {
+    "hash": {
+      "return": "string",
+      "parameters": [
+        { "name": "data", "type": "string" },
+        { "name": "algorithm", "type": "string" }
+      ]
+    },
+    "decrypt": {
+      "return": "string",
+      "parameters": {
+        "data": "string",
+        "key": "string"
+      }
+    },
+    "validate": {
+      "return": "bool",
+      "parameters": [{ "name": "input", "type": "any" }]
+    }
+  },
+  "constants": {
+    "MAX_BUFFER_SIZE": "int",
+    "SUPPORTED_ALGORITHMS": "string[]",
+    "VERSION": "string"
+  }
 }

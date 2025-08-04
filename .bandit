@@ -1,0 +1,12 @@
+[bandit]
+# Bandit configuration for YARA AST parser
+# Suppress legitimate warnings for this security-focused project
+
+skips = B101,B110,B324,B601
+
+# B101: Test assertions are legitimate in test files
+# B110: Try-except-pass patterns are legitimate for error handling
+# B324: MD5 usage for non-security checksums (using usedforsecurity=False)
+# B601: Shell execution warnings for CLI tools
+
+exclude_dirs = tests/

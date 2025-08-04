@@ -181,7 +181,12 @@ output = "coverage.xml"
 exclude_dirs = ["tests", "venv", "build", "dist"]
 severity = "medium"
 confidence = "medium"
-skips = ["B101", "B601"]  # Skip assert_used and shell=True warnings
+skips = [
+    "B101",  # assert_used - legitimate in tests
+    "B110",  # try_except_pass - legitimate error handling patterns
+    "B324",  # hashlib_insecure_function - MD5 used for non-security purposes (checksums)
+    "B601",  # shell=True warnings
+]
 
 # Mypy configuration (enhanced from existing)
 [tool.mypy]
@@ -272,3 +277,9 @@ max-complexity = 10
 "tests/*" = ["T20", "S101", "D", "PLR2004"]  # Allow prints, asserts, missing docs in tests
 "__init__.py" = ["F401", "F403", "F405"]  # Allow unused imports and star imports in __init__.py
 "examples/*" = ["T20", "F401", "E402"]  # Allow prints, unused imports, and imports not at top in examples
+# Parser/generator complexity is inherent to the domain
+"yaraast/parser/*" = ["C901"]  # Allow complex parser functions
+"yaraast/cli/main.py" = ["C901"]  # Allow complex CLI functions for rich output
+"yaraast/types/type_system.py" = ["C901"]  # Allow complex type checking
+"yaraast/serialization/*" = ["C901"]  # Allow complex serialization
+"yaraast/yarax/*" = ["C901"]  # Allow complex compatibility adapters

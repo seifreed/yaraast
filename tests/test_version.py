@@ -82,7 +82,11 @@ def test_version_format():
 def test_version_comparison():
     """Test version can be used for comparisons."""
     # Create version tuples for comparison
-    yaraast_tuple = (YARAAST_VERSION_MAJOR, YARAAST_VERSION_MINOR, YARAAST_VERSION_PATCH)
+    yaraast_tuple = (
+        YARAAST_VERSION_MAJOR,
+        YARAAST_VERSION_MINOR,
+        YARAAST_VERSION_PATCH,
+    )
 
     # Should be able to compare
     assert yaraast_tuple >= (0, 0, 0)

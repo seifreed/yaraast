@@ -8,7 +8,7 @@ from yaraast.types import TypeValidator
 
 def test_import_with_alias():
     """Test import statements with aliases."""
-    yara_code = '''
+    yara_code = """
     import "pe" as windows
     import "elf" as linux
     import "math"
@@ -19,7 +19,7 @@ def test_import_with_alias():
             linux.type == 0x02 and
             math.entropy(0, filesize) > 7.0
     }
-    '''
+    """
 
     parser = Parser()
     ast = parser.parse(yara_code)
@@ -39,17 +39,17 @@ def test_import_with_alias():
     assert 'import "pe" as windows' in output
     assert 'import "elf" as linux' in output
     assert 'import "math"' in output
-    assert 'as math' not in output
+    assert "as math" not in output
 
 
 def test_regex_matches_regex():
     """Test regex matching another regex expression."""
-    yara_code = '''
+    yara_code = """
     rule regex_matches_regex {
         condition:
             /foo.*bar/i matches /b[a-z]+r/
     }
-    '''
+    """
 
     parser = Parser()
     ast = parser.parse(yara_code)
@@ -62,12 +62,14 @@ def test_regex_matches_regex():
     assert condition.operator == "matches"
 
     # Check left side is regex literal
-    assert hasattr(condition.left, 'pattern')
+    assert condition.left is not None
+    assert hasattr(condition.left, "pattern")
     assert condition.left.pattern == "foo.*bar"
     assert condition.left.modifiers == "i"
 
     # Check right side is regex literal
-    assert hasattr(condition.right, 'pattern')
+    assert condition.right is not None
+    assert hasattr(condition.right, "pattern")
     assert condition.right.pattern == "b[a-z]+r"
     assert condition.right.modifiers == ""
 
@@ -79,7 +81,7 @@ def test_regex_matches_regex():
 
 def test_big_endian_little_endian_functions():
     """Test big-endian and little-endian integer functions."""
-    yara_code = '''
+    yara_code = """
     rule endian_functions {
         condition:
             uint16be(0) == 0x4D5A and
@@ -91,7 +93,7 @@ def test_big_endian_little_endian_functions():
             int16le(24) >= -100 and
             int32le(28) <= 2000
     }
-    '''
+    """
 
     parser = Parser()
     ast = parser.parse(yara_code)
@@ -105,14 +107,22 @@ def test_big_endian_little_endian_functions():
     output = generator.generate(ast)
 
     # Check all functions are present
-    for func in ["uint16be", "uint32be", "int16be", "int32be",
-                 "uint16le", "uint32le", "int16le", "int32le"]:
+    for func in [
+        "uint16be",
+        "uint32be",
+        "int16be",
+        "int32be",
+        "uint16le",
+        "uint32le",
+        "int16le",
+        "int32le",
+    ]:
         assert func in output
 
 
 def test_complex_regex_in_expressions():
     """Test complex regex patterns in expressions."""
-    yara_code = r'''
+    yara_code = r"""
     rule complex_regex {
         strings:
             $a = /[a-z]{3,5}/ nocase
@@ -124,7 +134,7 @@ def test_complex_regex_in_expressions():
             $b matches /.*@(gmail|yahoo|hotmail)\.com/ and
             /test\d+/ matches /test[0-9]+/
     }
-    '''
+    """
 
     parser = Parser()
     ast = parser.parse(yara_code)
@@ -138,15 +148,15 @@ def test_complex_regex_in_expressions():
     output = generator.generate(ast)
 
     # Verify regex patterns are preserved
-    assert r'/[a-z]{3,5}/' in output
-    assert r'/\w+@\w+\.\w+/' in output
-    assert r'$b matches /.*@(gmail|yahoo|hotmail)\.com/' in output
-    assert r'/test\d+/ matches /test[0-9]+/' in output
+    assert r"/[a-z]{3,5}/" in output
+    assert r"/\w+@\w+\.\w+/" in output
+    assert r"$b matches /.*@(gmail|yahoo|hotmail)\.com/" in output
+    assert r"/test\d+/ matches /test[0-9]+/" in output
 
 
 def test_string_matches_dynamic_regex():
     """Test string identifier matching dynamic regex."""
-    yara_code = r'''
+    yara_code = r"""
     rule string_matches_regex {
         strings:
             $email = /[a-z]+@[a-z]+\.com/
@@ -157,7 +167,7 @@ def test_string_matches_dynamic_regex():
             "static_string" matches /static.*/ and
             $email matches /.*@evil\.com/
     }
-    '''
+    """
 
     parser = Parser()
     ast = parser.parse(yara_code)
@@ -169,14 +179,14 @@ def test_string_matches_dynamic_regex():
     # Generate and verify
     generator = CodeGenerator()
     output = generator.generate(ast)
-    assert '$pattern matches /mal[a-z]+/' in output
+    assert "$pattern matches /mal[a-z]+/" in output
     assert '"static_string" matches /static.*/' in output
-    assert r'$email matches /.*@evil\.com/' in output
+    assert r"$email matches /.*@evil\.com/" in output
 
 
 def test_mixed_features():
     """Test combination of all new features."""
-    yara_code = r'''
+    yara_code = r"""
     import "pe" as peformat
     import "math" as m
 
@@ -199,7 +209,7 @@ def test_mixed_features():
             $url matches /.*\/download\//i and
             /[A-Z]{5,}/ matches /[A-Z]+/
     }
-    '''
+    """
 
     parser = Parser()
     ast = parser.parse(yara_code)
@@ -220,12 +230,12 @@ def test_mixed_features():
     # Verify all features are present
     assert 'import "pe" as peformat' in output
     assert 'import "math" as m' in output
-    assert 'uint16be(0) == 0x4D5A' in output
-    assert 'uint32le(uint32(0x3c))' in output
-    assert 'peformat.machine' in output
-    assert 'm.entropy' in output
-    assert '$str matches /mal[a-z]+/' in output
-    assert '/[A-Z]{5,}/ matches /[A-Z]+/' in output
+    assert "uint16be(0) == 0x4D5A" in output
+    assert "uint32le(uint32(0x3c))" in output
+    assert "peformat.machine" in output
+    assert "m.entropy" in output
+    assert "$str matches /mal[a-z]+/" in output
+    assert "/[A-Z]{5,}/ matches /[A-Z]+/" in output
 
 
 if __name__ == "__main__":

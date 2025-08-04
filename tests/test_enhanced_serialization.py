@@ -98,7 +98,7 @@ class TestRoundTripSerializer:
         """
 
         serializer = RoundTripSerializer()
-        ast, serialized = serializer.parse_and_serialize(yara_source.strip(), format="json")
+        _, serialized = serializer.parse_and_serialize(yara_source.strip(), format="json")
 
         # Parse serialized data to check metadata
         data = json.loads(serialized)
@@ -325,7 +325,7 @@ class TestIntegration:
 
         # Step 2: Round-trip serialize
         serializer = RoundTripSerializer()
-        ast, serialized = serializer.parse_and_serialize(yara_source.strip(), format="yaml")
+        _, serialized = serializer.parse_and_serialize(yara_source.strip(), format="yaml")
 
         # Step 3: Deserialize
         reconstructed_ast, reconstructed_yara = serializer.deserialize_and_generate(

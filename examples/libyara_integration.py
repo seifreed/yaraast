@@ -5,7 +5,7 @@ from yaraast.libyara.cross_validator import CrossValidator
 from yaraast.parser import Parser
 
 
-def example_compilation():
+def example_compilation() -> None:
     """Example: Compile AST using libyara."""
     print("=== LibYARA Compilation Example ===\n")
 
@@ -56,7 +56,7 @@ def example_compilation():
             print(f"  Error: {error}")
 
 
-def example_scanning():
+def example_scanning() -> None:
     """Example: Scan data with libyara."""
     print("\n=== LibYARA Scanning Example ===\n")
 
@@ -98,7 +98,7 @@ def example_scanning():
     for i, data in enumerate(test_samples):
         result = scanner.scan_data(compilation.compiled_rules, data)
 
-        print(f"Sample {i+1}: ", end="")
+        print(f"Sample {i + 1}: ", end="")
         if result.matched:
             print(f"MATCHED ({', '.join(result.matched_rules)})")
             for match in result.matches:
@@ -111,7 +111,7 @@ def example_scanning():
             print("No match")
 
 
-def example_cross_validation():
+def example_cross_validation() -> None:
     """Example: Cross-validate between yaraast and libyara."""
     print("\n=== Cross-Validation Example ===\n")
 
@@ -157,12 +157,12 @@ def example_cross_validation():
         print(f"  {match} {rule_name}: yaraast={yaraast}, libyara={libyara}")
 
     print("\nPerformance:")
-    print(f"  YaraAST: {result.yaraast_time*1000:.1f}ms")
-    print(f"  LibYARA compile: {result.libyara_compile_time*1000:.1f}ms")
-    print(f"  LibYARA scan: {result.libyara_scan_time*1000:.1f}ms")
+    print(f"  YaraAST: {result.yaraast_time * 1000:.1f}ms")
+    print(f"  LibYARA compile: {result.libyara_compile_time * 1000:.1f}ms")
+    print(f"  LibYARA scan: {result.libyara_scan_time * 1000:.1f}ms")
 
 
-def example_round_trip():
+def example_round_trip() -> None:
     """Example: Test AST round-trip equivalence."""
     print("\n=== Round-Trip Equivalence Test ===\n")
 

@@ -135,7 +135,7 @@ class OptimizationAnalyzer(ASTVisitor[None]):
                     "consider hex pattern",
                     "medium",
                     f'$str = "{plain.value}"',
-                    f'$str = {{ {" ".join(f"{ord(c):02X}" for c in plain.value)} }}',
+                    f"$str = {{ {' '.join(f'{ord(c):02X}' for c in plain.value)} }}",
                 )
 
         # Check for overlapping patterns
@@ -233,7 +233,7 @@ class OptimizationAnalyzer(ASTVisitor[None]):
                 self.report.add_suggestion(
                     self._current_rule.name,
                     "redundant_comparison",
-                    f"Redundant comparisons on '{left_cmp['var']}' - " "keep only the stricter one",
+                    f"Redundant comparisons on '{left_cmp['var']}' - keep only the stricter one",
                     "low",
                 )
 
@@ -357,7 +357,13 @@ class OptimizationAnalyzer(ASTVisitor[None]):
 
     def _extract_comparison(self, expr: Expression) -> dict[str, Any] | None:
         """Extract comparison info from expression."""
-        if isinstance(expr, BinaryExpression) and expr.operator in ["<", ">", "<=", ">=", "=="]:
+        if isinstance(expr, BinaryExpression) and expr.operator in [
+            "<",
+            ">",
+            "<=",
+            ">=",
+            "==",
+        ]:
             left_var = self._get_variable_name(expr.left)
             if left_var and isinstance(expr.right, IntegerLiteral):
                 return {"var": left_var, "op": expr.operator, "value": expr.right.value}

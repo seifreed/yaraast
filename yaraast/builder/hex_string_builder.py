@@ -12,7 +12,7 @@ from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, Hex
 class HexStringBuilder:
     """Fluent builder for constructing hex strings."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tokens: list[HexToken] = []
 
     def add(self, value: int | str | HexToken) -> Self:

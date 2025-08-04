@@ -242,7 +242,12 @@ class MockModuleRegistry:
     """Registry of mock modules."""
 
     def __init__(self):
-        self.modules = {"pe": MockPE, "elf": MockELF, "math": MockMath, "dotnet": MockDotNet}
+        self.modules = {
+            "pe": MockPE,
+            "elf": MockELF,
+            "math": MockMath,
+            "dotnet": MockDotNet,
+        }
         self.instances = {}
 
     def create_module(self, name: str, data: bytes) -> Any:

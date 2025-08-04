@@ -29,9 +29,44 @@ def fluent():
     """
 
 
+def create_example_rules():
+    """Create example rules using fluent API."""
+    return (
+        yara_file()
+        .with_rule(
+            rule("example_malware")
+            .tagged("malware", "backdoor")
+            .authored_by("Fluent API")
+            .described_as("Example malware detection rule")
+            .string("$mz")
+            .hex("4D 5A")
+            .then()
+            .string("$suspicious")
+            .text("backdoor")
+            .nocase()
+            .then()
+            .condition("$mz at 0 and $suspicious")
+            .build()
+        )
+        .with_rule(
+            rule("example_packer")
+            .tagged("packer")
+            .string("$upx")
+            .text("UPX!")
+            .then()
+            .condition("$upx")
+            .build()
+        )
+        .build()
+    )
+
+
 @fluent.command()
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file (default: stdout)"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file (default: stdout)",
 )
 def examples(output: Path | None):
     """
@@ -63,7 +98,10 @@ def examples(output: Path | None):
 
 @fluent.command()
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file (default: stdout)"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file (default: stdout)",
 )
 def string_patterns(output: Path | None):
     """
@@ -154,7 +192,10 @@ def string_patterns(output: Path | None):
 
 @fluent.command()
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file (default: stdout)"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file (default: stdout)",
 )
 def conditions(output: Path | None):
     """
@@ -250,7 +291,10 @@ def conditions(output: Path | None):
 
 @fluent.command()
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file (default: stdout)"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file (default: stdout)",
 )
 def transformations(output: Path | None):
     """
@@ -358,7 +402,10 @@ def transformations(output: Path | None):
 @click.option("--author", default="Fluent API", help="Rule author")
 @click.option("--tags", help="Comma-separated list of tags")
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file (default: stdout)"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file (default: stdout)",
 )
 def template(rule_name: str, rule_type: str, author: str, tags: str | None, output: Path | None):
     """
@@ -423,77 +470,6 @@ def template(rule_name: str, rule_type: str, author: str, tags: str | None, outp
     except Exception as e:
         click.echo(f"❌ Error generating template: {e}", err=True)
         sys.exit(1)
-
-
-def create_example_rules():
-    """Create comprehensive example rules showcasing fluent API."""
-    return (
-        yara_file()
-        .import_module("pe")
-        .import_module("math")
-        .import_module("hash")
-        # Basic malware rule
-        .rule("example_malware")
-        .tagged("malware", "example")
-        .authored_by("Fluent API Demo")
-        .described_as("Example malware detection using fluent API")
-        .versioned(1)
-        .mz_header()
-        .pe_header()
-        .string("$suspicious")
-        .text("backdoor")
-        .nocase()
-        .fullword()
-        .then()
-        .string("$crypto")
-        .regex(r"(aes|des|rsa|md5|sha)")
-        .nocase()
-        .then()
-        .when(
-            FluentConditionBuilder()
-            .string_matches("$mz")
-            .at(0)
-            .and_(FluentConditionBuilder().string_matches("$pe"))
-            .and_(FluentConditionBuilder().any_of("$suspicious", "$crypto"))
-            .and_(FluentConditionBuilder().filesize_gt(1024))
-        )
-        .then_rule("network_trojan")
-        .tagged("trojan", "network")
-        .authored_by("Fluent API Demo")
-        .ip_pattern()
-        .url_pattern()
-        .string("$connect")
-        .text("connect")
-        .ascii()
-        .then()
-        .string("$download")
-        .text("download")
-        .wide()
-        .then()
-        .with_condition_builder(
-            lambda c: c.any_of("$ip", "$url")
-            .and_(c.one_of("$connect", "$download"))
-            .and_(c.pe_is_exe())
-        )
-        .then_rule("packed_executable")
-        .tagged("packed", "upx")
-        .authored_by("Fluent API Demo")
-        .mz_header()
-        .string("$upx")
-        .text("UPX!")
-        .then()
-        .string("$packed")
-        .hex("60 BE ?? ?? ?? ?? 8D BE ?? ?? ?? ??")
-        .then()
-        .with_condition_builder(
-            lambda c: c.string_matches("$mz")
-            .at(0)
-            .and_(c.string_matches("$upx"))
-            .and_(c.high_entropy())
-            .and_(c.pe_section_count_eq(3))
-        )
-        .then_build_file()
-    )
 
 
 if __name__ == "__main__":

@@ -16,7 +16,6 @@ from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.yaml_serializer import YamlSerializer
 
 if TYPE_CHECKING:
-
     from yaraast.ast.base import YaraFile
 
 
@@ -141,7 +140,10 @@ class RoundTripSerializer:
         return ast, serialized
 
     def deserialize_and_generate(
-        self, serialized_data: str, format: str = "json", preserve_original_formatting: bool = True
+        self,
+        serialized_data: str,
+        format: str = "json",
+        preserve_original_formatting: bool = True,
     ) -> tuple[YaraFile, str]:
         """Deserialize and generate YARA code with preserved formatting."""
         # Load serialized data
@@ -201,7 +203,7 @@ class RoundTripSerializer:
         for i, (orig, recon) in enumerate(zip(original_lines, reconstructed_lines, strict=False)):
             if orig.strip() != recon.strip():
                 result["differences"].append(
-                    f"Line {i+1} differs: '{orig.strip()}' vs '{recon.strip()}'"
+                    f"Line {i + 1} differs: '{orig.strip()}' vs '{recon.strip()}'"
                 )
 
         result["round_trip_successful"] = len(result["differences"]) == 0
@@ -388,7 +390,11 @@ class EnhancedYamlSerializer(YamlSerializer):
         }
 
         yaml_str = yaml.dump(
-            manifest, default_flow_style=False, allow_unicode=True, sort_keys=False, indent=2
+            manifest,
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+            indent=2,
         )
 
         if output_path:

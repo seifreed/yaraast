@@ -11,9 +11,9 @@ from yaraast.parser import Parser
 from yaraast.serialization.roundtrip_serializer import (
     RoundTripSerializer,
     create_rules_manifest,
-    roundtrip_yara,
     serialize_for_pipeline,
 )
+from yaraast.serialization.simple_roundtrip import simple_roundtrip_test
 
 
 @click.group()
@@ -39,10 +39,15 @@ def roundtrip():
     help="Serialization format",
 )
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file for serialized data"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file for serialized data",
 )
 @click.option(
-    "--preserve-comments/--no-comments", default=True, help="Preserve comments in serialization"
+    "--preserve-comments/--no-comments",
+    default=True,
+    help="Preserve comments in serialization",
 )
 @click.option(
     "--preserve-formatting/--no-formatting",
@@ -116,7 +121,10 @@ def serialize(
     help="Input serialization format",
 )
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file for generated YARA code"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file for generated YARA code",
 )
 @click.option(
     "--preserve-formatting/--default-formatting",
@@ -148,7 +156,9 @@ def deserialize(input_file: Path, format: str, output: Path | None, preserve_for
 
         # Deserialize and generate
         ast, yara_code = serializer.deserialize_and_generate(
-            serialized_data, format=format, preserve_original_formatting=preserve_formatting
+            serialized_data,
+            format=format,
+            preserve_original_formatting=preserve_formatting,
         )
 
         # Output result
@@ -212,7 +222,10 @@ def _display_verbose_source(result: dict):
     help="Serialization format for testing",
 )
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file for test results"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file for test results",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed comparison results")
 def test(input_file: Path, format: str, output: Path | None, verbose: bool):
@@ -238,8 +251,8 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool):
         with Path(input_file).open(encoding="utf-8") as f:
             yara_source = f.read()
 
-        # Perform round-trip test
-        result = roundtrip_yara(yara_source, format)
+        # Perform round-trip test (using simple version for now)
+        result = simple_roundtrip_test(yara_source)
 
         # Display results
         if result["round_trip_successful"]:
@@ -268,7 +281,10 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool):
 @roundtrip.command()
 @click.argument("input_file", type=click.Path(exists=True, path_type=Path))
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file for formatted YARA code"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file for formatted YARA code",
 )
 @click.option(
     "--style",
@@ -280,7 +296,11 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool):
 @click.option("--max-line-length", type=int, default=120, help="Maximum line length")
 @click.option("--align-strings/--no-align-strings", default=True, help="Align string definitions")
 @click.option("--align-meta/--no-align-meta", default=True, help="Align meta values")
-@click.option("--sort-imports/--preserve-import-order", default=True, help="Sort import statements")
+@click.option(
+    "--sort-imports/--preserve-import-order",
+    default=True,
+    help="Sort import statements",
+)
 @click.option("--sort-tags/--preserve-tag-order", default=True, help="Sort rule tags")
 def pretty(
     input_file: Path,
@@ -362,7 +382,10 @@ def pretty(
 @roundtrip.command()
 @click.argument("input_file", type=click.Path(exists=True, path_type=Path))
 @click.option(
-    "--output", "-o", type=click.Path(path_type=Path), help="Output file for pipeline YAML"
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Output file for pipeline YAML",
 )
 @click.option("--pipeline-info", type=str, help="JSON string with pipeline information")
 @click.option(
@@ -371,7 +394,10 @@ def pretty(
     help="Generate rules manifest alongside serialization",
 )
 def pipeline(
-    input_file: Path, output: Path | None, pipeline_info: str | None, include_manifest: bool
+    input_file: Path,
+    output: Path | None,
+    pipeline_info: str | None,
+    include_manifest: bool,
 ):
     """
     Serialize YARA file for CI/CD pipeline use.

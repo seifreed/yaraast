@@ -290,7 +290,13 @@ class StreamingParser:
                 first_lines = f.read(1024).lower()
                 return any(
                     keyword in first_lines
-                    for keyword in ["rule ", "import ", "condition:", "strings:", "meta:"]
+                    for keyword in [
+                        "rule ",
+                        "import ",
+                        "condition:",
+                        "strings:",
+                        "meta:",
+                    ]
                 )
         except Exception:
             return False

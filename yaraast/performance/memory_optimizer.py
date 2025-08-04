@@ -38,7 +38,10 @@ class MemoryOptimizer:
     """
 
     def __init__(
-        self, memory_limit_mb: int = 1000, gc_threshold: int = 1000, enable_tracking: bool = True
+        self,
+        memory_limit_mb: int = 1000,
+        gc_threshold: int = 1000,
+        enable_tracking: bool = True,
     ):
         """Initialize memory optimizer.
 
@@ -155,7 +158,10 @@ class MemoryOptimizer:
         return minimal_ast
 
     def batch_process_with_memory_limit(
-        self, items: list[Any], processor_func: Callable[[Any], Any], batch_size: int = 50
+        self,
+        items: list[Any],
+        processor_func: Callable[[Any], Any],
+        batch_size: int = 50,
     ) -> Iterator[Any]:
         """Process items in batches with memory management."""
         processed_count = 0
@@ -338,7 +344,10 @@ class MemoryEfficientProcessor:
         self.loader = LazyASTLoader(self.optimizer)
 
     def process_collection(
-        self, items: list[Any], processor_func: Callable[[Any], Any], batch_size: int | None = None
+        self,
+        items: list[Any],
+        processor_func: Callable[[Any], Any],
+        batch_size: int | None = None,
     ) -> Iterator[Any]:
         """Process a collection with automatic memory management.
 

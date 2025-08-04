@@ -14,12 +14,9 @@ except ImportError:
     yara = None
     YARA_AVAILABLE = False
 
-from yaraast.ast.expressions import BinaryOperation, Identifier, IntegerLiteral, UnaryOperation
-from yaraast.visitor.visitor import ASTVisitor
 
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
-    from yaraast.ast.rules import Rule
 
 
 @dataclass
@@ -61,114 +58,8 @@ class DirectCompilationResult:
         )
 
 
-class ASTOptimizer(ASTVisitor):
-    """Optimizer for AST before compilation."""
-
-    def __init__(self):
-        super().__init__()
-        self.stats = OptimizationStats()
-        self.optimizations_applied = []
-
-    def optimize(self, ast: YaraFile) -> YaraFile:
-        """Apply optimizations to AST."""
-        self.stats = OptimizationStats()
-        self.optimizations_applied = []
-
-        optimized_ast = self.visit(ast)
-        return optimized_ast
-
-    def visit_rule(self, rule: Rule) -> Rule:
-        """Optimize rule."""
-        # Remove unused strings
-        used_strings = self._find_used_strings(rule)
-        original_string_count = len(rule.strings)
-
-        rule.strings = [s for s in rule.strings if s.identifier in used_strings]
-
-        if len(rule.strings) < original_string_count:
-            self.stats.strings_optimized += original_string_count - len(rule.strings)
-            self.optimizations_applied.append(
-                f"Removed {original_string_count - len(rule.strings)} unused strings from rule '{rule.name}'"
-            )
-
-        # Optimize condition
-        if rule.condition:
-            optimized_condition = self._optimize_condition(rule.condition)
-            if optimized_condition != rule.condition:
-                rule.condition = optimized_condition
-                self.stats.conditions_simplified += 1
-                self.optimizations_applied.append(f"Simplified condition in rule '{rule.name}'")
-
-        self.stats.rules_optimized += 1
-        return rule
-
-    def _find_used_strings(self, rule: Rule) -> set:
-        """Find string identifiers used in rule condition."""
-        used_strings = set()
-
-        if rule.condition:
-            used_strings.update(self._extract_string_identifiers(rule.condition))
-
-        return used_strings
-
-    def _extract_string_identifiers(self, node: ASTNode) -> set:
-        """Extract string identifiers from condition."""
-        identifiers = set()
-
-        if hasattr(node, "name") and isinstance(node, Identifier) and node.name.startswith("$"):
-            identifiers.add(node.name)
-
-        # Recursively check children
-        for child in node.children():
-            identifiers.update(self._extract_string_identifiers(child))
-
-        return identifiers
-
-    def _optimize_condition(self, condition: ASTNode) -> ASTNode:
-        """Optimize condition expressions."""
-        # Constant folding for binary operations
-        if isinstance(condition, BinaryOperation):
-            left_opt = self._optimize_condition(condition.left)
-            right_opt = self._optimize_condition(condition.right)
-
-            # Try constant folding
-            if isinstance(left_opt, IntegerLiteral) and isinstance(right_opt, IntegerLiteral):
-
-                result = self._fold_constants(left_opt, condition.operator, right_opt)
-                if result is not None:
-                    self.stats.constant_folded += 1
-                    return result
-
-            condition.left = left_opt
-            condition.right = right_opt
-
-        elif isinstance(condition, UnaryOperation):
-            condition.operand = self._optimize_condition(condition.operand)
-
-        return condition
-
-    def _fold_constants(
-        self, left: IntegerLiteral, op: str, right: IntegerLiteral
-    ) -> IntegerLiteral | None:
-        """Fold constant expressions."""
-        try:
-            left_val = int(left.value)
-            right_val = int(right.value)
-
-            if op == "+":
-                return IntegerLiteral(value=str(left_val + right_val))
-            if op == "-":
-                return IntegerLiteral(value=str(left_val - right_val))
-            if op == "*":
-                return IntegerLiteral(value=str(left_val * right_val))
-            if op == "/" and right_val != 0:
-                return IntegerLiteral(value=str(left_val // right_val))
-            if op == "%" and right_val != 0:
-                return IntegerLiteral(value=str(left_val % right_val))
-        except (ValueError, ZeroDivisionError):
-            pass
-
-        return None
+# Import the new ASTOptimizer from separate file
+from yaraast.libyara.ast_optimizer import ASTOptimizer
 
 
 class DirectASTCompiler:
@@ -189,7 +80,7 @@ class DirectASTCompiler:
         """
         if not YARA_AVAILABLE:
             raise ImportError(
-                "yara-python is not installed. " "Install it with: pip install yara-python"
+                "yara-python is not installed. Install it with: pip install yara-python"
             )
 
         self.externals = externals or {}
@@ -208,7 +99,10 @@ class DirectASTCompiler:
         }
 
     def compile_ast(
-        self, ast: YaraFile, includes: dict[str, str] | None = None, error_on_warning: bool = False
+        self,
+        ast: YaraFile,
+        includes: dict[str, str] | None = None,
+        error_on_warning: bool = False,
     ) -> DirectCompilationResult:
         """Compile AST directly to libyara rules.
 
@@ -289,7 +183,10 @@ class DirectASTCompiler:
         return generator.generate(ast)
 
     def _compile_optimized_source(
-        self, source: str, includes: dict[str, str] | None = None, error_on_warning: bool = False
+        self,
+        source: str,
+        includes: dict[str, str] | None = None,
+        error_on_warning: bool = False,
     ) -> DirectCompilationResult:
         """Compile optimized source using libyara."""
         from yaraast.libyara.compiler import LibyaraCompiler

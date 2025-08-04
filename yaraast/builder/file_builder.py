@@ -10,7 +10,7 @@ from yaraast.builder.rule_builder import RuleBuilder
 class YaraFileBuilder:
     """Fluent builder for constructing YARA files."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._imports: list[str] = []
         self._includes: list[str] = []
         self._rules: list[Rule] = []

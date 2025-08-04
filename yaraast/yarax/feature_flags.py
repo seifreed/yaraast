@@ -25,9 +25,9 @@ class YaraXFeatures:
     modular_parser: bool = True
 
     # Deprecated features
-    deprecated_features: set[str] = None
+    deprecated_features: set[str] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.deprecated_features is None:
             self.deprecated_features = {
                 "process_scanning",  # Not yet implemented in YARA-X
@@ -68,5 +68,7 @@ class YaraXFeatures:
             "validate_hex_bounds": self.validate_hex_bounds,
             "enhanced_error_messages": self.enhanced_error_messages,
             "modular_parser": self.modular_parser,
-            "deprecated_features": list(self.deprecated_features),
+            "deprecated_features": (
+                list(self.deprecated_features) if self.deprecated_features else []
+            ),
         }

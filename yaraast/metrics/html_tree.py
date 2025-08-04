@@ -18,12 +18,15 @@ if TYPE_CHECKING:
 class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
     """Generates HTML collapsible tree visualization from YARA AST."""
 
-    def __init__(self, include_metadata: bool = True):
+    def __init__(self, include_metadata: bool = True) -> None:
         self.include_metadata = include_metadata
         self.node_counter = 0
 
     def generate_html(
-        self, ast: YaraFile, output_path: str | None = None, title: str = "YARA AST Visualization"
+        self,
+        ast: YaraFile,
+        output_path: str | None = None,
+        title: str = "YARA AST Visualization",
     ) -> str:
         """Generate HTML tree visualization."""
         self.node_counter = 0
@@ -38,7 +41,10 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
         return html_content
 
     def generate_interactive_html(
-        self, ast: YaraFile, output_path: str | None = None, title: str = "Interactive YARA AST"
+        self,
+        ast: YaraFile,
+        output_path: str | None = None,
+        title: str = "Interactive YARA AST",
     ) -> str:
         """Generate interactive HTML with search and filtering."""
         self.node_counter = 0
@@ -269,7 +275,10 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
         stats = self._calculate_stats(tree_data) if self.include_metadata else None
 
         return template.render(
-            title=title, tree_data=tree_data, stats=stats, render_node=self._create_render_macro()
+            title=title,
+            tree_data=tree_data,
+            stats=stats,
+            render_node=self._create_render_macro(),
         )
 
     def _render_interactive_template(self, tree_data: dict[str, Any], title: str) -> str:
@@ -927,22 +936,46 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
 
     # Required visitor methods (minimal implementations)
     def visit_string_definition(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "String Definition", "node_class": "string"}
+        return {
+            "id": self._get_node_id(),
+            "label": "String Definition",
+            "node_class": "string",
+        }
 
     def visit_hex_token(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Hex Token", "node_class": "hex-token"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Hex Token",
+            "node_class": "hex-token",
+        }
 
     def visit_hex_jump(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Hex Jump", "node_class": "hex-jump"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Hex Jump",
+            "node_class": "hex-jump",
+        }
 
     def visit_hex_alternative(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Hex Alternative", "node_class": "hex-alt"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Hex Alternative",
+            "node_class": "hex-alt",
+        }
 
     def visit_hex_nibble(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Hex Nibble", "node_class": "hex-nibble"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Hex Nibble",
+            "node_class": "hex-nibble",
+        }
 
     def visit_expression(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Expression", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Expression",
+            "node_class": "expression",
+        }
 
     def visit_identifier(self, node) -> dict[str, Any]:
         return {
@@ -953,25 +986,53 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
         }
 
     def visit_string_count(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "String Count", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "String Count",
+            "node_class": "expression",
+        }
 
     def visit_string_offset(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "String Offset", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "String Offset",
+            "node_class": "expression",
+        }
 
     def visit_string_length(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "String Length", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "String Length",
+            "node_class": "expression",
+        }
 
     def visit_double_literal(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Double Literal", "node_class": "literal"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Double Literal",
+            "node_class": "literal",
+        }
 
     def visit_string_literal(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "String Literal", "node_class": "literal"}
+        return {
+            "id": self._get_node_id(),
+            "label": "String Literal",
+            "node_class": "literal",
+        }
 
     def visit_regex_literal(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Regex Literal", "node_class": "literal"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Regex Literal",
+            "node_class": "literal",
+        }
 
     def visit_unary_expression(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Unary Expression", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Unary Expression",
+            "node_class": "expression",
+        }
 
     def visit_parentheses_expression(self, node) -> dict[str, Any]:
         return {
@@ -981,52 +1042,108 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
         }
 
     def visit_set_expression(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Set Expression", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Set Expression",
+            "node_class": "expression",
+        }
 
     def visit_range_expression(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Range Expression", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Range Expression",
+            "node_class": "expression",
+        }
 
     def visit_function_call(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Function Call", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Function Call",
+            "node_class": "expression",
+        }
 
     def visit_array_access(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Array Access", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Array Access",
+            "node_class": "expression",
+        }
 
     def visit_member_access(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Member Access", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Member Access",
+            "node_class": "expression",
+        }
 
     def visit_condition(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Condition", "node_class": "condition"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Condition",
+            "node_class": "condition",
+        }
 
     def visit_for_expression(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "For Expression", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "For Expression",
+            "node_class": "expression",
+        }
 
     def visit_for_of_expression(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "For-Of Expression", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "For-Of Expression",
+            "node_class": "expression",
+        }
 
     def visit_at_expression(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "At Expression", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "At Expression",
+            "node_class": "expression",
+        }
 
     def visit_in_expression(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "In Expression", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "In Expression",
+            "node_class": "expression",
+        }
 
     def visit_of_expression(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Of Expression", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Of Expression",
+            "node_class": "expression",
+        }
 
     def visit_meta(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Meta", "node_class": "meta"}
 
     def visit_module_reference(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Module Reference", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Module Reference",
+            "node_class": "expression",
+        }
 
     def visit_dictionary_access(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Dictionary Access", "node_class": "expression"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Dictionary Access",
+            "node_class": "expression",
+        }
 
     def visit_comment(self, node) -> dict[str, Any]:
         return {"id": self._get_node_id(), "label": "Comment", "node_class": "comment"}
 
     def visit_comment_group(self, node) -> dict[str, Any]:
-        return {"id": self._get_node_id(), "label": "Comment Group", "node_class": "comment"}
+        return {
+            "id": self._get_node_id(),
+            "label": "Comment Group",
+            "node_class": "comment",
+        }
 
     def visit_defined_expression(self, node) -> dict[str, Any]:
         return {

@@ -6,11 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from yaraast.types.module_loader import ModuleLoader
-from yaraast.types.type_system import (
-    FunctionDefinition,
-    TypeChecker,
-    TypeEnvironment,
-)
+from yaraast.types.type_system import FunctionDefinition, TypeChecker, TypeEnvironment
 from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
@@ -38,7 +34,11 @@ class ValidationError:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
-        result = {"message": self.message, "error_type": self.error_type, "severity": self.severity}
+        result = {
+            "message": self.message,
+            "error_type": self.error_type,
+            "severity": self.severity,
+        }
         if self.location:
             result["location"] = {
                 "file": self.location.file,
@@ -59,7 +59,10 @@ class ValidationResult:
     warnings: list[ValidationError] = field(default_factory=list)
 
     def add_error(
-        self, message: str, location: Location | None = None, suggestion: str | None = None
+        self,
+        message: str,
+        location: Location | None = None,
+        suggestion: str | None = None,
     ) -> None:
         """Add validation error."""
         error = ValidationError(message, location, "semantic", "error", suggestion)
@@ -67,7 +70,10 @@ class ValidationResult:
         self.is_valid = False
 
     def add_warning(
-        self, message: str, location: Location | None = None, suggestion: str | None = None
+        self,
+        message: str,
+        location: Location | None = None,
+        suggestion: str | None = None,
     ) -> None:
         """Add validation warning."""
         warning = ValidationError(message, location, "semantic", "warning", suggestion)
@@ -110,6 +116,11 @@ class StringIdentifierValidator(ASTVisitor[None]):
         if identifier.startswith("$"):
             identifier = identifier[1:]
 
+        # Anonymous strings (just $) are allowed to be duplicated in YARA
+        if identifier == "":
+            # Anonymous string - these can be duplicated
+            return
+
         if identifier in self.current_rule_strings:
             self.result.add_error(
                 f"Duplicate string identifier '${identifier}' in rule '{self.current_rule_name}'",
@@ -121,16 +132,16 @@ class StringIdentifierValidator(ASTVisitor[None]):
 
     # Default implementations for other node types
     def visit_yara_file(self, node):
-        pass
+        """Visit YARA file node - handled by rule-specific validation."""
 
     def visit_import(self, node):
-        pass
+        """Visit import node - imports don't affect string identifier validation."""
 
     def visit_include(self, node):
-        pass
+        """Visit include node - includes don't affect string identifier validation."""
 
     def visit_tag(self, node):
-        pass
+        """Visit tag node - tags don't affect string identifier validation."""
 
     def visit_plain_string(self, node):
         self.visit_string_definition(node)
@@ -142,121 +153,143 @@ class StringIdentifierValidator(ASTVisitor[None]):
         self.visit_string_definition(node)
 
     def visit_string_modifier(self, node):
-        pass
+        """Visit string modifier node - modifiers don't affect identifier uniqueness."""
 
     def visit_hex_token(self, node):
-        pass
+        """Visit hex token node - hex tokens don't affect identifier validation."""
 
     def visit_hex_byte(self, node):
-        pass
+        """Visit hex byte node - hex bytes don't affect identifier validation."""
 
     def visit_hex_wildcard(self, node):
-        pass
+        """Visit hex wildcard node - wildcards don't affect identifier validation."""
 
     def visit_hex_jump(self, node):
-        pass
+        """Visit hex jump node - jumps don't affect identifier validation."""
 
     def visit_hex_alternative(self, node):
-        pass
+        """Visit hex alternative node - alternatives don't affect identifier validation."""
 
     def visit_hex_nibble(self, node):
-        pass
+        """Visit hex nibble node - nibbles don't affect identifier validation."""
 
     def visit_expression(self, node):
-        pass
+        """Visit expression node - expressions don't affect string identifier validation."""
 
     def visit_identifier(self, node):
-        pass
+        """Visit identifier node - identifiers don't affect string identifier validation."""
 
     def visit_string_identifier(self, node):
-        pass
+        """Visit string identifier node - string identifiers don't affect definition validation."""
 
     def visit_string_count(self, node):
-        pass
+        """Visit string count node - string counts don't affect identifier validation."""
 
     def visit_string_offset(self, node):
-        pass
+        """Visit string offset node - string offsets don't affect identifier validation."""
 
     def visit_string_length(self, node):
-        pass
+        """Visit string length node - string lengths don't affect identifier validation."""
 
     def visit_integer_literal(self, node):
-        pass
+        """Visit integer literal node - integer literals don't affect identifier validation."""
 
     def visit_double_literal(self, node):
-        pass
+        """Visit double literal node - double literals don't affect identifier validation."""
 
     def visit_string_literal(self, node):
-        pass
+        """Visit string literal node - string literals don't affect identifier validation."""
 
     def visit_boolean_literal(self, node):
-        pass
+        """Visit boolean literal node - boolean literals don't affect identifier validation."""
 
     def visit_binary_expression(self, node):
-        pass
+        """Visit binary expression node - binary expressions don't affect identifier validation."""
 
     def visit_unary_expression(self, node):
-        pass
+        """Visit unary expression node - unary expressions don't affect identifier validation."""
 
     def visit_parentheses_expression(self, node):
-        pass
+        """Visit parentheses expression node - parentheses don't affect identifier validation."""
 
     def visit_set_expression(self, node):
-        pass
+        """Visit set expression node - set expressions don't affect identifier validation."""
 
     def visit_range_expression(self, node):
-        pass
+        """Visit range expression node - range expressions don't affect identifier validation."""
 
     def visit_function_call(self, node):
-        pass
+        """Visit function call node - function calls don't affect identifier validation."""
 
     def visit_array_access(self, node):
-        pass
+        """Visit array access node - array access doesn't affect identifier validation."""
 
     def visit_member_access(self, node):
-        pass
+        """Visit member access node - member access doesn't affect identifier validation."""
 
     def visit_condition(self, node):
-        pass
+        """Visit condition node - conditions don't affect identifier validation."""
 
     def visit_for_expression(self, node):
-        pass
+        """Visit for expression node - for expressions don't affect identifier validation."""
 
     def visit_for_of_expression(self, node):
-        pass
+        """Visit for-of expression node - for-of expressions don't affect identifier validation."""
 
     def visit_at_expression(self, node):
-        pass
+        """Visit at expression node - at expressions don't affect identifier validation."""
 
     def visit_in_expression(self, node):
-        pass
+        """Visit in expression node - in expressions don't affect identifier validation."""
 
     def visit_of_expression(self, node):
-        pass
+        """Visit of expression node - of expressions don't affect identifier validation."""
 
     def visit_meta(self, node):
-        pass
+        """Visit meta node - meta fields don't affect identifier validation."""
 
     def visit_module_reference(self, node):
-        pass
+        """Visit module reference node - module references don't affect identifier validation."""
 
     def visit_dictionary_access(self, node):
-        pass
+        """Visit dictionary access node - dictionary access doesn't affect identifier validation."""
 
     def visit_comment(self, node):
-        pass
+        """Visit comment node - comments don't affect identifier validation."""
 
     def visit_comment_group(self, node):
-        pass
+        """Visit comment group node - comment groups don't affect identifier validation."""
 
     def visit_defined_expression(self, node):
-        pass
+        """Visit defined expression node - defined expressions don't affect identifier validation."""
 
     def visit_regex_literal(self, node):
-        pass
+        """Visit regex literal node - regex literals don't affect identifier validation."""
 
     def visit_string_operator_expression(self, node):
-        pass
+        """Visit string operator expression node - string operators don't affect identifier validation."""
+
+    # Add missing abstract methods
+    def visit_extern_import(self, node):
+        """Visit extern import node - extern imports don't affect identifier validation."""
+
+    def visit_extern_namespace(self, node):
+        """Visit extern namespace node - extern namespaces don't affect identifier validation."""
+
+    def visit_extern_rule(self, node):
+        """Visit extern rule node - extern rules don't affect identifier validation."""
+
+    def visit_extern_rule_reference(self, node):
+        """Visit extern rule reference node - extern rule references don't affect identifier validation."""
+
+    def visit_in_rule_pragma(self, node):
+        """Visit in-rule pragma node - pragmas don't affect identifier validation."""
+
+    def visit_pragma(self, node):
+        """Visit pragma node - pragmas don't affect identifier validation."""
+
+    def visit_pragma_block(self, node):
+        """Visit pragma block node - pragma blocks don't affect identifier validation."""
 
 
 class FunctionCallValidator(ASTVisitor[None]):
@@ -440,109 +473,131 @@ class FunctionCallValidator(ASTVisitor[None]):
 
     # Default implementations for leaf nodes and other types
     def visit_yara_file(self, node):
-        pass
+        """Visit YARA file node - function call validation is handled at rule level."""
 
     def visit_import(self, node):
-        pass
+        """Visit import node - imports are handled by type environment setup."""
 
     def visit_include(self, node):
-        pass
+        """Visit include node - includes don't contain function calls to validate."""
 
     def visit_rule(self, node):
-        pass
+        """Visit rule node - function call validation is handled in conditions."""
 
     def visit_tag(self, node):
-        pass
+        """Visit tag node - tags don't contain function calls."""
 
     def visit_string_definition(self, node):
-        pass
+        """Visit string definition node - string definitions don't contain function calls."""
 
     def visit_plain_string(self, node):
-        pass
+        """Visit plain string node - plain strings don't contain function calls."""
 
     def visit_hex_string(self, node):
-        pass
+        """Visit hex string node - hex strings don't contain function calls."""
 
     def visit_regex_string(self, node):
-        pass
+        """Visit regex string node - regex strings don't contain function calls."""
 
     def visit_string_modifier(self, node):
-        pass
+        """Visit string modifier node - modifiers don't contain function calls."""
 
     def visit_hex_token(self, node):
-        pass
+        """Visit hex token node - hex tokens don't contain function calls."""
 
     def visit_hex_byte(self, node):
-        pass
+        """Visit hex byte node - hex bytes don't contain function calls."""
 
     def visit_hex_wildcard(self, node):
-        pass
+        """Visit hex wildcard node - wildcards don't contain function calls."""
 
     def visit_hex_jump(self, node):
-        pass
+        """Visit hex jump node - jumps don't contain function calls."""
 
     def visit_hex_alternative(self, node):
-        pass
+        """Visit hex alternative node - alternatives don't contain function calls."""
 
     def visit_hex_nibble(self, node):
-        pass
+        """Visit hex nibble node - nibbles don't contain function calls."""
 
     def visit_expression(self, node):
-        pass
+        """Visit expression node - handled by specific expression type visitors."""
 
     def visit_identifier(self, node):
-        pass
+        """Visit identifier node - identifiers don't contain function calls."""
 
     def visit_string_identifier(self, node):
-        pass
+        """Visit string identifier node - string identifiers don't contain function calls."""
 
     def visit_string_count(self, node):
-        pass
+        """Visit string count node - string counts don't contain function calls."""
 
     def visit_string_offset(self, node):
-        pass
+        """Visit string offset node - string offsets don't contain function calls."""
 
     def visit_string_length(self, node):
-        pass
+        """Visit string length node - string lengths don't contain function calls."""
 
     def visit_integer_literal(self, node):
-        pass
+        """Visit integer literal node - integer literals don't contain function calls."""
 
     def visit_double_literal(self, node):
-        pass
+        """Visit double literal node - double literals don't contain function calls."""
 
     def visit_string_literal(self, node):
-        pass
+        """Visit string literal node - string literals don't contain function calls."""
 
     def visit_boolean_literal(self, node):
-        pass
+        """Visit boolean literal node - boolean literals don't contain function calls."""
 
     def visit_condition(self, node):
-        pass
+        """Visit condition node - conditions are handled by specific condition visitors."""
 
     def visit_meta(self, node):
-        pass
+        """Visit meta node - meta fields don't contain function calls."""
 
     def visit_module_reference(self, node):
-        pass
+        """Visit module reference node - module references are handled by member access visitor."""
 
     def visit_dictionary_access(self, node):
-        pass
+        """Visit dictionary access node - dictionary access doesn't contain function calls."""
 
     def visit_comment(self, node):
-        pass
+        """Visit comment node - comments don't contain function calls."""
 
     def visit_comment_group(self, node):
-        pass
+        """Visit comment group node - comment groups don't contain function calls."""
 
     def visit_defined_expression(self, node):
-        pass
+        """Visit defined expression node - defined expressions don't contain function calls."""
 
     def visit_regex_literal(self, node):
-        pass
+        """Visit regex literal node - regex literals don't contain function calls."""
 
     def visit_string_operator_expression(self, node):
-        pass
+        """Visit string operator expression node - string operators don't contain function calls."""
+
+    # Add missing abstract methods for FunctionCallValidator
+    def visit_extern_import(self, node):
+        """Visit extern import node - extern imports don't contain function calls."""
+
+    def visit_extern_namespace(self, node):
+        """Visit extern namespace node - extern namespaces don't contain function calls."""
+
+    def visit_extern_rule(self, node):
+        """Visit extern rule node - extern rules don't contain function calls to validate."""
+
+    def visit_extern_rule_reference(self, node):
+        """Visit extern rule reference node - extern rule references don't contain function calls."""
+
+    def visit_in_rule_pragma(self, node):
+        """Visit in-rule pragma node - pragmas don't contain function calls."""
+
+    def visit_pragma(self, node):
+        """Visit pragma node - pragmas don't contain function calls."""
+
+    def visit_pragma_block(self, node):
+        """Visit pragma block node - pragma blocks don't contain function calls."""
 
 
 class SemanticValidator:

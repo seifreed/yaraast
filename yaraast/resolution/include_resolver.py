@@ -178,7 +178,7 @@ class IncludeResolver:
         # Not found
         searched = [str(d) for d in search_dirs]
         raise FileNotFoundError(
-            f"Cannot find include file '{file_path}'. " f"Searched in: {', '.join(searched)}"
+            f"Cannot find include file '{file_path}'. Searched in: {', '.join(searched)}"
         )
 
     def _calculate_checksum(self, file_path: Path) -> str:

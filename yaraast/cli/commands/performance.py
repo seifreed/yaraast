@@ -78,7 +78,7 @@ def _display_output_files(result):
         for file_path in result.output_files:
             click.echo(f"    - {file_path}")
     else:
-        click.echo(f"    - {result.output_files[0]} (and {len(result.output_files)-1} more)")
+        click.echo(f"    - {result.output_files[0]} (and {len(result.output_files) - 1} more)")
 
 
 def _display_errors(result):
@@ -91,7 +91,7 @@ def _display_errors(result):
         for error in result.errors:
             click.echo(f"    - {error}")
     else:
-        click.echo(f"    - {result.errors[0]} (and {len(result.errors)-1} more)")
+        click.echo(f"    - {result.errors[0]} (and {len(result.errors) - 1} more)")
 
 
 def batch(
@@ -181,10 +181,8 @@ def _get_parse_iterator(parser, input_path: Path, split_rules: bool, pattern: st
     if input_path.is_file():
         if split_rules:
             return parser.parse_rules_from_file(input_path)
-        else:
-            return parser.parse_files([input_path])
-    else:
-        return parser.parse_directory(input_path, pattern, recursive)
+        return parser.parse_files([input_path])
+    return parser.parse_directory(input_path, pattern, recursive)
 
 
 def _display_stream_summary(results, total_time: float):

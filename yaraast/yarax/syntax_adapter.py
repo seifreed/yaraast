@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class YaraXSyntaxAdapter(ASTTransformer):
     """Adapt YARA rules to YARA-X syntax."""
 
-    def __init__(self, features: YaraXFeatures | None = None, target: str = "yarax"):
+    def __init__(self, features: YaraXFeatures | None = None, target: str = "yarax") -> None:
         """
         Initialize adapter.
 
@@ -83,7 +83,9 @@ class YaraXSyntaxAdapter(ASTTransformer):
             if adapted_regex != node.regex:
                 self.adaptations_count += 1
                 return RegexString(
-                    identifier=node.identifier, regex=adapted_regex, modifiers=node.modifiers
+                    identifier=node.identifier,
+                    regex=adapted_regex,
+                    modifiers=node.modifiers,
                 )
 
         elif self.target == "yara" and not self.features.strict_regex_escaping:
@@ -92,7 +94,9 @@ class YaraXSyntaxAdapter(ASTTransformer):
             if adapted_regex != node.regex:
                 self.adaptations_count += 1
                 return RegexString(
-                    identifier=node.identifier, regex=adapted_regex, modifiers=node.modifiers
+                    identifier=node.identifier,
+                    regex=adapted_regex,
+                    modifiers=node.modifiers,
                 )
 
         return node
@@ -159,7 +163,11 @@ class YaraXSyntaxAdapter(ASTTransformer):
 
     def visit_hex_string(self, node: HexString) -> HexString:
         """Adapt hex string syntax."""
-        tokens = [self.visit(token) for token in node.tokens]
+        from typing import cast
+
+        from yaraast.ast.strings import HexToken
+
+        tokens = [cast("HexToken", self.visit(token)) for token in node.tokens]
 
         return HexString(identifier=node.identifier, tokens=tokens, modifiers=node.modifiers)
 
@@ -174,7 +182,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
         guide = ["# YARA to YARA-X Migration Guide\n"]
 
         # Group issues by type
-        by_type = {}
+        by_type: dict[str, list[CompatibilityIssue]] = {}
         for issue in issues:
             if issue.issue_type not in by_type:
                 by_type[issue.issue_type] = []

@@ -108,6 +108,12 @@ class StringModifier:
             return f"{self.modifier_type.value}({self.value})"
         return self.modifier_type.value
 
+    def to_legacy_modifier(self):
+        """Convert to legacy StringModifier format."""
+        from yaraast.ast.strings import StringModifier as LegacyStringModifier
+
+        return LegacyStringModifier(name=self.name, value=self.value)
+
 
 @dataclass
 class RuleModifier:

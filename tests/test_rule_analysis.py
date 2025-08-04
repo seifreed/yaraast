@@ -96,7 +96,10 @@ rule independent {
 
     # Check dependencies
     assert results["dependencies"]["dependent_rule"] == ["base_rule"]
-    assert set(results["dependencies"]["multi_dependent"]) == {"base_rule", "dependent_rule"}
+    assert set(results["dependencies"]["multi_dependent"]) == {
+        "base_rule",
+        "dependent_rule",
+    }
     assert results["dependencies"].get("independent", []) == []
 
     # Check dependency graph

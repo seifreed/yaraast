@@ -39,7 +39,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
         # Create clusters for different pattern types
         with dot.subgraph(name="cluster_plain") as plain_cluster:
             plain_cluster.attr(
-                label="Plain String Patterns", style="filled", fillcolor="lightblue", color="blue"
+                label="Plain String Patterns",
+                style="filled",
+                fillcolor="lightblue",
+                color="blue",
             )
             plain_cluster.attr("node", shape="box", style="rounded,filled", fillcolor="lightcyan")
 
@@ -50,7 +53,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
         with dot.subgraph(name="cluster_hex") as hex_cluster:
             hex_cluster.attr(
-                label="Hex Patterns", style="filled", fillcolor="lightyellow", color="orange"
+                label="Hex Patterns",
+                style="filled",
+                fillcolor="lightyellow",
+                color="orange",
             )
             hex_cluster.attr("node", shape="hexagon", style="filled", fillcolor="yellow")
 
@@ -61,7 +67,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
         with dot.subgraph(name="cluster_regex") as regex_cluster:
             regex_cluster.attr(
-                label="Regex Patterns", style="filled", fillcolor="lightgreen", color="green"
+                label="Regex Patterns",
+                style="filled",
+                fillcolor="lightgreen",
+                color="green",
             )
             regex_cluster.attr("node", shape="ellipse", style="filled", fillcolor="lightgreen")
 
@@ -162,7 +171,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
             with dot.subgraph(name=f"cluster_{i}") as cluster:
                 cluster.attr(
-                    label=f"{group_type} Patterns", style="filled", fillcolor=color, alpha="0.5"
+                    label=f"{group_type} Patterns",
+                    style="filled",
+                    fillcolor=color,
+                    alpha="0.5",
                 )
 
                 for pattern_id in patterns:
@@ -228,14 +240,24 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
             # Create main pattern node
             main_label = f"{pattern_info['identifier']}\\nRule: {pattern_info['rule']}"
-            dot.node(pattern_id, main_label, shape="box", style="filled", fillcolor="lightblue")
+            dot.node(
+                pattern_id,
+                main_label,
+                shape="box",
+                style="filled",
+                fillcolor="lightblue",
+            )
 
             # Create token breakdown
             if tokens:
                 token_id = f"{pattern_id}_tokens"
                 token_label = self._create_hex_token_label(tokens)
                 dot.node(
-                    token_id, token_label, shape="record", style="filled", fillcolor="lightyellow"
+                    token_id,
+                    token_label,
+                    shape="record",
+                    style="filled",
+                    fillcolor="lightyellow",
                 )
                 dot.edge(pattern_id, token_id, label="tokens")
 

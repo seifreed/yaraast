@@ -364,10 +364,19 @@ class TypeSystem:
             ),
             "exports": FunctionDefinition("exports", BooleanType(), [("name", StringType())]),
             "imports": FunctionDefinition(
-                "imports", BooleanType(), [("dll", StringType()), ("function", StringType())]
+                "imports",
+                BooleanType(),
+                [("dll", StringType()), ("function", StringType())],
             ),
             "locale": FunctionDefinition("locale", BooleanType(), [("locale", IntegerType())]),
             "language": FunctionDefinition("language", BooleanType(), [("lang", IntegerType())]),
+            # Add functions that can also be called as attributes
+            "is_dll": FunctionDefinition("is_dll", BooleanType()),
+            "is_64bit": FunctionDefinition("is_64bit", BooleanType()),
+            "is_32bit": FunctionDefinition("is_32bit", BooleanType()),
+            "rva_to_offset": FunctionDefinition(
+                "rva_to_offset", IntegerType(), [("rva", IntegerType())]
+            ),
         }
         self.modules["pe"] = pe
 
@@ -382,7 +391,9 @@ class TypeSystem:
                 "max", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
             ),
             "to_string": FunctionDefinition(
-                "to_string", StringType(), [("n", IntegerType()), ("base", IntegerType())]
+                "to_string",
+                StringType(),
+                [("n", IntegerType()), ("base", IntegerType())],
             ),
             "to_number": FunctionDefinition("to_number", IntegerType(), [("s", StringType())]),
             "log": FunctionDefinition("log", DoubleType(), [("x", DoubleType())]),
@@ -476,16 +487,16 @@ class TypeEnvironment:
         self.module_aliases: dict[str, str] = {}  # alias -> actual module name
         self.strings: set[str] = set()
 
-    def push_scope(self):
+    def push_scope(self) -> None:
         """Push a new scope."""
         self.scopes.append({})
 
-    def pop_scope(self):
+    def pop_scope(self) -> None:
         """Pop the current scope."""
         if len(self.scopes) > 1:
             self.scopes.pop()
 
-    def define(self, name: str, type: YaraType):
+    def define(self, name: str, type: YaraType) -> None:
         """Define a variable in the current scope."""
         self.scopes[-1][name] = type
 
@@ -496,7 +507,7 @@ class TypeEnvironment:
                 return scope[name]
         return None
 
-    def add_module(self, alias: str, module: str | None = None):
+    def add_module(self, alias: str, module: str | None = None) -> None:
         """Add an imported module with optional alias."""
         if module is None:
             # No alias, just module name
@@ -506,7 +517,7 @@ class TypeEnvironment:
             self.modules.add(module)
             self.module_aliases[alias] = module
 
-    def add_string(self, string_id: str):
+    def add_string(self, string_id: str) -> None:
         """Add a string identifier."""
         self.strings.add(string_id)
 
@@ -587,7 +598,9 @@ class TypeInference(ASTVisitor[YaraType]):
 
     def visit_string_identifier(self, node: StringIdentifier) -> YaraType:
         if self.env.has_string(node.name):
-            return StringIdentifierType()  # String identifiers have their own type
+            # String identifiers are implicitly boolean in conditions
+            # They evaluate to true if the string matches
+            return BooleanType()
         self.errors.append(f"Undefined string: {node.name}")
         return UnknownType()
 
@@ -1011,6 +1024,28 @@ class TypeInference(ASTVisitor[YaraType]):
     def visit_string_operator_expression(self, node):
         return BooleanType()
 
+    # Add missing abstract methods for TypeInference
+    def visit_extern_import(self, node):
+        return UnknownType()
+
+    def visit_extern_namespace(self, node):
+        return UnknownType()
+
+    def visit_extern_rule(self, node):
+        return UnknownType()
+
+    def visit_extern_rule_reference(self, node):
+        return UnknownType()
+
+    def visit_in_rule_pragma(self, node):
+        return UnknownType()
+
+    def visit_pragma(self, node):
+        return UnknownType()
+
+    def visit_pragma_block(self, node):
+        return UnknownType()
+
 
 class TypeChecker(ASTVisitor[None]):
     """Type checker for YARA rules."""
@@ -1049,8 +1084,10 @@ class TypeChecker(ASTVisitor[None]):
         # Type check condition
         if node.condition:
             cond_type = self.inference.infer(node.condition)
-            if not isinstance(cond_type, BooleanType):
-                self.errors.append(f"Rule condition must be boolean, got {cond_type}")
+            # In YARA, integer conditions are valid (0 = false, non-zero = true)
+            # Also string counts and offsets return integers that can be used as conditions
+            if not isinstance(cond_type, BooleanType | IntegerType):
+                self.errors.append(f"Rule condition must be boolean or integer, got {cond_type}")
 
     # Other visit methods with pass
     def visit_include(self, node):
@@ -1186,6 +1223,28 @@ class TypeChecker(ASTVisitor[None]):
         pass
 
     def visit_string_operator_expression(self, node):
+        pass
+
+    # Add missing abstract methods
+    def visit_extern_import(self, node):
+        pass
+
+    def visit_extern_namespace(self, node):
+        pass
+
+    def visit_extern_rule(self, node):
+        pass
+
+    def visit_extern_rule_reference(self, node):
+        pass
+
+    def visit_in_rule_pragma(self, node):
+        pass
+
+    def visit_pragma(self, node):
+        pass
+
+    def visit_pragma_block(self, node):
         pass
 
 

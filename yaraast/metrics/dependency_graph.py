@@ -206,7 +206,11 @@ class DependencyGraphGenerator(ASTVisitor[None]):
             for module in modules:
                 if module in self.imports:
                     dot.edge(
-                        f"import_{module}", rule_name, label="uses", style="dashed", color="blue"
+                        f"import_{module}",
+                        rule_name,
+                        label="uses",
+                        style="dashed",
+                        color="blue",
                     )
 
         # String reference edges (conceptual)
@@ -235,7 +239,10 @@ class DependencyGraphGenerator(ASTVisitor[None]):
             ),
             "most_used_modules": sorted(
                 [
-                    (mod, len([refs for refs in self.module_references.values() if mod in refs]))
+                    (
+                        mod,
+                        len([refs for refs in self.module_references.values() if mod in refs]),
+                    )
                     for mod in self.imports
                 ],
                 key=lambda x: x[1],

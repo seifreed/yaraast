@@ -67,10 +67,19 @@ class ModuleLoader:
             ),
             "exports": FunctionDefinition("exports", BooleanType(), [("name", StringType())]),
             "imports": FunctionDefinition(
-                "imports", BooleanType(), [("dll", StringType()), ("function", StringType())]
+                "imports",
+                BooleanType(),
+                [("dll", StringType()), ("function", StringType())],
             ),
             "locale": FunctionDefinition("locale", BooleanType(), [("locale", IntegerType())]),
             "language": FunctionDefinition("language", BooleanType(), [("lang", IntegerType())]),
+            # Add functions that can also be called as attributes
+            "is_dll": FunctionDefinition("is_dll", BooleanType()),
+            "is_64bit": FunctionDefinition("is_64bit", BooleanType()),
+            "is_32bit": FunctionDefinition("is_32bit", BooleanType()),
+            "rva_to_offset": FunctionDefinition(
+                "rva_to_offset", IntegerType(), [("rva", IntegerType())]
+            ),
         }
         self.modules["pe"] = pe
 
@@ -85,7 +94,9 @@ class ModuleLoader:
                 "max", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
             ),
             "to_string": FunctionDefinition(
-                "to_string", StringType(), [("n", IntegerType()), ("base", IntegerType())]
+                "to_string",
+                StringType(),
+                [("n", IntegerType()), ("base", IntegerType())],
             ),
             "to_number": FunctionDefinition("to_number", IntegerType(), [("s", StringType())]),
             "log": FunctionDefinition("log", DoubleType(), [("x", DoubleType())]),
@@ -93,7 +104,9 @@ class ModuleLoader:
             "log10": FunctionDefinition("log10", DoubleType(), [("x", DoubleType())]),
             "sqrt": FunctionDefinition("sqrt", DoubleType(), [("x", DoubleType())]),
             "entropy": FunctionDefinition(
-                "entropy", DoubleType(), [("offset", IntegerType()), ("size", IntegerType())]
+                "entropy",
+                DoubleType(),
+                [("offset", IntegerType()), ("size", IntegerType())],
             ),
         }
         self.modules["math"] = math
@@ -134,16 +147,24 @@ class ModuleLoader:
         hash_mod = ModuleDefinition(name="hash")
         hash_mod.functions = {
             "md5": FunctionDefinition(
-                "md5", StringType(), [("offset", IntegerType()), ("size", IntegerType())]
+                "md5",
+                StringType(),
+                [("offset", IntegerType()), ("size", IntegerType())],
             ),
             "sha1": FunctionDefinition(
-                "sha1", StringType(), [("offset", IntegerType()), ("size", IntegerType())]
+                "sha1",
+                StringType(),
+                [("offset", IntegerType()), ("size", IntegerType())],
             ),
             "sha256": FunctionDefinition(
-                "sha256", StringType(), [("offset", IntegerType()), ("size", IntegerType())]
+                "sha256",
+                StringType(),
+                [("offset", IntegerType()), ("size", IntegerType())],
             ),
             "crc32": FunctionDefinition(
-                "crc32", IntegerType(), [("offset", IntegerType()), ("size", IntegerType())]
+                "crc32",
+                IntegerType(),
+                [("offset", IntegerType()), ("size", IntegerType())],
             ),
         }
         self.modules["hash"] = hash_mod

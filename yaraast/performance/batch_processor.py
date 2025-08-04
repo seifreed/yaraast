@@ -92,7 +92,8 @@ class BatchProcessor:
 
         # Initialize components
         self.streaming_parser = StreamingParser(
-            max_memory_mb=max_memory_mb, progress_callback=self._streaming_progress_callback
+            max_memory_mb=max_memory_mb,
+            progress_callback=self._streaming_progress_callback,
         )
 
         self._stats = {
@@ -137,7 +138,10 @@ class BatchProcessor:
         return self.process_files(file_paths, operations, output_dir)
 
     def process_files(
-        self, file_paths: list[str | Path], operations: list[BatchOperation], output_dir: str | Path
+        self,
+        file_paths: list[str | Path],
+        operations: list[BatchOperation],
+        output_dir: str | Path,
     ) -> dict[BatchOperation, BatchResult]:
         """Process a list of YARA files with specified operations.
 

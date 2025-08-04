@@ -1,12 +1,13 @@
 """Example: Transforming YARA AST."""
 
 from yaraast import ASTTransformer, CodeGenerator, Parser
-from yaraast.ast import *
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString, StringModifier
 
 
 # Example transformer that adds a prefix to all rule names
 class RulePrefixTransformer(ASTTransformer):
-    def __init__(self, prefix: str):
+    def __init__(self, prefix: str) -> None:
         self.prefix = prefix
 
     def visit_rule(self, node: Rule) -> Rule:
@@ -21,6 +22,7 @@ class RulePrefixTransformer(ASTTransformer):
         transformed.meta["prefix"] = self.prefix
 
         return transformed
+
 
 # Example transformer that converts all plain strings to nocase
 class NoCaseTransformer(ASTTransformer):
@@ -37,8 +39,9 @@ class NoCaseTransformer(ASTTransformer):
 
         return transformed
 
+
 # Original YARA rule
-original_yara = '''
+original_yara = """
 rule detect_malware {
     meta:
         author = "Analyst"
@@ -57,7 +60,7 @@ rule detect_backdoor {
     condition:
         all of them
 }
-'''
+"""
 
 # Parse the original rules
 parser = Parser(original_yara)

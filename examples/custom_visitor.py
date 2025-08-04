@@ -3,7 +3,23 @@
 # No specific typing imports needed with Python 3.9+ built-in generics
 
 from yaraast import ASTVisitor, Parser
-from yaraast.ast import *
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    Expression,
+    Identifier,
+    StringIdentifier,
+)
+from yaraast.ast.rules import Import, Rule
+from yaraast.ast.strings import (
+    HexByte,
+    HexString,
+    HexWildcard,
+    PlainString,
+    RegexString,
+    StringModifier,
+)
 
 
 # Visitor to collect statistics about YARA rules
@@ -85,106 +101,106 @@ class RuleStatisticsVisitor(ASTVisitor[None]):
 
     # Implement remaining visit methods with pass
     def visit_include(self, node):
-        pass
+        """Visit include node - not needed for statistics collection."""
 
     def visit_tag(self, node):
-        pass
+        """Visit tag node - not needed for statistics collection."""
 
     def visit_string_definition(self, node):
-        pass
+        """Visit string definition node - handled by specific string type visitors."""
 
     def visit_string_modifier(self, node):
-        pass
+        """Visit string modifier node - handled by string visitors."""
 
     def visit_hex_token(self, node):
-        pass
+        """Visit hex token node - not needed for statistics collection."""
 
     def visit_hex_byte(self, node):
-        pass
+        """Visit hex byte node - not needed for statistics collection."""
 
     def visit_hex_wildcard(self, node):
-        pass
+        """Visit hex wildcard node - not needed for statistics collection."""
 
     def visit_hex_jump(self, node):
-        pass
+        """Visit hex jump node - not needed for statistics collection."""
 
     def visit_hex_alternative(self, node):
-        pass
+        """Visit hex alternative node - not needed for statistics collection."""
 
     def visit_expression(self, node):
-        pass
+        """Visit expression node - handled by specific expression type visitors."""
 
     def visit_identifier(self, node):
-        pass
+        """Visit identifier node - not needed for statistics collection."""
 
     def visit_string_identifier(self, node):
-        pass
+        """Visit string identifier node - not needed for statistics collection."""
 
     def visit_string_count(self, node):
-        pass
+        """Visit string count node - not needed for statistics collection."""
 
     def visit_string_offset(self, node):
-        pass
+        """Visit string offset node - not needed for statistics collection."""
 
     def visit_string_length(self, node):
-        pass
+        """Visit string length node - not needed for statistics collection."""
 
     def visit_integer_literal(self, node):
-        pass
+        """Visit integer literal node - not needed for statistics collection."""
 
     def visit_double_literal(self, node):
-        pass
+        """Visit double literal node - not needed for statistics collection."""
 
     def visit_string_literal(self, node):
-        pass
+        """Visit string literal node - not needed for statistics collection."""
 
     def visit_boolean_literal(self, node):
-        pass
+        """Visit boolean literal node - not needed for statistics collection."""
 
     def visit_binary_expression(self, node):
-        pass
+        """Visit binary expression node - not needed for statistics collection."""
 
     def visit_unary_expression(self, node):
-        pass
+        """Visit unary expression node - not needed for statistics collection."""
 
     def visit_parentheses_expression(self, node):
-        pass
+        """Visit parentheses expression node - not needed for statistics collection."""
 
     def visit_set_expression(self, node):
-        pass
+        """Visit set expression node - not needed for statistics collection."""
 
     def visit_range_expression(self, node):
-        pass
+        """Visit range expression node - not needed for statistics collection."""
 
     def visit_function_call(self, node):
-        pass
+        """Visit function call node - not needed for statistics collection."""
 
     def visit_array_access(self, node):
-        pass
+        """Visit array access node - not needed for statistics collection."""
 
     def visit_member_access(self, node):
-        pass
+        """Visit member access node - not needed for statistics collection."""
 
     def visit_condition(self, node):
-        pass
+        """Visit condition node - not needed for statistics collection."""
 
     def visit_for_expression(self, node):
-        pass
+        """Visit for expression node - not needed for statistics collection."""
 
     def visit_for_of_expression(self, node):
-        pass
+        """Visit for-of expression node - not needed for statistics collection."""
 
     def visit_at_expression(self, node):
-        pass
+        """Visit at expression node - not needed for statistics collection."""
 
     def visit_in_expression(self, node):
-        pass
+        """Visit in expression node - not needed for statistics collection."""
 
     def visit_of_expression(self, node):
-        pass
+        """Visit of expression node - not needed for statistics collection."""
 
     def visit_meta(self, node):
-        pass
+        """Visit meta node - not needed for statistics collection."""
 
 
 # Visitor to extract all string values
@@ -221,108 +237,143 @@ class StringExtractorVisitor(ASTVisitor[list[str]]):
 
     # Implement remaining methods returning empty list
     def visit_import(self, node):
+        """Visit import node - returns empty list as imports don't contain strings."""
         return []
 
     def visit_include(self, node):
+        """Visit include node - returns empty list as includes don't contain strings."""
         return []
 
     def visit_tag(self, node):
+        """Visit tag node - returns empty list as tags don't contain strings."""
         return []
 
     def visit_string_definition(self, node):
+        """Visit string definition node - handled by specific string type visitors."""
         return []
 
     def visit_string_modifier(self, node):
+        """Visit string modifier node - returns empty list as modifiers don't contain strings."""
         return []
 
     def visit_hex_token(self, node):
+        """Visit hex token node - returns empty list as tokens are part of hex strings."""
         return []
 
     def visit_hex_byte(self, node):
+        """Visit hex byte node - returns empty list as bytes are part of hex strings."""
         return []
 
     def visit_hex_wildcard(self, node):
+        """Visit hex wildcard node - returns empty list as wildcards are part of hex strings."""
         return []
 
     def visit_hex_jump(self, node):
+        """Visit hex jump node - returns empty list as jumps are part of hex strings."""
         return []
 
     def visit_hex_alternative(self, node):
+        """Visit hex alternative node - returns empty list as alternatives are part of hex strings."""
         return []
 
     def visit_expression(self, node):
+        """Visit expression node - returns empty list as expressions don't contain extractable strings."""
         return []
 
     def visit_identifier(self, node):
+        """Visit identifier node - returns empty list as identifiers are not extractable strings."""
         return []
 
     def visit_string_identifier(self, node):
+        """Visit string identifier node - returns empty list as identifiers reference strings."""
         return []
 
     def visit_string_count(self, node):
+        """Visit string count node - returns empty list as counts are not extractable strings."""
         return []
 
     def visit_string_offset(self, node):
+        """Visit string offset node - returns empty list as offsets are not extractable strings."""
         return []
 
     def visit_string_length(self, node):
+        """Visit string length node - returns empty list as lengths are not extractable strings."""
         return []
 
     def visit_integer_literal(self, node):
+        """Visit integer literal node - returns empty list as integers are not extractable strings."""
         return []
 
     def visit_double_literal(self, node):
+        """Visit double literal node - returns empty list as doubles are not extractable strings."""
         return []
 
     def visit_string_literal(self, node):
+        """Visit string literal node - returns empty list as literals are not string definitions."""
         return []
 
     def visit_boolean_literal(self, node):
+        """Visit boolean literal node - returns empty list as booleans are not extractable strings."""
         return []
 
     def visit_binary_expression(self, node):
+        """Visit binary expression node - returns empty list as expressions don't contain extractable strings."""
         return []
 
     def visit_unary_expression(self, node):
+        """Visit unary expression node - returns empty list as expressions don't contain extractable strings."""
         return []
 
     def visit_parentheses_expression(self, node):
+        """Visit parentheses expression node - returns empty list as expressions don't contain extractable strings."""
         return []
 
     def visit_set_expression(self, node):
+        """Visit set expression node - returns empty list as sets don't contain extractable strings."""
         return []
 
     def visit_range_expression(self, node):
+        """Visit range expression node - returns empty list as ranges don't contain extractable strings."""
         return []
 
     def visit_function_call(self, node):
+        """Visit function call node - returns empty list as function calls don't contain extractable strings."""
         return []
 
     def visit_array_access(self, node):
+        """Visit array access node - returns empty list as array access doesn't contain extractable strings."""
         return []
 
     def visit_member_access(self, node):
+        """Visit member access node - returns empty list as member access doesn't contain extractable strings."""
         return []
 
     def visit_condition(self, node):
+        """Visit condition node - returns empty list as conditions don't contain extractable strings."""
         return []
 
     def visit_for_expression(self, node):
+        """Visit for expression node - returns empty list as for expressions don't contain extractable strings."""
         return []
 
     def visit_for_of_expression(self, node):
+        """Visit for-of expression node - returns empty list as for-of expressions don't contain extractable strings."""
         return []
 
     def visit_at_expression(self, node):
+        """Visit at expression node - returns empty list as at expressions don't contain extractable strings."""
         return []
 
     def visit_in_expression(self, node):
+        """Visit in expression node - returns empty list as in expressions don't contain extractable strings."""
         return []
 
     def visit_of_expression(self, node):
+        """Visit of expression node - returns empty list as of expressions don't contain extractable strings."""
         return []
 
     def visit_meta(self, node):
+        """Visit meta node - returns empty list as meta fields don't contain extractable strings."""
         return []
 
 

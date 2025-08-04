@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from yaraast.cli.ast_tools import AST_Formatter, ASTBenchmarker, ASTDiffer, ASTStructuralAnalyzer
+from yaraast.cli.ast_tools import ASTBenchmarker, ASTDiffer, ASTFormatter, ASTStructuralAnalyzer
 from yaraast.parser import YaraParser
 
 
@@ -20,7 +20,7 @@ class TestASTFormatter:
             test_file = Path(f.name)
 
         try:
-            formatter = AST_Formatter()
+            formatter = ASTFormatter()
             success, formatted = formatter.format_file(test_file, None, "pretty")
 
             assert success is True
@@ -48,7 +48,7 @@ class TestASTFormatter:
             test_file = Path(f.name)
 
         try:
-            formatter = AST_Formatter()
+            formatter = ASTFormatter()
 
             # Test different styles
             success_compact, compact = formatter.format_file(test_file, None, "compact")
@@ -76,7 +76,7 @@ class TestASTFormatter:
         # Poorly formatted YARA
         poorly_formatted = """rule test{strings:$a="hello"condition:$a}"""
 
-        formatter = AST_Formatter()
+        formatter = ASTFormatter()
 
         # Test well-formatted file
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
@@ -449,7 +449,7 @@ class TestIntegration:
 
         try:
             # Format the file
-            formatter = AST_Formatter()
+            formatter = ASTFormatter()
             success, formatted = formatter.format_file(original_file, None, "pretty")
             assert success is True
 
@@ -481,7 +481,7 @@ if __name__ == "__main__":
     print("Testing CLI tools...")
 
     # Test formatter
-    formatter = AST_Formatter()
+    formatter = ASTFormatter()
     yara_test = 'rule test{strings:$s="hello"condition:$s}'
 
     with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:

@@ -31,7 +31,9 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
         return json_str
 
     def deserialize(
-        self, json_str: str | None = None, input_path: str | Path | None = None
+        self,
+        json_str: str | None = None,
+        input_path: str | Path | None = None,
     ) -> YaraFile:
         """Deserialize JSON to AST."""
         if input_path:
@@ -78,7 +80,11 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
         }
 
     def visit_import(self, node) -> dict[str, Any]:
-        return {"type": "Import", "module": node.module, "alias": getattr(node, "alias", None)}
+        return {
+            "type": "Import",
+            "module": node.module,
+            "alias": getattr(node, "alias", None),
+        }
 
     def visit_include(self, node) -> dict[str, Any]:
         return {"type": "Include", "path": node.path}
@@ -185,7 +191,11 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
         return {"type": "StringLiteral", "value": node.value}
 
     def visit_regex_literal(self, node) -> dict[str, Any]:
-        return {"type": "RegexLiteral", "pattern": node.pattern, "modifiers": node.modifiers}
+        return {
+            "type": "RegexLiteral",
+            "pattern": node.pattern,
+            "modifiers": node.modifiers,
+        }
 
     def visit_boolean_literal(self, node) -> dict[str, Any]:
         return {"type": "BooleanLiteral", "value": node.value}
@@ -206,10 +216,16 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
         }
 
     def visit_parentheses_expression(self, node) -> dict[str, Any]:
-        return {"type": "ParenthesesExpression", "expression": self.visit(node.expression)}
+        return {
+            "type": "ParenthesesExpression",
+            "expression": self.visit(node.expression),
+        }
 
     def visit_set_expression(self, node) -> dict[str, Any]:
-        return {"type": "SetExpression", "elements": [self.visit(elem) for elem in node.elements]}
+        return {
+            "type": "SetExpression",
+            "elements": [self.visit(elem) for elem in node.elements],
+        }
 
     def visit_range_expression(self, node) -> dict[str, Any]:
         return {
@@ -233,7 +249,11 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
         }
 
     def visit_member_access(self, node) -> dict[str, Any]:
-        return {"type": "MemberAccess", "object": self.visit(node.object), "member": node.member}
+        return {
+            "type": "MemberAccess",
+            "object": self.visit(node.object),
+            "member": node.member,
+        }
 
     def visit_condition(self, node) -> dict[str, Any]:
         return {"type": "Condition"}
@@ -250,7 +270,11 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
     def visit_for_of_expression(self, node) -> dict[str, Any]:
         return {
             "type": "ForOfExpression",
-            "quantifier": node.quantifier,
+            "quantifier": (
+                self.visit(node.quantifier)
+                if hasattr(node.quantifier, "accept")
+                else node.quantifier
+            ),
             "string_set": self.visit(node.string_set),
             "condition": self.visit(node.condition) if node.condition else None,
         }
@@ -315,4 +339,47 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
             "left": self.visit(node.left),
             "operator": node.operator,
             "right": self.visit(node.right),
+        }
+
+    # Add missing abstract methods
+    def visit_extern_import(self, node) -> dict[str, Any]:
+        return {
+            "type": "ExternImport",
+            "module": node.module if hasattr(node, "module") else None,
+        }
+
+    def visit_extern_namespace(self, node) -> dict[str, Any]:
+        return {
+            "type": "ExternNamespace",
+            "name": node.name if hasattr(node, "name") else None,
+        }
+
+    def visit_extern_rule(self, node) -> dict[str, Any]:
+        return {
+            "type": "ExternRule",
+            "name": node.name if hasattr(node, "name") else None,
+        }
+
+    def visit_extern_rule_reference(self, node) -> dict[str, Any]:
+        return {
+            "type": "ExternRuleReference",
+            "name": node.name if hasattr(node, "name") else None,
+        }
+
+    def visit_in_rule_pragma(self, node) -> dict[str, Any]:
+        return {
+            "type": "InRulePragma",
+            "pragma": node.pragma if hasattr(node, "pragma") else None,
+        }
+
+    def visit_pragma(self, node) -> dict[str, Any]:
+        return {
+            "type": "Pragma",
+            "directive": node.directive if hasattr(node, "directive") else None,
+        }
+
+    def visit_pragma_block(self, node) -> dict[str, Any]:
+        return {
+            "type": "PragmaBlock",
+            "pragmas": [self.visit(p) for p in node.pragmas] if hasattr(node, "pragmas") else [],
         }

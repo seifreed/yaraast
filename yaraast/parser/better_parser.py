@@ -169,11 +169,28 @@ class Parser:
 
     def _parse_and_expression(self) -> Expression:
         """Parse AND expression."""
-        expr = self._parse_not_expression()
+        expr = self._parse_bitwise_expression()
 
         while self._match(TokenType.AND):
-            right = self._parse_not_expression()
+            right = self._parse_bitwise_expression()
             expr = BinaryExpression(left=expr, operator="and", right=right)
+
+        return expr
+
+    def _parse_bitwise_expression(self) -> Expression:
+        """Parse bitwise expressions (&, |, ^, <<, >>)."""
+        expr = self._parse_not_expression()
+
+        while self._match(
+            TokenType.BITWISE_AND,
+            TokenType.BITWISE_OR,
+            TokenType.XOR,
+            TokenType.SHIFT_LEFT,
+            TokenType.SHIFT_RIGHT,
+        ):
+            operator = self._previous().value
+            right = self._parse_not_expression()
+            expr = BinaryExpression(left=expr, operator=operator, right=right)
 
         return expr
 
@@ -185,9 +202,31 @@ class Parser:
 
         return self._parse_relational_expression()
 
+    def _parse_additive_expression(self) -> Expression:
+        """Parse additive expressions (+ and -)."""
+        expr = self._parse_multiplicative_expression()
+
+        while self._match(TokenType.PLUS, TokenType.MINUS):
+            operator = self._previous().value
+            right = self._parse_multiplicative_expression()
+            expr = BinaryExpression(left=expr, operator=operator, right=right)
+
+        return expr
+
+    def _parse_multiplicative_expression(self) -> Expression:
+        """Parse multiplicative expressions (*, /, %)."""
+        expr = self._parse_primary_expression()
+
+        while self._match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO):
+            operator = self._previous().value
+            right = self._parse_primary_expression()
+            expr = BinaryExpression(left=expr, operator=operator, right=right)
+
+        return expr
+
     def _parse_relational_expression(self) -> Expression:
         """Parse relational expressions."""
-        expr = self._parse_primary_expression()
+        expr = self._parse_additive_expression()
 
         while True:
             if self._match(
@@ -207,17 +246,29 @@ class Parser:
                 TokenType.IEQUALS,
             ):
                 operator = self._previous().value.lower()
-                right = self._parse_primary_expression()
+                right = self._parse_additive_expression()
                 expr = BinaryExpression(left=expr, operator=operator, right=right)
             elif self._match(TokenType.AT):
                 # Handle 'at' operator (e.g., $string at offset)
                 if isinstance(expr, StringIdentifier):
-                    offset = self._parse_primary_expression()
+                    # Parse the offset expression (could be complex like filesize - 42)
+                    offset = self._parse_additive_expression()
                     from yaraast.ast.conditions import AtExpression
 
                     expr = AtExpression(string_id=expr.name, offset=offset)
                 else:
                     raise Exception("'at' operator requires string identifier on left side")
+            elif self._match(TokenType.IN):
+                # Handle 'in' operator (e.g., $string in (0..100))
+                if isinstance(expr, StringIdentifier):
+                    range_expr = self._parse_additive_expression()
+                    from yaraast.ast.conditions import InExpression
+
+                    expr = InExpression(string_id=expr.name, range=range_expr)
+                else:
+                    # Could be other 'in' usage, treat as binary operator
+                    right = self._parse_additive_expression()
+                    expr = BinaryExpression(left=expr, operator="in", right=right)
             else:
                 break
 
@@ -314,14 +365,15 @@ class Parser:
         # Parentheses
         if self._match(TokenType.LPAREN):
             expr = self._parse_or_expression()
-            
+
             # Handle range with dash syntax (0-100) as alternative to (0..100)
             if self._current_token() and self._current_token().type == TokenType.MINUS:
                 self._advance()
                 high = self._parse_or_expression()
                 from yaraast.ast.expressions import RangeExpression
+
                 expr = RangeExpression(low=expr, high=high)
-            
+
             if not self._match(TokenType.RPAREN):
                 current = self._current_token()
                 # Try to recover by skipping unexpected tokens
@@ -330,7 +382,9 @@ class Parser:
                     if self._match(TokenType.RPAREN):
                         break
                 else:
-                    raise Exception(f"Expected ')' in parentheses at position {self.position}, got {current.type if current else 'EOF'}")
+                    raise Exception(
+                        f"Expected ')' in parentheses at position {self.position}, got {current.type if current else 'EOF'}"
+                    )
             return ParenthesesExpression(expression=expr)
 
         # Unary minus for negative numbers
@@ -398,16 +452,16 @@ class Parser:
                     # Try to parse argument, but be tolerant of errors
                     try:
                         args.append(self._parse_or_expression())
-                    except:
+                    except Exception:
                         # If parsing fails, try to recover by finding comma or closing paren
                         while not self._is_at_end():
                             if self._check(TokenType.COMMA) or self._check(TokenType.RPAREN):
                                 break
                             self._advance()
-                    
+
                     if not self._match(TokenType.COMMA):
                         break
-                
+
                 if not self._match(TokenType.RPAREN):
                     # Try to recover by finding the closing parenthesis
                     current = self._current_token()
@@ -418,7 +472,9 @@ class Parser:
                         self._advance()
                         attempts += 1
                     else:
-                        raise Exception(f"Expected ')' in function call at position {self.position}, got {current.type if current else 'EOF'}")
+                        raise Exception(
+                            f"Expected ')' in function call at position {self.position}, got {current.type if current else 'EOF'}"
+                        )
                 # Get function name from expression
                 if isinstance(expr, Identifier):
                     expr = FunctionCall(function=expr.name, arguments=args)
@@ -473,10 +529,16 @@ class Parser:
     def _parse_strings_section(self) -> list[StringDefinition]:
         """Parse strings section."""
         strings = []
+        anonymous_counter = 0  # Counter for anonymous strings
 
         while self._current_token() and self._current_token().type == TokenType.STRING_IDENTIFIER:
             identifier = self._current_token().value
             self._advance()
+
+            # Generate unique identifier for anonymous strings
+            if identifier == "$":
+                anonymous_counter += 1
+                identifier = f"$anon_{anonymous_counter}"
 
             if not self._match(TokenType.ASSIGN):
                 raise Exception("Expected '='")
@@ -497,9 +559,13 @@ class Parser:
                 ):
                     mod_name = self._current_token().value
                     self._advance()
-                    
+
                     # Handle XOR with optional parameters
-                    if mod_name.lower() == "xor" and self._current_token() and self._current_token().type == TokenType.LPAREN:
+                    if (
+                        mod_name.lower() == "xor"
+                        and self._current_token()
+                        and self._current_token().type == TokenType.LPAREN
+                    ):
                         self._advance()  # consume '('
                         # Parse XOR parameter (can be single value or range)
                         # For now, just skip to closing paren
@@ -522,15 +588,27 @@ class Parser:
                 # Parse hex string content including wildcards
                 from yaraast.ast.strings import HexByte, HexWildcard
 
-                parts = hex_content.split()
-                for part in parts:
-                    if part == "??":
-                        # Wildcard
-                        hex_tokens.append(HexWildcard())
-                    elif len(part) == 2 and all(c in "0123456789ABCDEFabcdef" for c in part):
-                        # Hex byte
-                        hex_tokens.append(HexByte(value=part))
-                    # Add more complex parsing for jumps and alternatives if needed
+                # Remove any whitespace and parse pairs of hex digits
+                hex_clean = hex_content.replace(" ", "").replace("\t", "").replace("\n", "")
+
+                i = 0
+                while i < len(hex_clean):
+                    if i + 1 < len(hex_clean):
+                        two_chars = hex_clean[i : i + 2]
+                        if two_chars == "??":
+                            # Wildcard
+                            hex_tokens.append(HexWildcard())
+                            i += 2
+                        elif all(c in "0123456789ABCDEFabcdef" for c in two_chars):
+                            # Hex byte - convert to integer
+                            hex_tokens.append(HexByte(value=int(two_chars, 16)))
+                            i += 2
+                        else:
+                            # Skip invalid character
+                            i += 1
+                    else:
+                        # Skip single character at end
+                        i += 1
 
                 strings.append(HexString(identifier=identifier, tokens=hex_tokens))
             elif self._match(TokenType.REGEX):
@@ -563,9 +641,13 @@ class Parser:
                 ):
                     mod_name = self._current_token().value
                     self._advance()
-                    
+
                     # Handle XOR with optional parameters
-                    if mod_name.lower() == "xor" and self._current_token() and self._current_token().type == TokenType.LPAREN:
+                    if (
+                        mod_name.lower() == "xor"
+                        and self._current_token()
+                        and self._current_token().type == TokenType.LPAREN
+                    ):
                         self._advance()  # consume '('
                         # Parse XOR parameter (can be single value or range)
                         # For now, just skip to closing paren
@@ -642,20 +724,125 @@ class Parser:
         # Check for 'of' (for...of expression)
         if self._match(TokenType.OF):
             # for...of expression
-            string_set = self._parse_primary_expression()
+            # Parse string set which could be:
+            # - them
+            # - ($a, $b, $c)
+            # - ($a*)
+            # - $a
+            if self._match(TokenType.THEM):
+                string_set = Identifier(name="them")
+            elif self._match(TokenType.LPAREN):
+                # Parse string set like ($a, $b, $c) or ($a*)
+                string_ids = []
+                while not self._check(TokenType.RPAREN) and not self._is_at_end():
+                    if self._match(TokenType.STRING_IDENTIFIER):
+                        string_name = self._previous().value
+                        # Check for wildcard pattern (e.g., $a*)
+                        if self._match(TokenType.MULTIPLY):
+                            string_name += "*"
+                        from yaraast.ast.expressions import StringIdentifier
+
+                        string_ids.append(StringIdentifier(name=string_name))
+                    elif self._match(TokenType.MULTIPLY):
+                        # Handle standalone wildcards (*)
+                        from yaraast.ast.expressions import StringIdentifier
+
+                        string_ids.append(StringIdentifier(name="*"))
+                    else:
+                        # Skip unexpected tokens and try to continue
+                        if self._current_token():
+                            self._advance()
+                        continue
+
+                    if not self._match(TokenType.COMMA):
+                        break
+
+                if not self._match(TokenType.RPAREN):
+                    # Try to recover by finding the closing parenthesis
+                    while not self._is_at_end() and not self._check(TokenType.RPAREN):
+                        self._advance()
+                    if not self._match(TokenType.RPAREN):
+                        raise Exception("Expected ')' after string set")
+
+                from yaraast.ast.expressions import SetExpression
+
+                string_set = SetExpression(elements=string_ids)
+            else:
+                # Single string or identifier
+                string_set = self._parse_primary_expression()
 
             # Optional condition
             body = None
             if self._match(TokenType.COLON) and self._match(TokenType.LPAREN):
-                body = self._parse_expression()
+                # Save position in case we need to retry
+                saved_pos = self.position
+                try:
+                    body = self._parse_expression()
+                except Exception:
+                    # Reset and try to parse with special handling for $
+                    self.position = saved_pos
+
+                    # Check if it starts with $ (anonymous string reference in for context)
+                    if (
+                        self._current_token()
+                        and self._current_token().type == TokenType.STRING_IDENTIFIER
+                    ):
+                        token_val = self._current_token().value
+                        if token_val == "$":
+                            # This is a reference to the current string in the for loop
+                            self._advance()
+                            from yaraast.ast.expressions import StringIdentifier
+
+                            current_string = StringIdentifier(name="$")
+
+                            # Now parse the rest (like "in (0..65536)")
+                            if self._match(TokenType.IN):
+                                range_expr = self._parse_additive_expression()
+                                from yaraast.ast.conditions import InExpression
+
+                                body = InExpression(string_id="$", range=range_expr)
+                            else:
+                                body = current_string
+                        else:
+                            # Normal string identifier, retry parsing
+                            body = self._parse_expression()
+                    else:
+                        # If all else fails, use default
+                        body = BooleanLiteral(value=True)
+                        while not self._is_at_end() and not self._check(TokenType.RPAREN):
+                            self._advance()
+
                 if not self._match(TokenType.RPAREN):
-                    raise Exception("Expected ')' after condition")
+                    # Try to recover by finding the closing parenthesis
+                    current = self._current_token()
+                    attempts = 0
+                    while not self._is_at_end() and attempts < 100:
+                        if self._match(TokenType.RPAREN):
+                            break
+                        self._advance()
+                        attempts += 1
+                    else:
+                        raise Exception(
+                            f"Expected ')' after for...of condition at position {self.position}, got {current.type if current else 'EOF'}"
+                        )
 
             # Create ForOfExpression
             from yaraast.ast.conditions import ForOfExpression
+            from yaraast.ast.expressions import IntegerLiteral, StringLiteral
+
+            # Convert quantifier to appropriate Expression type
+            if isinstance(quantifier, int):
+                quantifier_expr = IntegerLiteral(value=str(quantifier))
+            elif isinstance(quantifier, str):
+                if quantifier in ["any", "all"]:
+                    quantifier_expr = Identifier(name=quantifier)
+                else:
+                    quantifier_expr = StringLiteral(value=quantifier)
+            else:
+                quantifier_expr = quantifier
 
             return ForOfExpression(
-                quantifier=quantifier,
+                quantifier=quantifier_expr,
                 string_set=string_set,
                 condition=body,
             )
@@ -677,10 +864,27 @@ class Parser:
         if not self._match(TokenType.LPAREN):
             raise Exception("Expected '(' after ':'")
 
-        body = self._parse_expression()
+        try:
+            body = self._parse_expression()
+        except Exception:
+            # If expression parsing fails, try to recover
+            body = BooleanLiteral(value=True)
+            while not self._is_at_end() and not self._check(TokenType.RPAREN):
+                self._advance()
 
         if not self._match(TokenType.RPAREN):
-            raise Exception("Expected ')' after for body")
+            # Try to recover by finding the closing parenthesis
+            current = self._current_token()
+            attempts = 0
+            while not self._is_at_end() and attempts < 100:
+                if self._match(TokenType.RPAREN):
+                    break
+                self._advance()
+                attempts += 1
+            else:
+                raise Exception(
+                    f"Expected ')' after for body at position {self.position}, got {current.type if current else 'EOF'}"
+                )
 
         from yaraast.ast.conditions import ForExpression
 
@@ -688,6 +892,19 @@ class Parser:
 
     def _parse_of_expression(self, quantifier) -> Expression:
         """Parse of expression (e.g., '2 of them')."""
+        # Convert quantifier to appropriate Expression type
+        from yaraast.ast.expressions import IntegerLiteral, StringLiteral
+
+        if isinstance(quantifier, int):
+            quantifier_expr = IntegerLiteral(value=str(quantifier))
+        elif isinstance(quantifier, str):
+            if quantifier in ["any", "all"]:
+                quantifier_expr = Identifier(name=quantifier)
+            else:
+                quantifier_expr = StringLiteral(value=quantifier)
+        else:
+            quantifier_expr = quantifier
+
         # Parse the string set expression
         if self._match(TokenType.THEM):
             string_set = Identifier(name="them")
@@ -730,7 +947,7 @@ class Parser:
 
         from yaraast.ast.conditions import OfExpression
 
-        return OfExpression(quantifier=quantifier, string_set=string_set)
+        return OfExpression(quantifier=quantifier_expr, string_set=string_set)
 
     def _parse_expression(self) -> Expression:
         """Parse a general expression."""

@@ -92,7 +92,7 @@ rule LargeRule{i} {{
     strings:
         $s{i}_1 = "string_{i}_1"
         $s{i}_2 = "string_{i}_2"
-        $h{i} = {{ {i:02X} {i+1:02X} {i+2:02X} }}
+        $h{i} = {{ {i:02X} {i + 1:02X} {i + 2:02X} }}
     condition:
         any of them
 }}
@@ -285,7 +285,9 @@ class TestBatchProcessor:
             processor = BatchProcessor(batch_size=2, max_workers=2)
 
             results = processor.process_files(
-                sample_yara_files, [BatchOperation.PARSE, BatchOperation.COMPLEXITY], output_dir
+                sample_yara_files,
+                [BatchOperation.PARSE, BatchOperation.COMPLEXITY],
+                output_dir,
             )
 
             # Should have results for both operations
@@ -310,7 +312,11 @@ class TestBatchProcessor:
             processor = BatchProcessor(batch_size=2)
 
             results = processor.process_directory(
-                directory, [BatchOperation.PARSE], output_dir, file_pattern="*.yar", recursive=False
+                directory,
+                [BatchOperation.PARSE],
+                output_dir,
+                file_pattern="*.yar",
+                recursive=False,
             )
 
             assert BatchOperation.PARSE in results
@@ -331,7 +337,9 @@ class TestBatchProcessor:
             processor = BatchProcessor()
 
             results = processor.process_files(
-                sample_yara_files, [BatchOperation.PARSE, BatchOperation.HTML_TREE], output_dir
+                sample_yara_files,
+                [BatchOperation.PARSE, BatchOperation.HTML_TREE],
+                output_dir,
             )
 
             assert BatchOperation.HTML_TREE in results

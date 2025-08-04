@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class RuleBuilder:
     """Fluent builder for constructing YARA rules."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._name: str | None = None
         self._modifiers: list[str] = []
         self._tags: list[str] = []
@@ -174,11 +174,13 @@ class RuleBuilder:
                 self._condition = BooleanLiteral(value=False)
             elif condition == "any of them":
                 self._condition = OfExpression(
-                    quantifier=StringLiteral(value="any"), string_set=Identifier(name="them")
+                    quantifier=StringLiteral(value="any"),
+                    string_set=Identifier(name="them"),
                 )
             elif condition == "all of them":
                 self._condition = OfExpression(
-                    quantifier=StringLiteral(value="all"), string_set=Identifier(name="them")
+                    quantifier=StringLiteral(value="all"),
+                    string_set=Identifier(name="them"),
                 )
             elif condition.startswith("$"):
                 self._condition = StringIdentifier(name=condition)

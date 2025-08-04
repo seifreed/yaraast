@@ -99,7 +99,14 @@ class CodeGenerator(ASTVisitor[str]):
         # Tags
         if node.tags:
             self._write(" : ")
-            self._write(" ".join(tag.name for tag in node.tags))
+            # Handle tags that can be either strings or Tag objects
+            tag_names = []
+            for tag in node.tags:
+                if isinstance(tag, str):
+                    tag_names.append(tag)
+                else:
+                    tag_names.append(tag.name)
+            self._write(" ".join(tag_names))
 
         self._writeline(" {")
         self._indent()
@@ -108,13 +115,24 @@ class CodeGenerator(ASTVisitor[str]):
         if node.meta:
             self._writeline("meta:")
             self._indent()
-            for key, value in node.meta.items():
-                if isinstance(value, str):
-                    self._writeline(f'{key} = "{value}"')
-                elif isinstance(value, bool):
-                    self._writeline(f'{key} = {"true" if value else "false"}')
-                else:
-                    self._writeline(f"{key} = {value}")
+            # Handle meta as dict or list of Meta objects
+            if isinstance(node.meta, dict):
+                for key, value in node.meta.items():
+                    if isinstance(value, str):
+                        self._writeline(f'{key} = "{value}"')
+                    elif isinstance(value, bool):
+                        self._writeline(f"{key} = {'true' if value else 'false'}")
+                    else:
+                        self._writeline(f"{key} = {value}")
+            elif isinstance(node.meta, list):
+                for m in node.meta:
+                    if hasattr(m, "key") and hasattr(m, "value"):
+                        if isinstance(m.value, str):
+                            self._writeline(f'{m.key} = "{m.value}"')
+                        elif isinstance(m.value, bool):
+                            self._writeline(f"{m.key} = {'true' if m.value else 'false'}")
+                        else:
+                            self._writeline(f"{m.key} = {m.value}")
             self._dedent()
             self._writeline()
 
@@ -151,7 +169,25 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_plain_string(self, node: PlainString) -> str:
         """Generate code for PlainString."""
-        self._write(f'{node.identifier} = "{node.value}"')
+        # Write with proper indentation
+        indent = " " * (self.indent_level * self.indent_size)
+        self._write(indent)
+        # For YARA strings, we need to properly escape special characters
+        escaped_value = node.value.replace("\\", "\\\\")  # Escape backslashes first
+        escaped_value = escaped_value.replace('"', '\\"')  # Escape quotes
+        escaped_value = escaped_value.replace("\n", "\\n")  # Escape newlines
+        escaped_value = escaped_value.replace("\r", "\\r")  # Escape carriage returns
+        escaped_value = escaped_value.replace("\t", "\\t")  # Escape tabs
+        escaped_value = escaped_value.replace("\x00", "\\x00")  # Escape null bytes
+        # Escape other control characters
+        import re
+
+        escaped_value = re.sub(
+            r"[\x01-\x1f\x7f-\x9f]",
+            lambda m: f"\\x{ord(m.group(0)):02x}",
+            escaped_value,
+        )
+        self._write(f'{node.identifier} = "{escaped_value}"')
 
         # Add modifiers
         for mod in node.modifiers:
@@ -161,6 +197,9 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_hex_string(self, node: HexString) -> str:
         """Generate code for HexString."""
+        # Write with proper indentation
+        indent = " " * (self.indent_level * self.indent_size)
+        self._write(indent)
         self._write(f"{node.identifier} = {{ ")
 
         # Generate hex tokens
@@ -178,6 +217,9 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_regex_string(self, node: RegexString) -> str:
         """Generate code for RegexString."""
+        # Write with proper indentation
+        indent = " " * (self.indent_level * self.indent_size)
+        self._write(indent)
         self._write(f"{node.identifier} = /{node.regex}/")
 
         # Add modifiers
@@ -231,11 +273,14 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_hex_nibble(self, node) -> str:
         """Generate code for HexNibble."""
+        # Handle both string and int values for node.value
+        value_str = node.value.upper() if isinstance(node.value, str) else f"{node.value:X}"
+
         if node.high:
             # X? pattern
-            return f"{node.value:X}?"
+            return f"{value_str}?"
         # ?X pattern
-        return f"?{node.value:X}"
+        return f"?{value_str}"
 
     def visit_expression(self, node: Expression) -> str:
         """Generate code for Expression."""
@@ -267,6 +312,16 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_integer_literal(self, node: IntegerLiteral) -> str:
         """Generate code for IntegerLiteral."""
+        # Convert string value to int if needed
+        if isinstance(node.value, str):
+            try:
+                int_value = int(node.value)
+            except ValueError:
+                # If it can't be converted, just return as is
+                return str(node.value)
+        else:
+            int_value = node.value
+
         # Common hex values in YARA
         hex_values = {
             0x4D5A: "0x4D5A",  # MZ header
@@ -278,18 +333,18 @@ class CodeGenerator(ASTVisitor[str]):
             1024: "0x400",  # 1KB
         }
 
-        if node.value in hex_values:
-            return hex_values[node.value]
+        if int_value in hex_values:
+            return hex_values[int_value]
 
         # For other large values, use hex if it looks cleaner
-        if node.value >= 256:
+        if int_value >= 256:
             # Check if it's a round hex number
-            if node.value == 1024:
+            if int_value == 1024:
                 return "1024"  # Keep 1024 as decimal for readability
-            if node.value % 256 == 0 or node.value % 16 == 0:
-                return hex(node.value)
+            if int_value % 256 == 0 or int_value % 16 == 0:
+                return hex(int_value)
 
-        return str(node.value)
+        return str(int_value)
 
     def visit_double_literal(self, node: DoubleLiteral) -> str:
         """Generate code for DoubleLiteral."""
@@ -297,7 +352,10 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_string_literal(self, node: StringLiteral) -> str:
         """Generate code for StringLiteral."""
-        return f'"{node.value}"'
+        # Escape special characters in string literals
+        escaped = node.value.replace("\\", "\\\\")  # Escape backslashes first
+        escaped = escaped.replace('"', '\\"')  # Escape quotes
+        return f'"{escaped}"'
 
     def visit_regex_literal(self, node: RegexLiteral) -> str:
         """Generate code for RegexLiteral."""
@@ -334,7 +392,8 @@ class CodeGenerator(ASTVisitor[str]):
         """Generate code for RangeExpression."""
         low = self.visit(node.low)
         high = self.visit(node.high)
-        return f"({low}..{high})"
+        # Don't add parentheses here - let the parent context decide
+        return f"{low}..{high}"
 
     def visit_function_call(self, node: FunctionCall) -> str:
         """Generate code for FunctionCall."""
@@ -364,11 +423,17 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_for_of_expression(self, node: ForOfExpression) -> str:
         """Generate code for ForOfExpression."""
+        # Visit quantifier if it's an AST node, otherwise use it directly
+        if hasattr(node.quantifier, "accept"):
+            quantifier = self.visit(node.quantifier)
+        else:
+            quantifier = str(node.quantifier)
+
         string_set = self.visit(node.string_set)
         if node.condition:
             condition = self.visit(node.condition)
-            return f"for {node.quantifier} of {string_set} : ({condition})"
-        return f"{node.quantifier} of {string_set}"
+            return f"for {quantifier} of {string_set} : ({condition})"
+        return f"{quantifier} of {string_set}"
 
     def visit_at_expression(self, node: AtExpression) -> str:
         """Generate code for AtExpression."""
@@ -377,12 +442,38 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_in_expression(self, node: InExpression) -> str:
         """Generate code for InExpression."""
+        # Check if range is already a parenthesized expression to avoid double parentheses
+        from yaraast.ast.expressions import (
+            ParenthesesExpression,
+            RangeExpression,
+            StringCount,
+            StringLength,
+            StringOffset,
+        )
+
+        if isinstance(node.range, ParenthesesExpression):
+            inner = node.range.expression
+            if isinstance(inner, RangeExpression):
+                # Visit the inner range directly and add single parentheses
+                range_expr = self.visit(inner)
+                return f"{node.string_id} in ({range_expr})"
+            if isinstance(inner, StringOffset | StringCount | StringLength):
+                # Single string reference doesn't need parentheses
+                range_expr = self.visit(inner)
+                return f"{node.string_id} in {range_expr}"
+            # For other expressions, keep the parentheses
+            range_expr = self.visit(node.range)
+            return f"{node.string_id} in {range_expr}"
         range_expr = self.visit(node.range)
         return f"{node.string_id} in {range_expr}"
 
     def visit_of_expression(self, node: OfExpression) -> str:
         """Generate code for OfExpression."""
-        quantifier = self.visit(node.quantifier)
+        # Quantifier can be a string, int, or AST node
+        if isinstance(node.quantifier, str | int):
+            quantifier = str(node.quantifier)
+        else:
+            quantifier = self.visit(node.quantifier)
         string_set = self.visit(node.string_set)
         return f"{quantifier} of {string_set}"
 
@@ -391,7 +482,7 @@ class CodeGenerator(ASTVisitor[str]):
         if isinstance(node.value, str):
             return f'{node.key} = "{node.value}"'
         if isinstance(node.value, bool):
-            return f'{node.key} = {"true" if node.value else "false"}'
+            return f"{node.key} = {'true' if node.value else 'false'}"
         return f"{node.key} = {node.value}"
 
     def visit_module_reference(self, node) -> str:
@@ -424,3 +515,37 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_comment_group(self, node) -> str:
         """Generate code for CommentGroup."""
         return "\n".join(f"// {line}" for line in node.lines)
+
+    def visit_extern_import(self, node) -> str:
+        """Generate code for ExternImport."""
+        return f'import "{node.module}"'
+
+    def visit_extern_namespace(self, node) -> str:
+        """Generate code for ExternNamespace."""
+        return f"namespace {node.name}"
+
+    def visit_extern_rule(self, node) -> str:
+        """Generate code for ExternRule."""
+        modifiers = " ".join(node.modifiers) if hasattr(node, "modifiers") else ""
+        if modifiers:
+            return f"{modifiers} rule {node.name}"
+        return f"rule {node.name}"
+
+    def visit_extern_rule_reference(self, node) -> str:
+        """Generate code for ExternRuleReference."""
+        return node.name
+
+    def visit_in_rule_pragma(self, node) -> str:
+        """Generate code for InRulePragma."""
+        return f"#{node.directive}"
+
+    def visit_pragma(self, node) -> str:
+        """Generate code for Pragma."""
+        return f"#{node.directive}"
+
+    def visit_pragma_block(self, node) -> str:
+        """Generate code for PragmaBlock."""
+        lines = []
+        for pragma in node.pragmas:
+            lines.append(self.visit(pragma))
+        return "\n".join(lines)

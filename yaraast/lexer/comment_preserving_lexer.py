@@ -83,7 +83,11 @@ class CommentPreservingLexer(Lexer):
                 self._advance()
 
             return Token(
-                TokenType.COMMENT, comment_text, start_line, start_column, len(comment_text)
+                TokenType.COMMENT,
+                comment_text,
+                start_line,
+                start_column,
+                len(comment_text),
             )
 
         return None

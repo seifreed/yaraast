@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar, cast
+
+T = TypeVar("T")
 
 from yaraast.ast.base import *
 from yaraast.ast.comments import *
@@ -18,10 +20,8 @@ from yaraast.ast.pragmas import *
 from yaraast.ast.rules import *
 from yaraast.ast.strings import *
 
-T = TypeVar("T")
 
-
-class ASTVisitor[T](ABC):
+class ASTVisitor(Generic[T], ABC):
     """Base visitor class for traversing AST nodes."""
 
     def visit(self, node: ASTNode) -> T:
@@ -333,10 +333,13 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_hex_string(self, node: HexString) -> HexString:
         """Transform HexString node."""
-        tokens = [self.visit(token) for token in node.tokens]
-        modifiers = [self.visit(mod) for mod in node.modifiers]
+        tokens = [cast("HexToken", self.visit(token)) for token in node.tokens]
+        modifiers = [cast("StringModifier", self.visit(mod)) for mod in node.modifiers]
         return HexString(
-            identifier=node.identifier, tokens=tokens, modifiers=modifiers, location=node.location
+            identifier=node.identifier,
+            tokens=tokens,
+            modifiers=modifiers,
+            location=node.location,
         )
 
     def visit_regex_string(self, node: RegexString) -> RegexString:
@@ -367,7 +370,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_hex_jump(self, node: HexJump) -> HexJump:
         """Transform HexJump node."""
-        return HexJump(min_jump=node.min_jump, max_jump=node.max_jump, location=node.location)
+        return HexJump(min_jump=node.min_jump, max_jump=node.max_jump)
 
     def visit_hex_alternative(self, node: HexAlternative) -> HexAlternative:
         """Transform HexAlternative node."""
@@ -398,13 +401,13 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_string_offset(self, node: StringOffset) -> StringOffset:
         """Transform StringOffset node."""
-        index = self.visit(node.index) if node.index else None
-        return StringOffset(string_id=node.string_id, index=index, location=node.location)
+        index = cast("Expression", self.visit(node.index)) if node.index else None
+        return StringOffset(string_id=node.string_id, index=index)
 
     def visit_string_length(self, node: StringLength) -> StringLength:
         """Transform StringLength node."""
-        index = self.visit(node.index) if node.index else None
-        return StringLength(string_id=node.string_id, index=index, location=node.location)
+        index = cast("Expression", self.visit(node.index)) if node.index else None
+        return StringLength(string_id=node.string_id, index=index)
 
     def visit_integer_literal(self, node: IntegerLiteral) -> IntegerLiteral:
         """Transform IntegerLiteral node."""
@@ -420,7 +423,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_regex_literal(self, node: RegexLiteral) -> RegexLiteral:
         """Transform RegexLiteral node."""
-        return RegexLiteral(pattern=node.pattern, modifiers=node.modifiers, location=node.location)
+        return RegexLiteral(pattern=node.pattern, modifiers=node.modifiers)
 
     def visit_boolean_literal(self, node: BooleanLiteral) -> BooleanLiteral:
         """Transform BooleanLiteral node."""
@@ -436,8 +439,8 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_unary_expression(self, node: UnaryExpression) -> UnaryExpression:
         """Transform UnaryExpression node."""
-        operand = self.visit(node.operand)
-        return UnaryExpression(operator=node.operator, operand=operand, location=node.location)
+        operand = cast("Expression", self.visit(node.operand))
+        return UnaryExpression(operator=node.operator, operand=operand)
 
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> ParenthesesExpression:
         """Transform ParenthesesExpression node."""
@@ -457,8 +460,8 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_function_call(self, node: FunctionCall) -> FunctionCall:
         """Transform FunctionCall node."""
-        arguments = [self.visit(arg) for arg in node.arguments]
-        return FunctionCall(function=node.function, arguments=arguments, location=node.location)
+        arguments = [cast("Expression", self.visit(arg)) for arg in node.arguments]
+        return FunctionCall(function=node.function, arguments=arguments)
 
     def visit_array_access(self, node: ArrayAccess) -> ArrayAccess:
         """Transform ArrayAccess node."""
@@ -500,19 +503,19 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_at_expression(self, node: AtExpression) -> AtExpression:
         """Transform AtExpression node."""
-        offset = self.visit(node.offset)
-        return AtExpression(string_id=node.string_id, offset=offset, location=node.location)
+        offset = cast("Expression", self.visit(node.offset))
+        return AtExpression(string_id=node.string_id, offset=offset)
 
     def visit_in_expression(self, node: InExpression) -> InExpression:
         """Transform InExpression node."""
-        range = self.visit(node.range)
-        return InExpression(string_id=node.string_id, range=range, location=node.location)
+        range = cast("Expression", self.visit(node.range))
+        return InExpression(string_id=node.string_id, range=range)
 
     def visit_of_expression(self, node: OfExpression) -> OfExpression:
         """Transform OfExpression node."""
-        quantifier = self.visit(node.quantifier)
-        string_set = self.visit(node.string_set)
-        return OfExpression(quantifier=quantifier, string_set=string_set, location=node.location)
+        quantifier = cast("Expression", self.visit(node.quantifier))
+        string_set = cast("Expression", self.visit(node.string_set))
+        return OfExpression(quantifier=quantifier, string_set=string_set)
 
     def visit_meta(self, node: Meta) -> Meta:
         """Transform Meta node."""
@@ -596,8 +599,8 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_in_rule_pragma(self, node: InRulePragma) -> InRulePragma:
         """Transform InRulePragma node."""
-        pragma = self.visit(node.pragma)
-        return InRulePragma(pragma=pragma, position=node.position, location=node.location)
+        pragma = cast("Pragma", self.visit(node.pragma))
+        return InRulePragma(pragma=pragma, position=node.position)
 
     def visit_pragma_block(self, node: PragmaBlock) -> PragmaBlock:
         """Transform PragmaBlock node."""

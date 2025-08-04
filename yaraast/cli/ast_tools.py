@@ -163,7 +163,167 @@ class ASTStructuralAnalyzer(ASTVisitor):
     def _hash_dict(self, data: dict[str, Any]) -> str:
         """Create hash of dictionary for comparison."""
         json_str = json.dumps(data, sort_keys=True, default=str)
-        return hashlib.md5(json_str.encode()).hexdigest()
+        return hashlib.md5(json_str.encode(), usedforsecurity=False).hexdigest()
+
+    # Add all missing abstract methods
+    def visit_array_access(self, node) -> Any:
+        pass
+
+    def visit_at_expression(self, node) -> Any:
+        pass
+
+    def visit_binary_expression(self, node) -> Any:
+        pass
+
+    def visit_boolean_literal(self, node) -> Any:
+        pass
+
+    def visit_comment(self, node) -> Any:
+        pass
+
+    def visit_comment_group(self, node) -> Any:
+        pass
+
+    def visit_condition(self, node) -> Any:
+        pass
+
+    def visit_defined_expression(self, node) -> Any:
+        pass
+
+    def visit_dictionary_access(self, node) -> Any:
+        pass
+
+    def visit_double_literal(self, node) -> Any:
+        pass
+
+    def visit_expression(self, node) -> Any:
+        pass
+
+    def visit_extern_import(self, node) -> Any:
+        pass
+
+    def visit_extern_namespace(self, node) -> Any:
+        pass
+
+    def visit_extern_rule(self, node) -> Any:
+        pass
+
+    def visit_extern_rule_reference(self, node) -> Any:
+        pass
+
+    def visit_for_expression(self, node) -> Any:
+        pass
+
+    def visit_for_of_expression(self, node) -> Any:
+        pass
+
+    def visit_function_call(self, node) -> Any:
+        pass
+
+    def visit_hex_alternative(self, node) -> Any:
+        pass
+
+    def visit_hex_byte(self, node) -> Any:
+        pass
+
+    def visit_hex_jump(self, node) -> Any:
+        pass
+
+    def visit_hex_nibble(self, node) -> Any:
+        pass
+
+    def visit_hex_string(self, node) -> Any:
+        pass
+
+    def visit_hex_token(self, node) -> Any:
+        pass
+
+    def visit_hex_wildcard(self, node) -> Any:
+        pass
+
+    def visit_identifier(self, node) -> Any:
+        pass
+
+    def visit_import(self, node) -> Any:
+        pass
+
+    def visit_in_expression(self, node) -> Any:
+        pass
+
+    def visit_in_rule_pragma(self, node) -> Any:
+        pass
+
+    def visit_include(self, node) -> Any:
+        pass
+
+    def visit_integer_literal(self, node) -> Any:
+        pass
+
+    def visit_member_access(self, node) -> Any:
+        pass
+
+    def visit_meta(self, node) -> Any:
+        pass
+
+    def visit_module_reference(self, node) -> Any:
+        pass
+
+    def visit_of_expression(self, node) -> Any:
+        pass
+
+    def visit_parentheses_expression(self, node) -> Any:
+        pass
+
+    def visit_plain_string(self, node) -> Any:
+        pass
+
+    def visit_pragma(self, node) -> Any:
+        pass
+
+    def visit_pragma_block(self, node) -> Any:
+        pass
+
+    def visit_range_expression(self, node) -> Any:
+        pass
+
+    def visit_regex_literal(self, node) -> Any:
+        pass
+
+    def visit_regex_string(self, node) -> Any:
+        pass
+
+    def visit_set_expression(self, node) -> Any:
+        pass
+
+    def visit_string_count(self, node) -> Any:
+        pass
+
+    def visit_string_definition(self, node) -> Any:
+        pass
+
+    def visit_string_identifier(self, node) -> Any:
+        pass
+
+    def visit_string_length(self, node) -> Any:
+        pass
+
+    def visit_string_literal(self, node) -> Any:
+        pass
+
+    def visit_string_modifier(self, node) -> Any:
+        pass
+
+    def visit_string_offset(self, node) -> Any:
+        pass
+
+    def visit_string_operator_expression(self, node) -> Any:
+        pass
+
+    def visit_tag(self, node) -> Any:
+        pass
+
+    def visit_unary_expression(self, node) -> Any:
+        pass
 
 
 class ASTDiffer:

@@ -10,7 +10,6 @@ import yaml
 from yaraast.serialization.json_serializer import JsonSerializer
 
 if TYPE_CHECKING:
-
     from yaraast.ast.base import YaraFile
 
 
@@ -77,7 +76,11 @@ class YamlSerializer(JsonSerializer):
         ast_data = self.visit(ast)
 
         yaml_str = yaml.dump(
-            ast_data, default_flow_style=False, allow_unicode=True, sort_keys=False, indent=2
+            ast_data,
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+            indent=2,
         )
 
         if output_path:
@@ -94,7 +97,11 @@ class YamlSerializer(JsonSerializer):
         }
 
         yaml_str = yaml.dump(
-            rules_data, default_flow_style=False, allow_unicode=True, sort_keys=False, indent=2
+            rules_data,
+            default_flow_style=False,
+            allow_unicode=True,
+            sort_keys=False,
+            indent=2,
         )
 
         if output_path:

@@ -11,7 +11,6 @@ try:
     from yaraast.types.semantic_validator import SemanticValidator, ValidationResult
 except ImportError:
     # Fallback for running within the package
-    from ...parser import YaraParser
     from ...types.semantic_validator import SemanticValidator, ValidationResult
 
 
@@ -63,13 +62,20 @@ def _add_file_to_issues(issues, file_path: Path):
     help="Output file for validation results (JSON format)",
 )
 @click.option(
-    "--format", "-f", type=click.Choice(["text", "json"]), default="text", help="Output format"
+    "--format",
+    "-f",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    help="Output format",
 )
 @click.option("--warnings/--no-warnings", default=True, help="Include warnings in output")
 @click.option("--suggestions/--no-suggestions", default=True, help="Include suggestions in output")
 @click.option("--strict", is_flag=True, help="Treat warnings as errors (exit with non-zero code)")
 @click.option(
-    "--quiet", "-q", is_flag=True, help="Only show errors and warnings, not success messages"
+    "--quiet",
+    "-q",
+    is_flag=True,
+    help="Only show errors and warnings, not success messages",
 )
 def semantic(
     files: tuple[Path, ...],
@@ -186,7 +192,8 @@ def _display_text_results(
         elif result.is_valid:
             click.echo(
                 click.style(
-                    f"✓ {file_path}: Valid with {len(result.warnings)} warnings", fg="yellow"
+                    f"✓ {file_path}: Valid with {len(result.warnings)} warnings",
+                    fg="yellow",
                 )
             )
         else:

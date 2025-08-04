@@ -143,7 +143,10 @@ class CrossValidator:
         return result
 
     def validate_batch(
-        self, ast: YaraFile, test_data_list: list[bytes], externals: dict[str, Any] | None = None
+        self,
+        ast: YaraFile,
+        test_data_list: list[bytes],
+        externals: dict[str, Any] | None = None,
     ) -> list[ValidationResult]:
         """Validate AST against multiple test data samples.
 

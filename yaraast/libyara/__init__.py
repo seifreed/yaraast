@@ -8,14 +8,9 @@ except ImportError:
     YARA_AVAILABLE = False
 
 if YARA_AVAILABLE:
+    from .ast_optimizer import ASTOptimizer, OptimizationStats
     from .compiler import CompilationResult, LibyaraCompiler
-    from .direct_compiler import (
-        ASTOptimizer,
-        DirectASTCompiler,
-        DirectCompilationResult,
-        OptimizationStats,
-        OptimizedMatcher,
-    )
+    from .direct_compiler import DirectASTCompiler, DirectCompilationResult, OptimizedMatcher
     from .equivalence import EquivalenceResult, EquivalenceTester
     from .scanner import LibyaraScanner, ScanResult
 
@@ -39,5 +34,5 @@ else:
 
     def __getattr__(name):
         raise ImportError(
-            f"'{name}' requires yara-python. " "Install with: pip install yaraast[libyara]"
+            f"'{name}' requires yara-python. Install with: pip install yaraast[libyara]"
         )

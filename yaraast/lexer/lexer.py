@@ -198,14 +198,88 @@ class Lexer:
 
         while self._current_char() and self._current_char() != '"':
             if self._current_char() == "\\":
+                # Look ahead to see what follows the backslash
                 self._advance()
-                escape_char = self._current_char()
-                if escape_char in '"\\nrt':
-                    value += {"n": "\n", "r": "\r", "t": "\t"}.get(escape_char, escape_char)
+                next_char = self._current_char()
+
+                if next_char == "\\":
+                    # \\ -> single backslash in YARA output
+                    # But we need to check if this is really an escape or Windows path
+                    # In YARA strings, \\ is used for literal backslash
+                    value += "\\"
+                elif next_char == '"':
+                    # This is the tricky case: \"
+                    # Some YARA files use \" at the end like "\TEMP\"
+                    # which technically should be invalid but appears in real files
+                    #
+                    # Heuristic: if \" is followed by whitespace and valid string modifiers
+                    # or end of line, treat the backslash as literal and end the string
+                    look_ahead_pos = self.position + 1
+                    if look_ahead_pos < len(self.text):
+                        chars_after = self.text[look_ahead_pos : look_ahead_pos + 20]
+                        # Skip any whitespace
+                        i = 0
+                        while i < len(chars_after) and chars_after[i] in " \t":
+                            i += 1
+                        chars_after = chars_after[i:]
+
+                        # Check if what follows looks like string modifiers or end of string
+                        if not chars_after or chars_after.startswith(
+                            (
+                                "ascii",
+                                "wide",
+                                "nocase",
+                                "fullword",
+                                "xor",
+                                "base64",
+                                "\n",
+                                "\r",
+                                "//",
+                            )
+                        ):  # Comment after string
+                            # Looks like end of string, treat \ as literal and break
+                            value += "\\"
+                            # Advance to consume the quote and exit loop
+                            self._advance()
+                            break
+                        # Treat as escaped quote
+                        value += '"'
+                    else:
+                        # At end of file, treat as literal backslash
+                        value += "\\"
+                        self._advance()  # consume the quote
+                        break
+                elif next_char == "n":
+                    # \n -> newline
+                    value += "\n"
+                elif next_char == "r":
+                    # \r -> carriage return
+                    value += "\r"
+                elif next_char == "t":
+                    # \t -> tab
+                    value += "\t"
+                elif next_char == "x" and self.position + 2 < len(self.text):
+                    # \xHH -> hex character
+                    hex_digits = self.text[self.position + 1 : self.position + 3]
+                    if all(c in "0123456789abcdefABCDEF" for c in hex_digits):
+                        value += chr(int(hex_digits, 16))
+                        self._advance()  # skip first hex digit
+                        self._advance()  # skip second hex digit
+                    else:
+                        # Not valid hex escape, keep as literal
+                        value += "\\" + next_char
+                elif next_char is None:
+                    # Backslash at end of input
+                    value += "\\"
+                    break
                 else:
-                    value += escape_char
+                    # Any other character after \ is kept literally
+                    # e.g., \T becomes \T (common in Windows paths)
+                    value += "\\" + next_char
             else:
+                # Regular character
                 value += self._current_char()
+
             self._advance()
 
         if not self._current_char():

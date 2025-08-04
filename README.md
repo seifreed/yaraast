@@ -1,23 +1,23 @@
-# YARA AST - Abstract Syntax Tree for YARA Rules
+# YARAAST - YARA Abstract Syntax Tree
 
-A high-performance Python 3.13+ library for parsing, analyzing, and manipulating YARA rules. Designed to handle everything from single rules to massive rulesets with thousands of rules.
+A powerful Python library and CLI tool for parsing, analyzing, and manipulating
+YARA rules through Abstract Syntax Tree (AST) representations.
 
 **Author:** Marc Rivero | @seifreed  
-**Repository:** [https://github.com/seifreed/yaraast](https://github.com/seifreed/yaraast)
+**Email:** <mriverolopez@gmail.com>  
+**GitHub:** [https://github.com/seifreed/yaraast](https://github.com/seifreed/yaraast)
 
-## Overview
+## Features
 
-YARA AST provides a complete Abstract Syntax Tree implementation for YARA rules, enabling programmatic analysis, transformation, and generation of YARA rules. The library is built for performance and can efficiently process large-scale rule collections used in production environments.
-
-## Key Features
-
-- **Full YARA Language Support**: Complete implementation of YARA language features including modules, includes, and all condition operators
-- **High Performance**: Optimized for processing thousands of rules with streaming and parallel processing capabilities
-- **AST Manipulation**: Modify, optimize, and transform YARA rules programmatically
-- **Semantic Validation**: Type checking and semantic analysis to catch errors before runtime
-- **Rule Analysis**: Detect unused strings, circular dependencies, and optimization opportunities
-- **Multiple Output Formats**: JSON, YAML, Protocol Buffers, and formatted YARA output
-- **YARA-X Compatible**: Support for the new YARA-X parser features
+- Parse YARA rules into a structured AST
+- Analyze rules for optimization opportunities
+- Format and prettify YARA files
+- Validate syntax and semantic correctness
+- Support for large rulesets with thousands of rules
+- Extensible visitor pattern for custom analysis
+- Performance benchmarking and metrics
+- Diff comparison between YARA files
+- LibYARA integration for compilation and scanning
 
 ## Installation
 
@@ -30,244 +30,345 @@ pip install yaraast
 ```bash
 git clone https://github.com/seifreed/yaraast
 cd yaraast
-
-# Install core dependencies only
 pip install -r requirements.txt
 pip install -e .
+```
 
-# Or install with all development dependencies
-pip install -r requirements-dev.txt
-pip install -e .
+## Quick Start
+
+```bash
+# Get help
+yaraast --help
+
+# Show version
+yaraast --version
+```
+
+## Command Reference
+
+### Core Commands
+
+#### parse - Parse and Output YARA Files
+
+```bash
+# Parse and output in different formats
+yaraast parse rule.yar                    # Default output
+yaraast parse rule.yar --format json      # JSON representation
+yaraast parse rule.yar --format yaml      # YAML representation
+yaraast parse rule.yar --format tree      # Tree visualization
+```
+
+#### validate - Syntax Validation
+
+```bash
+# Validate YARA file syntax
+yaraast validate ruleset.yar              # Check for syntax errors
+yaraast validate *.yar                    # Validate multiple files
+```
+
+#### format - Code Formatting
+
+```bash
+# Format YARA files (like black for Python)
+yaraast format input.yar                  # Format in place
+yaraast format input.yar -o output.yar    # Format to new file
+yaraast format *.yar                      # Format multiple files
+```
+
+### Analysis Commands
+
+#### analyze - AST-Based Analysis
+
+```bash
+# Optimization analysis
+yaraast analyze optimize ruleset.yar      # Find optimization opportunities
+yaraast analyze optimize --detailed rule.yar  # Detailed suggestions
+
+# Best practices analysis
+yaraast analyze best-practices rule.yar   # Check best practices
+
+# Complexity analysis
+yaraast analyze complexity rule.yar       # Analyze rule complexity
+
+# Security analysis
+
+yaraast analyze security ruleset.yar      # Security best practices check
+```
+
+#### metrics - Rule Metrics and Visualization
+
+```bash
+# Generate metrics
+yaraast metrics rule.yar                  # Basic metrics
+
+yaraast metrics --detailed ruleset.yar    # Detailed statistics
+yaraast metrics --export-csv metrics.csv rule.yar  # Export to CSV
+```
+
+#### semantic - Semantic Validation
+
+```bash
+# Semantic validation beyond syntax
+yaraast semantic validate rule.yar        # Check semantic correctness
+yaraast semantic check-references rule.yar  # Verify all references
+
+yaraast semantic detect-duplicates ruleset.yar  # Find duplicate rules
+```
+
+### Development Commands
+
+#### diff - Compare YARA Files
+
+```bash
+
+# Show differences between files
+yaraast diff old.yar new.yar              # Basic diff
+yaraast diff --semantic old.yar new.yar   # Logical vs stylistic changes
+yaraast diff --ignore-comments old.yar new.yar  # Ignore comment changes
+```
+
+#### roundtrip - Serialization Testing
+
+```bash
+# Test AST serialization/deserialization
+yaraast roundtrip test rule.yar           # Verify round-trip consistency
+yaraast roundtrip pretty rule.yar         # Pretty print after round-trip
+```
+
+#### serialize - Import/Export AST
+
+```bash
+
+# Serialize AST for storage or transmission
+yaraast serialize export rule.yar -o ast.json  # Export to JSON
+yaraast serialize import ast.json -o rule.yar  # Import from JSON
+yaraast serialize convert rule.yar --to yaml   # Convert between formats
+```
+
+### Performance Commands
+
+#### performance - Large Ruleset Tools
+
+```bash
+# Performance analysis and optimization
+yaraast performance benchmark ruleset.yar  # Benchmark parsing speed
+yaraast performance profile ruleset.yar    # Profile memory usage
+yaraast performance stream large.yar       # Stream processing for huge files
+yaraast performance batch /path/to/rules   # Batch process directory
+```
+
+#### bench - Benchmarking Suite
+
+```bash
+# Run benchmarks
+yaraast bench parse rule.yar              # Benchmark parsing
+yaraast bench all ruleset.yar             # Run all benchmarks
+yaraast bench compare old.yar new.yar     # Compare performance
+```
+
+### Integration Commands
+
+#### libyara - LibYARA Integration
+
+```bash
+# Compile and scan with LibYARA
+yaraast libyara compile rule.yar          # Compile rules
+yaraast libyara scan rule.yar target.exe  # Scan files
+yaraast libyara verify rule.yar           # Verify LibYARA compatibility
+```
+
+#### workspace - Multi-File Analysis
+
+```bash
+# Workspace management for projects
+yaraast workspace init                    # Initialize workspace
+yaraast workspace add rules/*.yar         # Add files to workspace
+yaraast workspace analyze                 # Analyze entire workspace
+yaraast workspace report                  # Generate workspace report
+
+```
+
+### Advanced Commands
+
+#### fluent - Fluent API Examples
+
+```bash
+# Demonstrate fluent API usage
+yaraast fluent examples                   # Show API examples
+yaraast fluent build                      # Interactive rule builder
+yaraast fluent convert rule.yar           # Convert to fluent API code
+```
+
+#### fmt - Advanced Formatting
+
+```bash
+# Advanced formatting options (like black)
+yaraast fmt rule.yar                      # Auto-format with defaults
+yaraast fmt --line-length 100 rule.yar    # Custom line length
+yaraast fmt --style compact rule.yar      # Compact style
+yaraast fmt --check rule.yar              # Check if formatting needed
 ```
 
 ## Usage Examples
 
-### Basic Parsing
+### As a Python Library
 
 ```python
 from yaraast import Parser
+from yaraast.visitors import OptimizationAnalyzer
 
-# Parse a single rule
-yara_code = '''
-rule detect_malware {
-    meta:
-        author = "Security Team"
-        description = "Detects specific malware pattern"
-    strings:
-        $mz = { 4D 5A }
-        $string = "malicious"
-    condition:
-        $mz at 0 and $string
-}
-'''
+# Parse YARA rules
+parser = Parser()
+with open('ruleset.yar', 'r') as f:
+    ast = parser.parse(f.read())
 
+# Analyze for optimizations
+analyzer = OptimizationAnalyzer()
+analyzer.visit(ast)
+suggestions = analyzer.get_suggestions()
+
+for suggestion in suggestions:
+    print(f"{suggestion.rule}: {suggestion.message}")
+```
+
+### Batch Processing
+
+```bash
+# Process multiple files
+for file in *.yar; do
+    yaraast validate "$file" && \
+    yaraast format "$file" && \
+    yaraast analyze optimize "$file" > "${file%.yar}_report.txt"
+done
+```
+
+### CI/CD Integration
+
+```yaml
+# GitHub Actions example
+- name: Validate YARA Rules
+  run: |
+    pip install yaraast
+    yaraast validate rules/*.yar
+    yaraast analyze security rules/*.yar
+```
+
+### Large Ruleset Analysis
+
+```bash
+# Analyze massive rulesets efficiently
+yaraast performance stream huge_ruleset.yar | \
+    yaraast analyze optimize - | \
+    yaraast metrics --export-csv analysis.csv -
+```
+
+## Complete Command List
+
+```text
+Commands:
+  analyze      AST-based analysis commands
+  bench        Performance benchmarks for AST operations
+  diff         Show AST-based diff highlighting logical vs stylistic changes
+  fluent       Fluent API demonstrations and examples
+  fmt          Format YARA file using AST-based formatting (like black for Python)
+  format       Format a YARA file with consistent style
+  libyara      LibYARA integration commands for compilation and scanning
+  metrics      Analyze and visualize YARA AST metrics
+  parse        Parse a YARA file and output in various formats
+  performance  Performance tools for large YARA rule collections
+  roundtrip    Round-trip serialization and pretty printing commands
+  semantic     Perform semantic validation on YARA files
+  serialize    AST serialization commands for export/import and versioning
+  validate     Validate a YARA file for syntax errors
+  workspace    Workspace commands for multi-file analysis
+```
+
+## Real-World Usage
+
+### Processing Production Rulesets
+
+The tool has been tested with production rulesets containing thousands of rules:
+
+```bash
+# Example: Analyzing a 10,000+ rule collection
+$ yaraast analyze optimize master_yara.yar
+
+Optimization Analysis: master_yara.yar
+
+   Optimization
+  Opportunities
+┏━━━━━━━━┳━━━━━━━┓
+┃ Impact ┃ Count ┃
+┡━━━━━━━━╇━━━━━━━┩
+│ High   │     0 │
+│ Medium │  8184 │
+│ Low    │  5962 │
+└────────┴───────┘
+
+Found 14146 optimization suggestions
+```
+
+### Command Chaining
+
+Many commands support piping and chaining:
+
+```bash
+# Parse, optimize, and format
+yaraast parse rule.yar | \
+    yaraast analyze optimize - | \
+    yaraast format - > optimized.yar
+
+# Validate and generate report
+yaraast validate ruleset.yar && \
+    yaraast metrics --detailed ruleset.yar > report.txt
+```
+
+## Output Formats
+
+Most commands support multiple output formats:
+
+- **text** - Human-readable output (default)
+- **json** - JSON for programmatic processing
+- **yaml** - YAML for configuration files
+- **csv** - CSV for spreadsheet analysis
+- **tree** - Tree visualization for structure
+- **html** - HTML reports with styling
+
+```bash
+# Examples
+yaraast parse rule.yar --format json
+yaraast metrics rule.yar --format csv
+yaraast analyze optimize rule.yar --format html > report.html
+```
+
+## Python Module Usage
+
+The tool can be run as a Python module:
+
+```bash
+# Run as module
+python -m yaraast --help
+python -m yaraast analyze optimize rule.yar
+
+# In Python scripts
+from yaraast import Parser
+from yaraast.cli import cli
+
+# Use the parser
 parser = Parser()
 ast = parser.parse(yara_code)
 
-# Access rule properties
-for rule in ast.rules:
-    print(f"Rule: {rule.name}")
-    print(f"Strings: {len(rule.strings)}")
-    print(f"Meta: {rule.meta}")
+# Or invoke CLI programmatically
+cli(['analyze', 'optimize', 'rule.yar'])
 ```
 
-### Processing Large Rulesets
-
-```python
-from yaraast import Parser
-from pathlib import Path
-
-# Parse a file with thousands of rules
-parser = Parser()
-ast = parser.parse_file("large_ruleset.yar")
-
-# Analyze the ruleset
-print(f"Total rules: {len(ast.rules)}")
-print(f"Total imports: {len(ast.imports)}")
-print(f"Total includes: {len(ast.includes)}")
-
-# Process rules efficiently
-for rule in ast.rules:
-    # Perform analysis on each rule
-    if len(rule.strings) > 100:
-        print(f"Complex rule found: {rule.name} with {len(rule.strings)} strings")
-```
-
-### Rule Analysis and Optimization
-
-```python
-from yaraast import Parser, RuleAnalyzer, OptimizationAnalyzer
-
-# Parse rules
-parser = Parser()
-ast = parser.parse_file("rules.yar")
-
-# Analyze rules for issues
-analyzer = RuleAnalyzer()
-results = analyzer.analyze(ast)
-
-# Check for unused strings
-for rule_name, analysis in results['string_analysis'].items():
-    unused = analysis.get('unused', [])
-    if unused:
-        print(f"Rule '{rule_name}' has {len(unused)} unused strings")
-
-# Find optimization opportunities
-optimizer = OptimizationAnalyzer()
-opt_report = optimizer.analyze(ast)
-
-for suggestion in opt_report.suggestions:
-    print(f"{suggestion.rule_name}: {suggestion.description}")
-```
-
-### Building Rules Programmatically
-
-```python
-from yaraast.builder import RuleBuilder, ConditionBuilder
-
-# Create a new rule using the builder API
-rule = (RuleBuilder("detect_suspicious_behavior")
-    .add_meta("author", "Security Team")
-    .add_meta("date", "2025-01-01")
-    .add_string("$sus1", "suspicious.exe")
-    .add_string("$sus2", { "48 8B 05 ?? ?? ?? ??" })
-    .add_tag("malware")
-    .add_tag("trojan")
-    .set_condition("any of them")
-    .build())
-
-# Generate YARA code
-from yaraast import CodeGenerator
-generator = CodeGenerator()
-yara_output = generator.generate(rule)
-print(yara_output)
-```
-
-### AST Transformation
-
-```python
-from yaraast import Parser, ASTVisitor, CodeGenerator
-
-class StringPrefixTransformer(ASTVisitor):
-    """Add prefix to all string identifiers"""
-    
-    def visit_string_definition(self, node):
-        node.identifier = f"$prefix_{node.identifier[1:]}"
-        return node
-
-# Parse and transform
-parser = Parser()
-ast = parser.parse_file("original.yar")
-
-transformer = StringPrefixTransformer()
-transformed_ast = transformer.visit(ast)
-
-# Generate modified rules
-generator = CodeGenerator()
-output = generator.generate(transformed_ast)
-```
-
-### CLI Usage
-
-The library includes a comprehensive command-line interface:
-
-```bash
-# Parse and validate rules
-yaraast parse ruleset.yar --format tree
-yaraast validate ruleset.yar
-
-# Analyze rules for issues
-yaraast analyze best-practices ruleset.yar
-yaraast analyze optimize ruleset.yar
-
-# Convert between formats
-yaraast serialize export ruleset.yar --format json -o rules.json
-yaraast serialize import rules.json --format yara -o ruleset.yar
-
-# Process large collections
-yaraast performance batch /path/to/rules --operations parse complexity
-yaraast performance stream large_ruleset.yar --memory-limit 500
-```
-
-## Performance Considerations
-
-The library is designed to handle large-scale deployments:
-
-- **Streaming Parser**: Process rules one at a time with minimal memory usage
-- **Batch Processing**: Efficiently process thousands of files in parallel
-- **Memory Optimization**: Configurable memory limits and garbage collection
-- **Parallel Analysis**: Multi-threaded analysis for large rule collections
-
-Example for processing thousands of rules:
-
-```python
-from yaraast.performance import StreamingParser
-
-# Process large ruleset with limited memory
-parser = StreamingParser(max_memory_mb=500)
-
-for result in parser.parse_directory("/path/to/rules", pattern="*.yar"):
-    if result.status == "success":
-        print(f"Processed: {result.file_path}")
-    else:
-        print(f"Error in {result.file_path}: {result.error}")
-```
-
-## Advanced Features
-
-### Semantic Validation
-
-```python
-from yaraast import Parser
-from yaraast.types import SemanticValidator
-
-parser = Parser()
-ast = parser.parse_file("rules.yar")
-
-validator = SemanticValidator()
-result = validator.validate(ast)
-
-if not result.is_valid:
-    for error in result.errors:
-        print(f"Error: {error}")
-```
-
-### Dependency Analysis
-
-```python
-from yaraast.analysis import DependencyAnalyzer
-
-analyzer = DependencyAnalyzer()
-deps = analyzer.analyze(ast)
-
-# Find circular dependencies
-for cycle in deps['circular_dependencies']:
-    print(f"Circular dependency: {' -> '.join(cycle)}")
-
-# Get rule dependencies
-for rule_name, dependencies in deps['dependencies'].items():
-    print(f"{rule_name} depends on: {', '.join(dependencies)}")
-```
-
-## Architecture
-
-The library follows a modular architecture:
-
-- **Parser**: Lexical and syntactic analysis producing AST
-- **AST Nodes**: Strongly-typed representation of YARA constructs
-- **Visitor Pattern**: Traversal and transformation framework
-- **Analyzers**: Rule analysis and optimization modules
-- **Code Generators**: Output formatting and serialization
-- **Performance Module**: Large-scale processing capabilities
+<https://github.com/seifreed/yaraast>
 
 ## Requirements
 
 - Python 3.13 or higher
-- Optional: yara-python for cross-validation with libyara
-
-## Contributing
-
-Contributions are welcome! Please check the GitHub repository for guidelines.
+- Dependencies: click, rich, attrs, PyYAML
+- Optional: yara-python for LibYARA integration
 
 ## License
 
@@ -275,9 +376,12 @@ This project is licensed under the MIT License with an attribution requirement.
 
 ### License Summary
 
-- **Free to use**: You can use this software freely for any purpose (commercial or non-commercial)
-- **Attribution required**: You must include attribution to the original author when using this software
-- **Attribution format**: "YARA AST by Marc Rivero (@seifreed) - https://github.com/seifreed/yaraast"
+- **Free to use**: You can use this software freely for any purpose
+  (commercial or non-commercial)
+- **Attribution required**: You must include attribution to the original author
+  when using this software
+- **Attribution format**: "YARA AST by Marc Rivero (@seifreed) -
+  <https://github.com/seifreed/yaraast>"
 
 ### Full License
 

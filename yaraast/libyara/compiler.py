@@ -48,14 +48,17 @@ class LibyaraCompiler:
         """
         if not YARA_AVAILABLE:
             raise ImportError(
-                "yara-python is not installed. " "Install it with: pip install yara-python"
+                "yara-python is not installed. Install it with: pip install yara-python"
             )
 
         self.externals = externals or {}
         self.code_generator = CodeGenerator()
 
     def compile_ast(
-        self, ast: YaraFile, includes: dict[str, str] | None = None, error_on_warning: bool = False
+        self,
+        ast: YaraFile,
+        includes: dict[str, str] | None = None,
+        error_on_warning: bool = False,
     ) -> CompilationResult:
         """Compile AST to libyara rules.
 
@@ -84,7 +87,10 @@ class LibyaraCompiler:
             )
 
     def compile_source(
-        self, source: str, includes: dict[str, str] | None = None, error_on_warning: bool = False
+        self,
+        source: str,
+        includes: dict[str, str] | None = None,
+        error_on_warning: bool = False,
     ) -> CompilationResult:
         """Compile YARA source code using libyara.
 
@@ -99,39 +105,45 @@ class LibyaraCompiler:
         errors = []
         warnings = []
 
-        def error_callback(error_data):
-            """Callback for compilation errors."""
-            if error_data.get("warning", False):
-                warnings.append(
-                    f"{error_data.get('filename', 'unknown')}:"
-                    f"{error_data.get('line_number', 0)}: "
-                    f"{error_data.get('message', 'unknown warning')}"
-                )
-            else:
-                errors.append(
-                    f"{error_data.get('filename', 'unknown')}:"
-                    f"{error_data.get('line_number', 0)}: "
-                    f"{error_data.get('message', 'unknown error')}"
-                )
-
         try:
-            # Create compiler
-            compiler = yara.compile(
-                source=source,
-                externals=self.externals,
-                includes=includes or {},
-                error_on_warning=error_on_warning,
-                error_callback=error_callback,
-            )
+            # Check if source contains null bytes
+            if "\x00" in source:
+                # Use temporary file for sources with null bytes
+                import tempfile
 
-            # Check if compilation succeeded
-            if errors or (error_on_warning and warnings):
-                return CompilationResult(
-                    success=False, errors=errors, warnings=warnings, source_code=source
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".yar", delete=False) as f:
+                    # Write as UTF-8, replacing any problematic characters
+                    f.write(source)
+                    temp_path = f.name
+
+                try:
+                    # Compile from file instead
+                    compiler = yara.compile(
+                        filepath=temp_path,
+                        externals=self.externals,
+                        includes=includes or False,
+                        error_on_warning=error_on_warning,
+                    )
+                finally:
+                    # Clean up temp file
+                    import os
+
+                    os.unlink(temp_path)
+            else:
+                # No null bytes, compile directly from source
+                compiler = yara.compile(
+                    source=source,
+                    externals=self.externals,
+                    includes=includes or False,  # yara-python expects False, not {}
+                    error_on_warning=error_on_warning,
                 )
 
+            # If we got here, compilation succeeded
             return CompilationResult(
-                success=True, compiled_rules=compiler, warnings=warnings, source_code=source
+                success=True,
+                compiled_rules=compiler,
+                warnings=warnings,
+                source_code=source,
             )
 
         except yara.SyntaxError as e:

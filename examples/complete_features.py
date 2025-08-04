@@ -21,14 +21,14 @@ from yaraast.types.module_loader import ModuleLoader
 from yaraast.yarax import YaraXCompatibilityChecker, YaraXSyntaxAdapter
 
 
-def print_section(title: str):
+def print_section(title: str) -> None:
     """Print a section header."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {title}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
-def demo_version_info():
+def demo_version_info() -> None:
     """Demonstrate version information."""
     print_section("Version Information")
 
@@ -43,7 +43,7 @@ def demo_version_info():
             print(f"  {key}: {value}")
 
 
-def demo_module_loading():
+def demo_module_loading() -> None:
     """Demonstrate JSON module loading."""
     print_section("Module Loading from JSON")
 
@@ -53,12 +53,18 @@ def demo_module_loading():
         "description": "Demo module for example",
         "attributes": {
             "version": "string",
-            "config": {"type": "struct", "fields": {"enabled": "bool", "threshold": "int"}},
+            "config": {
+                "type": "struct",
+                "fields": {"enabled": "bool", "threshold": "int"},
+            },
         },
         "functions": {
             "analyze": {
                 "return": "int",
-                "parameters": [{"name": "data", "type": "string"}, {"name": "mode", "type": "int"}],
+                "parameters": [
+                    {"name": "data", "type": "string"},
+                    {"name": "mode", "type": "int"},
+                ],
             }
         },
         "constants": {"MAX_SIZE": "int", "VERSION": "string"},
@@ -79,17 +85,20 @@ def demo_module_loading():
     # Check if our module was loaded
     if "demo_module" in loader.modules:
         module = loader.get_module("demo_module")
-        print("\nDemo module loaded successfully!")
-        print(f"  Attributes: {list(module.attributes.keys())}")
-        print(f"  Functions: {list(module.functions.keys())}")
-        print(f"  Constants: {list(module.constants.keys())}")
+        if module:
+            print("\nDemo module loaded successfully!")
+            print(f"  Attributes: {list(module.attributes.keys())}")
+            print(f"  Functions: {list(module.functions.keys())}")
+            print(f"  Constants: {list(module.constants.keys())}")
+        else:
+            print("\nFailed to load demo module")
 
     # Clean up
     Path("demo_module.json").unlink()
     del os.environ["YARAAST_MODULE_SPEC_PATH"]
 
 
-def demo_complete_features():
+def demo_complete_features() -> None:
     """Demonstrate all features in one comprehensive example."""
     print_section("Complete Feature Demonstration")
 
@@ -186,7 +195,7 @@ def demo_complete_features():
     print(custom_gen.generate(optimized))
 
 
-def demo_optimization():
+def demo_optimization() -> None:
     """Demonstrate optimization capabilities."""
     print_section("Expression Optimization")
 
@@ -228,7 +237,7 @@ rule optimization_demo {
     print(f"  Total optimizations: {stats['total_optimizations']}")
 
 
-def main():
+def main() -> None:
     """Run all demonstrations."""
     print("YARAAST - Complete Feature Demonstration")
     print("========================================")

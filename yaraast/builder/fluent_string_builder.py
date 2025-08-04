@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Self
 
-from yaraast.ast.modifiers import StringModifier as EnhancedStringModifier, StringModifierType
+from yaraast.ast.modifiers import StringModifier as EnhancedStringModifier
+from yaraast.ast.modifiers import StringModifierType
 from yaraast.ast.strings import (
     HexByte,
     HexJump,
@@ -242,7 +243,9 @@ class FluentStringBuilder:
 
         if self._string_type == "plain":
             return PlainString(
-                identifier=self.identifier, value=str(self._content), modifiers=legacy_modifiers
+                identifier=self.identifier,
+                value=str(self._content),
+                modifiers=legacy_modifiers,
             )
         if self._string_type == "hex":
             return HexString(
@@ -252,7 +255,9 @@ class FluentStringBuilder:
             )
         if self._string_type == "regex":
             return RegexString(
-                identifier=self.identifier, regex=str(self._content), modifiers=legacy_modifiers
+                identifier=self.identifier,
+                regex=str(self._content),
+                modifiers=legacy_modifiers,
             )
         raise ValueError(f"Unknown string type: {self._string_type}")
 

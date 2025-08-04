@@ -31,7 +31,7 @@ class JobStatus(Enum):
 
 
 @dataclass
-class AnalysisJob[T]:
+class AnalysisJob:
     """Represents an analysis job for parallel processing."""
 
     job_id: str
@@ -57,7 +57,11 @@ class AnalysisJob[T]:
     @property
     def is_completed(self) -> bool:
         """Check if job is completed (success or failure)."""
-        return self.status in (JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED)
+        return self.status in (
+            JobStatus.COMPLETED,
+            JobStatus.FAILED,
+            JobStatus.CANCELLED,
+        )
 
 
 class ParallelAnalyzer:
@@ -150,7 +154,9 @@ class ParallelAnalyzer:
         for i in range(0, len(file_paths), chunk_size):
             chunk = file_paths[i : i + chunk_size]
             job = self._submit_job(
-                job_type="parse_files", input_data=chunk, worker_func=self._parse_files_worker
+                job_type="parse_files",
+                input_data=chunk,
+                worker_func=self._parse_files_worker,
             )
             jobs.append(job)
 
@@ -216,7 +222,11 @@ class ParallelAnalyzer:
                 job = self._submit_job(
                     job_type=f"graph_{graph_type}",
                     input_data=ast,
-                    parameters={"ast_index": i, "graph_type": graph_type, "output_dir": output_dir},
+                    parameters={
+                        "ast_index": i,
+                        "graph_type": graph_type,
+                        "output_dir": output_dir,
+                    },
                     worker_func=self._graph_worker,
                 )
                 jobs.append(job)
@@ -316,7 +326,10 @@ class ParallelAnalyzer:
             job_id = f"{job_type}_{self._job_counter}"
 
         job = AnalysisJob(
-            job_id=job_id, input_data=input_data, job_type=job_type, parameters=parameters or {}
+            job_id=job_id,
+            input_data=input_data,
+            job_type=job_type,
+            parameters=parameters or {},
         )
 
         self._jobs[job_id] = job
@@ -429,7 +442,11 @@ class ParallelAnalyzer:
         else:
             raise ValueError(f"Unknown graph type: {graph_type}")
 
-        result = {"ast_index": ast_index, "graph_type": graph_type, "graph_source": graph_source}
+        result = {
+            "ast_index": ast_index,
+            "graph_type": graph_type,
+            "graph_source": graph_source,
+        }
 
         # Save to file if output directory provided
         if output_dir:

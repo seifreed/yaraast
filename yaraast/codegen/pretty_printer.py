@@ -70,7 +70,8 @@ class PrettyPrinter(CommentAwareCodeGenerator):
     def __init__(self, options: PrettyPrintOptions | None = None):
         self.options = options or PrettyPrintOptions()
         super().__init__(
-            indent_size=self.options.indent_size, preserve_comments=self.options.preserve_comments
+            indent_size=self.options.indent_size,
+            preserve_comments=self.options.preserve_comments,
         )
         self._string_alignment_column = 0
         self._meta_alignment_column = 0
@@ -279,9 +280,15 @@ class PrettyPrinter(CommentAwareCodeGenerator):
         hex_parts = []
         for token in node.tokens:
             if hasattr(token, "value"):  # HexByte
-                hex_val = (
-                    f"{token.value:02X}" if self.options.hex_uppercase else f"{token.value:02x}"
-                )
+                # Handle both string and int values
+                if isinstance(token.value, str):
+                    hex_val = (
+                        token.value.upper() if self.options.hex_uppercase else token.value.lower()
+                    )
+                else:
+                    hex_val = (
+                        f"{token.value:02X}" if self.options.hex_uppercase else f"{token.value:02x}"
+                    )
                 hex_parts.append(hex_val)
             elif hasattr(token, "min_jump"):  # HexJump
                 if token.min_jump == token.max_jump:
@@ -369,7 +376,8 @@ class PrettyPrinter(CommentAwareCodeGenerator):
         from yaraast.codegen import CodeGenerator
 
         generator = CodeGenerator()
-        return generator.generate(expr).strip()
+        # Use visit directly instead of generate which expects a full AST
+        return generator.visit(expr).strip()
 
     def _calculate_string_alignment_column(self, ast: YaraFile) -> None:
         """Calculate alignment column for string definitions."""

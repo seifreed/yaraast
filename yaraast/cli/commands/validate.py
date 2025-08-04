@@ -153,7 +153,7 @@ def _display_code_comparison(result, verbose: bool):
         click.echo("-" * 40)
         click.echo(result.original_code)
         click.echo("-" * 40)
-        
+
         if result.regenerated_code:
             click.echo("\nRegenerated code:")
             click.echo("-" * 40)
@@ -178,7 +178,10 @@ def _display_roundtrip_details(result, status_fn, data, verbose: bool):
 @validate.command()
 @click.argument("rule_file", type=click.Path(exists=True))
 @click.option(
-    "-d", "--test-data", type=click.Path(exists=True), help="Test data for scanning comparison"
+    "-d",
+    "--test-data",
+    type=click.Path(exists=True),
+    help="Test data for scanning comparison",
 )
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed results")
 def roundtrip(rule_file: str, test_data: str | None, verbose: bool):

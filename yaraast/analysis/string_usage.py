@@ -198,73 +198,73 @@ class StringUsageAnalyzer(ASTVisitor[None]):
 
     # Default implementations for other visit methods
     def visit_import(self, node: Import) -> None:
-        pass
+        """Visit import node - imports don't affect string usage."""
 
     def visit_include(self, node: Include) -> None:
-        pass
+        """Visit include node - includes don't affect string usage."""
 
     def visit_tag(self, node: Tag) -> None:
-        pass
+        """Visit tag node - tags don't affect string usage."""
 
     def visit_string_modifier(self, node: StringModifier) -> None:
-        pass
+        """Visit string modifier node - modifiers don't affect string usage tracking."""
 
     def visit_hex_token(self, node: HexToken) -> None:
-        pass
+        """Visit hex token node - hex tokens don't affect string usage."""
 
     def visit_hex_byte(self, node: HexByte) -> None:
-        pass
+        """Visit hex byte node - hex bytes don't affect string usage."""
 
     def visit_hex_wildcard(self, node: HexWildcard) -> None:
-        pass
+        """Visit hex wildcard node - wildcards don't affect string usage."""
 
     def visit_hex_jump(self, node: HexJump) -> None:
-        pass
+        """Visit hex jump node - jumps don't affect string usage."""
 
     def visit_hex_alternative(self, node: HexAlternative) -> None:
-        pass
+        """Visit hex alternative node - alternatives don't affect string usage."""
 
     def visit_hex_nibble(self, node: HexNibble) -> None:
-        pass
+        """Visit hex nibble node - nibbles don't affect string usage."""
 
     def visit_expression(self, node: Expression) -> None:
-        pass
+        """Visit expression node - handled by specific expression type visitors."""
 
     def visit_identifier(self, node: Identifier) -> None:
-        pass
+        """Visit identifier node - identifiers don't affect string usage unless they're string identifiers."""
 
     def visit_integer_literal(self, node: IntegerLiteral) -> None:
-        pass
+        """Visit integer literal node - integer literals don't affect string usage."""
 
     def visit_double_literal(self, node: DoubleLiteral) -> None:
-        pass
+        """Visit double literal node - double literals don't affect string usage."""
 
     def visit_string_literal(self, node: StringLiteral) -> None:
-        pass
+        """Visit string literal node - string literals in conditions don't affect string usage."""
 
     def visit_boolean_literal(self, node: BooleanLiteral) -> None:
-        pass
+        """Visit boolean literal node - boolean literals don't affect string usage."""
 
     def visit_meta(self, node: Meta) -> None:
-        pass
+        """Visit meta node - meta fields don't affect string usage."""
 
     def visit_meta_statement(self, node) -> None:
-        pass
+        """Visit meta statement node - meta statements don't affect string usage."""
 
     def visit_condition(self, node) -> None:
-        pass
+        """Visit condition node - handled by specific condition visitors."""
 
     def visit_comment(self, node) -> None:
-        pass
+        """Visit comment node - comments don't affect string usage."""
 
     def visit_comment_group(self, node) -> None:
-        pass
+        """Visit comment group node - comment groups don't affect string usage."""
 
     def visit_module_reference(self, node) -> None:
-        pass
+        """Visit module reference node - module references don't affect string usage."""
 
     def visit_dictionary_access(self, node) -> None:
-        pass
+        """Visit dictionary access node - dictionary access doesn't affect string usage."""
 
     def visit_binary_expression(self, node: BinaryExpression) -> None:
         self.visit(node.left)
@@ -296,7 +296,32 @@ class StringUsageAnalyzer(ASTVisitor[None]):
         self.visit(node.body)
 
     def visit_defined_expression(self, node) -> None:
-        pass
+        """Visit defined expression node - defined expressions don't affect string usage."""
 
     def visit_string_operator_expression(self, node) -> None:
-        pass
+        """Visit string operator expression node - string operators don't affect string usage tracking."""
+
+    # Add missing abstract methods
+    def visit_extern_import(self, node) -> None:
+        """Visit extern import node - extern imports don't affect string usage."""
+
+    def visit_extern_namespace(self, node) -> None:
+        """Visit extern namespace node - extern namespaces don't affect string usage."""
+
+    def visit_extern_rule(self, node) -> None:
+        """Visit extern rule node - extern rules don't affect internal string usage."""
+
+    def visit_extern_rule_reference(self, node) -> None:
+        """Visit extern rule reference node - extern rule references don't affect string usage."""
+
+    def visit_in_rule_pragma(self, node) -> None:
+        """Visit in-rule pragma node - pragmas don't affect string usage."""
+
+    def visit_pragma(self, node) -> None:
+        """Visit pragma node - pragmas don't affect string usage."""
+
+    def visit_pragma_block(self, node) -> None:
+        """Visit pragma block node - pragma blocks don't affect string usage."""
+
+    def visit_regex_literal(self, node) -> None:
+        """Visit regex literal node - regex literals don't affect string usage."""

@@ -488,3 +488,25 @@ class ComplexityAnalyzer(ASTVisitor[None]):
     def visit_string_operator_expression(self, node) -> None:
         self.visit(node.left)
         self.visit(node.right)
+
+    # Add missing abstract methods
+    def visit_extern_import(self, node) -> None:
+        pass
+
+    def visit_extern_namespace(self, node) -> None:
+        pass
+
+    def visit_extern_rule(self, node) -> None:
+        pass
+
+    def visit_extern_rule_reference(self, node) -> None:
+        pass
+
+    def visit_in_rule_pragma(self, node) -> None:
+        pass
+
+    def visit_pragma(self, node) -> None:
+        pass
+
+    def visit_pragma_block(self, node) -> None:
+        pass

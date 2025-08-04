@@ -393,7 +393,14 @@ class TestDependencyGraph:
             imports=[],
             includes=[],
             rules=[
-                Rule(name="test_rule", modifiers=[], tags=[], meta={}, strings=[], condition=None)
+                Rule(
+                    name="test_rule",
+                    modifiers=[],
+                    tags=[],
+                    meta={},
+                    strings=[],
+                    condition=None,
+                )
             ],
         )
         graph.add_file(Path("test.yar"), ast)

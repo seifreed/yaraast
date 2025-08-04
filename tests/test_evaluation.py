@@ -260,7 +260,7 @@ class TestYaraEvaluator:
         ast = parser.parse(rule_text)
 
         # Little-endian data
-        data = b"\x4D\x5A\x00\x00\x78\x56\x34\x12"
+        data = b"\x4d\x5a\x00\x00\x78\x56\x34\x12"
         evaluator = YaraEvaluator(data)
         assert evaluator.evaluate_file(ast)["int_test"] is True
 

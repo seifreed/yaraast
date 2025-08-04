@@ -171,7 +171,11 @@ def resolve(file, search_path, show_tree):
 @click.argument("directory", type=click.Path(exists=True))
 @click.option("--output", "-o", type=click.Path(), help="Output file for graph")
 @click.option(
-    "--format", "-f", type=click.Choice(["dot", "json"]), default="dot", help="Output format"
+    "--format",
+    "-f",
+    type=click.Choice(["dot", "json"]),
+    default="dot",
+    help="Output format",
 )
 def graph(directory, output, format):
     """Generate dependency graph for YARA files."""

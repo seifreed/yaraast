@@ -241,7 +241,11 @@ def optimize(rule_file: str, verbose: bool, impact: str):
 @click.argument("rule_file", type=click.Path(exists=True))
 @click.option("-o", "--output", type=click.Path(), help="Save report to file")
 @click.option(
-    "-f", "--format", type=click.Choice(["text", "json"]), default="text", help="Output format"
+    "-f",
+    "--format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+    help="Output format",
 )
 def _generate_json_report(rule_file, bp_report, opt_report):
     """Generate JSON format report."""
