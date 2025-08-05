@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -10,6 +11,14 @@ from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+
+# Suppress protobuf version warning before import
+warnings.filterwarnings(
+    "ignore",
+    category=UserWarning,
+    message=".*Protobuf gencode version.*",
+    module="google.protobuf.runtime_version",
+)
 
 try:
     from yaraast.serialization import yara_ast_pb2
