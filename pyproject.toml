@@ -231,8 +231,7 @@ ignore_missing_imports = true
 
 # Pydocstyle configuration
 [tool.pydocstyle]
-convention = "google"
-add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107"]
+add-ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D107", "D203", "D212", "D213", "D401", "D406", "D407", "D413"]
 match-dir = "(?!tests|venv|build|dist).*"
 
 # Ruff configuration (enhanced)

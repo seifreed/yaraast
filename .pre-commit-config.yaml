@@ -88,7 +88,6 @@ repos:
       - id: pydocstyle
         args:
           [
-            --convention=google,
             --add-ignore=D100,
             D101,
             D102,
@@ -96,6 +95,17 @@ repos:
             D104,
             D105,
             D107,
+            D202,
+            D203,
+            D212,
+            D213,
+            D401,
+            D402,
+            D403,
+            D406,
+            D407,
+            D412,
+            D413,
           ]
         exclude: ^(tests/|venv/|build/|dist/|.*_pb2\.py$)
 

@@ -1,0 +1,18 @@
+{
+  "ignore": {
+    "vulnerabilities": [
+      {
+        "id": "64484",
+        "reason": "bandit>=1.7.7 is specified, false positive for range spec"
+      },
+      {
+        "id": "66742",
+        "reason": "black>=24.3.0 is specified, false positive for range spec"
+      },
+      {
+        "id": "59726",
+        "reason": "hypothesis>=6.0.4 is specified, false positive for range spec"
+      }
+    ]
+  }
+}
