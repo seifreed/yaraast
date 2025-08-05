@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import struct
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -35,7 +36,7 @@ class EvaluationContext:
 class YaraEvaluator(ASTVisitor[Any]):
     """Evaluate YARA conditions against byte data."""
 
-    def __init__(self, data: bytes, modules: MockModuleRegistry | None = None):
+    def __init__(self, data: bytes = b"", modules: MockModuleRegistry | None = None):
         self.data = data
         self.context = EvaluationContext(data=data)
         self.string_matcher = StringMatcher()
@@ -84,7 +85,7 @@ class YaraEvaluator(ASTVisitor[Any]):
         return node.value
 
     def visit_integer_literal(self, node: IntegerLiteral) -> int:
-        return node.value
+        return int(node.value)
 
     def visit_double_literal(self, node: DoubleLiteral) -> float:
         return node.value
@@ -300,10 +301,8 @@ class YaraEvaluator(ASTVisitor[Any]):
         if hasattr(obj, node.member):
             return getattr(obj, node.member)
         if hasattr(obj, "__getitem__"):
-            try:
+            with contextlib.suppress(Exception):
                 return obj[node.member]
-            except Exception:
-                pass
 
         raise ValueError(f"Cannot access member {node.member}")
 
@@ -580,12 +579,13 @@ class YaraEvaluator(ASTVisitor[Any]):
             # Check if it's a variable
             if expr.name in self.context.variables:
                 return True
-        elif isinstance(expr, StringIdentifier):
+        elif (
+            isinstance(expr, StringIdentifier) and self._current_rule and self._current_rule.strings
+        ):
             # Check if string is defined in current rule
-            if self._current_rule and self._current_rule.strings:
-                for string_def in self._current_rule.strings:
-                    if string_def.identifier == expr.name:
-                        return True
+            for string_def in self._current_rule.strings:
+                if string_def.identifier == expr.name:
+                    return True
 
         return False
 
@@ -603,3 +603,35 @@ class YaraEvaluator(ASTVisitor[Any]):
         # This is handled in binary_expression for string operators
         # But we can add specific handling here if needed
         return self.visit_binary_expression(node)
+
+    def visit_extern_import(self, node):
+        """Visit extern import - not evaluated."""
+        pass
+
+    def visit_extern_namespace(self, node):
+        """Visit extern namespace - not evaluated."""
+        pass
+
+    def visit_extern_rule(self, node):
+        """Visit extern rule - not evaluated."""
+        pass
+
+    def visit_extern_rule_reference(self, node):
+        """Visit extern rule reference - not evaluated."""
+        pass
+
+    def visit_in_rule_pragma(self, node):
+        """Visit in-rule pragma - not evaluated."""
+        pass
+
+    def visit_pragma(self, node):
+        """Visit pragma - not evaluated."""
+        pass
+
+    def visit_pragma_block(self, node):
+        """Visit pragma block - not evaluated."""
+        pass
+
+
+# Alias for compatibility
+Evaluator = YaraEvaluator

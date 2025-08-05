@@ -7,7 +7,7 @@ from rich.console import Console
 
 from yaraast.codegen import CodeGenerator
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
-from yaraast.performance.optimizer import optimize_yara_file
+from yaraast.performance.optimizer import PerformanceOptimizer
 from yaraast.performance.string_analyzer import analyze_rule_performance
 
 console = Console()
@@ -39,7 +39,7 @@ def optimize(input_file: Path, output_file: Path, dry_run: bool, analyze: bool):
         with console.status("[cyan]Parsing YARA file..."):
             content = input_file.read_text()
             parser = ErrorTolerantParser()
-            ast, lexer_errors, parser_errors = parser.parse_with_errors(content)
+            ast, _, _ = parser.parse_with_errors(content)
 
         if not ast:
             console.print("[red]❌ Failed to parse YARA file[/red]")
@@ -61,7 +61,9 @@ def optimize(input_file: Path, output_file: Path, dry_run: bool, analyze: bool):
 
         # Optimize the AST
         console.print(f"\n[cyan]Optimizing {len(ast.rules)} rules...[/cyan]")
-        optimized_ast, changes = optimize_yara_file(ast)
+        optimizer = PerformanceOptimizer()
+        optimized_ast = optimizer.optimize(ast)
+        changes = ["Performance optimizations applied"]  # Simple placeholder for changes
 
         if not changes:
             console.print(

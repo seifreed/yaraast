@@ -123,11 +123,7 @@ class StringDiagramGenerator(ASTVisitor[None]):
                 fillcolor=color,
                 width=str(size),
                 height=str(size),
-                shape=(
-                    "circle"
-                    if pattern_info["type"] == "plain"
-                    else "hexagon" if pattern_info["type"] == "hex" else "ellipse"
-                ),
+                shape=self._get_pattern_shape(pattern_info["type"]),
             )
 
         # Add complexity legend
@@ -281,8 +277,8 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
     def get_pattern_statistics(self) -> dict[str, Any]:
         """Get comprehensive pattern statistics."""
-        if not self.pattern_stats:
-            return {}
+        if not self.string_patterns:
+            return {"total_patterns": 0}
 
         stats = {
             "total_patterns": len(self.string_patterns),
@@ -313,7 +309,7 @@ class StringDiagramGenerator(ASTVisitor[None]):
                 pattern_id += 1
                 pid = f"pattern_{pattern_id}"
 
-                pattern_info = {
+                pattern_info: dict[str, Any] = {
                     "id": pid,
                     "identifier": string_def.identifier,
                     "rule": rule.name,
@@ -832,3 +828,286 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
     def visit_string_operator_expression(self, node) -> None:
         pass
+
+    def visit_extern_import(self, node) -> None:
+        """Visit ExternImport node."""
+        pass
+
+    def visit_extern_namespace(self, node) -> None:
+        """Visit ExternNamespace node."""
+        pass
+
+    def visit_extern_rule(self, node) -> None:
+        """Visit ExternRule node."""
+        pass
+
+    def visit_extern_rule_reference(self, node) -> None:
+        """Visit ExternRuleReference node."""
+        pass
+
+    def visit_in_rule_pragma(self, node) -> None:
+        """Visit InRulePragma node."""
+        pass
+
+    def visit_pragma(self, node) -> None:
+        """Visit Pragma node."""
+        pass
+
+    def visit_pragma_block(self, node) -> None:
+        """Visit PragmaBlock node."""
+        pass
+
+    def _get_pattern_shape(self, pattern_type: str) -> str:
+        """Get shape for pattern type."""
+        if pattern_type == "plain":
+            return "circle"
+        if pattern_type == "hex":
+            return "hexagon"
+        return "ellipse"
+
+    def generate(self, string_def) -> str:
+        """Generate string diagram for a single string definition."""
+        if isinstance(string_def, PlainString):
+            return self._generate_plain_diagram(string_def)
+        elif isinstance(string_def, HexString):
+            return self._generate_hex_diagram(string_def)
+        elif isinstance(string_def, RegexString):
+            return self._generate_regex_diagram(string_def)
+        return f"Unknown string type: {type(string_def).__name__}"
+
+    def _generate_plain_diagram(self, string_def: PlainString) -> str:
+        """Generate diagram for plain string."""
+        diagram = f"PlainString: {string_def.identifier}\n"
+        diagram += f'Value: "{string_def.value}"\n'
+        diagram += f"Length: {len(string_def.value)}\n"
+
+        if string_def.modifiers:
+            # Handle both string and object modifiers
+            mod_names = []
+            for mod in string_def.modifiers:
+                if hasattr(mod, "name"):
+                    mod_names.append(mod.name)
+                else:
+                    mod_names.append(str(mod))
+            modifiers = ", ".join(mod_names)
+            diagram += f"Modifiers: {modifiers}\n"
+
+        return diagram
+
+    def _generate_hex_diagram(self, string_def: HexString) -> str:
+        """Generate diagram for hex string."""
+        from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexWildcard
+
+        diagram = f"HexString: {string_def.identifier}\n"
+        diagram += "Pattern: { "
+
+        pattern_parts = []
+        for token in string_def.tokens:
+            if isinstance(token, HexByte):
+                pattern_parts.append(f"{token.value:02X}")
+            elif isinstance(token, HexWildcard):
+                pattern_parts.append("??")
+            elif isinstance(token, HexJump):
+                if token.min_jump == token.max_jump:
+                    pattern_parts.append(f"[{token.min_jump}]")
+                else:
+                    pattern_parts.append(f"[{token.min_jump}-{token.max_jump}]")
+            elif isinstance(token, HexAlternative):
+                alt_str = "|".join(f"{b:02X}" for b in token.alternatives)
+                pattern_parts.append(f"({alt_str})")
+
+        diagram += " ".join(pattern_parts) + " }\n"
+
+        if string_def.modifiers:
+            # Handle both string and object modifiers
+            mod_names = []
+            for mod in string_def.modifiers:
+                if hasattr(mod, "name"):
+                    mod_names.append(mod.name)
+                else:
+                    mod_names.append(str(mod))
+            modifiers = ", ".join(mod_names)
+            diagram += f"Modifiers: {modifiers}\n"
+
+        return diagram
+
+    def _generate_regex_diagram(self, string_def: RegexString) -> str:
+        """Generate diagram for regex string."""
+        diagram = f"RegexString: {string_def.identifier}\n"
+        diagram += f"Pattern: /{string_def.regex}/\n"
+
+        # Simple regex analysis
+        groups = len(re.findall(r"\([^?]", string_def.regex))
+        quantifiers = len(re.findall(r"[*+?{]", string_def.regex))
+
+        if groups > 0:
+            diagram += f"Capture Groups: {groups}\n"
+        if quantifiers > 0:
+            diagram += f"Quantifiers: {quantifiers}\n"
+
+        if string_def.modifiers:
+            # Handle both string and object modifiers
+            mod_names = []
+            for mod in string_def.modifiers:
+                if hasattr(mod, "name"):
+                    mod_names.append(mod.name)
+                else:
+                    mod_names.append(str(mod))
+            modifiers = ", ".join(mod_names)
+            diagram += f"Modifiers: {modifiers}\n"
+
+        return diagram
+
+
+# Convenience functions
+def generate_string_diagram(string_def) -> str:
+    """Generate string diagram for a string definition."""
+    gen = StringDiagramGenerator()
+    return gen.generate(string_def)
+
+
+def create_hex_diagram(tokens: list) -> str:
+    """Create hex pattern diagram from tokens."""
+    from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexWildcard
+
+    pattern_parts = []
+    for token in tokens:
+        if isinstance(token, HexByte):
+            pattern_parts.append(f"{token.value:02X}")
+        elif isinstance(token, HexWildcard):
+            pattern_parts.append("??")
+        elif isinstance(token, HexJump):
+            if token.min_jump == token.max_jump:
+                pattern_parts.append(f"[{token.min_jump}]")
+            else:
+                pattern_parts.append(f"[{token.min_jump}-{token.max_jump}]")
+        elif isinstance(token, HexAlternative):
+            alt_str = "|".join(f"{b:02X}" for b in token.alternatives)
+            pattern_parts.append(f"({alt_str})")
+
+    return " ".join(pattern_parts)
+
+
+def create_regex_diagram(pattern: str) -> str:
+    """Create regex pattern diagram."""
+    groups = re.findall(r"\([^?]", pattern)
+    quantifiers = re.findall(r"[*+?{]", pattern)
+    anchors = re.findall(r"[\^$]", pattern)
+    char_classes = re.findall(r"\[[^\]]+\]", pattern)
+
+    diagram = f"Pattern: /{pattern}/\n"
+
+    if groups:
+        diagram += f"Capture groups: {len(groups)}\n"
+        diagram += f"  Groups: {groups}\n"
+
+    if quantifiers:
+        diagram += f"Quantifiers: {quantifiers}\n"
+
+    if anchors:
+        diagram += f"Anchors: {anchors}\n"
+
+    if char_classes:
+        diagram += f"Character classes: {char_classes}\n"
+
+    return diagram
+
+
+def analyze_string_patterns(strings: list) -> dict[str, Any]:
+    """Analyze patterns in a list of string definitions."""
+    analysis = {
+        "total_strings": len(strings),
+        "types": {
+            "plain": 0,
+            "hex": 0,
+            "regex": 0,
+        },
+        "patterns": {
+            "common_prefixes": [],
+            "common_suffixes": [],
+            "duplicates": [],
+        },
+        "modifiers": {},
+    }
+
+    plain_values = []
+
+    for string_def in strings:
+        if isinstance(string_def, PlainString):
+            analysis["types"]["plain"] += 1
+            plain_values.append(string_def.value)
+        elif isinstance(string_def, HexString):
+            analysis["types"]["hex"] += 1
+        elif isinstance(string_def, RegexString):
+            analysis["types"]["regex"] += 1
+
+        # Count modifiers
+        for mod in string_def.modifiers:
+            # Handle both string and object modifiers
+            if hasattr(mod, "name"):
+                mod_name = mod.name
+            else:
+                mod_name = str(mod)
+            analysis["modifiers"][mod_name] = analysis["modifiers"].get(mod_name, 0) + 1
+
+    # Find common prefixes in plain strings
+    if len(plain_values) > 1:
+        # Find common prefixes
+        prefixes = Counter()
+        for i, s1 in enumerate(plain_values):
+            for _j, s2 in enumerate(plain_values[i + 1 :], i + 1):
+                # Find common prefix
+                prefix = ""
+                for k in range(min(len(s1), len(s2))):
+                    if s1[k] == s2[k]:
+                        prefix += s1[k]
+                    else:
+                        break
+                if len(prefix) >= 3:  # Minimum prefix length
+                    prefixes[prefix] += 1
+
+        analysis["patterns"]["common_prefixes"] = [
+            p for p, count in prefixes.most_common(5) if count >= 2
+        ]
+
+        # Find duplicates
+        value_counts = Counter(plain_values)
+        analysis["patterns"]["duplicates"] = [v for v, count in value_counts.items() if count > 1]
+
+    return analysis
+
+
+def generate_pattern_report(strings: list) -> dict[str, Any]:
+    """Generate comprehensive pattern analysis report."""
+    analysis = analyze_string_patterns(strings)
+
+    report = {
+        "summary": {
+            "total": analysis["total_strings"],
+            "by_type": analysis["types"],
+            "unique_patterns": analysis["total_strings"] - len(analysis["patterns"]["duplicates"]),
+        },
+        "details": [],
+    }
+
+    # Add details for each string
+    for string_def in strings:
+        detail = {
+            "identifier": string_def.identifier,
+            "type": type(string_def).__name__,
+            "modifiers": [
+                mod.name if hasattr(mod, "name") else str(mod) for mod in string_def.modifiers
+            ],
+        }
+
+        if isinstance(string_def, PlainString):
+            detail["value"] = string_def.value
+            detail["length"] = len(string_def.value)
+        elif isinstance(string_def, HexString):
+            detail["tokens"] = len(string_def.tokens)
+        elif isinstance(string_def, RegexString):
+            detail["pattern"] = string_def.regex
+
+        report["details"].append(detail)
+
+    return report

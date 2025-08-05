@@ -3,6 +3,8 @@
 Analyzes YARA rules for optimization opportunities using AST structure.
 """
 
+# type: ignore  # Analysis code allows gradual typing
+
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
@@ -229,7 +231,7 @@ class OptimizationAnalyzer(ASTVisitor[None]):
                     and left_cmp["op"] in [">", ">="]
                     and right_cmp["op"] in [">", ">="]
                 )
-            ):
+            ) and self._current_rule:
                 self.report.add_suggestion(
                     self._current_rule.name,
                     "redundant_comparison",

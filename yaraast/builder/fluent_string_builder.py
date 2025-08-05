@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Self
-
 from yaraast.ast.modifiers import StringModifier as EnhancedStringModifier
 from yaraast.ast.modifiers import StringModifierType
 from yaraast.ast.strings import (
@@ -31,23 +29,23 @@ class FluentStringBuilder:
         self._hex_builder: HexStringBuilder | None = None
 
     # String content methods
-    def literal(self, content: str) -> Self:
+    def literal(self, content: str) -> FluentStringBuilder:
         """Set as plain string literal."""
         self._content = content
         self._string_type = "plain"
         return self
 
-    def text(self, content: str) -> Self:
+    def text(self, content: str) -> FluentStringBuilder:
         """Alias for literal."""
         return self.literal(content)
 
-    def hex(self, pattern: str) -> Self:
+    def hex(self, pattern: str) -> FluentStringBuilder:
         """Set as hex string from pattern (e.g., '4D 5A ?? 00')."""
         self._content = self._parse_hex_pattern(pattern)
         self._string_type = "hex"
         return self
 
-    def hex_bytes(self, *bytes_values: int | str) -> Self:
+    def hex_bytes(self, *bytes_values: int | str) -> FluentStringBuilder:
         """Set as hex string from byte values."""
         tokens = []
         for byte_val in bytes_values:
@@ -68,64 +66,64 @@ class FluentStringBuilder:
         self._string_type = "hex"
         return self
 
-    def hex_builder(self, builder_func) -> Self:
+    def hex_builder(self, builder_func) -> FluentStringBuilder:
         """Set hex content using a HexStringBuilder lambda."""
         builder = HexStringBuilder()
         self._content = builder_func(builder).build()
         self._string_type = "hex"
         return self
 
-    def regex(self, pattern: str) -> Self:
+    def regex(self, pattern: str) -> FluentStringBuilder:
         """Set as regex string."""
         self._content = pattern
         self._string_type = "regex"
         return self
 
-    def regexp(self, pattern: str) -> Self:
+    def regexp(self, pattern: str) -> FluentStringBuilder:
         """Alias for regex."""
         return self.regex(pattern)
 
     # String modifier methods using enhanced enums
-    def ascii(self) -> Self:
+    def ascii(self) -> FluentStringBuilder:
         """Add ASCII modifier."""
         self._add_modifier(StringModifierType.ASCII)
         return self
 
-    def wide(self) -> Self:
+    def wide(self) -> FluentStringBuilder:
         """Add wide modifier."""
         self._add_modifier(StringModifierType.WIDE)
         return self
 
-    def nocase(self) -> Self:
+    def nocase(self) -> FluentStringBuilder:
         """Add nocase modifier."""
         self._add_modifier(StringModifierType.NOCASE)
         return self
 
-    def case_insensitive(self) -> Self:
+    def case_insensitive(self) -> FluentStringBuilder:
         """Alias for nocase."""
         return self.nocase()
 
-    def fullword(self) -> Self:
+    def fullword(self) -> FluentStringBuilder:
         """Add fullword modifier."""
         self._add_modifier(StringModifierType.FULLWORD)
         return self
 
-    def private(self) -> Self:
+    def private(self) -> FluentStringBuilder:
         """Add private modifier."""
         self._add_modifier(StringModifierType.PRIVATE)
         return self
 
-    def base64(self) -> Self:
+    def base64(self) -> FluentStringBuilder:
         """Add base64 modifier."""
         self._add_modifier(StringModifierType.BASE64)
         return self
 
-    def base64wide(self) -> Self:
+    def base64wide(self) -> FluentStringBuilder:
         """Add base64wide modifier."""
         self._add_modifier(StringModifierType.BASE64WIDE)
         return self
 
-    def xor(self, key: int | str | None = None) -> Self:
+    def xor(self, key: int | str | None = None) -> FluentStringBuilder:
         """Add XOR modifier with optional key."""
         if key is not None:
             if isinstance(key, str):
@@ -142,7 +140,7 @@ class FluentStringBuilder:
         self._modifiers.append(modifier)
         return self
 
-    def xor_range(self, min_key: int, max_key: int) -> Self:
+    def xor_range(self, min_key: int, max_key: int) -> FluentStringBuilder:
         """Add XOR modifier with key range."""
         modifier = EnhancedStringModifier(
             modifier_type=StringModifierType.XOR, value={"min": min_key, "max": max_key}
@@ -151,7 +149,7 @@ class FluentStringBuilder:
         return self
 
     # Regex-specific modifiers
-    def case_sensitive(self) -> Self:
+    def case_sensitive(self) -> FluentStringBuilder:
         """Mark regex as case sensitive (default)."""
         # Remove nocase if present
         self._modifiers = [
@@ -159,68 +157,68 @@ class FluentStringBuilder:
         ]
         return self
 
-    def dotall(self) -> Self:
+    def dotall(self) -> FluentStringBuilder:
         """Add dotall modifier for regex (. matches newlines)."""
         self._add_modifier(StringModifierType.DOTALL)
         return self
 
-    def multiline(self) -> Self:
+    def multiline(self) -> FluentStringBuilder:
         """Add multiline modifier for regex."""
         self._add_modifier(StringModifierType.MULTILINE)
         return self
 
     # String content pattern helpers
-    def mz_header(self) -> Self:
+    def mz_header(self) -> FluentStringBuilder:
         """Common MZ header pattern."""
         return self.hex("4D 5A")
 
-    def pe_header(self) -> Self:
+    def pe_header(self) -> FluentStringBuilder:
         """Common PE header pattern."""
         return self.hex("50 45 00 00")
 
-    def elf_header(self) -> Self:
+    def elf_header(self) -> FluentStringBuilder:
         """Common ELF header pattern."""
         return self.hex("7F 45 4C 46")
 
-    def zip_header(self) -> Self:
+    def zip_header(self) -> FluentStringBuilder:
         """Common ZIP header pattern."""
         return self.hex("50 4B 03 04")
 
-    def pdf_header(self) -> Self:
+    def pdf_header(self) -> FluentStringBuilder:
         """PDF file header."""
         return self.literal("%PDF-")
 
-    def email_pattern(self) -> Self:
+    def email_pattern(self) -> FluentStringBuilder:
         """Email address regex pattern."""
         return self.regex(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
 
-    def ip_address_pattern(self) -> Self:
+    def ip_address_pattern(self) -> FluentStringBuilder:
         """IP address regex pattern."""
         return self.regex(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
 
-    def url_pattern(self) -> Self:
+    def url_pattern(self) -> FluentStringBuilder:
         """URL regex pattern."""
         return self.regex(r"https?://[^\s<>\"]+")
 
-    def domain_pattern(self) -> Self:
+    def domain_pattern(self) -> FluentStringBuilder:
         """Domain name regex pattern."""
         return self.regex(r"\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b")
 
     # Advanced hex patterns
-    def wildcard_sequence(self, count: int) -> Self:
+    def wildcard_sequence(self, count: int) -> FluentStringBuilder:
         """Create sequence of hex wildcards."""
         tokens = [HexWildcard() for _ in range(count)]
         self._content = tokens
         self._string_type = "hex"
         return self
 
-    def mixed_pattern(self, pattern: str) -> Self:
+    def mixed_pattern(self, pattern: str) -> FluentStringBuilder:
         """Mixed hex/wildcard pattern with ? for wildcards."""
         self._content = self._parse_hex_pattern(pattern)
         self._string_type = "hex"
         return self
 
-    def jump_pattern(self, min_bytes: int, max_bytes: int | None = None) -> Self:
+    def jump_pattern(self, min_bytes: int, max_bytes: int | None = None) -> FluentStringBuilder:
         """Create hex jump pattern [min-max]."""
         if max_bytes is None:
             max_bytes = min_bytes
@@ -272,35 +270,50 @@ class FluentStringBuilder:
     def _parse_hex_pattern(self, pattern: str) -> list[HexToken]:
         """Parse hex pattern string into tokens."""
         tokens = []
-        # Remove spaces and normalize
-        hex_chars = pattern.replace(" ", "").replace("\t", "").replace("\n", "").upper()
+        hex_chars = self._normalize_hex_pattern(pattern)
 
         i = 0
         while i < len(hex_chars):
-            if i + 1 < len(hex_chars):
-                two_char = hex_chars[i : i + 2]
-                if two_char == "??":
-                    tokens.append(HexWildcard())
-                    i += 2
-                elif two_char[0] == "?" or two_char[1] == "?":
-                    # Half wildcards like ?0 or 0?
-                    if two_char[0] == "?":
-                        tokens.append(HexNibble(high=False, value=int(two_char[1], 16)))
-                    else:
-                        tokens.append(HexNibble(high=True, value=int(two_char[0], 16)))
-                    i += 2
-                else:
-                    try:
-                        byte_val = int(two_char, 16)
-                        tokens.append(HexByte(value=byte_val))
-                        i += 2
-                    except ValueError:
-                        i += 1
-            else:
-                # Single character, skip
-                i += 1
+            if i + 1 >= len(hex_chars):
+                i += 1  # Single character, skip
+                continue
+
+            two_char = hex_chars[i : i + 2]
+            token, consumed = self._parse_hex_pair(two_char)
+
+            if token:
+                tokens.append(token)
+            i += consumed
 
         return tokens
+
+    def _normalize_hex_pattern(self, pattern: str) -> str:
+        """Normalize hex pattern by removing whitespace and converting to uppercase."""
+        return pattern.replace(" ", "").replace("\t", "").replace("\n", "").upper()
+
+    def _parse_hex_pair(self, two_char: str) -> tuple[HexToken | None, int]:
+        """Parse two characters as hex token.
+
+        Returns:
+            Tuple of (token or None, characters consumed)
+        """
+        if two_char == "??":
+            return HexWildcard(), 2
+
+        if "?" in two_char:
+            return self._parse_nibble(two_char), 2
+
+        try:
+            byte_val = int(two_char, 16)
+            return HexByte(value=byte_val), 2
+        except ValueError:
+            return None, 1
+
+    def _parse_nibble(self, two_char: str) -> HexNibble:
+        """Parse a half-wildcard pattern like ?0 or 0?."""
+        if two_char[0] == "?":
+            return HexNibble(high=False, value=int(two_char[1], 16))
+        return HexNibble(high=True, value=int(two_char[0], 16))
 
     # Static factory methods
     @staticmethod
@@ -312,6 +325,11 @@ class FluentStringBuilder:
     def text_string(identifier: str, content: str) -> FluentStringBuilder:
         """Create a text string builder."""
         return FluentStringBuilder(identifier).literal(content)
+
+    @staticmethod
+    def plain(identifier: str, content: str) -> FluentStringBuilder:
+        """Create a plain string builder (alias for text_string)."""
+        return FluentStringBuilder.text_string(identifier, content)
 
     @staticmethod
     def hex_string(identifier: str, pattern: str) -> FluentStringBuilder:

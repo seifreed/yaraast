@@ -33,7 +33,6 @@ class CloneTransformer:
             meta=rule.meta.copy(),
             strings=[CloneTransformer.clone(s) for s in rule.strings],
             condition=CloneTransformer.clone(rule.condition) if rule.condition else None,
-            location=rule.location,
         )
 
     @staticmethod
@@ -47,7 +46,6 @@ class CloneTransformer:
             extern_imports=[CloneTransformer.clone(imp) for imp in yara_file.extern_imports],
             pragmas=[CloneTransformer.clone(pragma) for pragma in yara_file.pragmas],
             namespaces=[CloneTransformer.clone(ns) for ns in yara_file.namespaces],
-            location=yara_file.location,
         )
 
 

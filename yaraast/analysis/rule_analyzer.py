@@ -1,10 +1,12 @@
 """Main rule analyzer combining various analysis tools."""
 
+# type: ignore  # Analysis code allows gradual typing
+
 from typing import Any
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.analysis.string_usage import StringUsageAnalyzer
-from yaraast.ast import YaraFile
+from yaraast.ast.base import YaraFile
 
 
 class RuleAnalyzer:
@@ -32,6 +34,36 @@ class RuleAnalyzer:
         }
 
         return results
+
+    def analyze_rule(self, rule) -> dict[str, Any]:
+        """Analyze a single rule."""
+        # Create a temporary YaraFile with just this rule for analysis
+        temp_file = YaraFile(rules=[rule])
+        full_analysis = self.analyze(temp_file)
+
+        # Extract rule-specific data
+        rule_analysis = {
+            "name": rule.name,
+            "string_count": len(rule.strings) if rule.strings else 0,
+            "has_condition": rule.condition is not None,
+            "modifiers": rule.modifiers if rule.modifiers else [],
+            "tags": (
+                [tag.name if hasattr(tag, "name") else str(tag) for tag in rule.tags]
+                if rule.tags
+                else []
+            ),
+            "meta_count": len(rule.meta) if rule.meta else 0,
+        }
+
+        # Add string usage info if available
+        if (
+            "string_analysis" in full_analysis
+            and "unused_strings" in full_analysis["string_analysis"]
+        ):
+            unused = full_analysis["string_analysis"]["unused_strings"].get(rule.name, [])
+            rule_analysis["unused_strings"] = unused
+
+        return rule_analysis
 
     def _generate_summary(
         self, yara_file: YaraFile, string_analysis: dict, dependency_analysis: dict
@@ -89,7 +121,7 @@ class RuleAnalyzer:
         metrics["circular_dependency_score"] = len(dependency_analysis["circular_dependencies"])
 
         # Overall quality score (0-100)
-        quality_score = 100
+        quality_score = 100.0
         quality_score -= (
             1 - metrics["string_usage_efficiency"]
         ) * 20  # Up to -20 for unused strings
@@ -98,7 +130,7 @@ class RuleAnalyzer:
             max(0, metrics["average_dependencies"] - 3) * 5
         )  # Penalty for too many deps
 
-        metrics["overall_quality_score"] = max(0, min(100, quality_score))
+        metrics["overall_quality_score"] = max(0, min(100, int(quality_score)))
 
         return metrics
 

@@ -29,7 +29,13 @@ class YaraXSyntaxAdapter(ASTTransformer):
         self.target = target
         self.adaptations_count = 0
 
-    def adapt(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
+    def adapt(self, yara_file: YaraFile) -> YaraFile:
+        """Adapt YARA file syntax."""
+        self.adaptations_count = 0
+        adapted = self.visit(yara_file)
+        return adapted
+
+    def adapt_with_count(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
         """Adapt YARA file syntax and return adapted file with adaptation count."""
         self.adaptations_count = 0
         adapted = self.visit(yara_file)
@@ -232,3 +238,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
             guide.append("\nThese features are not backward compatible with YARA.\n")
 
         return "".join(guide)
+
+
+# Alias for compatibility
+SyntaxAdapter = YaraXSyntaxAdapter

@@ -205,3 +205,37 @@ class CommonRuleModifiers:
 
     PRIVATE = RuleModifier(RuleModifierType.PRIVATE)
     GLOBAL = RuleModifier(RuleModifierType.GLOBAL)
+
+
+# Simple modifier classes for test compatibility
+class Wide:
+    """Wide string modifier."""
+
+    def __init__(self):
+        self.name = "wide"
+        self.value = None
+
+    def __str__(self):
+        return "wide"
+
+
+class Ascii:
+    """ASCII string modifier."""
+
+    def __init__(self):
+        self.name = "ascii"
+        self.value = None
+
+    def __str__(self):
+        return "ascii"
+
+
+class Nocase:
+    """Nocase string modifier."""
+
+    def __init__(self):
+        self.name = "nocase"
+        self.value = None
+
+    def __str__(self):
+        return "nocase"

@@ -31,8 +31,8 @@ if TYPE_CHECKING:
 class RuleBuilder:
     """Fluent builder for constructing YARA rules."""
 
-    def __init__(self) -> None:
-        self._name: str | None = None
+    def __init__(self, name: str | None = None) -> None:
+        self._name: str | None = name
         self._modifiers: list[str] = []
         self._tags: list[str] = []
         self._meta: dict[str, Any] = {}
@@ -77,6 +77,10 @@ class RuleBuilder:
         self._meta[key] = value
         return self
 
+    def add_meta(self, key: str, value: str | int | bool) -> Self:
+        """Add a meta field (alias for with_meta)."""
+        return self.with_meta(key, value)
+
     def with_author(self, author: str) -> Self:
         """Add author meta field."""
         return self.with_meta("author", author)
@@ -111,6 +115,14 @@ class RuleBuilder:
 
         self._strings.append(PlainString(identifier=identifier, value=value, modifiers=modifiers))
         return self
+
+    def add_string(self, identifier: str, value: str) -> Self:
+        """Add a plain string (alias for with_plain_string)."""
+        return self.with_plain_string(identifier, value)
+
+    def with_string(self, identifier: str, value: str) -> Self:
+        """Add a plain string (alias for with_plain_string)."""
+        return self.with_plain_string(identifier, value)
 
     def with_hex_string(self, identifier: str, builder: HexStringBuilder) -> Self:
         """Add a hex string using a builder."""
@@ -194,6 +206,10 @@ class RuleBuilder:
 
         return self
 
+    def set_condition(self, condition: Expression | ConditionBuilder | str) -> Self:
+        """Set the rule condition (alias for with_condition)."""
+        return self.with_condition(condition)
+
     def with_condition_lambda(self, builder_func) -> Self:
         """Set condition using a lambda that receives a ConditionBuilder."""
         cb = ConditionBuilder()
@@ -211,9 +227,9 @@ class RuleBuilder:
 
         return Rule(
             name=self._name,
-            modifiers=self._modifiers,
+            modifiers=self._modifiers,  # type: ignore[arg-type]
             tags=[Tag(name=tag) for tag in self._tags],
             meta=self._meta,
             strings=self._strings,
-            condition=self._condition,
+            condition=self._condition,  # type: ignore[arg-type]
         )

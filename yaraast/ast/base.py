@@ -8,9 +8,10 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from yaraast.ast.comments import Comment
+    from yaraast.ast.extern import ExternRule
     from yaraast.ast.imports import ExternImport, ExternNamespace, Import, Include
-    from yaraast.ast.pragmas import PragmaType
-    from yaraast.ast.rules import ExternRule, Pragma, Rule
+    from yaraast.ast.pragmas import Pragma, PragmaType
+    from yaraast.ast.rules import Rule
 
 
 @dataclass

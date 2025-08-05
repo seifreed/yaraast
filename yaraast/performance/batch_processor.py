@@ -2,22 +2,22 @@
 
 from __future__ import annotations
 
-import json
 import tempfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from yaraast.metrics import HtmlTreeGenerator
-from yaraast.performance.parallel_analyzer import ParallelAnalyzer
-from yaraast.performance.streaming_parser import StreamingParser
+from yaraast.analysis.rule_analyzer import RuleAnalyzer
+from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Rule
+from yaraast.parser import Parser
+from yaraast.serialization.json_serializer import JsonSerializer
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from yaraast.ast.base import YaraFile
+    pass
 
 
 class BatchOperation(Enum):
@@ -61,11 +61,7 @@ class BatchResult:
 
 
 class BatchProcessor:
-    """High-performance batch processor for large YARA rule collections.
-
-    This processor combines streaming parsing with parallel analysis to handle
-    huge rule sets efficiently while maintaining memory usage within limits.
-    """
+    """High-performance batch processor for large YARA rule collections."""
 
     def __init__(
         self,
@@ -75,422 +71,186 @@ class BatchProcessor:
         temp_dir: str | None = None,
         progress_callback: Callable[[str, int, int], None] | None = None,
     ):
-        """Initialize batch processor.
-
-        Args:
-            max_workers: Maximum worker threads for parallel processing
-            max_memory_mb: Maximum memory usage before triggering cleanup
-            batch_size: Number of items to process in each batch
-            temp_dir: Temporary directory for intermediate files
-            progress_callback: Callback for progress updates
-        """
-        self.max_workers = max_workers
+        """Initialize batch processor."""
+        self.max_workers = max_workers or 4
         self.max_memory_mb = max_memory_mb
         self.batch_size = batch_size
         self.temp_dir = Path(temp_dir) if temp_dir else Path(tempfile.gettempdir())
         self.progress_callback = progress_callback
-
-        # Initialize components
-        self.streaming_parser = StreamingParser(
-            max_memory_mb=max_memory_mb,
-            progress_callback=self._streaming_progress_callback,
-        )
-
         self._stats = {
             "batches_processed": 0,
-            "total_files": 0,
-            "total_rules": 0,
-            "total_processing_time": 0.0,
-            "peak_memory_mb": 0,
-            "errors_encountered": 0,
+            "items_processed": 0,
+            "failures": 0,
         }
 
-    def process_directory(
+    def process_batch(
         self,
-        directory: str | Path,
-        operations: list[BatchOperation],
-        output_dir: str | Path | None = None,
-        file_pattern: str = "*.yar",
-        recursive: bool = True,
-    ) -> dict[BatchOperation, BatchResult]:
-        """Process all YARA files in a directory with specified operations.
+        items: list[Any],
+        operation: BatchOperation | Callable[[Any], Any] | None = None,
+        batch_size: int | None = None,
+    ) -> list[Any]:
+        """Process a batch of items."""
+        batch_size = batch_size or self.batch_size
+        results = []
 
-        Args:
-            directory: Directory containing YARA files
-            operations: List of operations to perform
-            output_dir: Directory for output files
-            file_pattern: File pattern to match
-            recursive: Whether to scan subdirectories recursively
+        # Process in batches
+        for i in range(0, len(items), batch_size):
+            batch = items[i : i + batch_size]
 
-        Returns:
-            Dictionary mapping operations to their results
-        """
-        directory = Path(directory)
-        output_dir = Path(output_dir) if output_dir else directory / "batch_output"
-        output_dir.mkdir(exist_ok=True)
+            for item in batch:
+                try:
+                    if callable(operation):
+                        result = operation(item)
+                    else:
+                        result = self._process_item(item, operation)
+                    results.append(result)
+                    self._stats["items_processed"] += 1
+                except Exception:
+                    self._stats["failures"] += 1
+                    results.append(None)
 
-        # Find all YARA files
-        if recursive:
-            file_paths = list(directory.rglob(file_pattern))
+            self._stats["batches_processed"] += 1
+
+            # Progress callback
+            if self.progress_callback:
+                self.progress_callback("Processing", i + len(batch), len(items))
+
+        return results
+
+    def _process_item(self, item: Any, operation: BatchOperation | None) -> Any:
+        """Process a single item based on operation type."""
+        if operation == BatchOperation.PARSE:
+            return self._parse_item(item)
+        elif operation == BatchOperation.COMPLEXITY:
+            return self._analyze_complexity(item)
+        elif operation == BatchOperation.SERIALIZE:
+            return self._serialize_item(item)
+        elif operation == BatchOperation.VALIDATE:
+            return self._validate_item(item)
         else:
-            file_paths = list(directory.glob(file_pattern))
+            return item
 
-        return self.process_files(file_paths, operations, output_dir)
+    def _parse_item(self, item: str | Path) -> YaraFile | None:
+        """Parse a YARA file."""
+        try:
+            parser = Parser()
+            if isinstance(item, Path):
+                with open(item) as f:
+                    content = f.read()
+            else:
+                content = item
+            return parser.parse(content)
+        except Exception:
+            return None
+
+    def _analyze_complexity(self, item: Rule) -> dict[str, Any]:
+        """Analyze rule complexity."""
+        analyzer = RuleAnalyzer()
+        return analyzer.analyze(item)
+
+    def _serialize_item(self, item: Any) -> str:
+        """Serialize an item to JSON."""
+        serializer = JsonSerializer()
+        return serializer.serialize(item)
+
+    def _validate_item(self, item: Rule) -> bool:
+        """Validate a rule."""
+        # Basic validation
+        return bool(item.name and item.condition)
 
     def process_files(
         self,
-        file_paths: list[str | Path],
-        operations: list[BatchOperation],
-        output_dir: str | Path,
-    ) -> dict[BatchOperation, BatchResult]:
-        """Process a list of YARA files with specified operations.
-
-        Args:
-            file_paths: List of file paths to process
-            operations: List of operations to perform
-            output_dir: Directory for output files
-
-        Returns:
-            Dictionary mapping operations to their results
-        """
-        file_paths = [Path(p) for p in file_paths]
-        output_dir = Path(output_dir)
-        output_dir.mkdir(exist_ok=True)
-
-        results = {}
-
-        # Step 1: Parse all files (streaming)
-        if self.progress_callback:
-            self.progress_callback("Parsing files", 0, len(file_paths))
-
-        parsed_asts = []
-        parse_results = []
-
-        for result in self.streaming_parser.parse_files(file_paths):
-            parse_results.append(result)
-            if result.ast:
-                parsed_asts.append((result.file_path, result.ast))
-
-        # Create parse result summary
-        successful_parses = [r for r in parse_results if r.ast is not None]
-        failed_parses = [r for r in parse_results if r.ast is None]
-
-        parse_batch_result = BatchResult(
-            operation=BatchOperation.PARSE,
+        file_paths: list[Path],
+        operation: BatchOperation,
+        output_dir: Path | None = None,
+    ) -> BatchResult:
+        """Process multiple YARA files."""
+        start_time = time.time()
+        result = BatchResult(
+            operation=operation,
             input_count=len(file_paths),
-            successful_count=len(successful_parses),
-            failed_count=len(failed_parses),
-            total_time=sum(r.parse_time for r in parse_results),
-            errors=[r.error for r in failed_parses if r.error],
         )
-        results[BatchOperation.PARSE] = parse_batch_result
 
-        # Update stats
-        self._stats["total_files"] = len(file_paths)
-        self._stats["total_rules"] = sum(r.rule_count for r in successful_parses)
+        if output_dir:
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Step 2: Process other operations in parallel
-        if parsed_asts:
-            for operation in operations:
-                if operation == BatchOperation.PARSE:
-                    continue  # Already done
+        # Process files
+        for i, file_path in enumerate(file_paths):
+            try:
+                # Parse file
+                with open(file_path) as f:
+                    content = f.read()
 
-                result = self._process_operation(operation, parsed_asts, output_dir)
-                results[operation] = result
+                parsed = self._parse_item(content)
+                if not parsed:
+                    result.failed_count += 1
+                    result.errors.append(f"Failed to parse {file_path}")
+                    continue
 
-        return results
+                # Perform operation
+                if operation == BatchOperation.COMPLEXITY:
+                    for rule in parsed.rules:
+                        analysis = self._analyze_complexity(rule)
+                        result.summary[rule.name] = analysis
 
-    def process_large_file(
+                elif operation == BatchOperation.SERIALIZE and output_dir:
+                    output_file = output_dir / f"{file_path.stem}.json"
+                    json_content = self._serialize_item(parsed)
+                    output_file.write_text(json_content)
+                    result.output_files.append(str(output_file))
+
+                result.successful_count += 1
+
+            except Exception as e:
+                result.failed_count += 1
+                result.errors.append(f"Error processing {file_path}: {str(e)}")
+
+            # Progress callback
+            if self.progress_callback:
+                self.progress_callback(f"Processing {operation.value}", i + 1, len(file_paths))
+
+        result.total_time = time.time() - start_time
+        return result
+
+    def process_rules(
         self,
-        file_path: str | Path,
-        operations: list[BatchOperation],
-        output_dir: str | Path,
-        split_rules: bool = True,
-    ) -> dict[BatchOperation, BatchResult]:
-        """Process a very large YARA file by splitting it into individual rules.
+        rules: list[Rule],
+        operation: Callable[[Rule], Any],
+    ) -> list[Any]:
+        """Process a list of rules with a custom operation."""
+        return self.process_batch(rules, operation)
 
-        Args:
-            file_path: Path to large YARA file
-            operations: List of operations to perform
-            output_dir: Directory for output files
-            split_rules: Whether to split file into individual rules
+    def analyze_rules(self, rules: list[Rule]) -> list[dict[str, Any]]:
+        """Analyze a batch of rules."""
+        return self.process_batch(rules, BatchOperation.COMPLEXITY)
 
-        Returns:
-            Dictionary mapping operations to their results
-        """
-        file_path = Path(file_path)
-        output_dir = Path(output_dir)
-        output_dir.mkdir(exist_ok=True)
+    def optimize_rules(self, rules: list[Rule]) -> list[Rule]:
+        """Optimize a batch of rules."""
+        from yaraast.optimization.rule_optimizer import RuleOptimizer
 
-        results = {}
-
-        if split_rules:
-            # Parse individual rules from the large file
-            rule_results = list(self.streaming_parser.parse_rules_from_file(file_path))
-
-            # Extract successful ASTs
-            parsed_asts = []
-            for result in rule_results:
-                if result.ast:
-                    rule_name = result.rule_name or f"rule_{len(parsed_asts)}"
-                    parsed_asts.append((f"{file_path}:{rule_name}", result.ast))
-
-            # Create parse result
-            successful_count = len(parsed_asts)
-            failed_count = len(rule_results) - successful_count
-
-            parse_result = BatchResult(
-                operation=BatchOperation.PARSE,
-                input_count=len(rule_results),
-                successful_count=successful_count,
-                failed_count=failed_count,
-                total_time=sum(getattr(r, "parse_time", 0) for r in rule_results),
-            )
-            results[BatchOperation.PARSE] = parse_result
-        else:
-            # Parse entire file as one unit
-            return self.process_files([file_path], operations, output_dir)
-
-        # Process other operations
-        for operation in operations:
-            if operation == BatchOperation.PARSE:
-                continue
-
-            result = self._process_operation(operation, parsed_asts, output_dir)
-            results[operation] = result
-
-        return results
+        optimizer = RuleOptimizer()
+        return self.process_batch(rules, optimizer.optimize_rule)
 
     def get_statistics(self) -> dict[str, Any]:
-        """Get batch processing statistics."""
-        return self._stats.copy()
-
-    def _process_operation(
-        self, operation: BatchOperation, parsed_asts: list[tuple], output_dir: Path
-    ) -> BatchResult:
-        """Process a specific operation on parsed ASTs."""
-        time.time()
-
-        if operation == BatchOperation.COMPLEXITY:
-            return self._process_complexity_analysis(parsed_asts, output_dir)
-        if operation == BatchOperation.DEPENDENCY_GRAPH:
-            return self._process_dependency_graphs(parsed_asts, output_dir)
-        if operation == BatchOperation.HTML_TREE:
-            return self._process_html_trees(parsed_asts, output_dir)
-        if operation == BatchOperation.SERIALIZE:
-            return self._process_serialization(parsed_asts, output_dir)
-        if operation == BatchOperation.VALIDATE:
-            return self._process_validation(parsed_asts, output_dir)
-        raise ValueError(f"Unknown operation: {operation}")
-
-    def _process_complexity_analysis(
-        self, parsed_asts: list[tuple], output_dir: Path
-    ) -> BatchResult:
-        """Process complexity analysis for all ASTs."""
-        result = BatchResult(operation=BatchOperation.COMPLEXITY, input_count=len(parsed_asts))
-
-        start_time = time.time()
-
-        with ParallelAnalyzer(max_workers=self.max_workers) as analyzer:
-            # Extract ASTs and file names
-            asts = [ast for _, ast in parsed_asts]
-            file_names = [name for name, _ in parsed_asts]
-
-            # Analyze in parallel
-            jobs = analyzer.analyze_complexity_parallel(asts, file_names)
-
-            # Collect results
-            complexity_results = []
-            for job in jobs:
-                if job.status.value == "completed":
-                    complexity_results.append(job.result)
-                    result.successful_count += 1
-                else:
-                    result.failed_count += 1
-                    if job.error:
-                        result.errors.append(job.error)
-
-        # Save complexity report
-        if complexity_results:
-            output_file = output_dir / "complexity_analysis.json"
-            with Path(output_file).open("w") as f:
-                json.dump(complexity_results, f, indent=2)
-            result.output_files.append(str(output_file))
-
-            # Create summary
-            quality_scores = [r["quality_score"] for r in complexity_results]
-            result.summary = {
-                "avg_quality_score": sum(quality_scores) / len(quality_scores),
-                "min_quality_score": min(quality_scores),
-                "max_quality_score": max(quality_scores),
-                "total_rules_analyzed": sum(
-                    r["metrics"]["file_metrics"]["total_rules"] for r in complexity_results
-                ),
-            }
-
-        result.total_time = time.time() - start_time
-        return result
-
-    def _process_dependency_graphs(self, parsed_asts: list[tuple], output_dir: Path) -> BatchResult:
-        """Process dependency graph generation for all ASTs."""
-        result = BatchResult(
-            operation=BatchOperation.DEPENDENCY_GRAPH, input_count=len(parsed_asts)
-        )
-
-        start_time = time.time()
-        graphs_dir = output_dir / "dependency_graphs"
-        graphs_dir.mkdir(exist_ok=True)
-
-        with ParallelAnalyzer(max_workers=self.max_workers) as analyzer:
-            asts = [ast for _, ast in parsed_asts]
-
-            # Generate graphs in parallel
-            jobs = analyzer.generate_graphs_parallel(
-                asts, output_dir=graphs_dir, graph_types=["full", "rules"]
-            )
-
-            # Collect results
-            for job in jobs:
-                if job.status.value == "completed":
-                    result.successful_count += 1
-                    if "output_file" in job.result:
-                        result.output_files.append(job.result["output_file"])
-                else:
-                    result.failed_count += 1
-                    if job.error:
-                        result.errors.append(job.error)
-
-        result.total_time = time.time() - start_time
-        result.summary = {"graphs_generated": len(result.output_files)}
-        return result
-
-    def _process_html_trees(self, parsed_asts: list[tuple], output_dir: Path) -> BatchResult:
-        """Process HTML tree generation for all ASTs."""
-        result = BatchResult(operation=BatchOperation.HTML_TREE, input_count=len(parsed_asts))
-
-        start_time = time.time()
-        trees_dir = output_dir / "html_trees"
-        trees_dir.mkdir(exist_ok=True)
-
-        generator = HtmlTreeGenerator()
-
-        for i, (file_name, ast) in enumerate(parsed_asts):
-            try:
-                # Create safe filename
-                safe_name = Path(file_name).stem.replace(":", "_").replace("/", "_")
-                output_file = trees_dir / f"{safe_name}_{i}.html"
-
-                # Generate HTML tree
-                generator.generate_interactive_html(ast, str(output_file), f"AST: {file_name}")
-
-                result.successful_count += 1
-                result.output_files.append(str(output_file))
-
-            except Exception as e:
-                result.failed_count += 1
-                result.errors.append(f"{file_name}: {e!s}")
-
-        result.total_time = time.time() - start_time
-        result.summary = {"html_files_generated": len(result.output_files)}
-        return result
-
-    def _process_serialization(self, parsed_asts: list[tuple], output_dir: Path) -> BatchResult:
-        """Process AST serialization for all ASTs."""
-        result = BatchResult(operation=BatchOperation.SERIALIZE, input_count=len(parsed_asts))
-
-        start_time = time.time()
-        serialized_dir = output_dir / "serialized"
-        serialized_dir.mkdir(exist_ok=True)
-
-        from yaraast.serialization import JsonSerializer
-
-        serializer = JsonSerializer()
-
-        for i, (file_name, ast) in enumerate(parsed_asts):
-            try:
-                # Create safe filename
-                safe_name = Path(file_name).stem.replace(":", "_").replace("/", "_")
-                output_file = serialized_dir / f"{safe_name}_{i}.json"
-
-                # Serialize AST
-                serializer.serialize(ast, str(output_file))
-
-                result.successful_count += 1
-                result.output_files.append(str(output_file))
-
-            except Exception as e:
-                result.failed_count += 1
-                result.errors.append(f"{file_name}: {e!s}")
-
-        result.total_time = time.time() - start_time
-        result.summary = {"serialized_files": len(result.output_files)}
-        return result
-
-    def _process_validation(self, parsed_asts: list[tuple], output_dir: Path) -> BatchResult:
-        """Process AST validation for all ASTs."""
-        result = BatchResult(operation=BatchOperation.VALIDATE, input_count=len(parsed_asts))
-
-        start_time = time.time()
-        validation_issues = []
-
-        for file_name, ast in parsed_asts:
-            issues = self._validate_ast(ast, file_name)
-            if issues:
-                validation_issues.extend(issues)
-                result.failed_count += 1
-            else:
-                result.successful_count += 1
-
-        # Save validation report
-        if validation_issues:
-            output_file = output_dir / "validation_report.json"
-            with Path(output_file).open("w") as f:
-                json.dump(validation_issues, f, indent=2)
-            result.output_files.append(str(output_file))
-
-        result.total_time = time.time() - start_time
-        result.summary = {
-            "total_issues": len(validation_issues),
-            "files_with_issues": result.failed_count,
+        """Get processing statistics."""
+        return {
+            **self._stats,
+            "avg_batch_size": (
+                self._stats["items_processed"] / self._stats["batches_processed"]
+                if self._stats["batches_processed"] > 0
+                else 0
+            ),
+            "failure_rate": (
+                self._stats["failures"] / self._stats["items_processed"] * 100
+                if self._stats["items_processed"] > 0
+                else 0
+            ),
         }
-        result.errors = [issue["message"] for issue in validation_issues]
 
-        return result
-
-    def _validate_ast(self, ast: YaraFile, file_name: str) -> list[dict[str, Any]]:
-        """Validate an AST and return list of issues."""
-        issues = []
-
-        # Check for empty rules
-        for rule in ast.rules:
-            if not rule.strings and not rule.condition:
-                issues.append(
-                    {
-                        "file": file_name,
-                        "rule": rule.name,
-                        "type": "empty_rule",
-                        "message": f"Rule '{rule.name}' has no strings or condition",
-                    }
-                )
-
-            # Check for unused strings
-            if rule.strings and rule.condition:
-                # Simple check - this could be more sophisticated
-                condition_str = str(rule.condition)
-                for string_def in rule.strings:
-                    if string_def.identifier not in condition_str:
-                        issues.append(
-                            {
-                                "file": file_name,
-                                "rule": rule.name,
-                                "type": "unused_string",
-                                "message": f"String '{string_def.identifier}' is not used in condition",
-                            }
-                        )
-
-        return issues
-
-    def _streaming_progress_callback(self, current: int, total: int, current_file: str) -> None:
-        """Progress callback for streaming parser."""
-        if self.progress_callback:
-            self.progress_callback(f"Parsing {Path(current_file).name}", current, total)
+    def reset_statistics(self) -> None:
+        """Reset processing statistics."""
+        self._stats = {
+            "batches_processed": 0,
+            "items_processed": 0,
+            "failures": 0,
+        }

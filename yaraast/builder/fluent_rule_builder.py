@@ -19,6 +19,10 @@ if TYPE_CHECKING:
 class FluentRuleBuilder:
     """Enhanced fluent builder for YARA rules with comprehensive chaining."""
 
+    # Constants
+    MZ_HEADER = "MZ"
+    YARA_AST_STR = "YARA AST"
+
     def __init__(self, name: str | None = None):
         self._rule_builder = RuleBuilder()
         if name:
@@ -62,6 +66,10 @@ class FluentRuleBuilder:
         self._rule_builder.with_meta(key, value)
         return self
 
+    def with_meta(self, key: str, value: str | int | bool) -> Self:
+        """Add metadata (alias for meta)."""
+        return self.meta(key, value)
+
     def authored_by(self, author: str) -> Self:
         """Set author."""
         self._rule_builder.with_author(author)
@@ -78,9 +86,19 @@ class FluentRuleBuilder:
         return self
 
     # String definition methods
-    def with_string(self, string_builder: FluentStringBuilder) -> Self:
-        """Add a string using FluentStringBuilder."""
-        self._string_builders.append(string_builder)
+    def with_string(
+        self, identifier_or_builder: str | FluentStringBuilder, value: str | None = None
+    ) -> Self:
+        """Add a string using FluentStringBuilder or simple string."""
+        if isinstance(identifier_or_builder, str) and value is not None:
+            # Simple string case
+            builder = FluentStringBuilder.text_string(identifier_or_builder, value)
+            self._string_builders.append(builder)
+        elif isinstance(identifier_or_builder, FluentStringBuilder):
+            # Builder case
+            self._string_builders.append(identifier_or_builder)
+        else:
+            raise ValueError("Either provide (identifier, value) or a FluentStringBuilder")
         return self
 
     def string(self, identifier: str) -> FluentStringContext:
@@ -127,6 +145,49 @@ class FluentRuleBuilder:
         """Add URL regex pattern."""
         return self.with_string(FluentStringBuilder.string(identifier).url_pattern())
 
+    # String modifier methods (apply to most recent string)
+    def nocase(self) -> Self:
+        """Add nocase modifier to the most recent string."""
+        if self._string_builders:
+            self._string_builders[-1].nocase()
+        return self
+
+    def ascii(self) -> Self:
+        """Add ASCII modifier to the most recent string."""
+        if self._string_builders:
+            self._string_builders[-1].ascii()
+        return self
+
+    def wide(self) -> Self:
+        """Add wide modifier to the most recent string."""
+        if self._string_builders:
+            self._string_builders[-1].wide()
+        return self
+
+    def fullword(self) -> Self:
+        """Add fullword modifier to the most recent string."""
+        if self._string_builders:
+            self._string_builders[-1].fullword()
+        return self
+
+    def private_string(self) -> Self:
+        """Add private modifier to the most recent string."""
+        if self._string_builders:
+            self._string_builders[-1].private()
+        return self
+
+    def xor(self, key: int | str | None = None) -> Self:
+        """Add XOR modifier to the most recent string."""
+        if self._string_builders:
+            self._string_builders[-1].xor(key)
+        return self
+
+    def base64(self) -> Self:
+        """Add base64 modifier to the most recent string."""
+        if self._string_builders:
+            self._string_builders[-1].base64()
+        return self
+
     # Condition methods
     def condition(self, condition: str | Expression | FluentConditionBuilder) -> Self:
         """Set the rule condition."""
@@ -137,6 +198,10 @@ class FluentRuleBuilder:
         return self
 
     def when(self, condition: str | Expression | FluentConditionBuilder) -> Self:
+        """Alias for condition."""
+        return self.condition(condition)
+
+    def with_condition(self, condition: str | Expression | FluentConditionBuilder) -> Self:
         """Alias for condition."""
         return self.condition(condition)
 
@@ -194,10 +259,10 @@ class FluentRuleBuilder:
     def for_pe_files(self) -> Self:
         """Add PE file conditions."""
         # Add MZ header if not already present
-        if not any(s.identifier in ["$mz", "$mz_header"] for s in self._string_builders):
-            self.mz_header("$mz_header")
+        if not any(s.identifier in ["$mz", self.MZ_HEADER] for s in self._string_builders):
+            self.mz_header(self.MZ_HEADER)
 
-        condition_builder = FluentConditionBuilder().string_matches("$mz_header").at(0)
+        condition_builder = FluentConditionBuilder().string_matches(self.MZ_HEADER).at(0)
         if self._rule_builder._condition:
             existing = self._rule_builder._condition
             combined = FluentConditionBuilder(existing).and_(condition_builder)
@@ -380,7 +445,11 @@ def yara_file() -> FluentYaraFileBuilder:
 def malware_rule(name: str) -> FluentRuleBuilder:
     """Create a malware detection rule template."""
     return (
-        FluentRuleBuilder(name).tagged("malware").authored_by("YARA AST").mz_header().for_pe_files()
+        FluentRuleBuilder(name)
+        .tagged("malware")
+        .authored_by(FluentRuleBuilder.YARA_AST_STR)
+        .mz_header()
+        .for_pe_files()
     )
 
 
@@ -389,7 +458,7 @@ def trojan_rule(name: str) -> FluentRuleBuilder:
     return (
         FluentRuleBuilder(name)
         .tagged("trojan", "malware")
-        .authored_by("YARA AST")
+        .authored_by(FluentRuleBuilder.YARA_AST_STR)
         .mz_header()
         .for_pe_files()
     )
@@ -400,7 +469,7 @@ def packed_rule(name: str) -> FluentRuleBuilder:
     return (
         FluentRuleBuilder(name)
         .tagged("packed")
-        .authored_by("YARA AST")
+        .authored_by(FluentRuleBuilder.YARA_AST_STR)
         .mz_header()
         .with_condition_builder(lambda c: c.string_matches("$mz").at(0).and_(c.high_entropy()))
     )
@@ -408,7 +477,7 @@ def packed_rule(name: str) -> FluentRuleBuilder:
 
 def document_rule(name: str) -> FluentRuleBuilder:
     """Create a document-based rule template."""
-    return FluentRuleBuilder(name).tagged("document").authored_by("YARA AST")
+    return FluentRuleBuilder(name).tagged("document").authored_by(FluentRuleBuilder.YARA_AST_STR)
 
 
 def network_rule(name: str) -> FluentRuleBuilder:
@@ -416,7 +485,7 @@ def network_rule(name: str) -> FluentRuleBuilder:
     return (
         FluentRuleBuilder(name)
         .tagged("network")
-        .authored_by("YARA AST")
+        .authored_by(FluentRuleBuilder.YARA_AST_STR)
         .ip_pattern()
         .url_pattern()
         .matches_any_of("$ip", "$url")

@@ -5,14 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from yaraast.ast.base import ASTNode, Location, YaraFile
-from yaraast.ast.comments import Comment
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.meta import Meta
-from yaraast.lexer import Token, TokenType
+from yaraast.ast.rules import Rule
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
+from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser.better_parser import Parser
 
 if TYPE_CHECKING:
-    from yaraast.ast.rules import Rule
     from yaraast.ast.strings import StringDefinition
 
 
@@ -21,7 +21,8 @@ class CommentAwareParser(Parser):
 
     def __init__(self):
         super().__init__()
-        self.pending_comments: list[Comment] = []
+        self.pending_comments: list[Token] = []
+        self.comment_tokens: list[Token] = []
 
     def parse(self, text: str) -> YaraFile:
         """Parse YARA rule text with comment preservation."""
@@ -30,137 +31,113 @@ class CommentAwareParser(Parser):
         self.position = 0
         self.text = text
 
-        # Process initial comments
-        self._collect_leading_comments()
+        # Separate comment tokens
+        self._extract_comment_tokens()
 
+        # Parse the file
         yara_file = self._parse_yara_file()
 
-        # Attach any trailing comments
+        # Attach any remaining comments
         if self.pending_comments:
-            yara_file.trailing_comment = self._make_comment_group()
+            self._attach_trailing_comments(yara_file)
 
         return yara_file
 
-    def _current_token(self) -> Token | None:
-        """Get current token, skipping comments but collecting them."""
-        while self.position < len(self.tokens):
-            token = self.tokens[self.position]
+    def _extract_comment_tokens(self) -> None:
+        """Extract comment tokens from the token stream."""
+        non_comment_tokens = []
+
+        for token in self.tokens:
             if token.type == TokenType.COMMENT:
-                self._collect_comment(token)
-                self.position += 1
+                self.comment_tokens.append(token)
             else:
-                return token
+                non_comment_tokens.append(token)
+
+        self.tokens = non_comment_tokens
+
+    def _collect_leading_comments(self, end_line: int) -> list[Comment]:
+        """Collect comments that appear before the given line."""
+        comments = []
+
+        for token in self.comment_tokens:
+            if token.line < end_line:
+                comment = Comment(text=token.value, is_multiline=token.value.startswith("/*"))
+                # Set location separately
+                comment.location = Location(line=token.line, column=token.column)
+                comments.append(comment)
+
+        # Remove collected comments from the list
+        self.comment_tokens = [token for token in self.comment_tokens if token.line >= end_line]
+
+        return comments
+
+    def _collect_trailing_comment(self, start_line: int) -> Comment | None:
+        """Collect a comment on the same line."""
+        for i, token in enumerate(self.comment_tokens):
+            if token.line == start_line:
+                comment = Comment(text=token.value, is_multiline=token.value.startswith("/*"))
+                # Set location separately
+                comment.location = Location(line=token.line, column=token.column)
+                # Remove from list
+                self.comment_tokens.pop(i)
+                return comment
         return None
 
-    def _peek_token(self, offset: int = 1) -> Token | None:
-        """Peek at token, handling comments."""
-        saved_pos = self.position
-        saved_comments = list(self.pending_comments)
-
-        # Skip forward
-        for _ in range(offset):
-            self._advance()
-
-        token = self._current_token()
-
-        # Restore position and comments
-        self.position = saved_pos
-        self.pending_comments = saved_comments
-
-        return token
-
-    def _advance(self) -> None:
-        """Advance position, collecting comments."""
-        if self.position < len(self.tokens):
-            if self.tokens[self.position].type != TokenType.COMMENT:
-                self.position += 1
-
-            # Collect any comments after advancing
-            while (
-                self.position < len(self.tokens)
-                and self.tokens[self.position].type == TokenType.COMMENT
-            ):
-                self._collect_comment(self.tokens[self.position])
-                self.position += 1
-
-    def _collect_comment(self, token: Token) -> None:
-        """Collect a comment token."""
-        text = token.value
-        is_multiline = text.startswith("/*")
-
-        # Clean comment text
-        text = text[2:-2].strip() if is_multiline else text[2:].strip()
-
-        comment = Comment(text=text, is_multiline=is_multiline)
-        comment.location = Location(line=token.line, column=token.column)
-        self.pending_comments.append(comment)
-
-    def _collect_leading_comments(self) -> None:
-        """Collect leading comments before any code."""
-        while (
-            self.position < len(self.tokens)
-            and self.tokens[self.position].type == TokenType.COMMENT
-        ):
-            self._collect_comment(self.tokens[self.position])
-            self.position += 1
-
-    def _attach_comments(self, node: ASTNode) -> None:
-        """Attach pending comments to a node."""
-        if self.pending_comments:
-            node.leading_comments = list(self.pending_comments)
-            self.pending_comments.clear()
-
-    def _make_comment_group(self) -> Comment | None:
-        """Create a comment from pending comments."""
-        if not self.pending_comments:
-            return None
-
-        if len(self.pending_comments) == 1:
-            return self.pending_comments[0]
-
-        # Combine multiple comments
-        combined_text = "\n".join(c.text for c in self.pending_comments)
-        comment = Comment(text=combined_text, is_multiline=True)
-        if self.pending_comments[0].location:
-            comment.location = self.pending_comments[0].location
-
-        return comment
-
     def _parse_rule(self) -> Rule:
-        """Parse rule with comment attachment."""
+        """Parse a rule with comment preservation."""
+        start_token = self._current_token()
+        start_line = start_token.line if start_token else 1
+
+        # Collect leading comments
+        leading_comments = self._collect_leading_comments(start_line)
+
+        # Parse the rule normally
         rule = super()._parse_rule()
 
-        # Attach any comments that were before the rule
-        self._attach_comments(rule)
+        # Attach leading comments
+        if leading_comments:
+            rule.leading_comments = leading_comments
+
+        # Check for trailing comment
+        if start_token:
+            trailing = self._collect_trailing_comment(start_token.line)
+            if trailing:
+                rule.trailing_comment = trailing
 
         return rule
 
     def _parse_string_definition(self) -> StringDefinition:
-        """Parse string definition with comment attachment."""
+        """Parse string definition with comments."""
+        start_token = self._current_token()
+        start_line = start_token.line if start_token else 1
+
+        # Collect leading comments
+        leading_comments = self._collect_leading_comments(start_line)
+
+        # Parse the string normally
         string_def = super()._parse_string_definition()
 
-        # Check for inline comment after the string
-        if self._current_token() and self._current_token().type == TokenType.COMMENT:
-            comment_token = self.tokens[self.position]
-            self.position += 1
+        # Attach comments
+        if leading_comments:
+            string_def.leading_comments = leading_comments
 
-            comment = Comment(
-                text=(
-                    comment_token.value[2:].strip()
-                    if comment_token.value.startswith("//")
-                    else comment_token.value[2:-2].strip()
-                ),
-                is_multiline=comment_token.value.startswith("/*"),
-            )
-            comment.location = Location(line=comment_token.line, column=comment_token.column)
-            string_def.trailing_comment = comment
+        # Check for trailing comment
+        if start_token:
+            trailing = self._collect_trailing_comment(start_token.line)
+            if trailing:
+                string_def.trailing_comment = trailing
 
         return string_def
 
-    def _parse_meta_statement(self) -> Meta:
-        """Parse meta statement with comment attachment."""
-        # The better_parser doesn't have _parse_meta_statement
-        # We need to implement this ourselves
+    def _parse_meta_item(self) -> Meta:
+        """Parse meta item with comments."""
+        start_token = self._current_token()
+        start_line = start_token.line if start_token else 1
+
+        # Collect leading comments
+        leading_comments = self._collect_leading_comments(start_line)
+
+        # Parse the meta normally
         key = self._current_token().value
         self._advance()
 
@@ -179,20 +156,31 @@ class CommentAwareParser(Parser):
 
         meta = Meta(key=key, value=value)
 
-        # Check for inline comment
-        if self._current_token() and self._current_token().type == TokenType.COMMENT:
-            comment_token = self.tokens[self.position]
-            self.position += 1
+        # Attach comments
+        if leading_comments:
+            meta.leading_comments = leading_comments
 
-            comment = Comment(
-                text=(
-                    comment_token.value[2:].strip()
-                    if comment_token.value.startswith("//")
-                    else comment_token.value[2:-2].strip()
-                ),
-                is_multiline=comment_token.value.startswith("/*"),
-            )
-            comment.location = Location(line=comment_token.line, column=comment_token.column)
-            meta.trailing_comment = comment
+        # Check for trailing comment
+        if start_token:
+            trailing = self._collect_trailing_comment(start_token.line)
+            if trailing:
+                meta.trailing_comment = trailing
 
         return meta
+
+    def _attach_trailing_comments(self, node: ASTNode) -> None:
+        """Attach any remaining comments as trailing comments."""
+        if self.comment_tokens:
+            comments = []
+            for token in self.comment_tokens:
+                comment = Comment(text=token.value, is_multiline=token.value.startswith("/*"))
+                # Set location separately
+                comment.location = Location(line=token.line, column=token.column)
+                comments.append(comment)
+
+            if len(comments) == 1:
+                node.trailing_comment = comments[0]
+            else:
+                node.trailing_comment = CommentGroup(comments=comments)
+
+            self.comment_tokens.clear()

@@ -9,7 +9,7 @@ from yaraast.ast.base import ASTNode
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
 
 if TYPE_CHECKING:
-    from yaraast.ast.expressions import Condition
+    from yaraast.ast.conditions import Condition
     from yaraast.ast.pragmas import InRulePragma
     from yaraast.ast.strings import StringDefinition
 

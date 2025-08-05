@@ -8,9 +8,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from rich.console import Console
+from rich.tree import Tree
+
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.codegen import CodeGenerator
-from yaraast.codegen.pretty_printer import PrettyPrinter, StylePresets
+from yaraast.codegen.pretty_printer import PrettyPrinter
 from yaraast.parser import Parser
 from yaraast.visitor.visitor import ASTVisitor
 
@@ -90,11 +93,18 @@ class ASTStructuralAnalyzer(ASTVisitor):
 
     def visit_rule(self, rule) -> Any:
         """Visit rule node and create signature."""
+        # Handle meta as dict or list
+        meta_data = getattr(rule, "meta", [])
+        if isinstance(meta_data, dict):
+            meta_keys = sorted(meta_data.keys())
+        else:
+            meta_keys = sorted([m.key for m in meta_data if hasattr(m, "key")])
+
         rule_structure = {
             "name": rule.name,
             "modifiers": sorted(getattr(rule, "modifiers", [])),
             "tags": sorted([tag.name for tag in getattr(rule, "tags", [])]),
-            "meta_keys": sorted([meta.key for meta in getattr(rule, "meta", [])]),
+            "meta_keys": meta_keys,
             "string_identifiers": sorted([s.identifier for s in getattr(rule, "strings", [])]),
             "has_condition": rule.condition is not None,
         }
@@ -167,162 +177,215 @@ class ASTStructuralAnalyzer(ASTVisitor):
 
     # Add all missing abstract methods
     def visit_array_access(self, node) -> Any:
+        """Visit Array Access node - not needed for structural analysis."""
         pass
 
     def visit_at_expression(self, node) -> Any:
+        """Visit At Expression node - not needed for structural analysis."""
         pass
 
     def visit_binary_expression(self, node) -> Any:
+        """Visit Binary Expression node - not needed for structural analysis."""
         pass
 
     def visit_boolean_literal(self, node) -> Any:
+        """Visit Boolean Literal node - not needed for structural analysis."""
         pass
 
     def visit_comment(self, node) -> Any:
+        """Visit Comment node - not needed for structural analysis."""
         pass
 
     def visit_comment_group(self, node) -> Any:
+        """Visit Comment Group node - not needed for structural analysis."""
         pass
 
     def visit_condition(self, node) -> Any:
+        """Visit Condition node - not needed for structural analysis."""
         pass
 
     def visit_defined_expression(self, node) -> Any:
+        """Visit Defined Expression node - not needed for structural analysis."""
         pass
 
     def visit_dictionary_access(self, node) -> Any:
+        """Visit Dictionary Access node - not needed for structural analysis."""
         pass
 
     def visit_double_literal(self, node) -> Any:
+        """Visit Double Literal node - not needed for structural analysis."""
         pass
 
     def visit_expression(self, node) -> Any:
+        """Visit Expression node - not needed for structural analysis."""
         pass
 
     def visit_extern_import(self, node) -> Any:
+        """Visit Extern Import node - not needed for structural analysis."""
         pass
 
     def visit_extern_namespace(self, node) -> Any:
+        """Visit Extern Namespace node - not needed for structural analysis."""
         pass
 
     def visit_extern_rule(self, node) -> Any:
+        """Visit Extern Rule node - not needed for structural analysis."""
         pass
 
     def visit_extern_rule_reference(self, node) -> Any:
+        """Visit Extern Rule Reference node - not needed for structural analysis."""
         pass
 
     def visit_for_expression(self, node) -> Any:
+        """Visit For Expression node - not needed for structural analysis."""
         pass
 
     def visit_for_of_expression(self, node) -> Any:
+        """Visit For Of Expression node - not needed for structural analysis."""
         pass
 
     def visit_function_call(self, node) -> Any:
+        """Visit Function Call node - not needed for structural analysis."""
         pass
 
     def visit_hex_alternative(self, node) -> Any:
+        """Visit Hex Alternative node - not needed for structural analysis."""
         pass
 
     def visit_hex_byte(self, node) -> Any:
+        """Visit Hex Byte node - not needed for structural analysis."""
         pass
 
     def visit_hex_jump(self, node) -> Any:
+        """Visit Hex Jump node - not needed for structural analysis."""
         pass
 
     def visit_hex_nibble(self, node) -> Any:
+        """Visit Hex Nibble node - not needed for structural analysis."""
         pass
 
     def visit_hex_string(self, node) -> Any:
+        """Visit Hex String node - not needed for structural analysis."""
         pass
 
     def visit_hex_token(self, node) -> Any:
+        """Visit Hex Token node - not needed for structural analysis."""
         pass
 
     def visit_hex_wildcard(self, node) -> Any:
+        """Visit Hex Wildcard node - not needed for structural analysis."""
         pass
 
     def visit_identifier(self, node) -> Any:
+        """Visit Identifier node - not needed for structural analysis."""
         pass
 
     def visit_import(self, node) -> Any:
+        """Visit Import node - not needed for structural analysis."""
         pass
 
     def visit_in_expression(self, node) -> Any:
+        """Visit In Expression node - not needed for structural analysis."""
         pass
 
     def visit_in_rule_pragma(self, node) -> Any:
+        """Visit In Rule Pragma node - not needed for structural analysis."""
         pass
 
     def visit_include(self, node) -> Any:
+        """Visit Include node - not needed for structural analysis."""
         pass
 
     def visit_integer_literal(self, node) -> Any:
+        """Visit Integer Literal node - not needed for structural analysis."""
         pass
 
     def visit_member_access(self, node) -> Any:
+        """Visit Member Access node - not needed for structural analysis."""
         pass
 
     def visit_meta(self, node) -> Any:
+        """Visit Meta node - not needed for structural analysis."""
         pass
 
     def visit_module_reference(self, node) -> Any:
+        """Visit Module Reference node - not needed for structural analysis."""
         pass
 
     def visit_of_expression(self, node) -> Any:
+        """Visit Of Expression node - not needed for structural analysis."""
         pass
 
     def visit_parentheses_expression(self, node) -> Any:
+        """Visit Parentheses Expression node - not needed for structural analysis."""
         pass
 
     def visit_plain_string(self, node) -> Any:
+        """Visit Plain String node - not needed for structural analysis."""
         pass
 
     def visit_pragma(self, node) -> Any:
+        """Visit Pragma node - not needed for structural analysis."""
         pass
 
     def visit_pragma_block(self, node) -> Any:
+        """Visit Pragma Block node - not needed for structural analysis."""
         pass
 
     def visit_range_expression(self, node) -> Any:
+        """Visit Range Expression node - not needed for structural analysis."""
         pass
 
     def visit_regex_literal(self, node) -> Any:
+        """Visit Regex Literal node - not needed for structural analysis."""
         pass
 
     def visit_regex_string(self, node) -> Any:
+        """Visit Regex String node - not needed for structural analysis."""
         pass
 
     def visit_set_expression(self, node) -> Any:
+        """Visit Set Expression node - not needed for structural analysis."""
         pass
 
     def visit_string_count(self, node) -> Any:
+        """Visit String Count node - not needed for structural analysis."""
         pass
 
     def visit_string_definition(self, node) -> Any:
+        """Visit String Definition node - not needed for structural analysis."""
         pass
 
     def visit_string_identifier(self, node) -> Any:
+        """Visit String Identifier node - not needed for structural analysis."""
         pass
 
     def visit_string_length(self, node) -> Any:
+        """Visit String Length node - not needed for structural analysis."""
         pass
 
     def visit_string_literal(self, node) -> Any:
+        """Visit String Literal node - not needed for structural analysis."""
         pass
 
     def visit_string_modifier(self, node) -> Any:
+        """Visit String Modifier node - not needed for structural analysis."""
         pass
 
     def visit_string_offset(self, node) -> Any:
+        """Visit String Offset node - not needed for structural analysis."""
         pass
 
     def visit_string_operator_expression(self, node) -> Any:
+        """Visit String Operator Expression node - not needed for structural analysis."""
         pass
 
     def visit_tag(self, node) -> Any:
+        """Visit Tag node - not needed for structural analysis."""
         pass
 
     def visit_unary_expression(self, node) -> Any:
+        """Visit Unary Expression node - not needed for structural analysis."""
         pass
 
 
@@ -488,10 +551,10 @@ class ASTFormatter:
             # Apply formatting style
             if style == "compact":
                 formatted = self.generator.generate(ast)
-            elif style == "pretty":
-                formatted = self.pretty_printer.pretty_print(ast, StylePresets.readable())
-            elif style == "verbose":
-                formatted = self.pretty_printer.pretty_print(ast, StylePresets.verbose())
+            elif style in ("pretty", "verbose"):
+                # Use readable preset by configuring the printer (same for pretty and verbose for now)
+                self.pretty_printer = PrettyPrinter()
+                formatted = self.pretty_printer.pretty_print(ast)
             else:  # default
                 formatted = self.pretty_printer.pretty_print(ast)
 
@@ -518,7 +581,7 @@ class ASTFormatter:
             formatted = self.pretty_printer.pretty_print(ast)
 
             if original.strip() == formatted.strip():
-                return True, []
+                return False, []
 
             # Find differences
             original_lines = original.strip().split("\n")
@@ -529,7 +592,7 @@ class ASTFormatter:
                 if orig != fmt:
                     issues.append(f"Line {i}: formatting issue")
 
-            return False, issues
+            return len(issues) > 0, issues
 
         except Exception as e:
             return False, [f"Check error: {e}"]
@@ -758,3 +821,115 @@ class ASTBenchmarker:
     def clear_results(self) -> None:
         """Clear benchmark results."""
         self.results.clear()
+
+
+def print_ast(ast: YaraFile, console: Console | None = None) -> None:
+    """Print AST in a readable format.
+
+    Args:
+        ast: The YARA AST to print
+        console: Rich console to use (creates new if None)
+    """
+    if console is None:
+        console = Console()
+
+    tree = Tree("YaraFile")
+
+    # Add imports
+    if ast.imports:
+        imports_branch = tree.add("imports")
+        for imp in ast.imports:
+            imp_text = f'import "{imp.module}"'
+            if hasattr(imp, "alias") and imp.alias:
+                imp_text += f" as {imp.alias}"
+            imports_branch.add(imp_text)
+
+    # Add includes
+    if ast.includes:
+        includes_branch = tree.add("includes")
+        for inc in ast.includes:
+            includes_branch.add(f'include "{inc.path}"')
+
+    # Add rules
+    if ast.rules:
+        rules_branch = tree.add("rules")
+        for rule in ast.rules:
+            rule_text = f"rule {rule.name}"
+            if hasattr(rule, "modifiers") and rule.modifiers:
+                rule_text = f"{' '.join(rule.modifiers)} {rule_text}"
+            rule_branch = rules_branch.add(rule_text)
+
+            # Add tags
+            if hasattr(rule, "tags") and rule.tags:
+                tags_branch = rule_branch.add("tags")
+                for tag in rule.tags:
+                    tag_name = tag.name if hasattr(tag, "name") else str(tag)
+                    tags_branch.add(tag_name)
+
+            # Add meta
+            if hasattr(rule, "meta") and rule.meta:
+                meta_branch = rule_branch.add("meta")
+                if isinstance(rule.meta, dict):
+                    for key, value in rule.meta.items():
+                        meta_branch.add(f"{key} = {value}")
+                else:
+                    for meta_item in rule.meta:
+                        if hasattr(meta_item, "key"):
+                            meta_branch.add(f"{meta_item.key} = {meta_item.value}")
+
+            # Add strings
+            if hasattr(rule, "strings") and rule.strings:
+                strings_branch = rule_branch.add("strings")
+                for string_def in rule.strings:
+                    string_type = type(string_def).__name__
+                    strings_branch.add(f"{string_def.identifier} ({string_type})")
+
+            # Add condition
+            if hasattr(rule, "condition") and rule.condition:
+                condition_branch = rule_branch.add("condition")
+                condition_type = type(rule.condition).__name__
+                condition_branch.add(condition_type)
+
+    console.print(tree)
+
+
+def visualize_ast(ast: YaraFile, output_format: str = "tree") -> str:
+    """Visualize AST in various formats.
+
+    Args:
+        ast: The YARA AST to visualize
+        output_format: Format to use ("tree", "json", "yaml")
+
+    Returns:
+        String representation in the requested format
+    """
+    if output_format == "tree":
+        # Use print_ast to generate tree
+        from io import StringIO
+
+        from rich.console import Console
+
+        string_io = StringIO()
+        console = Console(file=string_io, force_terminal=True)
+        print_ast(ast, console)
+        return string_io.getvalue()
+
+    elif output_format == "json":
+        # Convert to JSON
+        from yaraast.serialization.json_serializer import JsonSerializer
+
+        serializer = JsonSerializer()
+        return serializer.serialize(ast)
+
+    elif output_format == "yaml":
+        # Convert to YAML
+        try:
+            from yaraast.serialization.yaml_serializer import YamlSerializer
+
+            serializer = YamlSerializer()
+            return serializer.serialize(ast)
+        except ImportError:
+            return "YAML serialization not available (install pyyaml)"
+
+    else:
+        return f"Unknown format: {output_format}"

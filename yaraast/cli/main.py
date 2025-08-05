@@ -1,6 +1,5 @@
 """CLI interface for YARA AST."""
 
-import contextlib
 import json
 import time
 from difflib import unified_diff
@@ -110,10 +109,29 @@ class ASTDumper(ASTVisitor[dict]):
                 if hasattr(m, "key") and hasattr(m, "value"):
                     meta[m.key] = m.value
 
+        # Handle modifiers - they can be lists, strings, or AST objects
+        modifiers = []
+        if hasattr(node, "modifiers") and node.modifiers:
+            if isinstance(node.modifiers, (list, tuple)):
+                for mod in node.modifiers:
+                    if isinstance(mod, str):
+                        modifiers.append(mod)
+                    elif hasattr(mod, "accept"):
+                        modifiers.append(self.visit(mod))
+                    else:
+                        modifiers.append(str(mod))
+            elif isinstance(node.modifiers, str):
+                modifiers.append(node.modifiers)
+            elif hasattr(node.modifiers, "accept"):
+                # It's an AST node, don't include it as a modifier
+                pass
+            else:
+                modifiers.append(str(node.modifiers))
+
         return {
             "type": "Rule",
             "name": node.name,
-            "modifiers": node.modifiers,
+            "modifiers": modifiers,
             "tags": tags,
             "meta": meta,
             "strings": [self.visit(s) for s in node.strings],
@@ -127,27 +145,69 @@ class ASTDumper(ASTVisitor[dict]):
         return {"type": "StringDefinition", "identifier": node.identifier}
 
     def visit_plain_string(self, node: PlainString) -> dict:
+        # Handle modifiers - they can be strings or objects
+        modifiers = []
+        if hasattr(node, "modifiers") and node.modifiers:
+            if isinstance(node.modifiers, (list, tuple)):
+                for mod in node.modifiers:
+                    if isinstance(mod, str):
+                        modifiers.append(mod)
+                    elif hasattr(mod, "accept"):  # It's an AST node
+                        modifiers.append(self.visit(mod))
+                    else:
+                        modifiers.append(str(mod))
+            else:
+                modifiers.append(str(node.modifiers))
+
         return {
             "type": "PlainString",
             "identifier": node.identifier,
             "value": node.value,
-            "modifiers": [self.visit(mod) for mod in node.modifiers],
+            "modifiers": modifiers,
         }
 
     def visit_hex_string(self, node: HexString) -> dict:
+        # Handle modifiers safely
+        modifiers = []
+        if hasattr(node, "modifiers") and node.modifiers:
+            if isinstance(node.modifiers, (list, tuple)):
+                for mod in node.modifiers:
+                    if isinstance(mod, str):
+                        modifiers.append(mod)
+                    elif hasattr(mod, "accept"):
+                        modifiers.append(self.visit(mod))
+                    else:
+                        modifiers.append(str(mod))
+            else:
+                modifiers.append(str(node.modifiers))
+
         return {
             "type": "HexString",
             "identifier": node.identifier,
             "tokens": [self.visit(token) for token in node.tokens],
-            "modifiers": [self.visit(mod) for mod in node.modifiers],
+            "modifiers": modifiers,
         }
 
     def visit_regex_string(self, node: RegexString) -> dict:
+        # Handle modifiers safely
+        modifiers = []
+        if hasattr(node, "modifiers") and node.modifiers:
+            if isinstance(node.modifiers, (list, tuple)):
+                for mod in node.modifiers:
+                    if isinstance(mod, str):
+                        modifiers.append(mod)
+                    elif hasattr(mod, "accept"):
+                        modifiers.append(self.visit(mod))
+                    else:
+                        modifiers.append(str(mod))
+            else:
+                modifiers.append(str(node.modifiers))
+
         return {
             "type": "RegexString",
             "identifier": node.identifier,
             "regex": node.regex,
-            "modifiers": [self.visit(mod) for mod in node.modifiers],
+            "modifiers": modifiers,
         }
 
     def visit_string_modifier(self, node: StringModifier) -> dict:
@@ -378,6 +438,19 @@ class ASTDumper(ASTVisitor[dict]):
 class ASTTreeBuilder(ASTVisitor[Tree]):
     """Build Rich tree visualization of AST."""
 
+    def visit(self, node) -> Tree:
+        """Generic visit method with fallback."""
+        if node is None:
+            return Tree("None")
+
+        # Try specific visit methods first
+        method_name = f"visit_{type(node).__name__.lower()}"
+        if hasattr(self, method_name):
+            return getattr(self, method_name)(node)
+
+        # Fallback for unknown node types
+        return Tree(f"{type(node).__name__}: {str(node)[:50]}")
+
     def visit_yara_file(self, node: YaraFile) -> Tree:
         tree = Tree("YARA File")
 
@@ -401,7 +474,14 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
     def visit_rule(self, node: Rule) -> Tree:
         name_with_modifiers = node.name
         if node.modifiers:
-            name_with_modifiers = f"[{'|'.join(node.modifiers)}] {name_with_modifiers}"
+            # Convert modifiers to strings safely
+            modifier_strs = []
+            for mod in node.modifiers:
+                if isinstance(mod, str):
+                    modifier_strs.append(mod)
+                else:
+                    modifier_strs.append(str(mod))
+            name_with_modifiers = f"[{'|'.join(modifier_strs)}] {name_with_modifiers}"
 
         rule_tree = Tree(f"Rule: {name_with_modifiers}")
 
@@ -1151,14 +1231,16 @@ def parse(input_file: str, output: str | None, format: str) -> None:
             builder = ASTTreeBuilder()
             tree = builder.visit(ast)
             if output:
-                # For file output, use plain text without markup
-                with Path(output).open("w") as f:
-                    f.write(str(tree))
+                # For file output, use rich console to capture output
+                from rich.console import Console
+
+                with open(output, "w") as f:
+                    file_console = Console(file=f, width=80, legacy_windows=False)
+                    file_console.print(tree)
                 console.print(f"✅ AST tree written to {output}")
             else:
-                # For console output, try rich rendering with fallback
-                with contextlib.suppress(Exception):
-                    console.print(tree)
+                # For console output, print directly
+                console.print(tree)
 
     except Exception as e:
         # Escape the error message to avoid markup interpretation
@@ -1245,6 +1327,30 @@ def libyara() -> None:
 @click.option("--optimize", is_flag=True, help="Enable AST optimizations")
 @click.option("--debug", is_flag=True, help="Enable debug mode with source generation")
 @click.option("--stats", is_flag=True, help="Show compilation statistics")
+def _print_optimization_stats(result):
+    """Print optimization statistics."""
+    console.print("[blue]🔧 Optimizations applied:[/blue]")
+    if result.optimization_stats:
+        opt_stats = result.optimization_stats
+        console.print(f"  • Rules optimized: {opt_stats.rules_optimized}")
+        console.print(f"  • Strings optimized: {opt_stats.strings_optimized}")
+        console.print(f"  • Conditions simplified: {opt_stats.conditions_simplified}")
+        console.print(f"  • Constants folded: {opt_stats.constant_folded}")
+
+
+def _print_compilation_stats(result, compiler):
+    """Print compilation statistics."""
+    console.print("[blue]📊 Compilation Stats:[/blue]")
+    console.print(f"  • Compilation time: {result.compilation_time:.3f}s")
+    console.print(f"  • AST nodes: {result.ast_node_count}")
+
+    comp_stats = compiler.get_compilation_stats()
+    console.print(f"  • Total compilations: {comp_stats['total_compilations']}")
+    console.print(
+        f"  • Success rate: {comp_stats['successful_compilations']}/{comp_stats['total_compilations']}"
+    )
+
+
 def compile(input_file: str, output: str | None, optimize: bool, debug: bool, stats: bool):
     """Compile YARA file using direct AST compilation."""
     try:
@@ -1268,43 +1374,28 @@ def compile(input_file: str, output: str | None, optimize: bool, debug: bool, st
         # Compile AST
         result = compiler.compile_ast(ast)
 
-        if result.success:
-            console.print("[green]✅ Compilation successful[/green]")
-
-            if result.optimized:
-                console.print("[blue]🔧 Optimizations applied:[/blue]")
-                if result.optimization_stats:
-                    opt_stats = result.optimization_stats
-                    console.print(f"  • Rules optimized: {opt_stats.rules_optimized}")
-                    console.print(f"  • Strings optimized: {opt_stats.strings_optimized}")
-                    console.print(f"  • Conditions simplified: {opt_stats.conditions_simplified}")
-                    console.print(f"  • Constants folded: {opt_stats.constant_folded}")
-
-            if stats:
-                console.print("[blue]📊 Compilation Stats:[/blue]")
-                console.print(f"  • Compilation time: {result.compilation_time:.3f}s")
-                console.print(f"  • AST nodes: {result.ast_node_count}")
-
-                comp_stats = compiler.get_compilation_stats()
-                console.print(f"  • Total compilations: {comp_stats['total_compilations']}")
-                console.print(
-                    f"  • Success rate: {comp_stats['successful_compilations']}/{comp_stats['total_compilations']}"
-                )
-
-            # Save compiled rules if output specified
-            if output and result.compiled_rules:
-                result.compiled_rules.save(output)
-                console.print(f"[green]💾 Compiled rules saved to {output}[/green]")
-
-            if debug and result.generated_source:
-                console.print("[dim]🔍 Generated source (first 200 chars):[/dim]")
-                console.print(f"[dim]{result.generated_source[:200]}...[/dim]")
-
-        else:
+        if not result.success:
             console.print("[red]❌ Compilation failed[/red]")
             for error in result.errors:
                 console.print(f"[red]  • {error}[/red]")
             raise click.Abort from None
+
+        console.print("[green]✅ Compilation successful[/green]")
+
+        if result.optimized:
+            _print_optimization_stats(result)
+
+        if stats:
+            _print_compilation_stats(result, compiler)
+
+        # Save compiled rules if output specified
+        if output and result.compiled_rules:
+            result.compiled_rules.save(output)
+            console.print(f"[green]💾 Compiled rules saved to {output}[/green]")
+
+        if debug and result.generated_source:
+            console.print("[dim]🔍 Generated source (first 200 chars):[/dim]")
+            console.print(f"[dim]{result.generated_source[:200]}...[/dim]")
 
     except ImportError as e:
         console.print(f"[red]❌ Import error: {e}[/red]")
@@ -1466,6 +1557,63 @@ def optimize(input_file: str, show_optimizations: bool) -> None:
         raise click.Abort from None
 
 
+def _handle_format_check(formatter, input_path):
+    """Handle format checking mode."""
+    needs_format, issues = formatter.check_format(input_path)
+
+    if needs_format:
+        console.print(f"[yellow]📝 {input_path.name} needs formatting[/yellow]")
+        if issues:
+            for issue in issues[:5]:  # Show first 5 issues
+                console.print(f"[dim]  • {issue}[/dim]")
+            if len(issues) > 5:
+                console.print(f"[dim]  • ... and {len(issues) - 5} more issues[/dim]")
+        raise click.Abort from None
+    console.print(f"[green]✅ {input_path.name} is already formatted[/green]")
+
+
+def _show_format_diff(formatter, input_path, style):
+    """Show formatting diff."""
+    with Path(input_path).open() as f:
+        original = f.read()
+
+    success, formatted = formatter.format_file(input_path, None, style)
+    if not success:
+        console.print(f"[red]❌ {formatted}[/red]")
+        raise click.Abort from None
+
+    if original.strip() == formatted.strip():
+        console.print("[green]✅ No formatting changes needed[/green]")
+        return
+
+    console.print(f"[blue]📋 Formatting changes for {input_path.name}:[/blue]")
+
+    diff_lines = unified_diff(
+        original.splitlines(keepends=True),
+        formatted.splitlines(keepends=True),
+        fromfile=f"{input_path.name} (original)",
+        tofile=f"{input_path.name} (formatted)",
+        lineterm="",
+    )
+
+    _print_diff_lines(diff_lines)
+
+
+def _print_diff_lines(diff_lines):
+    """Print diff lines with colors."""
+    for line in diff_lines:
+        if line.startswith(("+++", "---")):
+            console.print(f"[bold]{line.rstrip()}[/bold]")
+        elif line.startswith("@@"):
+            console.print(f"[cyan]{line.rstrip()}[/cyan]")
+        elif line.startswith("+"):
+            console.print(f"[green]{line.rstrip()}[/green]")
+        elif line.startswith("-"):
+            console.print(f"[red]{line.rstrip()}[/red]")
+        else:
+            console.print(f"[dim]{line.rstrip()}[/dim]")
+
+
 @cli.command()
 @click.argument("input_file", type=click.Path(exists=True))
 @click.option("-o", "--output", type=click.Path(), help="Output file (default: overwrite input)")
@@ -1484,72 +1632,26 @@ def fmt(input_file: str, output: str | None, style: str, check: bool, diff: bool
 
         input_path = Path(input_file)
         output_path = Path(output) if output else input_path
-
         formatter = ASTFormatter()
 
         if check:
-            # Check formatting without modifying
-            needs_format, issues = formatter.check_format(input_path)
-
-            if needs_format:
-                console.print(f"[yellow]📝 {input_path.name} needs formatting[/yellow]")
-                if issues:
-                    for issue in issues[:5]:  # Show first 5 issues
-                        console.print(f"[dim]  • {issue}[/dim]")
-                    if len(issues) > 5:
-                        console.print(f"[dim]  • ... and {len(issues) - 5} more issues[/dim]")
-                raise click.Abort from None
-            console.print(f"[green]✅ {input_path.name} is already formatted[/green]")
+            _handle_format_check(formatter, input_path)
             return
 
         if diff:
-            # Show what would change
-            with Path(input_path).open() as f:
-                original = f.read()
+            _show_format_diff(formatter, input_path, style)
+            return
 
-            success, formatted = formatter.format_file(input_path, None, style)
-            if not success:
-                console.print(f"[red]❌ {formatted}[/red]")
-                raise click.Abort from None
+        # Format file
+        success, result = formatter.format_file(input_path, output_path, style)
+        if not success:
+            console.print(f"[red]❌ {result}[/red]")
+            raise click.Abort from None
 
-            if original.strip() != formatted.strip():
-                console.print(f"[blue]📋 Formatting changes for {input_path.name}:[/blue]")
-
-                diff_lines = unified_diff(
-                    original.splitlines(keepends=True),
-                    formatted.splitlines(keepends=True),
-                    fromfile=f"{input_path.name} (original)",
-                    tofile=f"{input_path.name} (formatted)",
-                    lineterm="",
-                )
-
-                for line in diff_lines:
-                    if line.startswith(("+++", "---")):
-                        console.print(f"[bold]{line.rstrip()}[/bold]")
-                    elif line.startswith("@@"):
-                        console.print(f"[cyan]{line.rstrip()}[/cyan]")
-                    elif line.startswith("+"):
-                        console.print(f"[green]{line.rstrip()}[/green]")
-                    elif line.startswith("-"):
-                        console.print(f"[red]{line.rstrip()}[/red]")
-                    else:
-                        console.print(f"[dim]{line.rstrip()}[/dim]")
-            else:
-                console.print("[green]✅ No formatting changes needed[/green]")
-                return
-
+        if output_path == input_path:
+            console.print(f"[green]✅ Formatted {input_path.name} ({style} style)[/green]")
         else:
-            # Format file
-            success, result = formatter.format_file(input_path, output_path, style)
-
-            if success:
-                if output_path == input_path:
-                    console.print(f"[green]✅ Formatted {input_path.name} ({style} style)[/green]")
-                else:
-                    console.print(f"[green]✅ Formatted file written to {output_path}[/green]")
-            else:
-                console.print(f"[red]❌ {result}[/red]")
-                raise click.Abort from None
+            console.print(f"[green]✅ Formatted file written to {output_path}[/green]")
 
     except ImportError as e:
         console.print(f"[red]❌ Import error: {e}[/red]")
@@ -1568,10 +1670,74 @@ def fmt(input_file: str, output: str | None, style: str, check: bool, diff: bool
 @click.option("--logical-only", is_flag=True, help="Show only logical changes (ignore style)")
 @click.option("--summary", is_flag=True, help="Show summary of changes only")
 @click.option("--no-style", is_flag=True, help="Don't analyze style changes")
+def _show_diff_summary(result):
+    """Show diff summary."""
+    console.print("[yellow]📋 Change Summary:[/yellow]")
+    for change_type, count in result.change_summary.items():
+        if count > 0:
+            console.print(f"  • {change_type.replace('_', ' ').title()}: {count}")
+
+
+def _show_rule_changes(result):
+    """Show rule additions, removals and modifications."""
+    if result.added_rules:
+        console.print(f"\n[green]+ Added Rules ({len(result.added_rules)}):[/green]")
+        for rule in result.added_rules:
+            console.print(f"  + {rule}")
+
+    if result.removed_rules:
+        console.print(f"\n[red]- Removed Rules ({len(result.removed_rules)}):[/red]")
+        for rule in result.removed_rules:
+            console.print(f"  - {rule}")
+
+    if result.modified_rules:
+        console.print(f"\n[yellow]🔄 Modified Rules ({len(result.modified_rules)}):[/yellow]")
+        for rule in result.modified_rules:
+            console.print(f"  ~ {rule}")
+
+
+def _show_change_details(result, logical_only, no_style):
+    """Show detailed change information."""
+    if result.logical_changes:
+        console.print(f"\n[red]🧠 Logical Changes ({len(result.logical_changes)}):[/red]")
+        for change in result.logical_changes:
+            console.print(f"  • {change}")
+
+    if result.structural_changes:
+        console.print(f"\n[blue]🏗️  Structural Changes ({len(result.structural_changes)}):[/blue]")
+        for change in result.structural_changes:
+            console.print(f"  • {change}")
+
+    if not logical_only and not no_style and result.style_only_changes:
+        console.print(f"\n[dim]🎨 Style-Only Changes ({len(result.style_only_changes)}):[/dim]")
+        for change in result.style_only_changes[:10]:
+            console.print(f"[dim]  • {change}[/dim]")
+        if len(result.style_only_changes) > 10:
+            console.print(
+                f"[dim]  • ... and {len(result.style_only_changes) - 10} more style changes[/dim]"
+            )
+
+
+def _show_change_significance(result):
+    """Show significance of changes."""
+    total_logical = (
+        len(result.logical_changes) + len(result.added_rules) + len(result.removed_rules)
+    )
+    total_style = len(result.style_only_changes)
+
+    if total_logical > 0:
+        console.print(
+            f"\n[yellow]⚠️  This diff contains {total_logical} logical changes that affect rule behavior[/yellow]"
+        )
+    elif total_style > 0:
+        console.print(
+            f"\n[green]✨ This diff contains only {total_style} style changes (no logic changes)[/green]"
+        )
+
+
 def diff(file1: str, file2: str, logical_only: bool, summary: bool, no_style: bool) -> None:
     """Show AST-based diff highlighting logical vs stylistic changes."""
     try:
-        # Try the simple differ first as it's more reliable
         from yaraast.cli.simple_differ import SimpleASTDiffer
 
         file1_path = Path(file1)
@@ -1590,70 +1756,17 @@ def diff(file1: str, file2: str, logical_only: bool, summary: bool, no_style: bo
         console.print("=" * 60)
 
         if summary:
-            # Show summary only
-            console.print("[yellow]📋 Change Summary:[/yellow]")
-            for change_type, count in result.change_summary.items():
-                if count > 0:
-                    console.print(f"  • {change_type.replace('_', ' ').title()}: {count}")
+            _show_diff_summary(result)
             return
 
-        # Show detailed changes
-        if result.added_rules:
-            console.print(f"\n[green]+ Added Rules ({len(result.added_rules)}):[/green]")
-            for rule in result.added_rules:
-                console.print(f"  + {rule}")
-
-        if result.removed_rules:
-            console.print(f"\n[red]- Removed Rules ({len(result.removed_rules)}):[/red]")
-            for rule in result.removed_rules:
-                console.print(f"  - {rule}")
-
-        if result.modified_rules:
-            console.print(f"\n[yellow]🔄 Modified Rules ({len(result.modified_rules)}):[/yellow]")
-            for rule in result.modified_rules:
-                console.print(f"  ~ {rule}")
-
-        if result.logical_changes:
-            console.print(f"\n[red]🧠 Logical Changes ({len(result.logical_changes)}):[/red]")
-            for change in result.logical_changes:
-                console.print(f"  • {change}")
-
-        if result.structural_changes:
-            console.print(
-                f"\n[blue]🏗️  Structural Changes ({len(result.structural_changes)}):[/blue]"
-            )
-            for change in result.structural_changes:
-                console.print(f"  • {change}")
-
-        if not logical_only and not no_style and result.style_only_changes:
-            console.print(f"\n[dim]🎨 Style-Only Changes ({len(result.style_only_changes)}):[/dim]")
-            for change in result.style_only_changes[:10]:  # Limit style changes shown
-                console.print(f"[dim]  • {change}[/dim]")
-            if len(result.style_only_changes) > 10:
-                console.print(
-                    f"[dim]  • ... and {len(result.style_only_changes) - 10} more style changes[/dim]"
-                )
-
-        # Show change significance
-        total_logical = (
-            len(result.logical_changes) + len(result.added_rules) + len(result.removed_rules)
-        )
-        total_style = len(result.style_only_changes)
-
-        if total_logical > 0:
-            console.print(
-                f"\n[yellow]⚠️  This diff contains {total_logical} logical changes that affect rule behavior[/yellow]"
-            )
-        elif total_style > 0:
-            console.print(
-                f"\n[green]✨ This diff contains only {total_style} style changes (no logic changes)[/green]"
-            )
+        _show_rule_changes(result)
+        _show_change_details(result, logical_only, no_style)
+        _show_change_significance(result)
 
     except ImportError as e:
         console.print(f"[red]❌ Import error: {e}[/red]")
         raise click.Abort from None
     except Exception as e:
-        # Escape the error message to avoid markup interpretation
         from rich.markup import escape
 
         console.print(f"[red]❌ Error: {escape(str(e))}[/red]")

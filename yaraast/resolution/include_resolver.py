@@ -76,6 +76,10 @@ class IncludeResolver:
 
         return unique_paths
 
+    def resolve(self, file_path: str, base_path: Path | None = None) -> ResolvedFile:
+        """Alias for resolve_file for backward compatibility."""
+        return self.resolve_file(file_path, base_path)
+
     def resolve_file(self, file_path: str, base_path: Path | None = None) -> ResolvedFile:
         """
         Resolve a YARA file and all its includes.

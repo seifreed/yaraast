@@ -1,386 +1,307 @@
-"""Memory optimization utilities for processing large YARA rule collections."""
+"""Memory optimization utilities for YARA AST processing."""
 
 from __future__ import annotations
 
 import gc
-import sys
 import weakref
-from contextlib import contextmanager
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.rules import Rule
+from yaraast.visitor.visitor import ASTTransformer
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
-
-
-@dataclass
-class MemoryStats:
-    """Memory usage statistics."""
-
-    total_objects: int = 0
-    ast_objects: int = 0
-    memory_mb: float = 0.0
-    peak_memory_mb: float = 0.0
-    gc_collections: int = 0
+    pass
 
 
 class MemoryOptimizer:
-    """Memory optimization utilities for large-scale AST processing.
+    """Optimizes memory usage when processing large YARA ASTs."""
 
-    This class provides tools to minimize memory usage when processing
-    huge YARA rule collections by implementing:
-    - Weak reference tracking
-    - Automatic garbage collection
-    - Memory-efficient iteration
-    - AST object pooling
-    """
-
-    def __init__(
-        self,
-        memory_limit_mb: int = 1000,
-        gc_threshold: int = 1000,
-        enable_tracking: bool = True,
-    ):
+    def __init__(self, aggressive: bool = False):
         """Initialize memory optimizer.
 
         Args:
-            memory_limit_mb: Memory limit in MB before triggering aggressive cleanup
-            gc_threshold: Number of objects before triggering garbage collection
-            enable_tracking: Enable object tracking for memory analysis
+            aggressive: If True, applies more aggressive memory optimizations
         """
-        self.memory_limit_mb = memory_limit_mb
-        self.gc_threshold = gc_threshold
-        self.enable_tracking = enable_tracking
-
-        # Tracking
-        self._tracked_objects: set[weakref.ref] = set()
-        self._stats = MemoryStats()
-        self._object_counter = 0
-
-        # AST object pool for reuse
-        self._ast_pool: list[YaraFile] = []
-        self._pool_size_limit = 100
-
-    @contextmanager
-    def memory_managed_context(self):
-        """Context manager for memory-managed processing."""
-        initial_memory = self._get_memory_usage()
-
-        try:
-            yield self
-        finally:
-            # Cleanup and report
-            self.cleanup()
-            final_memory = self._get_memory_usage()
-
-            memory_diff = final_memory - initial_memory
-            if memory_diff > 0:
-                pass
-
-    def track_object(self, obj: Any) -> None:
-        """Track an object for memory monitoring."""
-        if not self.enable_tracking:
-            return
-
-        try:
-            ref = weakref.ref(obj, self._object_cleanup_callback)
-            self._tracked_objects.add(ref)
-            self._object_counter += 1
-
-            # Periodic garbage collection
-            if self._object_counter % self.gc_threshold == 0:
-                self.force_cleanup()
-
-        except TypeError:
-            # Object doesn't support weak references
-            pass
-
-    def create_memory_efficient_ast(self) -> YaraFile:
-        """Create or reuse an AST object from the pool."""
-        if self._ast_pool:
-            ast = self._ast_pool.pop()
-            # Reset the AST
-            ast.imports.clear()
-            ast.includes.clear()
-            ast.rules.clear()
-            return ast
-        ast = YaraFile(imports=[], includes=[], rules=[])
-        self.track_object(ast)
-        return ast
-
-    def return_ast_to_pool(self, ast: YaraFile) -> None:
-        """Return an AST object to the pool for reuse."""
-        if len(self._ast_pool) < self._pool_size_limit:
-            # Clear references to allow garbage collection of contained objects
-            ast.imports.clear()
-            ast.includes.clear()
-            ast.rules.clear()
-            self._ast_pool.append(ast)
-
-    def memory_efficient_iterator(
-        self, items: list[Any], batch_size: int = 10
-    ) -> Iterator[list[Any]]:
-        """Create memory-efficient iterator that processes items in batches."""
-        for i in range(0, len(items), batch_size):
-            batch = items[i : i + batch_size]
-            yield batch
-
-            # Check memory usage after each batch
-            if i % (batch_size * 5) == 0:  # Check every 5 batches
-                current_memory = self._get_memory_usage()
-                if current_memory > self.memory_limit_mb:
-                    self.force_cleanup()
-
-    def minimize_ast_memory(self, ast: YaraFile) -> YaraFile:
-        """Minimize memory usage of an AST by removing unnecessary data."""
-        # Create a minimal copy with only essential information
-        minimal_ast = YaraFile(imports=[], includes=[], rules=[])
-
-        # Copy only essential parts
-        for imp in ast.imports:
-            minimal_ast.imports.append(imp)
-
-        for rule in ast.rules:
-            # Create minimal rule copy
-            minimal_rule = type(rule)(
-                name=rule.name,
-                modifiers=rule.modifiers.copy() if rule.modifiers else [],
-                tags=rule.tags.copy() if rule.tags else [],
-                meta=rule.meta.copy() if rule.meta else {},
-                strings=rule.strings.copy() if rule.strings else [],
-                condition=rule.condition,
-            )
-            minimal_ast.rules.append(minimal_rule)
-
-        self.track_object(minimal_ast)
-        return minimal_ast
-
-    def batch_process_with_memory_limit(
-        self,
-        items: list[Any],
-        processor_func: Callable[[Any], Any],
-        batch_size: int = 50,
-    ) -> Iterator[Any]:
-        """Process items in batches with memory management."""
-        processed_count = 0
-
-        for batch in self.memory_efficient_iterator(items, batch_size):
-            batch_results = []
-
-            for item in batch:
-                try:
-                    result = processor_func(item)
-                    batch_results.append(result)
-                    processed_count += 1
-
-                    # Track memory usage
-                    if hasattr(result, "__dict__"):
-                        self.track_object(result)
-
-                except Exception as e:
-                    # Log error but continue processing
-                    batch_results.append(f"Error processing item: {e}")
-
-            yield batch_results
-
-            # Memory check after each batch
-            current_memory = self._get_memory_usage()
-            if current_memory > self.memory_limit_mb:
-                self.force_cleanup()
-
-    def get_memory_stats(self) -> MemoryStats:
-        """Get current memory statistics."""
-        self._stats.total_objects = len(self._tracked_objects)
-        self._stats.ast_objects = len(
-            [ref for ref in self._tracked_objects if ref() and isinstance(ref(), YaraFile)]
-        )
-        self._stats.memory_mb = self._get_memory_usage()
-
-        return self._stats
-
-    def force_cleanup(self) -> int:
-        """Force garbage collection and cleanup of tracked objects."""
-        # Remove dead references
-        dead_refs = {ref for ref in self._tracked_objects if ref() is None}
-        self._tracked_objects -= dead_refs
-
-        # Force garbage collection
-        collected = gc.collect()
-        self._stats.gc_collections += 1
-
-        # Update memory stats
-        current_memory = self._get_memory_usage()
-        self._stats.peak_memory_mb = max(self._stats.peak_memory_mb, current_memory)
-
-        return collected
-
-    def cleanup(self) -> None:
-        """Comprehensive cleanup of all tracked resources."""
-        # Clear AST pool
-        self._ast_pool.clear()
-
-        # Clear tracked objects
-        self._tracked_objects.clear()
-
-        # Force garbage collection
-        self.force_cleanup()
-
-    def optimize_for_large_collection(self, collection_size: int) -> dict[str, Any]:
-        """Optimize settings based on collection size."""
-        recommendations = {
-            "batch_size": min(50, max(10, collection_size // 100)),
-            "gc_threshold": min(1000, max(100, collection_size // 10)),
-            "memory_limit_mb": max(500, min(2000, collection_size // 100)),
-            "enable_pooling": collection_size > 100,
-            "use_streaming": collection_size > 500,
+        self.aggressive = aggressive
+        self._cache = weakref.WeakValueDictionary()
+        self._string_pool = {}
+        self._stats = {
+            "nodes_processed": 0,
+            "strings_pooled": 0,
+            "memory_saved": 0,
         }
 
-        # Apply recommendations
-        if recommendations["enable_pooling"]:
-            self._pool_size_limit = min(200, collection_size // 50)
+    def optimize(self, yara_file: YaraFile) -> YaraFile:
+        """Optimize memory usage for a YARA file."""
+        # Clear caches
+        self._string_pool.clear()
 
-        self.gc_threshold = recommendations["gc_threshold"]
-        self.memory_limit_mb = recommendations["memory_limit_mb"]
+        # Optimize the AST
+        optimizer = MemoryOptimizerTransformer(self._string_pool, self.aggressive)
+        optimized = optimizer.visit(yara_file)
 
-        return recommendations
+        # Update stats
+        self._stats["nodes_processed"] += optimizer.nodes_processed
+        self._stats["strings_pooled"] += len(self._string_pool)
 
-    def _get_memory_usage(self) -> float:
-        """Get current memory usage in MB."""
-        try:
-            import os
+        # Force garbage collection if aggressive
+        if self.aggressive:
+            gc.collect()
 
-            import psutil
+        return optimized
 
-            process = psutil.Process(os.getpid())
-            memory_bytes = process.memory_info().rss
-            return memory_bytes / (1024 * 1024)
+    def optimize_rule(self, rule: Rule) -> Rule:
+        """Optimize memory usage for a single rule."""
+        optimizer = MemoryOptimizerTransformer(self._string_pool, self.aggressive)
+        return optimizer.visit(rule)
 
-        except ImportError:
-            # Fallback to sys.getsizeof for rough estimate
-            return sys.getsizeof(self._tracked_objects) / (1024 * 1024)
+    def optimize_rules(self, rules: list[Rule]) -> list[Rule]:
+        """Optimize memory usage for a list of rules."""
+        return [self.optimize_rule(rule) for rule in rules]
 
-    def _object_cleanup_callback(self, ref: weakref.ref) -> None:
-        """Callback when tracked object is garbage collected."""
-        self._tracked_objects.discard(ref)
+    def get_memory_usage(self) -> dict[str, Any]:
+        """Get current memory usage statistics."""
+        import os
 
+        import psutil
 
-class LazyASTLoader:
-    """Lazy loader for AST objects to minimize memory usage."""
-
-    def __init__(self, optimizer: MemoryOptimizer | None = None):
-        """Initialize lazy loader.
-
-        Args:
-            optimizer: Memory optimizer instance to use
-        """
-        self.optimizer = optimizer or MemoryOptimizer()
-        self._cache: dict[str, weakref.ref] = {}
-        self._cache_hits = 0
-        self._cache_misses = 0
-
-    def load_ast(self, identifier: str, loader_func: Callable[[], YaraFile]) -> YaraFile:
-        """Load AST with caching and memory optimization.
-
-        Args:
-            identifier: Unique identifier for the AST
-            loader_func: Function that loads/creates the AST
-
-        Returns:
-            The loaded AST
-        """
-        # Check cache first
-        if identifier in self._cache:
-            cached_ref = self._cache[identifier]
-            cached_ast = cached_ref()
-
-            if cached_ast is not None:
-                self._cache_hits += 1
-                return cached_ast
-            # Dead reference, remove from cache
-            del self._cache[identifier]
-
-        # Load AST
-        self._cache_misses += 1
-        ast = loader_func()
-
-        # Track and cache
-        if self.optimizer:
-            self.optimizer.track_object(ast)
-
-        self._cache[identifier] = weakref.ref(ast)
-
-        return ast
-
-    def get_cache_stats(self) -> dict[str, Any]:
-        """Get cache statistics."""
-        total_requests = self._cache_hits + self._cache_misses
-        hit_rate = (self._cache_hits / total_requests * 100) if total_requests > 0 else 0
+        process = psutil.Process(os.getpid())
+        mem_info = process.memory_info()
 
         return {
-            "cache_hits": self._cache_hits,
-            "cache_misses": self._cache_misses,
-            "hit_rate_percent": hit_rate,
-            "cached_objects": len(self._cache),
-            "live_objects": len([ref for ref in self._cache.values() if ref() is not None]),
+            "rss_mb": mem_info.rss / 1024 / 1024,
+            "vms_mb": mem_info.vms / 1024 / 1024,
+            "percent": process.memory_percent(),
+            "available_mb": psutil.virtual_memory().available / 1024 / 1024,
         }
 
-    def clear_cache(self) -> None:
-        """Clear the AST cache."""
+    def clear_caches(self) -> None:
+        """Clear all internal caches."""
         self._cache.clear()
+        self._string_pool.clear()
+        gc.collect()
 
-
-class MemoryEfficientProcessor:
-    """Memory-efficient processor for large AST collections."""
-
-    def __init__(self, memory_limit_mb: int = 1000):
-        """Initialize memory-efficient processor.
-
-        Args:
-            memory_limit_mb: Memory limit in MB
-        """
-        self.optimizer = MemoryOptimizer(memory_limit_mb=memory_limit_mb)
-        self.loader = LazyASTLoader(self.optimizer)
-
-    def process_collection(
-        self,
-        items: list[Any],
-        processor_func: Callable[[Any], Any],
-        batch_size: int | None = None,
-    ) -> Iterator[Any]:
-        """Process a collection with automatic memory management.
-
-        Args:
-            items: Items to process
-            processor_func: Function to process each item
-            batch_size: Batch size (auto-calculated if None)
-
-        Yields:
-            Processed results
-        """
-        # Optimize settings based on collection size
-        if batch_size is None:
-            settings = self.optimizer.optimize_for_large_collection(len(items))
-            batch_size = settings["batch_size"]
-
-        with self.optimizer.memory_managed_context():
-            yield from self.optimizer.batch_process_with_memory_limit(
-                items, processor_func, batch_size
-            )
-
-    def get_processing_stats(self) -> dict[str, Any]:
-        """Get comprehensive processing statistics."""
-        memory_stats = self.optimizer.get_memory_stats()
-        cache_stats = self.loader.get_cache_stats()
-
+    def get_statistics(self) -> dict[str, Any]:
+        """Get optimization statistics."""
         return {
-            "memory": {
-                "current_mb": memory_stats.memory_mb,
-                "peak_mb": memory_stats.peak_memory_mb,
-                "tracked_objects": memory_stats.total_objects,
-                "ast_objects": memory_stats.ast_objects,
-                "gc_collections": memory_stats.gc_collections,
-            },
-            "cache": cache_stats,
+            **self._stats,
+            "string_pool_size": len(self._string_pool),
+            "cache_size": len(self._cache),
         }
+
+
+class MemoryOptimizerTransformer(ASTTransformer):
+    """AST transformer that optimizes memory usage."""
+
+    def __init__(self, string_pool: dict[str, str], aggressive: bool = False):
+        super().__init__()
+        self.string_pool = string_pool
+        self.aggressive = aggressive
+        self.nodes_processed = 0
+
+    def visit(self, node: ASTNode) -> ASTNode:
+        """Visit a node and optimize its memory usage."""
+        self.nodes_processed += 1
+        return super().visit(node)
+
+    def visit_string_literal(self, node: Any) -> Any:
+        """Pool string literals to reduce memory usage."""
+        if hasattr(node, "value") and isinstance(node.value, str):
+            # Use string pooling
+            pooled = self.string_pool.get(node.value)
+            if pooled is None:
+                self.string_pool[node.value] = node.value
+                pooled = node.value
+            else:
+                # Reuse existing string
+                node.value = pooled
+        return node
+
+    def visit_identifier(self, node: Any) -> Any:
+        """Pool identifier names."""
+        if hasattr(node, "name") and isinstance(node.name, str):
+            pooled = self.string_pool.get(node.name)
+            if pooled is None:
+                self.string_pool[node.name] = node.name
+                pooled = node.name
+            else:
+                node.name = pooled
+        return node
+
+    def visit_rule(self, node: Rule) -> Rule:
+        """Optimize rule memory usage."""
+        # Pool rule name
+        if node.name:
+            pooled = self.string_pool.get(node.name)
+            if pooled is None:
+                self.string_pool[node.name] = node.name
+            else:
+                node.name = pooled
+
+        # Visit children
+        if node.condition:
+            node.condition = self.visit(node.condition)
+
+        if node.strings:
+            node.strings = [self.visit(s) for s in node.strings]
+
+        if node.meta:
+            node.meta = [self.visit(m) for m in node.meta]
+
+        if node.tags:
+            node.tags = [self.visit(t) for t in node.tags]
+
+        # Clear unnecessary attributes if aggressive
+        if self.aggressive and hasattr(node, "location"):
+            # Remove location info if not needed
+            node.location = None
+
+        return node
+
+    def visit_plain_string(self, node: Any) -> Any:
+        """Optimize plain string memory usage."""
+        # Pool string value
+        if hasattr(node, "value") and isinstance(node.value, str):
+            pooled = self.string_pool.get(node.value)
+            if pooled is None:
+                self.string_pool[node.value] = node.value
+            else:
+                node.value = pooled
+
+        # Pool identifier
+        if hasattr(node, "identifier") and isinstance(node.identifier, str):
+            pooled = self.string_pool.get(node.identifier)
+            if pooled is None:
+                self.string_pool[node.identifier] = node.identifier
+            else:
+                node.identifier = pooled
+
+        return node
+
+    def visit_meta(self, node: Any) -> Any:
+        """Optimize meta memory usage."""
+        # Pool meta key
+        if hasattr(node, "key") and isinstance(node.key, str):
+            pooled = self.string_pool.get(node.key)
+            if pooled is None:
+                self.string_pool[node.key] = node.key
+            else:
+                node.key = pooled
+
+        # Pool string values
+        if hasattr(node, "value") and isinstance(node.value, str):
+            pooled = self.string_pool.get(node.value)
+            if pooled is None:
+                self.string_pool[node.value] = node.value
+            else:
+                node.value = pooled
+
+        return node
+
+    def visit_tag(self, node: Any) -> Any:
+        """Optimize tag memory usage."""
+        if hasattr(node, "name") and isinstance(node.name, str):
+            pooled = self.string_pool.get(node.name)
+            if pooled is None:
+                self.string_pool[node.name] = node.name
+            else:
+                node.name = pooled
+        return node
+
+    # Pass-through methods for other node types
+    def visit_yara_file(self, node: YaraFile) -> YaraFile:
+        """Optimize YaraFile memory usage."""
+        if node.imports:
+            node.imports = [self.visit(imp) for imp in node.imports]
+        if node.includes:
+            node.includes = [self.visit(inc) for inc in node.includes]
+        if node.rules:
+            node.rules = [self.visit(rule) for rule in node.rules]
+        return node
+
+    def visit_import(self, node: Any) -> Any:
+        """Optimize import memory usage."""
+        if hasattr(node, "module") and isinstance(node.module, str):
+            pooled = self.string_pool.get(node.module)
+            if pooled is None:
+                self.string_pool[node.module] = node.module
+            else:
+                node.module = pooled
+        return node
+
+    def visit_include(self, node: Any) -> Any:
+        """Optimize include memory usage."""
+        if hasattr(node, "path") and isinstance(node.path, str):
+            pooled = self.string_pool.get(node.path)
+            if pooled is None:
+                self.string_pool[node.path] = node.path
+            else:
+                node.path = pooled
+        return node
+
+    def visit_boolean_literal(self, node: Any) -> Any:
+        return node
+
+    def visit_integer_literal(self, node: Any) -> Any:
+        return node
+
+    def visit_double_literal(self, node: Any) -> Any:
+        return node
+
+    def visit_string_identifier(self, node: Any) -> Any:
+        if hasattr(node, "name") and isinstance(node.name, str):
+            pooled = self.string_pool.get(node.name)
+            if pooled is None:
+                self.string_pool[node.name] = node.name
+            else:
+                node.name = pooled
+        return node
+
+    def visit_binary_expression(self, node: Any) -> Any:
+        if hasattr(node, "left"):
+            node.left = self.visit(node.left)
+        if hasattr(node, "right"):
+            node.right = self.visit(node.right)
+        if hasattr(node, "operator") and isinstance(node.operator, str):
+            pooled = self.string_pool.get(node.operator)
+            if pooled is None:
+                self.string_pool[node.operator] = node.operator
+            else:
+                node.operator = pooled
+        return node
+
+    def visit_unary_expression(self, node: Any) -> Any:
+        if hasattr(node, "operand"):
+            node.operand = self.visit(node.operand)
+        if hasattr(node, "operator") and isinstance(node.operator, str):
+            pooled = self.string_pool.get(node.operator)
+            if pooled is None:
+                self.string_pool[node.operator] = node.operator
+            else:
+                node.operator = pooled
+        return node
+
+    def visit_hex_string(self, node: Any) -> Any:
+        if hasattr(node, "identifier") and isinstance(node.identifier, str):
+            pooled = self.string_pool.get(node.identifier)
+            if pooled is None:
+                self.string_pool[node.identifier] = node.identifier
+            else:
+                node.identifier = pooled
+        return node
+
+    def visit_regex_string(self, node: Any) -> Any:
+        if hasattr(node, "identifier") and isinstance(node.identifier, str):
+            pooled = self.string_pool.get(node.identifier)
+            if pooled is None:
+                self.string_pool[node.identifier] = node.identifier
+            else:
+                node.identifier = pooled
+        if hasattr(node, "regex") and isinstance(node.regex, str):
+            pooled = self.string_pool.get(node.regex)
+            if pooled is None:
+                self.string_pool[node.regex] = node.regex
+            else:
+                node.regex = pooled
+        return node

@@ -28,8 +28,22 @@ class StringMatcher:
         self.matches: dict[str, list[MatchResult]] = {}
         self._cache: dict[str, any] = {}
 
-    def match_all(self, data: bytes, strings: list) -> dict[str, list[MatchResult]]:
-        """Match all strings against data."""
+    def match_all(self, *args) -> dict[str, list[MatchResult]]:
+        """Match all strings against data.
+
+        Can be called as:
+        - match_all(strings, data)  # Original order from tests
+        - match_all(data, strings)  # New order
+        """
+        if len(args) == 2:
+            # Determine order based on type
+            if isinstance(args[0], bytes):
+                data, strings = args[0], args[1]
+            else:
+                strings, data = args[0], args[1]
+        else:
+            raise ValueError("match_all requires exactly 2 arguments")
+
         self.matches.clear()
 
         for string_def in strings:
@@ -41,6 +55,22 @@ class StringMatcher:
                 self._match_regex_string(data, string_def)
 
         return self.matches
+
+    def match_string(self, string_def, data):
+        """Match a single string against data."""
+        matches = []
+
+        if isinstance(string_def, PlainString):
+            self._match_plain_string(data, string_def)
+            matches = self.matches.get(string_def.identifier, [])
+        elif isinstance(string_def, HexString):
+            self._match_hex_string(data, string_def)
+            matches = self.matches.get(string_def.identifier, [])
+        elif isinstance(string_def, RegexString):
+            self._match_regex_string(data, string_def)
+            matches = self.matches.get(string_def.identifier, [])
+
+        return matches
 
     def _match_plain_string(self, data: bytes, string_def: PlainString):
         """Match plain string against data."""

@@ -1,157 +1,179 @@
-"""Performance optimizer for YARA rules."""
+"""Performance optimization for YARA rules."""
 
-import copy
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexString, HexWildcard, PlainString, RegexString
+from yaraast.optimization.rule_optimizer import RuleOptimizer
+from yaraast.performance.memory_optimizer import MemoryOptimizer
+
+if TYPE_CHECKING:
+    pass
 
 
-class StringOptimizer:
-    """Optimize YARA strings for better performance."""
+class PerformanceOptimizer:
+    """Optimizes YARA rules for better runtime performance."""
 
-    def optimize_rule(self, rule: Rule) -> tuple[Rule, list[str]]:
-        """Optimize a rule and return optimized version with list of changes made."""
-        optimized_rule = copy.deepcopy(rule)
-        changes = []
+    def __init__(self):
+        self.rule_optimizer = RuleOptimizer()
+        self.memory_optimizer = MemoryOptimizer()
+        self._stats = {
+            "rules_optimized": 0,
+            "conditions_simplified": 0,
+            "strings_optimized": 0,
+        }
 
-        for i, string in enumerate(optimized_rule.strings):
-            if isinstance(string, HexString):
-                optimized, change = self.optimize_hex_string(string)
-                if change:
-                    optimized_rule.strings[i] = optimized
-                    changes.append(f"{string.identifier}: {change}")
-            elif isinstance(string, PlainString):
-                optimized, change = self.optimize_plain_string(string)
-                if change:
-                    optimized_rule.strings[i] = optimized
-                    changes.append(f"{string.identifier}: {change}")
-            elif isinstance(string, RegexString):
-                optimized, change = self.optimize_regex_string(string)
-                if change:
-                    optimized_rule.strings[i] = optimized
-                    changes.append(f"{string.identifier}: {change}")
+    def optimize(self, target: Rule | YaraFile, strategy: str = "balanced") -> Rule | YaraFile:
+        """Optimize a rule or file for performance.
 
-        return optimized_rule, changes
+        Args:
+            target: Rule or YaraFile to optimize
+            strategy: Optimization strategy ('speed', 'memory', 'balanced')
 
-    def optimize_hex_string(self, string: HexString) -> tuple[HexString, str | None]:
-        """Optimize hex string for better performance."""
-        if not string.tokens:
-            return string, None
-
-        optimized = copy.deepcopy(string)
-
-        # Strategy 1: Replace long wildcard sequences with jumps
-        new_tokens = []
-        consecutive_wildcards = 0
-
-        for token in optimized.tokens:
-            if isinstance(token, HexWildcard):
-                consecutive_wildcards += 1
-            else:
-                if consecutive_wildcards >= 4:
-                    # Replace 4+ consecutive wildcards with a jump
-                    from yaraast.ast.strings import HexJump
-
-                    new_tokens.append(
-                        HexJump(
-                            min_jump=consecutive_wildcards,
-                            max_jump=consecutive_wildcards,
-                        )
-                    )
-                    change = f"Replaced {consecutive_wildcards} consecutive wildcards with jump [4-{consecutive_wildcards}]"
-                else:
-                    # Keep the wildcards as is
-                    for _ in range(consecutive_wildcards):
-                        new_tokens.append(HexWildcard())
-                consecutive_wildcards = 0
-                new_tokens.append(token)
-
-        # Handle trailing wildcards
-        if consecutive_wildcards >= 4:
-            from yaraast.ast.strings import HexJump
-
-            new_tokens.append(
-                HexJump(min_jump=consecutive_wildcards, max_jump=consecutive_wildcards)
-            )
-            change = f"Replaced {consecutive_wildcards} consecutive wildcards with jump"
+        Returns:
+            Optimized rule or file
+        """
+        if isinstance(target, Rule):
+            return self.optimize_rule(target, strategy)
+        elif isinstance(target, YaraFile):
+            return self.optimize_file(target, strategy)
         else:
-            for _ in range(consecutive_wildcards):
-                new_tokens.append(HexWildcard())
-            change = None
+            return target
 
-        if len(new_tokens) != len(optimized.tokens):
-            optimized.tokens = new_tokens
-            return optimized, change or "Optimized wildcard patterns"
+    def optimize_rule(self, rule: Rule, strategy: str = "balanced") -> Rule:
+        """Optimize a single rule."""
+        # Apply rule optimizations
+        optimized = self.rule_optimizer.optimize_rule(rule)
 
-        return string, None
+        # Apply memory optimizations if needed
+        if strategy in ("memory", "balanced"):
+            optimized = self.memory_optimizer.optimize_rule(optimized)
 
-    def optimize_plain_string(self, string: PlainString) -> tuple[PlainString, str | None]:
-        """Optimize plain string for better performance."""
-        # Very short strings can't really be optimized
-        if len(string.value) <= 2:
-            # Could suggest removing or combining with other patterns
-            return string, None
+        # Apply performance-specific optimizations
+        if strategy in ("speed", "balanced"):
+            optimized = self._optimize_for_speed(optimized)
 
-        # Strings with only whitespace could be converted to hex patterns
-        if all(c in " \t\n\r\x00" for c in string.value):
-            # Convert to hex string for better control
-            from yaraast.ast.strings import HexByte, HexString
+        self._stats["rules_optimized"] += 1
+        return optimized
 
-            hex_tokens = []
-            for c in string.value:
-                hex_tokens.append(HexByte(value=ord(c)))
+    def optimize_file(self, yara_file: YaraFile, strategy: str = "balanced") -> YaraFile:
+        """Optimize an entire YARA file."""
+        # Apply file-level optimizations
+        optimized = self.rule_optimizer.optimize_file(yara_file)
 
-            HexString(
-                identifier=string.identifier,
-                tokens=hex_tokens,
-                modifiers=string.modifiers,
-            )
-            return string, None  # For now, don't auto-convert
+        # Apply memory optimizations if needed
+        if strategy in ("memory", "balanced"):
+            optimized = self.memory_optimizer.optimize(optimized)
 
-        return string, None
+        # Apply performance-specific optimizations
+        if strategy in ("speed", "balanced"):
+            optimized = self._optimize_file_for_speed(optimized)
 
-    def optimize_regex_string(self, string: RegexString) -> tuple[RegexString, str | None]:
-        """Optimize regex string for better performance."""
-        optimized = copy.deepcopy(string)
+        return optimized
 
-        # Remove unnecessary anchors with .*
-        if optimized.regex.startswith("^.*"):
-            optimized.regex = optimized.regex[3:]
-            return optimized, "Removed unnecessary ^.* anchor"
+    def _optimize_for_speed(self, rule: Rule) -> Rule:
+        """Apply speed-specific optimizations to a rule."""
+        # Reorder string checks for better performance
+        if rule.strings and isinstance(rule.strings, list):
+            # Put shorter strings first (faster to check)
+            try:
+                rule.strings.sort(key=lambda s: len(getattr(s, "value", "")))
+                self._stats["strings_optimized"] += len(rule.strings)
+            except (TypeError, AttributeError):
+                # Skip optimization if strings format is unexpected
+                pass
 
-        if optimized.regex.endswith(".*$"):
-            optimized.regex = optimized.regex[:-3]
-            return optimized, "Removed unnecessary .*$ anchor"
+        # TODO: More speed optimizations
+        # - Reorder condition checks
+        # - Optimize regex patterns
+        # - Cache intermediate results
 
-        # Warn about catastrophic backtracking patterns but don't auto-fix
-        # as they might be intentional
-        problematic = [
-            ("(.+)+", "nested quantifiers"),
-            ("(.*)*", "nested quantifiers"),
-            ("(.+)*", "nested quantifiers"),
-            ("(.*)+", "nested quantifiers"),
-        ]
+        return rule
 
-        for pattern, _issue in problematic:
-            if pattern in optimized.regex:
-                # Don't auto-fix as it might break the pattern
-                return string, None
+    def _optimize_file_for_speed(self, yara_file: YaraFile) -> YaraFile:
+        """Apply speed-specific optimizations to a file."""
+        # Optimize each rule
+        for i, rule in enumerate(yara_file.rules):
+            yara_file.rules[i] = self._optimize_for_speed(rule)
 
-        return string, None
+        # Reorder rules for better performance
+        # Put simpler rules first
+        yara_file.rules.sort(key=self._rule_complexity)
+
+        return yara_file
+
+    def _rule_complexity(self, rule: Rule) -> int:
+        """Estimate rule complexity for ordering."""
+        complexity = 0
+
+        # String complexity
+        if rule.strings:
+            complexity += len(rule.strings) * 10
+            for string_def in rule.strings:
+                if hasattr(string_def, "regex"):
+                    complexity += 50  # Regex is expensive
+                elif hasattr(string_def, "tokens"):
+                    complexity += len(string_def.tokens) * 5  # Hex patterns
+
+        # Condition complexity
+        if rule.condition:
+            # Simple heuristic based on string representation
+            condition_str = str(rule.condition)
+            complexity += len(condition_str)
+            complexity += condition_str.count(" and ") * 5
+            complexity += condition_str.count(" or ") * 5
+            complexity += condition_str.count("for ") * 20
+
+        return complexity
+
+    def get_statistics(self) -> dict[str, Any]:
+        """Get optimization statistics."""
+        return dict(self._stats)
+
+    def reset_statistics(self) -> None:
+        """Reset optimization statistics."""
+        self._stats = {
+            "rules_optimized": 0,
+            "conditions_simplified": 0,
+            "strings_optimized": 0,
+        }
 
 
-def optimize_yara_file(yara_file: YaraFile) -> tuple[YaraFile, list[str]]:
-    """Optimize an entire YARA file."""
-    optimizer = StringOptimizer()
-    optimized_file = copy.deepcopy(yara_file)
-    all_changes = []
+def optimize_yara_file(
+    file_path: str, output_path: str | None = None, strategy: str = "balanced"
+) -> tuple[YaraFile, dict[str, Any]]:
+    """Optimize a YARA file for performance.
 
-    for i, rule in enumerate(optimized_file.rules):
-        optimized_rule, changes = optimizer.optimize_rule(rule)
-        if changes:
-            optimized_file.rules[i] = optimized_rule
-            for change in changes:
-                all_changes.append(f"{rule.name}/{change}")
+    Args:
+        file_path: Path to input YARA file
+        output_path: Optional output path
+        strategy: Optimization strategy
 
-    return optimized_file, all_changes
+    Returns:
+        Tuple of (optimized AST, statistics)
+    """
+    from yaraast.parser import Parser
+
+    # Parse the file
+    parser = Parser()
+    with open(file_path) as f:
+        content = f.read()
+    ast = parser.parse(content)
+
+    # Optimize
+    optimizer = PerformanceOptimizer()
+    optimized = optimizer.optimize(ast, strategy)
+    stats = optimizer.get_statistics()
+
+    # Write output if requested
+    if output_path:
+        from yaraast.codegen import CodeGenerator
+
+        gen = CodeGenerator()
+        output = gen.generate(optimized)
+        with open(output_path, "w") as f:
+            f.write(output)
+
+    return optimized, stats

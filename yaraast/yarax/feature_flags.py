@@ -4,6 +4,16 @@ from dataclasses import dataclass
 from typing import Any
 
 
+class FeatureFlags:
+    """Legacy feature flags class for compatibility."""
+
+    SUPPORTS_FLOAT_MODULUS = True
+    SUPPORTS_TUPLE_INDEXING = True
+    SUPPORTS_WITH_STATEMENT = True
+    SUPPORTS_ARRAY_COMPREHENSION = True
+    SUPPORTS_DICT_COMPREHENSION = True
+
+
 @dataclass
 class YaraXFeatures:
     """Configuration for YARA-X specific features."""

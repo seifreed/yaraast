@@ -221,11 +221,40 @@ class ProtobufSerializer(ASTVisitor[Any]):
 
     def _protobuf_to_ast(self, pb_file: yara_ast_pb2.YaraFile) -> YaraFile:
         """Convert Protobuf message to AST."""
-        # Basic reconstruction - would need full implementation
-        # For now, return empty YaraFile as placeholder
         from yaraast.ast.base import YaraFile
+        from yaraast.ast.expressions import BooleanLiteral
+        from yaraast.ast.rules import Import, Include, Rule
 
-        return YaraFile(imports=[], includes=[], rules=[])
+        # Reconstruct imports
+        imports = []
+        for pb_import in pb_file.imports:
+            imports.append(
+                Import(
+                    module=pb_import.module,
+                    alias=pb_import.alias if pb_import.alias else None,
+                )
+            )
+
+        # Reconstruct includes
+        includes = []
+        for pb_include in pb_file.includes:
+            includes.append(Include(path=pb_include.path))
+
+        # Reconstruct rules (basic)
+        rules = []
+        for pb_rule in pb_file.rules:
+            # For now, create basic rules with boolean conditions
+            rule = Rule(
+                name=pb_rule.name,
+                modifiers=list(pb_rule.modifiers),
+                tags=[],
+                meta={},
+                strings=[],
+                condition=BooleanLiteral(value=True),  # Placeholder condition
+            )
+            rules.append(rule)
+
+        return YaraFile(imports=imports, includes=includes, rules=rules)
 
     def get_serialization_stats(self, ast: YaraFile) -> dict[str, Any]:
         """Get statistics about the serialization."""
@@ -385,4 +414,32 @@ class ProtobufSerializer(ASTVisitor[Any]):
         return None
 
     def visit_string_operator_expression(self, node) -> Any:
+        return None
+
+    def visit_extern_import(self, node) -> Any:
+        """Visit ExternImport node."""
+        return None
+
+    def visit_extern_namespace(self, node) -> Any:
+        """Visit ExternNamespace node."""
+        return None
+
+    def visit_extern_rule(self, node) -> Any:
+        """Visit ExternRule node."""
+        return None
+
+    def visit_extern_rule_reference(self, node) -> Any:
+        """Visit ExternRuleReference node."""
+        return None
+
+    def visit_in_rule_pragma(self, node) -> Any:
+        """Visit InRulePragma node."""
+        return None
+
+    def visit_pragma(self, node) -> Any:
+        """Visit Pragma node."""
+        return None
+
+    def visit_pragma_block(self, node) -> Any:
+        """Visit PragmaBlock node."""
         return None

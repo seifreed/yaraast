@@ -90,7 +90,15 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_rule(self, node: Rule) -> str:
         """Generate code for Rule."""
         # Rule header
-        modifiers = " ".join(node.modifiers)
+        modifiers = ""
+        if hasattr(node, "modifiers") and node.modifiers:
+            if isinstance(node.modifiers, (list, tuple)):
+                modifiers = " ".join(str(m) for m in node.modifiers)
+            elif isinstance(node.modifiers, str):
+                modifiers = node.modifiers
+            else:
+                # Don't show complex object representations
+                modifiers = ""
         if modifiers:
             self._write(f"{modifiers} ")
 
@@ -190,8 +198,20 @@ class CodeGenerator(ASTVisitor[str]):
         self._write(f'{node.identifier} = "{escaped_value}"')
 
         # Add modifiers
-        for mod in node.modifiers:
-            self._write(f" {self.visit(mod)}")
+        if hasattr(node, "modifiers") and node.modifiers:
+            if isinstance(node.modifiers, (list, tuple)):
+                for mod in node.modifiers:
+                    if isinstance(mod, str):
+                        self._write(f" {mod}")
+                    elif hasattr(mod, "accept"):
+                        self._write(f" {self.visit(mod)}")
+                    else:
+                        self._write(f" {str(mod)}")
+            elif isinstance(node.modifiers, str):
+                self._write(f" {node.modifiers}")
+            else:
+                # Don't try to visit non-AST objects
+                pass
 
         return ""
 
@@ -210,8 +230,20 @@ class CodeGenerator(ASTVisitor[str]):
         self._write("}")
 
         # Add modifiers
-        for mod in node.modifiers:
-            self._write(f" {self.visit(mod)}")
+        if hasattr(node, "modifiers") and node.modifiers:
+            if isinstance(node.modifiers, (list, tuple)):
+                for mod in node.modifiers:
+                    if isinstance(mod, str):
+                        self._write(f" {mod}")
+                    elif hasattr(mod, "accept"):
+                        self._write(f" {self.visit(mod)}")
+                    else:
+                        self._write(f" {str(mod)}")
+            elif isinstance(node.modifiers, str):
+                self._write(f" {node.modifiers}")
+            else:
+                # Don't try to visit non-AST objects
+                pass
 
         return ""
 
@@ -223,8 +255,20 @@ class CodeGenerator(ASTVisitor[str]):
         self._write(f"{node.identifier} = /{node.regex}/")
 
         # Add modifiers
-        for mod in node.modifiers:
-            self._write(f" {self.visit(mod)}")
+        if hasattr(node, "modifiers") and node.modifiers:
+            if isinstance(node.modifiers, (list, tuple)):
+                for mod in node.modifiers:
+                    if isinstance(mod, str):
+                        self._write(f" {mod}")
+                    elif hasattr(mod, "accept"):
+                        self._write(f" {self.visit(mod)}")
+                    else:
+                        self._write(f" {str(mod)}")
+            elif isinstance(node.modifiers, str):
+                self._write(f" {node.modifiers}")
+            else:
+                # Don't try to visit non-AST objects
+                pass
 
         return ""
 

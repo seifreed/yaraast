@@ -135,10 +135,8 @@ class ErrorTolerantLexer(Lexer):
         while self._current_char() and self._current_char() not in '\n"':
             self._advance()
 
-        if self._current_char() == '"':
-            self._advance()  # Skip the quote
-        elif self._current_char() == "\n":
-            self._advance()  # Skip newline
+        if self._current_char() in ('"', "\n"):
+            self._advance()  # Skip the quote or newline
 
     def _skip_to_whitespace(self):
         """Skip to next whitespace character."""

@@ -16,7 +16,7 @@ from yaraast.lexer import Lexer, Token, TokenType
 class Parser:
     """Better YARA parser implementation."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.tokens: list[Token] = []
         self.position = 0
         self.text = ""
@@ -257,7 +257,7 @@ class Parser:
 
                     expr = AtExpression(string_id=expr.name, offset=offset)
                 else:
-                    raise Exception("'at' operator requires string identifier on left side")
+                    raise ValueError("'at' operator requires string identifier on left side")
             elif self._match(TokenType.IN):
                 # Handle 'in' operator (e.g., $string in (0..100))
                 if isinstance(expr, StringIdentifier):
@@ -278,14 +278,9 @@ class Parser:
         """Parse primary expression."""
         # Handle 'defined' operator
         if self._match(TokenType.DEFINED):
-            # Parse the expression that follows 'defined'
-            if self._match(TokenType.IDENTIFIER):
-                expr = Identifier(name=self._previous().value)
-                return DefinedExpression(expression=expr)
-            if self._match(TokenType.STRING_IDENTIFIER):
-                expr = StringIdentifier(name=self._previous().value)
-                return DefinedExpression(expression=expr)
-            raise Exception("Expected identifier after 'defined'")
+            # Parse the full expression that follows 'defined' (could be complex like pe.sections[0].name)
+            expr = self._parse_postfix_expression()
+            return DefinedExpression(expression=expr)
 
         # String identifiers
         if self._match(TokenType.STRING_IDENTIFIER):
@@ -421,11 +416,13 @@ class Parser:
 
     def _parse_postfix_expression(self) -> Expression:
         """Parse postfix expression starting from primary."""
-        # Get base identifier
-        if not self._match(TokenType.IDENTIFIER):
-            raise Exception("Expected identifier")
-
-        return self._parse_postfix_from_identifier(self._previous().value)
+        # Get base identifier (could be regular identifier or string identifier)
+        if self._match(TokenType.IDENTIFIER):
+            return self._parse_postfix_from_identifier(self._previous().value)
+        if self._match(TokenType.STRING_IDENTIFIER):
+            # For string identifiers like $string1, return a StringIdentifier directly
+            return StringIdentifier(name=self._previous().value)
+        raise ValueError("Expected identifier in postfix expression")
 
     def _parse_postfix_from_identifier(self, name: str) -> Expression:
         """Parse postfix operations from an identifier."""
@@ -921,6 +918,10 @@ class Parser:
                 elif self._match(TokenType.MULTIPLY):
                     # Handle standalone wildcards (*)
                     string_ids.append(StringIdentifier(name="*"))
+                elif self._match(TokenType.INTEGER):
+                    # Handle integer literals in set expressions
+                    value = self._previous().value
+                    string_ids.append(IntegerLiteral(value=value))
                 else:
                     # Skip unexpected tokens and try to continue
                     # This helps with parsing files with unsupported syntax

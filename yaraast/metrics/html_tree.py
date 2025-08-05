@@ -10,7 +10,7 @@ from jinja2 import Template
 from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import YaraFile
+    from yaraast.ast.base import ASTNode, YaraFile
     from yaraast.ast.rules import Rule
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
@@ -1158,3 +1158,118 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
             "label": "String Operator Expression",
             "node_class": "expression",
         }
+
+    def visit_extern_import(self, node) -> dict[str, Any]:
+        """Visit ExternImport node."""
+        return {
+            "id": self._get_node_id(),
+            "label": "Extern Import",
+            "node_class": "import",
+        }
+
+    def visit_extern_namespace(self, node) -> dict[str, Any]:
+        """Visit ExternNamespace node."""
+        return {
+            "id": self._get_node_id(),
+            "label": "Extern Namespace",
+            "node_class": "namespace",
+        }
+
+    def visit_extern_rule(self, node) -> dict[str, Any]:
+        """Visit ExternRule node."""
+        return {"id": self._get_node_id(), "label": "Extern Rule", "node_class": "rule"}
+
+    def visit_extern_rule_reference(self, node) -> dict[str, Any]:
+        """Visit ExternRuleReference node."""
+        return {
+            "id": self._get_node_id(),
+            "label": "Extern Rule Reference",
+            "node_class": "expression",
+        }
+
+    def visit_in_rule_pragma(self, node) -> dict[str, Any]:
+        """Visit InRulePragma node."""
+        return {
+            "id": self._get_node_id(),
+            "label": "In-Rule Pragma",
+            "node_class": "pragma",
+        }
+
+    def visit_pragma(self, node) -> dict[str, Any]:
+        """Visit Pragma node."""
+        return {"id": self._get_node_id(), "label": "Pragma", "node_class": "pragma"}
+
+    def visit_pragma_block(self, node) -> dict[str, Any]:
+        """Visit PragmaBlock node."""
+        return {
+            "id": self._get_node_id(),
+            "label": "Pragma Block",
+            "node_class": "pragma",
+        }
+
+
+# Alias for compatibility
+HTMLTreeGenerator = HtmlTreeGenerator
+
+
+def generate_html_tree(ast: YaraFile, title: str = "YARA AST") -> str:
+    """Generate HTML tree visualization from AST."""
+    gen = HTMLTreeGenerator()
+    return gen.generate_html(ast, None, title)
+
+
+def create_node_html(node: ASTNode) -> str:
+    """Create HTML for a single AST node."""
+    gen = HTMLTreeGenerator()
+    node_data = node.accept(gen)
+
+    html = f'<div class="tree-node {node_data.get("node_class", "")}">'
+    html += f'<span class="node-label">{node_data.get("label", "")}</span>'
+
+    if node_data.get("value"):
+        html += f'<span class="node-value">{node_data["value"]}</span>'
+
+    if node_data.get("details"):
+        html += f'<div class="node-details">{node_data["details"]}</div>'
+
+    html += "</div>"
+    return html
+
+
+def generate_ast_tree(ast: YaraFile) -> dict[str, Any]:
+    """Generate tree data structure from AST."""
+    gen = HTMLTreeGenerator()
+    return gen.visit(ast)
+
+
+def export_html_tree(
+    ast: YaraFile, output_path: str | Path, title: str = "YARA AST Visualization"
+) -> None:
+    """Export HTML tree visualization to file."""
+    gen = HTMLTreeGenerator()
+    gen.generate_html(ast, str(output_path), title)
+
+
+# Add generate method to HTMLTreeGenerator for better compatibility
+def _generate_method(
+    self,
+    ast: YaraFile,
+    title: str = "YARA AST",
+    expand_level: int = 2,
+    show_attributes: bool = True,
+    custom_css: str = "",
+    custom_js: str = "",
+) -> str:
+    """Generate HTML tree visualization."""
+    html = self.generate_html(ast, None, title)
+
+    # Add custom CSS/JS if provided
+    if custom_css:
+        html = html.replace("</style>", f"{custom_css}\n</style>")
+    if custom_js:
+        html = html.replace("</script>", f"{custom_js}\n</script>")
+
+    return html
+
+
+HTMLTreeGenerator.generate = _generate_method

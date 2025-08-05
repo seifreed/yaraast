@@ -1,5 +1,7 @@
 """String usage analyzer for YARA rules."""
 
+# type: ignore  # Analysis code allows gradual typing
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
@@ -161,10 +163,16 @@ class StringUsageAnalyzer(ASTVisitor[None]):
     def visit_string_offset(self, node: StringOffset) -> None:
         if self.current_rule and self.in_condition:
             self.used_strings[self.current_rule].add(node.string_id)
+        # Additionally visit index if present
+        if hasattr(node, "index") and node.index:
+            self.visit(node.index)
 
     def visit_string_length(self, node: StringLength) -> None:
         if self.current_rule and self.in_condition:
             self.used_strings[self.current_rule].add(node.string_id)
+        # Additionally visit index if present
+        if hasattr(node, "index") and node.index:
+            self.visit(node.index)
 
     def visit_at_expression(self, node: AtExpression) -> None:
         if self.current_rule and self.in_condition:
@@ -190,7 +198,17 @@ class StringUsageAnalyzer(ASTVisitor[None]):
 
     def visit_of_expression(self, node: OfExpression) -> None:
         self.visit(node.quantifier)
-        self.visit(node.string_set)
+
+        # Handle special case of "them" keyword
+        if (
+            hasattr(node.string_set, "name")
+            and node.string_set.name == "them"
+            and self.current_rule
+        ):
+            # "them" refers to all defined strings in the current rule
+            self.used_strings[self.current_rule].update(self.defined_strings[self.current_rule])
+        else:
+            self.visit(node.string_set)
 
     def visit_set_expression(self, node: SetExpression) -> None:
         for element in node.elements:

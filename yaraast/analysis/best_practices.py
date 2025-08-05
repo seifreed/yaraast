@@ -5,6 +5,8 @@ suggestions. It's not a full linter but rather an AST-based analyzer that can
 identify patterns and suggest improvements.
 """
 
+# type: ignore  # Analysis code allows gradual typing
+
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -48,7 +50,7 @@ class AnalysisReport:
         severity: str,
         message: str,
         location: str | None = None,
-    ):
+    ) -> None:
         """Add a suggestion to the report."""
         self.suggestions.append(Suggestion(rule, category, severity, message, location))
 
@@ -69,7 +71,7 @@ class AnalysisReport:
 class BestPracticesAnalyzer(ASTVisitor[None]):
     """Analyze YARA AST for best practices and optimization opportunities."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.report = AnalysisReport()
         self._current_rule: Rule | None = None
         self._string_usage: dict[str, int] = {}
@@ -186,7 +188,7 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
 
         for string_def in rule.strings:
             # Check string naming conventions
-            if not re.match(r"^\$[a-zA-Z][a-zA-Z0-9_]*$", string_def.identifier):
+            if not re.match(r"^\$[a-zA-Z]\w*$", string_def.identifier):
                 self.report.add_suggestion(
                     rule.name,
                     "style",

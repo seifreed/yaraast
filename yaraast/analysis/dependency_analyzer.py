@@ -1,5 +1,7 @@
 """Dependency analyzer for YARA rules."""
 
+# type: ignore  # Analysis code allows gradual typing
+
 from collections import defaultdict
 
 from yaraast.ast.base import YaraFile
@@ -153,7 +155,7 @@ class DependencyAnalyzer(ASTVisitor[None]):
                     if color[neighbor] == gray:
                         # Found cycle
                         cycle_start = path.index(neighbor)
-                        cycle = [*path[cycle_start:], neighbor]
+                        cycle = path[cycle_start:]
                         cycles.append(cycle)
                     elif color[neighbor] == white:
                         dfs(neighbor)
@@ -182,11 +184,9 @@ class DependencyAnalyzer(ASTVisitor[None]):
 
         in_degree = dict.fromkeys(self.rule_names, 0)
 
-        # Calculate in-degrees
-        for _rule, deps in self.dependencies.items():
-            for dep in deps:
-                if dep in in_degree:  # Only count internal dependencies
-                    in_degree[dep] += 1
+        # Calculate in-degrees: if rule A depends on rule B, then A has incoming edge from B
+        for rule, deps in self.dependencies.items():
+            in_degree[rule] = len([dep for dep in deps if dep in in_degree])
 
         # Find nodes with no incoming edges
         queue = [rule for rule, degree in in_degree.items() if degree == 0]

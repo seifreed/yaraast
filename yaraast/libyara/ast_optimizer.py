@@ -83,9 +83,8 @@ class ASTOptimizer:
             condition.left = left_opt
             condition.right = right_opt
 
-        elif isinstance(condition, UnaryExpression):
-            if hasattr(condition, "operand"):
-                condition.operand = self._optimize_condition(condition.operand)
+        elif isinstance(condition, UnaryExpression) and hasattr(condition, "operand"):
+            condition.operand = self._optimize_condition(condition.operand)
 
         return condition
 

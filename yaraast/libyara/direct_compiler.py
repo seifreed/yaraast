@@ -58,8 +58,7 @@ class DirectCompilationResult:
         )
 
 
-# Import the new ASTOptimizer from separate file
-from yaraast.libyara.ast_optimizer import ASTOptimizer
+from yaraast.libyara.ast_optimizer import ASTOptimizer  # noqa: E402
 
 
 class DirectASTCompiler:
@@ -175,6 +174,17 @@ class DirectASTCompiler:
                 compilation_time=compilation_time,
             )
 
+    def compile_to_yara(self, ast: YaraFile) -> str:
+        """Compile AST to YARA source code.
+
+        Args:
+            ast: The YARA AST to compile
+
+        Returns:
+            Generated YARA source code
+        """
+        return self._generate_optimized_source(ast)
+
     def _generate_optimized_source(self, ast: YaraFile) -> str:
         """Generate YARA source from optimized AST."""
         from yaraast.codegen import CodeGenerator
@@ -280,7 +290,10 @@ class OptimizedMatcher:
             self.scan_stats["total_scans"] += 1
 
             # Prepare scan arguments
-            scan_args = {"timeout": timeout, "fast": fast_mode, **kwargs}
+            scan_args = {"fast": fast_mode, **kwargs}
+            # Only add timeout if it's not None
+            if timeout is not None:
+                scan_args["timeout"] = timeout
 
             # Determine scan type and execute
             if isinstance(data, bytes):
@@ -330,15 +343,25 @@ class OptimizedMatcher:
         enhanced = []
 
         for match in matches:
+            # Process strings - each string is a StringMatch object
+            string_matches = []
+            for string_match in match.strings:
+                # StringMatch has instances attribute which is a list of (offset, matched_data) tuples
+                for instance in string_match.instances:
+                    string_matches.append(
+                        {
+                            "offset": instance.offset,
+                            "identifier": string_match.identifier,
+                            "data": instance.matched_data,
+                        }
+                    )
+
             enhanced_match = {
                 "rule": match.rule,
                 "namespace": match.namespace,
                 "tags": list(match.tags),
                 "meta": dict(match.meta),
-                "strings": [
-                    {"offset": offset, "identifier": identifier, "data": data}
-                    for offset, identifier, data in match.strings
-                ],
+                "strings": string_matches,
                 "ast_context": self._get_ast_context_for_rule(match.rule),
             }
             enhanced.append(enhanced_match)
@@ -405,3 +428,7 @@ class OptimizedMatcher:
             stats["success_rate"] = 0.0
 
         return stats
+
+
+# For backward compatibility
+DirectCompiler = DirectASTCompiler

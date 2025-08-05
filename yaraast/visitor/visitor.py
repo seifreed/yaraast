@@ -7,21 +7,64 @@ from typing import Any, Generic, TypeVar, cast
 
 T = TypeVar("T")
 
-from yaraast.ast.base import *
-from yaraast.ast.comments import *
-from yaraast.ast.conditions import *
-from yaraast.ast.expressions import *
-from yaraast.ast.extern import *
-from yaraast.ast.meta import *
-from yaraast.ast.modifiers import *
-from yaraast.ast.modules import *
-from yaraast.ast.operators import *
-from yaraast.ast.pragmas import *
-from yaraast.ast.rules import *
-from yaraast.ast.strings import *
+# Import specific classes from AST modules
+from yaraast.ast.base import ASTNode, YaraFile  # noqa: E402
+from yaraast.ast.comments import Comment, CommentGroup  # noqa: E402
+from yaraast.ast.conditions import (  # noqa: E402
+    AtExpression,
+    Condition,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
+from yaraast.ast.expressions import (  # noqa: E402
+    ArrayAccess,
+    BinaryExpression,
+    BooleanLiteral,
+    DoubleLiteral,
+    Expression,
+    FunctionCall,
+    Identifier,
+    IntegerLiteral,
+    MemberAccess,
+    ParenthesesExpression,
+    RangeExpression,
+    RegexLiteral,
+    SetExpression,
+    StringCount,
+    StringIdentifier,
+    StringLength,
+    StringLiteral,
+    StringOffset,
+    UnaryExpression,
+)
+from yaraast.ast.extern import (  # noqa: E402
+    ExternImport,
+    ExternNamespace,
+    ExternRule,
+    ExternRuleReference,
+)
+from yaraast.ast.meta import Meta  # noqa: E402
+from yaraast.ast.modifiers import StringModifier  # noqa: E402
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression  # noqa: E402
+from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock  # noqa: E402
+from yaraast.ast.rules import Import, Include, Rule  # noqa: E402
+from yaraast.ast.simple_nodes import Tag  # noqa: E402
+from yaraast.ast.strings import (  # noqa: E402
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexString,
+    HexToken,
+    HexWildcard,
+    PlainString,
+    RegexString,
+    StringDefinition,
+)
 
 
-class ASTVisitor(Generic[T], ABC):
+class ASTVisitor(ABC, Generic[T]):
     """Base visitor class for traversing AST nodes."""
 
     def visit(self, node: ASTNode) -> T:
@@ -265,12 +308,20 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         """Transform YaraFile node."""
+        from typing import cast
+
         imports = [self.visit(imp) for imp in node.imports]
         includes = [self.visit(inc) for inc in node.includes]
-        rules = [self.visit(rule) for rule in node.rules]
-        extern_rules = [self.visit(extern_rule) for extern_rule in node.extern_rules]
-        extern_imports = [self.visit(extern_import) for extern_import in node.extern_imports]
-        pragmas = [self.visit(pragma) for pragma in node.pragmas]
+        rules = cast("list[Rule]", [self.visit(rule) for rule in node.rules])
+        extern_rules = cast(
+            "list[ExternRule]",
+            [self.visit(extern_rule) for extern_rule in node.extern_rules],
+        )
+        extern_imports = cast(
+            "list[ExternImport]",
+            [self.visit(extern_import) for extern_import in node.extern_imports],
+        )
+        pragmas = cast("list[Pragma]", [self.visit(pragma) for pragma in node.pragmas])
         namespaces = [self.visit(namespace) for namespace in node.namespaces]
 
         return YaraFile(
@@ -281,7 +332,6 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             extern_imports=extern_imports,
             pragmas=pragmas,
             namespaces=namespaces,
-            location=node.location,
         )
 
     def visit_import(self, node: Import) -> Import:
@@ -389,15 +439,19 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_identifier(self, node: Identifier) -> Identifier:
         """Transform Identifier node."""
-        return Identifier(name=node.name, location=node.location)
+        # expressions.Identifier doesn't accept location
+        from yaraast.ast.expressions import Identifier as ExprIdentifier
+
+        return ExprIdentifier(name=node.name)
 
     def visit_string_identifier(self, node: StringIdentifier) -> StringIdentifier:
         """Transform StringIdentifier node."""
-        return StringIdentifier(name=node.name, location=node.location)
+        # StringIdentifier doesn't accept location parameter
+        return StringIdentifier(name=node.name)
 
     def visit_string_count(self, node: StringCount) -> StringCount:
         """Transform StringCount node."""
-        return StringCount(string_id=node.string_id, location=node.location)
+        return StringCount(string_id=node.string_id)
 
     def visit_string_offset(self, node: StringOffset) -> StringOffset:
         """Transform StringOffset node."""
@@ -411,15 +465,15 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_integer_literal(self, node: IntegerLiteral) -> IntegerLiteral:
         """Transform IntegerLiteral node."""
-        return IntegerLiteral(value=node.value, location=node.location)
+        return IntegerLiteral(value=node.value)
 
     def visit_double_literal(self, node: DoubleLiteral) -> DoubleLiteral:
         """Transform DoubleLiteral node."""
-        return DoubleLiteral(value=node.value, location=node.location)
+        return DoubleLiteral(value=node.value)
 
     def visit_string_literal(self, node: StringLiteral) -> StringLiteral:
         """Transform StringLiteral node."""
-        return StringLiteral(value=node.value, location=node.location)
+        return StringLiteral(value=node.value)
 
     def visit_regex_literal(self, node: RegexLiteral) -> RegexLiteral:
         """Transform RegexLiteral node."""
@@ -427,15 +481,16 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_boolean_literal(self, node: BooleanLiteral) -> BooleanLiteral:
         """Transform BooleanLiteral node."""
-        return BooleanLiteral(value=node.value, location=node.location)
+        return BooleanLiteral(value=node.value)
 
     def visit_binary_expression(self, node: BinaryExpression) -> BinaryExpression:
         """Transform BinaryExpression node."""
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        return BinaryExpression(
-            left=left, operator=node.operator, right=right, location=node.location
-        )
+        from typing import cast
+
+        left = cast("Expression", self.visit(node.left))
+        right = cast("Expression", self.visit(node.right))
+        # BinaryExpression doesn't accept location parameter
+        return BinaryExpression(left=left, operator=node.operator, right=right)
 
     def visit_unary_expression(self, node: UnaryExpression) -> UnaryExpression:
         """Transform UnaryExpression node."""
@@ -444,8 +499,10 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> ParenthesesExpression:
         """Transform ParenthesesExpression node."""
-        expression = self.visit(node.expression)
-        return ParenthesesExpression(expression=expression, location=node.location)
+        from typing import cast
+
+        expression = cast("Expression", self.visit(node.expression))
+        return ParenthesesExpression(expression=expression)
 
     def visit_set_expression(self, node: SetExpression) -> SetExpression:
         """Transform SetExpression node."""
@@ -454,9 +511,13 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_range_expression(self, node: RangeExpression) -> RangeExpression:
         """Transform RangeExpression node."""
-        low = self.visit(node.low)
-        high = self.visit(node.high)
-        return RangeExpression(low=low, high=high, location=node.location)
+        from typing import cast
+
+        low = cast("Expression", self.visit(node.low))
+        high = cast("Expression", self.visit(node.high))
+        result = RangeExpression(low=low, high=high)
+        result.location = node.location
+        return result
 
     def visit_function_call(self, node: FunctionCall) -> FunctionCall:
         """Transform FunctionCall node."""
@@ -471,8 +532,11 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_member_access(self, node: MemberAccess) -> MemberAccess:
         """Transform MemberAccess node."""
-        object = self.visit(node.object)
-        return MemberAccess(object=object, member=node.member, location=node.location)
+        obj = self.visit(node.object)
+        # Ensure obj is an Expression
+        if not isinstance(obj, Expression):
+            obj = cast(Expression, obj)
+        return MemberAccess(object=obj, member=node.member)
 
     def visit_condition(self, node: Condition) -> Condition:
         """Transform Condition node."""
@@ -508,8 +572,8 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_in_expression(self, node: InExpression) -> InExpression:
         """Transform InExpression node."""
-        range = cast("Expression", self.visit(node.range))
-        return InExpression(string_id=node.string_id, range=range)
+        range_expr = cast("Expression", self.visit(node.range))
+        return InExpression(string_id=node.string_id, range=range_expr)
 
     def visit_of_expression(self, node: OfExpression) -> OfExpression:
         """Transform OfExpression node."""

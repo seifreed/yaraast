@@ -103,30 +103,70 @@ def graph(yara_file: str, output: str | None, format: str, type: str, engine: st
         base_name = Path(yara_file).stem
         output = f"{base_name}_graph_{type}.{format}"
 
-    if type == "full":
-        result_path = generator.generate_graph(ast, output, format, engine)
-    elif type == "rules":
-        result_path = generator.generate_rule_graph(ast, output, format)
-    elif type == "modules":
-        result_path = generator.generate_module_graph(ast, output, format)
-    elif type == "complexity":
-        # Need complexity metrics first
-        analyzer = ComplexityAnalyzer()
-        metrics = analyzer.analyze(ast)
-        result_path = generator.generate_complexity_graph(
-            ast, metrics.cyclomatic_complexity, output, format
-        )
+    try:
+        if type == "full":
+            result_path = generator.generate_graph(ast, output, format, engine)
+        elif type == "rules":
+            result_path = generator.generate_rule_graph(ast, output, format)
+        elif type == "modules":
+            result_path = generator.generate_module_graph(ast, output, format)
+        elif type == "complexity":
+            # Need complexity metrics first
+            analyzer = ComplexityAnalyzer()
+            metrics = analyzer.analyze(ast)
+            result_path = generator.generate_complexity_graph(
+                ast, metrics.cyclomatic_complexity, output, format
+            )
 
-    if isinstance(result_path, str) and Path(result_path).exists():
-        click.echo(f"Dependency graph generated: {result_path}")
+        if isinstance(result_path, str) and Path(result_path).exists():
+            click.echo(f"Dependency graph generated: {result_path}")
 
-        # Show stats
-        stats = generator.get_dependency_stats()
-        click.echo("\n📊 Graph Statistics:")
-        click.echo(f"  Rules: {stats['total_rules']}")
-        click.echo(f"  Imports: {stats['total_imports']}")
-        click.echo(f"  Rules with strings: {stats['rules_with_strings']}")
-        click.echo(f"  Rules using modules: {stats['rules_using_modules']}")
+            # Show stats
+            stats = generator.get_dependency_stats()
+            click.echo("\n📊 Graph Statistics:")
+            click.echo(f"  Rules: {stats['total_rules']}")
+            click.echo(f"  Imports: {stats['total_imports']}")
+            click.echo(f"  Rules with strings: {stats['rules_with_strings']}")
+            click.echo(f"  Rules using modules: {stats['rules_using_modules']}")
+    except Exception as e:
+        if (
+            "No such file or directory: PosixPath('dot')" in str(e)
+            or "ExecutableNotFound" in str(e)
+            or "failed to execute PosixPath('dot')" in str(e)
+        ):
+            # Graphviz not installed, generate text representation
+            click.echo("⚠️ Graphviz not installed. Generating text representation instead...\n")
+
+            # Analyze dependencies
+            generator.visit(ast)
+            stats = generator.get_dependency_stats()
+
+            click.echo("📊 Dependency Analysis (Text Mode):")
+            click.echo("=" * 50)
+            click.echo(f"\n📁 File: {yara_file}")
+            click.echo(f"  Total Rules: {stats['total_rules']}")
+            click.echo(f"  Total Imports: {stats['total_imports']}")
+            click.echo(f"  Rules with strings: {stats['rules_with_strings']}")
+            click.echo(f"  Rules using modules: {stats['rules_using_modules']}")
+
+            if generator.dependencies:
+                click.echo("\n🔗 Rule Dependencies:")
+                for rule, deps in generator.dependencies.items():
+                    if deps:
+                        click.echo(f"  {rule} → {', '.join(deps)}")
+
+            if generator.module_references:
+                click.echo("\n📦 Module Usage:")
+                for rule, modules in generator.module_references.items():
+                    if modules:
+                        click.echo(f"  {rule} uses: {', '.join(modules)}")
+
+            click.echo("\n💡 To generate visual graphs, install Graphviz:")
+            click.echo("  macOS: brew install graphviz")
+            click.echo("  Ubuntu: apt-get install graphviz")
+            click.echo("  Windows: https://graphviz.org/download/")
+        else:
+            raise
     else:
         click.echo("Graph source:")
         click.echo(result_path)
@@ -138,7 +178,15 @@ def graph(yara_file: str, output: str | None, format: str, type: str, engine: st
 @click.option("--interactive", is_flag=True, help="Generate interactive HTML with search")
 @click.option("--title", default="YARA AST Visualization", help="Page title")
 @click.option("--no-metadata", is_flag=True, help="Exclude metadata from visualization")
-def tree(yara_file: str, output: str | None, interactive: bool, title: str, no_metadata: bool):
+@click.option("--collapsible", is_flag=True, help="Generate collapsible tree")
+def tree(
+    yara_file: str,
+    output: str | None,
+    interactive: bool,
+    title: str,
+    no_metadata: bool,
+    collapsible: bool,
+):
     """Generate HTML collapsible tree visualization."""
     with Path(yara_file).open() as f:
         content = f.read()
@@ -198,35 +246,91 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
         base_name = Path(yara_file).stem
         output = f"{base_name}_patterns_{type}.{format}"
 
-    if type == "flow":
-        result_path = generator.generate_pattern_flow_diagram(ast, output, format)
-    elif type == "complexity":
-        result_path = generator.generate_pattern_complexity_diagram(ast, output, format)
-    elif type == "similarity":
-        result_path = generator.generate_pattern_similarity_diagram(ast, output, format)
-    elif type == "hex":
-        result_path = generator.generate_hex_pattern_diagram(ast, output, format)
+    try:
+        if type == "flow":
+            result_path = generator.generate_pattern_flow_diagram(ast, output, format)
+        elif type == "complexity":
+            result_path = generator.generate_pattern_complexity_diagram(ast, output, format)
+        elif type == "similarity":
+            result_path = generator.generate_pattern_similarity_diagram(ast, output, format)
+        elif type == "hex":
+            result_path = generator.generate_hex_pattern_diagram(ast, output, format)
 
-    if isinstance(result_path, str) and Path(result_path).exists():
-        click.echo(f"Pattern diagram generated: {result_path}")
-    else:
-        click.echo("Diagram source:")
-        click.echo(result_path)
+        if isinstance(result_path, str) and Path(result_path).exists():
+            click.echo(f"Pattern diagram generated: {result_path}")
+        else:
+            click.echo("Diagram source:")
+            click.echo(result_path)
+    except Exception as e:
+        if (
+            "No such file or directory: PosixPath('dot')" in str(e)
+            or "ExecutableNotFound" in str(e)
+            or "failed to execute PosixPath('dot')" in str(e)
+        ):
+            # Graphviz not installed, generate text representation
+            click.echo("⚠️ Graphviz not installed. Generating text analysis instead...\n")
+
+            # Analyze patterns
+            generator._analyze_patterns(ast)
+
+            click.echo("📊 String Pattern Analysis (Text Mode):")
+            click.echo("=" * 50)
+
+            # Show pattern breakdown
+            plain_count = 0
+            hex_count = 0
+            regex_count = 0
+
+            for rule in ast.rules:
+                if rule.strings:
+                    click.echo(f"\n📁 Rule: {rule.name}")
+                    for string_def in rule.strings:
+                        if hasattr(string_def, "value"):  # Plain string
+                            plain_count += 1
+                            click.echo(
+                                f'  📝 {string_def.identifier}: "{string_def.value[:30]}..."'
+                                if len(str(string_def.value)) > 30
+                                else f'  📝 {string_def.identifier}: "{string_def.value}"'
+                            )
+                        elif hasattr(string_def, "tokens"):  # Hex string
+                            hex_count += 1
+                            click.echo(
+                                f"  🔢 {string_def.identifier}: HEX pattern ({len(string_def.tokens)} tokens)"
+                            )
+                        elif hasattr(string_def, "regex"):  # Regex string
+                            regex_count += 1
+                            click.echo(f"  🔍 {string_def.identifier}: /{string_def.regex}/")
+
+            click.echo("\n📈 Summary:")
+            click.echo(f"  Total strings: {plain_count + hex_count + regex_count}")
+            click.echo(f"  Plain strings: {plain_count}")
+            click.echo(f"  Hex patterns: {hex_count}")
+            click.echo(f"  Regex patterns: {regex_count}")
+
+            click.echo("\n💡 To generate visual diagrams, install Graphviz:")
+            click.echo("  macOS: brew install graphviz")
+            click.echo("  Ubuntu: apt-get install graphviz")
+            click.echo("  Windows: https://graphviz.org/download/")
+        else:
+            raise
 
     # Show pattern statistics if requested
     if stats:
-        pattern_stats = generator.get_pattern_statistics()
-        if pattern_stats:
-            click.echo("\n📊 Pattern Statistics:")
-            click.echo(f"  Total patterns: {pattern_stats['total_patterns']}")
-            click.echo(f"  By type: {pattern_stats['by_type']}")
-            click.echo(f"  Complexity distribution: {pattern_stats['complexity_distribution']}")
+        try:
+            pattern_stats = generator.get_pattern_statistics()
+            if pattern_stats:
+                click.echo("\n📊 Pattern Statistics:")
+                click.echo(f"  Total patterns: {pattern_stats['total_patterns']}")
+                click.echo(f"  By type: {pattern_stats['by_type']}")
+                click.echo(f"  Complexity distribution: {pattern_stats['complexity_distribution']}")
 
-            if pattern_stats.get("pattern_lengths"):
-                lengths = pattern_stats["pattern_lengths"]
-                click.echo(
-                    f"  Length stats: min={lengths['min']}, max={lengths['max']}, avg={lengths['avg']:.1f}"
-                )
+                if pattern_stats.get("pattern_lengths"):
+                    lengths = pattern_stats["pattern_lengths"]
+                    click.echo(
+                        f"  Length stats: min={lengths['min']}, max={lengths['max']}, avg={lengths['avg']:.1f}"
+                    )
+        except Exception:
+            pass  # Statistics might not be available without full analysis
 
 
 @metrics.command()
@@ -432,6 +536,181 @@ def _format_complexity_text(metrics) -> str:
                 "📦 Module Usage:",
                 *[f"  {module}: {usage} times" for module, usage in metrics.module_usage.items()],
                 "",
+            ]
+        )
+
+    return "\n".join(lines)
+
+
+@metrics.command()
+@click.argument("yara_file", type=click.Path(exists=True, dir_okay=False))
+@click.option("--output", "-o", type=click.Path(), help="Output file path")
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["json", "text"]),
+    default="text",
+    help="Output format",
+)
+def strings(yara_file: str, output: str | None, format: str):
+    """Analyze string patterns in YARA rules."""
+    with Path(yara_file).open() as f:
+        content = f.read()
+    parser = Parser()
+    ast = parser.parse(content)
+
+    # Analyze strings
+    analysis = {
+        "total_strings": 0,
+        "type_distribution": {"plain": 0, "hex": 0, "regex": 0},
+        "length_stats": {"min": float("inf"), "max": 0, "avg": 0},
+        "rules": {},
+        "modifiers": {},
+        "patterns": {"short_strings": 0, "hex_patterns": 0},
+    }
+
+    lengths = []
+
+    for rule in ast.rules:
+        if rule.strings:
+            rule_info = {
+                "string_count": len(rule.strings),
+                "types": [],
+                "identifiers": [],
+            }
+
+            for string_def in rule.strings:
+                analysis["total_strings"] += 1
+                rule_info["identifiers"].append(string_def.identifier)
+
+                if hasattr(string_def, "value"):  # Plain string
+                    analysis["type_distribution"]["plain"] += 1
+                    rule_info["types"].append("plain")
+                    str_len = len(string_def.value)
+                    lengths.append(str_len)
+                    if str_len < 4:
+                        analysis["patterns"]["short_strings"] += 1
+
+                    # Count modifiers
+                    if hasattr(string_def, "modifiers"):
+                        for mod in string_def.modifiers:
+                            mod_name = mod.name if hasattr(mod, "name") else str(mod)
+                            analysis["modifiers"][mod_name] = (
+                                analysis["modifiers"].get(mod_name, 0) + 1
+                            )
+
+                elif hasattr(string_def, "tokens"):  # Hex string
+                    analysis["type_distribution"]["hex"] += 1
+                    rule_info["types"].append("hex")
+                    analysis["patterns"]["hex_patterns"] += 1
+
+                elif hasattr(string_def, "regex"):  # Regex string
+                    analysis["type_distribution"]["regex"] += 1
+                    rule_info["types"].append("regex")
+
+            analysis["rules"][rule.name] = rule_info
+
+    # Calculate length statistics
+    if lengths:
+        analysis["length_stats"]["min"] = min(lengths)
+        analysis["length_stats"]["max"] = max(lengths)
+        analysis["length_stats"]["avg"] = sum(lengths) / len(lengths)
+    else:
+        analysis["length_stats"]["min"] = 0
+        analysis["length_stats"]["max"] = 0
+        analysis["length_stats"]["avg"] = 0
+
+    # Format output
+    if format == "json":
+        output_text = json.dumps(analysis, indent=2)
+    else:
+        output_text = _format_strings_text(analysis)
+
+    if output:
+        with Path(output).open("w") as f:
+            f.write(output_text)
+        click.echo(f"String analysis written to {output}")
+    else:
+        click.echo(output_text)
+
+
+def _format_strings_text(analysis: dict) -> str:
+    """Format string analysis as readable text."""
+    lines = [
+        "YARA String Analysis",
+        "=" * 20,
+        "",
+        f"📊 Total Strings: {analysis['total_strings']}",
+        "",
+        "📝 Type Distribution:",
+        f"  Plain strings: {analysis['type_distribution']['plain']}",
+        f"  Hex patterns: {analysis['type_distribution']['hex']}",
+        f"  Regex patterns: {analysis['type_distribution']['regex']}",
+        "",
+    ]
+
+    if analysis["total_strings"] > 0:
+        lines.extend(
+            [
+                "📏 Length Statistics (plain strings):",
+                f"  Min: {analysis['length_stats']['min']}",
+                f"  Max: {analysis['length_stats']['max']}",
+                f"  Avg: {analysis['length_stats']['avg']:.1f}",
+                "",
+            ]
+        )
+
+    if analysis["modifiers"]:
+        lines.extend(
+            [
+                "🔧 String Modifiers:",
+                *[f"  {mod}: {count}" for mod, count in analysis["modifiers"].items()],
+                "",
+            ]
+        )
+
+    if analysis["patterns"]["short_strings"] > 0 or analysis["patterns"]["hex_patterns"] > 0:
+        lines.extend(
+            [
+                "🎯 Pattern Analysis:",
+                f"  Short strings (<4 chars): {analysis['patterns']['short_strings']}",
+                f"  Hex patterns: {analysis['patterns']['hex_patterns']}",
+                "",
+            ]
+        )
+
+    if analysis["rules"]:
+        lines.extend(
+            [
+                "📁 Rules with Strings:",
+                *[
+                    f"  {rule}: {info['string_count']} strings ({', '.join(set(info['types']))})"
+                    for rule, info in analysis["rules"].items()
+                ],
+            ]
+        )
+
+    return "\n".join(lines)
+
+
+def _get_text_graph(stats: dict, dependencies: dict) -> str:
+    """Format dependency graph as text."""
+    lines = [
+        "Dependency Analysis",
+        "=" * 19,
+        "",
+        f"Total rules: {stats['total_rules']}",
+        f"Total imports: {stats['total_imports']}",
+        f"Rules with strings: {stats['rules_with_strings']}",
+        f"Rules using modules: {stats['rules_using_modules']}",
+        "",
+    ]
+
+    if dependencies:
+        lines.extend(
+            [
+                "Rule Dependencies:",
+                *[f"  {rule} → {', '.join(deps)}" for rule, deps in dependencies.items() if deps],
             ]
         )
 

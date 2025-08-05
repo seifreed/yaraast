@@ -34,10 +34,18 @@ class MatchInfo:
             namespace=match.namespace,
             tags=list(match.tags),
             meta=dict(match.meta),
-            strings=[
-                {"offset": offset, "identifier": identifier, "data": data}
-                for offset, identifier, data in match.strings
-            ],
+            strings=(
+                [
+                    {
+                        "offset": s.instances[0].offset if s.instances else 0,
+                        "identifier": s.identifier,
+                        "data": s.instances[0].matched_data if s.instances else b"",
+                    }
+                    for s in match.strings
+                ]
+                if hasattr(match, "strings")
+                else []
+            ),
         )
 
 
@@ -94,8 +102,11 @@ class LibyaraScanner:
         matches = []
 
         try:
-            # Perform scan
-            yara_matches = rules.match(data=data, timeout=self.timeout, fast=fast_mode)
+            # Perform scan - only pass timeout if it's not None
+            match_kwargs = {"data": data, "fast": fast_mode}
+            if self.timeout is not None:
+                match_kwargs["timeout"] = self.timeout
+            yara_matches = rules.match(**match_kwargs)
 
             # Convert matches
             for match in yara_matches:
@@ -142,8 +153,11 @@ class LibyaraScanner:
             # Get file size
             file_size = filepath.stat().st_size
 
-            # Perform scan
-            yara_matches = rules.match(filepath=str(filepath), timeout=self.timeout, fast=fast_mode)
+            # Perform scan - only pass timeout if it's not None
+            match_kwargs = {"filepath": str(filepath), "fast": fast_mode}
+            if self.timeout is not None:
+                match_kwargs["timeout"] = self.timeout
+            yara_matches = rules.match(**match_kwargs)
 
             # Convert matches
             for match in yara_matches:
@@ -200,3 +214,7 @@ class LibyaraScanner:
         scan_time = time.time() - start_time
 
         return ScanResult(success=False, errors=errors, scan_time=scan_time)
+
+
+# Alias for compatibility
+Scanner = LibyaraScanner

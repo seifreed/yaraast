@@ -18,7 +18,7 @@ from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.formatting import FormattingConfig
 from yaraast.optimization import RuleOptimizer
 from yaraast.types.module_loader import ModuleLoader
-from yaraast.yarax import YaraXCompatibilityChecker, YaraXSyntaxAdapter
+from yaraast.yarax import YaraXCompatibilityChecker
 
 
 def print_section(title: str) -> None:

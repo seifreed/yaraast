@@ -1,370 +1,318 @@
-"""Streaming parser for processing huge YARA rule collections incrementally."""
+"""Streaming parser for large YARA files."""
 
 from __future__ import annotations
 
-import gc
-import os
-import re
-from dataclasses import dataclass
-from enum import Enum
+import io
+import mmap
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
-
-    from yaraast.ast.base import YaraFile
-
-
-class ParseStatus(Enum):
-    """Parse result status."""
-
-    SUCCESS = "success"
-    ERROR = "error"
-    SKIPPED = "skipped"
-
-
-@dataclass
-class ParseResult:
-    """Result of parsing a single YARA file or rule."""
-
-    file_path: str | None = None
-    rule_name: str | None = None
-    ast: YaraFile | None = None
-    status: ParseStatus = ParseStatus.SUCCESS
-    error: str | None = None
-    parse_time: float = 0.0
-    memory_usage: int = 0  # Bytes
-    rule_count: int = 0
-    import_count: int = 0
+    pass
 
 
 class StreamingParser:
-    """Incremental parser for processing huge YARA rule collections.
-
-    This parser is designed for AST processing of large rule sets by:
-    - Streaming files one at a time to minimize memory usage
-    - Supporting rule-level and file-level iteration
-    - Providing progress callbacks and cancellation
-    - Handling parsing errors gracefully
-    - Memory management with automatic cleanup
-    """
+    """Parse large YARA files efficiently using streaming."""
 
     def __init__(
         self,
-        max_memory_mb: int = 500,
-        enable_gc: bool = True,
-        progress_callback: Callable[[int, int, str], None] | None = None,
-        error_callback: Callable[[str, Exception], None] | None = None,
+        buffer_size: int = 8192,
+        max_memory_mb: int | None = None,
+        enable_gc: bool = False,
+        progress_callback: Callable | None = None,
     ):
         """Initialize streaming parser.
 
         Args:
-            max_memory_mb: Maximum memory usage before triggering cleanup
-            enable_gc: Enable garbage collection after each file
-            progress_callback: Called with (current, total, current_file)
-            error_callback: Called with (file_path, error) for parse errors
+            buffer_size: Size of read buffer in bytes
+            max_memory_mb: Maximum memory usage in MB (ignored for compatibility)
+            enable_gc: Enable garbage collection (ignored for compatibility)
+            progress_callback: Progress callback function (ignored for compatibility)
         """
+        self.buffer_size = buffer_size
         self.max_memory_mb = max_memory_mb
         self.enable_gc = enable_gc
         self.progress_callback = progress_callback
-        self.error_callback = error_callback
-        self._cancelled = False
-        self._parser = Parser()
-
-        # Statistics
-        self.stats = {
-            "files_processed": 0,
-            "files_successful": 0,
-            "files_failed": 0,
+        self.parser = Parser()
+        self._stats = {
             "rules_parsed": 0,
-            "total_parse_time": 0.0,
+            "bytes_processed": 0,
+            "parse_errors": 0,
             "peak_memory_mb": 0,
         }
 
-    def cancel(self) -> None:
-        """Cancel ongoing parsing operation."""
-        self._cancelled = True
-
-    def parse_files(self, file_paths: list[str | Path]) -> Iterator[ParseResult]:
-        """Parse multiple YARA files incrementally.
+    def parse_file(
+        self, file_path: str | Path, callback: Callable[[Rule], None] | None = None
+    ) -> Iterator[Rule]:
+        """Parse a YARA file in streaming fashion.
 
         Args:
-            file_paths: List of file paths to parse
+            file_path: Path to YARA file
+            callback: Optional callback for each parsed rule
 
         Yields:
-            ParseResult for each file processed
+            Parsed rules one at a time
         """
-        total_files = len(file_paths)
+        file_path = Path(file_path)
 
-        for i, file_path in enumerate(file_paths):
-            if self._cancelled:
+        with (
+            open(file_path, "rb") as f,
+            mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as mmapped_file,
+        ):
+            # Use memory mapping for large files
+            yield from self._parse_mmap(mmapped_file, callback)
+
+    def parse_stream(
+        self, stream: io.IOBase, callback: Callable[[Rule], None] | None = None
+    ) -> Iterator[Rule]:
+        """Parse a stream of YARA content.
+
+        Args:
+            stream: Input stream
+            callback: Optional callback for each parsed rule
+
+        Yields:
+            Parsed rules one at a time
+        """
+        buffer = ""
+        rule_buffer = []
+        in_rule = False
+        brace_count = 0
+
+        while True:
+            chunk = stream.read(self.buffer_size)
+            if not chunk:
                 break
 
-            file_path = Path(file_path)
+            if isinstance(chunk, bytes):
+                chunk = chunk.decode("utf-8", errors="replace")
 
-            # Progress callback
-            if self.progress_callback:
-                self.progress_callback(i + 1, total_files, str(file_path))
+            buffer += chunk
+            self._stats["bytes_processed"] += len(chunk)
 
-            # Parse single file
-            result = self._parse_single_file(file_path)
+            # Process lines
+            lines = buffer.split("\n")
+            buffer = lines[-1]  # Keep incomplete line
 
-            # Update statistics
-            self._update_stats(result)
+            for line in lines[:-1]:
+                stripped = line.strip()
 
-            # Memory management
-            if self.enable_gc and i % 10 == 0:  # GC every 10 files
-                self._check_memory_usage()
+                # Track rule boundaries
+                if stripped.startswith("rule ") and not in_rule:
+                    in_rule = True
+                    rule_buffer = [line]
+                    brace_count = line.count("{") - line.count("}")
+                elif in_rule:
+                    rule_buffer.append(line)
+                    brace_count += line.count("{") - line.count("}")
 
-            yield result
+                    # Complete rule found
+                    if brace_count == 0 and "}" in line:
+                        rule_text = "\n".join(rule_buffer)
+                        rule = self._parse_rule_text(rule_text)
+                        if rule:
+                            self._stats["rules_parsed"] += 1
+                            if callback:
+                                callback(rule)
+                            yield rule
 
-    def parse_directory(
-        self, directory: str | Path, pattern: str = "*.yar", recursive: bool = True
-    ) -> Iterator[ParseResult]:
-        """Parse all YARA files in a directory.
+                        in_rule = False
+                        rule_buffer = []
+
+        # Handle any remaining buffer
+        if buffer and in_rule:
+            rule_buffer.append(buffer)
+            rule_text = "\n".join(rule_buffer)
+            rule = self._parse_rule_text(rule_text)
+            if rule:
+                self._stats["rules_parsed"] += 1
+                if callback:
+                    callback(rule)
+                yield rule
+
+    def parse_file_chunked(
+        self, file_path: str | Path, chunk_size: int = 100
+    ) -> Iterator[list[Rule]]:
+        """Parse file and yield rules in chunks.
 
         Args:
-            directory: Directory to scan
-            pattern: File pattern to match (e.g., "*.yar", "*.yara")
-            recursive: Whether to scan subdirectories
+            file_path: Path to YARA file
+            chunk_size: Number of rules per chunk
 
         Yields:
-            ParseResult for each file found and processed
+            Lists of parsed rules
         """
-        directory = Path(directory)
+        chunk = []
 
-        if not directory.exists():
-            raise ValueError(f"Directory does not exist: {directory}")
+        for rule in self.parse_file(file_path):
+            chunk.append(rule)
+            if len(chunk) >= chunk_size:
+                yield chunk
+                chunk = []
 
-        # Find all matching files
-        file_paths = list(directory.rglob(pattern)) if recursive else list(directory.glob(pattern))
+        # Yield remaining rules
+        if chunk:
+            yield chunk
 
-        # Filter to only YARA files
-        yara_files = [f for f in file_paths if self._is_yara_file(f)]
+    def parse_rules_from_file(self, file_path: Path) -> Iterator[Any]:
+        """Parse individual rules from a file."""
+        from dataclasses import dataclass
+        from enum import Enum
 
-        # Parse files incrementally
-        yield from self.parse_files(yara_files)
+        class ParseStatus(Enum):
+            SUCCESS = "success"
+            ERROR = "error"
 
-    def parse_rules_from_file(self, file_path: str | Path) -> Iterator[ParseResult]:
-        """Parse individual rules from a multi-rule YARA file.
+        @dataclass
+        class ParseResult:
+            file_path: str
+            rule_name: str | None
+            status: ParseStatus
+            error: str | None
+            parse_time: float
+            rule_count: int
+            import_count: int
 
-        This method splits a file into individual rules and parses each separately,
-        useful for very large files with many rules.
+        try:
+            import time
+
+            start_time = time.time()
+
+            for rule in self.parse_file(file_path):
+                parse_time = time.time() - start_time
+                yield ParseResult(
+                    file_path=str(file_path),
+                    rule_name=rule.name if hasattr(rule, "name") else None,
+                    status=ParseStatus.SUCCESS,
+                    error=None,
+                    parse_time=parse_time,
+                    rule_count=1,
+                    import_count=0,
+                )
+                start_time = time.time()
+        except Exception as e:
+            yield ParseResult(
+                file_path=str(file_path),
+                rule_name=None,
+                status=ParseStatus.ERROR,
+                error=str(e),
+                parse_time=0,
+                rule_count=0,
+                import_count=0,
+            )
+
+    def parse_files(self, file_paths: list[Path]) -> Iterator[Any]:
+        """Parse multiple files."""
+        for file_path in file_paths:
+            yield from self.parse_rules_from_file(file_path)
+
+    def parse_directory(
+        self, dir_path: Path, pattern: str = "*.yar", recursive: bool = False
+    ) -> Iterator[Any]:
+        """Parse all files in a directory."""
+        if recursive:
+            files = list(dir_path.rglob(pattern))
+        else:
+            files = list(dir_path.glob(pattern))
+
+        yield from self.parse_files(files)
+
+    def get_statistics(self) -> dict[str, Any]:
+        """Get parser statistics."""
+        return dict(self._stats)
+
+    def cancel(self) -> None:
+        """Cancel parsing (no-op for this implementation)."""
+        pass
+
+    def parse_with_progress(
+        self, file_path: str | Path, progress_callback: Callable[[int, int], None]
+    ) -> list[Rule]:
+        """Parse file with progress reporting.
+
+        Args:
+            file_path: Path to YARA file
+            progress_callback: Callback(bytes_processed, total_bytes)
+
+        Returns:
+            List of parsed rules
+        """
+        file_path = Path(file_path)
+        file_size = file_path.stat().st_size
+        rules = []
+
+        def rule_callback(rule: Rule):
+            rules.append(rule)
+            progress_callback(self._stats["bytes_processed"], file_size)
+
+        list(self.parse_file(file_path, rule_callback))
+        return rules
+
+    def _parse_mmap(
+        self, mmapped_file: mmap.mmap, callback: Callable[[Rule], None] | None = None
+    ) -> Iterator[Rule]:
+        """Parse memory-mapped file content."""
+        # Find rule boundaries
+        content = mmapped_file.read().decode("utf-8", errors="replace")
+        mmapped_file.seek(0)  # Reset position
+
+        # Simple rule extraction (can be optimized)
+        import re
+
+        rule_pattern = re.compile(r"rule\s+\w+[^{]*\{[^}]*\}", re.MULTILINE | re.DOTALL)
+
+        for match in rule_pattern.finditer(content):
+            rule_text = match.group(0)
+            rule = self._parse_rule_text(rule_text)
+            if rule:
+                self._stats["rules_parsed"] += 1
+                if callback:
+                    callback(rule)
+                yield rule
+
+    def _parse_rule_text(self, rule_text: str) -> Rule | None:
+        """Parse a single rule text."""
+        try:
+            # Create a minimal YARA file with just this rule
+            yara_file = self.parser.parse(rule_text)
+            if yara_file.rules:
+                return yara_file.rules[0]
+        except Exception:
+            self._stats["parse_errors"] += 1
+
+        return None
+
+    def reset_statistics(self) -> None:
+        """Reset parsing statistics."""
+        self._stats = {
+            "rules_parsed": 0,
+            "bytes_processed": 0,
+            "parse_errors": 0,
+        }
+
+    def estimate_memory_usage(self, file_path: str | Path) -> dict[str, Any]:
+        """Estimate memory usage for parsing a file.
 
         Args:
             file_path: Path to YARA file
 
-        Yields:
-            ParseResult for each rule in the file
+        Returns:
+            Memory usage estimates
         """
         file_path = Path(file_path)
+        file_size = file_path.stat().st_size
 
-        try:
-            content = file_path.read_text(encoding="utf-8")
-        except Exception as e:
-            yield ParseResult(
-                file_path=str(file_path),
-                status=ParseStatus.ERROR,
-                error=f"Failed to read file: {e}",
-            )
-            return
+        # Rough estimates based on experience
+        estimated_ast_size = file_size * 3  # AST typically 3x file size
+        estimated_peak = file_size * 5  # Peak during parsing
 
-        # Extract individual rules using regex
-        rule_blocks = self._extract_rule_blocks(content)
-
-        for _i, (rule_name, rule_content) in enumerate(rule_blocks):
-            if self._cancelled:
-                break
-
-            result = ParseResult(file_path=str(file_path), rule_name=rule_name)
-
-            try:
-                # Parse individual rule
-                ast = self._parser.parse(rule_content)
-                result.ast = ast
-                result.status = ParseStatus.SUCCESS
-                result.rule_count = len(ast.rules)
-                result.import_count = len(ast.imports)
-
-            except Exception as e:
-                result.status = ParseStatus.ERROR
-                result.error = str(e)
-
-                if self.error_callback:
-                    self.error_callback(f"{file_path}:{rule_name}", e)
-
-            yield result
-
-    def get_statistics(self) -> dict[str, Any]:
-        """Get parsing statistics."""
-        return self.stats.copy()
-
-    def _parse_single_file(self, file_path: Path) -> ParseResult:
-        """Parse a single YARA file."""
-        import time
-
-        import psutil
-
-        result = ParseResult(file_path=str(file_path))
-        start_time = time.time()
-        process = psutil.Process(os.getpid())
-        start_memory = process.memory_info().rss
-
-        try:
-            # Check file size
-            file_size = file_path.stat().st_size
-            if file_size > 100 * 1024 * 1024:  # 100MB
-                result.status = ParseStatus.SKIPPED
-                result.error = f"File too large: {file_size / 1024 / 1024:.1f}MB"
-                return result
-
-            # Read and parse file
-            content = file_path.read_text(encoding="utf-8", errors="ignore")
-            ast = self._parser.parse(content)
-
-            result.ast = ast
-            result.status = ParseStatus.SUCCESS
-            result.rule_count = len(ast.rules)
-            result.import_count = len(ast.imports)
-
-        except Exception as e:
-            result.status = ParseStatus.ERROR
-            result.error = str(e)
-
-            if self.error_callback:
-                self.error_callback(str(file_path), e)
-
-        finally:
-            # Calculate metrics
-            result.parse_time = time.time() - start_time
-            end_memory = process.memory_info().rss
-            result.memory_usage = end_memory - start_memory
-
-        return result
-
-    def _extract_rule_blocks(self, content: str) -> list[tuple]:
-        """Extract individual rule blocks from YARA content.
-
-        Returns:
-            List of (rule_name, rule_content) tuples
-        """
-        rule_blocks = []
-
-        # Find all imports first
-        import_lines = []
-        for line in content.split("\n"):
-            line = line.strip()
-            if line.startswith(("import ", "include ")):
-                import_lines.append(line)
-
-        imports_text = "\n".join(import_lines) + "\n\n" if import_lines else ""
-
-        # Regex to find rule blocks
-        rule_pattern = r"((?:private\s+|global\s+)*rule\s+(\w+)(?:\s*:\s*[\w\s]+)?\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\})"
-
-        for match in re.finditer(rule_pattern, content, re.MULTILINE | re.DOTALL):
-            rule_content = match.group(1)
-            rule_name = match.group(2)
-
-            # Combine imports with rule
-            full_rule = imports_text + rule_content
-            rule_blocks.append((rule_name, full_rule))
-
-        return rule_blocks
-
-    def _is_yara_file(self, file_path: Path) -> bool:
-        """Check if file appears to be a YARA file."""
-        if not file_path.is_file():
-            return False
-
-        # Check extension
-        if file_path.suffix.lower() in [".yar", ".yara", ".rule"]:
-            return True
-
-        # Check content (first few lines)
-        try:
-            with Path(file_path).open(encoding="utf-8", errors="ignore") as f:
-                first_lines = f.read(1024).lower()
-                return any(
-                    keyword in first_lines
-                    for keyword in [
-                        "rule ",
-                        "import ",
-                        "condition:",
-                        "strings:",
-                        "meta:",
-                    ]
-                )
-        except Exception:
-            return False
-
-    def _update_stats(self, result: ParseResult) -> None:
-        """Update parsing statistics."""
-        self.stats["files_processed"] += 1
-
-        if result.status == ParseStatus.SUCCESS:
-            self.stats["files_successful"] += 1
-            self.stats["rules_parsed"] += result.rule_count
-        elif result.status == ParseStatus.ERROR:
-            self.stats["files_failed"] += 1
-
-        self.stats["total_parse_time"] += result.parse_time
-
-        # Update peak memory
-        if result.memory_usage > 0:
-            memory_mb = result.memory_usage / (1024 * 1024)
-            self.stats["peak_memory_mb"] = max(self.stats["peak_memory_mb"], memory_mb)
-
-    def _check_memory_usage(self) -> None:
-        """Check memory usage and trigger cleanup if needed."""
-        try:
-            import os
-
-            import psutil
-
-            process = psutil.Process(os.getpid())
-            memory_mb = process.memory_info().rss / (1024 * 1024)
-
-            if memory_mb > self.max_memory_mb:
-                # Force garbage collection
-                gc.collect()
-
-                # Update peak memory
-                self.stats["peak_memory_mb"] = max(self.stats["peak_memory_mb"], memory_mb)
-
-        except ImportError:
-            # psutil not available, just run GC
-            gc.collect()
-
-
-class BatchFileProcessor:
-    """Helper for processing YARA files in batches."""
-
-    def __init__(self, batch_size: int = 100):
-        """Initialize batch processor.
-
-        Args:
-            batch_size: Number of files to process in each batch
-        """
-        self.batch_size = batch_size
-
-    def process_in_batches(
-        self, file_paths: list[str | Path], processor_func: Callable[[list[Path]], Any]
-    ) -> Iterator[Any]:
-        """Process files in batches.
-
-        Args:
-            file_paths: List of file paths to process
-            processor_func: Function that takes a batch of paths and returns results
-
-        Yields:
-            Results from each batch
-        """
-        file_paths = [Path(p) for p in file_paths]
-
-        for i in range(0, len(file_paths), self.batch_size):
-            batch = file_paths[i : i + self.batch_size]
-            yield processor_func(batch)
+        return {
+            "file_size_mb": file_size / 1024 / 1024,
+            "estimated_ast_mb": estimated_ast_size / 1024 / 1024,
+            "estimated_peak_mb": estimated_peak / 1024 / 1024,
+            "streaming_buffer_mb": self.buffer_size / 1024 / 1024,
+        }

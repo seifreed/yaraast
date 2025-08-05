@@ -1,512 +1,298 @@
-"""Parallel AST analysis using thread pooling for performance optimization."""
+"""Parallel analysis for YARA rules."""
 
 from __future__ import annotations
 
-import threading
+import concurrent.futures
+import multiprocessing as mp
 import time
-from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
-from enum import Enum
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
+from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
+from yaraast.analysis.rule_analyzer import RuleAnalyzer
 from yaraast.ast.base import YaraFile
-from yaraast.metrics import ComplexityAnalyzer, DependencyGraphGenerator
-from yaraast.parser import Parser
+from yaraast.ast.rules import Rule
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-T = TypeVar("T")
-
-
-class JobStatus(Enum):
-    """Analysis job status."""
-
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-
-
-@dataclass
-class AnalysisJob:
-    """Represents an analysis job for parallel processing."""
-
-    job_id: str
-    input_data: Any  # File path, AST, or other input
-    job_type: str  # 'parse', 'complexity', 'dependency', etc.
-    parameters: dict[str, Any] = field(default_factory=dict)
-
-    # Status tracking
-    status: JobStatus = JobStatus.PENDING
-    result: T | None = None
-    error: str | None = None
-    start_time: float | None = None
-    end_time: float | None = None
-    worker_id: str | None = None
-
-    @property
-    def duration(self) -> float | None:
-        """Get job duration in seconds."""
-        if self.start_time and self.end_time:
-            return self.end_time - self.start_time
-        return None
-
-    @property
-    def is_completed(self) -> bool:
-        """Check if job is completed (success or failure)."""
-        return self.status in (
-            JobStatus.COMPLETED,
-            JobStatus.FAILED,
-            JobStatus.CANCELLED,
-        )
+    pass
 
 
 class ParallelAnalyzer:
-    """Parallel AST analysis engine with thread pooling.
+    """Analyzes YARA rules in parallel for improved performance."""
 
-    This analyzer provides thread-pooled execution for AST operations:
-    - Parallel parsing of multiple YARA files
-    - Concurrent complexity analysis
-    - Parallel dependency graph generation
-    - Batch processing with progress tracking
-    """
-
-    def __init__(
-        self,
-        max_workers: int | None = None,
-        queue_size: int = 1000,
-        timeout: float = 300.0,
-        progress_callback: Callable[[str, int, int], None] | None = None,
-    ):
+    def __init__(self, max_workers: int | None = None):
         """Initialize parallel analyzer.
 
         Args:
-            max_workers: Maximum number of worker threads (default: CPU count)
-            queue_size: Maximum job queue size
-            timeout: Job timeout in seconds
-            progress_callback: Called with (job_type, completed, total)
+            max_workers: Maximum number of parallel workers.
+                        Defaults to CPU count.
         """
-        self.max_workers = max_workers
-        self.queue_size = queue_size
-        self.timeout = timeout
-        self.progress_callback = progress_callback
-
-        self._executor: ThreadPoolExecutor | None = None
-        self._jobs: dict[str, AnalysisJob] = {}
-        self._job_counter = 0
-        self._lock = threading.Lock()
-
-        # Statistics
-        self.stats = {
-            "jobs_submitted": 0,
-            "jobs_completed": 0,
-            "jobs_failed": 0,
-            "total_processing_time": 0.0,
-            "avg_job_time": 0.0,
-            "peak_concurrent_jobs": 0,
-            "workers_created": 0,
+        self.max_workers = max_workers or mp.cpu_count()
+        self.rule_analyzer = RuleAnalyzer()
+        self._stats = {
+            "rules_analyzed": 0,
+            "total_time": 0.0,
+            "errors": 0,
         }
 
-    def __enter__(self):
-        """Context manager entry."""
-        self.start()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
-        self.shutdown()
-
-    def start(self) -> None:
-        """Start the thread pool executor."""
-        if self._executor is None:
-            self._executor = ThreadPoolExecutor(
-                max_workers=self.max_workers, thread_name_prefix="yaraast-worker"
-            )
-            self.stats["workers_created"] = self._executor._max_workers
-
-    def shutdown(self, wait: bool = True) -> None:
-        """Shutdown the thread pool executor."""
-        if self._executor:
-            self._executor.shutdown(wait=wait)
-            self._executor = None
-
-    def parse_files_parallel(
-        self, file_paths: list[str | Path], chunk_size: int = 10
-    ) -> list[AnalysisJob[YaraFile]]:
-        """Parse multiple YARA files in parallel.
+    def analyze_rules(
+        self, rules: list[Rule], max_workers: int | None = None
+    ) -> list[dict[str, Any]]:
+        """Analyze multiple rules in parallel.
 
         Args:
-            file_paths: List of file paths to parse
-            chunk_size: Number of files to process per job
+            rules: List of rules to analyze
+            max_workers: Override default max workers
 
         Returns:
-            List of analysis jobs with parsed ASTs
+            List of analysis results
         """
-        if not self._executor:
-            self.start()
+        max_workers = max_workers or self.max_workers
+        results = []
+        start_time = time.time()
 
-        jobs = []
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all tasks
+            future_to_rule = {
+                executor.submit(self._analyze_single_rule, rule): rule for rule in rules
+            }
 
-        # Create jobs for file chunks
-        for i in range(0, len(file_paths), chunk_size):
-            chunk = file_paths[i : i + chunk_size]
-            job = self._submit_job(
-                job_type="parse_files",
-                input_data=chunk,
-                worker_func=self._parse_files_worker,
-            )
-            jobs.append(job)
+            # Collect results
+            for future in concurrent.futures.as_completed(future_to_rule):
+                rule = future_to_rule[future]
+                try:
+                    result = future.result()
+                    results.append(result)
+                    self._stats["rules_analyzed"] += 1
+                except Exception as e:
+                    results.append({"rule": rule.name, "error": str(e), "analysis": None})
+                    self._stats["errors"] += 1
 
-        # Wait for completion and collect results
-        return self._wait_for_jobs(jobs, "Parsing files")
+        self._stats["total_time"] = time.time() - start_time
+        return results
 
-    def analyze_complexity_parallel(
-        self, asts: list[YaraFile], file_names: list[str] | None = None
-    ) -> list[AnalysisJob]:
-        """Analyze complexity of multiple ASTs in parallel.
+    def analyze_file(self, yara_file: YaraFile, max_workers: int | None = None) -> dict[str, Any]:
+        """Analyze an entire YARA file in parallel.
 
         Args:
-            asts: List of parsed YARA ASTs
-            file_names: Optional list of file names for identification
+            yara_file: YARA file to analyze
+            max_workers: Override default max workers
 
         Returns:
-            List of analysis jobs with complexity metrics
+            Analysis results including rule analyses and dependencies
         """
-        if not self._executor:
-            self.start()
+        # Analyze rules in parallel
+        rule_analyses = self.analyze_rules(yara_file.rules, max_workers)
 
-        jobs = []
+        # Analyze dependencies (single-threaded for now)
+        dep_analyzer = DependencyAnalyzer()
+        dependencies = dep_analyzer.analyze(yara_file)
 
-        for i, ast in enumerate(asts):
-            file_name = file_names[i] if file_names and i < len(file_names) else f"ast_{i}"
+        return {
+            "rules": rule_analyses,
+            "dependencies": dependencies,
+            "stats": {
+                "total_rules": len(yara_file.rules),
+                "analyzed": self._stats["rules_analyzed"],
+                "errors": self._stats["errors"],
+                "time": self._stats["total_time"],
+            },
+        }
 
-            job = self._submit_job(
-                job_type="complexity",
-                input_data=ast,
-                parameters={"file_name": file_name},
-                worker_func=self._complexity_worker,
-            )
-            jobs.append(job)
-
-        return self._wait_for_jobs(jobs, "Analyzing complexity")
-
-    def generate_graphs_parallel(
-        self,
-        asts: list[YaraFile],
-        output_dir: Path | None = None,
-        graph_types: list[str] | None = None,
-    ) -> list[AnalysisJob]:
-        """Generate dependency graphs for multiple ASTs in parallel.
+    def batch_analyze_files(
+        self, file_paths: list[str], max_workers: int | None = None
+    ) -> list[dict[str, Any]]:
+        """Analyze multiple YARA files in parallel.
 
         Args:
-            asts: List of parsed YARA ASTs
-            output_dir: Directory to save graphs
-            graph_types: Types of graphs to generate ['full', 'rules', 'modules']
+            file_paths: List of file paths to analyze
+            max_workers: Override default max workers
 
         Returns:
-            List of analysis jobs with generated graphs
+            List of file analysis results
         """
-        if not self._executor:
-            self.start()
-
-        if graph_types is None:
-            graph_types = ["full", "rules", "modules"]
-
-        jobs = []
-
-        for i, ast in enumerate(asts):
-            for graph_type in graph_types:
-                job = self._submit_job(
-                    job_type=f"graph_{graph_type}",
-                    input_data=ast,
-                    parameters={
-                        "ast_index": i,
-                        "graph_type": graph_type,
-                        "output_dir": output_dir,
-                    },
-                    worker_func=self._graph_worker,
-                )
-                jobs.append(job)
-
-        return self._wait_for_jobs(jobs, "Generating graphs")
-
-    def process_batch(
-        self,
-        items: list[Any],
-        worker_func: Callable[[Any, dict[str, Any]], Any],
-        job_type: str = "batch",
-        parameters: dict[str, Any] | None = None,
-        max_concurrent: int | None = None,
-    ) -> list[AnalysisJob]:
-        """Process a batch of items in parallel with custom worker function.
-
-        Args:
-            items: List of items to process
-            worker_func: Function to process each item
-            job_type: Type identifier for jobs
-            parameters: Additional parameters for worker
-            max_concurrent: Maximum concurrent jobs (None = no limit)
-
-        Returns:
-            List of completed analysis jobs
-        """
-        if not self._executor:
-            self.start()
-
-        if parameters is None:
-            parameters = {}
-
-        jobs = []
-
-        # Submit jobs with concurrency control
-        for i, item in enumerate(items):
-            # Wait if we have too many concurrent jobs
-            if max_concurrent and len([j for j in jobs if not j.is_completed]) >= max_concurrent:
-                # Wait for some jobs to complete
-                self._wait_for_some_completion(jobs, max_concurrent // 2)
-
-            job = self._submit_job(
-                job_type=f"{job_type}_{i}",
-                input_data=item,
-                parameters=parameters.copy(),
-                worker_func=worker_func,
-            )
-            jobs.append(job)
-
-        return self._wait_for_jobs(jobs, f"Processing {job_type}")
-
-    def get_job_status(self, job_id: str) -> AnalysisJob | None:
-        """Get status of a specific job."""
-        return self._jobs.get(job_id)
-
-    def get_active_jobs(self) -> list[AnalysisJob]:
-        """Get list of currently active (non-completed) jobs."""
-        return [job for job in self._jobs.values() if not job.is_completed]
-
-    def get_statistics(self) -> dict[str, Any]:
-        """Get processing statistics."""
-        completed_jobs = [j for j in self._jobs.values() if j.is_completed]
-
-        if completed_jobs:
-            total_time = sum(j.duration or 0 for j in completed_jobs)
-            self.stats["avg_job_time"] = total_time / len(completed_jobs)
-
-        return self.stats.copy()
-
-    def cancel_job(self, job_id: str) -> bool:
-        """Cancel a specific job."""
-        job = self._jobs.get(job_id)
-        if job and job.status == JobStatus.PENDING:
-            job.status = JobStatus.CANCELLED
-            return True
-        return False
-
-    def cancel_all_jobs(self) -> int:
-        """Cancel all pending jobs."""
-        cancelled = 0
-        for job in self._jobs.values():
-            if job.status == JobStatus.PENDING:
-                job.status = JobStatus.CANCELLED
-                cancelled += 1
-        return cancelled
-
-    def _submit_job(
-        self,
-        job_type: str,
-        input_data: Any,
-        worker_func: Callable,
-        parameters: dict[str, Any] | None = None,
-    ) -> AnalysisJob:
-        """Submit a job to the thread pool."""
-        with self._lock:
-            self._job_counter += 1
-            job_id = f"{job_type}_{self._job_counter}"
-
-        job = AnalysisJob(
-            job_id=job_id,
-            input_data=input_data,
-            job_type=job_type,
-            parameters=parameters or {},
-        )
-
-        self._jobs[job_id] = job
-
-        # Submit to executor
-        future = self._executor.submit(self._job_wrapper, job, worker_func)
-        job.future = future
-
-        self.stats["jobs_submitted"] += 1
-
-        return job
-
-    def _job_wrapper(self, job: AnalysisJob, worker_func: Callable) -> Any:
-        """Wrapper for job execution with error handling and timing."""
-        job.start_time = time.time()
-        job.status = JobStatus.RUNNING
-        job.worker_id = threading.current_thread().name
-
-        try:
-            result = worker_func(job.input_data, job.parameters)
-            job.result = result
-            job.status = JobStatus.COMPLETED
-            self.stats["jobs_completed"] += 1
-            return result
-
-        except Exception as e:
-            job.error = str(e)
-            job.status = JobStatus.FAILED
-            self.stats["jobs_failed"] += 1
-            raise
-
-        finally:
-            job.end_time = time.time()
-            if job.duration:
-                self.stats["total_processing_time"] += job.duration
-
-    def _wait_for_jobs(self, jobs: list[AnalysisJob], operation_name: str) -> list[AnalysisJob]:
-        """Wait for jobs to complete with progress tracking."""
-        total_jobs = len(jobs)
-
-        while True:
-            completed = sum(1 for job in jobs if job.is_completed)
-
-            if self.progress_callback:
-                self.progress_callback(operation_name, completed, total_jobs)
-
-            if completed == total_jobs:
-                break
-
-            time.sleep(0.1)
-
-        return jobs
-
-    def _wait_for_some_completion(self, jobs: list[AnalysisJob], target_completed: int) -> None:
-        """Wait until at least target_completed jobs are finished."""
-        while True:
-            completed = sum(1 for job in jobs if job.is_completed)
-            if completed >= target_completed:
-                break
-            time.sleep(0.1)
-
-    # Worker functions for different analysis types
-
-    def _parse_files_worker(
-        self, file_paths: list[Path], parameters: dict[str, Any]
-    ) -> list[YaraFile]:
-        """Worker function for parsing files."""
-        parser = Parser()
+        max_workers = max_workers or self.max_workers
         results = []
 
-        for file_path in file_paths:
-            try:
-                content = Path(file_path).read_text(encoding="utf-8", errors="ignore")
-                ast = parser.parse(content)
-                results.append(ast)
-            except Exception as e:
-                # Create empty AST with error info
-                ast = YaraFile(imports=[], includes=[], rules=[])
-                ast._parse_error = str(e)
-                results.append(ast)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit file analysis tasks
+            future_to_path = {
+                executor.submit(self._analyze_file_path, path): path for path in file_paths
+            }
+
+            # Collect results
+            for future in concurrent.futures.as_completed(future_to_path):
+                path = future_to_path[future]
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as e:
+                    results.append({"file": path, "error": str(e), "analysis": None})
 
         return results
 
-    def _complexity_worker(self, ast: YaraFile, parameters: dict[str, Any]) -> dict[str, Any]:
-        """Worker function for complexity analysis."""
-        analyzer = ComplexityAnalyzer()
-        metrics = analyzer.analyze(ast)
-
-        return {
-            "file_name": parameters.get("file_name", "unknown"),
-            "metrics": metrics.to_dict(),
-            "quality_score": metrics.get_quality_score(),
-            "quality_grade": metrics.get_complexity_grade(),
-        }
-
-    def _graph_worker(self, ast: YaraFile, parameters: dict[str, Any]) -> dict[str, Any]:
-        """Worker function for graph generation."""
-        generator = DependencyGraphGenerator()
-        graph_type = parameters["graph_type"]
-        ast_index = parameters["ast_index"]
-        output_dir = parameters.get("output_dir")
-
-        # Generate appropriate graph
-        if graph_type == "full":
-            graph_source = generator.generate_graph(ast)
-        elif graph_type == "rules":
-            graph_source = generator.generate_rule_graph(ast)
-        elif graph_type == "modules":
-            graph_source = generator.generate_module_graph(ast)
-        else:
-            raise ValueError(f"Unknown graph type: {graph_type}")
-
-        result = {
-            "ast_index": ast_index,
-            "graph_type": graph_type,
-            "graph_source": graph_source,
-        }
-
-        # Save to file if output directory provided
-        if output_dir:
-            output_file = Path(output_dir) / f"ast_{ast_index}_{graph_type}.dot"
-            output_file.write_text(graph_source)
-            result["output_file"] = str(output_file)
-
-        return result
-
-
-class ProgressTracker:
-    """Helper class for tracking progress of parallel operations."""
-
-    def __init__(self, total_operations: int, update_interval: float = 1.0):
-        """Initialize progress tracker.
+    def analyze_with_custom_function(
+        self, rules: list[Rule], analyze_func: Callable[[Rule], Any], max_workers: int | None = None
+    ) -> list[Any]:
+        """Analyze rules with a custom analysis function.
 
         Args:
-            total_operations: Total number of operations to track
-            update_interval: Minimum seconds between progress updates
-        """
-        self.total_operations = total_operations
-        self.update_interval = update_interval
-        self.completed_operations = 0
-        self.start_time = time.time()
-        self.last_update = 0
-        self._lock = threading.Lock()
-
-    def update(self, increment: int = 1) -> dict[str, Any] | None:
-        """Update progress and return stats if update interval reached.
-
-        Args:
-            increment: Number of operations completed
+            rules: List of rules to analyze
+            analyze_func: Custom analysis function
+            max_workers: Override default max workers
 
         Returns:
-            Progress stats dict if update should be displayed, None otherwise
+            List of analysis results
         """
-        with self._lock:
-            self.completed_operations += increment
-            current_time = time.time()
+        max_workers = max_workers or self.max_workers
+        results = []
 
-            if current_time - self.last_update >= self.update_interval:
-                self.last_update = current_time
+        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # Submit custom analysis tasks
+            futures = [executor.submit(analyze_func, rule) for rule in rules]
 
-                elapsed = current_time - self.start_time
-                percentage = (self.completed_operations / self.total_operations) * 100
+            # Collect results
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as e:
+                    results.append({"error": str(e)})
 
-                # Estimate remaining time
-                if self.completed_operations > 0:
-                    avg_time_per_op = elapsed / self.completed_operations
-                    remaining_ops = self.total_operations - self.completed_operations
-                    eta = remaining_ops * avg_time_per_op
-                else:
-                    eta = None
+        return results
 
-                return {
-                    "completed": self.completed_operations,
-                    "total": self.total_operations,
-                    "percentage": percentage,
-                    "elapsed": elapsed,
-                    "eta": eta,
-                }
+    def _analyze_single_rule(self, rule: Rule) -> dict[str, Any]:
+        """Analyze a single rule."""
+        return self.rule_analyzer.analyze(rule)
 
-        return None
+    def _analyze_file_path(self, file_path: str) -> dict[str, Any]:
+        """Analyze a file from path."""
+        from yaraast.parser import Parser
+
+        parser = Parser()
+        with open(file_path) as f:
+            content = f.read()
+
+        yara_file = parser.parse(content)
+        analysis = self.analyze_file(yara_file)
+        analysis["file"] = file_path
+
+        return analysis
+
+    def get_statistics(self) -> dict[str, Any]:
+        """Get analysis statistics."""
+        avg_time = 0.0
+        if self._stats["rules_analyzed"] > 0:
+            avg_time = self._stats["total_time"] / self._stats["rules_analyzed"]
+
+        return {
+            **self._stats,
+            "avg_time_per_rule": avg_time,
+            "max_workers": self.max_workers,
+        }
+
+    def reset_statistics(self) -> None:
+        """Reset analysis statistics."""
+        self._stats = {
+            "rules_analyzed": 0,
+            "total_time": 0.0,
+            "errors": 0,
+        }
+
+    def optimize_worker_count(self, rules: list[Rule]) -> int:
+        """Determine optimal worker count for rule set.
+
+        Args:
+            rules: Rules to analyze
+
+        Returns:
+            Optimal worker count
+        """
+        rule_count = len(rules)
+        cpu_count = mp.cpu_count()
+
+        # Heuristics for worker count
+        if rule_count < 10:
+            return 1  # Serial processing for small sets
+        elif rule_count < 50:
+            return min(4, cpu_count)
+        elif rule_count < 200:
+            return min(8, cpu_count)
+        else:
+            return cpu_count
+
+    def analyze_complexity_parallel(
+        self, rules: list[Rule], max_workers: int | None = None
+    ) -> dict[str, Any]:
+        """Analyze rule complexity in parallel.
+
+        Args:
+            rules: Rules to analyze
+            max_workers: Override default max workers
+
+        Returns:
+            Complexity analysis results
+        """
+        max_workers = max_workers or self.optimize_worker_count(rules)
+
+        # Analyze each rule
+        analyses = self.analyze_rules(rules, max_workers)
+
+        # Aggregate complexity metrics
+        total_complexity = 0
+        max_complexity = 0
+        min_complexity = float("inf")
+
+        for analysis in analyses:
+            if "complexity" in analysis:
+                complexity = analysis["complexity"]
+                total_complexity += complexity
+                max_complexity = max(max_complexity, complexity)
+                min_complexity = min(min_complexity, complexity)
+
+        avg_complexity = total_complexity / len(rules) if rules else 0
+
+        return {
+            "total_rules": len(rules),
+            "total_complexity": total_complexity,
+            "average_complexity": avg_complexity,
+            "max_complexity": max_complexity,
+            "min_complexity": min_complexity if min_complexity != float("inf") else 0,
+            "analyses": analyses,
+        }
+
+    def profile_performance(
+        self, rules: list[Rule], worker_counts: list[int] | None = None
+    ) -> dict[str, Any]:
+        """Profile performance with different worker counts.
+
+        Args:
+            rules: Rules to analyze
+            worker_counts: Worker counts to test
+
+        Returns:
+            Performance profiling results
+        """
+        if not worker_counts:
+            worker_counts = [1, 2, 4, 8, mp.cpu_count()]
+
+        results = {}
+
+        for workers in worker_counts:
+            if workers > mp.cpu_count():
+                continue
+
+            start_time = time.time()
+            self.analyze_rules(rules, max_workers=workers)
+            elapsed = time.time() - start_time
+
+            results[workers] = {
+                "time": elapsed,
+                "rules_per_second": len(rules) / elapsed if elapsed > 0 else 0,
+            }
+
+        return {
+            "worker_performance": results,
+            "optimal_workers": min(results, key=lambda k: results[k]["time"]),
+            "rule_count": len(rules),
+        }

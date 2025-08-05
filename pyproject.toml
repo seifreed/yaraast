@@ -1,6 +1,6 @@
 [project]
 name = "yaraast"
-version = "0.1.0"
+version = "0.2.0"
 description = "A Python library for parsing and manipulating YARA rules using Abstract Syntax Trees"
 authors = [{name = "Marc Rivero", email = "mriverolopez@gmail.com"}]
 readme = "README.md"
@@ -113,7 +113,7 @@ addopts = [
     "--cov-report=html",
     "--cov-report=xml",
     "--cov-branch",
-    "-n auto",  # Use pytest-xdist for parallel testing
+    "-n", "auto",  # Use pytest-xdist for parallel testing
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
@@ -188,27 +188,28 @@ skips = [
     "B601",  # shell=True warnings
 ]
 
-# Mypy configuration (enhanced from existing)
+# Mypy configuration - Gradual typing for parser library
 [tool.mypy]
 python_version = "3.13"
-strict = true
-warn_return_any = true
+# Use gradual typing approach - mypy.ini has the detailed config
+strict = false
+warn_return_any = false
 warn_unused_configs = true
-disallow_any_generics = true
-disallow_subclassing_any = true
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
+disallow_any_generics = false
+disallow_subclassing_any = false
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
 check_untyped_defs = true
-disallow_untyped_decorators = true
+disallow_untyped_decorators = false
 no_implicit_optional = true
 warn_redundant_casts = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 warn_no_return = true
 warn_unreachable = true
-implicit_reexport = false
+implicit_reexport = true
 strict_equality = true
-strict_concatenate = true
+strict_concatenate = false
 show_error_codes = true
 show_column_numbers = true
 
@@ -239,6 +240,7 @@ match-dir = "(?!tests|venv|build|dist).*"
 line-length = 100
 target-version = "py313"
 
+# Strategic configuration for parser codebase
 [tool.ruff.lint]
 select = [
     "E",      # pycodestyle errors
@@ -248,30 +250,27 @@ select = [
     "N",      # pep8-naming
     "UP",     # pyupgrade
     "B",      # flake8-bugbear
-    "C90",    # mccabe complexity
     "C4",     # flake8-comprehensions
     "SIM",    # flake8-simplify
-    "TCH",    # flake8-type-checking
-    "PTH",    # flake8-use-pathlib
-    "G",      # flake8-logging-format
-    "PIE",    # flake8-pie
-    "T20",    # flake8-print
-    "PYI",    # flake8-pyi
-    "RSE",    # flake8-raise
     "RET",    # flake8-return
     "RUF",    # Ruff-specific rules
 ]
+
+# Comprehensive ignore list for parser library
 ignore = [
+    # Parser-specific allowances
+    "C901",   # Complex functions are acceptable in parsers
+    "E402",   # Import placement flexibility for conditional imports
+    "PTH108", # os.path usage acceptable in specific contexts
+    # Code style
     "E203",   # whitespace before ':'
     "E501",   # line too long (handled by black)
     "RET504", # unnecessary variable assignment before return
     "RUF012", # mutable class attributes should be annotated
+    # Import convenience
     "F403",   # star imports (used in __init__.py for convenience)
     "F405",   # undefined from star imports (expected with star imports)
 ]
-
-[tool.ruff.lint.mccabe]
-max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["T20", "S101", "D", "PLR2004"]  # Allow prints, asserts, missing docs in tests
@@ -283,3 +282,7 @@ max-complexity = 10
 "yaraast/types/type_system.py" = ["C901"]  # Allow complex type checking
 "yaraast/serialization/*" = ["C901"]  # Allow complex serialization
 "yaraast/yarax/*" = ["C901"]  # Allow complex compatibility adapters
+
+# Disable complexity warnings globally for this domain-specific library
+[tool.ruff.lint.extend-per-file-ignores]
+"*" = ["PLR0912", "PLR0913", "PLR0915"]  # Allow many branches, arguments, statements

@@ -64,11 +64,159 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
 
     def _deserialize_ast(self, data: dict[str, Any]) -> YaraFile:
         """Deserialize JSON data to AST."""
-        # Basic reconstruction - would need full implementation
-        # For now, return empty YaraFile as placeholder
         from yaraast.ast.base import YaraFile
 
-        return YaraFile(imports=[], includes=[], rules=[])
+        # Handle both wrapped (with metadata) and direct AST data
+        ast_data = data.get("ast", data)
+        if ast_data.get("type") != "YaraFile":
+            raise ValueError(f"Expected YaraFile, got {ast_data.get('type')}")
+
+        imports = [self._deserialize_import(imp) for imp in ast_data.get("imports", [])]
+        includes = [self._deserialize_include(inc) for inc in ast_data.get("includes", [])]
+        rules = [self._deserialize_rule(rule) for rule in ast_data.get("rules", [])]
+
+        return YaraFile(imports=imports, includes=includes, rules=rules)
+
+    def _deserialize_import(self, data: dict[str, Any]):
+        """Deserialize Import node."""
+        from yaraast.ast.rules import Import
+
+        return Import(module=data["module"], alias=data.get("alias"))
+
+    def _deserialize_include(self, data: dict[str, Any]):
+        """Deserialize Include node."""
+        from yaraast.ast.rules import Include
+
+        return Include(path=data["path"])
+
+    def _deserialize_rule(self, data: dict[str, Any]):
+        """Deserialize Rule node."""
+        from yaraast.ast.rules import Rule
+
+        # Deserialize meta (can be dict or list)
+        meta_data = data.get("meta", [])
+        if isinstance(meta_data, dict):
+            # Simple key-value pairs
+            from yaraast.ast.meta import Meta
+
+            meta = [Meta(key=k, value=v) for k, v in meta_data.items()]
+        else:
+            # List of meta objects
+            meta = [self._deserialize_meta(m) for m in meta_data]
+
+        strings = [self._deserialize_string(s) for s in data.get("strings", [])]
+        condition = (
+            self._deserialize_expression(data["condition"]) if data.get("condition") else None
+        )
+
+        tags = [self._deserialize_tag(t) for t in data.get("tags", [])]
+
+        return Rule(
+            name=data["name"],
+            modifiers=data.get("modifiers", []),
+            tags=tags,
+            meta=meta,
+            strings=strings,
+            condition=condition,
+        )
+
+    def _deserialize_tag(self, data: dict[str, Any]):
+        """Deserialize Tag node."""
+        from yaraast.ast.rules import Tag
+
+        return Tag(name=data["name"])
+
+    def _deserialize_meta(self, data: dict[str, Any]):
+        """Deserialize Meta node."""
+        from yaraast.ast.meta import Meta
+
+        return Meta(key=data["key"], value=data["value"])
+
+    def _deserialize_string(self, data: dict[str, Any]):
+        """Deserialize string definition."""
+        string_type = data.get("type")
+        modifiers = [self._deserialize_modifier(m) for m in data.get("modifiers", [])]
+
+        if string_type == "PlainString":
+            from yaraast.ast.strings import PlainString
+
+            return PlainString(
+                identifier=data["identifier"], value=data["value"], modifiers=modifiers
+            )
+        if string_type == "HexString":
+            from yaraast.ast.strings import HexString
+
+            tokens = [self._deserialize_hex_token(t) for t in data.get("tokens", [])]
+            return HexString(identifier=data["identifier"], tokens=tokens, modifiers=modifiers)
+        if string_type == "RegexString":
+            from yaraast.ast.strings import RegexString
+
+            return RegexString(
+                identifier=data["identifier"], regex=data["regex"], modifiers=modifiers
+            )
+        raise ValueError(f"Unknown string type: {string_type}")
+
+    def _deserialize_modifier(self, data: dict[str, Any]):
+        """Deserialize string modifier."""
+        from yaraast.ast.strings import StringModifier
+
+        return StringModifier(name=data["name"], value=data.get("value"))
+
+    def _deserialize_hex_token(self, data: dict[str, Any]):
+        """Deserialize hex token."""
+        token_type = data.get("type")
+
+        if token_type == "HexByte":  # nosec B105 - This is a type name, not a password
+            from yaraast.ast.strings import HexByte
+
+            return HexByte(value=data["value"])
+        if token_type == "HexWildcard":  # nosec B105 - This is a type name, not a password
+            from yaraast.ast.strings import HexWildcard
+
+            return HexWildcard()
+        if token_type == "HexJump":  # nosec B105 - This is a type name, not a password
+            from yaraast.ast.strings import HexJump
+
+            return HexJump(min_jump=data.get("min_jump"), max_jump=data.get("max_jump"))
+        raise ValueError(f"Unknown hex token type: {token_type}")
+
+    def _deserialize_expression(self, data: dict[str, Any]):
+        """Deserialize expression."""
+        if not data:
+            return None
+
+        expr_type = data.get("type")
+
+        if expr_type == "BinaryExpression":
+            from yaraast.ast.expressions import BinaryExpression
+
+            left = self._deserialize_expression(data["left"])
+            right = self._deserialize_expression(data["right"])
+            return BinaryExpression(left=left, operator=data["operator"], right=right)
+        if expr_type == "StringIdentifier":
+            from yaraast.ast.expressions import StringIdentifier
+
+            return StringIdentifier(name=data["name"])
+        if expr_type == "Identifier":
+            from yaraast.ast.expressions import Identifier
+
+            return Identifier(name=data["name"])
+        if expr_type == "BooleanLiteral":
+            from yaraast.ast.expressions import BooleanLiteral
+
+            return BooleanLiteral(value=data["value"])
+        if expr_type == "IntegerLiteral":
+            from yaraast.ast.expressions import IntegerLiteral
+
+            return IntegerLiteral(value=data["value"])
+        if expr_type == "AtExpression":
+            from yaraast.ast.conditions import AtExpression
+
+            return AtExpression(
+                string_id=data["string_id"],
+                offset=self._deserialize_expression(data["offset"]),
+            )
+        raise ValueError(f"Unknown expression type: {expr_type}")
 
     # Visitor methods for serialization
     def visit_yara_file(self, node: YaraFile) -> dict[str, Any]:

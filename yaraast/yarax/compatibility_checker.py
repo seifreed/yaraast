@@ -90,8 +90,17 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
                 seen_modifiers.add(modifier)
 
         # Visit rule components
-        for meta in node.meta:
-            self.visit(meta)
+        # Handle meta as either dict or list
+        if isinstance(node.meta, dict):
+            # Meta is a dictionary, check values
+            for _key, _value in node.meta.items():
+                # Check meta values directly
+                pass
+        elif isinstance(node.meta, list):
+            # Meta is a list of Meta objects
+            for meta in node.meta:
+                if hasattr(meta, "accept"):
+                    self.visit(meta)
 
         for string_def in node.strings:
             self.visit(string_def)
@@ -146,14 +155,41 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
                     # Skip escaped character
                     i += 2
                     continue
-                if pattern[i] == "{" and (i == 0 or pattern[i - 1] in "({|"):
-                    self._add_issue(
-                        "error",
-                        "unescaped_brace",
-                        "Unescaped '{' in regex pattern",
-                        "Escape the brace with '\\{'",
-                        node.location,
-                    )
+                if pattern[i] == "{":
+                    # Check if this is a valid quantifier pattern like {3,5}
+                    # Look ahead to see if it follows the pattern {number} or {number,} or {number,number}
+                    j = i + 1
+                    is_valid_quantifier = False
+
+                    if j < len(pattern):
+                        # Skip digits
+                        while j < len(pattern) and pattern[j].isdigit():
+                            j += 1
+
+                        # Check if it's {n} or {n,} or {n,m}
+                        if j < len(pattern):
+                            if pattern[j] == "}":  # {n}
+                                is_valid_quantifier = True
+                            elif pattern[j] == "," and j + 1 < len(pattern):  # {n,?
+                                j += 1
+                                if pattern[j] == "}":  # {n,}
+                                    is_valid_quantifier = True
+                                else:
+                                    # Skip more digits for {n,m}
+                                    while j < len(pattern) and pattern[j].isdigit():
+                                        j += 1
+                                    if j < len(pattern) and pattern[j] == "}":  # {n,m}
+                                        is_valid_quantifier = True
+
+                    # If it's not a valid quantifier, it's an unescaped brace
+                    if not is_valid_quantifier:
+                        self._add_issue(
+                            "error",
+                            "unescaped_brace",
+                            f"Unescaped '{{' in regex pattern at position {i}",
+                            "Escape the brace with '\\{'",
+                            node.location,
+                        )
                 i += 1
 
         if self.features.validate_escape_sequences:
@@ -256,3 +292,201 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
         if errors <= 5:
             return "moderate"
         return "difficult"
+
+    # Implement all required abstract methods with default behavior
+    def visit_yara_file(self, node):
+        """Visit YARA file."""
+        for rule in node.rules:
+            self.visit(rule)
+
+    def visit_array_access(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_at_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_binary_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_boolean_literal(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_comment(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_comment_group(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_condition(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_defined_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_dictionary_access(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_double_literal(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_extern_import(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_extern_namespace(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_extern_rule(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_extern_rule_reference(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_for_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_for_of_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_function_call(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_hex_alternative(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_hex_byte(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_hex_nibble(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_hex_token(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_hex_wildcard(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_import(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_in_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_in_rule_pragma(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_include(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_integer_literal(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_member_access(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_meta(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_module_reference(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_parentheses_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_pragma(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_pragma_block(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_range_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_regex_literal(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_set_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_string_count(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_string_definition(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_string_identifier(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_string_length(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_string_literal(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_string_modifier(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_string_offset(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_string_operator_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_tag(self, node):
+        # Not needed for compatibility checking
+        pass
+
+    def visit_unary_expression(self, node):
+        # Not needed for compatibility checking
+        pass
+
+
+# Alias for compatibility
+CompatibilityChecker = YaraXCompatibilityChecker

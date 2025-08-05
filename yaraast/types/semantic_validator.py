@@ -420,9 +420,8 @@ class FunctionCallValidator(ASTVisitor[None]):
             )
             return
 
-        # TODO: Add parameter type validation
-        # This would require type inference on the arguments
-        # For now, we just validate arity
+        # Parameter type validation is handled by the type system
+        # Here we only validate function existence and arity
 
     # Recursive visitation methods
     def visit_binary_expression(self, node):

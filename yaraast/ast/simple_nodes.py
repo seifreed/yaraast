@@ -107,7 +107,12 @@ class StringModifier(ASTNode):
 class StringDefinition(ASTNode):
     """Base string definition."""
 
-    def __init__(self, identifier: str, modifiers: list[StringModifier] | None = None, **kwargs):
+    def __init__(
+        self,
+        identifier: str,
+        modifiers: list[StringModifier] | None = None,
+        **kwargs: Any,
+    ):
         super().__init__(**kwargs)
         self.identifier = identifier
         self.modifiers = modifiers or []
@@ -202,7 +207,7 @@ class Rule(ASTNode):
         tags: list[Tag] | None = None,
         meta: dict[str, Any] | None = None,
         strings: list[StringDefinition] | None = None,
-        condition: Expression = None,
+        condition: Expression | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)

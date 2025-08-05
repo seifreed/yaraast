@@ -195,3 +195,7 @@ class LibyaraCompiler:
             return True
         except Exception:
             return False
+
+
+# Alias for compatibility
+YaraCompiler = LibyaraCompiler

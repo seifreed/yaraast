@@ -13,9 +13,6 @@ from yaraast.parser import Parser
 from yaraast.version import (
     YARA_SYNTAX_VERSION,
     YARAAST_VERSION,
-    YARAAST_VERSION_MAJOR,
-    YARAAST_VERSION_MINOR,
-    YARAAST_VERSION_PATCH,
     get_version_info,
     get_version_string,
 )

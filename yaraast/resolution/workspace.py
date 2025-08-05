@@ -149,6 +149,10 @@ class Workspace:
         """Get all files that depend on this file."""
         return self.dependency_graph.get_file_dependents(file_path)
 
+    def get_all_files(self) -> list[str]:
+        """Get all files in the workspace."""
+        return list(self.files.keys())
+
 
 class WorkspaceAnalyzer:
     """Analyzer for workspace files."""
