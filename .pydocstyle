@@ -1,4 +1,4 @@
 [pydocstyle]
 inherit = false
-ignore = D100,D101,D102,D103,D104,D105,D107,D203,D212,D213,D401,D406,D407,D413
+ignore = D100,D101,D102,D103,D104,D105,D107,D202,D203,D212,D213,D401,D402,D403,D406,D407,D412,D413
 match-dir = (?!tests|venv|build|dist).*
