@@ -9,15 +9,20 @@ YARA rules through Abstract Syntax Tree (AST) representations.
 
 ## Features
 
-- Parse YARA rules into a structured AST
-- Analyze rules for optimization opportunities
-- Format and prettify YARA files
+- Parse YARA rules into a structured AST with multiple output formats
+- Analyze rules for optimization opportunities and best practices
+- Format and prettify YARA files with customizable styles
 - Validate syntax and semantic correctness
+- Generate comprehensive metrics and visualizations (complexity, strings, dependencies)
 - Support for large rulesets with thousands of rules
 - Extensible visitor pattern for custom analysis
-- Performance benchmarking and metrics
-- Diff comparison between YARA files
+- Performance benchmarking and streaming for huge files
+- AST-based diff comparison between YARA files
 - LibYARA integration for compilation and scanning
+- Fluent API for programmatic rule construction
+- Roundtrip testing for serialization fidelity
+- Multi-file workspace analysis with dependency resolution
+- Export/import AST in JSON/YAML/Protobuf formats
 
 ## Installation
 
@@ -69,10 +74,19 @@ yaraast validate *.yar                    # Validate multiple files
 #### format - Code Formatting
 
 ```bash
-# Format YARA files (like black for Python)
-yaraast format input.yar                  # Format in place
-yaraast format input.yar -o output.yar    # Format to new file
-yaraast format *.yar                      # Format multiple files
+# Format YARA files with consistent style
+yaraast format input.yar output.yar       # Format to new file
+yaraast format --help                     # See formatting options
+```
+
+#### fmt - In-place Formatting (like black)
+
+```bash
+# Format YARA files in place
+yaraast fmt rule.yar                      # Format with default style
+yaraast fmt --style compact rule.yar      # Use compact style
+yaraast fmt --style readable rule.yar     # Use readable style
+yaraast fmt --check rule.yar              # Check if formatting needed
 ```
 
 ### Analysis Commands
@@ -82,49 +96,44 @@ yaraast format *.yar                      # Format multiple files
 ```bash
 # Optimization analysis
 yaraast analyze optimize ruleset.yar      # Find optimization opportunities
-yaraast analyze optimize --detailed rule.yar  # Detailed suggestions
 
 # Best practices analysis
 yaraast analyze best-practices rule.yar   # Check best practices
-
-# Complexity analysis
-yaraast analyze complexity rule.yar       # Analyze rule complexity
-
-# Security analysis
-
-yaraast analyze security ruleset.yar      # Security best practices check
+yaraast analyze best-practices -v rule.yar # Verbose output with suggestions
 ```
 
 #### metrics - Rule Metrics and Visualization
 
 ```bash
-# Generate metrics
-yaraast metrics rule.yar                  # Basic metrics
+# Complexity metrics
+yaraast metrics complexity rule.yar       # Analyze rule complexity
 
-yaraast metrics --detailed ruleset.yar    # Detailed statistics
-yaraast metrics --export-csv metrics.csv rule.yar  # Export to CSV
+# String analysis
+yaraast metrics strings rule.yar          # Analyze string patterns
+
+# Visualizations
+yaraast metrics tree rule.yar --output tree.html    # HTML tree visualization
+yaraast metrics graph rule.yar            # Generate dependency graph
+yaraast metrics patterns rule.yar         # String pattern analysis
+yaraast metrics report rule.yar           # Comprehensive report
 ```
 
 #### semantic - Semantic Validation
 
 ```bash
 # Semantic validation beyond syntax
-yaraast semantic validate rule.yar        # Check semantic correctness
-yaraast semantic check-references rule.yar  # Verify all references
-
-yaraast semantic detect-duplicates ruleset.yar  # Find duplicate rules
+yaraast semantic rule.yar                 # Check semantic correctness
+yaraast semantic *.yar --quiet            # Check multiple files quietly
+yaraast semantic rule.yar --strict        # Treat warnings as errors
 ```
 
 ### Development Commands
 
-#### diff - Compare YARA Files
+#### serialize diff - Compare YARA Files
 
 ```bash
-
 # Show differences between files
-yaraast diff old.yar new.yar              # Basic diff
-yaraast diff --semantic old.yar new.yar   # Logical vs stylistic changes
-yaraast diff --ignore-comments old.yar new.yar  # Ignore comment changes
+yaraast serialize diff old.yar new.yar    # AST-based diff comparison
 ```
 
 #### roundtrip - Serialization Testing
@@ -132,17 +141,22 @@ yaraast diff --ignore-comments old.yar new.yar  # Ignore comment changes
 ```bash
 # Test AST serialization/deserialization
 yaraast roundtrip test rule.yar           # Verify round-trip consistency
-yaraast roundtrip pretty rule.yar         # Pretty print after round-trip
+yaraast roundtrip test rule.yar -v        # Verbose output
+yaraast roundtrip serialize rule.yar      # Serialize to JSON/YAML
+yaraast roundtrip deserialize ast.json    # Deserialize back to YARA
+yaraast roundtrip pretty rule.yar         # Pretty print with style options
+yaraast roundtrip pipeline rule.yar       # CI/CD pipeline format
 ```
 
 #### serialize - Import/Export AST
 
 ```bash
-
 # Serialize AST for storage or transmission
-yaraast serialize export rule.yar -o ast.json  # Export to JSON
-yaraast serialize import ast.json -o rule.yar  # Import from JSON
-yaraast serialize convert rule.yar --to yaml   # Convert between formats
+yaraast serialize export rule.yar --format json  # Export to JSON
+yaraast serialize export rule.yar --format yaml  # Export to YAML
+yaraast serialize import-ast ast.json     # Import from serialized format
+yaraast serialize info rule.yar           # Show AST structure info
+yaraast serialize validate ast.json       # Validate serialized format
 ```
 
 ### Performance Commands
@@ -151,19 +165,25 @@ yaraast serialize convert rule.yar --to yaml   # Convert between formats
 
 ```bash
 # Performance analysis and optimization
-yaraast performance benchmark ruleset.yar  # Benchmark parsing speed
-yaraast performance profile ruleset.yar    # Profile memory usage
 yaraast performance stream large.yar       # Stream processing for huge files
-yaraast performance batch /path/to/rules   # Batch process directory
+yaraast performance optimize rules/        # Get optimization recommendations
+```
+
+#### performance-check - Performance Analysis
+
+```bash
+# Check for performance issues
+yaraast performance-check rule.yar        # Analyze performance issues
 ```
 
 #### bench - Benchmarking Suite
 
 ```bash
 # Run benchmarks
-yaraast bench parse rule.yar              # Benchmark parsing
-yaraast bench all ruleset.yar             # Run all benchmarks
-yaraast bench compare old.yar new.yar     # Compare performance
+yaraast bench rule.yar                    # Default benchmarks
+yaraast bench rule.yar --operations parse # Benchmark parsing only
+yaraast bench rule.yar --iterations 10    # Custom iterations
+yaraast bench *.yar --compare             # Compare performance across files
 ```
 
 ### Integration Commands
@@ -171,21 +191,23 @@ yaraast bench compare old.yar new.yar     # Compare performance
 #### libyara - LibYARA Integration
 
 ```bash
-# Compile and scan with LibYARA
-yaraast libyara compile rule.yar          # Compile rules
-yaraast libyara scan rule.yar target.exe  # Scan files
-yaraast libyara verify rule.yar           # Verify LibYARA compatibility
+# Scan with LibYARA integration
+yaraast libyara scan rule.yar target      # Scan files
+yaraast libyara scan rule.yar target --optimize  # Use optimized compilation
+yaraast libyara scan rule.yar target --stats     # Show scan statistics
+
+# Optimize rules for LibYARA
+yaraast libyara optimize rule.yar         # Optimize and show results
+yaraast libyara optimize rule.yar --show-optimizations  # Detailed view
 ```
 
 #### workspace - Multi-File Analysis
 
 ```bash
-# Workspace management for projects
-yaraast workspace init                    # Initialize workspace
-yaraast workspace add rules/*.yar         # Add files to workspace
-yaraast workspace analyze                 # Analyze entire workspace
-yaraast workspace report                  # Generate workspace report
-
+# Analyze directories with multiple YARA files
+yaraast workspace analyze /path/to/rules  # Analyze all files in directory
+yaraast workspace graph /path/to/rules    # Generate dependency graph
+yaraast workspace resolve main.yar        # Resolve all includes
 ```
 
 ### Advanced Commands
@@ -194,19 +216,19 @@ yaraast workspace report                  # Generate workspace report
 
 ```bash
 # Demonstrate fluent API usage
-yaraast fluent examples                   # Show API examples
-yaraast fluent build                      # Interactive rule builder
-yaraast fluent convert rule.yar           # Convert to fluent API code
+yaraast fluent examples                   # Show example rules
+yaraast fluent conditions                 # Demonstrate condition builders
+yaraast fluent string-patterns            # Show string pattern builders
+yaraast fluent template                   # Generate rule template
+yaraast fluent transformations            # Show AST transformations
 ```
 
-#### fmt - Advanced Formatting
+#### optimize - Rule Optimization
 
 ```bash
-# Advanced formatting options (like black)
-yaraast fmt rule.yar                      # Auto-format with defaults
-yaraast fmt --line-length 100 rule.yar    # Custom line length
-yaraast fmt --style compact rule.yar      # Compact style
-yaraast fmt --check rule.yar              # Check if formatting needed
+# Optimize YARA rules
+yaraast optimize input.yar output.yar     # Optimize rules
+yaraast optimize rule.yar optimized.yar --show-changes  # Show what changed
 ```
 
 ## Usage Examples
@@ -266,21 +288,22 @@ yaraast performance stream huge_ruleset.yar | \
 
 ```text
 Commands:
-  analyze      AST-based analysis commands
-  bench        Performance benchmarks for AST operations
-  diff         Show AST-based diff highlighting logical vs stylistic changes
-  fluent       Fluent API demonstrations and examples
-  fmt          Format YARA file using AST-based formatting (like black for Python)
-  format       Format a YARA file with consistent style
-  libyara      LibYARA integration commands for compilation and scanning
-  metrics      Analyze and visualize YARA AST metrics
-  parse        Parse a YARA file and output in various formats
-  performance  Performance tools for large YARA rule collections
-  roundtrip    Round-trip serialization and pretty printing commands
-  semantic     Perform semantic validation on YARA files
-  serialize    AST serialization commands for export/import and versioning
-  validate     Validate a YARA file for syntax errors
-  workspace    Workspace commands for multi-file analysis
+  analyze            AST-based analysis commands
+  bench              Performance benchmarks for AST operations
+  fluent             Fluent API demonstrations and examples
+  fmt                Format YARA file in-place (like black for Python)
+  format             Format a YARA file to new file
+  libyara            LibYARA integration for scanning and optimization
+  metrics            Analyze and visualize YARA metrics
+  optimize           Optimize YARA rules for better performance
+  parse              Parse YARA file and output in various formats
+  performance        Performance tools for large rule collections
+  performance-check  Analyze YARA rules for performance issues
+  roundtrip          Round-trip serialization and pretty printing
+  semantic           Perform semantic validation on YARA files
+  serialize          AST serialization for export/import
+  validate           Validate YARA file for syntax errors
+  workspace          Multi-file analysis and dependency resolution
 ```
 
 ## Real-World Usage
@@ -369,6 +392,7 @@ cli(['analyze', 'optimize', 'rule.yar'])
 - Python 3.13 or higher
 - Dependencies: click, rich, attrs, PyYAML
 - Optional: yara-python for LibYARA integration
+- Optional: protobuf for binary serialization
 
 ## License
 
