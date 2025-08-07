@@ -171,19 +171,33 @@ def _optimize_display_suggestions(suggestions, verbose) -> None:
     """Display optimization suggestions by impact level."""
     for level in ["high", "medium", "low"]:
         level_suggestions = [s for s in suggestions if s.impact == level]
-        if not level_suggestions:
-            continue
+        if level_suggestions:
+            _display_suggestions_by_level(level_suggestions, level, verbose)
 
-        style = {"high": "red", "medium": "yellow", "low": "blue"}.get(level, "white")
-        console.print(f"\n[bold {style}]{level.capitalize()} Impact:[/bold {style}]")
 
-        for suggestion in level_suggestions:
-            console.print(f"  {suggestion.format()}")
-            if verbose and (suggestion.code_before or suggestion.code_after):
-                if suggestion.code_before:
-                    console.print(f"    Before: [dim]{suggestion.code_before}[/dim]")
-                if suggestion.code_after:
-                    console.print(f"    After:  [green]{suggestion.code_after}[/green]")
+def _display_suggestions_by_level(level_suggestions, level, verbose) -> None:
+    """Display suggestions for a specific impact level."""
+    style = _get_level_style(level)
+    console.print(f"\n[bold {style}]{level.capitalize()} Impact:[/bold {style}]")
+
+    for suggestion in level_suggestions:
+        console.print(f"  {suggestion.format()}")
+        if verbose:
+            _display_code_examples(suggestion)
+
+
+def _get_level_style(level: str) -> str:
+    """Get console style for impact level."""
+    return {"high": "red", "medium": "yellow", "low": "blue"}.get(level, "white")
+
+
+def _display_code_examples(suggestion) -> None:
+    """Display before/after code examples if available."""
+    if suggestion.code_before or suggestion.code_after:
+        if suggestion.code_before:
+            console.print(f"    Before: [dim]{suggestion.code_before}[/dim]")
+        if suggestion.code_after:
+            console.print(f"    After:  [green]{suggestion.code_after}[/green]")
 
 
 @analyze.command()

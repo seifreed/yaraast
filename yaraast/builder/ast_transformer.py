@@ -32,7 +32,7 @@ class CloneTransformer:
             tags=[Tag(name=tag.name) for tag in rule.tags],
             meta=rule.meta.copy(),
             strings=[CloneTransformer.clone(s) for s in rule.strings],
-            condition=CloneTransformer.clone(rule.condition) if rule.condition else None,
+            condition=(CloneTransformer.clone(rule.condition) if rule.condition else None),
         )
 
     @staticmethod

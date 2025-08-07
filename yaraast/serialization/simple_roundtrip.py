@@ -171,7 +171,11 @@ class SimpleRoundtripSerializer:
         """Deserialize a Rule."""
         rule = Rule(
             data["name"],
-            self.deserialize(data["condition"]) if data.get("condition") else BooleanLiteral(True),
+            (
+                self.deserialize(data["condition"])
+                if data.get("condition")
+                else BooleanLiteral(True)
+            ),
         )
 
         if "tags" in data:
@@ -347,7 +351,7 @@ def simple_roundtrip_test(yara_source: str) -> dict[str, Any]:
             "differences": differences,
             "metadata": {
                 "original_rule_count": len(original_ast.rules) if original_ast else 0,
-                "reconstructed_rule_count": len(original_ast.rules) if original_ast else 0,
+                "reconstructed_rule_count": (len(original_ast.rules) if original_ast else 0),
             },
         }
 

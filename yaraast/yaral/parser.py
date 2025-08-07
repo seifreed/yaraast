@@ -36,6 +36,9 @@ from .ast_nodes import (
 from .lexer import YaraLLexer, YaraLToken
 from .tokens import YaraLTokenType
 
+# Constants
+EXPECTED_FIELD_NAME_ERROR = "Expected field name"
+
 
 class YaraLParserError(Exception):
     """YARA-L parser error."""
@@ -208,10 +211,10 @@ class YaraLParser:
 
     def _parse_field_path(self) -> UDMFieldPath:
         """Parse UDM field path."""
-        EXPECTED_FIELD = "Expected field name"
+        expected_field = EXPECTED_FIELD_NAME_ERROR
         field_parts = []
         field_parts.append(
-            self._consume(BaseTokenType.IDENTIFIER, EXPECTED_FIELD).value,
+            self._consume(BaseTokenType.IDENTIFIER, expected_field).value,
         )
 
         while self._check(BaseTokenType.DOT):
@@ -553,7 +556,7 @@ class YaraLParser:
                 self._advance()
                 field_parts = []
                 field_parts.append(
-                    self._consume(BaseTokenType.IDENTIFIER, "Expected field name").value,
+                    self._consume(BaseTokenType.IDENTIFIER, EXPECTED_FIELD_NAME_ERROR).value,
                 )
 
                 while self._check(BaseTokenType.DOT):
@@ -561,7 +564,7 @@ class YaraLParser:
                     field_parts.append(
                         self._consume(
                             BaseTokenType.IDENTIFIER,
-                            "Expected field name",
+                            EXPECTED_FIELD_NAME_ERROR,
                         ).value,
                     )
 

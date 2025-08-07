@@ -155,27 +155,48 @@ class HexStringBuilder:
         parts = pattern.split()
 
         for part in parts:
-            if part == "??":
-                self.wildcard()
-            elif part.startswith("[") and part.endswith("]"):
-                # Jump pattern
-                jump_str = part[1:-1]
-                if "-" in jump_str:
-                    parts = jump_str.split("-")
-                    min_j = int(parts[0]) if parts[0] else None
-                    max_j = int(parts[1]) if parts[1] else None
-                    self.jump(min_j, max_j)
-                else:
-                    self.jump_exact(int(jump_str))
-            elif len(part) == 2 and "?" in part:
-                # Nibble pattern
-                self.nibble(part)
-            elif len(part) == 2:
-                # Regular hex byte
-                with contextlib.suppress(builtins.BaseException):
-                    self.add(part)
+            self._process_pattern_part(part)
 
         return self
+
+    def _process_pattern_part(self, part: str) -> None:
+        """Process a single pattern part."""
+        if part == "??":
+            self.wildcard()
+        elif self._is_jump_pattern(part):
+            self._process_jump_pattern(part)
+        elif self._is_nibble_pattern(part):
+            self.nibble(part)
+        elif self._is_hex_byte(part):
+            self._add_hex_byte_safely(part)
+
+    def _is_jump_pattern(self, part: str) -> bool:
+        """Check if part is a jump pattern like [2-4]."""
+        return part.startswith("[") and part.endswith("]")
+
+    def _is_nibble_pattern(self, part: str) -> bool:
+        """Check if part is a nibble pattern like A?."""
+        return len(part) == 2 and "?" in part
+
+    def _is_hex_byte(self, part: str) -> bool:
+        """Check if part is a regular hex byte."""
+        return len(part) == 2
+
+    def _process_jump_pattern(self, part: str) -> None:
+        """Process jump pattern like [2-4]."""
+        jump_str = part[1:-1]
+        if "-" in jump_str:
+            parts = jump_str.split("-")
+            min_j = int(parts[0]) if parts[0] else None
+            max_j = int(parts[1]) if parts[1] else None
+            self.jump(min_j, max_j)
+        else:
+            self.jump_exact(int(jump_str))
+
+    def _add_hex_byte_safely(self, part: str) -> None:
+        """Add hex byte with error suppression."""
+        with contextlib.suppress(builtins.BaseException):
+            self.add(part)
 
     def build(self) -> list[HexToken]:
         """Build the list of hex tokens."""

@@ -474,9 +474,27 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
         return tree
 
     def visit_rule(self, node: Rule) -> Tree:
+        """Visit a rule node and create its tree representation."""
+        rule_tree = self._create_rule_tree_with_modifiers(node)
+
+        if node.tags:
+            self._add_tags_to_tree(rule_tree, node.tags)
+
+        if node.meta:
+            self._add_meta_to_tree(rule_tree, node.meta)
+
+        if node.strings:
+            self._add_strings_to_tree(rule_tree, node.strings)
+
+        if node.condition:
+            self._add_condition_to_tree(rule_tree, node.condition)
+
+        return rule_tree
+
+    def _create_rule_tree_with_modifiers(self, node: Rule) -> Tree:
+        """Create rule tree with modifiers in the name."""
         name_with_modifiers = node.name
         if node.modifiers:
-            # Convert modifiers to strings safely
             modifier_strs = []
             for mod in node.modifiers:
                 if isinstance(mod, str):
@@ -485,264 +503,322 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
                     modifier_strs.append(str(mod))
             name_with_modifiers = f"[{'|'.join(modifier_strs)}] {name_with_modifiers}"
 
-        rule_tree = Tree(f"Rule: {name_with_modifiers}")
+        return Tree(f"Rule: {name_with_modifiers}")
 
-        if node.tags:
-            tags_tree = rule_tree.add("Tags")
-            for tag in node.tags:
-                if isinstance(tag, str):
-                    tags_tree.add(tag)
-                else:
-                    tags_tree.add(tag.name)
-
-        if node.meta:
-            from rich.markup import escape
-
-            meta_tree = rule_tree.add("Meta")
-            # Handle meta as dict or list
-            if isinstance(node.meta, dict):
-                for key, value in node.meta.items():
-                    if isinstance(value, str):
-                        # Escape value to avoid markup interpretation
-                        meta_tree.add(f'{escape(key)} = "{escape(value)}"')
-                    else:
-                        meta_tree.add(f"{escape(key)} = {value}")
-            elif isinstance(node.meta, list):
-                for m in node.meta:
-                    if hasattr(m, "key") and hasattr(m, "value"):
-                        if isinstance(m.value, str):
-                            meta_tree.add(f'{escape(m.key)} = "{escape(m.value)}"')
-                        else:
-                            meta_tree.add(f"{escape(m.key)} = {m.value}")
-
-        if node.strings:
-            from rich.markup import escape
-
-            strings_tree = rule_tree.add("Strings")
-            for string in node.strings:
-                string_type = string.__class__.__name__
-                value_preview = ""
-                if isinstance(string, PlainString):
-                    # Escape the value to avoid markup interpretation
-                    escaped_val = escape(string.value[:30]) if string.value else ""
-                    value_preview = f' = "{escaped_val}{"..." if len(string.value) > 30 else ""}"'
-                elif isinstance(string, RegexString):
-                    escaped_regex = escape(string.regex[:30]) if string.regex else ""
-                    value_preview = f" = /{escaped_regex}{'...' if len(string.regex) > 30 else ''}/"
-                strings_tree.add(f"{string.identifier}{value_preview} [{string_type}]")
-
-        if node.condition:
-            condition_tree = rule_tree.add("Condition")
-            try:
-                # Try to generate condition string
-                from yaraast.codegen.generator import CodeGenerator
-
-                condition_str = CodeGenerator().generate(node.condition).strip()
-                if not condition_str:
-                    # If generator returns empty, use fallback
-                    condition_str = self._condition_to_string(node.condition)
-            except (ValueError, TypeError, AttributeError):
-                # Fallback to simple representation
-                condition_str = self._condition_to_string(node.condition)
-
-            # Improved condition display - try to show more meaningful content
-            # Check if this is a hash-heavy condition
-            is_hash_heavy = "hash." in condition_str and condition_str.count("==") > 2
-
-            # Allow even more space for conditions with many hashes
-            hash_count = condition_str.count("hash.")
-            if hash_count > 10:
-                max_length = 1000  # Very long for many hashes (10+ hashes)
-            elif hash_count > 5:
-                max_length = 700  # Much more space for several hashes
-            elif is_hash_heavy:
-                max_length = 400  # More space for hash conditions
+    def _add_tags_to_tree(self, rule_tree: Tree, tags) -> None:
+        """Add tags section to rule tree."""
+        tags_tree = rule_tree.add("Tags")
+        for tag in tags:
+            if isinstance(tag, str):
+                tags_tree.add(tag)
             else:
-                max_length = 200  # Normal conditions
+                tags_tree.add(tag.name)
 
-            if len(condition_str) > max_length:
-                # Try to break at logical boundaries like ' and ' or ' or '
-                for boundary in [" or ", " and ", ", "]:
-                    if boundary in condition_str[:max_length]:
-                        cut_point = condition_str[:max_length].rfind(boundary)
-                        condition_str = condition_str[: cut_point + len(boundary)] + "..."
-                        break
-                else:
-                    condition_str = condition_str[:max_length] + "..."
-            # Always add something, even if it's a placeholder
-            if condition_str:
-                condition_tree.add(condition_str)
+    def _add_meta_to_tree(self, rule_tree: Tree, meta) -> None:
+        """Add meta section to rule tree."""
+        from rich.markup import escape
+
+        meta_tree = rule_tree.add("Meta")
+        if isinstance(meta, dict):
+            self._add_dict_meta_to_tree(meta_tree, meta, escape)
+        elif isinstance(meta, list):
+            self._add_list_meta_to_tree(meta_tree, meta, escape)
+
+    def _add_dict_meta_to_tree(self, meta_tree: Tree, meta_dict: dict, escape) -> None:
+        """Add dictionary meta to tree."""
+        for key, value in meta_dict.items():
+            if isinstance(value, str):
+                meta_tree.add(f'{escape(key)} = "{escape(value)}"')
             else:
-                condition_tree.add("<complex condition>")
+                meta_tree.add(f"{escape(key)} = {value}")
 
-        return rule_tree
+    def _add_list_meta_to_tree(self, meta_tree: Tree, meta_list: list, escape) -> None:
+        """Add list meta to tree."""
+        for m in meta_list:
+            if hasattr(m, "key") and hasattr(m, "value"):
+                if isinstance(m.value, str):
+                    meta_tree.add(f'{escape(m.key)} = "{escape(m.value)}"')
+                else:
+                    meta_tree.add(f"{escape(m.key)} = {m.value}")
+
+    def _add_strings_to_tree(self, rule_tree: Tree, strings) -> None:
+        """Add strings section to rule tree."""
+        from rich.markup import escape
+
+        strings_tree = rule_tree.add("Strings")
+        for string in strings:
+            string_type = string.__class__.__name__
+            value_preview = self._get_string_preview(string, escape)
+            strings_tree.add(f"{string.identifier}{value_preview} [{string_type}]")
+
+    def _get_string_preview(self, string, escape) -> str:
+        """Get string value preview for display."""
+        if isinstance(string, PlainString):
+            escaped_val = escape(string.value[:30]) if string.value else ""
+            ellipsis = "..." if len(string.value) > 30 else ""
+            return f' = "{escaped_val}{ellipsis}"'
+
+        if isinstance(string, RegexString):
+            escaped_regex = escape(string.regex[:30]) if string.regex else ""
+            ellipsis = "..." if len(string.regex) > 30 else ""
+            return f" = /{escaped_regex}{ellipsis}/"
+
+        return ""
+
+    def _add_condition_to_tree(self, rule_tree: Tree, condition) -> None:
+        """Add condition section to rule tree."""
+        condition_tree = rule_tree.add("Condition")
+        condition_str = self._get_condition_string(condition)
+        condition_str = self._truncate_condition_string(condition_str)
+
+        if condition_str:
+            condition_tree.add(condition_str)
+        else:
+            condition_tree.add("<complex condition>")
+
+    def _get_condition_string(self, condition) -> str:
+        """Get condition string using generator or fallback."""
+        try:
+            from yaraast.codegen.generator import CodeGenerator
+
+            condition_str = CodeGenerator().generate(condition).strip()
+            if not condition_str:
+                condition_str = self._condition_to_string(condition)
+        except (ValueError, TypeError, AttributeError):
+            condition_str = self._condition_to_string(condition)
+        return condition_str
+
+    def _truncate_condition_string(self, condition_str: str) -> str:
+        """Truncate condition string based on content type."""
+        hash_prefix = "hash."
+        is_hash_heavy = hash_prefix in condition_str and condition_str.count("==") > 2
+        hash_count = condition_str.count(hash_prefix)
+
+        max_length = self._get_condition_max_length(hash_count, is_hash_heavy)
+
+        if len(condition_str) > max_length:
+            return self._truncate_at_boundary(condition_str, max_length)
+
+        return condition_str
+
+    def _get_condition_max_length(self, hash_count: int, is_hash_heavy: bool) -> int:
+        """Determine max length for condition based on content."""
+        if hash_count > 10:
+            return 1000  # Very long for many hashes
+        if hash_count > 5:
+            return 700  # Much more space for several hashes
+        if is_hash_heavy:
+            return 400  # More space for hash conditions
+        return 200  # Normal conditions
+
+    def _truncate_at_boundary(self, condition_str: str, max_length: int) -> str:
+        """Truncate condition string at logical boundary."""
+        for boundary in [" or ", " and ", ", "]:
+            if boundary in condition_str[:max_length]:
+                cut_point = condition_str[:max_length].rfind(boundary)
+                return condition_str[: cut_point + len(boundary)] + "..."
+        return condition_str[:max_length] + "..."
 
     def _condition_to_string(self, condition, depth=0) -> str:
         """Convert condition to string representation."""
-        if depth > 3:  # Increase recursion depth limit
+        formatter = ConditionStringFormatter()
+        return formatter.format_condition(condition, depth)
+
+
+class ConditionStringFormatter:
+    """Helper class to format condition strings with reduced complexity."""
+
+    ELLIPSIS_PARENTHESES = "(...)"
+
+    def format_condition(self, condition, depth=0) -> str:
+        """Main entry point for condition formatting."""
+        if depth > 3:
             return "..."
 
-        if hasattr(condition, "__class__"):
-            class_name = condition.__class__.__name__
-            if class_name == "BooleanLiteral":
-                return str(condition.value).lower()
-            if class_name == "OfExpression":
-                quantifier = condition.quantifier if hasattr(condition, "quantifier") else "any"
-                string_set = "them"
-                if hasattr(condition, "string_set") and hasattr(
-                    condition.string_set,
-                    "name",
-                ):
-                    string_set = condition.string_set.name
-                return f"{quantifier} of {string_set}"
-            if class_name == "BinaryExpression":
-                op = condition.operator if hasattr(condition, "operator") else "and"
-                # For top-level binary expressions, show more detail
-                if depth == 0:
-                    if op in ["and", "or"]:
-                        # Collect all parts of the expression
-                        parts = []
-                        self._collect_binary_parts(condition, op, parts, 0)
-                        # Filter out empty parts
-                        parts = [p for p in parts if p and p != "..."]
-                        if not parts:
-                            # Fallback to simple representation
-                            left = (
-                                self._expr_to_str(condition.left, 0)
-                                if hasattr(condition, "left")
-                                else "?"
-                            )
-                            right = (
-                                self._expr_to_str(condition.right, 0)
-                                if hasattr(condition, "right")
-                                else "?"
-                            )
-                            return f"{left} {op} {right}"
+        if not hasattr(condition, "__class__"):
+            return "true"
 
-                        # Check if these are hash comparisons (they tend to be longer)
-                        is_hash_condition = any("hash." in p and "==" in p for p in parts[:3] if p)
+        class_name = condition.__class__.__name__
 
-                        if is_hash_condition:
-                            # For hash conditions, show ALL hashes if reasonable, otherwise abbreviate
-                            if len(parts) <= 15:
-                                # Show ALL if 15 or fewer - no abbreviation for manageable lists
-                                result = f" {op} ".join(parts)
-                            elif len(parts) <= 25:
-                                # Show first 10 and "..." for up to 25
-                                result = f" {op} ".join(parts[:10]) + f" {op} ..."
-                            else:
-                                # Show first 8, ellipsis, and last 2 for very long lists
-                                result = (
-                                    f" {op} ".join(parts[:8])
-                                    + f" {op} ... {op} "
-                                    + f" {op} ".join(parts[-2:])
-                                )
-                        elif len(parts) > 8:
-                            # For very long conditions, show first 5 and last 2
-                            result = (
-                                f" {op} ".join(parts[:5])
-                                + f" {op} ... {op} "
-                                + f" {op} ".join(parts[-2:])
-                            )
-                        else:
-                            result = f" {op} ".join(parts)
-                        return result
-                    # Other operators at top level
-                    left = (
-                        self._expr_to_str(condition.left, 0) if hasattr(condition, "left") else "?"
-                    )
-                    right = (
-                        self._expr_to_str(condition.right, 0)
-                        if hasattr(condition, "right")
-                        else "?"
-                    )
-                    return f"{left} {op} {right}"
-                # Not top level, use simple representation
-                left_str = (
-                    self._condition_to_string(condition.left, depth + 1)
-                    if hasattr(condition, "left")
-                    else "..."
-                )
-                right_str = (
-                    self._condition_to_string(condition.right, depth + 1)
-                    if hasattr(condition, "right")
-                    else "..."
-                )
-                return f"{left_str} {op} {right_str}"
-            if class_name == "Identifier":
-                return condition.name if hasattr(condition, "name") else "identifier"
-            if class_name == "StringIdentifier":
-                return condition.name if hasattr(condition, "name") else "$string"
-            if class_name == "StringCount":
-                return f"#{condition.name}" if hasattr(condition, "name") else "#string"
-            if class_name == "StringOffset":
-                return f"@{condition.name}" if hasattr(condition, "name") else "@string"
-            if class_name == "StringLength":
-                return f"!{condition.name}" if hasattr(condition, "name") else "!string"
-            if class_name == "FunctionCall":
-                func = condition.function if hasattr(condition, "function") else "func"
-                args = ""
-                if hasattr(condition, "arguments") and condition.arguments:
-                    arg_strs = []
-                    for _i, arg in enumerate(condition.arguments[:2]):
-                        arg_strs.append(self._condition_to_string(arg, depth + 1))
-                    args = ", ".join(arg_strs)
-                    if len(condition.arguments) > 2:
-                        args += ", ..."
-                return f"{func}({args})"
-            if class_name == "ParenthesesExpression":
-                if hasattr(condition, "expression"):
-                    inner = self._condition_to_string(condition.expression, depth + 1)
-                    return f"({inner})"
-                return "(...)"
-            if class_name == "IntegerLiteral":
-                val = condition.value if hasattr(condition, "value") else 0
-                # Format hex values nicely
-                if isinstance(val, int) and val > 255:
-                    return f"0x{val:X}"
-                return str(val)
-            if class_name == "StringLiteral":
-                val = condition.value if hasattr(condition, "value") else ""
-                if len(val) > 20:
-                    val = val[:20] + "..."
-                return f'"{val}"'
-            if class_name == "MemberAccess":
-                obj = (
-                    self._condition_to_string(condition.object, depth + 1)
-                    if hasattr(condition, "object")
-                    else "obj"
-                )
-                member = condition.member if hasattr(condition, "member") else "member"
-                return f"{obj}.{member}"
-            if class_name == "ArrayAccess":
-                arr = (
-                    self._condition_to_string(condition.array, depth + 1)
-                    if hasattr(condition, "array")
-                    else "arr"
-                )
-                idx = (
-                    self._condition_to_string(condition.index, depth + 1)
-                    if hasattr(condition, "index")
-                    else "0"
-                )
-                return f"{arr}[{idx}]"
-            if class_name == "ForExpression":
-                var = condition.identifier if hasattr(condition, "identifier") else "i"
-                return f"for {var} of ..."
-            if class_name == "ForOfExpression":
-                return "for ... of ..."
-            return f"<{class_name}>"
-        return "true"
+        # Use dispatch table for different node types
+        formatters = {
+            "BooleanLiteral": self._format_boolean_literal,
+            "OfExpression": self._format_of_expression,
+            "BinaryExpression": lambda c, d: self._format_binary_expression(c, d),
+            "Identifier": self._format_identifier,
+            "StringIdentifier": self._format_string_identifier,
+            "StringCount": self._format_string_count,
+            "StringOffset": self._format_string_offset,
+            "StringLength": self._format_string_length,
+            "FunctionCall": lambda c, d: self._format_function_call(c, d),
+            "ParenthesesExpression": lambda c, d: self._format_parentheses(c, d),
+            "IntegerLiteral": self._format_integer_literal,
+            "StringLiteral": self._format_string_literal,
+            "MemberAccess": lambda c, d: self._format_member_access(c, d),
+            "ArrayAccess": lambda c, d: self._format_array_access(c, d),
+            "ForExpression": self._format_for_expression,
+            "ForOfExpression": lambda c, d: "for ... of ...",
+        }
 
-    def _collect_binary_parts(
-        self,
-        expr: Any,
-        target_op: str,
-        parts: list[str],
-        depth: int,
-    ) -> None:
+        formatter = formatters.get(class_name, lambda c, d: f"<{class_name}>")
+        return formatter(condition, depth)
+
+    def _format_boolean_literal(self, condition, _depth):
+        return str(condition.value).lower() if hasattr(condition, "value") else "true"
+
+    def _format_of_expression(self, condition, _depth):
+        quantifier = getattr(condition, "quantifier", "any")
+        string_set = "them"
+        if hasattr(condition, "string_set") and hasattr(condition.string_set, "name"):
+            string_set = condition.string_set.name
+        return f"{quantifier} of {string_set}"
+
+    def _format_binary_expression(self, condition, depth):
+        op = getattr(condition, "operator", "and")
+
+        if depth == 0:
+            return self._format_top_level_binary(condition, op, depth)
+        return self._format_nested_binary(condition, op, depth)
+
+    def _format_top_level_binary(self, condition, op, depth):
+        if op in ["and", "or"]:
+            return self._format_logical_expression(condition, op)
+        return self._format_simple_binary(condition, op, depth)
+
+    def _format_logical_expression(self, condition, op):
+        parts = []
+        self._collect_binary_parts(condition, op, parts, 0)
+        parts = [p for p in parts if p and p != "..."]
+
+        if not parts:
+            return self._format_simple_binary(condition, op, 0)
+
+        return self._format_parts_list(parts, op)
+
+    def _format_parts_list(self, parts, op):
+        """Format a list of expression parts."""
+        hash_prefix = "hash."
+        is_hash_condition = any(hash_prefix in p and "==" in p for p in parts[:3] if p)
+
+        if is_hash_condition:
+            return self._format_hash_condition(parts, op)
+        if len(parts) > 8:
+            return self._format_long_condition(parts, op)
+        return f" {op} ".join(parts)
+
+    def _format_hash_condition(self, parts, op):
+        """Format hash comparison conditions."""
+        if len(parts) <= 15:
+            return f" {op} ".join(parts)
+        if len(parts) <= 25:
+            return f" {op} ".join(parts[:10]) + f" {op} ..."
+        return f" {op} ".join(parts[:8]) + f" {op} ... {op} " + f" {op} ".join(parts[-2:])
+
+    def _format_long_condition(self, parts, op):
+        """Format very long conditions."""
+        return f" {op} ".join(parts[:5]) + f" {op} ... {op} " + f" {op} ".join(parts[-2:])
+
+    def _format_simple_binary(self, condition, op, _depth):
+        left = self._expr_to_str(condition.left, 0) if hasattr(condition, "left") else "?"
+        right = self._expr_to_str(condition.right, 0) if hasattr(condition, "right") else "?"
+        return f"{left} {op} {right}"
+
+    def _format_nested_binary(self, condition, op, depth):
+        left_str = (
+            self.format_condition(condition.left, depth + 1)
+            if hasattr(condition, "left")
+            else "..."
+        )
+        right_str = (
+            self.format_condition(condition.right, depth + 1)
+            if hasattr(condition, "right")
+            else "..."
+        )
+        return f"{left_str} {op} {right_str}"
+
+    def _format_identifier(self, condition, _depth):
+        return getattr(condition, "name", "identifier")
+
+    def _format_string_identifier(self, condition, _depth):
+        return getattr(condition, "name", "$string")
+
+    def _format_string_count(self, condition, _depth):
+        name = getattr(condition, "name", "string")
+        return f"#{name}"
+
+    def _format_string_offset(self, condition, _depth):
+        name = getattr(condition, "name", "string")
+        return f"@{name}"
+
+    def _format_string_length(self, condition, _depth):
+        name = getattr(condition, "name", "string")
+        return f"!{name}"
+
+    def _format_function_call(self, condition, depth):
+        func = getattr(condition, "function", "func")
+        args = self._format_function_args(condition, depth)
+        return f"{func}({args})"
+
+    def _format_function_args(self, condition, depth):
+        if not (hasattr(condition, "arguments") and condition.arguments):
+            return ""
+
+        arg_strs = []
+        for arg in condition.arguments[:2]:
+            arg_strs.append(self.format_condition(arg, depth + 1))
+        args = ", ".join(arg_strs)
+
+        if len(condition.arguments) > 2:
+            args += ", ..."
+        return args
+
+    def _format_parentheses(self, condition, depth):
+        if hasattr(condition, "expression"):
+            inner = self.format_condition(condition.expression, depth + 1)
+            return f"({inner})"
+        return self.ELLIPSIS_PARENTHESES
+
+    def _format_integer_literal(self, condition, _depth):
+        val = getattr(condition, "value", 0)
+        if isinstance(val, int) and val > 255:
+            return f"0x{val:X}"
+        return str(val)
+
+    def _format_string_literal(self, condition, _depth):
+        val = getattr(condition, "value", "")
+        if len(val) > 20:
+            val = val[:20] + "..."
+        return f'"{val}"'
+
+    def _format_member_access(self, condition, depth):
+        obj = (
+            self.format_condition(condition.object, depth + 1)
+            if hasattr(condition, "object")
+            else "obj"
+        )
+        member = getattr(condition, "member", "member")
+        return f"{obj}.{member}"
+
+    def _format_array_access(self, condition, depth):
+        arr = (
+            self.format_condition(condition.array, depth + 1)
+            if hasattr(condition, "array")
+            else "arr"
+        )
+        idx = (
+            self.format_condition(condition.index, depth + 1)
+            if hasattr(condition, "index")
+            else "0"
+        )
+        return f"{arr}[{idx}]"
+
+    def _format_for_expression(self, condition, _depth):
+        var = getattr(condition, "identifier", "i")
+        return f"for {var} of ..."
+
+    def _collect_binary_parts(self, expr, target_op, parts, depth):
         """Collect parts of a binary expression with the same operator."""
-        if depth > 500:  # Very high limit for extremely deeply nested hash conditions
+        if depth > 500:
             parts.append("...")
             return
 
@@ -756,20 +832,26 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
             and hasattr(expr, "operator")
             and expr.operator == target_op
         ):
-            # Same operator, continue collecting
             if hasattr(expr, "left"):
                 self._collect_binary_parts(expr.left, target_op, parts, depth + 1)
             if hasattr(expr, "right"):
                 self._collect_binary_parts(expr.right, target_op, parts, depth + 1)
         else:
-            # Different operator or leaf node - generate string for this node
-            # Use a fresh depth counter to get full representation of this sub-expression
             expr_str = self._expr_to_str(expr, 0)
             parts.append(expr_str)
 
     def _expr_to_str(self, expr, depth=0) -> str:
         """Convert expression to string with fresh depth counter."""
-        if depth > 5:  # Increased depth limit for complex conditions
+        formatter = ExpressionStringFormatter()
+        return formatter.format_expression(expr, depth)
+
+
+class ExpressionStringFormatter:
+    """Helper class to format expression strings with reduced complexity."""
+
+    def format_expression(self, expr, depth=0) -> str:
+        """Format an expression to string representation."""
+        if depth > 5:
             return "..."
 
         if not expr or not hasattr(expr, "__class__"):
@@ -777,166 +859,246 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
 
         class_name = expr.__class__.__name__
 
-        if class_name == "BinaryExpression":
-            op = expr.operator if hasattr(expr, "operator") else "?"
-            left = self._expr_to_str(expr.left, depth + 1) if hasattr(expr, "left") else "?"
-            right = self._expr_to_str(expr.right, depth + 1) if hasattr(expr, "right") else "?"
-            return f"{left} {op} {right}"
-        if class_name == "ParenthesesExpression":
-            inner = (
-                self._expr_to_str(expr.expression, depth + 1)
-                if hasattr(expr, "expression")
-                else "..."
-            )
+        # Use dispatch table for different expression types
+        formatters = {
+            "BinaryExpression": self._format_binary_expression,
+            "ParenthesesExpression": self._format_parentheses_expression,
+            "FunctionCall": self._format_function_call,
+            "StringIdentifier": self._format_string_identifier,
+            "Identifier": self._format_identifier,
+            "IntegerLiteral": self._format_integer_literal,
+            "StringLiteral": self._format_string_literal,
+            "OfExpression": self._format_of_expression,
+            "StringCount": self._format_string_count,
+            "StringOffset": self._format_string_offset,
+            "ForExpression": self._format_for_expression,
+            "MemberAccess": self._format_member_access,
+            "RangeExpression": self._format_range_expression,
+        }
+
+        formatter = formatters.get(class_name, lambda e, d: f"<{class_name[:10]}>")
+        return formatter(expr, depth)
+
+    def _format_binary_expression(self, expr, depth):
+        op = getattr(expr, "operator", "?")
+        left = self.format_expression(expr.left, depth + 1) if hasattr(expr, "left") else "?"
+        right = self.format_expression(expr.right, depth + 1) if hasattr(expr, "right") else "?"
+        return f"{left} {op} {right}"
+
+    def _format_parentheses_expression(self, expr, depth):
+        inner = (
+            self.format_expression(expr.expression, depth + 1)
+            if hasattr(expr, "expression")
+            else "..."
+        )
+        return f"({inner})"
+
+    def _format_function_call(self, expr, depth):
+        func = getattr(expr, "function", "func")
+        args = self._format_function_args(expr, depth)
+        return f"{func}({args})"
+
+    def _format_function_args(self, expr, depth):
+        if not (hasattr(expr, "arguments") and expr.arguments):
+            return ""
+
+        args = ", ".join(self.format_expression(arg, depth + 1) for arg in expr.arguments[:2])
+        if len(expr.arguments) > 2:
+            args += ", ..."
+        return args
+
+    def _format_string_identifier(self, expr, _depth):
+        return getattr(expr, "name", "$?")
+
+    def _format_identifier(self, expr, _depth):
+        return getattr(expr, "name", "?")
+
+    def _format_integer_literal(self, expr, _depth):
+        val = getattr(expr, "value", 0)
+        if isinstance(val, int) and val > 255:
+            return f"0x{val:X}"
+        return str(val)
+
+    def _format_string_literal(self, expr, _depth):
+        val = getattr(expr, "value", "")
+        if len(val) > 30:
+            val = val[:30] + "..."
+        return f'"{val}"'
+
+    def _is_hash_value(self, val):
+        """Check if string looks like a hash value."""
+        return len(val) in [32, 40, 64] and all(c in "0123456789abcdefABCDEF" for c in val)
+
+    def _format_of_expression(self, expr, depth):
+        quantifier = getattr(expr, "quantifier", "any")
+        string_set = self._format_string_set(expr, depth)
+        return f"{quantifier} of {string_set}"
+
+    def _format_string_set(self, expr, depth):
+        """Format the string set part of an of expression."""
+        if not hasattr(expr, "string_set"):
+            return "them"
+
+        string_set = expr.string_set
+        if hasattr(string_set, "name"):
+            return string_set.name
+
+        if not hasattr(string_set, "__class__"):
+            return "them"
+
+        s_class = string_set.__class__.__name__
+        if s_class == "SetExpression":
+            return self._format_set_expression(string_set, depth)
+        if s_class == "StringWildcard":
+            return self._format_string_wildcard(string_set)
+        return "them"
+
+    def _format_set_expression(self, string_set, depth):
+        """Format a set expression like ($a, $b, $c)."""
+        if not hasattr(string_set, "elements"):
+            return self.ELLIPSIS_PARENTHESES
+
+        elements = []
+        for el in string_set.elements[:5]:
+            if hasattr(el, "name"):
+                elements.append(el.name)
+            else:
+                elements.append(self.format_expression(el, depth + 1))
+
+        if len(string_set.elements) > 5:
+            elements.append("...")
+
+        return "(" + ", ".join(elements) + ")"
+
+    def _format_string_wildcard(self, string_set):
+        """Format a string wildcard like $a*."""
+        if hasattr(string_set, "prefix"):
+            return f"(${string_set.prefix}*)"
+        return "($*)"
+
+    def _format_string_count(self, expr, _depth):
+        return f"#{getattr(expr, 'string_id', '?')}"
+
+    def _format_string_offset(self, expr, depth):
+        sid = getattr(expr, "string_id", "?")
+        if hasattr(expr, "index") and expr.index is not None:
+            idx = self.format_expression(expr.index, depth + 1)
+            return f"@{sid}[{idx}]"
+        return f"@{sid}"
+
+    def _format_for_expression(self, expr, depth):
+        quantifier = getattr(expr, "quantifier", "any")
+        variable = getattr(expr, "variable", "i")
+        iterable = (
+            self.format_expression(expr.iterable, depth + 1) if hasattr(expr, "iterable") else "..."
+        )
+        body = self.format_expression(expr.body, depth + 1) if hasattr(expr, "body") else "..."
+        return f"for {quantifier} {variable} in {iterable} : ({body})"
+
+    def _format_member_access(self, expr, depth):
+        obj = self.format_expression(expr.object, depth + 1) if hasattr(expr, "object") else "?"
+        member = getattr(expr, "member", "?")
+        return f"{obj}.{member}"
+
+    def _format_range_expression(self, expr, depth):
+        low = self.format_expression(expr.low, depth + 1) if hasattr(expr, "low") else "0"
+        high = self.format_expression(expr.high, depth + 1) if hasattr(expr, "high") else "..."
+        return f"({low}..{high})"
+
+
+class DetailedNodeStringFormatter:
+    """Helper class to format detailed node strings."""
+
+    def format_node(self, node, depth=0) -> str:
+        """Format a node to detailed string representation."""
+        if not node or depth > 2:
+            return "..."
+
+        class_name = node.__class__.__name__
+
+        formatters = {
+            "StringIdentifier": self._format_string_identifier,
+            "IntegerLiteral": self._format_integer_literal,
+            "BooleanLiteral": self._format_boolean_literal,
+            "StringLiteral": self._format_string_literal,
+            "FunctionCall": lambda n, d: self._format_function_call(n, d),
+            "BinaryExpression": lambda n, d: self._format_binary_expression(n, d),
+            "ParenthesesExpression": lambda n, d: self._format_parentheses(n, d),
+            "Identifier": self._format_identifier,
+            "MemberAccess": lambda n, d: self._format_member_access(n, d),
+        }
+
+        formatter = formatters.get(class_name, lambda n, d: "...")
+        return formatter(node, depth)
+
+    def _format_string_identifier(self, node, _depth):
+        return getattr(node, "name", "$...")
+
+    def _format_integer_literal(self, node, _depth):
+        return str(getattr(node, "value", 0))
+
+    def _format_boolean_literal(self, node, _depth):
+        value = getattr(node, "value", True)
+        return str(value).lower()
+
+    def _format_string_literal(self, node, _depth):
+        val = getattr(node, "value", "")
+        if len(val) > 15:
+            val = val[:15] + "..."
+        return f'"{val}"'
+
+    def _format_function_call(self, node, depth):
+        func = getattr(node, "function", "func")
+        args = self._format_function_args(node, depth)
+        return f"{func}({args})"
+
+    def _format_function_args(self, node, depth):
+        if not (hasattr(node, "arguments") and node.arguments):
+            return ""
+        return self.format_node(node.arguments[0], depth + 1)
+
+    def _format_binary_expression(self, node, depth):
+        if depth >= 2:
+            return self.ELLIPSIS_PARENTHESES
+        # Use the condition formatter for consistency
+        formatter = ConditionStringFormatter()
+        return formatter.format_condition(node, depth)
+
+    def _format_parentheses(self, node, depth):
+        if hasattr(node, "expression"):
+            inner = self.format_node(node.expression, depth + 1)
             return f"({inner})"
-        if class_name == "FunctionCall":
-            func = expr.function if hasattr(expr, "function") else "func"
-            if hasattr(expr, "arguments") and expr.arguments:
-                args = ", ".join(self._expr_to_str(arg, depth + 1) for arg in expr.arguments[:2])
-                if len(expr.arguments) > 2:
-                    args += ", ..."
-            else:
-                args = ""
-            return f"{func}({args})"
-        if class_name == "StringIdentifier":
-            return expr.name if hasattr(expr, "name") else "$?"
-        if class_name == "Identifier":
-            return expr.name if hasattr(expr, "name") else "?"
-        if class_name == "IntegerLiteral":
-            val = expr.value if hasattr(expr, "value") else 0
-            if isinstance(val, int) and val > 255:
-                return f"0x{val:X}"
-            return str(val)
-        if class_name == "StringLiteral":
-            val = expr.value if hasattr(expr, "value") else ""
-            # Don't truncate hash values (32 chars for MD5, 40 for SHA1, 64 for SHA256)
-            if len(val) in [32, 40, 64] and all(c in "0123456789abcdefABCDEF" for c in val):
-                # It's likely a hash, show it complete
-                return f'"{val}"'
-            if len(val) > 30:  # Increased limit for other strings
-                val = val[:30] + "..."
-            return f'"{val}"'
-        if class_name == "OfExpression":
-            q = expr.quantifier if hasattr(expr, "quantifier") else "any"
-            if hasattr(expr, "string_set"):
-                if hasattr(expr.string_set, "name"):
-                    s = expr.string_set.name
-                elif hasattr(expr.string_set, "__class__"):
-                    # Handle complex string sets like ($a*)
-                    s_class = expr.string_set.__class__.__name__
-                    if s_class == "SetExpression":
-                        # Try to show the set elements
-                        if hasattr(expr.string_set, "elements"):
-                            elements = []
-                            for el in expr.string_set.elements[:5]:  # Show more elements
-                                if hasattr(el, "name"):
-                                    elements.append(el.name)
-                                else:
-                                    # Handle other types
-                                    elements.append(self._expr_to_str(el, depth + 1))
-                            if len(expr.string_set.elements) > 5:
-                                elements.append("...")
-                            s = "(" + ", ".join(elements) + ")"
-                        else:
-                            s = "(...)"
-                    elif s_class == "StringWildcard":
-                        if hasattr(expr.string_set, "prefix"):
-                            s = f"(${expr.string_set.prefix}*)"
-                        else:
-                            s = "($*)"
-                    else:
-                        s = "them"
-                else:
-                    s = "them"
-            else:
-                s = "them"
-            return f"{q} of {s}"
-        if class_name == "StringCount":
-            return f"#{expr.string_id}" if hasattr(expr, "string_id") else "#?"
-        if class_name == "StringOffset":
-            sid = expr.string_id if hasattr(expr, "string_id") else "?"
-            if hasattr(expr, "index") and expr.index is not None:
-                idx = self._expr_to_str(expr.index, depth + 1)
-                return f"@{sid}[{idx}]"
-            return f"@{sid}"
-        if class_name == "ForExpression":
-            q = expr.quantifier if hasattr(expr, "quantifier") else "any"
-            v = expr.variable if hasattr(expr, "variable") else "i"
-            it = self._expr_to_str(expr.iterable, depth + 1) if hasattr(expr, "iterable") else "..."
-            body = self._expr_to_str(expr.body, depth + 1) if hasattr(expr, "body") else "..."
-            return f"for {q} {v} in {it} : ({body})"
-        if class_name == "MemberAccess":
-            obj = self._expr_to_str(expr.object, depth + 1) if hasattr(expr, "object") else "?"
-            member = expr.member if hasattr(expr, "member") else "?"
-            return f"{obj}.{member}"
-        if class_name == "RangeExpression":
-            low = self._expr_to_str(expr.low, depth + 1) if hasattr(expr, "low") else "0"
-            high = self._expr_to_str(expr.high, depth + 1) if hasattr(expr, "high") else "..."
-            return f"({low}..{high})"
-        return f"<{class_name[:10]}>"
+        return self.ELLIPSIS_PARENTHESES
+
+    def _format_identifier(self, node, _depth):
+        return getattr(node, "name", "id")
+
+    def _format_member_access(self, node, depth):
+        obj = self.format_node(node.object, depth + 1) if hasattr(node, "object") else "obj"
+        member = getattr(node, "member", "member")
+        return f"{obj}.{member}"
 
     def _get_detailed_node_str(self, node, depth=0) -> str:
         """Get detailed string representation of a node."""
-        if not node or depth > 2:
-            return "..."
-        class_name = node.__class__.__name__
-        if class_name == "StringIdentifier":
-            return node.name if hasattr(node, "name") else "$..."
-        if class_name == "IntegerLiteral":
-            return str(node.value) if hasattr(node, "value") else "0"
-        if class_name == "BooleanLiteral":
-            return str(node.value).lower() if hasattr(node, "value") else "true"
-        if class_name == "StringLiteral":
-            val = node.value if hasattr(node, "value") else ""
-            if len(val) > 15:
-                val = val[:15] + "..."
-            return f'"{val}"'
-        if class_name == "FunctionCall":
-            func = node.function if hasattr(node, "function") else "func"
-            if hasattr(node, "arguments") and node.arguments:
-                args = (
-                    self._get_detailed_node_str(node.arguments[0], depth + 1)
-                    if node.arguments
-                    else ""
-                )
-            else:
-                args = ""
-            return f"{func}({args})"
-        if class_name == "BinaryExpression":
-            if depth >= 2:
-                return "(...)"
-            return self._condition_to_string(node, depth)
-        if class_name == "ParenthesesExpression":
-            if hasattr(node, "expression"):
-                return f"({self._get_detailed_node_str(node.expression, depth + 1)})"
-            return "(...)"
-        if class_name == "Identifier":
-            return node.name if hasattr(node, "name") else "id"
-        if class_name == "MemberAccess":
-            obj = (
-                self._get_detailed_node_str(node.object, depth + 1)
-                if hasattr(node, "object")
-                else "obj"
-            )
-            member = node.member if hasattr(node, "member") else "member"
-            return f"{obj}.{member}"
-        return "..."
+        formatter = DetailedNodeStringFormatter()
+        return formatter.format_node(node, depth)
 
     def _get_simple_node_str(self, node: Any) -> str:
         """Get simple string representation of a node."""
-        return self._get_detailed_node_str(node, 2)  # Use depth 2 to get simple version
+        formatter = DetailedNodeStringFormatter()
+        return formatter.format_node(node, 2)  # Use depth 2 to get simple version
 
     # Minimal implementations for other visit methods
-    def visit_import(self, node: Any) -> Tree:
+    def visit_import(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_include(self, node: Any) -> Tree:
+    def visit_include(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_tag(self, node: Any) -> Tree:
+    def visit_tag(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_string_definition(self, node: Any) -> Tree:
+    def visit_string_definition(self, _node: Any) -> Tree:
         return Tree("")
 
     def visit_plain_string(self, node: Any) -> Tree:
@@ -973,97 +1135,97 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
         )
         return Tree(f"{node.identifier} = /{regex}/{mods}")
 
-    def visit_string_modifier(self, node: Any) -> Tree:
+    def visit_string_modifier(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_hex_token(self, node: Any) -> Tree:
+    def visit_hex_token(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_hex_byte(self, node: Any) -> Tree:
+    def visit_hex_byte(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_hex_wildcard(self, node: Any) -> Tree:
+    def visit_hex_wildcard(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_hex_jump(self, node: Any) -> Tree:
+    def visit_hex_jump(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_hex_alternative(self, node: Any) -> Tree:
+    def visit_hex_alternative(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_expression(self, node: Any) -> Tree:
+    def visit_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_identifier(self, node: Any) -> Tree:
+    def visit_identifier(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_string_identifier(self, node: Any) -> Tree:
+    def visit_string_identifier(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_string_count(self, node: Any) -> Tree:
+    def visit_string_count(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_string_offset(self, node: Any) -> Tree:
+    def visit_string_offset(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_string_length(self, node: Any) -> Tree:
+    def visit_string_length(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_integer_literal(self, node: Any) -> Tree:
+    def visit_integer_literal(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_double_literal(self, node: Any) -> Tree:
+    def visit_double_literal(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_string_literal(self, node: Any) -> Tree:
+    def visit_string_literal(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_boolean_literal(self, node: Any) -> Tree:
+    def visit_boolean_literal(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_binary_expression(self, node: Any) -> Tree:
+    def visit_binary_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_unary_expression(self, node: Any) -> Tree:
+    def visit_unary_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_parentheses_expression(self, node: Any) -> Tree:
+    def visit_parentheses_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_set_expression(self, node: Any) -> Tree:
+    def visit_set_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_range_expression(self, node: Any) -> Tree:
+    def visit_range_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_function_call(self, node: Any) -> Tree:
+    def visit_function_call(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_array_access(self, node: Any) -> Tree:
+    def visit_array_access(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_member_access(self, node: Any) -> Tree:
+    def visit_member_access(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_condition(self, node: Any) -> Tree:
+    def visit_condition(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_for_expression(self, node: Any) -> Tree:
+    def visit_for_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_for_of_expression(self, node: Any) -> Tree:
+    def visit_for_of_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_at_expression(self, node: Any) -> Tree:
+    def visit_at_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_in_expression(self, node: Any) -> Tree:
+    def visit_in_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_of_expression(self, node: Any) -> Tree:
+    def visit_of_expression(self, _node: Any) -> Tree:
         return Tree("")
 
-    def visit_meta(self, node: Any) -> Tree:
+    def visit_meta(self, _node: Any) -> Tree:
         return Tree("")
 
     # Add missing abstract methods
@@ -1152,155 +1314,196 @@ cli.add_command(roundtrip)
 def parse(input_file: str, output: str | None, format: str, dialect: str) -> None:
     """Parse a YARA file and output in various formats. Supports YARA, YARA-X, and YARA-L."""
     try:
-        # Read input file
-        with Path(input_file).open() as f:
-            content = f.read()
-
-        # Determine dialect and parse accordingly
-        lexer_errors = []
-        parser_errors = []
-
-        if dialect == "auto":
-            unified_parser = UnifiedParser(content)
-            detected_dialect = unified_parser.get_dialect()
-            console.print(f"[green]Detected dialect: {detected_dialect.name}[/green]")
-
-            if detected_dialect == YaraDialect.YARA_L:
-                ast = unified_parser.parse()
-            else:
-                # Try with error-tolerant parser for standard YARA
-                from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
-
-                error_parser = ErrorTolerantParser()
-                ast, lexer_errors, parser_errors = error_parser.parse_with_errors(
-                    content,
-                )
-        elif dialect == "yara-l":
-            console.print("[green]Using YARA-L parser[/green]")
-            from yaraast.yaral.parser import YaraLParser
-
-            parser = YaraLParser(content)
-            ast = parser.parse()
-        else:
-            # Standard YARA or YARA-X
-            from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
-
-            error_parser = ErrorTolerantParser()
-            ast, lexer_errors, parser_errors = error_parser.parse_with_errors(content)
-
-        # Report any errors found
-        total_errors = len(lexer_errors) + len(parser_errors)
-
-        if lexer_errors or parser_errors:
-            console.print(
-                f"\n[yellow]⚠️  Found {total_errors} issue(s) in the file:[/yellow]",
-            )
-
-            # Show lexer errors
-            if lexer_errors:
-                console.print(f"\n[yellow]Lexer Issues ({len(lexer_errors)}):[/yellow]")
-                for error in lexer_errors[:5]:  # Show first 5
-                    console.print(error.format_error())
-
-                if len(lexer_errors) > 5:
-                    console.print(
-                        f"\n[dim]... and {len(lexer_errors) - 5} more lexer issues[/dim]",
-                    )
-
-            # Show parser errors
-            if parser_errors:
-                console.print(
-                    f"\n[yellow]Parser Issues ({len(parser_errors)}):[/yellow]",
-                )
-                for error in parser_errors[:5]:  # Show first 5
-                    console.print(error.format_error())
-
-                if len(parser_errors) > 5:
-                    console.print(
-                        f"\n[dim]... and {len(parser_errors) - 5} more parser issues[/dim]",
-                    )
-
-            # If we couldn't parse anything, exit
-            if not ast:
-                console.print(
-                    "\n[red]❌ Could not parse file due to critical errors[/red]",
-                )
-                raise click.Abort from None
-
-            console.print(
-                "\n[green]✅ Partial parse successful despite errors[/green]\n",
-            )
-
-        # Generate output based on format
-        if format == "yara":
-            generator = CodeGenerator()
-            result = generator.generate(ast)
-            if output:
-                with Path(output).open("w") as f:
-                    f.write(result)
-                console.print(f"✅ Generated YARA code written to {output}")
-            else:
-                syntax = Syntax(result, "yara", theme="monokai", line_numbers=True)
-                console.print(syntax)
-
-        elif format == "json":
-            dumper = ASTDumper()
-            result = dumper.visit(ast)
-            json_str = json.dumps(result, indent=2)
-            if output:
-                with Path(output).open("w") as f:
-                    f.write(json_str)
-                console.print(f"✅ AST JSON written to {output}")
-            else:
-                syntax = Syntax(json_str, "json", theme="monokai")
-                console.print(syntax)
-
-        elif format == "yaml":
-            try:
-                import yaml
-            except ImportError:
-                console.print(
-                    "[red]❌ Error: PyYAML is not installed. Install it with: pip install pyyaml[/red]",
-                )
-                raise click.Abort from None
-
-            dumper = ASTDumper()
-            result = dumper.visit(ast)
-            yaml_str = yaml.dump(
-                result,
-                default_flow_style=False,
-                allow_unicode=True,
-                sort_keys=False,
-            )
-            if output:
-                with Path(output).open("w") as f:
-                    f.write(yaml_str)
-                console.print(f"✅ AST YAML written to {output}")
-            else:
-                syntax = Syntax(yaml_str, "yaml", theme="monokai")
-                console.print(syntax)
-
-        elif format == "tree":
-            builder = ASTTreeBuilder()
-            tree = builder.visit(ast)
-            if output:
-                # For file output, use rich console to capture output
-                from rich.console import Console
-
-                with open(output, "w") as f:
-                    file_console = Console(file=f, width=80, legacy_windows=False)
-                    file_console.print(tree)
-                console.print(f"✅ AST tree written to {output}")
-            else:
-                # For console output, print directly
-                console.print(tree)
+        content = _read_input_file(input_file)
+        ast, lexer_errors, parser_errors = _parse_content_by_dialect(content, dialect)
+        _report_parsing_errors(lexer_errors, parser_errors, ast)
+        _generate_output_by_format(ast, format, output)
 
     except Exception as e:
-        # Escape the error message to avoid markup interpretation
         from rich.markup import escape
 
         console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from None
+
+
+def _read_input_file(input_file: str) -> str:
+    """Read content from input file."""
+    with Path(input_file).open() as f:
+        return f.read()
+
+
+def _parse_content_by_dialect(content: str, dialect: str) -> tuple:
+    """Parse content based on specified dialect."""
+    lexer_errors = []
+    parser_errors = []
+
+    if dialect == "auto":
+        ast, lexer_errors, parser_errors = _parse_auto_detect_dialect(content)
+    elif dialect == "yara-l":
+        ast = _parse_yara_l_dialect(content)
+    else:
+        ast, lexer_errors, parser_errors = _parse_standard_yara_dialect(content)
+
+    return ast, lexer_errors, parser_errors
+
+
+def _parse_auto_detect_dialect(content: str) -> tuple:
+    """Parse with auto-detected dialect."""
+    unified_parser = UnifiedParser(content)
+    detected_dialect = unified_parser.get_dialect()
+    console.print(f"[green]Detected dialect: {detected_dialect.name}[/green]")
+
+    if detected_dialect == YaraDialect.YARA_L:
+        ast = unified_parser.parse()
+        return ast, [], []
+    return _parse_with_error_tolerant_parser(content)
+
+
+def _parse_yara_l_dialect(content: str):
+    """Parse using YARA-L parser."""
+    console.print("[green]Using YARA-L parser[/green]")
+    from yaraast.yaral.parser import YaraLParser
+
+    parser = YaraLParser(content)
+    return parser.parse()
+
+
+def _parse_standard_yara_dialect(content: str) -> tuple:
+    """Parse using standard YARA parser."""
+    return _parse_with_error_tolerant_parser(content)
+
+
+def _parse_with_error_tolerant_parser(content: str) -> tuple:
+    """Parse using error-tolerant parser."""
+    from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+
+    error_parser = ErrorTolerantParser()
+    return error_parser.parse_with_errors(content)
+
+
+def _report_parsing_errors(lexer_errors: list, parser_errors: list, ast) -> None:
+    """Report lexer and parser errors."""
+    total_errors = len(lexer_errors) + len(parser_errors)
+
+    if lexer_errors or parser_errors:
+        console.print(f"\\n[yellow]⚠️  Found {total_errors} issue(s) in the file:[/yellow]")
+
+        if lexer_errors:
+            _display_lexer_errors(lexer_errors)
+
+        if parser_errors:
+            _display_parser_errors(parser_errors)
+
+        if not ast:
+            console.print("\\n[red]❌ Could not parse file due to critical errors[/red]")
+            raise click.Abort from None
+
+        console.print("\\n[green]✅ Partial parse successful despite errors[/green]\\n")
+
+
+def _display_lexer_errors(lexer_errors: list) -> None:
+    """Display lexer errors."""
+    console.print(f"\\n[yellow]Lexer Issues ({len(lexer_errors)}):[/yellow]")
+    for error in lexer_errors[:5]:
+        console.print(error.format_error())
+
+    if len(lexer_errors) > 5:
+        console.print(f"\\n[dim]... and {len(lexer_errors) - 5} more lexer issues[/dim]")
+
+
+def _display_parser_errors(parser_errors: list) -> None:
+    """Display parser errors."""
+    console.print(f"\\n[yellow]Parser Issues ({len(parser_errors)}):[/yellow]")
+    for error in parser_errors[:5]:
+        console.print(error.format_error())
+
+    if len(parser_errors) > 5:
+        console.print(f"\\n[dim]... and {len(parser_errors) - 5} more parser issues[/dim]")
+
+
+def _generate_output_by_format(ast, format: str, output: str | None) -> None:
+    """Generate output based on specified format."""
+    if format == "yara":
+        _generate_yara_output(ast, output)
+    elif format == "json":
+        _generate_json_output(ast, output)
+    elif format == "yaml":
+        _generate_yaml_output(ast, output)
+    elif format == "tree":
+        _generate_tree_output(ast, output)
+
+
+def _generate_yara_output(ast, output: str | None) -> None:
+    """Generate YARA code output."""
+    generator = CodeGenerator()
+    result = generator.generate(ast)
+
+    if output:
+        with Path(output).open("w") as f:
+            f.write(result)
+        console.print(f"✅ Generated YARA code written to {output}")
+    else:
+        syntax = Syntax(result, "yara", theme="monokai", line_numbers=True)
+        console.print(syntax)
+
+
+def _generate_json_output(ast, output: str | None) -> None:
+    """Generate JSON AST output."""
+    dumper = ASTDumper()
+    result = dumper.visit(ast)
+    json_str = json.dumps(result, indent=2)
+
+    if output:
+        with Path(output).open("w") as f:
+            f.write(json_str)
+        console.print(f"✅ AST JSON written to {output}")
+    else:
+        syntax = Syntax(json_str, "json", theme="monokai")
+        console.print(syntax)
+
+
+def _generate_yaml_output(ast, output: str | None) -> None:
+    """Generate YAML AST output."""
+    try:
+        import yaml
+    except ImportError:
+        console.print(
+            "[red]❌ Error: PyYAML is not installed. Install it with: pip install pyyaml[/red]"
+        )
+        raise click.Abort from None
+
+    dumper = ASTDumper()
+    result = dumper.visit(ast)
+    yaml_str = yaml.dump(
+        result,
+        default_flow_style=False,
+        allow_unicode=True,
+        sort_keys=False,
+    )
+
+    if output:
+        with Path(output).open("w") as f:
+            f.write(yaml_str)
+        console.print(f"✅ AST YAML written to {output}")
+    else:
+        syntax = Syntax(yaml_str, "yaml", theme="monokai")
+        console.print(syntax)
+
+
+def _generate_tree_output(ast, output: str | None) -> None:
+    """Generate tree visualization output."""
+    builder = ASTTreeBuilder()
+    tree = builder.visit(ast)
+
+    if output:
+        from rich.console import Console
+
+        with open(output, "w") as f:
+            file_console = Console(file=f, width=80, legacy_windows=False)
+            file_console.print(tree)
+        console.print(f"✅ AST tree written to {output}")
+    else:
+        console.print(tree)
 
 
 @cli.command()
@@ -1906,120 +2109,20 @@ def bench(
 ) -> None:
     """Performance benchmarks for AST operations."""
     try:
-        import json
-
         from yaraast.cli.ast_tools import ASTBenchmarker
 
         file_paths = [Path(f) for f in files]
         benchmarker = ASTBenchmarker()
 
-        console.print("[blue]🏃 Running AST Performance Benchmarks[/blue]")
-        console.print(f"Files: {len(file_paths)}, Iterations: {iterations}")
-        console.print("=" * 60)
-
-        all_results = []
-
-        for file_path in file_paths:
-            console.print(f"\n[yellow]📁 Benchmarking {file_path.name}...[/yellow]")
-
-            # Determine operations to run
-            ops_to_run = []
-            if operations == "all":
-                ops_to_run = ["parse", "codegen", "roundtrip"]
-            elif operations == "roundtrip":
-                ops_to_run = ["roundtrip"]
-            else:
-                ops_to_run = [operations]
-
-            file_results = {}
-
-            for op in ops_to_run:
-                if op == "parse":
-                    result = benchmarker.benchmark_parsing(file_path, iterations)
-                elif op == "codegen":
-                    result = benchmarker.benchmark_codegen(file_path, iterations)
-                elif op == "roundtrip":
-                    results = benchmarker.benchmark_roundtrip(file_path, iterations)
-                    result = results[0] if results else None
-
-                if result and result.success:
-                    file_results[op] = result
-                    console.print(
-                        f"  ✅ {op:10s}: {result.execution_time * 1000:6.2f}ms "
-                        f"({result.rules_count} rules, {result.ast_nodes} nodes)",
-                    )
-                elif result:
-                    console.print(f"  ❌ {op:10s}: {result.error}")
-
-            all_results.append(
-                {
-                    "file": str(file_path),
-                    "file_name": file_path.name,
-                    "results": file_results,
-                },
-            )
-
-        # Show summary
-        summary = benchmarker.get_benchmark_summary()
-
-        console.print("\n[green]📊 Benchmark Summary:[/green]")
-        console.print("=" * 60)
-
-        for operation, stats in summary.items():
-            console.print(f"\n[bold]{operation.upper()}:[/bold]")
-            console.print(f"  • Average time: {stats['avg_time'] * 1000:.2f}ms")
-            console.print(f"  • Min time: {stats['min_time'] * 1000:.2f}ms")
-            console.print(f"  • Max time: {stats['max_time'] * 1000:.2f}ms")
-            console.print(f"  • Files processed: {stats['total_files_processed']}")
-            console.print(f"  • Rules processed: {stats['total_rules_processed']}")
-            console.print(f"  • Rules/second: {stats['avg_rules_per_second']:.1f}")
+        _print_benchmark_header(file_paths, iterations)
+        all_results = _run_benchmarks_for_all_files(benchmarker, file_paths, operations, iterations)
+        summary = _display_benchmark_summary(benchmarker)
 
         if compare and len(file_paths) > 1:
-            console.print("\n[blue]🔍 Performance Comparison:[/blue]")
-            console.print("=" * 60)
+            _display_performance_comparison(all_results)
 
-            # Compare parsing times
-            parse_results = [
-                (r["file_name"], r["results"].get("parse"))
-                for r in all_results
-                if "parse" in r["results"]
-            ]
-
-            if parse_results:
-                parse_results.sort(
-                    key=lambda x: x[1].execution_time if x[1] else float("inf"),
-                )
-                console.print(
-                    "\n[yellow]Parsing Performance (fastest to slowest):[/yellow]",
-                )
-
-                for i, (filename, result) in enumerate(parse_results):
-                    if result:
-                        throughput = (
-                            result.rules_count / result.execution_time
-                            if result.execution_time > 0
-                            else 0
-                        )
-                        console.print(
-                            f"  {i + 1:2d}. {filename:20s} "
-                            f"{result.execution_time * 1000:6.2f}ms "
-                            f"({throughput:.1f} rules/sec)",
-                        )
-
-        # Save results if requested
         if output:
-            benchmark_data = {
-                "timestamp": time.time(),
-                "iterations": iterations,
-                "operations": operations,
-                "files": all_results,
-                "summary": summary,
-            }
-
-            with Path(output).open("w") as f:
-                json.dump(benchmark_data, f, indent=2, default=str)
-
-            console.print(f"\n[green]💾 Benchmark results saved to {output}[/green]")
+            _save_benchmark_results(output, iterations, operations, all_results, summary)
 
         console.print("\n✅ Benchmarking completed!")
 
@@ -2027,11 +2130,156 @@ def bench(
         console.print(f"[red]❌ Import error: {e}[/red]")
         raise click.Abort from None
     except Exception as e:
-        # Escape the error message to avoid markup interpretation
         from rich.markup import escape
 
         console.print(f"[red]❌ Error: {escape(str(e))}[/red]")
         raise click.Abort from None
+
+
+def _print_benchmark_header(file_paths, iterations):
+    """Print benchmark header information."""
+    console.print("[blue]🏃 Running AST Performance Benchmarks[/blue]")
+    console.print(f"Files: {len(file_paths)}, Iterations: {iterations}")
+    console.print("=" * 60)
+
+
+def _run_benchmarks_for_all_files(benchmarker, file_paths, operations, iterations):
+    """Run benchmarks for all files and return results."""
+    all_results = []
+
+    for file_path in file_paths:
+        console.print(f"\n[yellow]📁 Benchmarking {file_path.name}...[/yellow]")
+        file_results = _run_benchmarks_for_single_file(
+            benchmarker, file_path, operations, iterations
+        )
+
+        all_results.append(
+            {
+                "file": str(file_path),
+                "file_name": file_path.name,
+                "results": file_results,
+            }
+        )
+
+    return all_results
+
+
+def _run_benchmarks_for_single_file(benchmarker, file_path, operations, iterations):
+    """Run benchmarks for a single file."""
+    ops_to_run = _determine_operations_to_run(operations)
+    file_results = {}
+
+    for op in ops_to_run:
+        result = _run_single_operation(benchmarker, file_path, op, iterations)
+        if result:
+            _display_operation_result(op, result)
+            if result.success:
+                file_results[op] = result
+
+    return file_results
+
+
+def _determine_operations_to_run(operations):
+    """Determine which operations to run based on input."""
+    if operations == "all":
+        return ["parse", "codegen", "roundtrip"]
+    if operations == "roundtrip":
+        return ["roundtrip"]
+    return [operations]
+
+
+def _run_single_operation(benchmarker, file_path, op, iterations):
+    """Run a single benchmark operation."""
+    if op == "parse":
+        return benchmarker.benchmark_parsing(file_path, iterations)
+    if op == "codegen":
+        return benchmarker.benchmark_codegen(file_path, iterations)
+    if op == "roundtrip":
+        results = benchmarker.benchmark_roundtrip(file_path, iterations)
+        return results[0] if results else None
+    return None
+
+
+def _display_operation_result(op, result):
+    """Display result of a single operation."""
+    if result and result.success:
+        console.print(
+            f"  ✅ {op:10s}: {result.execution_time * 1000:6.2f}ms "
+            f"({result.rules_count} rules, {result.ast_nodes} nodes)",
+        )
+    elif result:
+        console.print(f"  ❌ {op:10s}: {result.error}")
+
+
+def _display_benchmark_summary(benchmarker):
+    """Display benchmark summary and return summary data."""
+    summary = benchmarker.get_benchmark_summary()
+
+    console.print("\n[green]📊 Benchmark Summary:[/green]")
+    console.print("=" * 60)
+
+    for operation, stats in summary.items():
+        console.print(f"\n[bold]{operation.upper()}:[/bold]")
+        console.print(f"  • Average time: {stats['avg_time'] * 1000:.2f}ms")
+        console.print(f"  • Min time: {stats['min_time'] * 1000:.2f}ms")
+        console.print(f"  • Max time: {stats['max_time'] * 1000:.2f}ms")
+        console.print(f"  • Files processed: {stats['total_files_processed']}")
+        console.print(f"  • Rules processed: {stats['total_rules_processed']}")
+        console.print(f"  • Rules/second: {stats['avg_rules_per_second']:.1f}")
+
+    return summary
+
+
+def _display_performance_comparison(all_results):
+    """Display performance comparison between files."""
+    console.print("\n[blue]🔍 Performance Comparison:[/blue]")
+    console.print("=" * 60)
+
+    parse_results = [
+        (r["file_name"], r["results"].get("parse")) for r in all_results if "parse" in r["results"]
+    ]
+
+    if parse_results:
+        _display_parsing_comparison(parse_results)
+
+
+def _display_parsing_comparison(parse_results):
+    """Display parsing performance comparison."""
+    parse_results.sort(
+        key=lambda x: x[1].execution_time if x[1] else float("inf"),
+    )
+    console.print(
+        "\n[yellow]Parsing Performance (fastest to slowest):[/yellow]",
+    )
+
+    for i, (filename, result) in enumerate(parse_results):
+        if result:
+            throughput = (
+                result.rules_count / result.execution_time if result.execution_time > 0 else 0
+            )
+            console.print(
+                f"  {i + 1:2d}. {filename:20s} "
+                f"{result.execution_time * 1000:6.2f}ms "
+                f"({throughput:.1f} rules/sec)",
+            )
+
+
+def _save_benchmark_results(output, iterations, operations, all_results, summary):
+    """Save benchmark results to JSON file."""
+    import json
+
+    benchmark_data = {
+        "timestamp": time.time(),
+        "iterations": iterations,
+        "operations": operations,
+        "files": all_results,
+        "summary": summary,
+    }
+
+    with Path(output).open("w") as f:
+        json.dump(benchmark_data, f, indent=2, default=str)
+
+    console.print(f"\n[green]💾 Benchmark results saved to {output}[/green]")
 
 
 if __name__ == "__main__":

@@ -147,65 +147,85 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
     def visit_regex_string(self, node: RegexString) -> None:
         """Check regex string compatibility."""
         if self.features.strict_regex_escaping:
-            # Check for unescaped { outside of repetition
-            pattern = node.regex
-            i = 0
-            while i < len(pattern):
-                if pattern[i] == "\\":
-                    # Skip escaped character
-                    i += 2
-                    continue
-                if pattern[i] == "{":
-                    # Check if this is a valid quantifier pattern like {3,5}
-                    # Look ahead to see if it follows the pattern {number} or {number,} or {number,number}
-                    j = i + 1
-                    is_valid_quantifier = False
-
-                    if j < len(pattern):
-                        # Skip digits
-                        while j < len(pattern) and pattern[j].isdigit():
-                            j += 1
-
-                        # Check if it's {n} or {n,} or {n,m}
-                        if j < len(pattern):
-                            if pattern[j] == "}":  # {n}
-                                is_valid_quantifier = True
-                            elif pattern[j] == "," and j + 1 < len(pattern):  # {n,?
-                                j += 1
-                                if pattern[j] == "}":  # {n,}
-                                    is_valid_quantifier = True
-                                else:
-                                    # Skip more digits for {n,m}
-                                    while j < len(pattern) and pattern[j].isdigit():
-                                        j += 1
-                                    if j < len(pattern) and pattern[j] == "}":  # {n,m}
-                                        is_valid_quantifier = True
-
-                    # If it's not a valid quantifier, it's an unescaped brace
-                    if not is_valid_quantifier:
-                        self._add_issue(
-                            "error",
-                            "unescaped_brace",
-                            f"Unescaped '{{' in regex pattern at position {i}",
-                            "Escape the brace with '\\{'",
-                            node.location,
-                        )
-                i += 1
+            self._check_unescaped_braces(node)
 
         if self.features.validate_escape_sequences:
-            # Check for invalid escape sequences
-            invalid_escapes = re.findall(
-                r"\\([^\\abfnrtv0-7xdDsSwW.*+?{}()\[\]|^$])",
-                node.regex,
-            )
-            for escape in invalid_escapes:
+            self._check_invalid_escape_sequences(node)
+
+    def _check_unescaped_braces(self, node: RegexString) -> None:
+        """Check for unescaped { outside of repetition."""
+        pattern = node.regex
+        i = 0
+        while i < len(pattern):
+            if pattern[i] == "\\":
+                # Skip escaped character
+                i += 2
+                continue
+            if pattern[i] == "{" and not self._is_valid_quantifier(pattern, i):
                 self._add_issue(
                     "error",
-                    "invalid_escape",
-                    f"Invalid escape sequence '\\{escape}' in regex",
-                    "Remove or fix the escape sequence",
+                    "unescaped_brace",
+                    f"Unescaped '{{' in regex pattern at position {i}",
+                    "Escape the brace with '\\{'",
                     node.location,
                 )
+            i += 1
+
+    def _is_valid_quantifier(self, pattern: str, start_pos: int) -> bool:
+        """Check if brace at position is part of a valid quantifier."""
+        j = start_pos + 1
+        if j >= len(pattern):
+            return False
+
+        # Skip initial digits
+        if not self._skip_digits(pattern, j):
+            return False
+        j = self._get_position_after_digits(pattern, j)
+
+        if j >= len(pattern):
+            return False
+
+        # Check patterns: {n}, {n,}, {n,m}
+        if pattern[j] == "}":
+            return True  # {n} pattern
+
+        if pattern[j] == "," and j + 1 < len(pattern):
+            j += 1
+            if pattern[j] == "}":
+                return True  # {n,} pattern
+
+            # Check for {n,m} pattern
+            if self._skip_digits(pattern, j):
+                j = self._get_position_after_digits(pattern, j)
+                return j < len(pattern) and pattern[j] == "}"
+
+        return False
+
+    def _skip_digits(self, pattern: str, pos: int) -> bool:
+        """Check if position starts with digits."""
+        return pos < len(pattern) and pattern[pos].isdigit()
+
+    def _get_position_after_digits(self, pattern: str, start_pos: int) -> int:
+        """Get position after consuming all digits."""
+        pos = start_pos
+        while pos < len(pattern) and pattern[pos].isdigit():
+            pos += 1
+        return pos
+
+    def _check_invalid_escape_sequences(self, node: RegexString) -> None:
+        """Check for invalid escape sequences in regex."""
+        invalid_escapes = re.findall(
+            r"\\([^\\abfnrtv0-7xdDsSwW.*+?{}()\[\]|^$])",
+            node.regex,
+        )
+        for escape in invalid_escapes:
+            self._add_issue(
+                "error",
+                "invalid_escape",
+                f"Invalid escape sequence '\\{escape}' in regex",
+                "Remove or fix the escape sequence",
+                node.location,
+            )
 
     def visit_hex_string(self, node: HexString) -> None:
         """Check hex string compatibility."""

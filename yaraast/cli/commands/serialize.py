@@ -443,12 +443,13 @@ def info(input_file: str) -> None:
                 )
 
             if len(ast.rules) > 10:
+                dim_ellipsis = "[dim]...[/dim]"
                 rule_table.add_row(
-                    "[dim]...[/dim]",
-                    "[dim]...[/dim]",
-                    "[dim]...[/dim]",
-                    "[dim]...[/dim]",
-                    "[dim]...[/dim]",
+                    dim_ellipsis,
+                    dim_ellipsis,
+                    dim_ellipsis,
+                    dim_ellipsis,
+                    dim_ellipsis,
                 )
 
             console.print(rule_table)

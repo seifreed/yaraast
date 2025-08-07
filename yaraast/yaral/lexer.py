@@ -120,9 +120,12 @@ class YaraLLexer:
     def _skip_whitespace_and_comments(self) -> None:
         """Skip whitespace and comments."""
         while self.position < len(self.text):
-            if not self._skip_whitespace() and not self._skip_single_line_comment():
-                if not self._skip_multi_line_comment():
-                    break
+            if (
+                not self._skip_whitespace()
+                and not self._skip_single_line_comment()
+                and not self._skip_multi_line_comment()
+            ):
+                break
 
     def _skip_whitespace(self) -> bool:
         """Skip whitespace characters. Returns True if whitespace was skipped."""

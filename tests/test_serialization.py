@@ -170,9 +170,9 @@ class TestProtobufSerializer:
     def test_protobuf_available(self) -> None:
         """Test if protobuf serialization is available."""
         try:
-            ProtobufSerializer()
+            serializer = ProtobufSerializer()
             # If we get here, protobuf is available
-            assert True
+            assert serializer is not None
         except ImportError:
             # Skip protobuf tests if not available
             pytest.skip("Protobuf schema not compiled")

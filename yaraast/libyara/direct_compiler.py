@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.libyara.ast_optimizer import ASTOptimizer
+
 try:
     import yara
 
@@ -56,9 +58,6 @@ class DirectCompilationResult:
             or stats.dead_code_removed > 0
             or stats.constant_folded > 0
         )
-
-
-from yaraast.libyara.ast_optimizer import ASTOptimizer
 
 
 class DirectASTCompiler:
@@ -388,7 +387,7 @@ class OptimizedMatcher:
         for rule in self.ast.rules:
             if rule.name == rule_name:
                 return {
-                    "rule_type": "regular" if not rule.modifiers else str(rule.modifiers),
+                    "rule_type": ("regular" if not rule.modifiers else str(rule.modifiers)),
                     "string_count": len(rule.strings),
                     "has_meta": len(rule.meta) > 0,
                     "has_tags": len(rule.tags) > 0,

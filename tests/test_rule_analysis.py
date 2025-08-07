@@ -33,7 +33,7 @@ rule test_unused {
     assert len(rule_analysis["unused"]) == 2
     assert "$unused1" in rule_analysis["unused"]
     assert "$unused2" in rule_analysis["unused"]
-    assert rule_analysis["usage_rate"] == 0.5
+    assert abs(rule_analysis["usage_rate"] - 0.5) < 1e-9
 
 
 def test_undefined_string_detection() -> None:
@@ -234,7 +234,7 @@ rule test_them {
     # 'them' should mark all strings as used
     assert len(rule_analysis["used"]) == 3
     assert len(rule_analysis["unused"]) == 0
-    assert rule_analysis["usage_rate"] == 1.0
+    assert abs(rule_analysis["usage_rate"] - 1.0) < 1e-9
 
 
 if __name__ == "__main__":

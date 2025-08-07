@@ -124,56 +124,72 @@ def semantic(
         click.echo("Error: No files provided", err=True)
         sys.exit(1)
 
-    parser = Parser()
-    validator = SemanticValidator()
+    validation_context = _create_validation_context()
+    all_results, total_errors, total_warnings = _process_all_files(
+        files, validation_context, format, warnings, suggestions, quiet
+    )
+
+    _handle_output(all_results, total_errors, total_warnings, output, format, quiet, len(files))
+    _exit_with_appropriate_code(total_errors, total_warnings, strict)
+
+
+def _create_validation_context():
+    """Create validation context with parser and validator."""
+    return {"parser": Parser(), "validator": SemanticValidator()}
+
+
+def _process_all_files(files, context, format, warnings, suggestions, quiet):
+    """Process all files and collect results."""
     all_results = []
     total_errors = 0
     total_warnings = 0
 
     for file_path in files:
         try:
-            result = _process_file(file_path, parser, validator, quiet)
-            if not result:
-                continue
+            result = _process_file(file_path, context["parser"], context["validator"], quiet)
+            if result:
+                file_result = _create_file_result(file_path, result)
+                all_results.append(file_result)
 
-            # Store results
-            all_results.append(
-                {
-                    "file": str(file_path),
-                    "is_valid": result.is_valid,
-                    "errors": [error.to_dict() for error in result.errors],
-                    "warnings": [warning.to_dict() for warning in result.warnings],
-                    "total_issues": result.total_issues,
-                },
-            )
+                total_errors += len(result.errors)
+                total_warnings += len(result.warnings)
 
-            total_errors += len(result.errors)
-            total_warnings += len(result.warnings)
-
-            # Display results for this file
-            if format == "text":
-                _display_text_results(file_path, result, warnings, suggestions, quiet)
+                if format == "text":
+                    _display_text_results(file_path, result, warnings, suggestions, quiet)
         except Exception as e:
             click.echo(f"Error processing {file_path}: {e}", err=True)
             continue
 
-    # Output summary
-    if not quiet and format == "text":
-        _display_summary(len(files), total_errors, total_warnings)
+    return all_results, total_errors, total_warnings
 
-    # Write output file if requested
+
+def _create_file_result(file_path, result):
+    """Create result dictionary for a file."""
+    return {
+        "file": str(file_path),
+        "is_valid": result.is_valid,
+        "errors": [error.to_dict() for error in result.errors],
+        "warnings": [warning.to_dict() for warning in result.warnings],
+        "total_issues": result.total_issues,
+    }
+
+
+def _handle_output(all_results, total_errors, total_warnings, output, format, quiet, file_count):
+    """Handle various output options."""
+    if not quiet and format == "text":
+        _display_summary(file_count, total_errors, total_warnings)
+
     if output:
         _write_output_file(output, all_results, format)
-
-    # Output JSON to stdout if requested and no output file
-    if format == "json" and not output:
+    elif format == "json":
         click.echo(json.dumps(all_results, indent=2))
 
-    # Exit with appropriate code
+
+def _exit_with_appropriate_code(total_errors, total_warnings, strict):
+    """Exit with appropriate code based on results."""
     exit_code = 0
     if total_errors > 0 or (strict and total_warnings > 0):
         exit_code = 1
-
     sys.exit(exit_code)
 
 

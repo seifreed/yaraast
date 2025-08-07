@@ -424,19 +424,42 @@ def _extract_successful_asts(parse_jobs, file_paths: list[Path], chunk_size: int
     successful_asts = []
     file_names = []
 
-    for job in parse_jobs:
-        if job.status.value == "completed" and job.result:
-            for i, ast in enumerate(job.result):
-                if not hasattr(ast, "_parse_error"):
-                    successful_asts.append(ast)
-                    # Get corresponding file name
-                    job_index = parse_jobs.index(job)
-                    start_idx = job_index * chunk_size
-                    file_idx = start_idx + i
-                    if file_idx < len(file_paths):
-                        file_names.append(str(file_paths[file_idx]))
+    for job_index, job in enumerate(parse_jobs):
+        if _is_job_successful(job):
+            asts, names = _process_job_results(job, job_index, file_paths, chunk_size)
+            successful_asts.extend(asts)
+            file_names.extend(names)
 
     return successful_asts, file_names
+
+
+def _is_job_successful(job) -> bool:
+    """Check if a parse job completed successfully."""
+    return job.status.value == "completed" and job.result
+
+
+def _process_job_results(job, job_index: int, file_paths: list[Path], chunk_size: int):
+    """Process results from a successful job."""
+    asts = []
+    names = []
+
+    for i, ast in enumerate(job.result):
+        if not hasattr(ast, "_parse_error"):
+            asts.append(ast)
+            file_name = _get_corresponding_file_name(job_index, i, file_paths, chunk_size)
+            if file_name:
+                names.append(file_name)
+
+    return asts, names
+
+
+def _get_corresponding_file_name(
+    job_index: int, ast_index: int, file_paths: list[Path], chunk_size: int
+):
+    """Get the file name corresponding to a specific AST."""
+    start_idx = job_index * chunk_size
+    file_idx = start_idx + ast_index
+    return str(file_paths[file_idx]) if file_idx < len(file_paths) else None
 
 
 def _perform_complexity_analysis(

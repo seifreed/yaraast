@@ -164,16 +164,18 @@ class StringUsageAnalyzer(ASTVisitor[None]):
             self.used_strings[self.current_rule].add(node.string_id)
 
     def visit_string_offset(self, node: StringOffset) -> None:
+        """Visit string offset expression - marks string as used."""
         if self.current_rule and self.in_condition:
             self.used_strings[self.current_rule].add(node.string_id)
-        # Additionally visit index if present
+        # Additionally visit index if present for offset expressions
         if hasattr(node, "index") and node.index:
             self.visit(node.index)
 
     def visit_string_length(self, node: StringLength) -> None:
+        """Visit string length expression - marks string as used."""
         if self.current_rule and self.in_condition:
             self.used_strings[self.current_rule].add(node.string_id)
-        # Additionally visit index if present
+        # Additionally visit index if present for length expressions
         if hasattr(node, "index") and node.index:
             self.visit(node.index)
 

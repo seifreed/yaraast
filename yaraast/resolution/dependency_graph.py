@@ -86,7 +86,7 @@ class DependencyGraph:
             file_path=Path(file_key),
             metadata={
                 "modifiers": rule.modifiers,
-                "tags": [tag.name for tag in rule.tags] if hasattr(rule, "tags") else [],
+                "tags": ([tag.name for tag in rule.tags] if hasattr(rule, "tags") else []),
             },
         )
 

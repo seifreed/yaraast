@@ -143,33 +143,45 @@ class DependencyAnalyzer(ASTVisitor[None]):
 
     def _find_circular_dependencies(self) -> list[list[str]]:
         """Find circular dependencies using DFS."""
-        white, gray, black = 0, 1, 2
-        color = dict.fromkeys(self.rule_names, white)
+        dfs_state = self._init_dfs_state()
         cycles = []
-        path = []
-
-        def dfs(node: str) -> None:
-            color[node] = gray
-            path.append(node)
-
-            for neighbor in self.dependencies.get(node, set()):
-                if neighbor in self.rule_names:  # Only check internal rules
-                    if color[neighbor] == gray:
-                        # Found cycle
-                        cycle_start = path.index(neighbor)
-                        cycle = path[cycle_start:]
-                        cycles.append(cycle)
-                    elif color[neighbor] == white:
-                        dfs(neighbor)
-
-            path.pop()
-            color[node] = black
 
         for rule in self.rule_names:
-            if color[rule] == white:
-                dfs(rule)
+            if dfs_state["color"][rule] == dfs_state["white"]:
+                self._dfs_cycle_detection(rule, dfs_state, cycles)
 
-        # Remove duplicates
+        return self._remove_duplicate_cycles(cycles)
+
+    def _init_dfs_state(self) -> dict:
+        """Initialize DFS state for cycle detection."""
+        white, gray, black = 0, 1, 2
+        return {
+            "white": white,
+            "gray": gray,
+            "black": black,
+            "color": dict.fromkeys(self.rule_names, white),
+            "path": [],
+        }
+
+    def _dfs_cycle_detection(self, node: str, state: dict, cycles: list[list[str]]) -> None:
+        """Perform DFS for cycle detection."""
+        state["color"][node] = state["gray"]
+        state["path"].append(node)
+
+        for neighbor in self.dependencies.get(node, set()):
+            if neighbor in self.rule_names:  # Only check internal rules
+                if state["color"][neighbor] == state["gray"]:
+                    # Found cycle
+                    cycle_start = state["path"].index(neighbor)
+                    cycles.append(state["path"][cycle_start:])
+                elif state["color"][neighbor] == state["white"]:
+                    self._dfs_cycle_detection(neighbor, state, cycles)
+
+        state["path"].pop()
+        state["color"][node] = state["black"]
+
+    def _remove_duplicate_cycles(self, cycles: list[list[str]]) -> list[list[str]]:
+        """Remove duplicate cycles from the list."""
         unique_cycles = []
         for cycle in cycles:
             normalized = min(cycle[i:] + cycle[:i] for i in range(len(cycle)))

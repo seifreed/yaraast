@@ -542,5 +542,5 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
     def visit_pragma_block(self, node) -> dict[str, Any]:
         return {
             "type": "PragmaBlock",
-            "pragmas": [self.visit(p) for p in node.pragmas] if hasattr(node, "pragmas") else [],
+            "pragmas": ([self.visit(p) for p in node.pragmas] if hasattr(node, "pragmas") else []),
         }
