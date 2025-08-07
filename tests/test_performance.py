@@ -302,7 +302,7 @@ class TestBatchProcessor:
             parse_result = results[BatchOperation.PARSE]
             assert parse_result.input_count == 3
             assert parse_result.successful_count == 3
-            assert parse_result.success_rate == 100.0
+            assert abs(parse_result.success_rate - 100.0) < 1e-9
 
             complexity_result = results[BatchOperation.COMPLEXITY]
             assert complexity_result.successful_count > 0

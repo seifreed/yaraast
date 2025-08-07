@@ -306,11 +306,9 @@ class TestYaraEvaluator:
         """
         ast = parser.parse(rule_text)
 
-        # High entropy data (random-looking)
-        import random
-
-        random.seed(42)
-        data = bytes(random.randint(0, 255) for _ in range(200))
+        # High entropy data (pseudo-random pattern for testing)
+        # Using deterministic pattern instead of random for consistent testing
+        data = bytes((i * 37 + 123) % 256 for i in range(200))
 
         evaluator = YaraEvaluator(data)
         results = evaluator.evaluate_file(ast)
@@ -420,7 +418,7 @@ class TestMockModules:
 
         # Test entropy
         # All zeros should have entropy of 0
-        assert math.entropy(0, 50) == 0.0
+        assert abs(math.entropy(0, 50) - 0.0) < 1e-9
 
     def test_module_registry(self) -> None:
         """Test module registry."""

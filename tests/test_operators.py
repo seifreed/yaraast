@@ -1,6 +1,5 @@
 """Test missing operators implementation."""
 
-# import pytest
 from yaraast.ast.operators import DefinedExpression
 from yaraast.codegen import CodeGenerator
 from yaraast.parser import Parser

@@ -51,7 +51,7 @@ rule boolean_test {
     ast = parser.parse(yara_code)
 
     optimizer = ExpressionOptimizer()
-    optimized, count = optimizer.optimize(ast)
+    _, count = optimizer.optimize(ast)
 
     assert count >= 3  # At least 3 simplifications
 
@@ -121,7 +121,7 @@ rule optimize_me {
     ast = parser.parse(yara_code)
 
     optimizer = RuleOptimizer()
-    optimized, stats = optimizer.optimize(ast)
+    _, stats = optimizer.optimize(ast)
 
     # Should have multiple optimizations
     assert stats["total_optimizations"] > 0
@@ -179,7 +179,7 @@ rule range_test {
     ast = parser.parse(yara_code)
 
     optimizer = RuleOptimizer()
-    optimized, stats = optimizer.optimize(ast)
+    _, stats = optimizer.optimize(ast)
 
     # Should optimize the invalid range
     assert stats["expression_optimizations"] > 0
@@ -198,7 +198,7 @@ rule set_test {
     ast = parser.parse(yara_code)
 
     optimizer = ExpressionOptimizer()
-    optimized, count = optimizer.optimize(ast)
+    _, count = optimizer.optimize(ast)
 
     # Should remove duplicates
     assert count > 0

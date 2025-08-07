@@ -337,7 +337,7 @@ class TestIntegration:
         )
 
         # Step 3: Deserialize
-        reconstructed_ast, reconstructed_yara = serializer.deserialize_and_generate(
+        reconstructed_ast, _ = serializer.deserialize_and_generate(
             serialized,
             format="yaml",
         )

@@ -872,62 +872,108 @@ def print_ast(ast: YaraFile, console: Console | None = None) -> None:
 
     tree = Tree("YaraFile")
 
-    # Add imports
-    if ast.imports:
-        imports_branch = tree.add("imports")
-        for imp in ast.imports:
-            imp_text = f'import "{imp.module}"'
-            if hasattr(imp, "alias") and imp.alias:
-                imp_text += f" as {imp.alias}"
-            imports_branch.add(imp_text)
-
-    # Add includes
-    if ast.includes:
-        includes_branch = tree.add("includes")
-        for inc in ast.includes:
-            includes_branch.add(f'include "{inc.path}"')
-
-    # Add rules
-    if ast.rules:
-        rules_branch = tree.add("rules")
-        for rule in ast.rules:
-            rule_text = f"rule {rule.name}"
-            if hasattr(rule, "modifiers") and rule.modifiers:
-                rule_text = f"{' '.join(rule.modifiers)} {rule_text}"
-            rule_branch = rules_branch.add(rule_text)
-
-            # Add tags
-            if hasattr(rule, "tags") and rule.tags:
-                tags_branch = rule_branch.add("tags")
-                for tag in rule.tags:
-                    tag_name = tag.name if hasattr(tag, "name") else str(tag)
-                    tags_branch.add(tag_name)
-
-            # Add meta
-            if hasattr(rule, "meta") and rule.meta:
-                meta_branch = rule_branch.add("meta")
-                if isinstance(rule.meta, dict):
-                    for key, value in rule.meta.items():
-                        meta_branch.add(f"{key} = {value}")
-                else:
-                    for meta_item in rule.meta:
-                        if hasattr(meta_item, "key"):
-                            meta_branch.add(f"{meta_item.key} = {meta_item.value}")
-
-            # Add strings
-            if hasattr(rule, "strings") and rule.strings:
-                strings_branch = rule_branch.add("strings")
-                for string_def in rule.strings:
-                    string_type = type(string_def).__name__
-                    strings_branch.add(f"{string_def.identifier} ({string_type})")
-
-            # Add condition
-            if hasattr(rule, "condition") and rule.condition:
-                condition_branch = rule_branch.add("condition")
-                condition_type = type(rule.condition).__name__
-                condition_branch.add(condition_type)
+    _add_imports_to_tree(tree, ast.imports)
+    _add_includes_to_tree(tree, ast.includes)
+    _add_rules_to_tree(tree, ast.rules)
 
     console.print(tree)
+
+
+def _add_imports_to_tree(tree: Tree, imports) -> None:
+    """Add imports to the tree."""
+    if not imports:
+        return
+
+    imports_branch = tree.add("imports")
+    for imp in imports:
+        imp_text = f'import "{imp.module}"'
+        if hasattr(imp, "alias") and imp.alias:
+            imp_text += f" as {imp.alias}"
+        imports_branch.add(imp_text)
+
+
+def _add_includes_to_tree(tree: Tree, includes) -> None:
+    """Add includes to the tree."""
+    if not includes:
+        return
+
+    includes_branch = tree.add("includes")
+    for inc in includes:
+        includes_branch.add(f'include "{inc.path}"')
+
+
+def _add_rules_to_tree(tree: Tree, rules) -> None:
+    """Add rules to the tree."""
+    if not rules:
+        return
+
+    rules_branch = tree.add("rules")
+    for rule in rules:
+        rule_branch = _create_rule_branch(rules_branch, rule)
+        _add_rule_components(rule_branch, rule)
+
+
+def _create_rule_branch(rules_branch, rule):
+    """Create a rule branch in the tree."""
+    rule_text = f"rule {rule.name}"
+    if hasattr(rule, "modifiers") and rule.modifiers:
+        rule_text = f"{' '.join(rule.modifiers)} {rule_text}"
+    return rules_branch.add(rule_text)
+
+
+def _add_rule_components(rule_branch, rule) -> None:
+    """Add rule components (tags, meta, strings, condition) to the rule branch."""
+    _add_tags_to_rule(rule_branch, rule)
+    _add_meta_to_rule(rule_branch, rule)
+    _add_strings_to_rule(rule_branch, rule)
+    _add_condition_to_rule(rule_branch, rule)
+
+
+def _add_tags_to_rule(rule_branch, rule) -> None:
+    """Add tags to the rule branch."""
+    if not (hasattr(rule, "tags") and rule.tags):
+        return
+
+    tags_branch = rule_branch.add("tags")
+    for tag in rule.tags:
+        tag_name = tag.name if hasattr(tag, "name") else str(tag)
+        tags_branch.add(tag_name)
+
+
+def _add_meta_to_rule(rule_branch, rule) -> None:
+    """Add meta to the rule branch."""
+    if not (hasattr(rule, "meta") and rule.meta):
+        return
+
+    meta_branch = rule_branch.add("meta")
+    if isinstance(rule.meta, dict):
+        for key, value in rule.meta.items():
+            meta_branch.add(f"{key} = {value}")
+    else:
+        for meta_item in rule.meta:
+            if hasattr(meta_item, "key"):
+                meta_branch.add(f"{meta_item.key} = {meta_item.value}")
+
+
+def _add_strings_to_rule(rule_branch, rule) -> None:
+    """Add strings to the rule branch."""
+    if not (hasattr(rule, "strings") and rule.strings):
+        return
+
+    strings_branch = rule_branch.add("strings")
+    for string_def in rule.strings:
+        string_type = type(string_def).__name__
+        strings_branch.add(f"{string_def.identifier} ({string_type})")
+
+
+def _add_condition_to_rule(rule_branch, rule) -> None:
+    """Add condition to the rule branch."""
+    if not (hasattr(rule, "condition") and rule.condition):
+        return
+
+    condition_branch = rule_branch.add("condition")
+    condition_type = type(rule.condition).__name__
+    condition_branch.add(condition_type)
 
 
 def visualize_ast(ast: YaraFile, output_format: str = "tree") -> str:

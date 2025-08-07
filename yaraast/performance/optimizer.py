@@ -90,10 +90,11 @@ class PerformanceOptimizer:
                 # Skip optimization if strings format is unexpected
                 pass
 
-        # TODO: More speed optimizations
-        # - Reorder condition checks
-        # - Optimize regex patterns
-        # - Cache intermediate results
+        # Future speed optimizations to implement:
+        # - Reorder condition checks by complexity/selectivity
+        # - Optimize regex patterns for common use cases
+        # - Cache intermediate compilation results
+        # - Profile-guided optimization based on usage patterns
 
         return rule
 

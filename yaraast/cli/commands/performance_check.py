@@ -46,7 +46,7 @@ def performance_check(input_file: Path, severity: str, limit: int, summary: bool
         with console.status("[cyan]Parsing YARA file..."):
             content = input_file.read_text()
             parser = ErrorTolerantParser()
-            ast, lexer_errors, parser_errors = parser.parse_with_errors(content)
+            ast, _, _ = parser.parse_with_errors(content)
 
         if not ast:
             console.print("[red]❌ Failed to parse YARA file[/red]")

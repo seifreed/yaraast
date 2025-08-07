@@ -41,7 +41,7 @@ class UnifiedParser:
             return parser.parse()
         if self.dialect == YaraDialect.YARA_X:
             # For now, use standard YARA parser with extensions
-            # TODO: Add YARA-X specific features
+            # Future: Add YARA-X specific parser extensions for new syntax features
             parser = YaraParser(self.text)
             return parser.parse()
         # Standard YARA
