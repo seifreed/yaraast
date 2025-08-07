@@ -176,3 +176,12 @@ config.secret.json
 
 # Pre-commit
 .pre-commit-config.yaml.backup
+qlty.toml
+mypy.ini
+.bandit
+.pre-commit-config.yaml
+.safety-policy.json
+.gitignore
+.coverage
+.git
+.claude

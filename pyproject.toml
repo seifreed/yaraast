@@ -1,6 +1,6 @@
 [project]
 name = "yaraast"
-version = "0.3.0"
+version = "0.4.0"
 description = "A Python library for parsing and manipulating YARA rules using Abstract Syntax Trees"
 authors = [{name = "Marc Rivero", email = "mriverolopez@gmail.com"}]
 readme = "README.md"

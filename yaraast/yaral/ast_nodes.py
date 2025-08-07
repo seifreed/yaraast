@@ -171,6 +171,15 @@ class EventExistsCondition(ConditionExpression):
 
 
 @dataclass
+class JoinCondition(ConditionExpression):
+    """Join condition between events."""
+
+    left_event: str
+    right_event: str
+    join_type: str = "inner"  # inner, left, right, full
+
+
+@dataclass
 class OutcomeSection(ASTNode):
     """YARA-L outcome section for extracting data."""
 

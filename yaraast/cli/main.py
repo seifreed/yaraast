@@ -69,6 +69,8 @@ from yaraast.cli.commands.semantic import semantic
 from yaraast.cli.commands.serialize import serialize
 from yaraast.cli.commands.validate import validate
 from yaraast.cli.commands.workspace import workspace
+from yaraast.cli.commands.yaral import yaral
+from yaraast.cli.commands.yarax import yarax
 from yaraast.dialects import YaraDialect
 from yaraast.unified_parser import UnifiedParser
 from yaraast.visitor import ASTVisitor
@@ -1293,6 +1295,8 @@ cli.add_command(performance_check_cmd)
 cli.add_command(semantic)
 cli.add_command(fluent)
 cli.add_command(roundtrip)
+cli.add_command(yaral)
+cli.add_command(yarax)
 
 
 @cli.command()

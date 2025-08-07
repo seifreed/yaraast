@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from yaraast.ast.rules import YaraFile
+from yaraast.ast.base import YaraFile
 from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.parser.parser import Parser as YaraParser
 from yaraast.yaral.ast_nodes import YaraLFile
