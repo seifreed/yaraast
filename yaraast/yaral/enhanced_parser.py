@@ -60,8 +60,10 @@ class EnhancedYaraLParser:
             Parsed YARA-L AST
         """
         rules = []
+        max_iterations = 10000  # Safety limit to prevent infinite loops
 
-        while not self._is_at_end():
+        iteration = 0
+        while not self._is_at_end() and iteration < max_iterations:
             try:
                 if self._check_keyword("rule"):
                     rules.append(self._parse_rule())
@@ -72,6 +74,10 @@ class EnhancedYaraLParser:
                 self.errors.append(str(e))
                 # Try to recover by finding next rule
                 self._recover_to_next_rule()
+            iteration += 1
+
+        if iteration >= max_iterations:
+            self.errors.append(f"Parser exceeded maximum iterations ({max_iterations})")
 
         return YaraLFile(rules=rules)
 

@@ -14,7 +14,7 @@ from rich.tree import Tree
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.codegen import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter
-from yaraast.parser import Parser
+from yaraast.parser.parser import Parser
 from yaraast.visitor.visitor import ASTVisitor
 
 
@@ -407,13 +407,15 @@ class ASTDiffer:
         """Compare two YARA files at AST level."""
         try:
             # Parse both files
-            parser = Parser()
-
             with Path(file1_path).open() as f:
-                ast1 = parser.parse(f.read())
+                content1 = f.read()
+                parser1 = Parser(content1)
+                ast1 = parser1.parse()
 
             with Path(file2_path).open() as f:
-                ast2 = parser.parse(f.read())
+                content2 = f.read()
+                parser2 = Parser(content2)
+                ast2 = parser2.parse()
 
             return self.diff_asts(ast1, ast2)
 
@@ -424,9 +426,11 @@ class ASTDiffer:
 
     def diff_asts(self, ast1: YaraFile, ast2: YaraFile) -> ASTDiffResult:
         """Compare two ASTs and identify types of changes."""
-        # Analyze both ASTs
-        analysis1 = self.analyzer.analyze(ast1)
-        analysis2 = self.analyzer.analyze(ast2)
+        # Analyze both ASTs with fresh analyzers
+        analyzer1 = ASTStructuralAnalyzer()
+        analyzer2 = ASTStructuralAnalyzer()
+        analysis1 = analyzer1.analyze(ast1)
+        analysis2 = analyzer2.analyze(ast2)
 
         result = ASTDiffResult(has_changes=False)
 
@@ -563,11 +567,10 @@ class ASTFormatter:
         """Format YARA file using AST regeneration."""
         try:
             # Parse file
-            parser = Parser()
             with Path(input_path).open() as f:
                 content = f.read()
-
-            ast = parser.parse(content)
+                parser = Parser(content)
+                ast = parser.parse()
 
             # Apply formatting style
             if style == "compact":
@@ -597,8 +600,8 @@ class ASTFormatter:
                 original = f.read()
 
             # Parse and regenerate
-            parser = Parser()
-            ast = parser.parse(original)
+            parser = Parser(original)
+            ast = parser.parse()
             formatted = self.pretty_printer.pretty_print(ast)
 
             if original.strip() == formatted.strip():
@@ -640,10 +643,11 @@ class ASTBenchmarker:
                 content = f.read()
 
             file_size = len(content.encode())
-            parser = Parser()
+            # Parser will be instantiated with content
 
             # Warm up
-            ast = parser.parse(content)
+            parser = Parser(content)
+            ast = parser.parse()
             rules_count = len(ast.rules)
             strings_count = sum(len(rule.strings) for rule in ast.rules)
             ast_nodes = self._count_ast_nodes(ast)
@@ -652,8 +656,8 @@ class ASTBenchmarker:
             times = []
             for _ in range(iterations):
                 start = time.perf_counter()
-                parser = Parser()
-                ast = parser.parse(content)
+                parser = Parser(content)
+                ast = parser.parse()
                 end = time.perf_counter()
                 times.append(end - start)
 
@@ -694,12 +698,13 @@ class ASTBenchmarker:
         """Benchmark code generation performance."""
         try:
             # Parse file once
-            parser = Parser()
+            # Parser will be instantiated with content
             with Path(file_path).open() as f:
                 content = f.read()
 
             file_size = len(content.encode())
-            ast = parser.parse(content)
+            parser = Parser(content)
+            ast = parser.parse()
             rules_count = len(ast.rules)
             strings_count = sum(len(rule.strings) for rule in ast.rules)
             ast_nodes = self._count_ast_nodes(ast)
@@ -762,8 +767,8 @@ class ASTBenchmarker:
             for _ in range(iterations):
                 start = time.perf_counter()
 
-                parser = Parser()
-                ast = parser.parse(content)
+                parser = Parser(content)
+                ast = parser.parse()
 
                 generator = CodeGenerator()
                 generator.generate(ast)
@@ -774,8 +779,9 @@ class ASTBenchmarker:
             avg_time = statistics.mean(times)
 
             # Parse once more for statistics
-            parser = Parser()
-            ast = parser.parse(content)
+            # Parser will be instantiated with content
+            parser = Parser(content)
+            ast = parser.parse()
             rules_count = len(ast.rules)
             strings_count = sum(len(rule.strings) for rule in ast.rules)
             ast_nodes = self._count_ast_nodes(ast)

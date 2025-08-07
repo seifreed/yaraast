@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 from yaraast.cli.ast_tools import ASTBenchmarker, ASTDiffer, ASTFormatter, ASTStructuralAnalyzer
-from yaraast.parser import YaraParser
+from yaraast.parser import Parser
 
 
 class TestASTFormatter:
@@ -282,7 +282,7 @@ class TestASTStructuralAnalyzer:
         }
         """
 
-        parser = YaraParser()
+        parser = Parser()
         ast = parser.parse(yara_code.strip())
 
         analyzer = ASTStructuralAnalyzer()
@@ -305,7 +305,7 @@ class TestASTStructuralAnalyzer:
         }
         """
 
-        parser = YaraParser()
+        parser = Parser()
         ast1 = parser.parse(yara_code.strip())
         ast2 = parser.parse(yara_code.strip())
 
@@ -520,7 +520,7 @@ if __name__ == "__main__":
     }
     """
 
-    parser = YaraParser()
+    parser = Parser()
     ast = parser.parse(yara_test.strip())
     analysis = analyzer.analyze(ast)
 

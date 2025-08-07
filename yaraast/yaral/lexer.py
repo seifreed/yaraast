@@ -1,7 +1,8 @@
 """YARA-L lexer implementation."""
 
 import re
-from dataclasses import dataclass
+
+import attrs
 
 from yaraast.lexer.tokens import Token
 from yaraast.lexer.tokens import TokenType as BaseTokenType
@@ -9,7 +10,7 @@ from yaraast.lexer.tokens import TokenType as BaseTokenType
 from .tokens import YaraLTokenType
 
 
-@dataclass
+@attrs.define
 class YaraLToken(Token):
     """YARA-L specific token."""
 
@@ -96,7 +97,11 @@ class YaraLLexer:
 
     def tokenize(self) -> list[YaraLToken]:
         """Tokenize YARA-L input."""
-        while self.position < len(self.text):
+        max_iterations = 10000  # Safety limit to prevent infinite loops
+        iteration = 0
+
+        while self.position < len(self.text) and iteration < max_iterations:
+            old_position = self.position
             self._skip_whitespace_and_comments()
 
             if self.position >= len(self.text):
@@ -105,16 +110,38 @@ class YaraLLexer:
             token = self._next_token()
             if token:
                 self.tokens.append(token)
+            else:
+                # Skip unrecognized character
+                self.position += 1
 
-        self.tokens.append(
-            YaraLToken(
-                type=BaseTokenType.EOF,
-                value=None,
+            # Check if position advanced to avoid infinite loops
+            if self.position == old_position:
+                self.position += 1  # Force advance if stuck
+
+            iteration += 1
+
+        if iteration >= max_iterations:
+            # Add error token instead of crashing
+            error_token = YaraLToken(
+                type=BaseTokenType.ERROR,
+                value="Lexer exceeded maximum iterations",
                 line=self.line,
                 column=self.column,
-                yaral_type=YaraLTokenType.EOF,
-            ),
+                length=1,
+                yaral_type=None,
+            )
+            self.tokens.append(error_token)
+
+        # Create basic EOF token
+        eof_token = YaraLToken(
+            type=BaseTokenType.EOF,
+            value=None,
+            line=self.line,
+            column=self.column,
+            length=1,
+            yaral_type=YaraLTokenType.EOF,
         )
+        self.tokens.append(eof_token)
         return self.tokens
 
     def _skip_whitespace_and_comments(self) -> None:

@@ -46,14 +46,18 @@ class YaraXParser(BaseParser):
         """
         super().__init__(text)
 
-    def parse_condition(self) -> Condition:
+    def _parse_condition(self) -> Condition:
         """Parse condition with YARA-X extensions."""
         # Check for 'with' statement
         if self._check_keyword("with"):
             return self._parse_with_statement()
 
         # Otherwise parse normal condition
-        return super().parse_condition()
+        return super()._parse_condition()
+
+    def parse_condition(self) -> Condition:
+        """Parse condition with YARA-X extensions."""
+        return self._parse_condition()
 
     def _parse_with_statement(self) -> WithStatement:
         """Parse 'with' statement.
@@ -75,7 +79,7 @@ class YaraXParser(BaseParser):
         self._consume(TokenType.COLON, "Expected ':' after with declarations")
 
         # Parse body condition
-        body = super().parse_condition()
+        body = super()._parse_condition()
 
         return WithStatement(declarations=declarations, body=body)
 
@@ -84,10 +88,10 @@ class YaraXParser(BaseParser):
         # Get identifier (e.g., $a)
         identifier = self._consume(TokenType.STRING_IDENTIFIER, ERROR_EXPECTED_VARIABLE).value
 
-        self._consume(TokenType.EQ, "Expected '=' in with declaration")
+        self._consume(TokenType.ASSIGN, "Expected '=' in with declaration")
 
         # Parse initial value
-        value = self.parse_expression()
+        value = self._parse_or_expression()
 
         return WithDeclaration(identifier=identifier, value=value)
 
@@ -115,7 +119,7 @@ class YaraXParser(BaseParser):
             return self._parse_pattern_match()
 
         # Otherwise parse normal expression
-        expr = super().parse_expression()
+        expr = super()._parse_or_expression()
 
         # Check for tuple indexing
         if isinstance(expr, FunctionCall) and self._check(TokenType.LBRACKET):
@@ -138,7 +142,7 @@ class YaraXParser(BaseParser):
             return self._parse_spread_list()
 
         # Parse first element
-        first_expr = self.parse_expression()
+        first_expr = self._parse_or_expression()
 
         # Check for comprehension
         if self._check_keyword("for"):
@@ -164,10 +168,10 @@ class YaraXParser(BaseParser):
                 self._advance()  # First dot
                 self._advance()  # Second dot
                 self._advance()  # Third dot
-                expr = self.parse_expression()
+                expr = self._parse_or_expression()
                 elements.append(SpreadOperator(expression=expr, is_dict=False))
             else:
-                elements.append(self.parse_expression())
+                elements.append(self._parse_or_expression())
 
             if not self._check(TokenType.RBRACKET):
                 self._consume(TokenType.COMMA, "Expected ',' or ']'")
@@ -182,7 +186,7 @@ class YaraXParser(BaseParser):
             self._advance()
             if self._check(TokenType.RBRACKET):
                 break  # Trailing comma
-            elements.append(self.parse_expression())
+            elements.append(self._parse_or_expression())
 
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
         return ListExpression(elements=elements)
@@ -197,13 +201,13 @@ class YaraXParser(BaseParser):
         self._consume_keyword("in")
 
         # Parse iterable
-        iterable = self.parse_expression()
+        iterable = self._parse_or_expression()
 
         # Check for condition
         condition = None
         if self._check_keyword("if"):
             self._advance()
-            condition = self.parse_expression()
+            condition = self._parse_or_expression()
 
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
 
@@ -228,9 +232,9 @@ class YaraXParser(BaseParser):
             return self._parse_dict_with_spread()
 
         # Parse first key
-        first_key = self.parse_expression()
+        first_key = self._parse_or_expression()
         self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
-        first_value = self.parse_expression()
+        first_value = self._parse_or_expression()
 
         # Check for comprehension
         if self._check_keyword("for"):
@@ -255,7 +259,7 @@ class YaraXParser(BaseParser):
                 # Spread operator
                 self._advance()  # First star
                 self._advance()  # Second star
-                expr = self.parse_expression()
+                expr = self._parse_or_expression()
                 # For dict spread, we need special handling
                 # This is a simplification - real implementation would merge dicts
                 items.append(
@@ -266,9 +270,9 @@ class YaraXParser(BaseParser):
                 )
             else:
                 # Regular key-value pair
-                key = self.parse_expression()
+                key = self._parse_or_expression()
                 self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
-                value = self.parse_expression()
+                value = self._parse_or_expression()
                 items.append(DictItem(key=key, value=value))
 
             if not self._check(TokenType.RBRACE):
@@ -286,9 +290,9 @@ class YaraXParser(BaseParser):
             if self._check(TokenType.RBRACE):
                 break  # Trailing comma
 
-            key = self.parse_expression()
+            key = self._parse_or_expression()
             self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
-            value = self.parse_expression()
+            value = self._parse_or_expression()
             items.append(DictItem(key=key, value=value))
 
         self._consume(TokenType.RBRACE, ERROR_EXPECTED_BRACE_CLOSE)
@@ -315,13 +319,13 @@ class YaraXParser(BaseParser):
         self._consume_keyword("in")
 
         # Parse iterable
-        iterable = self.parse_expression()
+        iterable = self._parse_or_expression()
 
         # Check for condition
         condition = None
         if self._check_keyword("if"):
             self._advance()
-            condition = self.parse_expression()
+            condition = self._parse_or_expression()
 
         self._consume(TokenType.RBRACE, ERROR_EXPECTED_BRACE_CLOSE)
 
@@ -344,7 +348,7 @@ class YaraXParser(BaseParser):
             return TupleExpression(elements=[])
 
         # Parse first element
-        first = self.parse_expression()
+        first = self._parse_or_expression()
 
         # Check for comma (indicates tuple)
         if self._check(TokenType.COMMA):
@@ -353,7 +357,7 @@ class YaraXParser(BaseParser):
                 self._advance()
                 if self._check(TokenType.RPAREN):
                     break  # Trailing comma
-                elements.append(self.parse_expression())
+                elements.append(self._parse_or_expression())
 
             self._consume(TokenType.RPAREN, "Expected ')'")
             return TupleExpression(elements=elements)
@@ -381,7 +385,7 @@ class YaraXParser(BaseParser):
             return self._parse_slice_expression(tuple_expr, None)
 
         # Parse index
-        index = self.parse_expression()
+        index = self._parse_or_expression()
 
         # Check if this is actually a slice
         if self._check(TokenType.COLON):
@@ -404,14 +408,14 @@ class YaraXParser(BaseParser):
         # Parse stop
         stop = None
         if not self._check(TokenType.COLON) and not self._check(TokenType.RBRACKET):
-            stop = self.parse_expression()
+            stop = self._parse_or_expression()
 
         # Parse step
         step = None
         if self._check(TokenType.COLON):
             self._advance()
             if not self._check(TokenType.RBRACKET):
-                step = self.parse_expression()
+                step = self._parse_or_expression()
 
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
 
@@ -430,7 +434,7 @@ class YaraXParser(BaseParser):
             if self._check(TokenType.COLON):
                 expr = self._parse_slice_expression(expr, None)
             else:
-                index = self.parse_expression()
+                index = self._parse_or_expression()
 
                 # Check if this is a slice
                 if self._check(TokenType.COLON):
@@ -464,7 +468,7 @@ class YaraXParser(BaseParser):
         self._consume(TokenType.COLON, "Expected ':' after lambda parameters")
 
         # Parse body
-        body = self.parse_expression()
+        body = self._parse_or_expression()
 
         return LambdaExpression(parameters=parameters, body=body)
 
@@ -473,7 +477,7 @@ class YaraXParser(BaseParser):
         self._consume_keyword("match")
 
         # Parse value to match
-        value = self.parse_expression()
+        value = self._parse_or_expression()
 
         self._consume(TokenType.LBRACE, "Expected '{' after match value")
 
@@ -486,15 +490,15 @@ class YaraXParser(BaseParser):
                 # Default case
                 self._advance()
                 self._consume(TokenType.ARROW, "Expected '=>' after '_'")
-                default = self.parse_expression()
+                default = self._parse_or_expression()
 
                 if self._check(TokenType.COMMA):
                     self._advance()
             else:
                 # Regular case
-                pattern = self.parse_expression()
+                pattern = self._parse_or_expression()
                 self._consume(TokenType.ARROW, "Expected '=>' after pattern")
-                result = self.parse_expression()
+                result = self._parse_or_expression()
                 cases.append(MatchCase(pattern=pattern, result=result))
 
                 if self._check(TokenType.COMMA):
@@ -514,7 +518,9 @@ class YaraXParser(BaseParser):
     def _consume_keyword(self, keyword: str) -> Token:
         """Consume a specific keyword token."""
         if not self._check_keyword(keyword):
-            raise self._error(f"Expected keyword '{keyword}'")
+            from yaraast.parser.parser import ParserError
+
+            raise ParserError(f"Expected keyword '{keyword}'", self._peek())
         return self._advance()
 
     def _peek_ahead(self, n: int) -> Token | None:
@@ -523,3 +529,13 @@ class YaraXParser(BaseParser):
         if index < len(self.tokens):
             return self.tokens[index]
         return None
+
+    def _consume(self, token_type: TokenType, error_message: str) -> Token:
+        """Consume token of expected type or raise error."""
+        if self._check(token_type):
+            return self._advance()
+
+        current = self._peek()
+        from yaraast.parser.parser import ParserError
+
+        raise ParserError(error_message, current)
