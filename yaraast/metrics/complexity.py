@@ -4,19 +4,19 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
-from yaraast.ast.expressions import BinaryExpression, UnaryExpression
-from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.parser import Parser
 from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
+
+    from yaraast.ast.base import ASTNode, YaraFile
+    from yaraast.ast.expressions import BinaryExpression, UnaryExpression
+    from yaraast.ast.rules import Rule
 
 
 @dataclass
@@ -157,13 +157,17 @@ class ComplexityMetrics:
 class ComplexityAnalyzer(ASTVisitor[None]):
     """Analyzes AST complexity metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.metrics = ComplexityMetrics()
         self._current_rule: Rule | None = None
         self._condition_depths: list[int] = []
         self._current_depth = 0
-        self._string_usage: dict[str, set[str]] = defaultdict(set)  # string_id -> rule_names
-        self._rule_strings: dict[str, set[str]] = defaultdict(set)  # rule_name -> string_ids
+        self._string_usage: dict[str, set[str]] = defaultdict(
+            set,
+        )  # string_id -> rule_names
+        self._rule_strings: dict[str, set[str]] = defaultdict(
+            set,
+        )  # rule_name -> string_ids
 
     def analyze(self, ast: YaraFile) -> ComplexityMetrics:
         """Analyze AST and return complexity metrics."""
@@ -217,7 +221,10 @@ class ComplexityAnalyzer(ASTVisitor[None]):
             self._current_depth = 0
             self.visit(rule.condition)
             rule_max_depth = max(self._condition_depths) if self._condition_depths else 0
-            self.metrics.max_condition_depth = max(self.metrics.max_condition_depth, rule_max_depth)
+            self.metrics.max_condition_depth = max(
+                self.metrics.max_condition_depth,
+                rule_max_depth,
+            )
 
             # Calculate cyclomatic complexity for this rule
             self.metrics.cyclomatic_complexity[rule.name] = self._calculate_cyclomatic_complexity()
@@ -294,7 +301,7 @@ class ComplexityAnalyzer(ASTVisitor[None]):
         # Average condition depth
         if self._condition_depths:
             self.metrics.avg_condition_depth = sum(self._condition_depths) / len(
-                self._condition_depths
+                self._condition_depths,
             )
 
         # Find unused strings
@@ -362,82 +369,82 @@ class ComplexityAnalyzer(ASTVisitor[None]):
 
     # Required visitor methods (minimal implementations)
     def visit_yara_file(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_import(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_include(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_rule(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_tag(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_definition(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_plain_string(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_string(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_regex_string(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_modifier(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_token(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_byte(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_wildcard(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_jump(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_alternative(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_nibble(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_identifier(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_count(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_offset(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_length(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_integer_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_double_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_regex_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_boolean_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_parentheses_expression(self, node) -> None:
         self.visit(node.expression)
@@ -462,7 +469,7 @@ class ComplexityAnalyzer(ASTVisitor[None]):
         self.visit(node.object)
 
     def visit_condition(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_at_expression(self, node) -> None:
         self.visit(node.offset)
@@ -471,19 +478,19 @@ class ComplexityAnalyzer(ASTVisitor[None]):
         self.visit(node.range)
 
     def visit_meta(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_module_reference(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)
 
     def visit_comment(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_comment_group(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_defined_expression(self, node) -> None:
         self.visit(node.expression)
@@ -494,25 +501,25 @@ class ComplexityAnalyzer(ASTVisitor[None]):
 
     # Add missing abstract methods
     def visit_extern_import(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_extern_namespace(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_extern_rule(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_extern_rule_reference(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_in_rule_pragma(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_pragma(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_pragma_block(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
 
 @dataclass
@@ -530,7 +537,7 @@ class ComplexityReport:
 class ComplexityCalculator(ASTVisitor[int]):
     """Calculate complexity scores for AST nodes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._cognitive_depth = 0
         self._in_logical_op = False
 
@@ -825,7 +832,7 @@ def calculate_cognitive_complexity(expr: ASTNode) -> int:
     base_complexity = calc.calculate(expr)
 
     # Add extra complexity for nesting
-    if isinstance(expr, (ForExpression, ForOfExpression)):
+    if isinstance(expr, ForExpression | ForOfExpression):
         return base_complexity + 3
 
     return base_complexity
@@ -850,7 +857,7 @@ def generate_complexity_report(ast: YaraFile) -> dict[str, Any]:
                 "cognitive_complexity": cognitive,
                 "strings": len(rule.strings) if rule.strings else 0,
                 "modifiers": len(rule.modifiers),
-            }
+            },
         )
 
     return {
@@ -859,7 +866,10 @@ def generate_complexity_report(ast: YaraFile) -> dict[str, Any]:
             "total_rules": len(ast.rules),
             "avg_complexity": sum(r["total_complexity"] for r in rules_data)
             / max(1, len(rules_data)),
-            "max_complexity": max((r["total_complexity"] for r in rules_data), default=0),
+            "max_complexity": max(
+                (r["total_complexity"] for r in rules_data),
+                default=0,
+            ),
             "quality_score": metrics.get_quality_score(),
             "quality_grade": metrics.get_complexity_grade(),
         },

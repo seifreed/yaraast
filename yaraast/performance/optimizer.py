@@ -2,21 +2,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.optimization.rule_optimizer import RuleOptimizer
 from yaraast.performance.memory_optimizer import MemoryOptimizer
 
-if TYPE_CHECKING:
-    pass
-
 
 class PerformanceOptimizer:
     """Optimizes YARA rules for better runtime performance."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.rule_optimizer = RuleOptimizer()
         self.memory_optimizer = MemoryOptimizer()
         self._stats = {
@@ -25,7 +22,11 @@ class PerformanceOptimizer:
             "strings_optimized": 0,
         }
 
-    def optimize(self, target: Rule | YaraFile, strategy: str = "balanced") -> Rule | YaraFile:
+    def optimize(
+        self,
+        target: Rule | YaraFile,
+        strategy: str = "balanced",
+    ) -> Rule | YaraFile:
         """Optimize a rule or file for performance.
 
         Args:
@@ -34,44 +35,48 @@ class PerformanceOptimizer:
 
         Returns:
             Optimized rule or file
+
         """
         if isinstance(target, Rule):
             return self.optimize_rule(target, strategy)
-        elif isinstance(target, YaraFile):
+        if isinstance(target, YaraFile):
             return self.optimize_file(target, strategy)
-        else:
-            return target
+        return target
 
     def optimize_rule(self, rule: Rule, strategy: str = "balanced") -> Rule:
         """Optimize a single rule."""
         # Apply rule optimizations
-        optimized = self.rule_optimizer.optimize_rule(rule)
+        _ = self.rule_optimizer.optimize_rule(rule)
 
         # Apply memory optimizations if needed
         if strategy in ("memory", "balanced"):
-            optimized = self.memory_optimizer.optimize_rule(optimized)
+            _ = self.memory_optimizer.optimize_rule(rule)
 
         # Apply performance-specific optimizations
         if strategy in ("speed", "balanced"):
-            optimized = self._optimize_for_speed(optimized)
+            _ = self._optimize_for_speed(rule)
 
         self._stats["rules_optimized"] += 1
-        return optimized
+        return rule
 
-    def optimize_file(self, yara_file: YaraFile, strategy: str = "balanced") -> YaraFile:
+    def optimize_file(
+        self,
+        yara_file: YaraFile,
+        strategy: str = "balanced",
+    ) -> YaraFile:
         """Optimize an entire YARA file."""
         # Apply file-level optimizations
-        optimized = self.rule_optimizer.optimize_file(yara_file)
+        _ = self.rule_optimizer.optimize_file(yara_file)
 
         # Apply memory optimizations if needed
         if strategy in ("memory", "balanced"):
-            optimized = self.memory_optimizer.optimize(optimized)
+            _ = self.memory_optimizer.optimize(yara_file)
 
         # Apply performance-specific optimizations
         if strategy in ("speed", "balanced"):
-            optimized = self._optimize_file_for_speed(optimized)
+            _ = self._optimize_file_for_speed(yara_file)
 
-        return optimized
+        return yara_file
 
     def _optimize_for_speed(self, rule: Rule) -> Rule:
         """Apply speed-specific optimizations to a rule."""
@@ -142,7 +147,9 @@ class PerformanceOptimizer:
 
 
 def optimize_yara_file(
-    file_path: str, output_path: str | None = None, strategy: str = "balanced"
+    file_path: str,
+    output_path: str | None = None,
+    strategy: str = "balanced",
 ) -> tuple[YaraFile, dict[str, Any]]:
     """Optimize a YARA file for performance.
 
@@ -153,6 +160,7 @@ def optimize_yara_file(
 
     Returns:
         Tuple of (optimized AST, statistics)
+
     """
     from yaraast.parser import Parser
 
@@ -164,7 +172,7 @@ def optimize_yara_file(
 
     # Optimize
     optimizer = PerformanceOptimizer()
-    optimized = optimizer.optimize(ast, strategy)
+    _ = optimizer.optimize(ast, strategy)
     stats = optimizer.get_statistics()
 
     # Write output if requested
@@ -172,8 +180,8 @@ def optimize_yara_file(
         from yaraast.codegen import CodeGenerator
 
         gen = CodeGenerator()
-        output = gen.generate(optimized)
+        output = gen.generate(ast)
         with open(output_path, "w") as f:
             f.write(output)
 
-    return optimized, stats
+    return ast, stats

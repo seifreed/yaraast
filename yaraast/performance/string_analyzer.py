@@ -6,12 +6,11 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 
 if TYPE_CHECKING:
-    pass
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.rules import Rule
 
 
 @dataclass
@@ -29,7 +28,7 @@ class StringPerformanceIssue:
 class StringPatternAnalyzer:
     """Analyzes string patterns in YARA rules for optimization opportunities."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize string pattern analyzer."""
         self._stats = {
             "total_strings": 0,
@@ -41,7 +40,10 @@ class StringPatternAnalyzer:
             "common_suffixes": 0,
         }
 
-    def analyze_patterns(self, patterns: list[str | StringDefinition]) -> dict[str, Any]:
+    def analyze_patterns(
+        self,
+        patterns: list[str | StringDefinition],
+    ) -> dict[str, Any]:
         """Analyze a list of string patterns.
 
         Args:
@@ -49,6 +51,7 @@ class StringPatternAnalyzer:
 
         Returns:
             Analysis results
+
         """
         # Extract string values
         string_values = []
@@ -74,7 +77,10 @@ class StringPatternAnalyzer:
             "length_statistics": lengths,
             "pattern_types": self._categorize_patterns(patterns),
             "optimization_opportunities": self._find_optimizations(
-                string_values, duplicates, prefixes, suffixes
+                string_values,
+                duplicates,
+                prefixes,
+                suffixes,
             ),
         }
 
@@ -86,6 +92,7 @@ class StringPatternAnalyzer:
 
         Returns:
             String analysis for the rule
+
         """
         if not rule.strings:
             return {"rule": rule.name, "strings": 0, "analysis": None}
@@ -103,6 +110,7 @@ class StringPatternAnalyzer:
 
         Returns:
             Comprehensive string analysis
+
         """
         all_strings = []
         rule_analyses = []
@@ -133,7 +141,9 @@ class StringPatternAnalyzer:
         return duplicates
 
     def _find_common_prefixes(
-        self, strings: list[str], min_length: int = 3
+        self,
+        strings: list[str],
+        min_length: int = 3,
     ) -> dict[str, list[str]]:
         """Find common prefixes among strings."""
         prefixes = defaultdict(list)
@@ -151,7 +161,9 @@ class StringPatternAnalyzer:
         return common
 
     def _find_common_suffixes(
-        self, strings: list[str], min_length: int = 3
+        self,
+        strings: list[str],
+        min_length: int = 3,
     ) -> dict[str, list[str]]:
         """Find common suffixes among strings."""
         suffixes = defaultdict(list)
@@ -188,7 +200,10 @@ class StringPatternAnalyzer:
             "distribution": dict(length_dist),
         }
 
-    def _categorize_patterns(self, patterns: list[str | StringDefinition]) -> dict[str, int]:
+    def _categorize_patterns(
+        self,
+        patterns: list[str | StringDefinition],
+    ) -> dict[str, int]:
         """Categorize patterns by type."""
         categories = {
             "plain": 0,
@@ -231,7 +246,7 @@ class StringPatternAnalyzer:
                     "impact": "high",
                     "description": f"Found {len(duplicates)} duplicate strings",
                     "strings": list(duplicates.keys()),
-                }
+                },
             )
 
         # Prefix optimization
@@ -242,7 +257,7 @@ class StringPatternAnalyzer:
                     "impact": "medium",
                     "description": f"Found {len(prefixes)} common prefixes",
                     "prefixes": list(prefixes.keys())[:10],
-                }
+                },
             )
 
         # String pooling
@@ -255,7 +270,7 @@ class StringPatternAnalyzer:
                     "impact": "medium",
                     "description": f"String pooling could save {total_size - unique_size} bytes",
                     "savings": total_size - unique_size,
-                }
+                },
             )
 
         return optimizations
@@ -309,6 +324,7 @@ def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
 
     Returns:
         List of performance issues found
+
     """
     issues = []
 
@@ -324,7 +340,7 @@ def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
                         severity="warning",
                         description="Regular expression may have performance impact",
                         suggestion="Consider using plain strings or hex patterns when possible",
-                    )
+                    ),
                 )
             elif isinstance(string_def, PlainString) and len(string_def.value) < 3:
                 issues.append(
@@ -335,7 +351,7 @@ def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
                         severity="info",
                         description="Very short string may cause false positives",
                         suggestion="Use longer, more specific strings when possible",
-                    )
+                    ),
                 )
 
     return issues

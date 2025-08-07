@@ -7,7 +7,7 @@ from yaraast.parser import Parser
 class TestStringMatcher:
     """Test string matching functionality."""
 
-    def test_plain_string_match(self):
+    def test_plain_string_match(self) -> None:
         """Test plain string matching."""
         from yaraast.ast.strings import PlainString
 
@@ -34,7 +34,7 @@ class TestStringMatcher:
         assert matches["$a"][0].offset == 0
         assert matches["$b"][0].offset == 23  # "test" appears at position 23
 
-    def test_nocase_modifier(self):
+    def test_nocase_modifier(self) -> None:
         """Test case-insensitive matching."""
         from yaraast.ast.strings import PlainString, StringModifier
 
@@ -48,12 +48,14 @@ class TestStringMatcher:
 
         # Case-insensitive (match)
         string2 = PlainString(
-            identifier="$b", value="hello", modifiers=[StringModifier(name="nocase")]
+            identifier="$b",
+            value="hello",
+            modifiers=[StringModifier(name="nocase")],
         )
         matches = matcher.match_all(data, [string2])
         assert len(matches["$b"]) == 1
 
-    def test_wide_modifier(self):
+    def test_wide_modifier(self) -> None:
         """Test wide string matching."""
         from yaraast.ast.strings import PlainString, StringModifier
 
@@ -62,12 +64,14 @@ class TestStringMatcher:
         data = b"H\x00e\x00l\x00l\x00o\x00"
 
         string = PlainString(
-            identifier="$a", value="Hello", modifiers=[StringModifier(name="wide")]
+            identifier="$a",
+            value="Hello",
+            modifiers=[StringModifier(name="wide")],
         )
         matches = matcher.match_all(data, [string])
         assert len(matches["$a"]) == 1
 
-    def test_hex_string_match(self):
+    def test_hex_string_match(self) -> None:
         """Test hex string matching."""
         from yaraast.ast.strings import HexByte, HexString
 
@@ -90,7 +94,7 @@ class TestStringMatcher:
         assert len(matches["$hex1"]) == 1
         assert matches["$hex1"][0].offset == 0
 
-    def test_hex_wildcard(self):
+    def test_hex_wildcard(self) -> None:
         """Test hex string with wildcards."""
         from yaraast.ast.strings import HexByte, HexString, HexWildcard
 
@@ -112,7 +116,7 @@ class TestStringMatcher:
         matches = matcher.match_all(data, [hex_string])
         assert len(matches["$hex1"]) == 1
 
-    def test_regex_string(self):
+    def test_regex_string(self) -> None:
         """Test regex string matching."""
         from yaraast.ast.strings import RegexString
 
@@ -130,7 +134,7 @@ class TestStringMatcher:
 class TestYaraEvaluator:
     """Test YARA condition evaluation."""
 
-    def test_simple_string_match(self):
+    def test_simple_string_match(self) -> None:
         """Test simple string matching rule."""
         parser = Parser()
         rule_text = """
@@ -158,7 +162,7 @@ class TestYaraEvaluator:
 
         assert results2["test_rule"] is False
 
-    def test_string_count(self):
+    def test_string_count(self) -> None:
         """Test string count functionality."""
         parser = Parser()
         rule_text = """
@@ -178,7 +182,7 @@ class TestYaraEvaluator:
 
         assert results["count_test"] is True
 
-    def test_string_at(self):
+    def test_string_at(self) -> None:
         """Test string at specific offset."""
         parser = Parser()
         rule_text = """
@@ -201,7 +205,7 @@ class TestYaraEvaluator:
         evaluator2 = YaraEvaluator(data2)
         assert evaluator2.evaluate_file(ast)["at_test"] is False
 
-    def test_of_expression(self):
+    def test_of_expression(self) -> None:
         """Test 'of' expression."""
         parser = Parser()
         rule_text = """
@@ -226,7 +230,7 @@ class TestYaraEvaluator:
         evaluator2 = YaraEvaluator(data2)
         assert evaluator2.evaluate_file(ast)["of_test"] is False
 
-    def test_filesize(self):
+    def test_filesize(self) -> None:
         """Test filesize built-in."""
         parser = Parser()
         rule_text = """
@@ -247,7 +251,7 @@ class TestYaraEvaluator:
         evaluator2 = YaraEvaluator(data2)
         assert evaluator2.evaluate_file(ast)["size_test"] is False
 
-    def test_integer_functions(self):
+    def test_integer_functions(self) -> None:
         """Test integer reading functions."""
         parser = Parser()
         rule_text = """
@@ -264,7 +268,7 @@ class TestYaraEvaluator:
         evaluator = YaraEvaluator(data)
         assert evaluator.evaluate_file(ast)["int_test"] is True
 
-    def test_pe_module(self):
+    def test_pe_module(self) -> None:
         """Test PE module functionality."""
         parser = Parser()
         rule_text = """
@@ -289,7 +293,7 @@ class TestYaraEvaluator:
 
         assert results["pe_test"] is True
 
-    def test_math_module(self):
+    def test_math_module(self) -> None:
         """Test math module functionality."""
         parser = Parser()
         rule_text = """
@@ -314,7 +318,7 @@ class TestYaraEvaluator:
         # Random data should have high entropy
         assert results["entropy_test"] is True
 
-    def test_for_expression(self):
+    def test_for_expression(self) -> None:
         """Test for loop expression."""
         parser = Parser()
         rule_text = """
@@ -334,7 +338,7 @@ class TestYaraEvaluator:
 
         assert results["for_test"] is True
 
-    def test_module_alias(self):
+    def test_module_alias(self) -> None:
         """Test module import with alias."""
         parser = Parser()
         rule_text = """
@@ -354,7 +358,7 @@ class TestYaraEvaluator:
 
         assert results["alias_test"] is True
 
-    def test_complex_condition(self):
+    def test_complex_condition(self) -> None:
         """Test complex nested conditions."""
         parser = Parser()
         rule_text = """
@@ -381,7 +385,7 @@ class TestYaraEvaluator:
 class TestMockModules:
     """Test mock module implementations."""
 
-    def test_mock_pe(self):
+    def test_mock_pe(self) -> None:
         """Test MockPE functionality."""
         # Valid PE data
         # MZ header (64 bytes total)
@@ -402,7 +406,7 @@ class TestMockModules:
         assert pe.number_of_sections == 3
         assert pe.is_dll is True  # 0x2000 bit is set
 
-    def test_mock_math(self):
+    def test_mock_math(self) -> None:
         """Test MockMath functionality."""
         data = b"\x00" * 100
         math = MockMath(data)
@@ -418,7 +422,7 @@ class TestMockModules:
         # All zeros should have entropy of 0
         assert math.entropy(0, 50) == 0.0
 
-    def test_module_registry(self):
+    def test_module_registry(self) -> None:
         """Test module registry."""
         registry = MockModuleRegistry()
         data = b"test data"

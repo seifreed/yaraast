@@ -5,7 +5,7 @@ from yaraast.optimization import DeadCodeEliminator, ExpressionOptimizer, RuleOp
 from yaraast.parser import Parser
 
 
-def test_constant_folding():
+def test_constant_folding() -> None:
     """Test constant folding optimization."""
     yara_code = """
 rule constant_folding_test {
@@ -33,7 +33,7 @@ rule constant_folding_test {
     assert "20 == 20" in output or "true" in output
 
 
-def test_boolean_simplification():
+def test_boolean_simplification() -> None:
     """Test boolean expression simplification."""
     yara_code = """
 rule boolean_test {
@@ -56,7 +56,7 @@ rule boolean_test {
     assert count >= 3  # At least 3 simplifications
 
 
-def test_dead_code_elimination():
+def test_dead_code_elimination() -> None:
     """Test dead code elimination."""
     yara_code = """
 rule dead_code_test {
@@ -96,7 +96,7 @@ rule normal_rule {
     assert dead_code_rule.strings[0].identifier == "$used"
 
 
-def test_comprehensive_optimization():
+def test_comprehensive_optimization() -> None:
     """Test comprehensive optimization with multiple passes."""
     yara_code = """
 rule optimize_me {
@@ -134,7 +134,7 @@ rule optimize_me {
     assert "optimization_breakdown" in report
 
 
-def test_nested_expression_optimization():
+def test_nested_expression_optimization() -> None:
     """Test optimization of nested expressions."""
     yara_code = """
 rule nested_test {
@@ -162,7 +162,7 @@ rule nested_test {
     assert len(output) < len(yara_code)
 
 
-def test_range_optimization():
+def test_range_optimization() -> None:
     """Test range expression optimization."""
     yara_code = """
 rule range_test {
@@ -185,7 +185,7 @@ rule range_test {
     assert stats["expression_optimizations"] > 0
 
 
-def test_set_expression_optimization():
+def test_set_expression_optimization() -> None:
     """Test set expression optimization."""
     yara_code = """
 rule set_test {

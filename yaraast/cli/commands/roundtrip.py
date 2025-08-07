@@ -17,9 +17,8 @@ from yaraast.serialization.simple_roundtrip import simple_roundtrip_test
 
 
 @click.group()
-def roundtrip():
-    """
-    Round-trip serialization and pretty printing commands.
+def roundtrip() -> None:
+    """Round-trip serialization and pretty printing commands.
 
     These commands provide advanced serialization features including:
     - Round-trip YARA ↔ AST conversion with preservation
@@ -60,16 +59,14 @@ def serialize(
     output: Path | None,
     preserve_comments: bool,
     preserve_formatting: bool,
-):
-    """
-    Serialize YARA file to JSON/YAML with round-trip metadata.
+) -> None:
+    """Serialize YARA file to JSON/YAML with round-trip metadata.
 
     This command parses a YARA file and serializes it with metadata
     needed for perfect round-trip conversion, preserving comments
     and formatting information.
 
     Examples:
-
         # Serialize to JSON with full preservation
         yaraast roundtrip serialize rules.yar --format json -o rules.json
 
@@ -78,6 +75,7 @@ def serialize(
 
         # Minimal serialization without comments
         yaraast roundtrip serialize rules.yar --no-comments
+
     """
     try:
         # Read input file
@@ -86,12 +84,15 @@ def serialize(
 
         # Create serializer
         serializer = RoundTripSerializer(
-            preserve_comments=preserve_comments, preserve_formatting=preserve_formatting
+            preserve_comments=preserve_comments,
+            preserve_formatting=preserve_formatting,
         )
 
         # Parse and serialize
         ast, serialized = serializer.parse_and_serialize(
-            yara_source, source_file=str(input_file), format=format
+            yara_source,
+            source_file=str(input_file),
+            format=format,
         )
 
         # Output result
@@ -131,20 +132,24 @@ def serialize(
     default=True,
     help="Use original formatting if available",
 )
-def deserialize(input_file: Path, format: str, output: Path | None, preserve_formatting: bool):
-    """
-    Deserialize JSON/YAML back to YARA code.
+def deserialize(
+    input_file: Path,
+    format: str,
+    output: Path | None,
+    preserve_formatting: bool,
+) -> None:
+    """Deserialize JSON/YAML back to YARA code.
 
     This command takes serialized AST data and generates YARA code,
     optionally preserving the original formatting and comments.
 
     Examples:
-
         # Deserialize JSON back to YARA
         yaraast roundtrip deserialize rules.json -o reconstructed.yar
 
         # Deserialize YAML with default formatting
         yaraast roundtrip deserialize rules.yaml --default-formatting
+
     """
     try:
         # Read serialized data
@@ -176,15 +181,17 @@ def deserialize(input_file: Path, format: str, output: Path | None, preserve_for
         sys.exit(1)
 
 
-def _display_test_success(input_file: Path, result: dict, format: str):
+def _display_test_success(input_file: Path, result: dict, format: str) -> None:
     """Display successful test results."""
     click.echo(f"✅ Round-trip test PASSED for {input_file}")
     click.echo(f"   Format: {format.upper()}")
     click.echo(f"   Original rules: {result['metadata']['original_rule_count']}")
-    click.echo(f"   Reconstructed rules: {result['metadata']['reconstructed_rule_count']}")
+    click.echo(
+        f"   Reconstructed rules: {result['metadata']['reconstructed_rule_count']}",
+    )
 
 
-def _display_test_failure(input_file: Path, result: dict, verbose: bool):
+def _display_test_failure(input_file: Path, result: dict, verbose: bool) -> None:
     """Display failed test results."""
     click.echo(f"❌ Round-trip test FAILED for {input_file}")
     click.echo(f"   Differences found: {len(result['differences'])}")
@@ -195,16 +202,18 @@ def _display_test_failure(input_file: Path, result: dict, verbose: bool):
             click.echo(f"   • {diff}")
 
 
-def _display_verbose_source(result: dict):
+def _display_verbose_source(result: dict) -> None:
     """Display verbose source comparison."""
-    click.echo(f"\nOriginal source ({len(result['original_source'].splitlines())} lines):")
+    click.echo(
+        f"\nOriginal source ({len(result['original_source'].splitlines())} lines):",
+    )
     for i, line in enumerate(result["original_source"].splitlines()[:10], 1):
         click.echo(f"   {i:2d}: {line}")
     if len(result["original_source"].splitlines()) > 10:
         click.echo("      ... (truncated)")
 
     click.echo(
-        f"\nReconstructed source ({len(result['reconstructed_source'].splitlines())} lines):"
+        f"\nReconstructed source ({len(result['reconstructed_source'].splitlines())} lines):",
     )
     for i, line in enumerate(result["reconstructed_source"].splitlines()[:10], 1):
         click.echo(f"   {i:2d}: {line}")
@@ -228,9 +237,8 @@ def _display_verbose_source(result: dict):
     help="Output file for test results",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed comparison results")
-def test(input_file: Path, format: str, output: Path | None, verbose: bool):
-    """
-    Test round-trip conversion fidelity.
+def test(input_file: Path, format: str, output: Path | None, verbose: bool) -> None:
+    """Test round-trip conversion fidelity.
 
     This command performs a complete round-trip test:
     YARA → AST → Serialized → AST → YARA
@@ -239,12 +247,12 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool):
     YARA code, helping validate the preservation quality.
 
     Examples:
-
         # Test round-trip with JSON
         yaraast roundtrip test rules.yar --format json
 
         # Detailed test with YAML output
         yaraast roundtrip test rules.yar --format yaml --verbose -o test_results.json
+
     """
     try:
         # Read input file
@@ -294,7 +302,11 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool):
 )
 @click.option("--indent-size", type=int, default=4, help="Indentation size")
 @click.option("--max-line-length", type=int, default=120, help="Maximum line length")
-@click.option("--align-strings/--no-align-strings", default=True, help="Align string definitions")
+@click.option(
+    "--align-strings/--no-align-strings",
+    default=True,
+    help="Align string definitions",
+)
 @click.option("--align-meta/--no-align-meta", default=True, help="Align meta values")
 @click.option(
     "--sort-imports/--preserve-import-order",
@@ -312,15 +324,13 @@ def pretty(
     align_meta: bool,
     sort_imports: bool,
     sort_tags: bool,
-):
-    """
-    Pretty print YARA file with advanced formatting.
+) -> None:
+    """Pretty print YARA file with advanced formatting.
 
     This command applies advanced formatting options to YARA files,
     including alignment, sorting, and various style presets.
 
     Examples:
-
         # Pretty print with readable style
         yaraast roundtrip pretty rules.yar --style readable -o formatted.yar
 
@@ -329,6 +339,7 @@ def pretty(
 
         # Custom formatting options
         yaraast roundtrip pretty rules.yar --indent-size 2 --max-line-length 100
+
     """
     try:
         # Parse input file
@@ -338,7 +349,8 @@ def pretty(
 
         ast = parser.parse(yara_source)
         if not ast:
-            raise ValueError("Failed to parse YARA file")
+            msg = "Failed to parse YARA file"
+            raise ValueError(msg)
 
         # Create pretty print options
         if style == "compact":
@@ -398,15 +410,13 @@ def pipeline(
     output: Path | None,
     pipeline_info: str | None,
     include_manifest: bool,
-):
-    """
-    Serialize YARA file for CI/CD pipeline use.
+) -> None:
+    """Serialize YARA file for CI/CD pipeline use.
 
     This command creates a YAML serialization optimized for CI/CD
     pipelines, including metadata for automated processing.
 
     Examples:
-
         # Basic pipeline serialization
         yaraast roundtrip pipeline rules.yar -o pipeline.yaml
 
@@ -415,6 +425,7 @@ def pipeline(
 
         # Include rules manifest
         yaraast roundtrip pipeline rules.yar --include-manifest
+
     """
     try:
         # Parse input file
@@ -424,7 +435,8 @@ def pipeline(
 
         ast = parser.parse(yara_source)
         if not ast:
-            raise ValueError("Failed to parse YARA file")
+            msg = "Failed to parse YARA file"
+            raise ValueError(msg)
 
         # Parse pipeline info if provided
         pipeline_data = None

@@ -11,7 +11,7 @@ try:
     from yaraast.types.semantic_validator import SemanticValidator, ValidationResult
 except ImportError:
     # Fallback for running within the package
-    from ...types.semantic_validator import SemanticValidator, ValidationResult
+    from yaraast.types.semantic_validator import SemanticValidator, ValidationResult
 
 
 def _process_file(file_path: Path, parser, validator, quiet: bool):
@@ -42,7 +42,7 @@ def _process_file(file_path: Path, parser, validator, quiet: bool):
     return result
 
 
-def _add_file_to_issues(issues, file_path: Path):
+def _add_file_to_issues(issues, file_path: Path) -> None:
     """Add file path to all issues."""
     from yaraast.ast.base import Location
 
@@ -68,9 +68,21 @@ def _add_file_to_issues(issues, file_path: Path):
     default="text",
     help="Output format",
 )
-@click.option("--warnings/--no-warnings", default=True, help="Include warnings in output")
-@click.option("--suggestions/--no-suggestions", default=True, help="Include suggestions in output")
-@click.option("--strict", is_flag=True, help="Treat warnings as errors (exit with non-zero code)")
+@click.option(
+    "--warnings/--no-warnings",
+    default=True,
+    help="Include warnings in output",
+)
+@click.option(
+    "--suggestions/--no-suggestions",
+    default=True,
+    help="Include suggestions in output",
+)
+@click.option(
+    "--strict",
+    is_flag=True,
+    help="Treat warnings as errors (exit with non-zero code)",
+)
 @click.option(
     "--quiet",
     "-q",
@@ -85,9 +97,8 @@ def semantic(
     suggestions: bool,
     strict: bool,
     quiet: bool,
-):
-    """
-    Perform semantic validation on YARA files.
+) -> None:
+    """Perform semantic validation on YARA files.
 
     This command validates:
     - String identifier uniqueness per rule
@@ -96,7 +107,6 @@ def semantic(
     - Type compatibility and other semantic rules
 
     Examples:
-
         # Validate single file
         yaraast semantic rule.yar
 
@@ -108,6 +118,7 @@ def semantic(
 
         # Quiet mode - only show issues
         yaraast semantic rule.yar --quiet
+
     """
     if not files:
         click.echo("Error: No files provided", err=True)
@@ -133,7 +144,7 @@ def semantic(
                     "errors": [error.to_dict() for error in result.errors],
                     "warnings": [warning.to_dict() for warning in result.warnings],
                     "total_issues": result.total_issues,
-                }
+                },
             )
 
             total_errors += len(result.errors)
@@ -172,7 +183,7 @@ def _display_text_results(
     show_warnings: bool,
     show_suggestions: bool,
     quiet: bool,
-):
+) -> None:
     """Display validation results in text format."""
     if result.errors:
         for error in result.errors:
@@ -184,7 +195,9 @@ def _display_text_results(
         for warning in result.warnings:
             click.echo(click.style(str(warning), fg="yellow"))
             if show_suggestions and warning.suggestion:
-                click.echo(click.style(f"  Suggestion: {warning.suggestion}", fg="blue"))
+                click.echo(
+                    click.style(f"  Suggestion: {warning.suggestion}", fg="blue"),
+                )
 
     if not quiet:
         if result.is_valid and not result.warnings:
@@ -194,13 +207,15 @@ def _display_text_results(
                 click.style(
                     f"✓ {file_path}: Valid with {len(result.warnings)} warnings",
                     fg="yellow",
-                )
+                ),
             )
         else:
-            click.echo(click.style(f"✗ {file_path}: {len(result.errors)} errors", fg="red"))
+            click.echo(
+                click.style(f"✗ {file_path}: {len(result.errors)} errors", fg="red"),
+            )
 
 
-def _display_summary(total_files: int, total_errors: int, total_warnings: int):
+def _display_summary(total_files: int, total_errors: int, total_warnings: int) -> None:
     """Display validation summary."""
     click.echo()
     click.echo(f"Validated {total_files} file(s)")
@@ -215,7 +230,7 @@ def _display_summary(total_files: int, total_errors: int, total_warnings: int):
         click.echo(click.style("All files passed validation", fg="green"))
 
 
-def _write_output_file(output_path: Path, results: list[dict], format: str):
+def _write_output_file(output_path: Path, results: list[dict], format: str) -> None:
     """Write validation results to output file."""
     with Path(output_path).open("w", encoding="utf-8") as f:
         if format == "json":
@@ -233,7 +248,7 @@ def _write_output_file(output_path: Path, results: list[dict], format: str):
                     if error.get("location"):
                         loc = error["location"]
                         f.write(
-                            f"  Location: {loc.get('file', 'unknown')}:{loc.get('line', 0)}:{loc.get('column', 0)}\n"
+                            f"  Location: {loc.get('file', 'unknown')}:{loc.get('line', 0)}:{loc.get('column', 0)}\n",
                         )
                     if error.get("suggestion"):
                         f.write(f"  Suggestion: {error['suggestion']}\n")
@@ -243,7 +258,7 @@ def _write_output_file(output_path: Path, results: list[dict], format: str):
                     if warning.get("location"):
                         loc = warning["location"]
                         f.write(
-                            f"  Location: {loc.get('file', 'unknown')}:{loc.get('line', 0)}:{loc.get('column', 0)}\n"
+                            f"  Location: {loc.get('file', 'unknown')}:{loc.get('line', 0)}:{loc.get('column', 0)}\n",
                         )
                     if warning.get("suggestion"):
                         f.write(f"  Suggestion: {warning['suggestion']}\n")

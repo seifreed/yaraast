@@ -13,19 +13,24 @@ from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+    from yaraast.ast.expressions import Identifier
     from yaraast.ast.rules import Rule
 
 
 class DependencyGraphGenerator(ASTVisitor[None]):
     """Generates dependency graphs from YARA AST."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.dependencies: dict[str, set[str]] = defaultdict(set)
         self.imports: set[str] = set()
         self.includes: set[str] = set()
         self.rules: dict[str, dict[str, Any]] = {}
-        self.string_references: dict[str, set[str]] = defaultdict(set)  # rule -> strings
-        self.module_references: dict[str, set[str]] = defaultdict(set)  # rule -> modules
+        self.string_references: dict[str, set[str]] = defaultdict(
+            set,
+        )  # rule -> strings
+        self.module_references: dict[str, set[str]] = defaultdict(
+            set,
+        )  # rule -> modules
         self._current_rule: str | None = None
 
     def generate_graph(
@@ -62,7 +67,10 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         return dot.source
 
     def generate_rule_graph(
-        self, ast: YaraFile, output_path: str | None = None, format: str = "svg"
+        self,
+        ast: YaraFile,
+        output_path: str | None = None,
+        format: str = "svg",
     ) -> str:
         """Generate rule-only dependency graph."""
         self.visit(ast)
@@ -95,7 +103,10 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         return dot.source
 
     def generate_module_graph(
-        self, ast: YaraFile, output_path: str | None = None, format: str = "svg"
+        self,
+        ast: YaraFile,
+        output_path: str | None = None,
+        format: str = "svg",
     ) -> str:
         """Generate module dependency graph."""
         self.visit(ast)
@@ -171,7 +182,11 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         # Import nodes
         if self.imports:
             with dot.subgraph(name="cluster_imports") as imports_cluster:
-                imports_cluster.attr(label="Imports", style="filled", fillcolor="lightcyan")
+                imports_cluster.attr(
+                    label="Imports",
+                    style="filled",
+                    fillcolor="lightcyan",
+                )
                 imports_cluster.attr("node", shape="box", fillcolor="lightblue")
                 for imp in self.imports:
                     imports_cluster.node(f"import_{imp}", f'"{imp}"')
@@ -179,7 +194,11 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         # Include nodes
         if self.includes:
             with dot.subgraph(name="cluster_includes") as includes_cluster:
-                includes_cluster.attr(label="Includes", style="filled", fillcolor="lightyellow")
+                includes_cluster.attr(
+                    label="Includes",
+                    style="filled",
+                    fillcolor="lightyellow",
+                )
                 includes_cluster.attr("node", shape="note", fillcolor="yellow")
                 for inc in self.includes:
                     includes_cluster.node(f"include_{inc}", f'"{inc}"')
@@ -236,13 +255,15 @@ class DependencyGraphGenerator(ASTVisitor[None]):
             "total_includes": len(self.includes),
             "rules_with_strings": sum(1 for r in self.rules.values() if r["string_count"] > 0),
             "rules_using_modules": len(
-                [r for r in self.module_references if self.module_references[r]]
+                [r for r in self.module_references if self.module_references[r]],
             ),
             "most_used_modules": sorted(
                 [
                     (
                         mod,
-                        len([refs for refs in self.module_references.values() if mod in refs]),
+                        len(
+                            [refs for refs in self.module_references.values() if mod in refs],
+                        ),
                     )
                     for mod in self.imports
                 ],
@@ -312,79 +333,79 @@ class DependencyGraphGenerator(ASTVisitor[None]):
 
     # Required visitor methods (minimal implementations)
     def visit_import(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_include(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_tag(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_definition(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_plain_string(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_string(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_regex_string(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_modifier(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_token(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_byte(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_wildcard(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_jump(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_alternative(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_nibble(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_identifier(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_identifier(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_count(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_offset(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_length(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_integer_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_double_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_regex_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_boolean_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_binary_expression(self, node) -> None:
         self.visit(node.left)
@@ -409,7 +430,7 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         self.visit(node.index)
 
     def visit_condition(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_for_expression(self, node) -> None:
         self.visit(node.iterable)
@@ -433,7 +454,7 @@ class DependencyGraphGenerator(ASTVisitor[None]):
             self.visit(node.string_set)
 
     def visit_meta(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_module_reference(self, node) -> None:
         if self._current_rule:
@@ -443,10 +464,10 @@ class DependencyGraphGenerator(ASTVisitor[None]):
         self.visit(node.object)
 
     def visit_comment(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_comment_group(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_defined_expression(self, node) -> None:
         self.visit(node.expression)
@@ -457,37 +478,37 @@ class DependencyGraphGenerator(ASTVisitor[None]):
 
     def visit_extern_import(self, node) -> None:
         """Visit ExternImport node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_extern_namespace(self, node) -> None:
         """Visit ExternNamespace node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_extern_rule(self, node) -> None:
         """Visit ExternRule node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_extern_rule_reference(self, node) -> None:
         """Visit ExternRuleReference node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_in_rule_pragma(self, node) -> None:
         """Visit InRulePragma node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_pragma(self, node) -> None:
         """Visit Pragma node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_pragma_block(self, node) -> None:
         """Visit PragmaBlock node."""
-        pass
+        # Implementation intentionally empty
 
 
 class DependencyGraph:
     """Simple dependency graph implementation."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.nodes: set[str] = set()
         self.edges: dict[str, set[str]] = defaultdict(set)
         self._reverse_edges: dict[str, set[str]] = defaultdict(set)
@@ -549,11 +570,10 @@ def build_dependency_graph(ast: YaraFile) -> DependencyGraph:
         graph.add_node(rule.name)
 
     # Analyze dependencies
-    from yaraast.ast.expressions import Identifier
     from yaraast.visitor import ASTVisitor
 
     class DependencyFinder(ASTVisitor[None]):
-        def __init__(self, current_rule: str, all_rules: set[str]):
+        def __init__(self, current_rule: str, all_rules: set[str]) -> None:
             self.current_rule = current_rule
             self.all_rules = all_rules
             self.dependencies = set()
@@ -788,7 +808,7 @@ def find_circular_dependencies(graph: DependencyGraph) -> list[list[str]]:
             elif neighbor in rec_stack:
                 # Found cycle
                 cycle_start = path.index(neighbor)
-                cycle = path[cycle_start:] + [neighbor]
+                cycle = [*path[cycle_start:], neighbor]
                 # Normalize cycle (start with smallest node)
                 min_idx = cycle.index(min(cycle))
                 normalized = cycle[min_idx:] + cycle[:min_idx]
@@ -853,7 +873,9 @@ def generate_dot_graph(graph: DependencyGraph) -> str:
 
 
 def export_dependency_graph(
-    graph: DependencyGraph, output_path: str | Path, format: str = "json"
+    graph: DependencyGraph,
+    output_path: str | Path,
+    format: str = "json",
 ) -> None:
     """Export dependency graph to file."""
     output_path = Path(output_path)
@@ -865,4 +887,5 @@ def export_dependency_graph(
         with open(output_path, "w") as f:
             f.write(generate_dot_graph(graph))
     else:
-        raise ValueError(f"Unsupported format: {format}")
+        msg = f"Unsupported format: {format}"
+        raise ValueError(msg)

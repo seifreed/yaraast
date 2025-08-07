@@ -58,7 +58,7 @@ class DirectCompilationResult:
         )
 
 
-from yaraast.libyara.ast_optimizer import ASTOptimizer  # noqa: E402
+from yaraast.libyara.ast_optimizer import ASTOptimizer
 
 
 class DirectASTCompiler:
@@ -69,17 +69,19 @@ class DirectASTCompiler:
         externals: dict[str, Any] | None = None,
         enable_optimization: bool = True,
         debug_mode: bool = False,
-    ):
+    ) -> None:
         """Initialize direct compiler.
 
         Args:
             externals: External variables for YARA compilation
             enable_optimization: Apply AST optimizations before compilation
             debug_mode: Generate source code for debugging
+
         """
         if not YARA_AVAILABLE:
+            msg = "yara-python is not installed. Install it with: pip install yara-python"
             raise ImportError(
-                "yara-python is not installed. Install it with: pip install yara-python"
+                msg,
             )
 
         self.externals = externals or {}
@@ -112,6 +114,7 @@ class DirectASTCompiler:
 
         Returns:
             DirectCompilationResult with compiled rules or errors
+
         """
         import time
 
@@ -141,7 +144,9 @@ class DirectASTCompiler:
             # Step 4: Compile using libyara with generated source
             # (For now, still uses text compilation but with optimized AST)
             compile_result = self._compile_optimized_source(
-                source_code, includes=includes, error_on_warning=error_on_warning
+                source_code,
+                includes=includes,
+                error_on_warning=error_on_warning,
             )
 
             compilation_time = time.time() - start_time
@@ -149,7 +154,9 @@ class DirectASTCompiler:
 
             if compile_result.success:
                 self.compilation_stats["successful_compilations"] += 1
-                self.compilation_stats["total_rules_compiled"] += len(optimized_ast.rules)
+                self.compilation_stats["total_rules_compiled"] += len(
+                    optimized_ast.rules,
+                )
             else:
                 self.compilation_stats["failed_compilations"] += 1
 
@@ -182,6 +189,7 @@ class DirectASTCompiler:
 
         Returns:
             Generated YARA source code
+
         """
         return self._generate_optimized_source(ast)
 
@@ -245,15 +253,17 @@ class DirectASTCompiler:
 class OptimizedMatcher:
     """Optimized matcher using AST structure for efficient scanning."""
 
-    def __init__(self, rules: Any, ast: YaraFile | None = None):
+    def __init__(self, rules: Any, ast: YaraFile | None = None) -> None:
         """Initialize optimized matcher.
 
         Args:
             rules: Compiled yara.Rules object
             ast: Original AST for optimization hints
+
         """
         if not YARA_AVAILABLE:
-            raise ImportError("yara-python is not installed.")
+            msg = "yara-python is not installed."
+            raise ImportError(msg)
 
         self.rules = rules
         self.ast = ast
@@ -281,6 +291,7 @@ class OptimizedMatcher:
 
         Returns:
             Enhanced scan result with AST context
+
         """
         import time
 
@@ -306,7 +317,8 @@ class OptimizedMatcher:
                 scan_args["pid"] = data
                 data_size = 0  # Unknown for process scans
             else:
-                raise ValueError(f"Unsupported data type: {type(data)}")
+                msg = f"Unsupported data type: {type(data)}"
+                raise ValueError(msg)
 
             # Perform scan
             matches = self.rules.match(**scan_args)
@@ -353,7 +365,7 @@ class OptimizedMatcher:
                             "offset": instance.offset,
                             "identifier": string_match.identifier,
                             "data": instance.matched_data,
-                        }
+                        },
                     )
 
             enhanced_match = {
@@ -380,7 +392,9 @@ class OptimizedMatcher:
                     "string_count": len(rule.strings),
                     "has_meta": len(rule.meta) > 0,
                     "has_tags": len(rule.tags) > 0,
-                    "condition_complexity": self._estimate_condition_complexity(rule.condition),
+                    "condition_complexity": self._estimate_condition_complexity(
+                        rule.condition,
+                    ),
                 }
 
         return None
@@ -408,11 +422,11 @@ class OptimizedMatcher:
                 ctx = match["ast_context"]
                 if ctx.get("condition_complexity", 0) > 10:
                     hints.append(
-                        f"Rule '{match['rule']}' has complex condition - consider simplification"
+                        f"Rule '{match['rule']}' has complex condition - consider simplification",
                     )
                 if ctx.get("string_count", 0) > 20:
                     hints.append(
-                        f"Rule '{match['rule']}' has many strings - check for unused strings"
+                        f"Rule '{match['rule']}' has many strings - check for unused strings",
                     )
 
         return hints

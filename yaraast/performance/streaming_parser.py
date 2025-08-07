@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-import io
 import mmap
-from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 
 if TYPE_CHECKING:
-    pass
+    import io
+    from collections.abc import Callable, Iterator
+
+    from yaraast.ast.rules import Rule
 
 
 class StreamingParser:
@@ -24,7 +24,7 @@ class StreamingParser:
         max_memory_mb: int | None = None,
         enable_gc: bool = False,
         progress_callback: Callable | None = None,
-    ):
+    ) -> None:
         """Initialize streaming parser.
 
         Args:
@@ -32,6 +32,7 @@ class StreamingParser:
             max_memory_mb: Maximum memory usage in MB (ignored for compatibility)
             enable_gc: Enable garbage collection (ignored for compatibility)
             progress_callback: Progress callback function (ignored for compatibility)
+
         """
         self.buffer_size = buffer_size
         self.max_memory_mb = max_memory_mb
@@ -46,7 +47,9 @@ class StreamingParser:
         }
 
     def parse_file(
-        self, file_path: str | Path, callback: Callable[[Rule], None] | None = None
+        self,
+        file_path: str | Path,
+        callback: Callable[[Rule], None] | None = None,
     ) -> Iterator[Rule]:
         """Parse a YARA file in streaming fashion.
 
@@ -56,6 +59,7 @@ class StreamingParser:
 
         Yields:
             Parsed rules one at a time
+
         """
         file_path = Path(file_path)
 
@@ -67,7 +71,9 @@ class StreamingParser:
             yield from self._parse_mmap(mmapped_file, callback)
 
     def parse_stream(
-        self, stream: io.IOBase, callback: Callable[[Rule], None] | None = None
+        self,
+        stream: io.IOBase,
+        callback: Callable[[Rule], None] | None = None,
     ) -> Iterator[Rule]:
         """Parse a stream of YARA content.
 
@@ -77,6 +83,7 @@ class StreamingParser:
 
         Yields:
             Parsed rules one at a time
+
         """
         buffer = ""
         rule_buffer = []
@@ -135,7 +142,9 @@ class StreamingParser:
                 yield rule
 
     def parse_file_chunked(
-        self, file_path: str | Path, chunk_size: int = 100
+        self,
+        file_path: str | Path,
+        chunk_size: int = 100,
     ) -> Iterator[list[Rule]]:
         """Parse file and yield rules in chunks.
 
@@ -145,6 +154,7 @@ class StreamingParser:
 
         Yields:
             Lists of parsed rules
+
         """
         chunk = []
 
@@ -211,13 +221,13 @@ class StreamingParser:
             yield from self.parse_rules_from_file(file_path)
 
     def parse_directory(
-        self, dir_path: Path, pattern: str = "*.yar", recursive: bool = False
+        self,
+        dir_path: Path,
+        pattern: str = "*.yar",
+        recursive: bool = False,
     ) -> Iterator[Any]:
         """Parse all files in a directory."""
-        if recursive:
-            files = list(dir_path.rglob(pattern))
-        else:
-            files = list(dir_path.glob(pattern))
+        files = list(dir_path.rglob(pattern)) if recursive else list(dir_path.glob(pattern))
 
         yield from self.parse_files(files)
 
@@ -227,10 +237,12 @@ class StreamingParser:
 
     def cancel(self) -> None:
         """Cancel parsing (no-op for this implementation)."""
-        pass
+        # Implementation intentionally empty
 
     def parse_with_progress(
-        self, file_path: str | Path, progress_callback: Callable[[int, int], None]
+        self,
+        file_path: str | Path,
+        progress_callback: Callable[[int, int], None],
     ) -> list[Rule]:
         """Parse file with progress reporting.
 
@@ -240,12 +252,13 @@ class StreamingParser:
 
         Returns:
             List of parsed rules
+
         """
         file_path = Path(file_path)
         file_size = file_path.stat().st_size
         rules = []
 
-        def rule_callback(rule: Rule):
+        def rule_callback(rule: Rule) -> None:
             rules.append(rule)
             progress_callback(self._stats["bytes_processed"], file_size)
 
@@ -253,7 +266,9 @@ class StreamingParser:
         return rules
 
     def _parse_mmap(
-        self, mmapped_file: mmap.mmap, callback: Callable[[Rule], None] | None = None
+        self,
+        mmapped_file: mmap.mmap,
+        callback: Callable[[Rule], None] | None = None,
     ) -> Iterator[Rule]:
         """Parse memory-mapped file content."""
         # Find rule boundaries
@@ -281,7 +296,7 @@ class StreamingParser:
             yara_file = self.parser.parse(rule_text)
             if yara_file.rules:
                 return yara_file.rules[0]
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             self._stats["parse_errors"] += 1
 
         return None
@@ -302,6 +317,7 @@ class StreamingParser:
 
         Returns:
             Memory usage estimates
+
         """
         file_path = Path(file_path)
         file_size = file_path.stat().st_size

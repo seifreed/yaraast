@@ -20,7 +20,7 @@ from yaraast.types.type_system import TypeEnvironment
 class TestValidationError:
     """Tests for ValidationError class."""
 
-    def test_validation_error_basic(self):
+    def test_validation_error_basic(self) -> None:
         """Test basic validation error."""
         error = ValidationError("Test error message")
         assert error.message == "Test error message"
@@ -29,7 +29,7 @@ class TestValidationError:
         assert error.location is None
         assert error.suggestion is None
 
-    def test_validation_error_with_location(self):
+    def test_validation_error_with_location(self) -> None:
         """Test validation error with location."""
         location = Location(line=10, column=5, file="test.yar")
         error = ValidationError("Test error", location=location)
@@ -38,10 +38,14 @@ class TestValidationError:
         assert "test.yar:10:5" in str_repr
         assert "error: Test error" in str_repr
 
-    def test_validation_error_to_dict(self):
+    def test_validation_error_to_dict(self) -> None:
         """Test converting validation error to dictionary."""
         location = Location(line=10, column=5, file="test.yar")
-        error = ValidationError("Test error", location=location, suggestion="Try this fix")
+        error = ValidationError(
+            "Test error",
+            location=location,
+            suggestion="Try this fix",
+        )
 
         result = error.to_dict()
         assert result["message"] == "Test error"
@@ -56,7 +60,7 @@ class TestValidationError:
 class TestValidationResult:
     """Tests for ValidationResult class."""
 
-    def test_validation_result_empty(self):
+    def test_validation_result_empty(self) -> None:
         """Test empty validation result."""
         result = ValidationResult()
         assert result.is_valid is True
@@ -64,7 +68,7 @@ class TestValidationResult:
         assert len(result.warnings) == 0
         assert result.total_issues == 0
 
-    def test_add_error(self):
+    def test_add_error(self) -> None:
         """Test adding an error."""
         result = ValidationResult()
         result.add_error("Test error")
@@ -74,7 +78,7 @@ class TestValidationResult:
         assert result.errors[0].message == "Test error"
         assert result.total_issues == 1
 
-    def test_add_warning(self):
+    def test_add_warning(self) -> None:
         """Test adding a warning."""
         result = ValidationResult()
         result.add_warning("Test warning")
@@ -84,7 +88,7 @@ class TestValidationResult:
         assert result.warnings[0].message == "Test warning"
         assert result.total_issues == 1
 
-    def test_combine_results(self):
+    def test_combine_results(self) -> None:
         """Test combining validation results."""
         result1 = ValidationResult()
         result1.add_error("Error 1")
@@ -112,7 +116,7 @@ class TestStringIdentifierValidator:
             rule.strings.append(string_def)
         return rule
 
-    def test_unique_string_identifiers(self):
+    def test_unique_string_identifiers(self) -> None:
         """Test rule with unique string identifiers."""
         rule = self.create_rule_with_strings(["$a", "$b", "$c"])
         result = ValidationResult()
@@ -122,7 +126,7 @@ class TestStringIdentifierValidator:
         assert result.is_valid is True
         assert len(result.errors) == 0
 
-    def test_duplicate_string_identifiers(self):
+    def test_duplicate_string_identifiers(self) -> None:
         """Test rule with duplicate string identifiers."""
         rule = self.create_rule_with_strings(["$a", "$b", "$a"])
         result = ValidationResult()
@@ -134,7 +138,7 @@ class TestStringIdentifierValidator:
         assert "Duplicate string identifier '$a'" in result.errors[0].message
         assert "test_rule" in result.errors[0].message
 
-    def test_string_identifiers_without_dollar_prefix(self):
+    def test_string_identifiers_without_dollar_prefix(self) -> None:
         """Test handling of string identifiers without $ prefix."""
         rule = self.create_rule_with_strings(["a", "b", "a"])
         result = ValidationResult()
@@ -149,9 +153,12 @@ class TestStringIdentifierValidator:
 class TestFunctionCallValidator:
     """Tests for function call validation."""
 
-    def test_builtin_function_valid_arity(self):
+    def test_builtin_function_valid_arity(self) -> None:
         """Test builtin function with correct arity."""
-        func_call = FunctionCall(function="uint32", arguments=[Identifier(name="offset")])
+        func_call = FunctionCall(
+            function="uint32",
+            arguments=[Identifier(name="offset")],
+        )
 
         env = TypeEnvironment()
         result = ValidationResult()
@@ -161,9 +168,12 @@ class TestFunctionCallValidator:
         assert result.is_valid is True
         assert len(result.errors) == 0
 
-    def test_builtin_function_invalid_arity(self):
+    def test_builtin_function_invalid_arity(self) -> None:
         """Test builtin function with incorrect arity."""
-        func_call = FunctionCall(function="uint32", arguments=[])  # Should have 1 argument
+        func_call = FunctionCall(
+            function="uint32",
+            arguments=[],
+        )  # Should have 1 argument
 
         env = TypeEnvironment()
         result = ValidationResult()
@@ -174,7 +184,7 @@ class TestFunctionCallValidator:
         assert len(result.errors) == 1
         assert "expects at least 1 argument" in result.errors[0].message
 
-    def test_module_function_not_imported(self):
+    def test_module_function_not_imported(self) -> None:
         """Test module function call without import."""
         func_call = FunctionCall(function="pe.imphash", arguments=[])
 
@@ -187,7 +197,7 @@ class TestFunctionCallValidator:
         assert len(result.errors) == 1
         assert "Module 'pe' not imported" in result.errors[0].message
 
-    def test_module_function_imported(self):
+    def test_module_function_imported(self) -> None:
         """Test module function call with import."""
         func_call = FunctionCall(function="pe.imphash", arguments=[])
 
@@ -201,7 +211,7 @@ class TestFunctionCallValidator:
         assert result.is_valid is True
         assert len(result.errors) == 0
 
-    def test_unknown_module_function(self):
+    def test_unknown_module_function(self) -> None:
         """Test unknown function in known module."""
         func_call = FunctionCall(function="pe.unknown_func", arguments=[])
 
@@ -215,7 +225,7 @@ class TestFunctionCallValidator:
         assert len(result.errors) == 1
         assert "Function 'unknown_func' not found in module 'pe'" in result.errors[0].message
 
-    def test_unknown_function_warning(self):
+    def test_unknown_function_warning(self) -> None:
         """Test unknown function generates warning."""
         func_call = FunctionCall(function="unknown_func", arguments=[])
 
@@ -232,7 +242,7 @@ class TestFunctionCallValidator:
 class TestSemanticValidator:
     """Tests for comprehensive semantic validation."""
 
-    def test_valid_yara_file(self):
+    def test_valid_yara_file(self) -> None:
         """Test validation of valid YARA file."""
         yara_code = """
         import "pe"
@@ -255,7 +265,7 @@ class TestSemanticValidator:
         # Should be valid (assuming parser works correctly)
         assert isinstance(result, ValidationResult)
 
-    def test_duplicate_strings_in_rule(self):
+    def test_duplicate_strings_in_rule(self) -> None:
         """Test detection of duplicate string identifiers."""
         yara_code = """
         rule test_rule {
@@ -278,7 +288,7 @@ class TestSemanticValidator:
         assert result.is_valid is False
         assert any("Duplicate string identifier" in error.message for error in result.errors)
 
-    def test_module_function_validation_integration(self):
+    def test_module_function_validation_integration(self) -> None:
         """Test integration of module function validation."""
         yara_code = """
         import "pe"

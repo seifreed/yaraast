@@ -28,11 +28,11 @@ class Section:
 class MockPE:
     """Mock PE module for testing."""
 
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes) -> None:
         self.data = data
         self._parse_headers()
 
-    def _parse_headers(self):
+    def _parse_headers(self) -> None:
         """Parse PE headers from data."""
         # Default values
         self.machine = 0x14C  # IMAGE_FILE_MACHINE_I386
@@ -67,15 +67,21 @@ class MockPE:
                     and len(self.data) >= pe_offset + 24
                 ):
                     coff_offset = pe_offset + 4
-                    self.machine = struct.unpack("<H", self.data[coff_offset : coff_offset + 2])[0]
+                    self.machine = struct.unpack(
+                        "<H",
+                        self.data[coff_offset : coff_offset + 2],
+                    )[0]
                     self.number_of_sections = struct.unpack(
-                        "<H", self.data[coff_offset + 2 : coff_offset + 4]
+                        "<H",
+                        self.data[coff_offset + 2 : coff_offset + 4],
                     )[0]
                     self.timestamp = struct.unpack(
-                        "<I", self.data[coff_offset + 4 : coff_offset + 8]
+                        "<I",
+                        self.data[coff_offset + 4 : coff_offset + 8],
                     )[0]
                     self.characteristics = struct.unpack(
-                        "<H", self.data[coff_offset + 18 : coff_offset + 20]
+                        "<H",
+                        self.data[coff_offset + 18 : coff_offset + 20],
                     )[0]
 
                     # Check if DLL
@@ -84,16 +90,21 @@ class MockPE:
                     # Parse optional header
                     opt_offset = coff_offset + 20
                     if len(self.data) >= opt_offset + 2:
-                        magic = struct.unpack("<H", self.data[opt_offset : opt_offset + 2])[0]
+                        magic = struct.unpack(
+                            "<H",
+                            self.data[opt_offset : opt_offset + 2],
+                        )[0]
                         self.is_32bit = magic == 0x10B
                         self.is_64bit = magic == 0x20B
 
                         if self.is_32bit and len(self.data) >= opt_offset + 28:
                             self.entry_point = struct.unpack(
-                                "<I", self.data[opt_offset + 16 : opt_offset + 20]
+                                "<I",
+                                self.data[opt_offset + 16 : opt_offset + 20],
                             )[0]
                             self.image_base = struct.unpack(
-                                "<I", self.data[opt_offset + 28 : opt_offset + 32]
+                                "<I",
+                                self.data[opt_offset + 28 : opt_offset + 32],
                             )[0]
 
     def imphash(self) -> str:
@@ -129,11 +140,11 @@ class MockPE:
 class MockELF:
     """Mock ELF module for testing."""
 
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes) -> None:
         self.data = data
         self._parse_headers()
 
-    def _parse_headers(self):
+    def _parse_headers(self) -> None:
         """Parse ELF headers from data."""
         # Default values
         self.type = 2  # ET_EXEC
@@ -151,7 +162,7 @@ class MockELF:
 class MockMath:
     """Mock math module for testing."""
 
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes) -> None:
         self.data = data
 
     def abs(self, x: int) -> int:
@@ -180,7 +191,7 @@ class MockMath:
         """Convert string to number."""
         try:
             return int(s, 0)  # Auto-detect base
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return 0
 
     def log(self, x: float) -> float:
@@ -222,7 +233,7 @@ class MockMath:
 class MockDotNet:
     """Mock .NET module for testing."""
 
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes) -> None:
         self.data = data
         self.version = ""
         self.module_name = ""
@@ -241,7 +252,7 @@ class MockDotNet:
 class MockModuleRegistry:
     """Registry of mock modules."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.modules = {
             "pe": MockPE,
             "elf": MockELF,
@@ -262,10 +273,10 @@ class MockModuleRegistry:
         """Get existing module instance."""
         return self.instances.get(name)
 
-    def register_module(self, name: str, module_class: type):
+    def register_module(self, name: str, module_class: type) -> None:
         """Register a custom mock module."""
         self.modules[name] = module_class
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset all module instances."""
         self.instances.clear()

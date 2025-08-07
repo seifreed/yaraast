@@ -97,27 +97,35 @@ class ExpressionBuilder:
     def any_of_them() -> OfExpression:
         """Create 'any of them' expression."""
         return OfExpression(
-            quantifier=StringLiteral(value="any"), string_set=Identifier(name="them")
+            quantifier=StringLiteral(value="any"),
+            string_set=Identifier(name="them"),
         )
 
     @staticmethod
     def all_of_them() -> OfExpression:
         """Create 'all of them' expression."""
         return OfExpression(
-            quantifier=StringLiteral(value="all"), string_set=Identifier(name="them")
+            quantifier=StringLiteral(value="all"),
+            string_set=Identifier(name="them"),
         )
 
     @staticmethod
     def any_of(*strings: str) -> OfExpression:
         """Create 'any of (...)' expression."""
         string_set = ExpressionBuilder.string_set(*strings)
-        return OfExpression(quantifier=StringLiteral(value="any"), string_set=string_set)
+        return OfExpression(
+            quantifier=StringLiteral(value="any"),
+            string_set=string_set,
+        )
 
     @staticmethod
     def all_of(*strings: str) -> OfExpression:
         """Create 'all of (...)' expression."""
         string_set = ExpressionBuilder.string_set(*strings)
-        return OfExpression(quantifier=StringLiteral(value="all"), string_set=string_set)
+        return OfExpression(
+            quantifier=StringLiteral(value="all"),
+            string_set=string_set,
+        )
 
     @staticmethod
     def n_of(n: int, *strings: str) -> OfExpression:
@@ -129,7 +137,8 @@ class ExpressionBuilder:
     def and_(*expressions: Expression) -> Expression:
         """Create AND expression chain."""
         if not expressions:
-            raise ValueError("At least one expression required")
+            msg = "At least one expression required"
+            raise ValueError(msg)
 
         result = expressions[0]
         for expr in expressions[1:]:
@@ -141,7 +150,8 @@ class ExpressionBuilder:
     def or_(*expressions: Expression) -> Expression:
         """Create OR expression chain."""
         if not expressions:
-            raise ValueError("At least one expression required")
+            msg = "At least one expression required"
+            raise ValueError(msg)
 
         result = expressions[0]
         for expr in expressions[1:]:
@@ -166,7 +176,11 @@ class ExpressionBuilder:
         return AtExpression(string_id=string_id, offset=offset_expr)
 
     @staticmethod
-    def in_(string_id: str, start: int | Expression, end: int | Expression) -> InExpression:
+    def in_(
+        string_id: str,
+        start: int | Expression,
+        end: int | Expression,
+    ) -> InExpression:
         """Create 'in' expression."""
         range_expr = ExpressionBuilder.range(start, end)
         return InExpression(string_id=string_id, range=range_expr)
@@ -174,12 +188,22 @@ class ExpressionBuilder:
     @staticmethod
     def for_any(var: str, iterable: Expression, body: Expression) -> ForExpression:
         """Create 'for any' expression."""
-        return ForExpression(quantifier="any", variable=var, iterable=iterable, body=body)
+        return ForExpression(
+            quantifier="any",
+            variable=var,
+            iterable=iterable,
+            body=body,
+        )
 
     @staticmethod
     def for_all(var: str, iterable: Expression, body: Expression) -> ForExpression:
         """Create 'for all' expression."""
-        return ForExpression(quantifier="all", variable=var, iterable=iterable, body=body)
+        return ForExpression(
+            quantifier="all",
+            variable=var,
+            iterable=iterable,
+            body=body,
+        )
 
     @staticmethod
     def function_call(name: str, *args: Expression) -> FunctionCall:

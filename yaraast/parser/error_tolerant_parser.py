@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral, Identifier
@@ -12,9 +12,6 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import PlainString
 from yaraast.parser.better_parser import Parser
-
-if TYPE_CHECKING:
-    pass
 
 
 @dataclass
@@ -30,8 +27,7 @@ class ParserError:
         """Format the error for display."""
         if self.context:
             return f"Line {self.line}:{self.column}: {self.message}\n  {self.context}"
-        else:
-            return f"Line {self.line}:{self.column}: {self.message}"
+        return f"Line {self.line}:{self.column}: {self.message}"
 
     severity: str = "error"  # error, warning
 
@@ -48,7 +44,7 @@ class ParseResult:
 class ErrorTolerantParser(Parser):
     """Parser that can recover from syntax errors and continue parsing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.errors: list[ParserError] = []
         self.recovered_rules: list[Rule] = []
@@ -64,7 +60,7 @@ class ErrorTolerantParser(Parser):
         try:
             ast = super().parse(text)
             return ParseResult(ast=ast, errors=[], warnings=[])
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             # If normal parsing fails, try error-tolerant parsing
             ast = self._parse_with_recovery(text)
             return ParseResult(ast=ast, errors=self.errors, warnings=[])
@@ -89,7 +85,7 @@ class ErrorTolerantParser(Parser):
             line = self.lines[i].strip()
 
             # Skip empty lines and comments
-            if not line or line.startswith("//") or line.startswith("/*"):
+            if not line or line.startswith(("//", "/*")):
                 i += 1
                 continue
 
@@ -170,7 +166,7 @@ class ErrorTolerantParser(Parser):
         current_line = start_line + 1
 
         while current_line < len(self.lines) and (
-            brace_count > 0 or brace_count == 0 and not rule_body_lines
+            brace_count > 0 or (brace_count == 0 and not rule_body_lines)
         ):
             body_line = self.lines[current_line]
             rule_body_lines.append(body_line)
@@ -197,10 +193,10 @@ class ErrorTolerantParser(Parser):
             if stripped.startswith("meta:"):
                 section = "meta"
                 continue
-            elif stripped.startswith("strings:"):
+            if stripped.startswith("strings:"):
                 section = "strings"
                 continue
-            elif stripped.startswith("condition:"):
+            if stripped.startswith("condition:"):
                 section = "condition"
                 # Extract condition
                 condition_text = stripped[10:].strip()
@@ -266,15 +262,14 @@ class ErrorTolerantParser(Parser):
         # Simple conditions
         if condition_text == "true":
             return BooleanLiteral(True)
-        elif condition_text == "false":
+        if condition_text == "false":
             return BooleanLiteral(False)
-        elif re.match(r"\$\w+", condition_text):
+        if re.match(r"\$\w+", condition_text):
             return Identifier(condition_text)
-        else:
-            # For complex conditions, return as identifier for now
-            return Identifier(condition_text)
+        # For complex conditions, return as identifier for now
+        return Identifier(condition_text)
 
-    def _add_error(self, message: str, line: int, column: int, severity: str = "error"):
+    def _add_error(self, message: str, line: int, column: int, severity: str = "error") -> None:
         """Add a parsing error."""
         context = ""
         if 0 <= line < len(self.lines):

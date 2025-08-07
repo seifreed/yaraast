@@ -52,7 +52,7 @@ class CloneTransformer:
 class RuleTransformer:
     """Specialized transformer for rule modifications."""
 
-    def __init__(self, rule: Rule):
+    def __init__(self, rule: Rule) -> None:
         self.rule = CloneTransformer.clone_rule(rule)
 
     def rename(self, new_name: str) -> RuleTransformer:
@@ -144,7 +144,10 @@ class RuleTransformer:
 
         # Update string references in condition
         if self.rule.condition:
-            self.rule.condition = self._rename_strings_in_expression(self.rule.condition, mapping)
+            self.rule.condition = self._rename_strings_in_expression(
+                self.rule.condition,
+                mapping,
+            )
 
         return self
 
@@ -186,7 +189,8 @@ class RuleTransformer:
         return self
 
     def transform_condition(
-        self, transformer_func: Callable[[Expression], Expression]
+        self,
+        transformer_func: Callable[[Expression], Expression],
     ) -> RuleTransformer:
         """Transform the condition using a function."""
         if self.rule.condition:
@@ -199,7 +203,9 @@ class RuleTransformer:
 
     # Helper methods
     def _rename_strings_in_expression(
-        self, expr: Expression, mapping: dict[str, str]
+        self,
+        expr: Expression,
+        mapping: dict[str, str],
     ) -> Expression:
         """Recursively rename string identifiers in expression."""
         if isinstance(expr, StringIdentifier):
@@ -215,7 +221,7 @@ class RuleTransformer:
 class YaraFileTransformer:
     """Specialized transformer for YARA file modifications."""
 
-    def __init__(self, yara_file: YaraFile):
+    def __init__(self, yara_file: YaraFile) -> None:
         self.yara_file = CloneTransformer.clone_yara_file(yara_file)
 
     def add_import(self, module: str, alias: str | None = None) -> YaraFileTransformer:
@@ -253,7 +259,9 @@ class YaraFileTransformer:
         return self
 
     def transform_rule(
-        self, rule_name: str, transformer_func: Callable[[Rule], Rule]
+        self,
+        rule_name: str,
+        transformer_func: Callable[[Rule], Rule],
     ) -> YaraFileTransformer:
         """Transform a specific rule."""
         for i, rule in enumerate(self.yara_file.rules):
@@ -262,7 +270,10 @@ class YaraFileTransformer:
                 break
         return self
 
-    def transform_all_rules(self, transformer_func: Callable[[Rule], Rule]) -> YaraFileTransformer:
+    def transform_all_rules(
+        self,
+        transformer_func: Callable[[Rule], Rule],
+    ) -> YaraFileTransformer:
         """Transform all rules."""
         self.yara_file.rules = [transformer_func(rule) for rule in self.yara_file.rules]
         return self
@@ -270,27 +281,31 @@ class YaraFileTransformer:
     def prefix_all_rules(self, prefix: str) -> YaraFileTransformer:
         """Add prefix to all rule names."""
         return self.transform_all_rules(
-            lambda rule: RuleTransformer(rule).add_prefix(prefix).build()
+            lambda rule: RuleTransformer(rule).add_prefix(prefix).build(),
         )
 
     def suffix_all_rules(self, suffix: str) -> YaraFileTransformer:
         """Add suffix to all rule names."""
         return self.transform_all_rules(
-            lambda rule: RuleTransformer(rule).add_suffix(suffix).build()
+            lambda rule: RuleTransformer(rule).add_suffix(suffix).build(),
         )
 
     def add_tag_to_all_rules(self, tag: str) -> YaraFileTransformer:
         """Add tag to all rules."""
-        return self.transform_all_rules(lambda rule: RuleTransformer(rule).add_tag(tag).build())
+        return self.transform_all_rules(
+            lambda rule: RuleTransformer(rule).add_tag(tag).build(),
+        )
 
     def make_all_rules_private(self) -> YaraFileTransformer:
         """Make all rules private."""
-        return self.transform_all_rules(lambda rule: RuleTransformer(rule).make_private().build())
+        return self.transform_all_rules(
+            lambda rule: RuleTransformer(rule).make_private().build(),
+        )
 
     def set_author_for_all_rules(self, author: str) -> YaraFileTransformer:
         """Set author for all rules."""
         return self.transform_all_rules(
-            lambda rule: RuleTransformer(rule).set_author(author).build()
+            lambda rule: RuleTransformer(rule).set_author(author).build(),
         )
 
     def filter_rules(self, predicate: Callable[[Rule], bool]) -> YaraFileTransformer:

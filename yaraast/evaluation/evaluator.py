@@ -36,7 +36,7 @@ class EvaluationContext:
 class YaraEvaluator(ASTVisitor[Any]):
     """Evaluate YARA conditions against byte data."""
 
-    def __init__(self, data: bytes = b"", modules: MockModuleRegistry | None = None):
+    def __init__(self, data: bytes = b"", modules: MockModuleRegistry | None = None) -> None:
         self.data = data
         self.context = EvaluationContext(data=data)
         self.string_matcher = StringMatcher()
@@ -114,7 +114,8 @@ class YaraEvaluator(ASTVisitor[Any]):
         if node.name in self.context.modules:
             return self.context.modules[node.name]
 
-        raise ValueError(f"Unknown identifier: {node.name}")
+        msg = f"Unknown identifier: {node.name}"
+        raise ValueError(msg)
 
     def visit_string_identifier(self, node: StringIdentifier) -> bool:
         """String identifier evaluates to whether it matched."""
@@ -215,11 +216,12 @@ class YaraEvaluator(ASTVisitor[Any]):
 
             try:
                 return bool(re.search(right, left))
-            except Exception:
+            except (ValueError, TypeError, AttributeError):
                 return False
 
         else:
-            raise ValueError(f"Unknown operator: {node.operator}")
+            msg = f"Unknown operator: {node.operator}"
+            raise ValueError(msg)
 
     def visit_unary_expression(self, node: UnaryExpression) -> Any:
         """Evaluate unary expression."""
@@ -231,7 +233,8 @@ class YaraEvaluator(ASTVisitor[Any]):
             return -operand
         if node.operator == "~":
             return ~operand
-        raise ValueError(f"Unknown unary operator: {node.operator}")
+        msg = f"Unknown unary operator: {node.operator}"
+        raise ValueError(msg)
 
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> Any:
         """Evaluate parentheses expression."""
@@ -280,7 +283,7 @@ class YaraEvaluator(ASTVisitor[Any]):
         if node.function in ["uint16le", "uint32le", "int16le", "int32le"]:
             base_func = node.function[:-2]  # Remove 'le'
             return self.visit_function_call(
-                FunctionCall(function=base_func, arguments=node.arguments)
+                FunctionCall(function=base_func, arguments=node.arguments),
             )
 
         # Module functions
@@ -292,7 +295,8 @@ class YaraEvaluator(ASTVisitor[Any]):
                     func = getattr(module, func_name)
                     return func(*args)
 
-        raise ValueError(f"Unknown function: {node.function}")
+        msg = f"Unknown function: {node.function}"
+        raise ValueError(msg)
 
     def visit_member_access(self, node: MemberAccess) -> Any:
         """Evaluate member access."""
@@ -304,7 +308,8 @@ class YaraEvaluator(ASTVisitor[Any]):
             with contextlib.suppress(Exception):
                 return obj[node.member]
 
-        raise ValueError(f"Cannot access member {node.member}")
+        msg = f"Cannot access member {node.member}"
+        raise ValueError(msg)
 
     def visit_array_access(self, node: ArrayAccess) -> Any:
         """Evaluate array access."""
@@ -313,7 +318,7 @@ class YaraEvaluator(ASTVisitor[Any]):
 
         try:
             return array[index]
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return None
 
     # Condition evaluation
@@ -327,7 +332,11 @@ class YaraEvaluator(ASTVisitor[Any]):
         """Evaluate 'in' expression."""
         range_val = self.visit(node.range)
         if isinstance(range_val, range):
-            return self.string_matcher.string_in(node.string_id, range_val.start, range_val.stop)
+            return self.string_matcher.string_in(
+                node.string_id,
+                range_val.start,
+                range_val.stop,
+            )
         return False
 
     def visit_of_expression(self, node: OfExpression) -> bool:
@@ -461,62 +470,62 @@ class YaraEvaluator(ASTVisitor[Any]):
         return self.visit(node)
 
     # Visit method stubs for completeness
-    def visit_yara_file(self, node):
-        pass
+    def visit_yara_file(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_import(self, node):
-        pass
+    def visit_import(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_include(self, node):
-        pass
+    def visit_include(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_rule(self, node):
-        pass
+    def visit_rule(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_tag(self, node):
-        pass
+    def visit_tag(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_string_definition(self, node):
-        pass
+    def visit_string_definition(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_plain_string(self, node):
-        pass
+    def visit_plain_string(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_string(self, node):
-        pass
+    def visit_hex_string(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_regex_string(self, node):
-        pass
+    def visit_regex_string(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_string_modifier(self, node):
-        pass
+    def visit_string_modifier(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_token(self, node):
-        pass
+    def visit_hex_token(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_byte(self, node):
-        pass
+    def visit_hex_byte(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_wildcard(self, node):
-        pass
+    def visit_hex_wildcard(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_jump(self, node):
-        pass
+    def visit_hex_jump(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_alternative(self, node):
-        pass
+    def visit_hex_alternative(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_meta(self, node):
-        pass
+    def visit_meta(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_module_reference(self, node):
-        pass
+    def visit_module_reference(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_dictionary_access(self, node):
-        pass
+    def visit_dictionary_access(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_condition(self, node):
-        pass
+    def visit_condition(self, node) -> None:
+        pass  # Implementation intentionally empty
 
     def visit_for_of_expression(self, node) -> bool:
         """Evaluate 'for ... of' expression."""
@@ -589,14 +598,14 @@ class YaraEvaluator(ASTVisitor[Any]):
 
         return False
 
-    def visit_hex_nibble(self, node):
-        pass
+    def visit_hex_nibble(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_comment(self, node):
-        pass
+    def visit_comment(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_comment_group(self, node):
-        pass
+    def visit_comment_group(self, node) -> None:
+        pass  # Implementation intentionally empty
 
     def visit_string_operator_expression(self, node) -> Any:
         """Evaluate string-specific operators like contains, startswith, etc."""
@@ -604,33 +613,33 @@ class YaraEvaluator(ASTVisitor[Any]):
         # But we can add specific handling here if needed
         return self.visit_binary_expression(node)
 
-    def visit_extern_import(self, node):
+    def visit_extern_import(self, node) -> None:
         """Visit extern import - not evaluated."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_extern_namespace(self, node):
+    def visit_extern_namespace(self, node) -> None:
         """Visit extern namespace - not evaluated."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_extern_rule(self, node):
+    def visit_extern_rule(self, node) -> None:
         """Visit extern rule - not evaluated."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_extern_rule_reference(self, node):
+    def visit_extern_rule_reference(self, node) -> None:
         """Visit extern rule reference - not evaluated."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_in_rule_pragma(self, node):
+    def visit_in_rule_pragma(self, node) -> None:
         """Visit in-rule pragma - not evaluated."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_pragma(self, node):
+    def visit_pragma(self, node) -> None:
         """Visit pragma - not evaluated."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_pragma_block(self, node):
+    def visit_pragma_block(self, node) -> None:
         """Visit pragma block - not evaluated."""
-        pass
+        # Implementation intentionally empty
 
 
 # Alias for compatibility

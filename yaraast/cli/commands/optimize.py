@@ -26,7 +26,7 @@ console = Console()
     is_flag=True,
     help="Show performance analysis before and after optimization",
 )
-def optimize(input_file: Path, output_file: Path, dry_run: bool, analyze: bool):
+def optimize(input_file: Path, output_file: Path, dry_run: bool, analyze: bool) -> None:
     """Optimize YARA rules for better performance.
 
     This command automatically optimizes YARA rules by:
@@ -47,7 +47,9 @@ def optimize(input_file: Path, output_file: Path, dry_run: bool, analyze: bool):
 
         # Analyze performance before optimization
         if analyze:
-            console.print("\n[yellow]Performance analysis before optimization:[/yellow]")
+            console.print(
+                "\n[yellow]Performance analysis before optimization:[/yellow]",
+            )
             total_issues_before = 0
             critical_before = 0
 
@@ -63,11 +65,13 @@ def optimize(input_file: Path, output_file: Path, dry_run: bool, analyze: bool):
         console.print(f"\n[cyan]Optimizing {len(ast.rules)} rules...[/cyan]")
         optimizer = PerformanceOptimizer()
         optimized_ast = optimizer.optimize(ast)
-        changes = ["Performance optimizations applied"]  # Simple placeholder for changes
+        changes = [
+            "Performance optimizations applied",
+        ]  # Simple placeholder for changes
 
         if not changes:
             console.print(
-                "\n[green]✅ No optimizations needed - rules are already optimal![/green]"
+                "\n[green]✅ No optimizations needed - rules are already optimal![/green]",
             )
             return
 
@@ -97,7 +101,9 @@ def optimize(input_file: Path, output_file: Path, dry_run: bool, analyze: bool):
                 improvement = (
                     (total_issues_before - total_issues_after) / total_issues_before
                 ) * 100
-                console.print(f"\n[green]✅ Performance improved by {improvement:.1f}%[/green]")
+                console.print(
+                    f"\n[green]✅ Performance improved by {improvement:.1f}%[/green]",
+                )
 
         # Generate optimized code
         if not dry_run:
@@ -105,7 +111,9 @@ def optimize(input_file: Path, output_file: Path, dry_run: bool, analyze: bool):
             generator = CodeGenerator()
             optimized_code = generator.generate(optimized_ast)
             output_file.write_text(optimized_code)
-            console.print(f"[green]✅ Optimized YARA file written to {output_file}[/green]")
+            console.print(
+                f"[green]✅ Optimized YARA file written to {output_file}[/green]",
+            )
         else:
             console.print("\n[yellow]Dry run - no files were written[/yellow]")
 

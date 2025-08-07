@@ -50,7 +50,7 @@ class EquivalenceResult:
 class EquivalenceTester:
     """Test equivalence of AST transformations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize equivalence tester."""
         self.parser = Parser()
         self.codegen = CodeGenerator()
@@ -58,7 +58,9 @@ class EquivalenceTester:
         self.scanner = LibyaraScanner()
 
     def test_round_trip(
-        self, original_ast: YaraFile, test_data: bytes | None = None
+        self,
+        original_ast: YaraFile,
+        test_data: bytes | None = None,
     ) -> EquivalenceResult:
         """Test AST → code → libyara → re-parse round trip.
 
@@ -68,6 +70,7 @@ class EquivalenceTester:
 
         Returns:
             EquivalenceResult with detailed comparison
+
         """
         result = EquivalenceResult(equivalent=True)
 
@@ -127,8 +130,14 @@ class EquivalenceTester:
         # Step 7: If test data provided, compare scanning results
         if test_data and orig_compilation.success and regen_compilation.success:
             # Scan with both rule sets
-            orig_scan = self.scanner.scan_data(orig_compilation.compiled_rules, test_data)
-            regen_scan = self.scanner.scan_data(regen_compilation.compiled_rules, test_data)
+            orig_scan = self.scanner.scan_data(
+                orig_compilation.compiled_rules,
+                test_data,
+            )
+            regen_scan = self.scanner.scan_data(
+                regen_compilation.compiled_rules,
+                test_data,
+            )
 
             # Compare scan results
             scan_diffs = self._compare_scans(orig_scan, regen_scan)
@@ -147,7 +156,9 @@ class EquivalenceTester:
         return result
 
     def test_file_round_trip(
-        self, filepath: str, test_data: bytes | None = None
+        self,
+        filepath: str,
+        test_data: bytes | None = None,
     ) -> EquivalenceResult:
         """Test round-trip starting from a file.
 
@@ -157,6 +168,7 @@ class EquivalenceTester:
 
         Returns:
             EquivalenceResult
+
         """
         try:
             with Path(filepath).open() as f:
@@ -166,7 +178,8 @@ class EquivalenceTester:
             return self.test_round_trip(original_ast, test_data)
         except Exception as e:
             return EquivalenceResult(
-                equivalent=False, ast_differences=[f"Failed to parse file: {e!s}"]
+                equivalent=False,
+                ast_differences=[f"Failed to parse file: {e!s}"],
             )
 
     def _compare_code(self, code1: str, code2: str) -> bool:
@@ -182,21 +195,29 @@ class EquivalenceTester:
 
         # Compare imports
         if len(ast1.imports) != len(ast2.imports):
-            differences.append(f"Import count differs: {len(ast1.imports)} vs {len(ast2.imports)}")
+            differences.append(
+                f"Import count differs: {len(ast1.imports)} vs {len(ast2.imports)}",
+            )
 
         # Compare rules
         if len(ast1.rules) != len(ast2.rules):
-            differences.append(f"Rule count differs: {len(ast1.rules)} vs {len(ast2.rules)}")
+            differences.append(
+                f"Rule count differs: {len(ast1.rules)} vs {len(ast2.rules)}",
+            )
         else:
-            for i, (rule1, rule2) in enumerate(zip(ast1.rules, ast2.rules, strict=False)):
+            for i, (rule1, rule2) in enumerate(
+                zip(ast1.rules, ast2.rules, strict=False),
+            ):
                 if rule1.name != rule2.name:
-                    differences.append(f"Rule {i} name differs: {rule1.name} vs {rule2.name}")
+                    differences.append(
+                        f"Rule {i} name differs: {rule1.name} vs {rule2.name}",
+                    )
 
                 # Compare strings
                 if len(rule1.strings) != len(rule2.strings):
                     differences.append(
                         f"Rule {rule1.name} string count differs: "
-                        f"{len(rule1.strings)} vs {len(rule2.strings)}"
+                        f"{len(rule1.strings)} vs {len(rule2.strings)}",
                     )
 
         return differences
@@ -206,7 +227,9 @@ class EquivalenceTester:
         differences = []
 
         if scan1.success != scan2.success:
-            differences.append(f"Scan success differs: {scan1.success} vs {scan2.success}")
+            differences.append(
+                f"Scan success differs: {scan1.success} vs {scan2.success}",
+            )
 
         rules1 = set(scan1.matched_rules)
         rules2 = set(scan2.matched_rules)
@@ -222,7 +245,12 @@ class EquivalenceTester:
 
         return differences
 
-    def _compare_evaluation(self, ast1: YaraFile, ast2: YaraFile, test_data: bytes) -> list[str]:
+    def _compare_evaluation(
+        self,
+        ast1: YaraFile,
+        ast2: YaraFile,
+        test_data: bytes,
+    ) -> list[str]:
         """Compare evaluation results."""
         differences = []
 
@@ -237,13 +265,17 @@ class EquivalenceTester:
             # Compare results
             for rule_name in set(results1.keys()) | set(results2.keys()):
                 if rule_name not in results1:
-                    differences.append(f"Rule {rule_name} missing in original evaluation")
+                    differences.append(
+                        f"Rule {rule_name} missing in original evaluation",
+                    )
                 elif rule_name not in results2:
-                    differences.append(f"Rule {rule_name} missing in regenerated evaluation")
+                    differences.append(
+                        f"Rule {rule_name} missing in regenerated evaluation",
+                    )
                 elif results1[rule_name] != results2[rule_name]:
                     differences.append(
                         f"Rule {rule_name} evaluation differs: "
-                        f"{results1[rule_name]} vs {results2[rule_name]}"
+                        f"{results1[rule_name]} vs {results2[rule_name]}",
                     )
 
         except Exception as e:

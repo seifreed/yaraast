@@ -28,7 +28,7 @@ from yaraast.ast.expressions import (
 class ConditionBuilder:
     """Fluent builder for constructing conditions."""
 
-    def __init__(self, expr: Expression | None = None):
+    def __init__(self, expr: Expression | None = None) -> None:
         self._expression = expr
 
     # String references
@@ -43,12 +43,16 @@ class ConditionBuilder:
     def string_offset(self, identifier: str, index: int | None = None) -> Self:
         """Reference string offset (@string or @string[i])."""
         index_expr = IntegerLiteral(value=index) if index is not None else None
-        return ConditionBuilder(StringOffset(string_id=identifier.lstrip("@"), index=index_expr))
+        return ConditionBuilder(
+            StringOffset(string_id=identifier.lstrip("@"), index=index_expr),
+        )
 
     def string_length(self, identifier: str, index: int | None = None) -> Self:
         """Reference string length (!string or !string[i])."""
         index_expr = IntegerLiteral(value=index) if index is not None else None
-        return ConditionBuilder(StringLength(string_id=identifier.lstrip("!"), index=index_expr))
+        return ConditionBuilder(
+            StringLength(string_id=identifier.lstrip("!"), index=index_expr),
+        )
 
     # Literals
     def true(self) -> Self:
@@ -100,27 +104,34 @@ class ConditionBuilder:
     def and_(self, other: ConditionBuilder | Expression) -> Self:
         """Logical AND."""
         if not self._expression:
-            raise ValueError("Cannot apply AND to empty expression")
+            msg = "Cannot apply AND to empty expression"
+            raise ValueError(msg)
 
         right = other._expression if isinstance(other, ConditionBuilder) else other
         return ConditionBuilder(
-            BinaryExpression(left=self._expression, operator="and", right=right)
+            BinaryExpression(left=self._expression, operator="and", right=right),
         )
 
     def or_(self, other: ConditionBuilder | Expression) -> Self:
         """Logical OR."""
         if not self._expression:
-            raise ValueError("Cannot apply OR to empty expression")
+            msg = "Cannot apply OR to empty expression"
+            raise ValueError(msg)
 
         right = other._expression if isinstance(other, ConditionBuilder) else other
-        return ConditionBuilder(BinaryExpression(left=self._expression, operator="or", right=right))
+        return ConditionBuilder(
+            BinaryExpression(left=self._expression, operator="or", right=right),
+        )
 
     def not_(self) -> Self:
         """Logical NOT."""
         if not self._expression:
-            raise ValueError("Cannot apply NOT to empty expression")
+            msg = "Cannot apply NOT to empty expression"
+            raise ValueError(msg)
 
-        return ConditionBuilder(UnaryExpression(operator="not", operand=self._expression))
+        return ConditionBuilder(
+            UnaryExpression(operator="not", operand=self._expression),
+        )
 
     # Comparison operators
     def eq(self, other: ConditionBuilder | Expression | int | str) -> Self:
@@ -176,21 +187,31 @@ class ConditionBuilder:
     def at(self, offset: int | ConditionBuilder) -> Self:
         """String at offset."""
         if not self._expression or not isinstance(self._expression, StringIdentifier):
-            raise ValueError("'at' can only be used with string identifiers")
+            msg = "'at' can only be used with string identifiers"
+            raise ValueError(msg)
 
         offset_expr = self._to_expression(offset)
-        return ConditionBuilder(AtExpression(string_id=self._expression.name, offset=offset_expr))
+        return ConditionBuilder(
+            AtExpression(string_id=self._expression.name, offset=offset_expr),
+        )
 
-    def in_range(self, start: int | ConditionBuilder, end: int | ConditionBuilder) -> Self:
+    def in_range(
+        self,
+        start: int | ConditionBuilder,
+        end: int | ConditionBuilder,
+    ) -> Self:
         """String in range."""
         if not self._expression or not isinstance(self._expression, StringIdentifier):
-            raise ValueError("'in' can only be used with string identifiers")
+            msg = "'in' can only be used with string identifiers"
+            raise ValueError(msg)
 
         start_expr = self._to_expression(start)
         end_expr = self._to_expression(end)
         range_expr = RangeExpression(low=start_expr, high=end_expr)
 
-        return ConditionBuilder(InExpression(string_id=self._expression.name, range=range_expr))
+        return ConditionBuilder(
+            InExpression(string_id=self._expression.name, range=range_expr),
+        )
 
     # Quantifiers
     def any_of(self, *strings: str) -> Self:
@@ -202,7 +223,7 @@ class ConditionBuilder:
             string_set = SetExpression(elements=elements)
 
         return ConditionBuilder(
-            OfExpression(quantifier=StringLiteral(value="any"), string_set=string_set)
+            OfExpression(quantifier=StringLiteral(value="any"), string_set=string_set),
         )
 
     def all_of(self, *strings: str) -> Self:
@@ -214,7 +235,7 @@ class ConditionBuilder:
             string_set = SetExpression(elements=elements)
 
         return ConditionBuilder(
-            OfExpression(quantifier=StringLiteral(value="all"), string_set=string_set)
+            OfExpression(quantifier=StringLiteral(value="all"), string_set=string_set),
         )
 
     def n_of(self, n: int, *strings: str) -> Self:
@@ -226,7 +247,7 @@ class ConditionBuilder:
             string_set = SetExpression(elements=elements)
 
         return ConditionBuilder(
-            OfExpression(quantifier=IntegerLiteral(value=n), string_set=string_set)
+            OfExpression(quantifier=IntegerLiteral(value=n), string_set=string_set),
         )
 
     # For loops
@@ -241,7 +262,12 @@ class ConditionBuilder:
         cond_expr = self._to_expression(condition)
 
         return ConditionBuilder(
-            ForExpression(quantifier="any", variable=var, iterable=iter_expr, body=cond_expr)
+            ForExpression(
+                quantifier="any",
+                variable=var,
+                iterable=iter_expr,
+                body=cond_expr,
+            ),
         )
 
     def for_all(
@@ -255,7 +281,12 @@ class ConditionBuilder:
         cond_expr = self._to_expression(condition)
 
         return ConditionBuilder(
-            ForExpression(quantifier="all", variable=var, iterable=iter_expr, body=cond_expr)
+            ForExpression(
+                quantifier="all",
+                variable=var,
+                iterable=iter_expr,
+                body=cond_expr,
+            ),
         )
 
     # Arithmetic operations
@@ -295,7 +326,8 @@ class ConditionBuilder:
     def bitwise_not(self) -> Self:
         """Bitwise NOT."""
         if not self._expression:
-            raise ValueError("Cannot apply bitwise NOT to empty expression")
+            msg = "Cannot apply bitwise NOT to empty expression"
+            raise ValueError(msg)
 
         return ConditionBuilder(UnaryExpression(operator="~", operand=self._expression))
 
@@ -311,24 +343,36 @@ class ConditionBuilder:
     def group(self) -> Self:
         """Group expression in parentheses."""
         if not self._expression:
-            raise ValueError("Cannot group empty expression")
+            msg = "Cannot group empty expression"
+            raise ValueError(msg)
 
         return ConditionBuilder(ParenthesesExpression(expression=self._expression))
 
     # Helper methods
-    def _binary_op(self, op: str, other: ConditionBuilder | Expression | int | str) -> Self:
+    def _binary_op(
+        self,
+        op: str,
+        other: ConditionBuilder | Expression | int | str,
+    ) -> Self:
         """Create binary expression."""
         if not self._expression:
-            raise ValueError(f"Cannot apply {op} to empty expression")
+            msg = f"Cannot apply {op} to empty expression"
+            raise ValueError(msg)
 
         right = self._to_expression(other)
-        return ConditionBuilder(BinaryExpression(left=self._expression, operator=op, right=right))
+        return ConditionBuilder(
+            BinaryExpression(left=self._expression, operator=op, right=right),
+        )
 
-    def _to_expression(self, value: ConditionBuilder | Expression | int | str) -> Expression:
+    def _to_expression(
+        self,
+        value: ConditionBuilder | Expression | int | str,
+    ) -> Expression:
         """Convert value to expression."""
         if isinstance(value, ConditionBuilder):
             if not value._expression:
-                raise ValueError("Empty condition builder")
+                msg = "Empty condition builder"
+                raise ValueError(msg)
             return value._expression
         if isinstance(value, Expression):
             return value
@@ -338,12 +382,14 @@ class ConditionBuilder:
             if value.startswith("$"):
                 return StringIdentifier(name=value)
             return StringLiteral(value=value)
-        raise TypeError(f"Cannot convert {type(value)} to expression")
+        msg = f"Cannot convert {type(value)} to expression"
+        raise TypeError(msg)
 
     def build(self) -> Expression:
         """Build the final expression."""
         if not self._expression:
-            raise ValueError("Cannot build empty expression")
+            msg = "Cannot build empty expression"
+            raise ValueError(msg)
         return self._expression
 
     # Static factory methods

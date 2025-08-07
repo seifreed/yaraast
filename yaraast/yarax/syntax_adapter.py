@@ -17,13 +17,17 @@ if TYPE_CHECKING:
 class YaraXSyntaxAdapter(ASTTransformer):
     """Adapt YARA rules to YARA-X syntax."""
 
-    def __init__(self, features: YaraXFeatures | None = None, target: str = "yarax") -> None:
-        """
-        Initialize adapter.
+    def __init__(
+        self,
+        features: YaraXFeatures | None = None,
+        target: str = "yarax",
+    ) -> None:
+        """Initialize adapter.
 
         Args:
             features: Feature configuration
             target: Target format ("yarax" or "yara")
+
         """
         self.features = features or YaraXFeatures.yarax_strict()
         self.target = target
@@ -32,8 +36,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
     def adapt(self, yara_file: YaraFile) -> YaraFile:
         """Adapt YARA file syntax."""
         self.adaptations_count = 0
-        adapted = self.visit(yara_file)
-        return adapted
+        return self.visit(yara_file)
 
     def adapt_with_count(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
         """Adapt YARA file syntax and return adapted file with adaptation count."""
@@ -77,7 +80,11 @@ class YaraXSyntaxAdapter(ASTTransformer):
                 padding_needed = self.features.minimum_base64_length - len(node.value)
                 new_value = node.value + "A" * padding_needed
                 self.adaptations_count += 1
-                return PlainString(identifier=node.identifier, value=new_value, modifiers=modifiers)
+                return PlainString(
+                    identifier=node.identifier,
+                    value=new_value,
+                    modifiers=modifiers,
+                )
 
         return node
 
@@ -175,7 +182,11 @@ class YaraXSyntaxAdapter(ASTTransformer):
 
         tokens = [cast("HexToken", self.visit(token)) for token in node.tokens]
 
-        return HexString(identifier=node.identifier, tokens=tokens, modifiers=node.modifiers)
+        return HexString(
+            identifier=node.identifier,
+            tokens=tokens,
+            modifiers=node.modifiers,
+        )
 
     def visit_hex_jump(self, node: HexJump) -> HexJump:
         """Adapt hex jump syntax."""
@@ -220,7 +231,7 @@ class YaraXSyntaxAdapter(ASTTransformer):
         if "base64_too_short" in by_type:
             guide.append("## Base64 Pattern Length\n")
             guide.append(
-                f"YARA-X requires base64 patterns to be at least {self.features.minimum_base64_length} characters.\n"
+                f"YARA-X requires base64 patterns to be at least {self.features.minimum_base64_length} characters.\n",
             )
             guide.append("Short patterns should be padded or reconsidered.\n\n")
 

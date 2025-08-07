@@ -6,7 +6,7 @@ from yaraast.codegen import CodeGenerator
 from yaraast.parser import Parser
 
 
-def test_defined_operator():
+def test_defined_operator() -> None:
     """Test defined operator parsing and generation."""
     yara_code = """
 rule test_defined {
@@ -30,7 +30,7 @@ rule test_defined {
     assert "defined $string1" in output
 
 
-def test_iequals_operator():
+def test_iequals_operator() -> None:
     """Test iequals operator."""
     yara_code = """
 rule test_iequals {
@@ -52,7 +52,7 @@ rule test_iequals {
     assert "iequals" in output
 
 
-def test_icontains_operator():
+def test_icontains_operator() -> None:
     """Test icontains operator."""
     yara_code = """
 rule test_icontains {
@@ -71,7 +71,7 @@ rule test_icontains {
     assert "icontains" in output
 
 
-def test_complex_defined():
+def test_complex_defined() -> None:
     """Test complex defined expressions."""
     yara_code = """
 rule test_complex_defined {
@@ -91,7 +91,7 @@ rule test_complex_defined {
     assert 'defined pe.version_info["CompanyName"]' in output
 
 
-def test_string_operators_with_modules():
+def test_string_operators_with_modules() -> None:
     """Test string operators with module attributes."""
     yara_code = """
 rule test_module_string_ops {
@@ -113,7 +113,7 @@ rule test_module_string_ops {
     assert "iendswith" in output
 
 
-def test_arrays_in_expressions():
+def test_arrays_in_expressions() -> None:
     """Test arrays in for expressions."""
     yara_code = """
 rule test_arrays {

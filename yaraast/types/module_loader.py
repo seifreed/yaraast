@@ -13,7 +13,7 @@ from yaraast.types.type_system import FunctionDefinition, ModuleDefinition, Yara
 class ModuleLoader:
     """Load YARA module definitions from JSON files."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.modules: dict[str, ModuleDefinition] = {}
         self._load_builtin_modules()
         self._load_json_modules()
@@ -47,8 +47,8 @@ class ModuleLoader:
                         "virtual_size": IntegerType(),
                         "raw_size": IntegerType(),
                         "characteristics": IntegerType(),
-                    }
-                )
+                    },
+                ),
             ),
             "version_info": DictionaryType(StringType(), StringType()),
             "number_of_resources": IntegerType(),
@@ -63,22 +63,38 @@ class ModuleLoader:
         pe.functions = {
             "imphash": FunctionDefinition("imphash", StringType()),
             "section_index": FunctionDefinition(
-                "section_index", IntegerType(), [("name", StringType())]
+                "section_index",
+                IntegerType(),
+                [("name", StringType())],
             ),
-            "exports": FunctionDefinition("exports", BooleanType(), [("name", StringType())]),
+            "exports": FunctionDefinition(
+                "exports",
+                BooleanType(),
+                [("name", StringType())],
+            ),
             "imports": FunctionDefinition(
                 "imports",
                 BooleanType(),
                 [("dll", StringType()), ("function", StringType())],
             ),
-            "locale": FunctionDefinition("locale", BooleanType(), [("locale", IntegerType())]),
-            "language": FunctionDefinition("language", BooleanType(), [("lang", IntegerType())]),
+            "locale": FunctionDefinition(
+                "locale",
+                BooleanType(),
+                [("locale", IntegerType())],
+            ),
+            "language": FunctionDefinition(
+                "language",
+                BooleanType(),
+                [("lang", IntegerType())],
+            ),
             # Add functions that can also be called as attributes
             "is_dll": FunctionDefinition("is_dll", BooleanType()),
             "is_64bit": FunctionDefinition("is_64bit", BooleanType()),
             "is_32bit": FunctionDefinition("is_32bit", BooleanType()),
             "rva_to_offset": FunctionDefinition(
-                "rva_to_offset", IntegerType(), [("rva", IntegerType())]
+                "rva_to_offset",
+                IntegerType(),
+                [("rva", IntegerType())],
             ),
         }
         self.modules["pe"] = pe
@@ -88,17 +104,25 @@ class ModuleLoader:
         math.functions = {
             "abs": FunctionDefinition("abs", IntegerType(), [("x", IntegerType())]),
             "min": FunctionDefinition(
-                "min", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
+                "min",
+                IntegerType(),
+                [("a", IntegerType()), ("b", IntegerType())],
             ),
             "max": FunctionDefinition(
-                "max", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
+                "max",
+                IntegerType(),
+                [("a", IntegerType()), ("b", IntegerType())],
             ),
             "to_string": FunctionDefinition(
                 "to_string",
                 StringType(),
                 [("n", IntegerType()), ("base", IntegerType())],
             ),
-            "to_number": FunctionDefinition("to_number", IntegerType(), [("s", StringType())]),
+            "to_number": FunctionDefinition(
+                "to_number",
+                IntegerType(),
+                [("s", StringType())],
+            ),
             "log": FunctionDefinition("log", DoubleType(), [("x", DoubleType())]),
             "log2": FunctionDefinition("log2", DoubleType(), [("x", DoubleType())]),
             "log10": FunctionDefinition("log10", DoubleType(), [("x", DoubleType())]),
@@ -125,8 +149,8 @@ class ModuleLoader:
                         "address": IntegerType(),
                         "size": IntegerType(),
                         "offset": IntegerType(),
-                    }
-                )
+                    },
+                ),
             ),
             "segments": ArrayType(
                 StructType(
@@ -137,8 +161,8 @@ class ModuleLoader:
                         "physical_address": IntegerType(),
                         "file_size": IntegerType(),
                         "memory_size": IntegerType(),
-                    }
-                )
+                    },
+                ),
             ),
         }
         self.modules["elf"] = elf
@@ -231,7 +255,7 @@ class ModuleLoader:
                         module = self._parse_module(module_data["name"], module_data)
                         if module:
                             self.modules[module.name] = module
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             pass
 
     def _parse_module(self, name: str, data: dict[str, Any]) -> ModuleDefinition | None:
@@ -250,8 +274,12 @@ class ModuleLoader:
                     if isinstance(func_data, dict):
                         func_def = FunctionDefinition(
                             name=func_name,
-                            return_type=self._parse_type(func_data.get("return", "any")),
-                            parameters=self._parse_parameters(func_data.get("parameters", [])),
+                            return_type=self._parse_type(
+                                func_data.get("return", "any"),
+                            ),
+                            parameters=self._parse_parameters(
+                                func_data.get("parameters", []),
+                            ),
                         )
                         module.functions[func_name] = func_def
 
@@ -262,7 +290,7 @@ class ModuleLoader:
 
             return module
 
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return None
 
     def _parse_type(self, type_str: str | dict) -> YaraType:

@@ -15,14 +15,17 @@ if TYPE_CHECKING:
 class RuleOptimizer:
     """Comprehensive optimizer for YARA rules."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.expression_optimizer = ExpressionOptimizer()
         self.dead_code_eliminator = DeadCodeEliminator()
         self.optimization_stats: dict[str, int] = {}
 
-    def optimize(self, yara_file: YaraFile, passes: int = 3) -> tuple[YaraFile, dict[str, Any]]:
-        """
-        Perform multiple optimization passes on YARA file.
+    def optimize(
+        self,
+        yara_file: YaraFile,
+        passes: int = 3,
+    ) -> tuple[YaraFile, dict[str, Any]]:
+        """Perform multiple optimization passes on YARA file.
 
         Args:
             yara_file: The YARA file AST to optimize
@@ -30,6 +33,7 @@ class RuleOptimizer:
 
         Returns:
             Tuple of (optimized AST, optimization statistics)
+
         """
         total_expr_opts = 0
         total_dead_elims = 0
@@ -77,7 +81,7 @@ class RuleOptimizer:
         original_strings = sum(len(rule.strings) for rule in yara_file.rules)
         optimized_strings = sum(len(rule.strings) for rule in optimized.rules)
 
-        report = {
+        return {
             "summary": stats,
             "size_reduction": {
                 "rules": f"{stats['rules_eliminated']} rules removed",
@@ -95,8 +99,6 @@ class RuleOptimizer:
                 "unused_string_removal": "Removed unused string definitions",
             },
         }
-
-        return report
 
     def optimize_rule(self, rule: Rule) -> Rule:
         """Optimize a single rule."""

@@ -6,7 +6,7 @@ from yaraast.lexer.tokens import Token, TokenType
 class LexerError(Exception):
     """Lexer error exception."""
 
-    def __init__(self, message: str, line: int, column: int):
+    def __init__(self, message: str, line: int, column: int) -> None:
         super().__init__(f"Lexer error at {line}:{column}: {message}")
         self.line = line
         self.column = column
@@ -57,7 +57,7 @@ class Lexer:
         "fullword": TokenType.FULLWORD,
     }
 
-    def __init__(self, text: str):
+    def __init__(self, text: str) -> None:
         self.text = text
         self.position = 0
         self.line = 1
@@ -186,7 +186,8 @@ class Lexer:
             self._advance()
             return Token(token_type, char, start_line, start_column, 1)
 
-        raise LexerError(f"Unexpected character: {char}", self.line, self.column)
+        msg = f"Unexpected character: {char}"
+        raise LexerError(msg, self.line, self.column)
 
     def _read_string(self) -> Token:
         """Read string literal."""
@@ -235,7 +236,7 @@ class Lexer:
                                 "\n",
                                 "\r",
                                 "//",
-                            )
+                            ),
                         ):  # Comment after string
                             # Looks like end of string, treat \ as literal and break
                             value += "\\"
@@ -283,7 +284,8 @@ class Lexer:
             self._advance()
 
         if not self._current_char():
-            raise LexerError("Unterminated string", start_line, start_column)
+            msg = "Unterminated string"
+            raise LexerError(msg, start_line, start_column)
 
         self._advance()  # skip closing quote
         return Token(TokenType.STRING, value, start_line, start_column)
@@ -301,7 +303,8 @@ class Lexer:
             self._advance()
 
         if not self._current_char():
-            raise LexerError("Unterminated hex string", start_line, start_column)
+            msg = "Unterminated hex string"
+            raise LexerError(msg, start_line, start_column)
 
         self._advance()  # skip }
         return Token(TokenType.HEX_STRING, value, start_line, start_column)
@@ -325,7 +328,8 @@ class Lexer:
             self._advance()
 
         if not self._current_char():
-            raise LexerError("Unterminated regex", start_line, start_column)
+            msg = "Unterminated regex"
+            raise LexerError(msg, start_line, start_column)
 
         self._advance()  # skip closing /
 
@@ -339,7 +343,12 @@ class Lexer:
         # Use a special marker that won't appear in regex patterns
         if modifiers:
             # Use null byte as separator since it's not valid in regex patterns
-            return Token(TokenType.REGEX, value + "\x00" + modifiers, start_line, start_column)
+            return Token(
+                TokenType.REGEX,
+                value + "\x00" + modifiers,
+                start_line,
+                start_column,
+            )
         return Token(TokenType.REGEX, value, start_line, start_column)
 
     def _read_number(self) -> Token:
@@ -384,7 +393,12 @@ class Lexer:
             if self._current_char() and self._current_char().upper() == "B":
                 self._advance()
                 multiplier = 1024 if suffix == "K" else 1024 * 1024
-                return Token(TokenType.INTEGER, int(value) * multiplier, start_line, start_column)
+                return Token(
+                    TokenType.INTEGER,
+                    int(value) * multiplier,
+                    start_line,
+                    start_column,
+                )
 
         return Token(TokenType.INTEGER, int(value), start_line, start_column)
 

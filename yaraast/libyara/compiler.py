@@ -40,15 +40,17 @@ class CompilationResult:
 class LibyaraCompiler:
     """Compile yaraast AST to libyara rules."""
 
-    def __init__(self, externals: dict[str, Any] | None = None):
+    def __init__(self, externals: dict[str, Any] | None = None) -> None:
         """Initialize compiler.
 
         Args:
             externals: External variables for YARA compilation
+
         """
         if not YARA_AVAILABLE:
+            msg = "yara-python is not installed. Install it with: pip install yara-python"
             raise ImportError(
-                "yara-python is not installed. Install it with: pip install yara-python"
+                msg,
             )
 
         self.externals = externals or {}
@@ -69,6 +71,7 @@ class LibyaraCompiler:
 
         Returns:
             CompilationResult with compiled rules or errors
+
         """
         try:
             # Generate YARA source code from AST
@@ -76,7 +79,9 @@ class LibyaraCompiler:
 
             # Compile using libyara
             return self.compile_source(
-                source_code, includes=includes, error_on_warning=error_on_warning
+                source_code,
+                includes=includes,
+                error_on_warning=error_on_warning,
             )
 
         except Exception as e:
@@ -101,6 +106,7 @@ class LibyaraCompiler:
 
         Returns:
             CompilationResult with compiled rules or errors
+
         """
         errors = []
         warnings = []
@@ -111,7 +117,11 @@ class LibyaraCompiler:
                 # Use temporary file for sources with null bytes
                 import tempfile
 
-                with tempfile.NamedTemporaryFile(mode="w", suffix=".yar", delete=False) as f:
+                with tempfile.NamedTemporaryFile(
+                    mode="w",
+                    suffix=".yar",
+                    delete=False,
+                ) as f:
                     # Write as UTF-8, replacing any problematic characters
                     f.write(source)
                     temp_path = f.name
@@ -154,11 +164,16 @@ class LibyaraCompiler:
             errors.append(f"Unexpected error: {e!s}")
 
         return CompilationResult(
-            success=False, errors=errors, warnings=warnings, source_code=source
+            success=False,
+            errors=errors,
+            warnings=warnings,
+            source_code=source,
         )
 
     def compile_file(
-        self, filepath: str | Path, error_on_warning: bool = False
+        self,
+        filepath: str | Path,
+        error_on_warning: bool = False,
     ) -> CompilationResult:
         """Compile YARA file using libyara.
 
@@ -168,17 +183,24 @@ class LibyaraCompiler:
 
         Returns:
             CompilationResult with compiled rules or errors
+
         """
         filepath = Path(filepath)
 
         if not filepath.exists():
-            return CompilationResult(success=False, errors=[f"File not found: {filepath}"])
+            return CompilationResult(
+                success=False,
+                errors=[f"File not found: {filepath}"],
+            )
 
         try:
             source = filepath.read_text()
             return self.compile_source(source, error_on_warning=error_on_warning)
         except Exception as e:
-            return CompilationResult(success=False, errors=[f"Error reading file: {e!s}"])
+            return CompilationResult(
+                success=False,
+                errors=[f"Error reading file: {e!s}"],
+            )
 
     def save_compiled_rules(self, rules: Any, filepath: str | Path) -> bool:
         """Save compiled rules to file.
@@ -189,11 +211,12 @@ class LibyaraCompiler:
 
         Returns:
             True if successful
+
         """
         try:
             rules.save(str(filepath))
             return True
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return False
 
 

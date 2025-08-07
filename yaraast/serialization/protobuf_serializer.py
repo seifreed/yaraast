@@ -30,10 +30,11 @@ except ImportError:
 class ProtobufSerializer(ASTVisitor[Any]):
     """Protobuf serializer for YARA AST with efficient binary format."""
 
-    def __init__(self, include_metadata: bool = True):
+    def __init__(self, include_metadata: bool = True) -> None:
         if yara_ast_pb2 is None:
+            msg = "Protobuf schema not compiled. Run: protoc --python_out=. yara_ast.proto"
             raise ImportError(
-                "Protobuf schema not compiled. Run: protoc --python_out=. yara_ast.proto"
+                msg,
             )
 
         self.include_metadata = include_metadata
@@ -49,7 +50,11 @@ class ProtobufSerializer(ASTVisitor[Any]):
 
         return binary_data
 
-    def serialize_text(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
+    def serialize_text(
+        self,
+        ast: YaraFile,
+        output_path: str | Path | None = None,
+    ) -> str:
         """Serialize AST to Protobuf text format (for debugging)."""
         pb_yara_file = self._ast_to_protobuf(ast)
         text_data = str(pb_yara_file)
@@ -71,7 +76,8 @@ class ProtobufSerializer(ASTVisitor[Any]):
                 binary_data = f.read()
 
         if not binary_data:
-            raise ValueError("No binary data provided")
+            msg = "No binary data provided"
+            raise ValueError(msg)
 
         pb_yara_file = yara_ast_pb2.YaraFile()
         pb_yara_file.ParseFromString(binary_data)
@@ -221,11 +227,20 @@ class ProtobufSerializer(ASTVisitor[Any]):
             pb_expr.boolean_literal.value = expr.value
         elif isinstance(expr, BinaryExpression):
             pb_expr.binary_expression.operator = expr.operator
-            self._convert_expression_to_protobuf(expr.left, pb_expr.binary_expression.left)
-            self._convert_expression_to_protobuf(expr.right, pb_expr.binary_expression.right)
+            self._convert_expression_to_protobuf(
+                expr.left,
+                pb_expr.binary_expression.left,
+            )
+            self._convert_expression_to_protobuf(
+                expr.right,
+                pb_expr.binary_expression.right,
+            )
         elif isinstance(expr, UnaryExpression):
             pb_expr.unary_expression.operator = expr.operator
-            self._convert_expression_to_protobuf(expr.operand, pb_expr.unary_expression.operand)
+            self._convert_expression_to_protobuf(
+                expr.operand,
+                pb_expr.unary_expression.operand,
+            )
         # Add more expression types as needed
 
     def _protobuf_to_ast(self, pb_file: yara_ast_pb2.YaraFile) -> YaraFile:
@@ -241,7 +256,7 @@ class ProtobufSerializer(ASTVisitor[Any]):
                 Import(
                     module=pb_import.module,
                     alias=pb_import.alias if pb_import.alias else None,
-                )
+                ),
             )
 
         # Reconstruct includes

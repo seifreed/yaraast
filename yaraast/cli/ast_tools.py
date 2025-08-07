@@ -50,7 +50,7 @@ class BenchmarkResult:
 class ASTStructuralAnalyzer(ASTVisitor):
     """Analyze AST structure for diffing purposes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.structural_hash = {}
         self.rule_signatures = {}
@@ -105,7 +105,9 @@ class ASTStructuralAnalyzer(ASTVisitor):
             "modifiers": sorted(getattr(rule, "modifiers", [])),
             "tags": sorted([tag.name for tag in getattr(rule, "tags", [])]),
             "meta_keys": meta_keys,
-            "string_identifiers": sorted([s.identifier for s in getattr(rule, "strings", [])]),
+            "string_identifiers": sorted(
+                [s.identifier for s in getattr(rule, "strings", [])],
+            ),
             "has_condition": rule.condition is not None,
         }
 
@@ -126,7 +128,9 @@ class ASTStructuralAnalyzer(ASTVisitor):
         string_structure = {
             "identifier": string_def.identifier,
             "type": type(string_def).__name__,
-            "modifiers": sorted([str(mod) for mod in getattr(string_def, "modifiers", [])]),
+            "modifiers": sorted(
+                [str(mod) for mod in getattr(string_def, "modifiers", [])],
+            ),
         }
 
         # Add type-specific content hash (without exact content for style independence)
@@ -140,12 +144,16 @@ class ASTStructuralAnalyzer(ASTVisitor):
             string_structure["content_type"] = "hex"
             string_structure["token_count"] = len(getattr(string_def, "tokens", []))
 
-        self.string_signatures[string_def.identifier] = self._hash_dict(string_structure)
+        self.string_signatures[string_def.identifier] = self._hash_dict(
+            string_structure,
+        )
 
     def _analyze_condition(self, condition, rule_name: str) -> None:
         """Analyze condition structure."""
         condition_structure = self._get_condition_structure(condition)
-        self.condition_signatures[f"{rule_name}.condition"] = self._hash_dict(condition_structure)
+        self.condition_signatures[f"{rule_name}.condition"] = self._hash_dict(
+            condition_structure,
+        )
 
     def _get_condition_structure(self, node) -> dict[str, Any]:
         """Get structural representation of condition."""
@@ -178,221 +186,221 @@ class ASTStructuralAnalyzer(ASTVisitor):
     # Add all missing abstract methods
     def visit_array_access(self, node) -> Any:
         """Visit Array Access node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_at_expression(self, node) -> Any:
         """Visit At Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_binary_expression(self, node) -> Any:
         """Visit Binary Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_boolean_literal(self, node) -> Any:
         """Visit Boolean Literal node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_comment(self, node) -> Any:
         """Visit Comment node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_comment_group(self, node) -> Any:
         """Visit Comment Group node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_condition(self, node) -> Any:
         """Visit Condition node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_defined_expression(self, node) -> Any:
         """Visit Defined Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_dictionary_access(self, node) -> Any:
         """Visit Dictionary Access node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_double_literal(self, node) -> Any:
         """Visit Double Literal node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_expression(self, node) -> Any:
         """Visit Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_extern_import(self, node) -> Any:
         """Visit Extern Import node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_extern_namespace(self, node) -> Any:
         """Visit Extern Namespace node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_extern_rule(self, node) -> Any:
         """Visit Extern Rule node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_extern_rule_reference(self, node) -> Any:
         """Visit Extern Rule Reference node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_for_expression(self, node) -> Any:
         """Visit For Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_for_of_expression(self, node) -> Any:
         """Visit For Of Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_function_call(self, node) -> Any:
         """Visit Function Call node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_hex_alternative(self, node) -> Any:
         """Visit Hex Alternative node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_hex_byte(self, node) -> Any:
         """Visit Hex Byte node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_hex_jump(self, node) -> Any:
         """Visit Hex Jump node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_hex_nibble(self, node) -> Any:
         """Visit Hex Nibble node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_hex_string(self, node) -> Any:
         """Visit Hex String node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_hex_token(self, node) -> Any:
         """Visit Hex Token node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_hex_wildcard(self, node) -> Any:
         """Visit Hex Wildcard node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_identifier(self, node) -> Any:
         """Visit Identifier node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_import(self, node) -> Any:
         """Visit Import node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_in_expression(self, node) -> Any:
         """Visit In Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_in_rule_pragma(self, node) -> Any:
         """Visit In Rule Pragma node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_include(self, node) -> Any:
         """Visit Include node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_integer_literal(self, node) -> Any:
         """Visit Integer Literal node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_member_access(self, node) -> Any:
         """Visit Member Access node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_meta(self, node) -> Any:
         """Visit Meta node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_module_reference(self, node) -> Any:
         """Visit Module Reference node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_of_expression(self, node) -> Any:
         """Visit Of Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_parentheses_expression(self, node) -> Any:
         """Visit Parentheses Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_plain_string(self, node) -> Any:
         """Visit Plain String node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_pragma(self, node) -> Any:
         """Visit Pragma node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_pragma_block(self, node) -> Any:
         """Visit Pragma Block node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_range_expression(self, node) -> Any:
         """Visit Range Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_regex_literal(self, node) -> Any:
         """Visit Regex Literal node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_regex_string(self, node) -> Any:
         """Visit Regex String node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_set_expression(self, node) -> Any:
         """Visit Set Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_string_count(self, node) -> Any:
         """Visit String Count node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_string_definition(self, node) -> Any:
         """Visit String Definition node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_string_identifier(self, node) -> Any:
         """Visit String Identifier node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_string_length(self, node) -> Any:
         """Visit String Length node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_string_literal(self, node) -> Any:
         """Visit String Literal node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_string_modifier(self, node) -> Any:
         """Visit String Modifier node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_string_offset(self, node) -> Any:
         """Visit String Offset node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_string_operator_expression(self, node) -> Any:
         """Visit String Operator Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_tag(self, node) -> Any:
         """Visit Tag node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
     def visit_unary_expression(self, node) -> Any:
         """Visit Unary Expression node - not needed for structural analysis."""
-        pass
+        # Implementation not needed for structural analysis
 
 
 class ASTDiffer:
     """Compare ASTs and identify logical vs stylistic changes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.analyzer = ASTStructuralAnalyzer()
 
     def diff_files(self, file1_path: Path, file2_path: Path) -> ASTDiffResult:
@@ -424,7 +432,9 @@ class ASTDiffer:
 
         # Compare file-level structure
         if analysis1["structural_hash"]["file"] != analysis2["structural_hash"]["file"]:
-            result.structural_changes.append("File structure changed (imports/includes/rule order)")
+            result.structural_changes.append(
+                "File structure changed (imports/includes/rule order)",
+            )
             result.has_changes = True
 
         # Compare rules
@@ -441,7 +451,7 @@ class ASTDiffer:
             if analysis1["rule_signatures"][rule_name] != analysis2["rule_signatures"][rule_name]:
                 result.modified_rules.append(rule_name)
                 result.logical_changes.append(
-                    f"Rule '{rule_name}' modified (logic/structure changed)"
+                    f"Rule '{rule_name}' modified (logic/structure changed)",
                 )
 
         # Check string changes
@@ -454,7 +464,9 @@ class ASTDiffer:
         if added_strings:
             result.logical_changes.append(f"Added strings: {', '.join(added_strings)}")
         if removed_strings:
-            result.logical_changes.append(f"Removed strings: {', '.join(removed_strings)}")
+            result.logical_changes.append(
+                f"Removed strings: {', '.join(removed_strings)}",
+            )
 
         # Check condition changes
         conditions1 = set(analysis1["condition_signatures"].keys())
@@ -467,7 +479,9 @@ class ASTDiffer:
                 != analysis2["condition_signatures"][condition_key]
             ):
                 rule_name = condition_key.split(".")[0]
-                result.logical_changes.append(f"Condition logic changed in rule '{rule_name}'")
+                result.logical_changes.append(
+                    f"Condition logic changed in rule '{rule_name}'",
+                )
 
         # Detect style-only changes by comparing generated output
         result = self._detect_style_changes(ast1, ast2, result)
@@ -478,7 +492,7 @@ class ASTDiffer:
             or result.structural_changes
             or result.added_rules
             or result.removed_rules
-            or result.modified_rules
+            or result.modified_rules,
         )
 
         # Create summary
@@ -494,7 +508,10 @@ class ASTDiffer:
         return result
 
     def _detect_style_changes(
-        self, ast1: YaraFile, ast2: YaraFile, result: ASTDiffResult
+        self,
+        ast1: YaraFile,
+        ast2: YaraFile,
+        result: ASTDiffResult,
     ) -> ASTDiffResult:
         """Detect style-only changes by normalizing output."""
         try:
@@ -507,11 +524,12 @@ class ASTDiffer:
             if not result.logical_changes and code1_lines != code2_lines:
                 # Find specific style differences
                 for line_num, (line1, line2) in enumerate(
-                    zip(code1_lines, code2_lines, strict=False), 1
+                    zip(code1_lines, code2_lines, strict=False),
+                    1,
                 ):
                     if line1.strip() == line2.strip() and line1 != line2:
                         result.style_only_changes.append(
-                            f"Line {line_num}: whitespace/indentation change"
+                            f"Line {line_num}: whitespace/indentation change",
                         )
                     elif line1 != line2:
                         # Check if it's just formatting (same tokens, different spacing)
@@ -519,12 +537,12 @@ class ASTDiffer:
                         tokens2 = line2.split()
                         if tokens1 == tokens2:
                             result.style_only_changes.append(
-                                f"Line {line_num}: spacing/formatting change"
+                                f"Line {line_num}: spacing/formatting change",
                             )
 
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             # If we can't detect style changes, skip this analysis
-            pass
+            pass  # Implementation not needed for structural analysis
 
         return result
 
@@ -532,12 +550,15 @@ class ASTDiffer:
 class ASTFormatter:
     """AST-based code formatter using CodeGenerator."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.generator = CodeGenerator()
         self.pretty_printer = PrettyPrinter()
 
     def format_file(
-        self, input_path: Path, output_path: Path | None = None, style: str = "default"
+        self,
+        input_path: Path,
+        output_path: Path | None = None,
+        style: str = "default",
     ) -> tuple[bool, str]:
         """Format YARA file using AST regeneration."""
         try:
@@ -588,7 +609,10 @@ class ASTFormatter:
             formatted_lines = formatted.strip().split("\n")
 
             issues = []
-            for i, (orig, fmt) in enumerate(zip(original_lines, formatted_lines, strict=False), 1):
+            for i, (orig, fmt) in enumerate(
+                zip(original_lines, formatted_lines, strict=False),
+                1,
+            ):
                 if orig != fmt:
                     issues.append(f"Line {i}: formatting issue")
 
@@ -601,10 +625,14 @@ class ASTFormatter:
 class ASTBenchmarker:
     """Performance benchmarking for AST operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.results: list[BenchmarkResult] = []
 
-    def benchmark_parsing(self, file_path: Path, iterations: int = 10) -> BenchmarkResult:
+    def benchmark_parsing(
+        self,
+        file_path: Path,
+        iterations: int = 10,
+    ) -> BenchmarkResult:
         """Benchmark parsing performance."""
         try:
             # Read file once
@@ -658,7 +686,11 @@ class ASTBenchmarker:
             self.results.append(result)
             return result
 
-    def benchmark_codegen(self, file_path: Path, iterations: int = 10) -> BenchmarkResult:
+    def benchmark_codegen(
+        self,
+        file_path: Path,
+        iterations: int = 10,
+    ) -> BenchmarkResult:
         """Benchmark code generation performance."""
         try:
             # Parse file once
@@ -711,7 +743,11 @@ class ASTBenchmarker:
             self.results.append(result)
             return result
 
-    def benchmark_roundtrip(self, file_path: Path, iterations: int = 5) -> list[BenchmarkResult]:
+    def benchmark_roundtrip(
+        self,
+        file_path: Path,
+        iterations: int = 5,
+    ) -> list[BenchmarkResult]:
         """Benchmark full parse->generate roundtrip."""
         results = []
 
@@ -829,6 +865,7 @@ def print_ast(ast: YaraFile, console: Console | None = None) -> None:
     Args:
         ast: The YARA AST to print
         console: Rich console to use (creates new if None)
+
     """
     if console is None:
         console = Console()
@@ -902,6 +939,7 @@ def visualize_ast(ast: YaraFile, output_format: str = "tree") -> str:
 
     Returns:
         String representation in the requested format
+
     """
     if output_format == "tree":
         # Use print_ast to generate tree
@@ -914,14 +952,14 @@ def visualize_ast(ast: YaraFile, output_format: str = "tree") -> str:
         print_ast(ast, console)
         return string_io.getvalue()
 
-    elif output_format == "json":
+    if output_format == "json":
         # Convert to JSON
         from yaraast.serialization.json_serializer import JsonSerializer
 
         serializer = JsonSerializer()
         return serializer.serialize(ast)
 
-    elif output_format == "yaml":
+    if output_format == "yaml":
         # Convert to YAML
         try:
             from yaraast.serialization.yaml_serializer import YamlSerializer

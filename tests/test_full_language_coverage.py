@@ -6,7 +6,7 @@ from yaraast import CodeGenerator, Parser
 from yaraast.types import TypeValidator
 
 
-def test_import_with_alias():
+def test_import_with_alias() -> None:
     """Test import statements with aliases."""
     yara_code = """
     import "pe" as windows
@@ -42,7 +42,7 @@ def test_import_with_alias():
     assert "as math" not in output
 
 
-def test_regex_matches_regex():
+def test_regex_matches_regex() -> None:
     """Test regex matching another regex expression."""
     yara_code = """
     rule regex_matches_regex {
@@ -79,7 +79,7 @@ def test_regex_matches_regex():
     assert "/foo.*bar/i matches /b[a-z]+r/" in output
 
 
-def test_big_endian_little_endian_functions():
+def test_big_endian_little_endian_functions() -> None:
     """Test big-endian and little-endian integer functions."""
     yara_code = """
     rule endian_functions {
@@ -120,7 +120,7 @@ def test_big_endian_little_endian_functions():
         assert func in output
 
 
-def test_complex_regex_in_expressions():
+def test_complex_regex_in_expressions() -> None:
     """Test complex regex patterns in expressions."""
     yara_code = r"""
     rule complex_regex {
@@ -154,7 +154,7 @@ def test_complex_regex_in_expressions():
     assert r"/test\d+/ matches /test[0-9]+/" in output
 
 
-def test_string_matches_dynamic_regex():
+def test_string_matches_dynamic_regex() -> None:
     """Test string identifier matching dynamic regex."""
     yara_code = r"""
     rule string_matches_regex {
@@ -184,7 +184,7 @@ def test_string_matches_dynamic_regex():
     assert r"$email matches /.*@evil\.com/" in output
 
 
-def test_mixed_features():
+def test_mixed_features() -> None:
     """Test combination of all new features."""
     yara_code = r"""
     import "pe" as peformat

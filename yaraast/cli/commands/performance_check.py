@@ -32,7 +32,7 @@ console = Console()
     is_flag=True,
     help="Show only summary statistics",
 )
-def performance_check(input_file: Path, severity: str, limit: int, summary: bool):
+def performance_check(input_file: Path, severity: str, limit: int, summary: bool) -> None:
     """Analyze YARA rules for performance issues.
 
     This command identifies potential performance problems in YARA rules such as:
@@ -56,7 +56,7 @@ def performance_check(input_file: Path, severity: str, limit: int, summary: bool
         all_issues: list[StringPerformanceIssue] = []
 
         console.print(
-            f"\n[cyan]Analyzing {len(ast.rules)} rules for performance issues...[/cyan]\n"
+            f"\n[cyan]Analyzing {len(ast.rules)} rules for performance issues...[/cyan]\n",
         )
 
         for rule in track(ast.rules, description="Analyzing rules"):
@@ -91,7 +91,7 @@ def performance_check(input_file: Path, severity: str, limit: int, summary: bool
         critical_count = sum(1 for i in all_issues if i.severity == "critical")
         if critical_count > 0:
             console.print(
-                f"[red]⚠️  {critical_count} critical issues that may severely impact scanning speed[/red]"
+                f"[red]⚠️  {critical_count} critical issues that may severely impact scanning speed[/red]",
             )
 
     except Exception as e:
@@ -99,7 +99,7 @@ def performance_check(input_file: Path, severity: str, limit: int, summary: bool
         raise click.Abort from e
 
 
-def display_issues(issues: list[StringPerformanceIssue]):
+def display_issues(issues: list[StringPerformanceIssue]) -> None:
     """Display performance issues in a table."""
     table = Table(
         title="Performance Issues",
@@ -132,7 +132,7 @@ def display_issues(issues: list[StringPerformanceIssue]):
         console.print(f"  • {suggestion}")
 
 
-def display_summary(issues: list[StringPerformanceIssue], total_rules: int):
+def display_summary(issues: list[StringPerformanceIssue], total_rules: int) -> None:
     """Display summary statistics."""
     # Group by issue type
     issue_types = {}
@@ -156,7 +156,11 @@ def display_summary(issues: list[StringPerformanceIssue], total_rules: int):
     table.add_column("Critical", justify="right", style="red")
     table.add_column("Affected Rules", justify="right")
 
-    for issue_type, stats in sorted(issue_types.items(), key=lambda x: x[1]["count"], reverse=True):
+    for issue_type, stats in sorted(
+        issue_types.items(),
+        key=lambda x: x[1]["count"],
+        reverse=True,
+    ):
         table.add_row(
             issue_type.replace("_", " ").title(),
             str(stats["count"]),
@@ -171,10 +175,12 @@ def display_summary(issues: list[StringPerformanceIssue], total_rules: int):
     console.print("\n[cyan]Overall Statistics:[/cyan]")
     console.print(f"  • Total rules analyzed: {total_rules}")
     console.print(
-        f"  • Rules with issues: {affected_rules} ({affected_rules / total_rules * 100:.1f}%)"
+        f"  • Rules with issues: {affected_rules} ({affected_rules / total_rules * 100:.1f}%)",
     )
     console.print(f"  • Total issues found: {len(issues)}")
-    console.print(f"  • Critical issues: {sum(1 for i in issues if i.severity == 'critical')}")
+    console.print(
+        f"  • Critical issues: {sum(1 for i in issues if i.severity == 'critical')}",
+    )
 
 
 # Export the command

@@ -73,7 +73,9 @@ class FormattingConfig:
     sort_strings: bool = False
 
     # Section order
-    section_order: list[str] = field(default_factory=lambda: ["meta", "strings", "condition"])
+    section_order: list[str] = field(
+        default_factory=lambda: ["meta", "strings", "condition"],
+    )
 
     # Comments
     preserve_comments: bool = True

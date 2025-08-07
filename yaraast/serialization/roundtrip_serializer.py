@@ -100,7 +100,11 @@ class RoundTripMetadata:
 class RoundTripSerializer:
     """Enhanced serializer for round-trip YARA ↔ AST conversion with preservation."""
 
-    def __init__(self, preserve_comments: bool = True, preserve_formatting: bool = True):
+    def __init__(
+        self,
+        preserve_comments: bool = True,
+        preserve_formatting: bool = True,
+    ) -> None:
         self.preserve_comments = preserve_comments
         self.preserve_formatting = preserve_formatting
         self.json_serializer = JsonSerializer(include_metadata=True)
@@ -108,7 +112,10 @@ class RoundTripSerializer:
         self.parser = Parser()
 
     def parse_and_serialize(
-        self, yara_source: str, source_file: str | None = None, format: str = "json"
+        self,
+        yara_source: str,
+        source_file: str | None = None,
+        format: str = "json",
     ) -> tuple[YaraFile, str]:
         """Parse YARA source and serialize with metadata."""
         # Detect formatting info from source
@@ -117,7 +124,8 @@ class RoundTripSerializer:
         # Parse with comment preservation
         ast = self.parser.parse(yara_source)
         if not ast:
-            raise ValueError("Failed to parse YARA source")
+            msg = "Failed to parse YARA source"
+            raise ValueError(msg)
 
         # Create round-trip metadata
         metadata = RoundTripMetadata(
@@ -164,7 +172,10 @@ class RoundTripSerializer:
             ast = self.json_serializer.deserialize(serialized_data)
 
         # Generate YARA code with preserved formatting
-        generator = self._create_generator(roundtrip_metadata, preserve_original_formatting)
+        generator = self._create_generator(
+            roundtrip_metadata,
+            preserve_original_formatting,
+        )
         yara_code = generator.generate(ast)
 
         return ast, yara_code
@@ -176,7 +187,8 @@ class RoundTripSerializer:
 
         # Serialized → AST → YARA
         reconstructed_ast, reconstructed_yara = self.deserialize_and_generate(
-            serialized, format=format
+            serialized,
+            format=format,
         )
 
         # Compare results
@@ -196,14 +208,16 @@ class RoundTripSerializer:
 
         if len(original_lines) != len(reconstructed_lines):
             result["differences"].append(
-                f"Line count differs: {len(original_lines)} vs {len(reconstructed_lines)}"
+                f"Line count differs: {len(original_lines)} vs {len(reconstructed_lines)}",
             )
 
         # Line-by-line comparison (simplified)
-        for i, (orig, recon) in enumerate(zip(original_lines, reconstructed_lines, strict=False)):
+        for i, (orig, recon) in enumerate(
+            zip(original_lines, reconstructed_lines, strict=False),
+        ):
             if orig.strip() != recon.strip():
                 result["differences"].append(
-                    f"Line {i + 1} differs: '{orig.strip()}' vs '{recon.strip()}'"
+                    f"Line {i + 1} differs: '{orig.strip()}' vs '{recon.strip()}'",
                 )
 
         result["round_trip_successful"] = len(result["differences"]) == 0
@@ -253,7 +267,10 @@ class RoundTripSerializer:
         return formatting
 
     def _serialize_with_roundtrip_metadata(
-        self, ast: YaraFile, metadata: RoundTripMetadata, format: str
+        self,
+        ast: YaraFile,
+        metadata: RoundTripMetadata,
+        format: str,
     ) -> str:
         """Serialize AST with round-trip metadata."""
         if format == "yaml":
@@ -278,7 +295,9 @@ class RoundTripSerializer:
         return json.dumps(standard_data, indent=2, ensure_ascii=False)
 
     def _create_generator(
-        self, metadata: RoundTripMetadata | None, preserve_original_formatting: bool
+        self,
+        metadata: RoundTripMetadata | None,
+        preserve_original_formatting: bool,
     ) -> CommentAwareCodeGenerator:
         """Create code generator with appropriate formatting settings."""
         if metadata and preserve_original_formatting:
@@ -291,7 +310,8 @@ class RoundTripSerializer:
             preserve_comments = self.preserve_comments
 
         return CommentAwareCodeGenerator(
-            indent_size=indent_size, preserve_comments=preserve_comments
+            indent_size=indent_size,
+            preserve_comments=preserve_comments,
         )
 
 
@@ -303,7 +323,7 @@ class EnhancedYamlSerializer(YamlSerializer):
         include_metadata: bool = True,
         flow_style: bool = False,
         include_pipeline_metadata: bool = True,
-    ):
+    ) -> None:
         super().__init__(include_metadata, flow_style)
         self.include_pipeline_metadata = include_pipeline_metadata
 
@@ -360,7 +380,11 @@ class EnhancedYamlSerializer(YamlSerializer):
 
         return yaml_str
 
-    def serialize_rules_manifest(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
+    def serialize_rules_manifest(
+        self,
+        ast: YaraFile,
+        output_path: str | Path | None = None,
+    ) -> str:
         """Create a rules manifest for pipeline automation."""
         manifest = {
             "manifest_version": "1.0",
@@ -434,7 +458,10 @@ def roundtrip_yara(yara_source: str, format: str = "json") -> dict[str, Any]:
     return serializer.roundtrip_test(yara_source, format)
 
 
-def serialize_for_pipeline(ast: YaraFile, pipeline_info: dict[str, Any] | None = None) -> str:
+def serialize_for_pipeline(
+    ast: YaraFile,
+    pipeline_info: dict[str, Any] | None = None,
+) -> str:
     """Serialize AST for CI/CD pipeline."""
     serializer = EnhancedYamlSerializer(include_pipeline_metadata=True)
     return serializer.serialize_for_pipeline(ast, pipeline_info)

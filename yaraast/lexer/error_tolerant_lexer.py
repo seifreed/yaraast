@@ -48,7 +48,7 @@ class LexerErrorInfo:
 class ErrorTolerantLexer(Lexer):
     """Lexer that collects errors and continues parsing."""
 
-    def __init__(self, text: str, max_errors: int = 100):
+    def __init__(self, text: str, max_errors: int = 100) -> None:
         super().__init__(text)
         self.errors: list[LexerErrorInfo] = []
         self.max_errors = max_errors
@@ -64,7 +64,10 @@ class ErrorTolerantLexer(Lexer):
 
         while self.position < len(self.text):
             if len(self.errors) >= self.max_errors:
-                self._add_error(f"Too many errors (>{self.max_errors}), stopping", severity="error")
+                self._add_error(
+                    f"Too many errors (>{self.max_errors}), stopping",
+                    severity="error",
+                )
                 break
 
             # Skip whitespace and comments first
@@ -87,7 +90,12 @@ class ErrorTolerantLexer(Lexer):
         self.tokens.append(Token(TokenType.EOF, None, self.line, self.column))
         return self.tokens, self.errors
 
-    def _add_error(self, message: str, severity: str = "error", suggestion: str | None = None):
+    def _add_error(
+        self,
+        message: str,
+        severity: str = "error",
+        suggestion: str | None = None,
+    ) -> None:
         """Add an error with context."""
         # Get context lines
         lines = self.original_text.split("\n")
@@ -110,7 +118,7 @@ class ErrorTolerantLexer(Lexer):
         )
         self.errors.append(error)
 
-    def _recover_from_error(self):
+    def _recover_from_error(self) -> None:
         """Try to recover from an error and continue parsing."""
         char = self._current_char()
 
@@ -129,7 +137,7 @@ class ErrorTolerantLexer(Lexer):
             # Default: skip current character and continue
             self._advance()
 
-    def _recover_from_unterminated_string(self):
+    def _recover_from_unterminated_string(self) -> None:
         """Recover from unterminated string error."""
         # Skip to end of line or next string delimiter
         while self._current_char() and self._current_char() not in '\n"':
@@ -138,12 +146,12 @@ class ErrorTolerantLexer(Lexer):
         if self._current_char() in ('"', "\n"):
             self._advance()  # Skip the quote or newline
 
-    def _skip_to_whitespace(self):
+    def _skip_to_whitespace(self) -> None:
         """Skip to next whitespace character."""
         while self._current_char() and not self._current_char().isspace():
             self._advance()
 
-    def _skip_to_char(self, target: str):
+    def _skip_to_char(self, target: str) -> None:
         """Skip to target character."""
         while self._current_char() and self._current_char() != target:
             self._advance()
@@ -186,7 +194,7 @@ class ErrorTolerantLexer(Lexer):
                                 "base64",
                                 "\n",
                                 "\r",
-                            )
+                            ),
                         ):
                             # Treat as Windows path with backslash at end
                             value += "\\"

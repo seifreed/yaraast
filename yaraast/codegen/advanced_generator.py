@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 class AdvancedCodeGenerator(CodeGenerator):
     """Advanced code generator with configurable formatting."""
 
-    def __init__(self, config: FormattingConfig | None = None):
+    def __init__(self, config: FormattingConfig | None = None) -> None:
         self.config = config or FormattingConfig()
         super().__init__(self.config.indent_size)
         self._string_definitions: list[tuple[str, Any]] = []
@@ -104,7 +104,7 @@ class AdvancedCodeGenerator(CodeGenerator):
                     and (
                         (isinstance(rule.meta, dict) and rule.meta)
                         or (isinstance(rule.meta, list) and rule.meta)
-                    )
+                    ),
                 )
                 return (
                     not has_meta,
@@ -213,7 +213,10 @@ class AdvancedCodeGenerator(CodeGenerator):
     def _get_sorted_meta(self, meta_list: list) -> list:
         """Sort meta list if configured."""
         if self.config.sort_meta and meta_list:
-            return sorted(meta_list, key=lambda x: x.key if hasattr(x, "key") else str(x))
+            return sorted(
+                meta_list,
+                key=lambda x: x.key if hasattr(x, "key") else str(x),
+            )
         return meta_list
 
     def _get_max_key_length(self, meta_list: list) -> int:

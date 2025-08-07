@@ -9,7 +9,7 @@ from yaraast.lexer.tokens import Token, TokenType
 class CommentPreservingLexer(Lexer):
     """YARA lexer that preserves comments."""
 
-    def __init__(self, text: str):
+    def __init__(self, text: str) -> None:
         super().__init__(text)
         self.preserve_comments = True
         self.comments: list[Token] = []
@@ -39,7 +39,7 @@ class CommentPreservingLexer(Lexer):
                         tokens.append(comment_token)
                         self.comments.append(comment_token)
                     continue
-                elif self.text[self.position + 1] == "*":
+                if self.text[self.position + 1] == "*":
                     comment_token = self._read_block_comment()
                     if self.preserve_comments and comment_token:
                         tokens.append(comment_token)
@@ -71,7 +71,11 @@ class CommentPreservingLexer(Lexer):
             self._advance()
 
         return Token(
-            TokenType.COMMENT, comment_text, start_line, start_column, self.position - start_pos
+            TokenType.COMMENT,
+            comment_text,
+            start_line,
+            start_column,
+            self.position - start_pos,
         )
 
     def _read_block_comment(self) -> Token | None:
@@ -92,12 +96,15 @@ class CommentPreservingLexer(Lexer):
                 self._advance()
                 self._advance()
                 break
-            else:
-                comment_text += self._current_char()
-                self._advance()
+            comment_text += self._current_char()
+            self._advance()
 
         return Token(
-            TokenType.COMMENT, comment_text, start_line, start_column, self.position - start_pos
+            TokenType.COMMENT,
+            comment_text,
+            start_line,
+            start_column,
+            self.position - start_pos,
         )
 
     def get_comments(self) -> list[Token]:

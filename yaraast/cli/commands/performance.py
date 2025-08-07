@@ -16,21 +16,29 @@ from yaraast.performance import (
 
 
 @click.group()
-def performance():
+def performance() -> None:
     """Performance tools for large YARA rule collections."""
 
 
 @performance.command()
 @click.argument("input_path", type=click.Path(exists=True))
 @click.option("--output-dir", "-o", type=click.Path(), help="Output directory")
-@click.option("--batch-size", "-b", type=int, default=50, help="Batch size for processing")
+@click.option(
+    "--batch-size",
+    "-b",
+    type=int,
+    default=50,
+    help="Batch size for processing",
+)
 @click.option("--max-workers", "-w", type=int, help="Maximum worker threads")
 @click.option("--memory-limit", "-m", type=int, default=1000, help="Memory limit in MB")
 @click.option(
     "--operations",
     "-op",
     multiple=True,
-    type=click.Choice(["parse", "complexity", "dependency_graph", "html_tree", "serialize"]),
+    type=click.Choice(
+        ["parse", "complexity", "dependency_graph", "html_tree", "serialize"],
+    ),
     default=["parse", "complexity"],
     help="Operations to perform",
 )
@@ -55,7 +63,7 @@ def _convert_operations(operations):
     return batch_operations
 
 
-def _display_operation_result(operation, result):
+def _display_operation_result(operation, result) -> None:
     """Display results for a single operation."""
     click.echo(f"\n{operation.value.upper()}:")
     click.echo(f"  Input items: {result.input_count}")
@@ -68,7 +76,7 @@ def _display_operation_result(operation, result):
     _display_errors(result)
 
 
-def _display_output_files(result):
+def _display_output_files(result) -> None:
     """Display output files for a result."""
     if not result.output_files:
         return
@@ -78,10 +86,12 @@ def _display_output_files(result):
         for file_path in result.output_files:
             click.echo(f"    - {file_path}")
     else:
-        click.echo(f"    - {result.output_files[0]} (and {len(result.output_files) - 1} more)")
+        click.echo(
+            f"    - {result.output_files[0]} (and {len(result.output_files) - 1} more)",
+        )
 
 
-def _display_errors(result):
+def _display_errors(result) -> None:
     """Display errors for a result."""
     if not result.errors:
         return
@@ -104,7 +114,7 @@ def batch(
     recursive: bool,
     pattern: str,
     progress: bool,
-):
+) -> None:
     """Process large collections of YARA files in batches."""
     input_path = Path(input_path)
 
@@ -115,10 +125,13 @@ def batch(
     batch_operations = _convert_operations(operations)
 
     # Progress callback
-    def progress_callback(operation: str, current: int, total: int):
+    def progress_callback(operation: str, current: int, total: int) -> None:
         if progress:
             percentage = (current / total * 100) if total > 0 else 0
-            click.echo(f"\r{operation}: {current}/{total} ({percentage:.1f}%)", nl=False)
+            click.echo(
+                f"\r{operation}: {current}/{total} ({percentage:.1f}%)",
+                nl=False,
+            )
 
     processor = BatchProcessor(
         max_workers=max_workers,
@@ -131,10 +144,18 @@ def batch(
 
     try:
         if input_path.is_file():
-            results = processor.process_large_file(input_path, batch_operations, output_dir)
+            results = processor.process_large_file(
+                input_path,
+                batch_operations,
+                output_dir,
+            )
         else:
             results = processor.process_directory(
-                input_path, batch_operations, output_dir, pattern, recursive
+                input_path,
+                batch_operations,
+                output_dir,
+                pattern,
+                recursive,
             )
 
         total_time = time.time() - start_time
@@ -155,7 +176,7 @@ def batch(
         raise click.Abort from None
 
 
-def _save_batch_results(results, output_dir):
+def _save_batch_results(results, output_dir) -> None:
     """Save batch processing results to JSON."""
     results_file = output_dir / "batch_results.json"
     results_data = {
@@ -176,7 +197,13 @@ def _save_batch_results(results, output_dir):
         json.dump(results_data, f, indent=2)
 
 
-def _get_parse_iterator(parser, input_path: Path, split_rules: bool, pattern: str, recursive: bool):
+def _get_parse_iterator(
+    parser,
+    input_path: Path,
+    split_rules: bool,
+    pattern: str,
+    recursive: bool,
+):
     """Get appropriate parse iterator based on input type."""
     if input_path.is_file():
         if split_rules:
@@ -200,7 +227,7 @@ def _display_stream_summary(results, total_time: float):
     return successful, failed
 
 
-def _display_stream_details(successful, failed, parser_stats):
+def _display_stream_details(successful, failed, parser_stats) -> None:
     """Display detailed streaming statistics."""
     if successful:
         total_rules = sum(r.rule_count for r in successful)
@@ -224,7 +251,14 @@ def _display_stream_details(successful, failed, parser_stats):
             click.echo(f"  ... and {len(failed) - 5} more")
 
 
-def _save_stream_results(output: str, results, successful, failed, total_time: float, parser_stats):
+def _save_stream_results(
+    output: str,
+    results,
+    successful,
+    failed,
+    total_time: float,
+    parser_stats,
+) -> None:
     """Save streaming results to file."""
     output_data = {
         "summary": {
@@ -257,11 +291,20 @@ def _save_stream_results(output: str, results, successful, failed, total_time: f
 
 @performance.command()
 @click.argument("input_path", type=click.Path(exists=True))
-@click.option("--output", "-o", type=click.Path(), help="Output file for parsing statistics")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Output file for parsing statistics",
+)
 @click.option("--memory-limit", "-m", type=int, default=500, help="Memory limit in MB")
 @click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
 @click.option("--recursive", "-r", is_flag=True, help="Process directories recursively")
-@click.option("--split-rules", is_flag=True, help="Parse individual rules from large files")
+@click.option(
+    "--split-rules",
+    is_flag=True,
+    help="Parse individual rules from large files",
+)
 @click.option("--progress", is_flag=True, help="Show progress information")
 def stream(
     input_path: str,
@@ -271,27 +314,38 @@ def stream(
     recursive: bool,
     split_rules: bool,
     progress: bool,
-):
+) -> None:
     """Stream-parse large YARA collections with minimal memory usage."""
     input_path = Path(input_path)
 
     # Progress callback
-    def progress_callback(current: int, total: int, current_file: str):
+    def progress_callback(current: int, total: int, current_file: str) -> None:
         if progress:
             percentage = (current / total * 100) if total > 0 else 0
             file_name = Path(current_file).name
-            click.echo(f"\r{current}/{total} ({percentage:.1f}%) - {file_name}", nl=False)
+            click.echo(
+                f"\r{current}/{total} ({percentage:.1f}%) - {file_name}",
+                nl=False,
+            )
 
     # Initialize streaming parser
     parser = StreamingParser(
-        max_memory_mb=memory_limit, enable_gc=True, progress_callback=progress_callback
+        max_memory_mb=memory_limit,
+        enable_gc=True,
+        progress_callback=progress_callback,
     )
 
     start_time = time.time()
     results = []
 
     try:
-        result_iter = _get_parse_iterator(parser, input_path, split_rules, pattern, recursive)
+        result_iter = _get_parse_iterator(
+            parser,
+            input_path,
+            split_rules,
+            pattern,
+            recursive,
+        )
 
         # Process results
         for result in result_iter:
@@ -311,7 +365,14 @@ def stream(
 
         # Save results if requested
         if output:
-            _save_stream_results(output, results, successful, failed, total_time, parser_stats)
+            _save_stream_results(
+                output,
+                results,
+                successful,
+                failed,
+                total_time,
+                parser_stats,
+            )
 
     except KeyboardInterrupt:
         parser.cancel()
@@ -325,7 +386,13 @@ def stream(
 @click.argument("input_paths", nargs=-1, required=True, type=click.Path(exists=True))
 @click.option("--output-dir", "-o", type=click.Path(), help="Output directory")
 @click.option("--max-workers", "-w", type=int, help="Maximum worker threads")
-@click.option("--timeout", "-t", type=float, default=300.0, help="Job timeout in seconds")
+@click.option(
+    "--timeout",
+    "-t",
+    type=float,
+    default=300.0,
+    help="Job timeout in seconds",
+)
 @click.option(
     "--analysis-type",
     "-a",
@@ -333,7 +400,13 @@ def stream(
     default="complexity",
     help="Type of analysis to perform",
 )
-@click.option("--chunk-size", "-c", type=int, default=10, help="Files per processing chunk")
+@click.option(
+    "--chunk-size",
+    "-c",
+    type=int,
+    default=10,
+    help="Files per processing chunk",
+)
 def _collect_file_paths(input_paths: tuple) -> list[Path]:
     """Collect all YARA files from input paths."""
     file_paths = []
@@ -366,7 +439,12 @@ def _extract_successful_asts(parse_jobs, file_paths: list[Path], chunk_size: int
     return successful_asts, file_names
 
 
-def _perform_complexity_analysis(analyzer, successful_asts, file_names, output_dir: Path):
+def _perform_complexity_analysis(
+    analyzer,
+    successful_asts,
+    file_names,
+    output_dir: Path,
+) -> None:
     """Perform complexity analysis and save results."""
     click.echo("\n🧮 Analyzing complexity...")
     complexity_jobs = analyzer.analyze_complexity_parallel(successful_asts, file_names)
@@ -389,21 +467,30 @@ def _perform_complexity_analysis(analyzer, successful_asts, file_names, output_d
         avg_quality = sum(quality_scores) / len(quality_scores)
 
         click.echo(f"   Average quality score: {avg_quality:.1f}")
-        click.echo(f"   Quality range: {min(quality_scores):.1f} - {max(quality_scores):.1f}")
+        click.echo(
+            f"   Quality range: {min(quality_scores):.1f} - {max(quality_scores):.1f}",
+        )
 
 
-def _perform_dependency_analysis(analyzer, successful_asts, output_dir: Path):
+def _perform_dependency_analysis(analyzer, successful_asts, output_dir: Path) -> None:
     """Perform dependency analysis and generate graphs."""
     click.echo("\n🕸️  Generating dependency graphs...")
     graph_jobs = analyzer.generate_graphs_parallel(
-        successful_asts, output_dir / "graphs", ["full", "rules"]
+        successful_asts,
+        output_dir / "graphs",
+        ["full", "rules"],
     )
 
     successful_graphs = [job for job in graph_jobs if job.status.value == "completed"]
     click.echo(f"📈 Generated {len(successful_graphs)} dependency graphs")
 
 
-def _display_parallel_summary(file_paths, successful_asts, analyzer_stats, total_time: float):
+def _display_parallel_summary(
+    file_paths,
+    successful_asts,
+    analyzer_stats,
+    total_time: float,
+) -> None:
     """Display parallel processing summary."""
     click.echo(f"\n📊 Parallel Processing Summary ({total_time:.2f}s)")
     click.echo("=" * 45)
@@ -429,7 +516,7 @@ def parallel(
     timeout: float,
     analysis_type: str,
     chunk_size: int,
-):
+) -> None:
     """Analyze YARA files in parallel using thread pooling."""
     file_paths = _collect_file_paths(input_paths)
 
@@ -457,7 +544,9 @@ def parallel(
 
             # Extract successful ASTs
             successful_asts, file_names = _extract_successful_asts(
-                parse_jobs, file_paths, chunk_size
+                parse_jobs,
+                file_paths,
+                chunk_size,
             )
 
             click.echo(f"✅ Successfully parsed {len(successful_asts)} files")
@@ -468,7 +557,12 @@ def parallel(
 
             # Step 2: Perform analysis
             if analysis_type in ["complexity", "all"]:
-                _perform_complexity_analysis(analyzer, successful_asts, file_names, output_dir)
+                _perform_complexity_analysis(
+                    analyzer,
+                    successful_asts,
+                    file_names,
+                    output_dir,
+                )
 
             if analysis_type in ["dependency", "all"]:
                 _perform_dependency_analysis(analyzer, successful_asts, output_dir)
@@ -477,7 +571,12 @@ def parallel(
 
         # Overall statistics
         analyzer_stats = analyzer.get_statistics()
-        _display_parallel_summary(file_paths, successful_asts, analyzer_stats, total_time)
+        _display_parallel_summary(
+            file_paths,
+            successful_asts,
+            analyzer_stats,
+            total_time,
+        )
 
     except KeyboardInterrupt:
         click.echo("\n⏹️  Analysis cancelled by user")
@@ -490,7 +589,7 @@ def parallel(
 @click.argument("collection_size", type=int)
 @click.option("--memory-mb", type=int, help="Available memory in MB")
 @click.option("--target-time", type=int, help="Target processing time in seconds")
-def optimize(collection_size: int, memory_mb: int | None, target_time: int | None):
+def optimize(collection_size: int, memory_mb: int | None, target_time: int | None) -> None:
     """Get optimization recommendations for processing large collections."""
     optimizer = MemoryOptimizer()
 
@@ -503,8 +602,12 @@ def optimize(collection_size: int, memory_mb: int | None, target_time: int | Non
     click.echo(f"  Batch size: {recommendations['batch_size']}")
     click.echo(f"  GC threshold: {recommendations['gc_threshold']}")
     click.echo(f"  Memory limit: {recommendations['memory_limit_mb']} MB")
-    click.echo(f"  Enable pooling: {'Yes' if recommendations['enable_pooling'] else 'No'}")
-    click.echo(f"  Use streaming: {'Yes' if recommendations['use_streaming'] else 'No'}")
+    click.echo(
+        f"  Enable pooling: {'Yes' if recommendations['enable_pooling'] else 'No'}",
+    )
+    click.echo(
+        f"  Use streaming: {'Yes' if recommendations['use_streaming'] else 'No'}",
+    )
 
     click.echo("\n🚀 Performance Strategy:")
     if collection_size < 100:
@@ -528,12 +631,14 @@ def optimize(collection_size: int, memory_mb: int | None, target_time: int | Non
         if estimated_memory > memory_mb:
             click.echo(f"  ⚠️  Estimated memory need: {estimated_memory:.0f} MB")
             click.echo(
-                f"  🔧 Use streaming with batch size: {max(1, (memory_mb * 2) // collection_size)}"
+                f"  🔧 Use streaming with batch size: {max(1, (memory_mb * 2) // collection_size)}",
             )
             click.echo("  🔧 Enable aggressive garbage collection")
         else:
             click.echo("  ✅ Memory sufficient for batch processing")
-            click.echo(f"  💡 Can use batch size up to: {recommendations['batch_size'] * 2}")
+            click.echo(
+                f"  💡 Can use batch size up to: {recommendations['batch_size'] * 2}",
+            )
 
     # Time recommendations
     if target_time:

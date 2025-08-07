@@ -88,7 +88,7 @@ class DiffResult:
 class AstHasher(ASTVisitor[str]):
     """Creates structural hashes of AST nodes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._node_hashes: dict[str, str] = {}
 
     def hash_ast(self, ast: YaraFile) -> str:
@@ -323,7 +323,7 @@ class AstHasher(ASTVisitor[str]):
 class AstDiff:
     """Compares two ASTs and produces incremental diffs."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.hasher = AstHasher()
 
     def compare(self, old_ast: YaraFile, new_ast: YaraFile) -> DiffResult:
@@ -353,7 +353,12 @@ class AstDiff:
 
         return result
 
-    def _compare_imports(self, old_imports: list, new_imports: list, result: DiffResult) -> None:
+    def _compare_imports(
+        self,
+        old_imports: list,
+        new_imports: list,
+        result: DiffResult,
+    ) -> None:
         """Compare import lists."""
         old_modules = {imp.module: imp for imp in old_imports}
         new_modules = {imp.module: imp for imp in new_imports}
@@ -367,7 +372,7 @@ class AstDiff:
                         diff_type=DiffType.ADDED,
                         new_value=module,
                         node_type="Import",
-                    )
+                    ),
                 )
 
         # Find removed imports
@@ -379,7 +384,7 @@ class AstDiff:
                         diff_type=DiffType.REMOVED,
                         old_value=module,
                         node_type="Import",
-                    )
+                    ),
                 )
 
         # Find modified imports (alias changes)
@@ -395,10 +400,15 @@ class AstDiff:
                             old_value=old_alias,
                             new_value=new_alias,
                             node_type="Import",
-                        )
+                        ),
                     )
 
-    def _compare_includes(self, old_includes: list, new_includes: list, result: DiffResult) -> None:
+    def _compare_includes(
+        self,
+        old_includes: list,
+        new_includes: list,
+        result: DiffResult,
+    ) -> None:
         """Compare include lists."""
         old_paths = {inc.path for inc in old_includes}
         new_paths = {inc.path for inc in new_includes}
@@ -411,7 +421,7 @@ class AstDiff:
                     diff_type=DiffType.ADDED,
                     new_value=path,
                     node_type="Include",
-                )
+                ),
             )
 
         # Find removed includes
@@ -422,10 +432,15 @@ class AstDiff:
                     diff_type=DiffType.REMOVED,
                     old_value=path,
                     node_type="Include",
-                )
+                ),
             )
 
-    def _compare_rules(self, old_rules: list, new_rules: list, result: DiffResult) -> None:
+    def _compare_rules(
+        self,
+        old_rules: list,
+        new_rules: list,
+        result: DiffResult,
+    ) -> None:
         """Compare rule lists."""
         old_rule_map = {rule.name: rule for rule in old_rules}
         new_rule_map = {rule.name: rule for rule in new_rules}
@@ -439,8 +454,10 @@ class AstDiff:
                         diff_type=DiffType.ADDED,
                         new_value=name,
                         node_type="Rule",
-                        details={"rule_summary": self._get_rule_summary(new_rule_map[name])},
-                    )
+                        details={
+                            "rule_summary": self._get_rule_summary(new_rule_map[name]),
+                        },
+                    ),
                 )
 
         # Find removed rules
@@ -452,18 +469,29 @@ class AstDiff:
                         diff_type=DiffType.REMOVED,
                         old_value=name,
                         node_type="Rule",
-                        details={"rule_summary": self._get_rule_summary(old_rule_map[name])},
-                    )
+                        details={
+                            "rule_summary": self._get_rule_summary(old_rule_map[name]),
+                        },
+                    ),
                 )
 
         # Find modified rules
         for name in old_rule_map:
             if name in new_rule_map:
                 self._compare_rule_content(
-                    old_rule_map[name], new_rule_map[name], f"/rules/{name}", result
+                    old_rule_map[name],
+                    new_rule_map[name],
+                    f"/rules/{name}",
+                    result,
                 )
 
-    def _compare_rule_content(self, old_rule, new_rule, base_path: str, result: DiffResult) -> None:
+    def _compare_rule_content(
+        self,
+        old_rule,
+        new_rule,
+        base_path: str,
+        result: DiffResult,
+    ) -> None:
         """Compare content of two rules."""
         # Compare modifiers
         if set(old_rule.modifiers) != set(new_rule.modifiers):
@@ -474,7 +502,7 @@ class AstDiff:
                     old_value=list(old_rule.modifiers),
                     new_value=list(new_rule.modifiers),
                     node_type="RuleModifiers",
-                )
+                ),
             )
 
         # Compare tags
@@ -488,7 +516,7 @@ class AstDiff:
                     old_value=list(old_tag_names),
                     new_value=list(new_tag_names),
                     node_type="RuleTags",
-                )
+                ),
             )
 
         # Compare meta
@@ -500,12 +528,15 @@ class AstDiff:
                     old_value=dict(old_rule.meta),
                     new_value=dict(new_rule.meta),
                     node_type="RuleMeta",
-                )
+                ),
             )
 
         # Compare strings
         self._compare_rule_strings(
-            old_rule.strings, new_rule.strings, f"{base_path}/strings", result
+            old_rule.strings,
+            new_rule.strings,
+            f"{base_path}/strings",
+            result,
         )
 
         # Compare condition (simplified)
@@ -519,11 +550,15 @@ class AstDiff:
                     old_value=old_condition_hash,
                     new_value=new_condition_hash,
                     node_type="RuleCondition",
-                )
+                ),
             )
 
     def _compare_rule_strings(
-        self, old_strings: list, new_strings: list, base_path: str, result: DiffResult
+        self,
+        old_strings: list,
+        new_strings: list,
+        base_path: str,
+        result: DiffResult,
     ) -> None:
         """Compare string definitions in rules."""
         old_string_map = {s.identifier: s for s in old_strings}
@@ -538,7 +573,7 @@ class AstDiff:
                         diff_type=DiffType.ADDED,
                         new_value=identifier,
                         node_type="StringDefinition",
-                    )
+                    ),
                 )
 
         # Find removed strings
@@ -550,7 +585,7 @@ class AstDiff:
                         diff_type=DiffType.REMOVED,
                         old_value=identifier,
                         node_type="StringDefinition",
-                    )
+                    ),
                 )
 
         # Find modified strings
@@ -566,7 +601,7 @@ class AstDiff:
                             old_value=old_hash,
                             new_value=new_hash,
                             node_type="StringDefinition",
-                        )
+                        ),
                     )
 
     def _get_rule_summary(self, rule) -> dict[str, Any]:
@@ -581,7 +616,9 @@ class AstDiff:
         }
 
     def create_patch(
-        self, diff_result: DiffResult, output_path: str | Path | None = None
+        self,
+        diff_result: DiffResult,
+        output_path: str | Path | None = None,
     ) -> dict[str, Any]:
         """Create a patch file from diff result."""
         patch = {

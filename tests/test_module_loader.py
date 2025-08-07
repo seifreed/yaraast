@@ -9,7 +9,7 @@ from yaraast.types.module_loader import ModuleLoader
 from yaraast.types.type_system import ArrayType, IntegerType
 
 
-def test_builtin_modules():
+def test_builtin_modules() -> None:
     """Test loading of builtin modules."""
     loader = ModuleLoader()
 
@@ -25,7 +25,7 @@ def test_builtin_modules():
     assert "imphash" in pe_module.functions
 
 
-def test_load_json_module():
+def test_load_json_module() -> None:
     """Test loading module from JSON file."""
     # Create temporary JSON module
     module_json = {
@@ -35,7 +35,7 @@ def test_load_json_module():
             "process": {
                 "return": "bool",
                 "parameters": [{"name": "input", "type": "string"}],
-            }
+            },
         },
         "constants": {"MAX_SIZE": "int"},
     }
@@ -76,7 +76,7 @@ def test_load_json_module():
         del os.environ["YARAAST_MODULE_SPEC_PATH"]
 
 
-def test_exclusive_module_path():
+def test_exclusive_module_path() -> None:
     """Test exclusive module loading (ignoring builtins)."""
     module_json = [{"name": "custom_only", "attributes": {"test": "string"}}]
 
@@ -100,7 +100,7 @@ def test_exclusive_module_path():
         del os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"]
 
 
-def test_complex_types():
+def test_complex_types() -> None:
     """Test loading complex types from JSON."""
     module_json = {
         "name": "complex",
@@ -133,7 +133,7 @@ def test_complex_types():
         del os.environ["YARAAST_MODULE_SPEC_PATH"]
 
 
-def test_example_custom_module():
+def test_example_custom_module() -> None:
     """Test loading the example custom module."""
     # Load from default modules directory
     loader = ModuleLoader()

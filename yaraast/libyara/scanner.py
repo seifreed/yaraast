@@ -73,15 +73,17 @@ class ScanResult:
 class LibyaraScanner:
     """Scanner using libyara backend."""
 
-    def __init__(self, timeout: int | None = None):
+    def __init__(self, timeout: int | None = None) -> None:
         """Initialize scanner.
 
         Args:
             timeout: Scan timeout in seconds
+
         """
         if not YARA_AVAILABLE:
+            msg = "yara-python is not installed. Install it with: pip install yara-python"
             raise ImportError(
-                "yara-python is not installed. Install it with: pip install yara-python"
+                msg,
             )
 
         self.timeout = timeout
@@ -96,6 +98,7 @@ class LibyaraScanner:
 
         Returns:
             ScanResult with matches and timing
+
         """
         start_time = time.time()
         errors = []
@@ -115,7 +118,10 @@ class LibyaraScanner:
             scan_time = time.time() - start_time
 
             return ScanResult(
-                success=True, matches=matches, scan_time=scan_time, data_size=len(data)
+                success=True,
+                matches=matches,
+                scan_time=scan_time,
+                data_size=len(data),
             )
 
         except yara.TimeoutError:
@@ -127,9 +133,19 @@ class LibyaraScanner:
 
         scan_time = time.time() - start_time
 
-        return ScanResult(success=False, errors=errors, scan_time=scan_time, data_size=len(data))
+        return ScanResult(
+            success=False,
+            errors=errors,
+            scan_time=scan_time,
+            data_size=len(data),
+        )
 
-    def scan_file(self, rules: Any, filepath: str | Path, fast_mode: bool = False) -> ScanResult:
+    def scan_file(
+        self,
+        rules: Any,
+        filepath: str | Path,
+        fast_mode: bool = False,
+    ) -> ScanResult:
         """Scan file using compiled rules.
 
         Args:
@@ -139,6 +155,7 @@ class LibyaraScanner:
 
         Returns:
             ScanResult with matches and timing
+
         """
         filepath = Path(filepath)
 
@@ -166,7 +183,10 @@ class LibyaraScanner:
             scan_time = time.time() - start_time
 
             return ScanResult(
-                success=True, matches=matches, scan_time=scan_time, data_size=file_size
+                success=True,
+                matches=matches,
+                scan_time=scan_time,
+                data_size=file_size,
             )
 
         except yara.TimeoutError:
@@ -189,6 +209,7 @@ class LibyaraScanner:
 
         Returns:
             ScanResult with matches
+
         """
         start_time = time.time()
         errors = []

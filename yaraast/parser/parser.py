@@ -18,7 +18,7 @@ from yaraast.lexer import Lexer, Token, TokenType
 class ParserError(Exception):
     """Parser error exception."""
 
-    def __init__(self, message: str, token: Token):
+    def __init__(self, message: str, token: Token) -> None:
         super().__init__(f"Parser error at {token.line}:{token.column}: {message}")
         self.token = token
         self.line = token.line
@@ -28,7 +28,7 @@ class ParserError(Exception):
 class Parser:
     """YARA parser for building AST from tokens."""
 
-    def __init__(self, text: str):
+    def __init__(self, text: str) -> None:
         self.lexer = Lexer(text)
         self.tokens = self.lexer.tokenize()
         self.current = 0
@@ -51,14 +51,19 @@ class Parser:
             ):
                 rules.append(self._parse_rule())
             else:
-                raise ParserError(f"Unexpected token: {self._peek().value}", self._peek())
+                msg = f"Unexpected token: {self._peek().value}"
+                raise ParserError(
+                    msg,
+                    self._peek(),
+                )
 
         return YaraFile(imports=imports, includes=includes, rules=rules)
 
     def _parse_import(self) -> Import:
         """Parse import statement."""
         if not self._match(TokenType.STRING):
-            raise ParserError("Expected module name after 'import'", self._peek())
+            msg = "Expected module name after 'import'"
+            raise ParserError(msg, self._peek())
 
         module = self._previous().value
         alias = None
@@ -66,7 +71,8 @@ class Parser:
         # Check for 'as alias'
         if self._match(TokenType.AS):
             if not self._match(TokenType.IDENTIFIER):
-                raise ParserError("Expected alias after 'as'", self._peek())
+                msg = "Expected alias after 'as'"
+                raise ParserError(msg, self._peek())
             alias = self._previous().value
 
         return Import(module=module, alias=alias)
@@ -74,7 +80,8 @@ class Parser:
     def _parse_include(self) -> Include:
         """Parse include statement."""
         if not self._match(TokenType.STRING):
-            raise ParserError("Expected file path after 'include'", self._peek())
+            msg = "Expected file path after 'include'"
+            raise ParserError(msg, self._peek())
 
         path = self._previous().value
         return Include(path=path)
@@ -88,10 +95,12 @@ class Parser:
             modifiers.append(self._previous().value.lower())
 
         if not self._match(TokenType.RULE):
-            raise ParserError("Expected 'rule' keyword", self._peek())
+            msg = "Expected 'rule' keyword"
+            raise ParserError(msg, self._peek())
 
         if not self._match(TokenType.IDENTIFIER):
-            raise ParserError("Expected rule name", self._peek())
+            msg = "Expected rule name"
+            raise ParserError(msg, self._peek())
 
         name = self._previous().value
 
@@ -103,7 +112,8 @@ class Parser:
                 tags.append(Tag(name=tag_name))
 
         if not self._match(TokenType.LBRACE):
-            raise ParserError("Expected '{' after rule name", self._peek())
+            msg = "Expected '{' after rule name"
+            raise ParserError(msg, self._peek())
 
         # Parse rule sections
         meta = {}
@@ -113,21 +123,29 @@ class Parser:
         while not self._check(TokenType.RBRACE) and not self._is_at_end():
             if self._match(TokenType.META):
                 if not self._match(TokenType.COLON):
-                    raise ParserError("Expected ':' after 'meta'", self._peek())
+                    msg = "Expected ':' after 'meta'"
+                    raise ParserError(msg, self._peek())
                 meta = self._parse_meta_section()
             elif self._match(TokenType.STRINGS):
                 if not self._match(TokenType.COLON):
-                    raise ParserError("Expected ':' after 'strings'", self._peek())
+                    msg = "Expected ':' after 'strings'"
+                    raise ParserError(msg, self._peek())
                 strings = self._parse_strings_section()
             elif self._match(TokenType.CONDITION):
                 if not self._match(TokenType.COLON):
-                    raise ParserError("Expected ':' after 'condition'", self._peek())
+                    msg = "Expected ':' after 'condition'"
+                    raise ParserError(msg, self._peek())
                 condition = self._parse_condition()
             else:
-                raise ParserError(f"Unexpected section: {self._peek().value}", self._peek())
+                msg = f"Unexpected section: {self._peek().value}"
+                raise ParserError(
+                    msg,
+                    self._peek(),
+                )
 
         if not self._match(TokenType.RBRACE):
-            raise ParserError("Expected '}' at end of rule", self._peek())
+            msg = "Expected '}' at end of rule"
+            raise ParserError(msg, self._peek())
 
         return Rule(
             name=name,
@@ -142,14 +160,19 @@ class Parser:
         """Parse meta section."""
         meta = {}
 
-        while not self._check_any(TokenType.STRINGS, TokenType.CONDITION, TokenType.RBRACE):
+        while not self._check_any(
+            TokenType.STRINGS,
+            TokenType.CONDITION,
+            TokenType.RBRACE,
+        ):
             if not self._check(TokenType.IDENTIFIER):
                 break
 
             key = self._advance().value
 
             if not self._match(TokenType.ASSIGN):
-                raise ParserError("Expected '=' after meta key", self._peek())
+                msg = "Expected '=' after meta key"
+                raise ParserError(msg, self._peek())
 
             # Parse meta value
             if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
@@ -159,7 +182,8 @@ class Parser:
             elif self._match(TokenType.BOOLEAN_FALSE):
                 value = False
             else:
-                raise ParserError("Invalid meta value", self._peek())
+                msg = "Invalid meta value"
+                raise ParserError(msg, self._peek())
 
             meta[key] = value
 
@@ -176,24 +200,32 @@ class Parser:
             identifier = self._advance().value
 
             if not self._match(TokenType.ASSIGN):
-                raise ParserError("Expected '=' after string identifier", self._peek())
+                msg = "Expected '=' after string identifier"
+                raise ParserError(msg, self._peek())
 
             # Parse string value
             if self._match(TokenType.STRING):
                 value = self._previous().value
                 modifiers = self._parse_string_modifiers()
-                strings.append(PlainString(identifier=identifier, value=value, modifiers=modifiers))
+                strings.append(
+                    PlainString(identifier=identifier, value=value, modifiers=modifiers),
+                )
             elif self._match(TokenType.HEX_STRING):
                 hex_value = self._previous().value
                 tokens = self._parse_hex_string(hex_value)
                 modifiers = self._parse_string_modifiers()
-                strings.append(HexString(identifier=identifier, tokens=tokens, modifiers=modifiers))
+                strings.append(
+                    HexString(identifier=identifier, tokens=tokens, modifiers=modifiers),
+                )
             elif self._match(TokenType.REGEX):
                 regex = self._previous().value
                 modifiers = self._parse_string_modifiers()
-                strings.append(RegexString(identifier=identifier, regex=regex, modifiers=modifiers))
+                strings.append(
+                    RegexString(identifier=identifier, regex=regex, modifiers=modifiers),
+                )
             else:
-                raise ParserError("Invalid string value", self._peek())
+                msg = "Invalid string value"
+                raise ParserError(msg, self._peek())
 
         return strings
 
@@ -223,14 +255,20 @@ class Parser:
                             max_val = self._previous().value
                             value = (min_val, max_val)
                         else:
-                            raise ParserError("Expected integer after '-'", self._peek())
+                            msg = "Expected integer after '-'"
+                            raise ParserError(
+                                msg,
+                                self._peek(),
+                            )
                     else:
                         value = min_val
                 else:
-                    raise ParserError("Expected integer or range in xor", self._peek())
+                    msg = "Expected integer or range in xor"
+                    raise ParserError(msg, self._peek())
 
                 if not self._match(TokenType.RPAREN):
-                    raise ParserError("Expected ')' after xor parameter", self._peek())
+                    msg = "Expected ')' after xor parameter"
+                    raise ParserError(msg, self._peek())
 
                 modifiers.append(StringModifier(name=mod_name, value=value))
             else:
@@ -262,7 +300,8 @@ class Parser:
                     i += 1
 
                 if i >= len(hex_content):
-                    raise ParserError("Unterminated jump in hex string", self._peek())
+                    msg = "Unterminated jump in hex string"
+                    raise ParserError(msg, self._peek())
 
                 i += 1  # skip ]
 
@@ -275,7 +314,8 @@ class Parser:
                         max_jump = int(parts[1]) if parts[1].strip() else None
                         tokens.append(HexJump(min_jump=min_jump, max_jump=max_jump))
                     else:
-                        raise ParserError("Invalid jump range", self._peek())
+                        msg = "Invalid jump range"
+                        raise ParserError(msg, self._peek())
                 else:
                     val = int(jump_str)
                     tokens.append(HexJump(min_jump=val, max_jump=val))
@@ -306,7 +346,8 @@ class Parser:
                     tokens.append(HexNibble(high=False, value=nibble_val))
                     i += 2
                 else:
-                    raise ParserError(f"Invalid wildcard at position {i}", self._peek())
+                    msg = f"Invalid wildcard at position {i}"
+                    raise ParserError(msg, self._peek())
 
             # Hex byte or nibble
             elif char in "0123456789ABCDEFabcdef":
@@ -323,19 +364,32 @@ class Parser:
                         tokens.append(HexByte(value=byte_val))
                         i += 2
                     else:
-                        raise ParserError(f"Invalid hex byte at position {i}", self._peek())
+                        msg = f"Invalid hex byte at position {i}"
+                        raise ParserError(
+                            msg,
+                            self._peek(),
+                        )
                 else:
-                    raise ParserError(f"Incomplete hex byte at position {i}", self._peek())
+                    msg = f"Incomplete hex byte at position {i}"
+                    raise ParserError(
+                        msg,
+                        self._peek(),
+                    )
 
             else:
-                raise ParserError(f"Invalid character in hex string: {char}", self._peek())
+                msg = f"Invalid character in hex string: {char}"
+                raise ParserError(
+                    msg,
+                    self._peek(),
+                )
 
         return tokens
 
     def _parse_hex_alternative(self, hex_content: str) -> list[HexToken]:
         """Parse hex alternative with nested support."""
         if not hex_content.startswith("("):
-            raise ParserError("Expected '(' at start of alternative", self._peek())
+            msg = "Expected '(' at start of alternative"
+            raise ParserError(msg, self._peek())
 
         i = 1  # Skip opening (
         alternatives = []
@@ -390,7 +444,8 @@ class Parser:
                     jump_i += 1
 
                 if jump_i >= len(hex_content):
-                    raise ParserError("Unterminated jump in alternative", self._peek())
+                    msg = "Unterminated jump in alternative"
+                    raise ParserError(msg, self._peek())
 
                 # Parse jump
                 jump_str = jump_str.strip()
@@ -414,7 +469,8 @@ class Parser:
                     current_alt.append(HexNibble(high=False, value=nibble_val))
                     i += 2
                 else:
-                    raise ParserError("Invalid wildcard in alternative", self._peek())
+                    msg = "Invalid wildcard in alternative"
+                    raise ParserError(msg, self._peek())
 
             elif char in "0123456789ABCDEFabcdef":
                 if i + 1 < len(hex_content):
@@ -428,9 +484,11 @@ class Parser:
                         current_alt.append(HexByte(value=byte_val))
                         i += 2
                     else:
-                        raise ParserError("Invalid hex in alternative", self._peek())
+                        msg = "Invalid hex in alternative"
+                        raise ParserError(msg, self._peek())
                 else:
-                    raise ParserError("Incomplete hex in alternative", self._peek())
+                    msg = "Incomplete hex in alternative"
+                    raise ParserError(msg, self._peek())
 
             else:
                 i += 1
@@ -564,19 +622,24 @@ class Parser:
         while True:
             if self._match(TokenType.DOT):
                 if not self._match(TokenType.IDENTIFIER):
-                    raise ParserError("Expected member name after '.'", self._peek())
+                    msg = "Expected member name after '.'"
+                    raise ParserError(msg, self._peek())
                 member = self._previous().value
                 expr = MemberAccess(object=expr, member=member)
             elif self._match(TokenType.LBRACKET):
                 index = self._parse_expression()
                 if not self._match(TokenType.RBRACKET):
-                    raise ParserError("Expected ']'", self._peek())
+                    msg = "Expected ']'"
+                    raise ParserError(msg, self._peek())
                 # Check if this is dictionary access (string key) or array access (numeric)
                 if isinstance(index, StringLiteral):
                     expr = DictionaryAccess(object=expr, key=index.value)
                 else:
                     expr = ArrayAccess(array=expr, index=index)
-            elif self._match(TokenType.LPAREN) and not isinstance(expr, MemberAccess | ArrayAccess):
+            elif self._match(TokenType.LPAREN) and not isinstance(
+                expr,
+                MemberAccess | ArrayAccess,
+            ):
                 # Function call (but not for member/array access which might be dictionary key)
                 args = []
                 while not self._check(TokenType.RPAREN) and not self._is_at_end():
@@ -585,12 +648,14 @@ class Parser:
                         break
 
                 if not self._match(TokenType.RPAREN):
-                    raise ParserError("Expected ')' after arguments", self._peek())
+                    msg = "Expected ')' after arguments"
+                    raise ParserError(msg, self._peek())
 
                 if isinstance(expr, Identifier):
                     expr = FunctionCall(function=expr.name, arguments=args)
                 else:
-                    raise ParserError("Invalid function call", self._peek())
+                    msg = "Invalid function call"
+                    raise ParserError(msg, self._peek())
             else:
                 break
 
@@ -627,7 +692,8 @@ class Parser:
             if self._match(TokenType.LBRACKET):
                 index = self._parse_expression()
                 if not self._match(TokenType.RBRACKET):
-                    raise ParserError("Expected ']'", self._peek())
+                    msg = "Expected ']'"
+                    raise ParserError(msg, self._peek())
             return StringOffset(string_id=string_id, index=index)
 
         if self._match(TokenType.STRING_LENGTH):
@@ -636,7 +702,8 @@ class Parser:
             if self._match(TokenType.LBRACKET):
                 index = self._parse_expression()
                 if not self._match(TokenType.RBRACKET):
-                    raise ParserError("Expected ']'", self._peek())
+                    msg = "Expected ']'"
+                    raise ParserError(msg, self._peek())
             return StringLength(string_id=string_id, index=index)
 
         # Keywords
@@ -682,12 +749,14 @@ class Parser:
                         break
 
                 if not self._match(TokenType.RPAREN):
-                    raise ParserError("Expected ')' after set elements", self._peek())
+                    msg = "Expected ')' after set elements"
+                    raise ParserError(msg, self._peek())
 
                 return SetExpression(elements=exprs)
             # It's a parenthesized expression
             if not self._match(TokenType.RPAREN):
-                raise ParserError("Expected ')' after expression", self._peek())
+                msg = "Expected ')' after expression"
+                raise ParserError(msg, self._peek())
 
             return ParenthesesExpression(expression=exprs[0])
 
@@ -723,7 +792,8 @@ class Parser:
             # Otherwise it's just a string identifier
             return StringIdentifier(name=string_id)
 
-        raise ParserError(f"Unexpected token: {self._peek().value}", self._peek())
+        msg = f"Unexpected token: {self._peek().value}"
+        raise ParserError(msg, self._peek())
 
     def _parse_for_expression(self) -> ForExpression:
         """Parse for expression."""
@@ -735,7 +805,8 @@ class Parser:
         elif self._match(TokenType.INTEGER):
             quantifier = str(self._previous().value)
         else:
-            raise ParserError("Expected quantifier after 'for'", self._peek())
+            msg = "Expected quantifier after 'for'"
+            raise ParserError(msg, self._peek())
 
         # Check for 'of' (for...of expression)
         if self._match(TokenType.OF):
@@ -743,27 +814,37 @@ class Parser:
 
         # Otherwise it's a regular for expression
         if not self._match(TokenType.IDENTIFIER):
-            raise ParserError("Expected variable name", self._peek())
+            msg = "Expected variable name"
+            raise ParserError(msg, self._peek())
 
         variable = self._previous().value
 
         if not self._match(TokenType.IN):
-            raise ParserError("Expected 'in' after variable", self._peek())
+            msg = "Expected 'in' after variable"
+            raise ParserError(msg, self._peek())
 
         iterable = self._parse_expression()
 
         if not self._match(TokenType.COLON):
-            raise ParserError("Expected ':' after iterable", self._peek())
+            msg = "Expected ':' after iterable"
+            raise ParserError(msg, self._peek())
 
         if not self._match(TokenType.LPAREN):
-            raise ParserError("Expected '(' after ':'", self._peek())
+            msg = "Expected '(' after ':'"
+            raise ParserError(msg, self._peek())
 
         body = self._parse_expression()
 
         if not self._match(TokenType.RPAREN):
-            raise ParserError("Expected ')' after for body", self._peek())
+            msg = "Expected ')' after for body"
+            raise ParserError(msg, self._peek())
 
-        return ForExpression(quantifier=quantifier, variable=variable, iterable=iterable, body=body)
+        return ForExpression(
+            quantifier=quantifier,
+            variable=variable,
+            iterable=iterable,
+            body=body,
+        )
 
     def _parse_for_of_expression(self, quantifier: str) -> ForOfExpression:
         """Parse for...of expression."""
@@ -773,14 +854,22 @@ class Parser:
         if self._match(TokenType.COLON) and self._match(TokenType.LPAREN):
             condition = self._parse_expression()
             if not self._match(TokenType.RPAREN):
-                raise ParserError("Expected ')' after condition", self._peek())
+                msg = "Expected ')' after condition"
+                raise ParserError(msg, self._peek())
 
-        return ForOfExpression(quantifier=quantifier, string_set=string_set, condition=condition)
+        return ForOfExpression(
+            quantifier=quantifier,
+            string_set=string_set,
+            condition=condition,
+        )
 
     def _parse_of_expression(self, quantifier: str) -> OfExpression:
         """Parse of expression."""
         string_set = self._parse_expression()
-        return OfExpression(quantifier=StringLiteral(value=quantifier), string_set=string_set)
+        return OfExpression(
+            quantifier=StringLiteral(value=quantifier),
+            string_set=string_set,
+        )
 
     def _parse_expression(self) -> Expression:
         """Parse general expression."""

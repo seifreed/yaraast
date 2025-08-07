@@ -35,13 +35,13 @@ class ResolvedFile:
 class IncludeResolver:
     """Resolves YARA include statements with caching and cycle detection."""
 
-    def __init__(self, search_paths: list[str] | None = None):
-        """
-        Initialize include resolver.
+    def __init__(self, search_paths: list[str] | None = None) -> None:
+        """Initialize include resolver.
 
         Args:
             search_paths: List of directories to search for include files.
                          If None, uses current directory and YARA_INCLUDE_PATH env var.
+
         """
         self.search_paths = self._init_search_paths(search_paths)
         self.cache: dict[str, ResolvedFile] = {}
@@ -80,9 +80,12 @@ class IncludeResolver:
         """Alias for resolve_file for backward compatibility."""
         return self.resolve_file(file_path, base_path)
 
-    def resolve_file(self, file_path: str, base_path: Path | None = None) -> ResolvedFile:
-        """
-        Resolve a YARA file and all its includes.
+    def resolve_file(
+        self,
+        file_path: str,
+        base_path: Path | None = None,
+    ) -> ResolvedFile:
+        """Resolve a YARA file and all its includes.
 
         Args:
             file_path: Path to the YARA file.
@@ -94,6 +97,7 @@ class IncludeResolver:
         Raises:
             FileNotFoundError: If file cannot be found.
             RecursionError: If circular include is detected.
+
         """
         # Find the file
         resolved_path = self._find_file(file_path, base_path)
@@ -111,7 +115,8 @@ class IncludeResolver:
         if resolved_path in self.resolution_stack:
             cycle = " -> ".join(str(p) for p in self.resolution_stack)
             cycle += f" -> {resolved_path}"
-            raise RecursionError(f"Circular include detected: {cycle}")
+            msg = f"Circular include detected: {cycle}"
+            raise RecursionError(msg)
 
         # Add to resolution stack
         self.resolution_stack.append(resolved_path)
@@ -123,12 +128,20 @@ class IncludeResolver:
             checksum = self._calculate_checksum_from_content(content)
 
             # Create resolved file
-            resolved = ResolvedFile(path=resolved_path, content=content, ast=ast, checksum=checksum)
+            resolved = ResolvedFile(
+                path=resolved_path,
+                content=content,
+                ast=ast,
+                checksum=checksum,
+            )
 
             # Resolve includes
             for include in ast.includes:
                 try:
-                    included_file = self.resolve_file(include.path, base_path=resolved_path.parent)
+                    included_file = self.resolve_file(
+                        include.path,
+                        base_path=resolved_path.parent,
+                    )
                     resolved.includes.append(included_file)
                 except (FileNotFoundError, RecursionError):
                     # Log error but continue parsing other includes
@@ -144,8 +157,7 @@ class IncludeResolver:
             self.resolution_stack.pop()
 
     def _find_file(self, file_path: str, base_path: Path | None = None) -> Path:
-        """
-        Find a file in search paths.
+        """Find a file in search paths.
 
         Args:
             file_path: Path to find (can be relative).
@@ -156,6 +168,7 @@ class IncludeResolver:
 
         Raises:
             FileNotFoundError: If file cannot be found.
+
         """
         path = Path(file_path)
 
@@ -181,8 +194,9 @@ class IncludeResolver:
 
         # Not found
         searched = [str(d) for d in search_dirs]
+        msg = f"Cannot find include file '{file_path}'. Searched in: {', '.join(searched)}"
         raise FileNotFoundError(
-            f"Cannot find include file '{file_path}'. Searched in: {', '.join(searched)}"
+            msg,
         )
 
     def _calculate_checksum(self, file_path: Path) -> str:
@@ -194,7 +208,7 @@ class IncludeResolver:
         """Calculate checksum from content."""
         return hashlib.sha256(content.encode()).hexdigest()
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the file cache."""
         self.cache.clear()
 
@@ -203,11 +217,11 @@ class IncludeResolver:
         return list(self.cache.values())
 
     def get_include_tree(self, file_path: str) -> dict:
-        """
-        Get include tree structure for a file.
+        """Get include tree structure for a file.
 
         Returns:
             Dictionary representing the include tree.
+
         """
         resolved = self.resolve_file(file_path)
         return self._build_include_tree(resolved)

@@ -20,7 +20,7 @@ from yaraast.serialization import (
 class TestJsonSerializer:
     """Test JSON serialization."""
 
-    def test_serialize_simple_rule(self):
+    def test_serialize_simple_rule(self) -> None:
         """Test JSON serialization of simple rule."""
         rule_text = """
         rule test_rule {
@@ -46,7 +46,7 @@ class TestJsonSerializer:
         assert len(data["ast"]["rules"]) == 1
         assert data["ast"]["rules"][0]["name"] == "test_rule"
 
-    def test_serialize_with_metadata(self):
+    def test_serialize_with_metadata(self) -> None:
         """Test serialization with metadata."""
         rule_text = "rule test { condition: true }"
 
@@ -61,7 +61,7 @@ class TestJsonSerializer:
         assert data["metadata"]["rules_count"] == 1
         assert data["metadata"]["imports_count"] == 0
 
-    def test_serialize_without_metadata(self):
+    def test_serialize_without_metadata(self) -> None:
         """Test serialization without metadata."""
         rule_text = "rule test { condition: true }"
 
@@ -75,7 +75,7 @@ class TestJsonSerializer:
         assert "metadata" not in data
         assert "ast" in data
 
-    def test_serialize_to_file(self):
+    def test_serialize_to_file(self) -> None:
         """Test serialization to file."""
         rule_text = "rule test { condition: true }"
 
@@ -102,7 +102,7 @@ class TestJsonSerializer:
 class TestYamlSerializer:
     """Test YAML serialization."""
 
-    def test_serialize_simple_rule(self):
+    def test_serialize_simple_rule(self) -> None:
         """Test YAML serialization of simple rule."""
         rule_text = """
         rule test_rule {
@@ -128,7 +128,7 @@ class TestYamlSerializer:
         assert len(data["ast"]["rules"]) == 1
         assert data["ast"]["rules"][0]["name"] == "test_rule"
 
-    def test_serialize_minimal(self):
+    def test_serialize_minimal(self) -> None:
         """Test minimal YAML serialization."""
         rule_text = "rule test { condition: true }"
 
@@ -143,7 +143,7 @@ class TestYamlSerializer:
         assert data["type"] == "YaraFile"
         assert len(data["rules"]) == 1
 
-    def test_serialize_rules_only(self):
+    def test_serialize_rules_only(self) -> None:
         """Test rules-only YAML serialization."""
         rule_text = """
         rule rule1 { condition: true }
@@ -167,7 +167,7 @@ class TestYamlSerializer:
 class TestProtobufSerializer:
     """Test Protobuf serialization."""
 
-    def test_protobuf_available(self):
+    def test_protobuf_available(self) -> None:
         """Test if protobuf serialization is available."""
         try:
             ProtobufSerializer()
@@ -177,7 +177,7 @@ class TestProtobufSerializer:
             # Skip protobuf tests if not available
             pytest.skip("Protobuf schema not compiled")
 
-    def test_serialize_simple_rule(self):
+    def test_serialize_simple_rule(self) -> None:
         """Test Protobuf serialization of simple rule."""
         try:
             rule_text = "rule test { condition: true }"
@@ -194,7 +194,7 @@ class TestProtobufSerializer:
         except ImportError:
             pytest.skip("Protobuf schema not compiled")
 
-    def test_serialize_text_format(self):
+    def test_serialize_text_format(self) -> None:
         """Test Protobuf text serialization."""
         try:
             rule_text = "rule test { condition: true }"
@@ -211,7 +211,7 @@ class TestProtobufSerializer:
         except ImportError:
             pytest.skip("Protobuf schema not compiled")
 
-    def test_serialization_stats(self):
+    def test_serialization_stats(self) -> None:
         """Test serialization statistics."""
         try:
             rule_text = """
@@ -238,7 +238,7 @@ class TestProtobufSerializer:
 class TestAstDiff:
     """Test AST diff functionality."""
 
-    def test_identical_asts(self):
+    def test_identical_asts(self) -> None:
         """Test diff of identical ASTs."""
         rule_text = "rule test { condition: true }"
 
@@ -253,7 +253,7 @@ class TestAstDiff:
         assert len(result.differences) == 0
         assert result.old_ast_hash == result.new_ast_hash
 
-    def test_rule_added(self):
+    def test_rule_added(self) -> None:
         """Test detection of added rule."""
         old_text = "rule test1 { condition: true }"
         new_text = """
@@ -276,7 +276,7 @@ class TestAstDiff:
         assert added_rules[0].path == "/rules/test2"
         assert added_rules[0].new_value == "test2"
 
-    def test_rule_removed(self):
+    def test_rule_removed(self) -> None:
         """Test detection of removed rule."""
         old_text = """
         rule test1 { condition: true }
@@ -298,7 +298,7 @@ class TestAstDiff:
         assert removed_rules[0].path == "/rules/test2"
         assert removed_rules[0].old_value == "test2"
 
-    def test_rule_modified(self):
+    def test_rule_modified(self) -> None:
         """Test detection of modified rule."""
         old_text = """
         rule test {
@@ -330,7 +330,7 @@ class TestAstDiff:
         string_changes = [d for d in result.differences if d.path.startswith("/rules/test/strings")]
         assert len(string_changes) > 0
 
-    def test_import_changes(self):
+    def test_import_changes(self) -> None:
         """Test detection of import changes."""
         old_text = 'import "pe" rule test { condition: true }'
         new_text = """
@@ -356,7 +356,7 @@ class TestAstDiff:
         assert len(added_imports) == 1
         assert added_imports[0].new_value == "elf"
 
-    def test_change_summary(self):
+    def test_change_summary(self) -> None:
         """Test change summary generation."""
         old_text = "rule test1 { condition: true }"
         new_text = """
@@ -377,7 +377,7 @@ class TestAstDiff:
         assert "removed" in summary
         assert "modified" in summary
 
-    def test_create_patch(self):
+    def test_create_patch(self) -> None:
         """Test patch creation."""
         old_text = "rule test1 { condition: true }"
         new_text = "rule test2 { condition: false }"
@@ -398,7 +398,7 @@ class TestAstDiff:
         assert "changes" in patch
         assert "timestamp" in patch
 
-    def test_diff_to_dict(self):
+    def test_diff_to_dict(self) -> None:
         """Test diff result serialization."""
         old_text = "rule test1 { condition: true }"
         new_text = "rule test2 { condition: false }"
@@ -427,7 +427,7 @@ class TestAstDiff:
 class TestSerializationRoundTrip:
     """Test serialization round-trip scenarios."""
 
-    def test_json_roundtrip_structure(self):
+    def test_json_roundtrip_structure(self) -> None:
         """Test JSON serialization preserves structure."""
         rule_text = """
         import "pe"
@@ -468,7 +468,7 @@ class TestSerializationRoundTrip:
         assert "PlainString" in string_types
         assert "RegexString" in string_types
 
-    def test_yaml_preserves_readability(self):
+    def test_yaml_preserves_readability(self) -> None:
         """Test YAML serialization preserves human readability."""
         rule_text = """
         rule readable_rule {

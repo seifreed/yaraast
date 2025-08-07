@@ -42,13 +42,17 @@ class WorkspaceReport:
 class Workspace:
     """Workspace for managing multiple YARA files."""
 
-    def __init__(self, root_path: str | None = None, search_paths: list[str] | None = None):
-        """
-        Initialize workspace.
+    def __init__(
+        self,
+        root_path: str | None = None,
+        search_paths: list[str] | None = None,
+    ) -> None:
+        """Initialize workspace.
 
         Args:
             root_path: Root directory of the workspace.
             search_paths: Additional search paths for includes.
+
         """
         self.root_path = Path(root_path) if root_path else Path.cwd()
         self.include_resolver = IncludeResolver(search_paths)
@@ -81,14 +85,19 @@ class Workspace:
         self.files[str(path)] = result
         return result
 
-    def add_directory(self, directory: str, pattern: str = "*.yar", recursive: bool = True):
-        """
-        Add all YARA files from a directory.
+    def add_directory(
+        self,
+        directory: str,
+        pattern: str = "*.yar",
+        recursive: bool = True,
+    ) -> None:
+        """Add all YARA files from a directory.
 
         Args:
             directory: Directory to scan.
             pattern: File pattern to match (supports glob).
             recursive: Whether to scan subdirectories.
+
         """
         dir_path = Path(directory)
         if not dir_path.is_absolute():
@@ -100,7 +109,7 @@ class Workspace:
             if file_path.is_file():
                 self.add_file(str(file_path))
 
-    def _add_to_dependency_graph(self, resolved: ResolvedFile):
+    def _add_to_dependency_graph(self, resolved: ResolvedFile) -> None:
         """Add resolved file and its includes to dependency graph."""
         # Add main file
         self.dependency_graph.add_file(resolved.path, resolved.ast)
@@ -109,9 +118,12 @@ class Workspace:
         for include in resolved.includes:
             self._add_to_dependency_graph(include)
 
-    def analyze(self, parallel: bool = True, max_workers: int | None = None) -> WorkspaceReport:
-        """
-        Analyze all files in the workspace.
+    def analyze(
+        self,
+        parallel: bool = True,
+        max_workers: int | None = None,
+    ) -> WorkspaceReport:
+        """Analyze all files in the workspace.
 
         Args:
             parallel: Whether to analyze files in parallel.
@@ -119,6 +131,7 @@ class Workspace:
 
         Returns:
             WorkspaceReport with complete analysis.
+
         """
         analyzer = WorkspaceAnalyzer(self)
         return analyzer.analyze(parallel, max_workers)
@@ -157,11 +170,15 @@ class Workspace:
 class WorkspaceAnalyzer:
     """Analyzer for workspace files."""
 
-    def __init__(self, workspace: Workspace):
+    def __init__(self, workspace: Workspace) -> None:
         self.workspace = workspace
         self.parser = Parser()
 
-    def analyze(self, parallel: bool = True, max_workers: int | None = None) -> WorkspaceReport:
+    def analyze(
+        self,
+        parallel: bool = True,
+        max_workers: int | None = None,
+    ) -> WorkspaceReport:
         """Perform complete workspace analysis."""
         report = WorkspaceReport(
             files_analyzed=0,
@@ -186,13 +203,17 @@ class WorkspaceAnalyzer:
 
         return report
 
-    def _analyze_sequential(self, report: WorkspaceReport):
+    def _analyze_sequential(self, report: WorkspaceReport) -> None:
         """Analyze files sequentially."""
         for file_path, result in self.workspace.files.items():
             self._analyze_file(result, report)
             report.file_results[file_path] = result
 
-    def _analyze_parallel(self, report: WorkspaceReport, max_workers: int | None = None):
+    def _analyze_parallel(
+        self,
+        report: WorkspaceReport,
+        max_workers: int | None = None,
+    ) -> None:
         """Analyze files in parallel."""
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_file = {
@@ -209,7 +230,7 @@ class WorkspaceAnalyzer:
                     result.errors.append(f"Analysis error: {e}")
                     report.file_results[file_path] = result
 
-    def _analyze_file(self, result: FileAnalysisResult, report: WorkspaceReport):
+    def _analyze_file(self, result: FileAnalysisResult, report: WorkspaceReport) -> None:
         """Analyze a single file."""
         if not result.resolved:
             return
@@ -242,17 +263,21 @@ class WorkspaceAnalyzer:
             if analysis.get("unused_strings"):
                 for rule_name, strings in analysis["unused_strings"].items():
                     for string in strings:
-                        result.warnings.append(f"Rule '{rule_name}': Unused string '{string}'")
+                        result.warnings.append(
+                            f"Rule '{rule_name}': Unused string '{string}'",
+                        )
 
             if analysis.get("undefined_strings"):
                 for rule_name, strings in analysis["undefined_strings"].items():
                     for string in strings:
-                        result.warnings.append(f"Rule '{rule_name}': Undefined string '{string}'")
+                        result.warnings.append(
+                            f"Rule '{rule_name}': Undefined string '{string}'",
+                        )
 
         except Exception as e:
             result.errors.append(f"Analysis error: {e}")
 
-    def _calculate_statistics(self, report: WorkspaceReport):
+    def _calculate_statistics(self, report: WorkspaceReport) -> None:
         """Calculate workspace statistics."""
         # Basic counts
         report.statistics["file_count"] = report.files_analyzed
@@ -286,13 +311,15 @@ class WorkspaceAnalyzer:
         report.statistics["rule_name_conflicts"] = len(conflicts)
         report.statistics["conflicting_rules"] = conflicts
 
-    def _check_global_issues(self, report: WorkspaceReport):
+    def _check_global_issues(self, report: WorkspaceReport) -> None:
         """Check for workspace-wide issues."""
         # Check for dependency cycles
         cycles = report.dependency_graph.find_cycles()
         if cycles:
             for cycle in cycles:
-                report.global_errors.append(f"Dependency cycle detected: {' -> '.join(cycle)}")
+                report.global_errors.append(
+                    f"Dependency cycle detected: {' -> '.join(cycle)}",
+                )
 
         # Check for missing includes
         for file_path, result in report.file_results.items():
@@ -301,12 +328,12 @@ class WorkspaceAnalyzer:
                     # Check if include was resolved
                     if not any(inc.path.name == include.path for inc in result.resolved.includes):
                         report.global_errors.append(
-                            f"File '{file_path}': Cannot resolve include '{include.path}'"
+                            f"File '{file_path}': Cannot resolve include '{include.path}'",
                         )
 
         # Check for duplicate rule names
         conflicts = report.statistics.get("conflicting_rules", {})
         for rule_name, files in conflicts.items():
             report.global_errors.append(
-                f"Rule '{rule_name}' defined in multiple files: {', '.join(files)}"
+                f"Rule '{rule_name}' defined in multiple files: {', '.join(files)}",
             )

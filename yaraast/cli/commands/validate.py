@@ -12,7 +12,7 @@ from yaraast.parser import Parser
 
 
 @click.group()
-def validate():
+def validate() -> None:
     """Cross-validation commands."""
 
 
@@ -29,7 +29,7 @@ def _parse_externals(external: tuple) -> dict:
     return externals
 
 
-def _display_cross_results(result, verbose: bool):
+def _display_cross_results(result, verbose: bool) -> None:
     """Display cross-validation results."""
     if result.valid:
         click.echo(click.style("✓ Validation PASSED", fg="green", bold=True))
@@ -62,12 +62,13 @@ def _display_cross_results(result, verbose: bool):
 @click.argument("test_file", type=click.Path(exists=True))
 @click.option("-e", "--external", multiple=True, help="External variables (key=value)")
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed results")
-def cross(rule_file: str, test_file: str, external: tuple, verbose: bool):
+def cross(rule_file: str, test_file: str, external: tuple, verbose: bool) -> None:
     """Cross-validate YARA rules between yaraast and libyara.
 
     Example:
         yaraast validate cross rules.yar malware.bin
         yaraast validate cross rules.yar sample.exe -e filename=sample.exe
+
     """
     if not YARA_AVAILABLE:
         click.echo("Error: yara-python is not installed.", err=True)
@@ -133,12 +134,14 @@ def _display_roundtrip_summary(result):
     click.echo(f"\n{status(result.ast_equivalent)} AST equivalence")
     click.echo(f"{status(result.code_equivalent)} Code generation equivalence")
     click.echo(f"{status(result.original_compiles)} Original compiles with libyara")
-    click.echo(f"{status(result.regenerated_compiles)} Regenerated compiles with libyara")
+    click.echo(
+        f"{status(result.regenerated_compiles)} Regenerated compiles with libyara",
+    )
 
     return status
 
 
-def _display_differences(title: str, differences: list):
+def _display_differences(title: str, differences: list) -> None:
     """Display a list of differences."""
     if differences:
         click.echo(f"\n{title}:")
@@ -146,7 +149,7 @@ def _display_differences(title: str, differences: list):
             click.echo(f"  - {diff}")
 
 
-def _display_code_comparison(result, verbose: bool):
+def _display_code_comparison(result, verbose: bool) -> None:
     """Display original and regenerated code comparison."""
     if verbose and result.original_code:
         click.echo("\nOriginal code:")
@@ -161,7 +164,7 @@ def _display_code_comparison(result, verbose: bool):
             click.echo("-" * 40)
 
 
-def _display_roundtrip_details(result, status_fn, data, verbose: bool):
+def _display_roundtrip_details(result, status_fn, data, verbose: bool) -> None:
     """Display detailed round-trip results."""
     if data:
         click.echo(f"{status_fn(result.scan_equivalent)} Scan results match")
@@ -184,7 +187,7 @@ def _display_roundtrip_details(result, status_fn, data, verbose: bool):
     help="Test data for scanning comparison",
 )
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed results")
-def roundtrip(rule_file: str, test_data: str | None, verbose: bool):
+def roundtrip(rule_file: str, test_data: str | None, verbose: bool) -> None:
     """Test AST round-trip equivalence.
 
     Tests: AST → code → libyara → re-parse
@@ -192,6 +195,7 @@ def roundtrip(rule_file: str, test_data: str | None, verbose: bool):
     Example:
         yaraast validate roundtrip rules.yar
         yaraast validate roundtrip rules.yar -d malware.bin
+
     """
     if not YARA_AVAILABLE:
         click.echo("Error: yara-python is not installed.", err=True)

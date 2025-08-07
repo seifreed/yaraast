@@ -51,7 +51,7 @@ from yaraast.visitor import ASTVisitor
 class StringUsageAnalyzer(ASTVisitor[None]):
     """Analyze string usage in YARA rules."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.defined_strings: dict[str, set[str]] = {}  # rule_name -> set of string ids
         self.used_strings: dict[str, set[str]] = {}  # rule_name -> set of string ids
         self.current_rule: str | None = None
@@ -100,7 +100,10 @@ class StringUsageAnalyzer(ASTVisitor[None]):
 
         return unused
 
-    def get_undefined_strings(self, rule_name: str | None = None) -> dict[str, list[str]]:
+    def get_undefined_strings(
+        self,
+        rule_name: str | None = None,
+    ) -> dict[str, list[str]]:
         """Get undefined but used strings for a specific rule or all rules."""
         if rule_name:
             defined = self.defined_strings.get(rule_name, set())
@@ -189,7 +192,9 @@ class StringUsageAnalyzer(ASTVisitor[None]):
         if isinstance(node.string_set, Identifier) and node.string_set.name == "them":
             # "them" refers to all defined strings
             if self.current_rule:
-                self.used_strings[self.current_rule].update(self.defined_strings[self.current_rule])
+                self.used_strings[self.current_rule].update(
+                    self.defined_strings[self.current_rule],
+                )
         else:
             self.visit(node.string_set)
 
@@ -206,7 +211,9 @@ class StringUsageAnalyzer(ASTVisitor[None]):
             and self.current_rule
         ):
             # "them" refers to all defined strings in the current rule
-            self.used_strings[self.current_rule].update(self.defined_strings[self.current_rule])
+            self.used_strings[self.current_rule].update(
+                self.defined_strings[self.current_rule],
+            )
         else:
             self.visit(node.string_set)
 

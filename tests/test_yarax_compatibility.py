@@ -4,7 +4,7 @@ from yaraast.parser import Parser
 from yaraast.yarax import YaraXCompatibilityChecker, YaraXFeatures, YaraXSyntaxAdapter
 
 
-def test_regex_brace_escaping():
+def test_regex_brace_escaping() -> None:
     """Test detection of unescaped braces in regex."""
     yara_code = """
 rule regex_test {
@@ -30,7 +30,7 @@ rule regex_test {
     assert len(unescaped) >= 2
 
 
-def test_invalid_escape_sequences():
+def test_invalid_escape_sequences() -> None:
     """Test detection of invalid escape sequences."""
     yara_code = """
 rule escape_test {
@@ -56,7 +56,7 @@ rule escape_test {
     assert len(invalid) >= 2
 
 
-def test_base64_length_validation():
+def test_base64_length_validation() -> None:
     """Test base64 pattern length validation."""
     yara_code = """
 rule base64_test {
@@ -81,7 +81,7 @@ rule base64_test {
     assert len(short_base64) >= 1
 
 
-def test_duplicate_modifiers():
+def test_duplicate_modifiers() -> None:
     """Test detection of duplicate rule modifiers."""
     yara_code = """
 private private rule dup_test1 {
@@ -108,7 +108,7 @@ private global rule ok_test {
     assert len(duplicates) >= 2
 
 
-def test_syntax_adaptation():
+def test_syntax_adaptation() -> None:
     """Test YARA to YARA-X syntax adaptation."""
     yara_code = """
 rule adapt_me {
@@ -143,7 +143,7 @@ rule adapt_me {
     assert '"AAA" base64' in output or '"A" base64' not in output
 
 
-def test_compatibility_report():
+def test_compatibility_report() -> None:
     """Test comprehensive compatibility report."""
     yara_code = """
 private private rule complex_test {
@@ -173,7 +173,7 @@ private private rule complex_test {
     assert report["migration_difficulty"] in ["easy", "moderate", "difficult"]
 
 
-def test_migration_guide_generation():
+def test_migration_guide_generation() -> None:
     """Test migration guide generation."""
     yara_code = """
 rule migration_test {
@@ -202,7 +202,7 @@ rule migration_test {
     assert "Base64 Pattern Length" in guide or "base64" in guide.lower()
 
 
-def test_yara_compatibility_mode():
+def test_yara_compatibility_mode() -> None:
     """Test YARA compatibility mode."""
     features = YaraXFeatures.yara_compatible()
 

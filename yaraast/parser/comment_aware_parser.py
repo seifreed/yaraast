@@ -7,19 +7,19 @@ from typing import TYPE_CHECKING
 from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.meta import Meta
-from yaraast.ast.rules import Rule
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser.better_parser import Parser
 
 if TYPE_CHECKING:
+    from yaraast.ast.rules import Rule
     from yaraast.ast.strings import StringDefinition
 
 
 class CommentAwareParser(Parser):
     """Parser that preserves and attaches comments to AST nodes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.pending_comments: list[Token] = []
         self.comment_tokens: list[Token] = []
@@ -61,7 +61,10 @@ class CommentAwareParser(Parser):
 
         for token in self.comment_tokens:
             if token.line < end_line:
-                comment = Comment(text=token.value, is_multiline=token.value.startswith("/*"))
+                comment = Comment(
+                    text=token.value,
+                    is_multiline=token.value.startswith("/*"),
+                )
                 # Set location separately
                 comment.location = Location(line=token.line, column=token.column)
                 comments.append(comment)
@@ -75,7 +78,10 @@ class CommentAwareParser(Parser):
         """Collect a comment on the same line."""
         for i, token in enumerate(self.comment_tokens):
             if token.line == start_line:
-                comment = Comment(text=token.value, is_multiline=token.value.startswith("/*"))
+                comment = Comment(
+                    text=token.value,
+                    is_multiline=token.value.startswith("/*"),
+                )
                 # Set location separately
                 comment.location = Location(line=token.line, column=token.column)
                 # Remove from list
@@ -142,7 +148,8 @@ class CommentAwareParser(Parser):
         self._advance()
 
         if not self._match(TokenType.ASSIGN):
-            raise Exception("Expected '=' in meta")
+            msg = "Expected '=' in meta"
+            raise Exception(msg)
 
         # Parse value
         if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
@@ -152,7 +159,8 @@ class CommentAwareParser(Parser):
         elif self._match(TokenType.BOOLEAN_FALSE):
             value = False
         else:
-            raise Exception("Expected meta value")
+            msg = "Expected meta value"
+            raise Exception(msg)
 
         meta = Meta(key=key, value=value)
 
@@ -173,7 +181,10 @@ class CommentAwareParser(Parser):
         if self.comment_tokens:
             comments = []
             for token in self.comment_tokens:
-                comment = Comment(text=token.value, is_multiline=token.value.startswith("/*"))
+                comment = Comment(
+                    text=token.value,
+                    is_multiline=token.value.startswith("/*"),
+                )
                 # Set location separately
                 comment.location = Location(line=token.line, column=token.column)
                 comments.append(comment)

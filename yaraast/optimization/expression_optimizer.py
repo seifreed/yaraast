@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -14,9 +14,6 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.visitor.visitor import ASTTransformer
-
-if TYPE_CHECKING:
-    pass
 
 
 class ExpressionOptimizer(ASTTransformer):
@@ -33,53 +30,59 @@ class ExpressionOptimizer(ASTTransformer):
         node.right = self.visit(node.right)
 
         # Constant folding for boolean operations
-        if isinstance(node.left, BooleanLiteral) and isinstance(node.right, BooleanLiteral):
+        if isinstance(node.left, BooleanLiteral) and isinstance(
+            node.right,
+            BooleanLiteral,
+        ):
             if node.operator == "and":
                 return BooleanLiteral(value=node.left.value and node.right.value)
-            elif node.operator == "or":
+            if node.operator == "or":
                 return BooleanLiteral(value=node.left.value or node.right.value)
 
         # Constant folding for integer arithmetic
-        if isinstance(node.left, IntegerLiteral) and isinstance(node.right, IntegerLiteral):
+        if isinstance(node.left, IntegerLiteral) and isinstance(
+            node.right,
+            IntegerLiteral,
+        ):
             left_val = node.left.value
             right_val = node.right.value
 
             # Arithmetic operations
             if node.operator == "+":
                 return IntegerLiteral(value=left_val + right_val)
-            elif node.operator == "-":
+            if node.operator == "-":
                 return IntegerLiteral(value=left_val - right_val)
-            elif node.operator == "*":
+            if node.operator == "*":
                 return IntegerLiteral(value=left_val * right_val)
-            elif node.operator == "/" and right_val != 0:
+            if node.operator == "/" and right_val != 0:
                 return IntegerLiteral(value=left_val // right_val)  # Integer division
-            elif node.operator == "%" and right_val != 0:
+            if node.operator == "%" and right_val != 0:
                 return IntegerLiteral(value=left_val % right_val)
 
             # Bitwise operations
-            elif node.operator == "&":
+            if node.operator == "&":
                 return IntegerLiteral(value=left_val & right_val)
-            elif node.operator == "|":
+            if node.operator == "|":
                 return IntegerLiteral(value=left_val | right_val)
-            elif node.operator == "^":
+            if node.operator == "^":
                 return IntegerLiteral(value=left_val ^ right_val)
-            elif node.operator == "<<":
+            if node.operator == "<<":
                 return IntegerLiteral(value=left_val << right_val)
-            elif node.operator == ">>":
+            if node.operator == ">>":
                 return IntegerLiteral(value=left_val >> right_val)
 
             # Comparison operations
-            elif node.operator == "==":
+            if node.operator == "==":
                 return BooleanLiteral(value=left_val == right_val)
-            elif node.operator == "!=":
+            if node.operator == "!=":
                 return BooleanLiteral(value=left_val != right_val)
-            elif node.operator == "<":
+            if node.operator == "<":
                 return BooleanLiteral(value=left_val < right_val)
-            elif node.operator == ">":
+            if node.operator == ">":
                 return BooleanLiteral(value=left_val > right_val)
-            elif node.operator == "<=":
+            if node.operator == "<=":
                 return BooleanLiteral(value=left_val <= right_val)
-            elif node.operator == ">=":
+            if node.operator == ">=":
                 return BooleanLiteral(value=left_val >= right_val)
 
         # Identity operations
@@ -116,25 +119,21 @@ class ExpressionOptimizer(ASTTransformer):
             if node.operator == "and":
                 if not node.left.value:
                     return BooleanLiteral(value=False)
-                else:
-                    return node.right
-            elif node.operator == "or":
+                return node.right
+            if node.operator == "or":
                 if node.left.value:
                     return BooleanLiteral(value=True)
-                else:
-                    return node.right
+                return node.right
 
         if isinstance(node.right, BooleanLiteral):
             if node.operator == "and":
                 if not node.right.value:
                     return BooleanLiteral(value=False)
-                else:
-                    return node.left
-            elif node.operator == "or":
+                return node.left
+            if node.operator == "or":
                 if node.right.value:
                     return BooleanLiteral(value=True)
-                else:
-                    return node.left
+                return node.left
 
         return node
 
@@ -169,7 +168,7 @@ class ExpressionOptimizer(ASTTransformer):
         inner = self.visit(node.expression)
 
         # Remove unnecessary parentheses around literals and identifiers
-        if isinstance(inner, (BooleanLiteral, IntegerLiteral, Identifier)):
+        if isinstance(inner, BooleanLiteral | IntegerLiteral | Identifier):
             return inner
 
         node.expression = inner

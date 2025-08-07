@@ -16,13 +16,18 @@ from yaraast.parser import Parser
 
 
 @click.group()
-def metrics():
+def metrics() -> None:
     """Analyze and visualize YARA AST metrics."""
 
 
 @metrics.command()
 @click.argument("yara_file", type=click.Path(exists=True, dir_okay=False))
-@click.option("--output", "-o", type=click.Path(), help="Output file for metrics report")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(),
+    help="Output file for metrics report",
+)
 @click.option(
     "--format",
     "-f",
@@ -30,8 +35,13 @@ def metrics():
     default="text",
     help="Output format",
 )
-@click.option("--quality-gate", type=int, default=70, help="Quality gate threshold (0-100)")
-def complexity(yara_file: str, output: str | None, format: str, quality_gate: int):
+@click.option(
+    "--quality-gate",
+    type=int,
+    default=70,
+    help="Quality gate threshold (0-100)",
+)
+def complexity(yara_file: str, output: str | None, format: str, quality_gate: int) -> None:
     """Analyze YARA rule complexity metrics."""
     with Path(yara_file).open() as f:
         content = f.read()
@@ -60,7 +70,10 @@ def complexity(yara_file: str, output: str | None, format: str, quality_gate: in
     # Quality gate check
     quality_score = metrics.get_quality_score()
     if quality_score < quality_gate:
-        click.echo(f"\n⚠️  Quality gate warning: {quality_score:.1f} < {quality_gate}", err=True)
+        click.echo(
+            f"\n⚠️  Quality gate warning: {quality_score:.1f} < {quality_gate}",
+            err=True,
+        )
         # Don't exit with error - just warn
     else:
         click.echo(f"\n✅ Quality gate passed: {quality_score:.1f} >= {quality_gate}")
@@ -89,7 +102,7 @@ def complexity(yara_file: str, output: str | None, format: str, quality_gate: in
     default="dot",
     help="GraphViz layout engine",
 )
-def graph(yara_file: str, output: str | None, format: str, type: str, engine: str):
+def graph(yara_file: str, output: str | None, format: str, type: str, engine: str) -> None:
     """Generate dependency graphs with GraphViz."""
     with Path(yara_file).open() as f:
         content = f.read()
@@ -115,7 +128,10 @@ def graph(yara_file: str, output: str | None, format: str, type: str, engine: st
             analyzer = ComplexityAnalyzer()
             metrics = analyzer.analyze(ast)
             result_path = generator.generate_complexity_graph(
-                ast, metrics.cyclomatic_complexity, output, format
+                ast,
+                metrics.cyclomatic_complexity,
+                output,
+                format,
             )
 
         if isinstance(result_path, str) and Path(result_path).exists():
@@ -135,7 +151,9 @@ def graph(yara_file: str, output: str | None, format: str, type: str, engine: st
             or "failed to execute PosixPath('dot')" in str(e)
         ):
             # Graphviz not installed, generate text representation
-            click.echo("⚠️ Graphviz not installed. Generating text representation instead...\n")
+            click.echo(
+                "⚠️ Graphviz not installed. Generating text representation instead...\n",
+            )
 
             # Analyze dependencies
             generator.visit(ast)
@@ -175,7 +193,11 @@ def graph(yara_file: str, output: str | None, format: str, type: str, engine: st
 @metrics.command()
 @click.argument("yara_file", type=click.Path(exists=True, dir_okay=False))
 @click.option("--output", "-o", type=click.Path(), help="Output HTML file path")
-@click.option("--interactive", is_flag=True, help="Generate interactive HTML with search")
+@click.option(
+    "--interactive",
+    is_flag=True,
+    help="Generate interactive HTML with search",
+)
 @click.option("--title", default="YARA AST Visualization", help="Page title")
 @click.option("--no-metadata", is_flag=True, help="Exclude metadata from visualization")
 @click.option("--collapsible", is_flag=True, help="Generate collapsible tree")
@@ -186,7 +208,7 @@ def tree(
     title: str,
     no_metadata: bool,
     collapsible: bool,
-):
+) -> None:
     """Generate HTML collapsible tree visualization."""
     with Path(yara_file).open() as f:
         content = f.read()
@@ -232,7 +254,7 @@ def tree(
     help="Output format",
 )
 @click.option("--stats", is_flag=True, help="Show pattern statistics")
-def patterns(yara_file: str, output: str | None, type: str, format: str, stats: bool):
+def patterns(yara_file: str, output: str | None, type: str, format: str, stats: bool) -> None:
     """Generate string pattern analysis diagrams."""
     with Path(yara_file).open() as f:
         content = f.read()
@@ -250,9 +272,17 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
         if type == "flow":
             result_path = generator.generate_pattern_flow_diagram(ast, output, format)
         elif type == "complexity":
-            result_path = generator.generate_pattern_complexity_diagram(ast, output, format)
+            result_path = generator.generate_pattern_complexity_diagram(
+                ast,
+                output,
+                format,
+            )
         elif type == "similarity":
-            result_path = generator.generate_pattern_similarity_diagram(ast, output, format)
+            result_path = generator.generate_pattern_similarity_diagram(
+                ast,
+                output,
+                format,
+            )
         elif type == "hex":
             result_path = generator.generate_hex_pattern_diagram(ast, output, format)
 
@@ -268,7 +298,9 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
             or "failed to execute PosixPath('dot')" in str(e)
         ):
             # Graphviz not installed, generate text representation
-            click.echo("⚠️ Graphviz not installed. Generating text analysis instead...\n")
+            click.echo(
+                "⚠️ Graphviz not installed. Generating text analysis instead...\n",
+            )
 
             # Analyze patterns
             generator._analyze_patterns(ast)
@@ -288,18 +320,22 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
                         if hasattr(string_def, "value"):  # Plain string
                             plain_count += 1
                             click.echo(
-                                f'  📝 {string_def.identifier}: "{string_def.value[:30]}..."'
-                                if len(str(string_def.value)) > 30
-                                else f'  📝 {string_def.identifier}: "{string_def.value}"'
+                                (
+                                    f'  📝 {string_def.identifier}: "{string_def.value[:30]}..."'
+                                    if len(str(string_def.value)) > 30
+                                    else f'  📝 {string_def.identifier}: "{string_def.value}"'
+                                ),
                             )
                         elif hasattr(string_def, "tokens"):  # Hex string
                             hex_count += 1
                             click.echo(
-                                f"  🔢 {string_def.identifier}: HEX pattern ({len(string_def.tokens)} tokens)"
+                                f"  🔢 {string_def.identifier}: HEX pattern ({len(string_def.tokens)} tokens)",
                             )
                         elif hasattr(string_def, "regex"):  # Regex string
                             regex_count += 1
-                            click.echo(f"  🔍 {string_def.identifier}: /{string_def.regex}/")
+                            click.echo(
+                                f"  🔍 {string_def.identifier}: /{string_def.regex}/",
+                            )
 
             click.echo("\n📈 Summary:")
             click.echo(f"  Total strings: {plain_count + hex_count + regex_count}")
@@ -322,20 +358,27 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
                 click.echo("\n📊 Pattern Statistics:")
                 click.echo(f"  Total patterns: {pattern_stats['total_patterns']}")
                 click.echo(f"  By type: {pattern_stats['by_type']}")
-                click.echo(f"  Complexity distribution: {pattern_stats['complexity_distribution']}")
+                click.echo(
+                    f"  Complexity distribution: {pattern_stats['complexity_distribution']}",
+                )
 
                 if pattern_stats.get("pattern_lengths"):
                     lengths = pattern_stats["pattern_lengths"]
                     click.echo(
-                        f"  Length stats: min={lengths['min']}, max={lengths['max']}, avg={lengths['avg']:.1f}"
+                        f"  Length stats: min={lengths['min']}, max={lengths['max']}, avg={lengths['avg']:.1f}",
                     )
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             pass  # Statistics might not be available without full analysis
 
 
 @metrics.command()
 @click.argument("yara_file", type=click.Path(exists=True, dir_okay=False))
-@click.option("--output-dir", "-d", type=click.Path(), help="Output directory for all reports")
+@click.option(
+    "--output-dir",
+    "-d",
+    type=click.Path(),
+    help="Output directory for all reports",
+)
 @click.option(
     "--format",
     "-f",
@@ -343,7 +386,7 @@ def patterns(yara_file: str, output: str | None, type: str, format: str, stats: 
     default="svg",
     help="Image format for graphs",
 )
-def report(yara_file: str, output_dir: str | None, format: str):
+def report(yara_file: str, output_dir: str | None, format: str) -> None:
     """Generate comprehensive metrics report with all visualizations."""
     with Path(yara_file).open() as f:
         content = f.read()
@@ -382,9 +425,15 @@ def report(yara_file: str, output_dir: str | None, format: str):
     dep_generator = DependencyGraphGenerator()
 
     dep_generator.generate_graph(
-        ast, str(output_path / f"{base_name}_dependencies.{format}"), format
+        ast,
+        str(output_path / f"{base_name}_dependencies.{format}"),
+        format,
     )
-    dep_generator.generate_rule_graph(ast, str(output_path / f"{base_name}_rules.{format}"), format)
+    dep_generator.generate_rule_graph(
+        ast,
+        str(output_path / f"{base_name}_rules.{format}"),
+        format,
+    )
     dep_generator.generate_complexity_graph(
         ast,
         metrics.cyclomatic_complexity,
@@ -395,23 +444,32 @@ def report(yara_file: str, output_dir: str | None, format: str):
     # 3. HTML Tree
     click.echo("🌳 Generating HTML tree...")
     tree_generator = HtmlTreeGenerator()
-    tree_generator.generate_interactive_html(ast, str(output_path / f"{base_name}_tree.html"))
+    tree_generator.generate_interactive_html(
+        ast,
+        str(output_path / f"{base_name}_tree.html"),
+    )
 
     # 4. Pattern Diagrams
     click.echo("🧩 Generating pattern diagrams...")
     pattern_generator = StringDiagramGenerator()
 
     pattern_generator.generate_pattern_flow_diagram(
-        ast, str(output_path / f"{base_name}_pattern_flow.{format}"), format
+        ast,
+        str(output_path / f"{base_name}_pattern_flow.{format}"),
+        format,
     )
     pattern_generator.generate_pattern_complexity_diagram(
-        ast, str(output_path / f"{base_name}_pattern_complexity.{format}"), format
+        ast,
+        str(output_path / f"{base_name}_pattern_complexity.{format}"),
+        format,
     )
 
     # Try hex patterns (may be empty)
     with contextlib.suppress(BaseException):
         pattern_generator.generate_hex_pattern_diagram(
-            ast, str(output_path / f"{base_name}_hex_patterns.{format}"), format
+            ast,
+            str(output_path / f"{base_name}_hex_patterns.{format}"),
+            format,
         )
 
     # 5. Summary Report
@@ -443,7 +501,7 @@ def report(yara_file: str, output_dir: str | None, format: str):
 
     click.echo(f"\n✅ Comprehensive report generated in {output_path}/")
     click.echo(
-        f"📊 Quality Score: {metrics.get_quality_score():.1f} (Grade: {metrics.get_complexity_grade()})"
+        f"📊 Quality Score: {metrics.get_quality_score():.1f} (Grade: {metrics.get_complexity_grade()})",
     )
     click.echo(f"📁 Generated {len(summary['generated_files'])} files")
 
@@ -502,7 +560,7 @@ def _format_complexity_text(metrics) -> str:
                     for rule, complexity in metrics.cyclomatic_complexity.items()
                 ],
                 "",
-            ]
+            ],
         )
 
     if metrics.complex_rules:
@@ -511,7 +569,7 @@ def _format_complexity_text(metrics) -> str:
                 "⚠️  Complex Rules (require attention):",
                 *[f"  - {rule}" for rule in metrics.complex_rules],
                 "",
-            ]
+            ],
         )
 
     if metrics.unused_strings:
@@ -527,7 +585,7 @@ def _format_complexity_text(metrics) -> str:
                     else f"  ... and {len(metrics.unused_strings) - 10} more"
                 ),
                 "",
-            ]
+            ],
         )
 
     if metrics.module_usage:
@@ -536,7 +594,7 @@ def _format_complexity_text(metrics) -> str:
                 "📦 Module Usage:",
                 *[f"  {module}: {usage} times" for module, usage in metrics.module_usage.items()],
                 "",
-            ]
+            ],
         )
 
     return "\n".join(lines)
@@ -552,7 +610,7 @@ def _format_complexity_text(metrics) -> str:
     default="text",
     help="Output format",
 )
-def strings(yara_file: str, output: str | None, format: str):
+def strings(yara_file: str, output: str | None, format: str) -> None:
     """Analyze string patterns in YARA rules."""
     with Path(yara_file).open() as f:
         content = f.read()
@@ -657,7 +715,7 @@ def _format_strings_text(analysis: dict) -> str:
                 f"  Max: {analysis['length_stats']['max']}",
                 f"  Avg: {analysis['length_stats']['avg']:.1f}",
                 "",
-            ]
+            ],
         )
 
     if analysis["modifiers"]:
@@ -666,7 +724,7 @@ def _format_strings_text(analysis: dict) -> str:
                 "🔧 String Modifiers:",
                 *[f"  {mod}: {count}" for mod, count in analysis["modifiers"].items()],
                 "",
-            ]
+            ],
         )
 
     if analysis["patterns"]["short_strings"] > 0 or analysis["patterns"]["hex_patterns"] > 0:
@@ -676,7 +734,7 @@ def _format_strings_text(analysis: dict) -> str:
                 f"  Short strings (<4 chars): {analysis['patterns']['short_strings']}",
                 f"  Hex patterns: {analysis['patterns']['hex_patterns']}",
                 "",
-            ]
+            ],
         )
 
     if analysis["rules"]:
@@ -687,7 +745,7 @@ def _format_strings_text(analysis: dict) -> str:
                     f"  {rule}: {info['string_count']} strings ({', '.join(set(info['types']))})"
                     for rule, info in analysis["rules"].items()
                 ],
-            ]
+            ],
         )
 
     return "\n".join(lines)
@@ -711,7 +769,7 @@ def _get_text_graph(stats: dict, dependencies: dict) -> str:
             [
                 "Rule Dependencies:",
                 *[f"  {rule} → {', '.join(deps)}" for rule, deps in dependencies.items() if deps],
-            ]
+            ],
         )
 
     return "\n".join(lines)

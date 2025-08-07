@@ -9,7 +9,7 @@ from yaraast.resolution import Workspace
 
 
 @click.group()
-def workspace():
+def workspace() -> None:
     """Workspace commands for multi-file analysis."""
 
 
@@ -57,9 +57,13 @@ def _format_text_output(report):
     lines.append("Statistics:")
     lines.append(f"  Total errors: {report.statistics.get('total_errors', 0)}")
     lines.append(f"  Total warnings: {report.statistics.get('total_warnings', 0)}")
-    lines.append(f"  Total type errors: {report.statistics.get('total_type_errors', 0)}")
+    lines.append(
+        f"  Total type errors: {report.statistics.get('total_type_errors', 0)}",
+    )
     lines.append(f"  Dependency cycles: {report.statistics.get('cycles', 0)}")
-    lines.append(f"  Rule name conflicts: {report.statistics.get('rule_name_conflicts', 0)}")
+    lines.append(
+        f"  Rule name conflicts: {report.statistics.get('rule_name_conflicts', 0)}",
+    )
 
     return "\n".join(lines)
 
@@ -90,7 +94,12 @@ def _format_file_issues(file_path, result):
 @workspace.command()
 @click.argument("directory", type=click.Path(exists=True))
 @click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
-@click.option("--recursive/--no-recursive", "-r/-R", default=True, help="Scan subdirectories")
+@click.option(
+    "--recursive/--no-recursive",
+    "-r/-R",
+    default=True,
+    help="Scan subdirectories",
+)
 @click.option("--output", "-o", type=click.Path(), help="Output file for report")
 @click.option(
     "--format",
@@ -100,7 +109,7 @@ def _format_file_issues(file_path, result):
     help="Output format",
 )
 @click.option("--parallel/--sequential", default=True, help="Analyze files in parallel")
-def analyze(directory, pattern, recursive, output, format, parallel):
+def analyze(directory, pattern, recursive, output, format, parallel) -> None:
     """Analyze all YARA files in a directory."""
     click.echo(f"Analyzing directory: {directory}")
 
@@ -131,9 +140,14 @@ def analyze(directory, pattern, recursive, output, format, parallel):
 
 @workspace.command()
 @click.argument("file", type=click.Path(exists=True))
-@click.option("--search-path", "-I", multiple=True, help="Additional include search paths")
+@click.option(
+    "--search-path",
+    "-I",
+    multiple=True,
+    help="Additional include search paths",
+)
 @click.option("--show-tree/--no-tree", default=True, help="Show include tree")
-def resolve(file, search_path, show_tree):
+def resolve(file, search_path, show_tree) -> None:
     """Resolve all includes for a YARA file."""
     from yaraast.resolution import IncludeResolver
 
@@ -177,7 +191,7 @@ def resolve(file, search_path, show_tree):
     default="dot",
     help="Output format",
 )
-def graph(directory, output, format):
+def graph(directory, output, format) -> None:
     """Generate dependency graph for YARA files."""
     click.echo(f"Building dependency graph for: {directory}")
 
@@ -212,7 +226,7 @@ def graph(directory, output, format):
         click.echo(output_text)
 
 
-def _print_tree(tree, indent=0):
+def _print_tree(tree, indent=0) -> None:
     """Print include tree."""
     prefix = "  " * indent
     click.echo(f"{prefix}- {Path(tree['path']).name}")

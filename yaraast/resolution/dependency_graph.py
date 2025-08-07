@@ -27,18 +27,22 @@ class DependencyNode:
 class DependencyGraph:
     """Build and analyze dependency graphs for YARA files."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.nodes: dict[str, DependencyNode] = {}
         self.file_rules: dict[str, set[str]] = {}  # file_path -> rule_names
         self.rule_files: dict[str, str] = {}  # rule_name -> file_path
 
-    def add_file(self, file_path: Path, ast: YaraFile):
+    def add_file(self, file_path: Path, ast: YaraFile) -> None:
         """Add a YARA file to the dependency graph."""
         file_key = str(file_path)
 
         # Add file node
         if file_key not in self.nodes:
-            self.nodes[file_key] = DependencyNode(name=file_key, type="file", file_path=file_path)
+            self.nodes[file_key] = DependencyNode(
+                name=file_key,
+                type="file",
+                file_path=file_path,
+            )
 
         # Track rules in this file
         self.file_rules[file_key] = set()
@@ -56,7 +60,7 @@ class DependencyGraph:
         for rule in ast.rules:
             self._add_rule(file_key, rule)
 
-    def _add_module_dependency(self, file_key: str, module_name: str):
+    def _add_module_dependency(self, file_key: str, module_name: str) -> None:
         """Add module dependency."""
         # Create module node if not exists
         if module_name not in self.nodes:
@@ -66,12 +70,12 @@ class DependencyGraph:
         self.nodes[file_key].dependencies.add(module_name)
         self.nodes[module_name].dependents.add(file_key)
 
-    def _add_include_dependency(self, file_key: str, include_path: str):
+    def _add_include_dependency(self, file_key: str, include_path: str) -> None:
         """Add include dependency."""
         # Note: include_path should be resolved to absolute path by IncludeResolver
         self.nodes[file_key].dependencies.add(include_path)
 
-    def _add_rule(self, file_key: str, rule: Rule):
+    def _add_rule(self, file_key: str, rule: Rule) -> None:
         """Add rule to the graph and analyze its dependencies."""
         rule_key = f"rule:{rule.name}"
 
@@ -97,7 +101,7 @@ class DependencyGraph:
         # Analyze rule dependencies
         self._analyze_rule_dependencies(rule_key, rule)
 
-    def _analyze_rule_dependencies(self, rule_key: str, rule: Rule):
+    def _analyze_rule_dependencies(self, rule_key: str, rule: Rule) -> None:
         """Analyze dependencies within a rule."""
         # This would analyze the rule's condition to find:
         # - References to other rules

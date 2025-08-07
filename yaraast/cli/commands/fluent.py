@@ -19,9 +19,8 @@ from yaraast.codegen import CodeGenerator
 
 
 @click.group()
-def fluent():
-    """
-    Fluent API demonstrations and examples.
+def fluent() -> None:
+    """Fluent API demonstrations and examples.
 
     The fluent API provides a programmatic way to construct YARA rules
     using method chaining and builder patterns, making rule creation
@@ -46,7 +45,7 @@ def create_example_rules():
             .nocase()
             .then()
             .condition("$mz at 0 and $suspicious")
-            .build()
+            .build(),
         )
         .with_rule(
             rule("example_packer")
@@ -55,7 +54,7 @@ def create_example_rules():
             .text("UPX!")
             .then()
             .condition("$upx")
-            .build()
+            .build(),
         )
         .build()
     )
@@ -68,9 +67,8 @@ def create_example_rules():
     type=click.Path(path_type=Path),
     help="Output file (default: stdout)",
 )
-def examples(output: Path | None):
-    """
-    Generate example rules using the fluent API.
+def examples(output: Path | None) -> None:
+    """Generate example rules using the fluent API.
 
     This command demonstrates various fluent API patterns for building
     YARA rules programmatically, including string definitions, conditions,
@@ -103,9 +101,8 @@ def examples(output: Path | None):
     type=click.Path(path_type=Path),
     help="Output file (default: stdout)",
 )
-def string_patterns(output: Path | None):
-    """
-    Demonstrate string pattern builders.
+def string_patterns(output: Path | None) -> None:
+    """Demonstrate string pattern builders.
 
     Shows how to use the fluent string builder API to create various
     types of string patterns with modifiers.
@@ -197,9 +194,8 @@ def string_patterns(output: Path | None):
     type=click.Path(path_type=Path),
     help="Output file (default: stdout)",
 )
-def conditions(output: Path | None):
-    """
-    Demonstrate condition builders.
+def conditions(output: Path | None) -> None:
+    """Demonstrate condition builders.
 
     Shows how to use the fluent condition builder API to create
     complex rule conditions with logical operators and quantifiers.
@@ -222,7 +218,7 @@ def conditions(output: Path | None):
                 .at(0)
                 .and_(c.one_of("$a", "$b", "$c"))
                 .and_(c.filesize_gt(1024))
-                .and_(c.pe_is_exe())
+                .and_(c.pe_is_exe()),
             )
             .build()
         )
@@ -239,7 +235,7 @@ def conditions(output: Path | None):
             .text_string("$s2", "test2")
             .text_string("$s3", "test3")
             .matches_any_of("$s1", "$s2", "$s3")
-            .build()
+            .build(),
         )
 
         # File size conditions
@@ -248,9 +244,11 @@ def conditions(output: Path | None):
             .tagged("demo")
             .text_string("$test", "sample")
             .with_condition_builder(
-                lambda c: c.string_matches("$test").and_(c.filesize_between(1024, 1024 * 1024))
+                lambda c: c.string_matches("$test").and_(
+                    c.filesize_between(1024, 1024 * 1024),
+                ),
             )
-            .build()
+            .build(),
         )
 
         # PE-specific conditions
@@ -262,9 +260,9 @@ def conditions(output: Path | None):
                 lambda c: c.string_matches("$mz")
                 .at(0)
                 .and_(c.pe_is_dll())
-                .and_(c.pe_section_count_eq(3))
+                .and_(c.pe_section_count_eq(3)),
             )
-            .build()
+            .build(),
         )
 
         # Create YARA file with all rules
@@ -296,9 +294,8 @@ def conditions(output: Path | None):
     type=click.Path(path_type=Path),
     help="Output file (default: stdout)",
 )
-def transformations(output: Path | None):
-    """
-    Demonstrate AST transformations.
+def transformations(output: Path | None) -> None:
+    """Demonstrate AST transformations.
 
     Shows how to clone and transform existing rules to create variants
     with different names, tags, conditions, and string identifiers.
@@ -362,7 +359,7 @@ def transformations(output: Path | None):
             .transform_condition(
                 lambda cond: FluentConditionBuilder(cond)
                 .and_(FluentConditionBuilder().string_matches("$upx"))
-                .build()
+                .build(),
             )
             .build()
         )
@@ -407,9 +404,14 @@ def transformations(output: Path | None):
     type=click.Path(path_type=Path),
     help="Output file (default: stdout)",
 )
-def template(rule_name: str, rule_type: str, author: str, tags: str | None, output: Path | None):
-    """
-    Generate a rule template using fluent API.
+def template(
+    rule_name: str,
+    rule_type: str,
+    author: str,
+    tags: str | None,
+    output: Path | None,
+) -> None:
+    """Generate a rule template using fluent API.
 
     Creates a YARA rule template of the specified type with common
     patterns and conditions pre-configured.

@@ -13,7 +13,7 @@ from yaraast import (
 from yaraast.version import YARAX_COMPATIBLE, YARAX_SYNTAX_VERSION
 
 
-def test_version_constants():
+def test_version_constants() -> None:
     """Test version constants are properly defined."""
     # Check version components
     assert isinstance(YARAAST_VERSION_MAJOR, int)
@@ -34,7 +34,7 @@ def test_version_constants():
     assert "." in YARA_SYNTAX_VERSION
 
 
-def test_version_functions():
+def test_version_functions() -> None:
     """Test version helper functions."""
     # Test version string
     version_str = get_version_string()
@@ -64,7 +64,7 @@ def test_version_functions():
     assert info["yarax"]["compatible"] == YARAX_COMPATIBLE
 
 
-def test_version_format():
+def test_version_format() -> None:
     """Test version string formats."""
     # Version should follow semantic versioning
     import re
@@ -79,7 +79,7 @@ def test_version_format():
     assert re.match(r"^\d+\.\d+\.\d+$", YARAX_SYNTAX_VERSION)
 
 
-def test_version_comparison():
+def test_version_comparison() -> None:
     """Test version can be used for comparisons."""
     # Create version tuples for comparison
     yaraast_tuple = (

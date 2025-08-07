@@ -18,7 +18,7 @@ def create_temp_file(directory, name, content):
 class TestIncludeResolver:
     """Test include file resolution."""
 
-    def test_basic_include_resolution(self):
+    def test_basic_include_resolution(self) -> None:
         """Test basic include file resolution."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -55,7 +55,7 @@ rule common_rule {
             assert len(resolved.includes[0].ast.rules) == 1
             assert resolved.includes[0].ast.rules[0].name == "common_rule"
 
-    def test_nested_includes(self):
+    def test_nested_includes(self) -> None:
         """Test nested include resolution."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -102,7 +102,7 @@ rule lib2_rule {
             assert "lib1_rule" in rule_names
             assert "lib2_rule" in rule_names
 
-    def test_circular_include_detection(self):
+    def test_circular_include_detection(self) -> None:
         """Test detection of circular includes."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -124,7 +124,7 @@ rule rule_b { condition: true }
             with pytest.raises(RecursionError, match="Circular include detected"):
                 resolver.resolve_file(str(a_file))
 
-    def test_include_path_searching(self):
+    def test_include_path_searching(self) -> None:
         """Test include path searching in multiple directories."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -154,7 +154,7 @@ rule library_rule { condition: true }
             assert len(resolved.includes) == 1
             assert resolved.includes[0].path.parent.resolve() == lib_dir.resolve()
 
-    def test_caching(self):
+    def test_caching(self) -> None:
         """Test file caching."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -185,7 +185,7 @@ rule library_rule { condition: true }
 class TestWorkspace:
     """Test workspace functionality."""
 
-    def test_workspace_add_file(self):
+    def test_workspace_add_file(self) -> None:
         """Test adding files to workspace."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -211,7 +211,7 @@ rule test_rule {
             assert len(result.errors) == 0
             assert len(result.resolved.ast.rules) == 1
 
-    def test_workspace_add_directory(self):
+    def test_workspace_add_directory(self) -> None:
         """Test adding directory to workspace."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -240,7 +240,7 @@ rule test_rule {
             workspace2.add_directory(str(tmpdir), recursive=False)
             assert len(workspace2.files) == 3
 
-    def test_workspace_analysis(self):
+    def test_workspace_analysis(self) -> None:
         """Test workspace analysis."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -286,7 +286,7 @@ rule unused_strings {
             assert report.statistics["total_warnings"] > 0  # unused string warning
             assert report.statistics["total_type_errors"] == 0  # type errors are different
 
-    def test_dependency_graph(self):
+    def test_dependency_graph(self) -> None:
         """Test dependency graph building."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -329,7 +329,7 @@ rule lib_rule {
             assert stats["module_count"] >= 1
             assert stats["rule_count"] >= 1
 
-    def test_find_rule(self):
+    def test_find_rule(self) -> None:
         """Test finding rules in workspace."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
@@ -362,7 +362,7 @@ rule lib_rule {
 class TestDependencyGraph:
     """Test dependency graph functionality."""
 
-    def test_cycle_detection(self):
+    def test_cycle_detection(self) -> None:
         """Test cycle detection in dependency graph."""
         graph = DependencyGraph()
 
@@ -380,7 +380,7 @@ class TestDependencyGraph:
         cycles = graph.find_cycles()
         assert len(cycles) > 0
 
-    def test_dot_export(self):
+    def test_dot_export(self) -> None:
         """Test DOT format export."""
         graph = DependencyGraph()
 
@@ -400,7 +400,7 @@ class TestDependencyGraph:
                     meta={},
                     strings=[],
                     condition=None,
-                )
+                ),
             ],
         )
         graph.add_file(Path("test.yar"), ast)

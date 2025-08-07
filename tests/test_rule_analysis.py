@@ -4,7 +4,7 @@ from yaraast.analysis import DependencyAnalyzer, RuleAnalyzer, StringUsageAnalyz
 from yaraast.parser import Parser
 
 
-def test_unused_string_detection():
+def test_unused_string_detection() -> None:
     """Test detection of unused strings."""
     yara_code = """
 rule test_unused {
@@ -36,7 +36,7 @@ rule test_unused {
     assert rule_analysis["usage_rate"] == 0.5
 
 
-def test_undefined_string_detection():
+def test_undefined_string_detection() -> None:
     """Test detection of undefined strings."""
     yara_code = """
 rule test_undefined {
@@ -58,7 +58,7 @@ rule test_undefined {
     assert "$undefined" in rule_analysis["undefined"]
 
 
-def test_dependency_analysis():
+def test_dependency_analysis() -> None:
     """Test dependency analysis between rules."""
     yara_code = """
 rule base_rule {
@@ -114,7 +114,7 @@ rule independent {
     assert order.index("dependent_rule") < order.index("multi_dependent")
 
 
-def test_circular_dependency_detection():
+def test_circular_dependency_detection() -> None:
     """Test detection of circular dependencies."""
     yara_code = """
 rule rule_a {
@@ -149,7 +149,7 @@ rule rule_c {
     assert results["dependency_order"] is None
 
 
-def test_comprehensive_analysis():
+def test_comprehensive_analysis() -> None:
     """Test comprehensive rule analysis."""
     yara_code = """
 import "pe"
@@ -210,7 +210,7 @@ rule problematic_rule {
     assert len(undefined_recs) > 0
 
 
-def test_them_keyword_handling():
+def test_them_keyword_handling() -> None:
     """Test handling of 'them' keyword in string usage."""
     yara_code = """
 rule test_them {

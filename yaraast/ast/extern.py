@@ -139,7 +139,9 @@ class ExternNamespace(ASTNode):
 
 
 def create_extern_rule(
-    name: str, modifiers: list[str] | None = None, namespace: str | None = None
+    name: str,
+    modifiers: list[str] | None = None,
+    namespace: str | None = None,
 ) -> ExternRule:
     """Create an extern rule with string modifiers."""
     from yaraast.ast.modifiers import RuleModifier
@@ -152,13 +154,18 @@ def create_extern_rule(
     return ExternRule(name=name, modifiers=rule_modifiers, namespace=namespace)
 
 
-def create_extern_reference(rule_name: str, namespace: str | None = None) -> ExternRuleReference:
+def create_extern_reference(
+    rule_name: str,
+    namespace: str | None = None,
+) -> ExternRuleReference:
     """Create an extern rule reference."""
     return ExternRuleReference(rule_name=rule_name, namespace=namespace)
 
 
 def create_extern_import(
-    module_path: str, alias: str | None = None, rules: list[str] | None = None
+    module_path: str,
+    alias: str | None = None,
+    rules: list[str] | None = None,
 ) -> ExternImport:
     """Create an extern import statement."""
     return ExternImport(module_path=module_path, alias=alias, rules=rules or [])

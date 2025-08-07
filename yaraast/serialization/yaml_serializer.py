@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class YamlSerializer(JsonSerializer):
     """YAML serializer for YARA AST with human-readable output."""
 
-    def __init__(self, include_metadata: bool = True, flow_style: bool = False):
+    def __init__(self, include_metadata: bool = True, flow_style: bool = False) -> None:
         super().__init__(include_metadata)
         self.flow_style = flow_style
 
@@ -41,7 +41,9 @@ class YamlSerializer(JsonSerializer):
         return yaml_str
 
     def deserialize(
-        self, yaml_str: str | None = None, input_path: str | Path | None = None
+        self,
+        yaml_str: str | None = None,
+        input_path: str | Path | None = None,
     ) -> YaraFile:
         """Deserialize YAML to AST."""
         if input_path:
@@ -49,7 +51,8 @@ class YamlSerializer(JsonSerializer):
                 yaml_str = f.read()
 
         if not yaml_str:
-            raise ValueError("No YAML input provided")
+            msg = "No YAML input provided"
+            raise ValueError(msg)
 
         data = yaml.safe_load(yaml_str)
         return self._deserialize_ast(data)
@@ -71,7 +74,11 @@ class YamlSerializer(JsonSerializer):
 
         return result
 
-    def serialize_minimal(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
+    def serialize_minimal(
+        self,
+        ast: YaraFile,
+        output_path: str | Path | None = None,
+    ) -> str:
         """Serialize AST to minimal YAML format (AST only, no metadata)."""
         ast_data = self.visit(ast)
 
@@ -89,7 +96,11 @@ class YamlSerializer(JsonSerializer):
 
         return yaml_str
 
-    def serialize_rules_only(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
+    def serialize_rules_only(
+        self,
+        ast: YaraFile,
+        output_path: str | Path | None = None,
+    ) -> str:
         """Serialize only the rules section to YAML (useful for rule analysis)."""
         rules_data = {
             "rules": [self.visit(rule) for rule in ast.rules],

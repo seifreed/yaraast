@@ -28,7 +28,11 @@ class ASTNode(ABC):
     """Base class for all AST nodes."""
 
     location: Location | None = field(default=None, init=False, compare=False)
-    leading_comments: list[Comment] = field(default_factory=list, init=False, compare=False)
+    leading_comments: list[Comment] = field(
+        default_factory=list,
+        init=False,
+        compare=False,
+    )
     trailing_comment: Comment | None = field(default=None, init=False, compare=False)
 
     @abstractmethod
@@ -87,7 +91,11 @@ class YaraFile(ASTNode):
 
         return any(p.pragma_type == PragmaType.INCLUDE_ONCE for p in self.pragmas)
 
-    def get_extern_rule_by_name(self, name: str, namespace: str | None = None) -> ExternRule | None:
+    def get_extern_rule_by_name(
+        self,
+        name: str,
+        namespace: str | None = None,
+    ) -> ExternRule | None:
         """Get extern rule by name and optional namespace."""
         for rule in self.extern_rules:
             if rule.name == name and rule.namespace == namespace:

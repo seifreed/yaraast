@@ -69,6 +69,8 @@ from yaraast.cli.commands.semantic import semantic
 from yaraast.cli.commands.serialize import serialize
 from yaraast.cli.commands.validate import validate
 from yaraast.cli.commands.workspace import workspace
+from yaraast.dialects import YaraDialect
+from yaraast.unified_parser import UnifiedParser
 from yaraast.visitor import ASTVisitor
 
 console = Console()
@@ -112,7 +114,7 @@ class ASTDumper(ASTVisitor[dict]):
         # Handle modifiers - they can be lists, strings, or AST objects
         modifiers = []
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, (list, tuple)):
+            if isinstance(node.modifiers, list | tuple):
                 for mod in node.modifiers:
                     if isinstance(mod, str):
                         modifiers.append(mod)
@@ -148,7 +150,7 @@ class ASTDumper(ASTVisitor[dict]):
         # Handle modifiers - they can be strings or objects
         modifiers = []
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, (list, tuple)):
+            if isinstance(node.modifiers, list | tuple):
                 for mod in node.modifiers:
                     if isinstance(mod, str):
                         modifiers.append(mod)
@@ -170,7 +172,7 @@ class ASTDumper(ASTVisitor[dict]):
         # Handle modifiers safely
         modifiers = []
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, (list, tuple)):
+            if isinstance(node.modifiers, list | tuple):
                 for mod in node.modifiers:
                     if isinstance(mod, str):
                         modifiers.append(mod)
@@ -192,7 +194,7 @@ class ASTDumper(ASTVisitor[dict]):
         # Handle modifiers safely
         modifiers = []
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, (list, tuple)):
+            if isinstance(node.modifiers, list | tuple):
                 for mod in node.modifiers:
                     if isinstance(mod, str):
                         modifiers.append(mod)
@@ -539,7 +541,7 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
                 if not condition_str:
                     # If generator returns empty, use fallback
                     condition_str = self._condition_to_string(node.condition)
-            except Exception:
+            except (ValueError, TypeError, AttributeError):
                 # Fallback to simple representation
                 condition_str = self._condition_to_string(node.condition)
 
@@ -587,7 +589,10 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
             if class_name == "OfExpression":
                 quantifier = condition.quantifier if hasattr(condition, "quantifier") else "any"
                 string_set = "them"
-                if hasattr(condition, "string_set") and hasattr(condition.string_set, "name"):
+                if hasattr(condition, "string_set") and hasattr(
+                    condition.string_set,
+                    "name",
+                ):
                     string_set = condition.string_set.name
                 return f"{quantifier} of {string_set}"
             if class_name == "BinaryExpression":
@@ -730,7 +735,11 @@ class ASTTreeBuilder(ASTVisitor[Tree]):
         return "true"
 
     def _collect_binary_parts(
-        self, expr: Any, target_op: str, parts: list[str], depth: int
+        self,
+        expr: Any,
+        target_op: str,
+        parts: list[str],
+        depth: int,
     ) -> None:
         """Collect parts of a binary expression with the same operator."""
         if depth > 500:  # Very high limit for extremely deeply nested hash conditions
@@ -1134,25 +1143,58 @@ cli.add_command(roundtrip)
     default="yara",
     help="Output format",
 )
-def parse(input_file: str, output: str | None, format: str) -> None:
-    """Parse a YARA file and output in various formats."""
+@click.option(
+    "--dialect",
+    type=click.Choice(["auto", "yara", "yara-x", "yara-l"]),
+    default="auto",
+    help="YARA dialect to use (auto-detect by default)",
+)
+def parse(input_file: str, output: str | None, format: str, dialect: str) -> None:
+    """Parse a YARA file and output in various formats. Supports YARA, YARA-X, and YARA-L."""
     try:
         # Read input file
         with Path(input_file).open() as f:
             content = f.read()
 
-        # Try with error-tolerant parser
-        from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+        # Determine dialect and parse accordingly
+        lexer_errors = []
+        parser_errors = []
 
-        # Parse with error collection
-        error_parser = ErrorTolerantParser()
-        ast, lexer_errors, parser_errors = error_parser.parse_with_errors(content)
+        if dialect == "auto":
+            unified_parser = UnifiedParser(content)
+            detected_dialect = unified_parser.get_dialect()
+            console.print(f"[green]Detected dialect: {detected_dialect.name}[/green]")
+
+            if detected_dialect == YaraDialect.YARA_L:
+                ast = unified_parser.parse()
+            else:
+                # Try with error-tolerant parser for standard YARA
+                from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+
+                error_parser = ErrorTolerantParser()
+                ast, lexer_errors, parser_errors = error_parser.parse_with_errors(
+                    content,
+                )
+        elif dialect == "yara-l":
+            console.print("[green]Using YARA-L parser[/green]")
+            from yaraast.yaral.parser import YaraLParser
+
+            parser = YaraLParser(content)
+            ast = parser.parse()
+        else:
+            # Standard YARA or YARA-X
+            from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+
+            error_parser = ErrorTolerantParser()
+            ast, lexer_errors, parser_errors = error_parser.parse_with_errors(content)
 
         # Report any errors found
         total_errors = len(lexer_errors) + len(parser_errors)
 
         if lexer_errors or parser_errors:
-            console.print(f"\n[yellow]⚠️  Found {total_errors} issue(s) in the file:[/yellow]")
+            console.print(
+                f"\n[yellow]⚠️  Found {total_errors} issue(s) in the file:[/yellow]",
+            )
 
             # Show lexer errors
             if lexer_errors:
@@ -1161,25 +1203,33 @@ def parse(input_file: str, output: str | None, format: str) -> None:
                     console.print(error.format_error())
 
                 if len(lexer_errors) > 5:
-                    console.print(f"\n[dim]... and {len(lexer_errors) - 5} more lexer issues[/dim]")
+                    console.print(
+                        f"\n[dim]... and {len(lexer_errors) - 5} more lexer issues[/dim]",
+                    )
 
             # Show parser errors
             if parser_errors:
-                console.print(f"\n[yellow]Parser Issues ({len(parser_errors)}):[/yellow]")
+                console.print(
+                    f"\n[yellow]Parser Issues ({len(parser_errors)}):[/yellow]",
+                )
                 for error in parser_errors[:5]:  # Show first 5
                     console.print(error.format_error())
 
                 if len(parser_errors) > 5:
                     console.print(
-                        f"\n[dim]... and {len(parser_errors) - 5} more parser issues[/dim]"
+                        f"\n[dim]... and {len(parser_errors) - 5} more parser issues[/dim]",
                     )
 
             # If we couldn't parse anything, exit
             if not ast:
-                console.print("\n[red]❌ Could not parse file due to critical errors[/red]")
+                console.print(
+                    "\n[red]❌ Could not parse file due to critical errors[/red]",
+                )
                 raise click.Abort from None
 
-            console.print("\n[green]✅ Partial parse successful despite errors[/green]\n")
+            console.print(
+                "\n[green]✅ Partial parse successful despite errors[/green]\n",
+            )
 
         # Generate output based on format
         if format == "yara":
@@ -1210,14 +1260,17 @@ def parse(input_file: str, output: str | None, format: str) -> None:
                 import yaml
             except ImportError:
                 console.print(
-                    "[red]❌ Error: PyYAML is not installed. Install it with: pip install pyyaml[/red]"
+                    "[red]❌ Error: PyYAML is not installed. Install it with: pip install pyyaml[/red]",
                 )
                 raise click.Abort from None
 
             dumper = ASTDumper()
             result = dumper.visit(ast)
             yaml_str = yaml.dump(
-                result, default_flow_style=False, allow_unicode=True, sort_keys=False
+                result,
+                default_flow_style=False,
+                allow_unicode=True,
+                sort_keys=False,
             )
             if output:
                 with Path(output).open("w") as f:
@@ -1273,7 +1326,7 @@ def validate(input_file: str) -> None:
                 f"  • Imports: {import_count}",
                 title=f"Validation Result: {Path(input_file).name}",
                 border_style="green",
-            )
+            ),
         )
 
     except Exception as e:
@@ -1282,7 +1335,7 @@ def validate(input_file: str) -> None:
                 f"[red]❌ Invalid YARA file[/red]\n\nError: {e}",
                 title=f"Validation Result: {Path(input_file).name}",
                 border_style="red",
-            )
+            ),
         )
         raise click.Abort from None
 
@@ -1327,7 +1380,7 @@ def libyara() -> None:
 @click.option("--optimize", is_flag=True, help="Enable AST optimizations")
 @click.option("--debug", is_flag=True, help="Enable debug mode with source generation")
 @click.option("--stats", is_flag=True, help="Show compilation statistics")
-def _print_optimization_stats(result):
+def _print_optimization_stats(result) -> None:
     """Print optimization statistics."""
     console.print("[blue]🔧 Optimizations applied:[/blue]")
     if result.optimization_stats:
@@ -1338,7 +1391,7 @@ def _print_optimization_stats(result):
         console.print(f"  • Constants folded: {opt_stats.constant_folded}")
 
 
-def _print_compilation_stats(result, compiler):
+def _print_compilation_stats(result, compiler) -> None:
     """Print compilation statistics."""
     console.print("[blue]📊 Compilation Stats:[/blue]")
     console.print(f"  • Compilation time: {result.compilation_time:.3f}s")
@@ -1347,11 +1400,17 @@ def _print_compilation_stats(result, compiler):
     comp_stats = compiler.get_compilation_stats()
     console.print(f"  • Total compilations: {comp_stats['total_compilations']}")
     console.print(
-        f"  • Success rate: {comp_stats['successful_compilations']}/{comp_stats['total_compilations']}"
+        f"  • Success rate: {comp_stats['successful_compilations']}/{comp_stats['total_compilations']}",
     )
 
 
-def compile(input_file: str, output: str | None, optimize: bool, debug: bool, stats: bool):
+def compile(
+    input_file: str,
+    output: str | None,
+    optimize: bool,
+    debug: bool,
+    stats: bool,
+) -> None:
     """Compile YARA file using direct AST compilation."""
     try:
         from yaraast.libyara import YARA_AVAILABLE, DirectASTCompiler
@@ -1422,7 +1481,7 @@ def scan(
     timeout: int | None,
     fast: bool,
     stats: bool,
-):
+) -> None:
     """Scan file using optimized AST-based matcher."""
     try:
         from yaraast.libyara import YARA_AVAILABLE, DirectASTCompiler, OptimizedMatcher
@@ -1480,7 +1539,9 @@ def scan(
                     # Show AST context if available
                     if match.get("ast_context"):
                         ctx = match["ast_context"]
-                        console.print(f"     Complexity: {ctx.get('condition_complexity', 'N/A')}")
+                        console.print(
+                            f"     Complexity: {ctx.get('condition_complexity', 'N/A')}",
+                        )
 
             # Show optimization hints
             if scan_result.get("optimization_hints"):
@@ -1493,10 +1554,14 @@ def scan(
                 console.print("\n[blue]📈 Scan Statistics:[/blue]")
                 console.print(f"  • Total scans: {matcher_stats['total_scans']}")
                 console.print(f"  • Success rate: {matcher_stats['success_rate']:.1%}")
-                console.print(f"  • Average scan time: {matcher_stats['average_scan_time']:.3f}s")
+                console.print(
+                    f"  • Average scan time: {matcher_stats['average_scan_time']:.3f}s",
+                )
 
         else:
-            console.print(f"[red]❌ Scan failed: {scan_result.get('error', 'Unknown error')}[/red]")
+            console.print(
+                f"[red]❌ Scan failed: {scan_result.get('error', 'Unknown error')}[/red]",
+            )
             raise click.Abort from None
 
     except ImportError as e:
@@ -1537,7 +1602,9 @@ def optimize(input_file: str, show_optimizations: bool) -> None:
         console.print("[blue]📊 Optimization Stats:[/blue]")
         console.print(f"  • Rules optimized: {optimizer.stats.rules_optimized}")
         console.print(f"  • Strings optimized: {optimizer.stats.strings_optimized}")
-        console.print(f"  • Conditions simplified: {optimizer.stats.conditions_simplified}")
+        console.print(
+            f"  • Conditions simplified: {optimizer.stats.conditions_simplified}",
+        )
         console.print(f"  • Constants folded: {optimizer.stats.constant_folded}")
 
         if show_optimizations and optimizer.optimizations_applied:
@@ -1557,7 +1624,7 @@ def optimize(input_file: str, show_optimizations: bool) -> None:
         raise click.Abort from None
 
 
-def _handle_format_check(formatter, input_path):
+def _handle_format_check(formatter, input_path) -> None:
     """Handle format checking mode."""
     needs_format, issues = formatter.check_format(input_path)
 
@@ -1572,7 +1639,7 @@ def _handle_format_check(formatter, input_path):
     console.print(f"[green]✅ {input_path.name} is already formatted[/green]")
 
 
-def _show_format_diff(formatter, input_path, style):
+def _show_format_diff(formatter, input_path, style) -> None:
     """Show formatting diff."""
     with Path(input_path).open() as f:
         original = f.read()
@@ -1599,7 +1666,7 @@ def _show_format_diff(formatter, input_path, style):
     _print_diff_lines(diff_lines)
 
 
-def _print_diff_lines(diff_lines):
+def _print_diff_lines(diff_lines) -> None:
     """Print diff lines with colors."""
     for line in diff_lines:
         if line.startswith(("+++", "---")):
@@ -1616,16 +1683,31 @@ def _print_diff_lines(diff_lines):
 
 @cli.command()
 @click.argument("input_file", type=click.Path(exists=True))
-@click.option("-o", "--output", type=click.Path(), help="Output file (default: overwrite input)")
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(),
+    help="Output file (default: overwrite input)",
+)
 @click.option(
     "--style",
     type=click.Choice(["default", "compact", "pretty", "verbose"]),
     default="default",
     help="Formatting style",
 )
-@click.option("--check", is_flag=True, help="Check if file needs formatting (don't modify)")
+@click.option(
+    "--check",
+    is_flag=True,
+    help="Check if file needs formatting (don't modify)",
+)
 @click.option("--diff", is_flag=True, help="Show formatting changes as diff")
-def fmt(input_file: str, output: str | None, style: str, check: bool, diff: bool) -> None:
+def fmt(
+    input_file: str,
+    output: str | None,
+    style: str,
+    check: bool,
+    diff: bool,
+) -> None:
     """Format YARA file using AST-based formatting (like black for Python)."""
     try:
         from yaraast.cli.ast_tools import ASTFormatter
@@ -1649,7 +1731,9 @@ def fmt(input_file: str, output: str | None, style: str, check: bool, diff: bool
             raise click.Abort from None
 
         if output_path == input_path:
-            console.print(f"[green]✅ Formatted {input_path.name} ({style} style)[/green]")
+            console.print(
+                f"[green]✅ Formatted {input_path.name} ({style} style)[/green]",
+            )
         else:
             console.print(f"[green]✅ Formatted file written to {output_path}[/green]")
 
@@ -1667,10 +1751,14 @@ def fmt(input_file: str, output: str | None, style: str, check: bool, diff: bool
 @cli.command()
 @click.argument("file1", type=click.Path(exists=True))
 @click.argument("file2", type=click.Path(exists=True))
-@click.option("--logical-only", is_flag=True, help="Show only logical changes (ignore style)")
+@click.option(
+    "--logical-only",
+    is_flag=True,
+    help="Show only logical changes (ignore style)",
+)
 @click.option("--summary", is_flag=True, help="Show summary of changes only")
 @click.option("--no-style", is_flag=True, help="Don't analyze style changes")
-def _show_diff_summary(result):
+def _show_diff_summary(result) -> None:
     """Show diff summary."""
     console.print("[yellow]📋 Change Summary:[/yellow]")
     for change_type, count in result.change_summary.items():
@@ -1678,7 +1766,7 @@ def _show_diff_summary(result):
             console.print(f"  • {change_type.replace('_', ' ').title()}: {count}")
 
 
-def _show_rule_changes(result):
+def _show_rule_changes(result) -> None:
     """Show rule additions, removals and modifications."""
     if result.added_rules:
         console.print(f"\n[green]+ Added Rules ({len(result.added_rules)}):[/green]")
@@ -1691,34 +1779,42 @@ def _show_rule_changes(result):
             console.print(f"  - {rule}")
 
     if result.modified_rules:
-        console.print(f"\n[yellow]🔄 Modified Rules ({len(result.modified_rules)}):[/yellow]")
+        console.print(
+            f"\n[yellow]🔄 Modified Rules ({len(result.modified_rules)}):[/yellow]",
+        )
         for rule in result.modified_rules:
             console.print(f"  ~ {rule}")
 
 
-def _show_change_details(result, logical_only, no_style):
+def _show_change_details(result, logical_only, no_style) -> None:
     """Show detailed change information."""
     if result.logical_changes:
-        console.print(f"\n[red]🧠 Logical Changes ({len(result.logical_changes)}):[/red]")
+        console.print(
+            f"\n[red]🧠 Logical Changes ({len(result.logical_changes)}):[/red]",
+        )
         for change in result.logical_changes:
             console.print(f"  • {change}")
 
     if result.structural_changes:
-        console.print(f"\n[blue]🏗️  Structural Changes ({len(result.structural_changes)}):[/blue]")
+        console.print(
+            f"\n[blue]🏗️  Structural Changes ({len(result.structural_changes)}):[/blue]",
+        )
         for change in result.structural_changes:
             console.print(f"  • {change}")
 
     if not logical_only and not no_style and result.style_only_changes:
-        console.print(f"\n[dim]🎨 Style-Only Changes ({len(result.style_only_changes)}):[/dim]")
+        console.print(
+            f"\n[dim]🎨 Style-Only Changes ({len(result.style_only_changes)}):[/dim]",
+        )
         for change in result.style_only_changes[:10]:
             console.print(f"[dim]  • {change}[/dim]")
         if len(result.style_only_changes) > 10:
             console.print(
-                f"[dim]  • ... and {len(result.style_only_changes) - 10} more style changes[/dim]"
+                f"[dim]  • ... and {len(result.style_only_changes) - 10} more style changes[/dim]",
             )
 
 
-def _show_change_significance(result):
+def _show_change_significance(result) -> None:
     """Show significance of changes."""
     total_logical = (
         len(result.logical_changes) + len(result.added_rules) + len(result.removed_rules)
@@ -1727,15 +1823,21 @@ def _show_change_significance(result):
 
     if total_logical > 0:
         console.print(
-            f"\n[yellow]⚠️  This diff contains {total_logical} logical changes that affect rule behavior[/yellow]"
+            f"\n[yellow]⚠️  This diff contains {total_logical} logical changes that affect rule behavior[/yellow]",
         )
     elif total_style > 0:
         console.print(
-            f"\n[green]✨ This diff contains only {total_style} style changes (no logic changes)[/green]"
+            f"\n[green]✨ This diff contains only {total_style} style changes (no logic changes)[/green]",
         )
 
 
-def diff(file1: str, file2: str, logical_only: bool, summary: bool, no_style: bool) -> None:
+def diff(
+    file1: str,
+    file2: str,
+    logical_only: bool,
+    summary: bool,
+    no_style: bool,
+) -> None:
     """Show AST-based diff highlighting logical vs stylistic changes."""
     try:
         from yaraast.cli.simple_differ import SimpleASTDiffer
@@ -1748,11 +1850,13 @@ def diff(file1: str, file2: str, logical_only: bool, summary: bool, no_style: bo
 
         if not result.has_changes:
             console.print(
-                f"[green]✅ No differences found between {file1_path.name} and {file2_path.name}[/green]"
+                f"[green]✅ No differences found between {file1_path.name} and {file2_path.name}[/green]",
             )
             return
 
-        console.print(f"[blue]📊 AST Diff: {file1_path.name} → {file2_path.name}[/blue]")
+        console.print(
+            f"[blue]📊 AST Diff: {file1_path.name} → {file2_path.name}[/blue]",
+        )
         console.print("=" * 60)
 
         if summary:
@@ -1781,8 +1885,17 @@ def diff(file1: str, file2: str, logical_only: bool, summary: bool, no_style: bo
     default="all",
     help="Operations to benchmark",
 )
-@click.option("--iterations", type=int, default=10, help="Number of iterations per test")
-@click.option("--output", type=click.Path(), help="Output benchmark results to JSON file")
+@click.option(
+    "--iterations",
+    type=int,
+    default=10,
+    help="Number of iterations per test",
+)
+@click.option(
+    "--output",
+    type=click.Path(),
+    help="Output benchmark results to JSON file",
+)
 @click.option("--compare", is_flag=True, help="Compare performance across files")
 def bench(
     files: tuple[str],
@@ -1790,7 +1903,7 @@ def bench(
     iterations: int,
     output: str | None,
     compare: bool,
-):
+) -> None:
     """Performance benchmarks for AST operations."""
     try:
         import json
@@ -1833,7 +1946,7 @@ def bench(
                     file_results[op] = result
                     console.print(
                         f"  ✅ {op:10s}: {result.execution_time * 1000:6.2f}ms "
-                        f"({result.rules_count} rules, {result.ast_nodes} nodes)"
+                        f"({result.rules_count} rules, {result.ast_nodes} nodes)",
                     )
                 elif result:
                     console.print(f"  ❌ {op:10s}: {result.error}")
@@ -1843,7 +1956,7 @@ def bench(
                     "file": str(file_path),
                     "file_name": file_path.name,
                     "results": file_results,
-                }
+                },
             )
 
         # Show summary
@@ -1873,8 +1986,12 @@ def bench(
             ]
 
             if parse_results:
-                parse_results.sort(key=lambda x: x[1].execution_time if x[1] else float("inf"))
-                console.print("\n[yellow]Parsing Performance (fastest to slowest):[/yellow]")
+                parse_results.sort(
+                    key=lambda x: x[1].execution_time if x[1] else float("inf"),
+                )
+                console.print(
+                    "\n[yellow]Parsing Performance (fastest to slowest):[/yellow]",
+                )
 
                 for i, (filename, result) in enumerate(parse_results):
                     if result:
@@ -1886,7 +2003,7 @@ def bench(
                         console.print(
                             f"  {i + 1:2d}. {filename:20s} "
                             f"{result.execution_time * 1000:6.2f}ms "
-                            f"({throughput:.1f} rules/sec)"
+                            f"({throughput:.1f} rules/sec)",
                         )
 
         # Save results if requested

@@ -18,7 +18,7 @@ from yaraast.visitor import ASTVisitor
 class CodeGenerator(ASTVisitor[str]):
     """Generate YARA code from AST nodes."""
 
-    def __init__(self, indent_size: int = 4):
+    def __init__(self, indent_size: int = 4) -> None:
         self.indent_size = indent_size
         self.indent_level = 0
         self.buffer = StringIO()
@@ -92,7 +92,7 @@ class CodeGenerator(ASTVisitor[str]):
         # Rule header
         modifiers = ""
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, (list, tuple)):
+            if isinstance(node.modifiers, list | tuple):
                 modifiers = " ".join(str(m) for m in node.modifiers)
             elif isinstance(node.modifiers, str):
                 modifiers = node.modifiers
@@ -138,7 +138,9 @@ class CodeGenerator(ASTVisitor[str]):
                         if isinstance(m.value, str):
                             self._writeline(f'{m.key} = "{m.value}"')
                         elif isinstance(m.value, bool):
-                            self._writeline(f"{m.key} = {'true' if m.value else 'false'}")
+                            self._writeline(
+                                f"{m.key} = {'true' if m.value else 'false'}",
+                            )
                         else:
                             self._writeline(f"{m.key} = {m.value}")
             self._dedent()
@@ -199,14 +201,14 @@ class CodeGenerator(ASTVisitor[str]):
 
         # Add modifiers
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, (list, tuple)):
+            if isinstance(node.modifiers, list | tuple):
                 for mod in node.modifiers:
                     if isinstance(mod, str):
                         self._write(f" {mod}")
                     elif hasattr(mod, "accept"):
                         self._write(f" {self.visit(mod)}")
                     else:
-                        self._write(f" {str(mod)}")
+                        self._write(f" {mod!s}")
             elif isinstance(node.modifiers, str):
                 self._write(f" {node.modifiers}")
             else:
@@ -231,14 +233,14 @@ class CodeGenerator(ASTVisitor[str]):
 
         # Add modifiers
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, (list, tuple)):
+            if isinstance(node.modifiers, list | tuple):
                 for mod in node.modifiers:
                     if isinstance(mod, str):
                         self._write(f" {mod}")
                     elif hasattr(mod, "accept"):
                         self._write(f" {self.visit(mod)}")
                     else:
-                        self._write(f" {str(mod)}")
+                        self._write(f" {mod!s}")
             elif isinstance(node.modifiers, str):
                 self._write(f" {node.modifiers}")
             else:
@@ -256,14 +258,14 @@ class CodeGenerator(ASTVisitor[str]):
 
         # Add modifiers
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, (list, tuple)):
+            if isinstance(node.modifiers, list | tuple):
                 for mod in node.modifiers:
                     if isinstance(mod, str):
                         self._write(f" {mod}")
                     elif hasattr(mod, "accept"):
                         self._write(f" {self.visit(mod)}")
                     else:
-                        self._write(f" {str(mod)}")
+                        self._write(f" {mod!s}")
             elif isinstance(node.modifiers, str):
                 self._write(f" {node.modifiers}")
             else:

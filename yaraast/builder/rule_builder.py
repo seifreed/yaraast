@@ -64,7 +64,9 @@ class RuleBuilder:
     def with_regex_string(self, identifier: str, pattern: str, **modifiers) -> Self:
         """Add a regex string with modifiers."""
         mod_list = [StringModifier(name=k) for k, v in modifiers.items() if v]
-        self._strings.append(RegexString(identifier=identifier, regex=pattern, modifiers=mod_list))
+        self._strings.append(
+            RegexString(identifier=identifier, regex=pattern, modifiers=mod_list),
+        )
         return self
 
     def with_tags(self, *tags: str) -> Self:
@@ -113,7 +115,9 @@ class RuleBuilder:
         if fullword:
             modifiers.append(StringModifier(name="fullword"))
 
-        self._strings.append(PlainString(identifier=identifier, value=value, modifiers=modifiers))
+        self._strings.append(
+            PlainString(identifier=identifier, value=value, modifiers=modifiers),
+        )
         return self
 
     def add_string(self, identifier: str, value: str) -> Self:
@@ -126,7 +130,9 @@ class RuleBuilder:
 
     def with_hex_string(self, identifier: str, builder: HexStringBuilder) -> Self:
         """Add a hex string using a builder."""
-        self._strings.append(HexString(identifier=identifier, tokens=builder.build(), modifiers=[]))
+        self._strings.append(
+            HexString(identifier=identifier, tokens=builder.build(), modifiers=[]),
+        )
         return self
 
     def with_hex_string_raw(self, identifier: str, hex_pattern: str) -> Self:
@@ -150,7 +156,9 @@ class RuleBuilder:
             else:
                 i += 1
 
-        self._strings.append(HexString(identifier=identifier, tokens=tokens, modifiers=[]))
+        self._strings.append(
+            HexString(identifier=identifier, tokens=tokens, modifiers=[]),
+        )
         return self
 
     def with_regex(
@@ -173,7 +181,9 @@ class RuleBuilder:
                 modifiers += "m"
             pattern = pattern + modifiers
 
-        self._strings.append(RegexString(identifier=identifier, regex=pattern, modifiers=[]))
+        self._strings.append(
+            RegexString(identifier=identifier, regex=pattern, modifiers=[]),
+        )
         return self
 
     def with_condition(self, condition: Expression | ConditionBuilder | str) -> Self:
@@ -219,7 +229,8 @@ class RuleBuilder:
     def build(self) -> Rule:
         """Build the Rule AST node."""
         if not self._name:
-            raise ValueError("Rule name is required")
+            msg = "Rule name is required"
+            raise ValueError(msg)
 
         if not self._condition:
             # Default to true if no condition

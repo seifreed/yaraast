@@ -41,7 +41,7 @@ class DiffResult:
 class SimpleDiffer:
     """Simple differ for YARA files."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the differ."""
         self.parser = Parser()
         self.generator = CodeGenerator()
@@ -68,7 +68,7 @@ class SimpleDiffer:
                         line_num=i + 1,
                         content=f"+ {lines2[i]}",
                         new_content=lines2[i],
-                    )
+                    ),
                 )
                 added += 1
             elif i >= len(lines2):
@@ -79,7 +79,7 @@ class SimpleDiffer:
                         line_num=i + 1,
                         content=f"- {lines1[i]}",
                         old_content=lines1[i],
-                    )
+                    ),
                 )
                 removed += 1
             elif lines1[i] != lines2[i]:
@@ -91,7 +91,7 @@ class SimpleDiffer:
                         content=f"~ {lines2[i]}",
                         old_content=lines1[i],
                         new_content=lines2[i],
-                    )
+                    ),
                 )
                 modified += 1
             else:
@@ -103,7 +103,7 @@ class SimpleDiffer:
                         content=f"  {lines1[i]}",
                         old_content=lines1[i],
                         new_content=lines1[i],
-                    )
+                    ),
                 )
 
         has_changes = added > 0 or removed > 0 or modified > 0
@@ -150,7 +150,11 @@ class SimpleDiffer:
 
         return changes
 
-    def diff_directories(self, dir1: str | Path, dir2: str | Path) -> dict[str, DiffResult]:
+    def diff_directories(
+        self,
+        dir1: str | Path,
+        dir2: str | Path,
+    ) -> dict[str, DiffResult]:
         """Diff all YARA files in two directories."""
         dir1 = Path(dir1)
         dir2 = Path(dir2)
@@ -179,7 +183,10 @@ class SimpleDiffer:
             lines = content.splitlines()
             diff_lines = [
                 DiffLine(
-                    type=DiffType.REMOVE, line_num=i + 1, content=f"- {line}", old_content=line
+                    type=DiffType.REMOVE,
+                    line_num=i + 1,
+                    content=f"- {line}",
+                    old_content=line,
                 )
                 for i, line in enumerate(lines)
             ]
@@ -200,7 +207,12 @@ class SimpleDiffer:
             # Create a diff showing all lines as added
             lines = content.splitlines()
             diff_lines = [
-                DiffLine(type=DiffType.ADD, line_num=i + 1, content=f"+ {line}", new_content=line)
+                DiffLine(
+                    type=DiffType.ADD,
+                    line_num=i + 1,
+                    content=f"+ {line}",
+                    new_content=line,
+                )
                 for i, line in enumerate(lines)
             ]
 
@@ -263,5 +275,4 @@ def format_diff(diff_result: DiffResult) -> str:
 
 def print_diff(diff_result: DiffResult) -> None:
     """Print diff result to stdout."""
-    formatted = format_diff(diff_result)
-    print(formatted)
+    format_diff(diff_result)

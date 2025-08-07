@@ -9,7 +9,7 @@ from typing import Any
 class ASTNode(ABC):
     """Base class for all AST nodes."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.location = kwargs.get("location")
 
     @abstractmethod
@@ -27,7 +27,7 @@ class Expression(ASTNode):
 class StringIdentifier(Expression):
     """String identifier like $a."""
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, **kwargs) -> None:
         super().__init__(**kwargs)
         self.name = name
 
@@ -38,7 +38,7 @@ class StringIdentifier(Expression):
 class BooleanLiteral(Expression):
     """Boolean literal."""
 
-    def __init__(self, value: bool, **kwargs):
+    def __init__(self, value: bool, **kwargs) -> None:
         super().__init__(**kwargs)
         self.value = value
 
@@ -49,7 +49,7 @@ class BooleanLiteral(Expression):
 class IntegerLiteral(Expression):
     """Integer literal."""
 
-    def __init__(self, value: int, **kwargs):
+    def __init__(self, value: int, **kwargs) -> None:
         super().__init__(**kwargs)
         self.value = value
 
@@ -60,7 +60,7 @@ class IntegerLiteral(Expression):
 class Identifier(Expression):
     """Generic identifier."""
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, **kwargs) -> None:
         super().__init__(**kwargs)
         self.name = name
 
@@ -71,7 +71,7 @@ class Identifier(Expression):
 class BinaryExpression(Expression):
     """Binary expression."""
 
-    def __init__(self, left: Expression, operator: str, right: Expression, **kwargs):
+    def __init__(self, left: Expression, operator: str, right: Expression, **kwargs) -> None:
         super().__init__(**kwargs)
         self.left = left
         self.operator = operator
@@ -84,7 +84,7 @@ class BinaryExpression(Expression):
 class Tag(ASTNode):
     """Rule tag."""
 
-    def __init__(self, name: str, **kwargs):
+    def __init__(self, name: str, **kwargs) -> None:
         super().__init__(**kwargs)
         self.name = name
 
@@ -95,7 +95,7 @@ class Tag(ASTNode):
 class StringModifier(ASTNode):
     """String modifier."""
 
-    def __init__(self, name: str, value: Any = None, **kwargs):
+    def __init__(self, name: str, value: Any = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.name = name
         self.value = value
@@ -112,7 +112,7 @@ class StringDefinition(ASTNode):
         identifier: str,
         modifiers: list[StringModifier] | None = None,
         **kwargs: Any,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.identifier = identifier
         self.modifiers = modifiers or []
@@ -130,7 +130,7 @@ class PlainString(StringDefinition):
         value: str,
         modifiers: list[StringModifier] | None = None,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(identifier, modifiers, **kwargs)
         self.value = value
 
@@ -148,7 +148,7 @@ class HexToken(ASTNode):
 class HexByte(HexToken):
     """Hex byte."""
 
-    def __init__(self, value: int, **kwargs):
+    def __init__(self, value: int, **kwargs) -> None:
         super().__init__(**kwargs)
         self.value = value
 
@@ -172,7 +172,7 @@ class HexString(StringDefinition):
         tokens: list[HexToken],
         modifiers: list[StringModifier] | None = None,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(identifier, modifiers, **kwargs)
         self.tokens = tokens
 
@@ -189,7 +189,7 @@ class RegexString(StringDefinition):
         regex: str,
         modifiers: list[StringModifier] | None = None,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(identifier, modifiers, **kwargs)
         self.regex = regex
 
@@ -209,7 +209,7 @@ class Rule(ASTNode):
         strings: list[StringDefinition] | None = None,
         condition: Expression | None = None,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.name = name
         self.modifiers = modifiers or []

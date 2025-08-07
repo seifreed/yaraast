@@ -92,7 +92,10 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
         if duplicates:
             for dup in set(duplicates):
                 self.report.add_suggestion(
-                    dup, "structure", "error", f"Duplicate rule name '{dup}'"
+                    dup,
+                    "structure",
+                    "error",
+                    f"Duplicate rule name '{dup}'",
                 )
 
         # Visit all rules

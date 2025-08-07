@@ -40,7 +40,8 @@ class StringModifierType(Enum):
             return cls(modifier_str.lower())
         except ValueError:
             # For unknown modifiers, we could either raise an error or create a custom type
-            raise ValueError(f"Unknown string modifier: {modifier_str}") from None
+            msg = f"Unknown string modifier: {modifier_str}"
+            raise ValueError(msg) from None
 
     def __str__(self) -> str:
         """Return the string representation."""
@@ -59,7 +60,8 @@ class RuleModifierType(Enum):
         try:
             return cls(modifier_str.lower())
         except ValueError:
-            raise ValueError(f"Unknown rule modifier: {modifier_str}") from None
+            msg = f"Unknown rule modifier: {modifier_str}"
+            raise ValueError(msg) from None
 
     def __str__(self) -> str:
         return self.value
@@ -145,7 +147,12 @@ class MetaEntry:
     scope: MetaScope = MetaScope.PUBLIC
 
     @classmethod
-    def from_key_value(cls, key: str, value: Any, scope: str | None = None) -> "MetaEntry":
+    def from_key_value(
+        cls,
+        key: str,
+        value: Any,
+        scope: str | None = None,
+    ) -> "MetaEntry":
         """Create MetaEntry from key, value, and optional scope."""
         meta_scope = MetaScope.from_string(scope) if scope else MetaScope.PUBLIC
         return cls(key=key, value=value, scope=meta_scope)
@@ -211,31 +218,31 @@ class CommonRuleModifiers:
 class Wide:
     """Wide string modifier."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.name = "wide"
         self.value = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "wide"
 
 
 class Ascii:
     """ASCII string modifier."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.name = "ascii"
         self.value = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "ascii"
 
 
 class Nocase:
     """Nocase string modifier."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.name = "nocase"
         self.value = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "nocase"

@@ -55,9 +55,11 @@ class OptimizationReport:
         impact: str = "low",
         before: str | None = None,
         after: str | None = None,
-    ):
+    ) -> None:
         """Add optimization suggestion."""
-        self.suggestions.append(OptimizationSuggestion(rule, opt_type, desc, impact, before, after))
+        self.suggestions.append(
+            OptimizationSuggestion(rule, opt_type, desc, impact, before, after),
+        )
 
     @property
     def high_impact_count(self) -> int:
@@ -68,7 +70,7 @@ class OptimizationReport:
 class OptimizationAnalyzer(ASTVisitor[None]):
     """Analyze AST for optimization opportunities."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.report = OptimizationReport()
         self._current_rule: Rule | None = None
         self._string_refs: dict[str, list[Any]] = defaultdict(list)
@@ -143,20 +145,25 @@ class OptimizationAnalyzer(ASTVisitor[None]):
         # Check for overlapping patterns
         self._check_overlapping_patterns(rule, rule.strings)
 
-    def _check_hex_consolidation(self, rule: Rule, hex_strings: list[HexString]) -> None:
+    def _check_hex_consolidation(
+        self,
+        rule: Rule,
+        hex_strings: list[HexString],
+    ) -> None:
         """Check if hex strings can be consolidated."""
         # Group by prefix similarity (check first N-1 bytes, not including the last one)
         groups = defaultdict(list)
 
         for hex_str in hex_strings:
             prefix = self._get_hex_prefix(
-                hex_str, min(5, len(hex_str.tokens) - 1)
+                hex_str,
+                min(5, len(hex_str.tokens) - 1),
             )  # Exclude last byte
             if prefix and len(prefix) >= 4:  # Need meaningful prefix
                 groups[prefix].append(hex_str)
 
         # Suggest consolidation for similar patterns
-        for _prefix, similar in groups.items():
+        for similar in groups.values():
             if len(similar) > 2:
                 names = [s.identifier for s in similar]
                 self.report.add_suggestion(
@@ -215,7 +222,10 @@ class OptimizationAnalyzer(ASTVisitor[None]):
     def visit_binary_expression(self, node: BinaryExpression) -> None:
         """Analyze binary expressions."""
         self._condition_depth += 1
-        self._max_condition_depth = max(self._max_condition_depth, self._condition_depth)
+        self._max_condition_depth = max(
+            self._max_condition_depth,
+            self._condition_depth,
+        )
 
         # Check for redundant comparisons
         if node.operator == "and":

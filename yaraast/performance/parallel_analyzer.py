@@ -5,27 +5,28 @@ from __future__ import annotations
 import concurrent.futures
 import multiprocessing as mp
 import time
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
-from yaraast.ast.base import YaraFile
-from yaraast.ast.rules import Rule
 
 if TYPE_CHECKING:
-    pass
+    from collections.abc import Callable
+
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.rules import Rule
 
 
 class ParallelAnalyzer:
     """Analyzes YARA rules in parallel for improved performance."""
 
-    def __init__(self, max_workers: int | None = None):
+    def __init__(self, max_workers: int | None = None) -> None:
         """Initialize parallel analyzer.
 
         Args:
             max_workers: Maximum number of parallel workers.
                         Defaults to CPU count.
+
         """
         self.max_workers = max_workers or mp.cpu_count()
         self.rule_analyzer = RuleAnalyzer()
@@ -36,7 +37,9 @@ class ParallelAnalyzer:
         }
 
     def analyze_rules(
-        self, rules: list[Rule], max_workers: int | None = None
+        self,
+        rules: list[Rule],
+        max_workers: int | None = None,
     ) -> list[dict[str, Any]]:
         """Analyze multiple rules in parallel.
 
@@ -46,12 +49,15 @@ class ParallelAnalyzer:
 
         Returns:
             List of analysis results
+
         """
         max_workers = max_workers or self.max_workers
         results = []
         start_time = time.time()
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers,
+        ) as executor:
             # Submit all tasks
             future_to_rule = {
                 executor.submit(self._analyze_single_rule, rule): rule for rule in rules
@@ -65,13 +71,19 @@ class ParallelAnalyzer:
                     results.append(result)
                     self._stats["rules_analyzed"] += 1
                 except Exception as e:
-                    results.append({"rule": rule.name, "error": str(e), "analysis": None})
+                    results.append(
+                        {"rule": rule.name, "error": str(e), "analysis": None},
+                    )
                     self._stats["errors"] += 1
 
         self._stats["total_time"] = time.time() - start_time
         return results
 
-    def analyze_file(self, yara_file: YaraFile, max_workers: int | None = None) -> dict[str, Any]:
+    def analyze_file(
+        self,
+        yara_file: YaraFile,
+        max_workers: int | None = None,
+    ) -> dict[str, Any]:
         """Analyze an entire YARA file in parallel.
 
         Args:
@@ -80,6 +92,7 @@ class ParallelAnalyzer:
 
         Returns:
             Analysis results including rule analyses and dependencies
+
         """
         # Analyze rules in parallel
         rule_analyses = self.analyze_rules(yara_file.rules, max_workers)
@@ -100,7 +113,9 @@ class ParallelAnalyzer:
         }
 
     def batch_analyze_files(
-        self, file_paths: list[str], max_workers: int | None = None
+        self,
+        file_paths: list[str],
+        max_workers: int | None = None,
     ) -> list[dict[str, Any]]:
         """Analyze multiple YARA files in parallel.
 
@@ -110,6 +125,7 @@ class ParallelAnalyzer:
 
         Returns:
             List of file analysis results
+
         """
         max_workers = max_workers or self.max_workers
         results = []
@@ -132,7 +148,10 @@ class ParallelAnalyzer:
         return results
 
     def analyze_with_custom_function(
-        self, rules: list[Rule], analyze_func: Callable[[Rule], Any], max_workers: int | None = None
+        self,
+        rules: list[Rule],
+        analyze_func: Callable[[Rule], Any],
+        max_workers: int | None = None,
     ) -> list[Any]:
         """Analyze rules with a custom analysis function.
 
@@ -143,11 +162,14 @@ class ParallelAnalyzer:
 
         Returns:
             List of analysis results
+
         """
         max_workers = max_workers or self.max_workers
         results = []
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers,
+        ) as executor:
             # Submit custom analysis tasks
             futures = [executor.submit(analyze_func, rule) for rule in rules]
 
@@ -207,6 +229,7 @@ class ParallelAnalyzer:
 
         Returns:
             Optimal worker count
+
         """
         rule_count = len(rules)
         cpu_count = mp.cpu_count()
@@ -214,15 +237,16 @@ class ParallelAnalyzer:
         # Heuristics for worker count
         if rule_count < 10:
             return 1  # Serial processing for small sets
-        elif rule_count < 50:
+        if rule_count < 50:
             return min(4, cpu_count)
-        elif rule_count < 200:
+        if rule_count < 200:
             return min(8, cpu_count)
-        else:
-            return cpu_count
+        return cpu_count
 
     def analyze_complexity_parallel(
-        self, rules: list[Rule], max_workers: int | None = None
+        self,
+        rules: list[Rule],
+        max_workers: int | None = None,
     ) -> dict[str, Any]:
         """Analyze rule complexity in parallel.
 
@@ -232,6 +256,7 @@ class ParallelAnalyzer:
 
         Returns:
             Complexity analysis results
+
         """
         max_workers = max_workers or self.optimize_worker_count(rules)
 
@@ -262,7 +287,9 @@ class ParallelAnalyzer:
         }
 
     def profile_performance(
-        self, rules: list[Rule], worker_counts: list[int] | None = None
+        self,
+        rules: list[Rule],
+        worker_counts: list[int] | None = None,
     ) -> dict[str, Any]:
         """Profile performance with different worker counts.
 
@@ -272,6 +299,7 @@ class ParallelAnalyzer:
 
         Returns:
             Performance profiling results
+
         """
         if not worker_counts:
             worker_counts = [1, 2, 4, 8, mp.cpu_count()]

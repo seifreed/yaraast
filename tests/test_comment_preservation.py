@@ -4,7 +4,7 @@ from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 
 
-def test_single_line_comments():
+def test_single_line_comments() -> None:
     """Test single-line comment preservation."""
     yara_code = """
 // This is a file header comment
@@ -48,7 +48,7 @@ rule test_rule {
     assert "Check for both strings" in output
 
 
-def test_multiline_comments():
+def test_multiline_comments() -> None:
     """Test multi-line comment preservation."""
     yara_code = """
 /*
@@ -87,7 +87,7 @@ rule multiline_test {
     assert "important pattern" in output
 
 
-def test_comment_preservation_disabled():
+def test_comment_preservation_disabled() -> None:
     """Test disabling comment preservation."""
     yara_code = """
 // This comment should not appear

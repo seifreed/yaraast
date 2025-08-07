@@ -67,7 +67,7 @@ class PrettyPrintOptions:
 class PrettyPrinter(CommentAwareCodeGenerator):
     """Enhanced pretty printer with advanced formatting options."""
 
-    def __init__(self, options: PrettyPrintOptions | None = None):
+    def __init__(self, options: PrettyPrintOptions | None = None) -> None:
         self.options = options or PrettyPrintOptions()
         super().__init__(
             indent_size=self.options.indent_size,
@@ -360,11 +360,10 @@ class PrettyPrinter(CommentAwareCodeGenerator):
             if len(current_line + " " + word) > self.options.max_line_length:
                 self._writeline(current_line)
                 current_line = "    " + word  # Add extra indent for continuation
+            elif current_line:
+                current_line += " " + word
             else:
-                if current_line:
-                    current_line += " " + word
-                else:
-                    current_line = word
+                current_line = word
 
         if current_line:
             self._writeline(current_line)
@@ -399,7 +398,10 @@ class PrettyPrinter(CommentAwareCodeGenerator):
 
                 max_length = max(max_length, length)
 
-        self._string_alignment_column = min(max_length + 2, self.options.min_alignment_column)
+        self._string_alignment_column = min(
+            max_length + 2,
+            self.options.min_alignment_column,
+        )
 
     def _calculate_meta_alignment_column(self, ast: YaraFile) -> None:
         """Calculate alignment column for meta values."""
@@ -411,7 +413,10 @@ class PrettyPrinter(CommentAwareCodeGenerator):
                     length = len(f"{key} =")
                     max_length = max(max_length, length)
 
-        self._meta_alignment_column = min(max_length + 2, self.options.min_alignment_column)
+        self._meta_alignment_column = min(
+            max_length + 2,
+            self.options.min_alignment_column,
+        )
 
 
 class StylePresets:

@@ -79,7 +79,7 @@ class Pragma(ASTNode):
 class IncludeOncePragma(Pragma):
     """Include-once pragma to prevent multiple inclusions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             pragma_type=PragmaType.INCLUDE_ONCE,
             name="include_once",
@@ -97,7 +97,7 @@ class DefineDirective(Pragma):
     macro_name: str = ""
     macro_value: str | None = None
 
-    def __init__(self, macro_name: str, macro_value: str | None = None):
+    def __init__(self, macro_name: str, macro_value: str | None = None) -> None:
         super().__init__(
             pragma_type=PragmaType.DEFINE,
             name="define",
@@ -118,8 +118,12 @@ class UndefDirective(Pragma):
 
     macro_name: str = ""
 
-    def __init__(self, macro_name: str):
-        super().__init__(pragma_type=PragmaType.UNDEF, name="undef", arguments=[macro_name])
+    def __init__(self, macro_name: str) -> None:
+        super().__init__(
+            pragma_type=PragmaType.UNDEF,
+            name="undef",
+            arguments=[macro_name],
+        )
         self.macro_name = macro_name
 
     def __str__(self) -> str:
@@ -132,7 +136,7 @@ class ConditionalDirective(Pragma):
 
     condition: str | None = None
 
-    def __init__(self, pragma_type: PragmaType, condition: str | None = None):
+    def __init__(self, pragma_type: PragmaType, condition: str | None = None) -> None:
         name = pragma_type.value
         args = [condition] if condition else []
         super().__init__(pragma_type=pragma_type, name=name, arguments=args)
@@ -171,7 +175,7 @@ class CustomPragma(Pragma):
         arguments: list[str] | None = None,
         parameters: dict[str, Any] | None = None,
         scope: PragmaScope = PragmaScope.FILE,
-    ):
+    ) -> None:
         super().__init__(
             pragma_type=PragmaType.CUSTOM,
             name=name,
@@ -253,7 +257,9 @@ class PragmaBlock(ASTNode):
 
 
 def create_pragma(
-    name: str, arguments: list[str] | None = None, scope: PragmaScope = PragmaScope.FILE
+    name: str,
+    arguments: list[str] | None = None,
+    scope: PragmaScope = PragmaScope.FILE,
 ) -> Pragma:
     """Create a generic pragma."""
     pragma_type = PragmaType.from_string(name)
@@ -292,6 +298,9 @@ def create_endif() -> ConditionalDirective:
     return ConditionalDirective.endif()
 
 
-def create_in_rule_pragma(pragma: Pragma, position: str = "before_strings") -> InRulePragma:
+def create_in_rule_pragma(
+    pragma: Pragma,
+    position: str = "before_strings",
+) -> InRulePragma:
     """Create an in-rule pragma."""
     return InRulePragma(pragma, position)

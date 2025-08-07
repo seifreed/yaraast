@@ -12,7 +12,7 @@ from yaraast.parser import Parser
 class TestBestPracticesAnalyzer:
     """Test best practices analysis."""
 
-    def test_rule_naming_conventions(self):
+    def test_rule_naming_conventions(self) -> None:
         """Test rule name convention checking."""
         rule_text = """
         rule bad123name { condition: true }
@@ -34,7 +34,7 @@ class TestBestPracticesAnalyzer:
         info = report.get_by_severity("info")
         assert any("descriptive" in s.message for s in info)  # short name
 
-    def test_string_naming_conventions(self):
+    def test_string_naming_conventions(self) -> None:
         """Test string identifier conventions."""
         rule_text = """
         rule test_strings {
@@ -56,7 +56,7 @@ class TestBestPracticesAnalyzer:
         warnings = report.get_by_severity("warning")
         assert any("$name convention" in s.message for s in warnings)
 
-    def test_section_order_suggestion(self):
+    def test_section_order_suggestion(self) -> None:
         """Test section order checking."""
         rule_text = """
         rule wrong_order {
@@ -78,7 +78,7 @@ class TestBestPracticesAnalyzer:
         info = report.get_by_severity("info")
         assert any("section order" in s.message for s in info)
 
-    def test_unused_strings_detection(self):
+    def test_unused_strings_detection(self) -> None:
         """Test detection of unused strings."""
         rule_text = """
         rule unused_test {
@@ -99,7 +99,7 @@ class TestBestPracticesAnalyzer:
         warnings = report.get_by_severity("warning")
         assert any("$unused" in s.message and "never used" in s.message for s in warnings)
 
-    def test_short_string_warning(self):
+    def test_short_string_warning(self) -> None:
         """Test warning for very short strings."""
         rule_text = """
         rule short_strings {
@@ -120,7 +120,7 @@ class TestBestPracticesAnalyzer:
         info = report.get_by_severity("info")
         assert any("Short string" in s.message for s in info)
 
-    def test_duplicate_detection(self):
+    def test_duplicate_detection(self) -> None:
         """Test detection of duplicate names."""
         rule_text = """
         rule dup_test {
@@ -145,7 +145,7 @@ class TestBestPracticesAnalyzer:
 class TestOptimizationAnalyzer:
     """Test optimization analysis."""
 
-    def test_hex_pattern_consolidation(self):
+    def test_hex_pattern_consolidation(self) -> None:
         """Test suggestion for consolidating hex patterns."""
         rule_text = """
         rule hex_patterns {
@@ -167,7 +167,7 @@ class TestOptimizationAnalyzer:
         # Should suggest consolidation
         assert any("common prefix" in s.description for s in report.suggestions)
 
-    def test_overlapping_patterns(self):
+    def test_overlapping_patterns(self) -> None:
         """Test detection of overlapping patterns."""
         rule_text = """
         rule overlapping {
@@ -188,7 +188,7 @@ class TestOptimizationAnalyzer:
         # Should detect redundancy
         assert any("contained in" in s.description for s in report.suggestions)
 
-    def test_redundant_comparisons(self):
+    def test_redundant_comparisons(self) -> None:
         """Test detection of redundant comparisons."""
         rule_text = """
         rule redundant {
@@ -208,7 +208,7 @@ class TestOptimizationAnalyzer:
         # Should detect redundancy
         assert any("Redundant comparison" in s.description for s in report.suggestions)
 
-    def test_hex_wildcard_optimization(self):
+    def test_hex_wildcard_optimization(self) -> None:
         """Test warning for excessive wildcards."""
         rule_text = """
         rule wildcards {
@@ -228,7 +228,7 @@ class TestOptimizationAnalyzer:
         warnings = report.get_by_severity("warning")
         assert any("wildcards" in s.message and "inefficient" in s.message for s in warnings)
 
-    def test_cross_rule_duplication(self):
+    def test_cross_rule_duplication(self) -> None:
         """Test detection of patterns duplicated across rules."""
         rule_text = """
         rule rule1 {
@@ -259,7 +259,7 @@ class TestOptimizationAnalyzer:
         # Should detect duplication
         assert any("Same plain pattern used in" in s.description for s in report.suggestions)
 
-    def test_complex_condition_warning(self):
+    def test_complex_condition_warning(self) -> None:
         """Test warning for overly complex conditions."""
         # Create deeply nested condition
         rule_text = """
@@ -282,7 +282,7 @@ class TestOptimizationAnalyzer:
 class TestReportFeatures:
     """Test report functionality."""
 
-    def test_analysis_report_categorization(self):
+    def test_analysis_report_categorization(self) -> None:
         """Test report categorization features."""
         report = AnalysisReport()
 
@@ -299,7 +299,7 @@ class TestReportFeatures:
 
         assert report.has_issues  # Has warnings/errors
 
-    def test_optimization_report_impact(self):
+    def test_optimization_report_impact(self) -> None:
         """Test optimization report impact tracking."""
         report = OptimizationReport()
 

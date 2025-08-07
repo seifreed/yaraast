@@ -19,14 +19,17 @@ if TYPE_CHECKING:
 class StringDiagramGenerator(ASTVisitor[None]):
     """Generates string pattern analysis diagrams."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.string_patterns: dict[str, dict[str, Any]] = {}
         self.pattern_relationships: dict[str, set[str]] = defaultdict(set)
         self.pattern_stats: dict[str, Any] = {}
         self._current_rule: str | None = None
 
     def generate_pattern_flow_diagram(
-        self, ast: YaraFile, output_path: str | None = None, format: str = "svg"
+        self,
+        ast: YaraFile,
+        output_path: str | None = None,
+        format: str = "svg",
     ) -> str:
         """Generate string pattern flow diagram."""
         self._analyze_patterns(ast)
@@ -44,7 +47,12 @@ class StringDiagramGenerator(ASTVisitor[None]):
                 fillcolor="lightblue",
                 color="blue",
             )
-            plain_cluster.attr("node", shape="box", style="rounded,filled", fillcolor="lightcyan")
+            plain_cluster.attr(
+                "node",
+                shape="box",
+                style="rounded,filled",
+                fillcolor="lightcyan",
+            )
 
             for pattern_id, pattern_info in self.string_patterns.items():
                 if pattern_info["type"] == "plain":
@@ -58,7 +66,12 @@ class StringDiagramGenerator(ASTVisitor[None]):
                 fillcolor="lightyellow",
                 color="orange",
             )
-            hex_cluster.attr("node", shape="hexagon", style="filled", fillcolor="yellow")
+            hex_cluster.attr(
+                "node",
+                shape="hexagon",
+                style="filled",
+                fillcolor="yellow",
+            )
 
             for pattern_id, pattern_info in self.string_patterns.items():
                 if pattern_info["type"] == "hex":
@@ -72,7 +85,12 @@ class StringDiagramGenerator(ASTVisitor[None]):
                 fillcolor="lightgreen",
                 color="green",
             )
-            regex_cluster.attr("node", shape="ellipse", style="filled", fillcolor="lightgreen")
+            regex_cluster.attr(
+                "node",
+                shape="ellipse",
+                style="filled",
+                fillcolor="lightgreen",
+            )
 
             for pattern_id, pattern_info in self.string_patterns.items():
                 if pattern_info["type"] == "regex":
@@ -89,7 +107,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
         return dot.source
 
     def generate_pattern_complexity_diagram(
-        self, ast: YaraFile, output_path: str | None = None, format: str = "svg"
+        self,
+        ast: YaraFile,
+        output_path: str | None = None,
+        format: str = "svg",
     ) -> str:
         """Generate pattern complexity visualization."""
         self._analyze_patterns(ast)
@@ -140,7 +161,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
         return dot.source
 
     def generate_pattern_similarity_diagram(
-        self, ast: YaraFile, output_path: str | None = None, format: str = "svg"
+        self,
+        ast: YaraFile,
+        output_path: str | None = None,
+        format: str = "svg",
     ) -> str:
         """Generate pattern similarity clustering diagram."""
         self._analyze_patterns(ast)
@@ -202,7 +226,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
         return dot.source
 
     def generate_hex_pattern_diagram(
-        self, ast: YaraFile, output_path: str | None = None, format: str = "svg"
+        self,
+        ast: YaraFile,
+        output_path: str | None = None,
+        format: str = "svg",
     ) -> str:
         """Generate detailed hex pattern analysis diagram."""
         self._analyze_patterns(ast)
@@ -259,7 +286,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
                 # Add complexity metrics
                 complexity_id = f"{pattern_id}_complexity"
-                complexity_label = self._create_hex_complexity_label(pattern_info, tokens)
+                complexity_label = self._create_hex_complexity_label(
+                    pattern_info,
+                    tokens,
+                )
                 dot.node(
                     complexity_id,
                     complexity_label,
@@ -280,20 +310,24 @@ class StringDiagramGenerator(ASTVisitor[None]):
         if not self.string_patterns:
             return {"total_patterns": 0}
 
-        stats = {
+        return {
             "total_patterns": len(self.string_patterns),
             "by_type": {
-                "plain": len([p for p in self.string_patterns.values() if p["type"] == "plain"]),
-                "hex": len([p for p in self.string_patterns.values() if p["type"] == "hex"]),
-                "regex": len([p for p in self.string_patterns.values() if p["type"] == "regex"]),
+                "plain": len(
+                    [p for p in self.string_patterns.values() if p["type"] == "plain"],
+                ),
+                "hex": len(
+                    [p for p in self.string_patterns.values() if p["type"] == "hex"],
+                ),
+                "regex": len(
+                    [p for p in self.string_patterns.values() if p["type"] == "regex"],
+                ),
             },
             "complexity_distribution": self._get_complexity_distribution(),
             "common_patterns": self._find_common_patterns(),
             "pattern_lengths": self._get_length_statistics(),
             "modifiers_usage": self._get_modifier_statistics(),
         }
-
-        return stats
 
     def _analyze_patterns(self, ast: YaraFile) -> None:
         """Analyze all string patterns in the AST."""
@@ -322,8 +356,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
                             "type": "plain",
                             "value": string_def.value,
                             "length": len(string_def.value),
-                            "printable_ratio": self._calculate_printable_ratio(string_def.value),
-                        }
+                            "printable_ratio": self._calculate_printable_ratio(
+                                string_def.value,
+                            ),
+                        },
                     )
 
                 elif isinstance(string_def, HexString):
@@ -334,7 +370,7 @@ class StringDiagramGenerator(ASTVisitor[None]):
                             "tokens": len(string_def.tokens),
                             "token_analysis": token_analysis,
                             "length": len(string_def.tokens),
-                        }
+                        },
                     )
 
                 elif isinstance(string_def, RegexString):
@@ -345,7 +381,7 @@ class StringDiagramGenerator(ASTVisitor[None]):
                             "pattern": string_def.regex,
                             "regex_analysis": regex_analysis,
                             "length": len(string_def.regex),
-                        }
+                        },
                     )
 
                 self.string_patterns[pid] = pattern_info
@@ -498,7 +534,11 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
         return refined_groups
 
-    def _calculate_similarity(self, pattern1: dict[str, Any], pattern2: dict[str, Any]) -> float:
+    def _calculate_similarity(
+        self,
+        pattern1: dict[str, Any],
+        pattern2: dict[str, Any],
+    ) -> float:
         """Calculate similarity between two patterns."""
         if pattern1["type"] != pattern2["type"]:
             return 0.0
@@ -597,7 +637,9 @@ class StringDiagramGenerator(ASTVisitor[None]):
         return f"Bytes: {bytes_count}|Wildcards: {wildcards}|Jumps: {jumps}|Alternatives: {alternatives}"
 
     def _create_hex_complexity_label(
-        self, pattern_info: dict[str, Any], token_analysis: dict[str, Any]
+        self,
+        pattern_info: dict[str, Any],
+        token_analysis: dict[str, Any],
     ) -> str:
         """Create hex complexity metrics label."""
         complexity = self._calculate_pattern_complexity(pattern_info)
@@ -656,7 +698,9 @@ class StringDiagramGenerator(ASTVisitor[None]):
             for modifier in pattern_info.get("modifiers", []):
                 modifier_counts[modifier] += 1
 
-        common.extend([("modifier_" + mod, count) for mod, count in modifier_counts.most_common(3)])
+        common.extend(
+            [("modifier_" + mod, count) for mod, count in modifier_counts.most_common(3)],
+        )
 
         return common
 
@@ -686,176 +730,176 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
     # Required visitor methods (minimal implementations)
     def visit_yara_file(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_import(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_include(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_rule(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_tag(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_definition(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_plain_string(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_string(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_regex_string(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_modifier(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_token(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_byte(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_wildcard(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_jump(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_alternative(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_hex_nibble(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_identifier(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_identifier(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_count(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_offset(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_length(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_integer_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_double_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_regex_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_boolean_literal(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_binary_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_unary_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_parentheses_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_set_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_range_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_function_call(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_array_access(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_member_access(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_condition(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_for_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_for_of_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_at_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_in_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_of_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_meta(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_module_reference(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_dictionary_access(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_comment(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_comment_group(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_defined_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_string_operator_expression(self, node) -> None:
-        pass
+        pass  # Implementation intentionally empty
 
     def visit_extern_import(self, node) -> None:
         """Visit ExternImport node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_extern_namespace(self, node) -> None:
         """Visit ExternNamespace node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_extern_rule(self, node) -> None:
         """Visit ExternRule node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_extern_rule_reference(self, node) -> None:
         """Visit ExternRuleReference node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_in_rule_pragma(self, node) -> None:
         """Visit InRulePragma node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_pragma(self, node) -> None:
         """Visit Pragma node."""
-        pass
+        # Implementation intentionally empty
 
     def visit_pragma_block(self, node) -> None:
         """Visit PragmaBlock node."""
-        pass
+        # Implementation intentionally empty
 
     def _get_pattern_shape(self, pattern_type: str) -> str:
         """Get shape for pattern type."""
@@ -869,9 +913,9 @@ class StringDiagramGenerator(ASTVisitor[None]):
         """Generate string diagram for a single string definition."""
         if isinstance(string_def, PlainString):
             return self._generate_plain_diagram(string_def)
-        elif isinstance(string_def, HexString):
+        if isinstance(string_def, HexString):
             return self._generate_hex_diagram(string_def)
-        elif isinstance(string_def, RegexString):
+        if isinstance(string_def, RegexString):
             return self._generate_regex_diagram(string_def)
         return f"Unknown string type: {type(string_def).__name__}"
 
@@ -1044,10 +1088,7 @@ def analyze_string_patterns(strings: list) -> dict[str, Any]:
         # Count modifiers
         for mod in string_def.modifiers:
             # Handle both string and object modifiers
-            if hasattr(mod, "name"):
-                mod_name = mod.name
-            else:
-                mod_name = str(mod)
+            mod_name = mod.name if hasattr(mod, "name") else str(mod)
             analysis["modifiers"][mod_name] = analysis["modifiers"].get(mod_name, 0) + 1
 
     # Find common prefixes in plain strings

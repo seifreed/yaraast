@@ -3,12 +3,17 @@
 A powerful Python library and CLI tool for parsing, analyzing, and manipulating
 YARA rules through Abstract Syntax Tree (AST) representations.
 
+**NOW WITH YARA-L SUPPORT!** Parse and analyze YARA-L rules for Google Chronicle
+alongside standard YARA and YARA-X formats.
+
 **Author:** Marc Rivero | @seifreed  
 **Email:** <mriverolopez@gmail.com>  
 **GitHub:** [https://github.com/seifreed/yaraast](https://github.com/seifreed/yaraast)
 
 ## Features
 
+- **Multi-Dialect Support**: Parse YARA, YARA-X, and YARA-L rules
+- **Automatic Dialect Detection**: Intelligently detects rule format
 - Parse YARA rules into a structured AST with multiple output formats
 - Analyze rules for optimization opportunities and best practices
 - Format and prettify YARA files with customizable styles
@@ -23,6 +28,16 @@ YARA rules through Abstract Syntax Tree (AST) representations.
 - Roundtrip testing for serialization fidelity
 - Multi-file workspace analysis with dependency resolution
 - Export/import AST in JSON/YAML/Protobuf formats
+
+### YARA-L Support (NEW!)
+
+- Parse Google Chronicle YARA-L 2.0 rules
+- Support for UDM (Unified Data Model) fields
+- Event correlation and time windows
+- Aggregation functions (count, sum, max, min, etc.)
+- Reference lists and CIDR expressions
+- Outcome sections with conditional logic
+- Match sections with sliding windows
 
 ## Installation
 
@@ -57,10 +72,15 @@ yaraast --version
 
 ```bash
 # Parse and output in different formats
-yaraast parse rule.yar                    # Default output
+yaraast parse rule.yar                    # Default output (auto-detect dialect)
 yaraast parse rule.yar --format json      # JSON representation
 yaraast parse rule.yar --format yaml      # YAML representation
 yaraast parse rule.yar --format tree      # Tree visualization
+
+# Parse with specific dialect
+yaraast parse rule.yar --dialect yara     # Force standard YARA
+yaraast parse rule.yar --dialect yara-l   # Force YARA-L parser
+yaraast parse rule.yar --dialect auto     # Auto-detect (default)
 ```
 
 #### validate - Syntax Validation
@@ -232,6 +252,32 @@ yaraast optimize rule.yar optimized.yar --show-changes  # Show what changed
 ```
 
 ## Usage Examples
+
+### Working with YARA-L
+
+```python
+from yaraast.unified_parser import UnifiedParser
+from yaraast.dialects import YaraDialect
+
+# Auto-detect and parse YARA-L rules
+yaral_code = """
+rule suspicious_activity {
+    events:
+        $e.metadata.event_type = "USER_LOGIN"
+        $e.security_result.action = "BLOCK"
+    match:
+        $userid over 5m
+    condition:
+        #e > 5
+}
+"""
+
+parser = UnifiedParser(yaral_code)
+print(f"Detected dialect: {parser.get_dialect()}")  # YaraDialect.YARA_L
+
+ast = parser.parse()
+# Process YARA-L AST...
+```
 
 ### As a Python Library
 

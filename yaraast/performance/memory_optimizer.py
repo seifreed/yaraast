@@ -6,22 +6,22 @@ import gc
 import weakref
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.ast.rules import Rule
 from yaraast.visitor.visitor import ASTTransformer
 
 if TYPE_CHECKING:
-    pass
+    from yaraast.ast.base import ASTNode, YaraFile
+    from yaraast.ast.rules import Rule
 
 
 class MemoryOptimizer:
     """Optimizes memory usage when processing large YARA ASTs."""
 
-    def __init__(self, aggressive: bool = False):
+    def __init__(self, aggressive: bool = False) -> None:
         """Initialize memory optimizer.
 
         Args:
             aggressive: If True, applies more aggressive memory optimizations
+
         """
         self.aggressive = aggressive
         self._cache = weakref.WeakValueDictionary()
@@ -39,7 +39,7 @@ class MemoryOptimizer:
 
         # Optimize the AST
         optimizer = MemoryOptimizerTransformer(self._string_pool, self.aggressive)
-        optimized = optimizer.visit(yara_file)
+        _ = optimizer.visit(yara_file)
 
         # Update stats
         self._stats["nodes_processed"] += optimizer.nodes_processed
@@ -49,7 +49,7 @@ class MemoryOptimizer:
         if self.aggressive:
             gc.collect()
 
-        return optimized
+        return yara_file
 
     def optimize_rule(self, rule: Rule) -> Rule:
         """Optimize memory usage for a single rule."""
@@ -94,7 +94,7 @@ class MemoryOptimizer:
 class MemoryOptimizerTransformer(ASTTransformer):
     """AST transformer that optimizes memory usage."""
 
-    def __init__(self, string_pool: dict[str, str], aggressive: bool = False):
+    def __init__(self, string_pool: dict[str, str], aggressive: bool = False) -> None:
         super().__init__()
         self.string_pool = string_pool
         self.aggressive = aggressive

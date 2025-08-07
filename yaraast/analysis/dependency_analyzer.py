@@ -53,9 +53,11 @@ from yaraast.visitor import ASTVisitor
 class DependencyAnalyzer(ASTVisitor[None]):
     """Analyze dependencies between YARA rules."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.rule_names: set[str] = set()
-        self.dependencies: dict[str, set[str]] = defaultdict(set)  # rule -> rules it depends on
+        self.dependencies: dict[str, set[str]] = defaultdict(
+            set,
+        )  # rule -> rules it depends on
         self.current_rule: str | None = None
         self.imported_modules: set[str] = set()
         self.included_files: set[str] = set()

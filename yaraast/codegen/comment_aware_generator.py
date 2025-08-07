@@ -17,11 +17,15 @@ if TYPE_CHECKING:
 class CommentAwareCodeGenerator(CodeGenerator):
     """Generate YARA code with preserved comments."""
 
-    def __init__(self, indent_size: int = 4, preserve_comments: bool = True):
+    def __init__(self, indent_size: int = 4, preserve_comments: bool = True) -> None:
         super().__init__(indent_size)
         self.preserve_comments = preserve_comments
 
-    def _write_comment(self, comment: Comment | CommentGroup | None, inline: bool = False) -> None:
+    def _write_comment(
+        self,
+        comment: Comment | CommentGroup | None,
+        inline: bool = False,
+    ) -> None:
         """Write a single comment or comment group."""
         if not self.preserve_comments or not comment:
             return
@@ -52,15 +56,14 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         if inline:
             self._write(f"  // {text}")
+        # Check if it's a multi-line comment
+        elif "\n" in text or len(text) > 80:
+            self._writeline("/*")
+            for line in text.split("\n"):
+                self._writeline(f" * {line.strip()}")
+            self._writeline(" */")
         else:
-            # Check if it's a multi-line comment
-            if "\n" in text or len(text) > 80:
-                self._writeline("/*")
-                for line in text.split("\n"):
-                    self._writeline(f" * {line.strip()}")
-                self._writeline(" */")
-            else:
-                self._writeline(f"// {text}")
+            self._writeline(f"// {text}")
 
     def _write_leading_comments(self, comments: list[Comment]) -> None:
         """Write leading comments."""
@@ -82,8 +85,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         # Get the generated code
         if result:
             return result
-        else:
-            return self.buffer.getvalue()
+        return self.buffer.getvalue()
 
     def visit_yara_file(self, node: YaraFile) -> str:
         """Generate code for YaraFile with comments."""
@@ -140,7 +142,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         if node.tags:
             self._write(" : ")
             self._write(
-                " ".join(tag.name if hasattr(tag, "name") else str(tag) for tag in node.tags)
+                " ".join(tag.name if hasattr(tag, "name") else str(tag) for tag in node.tags),
             )
 
         # Write opening brace

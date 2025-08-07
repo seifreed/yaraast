@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 T = TypeVar("T")
 
 # Import specific classes from AST modules
-from yaraast.ast.base import ASTNode, YaraFile  # noqa: E402
-from yaraast.ast.comments import Comment, CommentGroup  # noqa: E402
-from yaraast.ast.conditions import (  # noqa: E402
+from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.comments import Comment, CommentGroup
+from yaraast.ast.conditions import (
     AtExpression,
     Condition,
     ForExpression,
@@ -18,7 +18,7 @@ from yaraast.ast.conditions import (  # noqa: E402
     InExpression,
     OfExpression,
 )
-from yaraast.ast.expressions import (  # noqa: E402
+from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
@@ -39,19 +39,14 @@ from yaraast.ast.expressions import (  # noqa: E402
     StringOffset,
     UnaryExpression,
 )
-from yaraast.ast.extern import (  # noqa: E402
-    ExternImport,
-    ExternNamespace,
-    ExternRule,
-    ExternRuleReference,
-)
-from yaraast.ast.meta import Meta  # noqa: E402
-from yaraast.ast.modifiers import StringModifier  # noqa: E402
-from yaraast.ast.operators import DefinedExpression, StringOperatorExpression  # noqa: E402
-from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock  # noqa: E402
-from yaraast.ast.rules import Import, Include, Rule  # noqa: E402
-from yaraast.ast.simple_nodes import Tag  # noqa: E402
-from yaraast.ast.strings import (  # noqa: E402
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
+from yaraast.ast.meta import Meta
+from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
+from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
+from yaraast.ast.rules import Import, Include, Rule
+from yaraast.ast.simple_nodes import Tag
+from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
@@ -64,7 +59,7 @@ from yaraast.ast.strings import (  # noqa: E402
 )
 
 
-class ASTVisitor(ABC, Generic[T]):
+class ASTVisitor[T](ABC):
     """Base visitor class for traversing AST nodes."""
 
     def visit(self, node: ASTNode) -> T:
@@ -497,7 +492,10 @@ class ASTTransformer(ASTVisitor[ASTNode]):
         operand = cast("Expression", self.visit(node.operand))
         return UnaryExpression(operator=node.operator, operand=operand)
 
-    def visit_parentheses_expression(self, node: ParenthesesExpression) -> ParenthesesExpression:
+    def visit_parentheses_expression(
+        self,
+        node: ParenthesesExpression,
+    ) -> ParenthesesExpression:
         """Transform ParenthesesExpression node."""
         from typing import cast
 
@@ -535,7 +533,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
         obj = self.visit(node.object)
         # Ensure obj is an Expression
         if not isinstance(obj, Expression):
-            obj = cast(Expression, obj)
+            obj = cast("Expression", obj)
         return MemberAccess(object=obj, member=node.member)
 
     def visit_condition(self, node: Condition) -> Condition:
@@ -614,7 +612,8 @@ class ASTTransformer(ASTVisitor[ASTNode]):
         return DefinedExpression(expression=expression)
 
     def visit_string_operator_expression(
-        self, node: StringOperatorExpression
+        self,
+        node: StringOperatorExpression,
     ) -> StringOperatorExpression:
         """Transform StringOperatorExpression node."""
         left = self.visit(node.left)
@@ -631,10 +630,15 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             location=node.location,
         )
 
-    def visit_extern_rule_reference(self, node: ExternRuleReference) -> ExternRuleReference:
+    def visit_extern_rule_reference(
+        self,
+        node: ExternRuleReference,
+    ) -> ExternRuleReference:
         """Transform ExternRuleReference node."""
         return ExternRuleReference(
-            rule_name=node.rule_name, namespace=node.namespace, location=node.location
+            rule_name=node.rule_name,
+            namespace=node.namespace,
+            location=node.location,
         )
 
     def visit_extern_import(self, node: ExternImport) -> ExternImport:

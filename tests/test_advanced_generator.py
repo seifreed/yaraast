@@ -11,7 +11,7 @@ from yaraast.codegen.formatting import (
 from yaraast.parser import Parser
 
 
-def test_compact_formatting():
+def test_compact_formatting() -> None:
     """Test compact formatting style."""
     yara_code = """
 rule test_rule {
@@ -40,7 +40,7 @@ rule test_rule {
     assert "$str1=" in output or "$str1 =" in output
 
 
-def test_expanded_formatting():
+def test_expanded_formatting() -> None:
     """Test expanded formatting style."""
     yara_code = """
 rule test_rule {
@@ -65,7 +65,7 @@ rule test_rule {
     assert "\n\n\n" not in output or "\n\n" in output  # Multiple blank lines
 
 
-def test_brace_styles():
+def test_brace_styles() -> None:
     """Test different brace placement styles."""
     yara_code = """
 rule test {
@@ -90,7 +90,7 @@ rule test {
     assert "rule test\n{" in output or "rule test\r\n{" in output
 
 
-def test_string_alignment():
+def test_string_alignment() -> None:
     """Test string definition alignment."""
     yara_code = """
 rule test {
@@ -121,7 +121,7 @@ rule test {
         assert len(set(equals_positions)) <= 2  # Allow some variance
 
 
-def test_hex_formatting():
+def test_hex_formatting() -> None:
     """Test hex string formatting options."""
     yara_code = """
 rule test {
@@ -149,7 +149,7 @@ rule test {
     assert "48 65 6c 6c 6f" in output or "48656c6c6f" in output
 
 
-def test_sorting_options():
+def test_sorting_options() -> None:
     """Test sorting of imports, rules, etc."""
     yara_code = """
 import "pe"
@@ -207,7 +207,7 @@ rule mmm_middle {
     )
 
 
-def test_spacing_options():
+def test_spacing_options() -> None:
     """Test various spacing options."""
     yara_code = """
 rule test : tag1 tag2 {
@@ -221,7 +221,9 @@ rule test : tag1 tag2 {
 
     # Test spacing around operators
     config = FormattingConfig(
-        space_before_colon=False, space_after_colon=False, space_around_operators=False
+        space_before_colon=False,
+        space_after_colon=False,
+        space_around_operators=False,
     )
     generator = AdvancedCodeGenerator(config)
     output = generator.generate(ast)
@@ -229,7 +231,7 @@ rule test : tag1 tag2 {
     assert "test:" in output or "test :" in output  # Colon spacing
 
 
-def test_indentation_styles():
+def test_indentation_styles() -> None:
     """Test spaces vs tabs indentation."""
     yara_code = """
 rule test {

@@ -12,7 +12,7 @@ from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer, R
 class TestRoundTripSerializer:
     """Tests for round-trip serialization."""
 
-    def test_basic_roundtrip_json(self):
+    def test_basic_roundtrip_json(self) -> None:
         """Test basic round-trip with JSON."""
         yara_source = """
         import "pe"
@@ -38,7 +38,7 @@ class TestRoundTripSerializer:
         assert result["metadata"]["original_rule_count"] == 1
         assert result["metadata"]["reconstructed_rule_count"] == 1
 
-    def test_basic_roundtrip_yaml(self):
+    def test_basic_roundtrip_yaml(self) -> None:
         """Test basic round-trip with YAML."""
         yara_source = """
         rule simple_rule {
@@ -55,7 +55,7 @@ class TestRoundTripSerializer:
         assert result["round_trip_successful"] is True
         assert result["format"] == "yaml"
 
-    def test_formatting_detection(self):
+    def test_formatting_detection(self) -> None:
         """Test formatting detection."""
         yara_source_tabs = """
 \t\trule tab_indented {
@@ -86,7 +86,7 @@ class TestRoundTripSerializer:
         assert formatting_spaces.indent_style == "spaces"
         assert formatting_spaces.indent_size == 4
 
-    def test_serialization_with_metadata(self):
+    def test_serialization_with_metadata(self) -> None:
         """Test serialization includes round-trip metadata."""
         yara_source = """
         rule metadata_test {
@@ -98,7 +98,10 @@ class TestRoundTripSerializer:
         """
 
         serializer = RoundTripSerializer()
-        _, serialized = serializer.parse_and_serialize(yara_source.strip(), format="json")
+        _, serialized = serializer.parse_and_serialize(
+            yara_source.strip(),
+            format="json",
+        )
 
         # Parse serialized data to check metadata
         data = json.loads(serialized)
@@ -114,7 +117,7 @@ class TestRoundTripSerializer:
 class TestEnhancedYamlSerializer:
     """Tests for enhanced YAML serialization."""
 
-    def test_pipeline_serialization(self):
+    def test_pipeline_serialization(self) -> None:
         """Test YAML serialization for pipelines."""
         yara_source = """
         import "pe"
@@ -144,7 +147,7 @@ class TestEnhancedYamlSerializer:
         assert "pe" in data["statistics"]["imports"]
         assert "malware" in data["statistics"]["rule_tags"]
 
-    def test_rules_manifest(self):
+    def test_rules_manifest(self) -> None:
         """Test rules manifest generation."""
         yara_source = """
         rule rule1 : tag1 tag2 {
@@ -190,7 +193,7 @@ class TestEnhancedYamlSerializer:
 class TestPrettyPrinter:
     """Tests for pretty printer."""
 
-    def test_basic_pretty_printing(self):
+    def test_basic_pretty_printing(self) -> None:
         """Test basic pretty printing."""
         yara_source = """
 import "pe"
@@ -210,7 +213,7 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         assert "condition:" in formatted
         assert formatted.count("\n") > yara_source.count("\n")
 
-    def test_style_presets(self):
+    def test_style_presets(self) -> None:
         """Test different style presets."""
         yara_source = """
         rule style_test {
@@ -235,7 +238,7 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         assert verbose.count("\n") > compact.count("\n")
         assert readable.count("\n") >= compact.count("\n")
 
-    def test_alignment_options(self):
+    def test_alignment_options(self) -> None:
         """Test string and meta alignment."""
         yara_source = """
         rule alignment_test {
@@ -256,7 +259,10 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         ast = parser.parse(yara_source.strip())
 
         # Test with alignment
-        options = PrettyPrintOptions(align_string_definitions=True, align_meta_values=True)
+        options = PrettyPrintOptions(
+            align_string_definitions=True,
+            align_meta_values=True,
+        )
         printer = PrettyPrinter(options)
         formatted = printer.pretty_print(ast)
 
@@ -270,7 +276,7 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
             # All should be at same position (or close for alignment)
             assert max(equals_positions) - min(equals_positions) <= 10
 
-    def test_custom_formatting_options(self):
+    def test_custom_formatting_options(self) -> None:
         """Test custom formatting options."""
         yara_source = """
         rule custom_test {
@@ -301,7 +307,7 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
 class TestIntegration:
     """Integration tests for enhanced serialization."""
 
-    def test_complete_workflow(self):
+    def test_complete_workflow(self) -> None:
         """Test complete workflow: parse -> serialize -> deserialize -> pretty print."""
         yara_source = """
         import "pe"
@@ -325,11 +331,15 @@ class TestIntegration:
 
         # Step 2: Round-trip serialize
         serializer = RoundTripSerializer()
-        _, serialized = serializer.parse_and_serialize(yara_source.strip(), format="yaml")
+        _, serialized = serializer.parse_and_serialize(
+            yara_source.strip(),
+            format="yaml",
+        )
 
         # Step 3: Deserialize
         reconstructed_ast, reconstructed_yara = serializer.deserialize_and_generate(
-            serialized, format="yaml"
+            serialized,
+            format="yaml",
         )
 
         # Step 4: Pretty print
@@ -366,7 +376,9 @@ if __name__ == "__main__":
     serializer = RoundTripSerializer()
     result = serializer.roundtrip_test(yara_test.strip())
 
-    print(f"✓ Round-trip test: {'PASSED' if result['round_trip_successful'] else 'FAILED'}")
+    print(
+        f"✓ Round-trip test: {'PASSED' if result['round_trip_successful'] else 'FAILED'}",
+    )
     if result["differences"]:
         print(f"  Differences: {len(result['differences'])}")
 

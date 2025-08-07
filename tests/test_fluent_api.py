@@ -24,7 +24,7 @@ from yaraast.codegen import CodeGenerator
 class TestFluentStringBuilder:
     """Tests for fluent string builder."""
 
-    def test_text_string_basic(self):
+    def test_text_string_basic(self) -> None:
         """Test basic text string creation."""
         string_def = text("$test", "hello world").build()
 
@@ -32,7 +32,7 @@ class TestFluentStringBuilder:
         assert string_def.value == "hello world"
         assert len(string_def.modifiers) == 0
 
-    def test_text_string_with_modifiers(self):
+    def test_text_string_with_modifiers(self) -> None:
         """Test text string with modifiers."""
         string_def = text("$test", "malware").nocase().wide().fullword().build()
 
@@ -45,21 +45,24 @@ class TestFluentStringBuilder:
         assert "wide" in modifier_names
         assert "fullword" in modifier_names
 
-    def test_hex_string_basic(self):
+    def test_hex_string_basic(self) -> None:
         """Test basic hex string creation."""
         string_def = hex_pattern("$hex", "4D 5A ?? 00").build()
 
         assert string_def.identifier == "$hex"
         assert len(string_def.tokens) > 0
 
-    def test_regex_string_basic(self):
+    def test_regex_string_basic(self) -> None:
         """Test basic regex string creation."""
-        string_def = regex("$email", r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}").build()
+        string_def = regex(
+            "$email",
+            r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+        ).build()
 
         assert string_def.identifier == "$email"
         assert "@" in string_def.regex
 
-    def test_pattern_helpers(self):
+    def test_pattern_helpers(self) -> None:
         """Test pattern helper methods."""
         mz = string("$mz").mz_header().build()
         assert mz.identifier == "$mz"
@@ -74,17 +77,17 @@ class TestFluentStringBuilder:
 class TestFluentConditionBuilder:
     """Tests for fluent condition builder."""
 
-    def test_string_match(self):
+    def test_string_match(self) -> None:
         """Test string matching condition."""
         cond = match("$test").build()
         assert cond is not None
 
-    def test_logical_operators(self):
+    def test_logical_operators(self) -> None:
         """Test logical operators."""
         cond = match("$a").and_(match("$b")).or_(match("$c")).build()
         assert cond is not None
 
-    def test_quantifiers(self):
+    def test_quantifiers(self) -> None:
         """Test quantifier conditions."""
         cond1 = any_of_them().build()
         assert cond1 is not None
@@ -95,7 +98,7 @@ class TestFluentConditionBuilder:
         cond3 = FluentConditionBuilder().one_of("$a", "$b", "$c").build()
         assert cond3 is not None
 
-    def test_file_properties(self):
+    def test_file_properties(self) -> None:
         """Test file property conditions."""
         cond1 = FluentConditionBuilder().filesize_gt(1024).build()
         assert cond1 is not None
@@ -107,7 +110,7 @@ class TestFluentConditionBuilder:
 class TestFluentRuleBuilder:
     """Tests for fluent rule builder."""
 
-    def test_basic_rule(self):
+    def test_basic_rule(self) -> None:
         """Test basic rule creation."""
         rule_ast = (
             rule("test_rule")
@@ -127,7 +130,7 @@ class TestFluentRuleBuilder:
         assert len(rule_ast.strings) == 1
         assert rule_ast.condition is not None
 
-    def test_rule_with_multiple_strings(self):
+    def test_rule_with_multiple_strings(self) -> None:
         """Test rule with multiple strings."""
         rule_ast = (
             rule("multi_string_rule")
@@ -143,7 +146,7 @@ class TestFluentRuleBuilder:
         assert rule_ast.strings[1].identifier == "$b"
         assert rule_ast.strings[2].identifier == "$c"
 
-    def test_rule_with_fluent_strings(self):
+    def test_rule_with_fluent_strings(self) -> None:
         """Test rule with fluent string context."""
         rule_ast = (
             rule("fluent_strings")
@@ -166,7 +169,7 @@ class TestFluentRuleBuilder:
         assert len(rule_ast.strings[0].modifiers) == 1
         assert rule_ast.strings[0].modifiers[0].name == "nocase"
 
-    def test_malware_rule_template(self):
+    def test_malware_rule_template(self) -> None:
         """Test malware rule template."""
         rule_ast = malware_rule("test_malware").build()
 
@@ -176,7 +179,7 @@ class TestFluentRuleBuilder:
         assert len(rule_ast.strings) > 0  # Should have MZ header
         assert rule_ast.condition is not None
 
-    def test_trojan_rule_template(self):
+    def test_trojan_rule_template(self) -> None:
         """Test trojan rule template."""
         rule_ast = trojan_rule("test_trojan").build()
 
@@ -188,7 +191,7 @@ class TestFluentRuleBuilder:
 class TestYaraFileBuilder:
     """Tests for YARA file builder."""
 
-    def test_basic_file(self):
+    def test_basic_file(self) -> None:
         """Test basic YARA file creation."""
         yara_ast = (
             yara_file()
@@ -206,7 +209,7 @@ class TestYaraFileBuilder:
         assert len(yara_ast.includes) == 1
         assert yara_ast.includes[0].path == "common.yar"
 
-    def test_file_with_rules(self):
+    def test_file_with_rules(self) -> None:
         """Test YARA file with rules."""
         rule1 = rule("rule1").text_string("$a", "test").matches_any().build()
         rule2 = rule("rule2").hex_string("$b", "4D 5A").matches_any().build()
@@ -217,7 +220,7 @@ class TestYaraFileBuilder:
         assert yara_ast.rules[0].name == "rule1"
         assert yara_ast.rules[1].name == "rule2"
 
-    def test_chained_rule_building(self):
+    def test_chained_rule_building(self) -> None:
         """Test chained rule building in file."""
         yara_ast = (
             yara_file()
@@ -241,7 +244,7 @@ class TestYaraFileBuilder:
 class TestRuleTransformations:
     """Tests for rule transformations."""
 
-    def test_clone_rule(self):
+    def test_clone_rule(self) -> None:
         """Test rule cloning."""
         original = rule("original").tagged("test").text_string("$a", "hello").matches_any().build()
 
@@ -252,7 +255,7 @@ class TestRuleTransformations:
         assert len(cloned.tags) == len(original.tags)
         assert len(cloned.strings) == len(original.strings)
 
-    def test_transform_rule_rename(self):
+    def test_transform_rule_rename(self) -> None:
         """Test rule transformation - renaming."""
         original = rule("original").text_string("$a", "hello").matches_any().build()
 
@@ -261,7 +264,7 @@ class TestRuleTransformations:
         assert transformed.name == "transformed"
         assert original.name == "original"  # Original unchanged
 
-    def test_transform_rule_tags(self):
+    def test_transform_rule_tags(self) -> None:
         """Test rule transformation - tags."""
         original = rule("test").tagged("original").text_string("$a", "hello").matches_any().build()
 
@@ -271,7 +274,7 @@ class TestRuleTransformations:
         assert "new" in tag_names
         assert "original" not in tag_names
 
-    def test_transform_rule_prefix(self):
+    def test_transform_rule_prefix(self) -> None:
         """Test rule transformation - prefix."""
         original = (
             rule("test").text_string("$a", "hello").text_string("$b", "world").matches_any().build()
@@ -288,7 +291,7 @@ class TestRuleTransformations:
 class TestCodeGeneration:
     """Tests for code generation from fluent API."""
 
-    def test_generate_simple_rule(self):
+    def test_generate_simple_rule(self) -> None:
         """Test generating code from simple rule."""
         rule_ast = rule("simple_test").text_string("$test", "hello").matches_any().build()
 
@@ -299,7 +302,7 @@ class TestCodeGeneration:
         assert '$test = "hello"' in code
         assert "condition:" in code
 
-    def test_generate_complex_file(self):
+    def test_generate_complex_file(self) -> None:
         """Test generating code from complex YARA file."""
         yara_ast = (
             yara_file()
@@ -314,7 +317,7 @@ class TestCodeGeneration:
                 lambda c: c.string_matches("$mz")
                 .at(0)
                 .and_(c.string_matches("$str"))
-                .and_(c.filesize_gt(1024))
+                .and_(c.filesize_gt(1024)),
             )
             .then_build_file()
         )
@@ -350,7 +353,7 @@ if __name__ == "__main__":
         .with_condition_builder(
             lambda c: c.string_matches("$hello")
             .and_(c.string_matches("$mz").at(0))
-            .or_(c.string_matches("$email"))
+            .or_(c.string_matches("$email")),
         )
         .build()
     )

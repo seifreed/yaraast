@@ -22,11 +22,11 @@ console = Console()
 
 
 @click.group()
-def serialize():
+def serialize() -> None:
     """AST serialization commands for export/import and versioning."""
 
 
-def _export_json(ast, output: str, minimal: bool, pretty: bool):
+def _export_json(ast, output: str, minimal: bool, pretty: bool) -> None:
     """Export AST to JSON format."""
     serializer = JsonSerializer(include_metadata=not minimal)
     result = serializer.serialize(ast, output)
@@ -35,7 +35,7 @@ def _export_json(ast, output: str, minimal: bool, pretty: bool):
         console.print(syntax)
 
 
-def _export_yaml(ast, output: str, minimal: bool, pretty: bool):
+def _export_yaml(ast, output: str, minimal: bool, pretty: bool) -> None:
     """Export AST to YAML format."""
     serializer = YamlSerializer(include_metadata=not minimal)
     if minimal:
@@ -47,7 +47,7 @@ def _export_yaml(ast, output: str, minimal: bool, pretty: bool):
         console.print(syntax)
 
 
-def _export_protobuf(ast, output: str, minimal: bool, pretty: bool):
+def _export_protobuf(ast, output: str, minimal: bool, pretty: bool) -> None:
     """Export AST to Protobuf format."""
     serializer = ProtobufSerializer(include_metadata=not minimal)
 
@@ -63,7 +63,7 @@ def _export_protobuf(ast, output: str, minimal: bool, pretty: bool):
         _display_protobuf_stats(stats)
 
 
-def _display_protobuf_stats(stats: dict):
+def _display_protobuf_stats(stats: dict) -> None:
     """Display Protobuf serialization statistics."""
     table = Table(title="Protobuf Serialization Stats")
     table.add_column("Metric", style="cyan")
@@ -90,7 +90,7 @@ def _display_protobuf_stats(stats: dict):
 )
 @click.option("--minimal", is_flag=True, help="Minimal output (no metadata)")
 @click.option("--pretty", is_flag=True, help="Pretty print output to console")
-def export(input_file: str, output: str, format: str, minimal: bool, pretty: bool):
+def export(input_file: str, output: str, format: str, minimal: bool, pretty: bool) -> None:
     """Export YARA AST to various serialization formats.
 
     Supports JSON, YAML, and Protobuf formats for AST persistence
@@ -100,6 +100,7 @@ def export(input_file: str, output: str, format: str, minimal: bool, pretty: boo
         yaraast serialize export rules.yar -f yaml -o rules.yaml
         yaraast serialize export rules.yar -f protobuf -o rules.pb
         yaraast serialize export rules.yar --pretty
+
     """
     try:
         # Parse YARA file
@@ -138,7 +139,7 @@ def export(input_file: str, output: str, format: str, minimal: bool, pretty: boo
     help="Input serialization format",
 )
 @click.option("-o", "--output", type=click.Path(), help="Output YARA file")
-def import_ast(input_file: str, format: str, output: str):
+def import_ast(input_file: str, format: str, output: str) -> None:
     """Import AST from serialized format back to YARA code.
 
     Note: Full round-trip import is not yet implemented.
@@ -147,6 +148,7 @@ def import_ast(input_file: str, format: str, output: str):
     Examples:
         yaraast serialize import rules.json -f json
         yaraast serialize import rules.yaml -f yaml
+
     """
     try:
         # Choose serializer
@@ -172,7 +174,7 @@ def import_ast(input_file: str, format: str, output: str):
         sys.exit(1)
 
 
-def _display_diff_summary(diff_result):
+def _display_diff_summary(diff_result) -> None:
     """Display difference summary table."""
     table = Table(title="AST Differences Summary")
     table.add_column("Change Type", style="cyan")
@@ -193,7 +195,7 @@ def _display_diff_summary(diff_result):
     console.print(table)
 
 
-def _display_detailed_changes(diff_result):
+def _display_detailed_changes(diff_result) -> None:
     """Display detailed changes if not too many."""
     if len(diff_result.differences) <= 20:  # Show details for small diffs
         console.print("\n[bold]Detailed Changes:[/bold]")
@@ -211,11 +213,11 @@ def _display_detailed_changes(diff_result):
                 console.print(f"    [dim]New:[/dim] {diff_node.new_value}")
     else:
         console.print(
-            f"\n[dim]Use --output to save detailed changes ({len(diff_result.differences)} total)[/dim]"
+            f"\n[dim]Use --output to save detailed changes ({len(diff_result.differences)} total)[/dim]",
         )
 
 
-def _display_diff_statistics(diff_result):
+def _display_diff_statistics(diff_result) -> None:
     """Display comparison statistics."""
     stats_table = Table(title="Comparison Statistics")
     stats_table.add_column("Metric", style="cyan")
@@ -250,7 +252,14 @@ def _display_diff_statistics(diff_result):
 )
 @click.option("--patch", is_flag=True, help="Create patch file")
 @click.option("--stats", is_flag=True, help="Show detailed statistics")
-def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, stats: bool):
+def diff(
+    old_file: str,
+    new_file: str,
+    output: str,
+    format: str,
+    patch: bool,
+    stats: bool,
+) -> None:
     """Compare two YARA files and show AST differences.
 
     Provides incremental versioning by analyzing structural changes
@@ -260,6 +269,7 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
         yaraast serialize diff old.yar new.yar
         yaraast serialize diff v1.yar v2.yar -o changes.json --patch
         yaraast serialize diff old.yar new.yar --stats
+
     """
     try:
         # Parse both files
@@ -325,7 +335,7 @@ def diff(old_file: str, new_file: str, output: str, format: str, patch: bool, st
     default="json",
     help="Serialization format to validate",
 )
-def validate(input_file: str, format: str):
+def validate(input_file: str, format: str) -> None:
     """Validate serialized AST format.
 
     Checks if the serialized file can be properly loaded and
@@ -334,6 +344,7 @@ def validate(input_file: str, format: str):
     Examples:
         yaraast serialize validate rules.json
         yaraast serialize validate rules.yaml -f yaml
+
     """
     try:
         if format == "json":
@@ -355,7 +366,7 @@ def validate(input_file: str, format: str):
                 f"  • Includes: {len(ast.includes)}",
                 title=f"Validation Result: {Path(input_file).name}",
                 border_style="green",
-            )
+            ),
         )
 
     except Exception as e:
@@ -364,14 +375,14 @@ def validate(input_file: str, format: str):
                 f"[red]❌ Invalid {format.upper()} serialization[/red]\n\nError: {e}",
                 title=f"Validation Result: {Path(input_file).name}",
                 border_style="red",
-            )
+            ),
         )
         sys.exit(1)
 
 
 @serialize.command()
 @click.argument("input_file", type=click.Path(exists=True))
-def info(input_file: str):
+def info(input_file: str) -> None:
     """Show information about a YARA file's AST structure.
 
     Provides detailed analysis of the AST without full serialization.
@@ -379,6 +390,7 @@ def info(input_file: str):
 
     Example:
         yaraast serialize info rules.yar
+
     """
     try:
         # Parse file

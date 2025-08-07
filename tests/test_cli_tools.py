@@ -10,7 +10,7 @@ from yaraast.parser import YaraParser
 class TestASTFormatter:
     """Tests for AST-based formatter."""
 
-    def test_basic_formatting(self):
+    def test_basic_formatting(self) -> None:
         """Test basic file formatting."""
         # Unformatted YARA
         unformatted = """rule test{strings:$a="hello"condition:$a}"""
@@ -27,12 +27,14 @@ class TestASTFormatter:
             assert "rule test" in formatted
             assert "strings:" in formatted
             assert "condition:" in formatted
-            assert formatted.count("\n") > unformatted.count("\n")  # More lines after formatting
+            assert formatted.count("\n") > unformatted.count(
+                "\n",
+            )  # More lines after formatting
 
         finally:
             test_file.unlink()
 
-    def test_format_styles(self):
+    def test_format_styles(self) -> None:
         """Test different formatting styles."""
         yara_code = """
         rule style_test {
@@ -55,7 +57,9 @@ class TestASTFormatter:
             success_pretty, pretty = formatter.format_file(test_file, None, "pretty")
             success_verbose, verbose = formatter.format_file(test_file, None, "verbose")
 
-            assert success_compact and success_pretty and success_verbose
+            assert success_compact
+            assert success_pretty
+            assert success_verbose
 
             # Verbose should have more lines than compact
             assert verbose.count("\n") >= pretty.count("\n") >= compact.count("\n")
@@ -63,7 +67,7 @@ class TestASTFormatter:
         finally:
             test_file.unlink()
 
-    def test_format_check(self):
+    def test_format_check(self) -> None:
         """Test format checking."""
         # Well-formatted YARA
         well_formatted = """rule test {
@@ -107,7 +111,7 @@ class TestASTFormatter:
 class TestASTDiffer:
     """Tests for AST-based differ."""
 
-    def test_no_differences(self):
+    def test_no_differences(self) -> None:
         """Test files with no differences."""
         yara_code = """
         rule test {
@@ -140,7 +144,7 @@ class TestASTDiffer:
             file1.unlink()
             file2.unlink()
 
-    def test_rule_addition(self):
+    def test_rule_addition(self) -> None:
         """Test detecting added rules."""
         original = """
         rule test1 {
@@ -188,7 +192,7 @@ class TestASTDiffer:
             file1.unlink()
             file2.unlink()
 
-    def test_logical_vs_style_changes(self):
+    def test_logical_vs_style_changes(self) -> None:
         """Test distinguishing logical from style changes."""
         original = """rule test {
     strings:
@@ -263,7 +267,7 @@ $s
 class TestASTStructuralAnalyzer:
     """Tests for AST structural analyzer."""
 
-    def test_rule_signature_generation(self):
+    def test_rule_signature_generation(self) -> None:
         """Test rule signature generation."""
         yara_code = """
         rule test_rule : tag1 tag2 {
@@ -290,7 +294,7 @@ class TestASTStructuralAnalyzer:
         assert "$s1" in analysis["string_signatures"]
         assert "$s2" in analysis["string_signatures"]
 
-    def test_structural_hash_consistency(self):
+    def test_structural_hash_consistency(self) -> None:
         """Test that identical structures produce identical hashes."""
         yara_code = """
         rule test {
@@ -317,7 +321,7 @@ class TestASTStructuralAnalyzer:
 class TestASTBenchmarker:
     """Tests for AST benchmarker."""
 
-    def test_parsing_benchmark(self):
+    def test_parsing_benchmark(self) -> None:
         """Test parsing benchmark."""
         yara_code = """
         rule benchmark_test {
@@ -346,7 +350,7 @@ class TestASTBenchmarker:
         finally:
             test_file.unlink()
 
-    def test_codegen_benchmark(self):
+    def test_codegen_benchmark(self) -> None:
         """Test code generation benchmark."""
         yara_code = """
         rule codegen_test {
@@ -373,7 +377,7 @@ class TestASTBenchmarker:
         finally:
             test_file.unlink()
 
-    def test_roundtrip_benchmark(self):
+    def test_roundtrip_benchmark(self) -> None:
         """Test roundtrip benchmark."""
         yara_code = """
         rule roundtrip_test {
@@ -401,7 +405,7 @@ class TestASTBenchmarker:
         finally:
             test_file.unlink()
 
-    def test_benchmark_summary(self):
+    def test_benchmark_summary(self) -> None:
         """Test benchmark summary generation."""
         yara_code = """
         rule summary_test {
@@ -439,7 +443,7 @@ class TestASTBenchmarker:
 class TestIntegration:
     """Integration tests for CLI tools."""
 
-    def test_format_and_diff_workflow(self):
+    def test_format_and_diff_workflow(self) -> None:
         """Test formatting a file then diffing the changes."""
         original = """rule test{strings:$s="hello"condition:$s}"""
 
@@ -454,7 +458,11 @@ class TestIntegration:
             assert success is True
 
             # Write formatted version to new file
-            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                delete=False,
+                suffix=".yar",
+            ) as f:
                 f.write(formatted)
                 formatted_file = Path(f.name)
 
@@ -494,7 +502,7 @@ if __name__ == "__main__":
 
         if success:
             print(
-                f"✓ Formatted output contains proper structure: {'PASSED' if 'strings:' in formatted else 'FAILED'}"
+                f"✓ Formatted output contains proper structure: {'PASSED' if 'strings:' in formatted else 'FAILED'}",
             )
     finally:
         test_file.unlink()
@@ -517,7 +525,7 @@ if __name__ == "__main__":
     analysis = analyzer.analyze(ast)
 
     print(
-        f"✓ AST analysis: {'PASSED' if 'differ_test' in analysis['rule_signatures'] else 'FAILED'}"
+        f"✓ AST analysis: {'PASSED' if 'differ_test' in analysis['rule_signatures'] else 'FAILED'}",
     )
 
     # Test benchmarker
@@ -533,7 +541,7 @@ if __name__ == "__main__":
 
         if result.success:
             print(
-                f"✓ Benchmark captured metrics: {'PASSED' if result.execution_time > 0 and result.rules_count > 0 else 'FAILED'}"
+                f"✓ Benchmark captured metrics: {'PASSED' if result.execution_time > 0 and result.rules_count > 0 else 'FAILED'}",
             )
     finally:
         bench_file.unlink()

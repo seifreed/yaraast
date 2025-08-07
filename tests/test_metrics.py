@@ -17,7 +17,7 @@ from yaraast.parser import Parser
 
 
 @pytest.fixture
-def sample_yara_content():
+def sample_yara_content() -> str:
     """Sample YARA content for testing."""
     return """
 import "pe"
@@ -69,7 +69,7 @@ def parsed_ast(sample_yara_content):
 class TestComplexityAnalyzer:
     """Test complexity analysis functionality."""
 
-    def test_basic_analysis(self, parsed_ast):
+    def test_basic_analysis(self, parsed_ast) -> None:
         """Test basic complexity analysis."""
         analyzer = ComplexityAnalyzer()
         metrics = analyzer.analyze(parsed_ast)
@@ -84,7 +84,7 @@ class TestComplexityAnalyzer:
         assert metrics.rules_with_meta == 1
         assert metrics.rules_with_tags == 1
 
-    def test_string_analysis(self, parsed_ast):
+    def test_string_analysis(self, parsed_ast) -> None:
         """Test string complexity analysis."""
         analyzer = ComplexityAnalyzer()
         metrics = analyzer.analyze(parsed_ast)
@@ -99,7 +99,7 @@ class TestComplexityAnalyzer:
         assert metrics.hex_wildcards > 0
         assert metrics.hex_alternatives > 0
 
-    def test_condition_complexity(self, parsed_ast):
+    def test_condition_complexity(self, parsed_ast) -> None:
         """Test condition complexity analysis."""
         analyzer = ComplexityAnalyzer()
         metrics = analyzer.analyze(parsed_ast)
@@ -109,7 +109,7 @@ class TestComplexityAnalyzer:
         assert metrics.for_expressions > 0
         assert len(metrics.cyclomatic_complexity) == 3  # One per rule
 
-    def test_quality_scoring(self, parsed_ast):
+    def test_quality_scoring(self, parsed_ast) -> None:
         """Test quality scoring system."""
         analyzer = ComplexityAnalyzer()
         metrics = analyzer.analyze(parsed_ast)
@@ -120,7 +120,7 @@ class TestComplexityAnalyzer:
         grade = metrics.get_complexity_grade()
         assert grade in ["A", "B", "C", "D", "F"]
 
-    def test_metrics_serialization(self, parsed_ast):
+    def test_metrics_serialization(self, parsed_ast) -> None:
         """Test metrics to dictionary conversion."""
         analyzer = ComplexityAnalyzer()
         metrics = analyzer.analyze(parsed_ast)
@@ -135,7 +135,7 @@ class TestComplexityAnalyzer:
         assert "quality_metrics" in metrics_dict
         assert "dependencies" in metrics_dict
 
-    def test_empty_file(self):
+    def test_empty_file(self) -> None:
         """Test analysis of empty YARA file."""
         parser = Parser()
         ast = parser.parse("")
@@ -151,7 +151,7 @@ class TestComplexityAnalyzer:
 class TestDependencyGraphGenerator:
     """Test dependency graph generation."""
 
-    def test_basic_graph_generation(self, parsed_ast):
+    def test_basic_graph_generation(self, parsed_ast) -> None:
         """Test basic dependency graph generation."""
         generator = DependencyGraphGenerator()
 
@@ -160,7 +160,7 @@ class TestDependencyGraphGenerator:
         assert isinstance(graph_source, str)
         assert "digraph" in graph_source.lower()
 
-    def test_rule_graph(self, parsed_ast):
+    def test_rule_graph(self, parsed_ast) -> None:
         """Test rule-only dependency graph."""
         generator = DependencyGraphGenerator()
 
@@ -170,7 +170,7 @@ class TestDependencyGraphGenerator:
         assert "PrivateRule" in graph_source
         assert "GlobalRule" in graph_source
 
-    def test_module_graph(self, parsed_ast):
+    def test_module_graph(self, parsed_ast) -> None:
         """Test module dependency graph."""
         generator = DependencyGraphGenerator()
 
@@ -179,20 +179,23 @@ class TestDependencyGraphGenerator:
         assert "pe" in graph_source
         assert "math" in graph_source
 
-    def test_complexity_graph(self, parsed_ast):
+    def test_complexity_graph(self, parsed_ast) -> None:
         """Test complexity visualization graph."""
         generator = DependencyGraphGenerator()
 
         # Create mock complexity metrics
         complexity_metrics = {"TestRule": 8, "PrivateRule": 2, "GlobalRule": 1}
 
-        graph_source = generator.generate_complexity_graph(parsed_ast, complexity_metrics)
+        graph_source = generator.generate_complexity_graph(
+            parsed_ast,
+            complexity_metrics,
+        )
         assert isinstance(graph_source, str)
         assert "Complexity: 8" in graph_source
         assert "Complexity: 2" in graph_source
         assert "Complexity: 1" in graph_source
 
-    def test_file_output(self, parsed_ast):
+    def test_file_output(self, parsed_ast) -> None:
         """Test writing graph to file."""
         generator = DependencyGraphGenerator()
 
@@ -203,11 +206,15 @@ class TestDependencyGraphGenerator:
             with patch("graphviz.Digraph.render") as mock_render:
                 mock_render.return_value = str(output_path) + ".svg"
 
-                result_path = generator.generate_graph(parsed_ast, str(output_path), "svg")
+                result_path = generator.generate_graph(
+                    parsed_ast,
+                    str(output_path),
+                    "svg",
+                )
                 assert result_path.endswith(".svg")
                 mock_render.assert_called_once()
 
-    def test_dependency_stats(self, parsed_ast):
+    def test_dependency_stats(self, parsed_ast) -> None:
         """Test dependency statistics collection."""
         generator = DependencyGraphGenerator()
         generator.generate_graph(parsed_ast)  # Populate internal state
@@ -224,7 +231,7 @@ class TestDependencyGraphGenerator:
 class TestHtmlTreeGenerator:
     """Test HTML tree visualization."""
 
-    def test_basic_html_generation(self, parsed_ast):
+    def test_basic_html_generation(self, parsed_ast) -> None:
         """Test basic HTML tree generation."""
         generator = HtmlTreeGenerator()
 
@@ -234,17 +241,20 @@ class TestHtmlTreeGenerator:
         assert "YARA AST Visualization" in html_content
         assert "TestRule" in html_content
 
-    def test_interactive_html(self, parsed_ast):
+    def test_interactive_html(self, parsed_ast) -> None:
         """Test interactive HTML generation with search."""
         generator = HtmlTreeGenerator()
 
-        html_content = generator.generate_interactive_html(parsed_ast, title="Test Interactive")
+        html_content = generator.generate_interactive_html(
+            parsed_ast,
+            title="Test Interactive",
+        )
         assert isinstance(html_content, str)
         assert "Test Interactive" in html_content
         assert "searchNodes" in html_content  # JavaScript search function
         assert "filterNodes" in html_content  # JavaScript filter function
 
-    def test_html_file_output(self, parsed_ast):
+    def test_html_file_output(self, parsed_ast) -> None:
         """Test writing HTML to file."""
         generator = HtmlTreeGenerator()
 
@@ -258,7 +268,7 @@ class TestHtmlTreeGenerator:
             assert "TestRule" in content
             assert "<!DOCTYPE html>" in content
 
-    def test_metadata_inclusion(self, parsed_ast):
+    def test_metadata_inclusion(self, parsed_ast) -> None:
         """Test metadata inclusion control."""
         # With metadata
         generator_with_meta = HtmlTreeGenerator(include_metadata=True)
@@ -273,7 +283,7 @@ class TestHtmlTreeGenerator:
         assert "<!DOCTYPE html>" in html_no_meta
         assert html_with_meta != html_no_meta
 
-    def test_custom_title(self, parsed_ast):
+    def test_custom_title(self, parsed_ast) -> None:
         """Test custom page title."""
         generator = HtmlTreeGenerator()
         custom_title = "My Custom YARA Analysis"
@@ -286,7 +296,7 @@ class TestHtmlTreeGenerator:
 class TestStringDiagramGenerator:
     """Test string pattern diagram generation."""
 
-    def test_pattern_flow_diagram(self, parsed_ast):
+    def test_pattern_flow_diagram(self, parsed_ast) -> None:
         """Test pattern flow diagram generation."""
         generator = StringDiagramGenerator()
 
@@ -297,7 +307,7 @@ class TestStringDiagramGenerator:
         assert "Hex Patterns" in diagram_source
         assert "Regex Patterns" in diagram_source
 
-    def test_pattern_complexity_diagram(self, parsed_ast):
+    def test_pattern_complexity_diagram(self, parsed_ast) -> None:
         """Test pattern complexity visualization."""
         generator = StringDiagramGenerator()
 
@@ -306,7 +316,7 @@ class TestStringDiagramGenerator:
         assert "Complexity" in diagram_source
         assert "neato" in diagram_source  # Should use neato engine
 
-    def test_pattern_similarity_diagram(self, parsed_ast):
+    def test_pattern_similarity_diagram(self, parsed_ast) -> None:
         """Test pattern similarity clustering."""
         generator = StringDiagramGenerator()
 
@@ -314,7 +324,7 @@ class TestStringDiagramGenerator:
         assert isinstance(diagram_source, str)
         assert "fdp" in diagram_source  # Should use fdp engine
 
-    def test_hex_pattern_diagram(self, parsed_ast):
+    def test_hex_pattern_diagram(self, parsed_ast) -> None:
         """Test hex pattern analysis diagram."""
         generator = StringDiagramGenerator()
 
@@ -323,7 +333,7 @@ class TestStringDiagramGenerator:
         # Should contain analysis of hex patterns
         assert "$hex1" in diagram_source or "$hex2" in diagram_source
 
-    def test_pattern_statistics(self, parsed_ast):
+    def test_pattern_statistics(self, parsed_ast) -> None:
         """Test pattern statistics collection."""
         generator = StringDiagramGenerator()
 
@@ -340,7 +350,7 @@ class TestStringDiagramGenerator:
         assert stats["by_type"]["hex"] == 2
         assert stats["by_type"]["regex"] == 1
 
-    def test_file_output(self, parsed_ast):
+    def test_file_output(self, parsed_ast) -> None:
         """Test writing diagram to file."""
         generator = StringDiagramGenerator()
 
@@ -352,12 +362,14 @@ class TestStringDiagramGenerator:
                 mock_render.return_value = str(output_path) + ".svg"
 
                 result_path = generator.generate_pattern_flow_diagram(
-                    parsed_ast, str(output_path), "svg"
+                    parsed_ast,
+                    str(output_path),
+                    "svg",
                 )
                 assert result_path.endswith(".svg")
                 mock_render.assert_called_once()
 
-    def test_empty_patterns(self):
+    def test_empty_patterns(self) -> None:
         """Test handling of files with no string patterns."""
         parser = Parser()
         ast = parser.parse(
@@ -365,7 +377,7 @@ class TestStringDiagramGenerator:
         rule EmptyRule {
             condition: true
         }
-        """
+        """,
         )
 
         generator = StringDiagramGenerator()
@@ -381,7 +393,7 @@ class TestStringDiagramGenerator:
 class TestMetricsIntegration:
     """Test integration between different metrics components."""
 
-    def test_complexity_with_dependency_graph(self, parsed_ast):
+    def test_complexity_with_dependency_graph(self, parsed_ast) -> None:
         """Test using complexity metrics with dependency graph."""
         # Get complexity metrics
         analyzer = ComplexityAnalyzer()
@@ -390,13 +402,14 @@ class TestMetricsIntegration:
         # Use with dependency graph
         generator = DependencyGraphGenerator()
         graph_source = generator.generate_complexity_graph(
-            parsed_ast, metrics.cyclomatic_complexity
+            parsed_ast,
+            metrics.cyclomatic_complexity,
         )
 
         assert isinstance(graph_source, str)
         assert "Complexity" in graph_source
 
-    def test_all_metrics_on_same_ast(self, parsed_ast):
+    def test_all_metrics_on_same_ast(self, parsed_ast) -> None:
         """Test that all metrics work on the same AST."""
         # Complexity analysis
         complexity_analyzer = ComplexityAnalyzer()
@@ -420,7 +433,7 @@ class TestMetricsIntegration:
         assert isinstance(html_tree, str)
         assert isinstance(pattern_diagram, str)
 
-    def test_metrics_consistency(self, parsed_ast):
+    def test_metrics_consistency(self, parsed_ast) -> None:
         """Test that different metrics report consistent counts."""
         # Complexity analysis
         complexity_analyzer = ComplexityAnalyzer()
@@ -435,7 +448,7 @@ class TestMetricsIntegration:
         assert complexity_metrics.total_rules == dep_stats["total_rules"]
         assert complexity_metrics.total_imports == dep_stats["total_imports"]
 
-    def test_large_file_handling(self):
+    def test_large_file_handling(self) -> None:
         """Test metrics on a larger, more complex YARA file."""
         # Create a more complex YARA file
         complex_yara = """

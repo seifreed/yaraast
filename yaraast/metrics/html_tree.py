@@ -268,7 +268,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
         {% endif %}
     </div>
 {% endmacro %}
-        """
+        """,
         )
 
         # Calculate statistics
@@ -281,7 +281,11 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
             render_node=self._create_render_macro(),
         )
 
-    def _render_interactive_template(self, tree_data: dict[str, Any], title: str) -> str:
+    def _render_interactive_template(
+        self,
+        tree_data: dict[str, Any],
+        title: str,
+    ) -> str:
         """Render interactive HTML template with search and filtering."""
         template = Template(
             """
@@ -571,7 +575,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
     </script>
 </body>
 </html>
-        """
+        """,
         )
 
         return template.render(title=title, tree_data=tree_data)
@@ -611,7 +615,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
         """Calculate tree statistics."""
         stats = {"rules": 0, "imports": 0, "strings": 0, "nodes": 0}
 
-        def count_nodes(node):
+        def count_nodes(node) -> None:
             stats["nodes"] += 1
             node_class = node.get("node_class", "")
 
@@ -686,7 +690,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                     "label": "Modifiers",
                     "node_class": "modifiers",
                     "value": ", ".join(node.modifiers),
-                }
+                },
             )
 
         # Add tags
@@ -700,7 +704,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                     "label": "Tags",
                     "node_class": "tags",
                     "children": tag_children,
-                }
+                },
             )
 
         # Add meta
@@ -713,7 +717,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                         "label": f"Meta: {key}",
                         "node_class": "meta",
                         "value": str(value),
-                    }
+                    },
                 )
             children.append(
                 {
@@ -721,7 +725,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                     "label": "Meta",
                     "node_class": "meta-section",
                     "children": meta_children,
-                }
+                },
             )
 
         # Add strings
@@ -735,7 +739,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                     "label": "Strings",
                     "node_class": "strings-section",
                     "children": string_children,
-                }
+                },
             )
 
         # Add condition
@@ -746,7 +750,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                     "label": "Condition",
                     "node_class": "condition-section",
                     "children": [self.visit(node.condition)],
-                }
+                },
             )
 
         return {
@@ -780,7 +784,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                     "label": "Modifiers",
                     "node_class": "modifiers",
                     "children": mod_children,
-                }
+                },
             )
 
         return {
@@ -806,7 +810,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                     "label": "Hex Tokens",
                     "node_class": "hex-tokens",
                     "children": token_children,
-                }
+                },
             )
 
         if node.modifiers:
@@ -819,7 +823,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                     "label": "Modifiers",
                     "node_class": "modifiers",
                     "children": mod_children,
-                }
+                },
             )
 
         return {
@@ -844,7 +848,7 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
                     "label": "Modifiers",
                     "node_class": "modifiers",
                     "children": mod_children,
-                }
+                },
             )
 
         return {
@@ -1243,7 +1247,9 @@ def generate_ast_tree(ast: YaraFile) -> dict[str, Any]:
 
 
 def export_html_tree(
-    ast: YaraFile, output_path: str | Path, title: str = "YARA AST Visualization"
+    ast: YaraFile,
+    output_path: str | Path,
+    title: str = "YARA AST Visualization",
 ) -> None:
     """Export HTML tree visualization to file."""
     gen = HTMLTreeGenerator()

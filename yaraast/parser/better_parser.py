@@ -68,11 +68,13 @@ class Parser:
 
         # Expect 'rule'
         if not self._match(TokenType.RULE):
-            raise Exception("Expected 'rule'")
+            msg = "Expected 'rule'"
+            raise Exception(msg)
 
         # Parse rule name
         if not self._current_token() or self._current_token().type != TokenType.IDENTIFIER:
-            raise Exception("Expected rule name")
+            msg = "Expected rule name"
+            raise Exception(msg)
 
         name = self._current_token().value
         self._advance()
@@ -88,7 +90,8 @@ class Parser:
 
         # Expect '{'
         if not self._match(TokenType.LBRACE):
-            raise Exception("Expected '{'")
+            msg = "Expected '{'"
+            raise Exception(msg)
 
         # Parse sections
         meta = {}
@@ -98,18 +101,21 @@ class Parser:
         while not self._check(TokenType.RBRACE) and not self._is_at_end():
             if self._match(TokenType.META):
                 if not self._match(TokenType.COLON):
-                    raise Exception("Expected ':' after 'meta'")
+                    msg = "Expected ':' after 'meta'"
+                    raise Exception(msg)
                 meta_list = self._parse_meta_section()
                 # Convert list of Meta objects to dict
                 for m in meta_list:
                     meta[m.key] = m.value
             elif self._match(TokenType.STRINGS):
                 if not self._match(TokenType.COLON):
-                    raise Exception("Expected ':' after 'strings'")
+                    msg = "Expected ':' after 'strings'"
+                    raise Exception(msg)
                 strings = self._parse_strings_section()
             elif self._match(TokenType.CONDITION):
                 if not self._match(TokenType.COLON):
-                    raise Exception("Expected ':' after 'condition'")
+                    msg = "Expected ':' after 'condition'"
+                    raise Exception(msg)
                 condition = self._parse_condition()
             else:
                 # Try to skip unrecognized tokens until we find something we know or '}'
@@ -129,8 +135,9 @@ class Parser:
                 self._advance()
                 attempts += 1
             else:
+                msg = f"Expected '}}' but found {current.type if current else 'EOF'} at position {self.position}"
                 raise Exception(
-                    f"Expected '}}' but found {current.type if current else 'EOF'} at position {self.position}"
+                    msg,
                 )
 
         # Condition is required
@@ -257,7 +264,10 @@ class Parser:
 
                     expr = AtExpression(string_id=expr.name, offset=offset)
                 else:
-                    raise ValueError("'at' operator requires string identifier on left side")
+                    msg = "'at' operator requires string identifier on left side"
+                    raise ValueError(
+                        msg,
+                    )
             elif self._match(TokenType.IN):
                 # Handle 'in' operator (e.g., $string in (0..100))
                 if isinstance(expr, StringIdentifier):
@@ -290,34 +300,33 @@ class Parser:
         if self._match(TokenType.STRING_COUNT):
             string_id = self._previous().value  # e.g., "#a"
             # Remove the # prefix to get just the identifier
-            if string_id.startswith("#"):
-                string_id = string_id[1:]
+            string_id = string_id.removeprefix("#")
             return StringCount(string_id=string_id)
 
         # String offset (@string or @string[index])
         if self._match(TokenType.STRING_OFFSET):
             string_id = self._previous().value  # e.g., "@a"
             # Remove the @ prefix to get just the identifier
-            if string_id.startswith("@"):
-                string_id = string_id[1:]
+            string_id = string_id.removeprefix("@")
             index = None
             if self._match(TokenType.LBRACKET):
                 index = self._parse_expression()
                 if not self._match(TokenType.RBRACKET):
-                    raise Exception("Expected ']' after string offset index")
+                    msg = "Expected ']' after string offset index"
+                    raise Exception(msg)
             return StringOffset(string_id=string_id, index=index)
 
         # String length (!string or !string[index])
         if self._match(TokenType.STRING_LENGTH):
             string_id = self._previous().value  # e.g., "!a"
             # Remove the ! prefix to get just the identifier
-            if string_id.startswith("!"):
-                string_id = string_id[1:]
+            string_id = string_id.removeprefix("!")
             index = None
             if self._match(TokenType.LBRACKET):
                 index = self._parse_expression()
                 if not self._match(TokenType.RBRACKET):
-                    raise Exception("Expected ']' after string length index")
+                    msg = "Expected ']' after string length index"
+                    raise Exception(msg)
             return StringLength(string_id=string_id, index=index)
 
         # Skip - integers are handled later to check for "N of" pattern
@@ -377,8 +386,9 @@ class Parser:
                     if self._match(TokenType.RPAREN):
                         break
                 else:
+                    msg = f"Expected ')' in parentheses at position {self.position}, got {current.type if current else 'EOF'}"
                     raise Exception(
-                        f"Expected ')' in parentheses at position {self.position}, got {current.type if current else 'EOF'}"
+                        msg,
                     )
             return ParenthesesExpression(expression=expr)
 
@@ -388,7 +398,8 @@ class Parser:
                 return IntegerLiteral(value=-self._previous().value)
             if self._match(TokenType.DOUBLE):
                 return DoubleLiteral(value=-self._previous().value)
-            raise Exception("Expected number after '-'")
+            msg = "Expected number after '-'"
+            raise Exception(msg)
 
         # Special expressions: for
         if self._match(TokenType.FOR):
@@ -412,7 +423,8 @@ class Parser:
             # Just a regular integer literal
             return IntegerLiteral(value=value)
 
-        raise Exception(f"Unexpected token in expression: {self._current_token()}")
+        msg = f"Unexpected token in expression: {self._current_token()}"
+        raise Exception(msg)
 
     def _parse_postfix_expression(self) -> Expression:
         """Parse postfix expression starting from primary."""
@@ -422,7 +434,8 @@ class Parser:
         if self._match(TokenType.STRING_IDENTIFIER):
             # For string identifiers like $string1, return a StringIdentifier directly
             return StringIdentifier(name=self._previous().value)
-        raise ValueError("Expected identifier in postfix expression")
+        msg = "Expected identifier in postfix expression"
+        raise ValueError(msg)
 
     def _parse_postfix_from_identifier(self, name: str) -> Expression:
         """Parse postfix operations from an identifier."""
@@ -431,13 +444,15 @@ class Parser:
         while True:
             if self._match(TokenType.DOT):
                 if not self._match(TokenType.IDENTIFIER):
-                    raise Exception("Expected member name after '.'")
+                    msg = "Expected member name after '.'"
+                    raise Exception(msg)
                 member = self._previous().value
                 expr = MemberAccess(object=expr, member=member)
             elif self._match(TokenType.LBRACKET):
                 index = self._parse_primary_expression()
                 if not self._match(TokenType.RBRACKET):
-                    raise Exception("Expected ']'")
+                    msg = "Expected ']'"
+                    raise Exception(msg)
                 if isinstance(index, StringLiteral):
                     expr = DictionaryAccess(object=expr, key=index.value)
                 else:
@@ -449,10 +464,12 @@ class Parser:
                     # Try to parse argument, but be tolerant of errors
                     try:
                         args.append(self._parse_or_expression())
-                    except Exception:
+                    except (ValueError, TypeError, AttributeError):
                         # If parsing fails, try to recover by finding comma or closing paren
                         while not self._is_at_end():
-                            if self._check(TokenType.COMMA) or self._check(TokenType.RPAREN):
+                            if self._check(TokenType.COMMA) or self._check(
+                                TokenType.RPAREN,
+                            ):
                                 break
                             self._advance()
 
@@ -469,17 +486,22 @@ class Parser:
                         self._advance()
                         attempts += 1
                     else:
+                        msg = f"Expected ')' in function call at position {self.position}, got {current.type if current else 'EOF'}"
                         raise Exception(
-                            f"Expected ')' in function call at position {self.position}, got {current.type if current else 'EOF'}"
+                            msg,
                         )
                 # Get function name from expression
                 if isinstance(expr, Identifier):
                     expr = FunctionCall(function=expr.name, arguments=args)
                 elif isinstance(expr, MemberAccess):
                     # Method call like math.entropy(...)
-                    expr = FunctionCall(function=f"{self._get_full_name(expr)}", arguments=args)
+                    expr = FunctionCall(
+                        function=f"{self._get_full_name(expr)}",
+                        arguments=args,
+                    )
                 else:
-                    raise Exception("Invalid function call")
+                    msg = "Invalid function call"
+                    raise Exception(msg)
             else:
                 break
 
@@ -507,7 +529,8 @@ class Parser:
             self._advance()
 
             if not self._match(TokenType.ASSIGN):
-                raise Exception("Expected '=' in meta")
+                msg = "Expected '=' in meta"
+                raise Exception(msg)
 
             # Parse value
             if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
@@ -517,7 +540,8 @@ class Parser:
             elif self._match(TokenType.BOOLEAN_FALSE):
                 value = False
             else:
-                raise Exception("Expected meta value")
+                msg = "Expected meta value"
+                raise Exception(msg)
 
             meta_list.append(Meta(key=key, value=value))
 
@@ -538,7 +562,8 @@ class Parser:
                 identifier = f"$anon_{anonymous_counter}"
 
             if not self._match(TokenType.ASSIGN):
-                raise Exception("Expected '='")
+                msg = "Expected '='"
+                raise Exception(msg)
 
             # Parse string value
             if self._match(TokenType.STRING):
@@ -576,7 +601,9 @@ class Parser:
                         modifiers.append(StringModifier(name="xor"))
                     else:
                         modifiers.append(StringModifier(name=mod_name))
-                strings.append(PlainString(identifier=identifier, value=value, modifiers=modifiers))
+                strings.append(
+                    PlainString(identifier=identifier, value=value, modifiers=modifiers),
+                )
             elif self._match(TokenType.HEX_STRING):
                 # Parse hex string content
                 hex_content = self._previous().value.strip()
@@ -660,17 +687,23 @@ class Parser:
                         modifiers.append(StringModifier(name=mod_name))
 
                 strings.append(
-                    RegexString(identifier=identifier, regex=pattern, modifiers=modifiers)
+                    RegexString(
+                        identifier=identifier,
+                        regex=pattern,
+                        modifiers=modifiers,
+                    ),
                 )
             else:
-                raise Exception("Expected string value")
+                msg = "Expected string value"
+                raise Exception(msg)
 
         return strings
 
     def _parse_import(self) -> Import:
         """Parse import statement."""
         if not self._match(TokenType.STRING):
-            raise Exception("Expected module name")
+            msg = "Expected module name"
+            raise Exception(msg)
 
         module = self._previous().value
         alias = None
@@ -678,7 +711,8 @@ class Parser:
         # Check for 'as alias'
         if self._match(TokenType.AS):
             if not self._match(TokenType.IDENTIFIER):
-                raise Exception("Expected alias after 'as'")
+                msg = "Expected alias after 'as'"
+                raise Exception(msg)
             alias = self._previous().value
 
         return Import(module=module, alias=alias)
@@ -686,7 +720,8 @@ class Parser:
     def _parse_include(self) -> Include:
         """Parse include statement."""
         if not self._match(TokenType.STRING):
-            raise Exception("Expected file path")
+            msg = "Expected file path"
+            raise Exception(msg)
 
         return Include(path=self._previous().value)
 
@@ -716,7 +751,8 @@ class Parser:
         elif self._match(TokenType.INTEGER):
             quantifier = self._previous().value
         else:
-            raise Exception("Expected quantifier after 'for'")
+            msg = "Expected quantifier after 'for'"
+            raise Exception(msg)
 
         # Check for 'of' (for...of expression)
         if self._match(TokenType.OF):
@@ -759,7 +795,8 @@ class Parser:
                     while not self._is_at_end() and not self._check(TokenType.RPAREN):
                         self._advance()
                     if not self._match(TokenType.RPAREN):
-                        raise Exception("Expected ')' after string set")
+                        msg = "Expected ')' after string set"
+                        raise Exception(msg)
 
                 from yaraast.ast.expressions import SetExpression
 
@@ -775,7 +812,7 @@ class Parser:
                 saved_pos = self.position
                 try:
                     body = self._parse_expression()
-                except Exception:
+                except (ValueError, TypeError, AttributeError):
                     # Reset and try to parse with special handling for $
                     self.position = saved_pos
 
@@ -806,7 +843,9 @@ class Parser:
                     else:
                         # If all else fails, use default
                         body = BooleanLiteral(value=True)
-                        while not self._is_at_end() and not self._check(TokenType.RPAREN):
+                        while not self._is_at_end() and not self._check(
+                            TokenType.RPAREN,
+                        ):
                             self._advance()
 
                 if not self._match(TokenType.RPAREN):
@@ -819,8 +858,9 @@ class Parser:
                         self._advance()
                         attempts += 1
                     else:
+                        msg = f"Expected ')' after for...of condition at position {self.position}, got {current.type if current else 'EOF'}"
                         raise Exception(
-                            f"Expected ')' after for...of condition at position {self.position}, got {current.type if current else 'EOF'}"
+                            msg,
                         )
 
             # Create ForOfExpression
@@ -846,24 +886,28 @@ class Parser:
 
         # Otherwise it's a regular for expression (for all i in (0..10) : (...))
         if not self._match(TokenType.IDENTIFIER):
-            raise Exception("Expected variable name after quantifier")
+            msg = "Expected variable name after quantifier"
+            raise Exception(msg)
 
         variable = self._previous().value
 
         if not self._match(TokenType.IN):
-            raise Exception("Expected 'in' after variable")
+            msg = "Expected 'in' after variable"
+            raise Exception(msg)
 
         iterable = self._parse_primary_expression()
 
         if not self._match(TokenType.COLON):
-            raise Exception("Expected ':' after iterable")
+            msg = "Expected ':' after iterable"
+            raise Exception(msg)
 
         if not self._match(TokenType.LPAREN):
-            raise Exception("Expected '(' after ':'")
+            msg = "Expected '(' after ':'"
+            raise Exception(msg)
 
         try:
             body = self._parse_expression()
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             # If expression parsing fails, try to recover
             body = BooleanLiteral(value=True)
             while not self._is_at_end() and not self._check(TokenType.RPAREN):
@@ -879,13 +923,19 @@ class Parser:
                 self._advance()
                 attempts += 1
             else:
+                msg = f"Expected ')' after for body at position {self.position}, got {current.type if current else 'EOF'}"
                 raise Exception(
-                    f"Expected ')' after for body at position {self.position}, got {current.type if current else 'EOF'}"
+                    msg,
                 )
 
         from yaraast.ast.conditions import ForExpression
 
-        return ForExpression(quantifier=quantifier, variable=variable, iterable=iterable, body=body)
+        return ForExpression(
+            quantifier=quantifier,
+            variable=variable,
+            iterable=iterable,
+            body=body,
+        )
 
     def _parse_of_expression(self, quantifier) -> Expression:
         """Parse of expression (e.g., '2 of them')."""
@@ -937,7 +987,8 @@ class Parser:
                 while not self._is_at_end() and not self._check(TokenType.RPAREN):
                     self._advance()
                 if not self._match(TokenType.RPAREN):
-                    raise Exception("Expected ')' after string set")
+                    msg = "Expected ')' after string set"
+                    raise Exception(msg)
 
             from yaraast.ast.expressions import SetExpression
 

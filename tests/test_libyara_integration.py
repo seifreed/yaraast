@@ -29,7 +29,7 @@ if YARA_AVAILABLE:
 class TestDirectASTCompiler:
     """Tests for direct AST compilation."""
 
-    def test_basic_compilation(self):
+    def test_basic_compilation(self) -> None:
         """Test basic AST compilation to yara.Rules."""
         yara_source = """
         rule test_rule {
@@ -53,7 +53,7 @@ class TestDirectASTCompiler:
         assert result.compilation_time > 0
         assert result.ast_node_count > 0
 
-    def test_compilation_with_optimization(self):
+    def test_compilation_with_optimization(self) -> None:
         """Test compilation with AST optimizations."""
         yara_source = """
         rule test_rule {
@@ -81,7 +81,7 @@ class TestDirectASTCompiler:
 class TestOptimizedMatcher:
     """Tests for optimized matcher."""
 
-    def test_basic_scanning(self):
+    def test_basic_scanning(self) -> None:
         """Test basic file scanning with optimized matcher."""
         yara_source = """
         rule scan_test {
@@ -125,7 +125,7 @@ class TestOptimizedMatcher:
 class TestLibyaraCompiler:
     """Test libyara compiler (legacy compatibility)."""
 
-    def test_compile_simple_rule(self):
+    def test_compile_simple_rule(self) -> None:
         """Test compiling a simple rule."""
         rule_text = """
         rule test_rule {
@@ -146,7 +146,7 @@ class TestLibyaraCompiler:
         assert result.compiled_rules is not None
         assert len(result.errors) == 0
 
-    def test_compile_with_imports(self):
+    def test_compile_with_imports(self) -> None:
         """Test compiling with module imports."""
         rule_text = """
         import "pe"
@@ -166,7 +166,7 @@ class TestLibyaraCompiler:
         # This should compile successfully
         assert result.success is True
 
-    def test_compile_syntax_error(self):
+    def test_compile_syntax_error(self) -> None:
         """Test compilation with syntax error."""
         # Directly compile invalid source
         compiler = LibyaraCompiler()
@@ -175,7 +175,7 @@ class TestLibyaraCompiler:
         assert result.success is False
         assert len(result.errors) > 0
 
-    def test_compile_with_externals(self):
+    def test_compile_with_externals(self) -> None:
         """Test compilation with external variables."""
         rule_text = """
         rule test_external {
@@ -193,7 +193,7 @@ class TestLibyaraCompiler:
 class TestLibyaraScanner:
     """Test libyara scanner."""
 
-    def test_scan_matching_data(self):
+    def test_scan_matching_data(self) -> None:
         """Test scanning data that matches."""
         rule_text = """
         rule test_match {
@@ -215,7 +215,7 @@ class TestLibyaraScanner:
         assert result.matched is True
         assert "test_match" in result.matched_rules
 
-    def test_scan_non_matching_data(self):
+    def test_scan_non_matching_data(self) -> None:
         """Test scanning data that doesn't match."""
         rule_text = """
         rule test_no_match {
@@ -237,7 +237,7 @@ class TestLibyaraScanner:
         assert result.matched is False
         assert len(result.matched_rules) == 0
 
-    def test_scan_with_timeout(self):
+    def test_scan_with_timeout(self) -> None:
         """Test scanning with timeout."""
         rule_text = """
         rule test_rule {
@@ -259,7 +259,7 @@ class TestLibyaraScanner:
 class TestEquivalenceTester:
     """Test AST equivalence testing."""
 
-    def test_simple_round_trip(self):
+    def test_simple_round_trip(self) -> None:
         """Test simple AST round-trip."""
         rule_text = """
         rule test_rule {
@@ -283,7 +283,7 @@ class TestEquivalenceTester:
         assert result.original_compiles is True
         assert result.regenerated_compiles is True
 
-    def test_complex_round_trip(self):
+    def test_complex_round_trip(self) -> None:
         """Test complex rule round-trip."""
         rule_text = """
         import "pe"
@@ -323,7 +323,7 @@ class TestEquivalenceTester:
 class TestCrossValidator:
     """Test cross-validation between yaraast and libyara."""
 
-    def test_simple_validation(self):
+    def test_simple_validation(self) -> None:
         """Test simple rule validation."""
         rule_text = """
         rule test_rule {
@@ -348,7 +348,7 @@ class TestCrossValidator:
         assert result.yaraast_results["test_rule"] is True
         assert result.libyara_results["test_rule"] is True
 
-    def test_validation_mismatch(self):
+    def test_validation_mismatch(self) -> None:
         """Test when yaraast and libyara disagree."""
         # This is a synthetic test - in practice they should agree
         # We'll test with a complex condition to ensure both work
@@ -374,7 +374,7 @@ class TestCrossValidator:
         assert result.yaraast_results["test_complex"] is True
         assert result.libyara_results["test_complex"] is True
 
-    def test_batch_validation(self):
+    def test_batch_validation(self) -> None:
         """Test batch validation."""
         rule_text = """
         rule test_rule {

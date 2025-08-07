@@ -4,20 +4,20 @@ from __future__ import annotations
 
 import tempfile
 import time
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
-from yaraast.ast.base import YaraFile
-from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 
 if TYPE_CHECKING:
-    pass
+    from collections.abc import Callable
+
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.rules import Rule
 
 
 class BatchOperation(Enum):
@@ -70,7 +70,7 @@ class BatchProcessor:
         batch_size: int = 50,
         temp_dir: str | None = None,
         progress_callback: Callable[[str, int, int], None] | None = None,
-    ):
+    ) -> None:
         """Initialize batch processor."""
         self.max_workers = max_workers or 4
         self.max_memory_mb = max_memory_mb
@@ -105,7 +105,7 @@ class BatchProcessor:
                         result = self._process_item(item, operation)
                     results.append(result)
                     self._stats["items_processed"] += 1
-                except Exception:
+                except (ValueError, TypeError, AttributeError):
                     self._stats["failures"] += 1
                     results.append(None)
 
@@ -121,14 +121,13 @@ class BatchProcessor:
         """Process a single item based on operation type."""
         if operation == BatchOperation.PARSE:
             return self._parse_item(item)
-        elif operation == BatchOperation.COMPLEXITY:
+        if operation == BatchOperation.COMPLEXITY:
             return self._analyze_complexity(item)
-        elif operation == BatchOperation.SERIALIZE:
+        if operation == BatchOperation.SERIALIZE:
             return self._serialize_item(item)
-        elif operation == BatchOperation.VALIDATE:
+        if operation == BatchOperation.VALIDATE:
             return self._validate_item(item)
-        else:
-            return item
+        return item
 
     def _parse_item(self, item: str | Path) -> YaraFile | None:
         """Parse a YARA file."""
@@ -140,7 +139,7 @@ class BatchProcessor:
             else:
                 content = item
             return parser.parse(content)
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return None
 
     def _analyze_complexity(self, item: Rule) -> dict[str, Any]:
@@ -203,11 +202,15 @@ class BatchProcessor:
 
             except Exception as e:
                 result.failed_count += 1
-                result.errors.append(f"Error processing {file_path}: {str(e)}")
+                result.errors.append(f"Error processing {file_path}: {e!s}")
 
             # Progress callback
             if self.progress_callback:
-                self.progress_callback(f"Processing {operation.value}", i + 1, len(file_paths))
+                self.progress_callback(
+                    f"Processing {operation.value}",
+                    i + 1,
+                    len(file_paths),
+                )
 
         result.total_time = time.time() - start_time
         return result

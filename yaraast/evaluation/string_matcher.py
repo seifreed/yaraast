@@ -17,14 +17,14 @@ class MatchResult:
     length: int
     matched_data: bytes
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"MatchResult({self.identifier} at {self.offset}, {self.length} bytes)"
 
 
 class StringMatcher:
     """Match YARA strings against byte data."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.matches: dict[str, list[MatchResult]] = {}
         self._cache: dict[str, any] = {}
 
@@ -42,7 +42,8 @@ class StringMatcher:
             else:
                 strings, data = args[0], args[1]
         else:
-            raise ValueError("match_all requires exactly 2 arguments")
+            msg = "match_all requires exactly 2 arguments"
+            raise ValueError(msg)
 
         self.matches.clear()
 
@@ -72,7 +73,7 @@ class StringMatcher:
 
         return matches
 
-    def _match_plain_string(self, data: bytes, string_def: PlainString):
+    def _match_plain_string(self, data: bytes, string_def: PlainString) -> None:
         """Match plain string against data."""
         matches = []
         pattern = string_def.value.encode("utf-8")
@@ -111,11 +112,16 @@ class StringMatcher:
 
         # Store results
         self.matches[string_def.identifier] = [
-            MatchResult(string_def.identifier, offset, length, data[offset : offset + length])
+            MatchResult(
+                string_def.identifier,
+                offset,
+                length,
+                data[offset : offset + length],
+            )
             for offset, length in matches
         ]
 
-    def _match_hex_string(self, data: bytes, string_def: HexString):
+    def _match_hex_string(self, data: bytes, string_def: HexString) -> None:
         """Match hex string against data."""
         # Build pattern from hex tokens
         pattern_bytes = []
@@ -148,7 +154,7 @@ class StringMatcher:
             for offset in matches
         ]
 
-    def _match_regex_string(self, data: bytes, string_def: RegexString):
+    def _match_regex_string(self, data: bytes, string_def: RegexString) -> None:
         """Match regex string against data."""
         # Prepare regex pattern
         pattern = string_def.regex
@@ -164,7 +170,7 @@ class StringMatcher:
         # Compile regex
         try:
             regex = re.compile(pattern.encode("utf-8"), flags)
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             # Invalid regex, no matches
             self.matches[string_def.identifier] = []
             return
@@ -178,7 +184,7 @@ class StringMatcher:
                     match.start(),
                     match.end() - match.start(),
                     match.group(0),
-                )
+                ),
             )
 
         self.matches[string_def.identifier] = matches
@@ -216,7 +222,10 @@ class StringMatcher:
         return matches
 
     def _find_hex_pattern(
-        self, data: bytes, pattern: list[int], wildcards: list[bool]
+        self,
+        data: bytes,
+        pattern: list[int],
+        wildcards: list[bool],
     ) -> list[int]:
         """Find hex pattern with wildcards."""
         matches = []

@@ -54,13 +54,16 @@ class ValidationResult:
 class CrossValidator:
     """Cross-validate between yaraast and libyara."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize cross-validator."""
         self.compiler = LibyaraCompiler()
         self.scanner = LibyaraScanner()
 
     def validate(
-        self, ast: YaraFile, test_data: bytes, externals: dict[str, Any] | None = None
+        self,
+        ast: YaraFile,
+        test_data: bytes,
+        externals: dict[str, Any] | None = None,
     ) -> ValidationResult:
         """Cross-validate AST against libyara.
 
@@ -71,6 +74,7 @@ class CrossValidator:
 
         Returns:
             ValidationResult with comparison
+
         """
         result = ValidationResult(valid=True)
 
@@ -137,7 +141,7 @@ class CrossValidator:
             else:
                 result.valid = False
                 result.rules_differ.append(
-                    f"{rule_name}: yaraast={yaraast_match}, libyara={libyara_match}"
+                    f"{rule_name}: yaraast={yaraast_match}, libyara={libyara_match}",
                 )
 
         return result
@@ -157,6 +161,7 @@ class CrossValidator:
 
         Returns:
             List of ValidationResult for each sample
+
         """
         results = []
 
@@ -172,7 +177,12 @@ class CrossValidator:
 
         # Test each sample
         for test_data in test_data_list:
-            result = self._validate_single(ast, test_data, compilation.compiled_rules, externals)
+            result = self._validate_single(
+                ast,
+                test_data,
+                compilation.compiled_rules,
+                externals,
+            )
             results.append(result)
 
         return results
@@ -232,7 +242,7 @@ class CrossValidator:
             else:
                 result.valid = False
                 result.rules_differ.append(
-                    f"{rule_name}: yaraast={yaraast_match}, libyara={libyara_match}"
+                    f"{rule_name}: yaraast={yaraast_match}, libyara={libyara_match}",
                 )
 
         return result

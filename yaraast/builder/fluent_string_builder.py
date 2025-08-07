@@ -21,7 +21,7 @@ from yaraast.builder.hex_string_builder import HexStringBuilder
 class FluentStringBuilder:
     """Fluent builder for YARA string definitions with full modifier support."""
 
-    def __init__(self, identifier: str):
+    def __init__(self, identifier: str) -> None:
         self.identifier = identifier
         self._content: str | list[HexToken] | None = None
         self._string_type: str = "plain"  # "plain", "hex", "regex"
@@ -52,7 +52,7 @@ class FluentStringBuilder:
             if isinstance(byte_val, int):
                 tokens.append(HexByte(value=byte_val))
             elif isinstance(byte_val, str):
-                if byte_val == "?" or byte_val == "??":
+                if byte_val in {"?", "??"}:
                     tokens.append(HexWildcard())
                 else:
                     # Parse hex string
@@ -133,7 +133,10 @@ class FluentStringBuilder:
                 except ValueError:
                     key = None
 
-            modifier = EnhancedStringModifier(modifier_type=StringModifierType.XOR, value=key)
+            modifier = EnhancedStringModifier(
+                modifier_type=StringModifierType.XOR,
+                value=key,
+            )
         else:
             modifier = EnhancedStringModifier(modifier_type=StringModifierType.XOR)
 
@@ -143,7 +146,8 @@ class FluentStringBuilder:
     def xor_range(self, min_key: int, max_key: int) -> FluentStringBuilder:
         """Add XOR modifier with key range."""
         modifier = EnhancedStringModifier(
-            modifier_type=StringModifierType.XOR, value={"min": min_key, "max": max_key}
+            modifier_type=StringModifierType.XOR,
+            value={"min": min_key, "max": max_key},
         )
         self._modifiers.append(modifier)
         return self
@@ -218,7 +222,11 @@ class FluentStringBuilder:
         self._string_type = "hex"
         return self
 
-    def jump_pattern(self, min_bytes: int, max_bytes: int | None = None) -> FluentStringBuilder:
+    def jump_pattern(
+        self,
+        min_bytes: int,
+        max_bytes: int | None = None,
+    ) -> FluentStringBuilder:
         """Create hex jump pattern [min-max]."""
         if max_bytes is None:
             max_bytes = min_bytes
@@ -232,7 +240,8 @@ class FluentStringBuilder:
     def build(self) -> StringDefinition:
         """Build the string definition."""
         if self._content is None:
-            raise ValueError(f"String content not set for {self.identifier}")
+            msg = f"String content not set for {self.identifier}"
+            raise ValueError(msg)
 
         # Convert enhanced modifiers to legacy format for compatibility
         legacy_modifiers = []
@@ -257,7 +266,8 @@ class FluentStringBuilder:
                 regex=str(self._content),
                 modifiers=legacy_modifiers,
             )
-        raise ValueError(f"Unknown string type: {self._string_type}")
+        msg = f"Unknown string type: {self._string_type}"
+        raise ValueError(msg)
 
     # Helper methods
     def _add_modifier(self, modifier_type: StringModifierType) -> None:
@@ -296,6 +306,7 @@ class FluentStringBuilder:
 
         Returns:
             Tuple of (token or None, characters consumed)
+
         """
         if two_char == "??":
             return HexWildcard(), 2

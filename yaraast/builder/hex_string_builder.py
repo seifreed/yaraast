@@ -26,7 +26,8 @@ class HexStringBuilder:
             if 0 <= value <= 255:
                 self._tokens.append(HexByte(value=value))
             else:
-                raise ValueError(f"Byte value must be 0-255, got {value}")
+                msg = f"Byte value must be 0-255, got {value}"
+                raise ValueError(msg)
         elif isinstance(value, str):
             # Parse hex string
             hex_val = value.upper().replace("0X", "")
@@ -35,13 +36,16 @@ class HexStringBuilder:
                     byte_val = int(hex_val, 16)
                     self._tokens.append(HexByte(value=byte_val))
                 except ValueError:
-                    raise ValueError(f"Invalid hex value: {value}") from None
+                    msg = f"Invalid hex value: {value}"
+                    raise ValueError(msg) from None
             else:
-                raise ValueError(f"Hex value must be 2 characters, got {value}")
+                msg = f"Hex value must be 2 characters, got {value}"
+                raise ValueError(msg)
         elif isinstance(value, HexToken):
             self._tokens.append(value)
         else:
-            raise TypeError(f"Invalid type for hex value: {type(value)}")
+            msg = f"Invalid type for hex value: {type(value)}"
+            raise TypeError(msg)
 
         return self
 
@@ -60,7 +64,8 @@ class HexStringBuilder:
     def nibble(self, value: str) -> Self:
         """Add a nibble pattern like 'F?', '?F', etc."""
         if len(value) != 2:
-            raise ValueError("Nibble must be 2 characters")
+            msg = "Nibble must be 2 characters"
+            raise ValueError(msg)
 
         if value[0] == "?" and value[1] != "?":
             # ?X pattern - low nibble
@@ -68,16 +73,19 @@ class HexStringBuilder:
                 nibble_val = int(value[1], 16)
                 self._tokens.append(HexNibble(high=False, value=nibble_val))
             except ValueError:
-                raise ValueError(f"Invalid nibble pattern: {value}") from None
+                msg = f"Invalid nibble pattern: {value}"
+                raise ValueError(msg) from None
         elif value[0] != "?" and value[1] == "?":
             # X? pattern - high nibble
             try:
                 nibble_val = int(value[0], 16)
                 self._tokens.append(HexNibble(high=True, value=nibble_val))
             except ValueError:
-                raise ValueError(f"Invalid nibble pattern: {value}") from None
+                msg = f"Invalid nibble pattern: {value}"
+                raise ValueError(msg) from None
         else:
-            raise ValueError(f"Invalid nibble pattern: {value}")
+            msg = f"Invalid nibble pattern: {value}"
+            raise ValueError(msg)
 
         return self
 
@@ -121,13 +129,15 @@ class HexStringBuilder:
                         byte_val = int(val, 16)
                         tokens.append(HexByte(value=byte_val))
                     else:
-                        raise TypeError(f"Invalid alternative value type: {type(val)}")
+                        msg = f"Invalid alternative value type: {type(val)}"
+                        raise TypeError(msg)
                 alt_tokens.append(tokens)
             elif isinstance(alt, HexStringBuilder):
                 # Nested builder
                 alt_tokens.append(alt.build())
             else:
-                raise TypeError(f"Invalid alternative type: {type(alt)}")
+                msg = f"Invalid alternative type: {type(alt)}"
+                raise TypeError(msg)
 
         self._tokens.append(HexAlternative(alternatives=alt_tokens))
         return self

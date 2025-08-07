@@ -23,7 +23,7 @@ class FluentRuleBuilder:
     MZ_HEADER = "MZ"
     YARA_AST_STR = "YARA AST"
 
-    def __init__(self, name: str | None = None):
+    def __init__(self, name: str | None = None) -> None:
         self._rule_builder = RuleBuilder()
         if name:
             self._rule_builder.with_name(name)
@@ -87,7 +87,9 @@ class FluentRuleBuilder:
 
     # String definition methods
     def with_string(
-        self, identifier_or_builder: str | FluentStringBuilder, value: str | None = None
+        self,
+        identifier_or_builder: str | FluentStringBuilder,
+        value: str | None = None,
     ) -> Self:
         """Add a string using FluentStringBuilder or simple string."""
         if isinstance(identifier_or_builder, str) and value is not None:
@@ -98,7 +100,10 @@ class FluentRuleBuilder:
             # Builder case
             self._string_builders.append(identifier_or_builder)
         else:
-            raise ValueError("Either provide (identifier, value) or a FluentStringBuilder")
+            msg = "Either provide (identifier, value) or a FluentStringBuilder"
+            raise ValueError(
+                msg,
+            )
         return self
 
     def string(self, identifier: str) -> FluentStringContext:
@@ -139,7 +144,9 @@ class FluentRuleBuilder:
 
     def ip_pattern(self, identifier: str = "$ip") -> Self:
         """Add IP address regex pattern."""
-        return self.with_string(FluentStringBuilder.string(identifier).ip_address_pattern())
+        return self.with_string(
+            FluentStringBuilder.string(identifier).ip_address_pattern(),
+        )
 
     def url_pattern(self, identifier: str = "$url") -> Self:
         """Add URL regex pattern."""
@@ -201,7 +208,10 @@ class FluentRuleBuilder:
         """Alias for condition."""
         return self.condition(condition)
 
-    def with_condition(self, condition: str | Expression | FluentConditionBuilder) -> Self:
+    def with_condition(
+        self,
+        condition: str | Expression | FluentConditionBuilder,
+    ) -> Self:
         """Alias for condition."""
         return self.condition(condition)
 
@@ -229,7 +239,8 @@ class FluentRuleBuilder:
         return self.condition(builder)
 
     def with_condition_builder(
-        self, builder_func: Callable[[FluentConditionBuilder], FluentConditionBuilder]
+        self,
+        builder_func: Callable[[FluentConditionBuilder], FluentConditionBuilder],
     ) -> Self:
         """Set condition using a builder function."""
         condition_builder = FluentConditionBuilder()
@@ -287,7 +298,7 @@ class FluentRuleBuilder:
 class FluentStringContext:
     """Context for fluent string building within a rule."""
 
-    def __init__(self, rule_builder: FluentRuleBuilder, identifier: str):
+    def __init__(self, rule_builder: FluentRuleBuilder, identifier: str) -> None:
         self.rule_builder = rule_builder
         self.string_builder = FluentStringBuilder(identifier)
 
@@ -379,7 +390,7 @@ class FluentStringContext:
 class FluentYaraFileBuilder:
     """Fluent builder for complete YARA files."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.imports: list[Import] = []
         self.includes: list[Include] = []
         self.rules: list[Rule] = []
@@ -413,7 +424,7 @@ class FluentYaraFileBuilder:
 class FluentRuleBuilderWithFile(FluentRuleBuilder):
     """Rule builder that can return to file builder."""
 
-    def __init__(self, file_builder: FluentYaraFileBuilder, name: str):
+    def __init__(self, file_builder: FluentYaraFileBuilder, name: str) -> None:
         super().__init__(name)
         self.file_builder = file_builder
 
@@ -471,7 +482,9 @@ def packed_rule(name: str) -> FluentRuleBuilder:
         .tagged("packed")
         .authored_by(FluentRuleBuilder.YARA_AST_STR)
         .mz_header()
-        .with_condition_builder(lambda c: c.string_matches("$mz").at(0).and_(c.high_entropy()))
+        .with_condition_builder(
+            lambda c: c.string_matches("$mz").at(0).and_(c.high_entropy()),
+        )
     )
 
 
@@ -518,14 +531,14 @@ def example_rules() -> YaraFile:
             .string_matches("$mz")
             .at(0)
             .and_(FluentConditionBuilder().string_matches("$pe"))
-            .and_(FluentConditionBuilder().string_matches("$suspicious"))
+            .and_(FluentConditionBuilder().string_matches("$suspicious")),
         )
         .then_rule("example_packed")
         .tagged("packed")
         .authored_by("Fluent API Demo")
         .mz_header()
         .with_condition_builder(
-            lambda c: c.string_matches("$mz").at(0).and_(c.high_entropy()).and_(c.pe_is_exe())
+            lambda c: c.string_matches("$mz").at(0).and_(c.high_entropy()).and_(c.pe_is_exe()),
         )
         .then_build_file()
     )

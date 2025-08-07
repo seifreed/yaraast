@@ -62,7 +62,7 @@ class YaraType(ABC):
 
 
 # Add static type instances after the concrete classes are defined
-def _init_static_types():
+def _init_static_types() -> None:
     """Initialize static type instances on YaraType class."""
     YaraType.INTEGER = IntegerType()
     YaraType.STRING = StringType()
@@ -176,7 +176,7 @@ class ArrayType(YaraType):
 
     def is_compatible_with(self, other: YaraType) -> bool:
         return isinstance(other, ArrayType) and self.element_type.is_compatible_with(
-            other.element_type
+            other.element_type,
         )
 
 
@@ -247,7 +247,10 @@ class StringIdentifierType(YaraType):
         return "string_identifier"
 
     def is_compatible_with(self, other: YaraType) -> bool:
-        return isinstance(other, StringType | RegexType | StringIdentifierType | BooleanType)
+        return isinstance(
+            other,
+            StringType | RegexType | StringIdentifierType | BooleanType,
+        )
 
     def is_string_like(self) -> bool:
         return True
@@ -321,11 +324,11 @@ class ModuleDefinition:
 class TypeSystem:
     """Type system with module support."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.modules: dict[str, ModuleDefinition] = {}
         self._init_modules()
 
-    def _init_modules(self):
+    def _init_modules(self) -> None:
         """Initialize modules using ModuleLoader."""
         try:
             from yaraast.types.module_loader import ModuleLoader
@@ -336,7 +339,7 @@ class TypeSystem:
             # Fallback to hardcoded modules
             self._init_builtin_modules()
 
-    def _init_builtin_modules(self):
+    def _init_builtin_modules(self) -> None:
         """Initialize builtin modules (fallback)."""
         # PE module
         pe = ModuleDefinition(name="pe")
@@ -355,8 +358,8 @@ class TypeSystem:
                         "virtual_size": IntegerType(),
                         "raw_size": IntegerType(),
                         "characteristics": IntegerType(),
-                    }
-                )
+                    },
+                ),
             ),
             "version_info": DictionaryType(StringType(), StringType()),
             "number_of_resources": IntegerType(),
@@ -371,22 +374,38 @@ class TypeSystem:
         pe.functions = {
             "imphash": FunctionDefinition("imphash", StringType()),
             "section_index": FunctionDefinition(
-                "section_index", IntegerType(), [("name", StringType())]
+                "section_index",
+                IntegerType(),
+                [("name", StringType())],
             ),
-            "exports": FunctionDefinition("exports", BooleanType(), [("name", StringType())]),
+            "exports": FunctionDefinition(
+                "exports",
+                BooleanType(),
+                [("name", StringType())],
+            ),
             "imports": FunctionDefinition(
                 "imports",
                 BooleanType(),
                 [("dll", StringType()), ("function", StringType())],
             ),
-            "locale": FunctionDefinition("locale", BooleanType(), [("locale", IntegerType())]),
-            "language": FunctionDefinition("language", BooleanType(), [("lang", IntegerType())]),
+            "locale": FunctionDefinition(
+                "locale",
+                BooleanType(),
+                [("locale", IntegerType())],
+            ),
+            "language": FunctionDefinition(
+                "language",
+                BooleanType(),
+                [("lang", IntegerType())],
+            ),
             # Add functions that can also be called as attributes
             "is_dll": FunctionDefinition("is_dll", BooleanType()),
             "is_64bit": FunctionDefinition("is_64bit", BooleanType()),
             "is_32bit": FunctionDefinition("is_32bit", BooleanType()),
             "rva_to_offset": FunctionDefinition(
-                "rva_to_offset", IntegerType(), [("rva", IntegerType())]
+                "rva_to_offset",
+                IntegerType(),
+                [("rva", IntegerType())],
             ),
         }
         self.modules["pe"] = pe
@@ -396,17 +415,25 @@ class TypeSystem:
         math.functions = {
             "abs": FunctionDefinition("abs", IntegerType(), [("x", IntegerType())]),
             "min": FunctionDefinition(
-                "min", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
+                "min",
+                IntegerType(),
+                [("a", IntegerType()), ("b", IntegerType())],
             ),
             "max": FunctionDefinition(
-                "max", IntegerType(), [("a", IntegerType()), ("b", IntegerType())]
+                "max",
+                IntegerType(),
+                [("a", IntegerType()), ("b", IntegerType())],
             ),
             "to_string": FunctionDefinition(
                 "to_string",
                 StringType(),
                 [("n", IntegerType()), ("base", IntegerType())],
             ),
-            "to_number": FunctionDefinition("to_number", IntegerType(), [("s", StringType())]),
+            "to_number": FunctionDefinition(
+                "to_number",
+                IntegerType(),
+                [("s", StringType())],
+            ),
             "log": FunctionDefinition("log", DoubleType(), [("x", DoubleType())]),
             "log2": FunctionDefinition("log2", DoubleType(), [("x", DoubleType())]),
             "log10": FunctionDefinition("log10", DoubleType(), [("x", DoubleType())]),
@@ -454,16 +481,26 @@ MODULE_DEFINITIONS = {
     "math": ModuleType(
         "math",
         {
-            "entropy": FunctionType("entropy", [IntegerType(), IntegerType()], DoubleType()),
+            "entropy": FunctionType(
+                "entropy",
+                [IntegerType(), IntegerType()],
+                DoubleType(),
+            ),
             "serial_correlation": FunctionType(
-                "serial_correlation", [IntegerType(), IntegerType()], DoubleType()
+                "serial_correlation",
+                [IntegerType(), IntegerType()],
+                DoubleType(),
             ),
             "monte_carlo_pi": FunctionType(
-                "monte_carlo_pi", [IntegerType(), IntegerType()], DoubleType()
+                "monte_carlo_pi",
+                [IntegerType(), IntegerType()],
+                DoubleType(),
             ),
             "mean": FunctionType("mean", [IntegerType(), IntegerType()], DoubleType()),
             "deviation": FunctionType(
-                "deviation", [IntegerType(), IntegerType(), DoubleType()], DoubleType()
+                "deviation",
+                [IntegerType(), IntegerType(), DoubleType()],
+                DoubleType(),
             ),
         },
     ),
@@ -482,8 +519,16 @@ MODULE_DEFINITIONS = {
         {
             "md5": FunctionType("md5", [IntegerType(), IntegerType()], StringType()),
             "sha1": FunctionType("sha1", [IntegerType(), IntegerType()], StringType()),
-            "sha256": FunctionType("sha256", [IntegerType(), IntegerType()], StringType()),
-            "crc32": FunctionType("crc32", [IntegerType(), IntegerType()], IntegerType()),
+            "sha256": FunctionType(
+                "sha256",
+                [IntegerType(), IntegerType()],
+                StringType(),
+            ),
+            "crc32": FunctionType(
+                "crc32",
+                [IntegerType(), IntegerType()],
+                IntegerType(),
+            ),
         },
     ),
 }
@@ -492,7 +537,7 @@ MODULE_DEFINITIONS = {
 class TypeEnvironment:
     """Type environment for tracking variable types."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.scopes: list[dict[str, YaraType]] = [{}]
         self.modules: set[str] = set()
         self.module_aliases: dict[str, str] = {}  # alias -> actual module name
@@ -577,7 +622,7 @@ class TypeEnvironment:
 class TypeInference(ASTVisitor[YaraType]):
     """Type inference visitor for expressions."""
 
-    def __init__(self, env: TypeEnvironment):
+    def __init__(self, env: TypeEnvironment) -> None:
         self.env = env
         self.errors: list[str] = []
 
@@ -603,7 +648,7 @@ class TypeInference(ASTVisitor[YaraType]):
 
     # Identifiers
     def visit_identifier(self, node: Identifier) -> YaraType:
-        if node.name == "filesize" or node.name == "entrypoint":
+        if node.name in {"filesize", "entrypoint"}:
             return IntegerType()
         if node.name == "them":
             return StringSetType()
@@ -628,7 +673,10 @@ class TypeInference(ASTVisitor[YaraType]):
                 module_def = loader.get_module(actual_module)
                 if module_def:
                     # Convert ModuleDefinition to ModuleType
-                    return ModuleType(module_name=actual_module, attributes=module_def.attributes)
+                    return ModuleType(
+                        module_name=actual_module,
+                        attributes=module_def.attributes,
+                    )
 
         var_type = self.env.lookup(node.name)
         if var_type:
@@ -658,7 +706,9 @@ class TypeInference(ASTVisitor[YaraType]):
             if hasattr(node, "index") and node.index:
                 index_type = self.visit(node.index)
                 if not isinstance(index_type, IntegerType):
-                    self.errors.append(f"String offset index must be integer, got {index_type}")
+                    self.errors.append(
+                        f"String offset index must be integer, got {index_type}",
+                    )
             return IntegerType()
         self.errors.append(f"Undefined string: {string_id}")
         return UnknownType()
@@ -670,7 +720,9 @@ class TypeInference(ASTVisitor[YaraType]):
             if hasattr(node, "index") and node.index:
                 index_type = self.visit(node.index)
                 if not isinstance(index_type, IntegerType):
-                    self.errors.append(f"String length index must be integer, got {index_type}")
+                    self.errors.append(
+                        f"String length index must be integer, got {index_type}",
+                    )
             return IntegerType()
         self.errors.append(f"Undefined string: {string_id}")
         return UnknownType()
@@ -684,22 +736,23 @@ class TypeInference(ASTVisitor[YaraType]):
         if node.operator in ["and", "or"]:
             if not isinstance(left_type, BooleanType | StringIdentifierType):
                 self.errors.append(
-                    f"Left operand of '{node.operator}' must be boolean, got {left_type}"
+                    f"Left operand of '{node.operator}' must be boolean, got {left_type}",
                 )
             if not isinstance(right_type, BooleanType | StringIdentifierType):
                 self.errors.append(
-                    f"Right operand of '{node.operator}' must be boolean, got {right_type}"
+                    f"Right operand of '{node.operator}' must be boolean, got {right_type}",
                 )
             return BooleanType()
 
         # Comparison operators
         if node.operator in ["<", "<=", ">", ">=", "==", "!="]:
             if (left_type.is_numeric() and right_type.is_numeric()) or isinstance(
-                left_type, type(right_type)
+                left_type,
+                type(right_type),
             ):
                 return BooleanType()
             self.errors.append(
-                f"Incompatible types for '{node.operator}': {left_type} and {right_type}"
+                f"Incompatible types for '{node.operator}': {left_type} and {right_type}",
             )
             return BooleanType()
 
@@ -716,30 +769,29 @@ class TypeInference(ASTVisitor[YaraType]):
         ]:
             if not left_type.is_string_like():
                 self.errors.append(
-                    f"Left operand of '{node.operator}' must be string-like, got {left_type}"
+                    f"Left operand of '{node.operator}' must be string-like, got {left_type}",
                 )
             # For matches, right side can be string or regex
             if node.operator == "matches":
                 if not isinstance(right_type, StringType | RegexType):
                     self.errors.append(
-                        f"Right operand of 'matches' must be string or regex, got {right_type}"
+                        f"Right operand of 'matches' must be string or regex, got {right_type}",
                     )
-            else:
-                if not isinstance(right_type, StringType):
-                    self.errors.append(
-                        f"Right operand of '{node.operator}' must be string, got {right_type}"
-                    )
+            elif not isinstance(right_type, StringType):
+                self.errors.append(
+                    f"Right operand of '{node.operator}' must be string, got {right_type}",
+                )
             return BooleanType()
 
         # Arithmetic operators
         if node.operator in ["+", "-", "*", "/", "%"]:
             if not left_type.is_numeric():
                 self.errors.append(
-                    f"Left operand of '{node.operator}' must be numeric, got {left_type}"
+                    f"Left operand of '{node.operator}' must be numeric, got {left_type}",
                 )
             if not right_type.is_numeric():
                 self.errors.append(
-                    f"Right operand of '{node.operator}' must be numeric, got {right_type}"
+                    f"Right operand of '{node.operator}' must be numeric, got {right_type}",
                 )
 
             # Division always returns double
@@ -755,11 +807,11 @@ class TypeInference(ASTVisitor[YaraType]):
         if node.operator in ["&", "|", "^", "<<", ">>"]:
             if not isinstance(left_type, IntegerType):
                 self.errors.append(
-                    f"Left operand of '{node.operator}' must be integer, got {left_type}"
+                    f"Left operand of '{node.operator}' must be integer, got {left_type}",
                 )
             if not isinstance(right_type, IntegerType):
                 self.errors.append(
-                    f"Right operand of '{node.operator}' must be integer, got {right_type}"
+                    f"Right operand of '{node.operator}' must be integer, got {right_type}",
                 )
             return IntegerType()
 
@@ -771,15 +823,21 @@ class TypeInference(ASTVisitor[YaraType]):
 
         if node.operator == "not":
             if not isinstance(operand_type, BooleanType):
-                self.errors.append(f"Operand of 'not' must be boolean, got {operand_type}")
+                self.errors.append(
+                    f"Operand of 'not' must be boolean, got {operand_type}",
+                )
             return BooleanType()
         if node.operator == "-":
             if not operand_type.is_numeric():
-                self.errors.append(f"Operand of '-' must be numeric, got {operand_type}")
+                self.errors.append(
+                    f"Operand of '-' must be numeric, got {operand_type}",
+                )
             return operand_type
         if node.operator == "~":
             if not isinstance(operand_type, IntegerType):
-                self.errors.append(f"Operand of '~' must be integer, got {operand_type}")
+                self.errors.append(
+                    f"Operand of '~' must be integer, got {operand_type}",
+                )
             return IntegerType()
         self.errors.append(f"Unknown unary operator: {node.operator}")
         return UnknownType()
@@ -795,7 +853,7 @@ class TypeInference(ASTVisitor[YaraType]):
                 elem_type = self.visit(elem)
                 if not first_type.is_compatible_with(elem_type):
                     self.errors.append(
-                        f"Set elements must have same type: {first_type} vs {elem_type}"
+                        f"Set elements must have same type: {first_type} vs {elem_type}",
                     )
 
         return StringSetType()  # Sets are typically string sets in YARA
@@ -829,14 +887,14 @@ class TypeInference(ASTVisitor[YaraType]):
                             func_def = module_def.functions[func_name]
                             # Validate argument types
                             if func_def.parameters and len(node.arguments) != len(
-                                func_def.parameters
+                                func_def.parameters,
                             ):
                                 self.errors.append(
-                                    f"Function '{func_name}' expects {len(func_def.parameters)} arguments, got {len(node.arguments)}"
+                                    f"Function '{func_name}' expects {len(func_def.parameters)} arguments, got {len(node.arguments)}",
                                 )
                             return func_def.return_type
                         self.errors.append(
-                            f"Module '{actual_module}' has no function '{func_name}'"
+                            f"Module '{actual_module}' has no function '{func_name}'",
                         )
                         return UnknownType()
 
@@ -929,7 +987,9 @@ class TypeInference(ASTVisitor[YaraType]):
             attr_type = obj_type.get_attribute_type(node.member)
             if attr_type:
                 return attr_type
-            self.errors.append(f"Module '{obj_type.module_name}' has no attribute '{node.member}'")
+            self.errors.append(
+                f"Module '{obj_type.module_name}' has no attribute '{node.member}'",
+            )
             return UnknownType()
         self.errors.append(f"Cannot access member of non-module type: {obj_type}")
         return UnknownType()
@@ -949,7 +1009,7 @@ class TypeInference(ASTVisitor[YaraType]):
                 key_type = self.visit(node.key)
                 if not isinstance(key_type, dict_type.key_type.__class__):
                     self.errors.append(
-                        f"Dictionary key must be {dict_type.key_type}, got {key_type}"
+                        f"Dictionary key must be {dict_type.key_type}, got {key_type}",
                     )
             return dict_type.value_type
         self.errors.append(f"Cannot access dictionary on non-dict type: {dict_type}")
@@ -959,7 +1019,9 @@ class TypeInference(ASTVisitor[YaraType]):
     def visit_at_expression(self, node: AtExpression) -> YaraType:
         offset_type = self.visit(node.offset)
         if not isinstance(offset_type, IntegerType):
-            self.errors.append(f"Offset in 'at' expression must be integer, got {offset_type}")
+            self.errors.append(
+                f"Offset in 'at' expression must be integer, got {offset_type}",
+            )
         return BooleanType()
 
     def visit_in_expression(self, node: InExpression) -> YaraType:
@@ -972,7 +1034,9 @@ class TypeInference(ASTVisitor[YaraType]):
         # Quantifier should be string ("any", "all") or integer
         quant_type = self.visit(node.quantifier)
         if not isinstance(quant_type, StringType | IntegerType):
-            self.errors.append(f"'of' quantifier must be string or integer, got {quant_type}")
+            self.errors.append(
+                f"'of' quantifier must be string or integer, got {quant_type}",
+            )
 
         # String set should be StringSetType
         set_type = self.visit(node.string_set)
@@ -1015,7 +1079,9 @@ class TypeInference(ASTVisitor[YaraType]):
         if node.condition:
             cond_type = self.visit(node.condition)
             if not isinstance(cond_type, BooleanType):
-                self.errors.append(f"'for...of' condition must be boolean, got {cond_type}")
+                self.errors.append(
+                    f"'for...of' condition must be boolean, got {cond_type}",
+                )
 
         return BooleanType()
 
@@ -1115,7 +1181,7 @@ class TypeInference(ASTVisitor[YaraType]):
 class TypeChecker(ASTVisitor[None]):
     """Type checker for YARA rules."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.env = TypeEnvironment()
         self.inference = TypeInference(self.env)
         self.errors: list[str] = []
@@ -1185,173 +1251,176 @@ class TypeChecker(ASTVisitor[None]):
             # In YARA, integer conditions are valid (0 = false, non-zero = true)
             # Also string counts and offsets return integers that can be used as conditions
             # String identifiers ($a, $b) are also valid as boolean conditions
-            if not isinstance(cond_type, BooleanType | IntegerType | StringIdentifierType):
+            if not isinstance(
+                cond_type,
+                BooleanType | IntegerType | StringIdentifierType,
+            ):
                 self.errors.append(
-                    f"Rule condition must be boolean, integer, or string identifier, got {cond_type}"
+                    f"Rule condition must be boolean, integer, or string identifier, got {cond_type}",
                 )
 
     # Other visit methods with pass
-    def visit_include(self, node):
+    def visit_include(self, node) -> None:
         """Include directives don't affect type checking."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_tag(self, node):
+    def visit_tag(self, node) -> None:
         """Tags don't affect type checking."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_string_definition(self, node):
+    def visit_string_definition(self, node) -> None:
         """String definitions are handled at rule level."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_plain_string(self, node):
+    def visit_plain_string(self, node) -> None:
         """Plain strings are handled at rule level."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_hex_string(self, node):
+    def visit_hex_string(self, node) -> None:
         """Hex strings are handled at rule level."""
-        pass
+        # Implementation intentionally empty
 
-    def visit_regex_string(self, node):
-        pass
+    def visit_regex_string(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_string_modifier(self, node):
-        pass
+    def visit_string_modifier(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_token(self, node):
-        pass
+    def visit_hex_token(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_byte(self, node):
-        pass
+    def visit_hex_byte(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_wildcard(self, node):
-        pass
+    def visit_hex_wildcard(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_jump(self, node):
-        pass
+    def visit_hex_jump(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_alternative(self, node):
-        pass
+    def visit_hex_alternative(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_hex_nibble(self, node):
-        pass
+    def visit_hex_nibble(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_expression(self, node):
-        pass
+    def visit_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_identifier(self, node):
-        pass
+    def visit_identifier(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_string_identifier(self, node):
-        pass
+    def visit_string_identifier(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_string_count(self, node):
-        pass
+    def visit_string_count(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_string_offset(self, node):
-        pass
+    def visit_string_offset(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_string_length(self, node):
-        pass
+    def visit_string_length(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_integer_literal(self, node):
-        pass
+    def visit_integer_literal(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_double_literal(self, node):
-        pass
+    def visit_double_literal(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_string_literal(self, node):
-        pass
+    def visit_string_literal(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_boolean_literal(self, node):
-        pass
+    def visit_boolean_literal(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_binary_expression(self, node):
-        pass
+    def visit_binary_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_unary_expression(self, node):
-        pass
+    def visit_unary_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_parentheses_expression(self, node):
-        pass
+    def visit_parentheses_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_set_expression(self, node):
-        pass
+    def visit_set_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_range_expression(self, node):
-        pass
+    def visit_range_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_function_call(self, node):
-        pass
+    def visit_function_call(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_array_access(self, node):
-        pass
+    def visit_array_access(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_member_access(self, node):
-        pass
+    def visit_member_access(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_condition(self, node):
-        pass
+    def visit_condition(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_for_expression(self, node):
-        pass
+    def visit_for_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_for_of_expression(self, node):
-        pass
+    def visit_for_of_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_at_expression(self, node):
-        pass
+    def visit_at_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_in_expression(self, node):
-        pass
+    def visit_in_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_of_expression(self, node):
-        pass
+    def visit_of_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_meta(self, node):
-        pass
+    def visit_meta(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_module_reference(self, node):
-        pass
+    def visit_module_reference(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_dictionary_access(self, node):
-        pass
+    def visit_dictionary_access(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_comment(self, node):
-        pass
+    def visit_comment(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_comment_group(self, node):
-        pass
+    def visit_comment_group(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_defined_expression(self, node):
-        pass
+    def visit_defined_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_regex_literal(self, node):
-        pass
+    def visit_regex_literal(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_string_operator_expression(self, node):
-        pass
+    def visit_string_operator_expression(self, node) -> None:
+        pass  # Implementation intentionally empty
 
     # Add missing abstract methods
-    def visit_extern_import(self, node):
-        pass
+    def visit_extern_import(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_extern_namespace(self, node):
-        pass
+    def visit_extern_namespace(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_extern_rule(self, node):
-        pass
+    def visit_extern_rule(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_extern_rule_reference(self, node):
-        pass
+    def visit_extern_rule_reference(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_in_rule_pragma(self, node):
-        pass
+    def visit_in_rule_pragma(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_pragma(self, node):
-        pass
+    def visit_pragma(self, node) -> None:
+        pass  # Implementation intentionally empty
 
-    def visit_pragma_block(self, node):
-        pass
+    def visit_pragma_block(self, node) -> None:
+        pass  # Implementation intentionally empty
 
 
 class TypeValidator:
@@ -1366,7 +1435,8 @@ class TypeValidator:
 
     @staticmethod
     def validate_expression(
-        expr: Expression, env: TypeEnvironment | None = None
+        expr: Expression,
+        env: TypeEnvironment | None = None,
     ) -> tuple[YaraType, list[str]]:
         """Validate and infer type of expression."""
         if env is None:

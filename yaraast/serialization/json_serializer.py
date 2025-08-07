@@ -16,7 +16,7 @@ from pathlib import Path
 class JsonSerializer(ASTVisitor[dict[str, Any]]):
     """Enhanced JSON serializer for YARA AST with metadata."""
 
-    def __init__(self, include_metadata: bool = True):
+    def __init__(self, include_metadata: bool = True) -> None:
         self.include_metadata = include_metadata
 
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
@@ -41,7 +41,8 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
                 json_str = f.read()
 
         if not json_str:
-            raise ValueError("No JSON input provided")
+            msg = "No JSON input provided"
+            raise ValueError(msg)
 
         data = json.loads(json_str)
         return self._deserialize_ast(data)
@@ -69,7 +70,8 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
         # Handle both wrapped (with metadata) and direct AST data
         ast_data = data.get("ast", data)
         if ast_data.get("type") != "YaraFile":
-            raise ValueError(f"Expected YaraFile, got {ast_data.get('type')}")
+            msg = f"Expected YaraFile, got {ast_data.get('type')}"
+            raise ValueError(msg)
 
         imports = [self._deserialize_import(imp) for imp in ast_data.get("imports", [])]
         includes = [self._deserialize_include(inc) for inc in ast_data.get("includes", [])]
@@ -141,20 +143,29 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
             from yaraast.ast.strings import PlainString
 
             return PlainString(
-                identifier=data["identifier"], value=data["value"], modifiers=modifiers
+                identifier=data["identifier"],
+                value=data["value"],
+                modifiers=modifiers,
             )
         if string_type == "HexString":
             from yaraast.ast.strings import HexString
 
             tokens = [self._deserialize_hex_token(t) for t in data.get("tokens", [])]
-            return HexString(identifier=data["identifier"], tokens=tokens, modifiers=modifiers)
+            return HexString(
+                identifier=data["identifier"],
+                tokens=tokens,
+                modifiers=modifiers,
+            )
         if string_type == "RegexString":
             from yaraast.ast.strings import RegexString
 
             return RegexString(
-                identifier=data["identifier"], regex=data["regex"], modifiers=modifiers
+                identifier=data["identifier"],
+                regex=data["regex"],
+                modifiers=modifiers,
             )
-        raise ValueError(f"Unknown string type: {string_type}")
+        msg = f"Unknown string type: {string_type}"
+        raise ValueError(msg)
 
     def _deserialize_modifier(self, data: dict[str, Any]):
         """Deserialize string modifier."""
@@ -178,7 +189,8 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
             from yaraast.ast.strings import HexJump
 
             return HexJump(min_jump=data.get("min_jump"), max_jump=data.get("max_jump"))
-        raise ValueError(f"Unknown hex token type: {token_type}")
+        msg = f"Unknown hex token type: {token_type}"
+        raise ValueError(msg)
 
     def _deserialize_expression(self, data: dict[str, Any]):
         """Deserialize expression."""
@@ -216,7 +228,8 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
                 string_id=data["string_id"],
                 offset=self._deserialize_expression(data["offset"]),
             )
-        raise ValueError(f"Unknown expression type: {expr_type}")
+        msg = f"Unknown expression type: {expr_type}"
+        raise ValueError(msg)
 
     # Visitor methods for serialization
     def visit_yara_file(self, node: YaraFile) -> dict[str, Any]:

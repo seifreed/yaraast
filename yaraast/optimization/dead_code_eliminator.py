@@ -4,19 +4,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral, Identifier, StringIdentifier
-from yaraast.ast.rules import Rule
 from yaraast.visitor.visitor import ASTTransformer
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import ASTNode
+    from yaraast.ast.base import ASTNode, YaraFile
+    from yaraast.ast.rules import Rule
 
 
 class DeadCodeEliminator(ASTTransformer):
     """Eliminates dead code from YARA rules."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.used_strings: set[str] = set()
         self.used_rules: set[str] = set()
@@ -35,9 +34,9 @@ class DeadCodeEliminator(ASTTransformer):
         self._collect_usage(ast)
 
         # Second pass: eliminate unused code
-        optimized = self.visit(ast)
+        _ = self.visit(ast)
 
-        return optimized
+        return ast
 
     def _collect_usage(self, ast: YaraFile) -> None:
         """Collect usage information."""
@@ -68,7 +67,10 @@ class DeadCodeEliminator(ASTTransformer):
             kept_rules = []
             for rule in node.rules:
                 is_private = False
-                if hasattr(rule, "modifiers") and isinstance(rule.modifiers, (list, tuple)):
+                if hasattr(rule, "modifiers") and isinstance(
+                    rule.modifiers,
+                    list | tuple,
+                ):
                     is_private = "private" in rule.modifiers
                 if (
                     rule.name in self.used_rules
@@ -136,7 +138,13 @@ class DeadCodeEliminator(ASTTransformer):
 
     def visit_identifier(self, node: Identifier) -> Identifier:
         """Visit Identifier - track potential rule usage."""
-        if self.in_condition and node.name not in ["true", "false", "any", "all", "them"]:
+        if self.in_condition and node.name not in [
+            "true",
+            "false",
+            "any",
+            "all",
+            "them",
+        ]:
             self.used_rules.add(node.name)
         return node
 
@@ -184,23 +192,26 @@ class DeadCodeEliminator(ASTTransformer):
         node.right = self.visit(node.right)
 
         # Constant folding for boolean literals
-        if isinstance(node.left, BooleanLiteral) and isinstance(node.right, BooleanLiteral):
+        if isinstance(node.left, BooleanLiteral) and isinstance(
+            node.right,
+            BooleanLiteral,
+        ):
             if node.operator == "and":
                 return BooleanLiteral(value=node.left.value and node.right.value)
-            elif node.operator == "or":
+            if node.operator == "or":
                 return BooleanLiteral(value=node.left.value or node.right.value)
 
         # Simplifications
         if isinstance(node.left, BooleanLiteral):
             if node.operator == "and" and not node.left.value:
                 return BooleanLiteral(value=False)
-            elif node.operator == "or" and node.left.value:
+            if node.operator == "or" and node.left.value:
                 return BooleanLiteral(value=True)
 
         if isinstance(node.right, BooleanLiteral):
             if node.operator == "and" and not node.right.value:
                 return BooleanLiteral(value=False)
-            elif node.operator == "or" and node.right.value:
+            if node.operator == "or" and node.right.value:
                 return BooleanLiteral(value=True)
 
         return node

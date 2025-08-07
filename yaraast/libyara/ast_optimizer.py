@@ -54,7 +54,9 @@ class ASTOptimizer:
             if optimized_condition != rule.condition:
                 rule.condition = optimized_condition
                 self.stats.conditions_simplified += 1
-                self.optimizations_applied.append(f"Simplified condition in rule '{rule.name}'")
+                self.optimizations_applied.append(
+                    f"Simplified condition in rule '{rule.name}'",
+                )
 
         self.stats.rules_optimized += 1
 
@@ -74,7 +76,10 @@ class ASTOptimizer:
             )
 
             # Try constant folding
-            if isinstance(left_opt, IntegerLiteral) and isinstance(right_opt, IntegerLiteral):
+            if isinstance(left_opt, IntegerLiteral) and isinstance(
+                right_opt,
+                IntegerLiteral,
+            ):
                 result = self._fold_constants(left_opt, condition.operator, right_opt)
                 if result is not None:
                     self.stats.constant_folded += 1
@@ -89,7 +94,10 @@ class ASTOptimizer:
         return condition
 
     def _fold_constants(
-        self, left: IntegerLiteral, op: str, right: IntegerLiteral
+        self,
+        left: IntegerLiteral,
+        op: str,
+        right: IntegerLiteral,
     ) -> IntegerLiteral | None:
         """Fold constant expressions."""
         try:

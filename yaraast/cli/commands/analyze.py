@@ -15,7 +15,7 @@ console = Console()
 
 
 @click.group()
-def analyze():
+def analyze() -> None:
     """AST-based analysis commands."""
 
 
@@ -29,7 +29,7 @@ def analyze():
     default="all",
     help="Filter by category",
 )
-def best_practices(rule_file: str, verbose: bool, category: str):
+def best_practices(rule_file: str, verbose: bool, category: str) -> None:
     """Analyze YARA rules for best practices using AST.
 
     This is not a full linter but an AST-based analyzer that identifies
@@ -38,6 +38,7 @@ def best_practices(rule_file: str, verbose: bool, category: str):
     Example:
         yaraast analyze best-practices rules.yar
         yaraast analyze best-practices rules.yar -c style
+
     """
     try:
         ast = _parse_rule_file(rule_file)
@@ -62,7 +63,12 @@ def _analyze_best_practices(ast):
     return analyzer.analyze(ast)
 
 
-def _display_best_practices_report(rule_file: str, report, verbose: bool, category: str):
+def _display_best_practices_report(
+    rule_file: str,
+    report,
+    verbose: bool,
+    category: str,
+) -> None:
     """Display best practices report."""
     console.print(f"\n[bold]Best Practices Analysis:[/bold] {rule_file}\n")
 
@@ -86,7 +92,7 @@ def _get_severity_counts(report):
     return errors, warnings, info
 
 
-def _display_summary(errors, warnings, info):
+def _display_summary(errors, warnings, info) -> None:
     """Display summary table."""
     summary = Table(show_header=False, box=None)
     summary.add_row("✗ Errors:", f"[red]{len(errors)}[/red]")
@@ -102,7 +108,7 @@ def _filter_suggestions(suggestions, category):
     return suggestions
 
 
-def _display_issues(suggestions):
+def _display_issues(suggestions) -> None:
     """Display errors and warnings."""
     important = [s for s in suggestions if s.severity in ("error", "warning")]
     if important:
@@ -111,7 +117,7 @@ def _display_issues(suggestions):
             console.print(f"  {suggestion.format()}")
 
 
-def _display_verbose_info(suggestions, report):
+def _display_verbose_info(suggestions, report) -> None:
     """Display verbose information."""
     info_items = [s for s in suggestions if s.severity == "info"]
     if info_items:
@@ -125,7 +131,7 @@ def _display_verbose_info(suggestions, report):
             console.print(f"  {key}: {value}")
 
 
-def _handle_exit_code(errors, warnings, info, verbose):
+def _handle_exit_code(errors, warnings, info, verbose) -> None:
     """Handle exit code based on results."""
     if errors:
         sys.exit(2)
@@ -137,7 +143,7 @@ def _handle_exit_code(errors, warnings, info, verbose):
         sys.exit(0)
 
 
-def _optimize_display_impact_summary(report):
+def _optimize_display_impact_summary(report) -> None:
     """Display impact summary table."""
     table = Table(title="Optimization Opportunities")
     table.add_column("Impact", style="cyan")
@@ -161,7 +167,7 @@ def _optimize_display_impact_summary(report):
     console.print(table)
 
 
-def _optimize_display_suggestions(suggestions, verbose):
+def _optimize_display_suggestions(suggestions, verbose) -> None:
     """Display optimization suggestions by impact level."""
     for level in ["high", "medium", "low"]:
         level_suggestions = [s for s in suggestions if s.impact == level]
@@ -190,7 +196,7 @@ def _optimize_display_suggestions(suggestions, verbose):
     default="all",
     help="Filter by impact level",
 )
-def optimize(rule_file: str, verbose: bool, impact: str):
+def optimize(rule_file: str, verbose: bool, impact: str) -> None:
     """Analyze YARA rules for optimization opportunities.
 
     Uses AST analysis to identify patterns that could be optimized,
@@ -199,6 +205,7 @@ def optimize(rule_file: str, verbose: bool, impact: str):
     Example:
         yaraast analyze optimize rules.yar
         yaraast analyze optimize rules.yar -i high
+
     """
     try:
         ast = _parse_rule_file(rule_file)
@@ -216,17 +223,19 @@ def optimize(rule_file: str, verbose: bool, impact: str):
 
         if verbose and report.statistics:
             console.print("\n[dim]Analysis Statistics:[/dim]")
-            console.print(f"  Total suggestions: {report.statistics['total_suggestions']}")
+            console.print(
+                f"  Total suggestions: {report.statistics['total_suggestions']}",
+            )
 
         # Exit based on results
         if report.high_impact_count > 0:
             console.print(
-                f"\n[yellow]⚠ Found {report.high_impact_count} high-impact optimization opportunities[/yellow]"
+                f"\n[yellow]⚠ Found {report.high_impact_count} high-impact optimization opportunities[/yellow]",
             )
             sys.exit(1)
         elif len(report.suggestions) > 0:
             console.print(
-                f"\n[blue]i Found {len(report.suggestions)} optimization suggestions[/blue]"
+                f"\n[blue]i Found {len(report.suggestions)} optimization suggestions[/blue]",
             )
             sys.exit(0)
         else:
@@ -292,7 +301,7 @@ def _generate_text_report(rule_file, bp_report, opt_report):
     return "\n".join(lines)
 
 
-def _add_best_practices_section(lines, bp_report):
+def _add_best_practices_section(lines, bp_report) -> None:
     """Add best practices section to report."""
     lines.append("\nBEST PRACTICES")
     lines.append("-" * 20)
@@ -305,7 +314,7 @@ def _add_best_practices_section(lines, bp_report):
                 lines.append(f"  {s.format()}")
 
 
-def _add_optimizations_section(lines, opt_report):
+def _add_optimizations_section(lines, opt_report) -> None:
     """Add optimizations section to report."""
     lines.append("\n\nOPTIMIZATIONS")
     lines.append("-" * 20)
@@ -318,17 +327,19 @@ def _add_optimizations_section(lines, opt_report):
                 lines.append(f"  {s.format()}")
 
 
-def _add_summary_section(lines, bp_report, opt_report):
+def _add_summary_section(lines, bp_report, opt_report) -> None:
     """Add summary section to report."""
     lines.append("\n\nSUMMARY")
     lines.append("-" * 20)
     lines.append(
-        f"Total issues: {len(bp_report.get_by_severity('error')) + len(bp_report.get_by_severity('warning'))}"
+        f"Total issues: {len(bp_report.get_by_severity('error')) + len(bp_report.get_by_severity('warning'))}",
     )
-    lines.append(f"Total suggestions: {len(bp_report.suggestions) + len(opt_report.suggestions)}")
+    lines.append(
+        f"Total suggestions: {len(bp_report.suggestions) + len(opt_report.suggestions)}",
+    )
 
 
-def full(rule_file: str, output: str, format: str):
+def full(rule_file: str, output: str, format: str) -> None:
     """Run full AST-based analysis (best practices + optimizations).
 
     Combines both best practices checking and optimization analysis
@@ -337,6 +348,7 @@ def full(rule_file: str, output: str, format: str):
     Example:
         yaraast analyze full rules.yar
         yaraast analyze full rules.yar -o report.txt
+
     """
     try:
         ast = _parse_rule_file(rule_file)

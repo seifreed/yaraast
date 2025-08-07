@@ -12,7 +12,7 @@ from yaraast.ast.base import YaraFile
 class RuleAnalyzer:
     """Comprehensive analyzer for YARA rules."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.string_analyzer = StringUsageAnalyzer()
         self.dependency_analyzer = DependencyAnalyzer()
 
@@ -23,17 +23,23 @@ class RuleAnalyzer:
         dependency_analysis = self.dependency_analyzer.analyze(yara_file)
 
         # Combine results
-        results = {
-            "summary": self._generate_summary(yara_file, string_analysis, dependency_analysis),
+        return {
+            "summary": self._generate_summary(
+                yara_file,
+                string_analysis,
+                dependency_analysis,
+            ),
             "string_analysis": string_analysis,
             "dependency_analysis": dependency_analysis,
             "quality_metrics": self._calculate_quality_metrics(
-                string_analysis, dependency_analysis
+                string_analysis,
+                dependency_analysis,
             ),
-            "recommendations": self._generate_recommendations(string_analysis, dependency_analysis),
+            "recommendations": self._generate_recommendations(
+                string_analysis,
+                dependency_analysis,
+            ),
         }
-
-        return results
 
     def analyze_rule(self, rule) -> dict[str, Any]:
         """Analyze a single rule."""
@@ -60,13 +66,19 @@ class RuleAnalyzer:
             "string_analysis" in full_analysis
             and "unused_strings" in full_analysis["string_analysis"]
         ):
-            unused = full_analysis["string_analysis"]["unused_strings"].get(rule.name, [])
+            unused = full_analysis["string_analysis"]["unused_strings"].get(
+                rule.name,
+                [],
+            )
             rule_analysis["unused_strings"] = unused
 
         return rule_analysis
 
     def _generate_summary(
-        self, yara_file: YaraFile, string_analysis: dict, dependency_analysis: dict
+        self,
+        yara_file: YaraFile,
+        string_analysis: dict,
+        dependency_analysis: dict,
     ) -> dict[str, Any]:
         """Generate summary statistics."""
         total_rules = len(yara_file.rules)
@@ -91,7 +103,9 @@ class RuleAnalyzer:
         }
 
     def _calculate_quality_metrics(
-        self, string_analysis: dict, dependency_analysis: dict
+        self,
+        string_analysis: dict,
+        dependency_analysis: dict,
     ) -> dict[str, Any]:
         """Calculate quality metrics for the rules."""
         metrics = {}
@@ -118,7 +132,9 @@ class RuleAnalyzer:
         metrics["independence_ratio"] = independent_rules / total_rules if total_rules > 0 else 0
 
         # Circular dependency score (lower is better)
-        metrics["circular_dependency_score"] = len(dependency_analysis["circular_dependencies"])
+        metrics["circular_dependency_score"] = len(
+            dependency_analysis["circular_dependencies"],
+        )
 
         # Overall quality score (0-100)
         quality_score = 100.0
@@ -135,7 +151,9 @@ class RuleAnalyzer:
         return metrics
 
     def _generate_recommendations(
-        self, string_analysis: dict, dependency_analysis: dict
+        self,
+        string_analysis: dict,
+        dependency_analysis: dict,
     ) -> list[dict[str, str]]:
         """Generate recommendations for improving the rules."""
         recommendations = []
@@ -160,7 +178,7 @@ class RuleAnalyzer:
                     "rule": rule,
                     "message": f"Rule '{rule}' has {len(strings)} unused string(s): {', '.join(strings)}",
                     "suggestion": "Consider removing unused strings or updating the condition to use them",
-                }
+                },
             )
         return recommendations
 
@@ -176,11 +194,14 @@ class RuleAnalyzer:
                     "rule": rule,
                     "message": f"Rule '{rule}' references undefined string(s): {', '.join(strings)}",
                     "suggestion": "Define the missing strings or fix the string identifiers",
-                }
+                },
             )
         return recommendations
 
-    def _check_circular_dependencies(self, dependency_analysis: dict) -> list[dict[str, str]]:
+    def _check_circular_dependencies(
+        self,
+        dependency_analysis: dict,
+    ) -> list[dict[str, str]]:
         """Check for circular dependencies."""
         recommendations = []
         for cycle in dependency_analysis.get("circular_dependencies", []):
@@ -191,11 +212,14 @@ class RuleAnalyzer:
                     "rule": cycle[0],
                     "message": f"Circular dependency detected: {' -> '.join(cycle)}",
                     "suggestion": "Refactor rules to eliminate circular dependencies",
-                }
+                },
             )
         return recommendations
 
-    def _check_high_dependencies(self, dependency_analysis: dict) -> list[dict[str, str]]:
+    def _check_high_dependencies(
+        self,
+        dependency_analysis: dict,
+    ) -> list[dict[str, str]]:
         """Check for highly dependent rules."""
         recommendations = []
         for rule, info in dependency_analysis.get("dependency_graph", {}).items():
@@ -208,7 +232,7 @@ class RuleAnalyzer:
                         "rule": rule,
                         "message": f"Rule '{rule}' has {dep_count} dependencies, which may make it fragile",
                         "suggestion": "Consider breaking down the rule or reducing dependencies",
-                    }
+                    },
                 )
         return recommendations
 
@@ -225,11 +249,15 @@ class RuleAnalyzer:
                         "rule": rule,
                         "message": f"Rule '{rule}' only uses {usage_rate:.0%} of its defined strings",
                         "suggestion": "Review if all strings are necessary for the rule's purpose",
-                    }
+                    },
                 )
         return recommendations
 
-    def get_rule_report(self, rule_name: str, yara_file: YaraFile) -> dict[str, Any] | None:
+    def get_rule_report(
+        self,
+        rule_name: str,
+        yara_file: YaraFile,
+    ) -> dict[str, Any] | None:
         """Get detailed report for a specific rule."""
         # Find the rule
         rule = None
@@ -245,7 +273,7 @@ class RuleAnalyzer:
         full_analysis = self.analyze(yara_file)
 
         # Extract rule-specific data
-        report = {
+        return {
             "name": rule_name,
             "tags": rule.tags,
             "string_count": len(rule.strings),
@@ -253,11 +281,9 @@ class RuleAnalyzer:
             "dependencies": self.dependency_analyzer.get_dependencies(rule_name),
             "dependents": self.dependency_analyzer.get_dependents(rule_name),
             "transitive_dependencies": list(
-                self.dependency_analyzer.get_transitive_dependencies(rule_name)
+                self.dependency_analyzer.get_transitive_dependencies(rule_name),
             ),
             "recommendations": [
                 r for r in full_analysis["recommendations"] if r.get("rule") == rule_name
             ],
         }
-
-        return report

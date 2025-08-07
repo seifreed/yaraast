@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.expressions import (
@@ -23,14 +23,11 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.codegen import CodeGenerator
 from yaraast.parser import Parser
 
-if TYPE_CHECKING:
-    pass
-
 
 class SimpleRoundtripSerializer:
     """Simple serializer for AST roundtrip testing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the serializer."""
         self.parser = Parser()
         self.generator = CodeGenerator()
@@ -39,40 +36,39 @@ class SimpleRoundtripSerializer:
         """Serialize an AST node to a dictionary."""
         if isinstance(node, YaraFile):
             return self._serialize_yarafile(node)
-        elif isinstance(node, Rule):
+        if isinstance(node, Rule):
             return self._serialize_rule(node)
-        elif isinstance(node, Import):
+        if isinstance(node, Import):
             return {"type": "Import", "module": node.module}
-        elif isinstance(node, Include):
+        if isinstance(node, Include):
             return {"type": "Include", "path": node.path}
-        elif isinstance(node, BooleanLiteral):
+        if isinstance(node, BooleanLiteral):
             return {"type": "BooleanLiteral", "value": node.value}
-        elif isinstance(node, IntegerLiteral):
+        if isinstance(node, IntegerLiteral):
             return {"type": "IntegerLiteral", "value": node.value}
-        elif isinstance(node, DoubleLiteral):
+        if isinstance(node, DoubleLiteral):
             return {"type": "DoubleLiteral", "value": node.value}
-        elif isinstance(node, StringLiteral):
+        if isinstance(node, StringLiteral):
             return {"type": "StringLiteral", "value": node.value}
-        elif isinstance(node, Identifier):
+        if isinstance(node, Identifier):
             return {"type": "Identifier", "name": node.name}
-        elif isinstance(node, StringIdentifier):
+        if isinstance(node, StringIdentifier):
             return {"type": "StringIdentifier", "name": node.name}
-        elif isinstance(node, BinaryExpression):
+        if isinstance(node, BinaryExpression):
             return {
                 "type": "BinaryExpression",
                 "left": self.serialize(node.left),
                 "operator": node.operator,
                 "right": self.serialize(node.right),
             }
-        elif isinstance(node, UnaryExpression):
+        if isinstance(node, UnaryExpression):
             return {
                 "type": "UnaryExpression",
                 "operator": node.operator,
                 "operand": self.serialize(node.operand),
             }
-        else:
-            # Generic serialization
-            return {"type": type(node).__name__, "data": str(node)}
+        # Generic serialization
+        return {"type": type(node).__name__, "data": str(node)}
 
     def _serialize_yarafile(self, yf: YaraFile) -> dict[str, Any]:
         """Serialize a YaraFile."""
@@ -114,20 +110,19 @@ class SimpleRoundtripSerializer:
                 "identifier": string_def.identifier,
                 "value": string_def.value,
             }
-        elif isinstance(string_def, HexString):
+        if isinstance(string_def, HexString):
             return {
                 "type": "HexString",
                 "identifier": string_def.identifier,
                 "tokens": str(string_def.tokens),
             }
-        elif isinstance(string_def, RegexString):
+        if isinstance(string_def, RegexString):
             return {
                 "type": "RegexString",
                 "identifier": string_def.identifier,
                 "regex": string_def.regex,
             }
-        else:
-            return {"type": "StringDefinition", "data": str(string_def)}
+        return {"type": "StringDefinition", "data": str(string_def)}
 
     def deserialize(self, data: dict[str, Any]) -> ASTNode:
         """Deserialize a dictionary to an AST node."""
@@ -135,33 +130,34 @@ class SimpleRoundtripSerializer:
 
         if node_type == "YaraFile":
             return self._deserialize_yarafile(data)
-        elif node_type == "Rule":
+        if node_type == "Rule":
             return self._deserialize_rule(data)
-        elif node_type == "Import":
+        if node_type == "Import":
             return Import(data["module"])
-        elif node_type == "Include":
+        if node_type == "Include":
             return Include(data["path"])
-        elif node_type == "BooleanLiteral":
+        if node_type == "BooleanLiteral":
             return BooleanLiteral(data["value"])
-        elif node_type == "IntegerLiteral":
+        if node_type == "IntegerLiteral":
             return IntegerLiteral(data["value"])
-        elif node_type == "DoubleLiteral":
+        if node_type == "DoubleLiteral":
             return DoubleLiteral(data["value"])
-        elif node_type == "StringLiteral":
+        if node_type == "StringLiteral":
             return StringLiteral(data["value"])
-        elif node_type == "Identifier":
+        if node_type == "Identifier":
             return Identifier(data["name"])
-        elif node_type == "StringIdentifier":
+        if node_type == "StringIdentifier":
             return StringIdentifier(data["name"])
-        elif node_type == "BinaryExpression":
+        if node_type == "BinaryExpression":
             return BinaryExpression(
-                self.deserialize(data["left"]), data["operator"], self.deserialize(data["right"])
+                self.deserialize(data["left"]),
+                data["operator"],
+                self.deserialize(data["right"]),
             )
-        elif node_type == "UnaryExpression":
+        if node_type == "UnaryExpression":
             return UnaryExpression(data["operator"], self.deserialize(data["operand"]))
-        else:
-            # Fallback
-            return Identifier(data.get("data", "unknown"))
+        # Fallback
+        return Identifier(data.get("data", "unknown"))
 
     def _deserialize_yarafile(self, data: dict[str, Any]) -> YaraFile:
         """Deserialize a YaraFile."""
@@ -199,13 +195,12 @@ class SimpleRoundtripSerializer:
 
         if string_type == "PlainString":
             return PlainString(data["identifier"], data["value"])
-        elif string_type == "HexString":
+        if string_type == "HexString":
             # Simplified hex string
             return PlainString(data["identifier"], data.get("tokens", ""))
-        elif string_type == "RegexString":
+        if string_type == "RegexString":
             return RegexString(data["identifier"], data["regex"])
-        else:
-            return PlainString(data.get("identifier", "$unknown"), data.get("data", ""))
+        return PlainString(data.get("identifier", "$unknown"), data.get("data", ""))
 
     def serialize_to_file(self, node: ASTNode, file_path: str | Path) -> None:
         """Serialize an AST node to a JSON file."""
@@ -255,7 +250,7 @@ class SimpleRoundtripSerializer:
 class SimpleRoundTrip:
     """Simple roundtrip testing utility."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.parser = Parser()
         self.generator = CodeGenerator()
         self.test_count = 0
@@ -274,7 +269,7 @@ class SimpleRoundTrip:
                 self.success_count += 1
 
             return success, original_ast, regenerated_ast
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             return False, None, None
 
     def test_batch(self, yara_codes: list[str]) -> list[tuple[bool, Any, Any]]:
@@ -306,7 +301,6 @@ class SimpleRoundTrip:
 
 def simple_roundtrip_test(yara_source: str) -> dict[str, Any]:
     """Perform a simple roundtrip test."""
-
     try:
         # Parse original
         parser = Parser()
@@ -334,11 +328,11 @@ def simple_roundtrip_test(yara_source: str) -> dict[str, Any]:
             success = False
             if len(original_lines) != len(reconstructed_lines):
                 differences.append(
-                    f"Line count differs: {len(original_lines)} vs {len(reconstructed_lines)}"
+                    f"Line count differs: {len(original_lines)} vs {len(reconstructed_lines)}",
                 )
 
             for i, (orig, recon) in enumerate(
-                zip(original_lines, reconstructed_lines, strict=False)
+                zip(original_lines, reconstructed_lines, strict=False),
             ):
                 if orig != recon:
                     differences.append(f"Line {i + 1} differs: '{orig}' vs '{recon}'")
