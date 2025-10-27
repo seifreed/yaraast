@@ -165,15 +165,29 @@ class YaraLParser:
         while not self._check_section_keyword() and not self._check(
             BaseTokenType.RBRACE,
         ):
+            # Save position to detect infinite loops
+            current_pos = self.current
+
             # Parse event statement
             stmt = self._parse_event_statement()
             if stmt:
                 statements.append(stmt)
 
+            # Guard against infinite loop: if position didn't advance, force skip
+            if self.current == current_pos:
+                if not self._is_at_end():
+                    self._advance()
+                else:
+                    break
+
         return EventsSection(statements=statements)
 
     def _parse_event_statement(self) -> EventStatement | None:
         """Parse a single event statement."""
+        # Check for parenthesized boolean expressions: (expr or expr or ...)
+        if self._check(BaseTokenType.LPAREN):
+            return self._parse_boolean_expression()
+
         # Check for function calls like re.regex()
         if self._check(BaseTokenType.IDENTIFIER):
             identifier = self._peek().value
@@ -741,6 +755,30 @@ class YaraLParser:
 
         # Return a generic EventStatement for now
         # In a full implementation, you'd parse the arguments properly
+        return EventStatement()
+
+    def _parse_boolean_expression(self) -> EventStatement:
+        """Parse a parenthesized boolean expression like (expr or expr or ...)."""
+        # Consume opening parenthesis
+        self._consume(BaseTokenType.LPAREN, "Expected '('")
+
+        # Consume all tokens until matching closing parenthesis
+        paren_depth = 1
+        while paren_depth > 0 and not self._is_at_end():
+            if self._check(BaseTokenType.LPAREN):
+                paren_depth += 1
+            elif self._check(BaseTokenType.RPAREN):
+                paren_depth -= 1
+                if paren_depth == 0:
+                    break
+            self._advance()
+
+        # Consume closing parenthesis
+        if self._check(BaseTokenType.RPAREN):
+            self._advance()
+
+        # Return a generic EventStatement
+        # In a full implementation, you'd parse the boolean logic properly
         return EventStatement()
 
     # Helper methods
