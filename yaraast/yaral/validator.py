@@ -431,7 +431,26 @@ class YaraLValidator(ASTVisitor[None]):
 
     def _validate_outcome_section(self, node: Any) -> None:
         """Validate outcome section."""
-        if hasattr(node, "variables"):
+        if hasattr(node, "assignments"):
+            for assignment in node.assignments:
+                var_name = assignment.variable
+                if var_name in self.defined_outcome_vars:
+                    self._add_error(
+                        "outcome",
+                        f"Duplicate outcome variable: {var_name}",
+                        "Use unique outcome variable names",
+                    )
+                self.defined_outcome_vars.add(var_name)
+
+                # Check for reserved names
+                reserved = ["risk_score", "severity", "confidence"]
+                if var_name not in reserved and not var_name.startswith("$"):
+                    self._add_warning(
+                        "outcome",
+                        f"Outcome variable '{var_name}' should start with $ or use reserved name",
+                        f"Reserved names: {', '.join(reserved)}",
+                    )
+        elif hasattr(node, "variables"):
             for var_name in node.variables:
                 if var_name in self.defined_outcome_vars:
                     self._add_error(
@@ -473,7 +492,14 @@ class YaraLValidator(ASTVisitor[None]):
     def _validate_cross_sections(self) -> None:
         """Validate cross-section references."""
         # Check if all used events are defined
+        # Note: We filter out variables that might be outcome variables
         undefined_events = self.used_events - self.defined_events
+        # Remove variables that are defined in outcome section
+        undefined_events = {
+            e
+            for e in undefined_events
+            if e not in self.defined_outcome_vars and f"${e}" not in self.defined_outcome_vars
+        }
         for event in undefined_events:
             self._add_error(
                 "condition",

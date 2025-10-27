@@ -228,6 +228,18 @@ class EventExistsCondition(ConditionExpression):
 
 
 @dataclass
+class VariableComparisonCondition(ConditionExpression):
+    """Variable comparison condition like $var > 5 or $dc_count > 3."""
+
+    variable: str  # Variable name (with or without $)
+    operator: str  # >, <, >=, <=, ==, !=
+    value: Any  # Comparison value
+
+    def accept(self, visitor: Any) -> Any:
+        return visitor.visit_yaral_variable_comparison_condition(self)
+
+
+@dataclass
 class JoinCondition(ConditionExpression):
     """Join condition between events."""
 

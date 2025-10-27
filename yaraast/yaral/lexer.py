@@ -218,6 +218,10 @@ class YaraLLexer:
         if self.text[self.position] == '"':
             return self._read_string()
 
+        # Check for backtick regex patterns
+        if self.text[self.position] == "`":
+            return self._read_backtick_regex()
+
         # Check for regex patterns
         if self.text[self.position] == "/":
             return self._try_regex_or_div(start_column)
@@ -393,6 +397,40 @@ class YaraLLexer:
             value=value,
             line=self.line,
             column=start_column,
+        )
+
+    def _read_backtick_regex(self) -> YaraLToken:
+        """Read a backtick-delimited regex pattern `...`."""
+        start_column = self.column
+        self.position += 1  # Skip opening backtick
+        self.column += 1
+
+        pattern = ""
+        while self.position < len(self.text) and self.text[self.position] != "`":
+            if self.text[self.position] == "\\" and self.position + 1 < len(self.text):
+                # Handle escape sequences
+                pattern += self.text[self.position : self.position + 2]
+                self.position += 2
+                self.column += 2
+            else:
+                pattern += self.text[self.position]
+                if self.text[self.position] == "\n":
+                    self.line += 1
+                    self.column = 1
+                else:
+                    self.column += 1
+                self.position += 1
+
+        if self.position < len(self.text):
+            self.position += 1  # Skip closing backtick
+            self.column += 1
+
+        return YaraLToken(
+            type=BaseTokenType.REGEX,
+            value=pattern,
+            line=self.line,
+            column=start_column,
+            yaral_type=YaraLTokenType.REGEX,
         )
 
     def _read_regex(self) -> YaraLToken:
