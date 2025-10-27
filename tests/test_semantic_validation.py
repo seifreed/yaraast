@@ -6,7 +6,7 @@ from yaraast.ast.base import Location
 from yaraast.ast.expressions import FunctionCall, Identifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
-from yaraast.parser import YaraParser
+from yaraast.parser.parser import Parser
 from yaraast.types.semantic_validator import (
     FunctionCallValidator,
     SemanticValidator,
@@ -256,8 +256,8 @@ class TestSemanticValidator:
         }
         """
 
-        parser = YaraParser()
-        ast = parser.parse(yara_code)
+        parser = Parser(yara_code)
+        ast = parser.parse()
 
         validator = SemanticValidator()
         result = validator.validate(ast)
@@ -278,8 +278,8 @@ class TestSemanticValidator:
         }
         """
 
-        parser = YaraParser()
-        ast = parser.parse(yara_code)
+        parser = Parser(yara_code)
+        ast = parser.parse()
 
         validator = SemanticValidator()
         result = validator.validate(ast)
@@ -301,8 +301,8 @@ class TestSemanticValidator:
         }
         """
 
-        parser = YaraParser()
-        ast = parser.parse(yara_code)
+        parser = Parser(yara_code)
+        ast = parser.parse()
 
         validator = SemanticValidator()
         result = validator.validate(ast)

@@ -1,0 +1,132 @@
+{
+  "name": "yaraast",
+  "displayName": "YARAAST - YARA Language Support",
+  "description": "Language support for YARA rules with AST-powered features",
+  "version": "0.1.0",
+  "publisher": "seifreed",
+  "author": {
+    "name": "Marc Rivero",
+    "email": "mriverolopez@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seifreed/yaraast"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "yara",
+    "yara-rules",
+    "malware",
+    "security",
+    "threat-hunting"
+  ],
+  "activationEvents": [
+    "onLanguage:yara"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "yara",
+        "aliases": [
+          "YARA",
+          "yara"
+        ],
+        "extensions": [
+          ".yar",
+          ".yara"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/yara-light.png",
+          "dark": "./icons/yara-dark.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "yara",
+        "scopeName": "source.yara",
+        "path": "./syntaxes/yara.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "YARAAST",
+      "properties": {
+        "yaraast.lsp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable the YARAAST language server"
+        },
+        "yaraast.lsp.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to Python interpreter (must have yaraast[lsp] installed)"
+        },
+        "yaraast.lsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the language server"
+        },
+        "yaraast.formatting.style": {
+          "type": "string",
+          "enum": [
+            "default",
+            "compact",
+            "readable",
+            "verbose"
+          ],
+          "default": "default",
+          "description": "Code formatting style"
+        },
+        "yaraast.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable diagnostics"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "yaraast.restartServer",
+        "title": "YARAAST: Restart Language Server"
+      },
+      {
+        "command": "yaraast.showOutputChannel",
+        "title": "YARAAST: Show Output Channel"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.19.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

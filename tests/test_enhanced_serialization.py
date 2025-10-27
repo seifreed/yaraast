@@ -5,7 +5,7 @@ import json
 import yaml
 
 from yaraast.codegen.pretty_printer import PrettyPrinter, PrettyPrintOptions, StylePresets
-from yaraast.parser import YaraParser
+from yaraast.parser.parser import Parser
 from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer, RoundTripSerializer
 
 
@@ -128,12 +128,12 @@ class TestEnhancedYamlSerializer:
             strings:
                 $mz = { 4D 5A }
             condition:
-                $mz at 0
+                $mz
         }
         """
 
-        parser = YaraParser()
-        ast = parser.parse(yara_source.strip())
+        parser = Parser(yara_source.strip())
+        ast = parser.parse()
 
         serializer = EnhancedYamlSerializer(include_pipeline_metadata=True)
         yaml_output = serializer.serialize_for_pipeline(ast)
@@ -166,8 +166,8 @@ class TestEnhancedYamlSerializer:
         }
         """
 
-        parser = YaraParser()
-        ast = parser.parse(yara_source.strip())
+        parser = Parser(yara_source.strip())
+        ast = parser.parse()
 
         serializer = EnhancedYamlSerializer()
         manifest = serializer.serialize_rules_manifest(ast)
@@ -200,8 +200,8 @@ import "pe"
 rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         """
 
-        parser = YaraParser()
-        ast = parser.parse(yara_source.strip())
+        parser = Parser(yara_source.strip())
+        ast = parser.parse()
 
         printer = PrettyPrinter()
         formatted = printer.pretty_print(ast)
@@ -226,8 +226,8 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         }
         """
 
-        parser = YaraParser()
-        ast = parser.parse(yara_source.strip())
+        parser = Parser(yara_source.strip())
+        ast = parser.parse()
 
         # Test different presets
         compact = PrettyPrinter(StylePresets.compact()).pretty_print(ast)
@@ -255,8 +255,8 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         }
         """
 
-        parser = YaraParser()
-        ast = parser.parse(yara_source.strip())
+        parser = Parser(yara_source.strip())
+        ast = parser.parse()
 
         # Test with alignment
         options = PrettyPrintOptions(
@@ -287,8 +287,8 @@ rule test{strings:$a="hello"$b={4D 5A}condition:$a and $b}
         }
         """
 
-        parser = YaraParser()
-        ast = parser.parse(yara_source.strip())
+        parser = Parser(yara_source.strip())
+        ast = parser.parse()
 
         # Test custom indent size
         options = PrettyPrintOptions(indent_size=2)
@@ -320,13 +320,13 @@ class TestIntegration:
                 $mz = { 4D 5A ?? 00 }
                 $string = "malware" nocase
             condition:
-                $mz at 0 and $string
+                $mz and $string
         }
         """
 
         # Step 1: Parse
-        parser = YaraParser()
-        original_ast = parser.parse(yara_source.strip())
+        parser = Parser(yara_source.strip())
+        original_ast = parser.parse()
         assert original_ast is not None
 
         # Step 2: Round-trip serialize

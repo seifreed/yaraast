@@ -636,11 +636,8 @@ class Parser:
                     expr = DictionaryAccess(object=expr, key=index.value)
                 else:
                     expr = ArrayAccess(array=expr, index=index)
-            elif self._match(TokenType.LPAREN) and not isinstance(
-                expr,
-                MemberAccess | ArrayAccess,
-            ):
-                # Function call (but not for member/array access which might be dictionary key)
+            elif self._match(TokenType.LPAREN):
+                # Function call
                 args = []
                 while not self._check(TokenType.RPAREN) and not self._is_at_end():
                     args.append(self._parse_expression())
@@ -651,8 +648,23 @@ class Parser:
                     msg = "Expected ')' after arguments"
                     raise ParserError(msg, self._peek())
 
+                # Handle different types of function calls
                 if isinstance(expr, Identifier):
                     expr = FunctionCall(function=expr.name, arguments=args)
+                elif isinstance(expr, MemberAccess):
+                    # Module function call like pe.imphash()
+                    if isinstance(expr.object, Identifier):
+                        function_name = f"{expr.object.name}.{expr.member}"
+                    elif isinstance(expr.object, ModuleReference):
+                        function_name = f"{expr.object.module}.{expr.member}"
+                    elif isinstance(expr.object, MemberAccess):
+                        # Nested member access like obj.subobj.func()
+                        function_name = (
+                            f"{self._member_access_to_string(expr.object)}.{expr.member}"
+                        )
+                    else:
+                        function_name = f"unknown.{expr.member}"
+                    expr = FunctionCall(function=function_name, arguments=args)
                 else:
                     msg = "Invalid function call"
                     raise ParserError(msg, self._peek())
@@ -876,6 +888,16 @@ class Parser:
         return self._parse_or_expression()
 
     # Helper methods
+    def _member_access_to_string(self, expr: MemberAccess) -> str:
+        """Convert MemberAccess to string representation."""
+        if isinstance(expr.object, Identifier):
+            return f"{expr.object.name}.{expr.member}"
+        if isinstance(expr.object, ModuleReference):
+            return f"{expr.object.module}.{expr.member}"
+        if isinstance(expr.object, MemberAccess):
+            return f"{self._member_access_to_string(expr.object)}.{expr.member}"
+        return f"unknown.{expr.member}"
+
     def _match(self, *types: TokenType) -> bool:
         """Check if current token matches any of the given types."""
         for token_type in types:

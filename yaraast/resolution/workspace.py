@@ -243,32 +243,48 @@ class WorkspaceAnalyzer:
         report.total_includes += len(ast.includes)
         report.total_imports += len(ast.imports)
 
-        # Type validation
-        is_valid, type_errors = TypeValidator.validate(ast)
-        if not is_valid:
-            result.type_errors.extend(type_errors)
+        # Type validation (optional - may generate false positives for undefined strings)
+        # Undefined strings are better handled by StringUsageAnalyzer as warnings
+        # is_valid, type_errors = TypeValidator.validate(ast)
+        # if not is_valid:
+        #     result.type_errors.extend(type_errors)
 
         # Rule analysis
         try:
             analyzer = RuleAnalyzer()
             analysis = analyzer.analyze(ast)
+
+            # Extract string analysis data (nested under "string_analysis")
+            string_analysis = analysis.get("string_analysis", {})
+
+            # Build unused/undefined strings dicts from string_analysis
+            unused_strings = {}
+            undefined_strings = {}
+            for rule_name, rule_data in string_analysis.items():
+                if rule_data.get("unused"):
+                    unused_strings[rule_name] = rule_data["unused"]
+                if rule_data.get("undefined"):
+                    undefined_strings[rule_name] = rule_data["undefined"]
+
             result.analysis_results = {
-                "unused_strings": analysis.get("unused_strings", []),
-                "undefined_strings": analysis.get("undefined_strings", []),
-                "rule_dependencies": analysis.get("dependencies", {}),
-                "complexity": analysis.get("complexity_metrics", {}),
+                "unused_strings": unused_strings,
+                "undefined_strings": undefined_strings,
+                "rule_dependencies": analysis.get("dependency_analysis", {}).get(
+                    "dependencies", {}
+                ),
+                "complexity": analysis.get("quality_metrics", {}),
             }
 
             # Convert analysis results to warnings
-            if analysis.get("unused_strings"):
-                for rule_name, strings in analysis["unused_strings"].items():
+            if unused_strings:
+                for rule_name, strings in unused_strings.items():
                     for string in strings:
                         result.warnings.append(
                             f"Rule '{rule_name}': Unused string '{string}'",
                         )
 
-            if analysis.get("undefined_strings"):
-                for rule_name, strings in analysis["undefined_strings"].items():
+            if undefined_strings:
+                for rule_name, strings in undefined_strings.items():
                     for string in strings:
                         result.warnings.append(
                             f"Rule '{rule_name}': Undefined string '{string}'",

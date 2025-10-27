@@ -14,6 +14,7 @@ alongside standard YARA and YARA-X formats.
 
 - **Multi-Dialect Support**: Parse YARA, YARA-X, and YARA-L rules
 - **Automatic Dialect Detection**: Intelligently detects rule format
+- **🆕 Language Server Protocol (LSP)**: Full IDE integration with VSCode
 - Parse YARA rules into a structured AST with multiple output formats
 - Analyze rules for optimization opportunities and best practices
 - Format and prettify YARA files with customizable styles
@@ -21,6 +22,8 @@ alongside standard YARA and YARA-X formats.
 - Generate comprehensive metrics and visualizations (complexity, strings, dependencies)
 - Support for large rulesets with thousands of rules
 - Extensible visitor pattern for custom analysis
+- **🆕 High-Performance Processing**: Streaming parser, parallel analysis, batch processing
+- **🆕 Memory Optimization**: Efficient handling of massive rulesets with memory limits
 - Performance benchmarking and streaming for huge files
 - AST-based diff comparison between YARA files
 - LibYARA integration for compilation and scanning
@@ -29,7 +32,58 @@ alongside standard YARA and YARA-X formats.
 - Multi-file workspace analysis with dependency resolution
 - Export/import AST in JSON/YAML/Protobuf formats
 
-### YARA-L Support (NEW!)
+### 🚀 Language Server Protocol (LSP) (NEW!)
+
+Full IDE integration with real-time features:
+
+**Core Features:**
+- **Real-time Diagnostics**: Syntax and semantic errors as you type
+- **Intelligent Autocomplete**: Context-aware completions for keywords, modules, functions
+- **Hover Information**: Documentation and definitions on hover
+- **Go to Definition**: Jump to string/rule definitions (F12)
+- **Find All References**: Find all usages (Shift+F12)
+- **Document Symbols**: Outline view (Ctrl+Shift+O)
+- **Code Formatting**: Format on save (Shift+Alt+F)
+- **Quick Fixes**: Auto-import modules, add missing definitions
+- **Rename Symbol**: Rename variables across file (F2)
+- **Semantic Highlighting**: Advanced AST-based syntax highlighting
+
+**Advanced Features:**
+- **Signature Help**: Parameter hints for functions (Ctrl+Shift+Space)
+- **Document Highlight**: Auto-highlight all symbol occurrences
+- **Folding Ranges**: Collapse/expand rules and sections
+- **Document Links**: Clickable imports and includes (Ctrl+Click)
+- **Workspace Symbols**: Global search across all YARA files (Ctrl+T)
+
+**Supported Editors**: VSCode (extension included), Vim, Emacs, JetBrains IDEs
+
+### ⚡ High-Performance Features (NEW!)
+
+**Streaming Parser:**
+- Memory-efficient parsing of huge YARA files (10,000+ rules)
+- Rule-by-rule processing without loading entire file into memory
+- Configurable chunk sizes and memory limits
+- Progress tracking and cancellation support
+
+**Parallel Analysis:**
+- Multi-threaded rule analysis for faster processing
+- Automatic worker count optimization
+- Job tracking and status management
+- Support for custom batch processing functions
+
+**Batch Processing:**
+- Process multiple files with configurable operations
+- HTML tree generation for AST visualization
+- Support for splitting large files into individual rules
+- Comprehensive batch result tracking and error handling
+
+**Memory Optimization:**
+- Object pooling for AST nodes
+- Automatic garbage collection with configurable thresholds
+- Memory-managed contexts for safe resource cleanup
+- Optimization recommendations based on ruleset size
+
+### YARA-L Support
 
 - Parse Google Chronicle YARA-L 2.0 rules
 - Support for UDM (Unified Data Model) fields
@@ -45,14 +99,24 @@ alongside standard YARA and YARA-X formats.
 pip install yaraast
 ```
 
+### With LSP Support (for IDE integration)
+
+```bash
+pip install 'yaraast[lsp]'
+```
+
 ### From Source
 
 ```bash
 git clone https://github.com/seifreed/yaraast
 cd yaraast
 pip install -r requirements.txt
-pip install -e .
+pip install -e '.[lsp]'  # Include LSP support
 ```
+
+### VSCode Extension
+
+See [vscode-yaraast/README.md](vscode-yaraast/README.md) for installation instructions.
 
 ## Quick Start
 
@@ -62,6 +126,9 @@ yaraast --help
 
 # Show version
 yaraast --version
+
+# Start Language Server (for IDE integration)
+yaraast lsp --stdio
 ```
 
 ## Command Reference
@@ -184,9 +251,21 @@ yaraast serialize validate ast.json       # Validate serialized format
 #### performance - Large Ruleset Tools
 
 ```bash
-# Performance analysis and optimization
+# Streaming parser for huge files (memory-efficient)
 yaraast performance stream large.yar       # Stream processing for huge files
-yaraast performance optimize rules/        # Get optimization recommendations
+yaraast performance stream large.yar --chunk-size 100  # Custom chunk size
+
+# Parallel analysis with multiple workers
+yaraast performance parallel rules/ --workers 4  # Parallel processing
+
+# Batch processing of multiple files
+yaraast performance batch rules/ --operations parse,complexity  # Batch operations
+
+# Memory optimization for large datasets
+yaraast performance memory-optimize rules/ --limit 500  # Limit memory usage
+
+# Get optimization recommendations
+yaraast performance optimize rules/        # Optimization suggestions
 ```
 
 #### performance-check - Performance Analysis
@@ -194,6 +273,7 @@ yaraast performance optimize rules/        # Get optimization recommendations
 ```bash
 # Check for performance issues
 yaraast performance-check rule.yar        # Analyze performance issues
+yaraast performance-check rule.yar --detailed  # Detailed performance report
 ```
 
 #### bench - Benchmarking Suite
@@ -324,10 +404,46 @@ done
 ### Large Ruleset Analysis
 
 ```bash
-# Analyze massive rulesets efficiently
+# Analyze massive rulesets efficiently with streaming
 yaraast performance stream huge_ruleset.yar | \
     yaraast analyze optimize - | \
     yaraast metrics --export-csv analysis.csv -
+```
+
+### High-Performance Processing
+
+```python
+from yaraast.performance import StreamingParser, ParallelAnalyzer, BatchProcessor, MemoryOptimizer
+
+# Streaming parser for huge files
+streaming_parser = StreamingParser(max_memory_mb=500)
+for rule in streaming_parser.parse_file("huge_ruleset.yar"):
+    print(f"Parsed rule: {rule.name}")
+
+# Parallel analysis with multiple workers
+with ParallelAnalyzer(max_workers=4) as analyzer:
+    jobs = analyzer.parse_files_parallel(file_paths, chunk_size=10)
+    for job in jobs:
+        if job.is_completed:
+            print(f"Analyzed {len(job.result)} rules")
+
+# Batch processing with operations
+from yaraast.performance import BatchOperation
+processor = BatchProcessor(batch_size=50)
+results = processor.process_files(
+    file_paths,
+    [BatchOperation.PARSE, BatchOperation.COMPLEXITY],
+    output_dir
+)
+print(f"Processed {results[BatchOperation.PARSE].successful_count} files")
+
+# Memory optimization
+optimizer = MemoryOptimizer(memory_limit_mb=1000)
+with optimizer.memory_managed_context():
+    # Process large dataset
+    for item in large_dataset:
+        optimizer.track_object(item)
+        # ... processing ...
 ```
 
 ## Complete Command List
@@ -340,6 +456,7 @@ Commands:
   fmt                Format YARA file in-place (like black for Python)
   format             Format a YARA file to new file
   libyara            LibYARA integration for scanning and optimization
+  lsp                Start the Language Server (IDE integration)
   metrics            Analyze and visualize YARA metrics
   optimize           Optimize YARA rules for better performance
   parse              Parse YARA file and output in various formats

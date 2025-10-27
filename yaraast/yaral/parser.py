@@ -140,7 +140,7 @@ class YaraLParser:
             value = None
             if self._check(BaseTokenType.STRING):
                 value = self._advance().value
-            elif self._check(BaseTokenType.NUMBER):
+            elif self._check(BaseTokenType.INTEGER):
                 value = int(self._advance().value)
             elif self._check(BaseTokenType.BOOLEAN_TRUE):
                 self._advance()
@@ -217,12 +217,21 @@ class YaraLParser:
             self._consume(BaseTokenType.IDENTIFIER, expected_field).value,
         )
 
-        while self._check(BaseTokenType.DOT):
-            self._advance()  # Consume dot
-            if self._check(BaseTokenType.IDENTIFIER):
-                field_parts.append(self._advance().value)
+        # Continue parsing path components (dots and brackets)
+        while self._check(BaseTokenType.DOT) or self._check(BaseTokenType.LBRACKET):
+            if self._check(BaseTokenType.DOT):
+                self._advance()  # Consume dot
+                if self._check(BaseTokenType.IDENTIFIER):
+                    field_parts.append(self._advance().value)
+                elif self._check(BaseTokenType.LBRACKET):
+                    # Handle array/map access after dot: .fields["key"]
+                    self._advance()  # [
+                    if self._check(BaseTokenType.STRING):
+                        key = self._advance().value
+                        field_parts.append(f'["{key}"]')
+                    self._consume(BaseTokenType.RBRACKET, "Expected ']'")
             elif self._check(BaseTokenType.LBRACKET):
-                # Handle array/map access like .additional.fields["key"]
+                # Handle array/map access directly: fields["key"]
                 self._advance()  # [
                 if self._check(BaseTokenType.STRING):
                     key = self._advance().value
@@ -238,8 +247,8 @@ class YaraLParser:
             BaseTokenType.NEQ: "!=",
             BaseTokenType.GT: ">",
             BaseTokenType.LT: "<",
-            BaseTokenType.GTE: ">=",
-            BaseTokenType.LTE: "<=",
+            BaseTokenType.GE: ">=",
+            BaseTokenType.LE: "<=",
         }
 
         for token_type, op in operator_map.items():
@@ -261,7 +270,7 @@ class YaraLParser:
         """Parse event value."""
         if self._check(BaseTokenType.STRING):
             return self._advance().value
-        if self._check(BaseTokenType.NUMBER):
+        if self._check(BaseTokenType.INTEGER):
             return int(self._advance().value)
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
             # Reference to another event variable
@@ -324,7 +333,7 @@ class YaraLParser:
                 duration = int(match.group(1))
                 unit = match.group(2)
                 return TimeWindow(duration=duration, unit=unit, modifier=modifier)
-        elif self._check(BaseTokenType.NUMBER):
+        elif self._check(BaseTokenType.INTEGER):
             duration = int(self._advance().value)
             # Check for unit
             unit = "m"  # Default to minutes
@@ -401,7 +410,7 @@ class YaraLParser:
             return expr
 
         # Event count: #e > 5
-        if self._check(BaseTokenType.HASH):
+        if self._check(BaseTokenType.STRING_COUNT):
             self._advance()
             event_name = self._consume(
                 BaseTokenType.IDENTIFIER,
@@ -416,10 +425,10 @@ class YaraLParser:
             elif self._check(BaseTokenType.LT):
                 operator = "<"
                 self._advance()
-            elif self._check(BaseTokenType.GTE):
+            elif self._check(BaseTokenType.GE):
                 operator = ">="
                 self._advance()
-            elif self._check(BaseTokenType.LTE):
+            elif self._check(BaseTokenType.LE):
                 operator = "<="
                 self._advance()
             elif self._check(BaseTokenType.EQ):
@@ -434,7 +443,7 @@ class YaraLParser:
 
             count = int(
                 self._consume(
-                    BaseTokenType.NUMBER,
+                    BaseTokenType.INTEGER,
                     "Expected number after operator",
                 ).value,
             )
@@ -546,13 +555,21 @@ class YaraLParser:
         return self._parse_outcome_argument()
 
     def _parse_outcome_argument(self) -> Any:
-        """Parse outcome argument (field access, literal, etc.)."""
-        # Event field access: $e.field.path
-        if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
+        """Parse outcome argument (field access, literal, expression, etc.)."""
+        # Check for nested conditional expression: if(...)
+        if self._check_keyword("if"):
+            return self._parse_outcome_expression()
+
+        # Event field access or variable: $e.field.path or $variable
+        if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+            BaseTokenType.STRING_IDENTIFIER
+        ):
             event_token = self._advance()
-            event = EventVariable(name=event_token.value)
+            var_name = event_token.value
 
             if self._check(BaseTokenType.DOT):
+                # It's a field access: $e.field.path
+                event = EventVariable(name=var_name)
                 self._advance()
                 field_parts = []
                 field_parts.append(
@@ -569,21 +586,69 @@ class YaraLParser:
                     )
 
                 field = UDMFieldPath(parts=field_parts)
-                return UDMFieldAccess(event=event, field=field)
 
-            return event
+                # Check for comparison operator to build expression
+                if (
+                    self._check(BaseTokenType.GT)
+                    or self._check(BaseTokenType.LT)
+                    or self._check(BaseTokenType.GE)
+                    or self._check(BaseTokenType.LE)
+                    or self._check(BaseTokenType.EQ)
+                    or self._check(BaseTokenType.NEQ)
+                ):
+                    # It's a comparison expression
+                    op_token = self._advance()
+                    op = op_token.value
+                    right_value = self._parse_outcome_argument()
+                    # Return as simple representation (string for now)
+                    return f"{var_name}.{'.'.join(field_parts)} {op} {right_value}"
+
+                return UDMFieldAccess(event=event, field=field)
+            elif (
+                self._check(BaseTokenType.GT)
+                or self._check(BaseTokenType.LT)
+                or self._check(BaseTokenType.GE)
+                or self._check(BaseTokenType.LE)
+                or self._check(BaseTokenType.EQ)
+                or self._check(BaseTokenType.NEQ)
+            ):
+                # It's a simple variable comparison: $variable > value
+                op_token = self._advance()
+                op = op_token.value
+                right_value = self._parse_outcome_argument()
+                # Return as simple representation
+                return f"{var_name} {op} {right_value}"
+            else:
+                # Just a variable reference
+                return var_name
 
         # String literal
         if self._check(BaseTokenType.STRING):
             return self._advance().value
 
         # Number literal
-        if self._check(BaseTokenType.NUMBER):
+        if self._check(BaseTokenType.INTEGER):
             return int(self._advance().value)
 
-        # Identifier
+        # Identifier (might be outcome variable or field name)
         if self._check(BaseTokenType.IDENTIFIER):
-            return self._advance().value
+            ident = self._advance().value
+
+            # Check for comparison operator
+            if (
+                self._check(BaseTokenType.GT)
+                or self._check(BaseTokenType.LT)
+                or self._check(BaseTokenType.GE)
+                or self._check(BaseTokenType.LE)
+                or self._check(BaseTokenType.EQ)
+                or self._check(BaseTokenType.NEQ)
+            ):
+                op_token = self._advance()
+                op = op_token.value
+                right_value = self._parse_outcome_argument()
+                return f"{ident} {op} {right_value}"
+
+            return ident
 
         msg = f"Unexpected token in outcome: {self._peek()}"
         raise YaraLParserError(
@@ -610,7 +675,7 @@ class YaraLParser:
                 value = None
                 if self._check(BaseTokenType.STRING):
                     value = self._advance().value
-                elif self._check(BaseTokenType.NUMBER):
+                elif self._check(BaseTokenType.INTEGER):
                     value = int(self._advance().value)
                 elif self._check(BaseTokenType.BOOLEAN_TRUE):
                     self._advance()

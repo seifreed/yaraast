@@ -39,11 +39,15 @@ class StreamingParser:
         self.enable_gc = enable_gc
         self.progress_callback = progress_callback
         self.parser = Parser()
+        self._cancelled = False
         self._stats = {
             "rules_parsed": 0,
             "bytes_processed": 0,
             "parse_errors": 0,
             "peak_memory_mb": 0,
+            "files_processed": 0,
+            "files_successful": 0,
+            "total_parse_time": 0,
         }
 
     def parse_file(
@@ -169,7 +173,7 @@ class StreamingParser:
             yield chunk
 
     def parse_rules_from_file(self, file_path: Path) -> Iterator[Any]:
-        """Parse individual rules from a file."""
+        """Parse individual rules from a file (yields one result per rule)."""
         from dataclasses import dataclass
         from enum import Enum
 
@@ -186,6 +190,7 @@ class StreamingParser:
             parse_time: float
             rule_count: int
             import_count: int
+            ast: Any = None
 
         try:
             import time
@@ -193,7 +198,15 @@ class StreamingParser:
             start_time = time.time()
 
             for rule in self.parse_file(file_path):
+                if self._cancelled:
+                    break
+
                 parse_time = time.time() - start_time
+                # Create a minimal YaraFile with just this rule
+                from yaraast.ast.base import YaraFile
+
+                ast = YaraFile(imports=[], includes=[], rules=[rule])
+
                 yield ParseResult(
                     file_path=str(file_path),
                     rule_name=rule.name if hasattr(rule, "name") else None,
@@ -202,6 +215,7 @@ class StreamingParser:
                     parse_time=parse_time,
                     rule_count=1,
                     import_count=0,
+                    ast=ast,
                 )
                 start_time = time.time()
         except Exception as e:
@@ -213,12 +227,74 @@ class StreamingParser:
                 parse_time=0,
                 rule_count=0,
                 import_count=0,
+                ast=None,
             )
 
     def parse_files(self, file_paths: list[Path]) -> Iterator[Any]:
-        """Parse multiple files."""
-        for file_path in file_paths:
-            yield from self.parse_rules_from_file(file_path)
+        """Parse multiple files (yields one result per file)."""
+        from dataclasses import dataclass
+        from enum import Enum
+
+        class ParseStatus(Enum):
+            SUCCESS = "success"
+            ERROR = "error"
+
+        @dataclass
+        class ParseResult:
+            file_path: str
+            rule_name: str | None
+            status: ParseStatus
+            error: str | None
+            parse_time: float
+            rule_count: int
+            import_count: int
+            ast: Any = None
+
+        import time
+
+        for idx, file_path in enumerate(file_paths, 1):
+            if self._cancelled:
+                break
+
+            try:
+                start_time = time.time()
+                content = Path(file_path).read_text()
+                ast = self.parser.parse(content)
+                parse_time = time.time() - start_time
+
+                self._stats["files_processed"] += 1
+                self._stats["files_successful"] += 1
+                self._stats["total_parse_time"] += parse_time
+                self._stats["rules_parsed"] += len(ast.rules)
+
+                # Call progress callback if provided
+                if self.progress_callback:
+                    self.progress_callback(idx, len(file_paths), str(file_path))
+
+                yield ParseResult(
+                    file_path=str(file_path),
+                    rule_name=ast.rules[0].name if ast.rules else None,
+                    status=ParseStatus.SUCCESS,
+                    error=None,
+                    parse_time=parse_time,
+                    rule_count=len(ast.rules),
+                    import_count=len(ast.imports),
+                    ast=ast,
+                )
+            except Exception as e:
+                self._stats["files_processed"] += 1
+                self._stats["parse_errors"] += 1
+
+                yield ParseResult(
+                    file_path=str(file_path),
+                    rule_name=None,
+                    status=ParseStatus.ERROR,
+                    error=str(e),
+                    parse_time=0,
+                    rule_count=0,
+                    import_count=0,
+                    ast=None,
+                )
 
     def parse_directory(
         self,
@@ -236,8 +312,8 @@ class StreamingParser:
         return dict(self._stats)
 
     def cancel(self) -> None:
-        """Cancel parsing (no-op for this implementation)."""
-        # Implementation intentionally empty
+        """Cancel parsing."""
+        self._cancelled = True
 
     def parse_with_progress(
         self,
@@ -275,19 +351,38 @@ class StreamingParser:
         content = mmapped_file.read().decode("utf-8", errors="replace")
         mmapped_file.seek(0)  # Reset position
 
-        # Simple rule extraction (can be optimized)
+        # Extract rules by properly tracking brace depth
         import re
 
-        rule_pattern = re.compile(r"rule\s+\w+[^{]*\{[^}]*\}", re.MULTILINE | re.DOTALL)
+        # Find all rule starts
+        rule_starts = [(m.start(), m.group(0)) for m in re.finditer(r"rule\s+\w+", content)]
 
-        for match in rule_pattern.finditer(content):
-            rule_text = match.group(0)
-            rule = self._parse_rule_text(rule_text)
-            if rule:
-                self._stats["rules_parsed"] += 1
-                if callback:
-                    callback(rule)
-                yield rule
+        for i, (start_pos, rule_header) in enumerate(rule_starts):
+            # Find the opening brace
+            brace_pos = content.find("{", start_pos)
+            if brace_pos == -1:
+                continue
+
+            # Count braces to find matching closing brace
+            brace_count = 1
+            pos = brace_pos + 1
+
+            while pos < len(content) and brace_count > 0:
+                if content[pos] == "{":
+                    brace_count += 1
+                elif content[pos] == "}":
+                    brace_count -= 1
+                pos += 1
+
+            if brace_count == 0:
+                # Extract the complete rule text
+                rule_text = content[start_pos:pos]
+                rule = self._parse_rule_text(rule_text)
+                if rule:
+                    self._stats["rules_parsed"] += 1
+                    if callback:
+                        callback(rule)
+                    yield rule
 
     def _parse_rule_text(self, rule_text: str) -> Rule | None:
         """Parse a single rule text."""

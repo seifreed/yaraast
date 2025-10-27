@@ -21,22 +21,41 @@ class DeadCodeEliminator(ASTTransformer):
         self.used_rules: set[str] = set()
         self.in_condition = False
         self.current_rule: str | None = None
+        self.elimination_count = 0
 
-    def eliminate(self, ast: YaraFile) -> YaraFile:
-        """Eliminate dead code from AST."""
+    def eliminate(self, ast: YaraFile) -> tuple[YaraFile, int]:
+        """Eliminate dead code from AST.
+
+        Returns:
+            Tuple of (optimized YaraFile, number of eliminations)
+        """
         # Reset state
         self.used_strings.clear()
         self.used_rules.clear()
         self.in_condition = False
         self.current_rule = None
+        self.elimination_count = 0
 
         # First pass: collect used strings and rules
         self._collect_usage(ast)
 
-        # Second pass: eliminate unused code
-        _ = self.visit(ast)
+        # Count strings to be removed
+        for rule in ast.rules:
+            if rule.strings:
+                for string_def in rule.strings:
+                    if string_def.identifier not in self.used_strings:
+                        self.elimination_count += 1
 
-        return ast
+        # Count rules with always-false conditions
+        for rule in ast.rules:
+            if rule.condition and isinstance(rule.condition, BooleanLiteral):
+                if not rule.condition.value:  # false condition
+                    self.elimination_count += 1
+
+        # Second pass: eliminate unused code
+        optimized_ast = self.visit(ast)
+
+        return optimized_ast, self.elimination_count
 
     def _collect_usage(self, ast: YaraFile) -> None:
         """Collect usage information."""
@@ -61,11 +80,17 @@ class DeadCodeEliminator(ASTTransformer):
 
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         """Visit YaraFile and remove unused rules."""
-        # Keep only used rules (or all if we can't determine)
-        if self.used_rules:
-            # Filter rules - keep if used or if it's a private rule that might be used internally
-            kept_rules = []
-            for rule in node.rules:
+        kept_rules = []
+
+        for rule in node.rules:
+            # Skip rules with always-false conditions
+            if rule.condition and isinstance(rule.condition, BooleanLiteral):
+                if not rule.condition.value:  # false condition
+                    continue  # Remove this rule
+
+            # Keep only used rules (or all if we can't determine)
+            if self.used_rules:
+                # Filter rules - keep if used or if it's a private rule that might be used internally
                 is_private = False
                 if hasattr(rule, "modifiers") and isinstance(
                     rule.modifiers,
@@ -78,11 +103,11 @@ class DeadCodeEliminator(ASTTransformer):
                     or not self._has_external_references(rule)
                 ):
                     kept_rules.append(self.visit(rule))
-            node.rules = kept_rules
-        else:
-            # If no usage info, keep all rules but optimize them
-            node.rules = [self.visit(rule) for rule in node.rules]
+            else:
+                # If no usage info, keep all rules but optimize them
+                kept_rules.append(self.visit(rule))
 
+        node.rules = kept_rules
         return node
 
     def _has_external_references(self, rule: Rule) -> bool:

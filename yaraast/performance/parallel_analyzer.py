@@ -5,6 +5,9 @@ from __future__ import annotations
 import concurrent.futures
 import multiprocessing as mp
 import time
+import uuid
+from dataclasses import dataclass, field
+from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
@@ -15,6 +18,40 @@ if TYPE_CHECKING:
 
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
+
+
+class JobStatus(Enum):
+    """Job status enumeration."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+@dataclass
+class Job:
+    """Represents a parallel analysis job."""
+
+    job_id: str
+    job_type: str
+    status: JobStatus = JobStatus.PENDING
+    result: Any = None
+    error: str | None = None
+    start_time: float = field(default_factory=time.time)
+    end_time: float | None = None
+
+    @property
+    def is_completed(self) -> bool:
+        """Check if job is completed."""
+        return self.status in (JobStatus.COMPLETED, JobStatus.FAILED)
+
+    @property
+    def duration(self) -> float:
+        """Get job duration in seconds."""
+        if self.end_time:
+            return self.end_time - self.start_time
+        return time.time() - self.start_time
 
 
 class ParallelAnalyzer:
@@ -34,7 +71,18 @@ class ParallelAnalyzer:
             "rules_analyzed": 0,
             "total_time": 0.0,
             "errors": 0,
+            "jobs_submitted": 0,
+            "jobs_completed": 0,
         }
+
+    def __enter__(self) -> ParallelAnalyzer:
+        """Enter context manager."""
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exit context manager."""
+        # Cleanup if needed
+        pass
 
     def analyze_rules(
         self,
@@ -185,7 +233,11 @@ class ParallelAnalyzer:
 
     def _analyze_single_rule(self, rule: Rule) -> dict[str, Any]:
         """Analyze a single rule."""
-        return self.rule_analyzer.analyze(rule)
+        from yaraast.ast.base import YaraFile as YF
+
+        # RuleAnalyzer.analyze expects YaraFile, so wrap Rule in minimal YaraFile
+        yara_file = YF(imports=[], includes=[], rules=[rule])
+        return self.rule_analyzer.analyze(yara_file)
 
     def _analyze_file_path(self, file_path: str) -> dict[str, Any]:
         """Analyze a file from path."""
@@ -245,46 +297,47 @@ class ParallelAnalyzer:
 
     def analyze_complexity_parallel(
         self,
-        rules: list[Rule],
+        asts: list[YaraFile],
         max_workers: int | None = None,
-    ) -> dict[str, Any]:
-        """Analyze rule complexity in parallel.
+    ) -> list[Job]:
+        """Analyze complexity of YARA files in parallel.
 
         Args:
-            rules: Rules to analyze
+            asts: List of YARA ASTs to analyze
             max_workers: Override default max workers
 
         Returns:
-            Complexity analysis results
+            List of Job objects
 
         """
-        max_workers = max_workers or self.optimize_worker_count(rules)
+        jobs = []
 
-        # Analyze each rule
-        analyses = self.analyze_rules(rules, max_workers)
+        for ast in asts:
+            job_id = str(uuid.uuid4())
+            job = Job(job_id=job_id, job_type="complexity", status=JobStatus.RUNNING)
+            jobs.append(job)
+            self._stats["jobs_submitted"] += 1
 
-        # Aggregate complexity metrics
-        total_complexity = 0
-        max_complexity = 0
-        min_complexity = float("inf")
+            try:
+                # Analyze this AST
+                analysis = self.analyze_file(ast, max_workers)
+                # Add metrics and quality_score keys for compatibility
+                analysis["metrics"] = analysis.get("stats", {})
+                # Calculate simple quality score (can be improved)
+                error_rate = analysis["stats"].get("errors", 0) / max(
+                    analysis["stats"].get("total_rules", 1), 1
+                )
+                analysis["quality_score"] = max(0, 100 - (error_rate * 100))
+                job.result = analysis
+                job.status = JobStatus.COMPLETED
+                job.end_time = time.time()
+                self._stats["jobs_completed"] += 1
+            except Exception as e:
+                job.error = str(e)
+                job.status = JobStatus.FAILED
+                job.end_time = time.time()
 
-        for analysis in analyses:
-            if "complexity" in analysis:
-                complexity = analysis["complexity"]
-                total_complexity += complexity
-                max_complexity = max(max_complexity, complexity)
-                min_complexity = min(min_complexity, complexity)
-
-        avg_complexity = total_complexity / len(rules) if rules else 0
-
-        return {
-            "total_rules": len(rules),
-            "total_complexity": total_complexity,
-            "average_complexity": avg_complexity,
-            "max_complexity": max_complexity,
-            "min_complexity": min_complexity if min_complexity != float("inf") else 0,
-            "analyses": analyses,
-        }
+        return jobs
 
     def profile_performance(
         self,
@@ -324,3 +377,94 @@ class ParallelAnalyzer:
             "optimal_workers": min(results, key=lambda k: results[k]["time"]),
             "rule_count": len(rules),
         }
+
+    def parse_files_parallel(
+        self,
+        file_paths: list,
+        chunk_size: int = 10,
+    ) -> list[Job]:
+        """Parse multiple files in parallel and return jobs.
+
+        Args:
+            file_paths: List of file paths to parse
+            chunk_size: Number of files per chunk
+
+        Returns:
+            List of Job objects
+
+        """
+        jobs = []
+
+        # Split files into chunks
+        chunks = [file_paths[i : i + chunk_size] for i in range(0, len(file_paths), chunk_size)]
+
+        for chunk in chunks:
+            job_id = str(uuid.uuid4())
+            job = Job(job_id=job_id, job_type="parse_files", status=JobStatus.RUNNING)
+            jobs.append(job)
+            self._stats["jobs_submitted"] += 1
+
+            try:
+                # Parse files in this chunk
+                from pathlib import Path
+
+                from yaraast.parser import Parser
+
+                parser = Parser()
+                results = []
+
+                for file_path in chunk:
+                    content = Path(file_path).read_text()
+                    ast = parser.parse(content)
+                    results.append(ast)
+
+                job.result = results
+                job.status = JobStatus.COMPLETED
+                job.end_time = time.time()
+                self._stats["jobs_completed"] += 1
+            except Exception as e:
+                job.error = str(e)
+                job.status = JobStatus.FAILED
+                job.end_time = time.time()
+
+        return jobs
+
+    def process_batch(
+        self,
+        items: list,
+        worker_func: Callable,
+        job_type: str = "batch",
+        parameters: dict | None = None,
+    ) -> list[Job]:
+        """Process a batch of items with a custom worker function.
+
+        Args:
+            items: Items to process
+            worker_func: Worker function to apply to each item
+            job_type: Type of job for tracking
+            parameters: Additional parameters for worker function
+
+        Returns:
+            List of Job objects
+
+        """
+        jobs = []
+        parameters = parameters or {}
+
+        for item in items:
+            job_id = str(uuid.uuid4())
+            job = Job(job_id=job_id, job_type=job_type, status=JobStatus.RUNNING)
+            jobs.append(job)
+
+            try:
+                # Call worker function
+                result = worker_func(item, parameters)
+                job.result = result
+                job.status = JobStatus.COMPLETED
+                job.end_time = time.time()
+            except Exception as e:
+                job.error = str(e)
+                job.status = JobStatus.FAILED
+                job.end_time = time.time()
+
+        return jobs

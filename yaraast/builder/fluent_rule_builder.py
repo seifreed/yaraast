@@ -130,6 +130,10 @@ class FluentRuleBuilder:
         """Add MZ header string."""
         return self.with_string(FluentStringBuilder.string(identifier).mz_header())
 
+    def mz_header(self, identifier: str = "$mz") -> Self:
+        """Add MZ header string (alias for with_mz_header)."""
+        return self.with_mz_header(identifier)
+
     def pe_header(self, identifier: str = "$pe") -> Self:
         """Add PE header string."""
         return self.with_string(FluentStringBuilder.string(identifier).pe_header())

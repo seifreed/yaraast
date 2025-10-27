@@ -143,7 +143,10 @@ class IncludeResolver:
                         base_path=resolved_path.parent,
                     )
                     resolved.includes.append(included_file)
-                except (FileNotFoundError, RecursionError):
+                except RecursionError:
+                    # Re-raise RecursionError for circular includes
+                    raise
+                except FileNotFoundError:
                     # Log error but continue parsing other includes
                     pass
 

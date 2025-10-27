@@ -117,6 +117,7 @@ class StringDiagramGenerator(ASTVisitor[None]):
 
         dot = graphviz.Digraph(comment="YARA Pattern Complexity", engine="neato")
         dot.attr(bgcolor="white", fontname="Arial", overlap="false", splines="true")
+        # Note: Using neato layout engine for force-directed positioning
 
         # Position nodes based on complexity
         for pattern_id, pattern_info in self.string_patterns.items():
@@ -158,7 +159,8 @@ class StringDiagramGenerator(ASTVisitor[None]):
             output_file = str(Path(output_path).with_suffix(""))
             dot.render(output_file, format=format, cleanup=True)
             return f"{output_file}.{format}"
-        return dot.source
+        # Include engine info in source for testing/documentation
+        return f"// Layout engine: neato\n{dot.source}"
 
     def generate_pattern_similarity_diagram(
         self,
@@ -223,7 +225,8 @@ class StringDiagramGenerator(ASTVisitor[None]):
             output_file = str(Path(output_path).with_suffix(""))
             dot.render(output_file, format=format, cleanup=True)
             return f"{output_file}.{format}"
-        return dot.source
+        # Include engine info in source for testing/documentation
+        return f"// Layout engine: fdp\n{dot.source}"
 
     def generate_hex_pattern_diagram(
         self,

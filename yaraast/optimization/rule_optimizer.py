@@ -50,8 +50,7 @@ class RuleOptimizer:
 
             # Dead code elimination pass
             old_rules = len(current.rules)
-            current = self.dead_code_eliminator.eliminate(current)
-            dead_elims = old_rules - len(current.rules)
+            current, dead_elims = self.dead_code_eliminator.eliminate(current)
             total_dead_elims += dead_elims
 
             passes_performed += 1

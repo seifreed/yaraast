@@ -221,6 +221,26 @@ class YaraLLexer:
         # Check for regex patterns
         if self.text[self.position] == "/":
             return self._try_regex_or_div(start_column)
+
+        # Check for operators and symbols
+        token = self._try_two_char_token(start_column)
+        if token:
+            return token
+
+        # Single character tokens
+        token = self._try_single_char_token(start_column)
+        if token:
+            return token
+
+        # Numbers
+        if self.text[self.position].isdigit():
+            return self._read_number()
+
+        # Identifiers and keywords
+        if self.text[self.position].isalpha() or self.text[self.position] == "_":
+            return self._read_identifier()
+
+        # Unknown character
         return None
 
     def _try_time_literal(self, start_column: int) -> YaraLToken | None:
@@ -284,12 +304,6 @@ class YaraLLexer:
             column=start_column,
         )
 
-        # Check for operators and symbols
-        token = self._try_two_char_token(start_column)
-        if token:
-            return token
-        return None
-
     def _try_two_char_token(self, start_column: int) -> YaraLToken | None:
         """Try to match two-character operators."""
         if self.position + 1 >= len(self.text):
@@ -299,9 +313,9 @@ class YaraLLexer:
         two_char_tokens = {
             "->": (BaseTokenType.IDENTIFIER, YaraLTokenType.ARROW),
             "::": (BaseTokenType.IDENTIFIER, YaraLTokenType.DOUBLE_COLON),
-            ">=": (BaseTokenType.GTE, None),
-            "<=": (BaseTokenType.LTE, None),
-            "==": (BaseTokenType.EQ, None),
+            ">=": (BaseTokenType.GE, None),
+            "<=": (BaseTokenType.LE, None),
+            "==": (BaseTokenType.IEQUALS, None),  # Use IEQUALS for ==
             "!=": (BaseTokenType.NEQ, None),
         }
 
@@ -316,24 +330,6 @@ class YaraLLexer:
                 column=start_column,
                 yaral_type=yaral_type,
             )
-        return None
-
-        # Single character tokens
-        token = self._try_single_char_token(start_column)
-        if token:
-            return token
-
-        # Numbers
-        if self.text[self.position].isdigit():
-            return self._read_number()
-
-        # Identifiers and keywords
-        if self.text[self.position].isalpha() or self.text[self.position] == "_":
-            return self._read_identifier()
-
-        # Unknown character
-        self.position += 1
-        self.column += 1
         return None
 
     def _try_single_char_token(self, start_column: int) -> YaraLToken | None:
@@ -355,8 +351,8 @@ class YaraLLexer:
             "<": BaseTokenType.LT,
             "+": BaseTokenType.PLUS,
             "-": BaseTokenType.MINUS,
-            "*": BaseTokenType.MUL,
-            "#": BaseTokenType.HASH,
+            "*": BaseTokenType.MULTIPLY,
+            "#": BaseTokenType.STRING_COUNT,  # or HASH if exists
         }
 
         if char in single_tokens:
@@ -453,7 +449,7 @@ class YaraLLexer:
             self.column += 1
 
         return YaraLToken(
-            type=BaseTokenType.NUMBER,
+            type=BaseTokenType.INTEGER,
             value=value,
             line=self.line,
             column=start_column,

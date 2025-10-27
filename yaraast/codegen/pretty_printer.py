@@ -257,13 +257,13 @@ class PrettyPrinter(CommentAwareCodeGenerator):
     def _write_plain_string_aligned(self, node: PlainString) -> None:
         """Write plain string with alignment."""
         quote = '"' if self.options.quote_style == "double" else "'"
-        string_part = f"{node.identifier} = {quote}{node.value}{quote}"
 
         if self.options.align_string_definitions and self._string_alignment_column > 0:
-            padding = max(1, self._string_alignment_column - len(string_part))
-            self._write(string_part + " " * padding)
+            # Align equals sign by padding identifier
+            padding = max(0, self._string_alignment_column - len(node.identifier))
+            self._write(f"{node.identifier}{' ' * padding} = {quote}{node.value}{quote}")
         else:
-            self._write(string_part)
+            self._write(f"{node.identifier} = {quote}{node.value}{quote}")
 
         # Modifiers
         if node.modifiers:
@@ -299,13 +299,13 @@ class PrettyPrinter(CommentAwareCodeGenerator):
                 hex_parts.append("??")
 
         hex_pattern = " ".join(hex_parts) if self.options.hex_spacing else "".join(hex_parts)
-        string_part = f"{node.identifier} = {{ {hex_pattern} }}"
 
         if self.options.align_string_definitions and self._string_alignment_column > 0:
-            padding = max(1, self._string_alignment_column - len(string_part))
-            self._write(string_part + " " * padding)
+            # Align equals sign by padding identifier
+            padding = max(0, self._string_alignment_column - len(node.identifier))
+            self._write(f"{node.identifier}{' ' * padding} = {{ {hex_pattern} }}")
         else:
-            self._write(string_part)
+            self._write(f"{node.identifier} = {{ {hex_pattern} }}")
 
         # Modifiers
         if node.modifiers:
@@ -318,13 +318,12 @@ class PrettyPrinter(CommentAwareCodeGenerator):
 
     def _write_regex_string_aligned(self, node: RegexString) -> None:
         """Write regex string with alignment."""
-        string_part = f"{node.identifier} = /{node.regex}/"
-
         if self.options.align_string_definitions and self._string_alignment_column > 0:
-            padding = max(1, self._string_alignment_column - len(string_part))
-            self._write(string_part + " " * padding)
+            # Align equals sign by padding identifier
+            padding = max(0, self._string_alignment_column - len(node.identifier))
+            self._write(f"{node.identifier}{' ' * padding} = /{node.regex}/")
         else:
-            self._write(string_part)
+            self._write(f"{node.identifier} = /{node.regex}/")
 
         # Modifiers
         if node.modifiers:
@@ -379,29 +378,17 @@ class PrettyPrinter(CommentAwareCodeGenerator):
         return generator.visit(expr).strip()
 
     def _calculate_string_alignment_column(self, ast: YaraFile) -> None:
-        """Calculate alignment column for string definitions."""
+        """Calculate alignment column for string definitions (equals sign position)."""
         max_length = 0
 
         for rule in ast.rules:
             for string_def in rule.strings:
-                if isinstance(string_def, PlainString):
-                    length = len(f'{string_def.identifier} = "{string_def.value}"')
-                elif isinstance(string_def, HexString):
-                    # Estimate hex string length
-                    length = (
-                        len(f"{string_def.identifier} = {{ ... }}") + len(string_def.tokens) * 3
-                    )
-                elif isinstance(string_def, RegexString):
-                    length = len(f"{string_def.identifier} = /{string_def.regex}/")
-                else:
-                    length = len(string_def.identifier) + 10  # Estimate
-
+                # Calculate just the identifier length for equals sign alignment
+                length = len(string_def.identifier)
                 max_length = max(max_length, length)
 
-        self._string_alignment_column = min(
-            max_length + 2,
-            self.options.min_alignment_column,
-        )
+        # Column where equals sign should appear (after identifier + space)
+        self._string_alignment_column = max_length + 1
 
     def _calculate_meta_alignment_column(self, ast: YaraFile) -> None:
         """Calculate alignment column for meta values."""

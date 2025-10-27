@@ -16,43 +16,111 @@ class CommentPreservingLexer(Lexer):
 
     def tokenize(self) -> list[Token]:
         """Tokenize input text and preserve comments."""
-        tokens = []
+        # First pass: extract comments and their positions
+        comment_tokens = []
+        text_without_comments = []
+        line_num = 1
+        col_num = 1
+        i = 0
 
-        while self.position < len(self.text):
-            # Skip only whitespace, not comments
-            while self.position < len(self.text) and self._current_char() in " \t\r\n":
-                if self._current_char() == "\n":
-                    self.line += 1
-                    self.column = 1
-                else:
-                    self.column += 1
-                self.position += 1
+        while i < len(self.text):
+            # Check for line comment
+            if i < len(self.text) - 1 and self.text[i : i + 2] == "//":
+                start_line = line_num
+                start_col = col_num
+                comment_text = "//"
+                i += 2
+                col_num += 2
 
-            if self.position >= len(self.text):
-                break
+                # Read until end of line
+                while i < len(self.text) and self.text[i] != "\n":
+                    comment_text += self.text[i]
+                    i += 1
+                    col_num += 1
 
-            # Check for comments
-            if self._current_char() == "/" and self.position + 1 < len(self.text):
-                if self.text[self.position + 1] == "/":
-                    comment_token = self._read_line_comment()
-                    if self.preserve_comments and comment_token:
-                        tokens.append(comment_token)
-                        self.comments.append(comment_token)
-                    continue
-                if self.text[self.position + 1] == "*":
-                    comment_token = self._read_block_comment()
-                    if self.preserve_comments and comment_token:
-                        tokens.append(comment_token)
-                        self.comments.append(comment_token)
-                    continue
+                if self.preserve_comments:
+                    comment_tokens.append(
+                        Token(
+                            TokenType.COMMENT,
+                            comment_text,
+                            start_line,
+                            start_col,
+                            len(comment_text),
+                        )
+                    )
 
-            # Regular token
-            token = self._next_token()
-            if token:
-                tokens.append(token)
+                # Replace comment with space to preserve positions
+                text_without_comments.append(" " * len(comment_text))
+                continue
 
-        tokens.append(Token(TokenType.EOF, "", self.line, self.column, 0))
-        return tokens
+            # Check for block comment
+            if i < len(self.text) - 1 and self.text[i : i + 2] == "/*":
+                start_line = line_num
+                start_col = col_num
+                comment_text = "/*"
+                i += 2
+                col_num += 2
+
+                # Read until */
+                while i < len(self.text) - 1:
+                    if self.text[i : i + 2] == "*/":
+                        comment_text += "*/"
+                        i += 2
+                        col_num += 2
+                        break
+                    if self.text[i] == "\n":
+                        line_num += 1
+                        col_num = 1
+                    else:
+                        col_num += 1
+                    comment_text += self.text[i]
+                    i += 1
+
+                if self.preserve_comments:
+                    comment_tokens.append(
+                        Token(
+                            TokenType.COMMENT,
+                            comment_text,
+                            start_line,
+                            start_col,
+                            len(comment_text),
+                        )
+                    )
+
+                # Replace comment with spaces (preserving newlines for line tracking)
+                for c in comment_text:
+                    text_without_comments.append(c if c == "\n" else " ")
+                continue
+
+            # Regular character
+            if self.text[i] == "\n":
+                line_num += 1
+                col_num = 1
+            else:
+                col_num += 1
+
+            text_without_comments.append(self.text[i])
+            i += 1
+
+        # Second pass: tokenize text without comments using base lexer
+        modified_text = "".join(text_without_comments)
+        base_lexer = Lexer(modified_text)
+        regular_tokens = base_lexer.tokenize()
+
+        # Merge comment tokens and regular tokens, sorted by position
+        all_tokens = list(regular_tokens[:-1])  # Exclude EOF for now
+        all_tokens.extend(comment_tokens)
+
+        # Sort by line, then column
+        all_tokens.sort(key=lambda t: (t.line, t.column))
+
+        # Add EOF at the end
+        all_tokens.append(regular_tokens[-1])
+
+        # Store comments separately
+        self.comments = comment_tokens
+
+        return all_tokens
 
     def _read_line_comment(self) -> Token | None:
         """Read a line comment starting with //."""

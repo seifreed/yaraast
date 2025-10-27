@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.expressions import BinaryExpression, IntegerLiteral, UnaryExpression
 from yaraast.ast.rules import Rule
+from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
+from yaraast.optimization.expression_optimizer import ExpressionOptimizer
 
 
 @dataclass
@@ -34,9 +36,26 @@ class ASTOptimizer:
         # Create a deep copy to avoid modifying the original
         optimized_ast = copy.deepcopy(ast)
 
-        # Optimize each rule
-        for rule in optimized_ast.rules:
-            self._optimize_rule(rule)
+        # Apply dead code elimination
+        eliminator = DeadCodeEliminator()
+        optimized_ast, elimination_count = eliminator.eliminate(optimized_ast)
+        if elimination_count > 0:
+            self.stats.strings_optimized += elimination_count
+            self.stats.dead_code_removed += elimination_count
+            self.optimizations_applied.append(
+                f"Removed {elimination_count} unused strings/dead code"
+            )
+
+        # Apply expression optimization
+        expr_optimizer = ExpressionOptimizer()
+        optimized_ast, expr_opt_count = expr_optimizer.optimize(optimized_ast)
+        if expr_opt_count > 0:
+            self.stats.conditions_simplified += expr_opt_count
+            self.stats.constant_folded += expr_opt_count
+            self.optimizations_applied.append(f"Applied {expr_opt_count} expression optimizations")
+
+        # Count rules as optimized
+        self.stats.rules_optimized = len(optimized_ast.rules)
 
         return optimized_ast
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -13,15 +14,53 @@ from yaraast.ast.expressions import (
     ParenthesesExpression,
     UnaryExpression,
 )
+from yaraast.ast.rules import Rule
 from yaraast.visitor.visitor import ASTTransformer
 
 
 class ExpressionOptimizer(ASTTransformer):
     """Optimizes expressions in YARA rules."""
 
-    def optimize(self, expr: Expression) -> Expression:
-        """Optimize an expression."""
-        return self.visit(expr)
+    def __init__(self) -> None:
+        super().__init__()
+        self.optimization_count = 0
+
+    def optimize(self, node: Expression | YaraFile) -> Expression | tuple[YaraFile, int]:
+        """Optimize an expression or YaraFile.
+
+        Args:
+            node: Expression to optimize or YaraFile containing rules to optimize
+
+        Returns:
+            If Expression: optimized Expression
+            If YaraFile: tuple of (optimized YaraFile, optimization count)
+        """
+        if isinstance(node, YaraFile):
+            self.optimization_count = 0
+            optimized_rules = []
+            for rule in node.rules:
+                optimized_rule = self._optimize_rule(rule)
+                optimized_rules.append(optimized_rule)
+
+            optimized_file = YaraFile(
+                imports=node.imports,
+                includes=node.includes,
+                rules=optimized_rules,
+            )
+            return optimized_file, self.optimization_count
+        else:
+            # Single expression optimization
+            return self.visit(node)
+
+    def _optimize_rule(self, rule: Rule) -> Rule:
+        """Optimize expressions in a rule."""
+        if rule.condition:
+            # Reset count for this rule to track optimizations
+            before_count = self.optimization_count
+            optimized_condition = self.visit(rule.condition)
+            # Count is incremented by visit methods for each optimization
+            rule.condition = optimized_condition
+        return rule
 
     def visit_binary_expression(self, node: BinaryExpression) -> Expression:
         """Visit BinaryExpression and optimize."""
@@ -35,8 +74,10 @@ class ExpressionOptimizer(ASTTransformer):
             BooleanLiteral,
         ):
             if node.operator == "and":
+                self.optimization_count += 1
                 return BooleanLiteral(value=node.left.value and node.right.value)
             if node.operator == "or":
+                self.optimization_count += 1
                 return BooleanLiteral(value=node.left.value or node.right.value)
 
         # Constant folding for integer arithmetic
@@ -118,21 +159,29 @@ class ExpressionOptimizer(ASTTransformer):
         if isinstance(node.left, BooleanLiteral):
             if node.operator == "and":
                 if not node.left.value:
+                    self.optimization_count += 1
                     return BooleanLiteral(value=False)
+                self.optimization_count += 1
                 return node.right
             if node.operator == "or":
                 if node.left.value:
+                    self.optimization_count += 1
                     return BooleanLiteral(value=True)
+                self.optimization_count += 1
                 return node.right
 
         if isinstance(node.right, BooleanLiteral):
             if node.operator == "and":
                 if not node.right.value:
+                    self.optimization_count += 1
                     return BooleanLiteral(value=False)
+                self.optimization_count += 1
                 return node.left
             if node.operator == "or":
                 if node.right.value:
+                    self.optimization_count += 1
                     return BooleanLiteral(value=True)
+                self.optimization_count += 1
                 return node.left
 
         return node
@@ -144,12 +193,15 @@ class ExpressionOptimizer(ASTTransformer):
 
         # Constant folding
         if node.operator == "not" and isinstance(node.operand, BooleanLiteral):
+            self.optimization_count += 1
             return BooleanLiteral(value=not node.operand.value)
 
         if node.operator == "-" and isinstance(node.operand, IntegerLiteral):
+            self.optimization_count += 1
             return IntegerLiteral(value=-node.operand.value)
 
         if node.operator == "~" and isinstance(node.operand, IntegerLiteral):
+            self.optimization_count += 1
             return IntegerLiteral(value=~node.operand.value)
 
         # Double negation elimination
@@ -158,6 +210,7 @@ class ExpressionOptimizer(ASTTransformer):
             and isinstance(node.operand, UnaryExpression)
             and node.operand.operator == "not"
         ):
+            self.optimization_count += 1
             return node.operand.operand
 
         return node
@@ -228,7 +281,37 @@ class ExpressionOptimizer(ASTTransformer):
 
     def visit_set_expression(self, node: Any) -> Any:
         if hasattr(node, "elements"):
+            # Optimize elements first
             node.elements = [self.visit(elem) for elem in node.elements]
+
+            # Remove duplicates from integer literals
+            seen = set()
+            unique_elements = []
+            duplicates_removed = 0
+
+            for elem in node.elements:
+                # Create a hashable representation for comparison
+                if isinstance(elem, IntegerLiteral):
+                    key = ("int", elem.value)
+                elif isinstance(elem, BooleanLiteral):
+                    key = ("bool", elem.value)
+                elif hasattr(elem, "name"):
+                    key = ("name", elem.name)
+                else:
+                    # For other types, keep them all (can't easily detect duplicates)
+                    unique_elements.append(elem)
+                    continue
+
+                if key not in seen:
+                    seen.add(key)
+                    unique_elements.append(elem)
+                else:
+                    duplicates_removed += 1
+
+            if duplicates_removed > 0:
+                self.optimization_count += duplicates_removed
+                node.elements = unique_elements
+
         return node
 
     def visit_for_expression(self, node: Any) -> Any:

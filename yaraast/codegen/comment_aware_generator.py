@@ -98,7 +98,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
             self.visit(imp)
             if imp.trailing_comment:
                 self._write_comment(imp.trailing_comment, inline=True)
-                self._writeline()
+            self._writeline()
 
         if node.imports:
             self._writeline()
@@ -172,7 +172,6 @@ class CommentAwareCodeGenerator(CodeGenerator):
                     self._writeline()
 
             self._dedent()
-            self._writeline()
 
         # Write strings section
         if node.strings:
@@ -187,34 +186,34 @@ class CommentAwareCodeGenerator(CodeGenerator):
                 self._writeline()
 
             self._dedent()
-            self._writeline()
 
         # Write condition
-        self._writeline("condition:")
-        self._indent()
+        if node.condition:
+            self._writeline("condition:")
+            self._indent()
 
-        # Check if condition has comments
-        if hasattr(node.condition, "leading_comments"):
-            self._write_leading_comments(node.condition.leading_comments)
+            # Check if condition has comments
+            if hasattr(node.condition, "leading_comments"):
+                self._write_leading_comments(node.condition.leading_comments)
 
-        self._write("")
-        condition_str = self.visit(node.condition)
-        self._write(condition_str)
+            condition_str = self.visit(node.condition)
+            self._writeline(condition_str)
 
-        if hasattr(node.condition, "trailing_comment") and node.condition.trailing_comment:
-            self._write_comment(node.condition.trailing_comment, inline=True)
+            if hasattr(node.condition, "trailing_comment") and node.condition.trailing_comment:
+                self._write_comment(node.condition.trailing_comment, inline=True)
 
-        self._writeline()
-        self._dedent()
+            self._dedent()
 
         # Close rule
-        self._write("}")
-        self._writeline()
+        self._writeline("}")
 
         return ""
 
     def _write_meta_item(self, key: str, value: any) -> None:
         """Write a meta item."""
+        # Add indentation manually
+        indent = " " * (self.indent_level * self.indent_size)
+        self._write(indent)
         self._write(f"{key} = ")
 
         if isinstance(value, str):
@@ -232,6 +231,9 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_plain_string(self, node: PlainString) -> str:
         """Generate code for PlainString with comments."""
+        # Add indentation manually
+        indent = " " * (self.indent_level * self.indent_size)
+        self._write(indent)
         self._write(f'{node.identifier} = "{node.value}"')
 
         # Write modifiers
@@ -244,6 +246,9 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_hex_string(self, node: HexString) -> str:
         """Generate code for HexString with comments."""
+        # Add indentation manually
+        indent = " " * (self.indent_level * self.indent_size)
+        self._write(indent)
         self._write(f"{node.identifier} = {{ ")
 
         # Generate hex tokens
@@ -265,6 +270,9 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_regex_string(self, node: RegexString) -> str:
         """Generate code for RegexString with comments."""
+        # Add indentation manually
+        indent = " " * (self.indent_level * self.indent_size)
+        self._write(indent)
         self._write(f"{node.identifier} = /{node.regex}/")
 
         # Write regex modifiers
@@ -281,6 +289,9 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_meta(self, node: Meta) -> str:
         """Generate code for Meta with comments."""
+        # Add indentation manually
+        indent = " " * (self.indent_level * self.indent_size)
+        self._write(indent)
         self._write(f"{node.key} = ")
 
         if isinstance(node.value, str):

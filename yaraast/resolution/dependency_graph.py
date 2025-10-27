@@ -111,6 +111,12 @@ class DependencyGraph:
 
     def get_file_dependencies(self, file_path: str) -> set[str]:
         """Get all dependencies of a file (transitive)."""
+        # Resolve path to handle symlinks (e.g., /var -> /private/var on macOS)
+        resolved_path = str(Path(file_path).resolve())
+
+        # Try both resolved and original paths
+        if resolved_path in self.nodes:
+            return self._get_transitive_dependencies(resolved_path)
         return self._get_transitive_dependencies(file_path)
 
     def get_file_dependents(self, file_path: str) -> set[str]:

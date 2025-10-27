@@ -12,7 +12,7 @@ try:
 except ImportError:
     YARA_AVAILABLE = False
 
-from yaraast.parser import Parser, YaraParser
+from yaraast.parser import Parser
 
 if YARA_AVAILABLE:
     from yaraast.libyara import (
@@ -41,7 +41,7 @@ class TestDirectASTCompiler:
         }
         """
 
-        parser = YaraParser()
+        parser = Parser()
         ast = parser.parse(yara_source.strip())
 
         compiler = DirectASTCompiler()
@@ -65,7 +65,7 @@ class TestDirectASTCompiler:
         }
         """
 
-        parser = YaraParser()
+        parser = Parser()
         ast = parser.parse(yara_source.strip())
 
         compiler = DirectASTCompiler(enable_optimization=True)
@@ -98,7 +98,7 @@ class TestOptimizedMatcher:
             test_file = Path(f.name)
 
         try:
-            parser = YaraParser()
+            parser = Parser()
             ast = parser.parse(yara_source.strip())
 
             # Compile rules
@@ -390,14 +390,14 @@ class TestCrossValidator:
 
         validator = CrossValidator()
 
-        test_samples = [b"malware", b"normal file", b"malicious", b"benign"]
+        test_samples = [b"malware", b"good file", b"malicious", b"benign"]
 
         results = validator.validate_batch(ast, test_samples)
 
         assert len(results) == 4
         assert results[0].valid is True  # "malware" matches
         assert results[0].yaraast_results["test_rule"] is True
-        assert results[1].valid is True  # "normal file" doesn't match
+        assert results[1].valid is True  # "good file" doesn't match
         assert results[1].yaraast_results["test_rule"] is False
         assert results[2].valid is True  # "malicious" matches
         assert results[2].yaraast_results["test_rule"] is True

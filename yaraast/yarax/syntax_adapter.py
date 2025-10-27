@@ -33,10 +33,11 @@ class YaraXSyntaxAdapter(ASTTransformer):
         self.target = target
         self.adaptations_count = 0
 
-    def adapt(self, yara_file: YaraFile) -> YaraFile:
-        """Adapt YARA file syntax."""
+    def adapt(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
+        """Adapt YARA file syntax and return adapted file with adaptation count."""
         self.adaptations_count = 0
-        return self.visit(yara_file)
+        adapted = self.visit(yara_file)
+        return adapted, self.adaptations_count
 
     def adapt_with_count(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
         """Adapt YARA file syntax and return adapted file with adaptation count."""

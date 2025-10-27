@@ -133,13 +133,19 @@ class ASTStructuralAnalyzer(ASTVisitor):
             ),
         }
 
-        # Add type-specific content hash (without exact content for style independence)
+        # Add type-specific content hash (include actual content for logical comparison)
         if hasattr(string_def, "value"):
             string_structure["content_type"] = "literal"
-            string_structure["content_length"] = len(str(string_def.value))
+            string_structure["content_hash"] = hashlib.md5(
+                str(string_def.value).encode(),
+                usedforsecurity=False,
+            ).hexdigest()
         elif hasattr(string_def, "pattern"):
             string_structure["content_type"] = "regex"
-            string_structure["pattern_length"] = len(str(string_def.pattern))
+            string_structure["content_hash"] = hashlib.md5(
+                str(string_def.pattern).encode(),
+                usedforsecurity=False,
+            ).hexdigest()
         elif hasattr(string_def, "tokens"):
             string_structure["content_type"] = "hex"
             string_structure["token_count"] = len(getattr(string_def, "tokens", []))
@@ -471,6 +477,17 @@ class ASTDiffer:
             result.logical_changes.append(
                 f"Removed strings: {', '.join(removed_strings)}",
             )
+
+        # Check modified strings (same identifier, different content)
+        common_strings = strings1 & strings2
+        for string_id in common_strings:
+            if (
+                analysis1["string_signatures"][string_id]
+                != analysis2["string_signatures"][string_id]
+            ):
+                result.logical_changes.append(
+                    f"String '{string_id}' content modified",
+                )
 
         # Check condition changes
         conditions1 = set(analysis1["condition_signatures"].keys())

@@ -20,6 +20,19 @@ if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
 
 
+class HtmlTreeGenerator:
+    """Generates HTML tree visualizations of YARA ASTs."""
+
+    def generate(self, ast: YaraFile) -> str:
+        """Generate HTML tree from AST."""
+        # Simple HTML generation
+        html = "<html><body><h1>YARA AST</h1>"
+        for rule in ast.rules:
+            html += f"<div class='rule'><h2>{rule.name}</h2></div>"
+        html += "</body></html>"
+        return html
+
+
 class BatchOperation(Enum):
     """Types of batch operations."""
 
@@ -144,8 +157,12 @@ class BatchProcessor:
 
     def _analyze_complexity(self, item: Rule) -> dict[str, Any]:
         """Analyze rule complexity."""
+        from yaraast.ast.base import YaraFile as YF
+
         analyzer = RuleAnalyzer()
-        return analyzer.analyze(item)
+        # RuleAnalyzer.analyze expects YaraFile, so wrap Rule in minimal YaraFile
+        yara_file = YF(imports=[], includes=[], rules=[item])
+        return analyzer.analyze(yara_file)
 
     def _serialize_item(self, item: Any) -> str:
         """Serialize an item to JSON."""
@@ -160,10 +177,27 @@ class BatchProcessor:
     def process_files(
         self,
         file_paths: list[Path],
+        operations: list[BatchOperation] | BatchOperation,
+        output_dir: Path | None = None,
+    ) -> dict[BatchOperation, BatchResult] | BatchResult:
+        """Process multiple YARA files with one or more operations."""
+        # Support both single operation and list of operations
+        if isinstance(operations, BatchOperation):
+            return self._process_files_single(file_paths, operations, output_dir)
+
+        # Process multiple operations
+        results = {}
+        for operation in operations:
+            results[operation] = self._process_files_single(file_paths, operation, output_dir)
+        return results
+
+    def _process_files_single(
+        self,
+        file_paths: list[Path],
         operation: BatchOperation,
         output_dir: Path | None = None,
     ) -> BatchResult:
-        """Process multiple YARA files."""
+        """Process multiple YARA files with a single operation."""
         start_time = time.time()
         result = BatchResult(
             operation=operation,
@@ -191,6 +225,13 @@ class BatchProcessor:
                     for rule in parsed.rules:
                         analysis = self._analyze_complexity(rule)
                         result.summary[rule.name] = analysis
+
+                elif operation == BatchOperation.HTML_TREE and output_dir:
+                    output_file = output_dir / f"{file_path.stem}.html"
+                    generator = HtmlTreeGenerator()
+                    html_content = generator.generate(parsed)
+                    output_file.write_text(html_content)
+                    result.output_files.append(str(output_file))
 
                 elif operation == BatchOperation.SERIALIZE and output_dir:
                     output_file = output_dir / f"{file_path.stem}.json"
@@ -257,3 +298,90 @@ class BatchProcessor:
             "items_processed": 0,
             "failures": 0,
         }
+
+    def process_directory(
+        self,
+        directory: Path,
+        operations: list[BatchOperation] | BatchOperation,
+        output_dir: Path | None = None,
+        file_pattern: str = "*.yar",
+        recursive: bool = False,
+    ) -> dict[BatchOperation, BatchResult] | BatchResult:
+        """Process all YARA files in a directory."""
+        # Find all matching files
+        if recursive:
+            file_paths = list(directory.rglob(file_pattern))
+        else:
+            file_paths = list(directory.glob(file_pattern))
+
+        # Process using process_files
+        return self.process_files(file_paths, operations, output_dir)
+
+    def process_large_file(
+        self,
+        file_path: Path,
+        operations: list[BatchOperation],
+        output_dir: Path,
+        split_rules: bool = False,
+    ) -> dict[BatchOperation, BatchResult]:
+        """Process a large YARA file, optionally splitting rules."""
+        results = {}
+
+        try:
+            # Parse the file
+            with open(file_path) as f:
+                content = f.read()
+
+            parsed = self._parse_item(content)
+
+            # Determine input count (rules if split, otherwise files)
+            input_count = len(parsed.rules) if (parsed and split_rules) else 1
+
+            # Process each operation
+            for operation in operations:
+                result = BatchResult(
+                    operation=operation,
+                    input_count=input_count,
+                )
+
+                if not parsed:
+                    result.failed_count += 1
+                    result.errors.append(f"Failed to parse {file_path}")
+                    results[operation] = result
+                    continue
+
+                try:
+                    if operation == BatchOperation.PARSE:
+                        # Already parsed
+                        if split_rules:
+                            result.successful_count = len(parsed.rules)
+                        else:
+                            result.successful_count = 1
+                    elif operation == BatchOperation.COMPLEXITY:
+                        if split_rules:
+                            # Process each rule separately
+                            for rule in parsed.rules:
+                                analysis = self._analyze_complexity(rule)
+                                result.summary[rule.name] = analysis
+                                result.successful_count += 1
+                        else:
+                            # Process whole file
+                            for rule in parsed.rules:
+                                analysis = self._analyze_complexity(rule)
+                                result.summary[rule.name] = analysis
+                            result.successful_count = 1
+                except Exception as e:
+                    result.failed_count += 1
+                    result.errors.append(f"Error with {operation.value}: {e!s}")
+
+                results[operation] = result
+
+        except Exception as e:
+            # If parsing fails, all operations fail
+            for operation in operations:
+                result = BatchResult(operation=operation, input_count=1)
+                result.failed_count += 1
+                result.errors.append(f"Error processing {file_path}: {e!s}")
+                results[operation] = result
+
+        return results

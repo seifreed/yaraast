@@ -252,11 +252,13 @@ class RoundTripSerializer:
                 formatting.indent_style = "tabs"
 
         if indent_sizes:
-            # Find most common indent size
-            from collections import Counter
+            # Find base indent unit (GCD of all indents)
+            from functools import reduce
+            from math import gcd
 
-            indent_counter = Counter(indent_sizes)
-            formatting.indent_size = indent_counter.most_common(1)[0][0]
+            # Calculate GCD of all indent sizes to find base unit
+            base_indent = reduce(gcd, indent_sizes)
+            formatting.indent_size = base_indent if base_indent > 0 else 4
 
         # Detect comment style
         if "/*" in source and "*/" in source:

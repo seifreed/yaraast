@@ -60,6 +60,7 @@ from yaraast.ast.strings import (
 # Import CLI commands
 from yaraast.cli.commands.analyze import analyze
 from yaraast.cli.commands.fluent import fluent
+from yaraast.cli.commands.lsp import lsp
 from yaraast.cli.commands.metrics import metrics
 from yaraast.cli.commands.optimize import optimize_cmd
 from yaraast.cli.commands.performance import performance
@@ -1297,6 +1298,7 @@ cli.add_command(fluent)
 cli.add_command(roundtrip)
 cli.add_command(yaral)
 cli.add_command(yarax)
+cli.add_command(lsp)
 
 
 @cli.command()
