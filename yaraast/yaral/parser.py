@@ -174,6 +174,15 @@ class YaraLParser:
 
     def _parse_event_statement(self) -> EventStatement | None:
         """Parse a single event statement."""
+        # Check for function calls like re.regex()
+        if self._check(BaseTokenType.IDENTIFIER):
+            identifier = self._peek().value
+            # Check if it's a function call pattern: module.function or re.regex keyword
+            if identifier in ["re.regex", "re.capture", "strings", "net", "arrays"] or (
+                "." in identifier and identifier.split(".")[0] in ["re", "strings", "net", "arrays"]
+            ):
+                return self._parse_function_call_statement()
+
         # Look for event variable ($e, $e1, etc.)
         if not self._check_yaral_type(YaraLTokenType.EVENT_VAR):
             # Try to skip to next statement
@@ -691,6 +700,48 @@ class YaraLParser:
                 self._advance()
 
         return OptionsSection(options=options)
+
+    def _parse_function_call_statement(self) -> EventStatement:
+        """Parse function call statement like re.regex($e.field, `pattern`) nocase."""
+        # Parse module.function identifier (could be "re.regex" as single token or separate tokens)
+        function_name = self._advance().value
+
+        # If it's not a compound name like "re.regex", check for dot and function name
+        if "." not in function_name and self._check(BaseTokenType.DOT):
+            self._advance()
+            # Parse function name
+            if self._check(BaseTokenType.IDENTIFIER):
+                function_part = self._advance().value
+                function_name = f"{function_name}.{function_part}"
+
+        # Consume opening parenthesis
+        self._consume(BaseTokenType.LPAREN, "Expected '(' after function name")
+
+        # Parse arguments - skip all tokens until we find the closing paren
+        # For now, just consume all tokens to skip the arguments
+        paren_depth = 1
+        while paren_depth > 0 and not self._is_at_end():
+            if self._check(BaseTokenType.LPAREN):
+                paren_depth += 1
+            elif self._check(BaseTokenType.RPAREN):
+                paren_depth -= 1
+                if paren_depth == 0:
+                    break
+            self._advance()
+
+        # Consume closing parenthesis
+        if self._check(BaseTokenType.RPAREN):
+            self._advance()
+
+        # Check for modifiers like 'nocase'
+        modifiers = []
+        if self._check_keyword("nocase"):
+            modifiers.append("nocase")
+            self._advance()
+
+        # Return a generic EventStatement for now
+        # In a full implementation, you'd parse the arguments properly
+        return EventStatement()
 
     # Helper methods
 

@@ -298,7 +298,7 @@ class YaraLLexer:
         self.position += 1
         self.column += 1
         return YaraLToken(
-            type=BaseTokenType.DIV,
+            type=BaseTokenType.DIVIDE,
             value="/",
             line=self.line,
             column=start_column,
