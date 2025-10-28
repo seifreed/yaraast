@@ -545,7 +545,7 @@ class YaraLLexer:
 
     def _is_regex_context(self) -> bool:
         """Check if we're in a regex context (heuristic)."""
-        # Look back for = or regex keyword
+        # Look back for = or regex keyword or comma (for function args)
         lookback = max(0, self.position - 20)
         recent = self.text[lookback : self.position].strip()
-        return recent.endswith(("=", "regex", "~"))
+        return recent.endswith(("=", "regex", "~", ","))
