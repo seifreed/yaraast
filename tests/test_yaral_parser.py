@@ -217,6 +217,62 @@ class TestYaraLParser:
         assert rule.outcome is not None
         assert len(rule.outcome.assignments) == 1
 
+    def test_regex_in_outcome_expressions(self) -> None:
+        """Test parsing regex patterns in outcome section."""
+        yaral_code = r"""
+        rule regex_in_outcome {
+            events:
+                $e.metadata.event_type = "USER_RESOURCE_UPDATE_PERMISSIONS"
+
+            outcome:
+                $risk_score = max(45 + if($e.target.resource.name = /organizations/, 30, 0))
+                $is_org = if($e.target.resource.name = /organizations/, "true", "false")
+                $category = if($e.labels.key = /OldValue_/, "old", "new")
+
+            condition:
+                $e
+        }
+        """
+
+        parser = YaraLParser(yaral_code)
+        ast = parser.parse()
+
+        rule = ast.rules[0]
+        assert rule.outcome is not None
+        assert len(rule.outcome.assignments) == 3
+
+        # Verify all outcome assignments parse correctly
+        assert rule.outcome.assignments[0].variable == "$risk_score"
+        assert rule.outcome.assignments[1].variable == "$is_org"
+        assert rule.outcome.assignments[2].variable == "$category"
+
+    def test_parenthesized_arithmetic_in_outcome(self) -> None:
+        """Test parsing parenthesized arithmetic expressions in outcome."""
+        yaral_code = """
+        rule arithmetic_outcome {
+            events:
+                $e.metadata.event_type = "UPDATE"
+
+            outcome:
+                $percentage = (($new_count - $old_count) / $old_count) * 100
+                $adjusted = max(($count + 10) * 2)
+
+            condition:
+                $e
+        }
+        """
+
+        parser = YaraLParser(yaral_code)
+        ast = parser.parse()
+
+        rule = ast.rules[0]
+        assert rule.outcome is not None
+        assert len(rule.outcome.assignments) == 2
+
+        # Verify arithmetic expressions parse correctly
+        assert rule.outcome.assignments[0].variable == "$percentage"
+        assert rule.outcome.assignments[1].variable == "$adjusted"
+
     def test_multi_event_correlation(self) -> None:
         """Test parsing rules with multiple correlated events."""
         yaral_code = """

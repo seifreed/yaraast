@@ -198,8 +198,10 @@ class YaraLParser:
             ):
                 return self._parse_function_call_statement()
 
-        # Look for event variable ($e, $e1, etc.)
-        if not self._check_yaral_type(YaraLTokenType.EVENT_VAR):
+        # Look for event variable ($e, $e1, etc.) or placeholder variable ($var)
+        if not self._check_yaral_type(YaraLTokenType.EVENT_VAR) and not self._check(
+            BaseTokenType.STRING_IDENTIFIER
+        ):
             # Try to skip to next statement
             self._advance()
             return None
@@ -215,15 +217,76 @@ class YaraLParser:
 
             # Parse the right-hand side expression
             # This could be a function call, event field, or other expression
-            # For now, we'll parse it as a generic expression and skip to end of statement
-            # by consuming tokens until we hit a newline or next statement
 
             # Check if it's a function call
             if self._check(BaseTokenType.IDENTIFIER):
-                # Parse as function call statement
-                return self._parse_function_call_statement()
+                # Could be a function call or start of field access
+                identifier = self._peek().value
+                # Check if it's a function call pattern (module.function or known function names)
+                if identifier in ["re.regex", "re.capture", "strings", "net", "arrays"] or (
+                    identifier.startswith("strings.")
+                    or identifier.startswith("re.")
+                    or identifier.startswith("net.")
+                    or identifier.startswith("arrays.")
+                    or identifier.startswith("math.")
+                ):
+                    return self._parse_function_call_statement()
+
+            # Handle field access on right side: $var = $event.field.path
+            if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+                BaseTokenType.STRING_IDENTIFIER
+            ):
+                # Skip the entire right-hand side by consuming tokens until end of statement
+                # We consume tokens until we see another variable assignment pattern or section keyword
+                # Look ahead to determine when the statement ends
+                start_line = self._peek().line if not self._is_at_end() else -1
+
+                while not self._is_at_end():
+                    current_token = self._peek()
+
+                    # Stop if we hit a section keyword or closing brace
+                    if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
+                        break
+
+                    # Stop if we see a new line starting with a $ variable (potential new statement)
+                    # Only stop if it's on a different line AND appears to be a new statement
+                    if current_token.line > start_line and (
+                        self._check_yaral_type(YaraLTokenType.EVENT_VAR)
+                        or self._check(BaseTokenType.STRING_IDENTIFIER)
+                    ):
+                        # Peek ahead one more token to see if there's a . or =
+                        # If there's an =, it's definitely a new assignment statement
+                        # If there's a ., it could be $event.field which is also a new statement
+                        next_pos = self.current + 1
+                        if next_pos < len(self.tokens):
+                            next_token = self.tokens[next_pos]
+                            if (
+                                next_token.type == BaseTokenType.EQ
+                                or next_token.type == BaseTokenType.DOT
+                            ):
+                                # This is a new statement
+                                break
+
+                    self._advance()
+                return EventStatement()
 
             # Otherwise skip this statement (not fully supported yet)
+            return EventStatement()
+
+        # Check if this is a comparison expression: $var != $other_var or $var in %list%
+        if (
+            self._check(BaseTokenType.NEQ)
+            or self._check(BaseTokenType.GT)
+            or self._check(BaseTokenType.LT)
+            or self._check(BaseTokenType.GE)
+            or self._check(BaseTokenType.LE)
+            or self._check_keyword("in")
+        ):
+            # Skip the comparison operator
+            self._advance()
+            # Skip the right-hand side value (could be variable, reference list, etc.)
+            if not self._is_at_end():
+                self._advance()
             return EventStatement()
 
         # Expect dot for field access
@@ -267,18 +330,24 @@ class YaraLParser:
                 if self._check(BaseTokenType.IDENTIFIER):
                     field_parts.append(self._advance().value)
                 elif self._check(BaseTokenType.LBRACKET):
-                    # Handle array/map access after dot: .fields["key"]
+                    # Handle array/map access after dot: .fields["key"] or .fields[0]
                     self._advance()  # [
                     if self._check(BaseTokenType.STRING):
                         key = self._advance().value
                         field_parts.append(f'["{key}"]')
+                    elif self._check(BaseTokenType.INTEGER):
+                        index = self._advance().value
+                        field_parts.append(f"[{index}]")
                     self._consume(BaseTokenType.RBRACKET, "Expected ']'")
             elif self._check(BaseTokenType.LBRACKET):
-                # Handle array/map access directly: fields["key"]
+                # Handle array/map access directly: fields["key"] or fields[0]
                 self._advance()  # [
                 if self._check(BaseTokenType.STRING):
                     key = self._advance().value
                     field_parts.append(f'["{key}"]')
+                elif self._check(BaseTokenType.INTEGER):
+                    index = self._advance().value
+                    field_parts.append(f"[{index}]")
                 self._consume(BaseTokenType.RBRACKET, "Expected ']'")
 
         return UDMFieldPath(parts=field_parts)
@@ -696,7 +765,7 @@ class YaraLParser:
             self._advance()
             self._consume(BaseTokenType.LPAREN, "Expected '(' after 'if'")
 
-            condition = self._parse_outcome_argument()
+            condition = self._parse_outcome_condition()
             self._consume(BaseTokenType.COMMA, "Expected ',' after condition")
 
             true_value = self._parse_outcome_argument()
@@ -736,11 +805,57 @@ class YaraLParser:
 
         return left
 
+    def _parse_outcome_condition(self) -> Any:
+        """Parse logical condition in outcome context (handles and, or, not)."""
+        return self._parse_outcome_or_condition()
+
+    def _parse_outcome_or_condition(self) -> Any:
+        """Parse OR condition in outcome context."""
+        left = self._parse_outcome_and_condition()
+
+        while self._check_keyword("or"):
+            self._advance()
+            right = self._parse_outcome_and_condition()
+            left = f"{left} or {right}"
+
+        return left
+
+    def _parse_outcome_and_condition(self) -> Any:
+        """Parse AND condition in outcome context."""
+        left = self._parse_outcome_not_condition()
+
+        while self._check_keyword("and"):
+            self._advance()
+            right = self._parse_outcome_not_condition()
+            left = f"{left} and {right}"
+
+        return left
+
+    def _parse_outcome_not_condition(self) -> Any:
+        """Parse NOT condition in outcome context."""
+        if self._check_keyword("not"):
+            self._advance()
+            operand = self._parse_outcome_not_condition()
+            return f"not {operand}"
+
+        return self._parse_outcome_comparison()
+
+    def _parse_outcome_comparison(self) -> Any:
+        """Parse comparison expressions in outcome context."""
+        return self._parse_outcome_argument()
+
     def _parse_outcome_argument(self) -> Any:
         """Parse outcome argument (field access, literal, expression, etc.)."""
         # Check for nested conditional expression: if(...)
         if self._check_keyword("if"):
             return self._parse_outcome_expression()
+
+        # Parenthesized arithmetic expression
+        if self._check(BaseTokenType.LPAREN):
+            self._advance()  # Consume (
+            expr = self._parse_outcome_arithmetic_expression()
+            self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
+            return f"({expr})"
 
         # Event field access or variable: $e.field.path or $variable
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
@@ -765,23 +880,29 @@ class YaraLParser:
                         if self._check(BaseTokenType.IDENTIFIER):
                             field_parts.append(self._advance().value)
                         elif self._check(BaseTokenType.LBRACKET):
-                            # Handle array/map access after dot: .fields["key"]
+                            # Handle array/map access after dot: .fields["key"] or .fields[0]
                             self._advance()  # [
                             if self._check(BaseTokenType.STRING):
                                 key = self._advance().value
                                 field_parts.append(f'["{key}"]')
+                            elif self._check(BaseTokenType.INTEGER):
+                                index = self._advance().value
+                                field_parts.append(f"[{index}]")
                             self._consume(BaseTokenType.RBRACKET, "Expected ']'")
                     elif self._check(BaseTokenType.LBRACKET):
-                        # Handle array/map access directly: fields["key"]
+                        # Handle array/map access directly: fields["key"] or fields[0]
                         self._advance()  # [
                         if self._check(BaseTokenType.STRING):
                             key = self._advance().value
                             field_parts.append(f'["{key}"]')
+                        elif self._check(BaseTokenType.INTEGER):
+                            index = self._advance().value
+                            field_parts.append(f"[{index}]")
                         self._consume(BaseTokenType.RBRACKET, "Expected ']'")
 
                 field = UDMFieldPath(parts=field_parts)
 
-                # Check for comparison operator to build expression
+                # Check for comparison or arithmetic operator to build expression
                 if (
                     self._check(BaseTokenType.GT)
                     or self._check(BaseTokenType.LT)
@@ -789,8 +910,13 @@ class YaraLParser:
                     or self._check(BaseTokenType.LE)
                     or self._check(BaseTokenType.EQ)
                     or self._check(BaseTokenType.NEQ)
+                    or self._check(BaseTokenType.IN)
+                    or self._check(BaseTokenType.PLUS)
+                    or self._check(BaseTokenType.MINUS)
+                    or self._check(BaseTokenType.MULTIPLY)
+                    or self._check(BaseTokenType.DIVIDE)
                 ):
-                    # It's a comparison expression
+                    # It's a comparison or arithmetic expression
                     op_token = self._advance()
                     op = op_token.value
                     right_value = self._parse_outcome_argument()
@@ -805,8 +931,13 @@ class YaraLParser:
                 or self._check(BaseTokenType.LE)
                 or self._check(BaseTokenType.EQ)
                 or self._check(BaseTokenType.NEQ)
+                or self._check(BaseTokenType.IN)
+                or self._check(BaseTokenType.PLUS)
+                or self._check(BaseTokenType.MINUS)
+                or self._check(BaseTokenType.MULTIPLY)
+                or self._check(BaseTokenType.DIVIDE)
             ):
-                # It's a simple variable comparison: $variable > value
+                # It's a comparison or arithmetic expression
                 op_token = self._advance()
                 op = op_token.value
                 right_value = self._parse_outcome_argument()
@@ -824,7 +955,7 @@ class YaraLParser:
         if self._check(BaseTokenType.INTEGER):
             num_value = int(self._advance().value)
 
-            # Check for comparison operator after integer
+            # Check for comparison or arithmetic operator after integer
             if (
                 self._check(BaseTokenType.GT)
                 or self._check(BaseTokenType.LT)
@@ -832,6 +963,10 @@ class YaraLParser:
                 or self._check(BaseTokenType.LE)
                 or self._check(BaseTokenType.EQ)
                 or self._check(BaseTokenType.NEQ)
+                or self._check(BaseTokenType.PLUS)
+                or self._check(BaseTokenType.MINUS)
+                or self._check(BaseTokenType.MULTIPLY)
+                or self._check(BaseTokenType.DIVIDE)
             ):
                 op_token = self._advance()
                 op = op_token.value
@@ -864,7 +999,7 @@ class YaraLParser:
                 args_str = ", ".join(str(arg) for arg in arguments)
                 return f"{ident}({args_str})"
 
-            # Check for comparison operator
+            # Check for comparison or arithmetic operator
             if (
                 self._check(BaseTokenType.GT)
                 or self._check(BaseTokenType.LT)
@@ -872,6 +1007,10 @@ class YaraLParser:
                 or self._check(BaseTokenType.LE)
                 or self._check(BaseTokenType.EQ)
                 or self._check(BaseTokenType.NEQ)
+                or self._check(BaseTokenType.PLUS)
+                or self._check(BaseTokenType.MINUS)
+                or self._check(BaseTokenType.MULTIPLY)
+                or self._check(BaseTokenType.DIVIDE)
             ):
                 op_token = self._advance()
                 op = op_token.value
@@ -879,6 +1018,11 @@ class YaraLParser:
                 return f"{ident} {op} {right_value}"
 
             return ident
+
+        # Regex pattern (e.g., /pattern/ in outcome expressions)
+        if self._check(BaseTokenType.REGEX):
+            pattern_token = self._advance()
+            return RegexPattern(pattern=pattern_token.value)
 
         msg = f"Unexpected token in outcome: {self._peek()}"
         raise YaraLParserError(
@@ -953,6 +1097,15 @@ class YaraLParser:
         # Consume closing parenthesis
         if self._check(BaseTokenType.RPAREN):
             self._advance()
+
+        # Check for assignment: function(...) = $variable
+        if self._check(BaseTokenType.EQ):
+            self._advance()  # Consume '='
+            # The right-hand side should be a variable - just consume it
+            if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+                BaseTokenType.STRING_IDENTIFIER,
+            ):
+                self._advance()  # Consume the variable
 
         # Check for modifiers like 'nocase'
         modifiers = []
