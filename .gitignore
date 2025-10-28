@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
 
 # C extensions
 *.so
@@ -134,6 +137,9 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
+# Ruff cache
+.ruff_cache/
+
 # Cython debug symbols
 cython_debug/
 
@@ -171,17 +177,15 @@ node_modules/
 credentials.json
 config.secret.json
 
-# Qlty
+# Development directories
+qlty/
 .qlty/
+.claude/
+detection-rules/
 
-# Pre-commit
+# Debug and temporary development files
+debug_*.py
+/tmp/
+
+# Pre-commit configuration backups
 .pre-commit-config.yaml.backup
-qlty.toml
-mypy.ini
-.bandit
-.pre-commit-config.yaml
-.safety-policy.json
-.gitignore
-.coverage
-.git
-.claude
