@@ -176,8 +176,6 @@ Verified with production rulesets:
 - **ClamAV**: 223,261 rules
 - **YARA Master Collection**: 31,442 rules
 - **Community Rules**: 11,331 rules
-- **CrowdStrike**: 4,417 rules
-- **Kaspersky APT/ICS**: 3,130 rules
 - **Google Chronicle**: 891 YARA-L rules
 
 ## Performance
