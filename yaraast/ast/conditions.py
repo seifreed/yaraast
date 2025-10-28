@@ -54,10 +54,16 @@ class AtExpression(Condition):
 
 @dataclass
 class InExpression(Condition):
-    """In expression ($a in (offset..offset))."""
+    """In expression ($a in (offset..offset) or all of ($a*) in (offset..offset))."""
 
-    string_id: str
+    subject: str | Expression  # Either string_id (str) or OfExpression
     range: Expression
+
+    # Backward compatibility property
+    @property
+    def string_id(self) -> str | None:
+        """Return string_id if subject is a string, None otherwise."""
+        return self.subject if isinstance(self.subject, str) else None
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_in_expression(self)

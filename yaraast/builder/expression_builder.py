@@ -183,7 +183,7 @@ class ExpressionBuilder:
     ) -> InExpression:
         """Create 'in' expression."""
         range_expr = ExpressionBuilder.range(start, end)
-        return InExpression(string_id=string_id, range=range_expr)
+        return InExpression(subject=string_id, range=range_expr)
 
     @staticmethod
     def for_any(var: str, iterable: Expression, body: Expression) -> ForExpression:

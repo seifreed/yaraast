@@ -1,4 +1,9 @@
-"""YARA lexer implementation."""
+"""YARA lexer implementation.
+
+Copyright (c) Marc Rivero López
+Licensed under GPLv3
+https://www.gnu.org/licenses/gpl-3.0.html
+"""
 
 from yaraast.lexer.tokens import Token, TokenType
 
@@ -208,10 +213,15 @@ class Lexer:
         raise LexerError(msg, self.line, self.column)
 
     def _read_string(self) -> Token:
-        """Read string literal."""
+        """Read string literal.
+
+        Performance optimization: Uses list builder pattern O(n) instead of
+        string concatenation O(n²) for long string literals.
+        """
         start_line = self.line
         start_column = self.column
-        value = ""
+        # OPTIMIZATION: Use list builder to avoid O(n²) concatenation
+        value_chars = []
 
         self._advance()  # skip opening quote
 
@@ -225,7 +235,7 @@ class Lexer:
                     # \\ -> single backslash in YARA output
                     # But we need to check if this is really an escape or Windows path
                     # In YARA strings, \\ is used for literal backslash
-                    value += "\\"
+                    value_chars.append("\\")
                 elif next_char == '"':
                     # \" -> escaped quote
                     # Special case: detect malformed strings ending with backslash like "C:\TEMP\"
@@ -290,42 +300,44 @@ class Lexer:
 
                     if is_string_ending:
                         # Treat as literal backslash at end of malformed string
-                        value += "\\"
+                        value_chars.append("\\")
                         self._advance()  # consume the quote
                         break
                     else:
                         # Normal escaped quote in middle of string
-                        value += '"'
+                        value_chars.append('"')
                 elif next_char == "n":
                     # \n -> newline
-                    value += "\n"
+                    value_chars.append("\n")
                 elif next_char == "r":
                     # \r -> carriage return
-                    value += "\r"
+                    value_chars.append("\r")
                 elif next_char == "t":
                     # \t -> tab
-                    value += "\t"
+                    value_chars.append("\t")
                 elif next_char == "x" and self.position + 2 < len(self.text):
                     # \xHH -> hex character
                     hex_digits = self.text[self.position + 1 : self.position + 3]
                     if all(c in "0123456789abcdefABCDEF" for c in hex_digits):
-                        value += chr(int(hex_digits, 16))
+                        value_chars.append(chr(int(hex_digits, 16)))
                         self._advance()  # skip first hex digit
                         self._advance()  # skip second hex digit
                     else:
                         # Not valid hex escape, keep as literal
-                        value += "\\" + next_char
+                        value_chars.append("\\")
+                        value_chars.append(next_char)
                 elif next_char is None:
                     # Backslash at end of input
-                    value += "\\"
+                    value_chars.append("\\")
                     break
                 else:
                     # Any other character after \ is kept literally
                     # e.g., \T becomes \T (common in Windows paths)
-                    value += "\\" + next_char
+                    value_chars.append("\\")
+                    value_chars.append(next_char)
             else:
                 # Regular character
-                value += self._current_char()
+                value_chars.append(self._current_char())
 
             self._advance()
 
@@ -334,43 +346,93 @@ class Lexer:
             raise LexerError(msg, start_line, start_column)
 
         self._advance()  # skip closing quote
+        # Join once at the end - O(n) operation
+        value = "".join(value_chars)
         return Token(TokenType.STRING, value, start_line, start_column)
 
     def _read_hex_string(self) -> Token:
-        """Read hex string."""
+        """Read hex string.
+
+        Performance optimization: Uses list builder pattern O(n) instead of
+        string concatenation O(n²) for long hex strings.
+
+        Bug fix: Properly handles comments with braces inside hex strings.
+        Comments are completely skipped (not preserved in the token value).
+        """
         start_line = self.line
         start_column = self.column
-        value = ""
+        # OPTIMIZATION: Use list builder to avoid O(n²) concatenation
+        value_chars = []
 
-        self._advance()  # skip {
+        self._advance()  # skip opening {
 
-        while self._current_char() and self._current_char() != "}":
-            value += self._current_char()
+        while self._current_char():
+            # Check for end of hex string (} not in comment)
+            if self._current_char() == "}":
+                break
+
+            # Handle single-line comments: // comment
+            # Skip them entirely - do NOT include in hex string value
+            if self._current_char() == "/" and self._peek_char() == "/":
+                # Skip the entire comment (do not append to value_chars)
+                while self._current_char() and self._current_char() != "\n":
+                    self._advance()
+                # Skip the newline as well
+                if self._current_char() == "\n":
+                    self._advance()
+                continue
+
+            # Handle multi-line comments: /* comment */
+            # Skip them entirely - do NOT include in hex string value
+            if self._current_char() == "/" and self._peek_char() == "*":
+                # Skip the opening /*
+                self._advance()  # skip /
+                self._advance()  # skip *
+
+                # Skip until */
+                while self._current_char():
+                    if self._current_char() == "*" and self._peek_char() == "/":
+                        self._advance()  # skip *
+                        self._advance()  # skip /
+                        break
+                    self._advance()
+                continue
+
+            # Regular character (whitespace and hex bytes)
+            value_chars.append(self._current_char())
             self._advance()
 
-        if not self._current_char():
+        if not self._current_char() or self._current_char() != "}":
             msg = "Unterminated hex string"
             raise LexerError(msg, start_line, start_column)
 
-        self._advance()  # skip }
+        self._advance()  # skip closing }
+
+        # Join once at the end - O(n) operation
+        value = "".join(value_chars)
         return Token(TokenType.HEX_STRING, value, start_line, start_column)
 
     def _read_regex(self) -> Token:
-        """Read regular expression."""
+        """Read regular expression.
+
+        Performance optimization: Uses list builder pattern O(n) instead of
+        string concatenation O(n²) for long regex patterns.
+        """
         start_line = self.line
         start_column = self.column
-        value = ""
+        # OPTIMIZATION: Use list builder to avoid O(n²) concatenation
+        value_chars = []
 
         self._advance()  # skip opening /
 
         while self._current_char() and self._current_char() != "/":
             if self._current_char() == "\\":
-                value += self._current_char()
+                value_chars.append(self._current_char())
                 self._advance()
                 if self._current_char():
-                    value += self._current_char()
+                    value_chars.append(self._current_char())
             else:
-                value += self._current_char()
+                value_chars.append(self._current_char())
             self._advance()
 
         if not self._current_char():
@@ -379,11 +441,15 @@ class Lexer:
 
         self._advance()  # skip closing /
 
-        # Read regex modifiers
+        # Read regex modifiers - these are typically short, so list builder
+        # overhead not needed
         modifiers = ""
         while self._current_char() and self._current_char() in "ims":
             modifiers += self._current_char()
             self._advance()
+
+        # Join pattern once at the end - O(n) operation
+        value = "".join(value_chars)
 
         # Store the pattern and modifiers together but in a way we can parse
         # Use a special marker that won't appear in regex patterns

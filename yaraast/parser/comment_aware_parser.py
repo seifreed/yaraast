@@ -9,7 +9,7 @@ from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.meta import Meta
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import Token, TokenType
-from yaraast.parser.better_parser import Parser
+from yaraast.parser.parser import Parser
 
 if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
@@ -28,17 +28,38 @@ class CommentAwareParser(Parser):
         """Parse YARA rule text with comment preservation."""
         lexer = CommentPreservingLexer(text)
         self.tokens = lexer.tokenize()
-        self.position = 0
-        self.text = text
+        self.current = 0
+        self.lexer = lexer
 
         # Separate comment tokens
         self._extract_comment_tokens()
 
-        # Parse the file
-        yara_file = self._parse_yara_file()
+        # Parse the file (same logic as base Parser.parse)
+        imports = []
+        includes = []
+        rules = []
+
+        while not self._is_at_end():
+            if self._match(TokenType.IMPORT):
+                imports.append(self._parse_import())
+            elif self._match(TokenType.INCLUDE):
+                includes.append(self._parse_include())
+            elif (
+                self._check(TokenType.RULE)
+                or self._check(TokenType.PRIVATE)
+                or self._check(TokenType.GLOBAL)
+            ):
+                rules.append(self._parse_rule())
+            else:
+                from yaraast.parser.parser import ParserError
+
+                msg = f"Unexpected token: {self._peek().value}"
+                raise ParserError(msg, self._peek())
+
+        yara_file = YaraFile(imports=imports, includes=includes, rules=rules)
 
         # Attach any remaining comments
-        if self.pending_comments:
+        if self.comment_tokens:
             self._attach_trailing_comments(yara_file)
 
         return yara_file
@@ -93,7 +114,7 @@ class CommentAwareParser(Parser):
         """Parse a rule with comment preservation."""
         from yaraast.lexer.tokens import TokenType
 
-        start_token = self._current_token()
+        start_token = self._peek()
         start_line = start_token.line if start_token else 1
 
         # Collect leading comments
@@ -101,11 +122,11 @@ class CommentAwareParser(Parser):
 
         # Parse modifiers
         modifiers = []
-        while self._current_token() and self._current_token().type in (
+        while self._peek() and self._peek().type in (
             TokenType.PRIVATE,
             TokenType.GLOBAL,
         ):
-            modifiers.append(self._current_token().value)
+            modifiers.append(self._peek().value)
             self._advance()
 
         # Expect 'rule'
@@ -114,20 +135,20 @@ class CommentAwareParser(Parser):
             raise Exception(msg)
 
         # Parse rule name
-        if not self._current_token() or self._current_token().type != TokenType.IDENTIFIER:
+        if not self._peek() or self._peek().type != TokenType.IDENTIFIER:
             msg = "Expected rule name"
             raise Exception(msg)
 
-        name = self._current_token().value
+        name = self._peek().value
         self._advance()
 
         # Parse tags
         tags = []
         if self._match(TokenType.COLON):
-            while self._current_token() and self._current_token().type == TokenType.IDENTIFIER:
+            while self._peek() and self._peek().type == TokenType.IDENTIFIER:
                 from yaraast.ast.rules import Tag
 
-                tags.append(Tag(name=self._current_token().value))
+                tags.append(Tag(name=self._peek().value))
                 self._advance()
 
         # Expect '{'
@@ -157,7 +178,7 @@ class CommentAwareParser(Parser):
                     raise Exception(msg)
 
                 # Collect comments before condition
-                cond_start_token = self._current_token()
+                cond_start_token = self._peek()
                 cond_start_line = cond_start_token.line if cond_start_token else 1
                 cond_leading_comments = self._collect_leading_comments(cond_start_line)
 
@@ -168,7 +189,7 @@ class CommentAwareParser(Parser):
                     condition.leading_comments = cond_leading_comments
             else:
                 # Try to skip unrecognized tokens
-                if self._current_token() and self._current_token().type != TokenType.RBRACE:
+                if self._peek() and self._peek().type != TokenType.RBRACE:
                     self._advance()
                     continue
                 break
@@ -214,27 +235,20 @@ class CommentAwareParser(Parser):
 
     def _parse_strings_section(self) -> list[StringDefinition]:
         """Parse strings section with comment preservation."""
-        from yaraast.ast.strings import (
-            HexByte,
-            HexString,
-            HexWildcard,
-            PlainString,
-            RegexString,
-            StringModifier,
-        )
+        from yaraast.ast.strings import HexString, PlainString, RegexString
         from yaraast.lexer.tokens import TokenType
 
         strings = []
         anonymous_counter = 0
 
-        while self._current_token() and self._current_token().type == TokenType.STRING_IDENTIFIER:
-            start_token = self._current_token()
+        while self._peek() and self._peek().type == TokenType.STRING_IDENTIFIER:
+            start_token = self._peek()
             start_line = start_token.line if start_token else 1
 
             # Collect leading comments
             leading_comments = self._collect_leading_comments(start_line)
 
-            identifier = self._current_token().value
+            identifier = self._peek().value
             self._advance()
 
             # Generate unique identifier for anonymous strings
@@ -285,7 +299,7 @@ class CommentAwareParser(Parser):
         from yaraast.lexer.tokens import TokenType
 
         modifiers = []
-        while self._current_token() and self._current_token().type in (
+        while self._peek() and self._peek().type in (
             TokenType.NOCASE,
             TokenType.WIDE,
             TokenType.ASCII,
@@ -294,21 +308,17 @@ class CommentAwareParser(Parser):
             TokenType.BASE64WIDE,
             TokenType.XOR_MOD,
         ):
-            mod_name = self._current_token().value
+            mod_name = self._peek().value
             self._advance()
 
             # Handle XOR with optional parameters
-            if (
-                mod_name.lower() == "xor"
-                and self._current_token()
-                and self._current_token().type == TokenType.LPAREN
-            ):
+            if mod_name.lower() == "xor" and self._peek() and self._peek().type == TokenType.LPAREN:
                 self._advance()  # consume '('
                 depth = 1
-                while depth > 0 and self._current_token():
-                    if self._current_token().type == TokenType.LPAREN:
+                while depth > 0 and self._peek():
+                    if self._peek().type == TokenType.LPAREN:
                         depth += 1
-                    elif self._current_token().type == TokenType.RPAREN:
+                    elif self._peek().type == TokenType.RPAREN:
                         depth -= 1
                     self._advance()
                 modifiers.append(StringModifier(name="xor"))
@@ -367,14 +377,14 @@ class CommentAwareParser(Parser):
 
         meta_list = []
 
-        while self._current_token() and self._current_token().type == TokenType.IDENTIFIER:
-            start_token = self._current_token()
+        while self._peek() and self._peek().type == TokenType.IDENTIFIER:
+            start_token = self._peek()
             start_line = start_token.line if start_token else 1
 
             # Collect leading comments
             leading_comments = self._collect_leading_comments(start_line)
 
-            key = self._current_token().value
+            key = self._peek().value
             self._advance()
 
             if not self._match(TokenType.ASSIGN):

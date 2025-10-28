@@ -11,7 +11,7 @@ from yaraast.ast.expressions import BooleanLiteral, Identifier
 from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import PlainString
-from yaraast.parser.better_parser import Parser
+from yaraast.parser.parser import Parser
 
 
 @dataclass

@@ -524,8 +524,16 @@ class YaraEvaluator(ASTVisitor[Any]):
     def visit_meta(self, node) -> None:
         pass  # Implementation intentionally empty
 
-    def visit_module_reference(self, node) -> None:
-        pass  # Implementation intentionally empty
+    def visit_module_reference(self, node) -> Any:
+        """Visit module reference and return the module object."""
+        from yaraast.ast.modules import ModuleReference
+
+        if isinstance(node, ModuleReference):
+            if node.module in self.context.modules:
+                return self.context.modules[node.module]
+            msg = f"Unknown module: {node.module}"
+            raise ValueError(msg)
+        return None
 
     def visit_dictionary_access(self, node) -> None:
         pass  # Implementation intentionally empty

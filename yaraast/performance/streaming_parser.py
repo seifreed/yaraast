@@ -346,43 +346,115 @@ class StreamingParser:
         mmapped_file: mmap.mmap,
         callback: Callable[[Rule], None] | None = None,
     ) -> Iterator[Rule]:
-        """Parse memory-mapped file content."""
-        # Find rule boundaries
+        """Parse memory-mapped file content using proper tokenization.
+
+        This method uses the Lexer to properly identify rule boundaries,
+        avoiding issues with braces in strings, regexes, or comments.
+        """
+        from yaraast.lexer import Lexer, TokenType
+
+        # Read and decode the entire file
         content = mmapped_file.read().decode("utf-8", errors="replace")
         mmapped_file.seek(0)  # Reset position
 
-        # Extract rules by properly tracking brace depth
-        import re
+        # Pre-calculate line start positions for O(1) position lookup
+        # This avoids repeated string splitting
+        line_starts = [0]  # Line 1 starts at position 0
+        for i, char in enumerate(content):
+            if char == "\n":
+                line_starts.append(i + 1)  # Next line starts after newline
 
-        # Find all rule starts
-        rule_starts = [(m.start(), m.group(0)) for m in re.finditer(r"rule\s+\w+", content)]
+        def get_char_pos(line: int, column: int) -> int:
+            """Get character position from line and column (both 1-indexed)."""
+            if line - 1 < len(line_starts):
+                return line_starts[line - 1] + (column - 1)
+            return 0
 
-        for i, (start_pos, rule_header) in enumerate(rule_starts):
-            # Find the opening brace
-            brace_pos = content.find("{", start_pos)
-            if brace_pos == -1:
+        # Tokenize the entire file
+        lexer = Lexer(content)
+        tokens = list(lexer.tokenize())
+
+        # Find rule boundaries using tokens
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+
+            # Skip imports and includes
+            if token.type == TokenType.IMPORT or token.type == TokenType.INCLUDE:
+                i += 1
+                while i < len(tokens) and tokens[i].type != TokenType.STRING:
+                    i += 1
+                i += 1  # Skip the string
                 continue
 
-            # Count braces to find matching closing brace
-            brace_count = 1
-            pos = brace_pos + 1
+            # Look for rule definitions (with optional modifiers)
+            if token.type in (TokenType.RULE, TokenType.PRIVATE, TokenType.GLOBAL):
+                # Find the start position of this rule
+                rule_start_token = token
 
-            while pos < len(content) and brace_count > 0:
-                if content[pos] == "{":
-                    brace_count += 1
-                elif content[pos] == "}":
-                    brace_count -= 1
-                pos += 1
+                # Skip modifiers to find the actual RULE token
+                while i < len(tokens) and tokens[i].type != TokenType.RULE:
+                    i += 1
 
-            if brace_count == 0:
-                # Extract the complete rule text
-                rule_text = content[start_pos:pos]
-                rule = self._parse_rule_text(rule_text)
-                if rule:
-                    self._stats["rules_parsed"] += 1
-                    if callback:
-                        callback(rule)
-                    yield rule
+                if i >= len(tokens):
+                    break
+
+                # Now we're at RULE token, skip to identifier
+                i += 1
+                if i >= len(tokens) or tokens[i].type != TokenType.IDENTIFIER:
+                    i += 1
+                    continue
+
+                # Skip identifier and optional tags (: tag1 tag2)
+                i += 1
+                if i < len(tokens) and tokens[i].type == TokenType.COLON:
+                    i += 1
+                    # Skip tags
+                    while i < len(tokens) and tokens[i].type == TokenType.IDENTIFIER:
+                        i += 1
+
+                # Find the opening brace
+                while i < len(tokens) and tokens[i].type != TokenType.LBRACE:
+                    i += 1
+
+                if i >= len(tokens):
+                    break
+
+                # Now count braces using TOKENS (not characters)
+                brace_count = 1
+                i += 1
+
+                while i < len(tokens) and brace_count > 0:
+                    if tokens[i].type == TokenType.LBRACE:
+                        brace_count += 1
+                    elif tokens[i].type == TokenType.RBRACE:
+                        brace_count -= 1
+                    i += 1
+
+                if brace_count == 0:
+                    # Found matching closing brace
+                    # Extract text from start of rule to end of closing brace
+                    brace_end_token = tokens[i - 1]
+
+                    # Calculate character positions using line and column
+                    # Find start position (beginning of first modifier/rule token)
+                    start_pos = get_char_pos(rule_start_token.line, rule_start_token.column)
+
+                    # Find end position (end of closing brace)
+                    # Get position of closing brace token and add its length
+                    end_pos = get_char_pos(brace_end_token.line, brace_end_token.column) + len("}")
+
+                    rule_text = content[start_pos:end_pos]
+
+                    # Parse this rule
+                    rule = self._parse_rule_text(rule_text)
+                    if rule:
+                        self._stats["rules_parsed"] += 1
+                        if callback:
+                            callback(rule)
+                        yield rule
+            else:
+                i += 1
 
     def _parse_rule_text(self, rule_text: str) -> Rule | None:
         """Parse a single rule text."""

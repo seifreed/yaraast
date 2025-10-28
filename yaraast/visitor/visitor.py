@@ -905,8 +905,13 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
     def visit_in_expression(self, node: InExpression) -> InExpression:
         """Transform InExpression node."""
+        # Handle both string subjects and expression subjects (like OfExpression)
+        if isinstance(node.subject, str):
+            subject = node.subject
+        else:
+            subject = cast("Expression", self.visit(node.subject))
         range_expr = cast("Expression", self.visit(node.range))
-        return InExpression(string_id=node.string_id, range=range_expr)
+        return InExpression(subject=subject, range=range_expr)
 
     def visit_of_expression(self, node: OfExpression) -> OfExpression:
         """Transform OfExpression node."""

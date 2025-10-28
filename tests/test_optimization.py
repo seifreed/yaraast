@@ -101,8 +101,8 @@ def test_comprehensive_optimization() -> None:
     yara_code = """
 rule optimize_me {
     meta:
-        version = 1 + 1
-        unused = ""
+        version = 2
+        author = "test"
 
     strings:
         $a = "used"

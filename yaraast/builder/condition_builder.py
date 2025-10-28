@@ -210,7 +210,7 @@ class ConditionBuilder:
         range_expr = RangeExpression(low=start_expr, high=end_expr)
 
         return ConditionBuilder(
-            InExpression(string_id=self._expression.name, range=range_expr),
+            InExpression(subject=self._expression.name, range=range_expr),
         )
 
     # Quantifiers
