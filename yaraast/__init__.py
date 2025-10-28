@@ -19,7 +19,7 @@ from yaraast.version import (
     get_version_info,
     get_version_string,
 )
-from yaraast.visitor import ASTVisitor
+from yaraast.visitor import ASTVisitor, BaseVisitor
 
 __version__ = YARAAST_VERSION
 __all__ = [
@@ -29,6 +29,7 @@ __all__ = [
     "YARAAST_VERSION_PATCH",
     "YARA_SYNTAX_VERSION",
     "ASTVisitor",
+    "BaseVisitor",
     "CodeGenerator",
     "ConditionBuilder",
     "ExpressionBuilder",

@@ -468,46 +468,64 @@ class YaraLParser:
         self._consume_keyword("match")
         self._consume(BaseTokenType.COLON, "Expected ':' after 'match'")
 
-        # Collect all variable names first (comma-separated list)
-        var_names = []
+        variables = []
 
         while not self._check_section_keyword() and not self._check(
             BaseTokenType.RBRACE,
         ):
-            # Parse match variables: $var1, $var2, ... over 5m
+            # Parse match variables: each can be on its own line with its own time window
             if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
                 BaseTokenType.STRING_IDENTIFIER,
             ):
                 var_token = self._advance()
                 var_name = var_token.value.lstrip("$")  # Remove $ prefix
-                var_names.append(var_name)
 
-                # Check for comma separator (more variables coming)
+                # Check for comma separator (old syntax: $var1, $var2 over 5m)
                 if self._check(BaseTokenType.COMMA):
-                    self._advance()
-                    continue
+                    # Collect all comma-separated variables for backward compatibility
+                    var_names = [var_name]
+                    while self._check(BaseTokenType.COMMA):
+                        self._advance()
+                        if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+                            BaseTokenType.STRING_IDENTIFIER,
+                        ):
+                            var_token = self._advance()
+                            var_names.append(var_token.value.lstrip("$"))
 
-                # No comma means we should now see 'over' keyword
-                break
+                    # Now consume 'over' keyword and parse shared time window
+                    self._consume_keyword("over", "Expected 'over' after match variable list")
+
+                    # Check for 'every' modifier
+                    modifier = None
+                    if self._check_keyword("every"):
+                        modifier = "every"
+                        self._advance()
+
+                    # Parse time window once for all comma-separated variables
+                    time_window = self._parse_time_window(modifier)
+
+                    # Create MatchVariable objects with shared time window
+                    for vname in var_names:
+                        variables.append(MatchVariable(variable=vname, time_window=time_window))
+                else:
+                    # New syntax: each variable has its own 'over' clause
+                    # Expect 'over' keyword
+                    self._consume_keyword("over", f"Expected 'over' after variable ${var_name}")
+
+                    # Check for 'every' modifier
+                    modifier = None
+                    if self._check_keyword("every"):
+                        modifier = "every"
+                        self._advance()
+
+                    # Parse time window for this variable
+                    time_window = self._parse_time_window(modifier)
+
+                    # Create MatchVariable for this single variable
+                    variables.append(MatchVariable(variable=var_name, time_window=time_window))
             else:
+                # Skip unknown tokens
                 self._advance()
-
-        # Now consume 'over' keyword and parse time window
-        self._consume_keyword("over", "Expected 'over' after match variable list")
-
-        # Check for 'every' modifier
-        modifier = None
-        if self._check_keyword("every"):
-            modifier = "every"
-            self._advance()
-
-        # Parse time window once
-        time_window = self._parse_time_window(modifier)
-
-        # Create MatchVariable objects for each variable with the shared time window
-        variables = [
-            MatchVariable(variable=var_name, time_window=time_window) for var_name in var_names
-        ]
 
         return MatchSection(variables=variables)
 

@@ -2,16 +2,8 @@
 
 import pytest
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import IntegerLiteral, StringIdentifier
-from yaraast.ast.rules import Rule
-from yaraast.ast.strings import PlainString
 from yaraast.parser.parser import Parser
-from yaraast.visitor import ASTVisitor
-
-pytestmark = pytest.mark.skip(
-    reason="ASTVisitor is abstract and requires all methods to be implemented"
-)
+from yaraast.visitor.visitor import BaseVisitor
 
 
 class TestVisitorPattern:
@@ -20,7 +12,7 @@ class TestVisitorPattern:
     def test_basic_visitor(self):
         """Test basic visitor traversal."""
 
-        class CountingVisitor(ASTVisitor):
+        class CountingVisitor(BaseVisitor):
             def __init__(self):
                 self.rule_count = 0
                 self.string_count = 0
@@ -62,7 +54,7 @@ class TestVisitorPattern:
     def test_visitor_returns_values(self):
         """Test visitor that returns values."""
 
-        class NameCollectorVisitor(ASTVisitor[list[str]]):
+        class NameCollectorVisitor(BaseVisitor[list[str]]):
             def __init__(self):
                 self.names = []
 
@@ -87,7 +79,7 @@ class TestVisitorPattern:
         ast = parser.parse()
 
         visitor = NameCollectorVisitor()
-        result = visitor.visit(ast)
+        visitor.visit(ast)
 
         assert "rule_one" in visitor.names
         assert "rule_two" in visitor.names
@@ -96,7 +88,7 @@ class TestVisitorPattern:
     def test_visitor_transformation(self):
         """Test visitor that transforms AST."""
 
-        class RuleRenamerVisitor(ASTVisitor):
+        class RuleRenamerVisitor(BaseVisitor):
             def __init__(self, suffix="_renamed"):
                 self.suffix = suffix
 
@@ -123,7 +115,7 @@ class TestVisitorPattern:
     def test_visitor_with_condition(self):
         """Test visitor that processes conditions."""
 
-        class StringIdentifierCollector(ASTVisitor):
+        class StringIdentifierCollector(BaseVisitor):
             def __init__(self):
                 self.string_ids = []
 
@@ -154,7 +146,7 @@ class TestVisitorPattern:
     def test_visitor_inheritance(self):
         """Test that visitor methods can be inherited."""
 
-        class BaseVisitor(ASTVisitor):
+        class CustomBaseVisitor(BaseVisitor):
             def __init__(self):
                 self.visited = []
 
@@ -162,7 +154,7 @@ class TestVisitorPattern:
                 self.visited.append(("rule", node.name))
                 super().visit_rule(node)
 
-        class ExtendedVisitor(BaseVisitor):
+        class ExtendedVisitor(CustomBaseVisitor):
             def visit_plain_string(self, node):
                 self.visited.append(("string", node.identifier))
                 super().visit_plain_string(node)
@@ -192,7 +184,7 @@ class TestVisitorPattern:
     def test_visitor_early_exit(self):
         """Test visitor can exit early."""
 
-        class EarlyExitVisitor(ASTVisitor):
+        class EarlyExitVisitor(BaseVisitor):
             def __init__(self, target_rule):
                 self.target_rule = target_rule
                 self.found = False
@@ -239,7 +231,7 @@ class TestVisitorPatternAdvanced:
     def test_visitor_with_meta_collection(self):
         """Test collecting metadata."""
 
-        class MetaCollectorVisitor(ASTVisitor):
+        class MetaCollectorVisitor(BaseVisitor):
             def __init__(self):
                 self.meta_data = {}
 
@@ -272,7 +264,7 @@ class TestVisitorPatternAdvanced:
     def test_visitor_exception_handling(self):
         """Test visitor handles exceptions gracefully."""
 
-        class FailingVisitor(ASTVisitor):
+        class FailingVisitor(BaseVisitor):
             def __init__(self):
                 self.errors = []
 
