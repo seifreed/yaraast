@@ -258,6 +258,10 @@ class OptimizationAnalyzer(ASTVisitor[None]):
         """Track string references."""
         self._string_refs[node.name].append(node)
 
+    def visit_string_wildcard(self, node: StringIdentifier) -> None:
+        """Visit StringWildcard node."""
+        pass
+
     def visit_of_expression(self, node: OfExpression) -> None:
         """Analyze 'of' expressions."""
         # Check for 'any of them' which could be more specific

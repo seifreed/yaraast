@@ -171,6 +171,10 @@ class StringUsageAnalyzer(ASTVisitor[None]):
         if hasattr(node, "index") and node.index:
             self.visit(node.index)
 
+    def visit_string_wildcard(self, node: StringIdentifier) -> None:
+        """Visit StringWildcard node."""
+        pass
+
     def visit_string_length(self, node: StringLength) -> None:
         """Visit string length expression - marks string as used."""
         if self.current_rule and self.in_condition:

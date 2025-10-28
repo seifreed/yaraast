@@ -373,6 +373,15 @@ class MemoryOptimizerTransformer(ASTTransformer):
                 node.name = pooled
         return node
 
+    def visit_string_wildcard(self, node: Any) -> Any:
+        if hasattr(node, "pattern") and isinstance(node.pattern, str):
+            pooled = self.string_pool.get(node.pattern)
+            if pooled is None:
+                self.string_pool[node.pattern] = node.pattern
+            else:
+                node.pattern = pooled
+        return node
+
     def visit_binary_expression(self, node: Any) -> Any:
         if hasattr(node, "left"):
             node.left = self.visit(node.left)

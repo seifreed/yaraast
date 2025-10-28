@@ -368,6 +368,10 @@ class ComplexityAnalyzer(ASTVisitor[None]):
             self._string_usage[self._current_rule.name].add(node.name)
 
     # Required visitor methods (minimal implementations)
+    def visit_string_wildcard(self, node) -> None:
+        """Visit StringWildcard node."""
+        pass
+
     def visit_yara_file(self, node) -> None:
         pass  # Implementation intentionally empty
 

@@ -332,6 +332,10 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
         """Track string usage."""
         self._string_usage[node.name] = self._string_usage.get(node.name, 0) + 1
 
+    def visit_string_wildcard(self, node: StringIdentifier) -> None:
+        """Visit StringWildcard node."""
+        pass
+
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""
         # Check for redundant hex patterns that could be consolidated

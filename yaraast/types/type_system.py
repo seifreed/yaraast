@@ -650,6 +650,13 @@ class TypeInference(ASTVisitor[YaraType]):
     def visit_identifier(self, node: Identifier) -> YaraType:
         if node.name in {"filesize", "entrypoint"}:
             return IntegerType()
+
+        # VT LiveHunt legacy identifiers (work without import "vt")
+        if node.name == "new_file":
+            return BooleanType()
+        if node.name in {"positives", "submissions"}:
+            return IntegerType()
+
         if node.name == "them":
             return StringSetType()
 
@@ -691,6 +698,10 @@ class TypeInference(ASTVisitor[YaraType]):
             return StringIdentifierType()
         self.errors.append(f"Undefined string: {node.name}")
         return UnknownType()
+
+    def visit_string_wildcard(self, node) -> YaraType:
+        """Visit string wildcard ($*)."""
+        return StringSetType()
 
     def visit_string_count(self, node: StringCount) -> YaraType:
         string_id = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
@@ -767,9 +778,18 @@ class TypeInference(ASTVisitor[YaraType]):
             "iendswith",
             "iequals",
         ]:
+            # contains can also work on arrays (e.g., array contains element)
+            if node.operator == "contains" and isinstance(left_type, ArrayType):
+                # For arrays, right side should match element type
+                if not left_type.element_type.is_compatible_with(right_type):
+                    self.errors.append(
+                        f"Array element type {left_type.element_type} not compatible with {right_type}",
+                    )
+                return BooleanType()
+
             if not left_type.is_string_like():
                 self.errors.append(
-                    f"Left operand of '{node.operator}' must be string-like, got {left_type}",
+                    f"Left operand of '{node.operator}' must be string-like or array, got {left_type}",
                 )
             # For matches, right side can be string or regex
             if node.operator == "matches":
@@ -991,11 +1011,35 @@ class TypeInference(ASTVisitor[YaraType]):
                 f"Module '{obj_type.module_name}' has no attribute '{node.member}'",
             )
             return UnknownType()
+
+        if isinstance(obj_type, StructType):
+            if node.member in obj_type.fields:
+                return obj_type.fields[node.member]
+            self.errors.append(
+                f"Struct has no field '{node.member}'",
+            )
+            return UnknownType()
+
         self.errors.append(f"Cannot access member of non-module type: {obj_type}")
         return UnknownType()
 
     def visit_module_reference(self, node) -> YaraType:
         if self.env.has_module(node.module):
+            # Get the actual module name (handles aliases)
+            actual_module = self.env.get_module_name(node.module)
+            if actual_module:
+                # Return module type based on module loader
+                from yaraast.types.module_loader import ModuleLoader
+
+                loader = ModuleLoader()
+                module_def = loader.get_module(actual_module)
+                if module_def:
+                    # Convert ModuleDefinition to ModuleType
+                    return ModuleType(
+                        module_name=actual_module,
+                        attributes=module_def.attributes,
+                    )
+            # Fallback to old MODULE_DEFINITIONS for compatibility
             return MODULE_DEFINITIONS.get(node.module, UnknownType())
         self.errors.append(f"Module '{node.module}' not imported")
         return UnknownType()
@@ -1311,6 +1355,9 @@ class TypeChecker(ASTVisitor[None]):
         pass  # Implementation intentionally empty
 
     def visit_string_identifier(self, node) -> None:
+        pass  # Implementation intentionally empty
+
+    def visit_string_wildcard(self, node) -> None:
         pass  # Implementation intentionally empty
 
     def visit_string_count(self, node) -> None:

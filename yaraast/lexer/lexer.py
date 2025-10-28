@@ -103,12 +103,24 @@ class Lexer:
             self.position += 1
 
     def _skip_whitespace_and_comments(self) -> None:
-        """Skip whitespace and comments."""
+        """Skip whitespace, comments, and line continuations."""
         while self.position < len(self.text):
             char = self._current_char()
 
             if char in " \t\r\n":
                 self._advance()
+            elif char == "\\" and self._is_line_continuation():
+                # Line continuation: backslash followed by optional whitespace and newline
+                self._advance()  # skip backslash
+                # Skip any whitespace before newline
+                while self._current_char() in " \t":
+                    self._advance()
+                # Skip the newline
+                if self._current_char() in "\r\n":
+                    self._advance()
+                    # Handle CRLF
+                    if self._current_char() == "\n":
+                        self._advance()
             elif char == "/" and self._peek_char() == "/":
                 # Single-line comment
                 while self._current_char() and self._current_char() != "\n":
@@ -186,6 +198,12 @@ class Lexer:
             self._advance()
             return Token(token_type, char, start_line, start_column, 1)
 
+        # Handle backslash followed by whitespace (common typo for division in some YARA files)
+        if char == "\\" and self._peek_char() in (" ", "\t"):
+            # Treat as division operator (typo correction)
+            self._advance()
+            return Token(TokenType.DIVIDE, "/", start_line, start_column, 1)
+
         msg = f"Unexpected character: {char}"
         raise LexerError(msg, self.line, self.column)
 
@@ -209,47 +227,75 @@ class Lexer:
                     # In YARA strings, \\ is used for literal backslash
                     value += "\\"
                 elif next_char == '"':
-                    # This is the tricky case: \"
-                    # Some YARA files use \" at the end like "\TEMP\"
-                    # which technically should be invalid but appears in real files
+                    # \" -> escaped quote
+                    # Special case: detect malformed strings ending with backslash like "C:\TEMP\"
+                    # These appear in real YARA files even though technically invalid
                     #
-                    # Heuristic: if \" is followed by whitespace and valid string modifiers
-                    # or end of line, treat the backslash as literal and end the string
+                    # Heuristic: if \" is followed by ONLY whitespace/modifiers until newline,
+                    # treat the backslash as literal and end the string
                     look_ahead_pos = self.position + 1
+                    is_string_ending = False
+
                     if look_ahead_pos < len(self.text):
-                        chars_after = self.text[look_ahead_pos : look_ahead_pos + 20]
-                        # Skip any whitespace
+                        chars_after = self.text[look_ahead_pos : look_ahead_pos + 50]
+                        # Track if we've seen any whitespace after the quote
+                        has_whitespace = False
                         i = 0
                         while i < len(chars_after) and chars_after[i] in " \t":
+                            has_whitespace = True
                             i += 1
-                        chars_after = chars_after[i:]
 
-                        # Check if what follows looks like string modifiers or end of string
-                        if not chars_after or chars_after.startswith(
-                            (
-                                "ascii",
-                                "wide",
-                                "nocase",
-                                "fullword",
-                                "xor",
-                                "base64",
-                                "\n",
-                                "\r",
-                                "//",
-                            ),
-                        ):  # Comment after string
-                            # Looks like end of string, treat \ as literal and break
-                            value += "\\"
-                            # Advance to consume the quote and exit loop
-                            self._advance()
-                            break
-                        # Treat as escaped quote
-                        value += '"'
+                        # Check what comes after whitespace
+                        if i < len(chars_after):
+                            remaining = chars_after[i:]
+                            # Check if string ends: newline, comment, or modifiers
+                            if (
+                                remaining.startswith(("\n", "\r"))
+                                or (has_whitespace and remaining.startswith("//"))
+                                or remaining.startswith("ascii ")
+                                or remaining.startswith("ascii\n")
+                                or remaining.startswith("ascii\r")
+                                or remaining.startswith("ascii//")
+                                or remaining.startswith("wide ")
+                                or remaining.startswith("wide\n")
+                                or remaining.startswith("wide\r")
+                                or remaining.startswith("wide//")
+                                or remaining.startswith("nocase ")
+                                or remaining.startswith("nocase\n")
+                                or remaining.startswith("nocase\r")
+                                or remaining.startswith("nocase//")
+                                or remaining.startswith("fullword ")
+                                or remaining.startswith("fullword\n")
+                                or remaining.startswith("fullword\r")
+                                or remaining.startswith("fullword//")
+                                or remaining.startswith("xor ")
+                                or remaining.startswith("xor(")
+                                or remaining.startswith("xor\n")
+                                or remaining.startswith("xor\r")
+                                or remaining.startswith("xor//")
+                                or remaining.startswith("base64 ")
+                                or remaining.startswith("base64(")
+                                or remaining.startswith("base64\n")
+                                or remaining.startswith("base64\r")
+                                or remaining.startswith("base64//")
+                                or remaining.startswith("base64wide")
+                            ):
+                                is_string_ending = True
+                        else:
+                            # Only whitespace remains - end of string
+                            is_string_ending = True
                     else:
-                        # At end of file, treat as literal backslash
+                        # End of file
+                        is_string_ending = True
+
+                    if is_string_ending:
+                        # Treat as literal backslash at end of malformed string
                         value += "\\"
                         self._advance()  # consume the quote
                         break
+                    else:
+                        # Normal escaped quote in middle of string
+                        value += '"'
                 elif next_char == "n":
                     # \n -> newline
                     value += "\n"
@@ -418,7 +464,7 @@ class Lexer:
         return Token(token_type, value, start_line, start_column)
 
     def _read_string_identifier(self) -> Token:
-        """Read string identifier ($name)."""
+        """Read string identifier ($name) or wildcard pattern ($name*)."""
         start_line = self.line
         start_column = self.column
 
@@ -433,6 +479,10 @@ class Lexer:
             self._current_char().isalnum() or self._current_char() == "_"
         ):
             value += self._current_char()
+            self._advance()
+
+        if self._current_char() == "*":
+            value += "*"
             self._advance()
 
         return Token(TokenType.STRING_IDENTIFIER, value, start_line, start_column)
@@ -525,6 +575,25 @@ class Lexer:
             ";": TokenType.SEMICOLON,
         }
         return tokens.get(char)
+
+    def _is_line_continuation(self) -> bool:
+        """Check if backslash is a line continuation.
+
+        A line continuation is a backslash followed by optional whitespace and a newline.
+        """
+        if self._current_char() != "\\":
+            return False
+
+        # Look ahead to see if there's a newline (possibly with whitespace before it)
+        pos = self.position + 1
+        while pos < len(self.text) and self.text[pos] in " \t":
+            pos += 1
+
+        # Check if we have a newline
+        if pos < len(self.text) and self.text[pos] in "\r\n":
+            return True
+
+        return False
 
     def _is_regex_context(self) -> bool:
         """Check if we're in a regex context."""

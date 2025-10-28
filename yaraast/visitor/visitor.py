@@ -34,6 +34,7 @@ from yaraast.ast.expressions import (
     StringLength,
     StringLiteral,
     StringOffset,
+    StringWildcard,
     UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
@@ -144,6 +145,10 @@ class ASTVisitor[T](ABC):
     @abstractmethod
     def visit_string_identifier(self, node: StringIdentifier) -> T:
         """Visit StringIdentifier node."""
+
+    @abstractmethod
+    def visit_string_wildcard(self, node: StringWildcard) -> T:
+        """Visit StringWildcard node."""
 
     @abstractmethod
     def visit_string_count(self, node: StringCount) -> T:
@@ -416,6 +421,10 @@ class BaseVisitor(ASTVisitor[T]):
 
     def visit_string_identifier(self, node: StringIdentifier) -> T:
         """Visit StringIdentifier node."""
+        return cast(T, None)
+
+    def visit_string_wildcard(self, node: StringWildcard) -> T:
+        """Visit StringWildcard node."""
         return cast(T, None)
 
     def visit_string_count(self, node: StringCount) -> T:
@@ -755,8 +764,14 @@ class ASTTransformer(ASTVisitor[ASTNode]):
         node: StringIdentifier,
     ) -> StringIdentifier:
         """Transform StringIdentifier node."""
-        # StringIdentifier doesn't accept location parameter
         return StringIdentifier(name=node.name)
+
+    def visit_string_wildcard(
+        self,
+        node: StringWildcard,
+    ) -> StringWildcard:
+        """Transform StringWildcard node."""
+        return StringWildcard(pattern=node.pattern)
 
     def visit_string_count(self, node: StringCount) -> StringCount:
         """Transform StringCount node."""

@@ -346,6 +346,10 @@ class DependencyAnalyzer(ASTVisitor[None]):
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         """Visit string identifier node - string identifiers don't create rule dependencies."""
 
+    def visit_string_wildcard(self, node: StringIdentifier) -> None:
+        """Visit StringWildcard node."""
+        pass
+
     def visit_string_count(self, node: StringCount) -> None:
         """Visit string count node - string counts don't create dependencies."""
 

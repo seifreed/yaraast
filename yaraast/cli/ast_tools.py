@@ -374,6 +374,10 @@ class ASTStructuralAnalyzer(ASTVisitor):
         """Visit String Identifier node - not needed for structural analysis."""
         # Implementation not needed for structural analysis
 
+    def visit_string_wildcard(self, node) -> Any:
+        """Visit StringWildcard node."""
+        return None
+
     def visit_string_length(self, node) -> Any:
         """Visit String Length node - not needed for structural analysis."""
         # Implementation not needed for structural analysis

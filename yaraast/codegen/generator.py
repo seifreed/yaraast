@@ -340,6 +340,10 @@ class CodeGenerator(ASTVisitor[str]):
         """Generate code for StringIdentifier."""
         return node.name
 
+    def visit_string_wildcard(self, node: StringWildcard) -> str:
+        """Generate code for StringWildcard."""
+        return node.pattern
+
     def visit_string_count(self, node: StringCount) -> str:
         """Generate code for StringCount."""
         return f"#{node.string_id}"
@@ -515,9 +519,10 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_of_expression(self, node: OfExpression) -> str:
         """Generate code for OfExpression."""
-        # Quantifier can be a string, int, or AST node
         if isinstance(node.quantifier, str | int):
             quantifier = str(node.quantifier)
+        elif isinstance(node.quantifier, StringLiteral):
+            quantifier = node.quantifier.value
         else:
             quantifier = self.visit(node.quantifier)
         string_set = self.visit(node.string_set)

@@ -443,6 +443,10 @@ class ASTDumper(ASTVisitor[dict]):
 class ASTTreeBuilder(ASTVisitor[Tree]):
     """Build Rich tree visualization of AST."""
 
+    def visit_string_wildcard(self, node: StringIdentifier) -> dict:
+        """Visit StringWildcard node."""
+        return {"type": "StringWildcard", "pattern": node.pattern}
+
     def visit(self, node) -> Tree:
         """Generic visit method with fallback."""
         if node is None:

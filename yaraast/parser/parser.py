@@ -278,6 +278,28 @@ class Parser:
 
     def _parse_hex_string(self, hex_content: str) -> list[HexToken]:
         """Parse hex string content into tokens."""
+        # Remove comments from hex content
+        # Handle both single-line (//) and multi-line (/* */) comments
+        cleaned_content = ""
+        i = 0
+        while i < len(hex_content):
+            if i < len(hex_content) - 1 and hex_content[i : i + 2] == "//":
+                # Skip until newline
+                while i < len(hex_content) and hex_content[i] != "\n":
+                    i += 1
+            elif i < len(hex_content) - 1 and hex_content[i : i + 2] == "/*":
+                # Skip until */
+                i += 2
+                while i < len(hex_content) - 1:
+                    if hex_content[i : i + 2] == "*/":
+                        i += 2
+                        break
+                    i += 1
+            else:
+                cleaned_content += hex_content[i]
+                i += 1
+
+        hex_content = cleaned_content
         tokens = []
         i = 0
 
@@ -534,7 +556,7 @@ class Parser:
 
     def _parse_relational_expression(self) -> Expression:
         """Parse relational expression."""
-        expr = self._parse_bitwise_expression()
+        expr = self._parse_range_expression()
 
         while self._match(
             TokenType.LT,
@@ -553,8 +575,18 @@ class Parser:
             TokenType.IEQUALS,
         ):
             operator = self._previous().value.lower()
-            right = self._parse_bitwise_expression()
+            right = self._parse_range_expression()
             expr = BinaryExpression(left=expr, operator=operator, right=right)
+
+        return expr
+
+    def _parse_range_expression(self) -> Expression:
+        """Parse range expression (a..b)."""
+        expr = self._parse_bitwise_expression()
+
+        if self._match(TokenType.DOUBLE_DOT):
+            high = self._parse_bitwise_expression()
+            expr = RangeExpression(low=expr, high=high)
 
         return expr
 
@@ -668,6 +700,22 @@ class Parser:
                 else:
                     msg = "Invalid function call"
                     raise ParserError(msg, self._peek())
+            elif self._match(TokenType.AT):
+                # At expression: $string at offset
+                if isinstance(expr, StringIdentifier):
+                    offset = self._parse_additive_expression()
+                    expr = AtExpression(string_id=expr.name, offset=offset)
+                else:
+                    msg = "AT keyword can only be used with string identifiers"
+                    raise ParserError(msg, self._peek())
+            elif self._match(TokenType.IN):
+                # In expression: $string in range
+                if isinstance(expr, StringIdentifier):
+                    range_expr = self._parse_additive_expression()
+                    expr = InExpression(string_id=expr.name, range=range_expr)
+                else:
+                    msg = "IN keyword can only be used with string identifiers"
+                    raise ParserError(msg, self._peek())
             else:
                 break
 
@@ -675,6 +723,25 @@ class Parser:
 
     def _parse_primary_expression(self) -> Expression:
         """Parse primary expression."""
+        # Check for numeric quantifiers BEFORE parsing simple integers
+        # This handles patterns like "7 of them" or "3 of ($a*)"
+        if self._check(TokenType.INTEGER):
+            # Peek ahead to see if this is a quantifier
+            saved_pos = self.current
+            self._advance()
+            quantifier_value = self._previous().value
+
+            if self._match(TokenType.OF):
+                # It's a numeric quantifier expression
+                # Parse the string set at primary level to avoid consuming operators
+                string_set = self._parse_postfix_expression()
+                return OfExpression(
+                    quantifier=IntegerLiteral(value=quantifier_value),
+                    string_set=string_set,
+                )
+            # Not a quantifier, backtrack and parse as normal integer
+            self.current = saved_pos
+
         # Literals
         if self._match(TokenType.INTEGER):
             return IntegerLiteral(value=self._previous().value)
@@ -693,7 +760,10 @@ class Parser:
 
         # String references
         if self._match(TokenType.STRING_IDENTIFIER):
-            return StringIdentifier(name=self._previous().value)
+            name = self._previous().value
+            if name.endswith("*"):
+                return StringWildcard(pattern=name)
+            return StringIdentifier(name=name)
 
         if self._match(TokenType.STRING_COUNT):
             return StringCount(string_id=self._previous().value[1:])  # Remove #
@@ -770,6 +840,15 @@ class Parser:
                 msg = "Expected ')' after expression"
                 raise ParserError(msg, self._peek())
 
+            # Check if this is a quantifier expression like "(2+3) of them"
+            if self._match(TokenType.OF):
+                # Parse the string set at postfix level to avoid consuming operators
+                string_set = self._parse_postfix_expression()
+                return OfExpression(
+                    quantifier=exprs[0],
+                    string_set=string_set,
+                )
+
             return ParenthesesExpression(expression=exprs[0])
 
         # Range
@@ -801,7 +880,9 @@ class Parser:
                 range_expr = self._parse_expression()
                 return InExpression(string_id=string_id, range=range_expr)
 
-            # Otherwise it's just a string identifier
+            # Otherwise it's just a string identifier or wildcard
+            if string_id.endswith("*"):
+                return StringWildcard(pattern=string_id)
             return StringIdentifier(name=string_id)
 
         msg = f"Unexpected token: {self._peek().value}"
@@ -877,7 +958,8 @@ class Parser:
 
     def _parse_of_expression(self, quantifier: str) -> OfExpression:
         """Parse of expression."""
-        string_set = self._parse_expression()
+        # Parse the string set at postfix level to avoid consuming operators
+        string_set = self._parse_postfix_expression()
         return OfExpression(
             quantifier=StringLiteral(value=quantifier),
             string_set=string_set,

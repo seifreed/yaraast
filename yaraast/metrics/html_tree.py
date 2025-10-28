@@ -920,6 +920,10 @@ class HtmlTreeGenerator(ASTVisitor[dict[str, Any]]):
             "value": node.name,
         }
 
+    def visit_string_wildcard(self, node) -> dict[str, Any]:
+        """Visit StringWildcard node."""
+        return {"type": "StringWildcard", "pattern": node.pattern}
+
     def visit_boolean_literal(self, node) -> dict[str, Any]:
         """Visit boolean literal node."""
         return {

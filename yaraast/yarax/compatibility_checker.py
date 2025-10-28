@@ -485,6 +485,10 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
         # Not needed for compatibility checking
         pass  # Implementation intentionally empty
 
+    def visit_string_wildcard(self, node) -> None:
+        # Not needed for compatibility checking
+        pass  # Implementation intentionally empty
+
     def visit_string_length(self, node) -> None:
         # Not needed for compatibility checking
         pass  # Implementation intentionally empty

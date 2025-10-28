@@ -880,6 +880,10 @@ class StringDiagramGenerator(ASTVisitor[None]):
         """Visit ExternImport node."""
         # Implementation intentionally empty
 
+    def visit_string_wildcard(self, node) -> None:
+        """Visit StringWildcard node."""
+        pass
+
     def visit_extern_namespace(self, node) -> None:
         """Visit ExternNamespace node."""
         # Implementation intentionally empty

@@ -48,9 +48,12 @@ class DeadCodeEliminator(ASTTransformer):
 
         # Count rules with always-false conditions
         for rule in ast.rules:
-            if rule.condition and isinstance(rule.condition, BooleanLiteral):
-                if not rule.condition.value:  # false condition
-                    self.elimination_count += 1
+            if (
+                rule.condition
+                and isinstance(rule.condition, BooleanLiteral)
+                and not rule.condition.value
+            ):  # false condition
+                self.elimination_count += 1
 
         # Second pass: eliminate unused code
         optimized_ast = self.visit(ast)
@@ -84,9 +87,12 @@ class DeadCodeEliminator(ASTTransformer):
 
         for rule in node.rules:
             # Skip rules with always-false conditions
-            if rule.condition and isinstance(rule.condition, BooleanLiteral):
-                if not rule.condition.value:  # false condition
-                    continue  # Remove this rule
+            if (
+                rule.condition
+                and isinstance(rule.condition, BooleanLiteral)
+                and not rule.condition.value
+            ):  # false condition
+                continue  # Remove this rule
 
             # Keep only used rules (or all if we can't determine)
             if self.used_rules:
@@ -160,6 +166,10 @@ class DeadCodeEliminator(ASTTransformer):
         if self.in_condition:
             self.used_strings.add(node.name)
         return node
+
+    def visit_string_wildcard(self, node: StringIdentifier) -> StringIdentifier:
+        """Visit StringWildcard node."""
+        pass
 
     def visit_identifier(self, node: Identifier) -> Identifier:
         """Visit Identifier - track potential rule usage."""

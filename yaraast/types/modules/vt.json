@@ -1,0 +1,258 @@
+{
+  "name": "vt",
+  "description": "VirusTotal LiveHunt module for YARA rules with metadata and behavioral analysis",
+  "attributes": {
+    "metadata": {
+      "type": "struct",
+      "fields": {
+        "md5": "string",
+        "sha1": "string",
+        "sha256": "string",
+        "file_name": "string",
+        "file_size": "int",
+        "file_type": "int",
+        "file_type_tags": "string[]",
+        "new_file": "bool",
+        "first_submission_date": "int",
+        "times_submitted": "int",
+        "unique_sources": "int",
+        "imphash": "string",
+        "ssdeep": "string",
+        "tlsh": "string",
+        "tags": "string[]",
+        "malware_families": "string[]",
+        "analysis_stats": {
+          "type": "struct",
+          "fields": {
+            "malicious": "int",
+            "undetected": "int",
+            "failure": "int",
+            "type_unsupported": "int"
+          }
+        },
+        "signatures": {
+          "type": "dict",
+          "key": "string",
+          "value": "string"
+        },
+        "submitter": {
+          "type": "struct",
+          "fields": {
+            "country": "string",
+            "city": "string"
+          }
+        },
+        "exiftool": {
+          "type": "dict",
+          "key": "string",
+          "value": "string"
+        },
+        "goresym": {
+          "type": "struct",
+          "fields": {
+            "arch": "string",
+            "build_id": "string",
+            "go_version": "string",
+            "os": "string",
+            "stripped": "bool"
+          }
+        }
+      }
+    },
+    "behaviour": {
+      "type": "struct",
+      "fields": {
+        "files_dropped": {
+          "type": "array",
+          "element": {
+            "type": "struct",
+            "fields": {
+              "path": "string",
+              "sha256": "string",
+              "type": "string",
+              "process_name": "string"
+            }
+          }
+        },
+        "files_deleted": "string[]",
+        "files_copied": {
+          "type": "array",
+          "element": {
+            "type": "struct",
+            "fields": {
+              "source": "string",
+              "destination": "string"
+            }
+          }
+        },
+        "files_opened": "string[]",
+        "files_written": "string[]",
+        "files_attribute_changed": "string[]",
+        "dns_lookups": {
+          "type": "array",
+          "element": {
+            "type": "struct",
+            "fields": {
+              "hostname": "string",
+              "resolved_ips": "string[]"
+            }
+          }
+        },
+        "ip_traffic": {
+          "type": "array",
+          "element": {
+            "type": "struct",
+            "fields": {
+              "destination_ip": "string",
+              "destination_port": "int",
+              "transport_layer_protocol": "string"
+            }
+          }
+        },
+        "http_conversations": {
+          "type": "array",
+          "element": {
+            "type": "struct",
+            "fields": {
+              "url": "string",
+              "request_method": "string",
+              "request_headers": {
+                "type": "dict",
+                "key": "string",
+                "value": "string"
+              },
+              "response_status_code": "int"
+            }
+          }
+        },
+        "tls": {
+          "type": "array",
+          "element": {
+            "type": "struct",
+            "fields": {
+              "issuer": "string",
+              "subject": "string",
+              "ja3": "string",
+              "sni": "string",
+              "version": "string"
+            }
+          }
+        },
+        "processes_created": "string[]",
+        "processes_injected": "string[]",
+        "processes_killed": "string[]",
+        "command_executions": "string[]",
+        "modules_loaded": "string[]",
+        "mutexes_created": "string[]",
+        "mutexes_opened": "string[]",
+        "registry_keys_set": {
+          "type": "array",
+          "element": {
+            "type": "struct",
+            "fields": {
+              "key": "string",
+              "value": "string"
+            }
+          }
+        },
+        "services_created": "string[]",
+        "services_started": "string[]",
+        "traits": "int[]",
+        "verdicts": "int[]",
+        "verdict_labels": "string[]",
+        "mitre_attack_techniques": "string[]"
+      }
+    },
+    "FileType": {
+      "type": "struct",
+      "fields": {
+        "PE_EXE": "int",
+        "PE_DLL": "int",
+        "ELF": "int",
+        "MACH_O": "int",
+        "PDF": "int",
+        "ZIP": "int",
+        "RAR": "int"
+      }
+    },
+    "Http": {
+      "type": "struct",
+      "fields": {
+        "Method": {
+          "type": "struct",
+          "fields": {
+            "GET": "int",
+            "POST": "int",
+            "PUT": "int",
+            "DELETE": "int",
+            "HEAD": "int",
+            "PATCH": "int",
+            "TRACE": "int",
+            "OPTIONS": "int",
+            "CONNECT": "int"
+          }
+        }
+      }
+    },
+    "Net": {
+      "type": "struct",
+      "fields": {
+        "Protocol": {
+          "type": "struct",
+          "fields": {
+            "TCP": "int",
+            "UDP": "int",
+            "ICMP": "int",
+            "IGMP": "int",
+            "ESP": "int",
+            "AH": "int",
+            "L2TP": "int",
+            "SCTP": "int"
+          }
+        }
+      }
+    },
+    "BehaviourTrait": {
+      "type": "struct",
+      "fields": {
+        "PERSISTENCE": "int",
+        "SELF_DELETE": "int",
+        "CRYPTO": "int",
+        "FTP_COMMUNICATION": "int",
+        "LONG_SLEEPS": "int",
+        "OBFUSCATED": "int",
+        "INJECTION": "int",
+        "KEYLOGGER": "int",
+        "ROOTKIT": "int",
+        "STEALER": "int"
+      }
+    },
+    "BehaviourVerdict": {
+      "type": "struct",
+      "fields": {
+        "MALWARE": "int",
+        "TROJAN": "int",
+        "RANSOM": "int",
+        "BANKER": "int",
+        "ADWARE": "int",
+        "PHISHING": "int",
+        "CLEAN": "int",
+        "UNKNOWN_VERDICT": "int"
+      }
+    }
+  },
+  "constants": {
+    "new_file": "bool",
+    "positives": "int",
+    "submissions": "int",
+    "file_name": "string",
+    "file_type": "int",
+    "tags": "string[]",
+    "signatures": {
+      "type": "dict",
+      "key": "string",
+      "value": "string"
+    }
+  },
+  "functions": {}
+}

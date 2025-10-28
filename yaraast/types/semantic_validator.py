@@ -181,6 +181,9 @@ class StringIdentifierValidator(ASTVisitor[None]):
     def visit_string_identifier(self, node) -> None:
         """Visit string identifier node - string identifiers don't affect definition validation."""
 
+    def visit_string_wildcard(self, node) -> None:
+        """Visit string wildcard node - string wildcards don't affect definition validation."""
+
     def visit_string_count(self, node) -> None:
         """Visit string count node - string counts don't affect identifier validation."""
 
@@ -533,6 +536,9 @@ class FunctionCallValidator(ASTVisitor[None]):
 
     def visit_string_identifier(self, node) -> None:
         """Visit string identifier node - string identifiers don't contain function calls."""
+
+    def visit_string_wildcard(self, node) -> None:
+        """Visit string wildcard node - string wildcards don't contain function calls."""
 
     def visit_string_count(self, node) -> None:
         """Visit string count node - string counts don't contain function calls."""

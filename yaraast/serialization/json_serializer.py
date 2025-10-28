@@ -325,6 +325,9 @@ class JsonSerializer(ASTVisitor[dict[str, Any]]):
     def visit_string_identifier(self, node) -> dict[str, Any]:
         return {"type": "StringIdentifier", "name": node.name}
 
+    def visit_string_wildcard(self, node) -> dict[str, Any]:
+        return {"type": "StringWildcard", "pattern": node.pattern}
+
     def visit_string_count(self, node) -> dict[str, Any]:
         return {"type": "StringCount", "string_id": node.string_id}
 

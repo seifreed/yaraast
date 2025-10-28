@@ -37,6 +37,16 @@ class StringIdentifier(Expression):
 
 
 @dataclass
+class StringWildcard(Expression):
+    """String wildcard pattern (e.g., $a*, $prefix*)."""
+
+    pattern: str
+
+    def accept(self, visitor: Any) -> Any:
+        return visitor.visit_string_wildcard(self)
+
+
+@dataclass
 class StringCount(Expression):
     """String count expression (#str)."""
 

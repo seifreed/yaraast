@@ -444,6 +444,10 @@ class ProtobufSerializer(ASTVisitor[Any]):
         """Visit ExternImport node."""
         return None
 
+    def visit_string_wildcard(self, node) -> Any:
+        """Visit StringWildcard node."""
+        return None
+
     def visit_extern_namespace(self, node) -> Any:
         """Visit ExternNamespace node."""
         return None

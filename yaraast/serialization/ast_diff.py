@@ -178,6 +178,10 @@ class AstHasher(ASTVisitor[str]):
         """Hash StringIdentifier node."""
         return f"StrId({node.name})"
 
+    def visit_string_wildcard(self, node) -> str:
+        """Visit StringWildcard node."""
+        return node.pattern
+
     def visit_integer_literal(self, node) -> str:
         """Hash IntegerLiteral node."""
         return f"Int({node.value})"
