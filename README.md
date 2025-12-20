@@ -7,14 +7,17 @@ A Python library for parsing and manipulating YARA rules using Abstract Syntax T
 - **100% YARA Parsing Success**: Parses all production YARA files (273,683+ rules tested)
 - **YARA-L 2.0 Support**: Full support for Google Chronicle detection rules (891/891 files)
 - **YARA-X Support**: Compatible with YARA-X syntax and features
+- **Automatic Dialect Detection**: Context-aware detection distinguishes YARA, YARA-L, and YARA-X
 - **Advanced Features**:
   - Hex nibble wildcards (`4?`, `?5`, `??`)
   - Regex modifiers (`/i`, `/m`, `/s`, `/g`)
   - VirusTotal LiveHunt module support
   - Wildcard string sets (`$a*`, `any of ($prefix*)`)
   - Negative integers in metadata
-  - Extended IN operator with ranges
+  - Extended `of...in` operator with ranges (`N of ($a*) in (start..end)`)
+  - PE exports with regex patterns (`pe.exports(/pattern/)`)
   - Comment-aware hex string parsing
+  - Streaming parser for large files (100MB+ threshold)
   - ClamAV syntax detection
 
 ## Installation
@@ -27,8 +30,9 @@ pip install yaraast
 
 ```python
 from yaraast import Parser
+from yaraast.unified_parser import UnifiedParser
 
-# Parse YARA rules
+# Parse YARA rules with automatic dialect detection
 yara_code = """
 rule example {
     meta:
@@ -42,8 +46,12 @@ rule example {
 }
 """
 
+# Option 1: Direct parser (when you know it's standard YARA)
 parser = Parser(yara_code)
 ast = parser.parse()
+
+# Option 2: Unified parser with auto-detection (recommended)
+ast = UnifiedParser.parse_string(yara_code)
 
 # Access rule components
 rule = ast.rules[0]
@@ -53,6 +61,41 @@ print(f"Condition: {rule.condition}")
 ```
 
 ## Advanced Usage
+
+### Automatic Dialect Detection
+
+The UnifiedParser automatically detects YARA, YARA-L, and YARA-X dialects:
+
+```python
+from yaraast.unified_parser import UnifiedParser
+
+# Parse file with automatic detection
+ast = UnifiedParser.parse_file("rules.yar")
+
+# Or parse string
+ast = UnifiedParser.parse_string(yara_code)
+
+# Force specific dialect if needed
+from yaraast.dialects import YaraDialect
+ast = UnifiedParser.parse_file("rules.yar", dialect=YaraDialect.YARA)
+```
+
+### Streaming Parser for Large Files
+
+For very large YARA files (100MB+), use streaming mode:
+
+```python
+from yaraast.unified_parser import UnifiedParser
+
+# Automatically uses streaming for files > 100MB
+ast = UnifiedParser.parse_file("large_ruleset.yar")
+
+# Force streaming for smaller files
+ast = UnifiedParser.parse_file("rules.yar", force_streaming=True)
+
+# Custom threshold (in MB)
+ast = UnifiedParser.parse_file("rules.yar", streaming_threshold_mb=50)
+```
 
 ### Lenient Parsing Mode
 
@@ -154,8 +197,11 @@ print(f"Found rules: {collector.rule_names}")
 - ✅ String modifiers (ascii, wide, nocase, fullword, xor, base64)
 - ✅ All condition operators and expressions
 - ✅ Module imports (pe, elf, math, hash, vt, etc.)
+- ✅ PE exports with regex patterns (`pe.exports(/pattern/)`)
+- ✅ Extended `of...in` ranges (`N of ($a*) in (start..end)`)
 - ✅ Private and global rules
 - ✅ Include directives
+- ✅ Comments inside hex strings
 
 ### YARA-L 2.0 Features
 - ✅ Event matching and correlation
@@ -174,16 +220,17 @@ print(f"Found rules: {collector.rule_names}")
 
 Verified with production rulesets:
 - **ClamAV**: 223,261 rules
-- **YARA Master Collection**: 31,442 rules
+- **YARA Master Collection**: 31,463 rules
 - **Community Rules**: 11,331 rules
 - **Google Chronicle**: 891 YARA-L rules
 
 ## Performance
 
-- Parses 273,683 rules across 14 files
-- 293 comprehensive tests
-- 47% code coverage
+- Parses 273,683+ rules across 14 files
+- 337 comprehensive tests (100% passing)
 - Handles files up to 91MB
+- Streaming mode for files > 100MB
+- ~1,800 rules/second on large files (30MB+)
 
 ## Requirements
 
