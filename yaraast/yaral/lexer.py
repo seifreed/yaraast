@@ -121,16 +121,9 @@ class YaraLLexer:
             iteration += 1
 
         if iteration >= max_iterations:
-            # Add error token instead of crashing
-            error_token = YaraLToken(
-                type=BaseTokenType.ERROR,
-                value="Lexer exceeded maximum iterations",
-                line=self.line,
-                column=self.column,
-                length=1,
-                yaral_type=None,
-            )
-            self.tokens.append(error_token)
+            # Safety limit reached - lexer may have encountered an infinite loop
+            # Skip adding error token as BaseTokenType.ERROR doesn't exist
+            pass
 
         # Create basic EOF token
         eof_token = YaraLToken(

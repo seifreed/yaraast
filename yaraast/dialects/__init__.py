@@ -21,25 +21,33 @@ def detect_dialect(content: str) -> YaraDialect:
         The detected YARA dialect
 
     """
-    # Quick heuristics for dialect detection
-    content_lower = content.lower()
+    import re
 
-    # YARA-L specific keywords
-    yaral_keywords = [
-        "events:",
-        "match:",
-        "outcome:",
-        "options:",
-        "metadata.event_type",
-        "principal.",
-        "target.",
-        "udm.",
-        "over ",
-        "nocase",
-        "count_distinct",
-        "array_distinct",
-        "earliest",
-        "latest",
+    # YARA-L specific structural keywords (high confidence indicators)
+    # Match these as section headers at the start of a line (possibly after whitespace)
+    # to avoid false positives from strings containing these patterns
+    yaral_structural_patterns = [
+        r"^\s*events\s*:",
+        r"^\s*match\s*:",
+        r"^\s*outcome\s*:",
+    ]
+
+    # YARA-L UDM (Unified Data Model) field patterns
+    # These start with $ followed by event variable and UDM field path
+    # Example: $e.metadata.event_type, $e1.principal.hostname
+    yaral_udm_patterns = [
+        r"\$\w+\.metadata\.event_type",
+        r"\$\w+\.principal\.",
+        r"\$\w+\.target\.",
+        r"\$\w+\.udm\.",
+    ]
+
+    # YARA-L aggregation functions (unique to YARA-L)
+    yaral_aggregation_patterns = [
+        r"\bcount_distinct\s*\(",
+        r"\barray_distinct\s*\(",
+        r"\bearliest\s*\(",
+        r"\blatest\s*\(",
     ]
 
     # YARA-X specific features (if any distinct ones exist)
@@ -47,14 +55,25 @@ def detect_dialect(content: str) -> YaraDialect:
         # Add YARA-X specific features when identified
     ]
 
-    # Check for YARA-L indicators
-    for keyword in yaral_keywords:
-        if keyword in content_lower:
+    # Check for YARA-L structural indicators (highest priority)
+    # Use MULTILINE flag so ^ matches at start of each line
+    for pattern in yaral_structural_patterns:
+        if re.search(pattern, content, re.MULTILINE | re.IGNORECASE):
+            return YaraDialect.YARA_L
+
+    # Check for YARA-L UDM patterns
+    for pattern in yaral_udm_patterns:
+        if re.search(pattern, content, re.IGNORECASE):
+            return YaraDialect.YARA_L
+
+    # Check for YARA-L aggregation functions
+    for pattern in yaral_aggregation_patterns:
+        if re.search(pattern, content, re.IGNORECASE):
             return YaraDialect.YARA_L
 
     # Check for YARA-X indicators
     for keyword in yarax_keywords:
-        if keyword in content_lower:
+        if keyword.lower() in content.lower():
             return YaraDialect.YARA_X
 
     # Default to standard YARA
