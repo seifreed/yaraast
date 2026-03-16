@@ -4,15 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.rules import Import, Include, Rule
+from yaraast.ast.rules import Rule
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
+from yaraast.builder.fluent_rule_helpers import apply_last_string_modifier, combine_condition
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from yaraast.ast.base import YaraFile
     from yaraast.ast.expressions import Expression
 
 
@@ -20,7 +21,7 @@ class FluentRuleBuilder:
     """Enhanced fluent builder for YARA rules with comprehensive chaining."""
 
     # Constants
-    MZ_HEADER = "MZ"
+    MZ_HEADER = "$mz"
     YARA_AST_STR = "YARA AST"
 
     def __init__(self, name: str | None = None) -> None:
@@ -47,8 +48,7 @@ class FluentRuleBuilder:
 
     def public(self) -> Self:
         """Mark rule as public (remove private modifier)."""
-        # Remove private from modifiers
-        self._rule_builder._modifiers = [m for m in self._rule_builder._modifiers if m != "private"]
+        self._rule_builder.public()
         return self
 
     def tagged(self, *tags: str) -> Self:
@@ -159,44 +159,37 @@ class FluentRuleBuilder:
     # String modifier methods (apply to most recent string)
     def nocase(self) -> Self:
         """Add nocase modifier to the most recent string."""
-        if self._string_builders:
-            self._string_builders[-1].nocase()
+        apply_last_string_modifier(self._string_builders, "nocase")
         return self
 
     def ascii(self) -> Self:
         """Add ASCII modifier to the most recent string."""
-        if self._string_builders:
-            self._string_builders[-1].ascii()
+        apply_last_string_modifier(self._string_builders, "ascii")
         return self
 
     def wide(self) -> Self:
         """Add wide modifier to the most recent string."""
-        if self._string_builders:
-            self._string_builders[-1].wide()
+        apply_last_string_modifier(self._string_builders, "wide")
         return self
 
     def fullword(self) -> Self:
         """Add fullword modifier to the most recent string."""
-        if self._string_builders:
-            self._string_builders[-1].fullword()
+        apply_last_string_modifier(self._string_builders, "fullword")
         return self
 
     def private_string(self) -> Self:
         """Add private modifier to the most recent string."""
-        if self._string_builders:
-            self._string_builders[-1].private()
+        apply_last_string_modifier(self._string_builders, "private")
         return self
 
     def xor(self, key: int | str | None = None) -> Self:
         """Add XOR modifier to the most recent string."""
-        if self._string_builders:
-            self._string_builders[-1].xor(key)
+        apply_last_string_modifier(self._string_builders, "xor", key)
         return self
 
     def base64(self) -> Self:
         """Add base64 modifier to the most recent string."""
-        if self._string_builders:
-            self._string_builders[-1].base64()
+        apply_last_string_modifier(self._string_builders, "base64")
         return self
 
     # Condition methods
@@ -255,21 +248,14 @@ class FluentRuleBuilder:
     def for_small_files(self) -> Self:
         """Add small file condition (< 1MB)."""
         condition_builder = FluentConditionBuilder().small_file()
-        if self._rule_builder._condition:
-            # Combine with existing condition
-            existing = self._rule_builder._condition
-            combined = FluentConditionBuilder(existing).and_(condition_builder)
-            return self.condition(combined)
-        return self.condition(condition_builder)
+        combined = combine_condition(self._rule_builder.get_condition(), condition_builder)
+        return self.condition(combined)
 
     def for_large_files(self) -> Self:
         """Add large file condition (> 10MB)."""
         condition_builder = FluentConditionBuilder().large_file()
-        if self._rule_builder._condition:
-            existing = self._rule_builder._condition
-            combined = FluentConditionBuilder(existing).and_(condition_builder)
-            return self.condition(combined)
-        return self.condition(condition_builder)
+        combined = combine_condition(self._rule_builder.get_condition(), condition_builder)
+        return self.condition(combined)
 
     def for_pe_files(self) -> Self:
         """Add PE file conditions."""
@@ -278,11 +264,8 @@ class FluentRuleBuilder:
             self.with_mz_header(self.MZ_HEADER)
 
         condition_builder = FluentConditionBuilder().string_matches(self.MZ_HEADER).at(0)
-        if self._rule_builder._condition:
-            existing = self._rule_builder._condition
-            combined = FluentConditionBuilder(existing).and_(condition_builder)
-            return self.condition(combined)
-        return self.condition(condition_builder)
+        combined = combine_condition(self._rule_builder.get_condition(), condition_builder)
+        return self.condition(combined)
 
     def for_executables(self) -> Self:
         """Add executable file conditions."""
@@ -291,12 +274,18 @@ class FluentRuleBuilder:
     # Build method
     def build(self) -> Rule:
         """Build the rule."""
-        # Add all string builders to the rule builder
-        for string_builder in self._string_builders:
-            string_def = string_builder.build()
-            self._rule_builder._strings.append(string_def)
+        self._rule_builder.add_string_definitions(
+            [string_builder.build() for string_builder in self._string_builders],
+        )
 
-        return self._rule_builder.build()
+        rule = self._rule_builder.build()
+        if isinstance(rule.meta, list):
+            meta_dict: dict[str, object] = {}
+            for item in rule.meta:
+                if hasattr(item, "key") and hasattr(item, "value"):
+                    meta_dict[item.key] = item.value
+            rule.meta = meta_dict
+        return rule
 
 
 class FluentStringContext:
@@ -391,38 +380,7 @@ class FluentStringContext:
         return FluentStringContext(self.rule_builder, identifier)
 
 
-class FluentYaraFileBuilder:
-    """Fluent builder for complete YARA files."""
-
-    def __init__(self) -> None:
-        self.imports: list[Import] = []
-        self.includes: list[Include] = []
-        self.rules: list[Rule] = []
-
-    def import_module(self, module: str, alias: str | None = None) -> Self:
-        """Add import statement."""
-        if not any(imp.module == module for imp in self.imports):
-            self.imports.append(Import(module=module, alias=alias))
-        return self
-
-    def include_file(self, path: str) -> Self:
-        """Add include statement."""
-        if not any(inc.path == path for inc in self.includes):
-            self.includes.append(Include(path=path))
-        return self
-
-    def with_rule(self, rule: Rule) -> Self:
-        """Add a rule."""
-        self.rules.append(rule)
-        return self
-
-    def rule(self, name: str) -> FluentRuleBuilder:
-        """Start building a rule."""
-        return FluentRuleBuilderWithFile(self, name)
-
-    def build(self) -> YaraFile:
-        """Build the YARA file."""
-        return YaraFile(imports=self.imports, includes=self.includes, rules=self.rules)
+from yaraast.builder.fluent_file_builder import FluentYaraFileBuilder
 
 
 class FluentRuleBuilderWithFile(FluentRuleBuilder):
@@ -443,106 +401,3 @@ class FluentRuleBuilderWithFile(FluentRuleBuilder):
         rule = self.build()
         self.file_builder.with_rule(rule)
         return self.file_builder.build()
-
-
-# Convenience functions
-def rule(name: str) -> FluentRuleBuilder:
-    """Create a new fluent rule builder."""
-    return FluentRuleBuilder(name)
-
-
-def yara_file() -> FluentYaraFileBuilder:
-    """Create a new fluent YARA file builder."""
-    return FluentYaraFileBuilder()
-
-
-# Factory functions for common rule types
-def malware_rule(name: str) -> FluentRuleBuilder:
-    """Create a malware detection rule template."""
-    return (
-        FluentRuleBuilder(name)
-        .tagged("malware")
-        .authored_by(FluentRuleBuilder.YARA_AST_STR)
-        .mz_header()
-        .for_pe_files()
-    )
-
-
-def trojan_rule(name: str) -> FluentRuleBuilder:
-    """Create a trojan detection rule template."""
-    return (
-        FluentRuleBuilder(name)
-        .tagged("trojan", "malware")
-        .authored_by(FluentRuleBuilder.YARA_AST_STR)
-        .mz_header()
-        .for_pe_files()
-    )
-
-
-def packed_rule(name: str) -> FluentRuleBuilder:
-    """Create a packed executable rule template."""
-    return (
-        FluentRuleBuilder(name)
-        .tagged("packed")
-        .authored_by(FluentRuleBuilder.YARA_AST_STR)
-        .mz_header()
-        .with_condition_builder(
-            lambda c: c.string_matches("$mz").at(0).and_(c.high_entropy()),
-        )
-    )
-
-
-def document_rule(name: str) -> FluentRuleBuilder:
-    """Create a document-based rule template."""
-    return FluentRuleBuilder(name).tagged("document").authored_by(FluentRuleBuilder.YARA_AST_STR)
-
-
-def network_rule(name: str) -> FluentRuleBuilder:
-    """Create a network-based detection rule."""
-    return (
-        FluentRuleBuilder(name)
-        .tagged("network")
-        .authored_by(FluentRuleBuilder.YARA_AST_STR)
-        .ip_pattern()
-        .url_pattern()
-        .matches_any_of("$ip", "$url")
-    )
-
-
-# Example usage function
-def example_rules() -> YaraFile:
-    """Create example rules using the fluent API."""
-    return (
-        yara_file()
-        .import_module("pe")
-        .import_module("math")
-        .rule("example_malware")
-        .tagged("malware", "example")
-        .authored_by("Fluent API Demo")
-        .described_as("Example malware detection rule")
-        .string("$mz")
-        .hex("4D 5A")
-        .then()
-        .string("$pe")
-        .hex("50 45 00 00")
-        .then()
-        .string("$suspicious")
-        .text("backdoor")
-        .nocase()
-        .then()
-        .when(
-            FluentConditionBuilder()
-            .string_matches("$mz")
-            .at(0)
-            .and_(FluentConditionBuilder().string_matches("$pe"))
-            .and_(FluentConditionBuilder().string_matches("$suspicious")),
-        )
-        .then_rule("example_packed")
-        .tagged("packed")
-        .authored_by("Fluent API Demo")
-        .mz_header()
-        .with_condition_builder(
-            lambda c: c.string_matches("$mz").at(0).and_(c.high_entropy()).and_(c.pe_is_exe()),
-        )
-        .then_build_file()
-    )

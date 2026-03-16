@@ -124,15 +124,15 @@ class ASTOptimizer:
             right_val = int(right.value)
 
             if op == "+":
-                return IntegerLiteral(value=str(left_val + right_val))
+                return IntegerLiteral(value=left_val + right_val)
             if op == "-":
-                return IntegerLiteral(value=str(left_val - right_val))
+                return IntegerLiteral(value=left_val - right_val)
             if op == "*":
-                return IntegerLiteral(value=str(left_val * right_val))
+                return IntegerLiteral(value=left_val * right_val)
             if op == "/" and right_val != 0:
-                return IntegerLiteral(value=str(left_val // right_val))
+                return IntegerLiteral(value=left_val // right_val)
             if op == "%" and right_val != 0:
-                return IntegerLiteral(value=str(left_val % right_val))
+                return IntegerLiteral(value=left_val % right_val)
         except (ValueError, ZeroDivisionError):
             pass
 

@@ -66,7 +66,8 @@ class PerformanceOptimizer:
     ) -> YaraFile:
         """Optimize an entire YARA file."""
         # Apply file-level optimizations
-        _ = self.rule_optimizer.optimize_file(yara_file)
+        optimized_file, _ = self.rule_optimizer.optimize(yara_file)
+        yara_file = optimized_file
 
         # Apply memory optimizations if needed
         if strategy in ("memory", "balanced"):
@@ -79,12 +80,12 @@ class PerformanceOptimizer:
         return yara_file
 
     def _optimize_for_speed(self, rule: Rule) -> Rule:
-        """Apply speed-specific optimizations to a rule."""
+        """Apply speed-specific optimizations to a rule (returns new sorted lists, not in-place)."""
         # Reorder string checks for better performance
         if rule.strings and isinstance(rule.strings, list):
             # Put shorter strings first (faster to check)
             try:
-                rule.strings.sort(key=lambda s: len(getattr(s, "value", "")))
+                rule.strings = sorted(rule.strings, key=lambda s: len(getattr(s, "value", "")))
                 self._stats["strings_optimized"] += len(rule.strings)
             except (TypeError, AttributeError):
                 # Skip optimization if strings format is unexpected
@@ -99,14 +100,13 @@ class PerformanceOptimizer:
         return rule
 
     def _optimize_file_for_speed(self, yara_file: YaraFile) -> YaraFile:
-        """Apply speed-specific optimizations to a file."""
+        """Apply speed-specific optimizations to a file (creates sorted copies, not in-place)."""
         # Optimize each rule
         for i, rule in enumerate(yara_file.rules):
             yara_file.rules[i] = self._optimize_for_speed(rule)
 
-        # Reorder rules for better performance
-        # Put simpler rules first
-        yara_file.rules.sort(key=self._rule_complexity)
+        # Reorder rules for better performance (new list, not in-place sort)
+        yara_file.rules = sorted(yara_file.rules, key=self._rule_complexity)
 
         return yara_file
 
@@ -163,7 +163,7 @@ def optimize_yara_file(
         Tuple of (optimized AST, statistics)
 
     """
-    from yaraast.parser import Parser
+    from yaraast.parser.parser import Parser
 
     # Parse the file
     parser = Parser()
@@ -178,7 +178,7 @@ def optimize_yara_file(
 
     # Write output if requested
     if output_path:
-        from yaraast.codegen import CodeGenerator
+        from yaraast.codegen.generator import CodeGenerator
 
         gen = CodeGenerator()
         output = gen.generate(ast)

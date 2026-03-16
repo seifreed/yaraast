@@ -6,7 +6,13 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.ast.expressions import Expression, StringIdentifier
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    Expression,
+    ParenthesesExpression,
+    StringIdentifier,
+    UnaryExpression,
+)
 from yaraast.ast.rules import Import, Include, Rule, Tag
 
 if TYPE_CHECKING:
@@ -210,11 +216,33 @@ class RuleTransformer:
         """Recursively rename string identifiers in expression."""
         if isinstance(expr, StringIdentifier):
             if expr.name in mapping:
-                return StringIdentifier(name=mapping[expr.name], location=expr.location)
+                return StringIdentifier(name=mapping[expr.name])
             return expr
 
-        # For other expression types, would need to traverse recursively
-        # This is a simplified implementation
+        if isinstance(expr, BinaryExpression):
+            new_left = self._rename_strings_in_expression(expr.left, mapping)
+            new_right = self._rename_strings_in_expression(expr.right, mapping)
+            if new_left is not expr.left or new_right is not expr.right:
+                return BinaryExpression(left=new_left, operator=expr.operator, right=new_right)
+            return expr
+
+        if isinstance(expr, UnaryExpression):
+            new_operand = self._rename_strings_in_expression(expr.operand, mapping)
+            if new_operand is not expr.operand:
+                return UnaryExpression(operator=expr.operator, operand=new_operand)
+            return expr
+
+        if isinstance(expr, ParenthesesExpression):
+            new_inner = self._rename_strings_in_expression(expr.expression, mapping)
+            if new_inner is not expr.expression:
+                return ParenthesesExpression(expression=new_inner)
+            return expr
+
+        # For node types with children, recurse via generic traversal
+        for child in expr.children():
+            if isinstance(child, Expression):
+                self._rename_strings_in_expression(child, mapping)
+
         return expr
 
 

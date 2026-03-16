@@ -1,18 +1,21 @@
-"""Metrics and visualization for YARA AST.
+"""Metrics subsystem facade for YARA AST analysis and visualization."""
 
-This module provides AST-based metrics and visualization capabilities
-for analyzing YARA rule complexity, dependencies, and structure.
-"""
-
-from yaraast.metrics.complexity import ComplexityAnalyzer, ComplexityMetrics
+from yaraast.metrics.capabilities import CAPABILITIES, MetricsCapability
+from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.dependency_graph import DependencyGraphGenerator
+from yaraast.metrics.facade import METRICS, MetricsSubsystem
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
+from yaraast.metrics.workflows import MetricsReportData
 
 __all__ = [
+    "CAPABILITIES",
+    "METRICS",
     "ComplexityAnalyzer",
-    "ComplexityMetrics",
     "DependencyGraphGenerator",
     "HtmlTreeGenerator",
+    "MetricsCapability",
+    "MetricsReportData",
+    "MetricsSubsystem",
     "StringDiagramGenerator",
 ]

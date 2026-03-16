@@ -1,26 +1,31 @@
 """Workspace symbols provider for YARAAST LSP."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
-from lsprotocol.types import Location, Position, Range, SymbolInformation, SymbolKind
+from lsprotocol.types import SymbolInformation
 
-from yaraast.parser.parser import Parser
+from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 
 
 class WorkspaceSymbolsProvider:
     """Provide workspace-wide symbol search."""
 
-    def __init__(self):
+    def __init__(self, runtime: LspRuntime | None = None) -> None:
         """Initialize workspace symbols provider."""
-        self.symbol_cache = {}
-        self.workspace_root = None
+        self.runtime = runtime
+        self.symbol_cache: dict[str, tuple[float, list[SymbolInformation]]] = {}
+        self.workspace_root: Path | None = None
 
-    def set_workspace_root(self, root_path: str):
+    def set_workspace_root(self, root_path: str) -> None:
         """Set the workspace root directory."""
         self.workspace_root = Path(root_path)
 
     def get_workspace_symbols(self, query: str) -> list[SymbolInformation]:
         """Search for symbols across the entire workspace."""
+        if self.runtime:
+            return self.runtime.workspace_symbols(query)
         if not self.workspace_root or not self.workspace_root.exists():
             return []
 
@@ -67,51 +72,27 @@ class WorkspaceSymbolsProvider:
             with open(file_path) as f:
                 content = f.read()
 
-            parser = Parser(content)
-            ast = parser.parse()
-
-            file_uri = f"file://{file_path.resolve()}"
-
-            # Extract rule symbols
-            for rule in ast.rules:
-                rule_line = self._find_rule_line(content, rule.name)
-                if rule_line is not None:
-                    symbols.append(
-                        SymbolInformation(
-                            name=rule.name,
-                            kind=SymbolKind.Class,  # Rules are like classes
-                            location=Location(
-                                uri=file_uri,
-                                range=Range(
-                                    start=Position(line=rule_line, character=0),
-                                    end=Position(line=rule_line, character=len(rule.name) + 5),
-                                ),
-                            ),
-                            container_name=file_path.name,
-                        )
+            file_uri = path_to_uri(file_path)
+            doc = DocumentContext(file_uri, content)
+            for record in doc.symbols():
+                if record.kind not in {"rule", "string"}:
+                    continue
+                info = record.to_symbol_information()
+                if record.kind == "rule":
+                    info = SymbolInformation(
+                        name=info.name,
+                        kind=info.kind,
+                        location=info.location,
+                        container_name=file_path.name,
                     )
-
-                    # Extract string symbols from rule
-                    for string_def in rule.strings:
-                        string_line = self._find_string_line(content, string_def.identifier)
-                        if string_line is not None:
-                            symbols.append(
-                                SymbolInformation(
-                                    name=string_def.identifier,
-                                    kind=SymbolKind.Variable,
-                                    location=Location(
-                                        uri=file_uri,
-                                        range=Range(
-                                            start=Position(line=string_line, character=0),
-                                            end=Position(
-                                                line=string_line,
-                                                character=len(string_def.identifier),
-                                            ),
-                                        ),
-                                    ),
-                                    container_name=f"{file_path.name} :: {rule.name}",
-                                )
-                            )
+                elif record.kind == "string":
+                    info = SymbolInformation(
+                        name=info.name,
+                        kind=info.kind,
+                        location=info.location,
+                        container_name=f"{file_path.name} :: {record.container_name}",
+                    )
+                symbols.append(info)
 
             # Cache results
             self.symbol_cache[cache_key] = (mtime, symbols)
@@ -122,28 +103,15 @@ class WorkspaceSymbolsProvider:
 
         return symbols
 
-    def _find_rule_line(self, text: str, rule_name: str) -> int | None:
-        """Find the line number where a rule is defined."""
-        lines = text.split("\n")
-        for line_num, line in enumerate(lines):
-            if f"rule {rule_name}" in line or f"rule {rule_name}:" in line:
-                return line_num
-        return None
-
-    def _find_string_line(self, text: str, string_id: str) -> int | None:
-        """Find the line number where a string is defined."""
-        lines = text.split("\n")
-        for line_num, line in enumerate(lines):
-            # Look for string definition like: $str = "value"
-            if f"{string_id} =" in line or f"{string_id}=" in line:
-                return line_num
-        return None
-
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the symbol cache."""
+        if self.runtime:
+            return
         self.symbol_cache.clear()
 
-    def invalidate_file(self, file_path: str):
+    def invalidate_file(self, file_path: str) -> None:
         """Invalidate cache for a specific file."""
+        if self.runtime:
+            return
         if file_path in self.symbol_cache:
             del self.symbol_cache[file_path]

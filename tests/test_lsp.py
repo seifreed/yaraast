@@ -1,5 +1,7 @@
 """Tests for LSP implementation."""
 
+from importlib import util
+
 import pytest
 
 
@@ -277,12 +279,7 @@ def test_semantic_tokens_provider():
 
 
 # Skip LSP server tests if pygls is not installed
-try:
-    import pygls
-
-    PYGLS_AVAILABLE = True
-except ImportError:
-    PYGLS_AVAILABLE = False
+PYGLS_AVAILABLE = util.find_spec("pygls") is not None
 
 
 @pytest.mark.skipif(not PYGLS_AVAILABLE, reason="pygls not installed")
@@ -393,7 +390,6 @@ def test_document_links_provider():
 
 def test_workspace_symbols_provider():
     """Test workspace symbols provider."""
-    import os
     import tempfile
     from pathlib import Path
 

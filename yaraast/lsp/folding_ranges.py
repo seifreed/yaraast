@@ -1,8 +1,13 @@
 """Folding ranges provider for YARAAST LSP."""
 
+from __future__ import annotations
+
+from typing import Any
+
 from lsprotocol.types import FoldingRange, FoldingRangeKind
 
-from yaraast.parser.parser import Parser
+from yaraast.lsp.parsing import parse_for_lsp
+from yaraast.lsp.structure import find_rule_end, find_rule_line, find_section_range
 
 
 class FoldingRangesProvider:
@@ -11,8 +16,7 @@ class FoldingRangesProvider:
     def get_folding_ranges(self, text: str) -> list[FoldingRange]:
         """Get all folding ranges in the document."""
         try:
-            parser = Parser(text)
-            ast = parser.parse()
+            ast = parse_for_lsp(text)
 
             ranges = []
 
@@ -44,7 +48,7 @@ class FoldingRangesProvider:
             # Fallback to regex-based folding
             return self._fallback_folding_ranges(text)
 
-    def _get_import_block_lines(self, text: str, imports: list) -> tuple[int, int] | None:
+    def _get_import_block_lines(self, text: str, imports: list[Any]) -> tuple[int, int] | None:
         """Get the line range for the imports block."""
         if not imports:
             return None
@@ -66,55 +70,33 @@ class FoldingRangesProvider:
 
         return None
 
-    def _get_rule_folding_range(self, text: str, rule) -> FoldingRange | None:
+    def _get_rule_folding_range(self, text: str, rule: Any) -> FoldingRange | None:
         """Get folding range for entire rule."""
         lines = text.split("\n")
 
-        # Find rule declaration line
-        start_line = None
-        for line_num, line in enumerate(lines):
-            if f"rule {rule.name}" in line:
-                start_line = line_num
-                break
-
-        if start_line is None:
+        start_line = find_rule_line(lines, rule.name)
+        if start_line is None or start_line < 0:
             return None
 
-        # Find closing brace
-        end_line = None
-        brace_count = 0
-        for line_num in range(start_line, len(lines)):
-            line = lines[line_num]
-            brace_count += line.count("{")
-            brace_count -= line.count("}")
-
-            if brace_count == 0 and "}" in line:
-                end_line = line_num
-                break
-
-        if end_line is None or end_line <= start_line:
+        end_line = find_rule_end(lines, start_line)
+        if end_line is None or end_line <= start_line or "}" not in lines[end_line]:
             return None
 
         return FoldingRange(start_line=start_line, end_line=end_line, kind=FoldingRangeKind.Region)
 
-    def _get_section_folding_ranges(self, text: str, rule) -> list[FoldingRange]:
+    def _get_section_folding_ranges(self, text: str, rule: Any) -> list[FoldingRange]:
         """Get folding ranges for rule sections (meta, strings, condition)."""
-        ranges = []
+        ranges: list[FoldingRange] = []
         lines = text.split("\n")
 
-        # Find rule start
-        rule_start = None
-        for line_num, line in enumerate(lines):
-            if f"rule {rule.name}" in line:
-                rule_start = line_num
-                break
-
-        if rule_start is None:
+        rule_start = find_rule_line(lines, rule.name)
+        if rule_start is None or rule_start < 0:
             return ranges
+        rule_end = find_rule_end(lines, rule_start)
 
         # Look for meta: section
         if rule.meta:
-            meta_range = self._find_section_range(lines, rule_start, "meta:")
+            meta_range = self._find_section_range(lines, rule_start, rule_end, "meta")
             if meta_range:
                 ranges.append(
                     FoldingRange(
@@ -126,7 +108,7 @@ class FoldingRangesProvider:
 
         # Look for strings: section
         if rule.strings:
-            strings_range = self._find_section_range(lines, rule_start, "strings:")
+            strings_range = self._find_section_range(lines, rule_start, rule_end, "strings")
             if strings_range:
                 ranges.append(
                     FoldingRange(
@@ -138,7 +120,7 @@ class FoldingRangesProvider:
 
         # Look for condition: section
         if rule.condition:
-            condition_range = self._find_section_range(lines, rule_start, "condition:")
+            condition_range = self._find_section_range(lines, rule_start, rule_end, "condition")
             if condition_range:
                 ranges.append(
                     FoldingRange(
@@ -151,46 +133,22 @@ class FoldingRangesProvider:
         return ranges
 
     def _find_section_range(
-        self, lines: list[str], start_line: int, section_keyword: str
+        self,
+        lines: list[str],
+        start_line: int,
+        rule_end_or_section_name: int | str,
+        section_name: str | None = None,
     ) -> tuple[int, int] | None:
-        """Find the line range for a rule section."""
-        section_start = None
-
-        # Find section start
-        for line_num in range(start_line, len(lines)):
-            line = lines[line_num].strip()
-            if line.startswith(section_keyword):
-                section_start = line_num
-                break
-
-        if section_start is None:
+        if section_name is None:
+            raw_section_name = str(rule_end_or_section_name).removesuffix(":")
+            rule_end = find_rule_end(lines, start_line)
+        else:
+            raw_section_name = section_name
+            rule_end = int(rule_end_or_section_name)
+        range_ = find_section_range(lines, raw_section_name, start_line, rule_end)
+        if range_ is None or range_.end.line <= range_.start.line:
             return None
-
-        # Find section end (next section keyword or closing brace)
-        section_keywords = ["meta:", "strings:", "condition:"]
-        section_end = None
-
-        for line_num in range(section_start + 1, len(lines)):
-            line = lines[line_num].strip()
-
-            # Check for next section
-            if any(line.startswith(kw) for kw in section_keywords):
-                section_end = line_num - 1
-                break
-
-            # Check for closing brace
-            if line == "}":
-                section_end = line_num - 1
-                break
-
-        if section_end is None or section_end <= section_start:
-            return None
-
-        # Ensure we have at least 2 lines to fold
-        if section_end - section_start < 1:
-            return None
-
-        return (section_start, section_end)
+        return (range_.start.line, range_.end.line)
 
     def _fallback_folding_ranges(self, text: str) -> list[FoldingRange]:
         """Fallback regex-based folding when AST parsing fails."""
@@ -200,7 +158,7 @@ class FoldingRangesProvider:
         brace_stack = []
 
         for line_num, line in enumerate(lines):
-            stripped = line.strip()
+            line.strip()
 
             # Track opening braces
             if "{" in line:

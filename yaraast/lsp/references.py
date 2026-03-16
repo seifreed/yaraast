@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from lsprotocol.types import Location, Position
 
-from lsprotocol.types import Location, Position, Range
-
-from yaraast.lsp.utils import get_word_at_position
-
-if TYPE_CHECKING:
-    pass
+from yaraast.lsp.runtime import DocumentContext, LspRuntime, ReferenceRecord
 
 
 class ReferencesProvider:
     """Provides find-all-references functionality."""
+
+    def __init__(self, runtime: LspRuntime | None = None) -> None:
+        self.runtime = runtime
 
     def get_references(
         self,
@@ -34,81 +32,46 @@ class ReferencesProvider:
         Returns:
             List of locations where the symbol is referenced
         """
-        word, _ = get_word_at_position(text, position)
+        return [
+            record.location
+            for record in self.get_reference_records(text, position, uri, include_declaration)
+        ]
 
-        if not word:
-            return []
+    def get_reference_records(
+        self,
+        text: str,
+        position: Position,
+        uri: str,
+        include_declaration: bool = True,
+    ) -> list[ReferenceRecord]:
+        """Find typed references for the symbol at the given position."""
+        doc = (
+            self.runtime.ensure_document(uri, text)
+            if self.runtime and uri
+            else DocumentContext(uri, text)
+        )
+        resolved = (
+            self.runtime.resolve_symbol(uri, text, position)
+            if self.runtime and uri
+            else doc.resolve_symbol(position)
+        )
 
-        locations = []
-        lines = text.split("\n")
+        if resolved is not None:
+            if resolved.kind == "string":
+                return doc.find_string_reference_records(
+                    resolved.normalized_name,
+                    include_declaration=include_declaration,
+                )
+            if resolved.kind == "rule":
+                if self.runtime:
+                    return self.runtime.find_rule_reference_records(
+                        resolved.normalized_name,
+                        include_declaration=include_declaration,
+                        current_uri=uri,
+                    )
+                return doc.rule_reference_records(
+                    resolved.normalized_name,
+                    include_declaration=include_declaration,
+                )
 
-        # Normalize string identifiers
-        if (
-            word.startswith("$")
-            or word.startswith("#")
-            or word.startswith("@")
-            or word.startswith("!")
-        ):
-            base_identifier = word.lstrip("#@!")
-            if not base_identifier.startswith("$"):
-                base_identifier = f"${base_identifier}"
-
-            # Find all occurrences of this identifier and its variants
-            for line_num, line in enumerate(lines):
-                # Check for all variants: $id, #id, @id, !id
-                for variant in [
-                    base_identifier,
-                    f"#{base_identifier[1:]}",
-                    f"@{base_identifier[1:]}",
-                    f"!{base_identifier[1:]}",
-                ]:
-                    col = 0
-                    while True:
-                        col = line.find(variant, col)
-                        if col == -1:
-                            break
-
-                        # Check if it's a whole word (not part of another identifier)
-                        if (col == 0 or not line[col - 1].isalnum()) and (
-                            col + len(variant) >= len(line)
-                            or not line[col + len(variant)].isalnum()
-                        ):
-                            locations.append(
-                                Location(
-                                    uri=uri,
-                                    range=Range(
-                                        start=Position(line=line_num, character=col),
-                                        end=Position(
-                                            line=line_num,
-                                            character=col + len(variant),
-                                        ),
-                                    ),
-                                )
-                            )
-                        col += len(variant)
-
-        else:
-            # Find all occurrences of the word
-            for line_num, line in enumerate(lines):
-                col = 0
-                while True:
-                    col = line.find(word, col)
-                    if col == -1:
-                        break
-
-                    # Check if it's a whole word
-                    if (col == 0 or not line[col - 1].isalnum()) and (
-                        col + len(word) >= len(line) or not line[col + len(word)].isalnum()
-                    ):
-                        locations.append(
-                            Location(
-                                uri=uri,
-                                range=Range(
-                                    start=Position(line=line_num, character=col),
-                                    end=Position(line=line_num, character=col + len(word)),
-                                ),
-                            )
-                        )
-                    col += len(word)
-
-        return locations
+        return []

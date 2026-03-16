@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from yaraast.ast.base import ASTNode
+
 
 class StringModifierType(Enum):
     """Enumeration of all YARA string modifiers."""
@@ -19,6 +21,8 @@ class StringModifierType(Enum):
     # Case sensitivity
     NOCASE = "nocase"
     CASE = "case"  # Explicit case-sensitive (rare but valid)
+    DOTALL = "dotall"
+    MULTILINE = "multiline"
 
     # String interpretation
     FULLWORD = "fullword"
@@ -87,7 +91,7 @@ class MetaScope(Enum):
 
 
 @dataclass
-class StringModifier:
+class StringModifier(ASTNode):
     """Enhanced string modifier with proper type safety."""
 
     modifier_type: StringModifierType
@@ -104,17 +108,14 @@ class StringModifier:
         """Get the modifier name for backward compatibility."""
         return self.modifier_type.value
 
+    def accept(self, visitor: Any) -> Any:
+        return visitor.visit_string_modifier(self)
+
     def __str__(self) -> str:
         """String representation of the modifier."""
         if self.value is not None:
             return f"{self.modifier_type.value}({self.value})"
         return self.modifier_type.value
-
-    def to_legacy_modifier(self):
-        """Convert to legacy StringModifier format."""
-        from yaraast.ast.strings import StringModifier as LegacyStringModifier
-
-        return LegacyStringModifier(name=self.name, value=self.value)
 
 
 @dataclass
@@ -212,37 +213,3 @@ class CommonRuleModifiers:
 
     PRIVATE = RuleModifier(RuleModifierType.PRIVATE)
     GLOBAL = RuleModifier(RuleModifierType.GLOBAL)
-
-
-# Simple modifier classes for test compatibility
-class Wide:
-    """Wide string modifier."""
-
-    def __init__(self) -> None:
-        self.name = "wide"
-        self.value = None
-
-    def __str__(self) -> str:
-        return "wide"
-
-
-class Ascii:
-    """ASCII string modifier."""
-
-    def __init__(self) -> None:
-        self.name = "ascii"
-        self.value = None
-
-    def __str__(self) -> str:
-        return "ascii"
-
-
-class Nocase:
-    """Nocase string modifier."""
-
-    def __init__(self) -> None:
-        self.name = "nocase"
-        self.value = None
-
-    def __str__(self) -> str:
-        return "nocase"

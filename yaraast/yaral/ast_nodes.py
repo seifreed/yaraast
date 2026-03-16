@@ -23,6 +23,17 @@ class YaraLRule(ASTNode):
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_yaral_rule(self)
 
+    @property
+    def rule_type(self) -> str:
+        """Classify rule as single-event or multi-event based on content."""
+        if not self.events:
+            return "single_event"
+        event_vars = set()
+        for stmt in self.events.statements:
+            if hasattr(stmt, "event_var") and hasattr(stmt.event_var, "name"):
+                event_vars.add(stmt.event_var.name)
+        return "multi_event" if len(event_vars) > 1 else "single_event"
+
 
 @dataclass
 class MetaSection(ASTNode):
@@ -142,6 +153,7 @@ class MatchVariable(ASTNode):
 
     variable: str  # Variable name (without $)
     time_window: TimeWindow
+    grouping_field: UDMFieldAccess | None = None  # Field used for grouping
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_yaral_match_variable(self)
@@ -249,6 +261,28 @@ class JoinCondition(ConditionExpression):
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_yaral_join_condition(self)
+
+
+@dataclass
+class NOfCondition(ConditionExpression):
+    """Quantified event matching: N of ($e1, $e2, $e3)."""
+
+    count: int
+    events: list[str]
+
+    def accept(self, visitor: Any) -> Any:
+        return visitor.visit_yaral_condition_expression(self)
+
+
+@dataclass
+class NullCheckCondition(ConditionExpression):
+    """Null check: field is null / field is not null."""
+
+    field: Any  # UDMFieldAccess
+    negated: bool = False  # True for 'is not null'
+
+    def accept(self, visitor: Any) -> Any:
+        return visitor.visit_yaral_condition_expression(self)
 
 
 @dataclass
@@ -385,3 +419,81 @@ class YaraLFile(ASTNode):
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_yaral_file(self)
+
+
+# YARA-L 2.0 built-in functions registry for validation and completion
+YARAL_BUILTIN_FUNCTIONS: dict[str, dict[str, str]] = {
+    # String functions (Gap 1)
+    "strings.concat": {"args": "str, str, ...", "returns": "string", "doc": "Concatenate strings"},
+    "strings.to_lower": {"args": "str", "returns": "string", "doc": "Convert to lowercase"},
+    "strings.to_upper": {"args": "str", "returns": "string", "doc": "Convert to uppercase"},
+    "strings.base64_decode": {"args": "str", "returns": "string", "doc": "Decode base64 string"},
+    "strings.coalesce": {
+        "args": "str, str, ...",
+        "returns": "string",
+        "doc": "Return first non-empty string",
+    },
+    # Regex functions (Gap 2)
+    "re.regex": {
+        "args": "field, pattern",
+        "returns": "bool",
+        "doc": "Match regex pattern against field",
+    },
+    "re.capture": {
+        "args": "field, pattern",
+        "returns": "string",
+        "doc": "Capture regex group from field",
+    },
+    # Timestamp functions (Gap 3)
+    "timestamp.get_date": {
+        "args": "timestamp, timezone",
+        "returns": "string",
+        "doc": "Get date string from timestamp",
+    },
+    "timestamp.get_hour": {
+        "args": "timestamp",
+        "returns": "integer",
+        "doc": "Get hour from timestamp",
+    },
+    "timestamp.get_minute": {
+        "args": "timestamp",
+        "returns": "integer",
+        "doc": "Get minute from timestamp",
+    },
+    "timestamp.get_second": {
+        "args": "timestamp",
+        "returns": "integer",
+        "doc": "Get second from timestamp",
+    },
+    "timestamp.get_day_of_week": {
+        "args": "timestamp",
+        "returns": "integer",
+        "doc": "Get day of week (1=Monday)",
+    },
+    "timestamp.get_week": {"args": "timestamp", "returns": "integer", "doc": "Get ISO week number"},
+    "timestamp.current_timestamp": {"args": "", "returns": "timestamp", "doc": "Current time"},
+    # Array functions (Gap 4)
+    "arrays.length": {"args": "array", "returns": "integer", "doc": "Get array length"},
+    "arrays.contains": {
+        "args": "array, value",
+        "returns": "bool",
+        "doc": "Check if array contains value",
+    },
+    # Math functions (Gap 5)
+    "math.abs": {"args": "number", "returns": "number", "doc": "Absolute value"},
+    "math.log": {"args": "number", "returns": "float", "doc": "Natural logarithm"},
+    "math.round": {"args": "number, decimals", "returns": "float", "doc": "Round to N decimals"},
+    # Network functions (Gap 6)
+    "net.ip_in_range_cidr": {
+        "args": "ip, cidr",
+        "returns": "bool",
+        "doc": "Check if IP is in CIDR range",
+    },
+    # Aggregation functions (used in outcome)
+    "count": {"args": "field", "returns": "integer", "doc": "Count occurrences"},
+    "count_distinct": {"args": "field", "returns": "integer", "doc": "Count distinct values"},
+    "sum": {"args": "field", "returns": "number", "doc": "Sum values"},
+    "min": {"args": "field", "returns": "number", "doc": "Minimum value"},
+    "max": {"args": "field", "returns": "number", "doc": "Maximum value"},
+    "array_distinct": {"args": "field", "returns": "array", "doc": "Distinct values as array"},
+}

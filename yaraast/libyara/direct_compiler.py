@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.libyara.ast_optimizer import ASTOptimizer
+from yaraast.libyara.direct_helpers import compile_source, count_ast_nodes, generate_source
+from yaraast.libyara.direct_models import DirectCompilationResult
 
 try:
     import yara
@@ -18,46 +19,7 @@ except ImportError:
 
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import ASTNode, YaraFile
-
-
-@dataclass
-class OptimizationStats:
-    """Statistics about AST optimizations performed."""
-
-    rules_optimized: int = 0
-    strings_optimized: int = 0
-    conditions_simplified: int = 0
-    dead_code_removed: int = 0
-    constant_folded: int = 0
-
-
-@dataclass
-class DirectCompilationResult:
-    """Result of direct AST compilation."""
-
-    success: bool
-    compiled_rules: Any | None = None  # yara.Rules object
-    errors: list[str] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
-    optimization_stats: OptimizationStats | None = None
-    compilation_time: float = 0.0
-    ast_node_count: int = 0
-    generated_source: str | None = None  # For debugging
-
-    @property
-    def optimized(self) -> bool:
-        """Check if optimizations were applied."""
-        if not self.optimization_stats:
-            return False
-        stats = self.optimization_stats
-        return (
-            stats.rules_optimized > 0
-            or stats.strings_optimized > 0
-            or stats.conditions_simplified > 0
-            or stats.dead_code_removed > 0
-            or stats.constant_folded > 0
-        )
+    from yaraast.ast.base import YaraFile
 
 
 class DirectASTCompiler:
@@ -135,17 +97,18 @@ class DirectASTCompiler:
                 optimized_ast = ast
 
             # Step 2: Generate optimized YARA source
-            source_code = self._generate_optimized_source(optimized_ast)
+            source_code = generate_source(optimized_ast)
 
             # Step 3: Count AST nodes for statistics
-            node_count = self._count_ast_nodes(optimized_ast)
+            node_count = count_ast_nodes(optimized_ast)
 
             # Step 4: Compile using libyara with generated source
             # (For now, still uses text compilation but with optimized AST)
-            compile_result = self._compile_optimized_source(
+            compile_result = compile_source(
                 source_code,
-                includes=includes,
-                error_on_warning=error_on_warning,
+                self.externals,
+                includes,
+                error_on_warning,
             )
 
             compilation_time = time.time() - start_time
@@ -190,48 +153,7 @@ class DirectASTCompiler:
             Generated YARA source code
 
         """
-        return self._generate_optimized_source(ast)
-
-    def _generate_optimized_source(self, ast: YaraFile) -> str:
-        """Generate YARA source from optimized AST."""
-        from yaraast.codegen import CodeGenerator
-
-        generator = CodeGenerator()
-        return generator.generate(ast)
-
-    def _compile_optimized_source(
-        self,
-        source: str,
-        includes: dict[str, str] | None = None,
-        error_on_warning: bool = False,
-    ) -> DirectCompilationResult:
-        """Compile optimized source using libyara."""
-        from yaraast.libyara.compiler import LibyaraCompiler
-
-        compiler = LibyaraCompiler(externals=self.externals)
-        result = compiler.compile_source(source, includes, error_on_warning)
-
-        return DirectCompilationResult(
-            success=result.success,
-            compiled_rules=result.compiled_rules,
-            errors=result.errors,
-            warnings=result.warnings,
-        )
-
-    def _count_ast_nodes(self, ast: YaraFile) -> int:
-        """Count total AST nodes."""
-        count = 1  # YaraFile itself
-
-        def count_node(node: ASTNode) -> int:
-            node_count = 1
-            for child in node.children():
-                node_count += count_node(child)
-            return node_count
-
-        for child in ast.children():
-            count += count_node(child)
-
-        return count
+        return generate_source(ast)
 
     def get_compilation_stats(self) -> dict[str, Any]:
         """Get compilation statistics."""
@@ -441,7 +363,3 @@ class OptimizedMatcher:
             stats["success_rate"] = 0.0
 
         return stats
-
-
-# For backward compatibility
-DirectCompiler = DirectASTCompiler

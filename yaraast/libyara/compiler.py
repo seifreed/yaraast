@@ -14,7 +14,7 @@ except ImportError:
     yara = None
     YARA_AVAILABLE = False
 
-from yaraast.codegen import CodeGenerator
+from yaraast.codegen.generator import CodeGenerator
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -218,7 +218,3 @@ class LibyaraCompiler:
             return True
         except (ValueError, TypeError, AttributeError):
             return False
-
-
-# Alias for compatibility
-YaraCompiler = LibyaraCompiler

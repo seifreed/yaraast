@@ -11,6 +11,7 @@ from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, 
 from yaraast.performance.memory_optimizer import MemoryOptimizer
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 from yaraast.performance.streaming_parser import StreamingParser
+from yaraast.performance.string_analyzer import StringPatternAnalyzer
 
 __all__ = [
     "BatchOperation",
@@ -19,4 +20,5 @@ __all__ = [
     "MemoryOptimizer",
     "ParallelAnalyzer",
     "StreamingParser",
+    "StringPatternAnalyzer",
 ]

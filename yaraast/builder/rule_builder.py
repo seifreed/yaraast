@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Self, cast
 
-from yaraast.ast.conditions import OfExpression
+from yaraast.ast.conditions import Condition, OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
     Expression,
@@ -12,6 +12,7 @@ from yaraast.ast.expressions import (
     StringIdentifier,
     StringLiteral,
 )
+from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import (
     HexByte,
@@ -20,7 +21,6 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
     StringDefinition,
-    StringModifier,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
 
@@ -33,11 +33,12 @@ class RuleBuilder:
 
     def __init__(self, name: str | None = None) -> None:
         self._name: str | None = name
-        self._modifiers: list[str] = []
+        self._modifiers: list[RuleModifier] = []
         self._tags: list[str] = []
         self._meta: dict[str, Any] = {}
         self._strings: list[StringDefinition] = []
-        self._condition: Expression | None = None
+        self._condition: Condition | None = None
+        self._require_condition: bool = False
 
     def with_name(self, name: str) -> Self:
         """Set the rule name."""
@@ -46,14 +47,21 @@ class RuleBuilder:
 
     def private(self) -> Self:
         """Mark rule as private."""
-        if "private" not in self._modifiers:
-            self._modifiers.append("private")
+        if not any(mod.name == "private" for mod in self._modifiers):
+            self._modifiers.append(RuleModifier.from_string("private"))
         return self
 
     def global_(self) -> Self:
         """Mark rule as global."""
-        if "global" not in self._modifiers:
-            self._modifiers.append("global")
+        if not any(mod.name == "global" for mod in self._modifiers):
+            self._modifiers.append(RuleModifier.from_string("global"))
+        return self
+
+    def public(self) -> Self:
+        """Mark rule as public.
+
+        Public is the default visibility, so this is a compatibility no-op.
+        """
         return self
 
     def with_tag(self, tag: str) -> Self:
@@ -63,10 +71,20 @@ class RuleBuilder:
 
     def with_regex_string(self, identifier: str, pattern: str, **modifiers) -> Self:
         """Add a regex string with modifiers."""
-        mod_list = [StringModifier(name=k) for k, v in modifiers.items() if v]
+        mod_list = [StringModifier.from_name_value(k) for k, v in modifiers.items() if v]
         self._strings.append(
             RegexString(identifier=identifier, regex=pattern, modifiers=mod_list),
         )
+        return self
+
+    def add_string_definition(self, string_def: StringDefinition) -> Self:
+        """Add a prebuilt string definition."""
+        self._strings.append(string_def)
+        return self
+
+    def add_string_definitions(self, string_defs: list[StringDefinition]) -> Self:
+        """Add multiple prebuilt string definitions."""
+        self._strings.extend(string_defs)
         return self
 
     def with_tags(self, *tags: str) -> Self:
@@ -98,22 +116,24 @@ class RuleBuilder:
     def with_plain_string(
         self,
         identifier: str,
-        value: str,
+        value: str | bytes,
         nocase: bool = False,
         wide: bool = False,
         ascii: bool = False,
         fullword: bool = False,
     ) -> Self:
         """Add a plain string."""
+        if isinstance(value, bytes):
+            value = value.decode("latin-1")
         modifiers = []
         if nocase:
-            modifiers.append(StringModifier(name="nocase"))
+            modifiers.append(StringModifier.from_name_value("nocase"))
         if wide:
-            modifiers.append(StringModifier(name="wide"))
+            modifiers.append(StringModifier.from_name_value("wide"))
         if ascii:
-            modifiers.append(StringModifier(name="ascii"))
+            modifiers.append(StringModifier.from_name_value("ascii"))
         if fullword:
-            modifiers.append(StringModifier(name="fullword"))
+            modifiers.append(StringModifier.from_name_value("fullword"))
 
         self._strings.append(
             PlainString(identifier=identifier, value=value, modifiers=modifiers),
@@ -124,16 +144,38 @@ class RuleBuilder:
         """Add a plain string (alias for with_plain_string)."""
         return self.with_plain_string(identifier, value)
 
-    def with_string(self, identifier: str, value: str) -> Self:
+    def with_string(
+        self,
+        identifier: str,
+        value: str,
+        nocase: bool = False,
+        wide: bool = False,
+        ascii: bool = False,
+        fullword: bool = False,
+    ) -> Self:
         """Add a plain string (alias for with_plain_string)."""
-        return self.with_plain_string(identifier, value)
-
-    def with_hex_string(self, identifier: str, builder: HexStringBuilder) -> Self:
-        """Add a hex string using a builder."""
-        self._strings.append(
-            HexString(identifier=identifier, tokens=builder.build(), modifiers=[]),
+        return self.with_plain_string(
+            identifier,
+            value,
+            nocase=nocase,
+            wide=wide,
+            ascii=ascii,
+            fullword=fullword,
         )
+
+    def with_hex_string(self, identifier: str, builder: HexStringBuilder | list) -> Self:
+        """Add a hex string using a builder or token list."""
+        tokens = builder if isinstance(builder, list) else builder.build()
+        self._strings.append(HexString(identifier=identifier, tokens=tokens, modifiers=[]))
         return self
+
+    def with_hex_string_builder(self, identifier: str, builder_func) -> Self:
+        """Add a hex string using a builder callback."""
+        from yaraast.builder.hex_string_builder import HexStringBuilder
+
+        builder = HexStringBuilder(identifier=identifier)
+        builder_func(builder)
+        return self.with_hex_string(identifier, builder)
 
     def with_hex_string_raw(self, identifier: str, hex_pattern: str) -> Self:
         """Add a hex string from raw pattern."""
@@ -191,9 +233,9 @@ class RuleBuilder:
         if isinstance(condition, str):
             # Simple conditions
             if condition == "true":
-                self._condition = BooleanLiteral(value=True)
+                self._condition = cast(Condition, BooleanLiteral(value=True))
             elif condition == "false":
-                self._condition = BooleanLiteral(value=False)
+                self._condition = cast(Condition, BooleanLiteral(value=False))
             elif condition == "any of them":
                 self._condition = OfExpression(
                     quantifier=StringLiteral(value="any"),
@@ -205,14 +247,14 @@ class RuleBuilder:
                     string_set=Identifier(name="them"),
                 )
             elif condition.startswith("$"):
-                self._condition = StringIdentifier(name=condition)
+                self._condition = cast(Condition, StringIdentifier(name=condition))
             else:
                 # For complex conditions, would need a parser
-                self._condition = Identifier(name=condition)
+                self._condition = cast(Condition, Identifier(name=condition))
         elif isinstance(condition, ConditionBuilder):
-            self._condition = condition.build()
+            self._condition = cast(Condition, condition.build())
         else:
-            self._condition = condition
+            self._condition = cast(Condition, condition)
 
         return self
 
@@ -220,10 +262,33 @@ class RuleBuilder:
         """Set the rule condition (alias for with_condition)."""
         return self.with_condition(condition)
 
+    def get_condition(self) -> Condition | None:
+        """Return the currently configured condition."""
+        return self._condition
+
+    def with_simple_condition(self, condition: str) -> Self:
+        """Set a simple condition string."""
+        condition_value = condition.lstrip("$")
+        self._condition = cast(Condition, Identifier(name=condition_value))
+        return self
+
+    def with_any_string(self) -> Self:
+        """Set condition to any of them."""
+        return self.with_condition("any of them")
+
+    def with_all_strings(self) -> Self:
+        """Set condition to all of them."""
+        return self.with_condition("all of them")
+
     def with_condition_lambda(self, builder_func) -> Self:
         """Set condition using a lambda that receives a ConditionBuilder."""
         cb = ConditionBuilder()
-        self._condition = builder_func(cb).build()
+        self._condition = cast(Condition, builder_func(cb).build())
+        return self
+
+    def require_condition(self, require: bool = True) -> Self:
+        """Require an explicit condition before build."""
+        self._require_condition = require
         return self
 
     def build(self) -> Rule:
@@ -233,14 +298,16 @@ class RuleBuilder:
             raise ValueError(msg)
 
         if not self._condition:
-            # Default to true if no condition
-            self._condition = BooleanLiteral(value=True)
+            if self._require_condition:
+                msg = "Rule condition is required"
+                raise ValueError(msg)
+            self._condition = cast(Condition, BooleanLiteral(value=True))
 
         return Rule(
             name=self._name,
-            modifiers=self._modifiers,  # type: ignore[arg-type]
+            modifiers=self._modifiers,
             tags=[Tag(name=tag) for tag in self._tags],
-            meta=self._meta,
+            meta=dict(self._meta),  # Use dict for consistency with parser output
             strings=self._strings,
-            condition=self._condition,  # type: ignore[arg-type]
+            condition=self._condition,
         )

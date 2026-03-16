@@ -1,9 +1,18 @@
 """LSP server command for CLI."""
 
-import click
-from rich.console import Console
+from __future__ import annotations
 
-console = Console()
+import click
+
+from yaraast.cli.lsp_reporting import (
+    display_listening_stdio,
+    display_listening_tcp,
+    display_missing_dependency,
+    display_start_error,
+    display_starting,
+    get_console,
+)
+from yaraast.cli.lsp_services import create_lsp_server, start_lsp_server
 
 
 @click.command()
@@ -25,28 +34,20 @@ def lsp(stdio: bool, tcp: int | None, host: str) -> None:
         yaraast lsp --stdio           # Start with stdio (default)
         yaraast lsp --tcp 5007        # Start on TCP port 5007
     """
+    console = get_console()
     try:
-        from yaraast.lsp.server import create_server
-
-        console.print("[green]🚀 Starting YARAAST Language Server...[/green]")
-
-        server = create_server()
+        display_starting(console)
+        server = create_lsp_server()
 
         if tcp:
-            console.print(f"[blue]📡 Listening on {host}:{tcp}[/blue]")
-            server.start_tcp(host, tcp)
+            display_listening_tcp(console, host, tcp)
         else:
-            console.print("[blue]📡 Using stdio for communication[/blue]")
-            server.start_io()
+            display_listening_stdio(console)
 
-    except ImportError as e:
-        console.print(f"[red]❌ Missing dependency: {e}[/red]")
-        console.print("\nInstall LSP dependencies with:")
-        console.print("  pip install 'yaraast[lsp]'")
-        console.print("\nOr install pygls manually:")
-        console.print("  pip install pygls lsprotocol")
+        start_lsp_server(server, tcp, host)
+    except ImportError as exc:
+        display_missing_dependency(console, exc)
         raise click.Abort from None
-
-    except Exception as e:
-        console.print(f"[red]❌ Error starting LSP server: {e}[/red]")
+    except Exception as exc:
+        display_start_error(console, exc)
         raise click.Abort from None

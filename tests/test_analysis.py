@@ -57,7 +57,7 @@ class TestBestPracticesAnalyzer:
         assert any("$name convention" in s.message for s in warnings)
 
     def test_section_order_suggestion(self) -> None:
-        """Test section order checking."""
+        """AST-only analyzer should not guess section order without source-order evidence."""
         rule_text = """
         rule wrong_order {
             condition:
@@ -76,7 +76,7 @@ class TestBestPracticesAnalyzer:
         report = analyzer.analyze(ast)
 
         info = report.get_by_severity("info")
-        assert any("section order" in s.message for s in info)
+        assert not any("section order" in s.message for s in info)
 
     def test_unused_strings_detection(self) -> None:
         """Test detection of unused strings."""

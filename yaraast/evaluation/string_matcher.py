@@ -170,7 +170,7 @@ class StringMatcher:
         # Compile regex
         try:
             regex = re.compile(pattern.encode("utf-8"), flags)
-        except (ValueError, TypeError, AttributeError):
+        except (re.error, ValueError, TypeError, AttributeError):
             # Invalid regex, no matches
             self.matches[string_def.identifier] = []
             return
@@ -248,17 +248,26 @@ class StringMatcher:
 
     def _is_fullword(self, data: bytes, offset: int, length: int) -> bool:
         """Check if match is a full word."""
+
+        def _is_word_byte(value: int) -> bool:
+            return (
+                value == ord("_")
+                or (48 <= value <= 57)
+                or (65 <= value <= 90)
+                or (97 <= value <= 122)
+            )
+
         # Check character before
         if offset > 0:
             prev_char = data[offset - 1]
-            if prev_char.isalnum() or prev_char == ord("_"):
+            if _is_word_byte(prev_char):
                 return False
 
         # Check character after
         end = offset + length
         if end < len(data):
             next_char = data[end]
-            if next_char.isalnum() or next_char == ord("_"):
+            if _is_word_byte(next_char):
                 return False
 
         return True

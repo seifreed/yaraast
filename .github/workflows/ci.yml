@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x64
+          - os: ubuntu-24.04
+            python-version: "3.13"
+            arch: x64
+          # Linux ARM64
+          - os: ubuntu-24.04-arm
+            python-version: "3.13"
+            arch: arm64
+          # macOS ARM64 (Apple Silicon)
+          - os: macos-14
+            python-version: "3.13"
+            arch: arm64
+          # macOS x64 (Intel)
+          - os: macos-13
+            python-version: "3.13"
+            arch: x64
+          # Windows x64
+          - os: windows-2022
+            python-version: "3.13"
+            arch: x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/Library/Caches/pip
+            ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-${{ matrix.arch }}-pip-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        run: |
+          python -m pytest tests/ -o "addopts=" -q --tb=short --ignore=tests/test_cli_benchmark_metrics_perfcheck_more.py --ignore=tests/test_cli_direct.py --ignore=tests/test_metrics_dependency_graph_graphviz_utils_more5.py
+
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Ruff check
+        run: ruff check yaraast/
+
+      - name: Ruff format check
+        run: ruff format --check yaraast/
+
+      - name: MyPy
+        run: mypy yaraast/ --ignore-missing-imports

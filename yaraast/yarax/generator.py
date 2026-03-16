@@ -103,6 +103,7 @@ class YaraXGenerator(BaseGenerator):
 
         # If tuple_expr is a function call or identifier, don't add extra parens
         from yaraast.ast.expressions import FunctionCall, Identifier
+        from yaraast.yarax.ast_nodes import TupleExpression
 
         if isinstance(node.tuple_expr, FunctionCall | Identifier | TupleExpression):
             return f"{tuple_str}[{index_str}]"
@@ -121,6 +122,8 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_dict_expression(self, node: DictExpression) -> str:
         """Generate code for dict expression."""
+        from yaraast.yarax.ast_nodes import SpreadOperator
+
         items = []
         for item in node.items:
             # Check for spread operator (special case)

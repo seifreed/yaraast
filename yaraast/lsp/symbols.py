@@ -2,20 +2,24 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import time
 
-from lsprotocol.types import DocumentSymbol, Position, Range, SymbolKind
+from lsprotocol.types import DocumentSymbol, Range
 
-from yaraast.parser.parser import Parser
-
-if TYPE_CHECKING:
-    pass
+from yaraast.lsp.runtime import DocumentContext, LspRuntime
+from yaraast.lsp.symbol_tree_builder import build_document_symbols
+from yaraast.lsp.symbol_tree_builder import find_closing_brace as _find_closing_brace_impl
+from yaraast.lsp.symbol_tree_builder import find_line_containing as _find_line_containing_impl
+from yaraast.lsp.symbol_tree_builder import make_range as _make_range_impl
 
 
 class SymbolsProvider:
     """Provides document symbols (outline view)."""
 
-    def get_symbols(self, text: str) -> list[DocumentSymbol]:
+    def __init__(self, runtime: LspRuntime | None = None) -> None:
+        self.runtime = runtime
+
+    def get_symbols(self, text: str, uri: str | None = None) -> list[DocumentSymbol]:
         """
         Get document symbols for the given YARA file.
 
@@ -25,161 +29,31 @@ class SymbolsProvider:
         Returns:
             List of document symbols
         """
-        symbols = []
+        started = time.perf_counter()
 
         try:
-            parser = Parser(text)
-            ast = parser.parse()
-
+            if self.runtime and uri:
+                doc = self.runtime.ensure_document(uri, text)
+            else:
+                doc = DocumentContext(uri or "", text)
+            cached = doc.get_cached("lsp:document_symbols")
+            if cached is not None:
+                return cached
+            ast = doc.ast()
+            if ast is None:
+                return []
             lines = text.split("\n")
-
-            # Add imports
-            for imp in ast.imports:
-                line_num = self._find_line_containing(lines, f'import "{imp.module}"')
-                if line_num >= 0:
-                    symbols.append(
-                        DocumentSymbol(
-                            name=f'import "{imp.module}"',
-                            kind=SymbolKind.Namespace,
-                            range=self._make_range(line_num, 0, line_num, len(lines[line_num])),
-                            selection_range=self._make_range(
-                                line_num, 0, line_num, len(lines[line_num])
-                            ),
-                        )
-                    )
-
-            # Add rules
-            for rule in ast.rules:
-                rule_line = self._find_line_containing(lines, f"rule {rule.name}")
-                if rule_line < 0:
-                    continue
-
-                # Find rule end (closing brace)
-                rule_end = self._find_closing_brace(lines, rule_line)
-
-                rule_symbol = DocumentSymbol(
-                    name=rule.name,
-                    kind=SymbolKind.Class,
-                    range=self._make_range(
-                        rule_line, 0, rule_end, len(lines[rule_end]) if rule_end < len(lines) else 0
-                    ),
-                    selection_range=self._make_range(
-                        rule_line,
-                        lines[rule_line].index(rule.name),
-                        rule_line,
-                        lines[rule_line].index(rule.name) + len(rule.name),
-                    ),
-                    children=[],
-                )
-
-                # Add meta section
-                if rule.meta:
-                    meta_line = self._find_line_containing(lines, "meta:", rule_line)
-                    if meta_line >= 0:
-                        meta_children = []
-                        for key, value in rule.meta.items():
-                            key_line = self._find_line_containing(lines, f"{key} =", meta_line)
-                            if key_line >= 0:
-                                meta_children.append(
-                                    DocumentSymbol(
-                                        name=f"{key} = {value}",
-                                        kind=SymbolKind.Property,
-                                        range=self._make_range(
-                                            key_line, 0, key_line, len(lines[key_line])
-                                        ),
-                                        selection_range=self._make_range(
-                                            key_line, 0, key_line, len(lines[key_line])
-                                        ),
-                                    )
-                                )
-
-                        if meta_children:
-                            rule_symbol.children.append(
-                                DocumentSymbol(
-                                    name="meta",
-                                    kind=SymbolKind.Namespace,
-                                    range=self._make_range(
-                                        meta_line, 0, meta_line, len(lines[meta_line])
-                                    ),
-                                    selection_range=self._make_range(
-                                        meta_line, 0, meta_line, len(lines[meta_line])
-                                    ),
-                                    children=meta_children,
-                                )
-                            )
-
-                # Add strings section
-                if rule.strings:
-                    strings_line = self._find_line_containing(lines, "strings:", rule_line)
-                    if strings_line >= 0:
-                        string_children = []
-                        for string_def in rule.strings:
-                            string_line = self._find_line_containing(
-                                lines,
-                                string_def.identifier,
-                                strings_line,
-                            )
-                            if string_line >= 0:
-                                string_children.append(
-                                    DocumentSymbol(
-                                        name=string_def.identifier,
-                                        kind=SymbolKind.String,
-                                        range=self._make_range(
-                                            string_line, 0, string_line, len(lines[string_line])
-                                        ),
-                                        selection_range=self._make_range(
-                                            string_line,
-                                            0,
-                                            string_line,
-                                            len(lines[string_line]),
-                                        ),
-                                    )
-                                )
-
-                        if string_children:
-                            rule_symbol.children.append(
-                                DocumentSymbol(
-                                    name="strings",
-                                    kind=SymbolKind.Namespace,
-                                    range=self._make_range(
-                                        strings_line, 0, strings_line, len(lines[strings_line])
-                                    ),
-                                    selection_range=self._make_range(
-                                        strings_line,
-                                        0,
-                                        strings_line,
-                                        len(lines[strings_line]),
-                                    ),
-                                    children=string_children,
-                                )
-                            )
-
-                # Add condition section
-                if rule.condition:
-                    condition_line = self._find_line_containing(lines, "condition:", rule_line)
-                    if condition_line >= 0:
-                        rule_symbol.children.append(
-                            DocumentSymbol(
-                                name="condition",
-                                kind=SymbolKind.Function,
-                                range=self._make_range(
-                                    condition_line, 0, condition_line, len(lines[condition_line])
-                                ),
-                                selection_range=self._make_range(
-                                    condition_line,
-                                    0,
-                                    condition_line,
-                                    len(lines[condition_line]),
-                                ),
-                            )
-                        )
-
-                symbols.append(rule_symbol)
+            symbols = build_document_symbols(doc, lines)
 
         except Exception:
             # If parsing fails, return empty symbols
-            pass
+            symbols = []
 
+        doc.set_cached("lsp:document_symbols", symbols)
+        if self.runtime is not None:
+            self.runtime.record_latency(
+                "document_symbols", (time.perf_counter() - started) * 1000.0
+            )
         return symbols
 
     def _find_line_containing(
@@ -189,24 +63,12 @@ class SymbolsProvider:
         start: int = 0,
     ) -> int:
         """Find the line number containing the given text."""
-        for i in range(start, len(lines)):
-            if text in lines[i]:
-                return i
-        return -1
+        return _find_line_containing_impl(lines, text, start)
 
     def _find_closing_brace(self, lines: list[str], start: int) -> int:
         """Find the closing brace for a rule."""
-        depth = 0
-        for i in range(start, len(lines)):
-            depth += lines[i].count("{")
-            depth -= lines[i].count("}")
-            if depth == 0 and "}" in lines[i]:
-                return i
-        return len(lines) - 1
+        return _find_closing_brace_impl(lines, start)
 
     def _make_range(self, start_line: int, start_char: int, end_line: int, end_char: int) -> Range:
         """Create an LSP Range."""
-        return Range(
-            start=Position(line=start_line, character=start_char),
-            end=Position(line=end_line, character=end_char),
-        )
+        return _make_range_impl(start_line, start_char, end_line, end_char)

@@ -1,0 +1,32 @@
+{
+  "YARA Rule": {
+    "prefix": "rule",
+    "body": [
+      "rule ${1:name} {",
+      "    meta:",
+      "        author = \"${2:author}\"",
+      "",
+      "    strings:",
+      "        $a = \"${3:value}\"",
+      "",
+      "    condition:",
+      "        ${4:$a}",
+      "}"
+    ],
+    "description": "Basic YARA rule"
+  },
+  "YARA Import": {
+    "prefix": "import",
+    "body": [
+      "import \"${1:pe}\""
+    ],
+    "description": "Import a YARA module"
+  },
+  "YARA Hex String": {
+    "prefix": "hexstr",
+    "body": [
+      "$${1:id} = { ${2:4D 5A} }"
+    ],
+    "description": "Hex string definition"
+  }
+}

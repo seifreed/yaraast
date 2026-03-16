@@ -1,44 +1,33 @@
-"""Error-tolerant YARA parser that can recover from syntax errors."""
+"""Error-tolerant YARA parser facade."""
 
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass, field
 from typing import Any
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BooleanLiteral, Identifier
 from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import PlainString
+from yaraast.lexer.lexer import LexerError
+from yaraast.parser.error_tolerant_flow import (
+    collect_rule_body,
+    extract_rule_header,
+    parse_rule_with_recovery,
+    parse_with_recovery,
+)
+from yaraast.parser.error_tolerant_recovery import (
+    create_rule_from_body,
+    parse_condition,
+    parse_import_line,
+    parse_include_line,
+    parse_meta_line,
+    parse_section_content,
+    parse_string_line,
+    set_recovered_location,
+)
+from yaraast.parser.error_tolerant_types import ParserError, ParseResult, format_parser_errors
 from yaraast.parser.parser import Parser
-
-
-@dataclass
-class ParserError:
-    """Represents a parsing error."""
-
-    message: str
-    line: int
-    column: int
-    context: str = ""
-
-    def format_error(self) -> str:
-        """Format the error for display."""
-        if self.context:
-            return f"Line {self.line}:{self.column}: {self.message}\n  {self.context}"
-        return f"Line {self.line}:{self.column}: {self.message}"
-
-    severity: str = "error"  # error, warning
-
-
-@dataclass
-class ParseResult:
-    """Result of error-tolerant parsing."""
-
-    ast: YaraFile
-    errors: list[ParserError] = field(default_factory=list)
-    warnings: list[ParserError] = field(default_factory=list)
+from yaraast.parser.parser import ParserError as BaseParserError
 
 
 class ErrorTolerantParser(Parser):
@@ -55,15 +44,14 @@ class ErrorTolerantParser(Parser):
         self.errors = []
         self.recovered_rules = []
         self.lines = text.splitlines()
-
         # Try normal parsing first
         try:
             ast = super().parse(text)
-            return ParseResult(ast=ast, errors=[], warnings=[])
-        except (ValueError, TypeError, AttributeError):
+        except (ValueError, TypeError, AttributeError, BaseParserError, LexerError):
             # If normal parsing fails, try error-tolerant parsing
             ast = self._parse_with_recovery(text)
             return ParseResult(ast=ast, errors=self.errors, warnings=[])
+        return ParseResult(ast=ast, errors=[], warnings=[])
 
     def parse_with_errors(self, text: str) -> tuple[YaraFile, list, list]:
         """Parse YARA text and return AST with separate error lists."""
@@ -74,200 +62,104 @@ class ErrorTolerantParser(Parser):
 
     def _parse_with_recovery(self, text: str) -> YaraFile:
         """Parse with error recovery strategies."""
-        yara_file = YaraFile()
-        yara_file.imports = []
-        yara_file.includes = []
-        yara_file.rules = []
-
-        # Parse line by line for recovery
-        i = 0
-        while i < len(self.lines):
-            line = self.lines[i].strip()
-
-            # Skip empty lines and comments
-            if not line or line.startswith(("//", "/*")):
-                i += 1
-                continue
-
-            # Try to parse imports
-            if line.startswith("import "):
-                import_stmt = self._parse_import_line(line, i)
-                if import_stmt:
-                    yara_file.imports.append(import_stmt)
-                i += 1
-                continue
-
-            # Try to parse includes
-            if line.startswith("include "):
-                include_stmt = self._parse_include_line(line, i)
-                if include_stmt:
-                    yara_file.includes.append(include_stmt)
-                i += 1
-                continue
-
-            # Try to parse rules
-            if line.startswith("rule "):
-                rule, lines_consumed = self._parse_rule_with_recovery(i)
-                if rule:
-                    yara_file.rules.append(rule)
-                    self.recovered_rules.append(rule)
-                i += lines_consumed
-                continue
-
-            # Unknown line
-            self._add_error(f"Unexpected line: {line}", i, 0)
-            i += 1
-
-        return yara_file
+        return parse_with_recovery(self)
 
     def _parse_import_line(self, line: str, line_num: int) -> Import | None:
         """Parse an import statement."""
-        match = re.match(r'import\s+"([^"]+)"', line)
-        if match:
-            return Import(match.group(1))
-
-        match = re.match(r"import\s+(\w+)", line)
-        if match:
-            return Import(match.group(1))
-
-        self._add_error(f"Invalid import statement: {line}", line_num, 0)
-        return None
+        return parse_import_line(self, line, line_num)
 
     def _parse_include_line(self, line: str, line_num: int) -> Include | None:
         """Parse an include statement."""
-        match = re.match(r'include\s+"([^"]+)"', line)
-        if match:
-            return Include(match.group(1))
-
-        self._add_error(f"Invalid include statement: {line}", line_num, 0)
-        return None
+        return parse_include_line(self, line, line_num)
 
     def _parse_rule_with_recovery(self, start_line: int) -> tuple[Rule | None, int]:
         """Parse a rule with error recovery."""
-        line = self.lines[start_line].strip()
+        return parse_rule_with_recovery(self, start_line)
 
-        # Extract rule name
-        match = re.match(r"rule\s+(\w+)\s*(?:\:\s*([^{]+))?\s*{?", line)
-        if not match:
-            self._add_error(f"Invalid rule declaration: {line}", start_line, 0)
-            return None, 1
+    def _extract_rule_header(self, line: str, line_num: int) -> tuple[str | None, list[str]]:
+        """Extract rule name and tags from rule declaration line."""
+        return extract_rule_header(self, line, line_num)
 
-        rule_name = match.group(1)
-        tags_str = match.group(2)
+    def _collect_rule_body(self, start_line: int, header_line: str) -> tuple[list[str], int]:
+        """Collect lines that form the rule body."""
+        return collect_rule_body(self, start_line, header_line)
 
-        # Parse tags
-        tags = []
-        if tags_str:
-            tags = [tag.strip() for tag in tags_str.split()]
+    def _create_rule_from_body(
+        self, name: str, tags: list[str], body_lines: list[str], start_line: int = 0
+    ) -> Rule:
+        """Create a Rule object from parsed body lines."""
+        return create_rule_from_body(self, name, tags, body_lines, start_line)
 
-        # Find rule body
-        rule_body_lines = []
-        brace_count = 1 if "{" in line else 0
-        current_line = start_line + 1
+    def _parse_body_line(
+        self,
+        rule: Rule,
+        body_line: str,
+        current_section: str | None,
+        line_num: int,
+    ) -> str | None:
+        """Parse a single line from rule body. Returns updated section."""
+        stripped = body_line.strip()
 
-        while current_line < len(self.lines) and (
-            brace_count > 0 or (brace_count == 0 and not rule_body_lines)
-        ):
-            body_line = self.lines[current_line]
-            rule_body_lines.append(body_line)
+        if stripped.startswith("meta:"):
+            return "meta"
+        if stripped.startswith("strings:"):
+            return "strings"
+        if stripped.startswith("condition:"):
+            condition_text = stripped[10:].strip()
+            if condition_text:
+                rule.condition = self._parse_condition(condition_text, line_num, body_line)
+            return "condition"
 
-            # Count braces
-            brace_count += body_line.count("{") - body_line.count("}")
+        if not stripped or stripped.startswith("}"):
+            return current_section
 
-            if brace_count == 0 and "}" in body_line:
-                break
+        self._parse_section_content(rule, stripped, current_section, line_num, body_line)
+        return current_section
 
-            current_line += 1
+    def _parse_section_content(
+        self,
+        rule: Rule,
+        line: str,
+        section: str | None,
+        line_num: int,
+        raw_line: str,
+    ) -> None:
+        """Parse content based on current section."""
+        parse_section_content(self, rule, line, section, line_num, raw_line)
 
-        # Parse rule sections
-        rule = Rule(rule_name, BooleanLiteral(True))
-        rule.tags = tags
-        rule.meta = []
-        rule.strings = []
-
-        # Simple section parsing
-        section = None
-        for body_line in rule_body_lines:
-            stripped = body_line.strip()
-
-            if stripped.startswith("meta:"):
-                section = "meta"
-                continue
-            if stripped.startswith("strings:"):
-                section = "strings"
-                continue
-            if stripped.startswith("condition:"):
-                section = "condition"
-                # Extract condition
-                condition_text = stripped[10:].strip()
-                if condition_text:
-                    rule.condition = self._parse_condition(condition_text)
-                continue
-
-            # Parse content based on section
-            if section == "meta" and stripped and not stripped.startswith("}"):
-                meta_item = self._parse_meta_line(stripped)
-                if meta_item:
-                    rule.meta.append(meta_item)
-            elif section == "strings" and stripped and not stripped.startswith("}"):
-                string_def = self._parse_string_line(stripped)
-                if string_def:
-                    rule.strings.append(string_def)
-            elif section == "condition" and stripped and not stripped.startswith("}"):
-                rule.condition = self._parse_condition(stripped)
-
-        return rule, current_line - start_line + 1
-
-    def _parse_meta_line(self, line: str) -> Meta | None:
+    def _parse_meta_line(
+        self, line: str, line_num: int | None = None, raw_line: str | None = None
+    ) -> Meta | None:
         """Parse a meta line."""
-        match = re.match(r'(\w+)\s*=\s*"([^"]*)"', line)
-        if match:
-            return Meta(match.group(1), match.group(2))
+        return parse_meta_line(self, line, line_num, raw_line)
 
-        match = re.match(r"(\w+)\s*=\s*(\d+)", line)
-        if match:
-            return Meta(match.group(1), int(match.group(2)))
-
-        match = re.match(r"(\w+)\s*=\s*(true|false)", line, re.IGNORECASE)
-        if match:
-            return Meta(match.group(1), match.group(2).lower() == "true")
-
-        return None
-
-    def _parse_string_line(self, line: str) -> PlainString | None:
+    def _parse_string_line(
+        self,
+        line: str,
+        line_num: int | None = None,
+        raw_line: str | None = None,
+    ) -> PlainString | None:
         """Parse a string definition line."""
-        # Plain string
-        match = re.match(r'(\$\w+)\s*=\s*"([^"]*)"', line)
-        if match:
-            return PlainString(match.group(1), match.group(2))
+        return parse_string_line(self, line, line_num, raw_line)
 
-        # Hex string (simplified)
-        match = re.match(r"(\$\w+)\s*=\s*{([^}]+)}", line)
-        if match:
-            # For now, treat as plain string
-            return PlainString(match.group(1), match.group(2))
-
-        # Regex string (simplified)
-        match = re.match(r"(\$\w+)\s*=\s*/([^/]+)/", line)
-        if match:
-            # For now, treat as plain string
-            return PlainString(match.group(1), match.group(2))
-
-        return None
-
-    def _parse_condition(self, condition_text: str) -> Any:
+    def _parse_condition(
+        self,
+        condition_text: str,
+        line_num: int | None = None,
+        raw_line: str | None = None,
+    ) -> Any:
         """Parse a condition expression (simplified)."""
-        condition_text = condition_text.strip()
+        return parse_condition(self, condition_text, line_num, raw_line)
 
-        # Simple conditions
-        if condition_text == "true":
-            return BooleanLiteral(True)
-        if condition_text == "false":
-            return BooleanLiteral(False)
-        if re.match(r"\$\w+", condition_text):
-            return Identifier(condition_text)
-        # For complex conditions, return as identifier for now
-        return Identifier(condition_text)
+    def _set_recovered_location(
+        self,
+        node: Any,
+        line_num: int | None,
+        raw_line: str | None,
+        start_col: int,
+        end_col: int,
+    ) -> Any:
+        return set_recovered_location(self, node, line_num, raw_line, start_col, end_col)
 
     def _add_error(self, message: str, line: int, column: int, severity: str = "error") -> None:
         """Add a parsing error."""
@@ -298,16 +190,4 @@ class ErrorTolerantParser(Parser):
 
     def format_errors(self) -> str:
         """Format errors for display."""
-        if not self.errors:
-            return "No errors"
-
-        lines = []
-        for error in self.errors:
-            lines.append(f"{error.severity.upper()}: {error.message}")
-            lines.append(f"  at line {error.line}, column {error.column}")
-            if error.context:
-                lines.append(f"  > {error.context}")
-                lines.append(f"    {' ' * error.column}^")
-            lines.append("")
-
-        return "\n".join(lines)
+        return format_parser_errors(self.errors)

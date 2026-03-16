@@ -2,7 +2,6 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -329,15 +328,10 @@ class TestBatchProcessor:
             parse_result = results[BatchOperation.PARSE]
             assert parse_result.successful_count >= 3
 
-    @patch("yaraast.performance.batch_processor.HtmlTreeGenerator")
-    def test_html_tree_generation(self, mock_generator, sample_yara_files) -> None:
+    def test_html_tree_generation(self, sample_yara_files) -> None:
         """Test HTML tree generation in batch."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
-
-            # Mock the HTML generator
-            mock_gen_instance = MagicMock()
-            mock_generator.return_value = mock_gen_instance
 
             processor = BatchProcessor()
 
@@ -352,6 +346,11 @@ class TestBatchProcessor:
             # Should have attempted to generate trees
             html_result = results[BatchOperation.HTML_TREE]
             assert html_result.input_count > 0
+            assert html_result.successful_count > 0
+            for output_file in html_result.output_files:
+                path = Path(output_file)
+                assert path.exists()
+                assert "<!DOCTYPE html>" in path.read_text(encoding="utf-8")
 
     def test_large_file_processing(self, large_yara_file) -> None:
         """Test processing of large file with rule splitting."""

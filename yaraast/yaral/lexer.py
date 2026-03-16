@@ -1,12 +1,19 @@
 """YARA-L lexer implementation."""
 
-import re
-
 import attrs
 
 from yaraast.lexer.tokens import Token
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
+from .lexer_tables import EVENT_VAR_PATTERN
+from .lexer_tables import KEYWORDS as LEXER_KEYWORDS
+from .lexer_tables import (
+    REFERENCE_LIST_PATTERN,
+    SINGLE_CHAR_TOKENS,
+    TIME_PATTERN,
+    TWO_CHAR_TOKENS,
+    UDM_FIELD_PATTERN,
+)
 from .tokens import YaraLTokenType
 
 
@@ -20,73 +27,7 @@ class YaraLToken(Token):
 class YaraLLexer:
     """Lexer for YARA-L 2.0 syntax."""
 
-    KEYWORDS = {
-        # Sections
-        "rule": YaraLTokenType.EVENTS,  # Reuse for rule start
-        "meta": BaseTokenType.META,
-        "events": YaraLTokenType.EVENTS,
-        "match": YaraLTokenType.MATCH,
-        "outcome": YaraLTokenType.OUTCOME,
-        "condition": BaseTokenType.CONDITION,
-        "options": YaraLTokenType.OPTIONS,
-        # Time-related
-        "over": YaraLTokenType.OVER,
-        "before": YaraLTokenType.BEFORE,
-        "after": YaraLTokenType.AFTER,
-        "within": YaraLTokenType.WITHIN,
-        "by": YaraLTokenType.BY,
-        "every": YaraLTokenType.EVERY,
-        # Aggregation functions
-        "count": YaraLTokenType.COUNT,
-        "count_distinct": YaraLTokenType.COUNT_DISTINCT,
-        "sum": YaraLTokenType.SUM,
-        "min": YaraLTokenType.MIN,
-        "max": YaraLTokenType.MAX,
-        "avg": YaraLTokenType.AVG,
-        "array": YaraLTokenType.ARRAY,
-        "array_distinct": YaraLTokenType.ARRAY_DISTINCT,
-        "earliest": YaraLTokenType.EARLIEST,
-        "latest": YaraLTokenType.LATEST,
-        # UDM prefixes
-        "metadata": YaraLTokenType.METADATA,
-        "principal": YaraLTokenType.PRINCIPAL,
-        "target": YaraLTokenType.TARGET,
-        "network": YaraLTokenType.NETWORK,
-        "security_result": YaraLTokenType.SECURITY_RESULT,
-        "udm": YaraLTokenType.UDM,
-        "additional": YaraLTokenType.ADDITIONAL,
-        # Operators
-        "and": BaseTokenType.AND,
-        "or": BaseTokenType.OR,
-        "not": BaseTokenType.NOT,
-        "in": BaseTokenType.IN,
-        "nocase": YaraLTokenType.NOCASE,
-        "is": YaraLTokenType.IS,
-        "null": YaraLTokenType.NULL,
-        "if": YaraLTokenType.IF,
-        "else": YaraLTokenType.ELSE,
-        "cidr": YaraLTokenType.CIDR,
-        "regex": YaraLTokenType.REGEX,
-        "re.regex": YaraLTokenType.REGEX,
-        # Boolean
-        "true": BaseTokenType.BOOLEAN_TRUE,
-        "false": BaseTokenType.BOOLEAN_FALSE,
-        # Special
-        "all": BaseTokenType.ALL,
-        "any": BaseTokenType.ANY,
-    }
-
-    # Time unit patterns
-    TIME_PATTERN = re.compile(r"(\d+)([smhd])")
-
-    # Event variable pattern ($e, $e1, $event_name)
-    EVENT_VAR_PATTERN = re.compile(r"\$[a-zA-Z_][a-zA-Z0-9_]*")
-
-    # Reference list pattern (%list_name%)
-    REFERENCE_LIST_PATTERN = re.compile(r"%[a-zA-Z_][a-zA-Z0-9_]*%")
-
-    # UDM field path pattern
-    UDM_FIELD_PATTERN = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+")
+    KEYWORDS = LEXER_KEYWORDS
 
     def __init__(self, text: str) -> None:
         self.text = text
@@ -101,7 +42,6 @@ class YaraLLexer:
         iteration = 0
 
         while self.position < len(self.text) and iteration < max_iterations:
-            old_position = self.position
             self._skip_whitespace_and_comments()
 
             if self.position >= len(self.text):
@@ -113,10 +53,6 @@ class YaraLLexer:
             else:
                 # Skip unrecognized character
                 self.position += 1
-
-            # Check if position advanced to avoid infinite loops
-            if self.position == old_position:
-                self.position += 1  # Force advance if stuck
 
             iteration += 1
 
@@ -242,7 +178,7 @@ class YaraLLexer:
 
     def _try_time_literal(self, start_column: int) -> YaraLToken | None:
         """Try to match a time literal (5m, 1h, 7d)."""
-        time_match = self.TIME_PATTERN.match(self.text[self.position :])
+        time_match = TIME_PATTERN.match(self.text[self.position :])
         if time_match:
             value = time_match.group(0)
             self.position += len(value)
@@ -258,7 +194,7 @@ class YaraLLexer:
 
     def _try_reference_list(self, start_column: int) -> YaraLToken | None:
         """Try to match a reference list (%list_name%)."""
-        ref_match = self.REFERENCE_LIST_PATTERN.match(self.text[self.position :])
+        ref_match = REFERENCE_LIST_PATTERN.match(self.text[self.position :])
         if ref_match:
             value = ref_match.group(0)
             self.position += len(value)
@@ -274,7 +210,7 @@ class YaraLLexer:
 
     def _try_event_variable(self, start_column: int) -> YaraLToken | None:
         """Try to match an event variable ($e, $e1, etc.)."""
-        event_match = self.EVENT_VAR_PATTERN.match(self.text[self.position :])
+        event_match = EVENT_VAR_PATTERN.match(self.text[self.position :])
         if event_match:
             value = event_match.group(0)
             self.position += len(value)
@@ -307,17 +243,8 @@ class YaraLLexer:
             return None
 
         two_char = self.text[self.position : self.position + 2]
-        two_char_tokens = {
-            "->": (BaseTokenType.IDENTIFIER, YaraLTokenType.ARROW),
-            "::": (BaseTokenType.IDENTIFIER, YaraLTokenType.DOUBLE_COLON),
-            ">=": (BaseTokenType.GE, None),
-            "<=": (BaseTokenType.LE, None),
-            "==": (BaseTokenType.IEQUALS, None),  # Use IEQUALS for ==
-            "!=": (BaseTokenType.NEQ, None),
-        }
-
-        if two_char in two_char_tokens:
-            base_type, yaral_type = two_char_tokens[two_char]
+        if two_char in TWO_CHAR_TOKENS:
+            base_type, yaral_type = TWO_CHAR_TOKENS[two_char]
             self.position += 2
             self.column += 2
             return YaraLToken(
@@ -332,31 +259,11 @@ class YaraLLexer:
     def _try_single_char_token(self, start_column: int) -> YaraLToken | None:
         """Try to match single-character tokens."""
         char = self.text[self.position]
-        single_tokens = {
-            "(": BaseTokenType.LPAREN,
-            ")": BaseTokenType.RPAREN,
-            "{": BaseTokenType.LBRACE,
-            "}": BaseTokenType.RBRACE,
-            "[": BaseTokenType.LBRACKET,
-            "]": BaseTokenType.RBRACKET,
-            ":": BaseTokenType.COLON,
-            ";": BaseTokenType.SEMICOLON,
-            ",": BaseTokenType.COMMA,
-            ".": BaseTokenType.DOT,
-            "=": BaseTokenType.EQ,
-            ">": BaseTokenType.GT,
-            "<": BaseTokenType.LT,
-            "+": BaseTokenType.PLUS,
-            "-": BaseTokenType.MINUS,
-            "*": BaseTokenType.MULTIPLY,
-            "#": BaseTokenType.STRING_COUNT,  # or HASH if exists
-        }
-
-        if char in single_tokens:
+        if char in SINGLE_CHAR_TOKENS:
             self.position += 1
             self.column += 1
             return YaraLToken(
-                type=single_tokens[char],
+                type=SINGLE_CHAR_TOKENS[char],
                 value=char,
                 line=self.line,
                 column=start_column,
@@ -519,7 +426,7 @@ class YaraLLexer:
             )
 
         # Check if it's a UDM field path
-        if "." in value and self.UDM_FIELD_PATTERN.match(value):
+        if "." in value and UDM_FIELD_PATTERN.match(value):
             return YaraLToken(
                 type=BaseTokenType.IDENTIFIER,
                 value=value,

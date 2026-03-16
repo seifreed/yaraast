@@ -37,11 +37,12 @@ class MatchInfo:
             strings=(
                 [
                     {
-                        "offset": s.instances[0].offset if s.instances else 0,
+                        "offset": instance.offset,
                         "identifier": s.identifier,
-                        "data": s.instances[0].matched_data if s.instances else b"",
+                        "data": instance.matched_data,
                     }
                     for s in match.strings
+                    for instance in (s.instances if s.instances else [])
                 ]
                 if hasattr(match, "strings")
                 else []
@@ -235,7 +236,3 @@ class LibyaraScanner:
         scan_time = time.time() - start_time
 
         return ScanResult(success=False, errors=errors, scan_time=scan_time)
-
-
-# Alias for compatibility
-Scanner = LibyaraScanner

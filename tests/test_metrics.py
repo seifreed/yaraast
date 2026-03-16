@@ -2,17 +2,18 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from yaraast.metrics import (
-    ComplexityAnalyzer,
-    ComplexityMetrics,
-    DependencyGraphGenerator,
-    HtmlTreeGenerator,
-    StringDiagramGenerator,
-)
+from yaraast.metrics.complexity import ComplexityAnalyzer
+from yaraast.metrics.complexity_model import ComplexityMetrics
+from yaraast.metrics.html_tree import HtmlTreeGenerator
+from yaraast.metrics.string_diagrams import StringDiagramGenerator
+
+try:
+    from yaraast.metrics.dependency_graph import DependencyGraphGenerator
+except ModuleNotFoundError:
+    DependencyGraphGenerator = None  # type: ignore[assignment]
 from yaraast.parser import Parser
 
 
@@ -149,6 +150,10 @@ class TestComplexityAnalyzer:
         assert metrics.max_condition_depth == 0
 
 
+@pytest.mark.skipif(
+    DependencyGraphGenerator is None,
+    reason="graphviz package is not installed",
+)
 class TestDependencyGraphGenerator:
     """Test dependency graph generation."""
 
@@ -201,19 +206,15 @@ class TestDependencyGraphGenerator:
         generator = DependencyGraphGenerator()
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            output_path = Path(temp_dir) / "test_graph"
-
-            # Mock graphviz render to avoid requiring GraphViz installation
-            with patch("graphviz.Digraph.render") as mock_render:
-                mock_render.return_value = str(output_path) + ".svg"
-
-                result_path = generator.generate_graph(
-                    parsed_ast,
-                    str(output_path),
-                    "svg",
-                )
-                assert result_path.endswith(".svg")
-                mock_render.assert_called_once()
+            output_path = Path(temp_dir) / "test_graph.dot"
+            result_path = generator.generate_graph(
+                parsed_ast,
+                str(output_path),
+                "dot",
+            )
+            assert result_path.endswith(".dot")
+            assert Path(result_path).exists()
+            assert "digraph" in Path(result_path).read_text(encoding="utf-8")
 
     def test_dependency_stats(self, parsed_ast) -> None:
         """Test dependency statistics collection."""
@@ -356,19 +357,15 @@ class TestStringDiagramGenerator:
         generator = StringDiagramGenerator()
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            output_path = Path(temp_dir) / "test_patterns"
-
-            # Mock graphviz render
-            with patch("graphviz.Digraph.render") as mock_render:
-                mock_render.return_value = str(output_path) + ".svg"
-
-                result_path = generator.generate_pattern_flow_diagram(
-                    parsed_ast,
-                    str(output_path),
-                    "svg",
-                )
-                assert result_path.endswith(".svg")
-                mock_render.assert_called_once()
+            output_path = Path(temp_dir) / "test_patterns.dot"
+            result_path = generator.generate_pattern_flow_diagram(
+                parsed_ast,
+                str(output_path),
+                "dot",
+            )
+            assert result_path.endswith(".dot")
+            assert Path(result_path).exists()
+            assert "digraph" in Path(result_path).read_text(encoding="utf-8")
 
     def test_empty_patterns(self) -> None:
         """Test handling of files with no string patterns."""

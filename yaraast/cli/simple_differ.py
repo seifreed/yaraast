@@ -1,12 +1,14 @@
 """Simple differ for YARA files."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from yaraast.codegen import CodeGenerator
-from yaraast.parser import Parser
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.parser.parser import Parser
 
 
 class DiffType(Enum):
@@ -119,18 +121,71 @@ class SimpleDiffer:
             },
         )
 
-    def diff_files(self, file1: str | Path, file2: str | Path) -> DiffResult:
-        """Diff two YARA files."""
-        file1 = Path(file1)
-        file2 = Path(file2)
 
-        with open(file1) as f:
-            content1 = f.read()
+@dataclass
+class ASTDiffResult:
+    """Result of an AST diff operation."""
 
-        with open(file2) as f:
-            content2 = f.read()
+    has_changes: bool
+    change_summary: dict[str, int]
+    added_rules: list[str]
+    removed_rules: list[str]
+    modified_rules: list[str]
+    logical_changes: list[str]
+    structural_changes: list[str]
+    style_only_changes: list[str]
 
-        return self.diff(content1, content2)
+
+class SimpleASTDiffer(SimpleDiffer):
+    """Simplified AST differ for CLI use."""
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def diff_files(self, file1: Path, file2: Path) -> ASTDiffResult:
+        content1 = file1.read_text()
+        content2 = file2.read_text()
+
+        ast1 = self.parser.parse(content1)
+        ast2 = self.parser.parse(content2)
+
+        rules1 = {rule.name: rule for rule in ast1.rules}
+        rules2 = {rule.name: rule for rule in ast2.rules}
+
+        added_rules = sorted(set(rules2) - set(rules1))
+        removed_rules = sorted(set(rules1) - set(rules2))
+
+        modified_rules: list[str] = []
+        for name in set(rules1) & set(rules2):
+            if repr(rules1[name]) != repr(rules2[name]):
+                modified_rules.append(name)
+
+        logical_changes = []
+        for name in added_rules:
+            logical_changes.append(f"Rule added: {name}")
+        for name in removed_rules:
+            logical_changes.append(f"Rule removed: {name}")
+        for name in modified_rules:
+            logical_changes.append(f"Rule modified: {name}")
+
+        change_summary = {
+            "added_rules": len(added_rules),
+            "removed_rules": len(removed_rules),
+            "modified_rules": len(modified_rules),
+        }
+
+        has_changes = bool(added_rules or removed_rules or modified_rules)
+
+        return ASTDiffResult(
+            has_changes=has_changes,
+            change_summary=change_summary,
+            added_rules=added_rules,
+            removed_rules=removed_rules,
+            modified_rules=modified_rules,
+            logical_changes=logical_changes,
+            structural_changes=[],
+            style_only_changes=[],
+        )
 
     def diff_ast(self, ast1: Any, ast2: Any) -> DiffResult:
         """Diff two ASTs by comparing their generated code."""
@@ -250,7 +305,7 @@ def diff_tokens(content1: str, content2: str) -> list[str]:
 
 def diff_ast(ast1: Any, ast2: Any) -> DiffResult:
     """Diff two ASTs."""
-    differ = SimpleDiffer()
+    differ = SimpleASTDiffer()
     return differ.diff_ast(ast1, ast2)
 
 

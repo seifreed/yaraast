@@ -1,37 +1,15 @@
 """Type system for YARA AST semantic validation."""
 
-from yaraast.types.type_system import (
-    ArrayType,
-    BooleanType,
-    DictionaryType,
-    DoubleType,
-    FunctionType,
-    IntegerType,
-    ModuleType,
-    RangeType,
-    StringSetType,
-    StringType,
-    TypeChecker,
-    TypeInference,
-    TypeValidator,
-    UnknownType,
-    YaraType,
-)
+from yaraast.types._inference import TypeInference
+from yaraast.types._registry import YaraType
+from yaraast.types._validation import TypeChecker, TypeValidator
+from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
 
 __all__ = [
-    "ArrayType",
-    "BooleanType",
-    "DictionaryType",
-    "DoubleType",
-    "FunctionType",
-    "IntegerType",
-    "ModuleType",
-    "RangeType",
-    "StringSetType",
-    "StringType",
+    "FunctionDefinition",
+    "ModuleDefinition",
     "TypeChecker",
     "TypeInference",
     "TypeValidator",
-    "UnknownType",
     "YaraType",
 ]

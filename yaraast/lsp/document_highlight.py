@@ -1,9 +1,19 @@
 """Document highlight provider for YARAAST LSP."""
 
-from lsprotocol.types import DocumentHighlight, DocumentHighlightKind, Position, Range
+from __future__ import annotations
 
-from yaraast.lsp.utils import get_word_at_position, offset_to_position
-from yaraast.parser.parser import Parser
+from lsprotocol.types import DocumentHighlight, DocumentHighlightKind, Position
+
+from yaraast.lsp.document_context import DocumentContext
+from yaraast.lsp.document_highlight_helpers import (
+    highlight_identifier as helper_highlight_identifier,
+)
+from yaraast.lsp.document_highlight_helpers import (
+    highlight_string_identifier as helper_highlight_string_identifier,
+)
+from yaraast.lsp.document_highlight_helpers import simple_highlight as helper_simple_highlight
+from yaraast.lsp.document_types import ReferenceRecord
+from yaraast.lsp.utils import get_word_at_position
 
 
 class DocumentHighlightProvider:
@@ -24,121 +34,41 @@ class DocumentHighlightProvider:
 
     def _highlight_string_identifier(self, text: str, identifier: str) -> list[DocumentHighlight]:
         """Highlight all occurrences of a string identifier."""
-        highlights = []
-
-        try:
-            parser = Parser(text)
-            ast = parser.parse()
-
-            # Find all occurrences of this string identifier
-            # Check both definition and usage
-            lines = text.split("\n")
-
-            # Base identifier without $ prefix
-            base_id = identifier[1:] if identifier.startswith("$") else identifier
-
-            # Look for: $id, #id, @id, !id
-            patterns = [f"${base_id}", f"#{base_id}", f"@{base_id}", f"!{base_id}"]
-
-            for line_num, line in enumerate(lines):
-                for pattern in patterns:
-                    col = 0
-                    while True:
-                        idx = line.find(pattern, col)
-                        if idx == -1:
-                            break
-
-                        # Check if it's a word boundary
-                        if idx > 0 and (line[idx - 1].isalnum() or line[idx - 1] == "_"):
-                            col = idx + 1
-                            continue
-
-                        end_idx = idx + len(pattern)
-                        if end_idx < len(line) and (
-                            line[end_idx].isalnum() or line[end_idx] == "_"
-                        ):
-                            col = idx + 1
-                            continue
-
-                        # Determine highlight kind
-                        kind = DocumentHighlightKind.Read
-                        if pattern.startswith("$") and "strings:" in text[: text.find(pattern)]:
-                            # This is the definition
-                            kind = DocumentHighlightKind.Write
-
-                        highlights.append(
-                            DocumentHighlight(
-                                range=Range(
-                                    start=Position(line=line_num, character=idx),
-                                    end=Position(line=line_num, character=end_idx),
-                                ),
-                                kind=kind,
-                            )
-                        )
-                        col = end_idx
-
-        except Exception:
-            # Fallback to simple text search
-            return self._simple_highlight(text, identifier)
-
-        return highlights
+        records = self._get_string_reference_records(text, identifier)
+        if records:
+            return self._highlights_from_records(records)
+        return helper_highlight_string_identifier(text, identifier)
 
     def _highlight_identifier(self, text: str, identifier: str) -> list[DocumentHighlight]:
         """Highlight all occurrences of a regular identifier."""
-        highlights = []
-        lines = text.split("\n")
-
-        for line_num, line in enumerate(lines):
-            col = 0
-            while True:
-                idx = line.find(identifier, col)
-                if idx == -1:
-                    break
-
-                # Check word boundaries
-                if idx > 0 and (line[idx - 1].isalnum() or line[idx - 1] == "_"):
-                    col = idx + 1
-                    continue
-
-                end_idx = idx + len(identifier)
-                if end_idx < len(line) and (line[end_idx].isalnum() or line[end_idx] == "_"):
-                    col = idx + 1
-                    continue
-
-                highlights.append(
-                    DocumentHighlight(
-                        range=Range(
-                            start=Position(line=line_num, character=idx),
-                            end=Position(line=line_num, character=end_idx),
-                        ),
-                        kind=DocumentHighlightKind.Text,
-                    )
-                )
-                col = end_idx
-
-        return highlights
+        records = self._get_rule_reference_records(text, identifier)
+        if records:
+            return self._highlights_from_records(records)
+        return helper_highlight_identifier(text, identifier)
 
     def _simple_highlight(self, text: str, word: str) -> list[DocumentHighlight]:
         """Simple text-based highlighting fallback."""
-        highlights = []
-        lines = text.split("\n")
+        return helper_simple_highlight(text, word)
 
-        for line_num, line in enumerate(lines):
-            col = 0
-            while True:
-                idx = line.find(word, col)
-                if idx == -1:
-                    break
+    def _get_string_reference_records(self, text: str, identifier: str) -> list[ReferenceRecord]:
+        ctx = DocumentContext("file:///document-highlight.yar", text)
+        if ctx.ast() is None:
+            return []
+        return ctx.find_string_reference_records(identifier, include_declaration=True)
 
-                highlights.append(
-                    DocumentHighlight(
-                        range=Range(
-                            start=Position(line=line_num, character=idx),
-                            end=Position(line=line_num, character=idx + len(word)),
-                        ),
-                        kind=DocumentHighlightKind.Text,
-                    )
-                )
-                col = idx + len(word)
+    def _get_rule_reference_records(self, text: str, identifier: str) -> list[ReferenceRecord]:
+        ctx = DocumentContext("file:///document-highlight.yar", text)
+        if ctx.ast() is None:
+            return []
+        return ctx.rule_reference_records(identifier, include_declaration=True)
 
+    def _highlights_from_records(self, records: list[ReferenceRecord]) -> list[DocumentHighlight]:
+        highlights: list[DocumentHighlight] = []
+        for record in records:
+            kind = (
+                DocumentHighlightKind.Write
+                if record.role == "declaration"
+                else DocumentHighlightKind.Read
+            )
+            highlights.append(DocumentHighlight(range=record.location.range, kind=kind))
         return highlights

@@ -190,6 +190,7 @@ class TestLibyaraCompiler:
         assert result.success is True
 
 
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 class TestLibyaraScanner:
     """Test libyara scanner."""
 
@@ -256,6 +257,7 @@ class TestLibyaraScanner:
         assert result.success is True
 
 
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 class TestEquivalenceTester:
     """Test AST equivalence testing."""
 
@@ -320,6 +322,7 @@ class TestEquivalenceTester:
         assert result.ast_equivalent is True
 
 
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 class TestCrossValidator:
     """Test cross-validation between yaraast and libyara."""
 

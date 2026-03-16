@@ -5,17 +5,25 @@ suggestions. It's not a full linter but rather an AST-based analyzer that can
 identify patterns and suggest improvements.
 """
 
-# type: ignore  # Analysis code allows gradual typing
+from __future__ import annotations
 
 import re
-from collections import defaultdict
+from collections import Counter
 from dataclasses import dataclass, field
+from typing import Any
 
+from yaraast.analysis.best_practices_helpers import (
+    analyze_global_patterns as helper_analyze_global_patterns,
+)
+from yaraast.analysis.best_practices_helpers import get_hex_prefix as helper_get_hex_prefix
+from yaraast.analysis.best_practices_helpers import (
+    levenshtein_distance as helper_levenshtein_distance,
+)
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import StringIdentifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.visitor import ASTVisitor
+from yaraast.visitor.base import BaseVisitor
 
 
 @dataclass
@@ -68,7 +76,7 @@ class AnalysisReport:
         return [s for s in self.suggestions if s.category == category]
 
 
-class BestPracticesAnalyzer(ASTVisitor[None]):
+class BestPracticesAnalyzer(BaseVisitor[None]):
     """Analyze YARA AST for best practices and optimization opportunities."""
 
     def __init__(self) -> None:
@@ -88,9 +96,9 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
         """Analyze file-level patterns."""
         # Check for duplicate rule names
         rule_names = [rule.name for rule in node.rules]
-        duplicates = [name for name in rule_names if rule_names.count(name) > 1]
+        duplicates = [name for name, count in Counter(rule_names).items() if count > 1]
         if duplicates:
-            for dup in set(duplicates):
+            for dup in duplicates:
                 self.report.add_suggestion(
                     dup,
                     "structure",
@@ -135,32 +143,8 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
                 "Consider using more descriptive rule names (3+ characters)",
             )
 
-        # Check section order (convention: meta, strings, condition)
-        # Note: This is a simplified check based on the expected test case behavior
-        # In reality, YARA allows any order but some conventions prefer meta first
-        has_meta = bool(node.meta)
-        has_strings = bool(node.strings)
-        has_condition = bool(node.condition)
-
-        # If condition appears before strings in the rule text, suggest reordering
-        # For now, we'll detect the wrong order pattern from the test
-        if has_condition and has_strings and has_meta:
-            # Test expects this suggestion for the specific test case
-            self.report.add_suggestion(
-                node.name,
-                "style",
-                "info",
-                "Consider section order: meta → strings → condition",
-            )
-
-        # Check for missing meta information
-        if not node.meta:
-            self.report.add_suggestion(
-                node.name,
-                "style",
-                "info",
-                "Consider adding meta information (author, description, etc.)",
-            )
+        # Section order cannot be inferred reliably from the current AST shape.
+        # Avoid emitting suggestions without structural evidence from source order.
 
         # Analyze strings
         if node.strings:
@@ -175,9 +159,9 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
             ):
                 self.report.add_suggestion(
                     node.name,
-                    "structure",
+                    "style",
                     "info",
-                    "Rule has no strings defined - intentional?",
+                    "Rule has no strings defined; verify that non-string-only matching is intentional",
                 )
 
         # Visit condition to track string usage
@@ -212,9 +196,9 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
                 self._analyze_regex_string(rule, string_def)
 
         # Check for duplicate string names
-        duplicates = [name for name in string_names if string_names.count(name) > 1]
+        duplicates = [name for name, count in Counter(string_names).items() if count > 1]
         if duplicates:
-            for dup in set(duplicates):
+            for dup in duplicates:
                 self.report.add_suggestion(
                     rule.name,
                     "structure",
@@ -332,246 +316,14 @@ class BestPracticesAnalyzer(ASTVisitor[None]):
         """Track string usage."""
         self._string_usage[node.name] = self._string_usage.get(node.name, 0) + 1
 
-    def visit_string_wildcard(self, node: StringIdentifier) -> None:
-        """Visit StringWildcard node."""
-        pass
-
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""
-        # Check for redundant hex patterns that could be consolidated
-        if len(self._hex_patterns) > 1:
-            # Group by pattern similarity
-            pattern_groups = defaultdict(list)
+        helper_analyze_global_patterns(self)
 
-            for name, hex_string in self._hex_patterns:
-                # Simple grouping by length and first few bytes
-                if len(hex_string.tokens) > 0:
-                    key = (len(hex_string.tokens), self._get_hex_prefix(hex_string, 4))
-                    pattern_groups[key].append((name, hex_string))
-
-            # Report potential consolidations
-            for group in pattern_groups.values():
-                if len(group) > 1:
-                    names = [name for name, _ in group]
-                    self.report.add_suggestion(
-                        "global",
-                        "optimization",
-                        "info",
-                        f"Similar hex patterns: {', '.join(names)} - consider consolidation?",
-                    )
-
-    def _get_hex_prefix(self, hex_string: HexString, length: int) -> tuple:
+    def _get_hex_prefix(self, hex_string: HexString, length: int) -> tuple[Any, ...]:
         """Get first N bytes of hex string for comparison."""
-        prefix = []
-        for _i, token in enumerate(hex_string.tokens[:length]):
-            if hasattr(token, "value"):
-                prefix.append(token.value)
-            else:
-                prefix.append(None)  # Wildcard
-        return tuple(prefix)
+        return helper_get_hex_prefix(hex_string, length)
 
     def _levenshtein_distance(self, s1: str, s2: str) -> int:
         """Calculate edit distance between two strings."""
-        if len(s1) < len(s2):
-            return self._levenshtein_distance(s2, s1)
-
-        if len(s2) == 0:
-            return len(s1)
-
-        previous_row = range(len(s2) + 1)
-        for i, c1 in enumerate(s1):
-            current_row = [i + 1]
-            for j, c2 in enumerate(s2):
-                insertions = previous_row[j + 1] + 1
-                deletions = current_row[j] + 1
-                substitutions = previous_row[j] + (c1 != c2)
-                current_row.append(min(insertions, deletions, substitutions))
-            previous_row = current_row
-
-        return previous_row[-1]
-
-    # Required visitor methods - most are no-ops for best practices analysis
-
-    def visit_import(self, node) -> None:
-        """Visit Import node."""
-
-    def visit_include(self, node) -> None:
-        """Visit Include node."""
-
-    def visit_tag(self, node) -> None:
-        """Visit Tag node."""
-
-    def visit_string_definition(self, node) -> None:
-        """Visit StringDefinition node."""
-
-    def visit_plain_string(self, node) -> None:
-        """Visit PlainString node."""
-
-    def visit_hex_string(self, node) -> None:
-        """Visit HexString node."""
-
-    def visit_regex_string(self, node) -> None:
-        """Visit RegexString node."""
-
-    def visit_string_modifier(self, node) -> None:
-        """Visit StringModifier node."""
-
-    def visit_hex_token(self, node) -> None:
-        """Visit HexToken node."""
-
-    def visit_hex_byte(self, node) -> None:
-        """Visit HexByte node."""
-
-    def visit_hex_wildcard(self, node) -> None:
-        """Visit HexWildcard node."""
-
-    def visit_hex_jump(self, node) -> None:
-        """Visit HexJump node."""
-
-    def visit_hex_alternative(self, node) -> None:
-        """Visit HexAlternative node."""
-
-    def visit_hex_nibble(self, node) -> None:
-        """Visit HexNibble node."""
-
-    def visit_expression(self, node) -> None:
-        """Visit Expression node."""
-
-    def visit_identifier(self, node) -> None:
-        """Visit Identifier node."""
-
-    def visit_string_count(self, node) -> None:
-        """Visit StringCount node."""
-
-    def visit_string_offset(self, node) -> None:
-        """Visit StringOffset node."""
-
-    def visit_string_length(self, node) -> None:
-        """Visit StringLength node."""
-
-    def visit_integer_literal(self, node) -> None:
-        """Visit IntegerLiteral node."""
-
-    def visit_double_literal(self, node) -> None:
-        """Visit DoubleLiteral node."""
-
-    def visit_string_literal(self, node) -> None:
-        """Visit StringLiteral node."""
-
-    def visit_regex_literal(self, node) -> None:
-        """Visit RegexLiteral node."""
-
-    def visit_boolean_literal(self, node) -> None:
-        """Visit BooleanLiteral node."""
-
-    def visit_binary_expression(self, node) -> None:
-        """Visit BinaryExpression node."""
-        self.visit(node.left)
-        self.visit(node.right)
-
-    def visit_unary_expression(self, node) -> None:
-        """Visit UnaryExpression node."""
-        self.visit(node.operand)
-
-    def visit_parentheses_expression(self, node) -> None:
-        """Visit ParenthesesExpression node."""
-        self.visit(node.expression)
-
-    def visit_set_expression(self, node) -> None:
-        """Visit SetExpression node."""
-        for elem in node.elements:
-            self.visit(elem)
-
-    def visit_range_expression(self, node) -> None:
-        """Visit RangeExpression node."""
-        self.visit(node.low)
-        self.visit(node.high)
-
-    def visit_function_call(self, node) -> None:
-        """Visit FunctionCall node."""
-        for arg in node.arguments:
-            self.visit(arg)
-
-    def visit_array_access(self, node) -> None:
-        """Visit ArrayAccess node."""
-        self.visit(node.array)
-        self.visit(node.index)
-
-    def visit_member_access(self, node) -> None:
-        """Visit MemberAccess node."""
-        self.visit(node.object)
-
-    def visit_condition(self, node) -> None:
-        """Visit Condition node."""
-
-    def visit_for_expression(self, node) -> None:
-        """Visit ForExpression node."""
-        self.visit(node.iterable)
-        self.visit(node.body)
-
-    def visit_for_of_expression(self, node) -> None:
-        """Visit ForOfExpression node."""
-        self.visit(node.string_set)
-        if node.condition:
-            self.visit(node.condition)
-
-    def visit_at_expression(self, node) -> None:
-        """Visit AtExpression node."""
-        self.visit(node.offset)
-
-    def visit_in_expression(self, node) -> None:
-        """Visit InExpression node."""
-        self.visit(node.range)
-
-    def visit_of_expression(self, node) -> None:
-        """Visit OfExpression node."""
-        if hasattr(node.quantifier, "accept"):
-            self.visit(node.quantifier)
-        if hasattr(node.string_set, "accept"):
-            self.visit(node.string_set)
-
-    def visit_meta(self, node) -> None:
-        """Visit Meta node."""
-
-    def visit_module_reference(self, node) -> None:
-        """Visit ModuleReference node."""
-
-    def visit_dictionary_access(self, node) -> None:
-        """Visit DictionaryAccess node."""
-        self.visit(node.object)
-
-    def visit_comment(self, node) -> None:
-        """Visit Comment node."""
-
-    def visit_comment_group(self, node) -> None:
-        """Visit CommentGroup node."""
-
-    def visit_defined_expression(self, node) -> None:
-        """Visit DefinedExpression node."""
-        self.visit(node.expression)
-
-    def visit_string_operator_expression(self, node) -> None:
-        """Visit StringOperatorExpression node."""
-        self.visit(node.left)
-        self.visit(node.right)
-
-    def visit_extern_import(self, node) -> None:
-        """Visit ExternImport node."""
-
-    def visit_extern_namespace(self, node) -> None:
-        """Visit ExternNamespace node."""
-
-    def visit_extern_rule(self, node) -> None:
-        """Visit ExternRule node."""
-
-    def visit_extern_rule_reference(self, node) -> None:
-        """Visit ExternRuleReference node."""
-
-    def visit_in_rule_pragma(self, node) -> None:
-        """Visit InRulePragma node."""
-
-    def visit_pragma(self, node) -> None:
-        """Visit Pragma node."""
-
-    def visit_pragma_block(self, node) -> None:
-        """Visit PragmaBlock node."""
+        return helper_levenshtein_distance(s1, s2)

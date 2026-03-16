@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from yaraast.parser import Parser
+from yaraast.parser.parser import Parser
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -76,10 +76,6 @@ class IncludeResolver:
 
         return unique_paths
 
-    def resolve(self, file_path: str, base_path: Path | None = None) -> ResolvedFile:
-        """Alias for resolve_file for backward compatibility."""
-        return self.resolve_file(file_path, base_path)
-
     def resolve_file(
         self,
         file_path: str,
@@ -106,9 +102,9 @@ class IncludeResolver:
         cache_key = str(resolved_path)
         if cache_key in self.cache:
             cached = self.cache[cache_key]
-            # Verify checksum
+            # Verify checksum of this file AND all its includes
             current_checksum = self._calculate_checksum(resolved_path)
-            if cached.checksum == current_checksum:
+            if cached.checksum == current_checksum and self._includes_unchanged(cached):
                 return cached
 
         # Check for circular includes
@@ -193,7 +189,13 @@ class IncludeResolver:
         for search_dir in search_dirs:
             full_path = search_dir / path
             if full_path.exists():
-                return full_path.resolve()
+                resolved = full_path.resolve()
+                # Prevent path traversal — resolved path must be within search directory
+                try:
+                    resolved.relative_to(search_dir.resolve())
+                except ValueError:
+                    continue  # Skip paths that escape the search directory
+                return resolved
 
         # Not found
         searched = [str(d) for d in search_dirs]
@@ -201,6 +203,20 @@ class IncludeResolver:
         raise FileNotFoundError(
             msg,
         )
+
+    def _includes_unchanged(self, resolved) -> bool:
+        """Check if all included files still have the same checksum."""
+        for included in resolved.includes:
+            try:
+                current = self._calculate_checksum(included.path)
+                if current != included.checksum:
+                    return False
+                # Recursively check nested includes
+                if not self._includes_unchanged(included):
+                    return False
+            except (FileNotFoundError, OSError):
+                return False
+        return True
 
     def _calculate_checksum(self, file_path: Path) -> str:
         """Calculate checksum of a file."""

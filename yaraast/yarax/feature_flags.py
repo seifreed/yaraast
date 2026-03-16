@@ -4,16 +4,6 @@ from dataclasses import dataclass
 from typing import Any
 
 
-class FeatureFlags:
-    """Legacy feature flags class for compatibility."""
-
-    SUPPORTS_FLOAT_MODULUS = True
-    SUPPORTS_TUPLE_INDEXING = True
-    SUPPORTS_WITH_STATEMENT = True
-    SUPPORTS_ARRAY_COMPREHENSION = True
-    SUPPORTS_DICT_COMPREHENSION = True
-
-
 @dataclass
 class YaraXFeatures:
     """Configuration for YARA-X specific features."""
@@ -33,16 +23,6 @@ class YaraXFeatures:
     # Parser features
     enhanced_error_messages: bool = True
     modular_parser: bool = True
-
-    # Deprecated features
-    deprecated_features: set[str] | None = None
-
-    def __post_init__(self) -> None:
-        if self.deprecated_features is None:
-            self.deprecated_features = {
-                "process_scanning",  # Not yet implemented in YARA-X
-                "legacy_escape_sequences",  # Stricter validation
-            }
 
     @classmethod
     def yara_compatible(cls) -> "YaraXFeatures":
@@ -65,6 +45,22 @@ class YaraXFeatures:
         """Create configuration for strict YARA-X mode."""
         return cls()  # All defaults are YARA-X strict
 
+    @classmethod
+    def yarax_compatible(cls) -> "YaraXFeatures":
+        """Create configuration for relaxed YARA-X compatibility checks."""
+        return cls(
+            strict_regex_escaping=False,
+            validate_escape_sequences=False,
+            minimum_base64_length=0,
+            allow_with_statement=True,
+            allow_tuple_of_expressions=True,
+            disallow_duplicate_modifiers=False,
+            strict_xor_fullword=False,
+            validate_hex_bounds=False,
+            enhanced_error_messages=False,
+            modular_parser=True,
+        )
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -78,7 +74,4 @@ class YaraXFeatures:
             "validate_hex_bounds": self.validate_hex_bounds,
             "enhanced_error_messages": self.enhanced_error_messages,
             "modular_parser": self.modular_parser,
-            "deprecated_features": (
-                list(self.deprecated_features) if self.deprecated_features else []
-            ),
         }

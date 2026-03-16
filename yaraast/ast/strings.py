@@ -6,27 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from yaraast.ast.base import ASTNode
-from yaraast.ast.modifiers import StringModifier as EnhancedStringModifier
-
-
-# Keep backward compatibility with old StringModifier
-@dataclass
-class StringModifier(ASTNode):
-    """Legacy string modifier for backward compatibility."""
-
-    name: str
-    value: Any | None = None
-
-    def accept(self, visitor: Any) -> Any:
-        return visitor.visit_string_modifier(self)
-
-    def to_legacy_modifier(self) -> StringModifier:
-        """Return self as already a legacy modifier."""
-        return self
-
-    def to_enhanced_modifier(self) -> EnhancedStringModifier:
-        """Convert to enhanced enum-based modifier."""
-        return EnhancedStringModifier.from_name_value(self.name, self.value)
+from yaraast.ast.modifiers import StringModifier
 
 
 @dataclass
@@ -73,6 +53,16 @@ class HexByte(HexToken):
     """Single hex byte."""
 
     value: int = 0  # Add default
+
+    def accept(self, visitor: Any) -> Any:
+        return visitor.visit_hex_byte(self)
+
+
+@dataclass
+class HexNegatedByte(HexToken):
+    """Negated hex byte — matches anything except this value."""
+
+    value: int = 0
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_hex_byte(self)

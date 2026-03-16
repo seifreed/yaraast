@@ -5,72 +5,100 @@ Licensed under GPLv3
 https://www.gnu.org/licenses/gpl-3.0.html
 """
 
+from __future__ import annotations
+
+from yaraast.lexer.lexer_dispatch import (
+    get_single_char_token,
+    get_two_char_operator,
+    read_next_token,
+)
+from yaraast.lexer.lexer_helpers import skip_whitespace_and_comments
+from yaraast.lexer.lexer_readers import (
+    is_hex_string_context,
+    is_regex_context,
+    read_hex_string,
+    read_identifier,
+    read_number,
+    read_regex,
+    read_string,
+    read_string_count,
+    read_string_identifier,
+    read_string_length,
+    read_string_offset,
+)
+from yaraast.lexer.lexer_state import LexerState
+from yaraast.lexer.lexer_tables import KEYWORDS as LEXER_KEYWORDS
 from yaraast.lexer.tokens import Token, TokenType
 
 
-class LexerError(Exception):
-    """Lexer error exception."""
-
-    def __init__(self, message: str, line: int, column: int) -> None:
-        super().__init__(f"Lexer error at {line}:{column}: {message}")
-        self.line = line
-        self.column = column
-
-
 class Lexer:
-    """YARA lexer for tokenizing YARA rules."""
+    """YARA lexer for tokenizing YARA rules.
 
-    KEYWORDS = {
-        "rule": TokenType.RULE,
-        "private": TokenType.PRIVATE,
-        "global": TokenType.GLOBAL,
-        "import": TokenType.IMPORT,
-        "include": TokenType.INCLUDE,
-        "meta": TokenType.META,
-        "strings": TokenType.STRINGS,
-        "condition": TokenType.CONDITION,
-        "and": TokenType.AND,
-        "or": TokenType.OR,
-        "not": TokenType.NOT,
-        "for": TokenType.FOR,
-        "of": TokenType.OF,
-        "in": TokenType.IN,
-        "as": TokenType.AS,
-        "at": TokenType.AT,
-        "them": TokenType.THEM,
-        "any": TokenType.ANY,
-        "all": TokenType.ALL,
-        "entrypoint": TokenType.ENTRYPOINT,
-        "filesize": TokenType.FILESIZE,
-        "matches": TokenType.MATCHES,
-        "contains": TokenType.CONTAINS,
-        "startswith": TokenType.STARTSWITH,
-        "endswith": TokenType.ENDSWITH,
-        "icontains": TokenType.ICONTAINS,
-        "istartswith": TokenType.ISTARTSWITH,
-        "iendswith": TokenType.IENDSWITH,
-        "iequals": TokenType.IEQUALS,
-        "defined": TokenType.DEFINED,
-        "true": TokenType.BOOLEAN_TRUE,
-        "false": TokenType.BOOLEAN_FALSE,
-        "nocase": TokenType.NOCASE,
-        "wide": TokenType.WIDE,
-        "ascii": TokenType.ASCII,
-        "xor": TokenType.XOR_MOD,
-        "base64": TokenType.BASE64,
-        "base64wide": TokenType.BASE64WIDE,
-        "fullword": TokenType.FULLWORD,
-    }
+    Implements the ILexer protocol for dependency injection support.
+    The Lexer class implicitly satisfies the ILexer Protocol through
+    structural subtyping (duck typing) by implementing the tokenize method.
+    """
 
-    def __init__(self, text: str) -> None:
-        self.text = text
-        self.position = 0
-        self.line = 1
-        self.column = 1
+    KEYWORDS = LEXER_KEYWORDS
+
+    def __init__(self, text: str | None = None) -> None:
+        """Initialize lexer.
+
+        Args:
+            text: Optional YARA code to tokenize. If provided, can call
+                  tokenize() without arguments. If None, text must be
+                  passed to tokenize().
+        """
+        self.state = LexerState(text if text is not None else "")
         self.tokens: list[Token] = []
 
-    def tokenize(self) -> list[Token]:
-        """Tokenize the input text and return list of tokens."""
+    @property
+    def text(self) -> str:
+        return self.state.text
+
+    @text.setter
+    def text(self, value: str) -> None:
+        self.state.text = value
+
+    @property
+    def position(self) -> int:
+        return self.state.position
+
+    @position.setter
+    def position(self, value: int) -> None:
+        self.state.position = value
+
+    @property
+    def line(self) -> int:
+        return self.state.line
+
+    @line.setter
+    def line(self, value: int) -> None:
+        self.state.line = value
+
+    @property
+    def column(self) -> int:
+        return self.state.column
+
+    @column.setter
+    def column(self, value: int) -> None:
+        self.state.column = value
+
+    def tokenize(self, text: str | None = None) -> list[Token]:
+        """Tokenize the input text and return list of tokens.
+
+        Args:
+            text: Optional YARA code to tokenize. If provided, will tokenize
+                  this text. If None, uses text from constructor.
+
+        Returns:
+            A list of Token objects representing the tokenized input.
+            The list always ends with an EOF token.
+        """
+        if text is not None:
+            self.state.reset(text)
+            self.tokens = []
+
         while self.position < len(self.text):
             self._skip_whitespace_and_comments()
 
@@ -109,538 +137,55 @@ class Lexer:
 
     def _skip_whitespace_and_comments(self) -> None:
         """Skip whitespace, comments, and line continuations."""
-        while self.position < len(self.text):
-            char = self._current_char()
-
-            if char in " \t\r\n":
-                self._advance()
-            elif char == "\\" and self._is_line_continuation():
-                # Line continuation: backslash followed by optional whitespace and newline
-                self._advance()  # skip backslash
-                # Skip any whitespace before newline
-                while self._current_char() in " \t":
-                    self._advance()
-                # Skip the newline
-                if self._current_char() in "\r\n":
-                    self._advance()
-                    # Handle CRLF
-                    if self._current_char() == "\n":
-                        self._advance()
-            elif char == "/" and self._peek_char() == "/":
-                # Single-line comment
-                while self._current_char() and self._current_char() != "\n":
-                    self._advance()
-            elif char == "/" and self._peek_char() == "*":
-                # Multi-line comment
-                self._advance()  # skip /
-                self._advance()  # skip *
-                while self.position < len(self.text) - 1:
-                    if self._current_char() == "*" and self._peek_char() == "/":
-                        self._advance()  # skip *
-                        self._advance()  # skip /
-                        break
-                    self._advance()
-            else:
-                break
+        skip_whitespace_and_comments(self)
 
     def _next_token(self) -> Token | None:
         """Get next token."""
-        start_line = self.line
-        start_column = self.column
-        char = self._current_char()
-
-        if not char:
-            return None
-
-        # String literals
-        if char == '"':
-            return self._read_string()
-
-        # Hex strings (only in strings section)
-        if char == "{" and self._is_hex_string_context():
-            return self._read_hex_string()
-
-        # Regular expressions
-        if char == "/" and self._is_regex_context():
-            return self._read_regex()
-
-        # Numbers
-        if char.isdigit() or (char == "0" and self._peek_char() in "xX"):
-            return self._read_number()
-
-        # Identifiers and keywords
-        if char.isalpha() or char == "_":
-            return self._read_identifier()
-
-        # String identifiers
-        if char == "$":
-            return self._read_string_identifier()
-
-        # String count
-        if char == "#":
-            return self._read_string_count()
-
-        # String offset
-        if char == "@":
-            return self._read_string_offset()
-
-        # Two-character operators (check before single-char operators like !)
-        if self.position < len(self.text) - 1:
-            two_char = self.text[self.position : self.position + 2]
-            token_type = self._get_two_char_operator(two_char)
-            if token_type:
-                self._advance()
-                self._advance()
-                return Token(token_type, two_char, start_line, start_column, 2)
-
-        # String length (check after two-char operators to handle != correctly)
-        if char == "!":
-            return self._read_string_length()
-
-        # Single-character operators and delimiters
-        token_type = self._get_single_char_token(char)
-        if token_type:
-            self._advance()
-            return Token(token_type, char, start_line, start_column, 1)
-
-        # Handle backslash followed by whitespace (common typo for division in some YARA files)
-        if char == "\\" and self._peek_char() in (" ", "\t"):
-            # Treat as division operator (typo correction)
-            self._advance()
-            return Token(TokenType.DIVIDE, "/", start_line, start_column, 1)
-
-        msg = f"Unexpected character: {char}"
-        raise LexerError(msg, self.line, self.column)
+        return read_next_token(self)
 
     def _read_string(self) -> Token:
-        """Read string literal.
-
-        Performance optimization: Uses list builder pattern O(n) instead of
-        string concatenation O(n²) for long string literals.
-        """
-        start_line = self.line
-        start_column = self.column
-        # OPTIMIZATION: Use list builder to avoid O(n²) concatenation
-        value_chars = []
-
-        self._advance()  # skip opening quote
-
-        while self._current_char() and self._current_char() != '"':
-            if self._current_char() == "\\":
-                # Look ahead to see what follows the backslash
-                self._advance()
-                next_char = self._current_char()
-
-                if next_char == "\\":
-                    # \\ -> single backslash in YARA output
-                    # But we need to check if this is really an escape or Windows path
-                    # In YARA strings, \\ is used for literal backslash
-                    value_chars.append("\\")
-                elif next_char == '"':
-                    # \" -> escaped quote
-                    # Special case: detect malformed strings ending with backslash like "C:\TEMP\"
-                    # These appear in real YARA files even though technically invalid
-                    #
-                    # Heuristic: if \" is followed by ONLY whitespace/modifiers until newline,
-                    # treat the backslash as literal and end the string
-                    look_ahead_pos = self.position + 1
-                    is_string_ending = False
-
-                    if look_ahead_pos < len(self.text):
-                        chars_after = self.text[look_ahead_pos : look_ahead_pos + 50]
-                        # Track if we've seen any whitespace after the quote
-                        has_whitespace = False
-                        i = 0
-                        while i < len(chars_after) and chars_after[i] in " \t":
-                            has_whitespace = True
-                            i += 1
-
-                        # Check what comes after whitespace
-                        if i < len(chars_after):
-                            remaining = chars_after[i:]
-                            # Check if string ends: newline, comment, or modifiers
-                            if (
-                                remaining.startswith(("\n", "\r"))
-                                or (has_whitespace and remaining.startswith("//"))
-                                or remaining.startswith("ascii ")
-                                or remaining.startswith("ascii\n")
-                                or remaining.startswith("ascii\r")
-                                or remaining.startswith("ascii//")
-                                or remaining.startswith("wide ")
-                                or remaining.startswith("wide\n")
-                                or remaining.startswith("wide\r")
-                                or remaining.startswith("wide//")
-                                or remaining.startswith("nocase ")
-                                or remaining.startswith("nocase\n")
-                                or remaining.startswith("nocase\r")
-                                or remaining.startswith("nocase//")
-                                or remaining.startswith("fullword ")
-                                or remaining.startswith("fullword\n")
-                                or remaining.startswith("fullword\r")
-                                or remaining.startswith("fullword//")
-                                or remaining.startswith("xor ")
-                                or remaining.startswith("xor(")
-                                or remaining.startswith("xor\n")
-                                or remaining.startswith("xor\r")
-                                or remaining.startswith("xor//")
-                                or remaining.startswith("base64 ")
-                                or remaining.startswith("base64(")
-                                or remaining.startswith("base64\n")
-                                or remaining.startswith("base64\r")
-                                or remaining.startswith("base64//")
-                                or remaining.startswith("base64wide")
-                            ):
-                                is_string_ending = True
-                        else:
-                            # Only whitespace remains - end of string
-                            is_string_ending = True
-                    else:
-                        # End of file
-                        is_string_ending = True
-
-                    if is_string_ending:
-                        # Treat as literal backslash at end of malformed string
-                        value_chars.append("\\")
-                        self._advance()  # consume the quote
-                        break
-                    else:
-                        # Normal escaped quote in middle of string
-                        value_chars.append('"')
-                elif next_char == "n":
-                    # \n -> newline
-                    value_chars.append("\n")
-                elif next_char == "r":
-                    # \r -> carriage return
-                    value_chars.append("\r")
-                elif next_char == "t":
-                    # \t -> tab
-                    value_chars.append("\t")
-                elif next_char == "x" and self.position + 2 < len(self.text):
-                    # \xHH -> hex character
-                    hex_digits = self.text[self.position + 1 : self.position + 3]
-                    if all(c in "0123456789abcdefABCDEF" for c in hex_digits):
-                        value_chars.append(chr(int(hex_digits, 16)))
-                        self._advance()  # skip first hex digit
-                        self._advance()  # skip second hex digit
-                    else:
-                        # Not valid hex escape, keep as literal
-                        value_chars.append("\\")
-                        value_chars.append(next_char)
-                elif next_char is None:
-                    # Backslash at end of input
-                    value_chars.append("\\")
-                    break
-                else:
-                    # Any other character after \ is kept literally
-                    # e.g., \T becomes \T (common in Windows paths)
-                    value_chars.append("\\")
-                    value_chars.append(next_char)
-            else:
-                # Regular character
-                value_chars.append(self._current_char())
-
-            self._advance()
-
-        if not self._current_char():
-            msg = "Unterminated string"
-            raise LexerError(msg, start_line, start_column)
-
-        self._advance()  # skip closing quote
-        # Join once at the end - O(n) operation
-        value = "".join(value_chars)
-        return Token(TokenType.STRING, value, start_line, start_column)
+        """Read string literal."""
+        return read_string(self)
 
     def _read_hex_string(self) -> Token:
-        """Read hex string.
-
-        Performance optimization: Uses list builder pattern O(n) instead of
-        string concatenation O(n²) for long hex strings.
-
-        Bug fix: Properly handles comments with braces inside hex strings.
-        Comments are completely skipped (not preserved in the token value).
-        """
-        start_line = self.line
-        start_column = self.column
-        # OPTIMIZATION: Use list builder to avoid O(n²) concatenation
-        value_chars = []
-
-        self._advance()  # skip opening {
-
-        while self._current_char():
-            # Check for end of hex string (} not in comment)
-            if self._current_char() == "}":
-                break
-
-            # Handle single-line comments: // comment
-            # Skip them entirely - do NOT include in hex string value
-            if self._current_char() == "/" and self._peek_char() == "/":
-                # Skip the entire comment (do not append to value_chars)
-                while self._current_char() and self._current_char() != "\n":
-                    self._advance()
-                # Skip the newline as well
-                if self._current_char() == "\n":
-                    self._advance()
-                continue
-
-            # Handle multi-line comments: /* comment */
-            # Skip them entirely - do NOT include in hex string value
-            if self._current_char() == "/" and self._peek_char() == "*":
-                # Skip the opening /*
-                self._advance()  # skip /
-                self._advance()  # skip *
-
-                # Skip until */
-                while self._current_char():
-                    if self._current_char() == "*" and self._peek_char() == "/":
-                        self._advance()  # skip *
-                        self._advance()  # skip /
-                        break
-                    self._advance()
-                continue
-
-            # Regular character (whitespace and hex bytes)
-            value_chars.append(self._current_char())
-            self._advance()
-
-        if not self._current_char() or self._current_char() != "}":
-            msg = "Unterminated hex string"
-            raise LexerError(msg, start_line, start_column)
-
-        self._advance()  # skip closing }
-
-        # Join once at the end - O(n) operation
-        value = "".join(value_chars)
-        return Token(TokenType.HEX_STRING, value, start_line, start_column)
+        """Read hex string."""
+        return read_hex_string(self)
 
     def _read_regex(self) -> Token:
-        """Read regular expression.
-
-        Performance optimization: Uses list builder pattern O(n) instead of
-        string concatenation O(n²) for long regex patterns.
-        """
-        start_line = self.line
-        start_column = self.column
-        # OPTIMIZATION: Use list builder to avoid O(n²) concatenation
-        value_chars = []
-
-        self._advance()  # skip opening /
-
-        while self._current_char() and self._current_char() != "/":
-            if self._current_char() == "\\":
-                value_chars.append(self._current_char())
-                self._advance()
-                if self._current_char():
-                    value_chars.append(self._current_char())
-            else:
-                value_chars.append(self._current_char())
-            self._advance()
-
-        if not self._current_char():
-            msg = "Unterminated regex"
-            raise LexerError(msg, start_line, start_column)
-
-        self._advance()  # skip closing /
-
-        # Read regex modifiers - these are typically short, so list builder
-        # overhead not needed
-        modifiers = ""
-        while self._current_char() and self._current_char() in "ims":
-            modifiers += self._current_char()
-            self._advance()
-
-        # Join pattern once at the end - O(n) operation
-        value = "".join(value_chars)
-
-        # Store the pattern and modifiers together but in a way we can parse
-        # Use a special marker that won't appear in regex patterns
-        if modifiers:
-            # Use null byte as separator since it's not valid in regex patterns
-            return Token(
-                TokenType.REGEX,
-                value + "\x00" + modifiers,
-                start_line,
-                start_column,
-            )
-        return Token(TokenType.REGEX, value, start_line, start_column)
+        """Read regular expression."""
+        return read_regex(self)
 
     def _read_number(self) -> Token:
         """Read number (integer or double)."""
-        start_line = self.line
-        start_column = self.column
-        value = ""
-
-        # Handle hex numbers
-        if self._current_char() == "0" and self._peek_char() in "xX":
-            value += self._current_char()
-            self._advance()
-            value += self._current_char()
-            self._advance()
-
-            while self._current_char() and self._current_char() in "0123456789abcdefABCDEF":
-                value += self._current_char()
-                self._advance()
-
-            return Token(TokenType.INTEGER, int(value, 16), start_line, start_column)
-
-        # Read integer part
-        while self._current_char() and self._current_char().isdigit():
-            value += self._current_char()
-            self._advance()
-
-        # Check for decimal point
-        if self._current_char() == "." and self._peek_char() and self._peek_char().isdigit():
-            value += self._current_char()
-            self._advance()
-
-            while self._current_char() and self._current_char().isdigit():
-                value += self._current_char()
-                self._advance()
-
-            return Token(TokenType.DOUBLE, float(value), start_line, start_column)
-
-        # Handle size suffixes (KB, MB)
-        if self._current_char() and self._current_char().upper() in "KM":
-            suffix = self._current_char().upper()
-            self._advance()
-            if self._current_char() and self._current_char().upper() == "B":
-                self._advance()
-                multiplier = 1024 if suffix == "K" else 1024 * 1024
-                return Token(
-                    TokenType.INTEGER,
-                    int(value) * multiplier,
-                    start_line,
-                    start_column,
-                )
-
-        return Token(TokenType.INTEGER, int(value), start_line, start_column)
+        return read_number(self)
 
     def _read_identifier(self) -> Token:
         """Read identifier or keyword."""
-        start_line = self.line
-        start_column = self.column
-        value = ""
-
-        while self._current_char() and (
-            self._current_char().isalnum() or self._current_char() == "_"
-        ):
-            value += self._current_char()
-            self._advance()
-
-        token_type = self.KEYWORDS.get(value.lower(), TokenType.IDENTIFIER)
-        return Token(token_type, value, start_line, start_column)
+        return read_identifier(self)
 
     def _read_string_identifier(self) -> Token:
         """Read string identifier ($name) or wildcard pattern ($name*)."""
-        start_line = self.line
-        start_column = self.column
-
-        self._advance()  # skip $
-
-        if self._current_char() == "*":
-            self._advance()
-            return Token(TokenType.STRING_IDENTIFIER, "$*", start_line, start_column)
-
-        value = "$"
-        while self._current_char() and (
-            self._current_char().isalnum() or self._current_char() == "_"
-        ):
-            value += self._current_char()
-            self._advance()
-
-        if self._current_char() == "*":
-            value += "*"
-            self._advance()
-
-        return Token(TokenType.STRING_IDENTIFIER, value, start_line, start_column)
+        return read_string_identifier(self)
 
     def _read_string_count(self) -> Token:
         """Read string count (#name)."""
-        start_line = self.line
-        start_column = self.column
-
-        self._advance()  # skip #
-        value = "#"
-
-        while self._current_char() and (
-            self._current_char().isalnum() or self._current_char() == "_"
-        ):
-            value += self._current_char()
-            self._advance()
-
-        return Token(TokenType.STRING_COUNT, value, start_line, start_column)
+        return read_string_count(self)
 
     def _read_string_offset(self) -> Token:
         """Read string offset (@name)."""
-        start_line = self.line
-        start_column = self.column
-
-        self._advance()  # skip @
-        value = "@"
-
-        while self._current_char() and (
-            self._current_char().isalnum() or self._current_char() == "_"
-        ):
-            value += self._current_char()
-            self._advance()
-
-        return Token(TokenType.STRING_OFFSET, value, start_line, start_column)
+        return read_string_offset(self)
 
     def _read_string_length(self) -> Token:
         """Read string length (!name)."""
-        start_line = self.line
-        start_column = self.column
-
-        self._advance()  # skip !
-        value = "!"
-
-        while self._current_char() and (
-            self._current_char().isalnum() or self._current_char() == "_"
-        ):
-            value += self._current_char()
-            self._advance()
-
-        return Token(TokenType.STRING_LENGTH, value, start_line, start_column)
+        return read_string_length(self)
 
     def _get_two_char_operator(self, chars: str) -> TokenType | None:
         """Get token type for two-character operators."""
-        operators = {
-            "==": TokenType.EQ,
-            "!=": TokenType.NEQ,
-            "<=": TokenType.LE,
-            ">=": TokenType.GE,
-            "<<": TokenType.SHIFT_LEFT,
-            ">>": TokenType.SHIFT_RIGHT,
-            "..": TokenType.DOUBLE_DOT,
-        }
-        return operators.get(chars)
+        return get_two_char_operator(chars)
 
     def _get_single_char_token(self, char: str) -> TokenType | None:
         """Get token type for single-character tokens."""
-        tokens = {
-            "=": TokenType.ASSIGN,
-            "+": TokenType.PLUS,
-            "-": TokenType.MINUS,
-            "*": TokenType.MULTIPLY,
-            "/": TokenType.DIVIDE,
-            "%": TokenType.MODULO,
-            "^": TokenType.XOR,
-            "&": TokenType.BITWISE_AND,
-            "|": TokenType.BITWISE_OR,
-            "~": TokenType.BITWISE_NOT,
-            "<": TokenType.LT,
-            ">": TokenType.GT,
-            ".": TokenType.DOT,
-            "(": TokenType.LPAREN,
-            ")": TokenType.RPAREN,
-            "{": TokenType.LBRACE,
-            "}": TokenType.RBRACE,
-            "[": TokenType.LBRACKET,
-            "]": TokenType.RBRACKET,
-            ",": TokenType.COMMA,
-            ":": TokenType.COLON,
-            ";": TokenType.SEMICOLON,
-        }
-        return tokens.get(char)
+        return get_single_char_token(char)
 
     def _is_line_continuation(self) -> bool:
         """Check if backslash is a line continuation.
@@ -656,72 +201,12 @@ class Lexer:
             pos += 1
 
         # Check if we have a newline
-        if pos < len(self.text) and self.text[pos] in "\r\n":
-            return True
-
-        return False
+        return bool(pos < len(self.text) and self.text[pos] in "\r\n")
 
     def _is_regex_context(self) -> bool:
         """Check if we're in a regex context."""
-        # Simple heuristic: check if previous non-whitespace token suggests regex
-        # This is a simplified version - a full implementation would track parser state
-
-        # Check if we're at the start of a condition or after certain tokens
-        if not self.tokens:
-            return True  # Could be regex at start
-
-        # Look at previous significant tokens
-        i = len(self.tokens) - 1
-        while i >= 0:
-            token = self.tokens[i]
-
-            # These tokens often precede regex
-            if token.type in (
-                TokenType.MATCHES,
-                TokenType.CONTAINS,
-                TokenType.ASSIGN,
-                TokenType.COLON,
-                TokenType.LPAREN,
-                TokenType.COMMA,
-                TokenType.AND,
-                TokenType.OR,
-                TokenType.NOT,
-            ):
-                return True
-
-            # If we see CONDITION, we're likely in a condition context where regex is common
-            if token.type == TokenType.CONDITION:
-                return True
-
-            if token.type not in (TokenType.NEWLINE, TokenType.COMMENT):
-                # Check if previous token could end an expression that would be followed by regex
-                if token.type in (TokenType.RPAREN, TokenType.RBRACKET):
-                    return False  # Probably division after closing paren/bracket
-                break
-
-            i -= 1
-
-        # Default to true for regex since it's more common in YARA than division
-        return True
+        return is_regex_context(self)
 
     def _is_hex_string_context(self) -> bool:
         """Check if we're in a hex string context (inside strings section)."""
-        # Look for pattern: string_id = <here>
-        # Check if we have: IDENTIFIER ASSIGN pattern
-        if len(self.tokens) >= 2:
-            # Check last two non-comment tokens
-            non_comment_tokens = []
-            for token in reversed(self.tokens):
-                if token.type != TokenType.COMMENT:
-                    non_comment_tokens.append(token)
-                    if len(non_comment_tokens) >= 2:
-                        break
-
-            if (
-                len(non_comment_tokens) >= 2
-                and non_comment_tokens[0].type == TokenType.ASSIGN
-                and non_comment_tokens[1].type == TokenType.STRING_IDENTIFIER
-            ):
-                return True
-
-        return False
+        return is_hex_string_context(self)

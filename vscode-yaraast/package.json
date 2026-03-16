@@ -4,6 +4,7 @@
   "description": "Language support for YARA rules with AST-powered features",
   "version": "0.1.0",
   "publisher": "seifreed",
+  "icon": "icons/yaraast.png",
   "author": {
     "name": "Marc Rivero",
     "email": "mriverolopez@gmail.com"
@@ -12,14 +13,22 @@
     "type": "git",
     "url": "https://github.com/seifreed/yaraast"
   },
+  "homepage": "https://github.com/seifreed/yaraast/tree/main/vscode-yaraast",
+  "bugs": {
+    "url": "https://github.com/seifreed/yaraast/issues"
+  },
   "license": "MIT",
+  "galleryBanner": {
+    "color": "#1f3a5f",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
   "categories": [
     "Programming Languages",
-    "Linters",
-    "Formatters"
+    "Formatters",
+    "Other"
   ],
   "keywords": [
     "yara",
@@ -71,6 +80,27 @@
           "default": "python",
           "description": "Path to Python interpreter (must have yaraast[lsp] installed)"
         },
+        "yaraast.lsp.serverModule": {
+          "type": "string",
+          "default": "yaraast",
+          "description": "Python module used to start the YARAAST language server"
+        },
+        "yaraast.lsp.dialectMode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "yara",
+            "yaral",
+            "yarax"
+          ],
+          "default": "auto",
+          "description": "Force a dialect mode for the language server or let it auto-detect"
+        },
+        "yaraast.lsp.cacheWorkspace": {
+          "type": "boolean",
+          "default": true,
+          "description": "Keep a cached workspace index for cross-file navigation"
+        },
         "yaraast.lsp.trace.server": {
           "type": "string",
           "enum": [
@@ -92,6 +122,32 @@
           "default": "default",
           "description": "Code formatting style"
         },
+        "yaraast.formatting.indentSize": {
+          "type": "number",
+          "default": 4,
+          "minimum": 1,
+          "description": "Indent size passed to the language server formatter"
+        },
+        "yaraast.formatting.braceStyle": {
+          "type": "string",
+          "enum": [
+            "same_line",
+            "new_line",
+            "k_and_r"
+          ],
+          "default": "same_line",
+          "description": "Brace placement style passed to the language server formatter"
+        },
+        "yaraast.formatting.sortMeta": {
+          "type": "boolean",
+          "default": false,
+          "description": "Sort meta entries during formatting"
+        },
+        "yaraast.formatting.sortStrings": {
+          "type": "boolean",
+          "default": false,
+          "description": "Sort strings during formatting"
+        },
         "yaraast.diagnostics.enabled": {
           "type": "boolean",
           "default": true,
@@ -99,6 +155,19 @@
         }
       }
     },
+    "configurationDefaults": {
+      "[yara]": {
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true,
+        "editor.formatOnSave": true
+      }
+    },
+    "snippets": [
+      {
+        "language": "yara",
+        "path": "./snippets/yara.code-snippets"
+      }
+    ],
     "commands": [
       {
         "command": "yaraast.restartServer",
@@ -107,6 +176,46 @@
       {
         "command": "yaraast.showOutputChannel",
         "title": "YARAAST: Show Output Channel"
+      },
+      {
+        "command": "yaraast.showServerInfo",
+        "title": "YARAAST: Show Server Configuration"
+      },
+      {
+        "command": "yaraast.selectDialectMode",
+        "title": "YARAAST: Select Dialect Mode"
+      },
+      {
+        "command": "yaraast.toggleServer",
+        "title": "YARAAST: Toggle Language Server"
+      },
+      {
+        "command": "yaraast.showServerStatus",
+        "title": "YARAAST: Show Server Status"
+      },
+      {
+        "command": "yaraast.copyServerStatus",
+        "title": "YARAAST: Copy Server Status"
+      },
+      {
+        "command": "yaraast.showRuntimeMetrics",
+        "title": "YARAAST: Show Runtime Metrics"
+      },
+      {
+        "command": "yaraast.openRuntimeDashboard",
+        "title": "YARAAST: Open Runtime Dashboard"
+      },
+      {
+        "command": "yaraast.previewRefactors",
+        "title": "YARAAST: Preview Refactors"
+      },
+      {
+        "command": "yaraast.diagnoseServer",
+        "title": "YARAAST: Diagnose Server Environment"
+      },
+      {
+        "command": "yaraast.openSettings",
+        "title": "YARAAST: Open Extension Settings"
       }
     ]
   },
@@ -115,7 +224,8 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
-    "package": "vsce package"
+    "package": "vsce package",
+    "verify:vsix": "python3 scripts/verify_vsix.py"
   },
   "devDependencies": {
     "@types/node": "^18.x",

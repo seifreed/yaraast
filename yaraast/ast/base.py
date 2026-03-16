@@ -8,10 +8,9 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from yaraast.ast.comments import Comment
-    from yaraast.ast.extern import ExternRule
-    from yaraast.ast.imports import ExternImport, ExternNamespace, Import, Include
+    from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
     from yaraast.ast.pragmas import Pragma, PragmaType
-    from yaraast.ast.rules import Rule
+    from yaraast.ast.rules import Import, Include, Rule
 
 
 @dataclass
@@ -21,6 +20,8 @@ class Location:
     line: int
     column: int
     file: str | None = None
+    end_line: int | None = None
+    end_column: int | None = None
 
 
 @dataclass
@@ -39,13 +40,15 @@ class ASTNode(ABC):
     def accept(self, visitor: Any) -> Any:
         """Accept a visitor for the visitor pattern."""
 
+    _METADATA_FIELDS = frozenset({"location", "leading_comments", "trailing_comment"})
+
     def children(self) -> list[ASTNode]:
-        """Return child nodes."""
+        """Return semantic child nodes (excludes metadata like location and comments)."""
         from dataclasses import fields
 
         children = []
         for f in fields(self):
-            if f.name == "location":
+            if f.name in self._METADATA_FIELDS:
                 continue
             value = getattr(self, f.name)
             if isinstance(value, ASTNode):

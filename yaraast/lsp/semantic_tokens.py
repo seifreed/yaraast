@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import time
 
-from lsprotocol.types import SemanticTokens, SemanticTokensLegend, SemanticTokensParams
+from lsprotocol.types import Range, SemanticTokens, SemanticTokensLegend
 
-from yaraast.lexer import Lexer, TokenType
-
-if TYPE_CHECKING:
-    pass
-
+from yaraast.lexer.lexer import Lexer
+from yaraast.lexer.tokens import TokenType
+from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.semantic_tokens_helpers import encode_tokens as helper_encode_tokens
+from yaraast.lsp.semantic_tokens_helpers import (
+    encode_tokens_in_range as helper_encode_tokens_in_range,
+)
+from yaraast.lsp.semantic_tokens_helpers import map_token_type as helper_map_token_type
 
 # Define semantic token types and modifiers according to LSP spec
 TOKEN_TYPES = [
@@ -56,6 +59,9 @@ TOKEN_MODIFIERS = [
 class SemanticTokensProvider:
     """Provides semantic tokens for advanced syntax highlighting."""
 
+    def __init__(self, runtime: LspRuntime | None = None) -> None:
+        self.runtime = runtime
+
     @staticmethod
     def get_legend() -> SemanticTokensLegend:
         """Get the semantic tokens legend."""
@@ -64,7 +70,7 @@ class SemanticTokensProvider:
             token_modifiers=TOKEN_MODIFIERS,
         )
 
-    def get_semantic_tokens(self, text: str) -> SemanticTokens:
+    def get_semantic_tokens(self, text: str, uri: str | None = None) -> SemanticTokens:
         """
         Get semantic tokens for the document.
 
@@ -74,123 +80,69 @@ class SemanticTokensProvider:
         Returns:
             SemanticTokens with token information
         """
+        ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
+        if ctx is not None:
+            cached = ctx.get_cached("semantic_tokens:full")
+            if cached is not None:
+                return cached
+
         tokens_data = []
+        started = time.perf_counter()
 
         try:
             lexer = Lexer(text)
             tokens = lexer.tokenize()
-
-            prev_line = 0
-            prev_char = 0
-
-            for token in tokens:
-                if token.type == TokenType.EOF:
-                    break
-
-                token_type = self._map_token_type(token.type)
-                if token_type is None:
-                    continue
-
-                # Calculate delta encoding
-                delta_line = token.line - 1 - prev_line  # Convert to 0-based
-                delta_char = token.column if delta_line > 0 else token.column - prev_char
-
-                # Length of token
-                length = len(str(token.value))
-
-                # Token type index
-                token_type_idx = TOKEN_TYPES.index(token_type)
-
-                # Token modifiers (bitmask)
-                modifiers = 0
-
-                # Append: [deltaLine, deltaChar, length, tokenType, tokenModifiers]
-                tokens_data.extend(
-                    [
-                        delta_line,
-                        delta_char,
-                        length,
-                        token_type_idx,
-                        modifiers,
-                    ]
-                )
-
-                prev_line = token.line - 1
-                prev_char = token.column
+            tokens_data = helper_encode_tokens(tokens, self._map_token_type, TOKEN_TYPES)
 
         except Exception:
             # If tokenization fails, return empty tokens
             pass
 
-        return SemanticTokens(data=tokens_data)
+        result = SemanticTokens(data=tokens_data)
+        if ctx is not None:
+            ctx.set_cached("semantic_tokens:full", result)
+        if self.runtime is not None:
+            self.runtime.record_latency(
+                "semantic_tokens_full", (time.perf_counter() - started) * 1000.0
+            )
+        return result
+
+    def get_semantic_tokens_range(
+        self, text: str, range_: Range, uri: str | None = None
+    ) -> SemanticTokens:
+        """Get semantic tokens for a specific range."""
+        ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
+        cache_key = None
+        if ctx is not None:
+            cache_key = (
+                f"semantic_tokens:range:{range_.start.line}:{range_.start.character}:"
+                f"{range_.end.line}:{range_.end.character}"
+            )
+            cached = ctx.get_cached(cache_key)
+            if cached is not None:
+                return cached
+
+        tokens_data = []
+        started = time.perf_counter()
+
+        try:
+            lexer = Lexer(text)
+            tokens = lexer.tokenize()
+            tokens_data = helper_encode_tokens_in_range(
+                tokens, range_, self._map_token_type, TOKEN_TYPES
+            )
+
+        except Exception:
+            pass
+
+        result = SemanticTokens(data=tokens_data)
+        if ctx is not None and cache_key is not None:
+            ctx.set_cached(cache_key, result)
+        if self.runtime is not None:
+            self.runtime.record_latency(
+                "semantic_tokens_range", (time.perf_counter() - started) * 1000.0
+            )
+        return result
 
     def _map_token_type(self, token_type: TokenType) -> str | None:
-        """Map YARA token type to LSP semantic token type."""
-        mapping = {
-            # Keywords
-            TokenType.RULE: "keyword",
-            TokenType.PRIVATE: "keyword",
-            TokenType.GLOBAL: "keyword",
-            TokenType.META: "keyword",
-            TokenType.STRINGS: "keyword",
-            TokenType.CONDITION: "keyword",
-            TokenType.IMPORT: "keyword",
-            TokenType.INCLUDE: "keyword",
-            TokenType.AND: "keyword",
-            TokenType.OR: "keyword",
-            TokenType.NOT: "keyword",
-            TokenType.ALL: "keyword",
-            TokenType.ANY: "keyword",
-            TokenType.OF: "keyword",
-            TokenType.THEM: "keyword",
-            TokenType.FOR: "keyword",
-            TokenType.IN: "keyword",
-            TokenType.AT: "keyword",
-            TokenType.FILESIZE: "keyword",
-            TokenType.ENTRYPOINT: "keyword",
-            TokenType.DEFINED: "keyword",
-            # Literals
-            TokenType.STRING: "string",
-            TokenType.INTEGER: "number",
-            TokenType.DOUBLE: "number",
-            TokenType.REGEX: "regexp",
-            TokenType.HEX_STRING: "string",
-            TokenType.BOOLEAN_TRUE: "keyword",
-            TokenType.BOOLEAN_FALSE: "keyword",
-            # Identifiers
-            TokenType.IDENTIFIER: "variable",
-            TokenType.STRING_IDENTIFIER: "variable",
-            TokenType.STRING_COUNT: "variable",
-            TokenType.STRING_OFFSET: "variable",
-            TokenType.STRING_LENGTH: "variable",
-            # Operators
-            TokenType.EQ: "operator",
-            TokenType.NEQ: "operator",
-            TokenType.LT: "operator",
-            TokenType.LE: "operator",
-            TokenType.GT: "operator",
-            TokenType.GE: "operator",
-            TokenType.PLUS: "operator",
-            TokenType.MINUS: "operator",
-            TokenType.MULTIPLY: "operator",
-            TokenType.DIVIDE: "operator",
-            TokenType.MODULO: "operator",
-            TokenType.BITWISE_AND: "operator",
-            TokenType.BITWISE_OR: "operator",
-            TokenType.BITWISE_NOT: "operator",
-            TokenType.XOR: "operator",
-            TokenType.SHIFT_LEFT: "operator",
-            TokenType.SHIFT_RIGHT: "operator",
-            # Comments
-            TokenType.COMMENT: "comment",
-            # String modifiers
-            TokenType.NOCASE: "property",
-            TokenType.WIDE: "property",
-            TokenType.ASCII: "property",
-            TokenType.XOR_MOD: "property",
-            TokenType.BASE64: "property",
-            TokenType.BASE64WIDE: "property",
-            TokenType.FULLWORD: "property",
-        }
-
-        return mapping.get(token_type)
+        return helper_map_token_type(token_type)

@@ -167,6 +167,11 @@ class CommentPreservingLexer(Lexer):
             comment_text += self._current_char()
             self._advance()
 
+        # Preserve the trailing character for unterminated block comments.
+        if self.position == len(self.text) - 1 and self._current_char() is not None:
+            comment_text += self._current_char()
+            self._advance()
+
         return Token(
             TokenType.COMMENT,
             comment_text,

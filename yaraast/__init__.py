@@ -8,6 +8,7 @@ from yaraast.builder import (
     YaraFileBuilder,
 )
 from yaraast.codegen import CodeGenerator
+from yaraast.interfaces import ILexer
 from yaraast.lexer import Lexer
 from yaraast.parser import Parser
 from yaraast.version import (
@@ -34,6 +35,7 @@ __all__ = [
     "ConditionBuilder",
     "ExpressionBuilder",
     "HexStringBuilder",
+    "ILexer",
     "Lexer",
     "Parser",
     "RuleBuilder",

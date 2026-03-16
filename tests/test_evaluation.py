@@ -36,7 +36,8 @@ class TestStringMatcher:
 
     def test_nocase_modifier(self) -> None:
         """Test case-insensitive matching."""
-        from yaraast.ast.strings import PlainString, StringModifier
+        from yaraast.ast.modifiers import StringModifier
+        from yaraast.ast.strings import PlainString
 
         matcher = StringMatcher()
         data = b"HELLO world"
@@ -50,14 +51,15 @@ class TestStringMatcher:
         string2 = PlainString(
             identifier="$b",
             value="hello",
-            modifiers=[StringModifier(name="nocase")],
+            modifiers=[StringModifier.from_name_value("nocase")],
         )
         matches = matcher.match_all(data, [string2])
         assert len(matches["$b"]) == 1
 
     def test_wide_modifier(self) -> None:
         """Test wide string matching."""
-        from yaraast.ast.strings import PlainString, StringModifier
+        from yaraast.ast.modifiers import StringModifier
+        from yaraast.ast.strings import PlainString
 
         matcher = StringMatcher()
         # UTF-16LE encoded "Hello"
@@ -66,7 +68,7 @@ class TestStringMatcher:
         string = PlainString(
             identifier="$a",
             value="Hello",
-            modifiers=[StringModifier(name="wide")],
+            modifiers=[StringModifier.from_name_value("wide")],
         )
         matches = matcher.match_all(data, [string])
         assert len(matches["$a"]) == 1

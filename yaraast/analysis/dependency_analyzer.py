@@ -1,56 +1,19 @@
 """Dependency analyzer for YARA rules."""
 
-# type: ignore  # Analysis code allows gradual typing
+from __future__ import annotations
 
 from collections import defaultdict
+from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import (
-    AtExpression,
-    ForExpression,
-    ForOfExpression,
-    InExpression,
-    OfExpression,
-)
-from yaraast.ast.expressions import (
-    ArrayAccess,
-    BinaryExpression,
-    BooleanLiteral,
-    DoubleLiteral,
-    Expression,
-    FunctionCall,
-    Identifier,
-    IntegerLiteral,
-    MemberAccess,
-    ParenthesesExpression,
-    RangeExpression,
-    SetExpression,
-    StringCount,
-    StringIdentifier,
-    StringLength,
-    StringLiteral,
-    StringOffset,
-    UnaryExpression,
-)
-from yaraast.ast.meta import Meta
-from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import (
-    HexAlternative,
-    HexByte,
-    HexJump,
-    HexNibble,
-    HexString,
-    HexToken,
-    HexWildcard,
-    PlainString,
-    RegexString,
-    StringDefinition,
-    StringModifier,
-)
-from yaraast.visitor import ASTVisitor
+from yaraast.visitor.base import BaseVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.ast.expressions import FunctionCall, Identifier
+    from yaraast.ast.rules import Import, Include, Rule
 
 
-class DependencyAnalyzer(ASTVisitor[None]):
+class DependencyAnalyzer(BaseVisitor[None]):
     """Analyze dependencies between YARA rules."""
 
     def __init__(self) -> None:
@@ -62,12 +25,13 @@ class DependencyAnalyzer(ASTVisitor[None]):
         self.imported_modules: set[str] = set()
         self.included_files: set[str] = set()
 
-    def analyze(self, yara_file: YaraFile) -> dict[str, any]:
+    def analyze(self, yara_file: YaraFile) -> dict[str, Any]:
         """Analyze dependencies in YARA file."""
         self.rule_names.clear()
         self.dependencies.clear()
         self.imported_modules.clear()
         self.included_files.clear()
+        self.current_rule = None
 
         # First pass: collect all rule names
         for rule in yara_file.rules:
@@ -152,7 +116,7 @@ class DependencyAnalyzer(ASTVisitor[None]):
 
         return self._remove_duplicate_cycles(cycles)
 
-    def _init_dfs_state(self) -> dict:
+    def _init_dfs_state(self) -> dict[str, Any]:
         """Initialize DFS state for cycle detection."""
         white, gray, black = 0, 1, 2
         return {
@@ -163,7 +127,9 @@ class DependencyAnalyzer(ASTVisitor[None]):
             "path": [],
         }
 
-    def _dfs_cycle_detection(self, node: str, state: dict, cycles: list[list[str]]) -> None:
+    def _dfs_cycle_detection(
+        self, node: str, state: dict[str, Any], cycles: list[list[str]]
+    ) -> None:
         """Perform DFS for cycle detection."""
         state["color"][node] = state["gray"]
         state["path"].append(node)
@@ -171,9 +137,9 @@ class DependencyAnalyzer(ASTVisitor[None]):
         for neighbor in self.dependencies.get(node, set()):
             if neighbor in self.rule_names:  # Only check internal rules
                 if state["color"][neighbor] == state["gray"]:
-                    # Found cycle
+                    # Found cycle - include the back-edge to close it
                     cycle_start = state["path"].index(neighbor)
-                    cycles.append(state["path"][cycle_start:])
+                    cycles.append([*state["path"][cycle_start:], neighbor])
                 elif state["color"][neighbor] == state["white"]:
                     self._dfs_cycle_detection(neighbor, state, cycles)
 
@@ -184,7 +150,13 @@ class DependencyAnalyzer(ASTVisitor[None]):
         """Remove duplicate cycles from the list."""
         unique_cycles = []
         for cycle in cycles:
-            normalized = min(cycle[i:] + cycle[:i] for i in range(len(cycle)))
+            # Normalize by rotating the cycle body (excluding closing back-edge)
+            body = cycle[:-1] if len(cycle) > 1 and cycle[0] == cycle[-1] else cycle
+            if body:
+                normalized_body = min(body[i:] + body[:i] for i in range(len(body)))
+                normalized = [*normalized_body, normalized_body[0]]  # Re-add closing edge
+            else:
+                normalized = cycle
             if normalized not in unique_cycles:
                 unique_cycles.append(normalized)
 
@@ -219,17 +191,7 @@ class DependencyAnalyzer(ASTVisitor[None]):
 
         return result if len(result) == len(self.rule_names) else None
 
-    # Visitor methods
-    def visit_yara_file(self, node: YaraFile) -> None:
-        for imp in node.imports:
-            self.visit(imp)
-
-        for inc in node.includes:
-            self.visit(inc)
-
-        for rule in node.rules:
-            self.visit(rule)
-
+    # Visitor methods with actual logic
     def visit_import(self, node: Import) -> None:
         self.imported_modules.add(node.module)
 
@@ -240,7 +202,8 @@ class DependencyAnalyzer(ASTVisitor[None]):
         self.current_rule = node.name
 
         # Check condition for rule references
-        self.visit(node.condition)
+        if node.condition:
+            self.visit(node.condition)
 
         self.current_rule = None
 
@@ -254,171 +217,5 @@ class DependencyAnalyzer(ASTVisitor[None]):
         if node.function in self.rule_names and self.current_rule:
             self.dependencies[self.current_rule].add(node.function)
 
-        # Visit arguments
-        for arg in node.arguments:
-            self.visit(arg)
-
-    # Pass-through visitor methods
-    def visit_binary_expression(self, node: BinaryExpression) -> None:
-        self.visit(node.left)
-        self.visit(node.right)
-
-    def visit_unary_expression(self, node: UnaryExpression) -> None:
-        self.visit(node.operand)
-
-    def visit_parentheses_expression(self, node: ParenthesesExpression) -> None:
-        self.visit(node.expression)
-
-    def visit_for_expression(self, node: ForExpression) -> None:
-        self.visit(node.iterable)
-        self.visit(node.body)
-
-    def visit_for_of_expression(self, node: ForOfExpression) -> None:
-        self.visit(node.string_set)
-        if node.condition:
-            self.visit(node.condition)
-
-    def visit_set_expression(self, node: SetExpression) -> None:
-        for element in node.elements:
-            self.visit(element)
-
-    def visit_range_expression(self, node: RangeExpression) -> None:
-        self.visit(node.low)
-        self.visit(node.high)
-
-    def visit_array_access(self, node: ArrayAccess) -> None:
-        self.visit(node.array)
-        self.visit(node.index)
-
-    def visit_member_access(self, node: MemberAccess) -> None:
-        self.visit(node.object)
-
-    def visit_at_expression(self, node: AtExpression) -> None:
-        self.visit(node.offset)
-
-    def visit_in_expression(self, node: InExpression) -> None:
-        self.visit(node.range)
-
-    def visit_of_expression(self, node: OfExpression) -> None:
-        self.visit(node.quantifier)
-        self.visit(node.string_set)
-
-    # No-op visitor methods
-    def visit_tag(self, node: Tag) -> None:
-        """Visit tag node - tags don't create dependencies."""
-
-    def visit_string_definition(self, node: StringDefinition) -> None:
-        """Visit string definition node - string definitions don't create dependencies."""
-
-    def visit_plain_string(self, node: PlainString) -> None:
-        """Visit plain string node - plain strings don't create dependencies."""
-
-    def visit_hex_string(self, node: HexString) -> None:
-        """Visit hex string node - hex strings don't create dependencies."""
-
-    def visit_regex_string(self, node: RegexString) -> None:
-        """Visit regex string node - regex strings don't create dependencies."""
-
-    def visit_string_modifier(self, node: StringModifier) -> None:
-        """Visit string modifier node - modifiers don't create dependencies."""
-
-    def visit_hex_token(self, node: HexToken) -> None:
-        """Visit hex token node - hex tokens don't create dependencies."""
-
-    def visit_hex_byte(self, node: HexByte) -> None:
-        """Visit hex byte node - hex bytes don't create dependencies."""
-
-    def visit_hex_wildcard(self, node: HexWildcard) -> None:
-        """Visit hex wildcard node - wildcards don't create dependencies."""
-
-    def visit_hex_jump(self, node: HexJump) -> None:
-        """Visit hex jump node - jumps don't create dependencies."""
-
-    def visit_hex_alternative(self, node: HexAlternative) -> None:
-        """Visit hex alternative node - alternatives don't create dependencies."""
-
-    def visit_hex_nibble(self, node: HexNibble) -> None:
-        """Visit hex nibble node - nibbles don't create dependencies."""
-
-    def visit_expression(self, node: Expression) -> None:
-        """Visit expression node - handled by specific expression type visitors."""
-
-    def visit_string_identifier(self, node: StringIdentifier) -> None:
-        """Visit string identifier node - string identifiers don't create rule dependencies."""
-
-    def visit_string_wildcard(self, node: StringIdentifier) -> None:
-        """Visit StringWildcard node."""
-        pass
-
-    def visit_string_count(self, node: StringCount) -> None:
-        """Visit string count node - string counts don't create dependencies."""
-
-    def visit_string_offset(self, node: StringOffset) -> None:
-        """Visit string offset node - string offsets don't create dependencies."""
-
-    def visit_string_length(self, node: StringLength) -> None:
-        """Visit string length node - string lengths don't create dependencies."""
-
-    def visit_integer_literal(self, node: IntegerLiteral) -> None:
-        """Visit integer literal node - integer literals don't create dependencies."""
-
-    def visit_double_literal(self, node: DoubleLiteral) -> None:
-        """Visit double literal node - double literals don't create dependencies."""
-
-    def visit_string_literal(self, node: StringLiteral) -> None:
-        """Visit string literal node - string literals don't create dependencies."""
-
-    def visit_boolean_literal(self, node: BooleanLiteral) -> None:
-        """Visit boolean literal node - boolean literals don't create dependencies."""
-
-    def visit_meta(self, node: Meta) -> None:
-        """Visit meta node - meta fields don't create dependencies."""
-
-    def visit_meta_statement(self, node) -> None:
-        """Visit meta statement node - meta statements don't create dependencies."""
-
-    def visit_condition(self, node) -> None:
-        """Visit condition node - handled by specific condition visitors."""
-
-    def visit_comment(self, node) -> None:
-        """Visit comment node - comments don't create dependencies."""
-
-    def visit_comment_group(self, node) -> None:
-        """Visit comment group node - comment groups don't create dependencies."""
-
-    def visit_module_reference(self, node) -> None:
-        """Visit module reference node - module references are handled by imports."""
-
-    def visit_dictionary_access(self, node) -> None:
-        """Visit dictionary access node - dictionary access doesn't create rule dependencies."""
-
-    def visit_defined_expression(self, node) -> None:
-        """Visit defined expression node - defined expressions don't create rule dependencies."""
-
-    def visit_string_operator_expression(self, node) -> None:
-        """Visit string operator expression node - string operators don't create rule dependencies."""
-
-    # Add missing abstract methods
-    def visit_extern_import(self, node) -> None:
-        """Visit extern import node - extern imports don't create rule dependencies."""
-
-    def visit_extern_namespace(self, node) -> None:
-        """Visit extern namespace node - extern namespaces don't create rule dependencies."""
-
-    def visit_extern_rule(self, node) -> None:
-        """Visit extern rule node - extern rules are handled separately from internal rules."""
-
-    def visit_extern_rule_reference(self, node) -> None:
-        """Visit extern rule reference node - extern rule references are handled separately."""
-
-    def visit_in_rule_pragma(self, node) -> None:
-        """Visit in-rule pragma node - pragmas don't create dependencies."""
-
-    def visit_pragma(self, node) -> None:
-        """Visit pragma node - pragmas don't create dependencies."""
-
-    def visit_pragma_block(self, node) -> None:
-        """Visit pragma block node - pragma blocks don't create dependencies."""
-
-    def visit_regex_literal(self, node) -> None:
-        """Visit regex literal node - regex literals don't create dependencies."""
+        # Visit arguments (BaseVisitor.visit_function_call does this, but we call super)
+        super().visit_function_call(node)

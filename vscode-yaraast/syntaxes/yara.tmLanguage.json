@@ -1,0 +1,92 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "YARA",
+  "scopeName": "source.yara",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#operators"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.yara",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.yara",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.yara",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.yara",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.regex.yara",
+          "begin": "/",
+          "end": "/[is]*",
+          "patterns": [
+            {
+              "name": "constant.character.escape.yara",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.hex.yara",
+          "begin": "\\{",
+          "end": "\\}"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.yara",
+          "match": "\\b(rule|import|include|private|global|meta|strings|condition|them|for|of|all|any|none|and|or|not|true|false|entrypoint|filesize)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.yara",
+          "match": "\\b(?:0x[0-9A-Fa-f]+|\\d+)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.yara",
+          "match": "(==|!=|<=|>=|<|>|\\+|-|\\*|/|%|\\.|\\.|\\.)"
+        }
+      ]
+    }
+  }
+}

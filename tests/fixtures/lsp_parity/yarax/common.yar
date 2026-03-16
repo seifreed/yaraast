@@ -1,0 +1,1 @@
+rule helper { condition: true }

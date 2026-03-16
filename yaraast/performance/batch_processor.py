@@ -3,34 +3,24 @@
 from __future__ import annotations
 
 import tempfile
-import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from yaraast.analysis.rule_analyzer import RuleAnalyzer
-from yaraast.parser import Parser
-from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.performance.batch_processor_ops import (
+    analyze_complexity,
+    parse_item,
+    process_files_single,
+)
+from yaraast.performance.batch_processor_ops import process_large_file as process_large_file_ops
+from yaraast.performance.batch_processor_ops import serialize_item, validate_item
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
-
-
-class HtmlTreeGenerator:
-    """Generates HTML tree visualizations of YARA ASTs."""
-
-    def generate(self, ast: YaraFile) -> str:
-        """Generate HTML tree from AST."""
-        # Simple HTML generation
-        html = "<html><body><h1>YARA AST</h1>"
-        for rule in ast.rules:
-            html += f"<div class='rule'><h2>{rule.name}</h2></div>"
-        html += "</body></html>"
-        return html
 
 
 class BatchOperation(Enum):
@@ -118,7 +108,7 @@ class BatchProcessor:
                         result = self._process_item(item, operation)
                     results.append(result)
                     self._stats["items_processed"] += 1
-                except (ValueError, TypeError, AttributeError):
+                except Exception:
                     self._stats["failures"] += 1
                     results.append(None)
 
@@ -143,36 +133,16 @@ class BatchProcessor:
         return item
 
     def _parse_item(self, item: str | Path) -> YaraFile | None:
-        """Parse a YARA file."""
-        try:
-            parser = Parser()
-            if isinstance(item, Path):
-                with open(item) as f:
-                    content = f.read()
-            else:
-                content = item
-            return parser.parse(content)
-        except (ValueError, TypeError, AttributeError):
-            return None
+        return parse_item(item)
 
     def _analyze_complexity(self, item: Rule) -> dict[str, Any]:
-        """Analyze rule complexity."""
-        from yaraast.ast.base import YaraFile as YF
-
-        analyzer = RuleAnalyzer()
-        # RuleAnalyzer.analyze expects YaraFile, so wrap Rule in minimal YaraFile
-        yara_file = YF(imports=[], includes=[], rules=[item])
-        return analyzer.analyze(yara_file)
+        return analyze_complexity(item)
 
     def _serialize_item(self, item: Any) -> str:
-        """Serialize an item to JSON."""
-        serializer = JsonSerializer()
-        return serializer.serialize(item)
+        return serialize_item(item)
 
     def _validate_item(self, item: Rule) -> bool:
-        """Validate a rule."""
-        # Basic validation
-        return bool(item.name and item.condition)
+        return validate_item(item)
 
     def process_files(
         self,
@@ -198,63 +168,7 @@ class BatchProcessor:
         output_dir: Path | None = None,
     ) -> BatchResult:
         """Process multiple YARA files with a single operation."""
-        start_time = time.time()
-        result = BatchResult(
-            operation=operation,
-            input_count=len(file_paths),
-        )
-
-        if output_dir:
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-        # Process files
-        for i, file_path in enumerate(file_paths):
-            try:
-                # Parse file
-                with open(file_path) as f:
-                    content = f.read()
-
-                parsed = self._parse_item(content)
-                if not parsed:
-                    result.failed_count += 1
-                    result.errors.append(f"Failed to parse {file_path}")
-                    continue
-
-                # Perform operation
-                if operation == BatchOperation.COMPLEXITY:
-                    for rule in parsed.rules:
-                        analysis = self._analyze_complexity(rule)
-                        result.summary[rule.name] = analysis
-
-                elif operation == BatchOperation.HTML_TREE and output_dir:
-                    output_file = output_dir / f"{file_path.stem}.html"
-                    generator = HtmlTreeGenerator()
-                    html_content = generator.generate(parsed)
-                    output_file.write_text(html_content)
-                    result.output_files.append(str(output_file))
-
-                elif operation == BatchOperation.SERIALIZE and output_dir:
-                    output_file = output_dir / f"{file_path.stem}.json"
-                    json_content = self._serialize_item(parsed)
-                    output_file.write_text(json_content)
-                    result.output_files.append(str(output_file))
-
-                result.successful_count += 1
-
-            except Exception as e:
-                result.failed_count += 1
-                result.errors.append(f"Error processing {file_path}: {e!s}")
-
-            # Progress callback
-            if self.progress_callback:
-                self.progress_callback(
-                    f"Processing {operation.value}",
-                    i + 1,
-                    len(file_paths),
-                )
-
-        result.total_time = time.time() - start_time
-        return result
+        return process_files_single(self, file_paths, operation, output_dir)
 
     def process_rules(
         self,
@@ -325,63 +239,4 @@ class BatchProcessor:
         split_rules: bool = False,
     ) -> dict[BatchOperation, BatchResult]:
         """Process a large YARA file, optionally splitting rules."""
-        results = {}
-
-        try:
-            # Parse the file
-            with open(file_path) as f:
-                content = f.read()
-
-            parsed = self._parse_item(content)
-
-            # Determine input count (rules if split, otherwise files)
-            input_count = len(parsed.rules) if (parsed and split_rules) else 1
-
-            # Process each operation
-            for operation in operations:
-                result = BatchResult(
-                    operation=operation,
-                    input_count=input_count,
-                )
-
-                if not parsed:
-                    result.failed_count += 1
-                    result.errors.append(f"Failed to parse {file_path}")
-                    results[operation] = result
-                    continue
-
-                try:
-                    if operation == BatchOperation.PARSE:
-                        # Already parsed
-                        if split_rules:
-                            result.successful_count = len(parsed.rules)
-                        else:
-                            result.successful_count = 1
-                    elif operation == BatchOperation.COMPLEXITY:
-                        if split_rules:
-                            # Process each rule separately
-                            for rule in parsed.rules:
-                                analysis = self._analyze_complexity(rule)
-                                result.summary[rule.name] = analysis
-                                result.successful_count += 1
-                        else:
-                            # Process whole file
-                            for rule in parsed.rules:
-                                analysis = self._analyze_complexity(rule)
-                                result.summary[rule.name] = analysis
-                            result.successful_count = 1
-                except Exception as e:
-                    result.failed_count += 1
-                    result.errors.append(f"Error with {operation.value}: {e!s}")
-
-                results[operation] = result
-
-        except Exception as e:
-            # If parsing fails, all operations fail
-            for operation in operations:
-                result = BatchResult(operation=operation, input_count=1)
-                result.failed_count += 1
-                result.errors.append(f"Error processing {file_path}: {e!s}")
-                results[operation] = result
-
-        return results
+        return process_large_file_ops(self, file_path, operations, output_dir, split_rules)

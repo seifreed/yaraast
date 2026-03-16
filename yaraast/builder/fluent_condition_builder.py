@@ -2,24 +2,29 @@
 
 from __future__ import annotations
 
-from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
+from yaraast.ast.conditions import AtExpression, InExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
-    DoubleLiteral,
     Expression,
     FunctionCall,
     Identifier,
     IntegerLiteral,
     MemberAccess,
     RangeExpression,
-    SetExpression,
-    StringCount,
     StringIdentifier,
     StringLiteral,
     UnaryExpression,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
+from yaraast.builder.fluent_condition_helpers import (
+    build_entropy_compare,
+    build_of_expression,
+    build_string_set,
+    chain_or,
+    make_filesize_compare,
+    make_string_count_compare,
+)
 
 
 class FluentConditionBuilder(ConditionBuilder):
@@ -31,31 +36,18 @@ class FluentConditionBuilder(ConditionBuilder):
     # Enhanced quantifier methods
     def any_of_them(self) -> FluentConditionBuilder:
         """Any of them - common pattern."""
-        return FluentConditionBuilder(
-            OfExpression(
-                quantifier=StringLiteral(value="any"),
-                string_set=Identifier(name="them"),
-            ),
-        )
+        return FluentConditionBuilder(build_of_expression("any", Identifier(name="them")))
 
     def all_of_them(self) -> FluentConditionBuilder:
         """All of them - common pattern."""
-        return FluentConditionBuilder(
-            OfExpression(
-                quantifier=StringLiteral(value="all"),
-                string_set=Identifier(name="them"),
-            ),
-        )
+        return FluentConditionBuilder(build_of_expression("all", Identifier(name="them")))
 
     def not_them(self) -> FluentConditionBuilder:
         """Not any of them - negated pattern."""
         return FluentConditionBuilder(
             UnaryExpression(
                 operator="not",
-                operand=OfExpression(
-                    quantifier=StringLiteral(value="any"),
-                    string_set=Identifier(name="them"),
-                ),
+                operand=build_of_expression("any", Identifier(name="them")),
             ),
         )
 
@@ -86,31 +78,13 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def at_least_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At least N of the specified strings."""
-        # Create condition: n_of OR (n+1)_of OR ... OR all_of
-        conditions = []
-        for i in range(n, len(strings) + 1):
-            conditions.append(self._create_n_of(i, *strings))
-
-        # Chain with OR
-        result = conditions[0]
-        for cond in conditions[1:]:
-            result = BinaryExpression(left=result, operator="or", right=cond)
-
-        return FluentConditionBuilder(result)
+        conditions = [self._create_n_of(i, *strings) for i in range(n, len(strings) + 1)]
+        return FluentConditionBuilder(chain_or(conditions))
 
     def at_most_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At most N of the specified strings."""
-        # Create condition: 0_of OR 1_of OR ... OR n_of
-        conditions = []
-        for i in range(n + 1):
-            conditions.append(self._create_n_of(i, *strings))
-
-        # Chain with OR
-        result = conditions[0]
-        for cond in conditions[1:]:
-            result = BinaryExpression(left=result, operator="or", right=cond)
-
-        return FluentConditionBuilder(result)
+        conditions = [self._create_n_of(i, *strings) for i in range(n + 1)]
+        return FluentConditionBuilder(chain_or(conditions))
 
     def between_n_and_m_of(
         self,
@@ -119,16 +93,8 @@ class FluentConditionBuilder(ConditionBuilder):
         *strings: str,
     ) -> FluentConditionBuilder:
         """Between N and M of the specified strings."""
-        conditions = []
-        for i in range(min_n, max_m + 1):
-            conditions.append(self._create_n_of(i, *strings))
-
-        # Chain with OR
-        result = conditions[0]
-        for cond in conditions[1:]:
-            result = BinaryExpression(left=result, operator="or", right=cond)
-
-        return FluentConditionBuilder(result)
+        conditions = [self._create_n_of(i, *strings) for i in range(min_n, max_m + 1)]
+        return FluentConditionBuilder(chain_or(conditions))
 
     # String-specific helpers
     def string_matches(self, string_id: str) -> FluentConditionBuilder:
@@ -137,33 +103,15 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def string_count_eq(self, string_id: str, count: int) -> FluentConditionBuilder:
         """String count equals N."""
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=StringCount(string_id=string_id.lstrip("#")),
-                operator="==",
-                right=IntegerLiteral(value=count),
-            ),
-        )
+        return FluentConditionBuilder(make_string_count_compare(string_id, "==", count))
 
     def string_count_gt(self, string_id: str, count: int) -> FluentConditionBuilder:
         """String count greater than N."""
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=StringCount(string_id=string_id.lstrip("#")),
-                operator=">",
-                right=IntegerLiteral(value=count),
-            ),
-        )
+        return FluentConditionBuilder(make_string_count_compare(string_id, ">", count))
 
     def string_count_ge(self, string_id: str, count: int) -> FluentConditionBuilder:
         """String count greater than or equal to N."""
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=StringCount(string_id=string_id.lstrip("#")),
-                operator=">=",
-                right=IntegerLiteral(value=count),
-            ),
-        )
+        return FluentConditionBuilder(make_string_count_compare(string_id, ">=", count))
 
     def string_at_entrypoint(self, string_id: str) -> FluentConditionBuilder:
         """String at entrypoint."""
@@ -181,7 +129,7 @@ class FluentConditionBuilder(ConditionBuilder):
         """String in first 1KB of file."""
         return FluentConditionBuilder(
             InExpression(
-                string_id=string_id,
+                subject=string_id,
                 range=RangeExpression(
                     low=IntegerLiteral(value=0),
                     high=IntegerLiteral(value=1024),
@@ -193,7 +141,7 @@ class FluentConditionBuilder(ConditionBuilder):
         """String in last 1KB of file."""
         return FluentConditionBuilder(
             InExpression(
-                string_id=string_id,
+                subject=string_id,
                 range=RangeExpression(
                     low=BinaryExpression(
                         left=Identifier(name="filesize"),
@@ -208,49 +156,23 @@ class FluentConditionBuilder(ConditionBuilder):
     # File property helpers
     def filesize_eq(self, size: int) -> FluentConditionBuilder:
         """File size equals specific value."""
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=Identifier(name="filesize"),
-                operator="==",
-                right=IntegerLiteral(value=size),
-            ),
-        )
+        return FluentConditionBuilder(make_filesize_compare("==", size))
 
     def filesize_gt(self, size: int) -> FluentConditionBuilder:
         """File size greater than."""
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=Identifier(name="filesize"),
-                operator=">",
-                right=IntegerLiteral(value=size),
-            ),
-        )
+        return FluentConditionBuilder(make_filesize_compare(">", size))
 
     def filesize_lt(self, size: int) -> FluentConditionBuilder:
         """File size less than."""
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=Identifier(name="filesize"),
-                operator="<",
-                right=IntegerLiteral(value=size),
-            ),
-        )
+        return FluentConditionBuilder(make_filesize_compare("<", size))
 
     def filesize_between(self, min_size: int, max_size: int) -> FluentConditionBuilder:
         """File size between min and max."""
         return FluentConditionBuilder(
             BinaryExpression(
-                left=BinaryExpression(
-                    left=Identifier(name="filesize"),
-                    operator=">=",
-                    right=IntegerLiteral(value=min_size),
-                ),
+                left=make_filesize_compare(">=", min_size),
                 operator="and",
-                right=BinaryExpression(
-                    left=Identifier(name="filesize"),
-                    operator="<=",
-                    right=IntegerLiteral(value=max_size),
-                ),
+                right=make_filesize_compare("<=", max_size),
             ),
         )
 
@@ -356,19 +278,7 @@ class FluentConditionBuilder(ConditionBuilder):
         threshold: float,
     ) -> FluentConditionBuilder:
         """Entropy greater than threshold."""
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=FunctionCall(
-                    function=self.MATH_ENTROPY,
-                    arguments=[
-                        IntegerLiteral(value=offset),
-                        IntegerLiteral(value=size),
-                    ],
-                ),
-                operator=">",
-                right=DoubleLiteral(value=threshold),
-            ),
-        )
+        return FluentConditionBuilder(build_entropy_compare(">", offset, size, threshold))
 
     def high_entropy(self, offset: int = 0, size: int = 1024) -> FluentConditionBuilder:
         """High entropy section (> 7.0)."""
@@ -376,19 +286,7 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def low_entropy(self, offset: int = 0, size: int = 1024) -> FluentConditionBuilder:
         """Low entropy section (< 3.0)."""
-        return FluentConditionBuilder(
-            BinaryExpression(
-                left=FunctionCall(
-                    function=self.MATH_ENTROPY,
-                    arguments=[
-                        IntegerLiteral(value=offset),
-                        IntegerLiteral(value=size),
-                    ],
-                ),
-                operator="<",
-                right=DoubleLiteral(value=3.0),
-            ),
-        )
+        return FluentConditionBuilder(build_entropy_compare("<", offset, size, 3.0))
 
     # Composite helpers
     def executable_file(self) -> FluentConditionBuilder:
@@ -411,14 +309,7 @@ class FluentConditionBuilder(ConditionBuilder):
         """Suspicious entropy patterns."""
         return self.high_entropy().or_(
             FluentConditionBuilder(
-                BinaryExpression(
-                    left=FunctionCall(
-                        function=self.MATH_ENTROPY,
-                        arguments=[IntegerLiteral(value=0), IntegerLiteral(value=512)],
-                    ),
-                    operator=">",
-                    right=DoubleLiteral(value=7.5),
-                ),
+                build_entropy_compare(">", 0, 512, 7.5),
             ),
         )
 
@@ -440,13 +331,8 @@ class FluentConditionBuilder(ConditionBuilder):
     # Helper methods
     def _create_n_of(self, n: int, *strings: str) -> Expression:
         """Create N of strings expression."""
-        if all(s == "them" for s in strings):
-            string_set = Identifier(name="them")
-        else:
-            elements = [StringIdentifier(name=s) for s in strings]
-            string_set = SetExpression(elements=elements)
-
-        return OfExpression(quantifier=IntegerLiteral(value=n), string_set=string_set)
+        string_set = build_string_set(*strings)
+        return build_of_expression(n, string_set)
 
     # Factory methods
     @staticmethod

@@ -1,0 +1,26 @@
+# Benchmark-specific gitignore
+
+# Generated test data
+test_data/
+*.yar
+*.yara
+
+# Benchmark results
+results/
+*.json
+*.txt
+*.prof
+*.png
+*.svg
+
+# Pytest cache
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Benchmark history
+.benchmarks/
+
+# Memory profiling
+*.dat
+*.mprofile

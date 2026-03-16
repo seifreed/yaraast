@@ -142,7 +142,8 @@ rule rule_c {
     # Should detect circular dependency
     assert len(results["circular_dependencies"]) == 1
     cycle = results["circular_dependencies"][0]
-    assert len(cycle) == 3
+    assert len(cycle) == 4  # Includes closing back-edge: A→B→C→A
+    assert cycle[0] == cycle[-1]  # Cycle is properly closed
     assert set(cycle) == {"rule_a", "rule_b", "rule_c"}
 
     # Topological sort should fail

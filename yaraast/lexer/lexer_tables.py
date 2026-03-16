@@ -1,0 +1,83 @@
+"""Token tables used by the lexer."""
+
+from __future__ import annotations
+
+from yaraast.lexer.tokens import TokenType
+
+KEYWORDS = {
+    "rule": TokenType.RULE,
+    "private": TokenType.PRIVATE,
+    "global": TokenType.GLOBAL,
+    "import": TokenType.IMPORT,
+    "include": TokenType.INCLUDE,
+    "meta": TokenType.META,
+    "strings": TokenType.STRINGS,
+    "condition": TokenType.CONDITION,
+    "and": TokenType.AND,
+    "or": TokenType.OR,
+    "not": TokenType.NOT,
+    "for": TokenType.FOR,
+    "of": TokenType.OF,
+    "in": TokenType.IN,
+    "as": TokenType.AS,
+    "at": TokenType.AT,
+    "them": TokenType.THEM,
+    "any": TokenType.ANY,
+    "all": TokenType.ALL,
+    "none": TokenType.NONE,
+    "entrypoint": TokenType.ENTRYPOINT,
+    "filesize": TokenType.FILESIZE,
+    "matches": TokenType.MATCHES,
+    "contains": TokenType.CONTAINS,
+    "startswith": TokenType.STARTSWITH,
+    "endswith": TokenType.ENDSWITH,
+    "icontains": TokenType.ICONTAINS,
+    "istartswith": TokenType.ISTARTSWITH,
+    "iendswith": TokenType.IENDSWITH,
+    "iequals": TokenType.IEQUALS,
+    "defined": TokenType.DEFINED,
+    "true": TokenType.BOOLEAN_TRUE,
+    "false": TokenType.BOOLEAN_FALSE,
+    "nocase": TokenType.NOCASE,
+    "wide": TokenType.WIDE,
+    "ascii": TokenType.ASCII,
+    "xor": TokenType.XOR_MOD,
+    "base64": TokenType.BASE64,
+    "base64wide": TokenType.BASE64WIDE,
+    "fullword": TokenType.FULLWORD,
+}
+
+TWO_CHAR_OPERATORS = {
+    "==": TokenType.EQ,
+    "!=": TokenType.NEQ,
+    "<=": TokenType.LE,
+    ">=": TokenType.GE,
+    "<<": TokenType.SHIFT_LEFT,
+    ">>": TokenType.SHIFT_RIGHT,
+    "..": TokenType.DOUBLE_DOT,
+}
+
+SINGLE_CHAR_TOKENS = {
+    "=": TokenType.ASSIGN,
+    "+": TokenType.PLUS,
+    "-": TokenType.MINUS,
+    "*": TokenType.MULTIPLY,
+    "/": TokenType.DIVIDE,
+    "%": TokenType.MODULO,
+    "^": TokenType.XOR,
+    "&": TokenType.BITWISE_AND,
+    "|": TokenType.BITWISE_OR,
+    "~": TokenType.BITWISE_NOT,
+    "<": TokenType.LT,
+    ">": TokenType.GT,
+    ".": TokenType.DOT,
+    "(": TokenType.LPAREN,
+    ")": TokenType.RPAREN,
+    "{": TokenType.LBRACE,
+    "}": TokenType.RBRACE,
+    "[": TokenType.LBRACKET,
+    "]": TokenType.RBRACKET,
+    ",": TokenType.COMMA,
+    ":": TokenType.COLON,
+    # Semicolons are not part of YARA grammar — skip them to avoid parser crashes
+}

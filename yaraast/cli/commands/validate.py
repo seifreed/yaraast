@@ -1,60 +1,78 @@
 """CLI command for cross-validation with libyara."""
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 
 import click
 
+from yaraast.cli.utils import parse_yara_file
+from yaraast.cli.validate_reporting import (
+    display_cross_results,
+    display_external_parse_error,
+    display_roundtrip_details,
+    display_roundtrip_summary,
+    display_rule_file_invalid,
+    display_rule_file_valid,
+)
+from yaraast.cli.validate_services import (
+    cross_validate_rules,
+    parse_externals,
+    read_test_data,
+    roundtrip_test,
+    validate_rule_file,
+)
 from yaraast.libyara import YARA_AVAILABLE
-from yaraast.libyara.cross_validator import CrossValidator
-from yaraast.libyara.equivalence import EquivalenceTester
-from yaraast.parser import Parser
 
 
-@click.group()
+class ValidateGroup(click.Group):
+    """Group that falls back to file validation when no subcommand matches."""
+
+    def resolve_command(self, ctx: click.Context, args: list[str]):
+        if args:
+            cmd_name = args[0]
+            cmd = self.get_command(ctx, cmd_name)
+            if cmd is not None:
+                return cmd_name, cmd, args[1:]
+            default_cmd = self.get_command(ctx, "_file")
+            return "_file", default_cmd, args
+        return super().resolve_command(ctx, args)
+
+
+@click.group(cls=ValidateGroup)
 def validate() -> None:
     """Cross-validation commands."""
 
 
-def _parse_externals(external: tuple) -> dict:
+def _validate_rule_file(rule_file: str) -> int:
+    """Basic validation for backward-compatible `validate <file>` usage."""
+    try:
+        ast, rules_count, imports_count, string_count = validate_rule_file(rule_file)
+    except Exception as exc:
+        display_rule_file_invalid(exc)
+        return 1
+
+    display_rule_file_valid(rules_count, imports_count, string_count)
+    return 0
+
+
+@validate.command(name="_file", hidden=True)
+@click.argument("rule_file", type=click.Path(exists=True))
+def _validate_file(rule_file: str) -> None:
+    """Validate a YARA file."""
+    code = _validate_rule_file(rule_file)
+    if code != 0:
+        raise SystemExit(code)
+
+
+def _parse_externals(external: tuple[str, ...]) -> dict[str, str]:
     """Parse external variables from command line."""
-    externals = {}
-    for ext in external:
-        if "=" not in ext:
-            click.echo(f"Invalid external format: {ext}", err=True)
-            click.echo("Use format: key=value", err=True)
-            sys.exit(1)
-        key, value = ext.split("=", 1)
-        externals[key] = value
-    return externals
-
-
-def _display_cross_results(result, verbose: bool) -> None:
-    """Display cross-validation results."""
-    if result.valid:
-        click.echo(click.style("✓ Validation PASSED", fg="green", bold=True))
-    else:
-        click.echo(click.style("✗ Validation FAILED", fg="red", bold=True))
-
-    click.echo(f"\nRules tested: {result.rules_tested}")
-    click.echo(f"Rules matched: {result.rules_matched} ({result.match_rate:.1f}%)")
-
-    if verbose or not result.valid:
-        if result.rules_differ:
-            click.echo("\nDifferences found:")
-            for diff in result.rules_differ:
-                click.echo(f"  - {diff}")
-
-        if result.errors:
-            click.echo("\nErrors:")
-            for error in result.errors:
-                click.echo(f"  - {error}")
-
-        click.echo("\nPerformance:")
-        click.echo(f"  YaraAST evaluation: {result.yaraast_time:.3f}s")
-        click.echo(f"  LibYARA compilation: {result.libyara_compile_time:.3f}s")
-        click.echo(f"  LibYARA scanning: {result.libyara_scan_time:.3f}s")
-        click.echo(f"  Total time: {result.total_time:.3f}s")
+    try:
+        return parse_externals(external)
+    except ValueError as exc:
+        display_external_parse_error(exc)
+        sys.exit(1)
 
 
 @validate.command()
@@ -70,21 +88,17 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool) -> Non
         yaraast validate cross rules.yar sample.exe -e filename=sample.exe
 
     """
+    # Parse externals
+    externals = _parse_externals(external)
+
     if not YARA_AVAILABLE:
         click.echo("Error: yara-python is not installed.", err=True)
         click.echo("Install it with: pip install yara-python", err=True)
         sys.exit(1)
 
-    # Parse externals
-    externals = _parse_externals(external)
-
     # Parse rules
     try:
-        with Path(rule_file).open() as f:
-            rule_content = f.read()
-
-        parser = Parser()
-        ast = parser.parse(rule_content)
+        parse_yara_file(rule_file)
     except Exception as e:
         click.echo(f"Error parsing rules: {e}", err=True)
         sys.exit(1)
@@ -98,84 +112,12 @@ def cross(rule_file: str, test_file: str, external: tuple, verbose: bool) -> Non
         sys.exit(1)
 
     # Validate
-    validator = CrossValidator()
-    result = validator.validate(ast, test_data, externals)
+    result = cross_validate_rules(rule_file, test_data, externals)
 
     # Display results
-    _display_cross_results(result, verbose)
+    display_cross_results(result, verbose)
 
     sys.exit(0 if result.valid else 1)
-
-
-def _read_test_data(test_data_path: str | None) -> bytes | None:
-    """Read test data if provided."""
-    if not test_data_path:
-        return None
-
-    try:
-        with Path(test_data_path).open("rb") as f:
-            return f.read()
-    except Exception as e:
-        click.echo(f"Error reading test data: {e}", err=True)
-        sys.exit(1)
-
-
-def _display_roundtrip_summary(result):
-    """Display round-trip test summary."""
-    if result.equivalent:
-        click.echo(click.style("✓ Round-trip PASSED", fg="green", bold=True))
-    else:
-        click.echo(click.style("✗ Round-trip FAILED", fg="red", bold=True))
-
-    # Show details
-    def status(x):
-        return click.style("✓", fg="green") if x else click.style("✗", fg="red")
-
-    click.echo(f"\n{status(result.ast_equivalent)} AST equivalence")
-    click.echo(f"{status(result.code_equivalent)} Code generation equivalence")
-    click.echo(f"{status(result.original_compiles)} Original compiles with libyara")
-    click.echo(
-        f"{status(result.regenerated_compiles)} Regenerated compiles with libyara",
-    )
-
-    return status
-
-
-def _display_differences(title: str, differences: list) -> None:
-    """Display a list of differences."""
-    if differences:
-        click.echo(f"\n{title}:")
-        for diff in differences:
-            click.echo(f"  - {diff}")
-
-
-def _display_code_comparison(result, verbose: bool) -> None:
-    """Display original and regenerated code comparison."""
-    if verbose and result.original_code:
-        click.echo("\nOriginal code:")
-        click.echo("-" * 40)
-        click.echo(result.original_code)
-        click.echo("-" * 40)
-
-        if result.regenerated_code:
-            click.echo("\nRegenerated code:")
-            click.echo("-" * 40)
-            click.echo(result.regenerated_code)
-            click.echo("-" * 40)
-
-
-def _display_roundtrip_details(result, status_fn, data, verbose: bool) -> None:
-    """Display detailed round-trip results."""
-    if data:
-        click.echo(f"{status_fn(result.scan_equivalent)} Scan results match")
-        click.echo(f"{status_fn(result.eval_equivalent)} Evaluation results match")
-
-    if verbose or not result.equivalent:
-        _display_differences("AST differences", result.ast_differences)
-        _display_differences("Compilation errors", result.compilation_errors)
-        _display_differences("Scan differences", result.scan_differences)
-        _display_differences("Evaluation differences", result.eval_differences)
-        _display_code_comparison(result, verbose)
 
 
 @validate.command()
@@ -203,14 +145,17 @@ def roundtrip(rule_file: str, test_data: str | None, verbose: bool) -> None:
         sys.exit(1)
 
     # Read test data if provided
-    data = _read_test_data(test_data)
+    try:
+        data = read_test_data(test_data)
+    except ValueError as exc:
+        click.echo(str(exc), err=True)
+        sys.exit(1)
 
     # Test round-trip
-    tester = EquivalenceTester()
-    result = tester.test_file_round_trip(rule_file, data)
+    result = roundtrip_test(rule_file, data)
 
     # Display results
-    status_fn = _display_roundtrip_summary(result)
-    _display_roundtrip_details(result, status_fn, data, verbose)
+    status_fn = display_roundtrip_summary(result)
+    display_roundtrip_details(result, status_fn, data, verbose)
 
     sys.exit(0 if result.equivalent else 1)

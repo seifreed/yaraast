@@ -1,22 +1,12 @@
 """Main entry point for yaraast package."""
 
-import sys
 
-
-def main():
+def main() -> None:
     """Main function for yaraast."""
-    try:
-        from yaraast.cli.main import cli
+    from yaraast.cli.main import cli
 
-        return cli()
-    except ImportError:
-        # Fallback if CLI is not available
-        return 1
-    except KeyboardInterrupt:
-        return 130
-    except Exception:
-        return 1
+    cli()
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

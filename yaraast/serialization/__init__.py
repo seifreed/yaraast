@@ -9,8 +9,6 @@ from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 from yaraast.serialization.roundtrip_serializer import (
     EnhancedYamlSerializer,
-    FormattingInfo,
-    RoundTripMetadata,
     RoundTripSerializer,
     create_rules_manifest,
     roundtrip_yara,
@@ -23,10 +21,8 @@ __all__ = [
     "DiffResult",
     "DiffType",
     "EnhancedYamlSerializer",
-    "FormattingInfo",
     "JsonSerializer",
     "ProtobufSerializer",
-    "RoundTripMetadata",
     "RoundTripSerializer",
     "YamlSerializer",
     "create_rules_manifest",

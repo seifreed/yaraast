@@ -7,7 +7,9 @@ import os
 from pathlib import Path
 from typing import Any
 
-from yaraast.types.type_system import FunctionDefinition, ModuleDefinition, YaraType
+from yaraast.types._registry_base import YaraType
+from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
+from yaraast.types.module_definitions import load_builtin_modules
 
 
 class ModuleLoader:
@@ -20,189 +22,7 @@ class ModuleLoader:
 
     def _load_builtin_modules(self) -> None:
         """Load hardcoded builtin modules."""
-        # PE module
-        from yaraast.types.type_system import (
-            ArrayType,
-            BooleanType,
-            DictionaryType,
-            DoubleType,
-            IntegerType,
-            StringType,
-            StructType,
-        )
-
-        pe = ModuleDefinition(name="pe")
-        pe.attributes = {
-            "machine": IntegerType(),
-            "number_of_sections": IntegerType(),
-            "timestamp": IntegerType(),
-            "characteristics": IntegerType(),
-            "entry_point": IntegerType(),
-            "image_base": IntegerType(),
-            "sections": ArrayType(
-                StructType(
-                    {
-                        "name": StringType(),
-                        "virtual_address": IntegerType(),
-                        "virtual_size": IntegerType(),
-                        "raw_size": IntegerType(),
-                        "characteristics": IntegerType(),
-                    },
-                ),
-            ),
-            "version_info": DictionaryType(StringType(), StringType()),
-            "number_of_resources": IntegerType(),
-            "resource_timestamp": IntegerType(),
-            "imports": ArrayType(StringType()),
-            "exports": ArrayType(StringType()),
-            "is_pe": BooleanType(),
-            "is_dll": BooleanType(),
-            "is_32bit": BooleanType(),
-            "is_64bit": BooleanType(),
-        }
-        pe.functions = {
-            "imphash": FunctionDefinition("imphash", StringType()),
-            "section_index": FunctionDefinition(
-                "section_index",
-                IntegerType(),
-                [("name", StringType())],
-            ),
-            "exports": FunctionDefinition(
-                "exports",
-                BooleanType(),
-                [("name", StringType())],
-            ),
-            "imports": FunctionDefinition(
-                "imports",
-                BooleanType(),
-                [("dll", StringType()), ("function", StringType())],
-            ),
-            "locale": FunctionDefinition(
-                "locale",
-                BooleanType(),
-                [("locale", IntegerType())],
-            ),
-            "language": FunctionDefinition(
-                "language",
-                BooleanType(),
-                [("lang", IntegerType())],
-            ),
-            # Add functions that can also be called as attributes
-            "is_dll": FunctionDefinition("is_dll", BooleanType()),
-            "is_64bit": FunctionDefinition("is_64bit", BooleanType()),
-            "is_32bit": FunctionDefinition("is_32bit", BooleanType()),
-            "rva_to_offset": FunctionDefinition(
-                "rva_to_offset",
-                IntegerType(),
-                [("rva", IntegerType())],
-            ),
-        }
-        self.modules["pe"] = pe
-
-        # Math module
-        math = ModuleDefinition(name="math")
-        math.functions = {
-            "abs": FunctionDefinition("abs", IntegerType(), [("x", IntegerType())]),
-            "min": FunctionDefinition(
-                "min",
-                IntegerType(),
-                [("a", IntegerType()), ("b", IntegerType())],
-            ),
-            "max": FunctionDefinition(
-                "max",
-                IntegerType(),
-                [("a", IntegerType()), ("b", IntegerType())],
-            ),
-            "to_string": FunctionDefinition(
-                "to_string",
-                StringType(),
-                [("n", IntegerType()), ("base", IntegerType())],
-            ),
-            "to_number": FunctionDefinition(
-                "to_number",
-                IntegerType(),
-                [("s", StringType())],
-            ),
-            "log": FunctionDefinition("log", DoubleType(), [("x", DoubleType())]),
-            "log2": FunctionDefinition("log2", DoubleType(), [("x", DoubleType())]),
-            "log10": FunctionDefinition("log10", DoubleType(), [("x", DoubleType())]),
-            "sqrt": FunctionDefinition("sqrt", DoubleType(), [("x", DoubleType())]),
-            "entropy": FunctionDefinition(
-                "entropy",
-                DoubleType(),
-                [("offset", IntegerType()), ("size", IntegerType())],
-            ),
-        }
-        self.modules["math"] = math
-
-        # ELF module
-        elf = ModuleDefinition(name="elf")
-        elf.attributes = {
-            "type": IntegerType(),
-            "machine": IntegerType(),
-            "entry_point": IntegerType(),
-            "sections": ArrayType(
-                StructType(
-                    {
-                        "name": StringType(),
-                        "type": IntegerType(),
-                        "address": IntegerType(),
-                        "size": IntegerType(),
-                        "offset": IntegerType(),
-                    },
-                ),
-            ),
-            "segments": ArrayType(
-                StructType(
-                    {
-                        "type": IntegerType(),
-                        "offset": IntegerType(),
-                        "virtual_address": IntegerType(),
-                        "physical_address": IntegerType(),
-                        "file_size": IntegerType(),
-                        "memory_size": IntegerType(),
-                    },
-                ),
-            ),
-        }
-        self.modules["elf"] = elf
-
-        # Hash module
-        hash_mod = ModuleDefinition(name="hash")
-        hash_mod.functions = {
-            "md5": FunctionDefinition(
-                "md5",
-                StringType(),
-                [("offset", IntegerType()), ("size", IntegerType())],
-            ),
-            "sha1": FunctionDefinition(
-                "sha1",
-                StringType(),
-                [("offset", IntegerType()), ("size", IntegerType())],
-            ),
-            "sha256": FunctionDefinition(
-                "sha256",
-                StringType(),
-                [("offset", IntegerType()), ("size", IntegerType())],
-            ),
-            "crc32": FunctionDefinition(
-                "crc32",
-                IntegerType(),
-                [("offset", IntegerType()), ("size", IntegerType())],
-            ),
-        }
-        self.modules["hash"] = hash_mod
-
-        # Dotnet module
-        dotnet = ModuleDefinition(name="dotnet")
-        dotnet.attributes = {
-            "version": StringType(),
-            "module_name": StringType(),
-            "assembly": DictionaryType(StringType(), StringType()),
-            "resources": ArrayType(DictionaryType(StringType(), IntegerType())),
-            "streams": ArrayType(DictionaryType(StringType(), IntegerType())),
-        }
-        self.modules["dotnet"] = dotnet
+        self.modules.update(load_builtin_modules())
 
     def _load_json_modules(self) -> None:
         """Load modules from JSON files based on environment variables."""
@@ -295,15 +115,13 @@ class ModuleLoader:
 
     def _parse_type(self, type_str: str | dict) -> YaraType:
         """Parse type from string or dict representation."""
-        from yaraast.types.type_system import (
+        from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
+        from yaraast.types._registry_primitives import (
             AnyType,
-            ArrayType,
             BooleanType,
-            DictionaryType,
             FloatType,
             IntegerType,
             StringType,
-            StructType,
         )
 
         if isinstance(type_str, str):
@@ -354,7 +172,7 @@ class ModuleLoader:
                 if isinstance(param, str):
                     result.append((param, self._parse_type("any")))
                 elif isinstance(param, dict):
-                    name = param.get("name", "param")
+                    name = param.get("name", f"param_{len(result)}")
                     type_ = self._parse_type(param.get("type", "any"))
                     result.append((name, type_))
 

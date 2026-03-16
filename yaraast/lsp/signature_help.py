@@ -1,14 +1,14 @@
 """Signature help provider for YARAAST LSP."""
 
-from lsprotocol.types import ParameterInformation, Position, SignatureHelp, SignatureInformation
+from __future__ import annotations
 
-from yaraast.lsp.utils import get_word_at_position
+from lsprotocol.types import ParameterInformation, Position, SignatureHelp, SignatureInformation
 
 
 class SignatureHelpProvider:
     """Provide signature help for functions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize signature help provider."""
         # YARA module functions with signatures
         self.function_signatures = {
@@ -192,12 +192,12 @@ class SignatureHelpProvider:
         char_pos = position.character
 
         # Look backwards for opening parenthesis
-        paren_pos = None
+        paren_pos: int | None = None
         for i in range(char_pos - 1, -1, -1):
             if line[i] == "(":
                 paren_pos = i
                 break
-            elif line[i] in [";", "}", "{"]:
+            if line[i] in [";", "}", "{"]:
                 # Hit a statement boundary
                 return None
 
@@ -216,7 +216,7 @@ class SignatureHelpProvider:
         if func_name_start == func_name_end:
             return None
 
-        function_name = line[func_name_start:func_name_end]
+        function_name: str = line[func_name_start:func_name_end]
         return function_name
 
     def _calculate_active_parameter(self, text: str, position: Position) -> int:

@@ -1,17 +1,20 @@
 """Document links provider for YARAAST LSP."""
 
-from pathlib import Path
+from __future__ import annotations
+
+from typing import Any
 
 from lsprotocol.types import DocumentLink, Position, Range
 
-from yaraast.parser.parser import Parser
+from yaraast.lsp.runtime import DocumentContext, LspRuntime, SymbolRecord
 
 
 class DocumentLinksProvider:
     """Provide document links for imports and includes."""
 
-    def __init__(self):
+    def __init__(self, runtime: LspRuntime | None = None) -> None:
         """Initialize document links provider."""
+        self.runtime = runtime
         # YARA module documentation URLs
         self.module_docs = {
             "pe": "https://yara.readthedocs.io/en/stable/modules/pe.html",
@@ -30,20 +33,18 @@ class DocumentLinksProvider:
         links = []
 
         try:
-            parser = Parser(text)
-            ast = parser.parse()
-
-            # Add links for imports
-            for import_node in ast.imports:
-                link = self._create_import_link(text, import_node)
-                if link:
-                    links.append(link)
-
-            # Add links for includes
-            for include_node in ast.includes:
-                link = self._create_include_link(text, include_node, document_uri)
-                if link:
-                    links.append(link)
+            if self.runtime and document_uri:
+                doc = self.runtime.ensure_document(document_uri, text)
+                symbol_records = doc.symbols()
+                links.extend(self._create_runtime_symbol_links(doc, symbol_records))
+                links.extend(self._create_rule_reference_links(document_uri))
+                return links
+            doc = DocumentContext(document_uri, text)
+            symbol_records = doc.symbols()
+            if not symbol_records and doc.parse_error() is not None:
+                return self._fallback_links(text, document_uri)
+            links.extend(self._create_runtime_symbol_links(doc, symbol_records))
+            links.extend(self._create_local_rule_reference_links(doc))
 
         except Exception:
             # Fallback to regex-based link detection
@@ -51,88 +52,67 @@ class DocumentLinksProvider:
 
         return links
 
-    def _create_import_link(self, text: str, import_node) -> DocumentLink | None:
-        """Create a link for an import statement."""
-        module_name = import_node.module
+    def _create_runtime_symbol_links(
+        self,
+        doc: Any,
+        symbol_records: list[SymbolRecord],
+    ) -> list[DocumentLink]:
+        links: list[DocumentLink] = []
+        for record in symbol_records:
+            if record.kind == "import":
+                url = self.module_docs.get(record.name)
+                if url:
+                    links.append(
+                        DocumentLink(
+                            range=record.range,
+                            target=url,
+                            tooltip=f"Open documentation for {record.name} module",
+                        )
+                    )
+            elif record.kind == "include":
+                target_uri = doc.get_include_target_uri(record.name)
+                if target_uri:
+                    links.append(
+                        DocumentLink(
+                            range=record.range,
+                            target=target_uri,
+                            tooltip=f"Open {record.name}",
+                        )
+                    )
+        return links
 
-        # Get documentation URL for this module
-        url = self.module_docs.get(module_name)
-        if not url:
-            return None
+    def _create_rule_reference_links(self, document_uri: str) -> list[DocumentLink]:
+        if self.runtime is None:
+            return []
 
-        # Find the import statement in the text
-        lines = text.split("\n")
-        for line_num, line in enumerate(lines):
-            if f'import "{module_name}"' in line:
-                # Find the position of the module name
-                start_col = line.find(f'"{module_name}"') + 1  # Skip opening quote
-                end_col = start_col + len(module_name)
-
-                return DocumentLink(
-                    range=Range(
-                        start=Position(line=line_num, character=start_col),
-                        end=Position(line=line_num, character=end_col),
-                    ),
-                    target=url,
-                    tooltip=f"Open documentation for {module_name} module",
+        links: list[DocumentLink] = []
+        for record in self.runtime.get_rule_link_records_for_document(document_uri):
+            links.append(
+                DocumentLink(
+                    range=record.location.range,
+                    target=record.target_uri,
+                    tooltip=f"Go to rule {record.rule_name}",
                 )
+            )
+        return links
 
-        return None
-
-    def _create_include_link(
-        self, text: str, include_node, document_uri: str
-    ) -> DocumentLink | None:
-        """Create a link for an include statement."""
-        include_path = include_node.path
-
-        # Find the include statement in the text
-        lines = text.split("\n")
-        for line_num, line in enumerate(lines):
-            if f'include "{include_path}"' in line:
-                # Find the position of the path
-                start_col = line.find(f'"{include_path}"') + 1  # Skip opening quote
-                end_col = start_col + len(include_path)
-
-                # Resolve the include path relative to current document
-                target_uri = self._resolve_include_path(include_path, document_uri)
-                if not target_uri:
-                    return None
-
-                return DocumentLink(
-                    range=Range(
-                        start=Position(line=line_num, character=start_col),
-                        end=Position(line=line_num, character=end_col),
-                    ),
-                    target=target_uri,
-                    tooltip=f"Open {include_path}",
+    def _create_local_rule_reference_links(self, doc: DocumentContext) -> list[DocumentLink]:
+        links: list[DocumentLink] = []
+        for record in doc.get_local_rule_link_records():
+            links.append(
+                DocumentLink(
+                    range=record.location.range,
+                    target=record.target_uri,
+                    tooltip=f"Go to rule {record.rule_name}",
                 )
-
-        return None
-
-    def _resolve_include_path(self, include_path: str, document_uri: str) -> str | None:
-        """Resolve an include path to an absolute file URI."""
-        try:
-            # Convert document URI to file path
-            if document_uri.startswith("file://"):
-                doc_path = Path(document_uri[7:])
-            else:
-                doc_path = Path(document_uri)
-
-            # Resolve include path relative to document directory
-            include_file = doc_path.parent / include_path
-
-            if include_file.exists():
-                return f"file://{include_file.resolve()}"
-
-        except Exception:
-            pass
-
-        return None
+            )
+        return links
 
     def _fallback_links(self, text: str, document_uri: str) -> list[DocumentLink]:
         """Fallback regex-based link detection."""
         links = []
         lines = text.split("\n")
+        doc = DocumentContext(document_uri, text)
 
         for line_num, line in enumerate(lines):
             # Look for import statements
@@ -160,7 +140,7 @@ class DocumentLinksProvider:
                 end = line.find('"', start + 1)
                 if start != -1 and end != -1:
                     include_path = line[start + 1 : end]
-                    target_uri = self._resolve_include_path(include_path, document_uri)
+                    target_uri = doc.get_include_target_uri(include_path)
                     if target_uri:
                         links.append(
                             DocumentLink(

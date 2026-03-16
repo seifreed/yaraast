@@ -45,6 +45,7 @@ class TokenType(Enum):
     THEM = auto()
     ANY = auto()
     ALL = auto()
+    NONE = auto()
     ENTRYPOINT = auto()
     FILESIZE = auto()
     MATCHES = auto()

@@ -1,94 +1,22 @@
 """Workspace CLI commands."""
 
-import json
+from __future__ import annotations
+
 from pathlib import Path
 
 import click
 
-from yaraast.resolution import Workspace
+from yaraast.cli.workspace_reporting import print_include_tree
+from yaraast.cli.workspace_services import (
+    analyze_workspace,
+    format_workspace_graph,
+    format_workspace_output,
+)
 
 
 @click.group()
 def workspace() -> None:
     """Workspace commands for multi-file analysis."""
-
-
-def _format_json_output(report):
-    """Format report as JSON."""
-    output_data = {
-        "statistics": report.statistics,
-        "files": {
-            path: {
-                "errors": result.errors,
-                "warnings": result.warnings,
-                "type_errors": result.type_errors,
-                "analysis": result.analysis_results,
-            }
-            for path, result in report.file_results.items()
-        },
-        "global_errors": report.global_errors,
-    }
-    return json.dumps(output_data, indent=2)
-
-
-def _format_text_output(report):
-    """Format report as text."""
-    lines = []
-    lines.append("Workspace Analysis Report")
-    lines.append("=" * 50)
-    lines.append(f"Files analyzed: {report.files_analyzed}")
-    lines.append(f"Total rules: {report.total_rules}")
-    lines.append(f"Total includes: {report.total_includes}")
-    lines.append(f"Total imports: {report.total_imports}")
-    lines.append("")
-
-    if report.global_errors:
-        lines.append("Global Errors:")
-        for error in report.global_errors:
-            lines.append(f"  - {error}")
-        lines.append("")
-
-    # File-specific issues
-    for file_path, result in report.file_results.items():
-        if result.errors or result.warnings or result.type_errors:
-            lines.extend(_format_file_issues(file_path, result))
-
-    # Statistics
-    lines.append("Statistics:")
-    lines.append(f"  Total errors: {report.statistics.get('total_errors', 0)}")
-    lines.append(f"  Total warnings: {report.statistics.get('total_warnings', 0)}")
-    lines.append(
-        f"  Total type errors: {report.statistics.get('total_type_errors', 0)}",
-    )
-    lines.append(f"  Dependency cycles: {report.statistics.get('cycles', 0)}")
-    lines.append(
-        f"  Rule name conflicts: {report.statistics.get('rule_name_conflicts', 0)}",
-    )
-
-    return "\n".join(lines)
-
-
-def _format_file_issues(file_path, result):
-    """Format issues for a single file."""
-    lines = [f"File: {file_path}"]
-
-    if result.errors:
-        lines.append("  Errors:")
-        for error in result.errors:
-            lines.append(f"    - {error}")
-
-    if result.warnings:
-        lines.append("  Warnings:")
-        for warning in result.warnings:
-            lines.append(f"    - {warning}")
-
-    if result.type_errors:
-        lines.append("  Type Errors:")
-        for error in result.type_errors:
-            lines.append(f"    - {error}")
-
-    lines.append("")
-    return lines
 
 
 @workspace.command()
@@ -113,22 +41,10 @@ def analyze(directory, pattern, recursive, output, format, parallel) -> None:
     """Analyze all YARA files in a directory."""
     click.echo(f"Analyzing directory: {directory}")
 
-    # Create workspace
-    ws = Workspace(root_path=directory)
-    ws.add_directory(directory, pattern=pattern, recursive=recursive)
-
+    ws, report = analyze_workspace(directory, pattern, recursive, parallel)
     click.echo(f"Found {len(ws.files)} YARA files")
 
-    # Analyze
-    report = ws.analyze(parallel=parallel)
-
-    # Format output
-    if format == "json":
-        output_text = _format_json_output(report)
-    elif format == "dot":
-        output_text = report.dependency_graph.export_dot()
-    else:  # text format
-        output_text = _format_text_output(report)
+    output_text = format_workspace_output(report, format)
 
     # Output
     if output:
@@ -165,7 +81,7 @@ def resolve(file, search_path, show_tree) -> None:
         if show_tree:
             # Show include tree
             tree = resolver.get_include_tree(file)
-            _print_tree(tree)
+            print_include_tree(tree)
 
         # Show all resolved files
         all_files = resolver.get_all_resolved_files()
@@ -173,9 +89,6 @@ def resolve(file, search_path, show_tree) -> None:
         for resolved_file in all_files:
             click.echo(f"  - {resolved_file.path}")
 
-    except FileNotFoundError as e:
-        click.echo(f"Error: {e}", err=True)
-        raise click.Abort from None
     except RecursionError as e:
         click.echo(f"Error: {e}", err=True)
         raise click.Abort from None
@@ -195,26 +108,8 @@ def graph(directory, output, format) -> None:
     """Generate dependency graph for YARA files."""
     click.echo(f"Building dependency graph for: {directory}")
 
-    # Create workspace
-    ws = Workspace(root_path=directory)
-    ws.add_directory(directory, recursive=True)
-
-    # Analyze to build graph
-    report = ws.analyze(parallel=True)
-
-    # Generate output
-    if format == "dot":
-        output_text = report.dependency_graph.export_dot()
-    else:  # json
-        nodes = {}
-        for key, node in report.dependency_graph.nodes.items():
-            nodes[key] = {
-                "type": node.type,
-                "dependencies": list(node.dependencies),
-                "dependents": list(node.dependents),
-                "metadata": node.metadata,
-            }
-        output_text = json.dumps({"nodes": nodes}, indent=2)
+    ws, report = analyze_workspace(directory, "*.yar", True, True)
+    output_text = format_workspace_graph(report, format)
 
     # Output
     if output:
@@ -224,11 +119,3 @@ def graph(directory, output, format) -> None:
             click.echo(f"Visualize with: dot -Tpng {output} -o graph.png")
     else:
         click.echo(output_text)
-
-
-def _print_tree(tree, indent=0) -> None:
-    """Print include tree."""
-    prefix = "  " * indent
-    click.echo(f"{prefix}- {Path(tree['path']).name}")
-    for include in tree["includes"]:
-        _print_tree(include, indent + 1)

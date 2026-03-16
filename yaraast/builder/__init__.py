@@ -26,14 +26,16 @@ from yaraast.builder.fluent_condition_builder import (
     one_of,
     small_file,
 )
-from yaraast.builder.fluent_rule_builder import (
-    FluentRuleBuilder,
-    FluentYaraFileBuilder,
+from yaraast.builder.fluent_file_builder import FluentYaraFileBuilder, yara_file
+from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
+from yaraast.builder.fluent_rule_presets import (
+    document_rule,
+    example_rules,
     malware_rule,
+    network_rule,
     packed_rule,
     rule,
     trojan_rule,
-    yara_file,
 )
 
 # Convenience functions
@@ -49,21 +51,15 @@ from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 
 __all__ = [
-    # Transformers
-    "CloneTransformer",
     "ConditionBuilder",
     "ExpressionBuilder",
     "FluentConditionBuilder",
     "FluentRuleBuilder",
-    # Fluent builders
     "FluentStringBuilder",
     "FluentYaraFileBuilder",
     "HexStringBuilder",
-    # Original builders
     "RuleBuilder",
-    "RuleTransformer",
     "YaraFileBuilder",
-    "YaraFileTransformer",
     "all_of",
     "all_of_them",
     "any_of",
@@ -71,11 +67,14 @@ __all__ = [
     "clone_rule",
     "clone_yara_file",
     "condition",
+    "document_rule",
+    "example_rules",
     "filesize_gt",
     "hex_pattern",
     "large_file",
     "malware_rule",
     "match",
+    "network_rule",
     "not_them",
     "one_of",
     "packed_rule",

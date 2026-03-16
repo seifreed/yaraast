@@ -6,7 +6,16 @@ import mmap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from yaraast.parser import Parser
+from yaraast.dialects import YaraDialect
+from yaraast.parser.parser import Parser
+from yaraast.performance.streaming_mmap import iter_rule_texts_from_mmap
+from yaraast.performance.streaming_result_builders import (
+    build_error_parse_result,
+    build_file_parse_result,
+    build_rule_parse_result,
+    default_streaming_stats,
+    timed_now,
+)
 
 if TYPE_CHECKING:
     import io
@@ -24,31 +33,26 @@ class StreamingParser:
         max_memory_mb: int | None = None,
         enable_gc: bool = False,
         progress_callback: Callable | None = None,
+        dialect: YaraDialect | None = None,
     ) -> None:
         """Initialize streaming parser.
 
         Args:
             buffer_size: Size of read buffer in bytes
-            max_memory_mb: Maximum memory usage in MB (ignored for compatibility)
-            enable_gc: Enable garbage collection (ignored for compatibility)
-            progress_callback: Progress callback function (ignored for compatibility)
+            max_memory_mb: Maximum memory usage in MB
+            enable_gc: Enable garbage collection between files
+            progress_callback: Progress callback function
+            dialect: YARA dialect to use (auto-detects if None)
 
         """
         self.buffer_size = buffer_size
         self.max_memory_mb = max_memory_mb
         self.enable_gc = enable_gc
         self.progress_callback = progress_callback
+        self.dialect = dialect
         self.parser = Parser()
         self._cancelled = False
-        self._stats = {
-            "rules_parsed": 0,
-            "bytes_processed": 0,
-            "parse_errors": 0,
-            "peak_memory_mb": 0,
-            "files_processed": 0,
-            "files_successful": 0,
-            "total_parse_time": 0,
-        }
+        self._stats = default_streaming_stats()
 
     def parse_file(
         self,
@@ -174,93 +178,30 @@ class StreamingParser:
 
     def parse_rules_from_file(self, file_path: Path) -> Iterator[Any]:
         """Parse individual rules from a file (yields one result per rule)."""
-        from dataclasses import dataclass
-        from enum import Enum
-
-        class ParseStatus(Enum):
-            SUCCESS = "success"
-            ERROR = "error"
-
-        @dataclass
-        class ParseResult:
-            file_path: str
-            rule_name: str | None
-            status: ParseStatus
-            error: str | None
-            parse_time: float
-            rule_count: int
-            import_count: int
-            ast: Any = None
-
         try:
-            import time
-
-            start_time = time.time()
+            start_time = timed_now()
 
             for rule in self.parse_file(file_path):
                 if self._cancelled:
                     break
 
-                parse_time = time.time() - start_time
-                # Create a minimal YaraFile with just this rule
-                from yaraast.ast.base import YaraFile
-
-                ast = YaraFile(imports=[], includes=[], rules=[rule])
-
-                yield ParseResult(
-                    file_path=str(file_path),
-                    rule_name=rule.name if hasattr(rule, "name") else None,
-                    status=ParseStatus.SUCCESS,
-                    error=None,
-                    parse_time=parse_time,
-                    rule_count=1,
-                    import_count=0,
-                    ast=ast,
-                )
-                start_time = time.time()
+                parse_time = timed_now() - start_time
+                yield build_rule_parse_result(file_path, rule, parse_time)
+                start_time = timed_now()
         except Exception as e:
-            yield ParseResult(
-                file_path=str(file_path),
-                rule_name=None,
-                status=ParseStatus.ERROR,
-                error=str(e),
-                parse_time=0,
-                rule_count=0,
-                import_count=0,
-                ast=None,
-            )
+            yield build_error_parse_result(file_path, e)
 
     def parse_files(self, file_paths: list[Path]) -> Iterator[Any]:
         """Parse multiple files (yields one result per file)."""
-        from dataclasses import dataclass
-        from enum import Enum
-
-        class ParseStatus(Enum):
-            SUCCESS = "success"
-            ERROR = "error"
-
-        @dataclass
-        class ParseResult:
-            file_path: str
-            rule_name: str | None
-            status: ParseStatus
-            error: str | None
-            parse_time: float
-            rule_count: int
-            import_count: int
-            ast: Any = None
-
-        import time
-
         for idx, file_path in enumerate(file_paths, 1):
             if self._cancelled:
                 break
 
             try:
-                start_time = time.time()
+                start_time = timed_now()
                 content = Path(file_path).read_text()
                 ast = self.parser.parse(content)
-                parse_time = time.time() - start_time
+                parse_time = timed_now() - start_time
 
                 self._stats["files_processed"] += 1
                 self._stats["files_successful"] += 1
@@ -271,30 +212,14 @@ class StreamingParser:
                 if self.progress_callback:
                     self.progress_callback(idx, len(file_paths), str(file_path))
 
-                yield ParseResult(
-                    file_path=str(file_path),
-                    rule_name=ast.rules[0].name if ast.rules else None,
-                    status=ParseStatus.SUCCESS,
-                    error=None,
-                    parse_time=parse_time,
-                    rule_count=len(ast.rules),
-                    import_count=len(ast.imports),
-                    ast=ast,
-                )
+                yield build_file_parse_result(file_path, ast, parse_time)
             except Exception as e:
                 self._stats["files_processed"] += 1
                 self._stats["parse_errors"] += 1
 
-                yield ParseResult(
-                    file_path=str(file_path),
-                    rule_name=None,
-                    status=ParseStatus.ERROR,
-                    error=str(e),
-                    parse_time=0,
-                    rule_count=0,
-                    import_count=0,
-                    ast=None,
-                )
+                yield build_error_parse_result(file_path, e)
+            finally:
+                self._maybe_collect_garbage()
 
     def parse_directory(
         self,
@@ -341,6 +266,28 @@ class StreamingParser:
         list(self.parse_file(file_path, rule_callback))
         return rules
 
+    def _maybe_collect_garbage(self) -> None:
+        """Run garbage collection based on configuration."""
+        if self.enable_gc or self._memory_limit_exceeded():
+            import gc
+
+            gc.collect()
+
+    def _memory_limit_exceeded(self) -> bool:
+        """Check if current RSS exceeds the configured memory limit."""
+        if self.max_memory_mb is None:
+            return False
+        try:
+            import os
+
+            import psutil
+
+            process = psutil.Process(os.getpid())
+            rss_mb = process.memory_info().rss / 1024 / 1024
+            return rss_mb > self.max_memory_mb
+        except Exception:
+            return False
+
     def _parse_mmap(
         self,
         mmapped_file: mmap.mmap,
@@ -351,119 +298,32 @@ class StreamingParser:
         This method uses the Lexer to properly identify rule boundaries,
         avoiding issues with braces in strings, regexes, or comments.
         """
-        from yaraast.lexer import Lexer, TokenType
-
-        # Read and decode the entire file
-        content = mmapped_file.read().decode("utf-8", errors="replace")
-        mmapped_file.seek(0)  # Reset position
-
-        # Pre-calculate line start positions for O(1) position lookup
-        # This avoids repeated string splitting
-        line_starts = [0]  # Line 1 starts at position 0
-        for i, char in enumerate(content):
-            if char == "\n":
-                line_starts.append(i + 1)  # Next line starts after newline
-
-        def get_char_pos(line: int, column: int) -> int:
-            """Get character position from line and column (both 1-indexed)."""
-            if line - 1 < len(line_starts):
-                return line_starts[line - 1] + (column - 1)
-            return 0
-
-        # Tokenize the entire file
-        lexer = Lexer(content)
-        tokens = list(lexer.tokenize())
-
-        # Find rule boundaries using tokens
-        i = 0
-        while i < len(tokens):
-            token = tokens[i]
-
-            # Skip imports and includes
-            if token.type == TokenType.IMPORT or token.type == TokenType.INCLUDE:
-                i += 1
-                while i < len(tokens) and tokens[i].type != TokenType.STRING:
-                    i += 1
-                i += 1  # Skip the string
-                continue
-
-            # Look for rule definitions (with optional modifiers)
-            if token.type in (TokenType.RULE, TokenType.PRIVATE, TokenType.GLOBAL):
-                # Find the start position of this rule
-                rule_start_token = token
-
-                # Skip modifiers to find the actual RULE token
-                while i < len(tokens) and tokens[i].type != TokenType.RULE:
-                    i += 1
-
-                if i >= len(tokens):
-                    break
-
-                # Now we're at RULE token, skip to identifier
-                i += 1
-                if i >= len(tokens) or tokens[i].type != TokenType.IDENTIFIER:
-                    i += 1
-                    continue
-
-                # Skip identifier and optional tags (: tag1 tag2)
-                i += 1
-                if i < len(tokens) and tokens[i].type == TokenType.COLON:
-                    i += 1
-                    # Skip tags
-                    while i < len(tokens) and tokens[i].type == TokenType.IDENTIFIER:
-                        i += 1
-
-                # Find the opening brace
-                while i < len(tokens) and tokens[i].type != TokenType.LBRACE:
-                    i += 1
-
-                if i >= len(tokens):
-                    break
-
-                # Now count braces using TOKENS (not characters)
-                brace_count = 1
-                i += 1
-
-                while i < len(tokens) and brace_count > 0:
-                    if tokens[i].type == TokenType.LBRACE:
-                        brace_count += 1
-                    elif tokens[i].type == TokenType.RBRACE:
-                        brace_count -= 1
-                    i += 1
-
-                if brace_count == 0:
-                    # Found matching closing brace
-                    # Extract text from start of rule to end of closing brace
-                    brace_end_token = tokens[i - 1]
-
-                    # Calculate character positions using line and column
-                    # Find start position (beginning of first modifier/rule token)
-                    start_pos = get_char_pos(rule_start_token.line, rule_start_token.column)
-
-                    # Find end position (end of closing brace)
-                    # Get position of closing brace token and add its length
-                    end_pos = get_char_pos(brace_end_token.line, brace_end_token.column) + len("}")
-
-                    rule_text = content[start_pos:end_pos]
-
-                    # Parse this rule
-                    rule = self._parse_rule_text(rule_text)
-                    if rule:
-                        self._stats["rules_parsed"] += 1
-                        if callback:
-                            callback(rule)
-                        yield rule
-            else:
-                i += 1
+        for rule_text in iter_rule_texts_from_mmap(mmapped_file):
+            rule = self._parse_rule_text(rule_text)
+            if rule:
+                self._stats["rules_parsed"] += 1
+                if callback:
+                    callback(rule)
+                yield rule
 
     def _parse_rule_text(self, rule_text: str) -> Rule | None:
-        """Parse a single rule text."""
+        """Parse a single rule text using the appropriate dialect parser."""
         try:
-            # Create a minimal YARA file with just this rule
-            yara_file = self.parser.parse(rule_text)
-            if yara_file.rules:
-                return yara_file.rules[0]
-        except (ValueError, TypeError, AttributeError):
+            dialect = self.dialect
+            if dialect is not None and dialect != YaraDialect.YARA:
+                # Use UnifiedParser for non-standard dialects
+                from yaraast.unified_parser import UnifiedParser
+
+                unified = UnifiedParser(rule_text, dialect=dialect)
+                result = unified.parse()
+                if hasattr(result, "rules") and result.rules:
+                    return result.rules[0]
+            else:
+                # Use standard parser (default, fastest path)
+                yara_file = self.parser.parse(rule_text)
+                if yara_file.rules:
+                    return yara_file.rules[0]
+        except Exception:
             self._stats["parse_errors"] += 1
 
         return None

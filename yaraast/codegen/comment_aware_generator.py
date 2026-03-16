@@ -211,6 +211,8 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def _write_meta_item(self, key: str, value: any) -> None:
         """Write a meta item."""
+        from yaraast.codegen.generator_helpers import escape_plain_string_value
+
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
@@ -219,7 +221,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         if isinstance(value, str):
             # Check if already quoted
             if not (value.startswith('"') and value.endswith('"')):
-                self._write(f'"{value}"')
+                self._write(f'"{escape_plain_string_value(value)}"')
             else:
                 self._write(value)
         elif isinstance(value, bool):
@@ -231,10 +233,12 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_plain_string(self, node: PlainString) -> str:
         """Generate code for PlainString with comments."""
+        from yaraast.codegen.generator_helpers import escape_plain_string_value
+
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
-        self._write(f'{node.identifier} = "{node.value}"')
+        self._write(f'{node.identifier} = "{escape_plain_string_value(node.value)}"')
 
         # Write modifiers
         for modifier in node.modifiers:
@@ -273,7 +277,8 @@ class CommentAwareCodeGenerator(CodeGenerator):
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
-        self._write(f"{node.identifier} = /{node.regex}/")
+        regex = node.regex.replace("/", "\\/")
+        self._write(f"{node.identifier} = /{regex}/")
 
         # Write regex modifiers
         if node.modifiers:
@@ -289,6 +294,8 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_meta(self, node: Meta) -> str:
         """Generate code for Meta with comments."""
+        from yaraast.codegen.generator_helpers import escape_plain_string_value
+
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
@@ -296,7 +303,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         if isinstance(node.value, str):
             if not (node.value.startswith('"') and node.value.endswith('"')):
-                self._write(f'"{node.value}"')
+                self._write(f'"{escape_plain_string_value(node.value)}"')
             else:
                 self._write(node.value)
         elif isinstance(node.value, bool):
@@ -305,7 +312,3 @@ class CommentAwareCodeGenerator(CodeGenerator):
             self._write(str(node.value))
 
         return ""
-
-
-# Alias for compatibility
-CommentAwareGenerator = CommentAwareCodeGenerator

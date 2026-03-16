@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.ast.modifiers import StringModifier as EnhancedStringModifier
-from yaraast.ast.modifiers import StringModifierType
+from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.strings import (
     HexByte,
     HexJump,
@@ -25,7 +24,7 @@ class FluentStringBuilder:
         self.identifier = identifier
         self._content: str | list[HexToken] | None = None
         self._string_type: str = "plain"  # "plain", "hex", "regex"
-        self._modifiers: list[EnhancedStringModifier] = []
+        self._modifiers: list[StringModifier] = []
         self._hex_builder: HexStringBuilder | None = None
 
     # String content methods
@@ -133,19 +132,19 @@ class FluentStringBuilder:
                 except ValueError:
                     key = None
 
-            modifier = EnhancedStringModifier(
+            modifier = StringModifier(
                 modifier_type=StringModifierType.XOR,
                 value=key,
             )
         else:
-            modifier = EnhancedStringModifier(modifier_type=StringModifierType.XOR)
+            modifier = StringModifier(modifier_type=StringModifierType.XOR)
 
         self._modifiers.append(modifier)
         return self
 
     def xor_range(self, min_key: int, max_key: int) -> FluentStringBuilder:
         """Add XOR modifier with key range."""
-        modifier = EnhancedStringModifier(
+        modifier = StringModifier(
             modifier_type=StringModifierType.XOR,
             value={"min": min_key, "max": max_key},
         )
@@ -243,28 +242,23 @@ class FluentStringBuilder:
             msg = f"String content not set for {self.identifier}"
             raise ValueError(msg)
 
-        # Convert enhanced modifiers to legacy format for compatibility
-        legacy_modifiers = []
-        for mod in self._modifiers:
-            legacy_modifiers.append(mod.to_legacy_modifier())
-
         if self._string_type == "plain":
             return PlainString(
                 identifier=self.identifier,
                 value=str(self._content),
-                modifiers=legacy_modifiers,
+                modifiers=list(self._modifiers),
             )
         if self._string_type == "hex":
             return HexString(
                 identifier=self.identifier,
                 tokens=self._content if isinstance(self._content, list) else [],
-                modifiers=legacy_modifiers,
+                modifiers=list(self._modifiers),
             )
         if self._string_type == "regex":
             return RegexString(
                 identifier=self.identifier,
                 regex=str(self._content),
-                modifiers=legacy_modifiers,
+                modifiers=list(self._modifiers),
             )
         msg = f"Unknown string type: {self._string_type}"
         raise ValueError(msg)
@@ -275,7 +269,7 @@ class FluentStringBuilder:
         # Remove existing modifier of same type
         self._modifiers = [m for m in self._modifiers if m.modifier_type != modifier_type]
         # Add new modifier
-        self._modifiers.append(EnhancedStringModifier(modifier_type=modifier_type))
+        self._modifiers.append(StringModifier(modifier_type=modifier_type))
 
     def _parse_hex_pattern(self, pattern: str) -> list[HexToken]:
         """Parse hex pattern string into tokens."""

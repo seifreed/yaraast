@@ -383,7 +383,7 @@ if __name__ == "__main__":
         print(f"  Differences: {len(result['differences'])}")
 
     # Test pretty printing
-    parser = YaraParser()
+    parser = Parser()
     ast = parser.parse(yara_test.strip())
 
     printer = PrettyPrinter(StylePresets.readable())

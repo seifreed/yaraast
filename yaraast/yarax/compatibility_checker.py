@@ -6,7 +6,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.expressions import BinaryExpression, Identifier, SetExpression
-from yaraast.visitor import ASTVisitor
+from yaraast.visitor import DefaultASTVisitor
 from yaraast.yarax.feature_flags import YaraXFeatures
 
 if TYPE_CHECKING:
@@ -38,10 +38,11 @@ class CompatibilityIssue:
         return f"[{self.severity.upper()}] {loc}: {self.message}"
 
 
-class YaraXCompatibilityChecker(ASTVisitor[None]):
+class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
     """Check YARA rules for YARA-X compatibility."""
 
     def __init__(self, features: YaraXFeatures | None = None) -> None:
+        super().__init__(default=None)
         self.features = features or YaraXFeatures.yarax_strict()
         self.issues: list[CompatibilityIssue] = []
         self.current_rule: str | None = None
@@ -215,7 +216,7 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
     def _check_invalid_escape_sequences(self, node: RegexString) -> None:
         """Check for invalid escape sequences in regex."""
         invalid_escapes = re.findall(
-            r"\\([^\\abfnrtv0-7xdDsSwW.*+?{}()\[\]|^$])",
+            r"\\([^\\abfnrtv0-7xdDsSwWbBuU<>.*+?{}()\[\]|^$])",
             node.regex,
         )
         for escape in invalid_escapes:
@@ -324,199 +325,3 @@ class YaraXCompatibilityChecker(ASTVisitor[None]):
         """Visit YARA file."""
         for rule in node.rules:
             self.visit(rule)
-
-    def visit_array_access(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_at_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_binary_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_boolean_literal(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_comment(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_comment_group(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_condition(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_defined_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_dictionary_access(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_double_literal(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_extern_import(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_extern_namespace(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_extern_rule(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_extern_rule_reference(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_for_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_for_of_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_function_call(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_hex_alternative(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_hex_byte(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_hex_nibble(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_hex_token(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_hex_wildcard(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_import(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_in_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_in_rule_pragma(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_include(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_integer_literal(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_member_access(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_meta(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_module_reference(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_parentheses_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_pragma(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_pragma_block(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_range_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_regex_literal(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_set_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_string_count(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_string_definition(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_string_identifier(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_string_wildcard(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_string_length(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_string_literal(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_string_modifier(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_string_offset(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_string_operator_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_tag(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-    def visit_unary_expression(self, node) -> None:
-        # Not needed for compatibility checking
-        pass  # Implementation intentionally empty
-
-
-# Alias for compatibility
-CompatibilityChecker = YaraXCompatibilityChecker

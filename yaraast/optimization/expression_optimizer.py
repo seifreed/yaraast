@@ -15,7 +15,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.rules import Rule
-from yaraast.visitor.visitor import ASTTransformer
+from yaraast.visitor.base import ASTTransformer
 
 
 class ExpressionOptimizer(ASTTransformer):
@@ -48,15 +48,13 @@ class ExpressionOptimizer(ASTTransformer):
                 rules=optimized_rules,
             )
             return optimized_file, self.optimization_count
-        else:
-            # Single expression optimization
-            return self.visit(node)
+        # Single expression optimization
+        return self.visit(node)
 
     def _optimize_rule(self, rule: Rule) -> Rule:
         """Optimize expressions in a rule."""
         if rule.condition:
             # Reset count for this rule to track optimizations
-            before_count = self.optimization_count
             optimized_condition = self.visit(rule.condition)
             # Count is incremented by visit methods for each optimization
             rule.condition = optimized_condition
@@ -96,9 +94,11 @@ class ExpressionOptimizer(ASTTransformer):
             if node.operator == "*":
                 return IntegerLiteral(value=left_val * right_val)
             if node.operator == "/" and right_val != 0:
-                return IntegerLiteral(value=left_val // right_val)  # Integer division
+                # Use C-style truncation toward zero (int() truncates), not Python floor division
+                return IntegerLiteral(value=int(left_val / right_val))
             if node.operator == "%" and right_val != 0:
-                return IntegerLiteral(value=left_val % right_val)
+                # C-style modulo: result has same sign as dividend
+                return IntegerLiteral(value=int(left_val - int(left_val / right_val) * right_val))
 
             # Bitwise operations
             if node.operator == "&":

@@ -1,14 +1,27 @@
 """Optimize YARA rules for better performance."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import click
 from rich.console import Console
 
-from yaraast.codegen import CodeGenerator
-from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
-from yaraast.performance.optimizer import PerformanceOptimizer
-from yaraast.performance.string_analyzer import analyze_rule_performance
+from yaraast.cli.optimize_reporting import (
+    display_analysis,
+    display_changes,
+    display_dry_run,
+    display_improvement,
+    display_write_start,
+    display_write_success,
+)
+from yaraast.cli.optimize_services import (
+    analyze_performance,
+    calculate_improvement,
+    generate_code,
+    optimize_ast,
+    parse_yara_with_tolerance,
+)
 
 console = Console()
 
@@ -37,85 +50,37 @@ def optimize(input_file: Path, output_file: Path, dry_run: bool, analyze: bool) 
     try:
         # Parse the YARA file
         with console.status("[cyan]Parsing YARA file..."):
-            content = input_file.read_text()
-            parser = ErrorTolerantParser()
-            ast, _, _ = parser.parse_with_errors(content)
-
-        if not ast:
-            console.print("[red]❌ Failed to parse YARA file[/red]")
-            raise click.Abort
+            content = input_file.read_text(encoding="utf-8")
+            ast, _, _ = parse_yara_with_tolerance(content)
 
         # Analyze performance before optimization
         if analyze:
-            console.print(
-                "\n[yellow]Performance analysis before optimization:[/yellow]",
-            )
-            total_issues_before = 0
-            critical_before = 0
-
-            for rule in ast.rules:
-                issues = analyze_rule_performance(rule)
-                total_issues_before += len(issues)
-                critical_before += sum(1 for i in issues if i.severity == "critical")
-
-            console.print(f"  • Total issues: {total_issues_before}")
-            console.print(f"  • Critical issues: {critical_before}")
+            before = analyze_performance(ast)
+            display_analysis(console, "Performance analysis before optimization", before)
 
         # Optimize the AST
         console.print(f"\n[cyan]Optimizing {len(ast.rules)} rules...[/cyan]")
-        optimizer = PerformanceOptimizer()
-        optimized_ast = optimizer.optimize(ast)
-        changes = [
-            "Performance optimizations applied",
-        ]  # Simple placeholder for changes
+        optimized_ast, changes = optimize_ast(ast)
 
-        if not changes:
-            console.print(
-                "\n[green]✅ No optimizations needed - rules are already optimal![/green]",
-            )
-            return
-
-        # Show changes
-        console.print(f"\n[yellow]Applied {len(changes)} optimizations:[/yellow]")
-        for change in changes[:10]:  # Show first 10
-            console.print(f"  • {change}")
-        if len(changes) > 10:
-            console.print(f"  ... and {len(changes) - 10} more")
+        display_changes(console, changes)
 
         # Analyze performance after optimization
         if analyze:
-            console.print("\n[yellow]Performance analysis after optimization:[/yellow]")
-            total_issues_after = 0
-            critical_after = 0
+            after = analyze_performance(optimized_ast)
+            display_analysis(console, "Performance analysis after optimization", after)
 
-            for rule in optimized_ast.rules:
-                issues = analyze_rule_performance(rule)
-                total_issues_after += len(issues)
-                critical_after += sum(1 for i in issues if i.severity == "critical")
-
-            console.print(f"  • Total issues: {total_issues_after}")
-            console.print(f"  • Critical issues: {critical_after}")
-
-            # Show improvement
-            if total_issues_before > total_issues_after:
-                improvement = (
-                    (total_issues_before - total_issues_after) / total_issues_before
-                ) * 100
-                console.print(
-                    f"\n[green]✅ Performance improved by {improvement:.1f}%[/green]",
-                )
+            improvement = calculate_improvement(before, after)
+            if improvement is not None:
+                display_improvement(console, improvement)
 
         # Generate optimized code
         if not dry_run:
-            console.print(f"\n[cyan]Writing optimized rules to {output_file}...[/cyan]")
-            generator = CodeGenerator()
-            optimized_code = generator.generate(optimized_ast)
-            output_file.write_text(optimized_code)
-            console.print(
-                f"[green]✅ Optimized YARA file written to {output_file}[/green]",
-            )
+            display_write_start(console, output_file)
+            optimized_code = generate_code(optimized_ast)
+            output_file.write_text(optimized_code, encoding="utf-8")
+            display_write_success(console, output_file)
         else:
-            console.print("\n[yellow]Dry run - no files were written[/yellow]")
+            display_dry_run(console)
 
     except Exception as e:
         console.print(f"[red]❌ Error: {e}[/red]")

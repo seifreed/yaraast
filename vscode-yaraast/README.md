@@ -2,6 +2,22 @@
 
 Powerful language support for YARA rules powered by the YARAAST AST parser.
 
+## Release Status
+
+- Extension packaging is ready via VSIX.
+- Marketplace metadata, settings and commands are wired.
+- Recommended install path today: local VSIX or source checkout.
+
+## Screenshots
+
+### Runtime Dashboard
+
+![Runtime Dashboard](./media/runtime-dashboard.png)
+
+### Refactor Preview
+
+![Refactor Preview](./media/refactor-preview.png)
+
 ## Features
 
 ### 🎯 Real-time Diagnostics
@@ -37,7 +53,8 @@ Powerful language support for YARA rules powered by the YARAAST AST parser.
 - **Auto-import** missing modules
 - **Add missing** string definitions
 - **Rename** duplicate identifiers
-- **Extract** to rule (refactoring)
+- **Structural refactors** for strings, sections and conditions
+- **Preview refactors** before applying them
 
 ### 🔄 Rename Symbol
 - **Rename** string identifiers (F2)
@@ -130,6 +147,15 @@ Open VSCode settings (`Ctrl+,`) and search for "yaraast":
   // Path to Python interpreter (must have yaraast[lsp] installed)
   "yaraast.lsp.pythonPath": "python",
 
+  // Python module used to start the server
+  "yaraast.lsp.serverModule": "yaraast",
+
+  // Force a dialect or let the server auto-detect it
+  "yaraast.lsp.dialectMode": "auto", // "auto" | "yara" | "yaral" | "yarax"
+
+  // Keep a workspace cache for cross-file navigation
+  "yaraast.lsp.cacheWorkspace": true,
+
   // Trace server communication (for debugging)
   "yaraast.lsp.trace.server": "off", // "off" | "messages" | "verbose"
 }
@@ -141,6 +167,16 @@ Open VSCode settings (`Ctrl+,`) and search for "yaraast":
 {
   // Code formatting style
   "yaraast.formatting.style": "default", // "default" | "compact" | "readable" | "verbose"
+
+  // Override indent size sent to the language server
+  "yaraast.formatting.indentSize": 4,
+
+  // Brace placement style
+  "yaraast.formatting.braceStyle": "same_line", // "same_line" | "new_line" | "k_and_r"
+
+  // Sorting options forwarded to the language server formatter
+  "yaraast.formatting.sortMeta": false,
+  "yaraast.formatting.sortStrings": false
 }
 ```
 
@@ -169,6 +205,25 @@ Access via Command Palette (`Ctrl+Shift+P`):
 
 - `YARAAST: Restart Language Server` - Restart the LSP server
 - `YARAAST: Show Output Channel` - View server logs
+- `YARAAST: Show Server Configuration` - Dump current runtime configuration to the output channel
+- `YARAAST: Show Server Status` - Show effective runtime and environment status
+- `YARAAST: Copy Server Status` - Copy effective runtime and environment status to the clipboard
+- `YARAAST: Show Runtime Metrics` - Show cached latency metrics from the language server
+- `YARAAST: Diagnose Server Environment` - Copy a diagnostic report to the clipboard
+- `YARAAST: Open Extension Settings` - Jump directly to YARAAST settings
+- `YARAAST: Select Dialect Mode` - Force `auto`, `yara`, `yaral` or `yarax`
+- `YARAAST: Toggle Language Server` - Enable or disable the server quickly
+- `YARAAST: Preview Refactors` - Preview and apply structural YARAAST refactors
+
+## Release Notes
+
+See [CHANGELOG.md](./CHANGELOG.md) for packaged extension changes.
+
+## Release Workflow
+
+Use [RELEASE.md](./RELEASE.md) for the packaging and verification checklist.
+
+For day-to-day usage, see [USAGE.md](./USAGE.md).
 
 ### Keyboard Shortcuts
 
@@ -211,6 +266,7 @@ Access via Command Palette (`Ctrl+Shift+P`):
 4. **View server logs:**
    - Open Command Palette (`Ctrl+Shift+P`)
    - Run `YARAAST: Show Output Channel`
+   - Or run `YARAAST: Diagnose Server Environment` to copy a report you can paste into an issue
 
 ### Python Path Issues
 

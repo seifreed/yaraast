@@ -1,19 +1,30 @@
 """Round-trip serialization and pretty printing CLI commands."""
 
-import json
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 
 import click
 
-from yaraast.codegen.pretty_printer import PrettyPrinter, StylePresets
-from yaraast.parser import Parser
-from yaraast.serialization.roundtrip_serializer import (
-    RoundTripSerializer,
-    create_rules_manifest,
-    serialize_for_pipeline,
+from yaraast.cli.roundtrip_reporting import (
+    _display_test_failure,
+    _display_test_success,
+    _display_verbose_source,
+    display_deserialize_result,
+    display_pipeline_result,
+    display_pretty_result,
+    display_serialize_result,
 )
-from yaraast.serialization.simple_roundtrip import simple_roundtrip_test
+from yaraast.cli.roundtrip_services import (
+    build_rules_manifest,
+    deserialize_roundtrip_file,
+    pipeline_serialize_file,
+    pretty_print_file,
+    serialize_roundtrip_file,
+    test_roundtrip_file,
+)
+from yaraast.cli.utils import format_json, write_text
 
 
 @click.group()
@@ -79,33 +90,23 @@ def serialize(
     """
     try:
         # Read input file
-        with Path(input_file).open(encoding="utf-8") as f:
-            yara_source = f.read()
-
-        # Create serializer
-        serializer = RoundTripSerializer(
-            preserve_comments=preserve_comments,
-            preserve_formatting=preserve_formatting,
+        ast, serialized = serialize_roundtrip_file(
+            input_file,
+            format,
+            preserve_comments,
+            preserve_formatting,
         )
 
-        # Parse and serialize
-        ast, serialized = serializer.parse_and_serialize(
-            yara_source,
-            source_file=str(input_file),
-            format=format,
-        )
-
-        # Output result
         if output:
-            with Path(output).open("w", encoding="utf-8") as f:
-                f.write(serialized)
-            click.echo(f"✅ Serialized to {output}")
-            click.echo(f"   Format: {format.upper()}")
-            click.echo(f"   Rules: {len(ast.rules)}")
-            click.echo(f"   Comments preserved: {preserve_comments}")
-            click.echo(f"   Formatting preserved: {preserve_formatting}")
-        else:
-            click.echo(serialized)
+            write_text(output, serialized)
+        display_serialize_result(
+            output,
+            format,
+            ast,
+            preserve_comments,
+            preserve_formatting,
+            serialized,
+        )
 
     except Exception as e:
         click.echo(f"❌ Error serializing {input_file}: {e}", err=True)
@@ -152,73 +153,25 @@ def deserialize(
 
     """
     try:
-        # Read serialized data
-        with Path(input_file).open(encoding="utf-8") as f:
-            serialized_data = f.read()
-
-        # Create serializer
-        serializer = RoundTripSerializer()
-
-        # Deserialize and generate
-        ast, yara_code = serializer.deserialize_and_generate(
-            serialized_data,
-            format=format,
-            preserve_original_formatting=preserve_formatting,
+        ast, yara_code = deserialize_roundtrip_file(
+            input_file,
+            format,
+            preserve_formatting,
         )
 
-        # Output result
         if output:
-            with Path(output).open("w", encoding="utf-8") as f:
-                f.write(yara_code)
-            click.echo(f"✅ Generated YARA code to {output}")
-            click.echo(f"   Rules: {len(ast.rules)}")
-            click.echo(f"   Formatting preserved: {preserve_formatting}")
-        else:
-            click.echo(yara_code)
+            write_text(output, yara_code)
+        display_deserialize_result(
+            output,
+            format,
+            ast,
+            preserve_formatting,
+            yara_code,
+        )
 
     except Exception as e:
         click.echo(f"❌ Error deserializing {input_file}: {e}", err=True)
         sys.exit(1)
-
-
-def _display_test_success(input_file: Path, result: dict, format: str) -> None:
-    """Display successful test results."""
-    click.echo(f"✅ Round-trip test PASSED for {input_file}")
-    click.echo(f"   Format: {format.upper()}")
-    click.echo(f"   Original rules: {result['metadata']['original_rule_count']}")
-    click.echo(
-        f"   Reconstructed rules: {result['metadata']['reconstructed_rule_count']}",
-    )
-
-
-def _display_test_failure(input_file: Path, result: dict, verbose: bool) -> None:
-    """Display failed test results."""
-    click.echo(f"❌ Round-trip test FAILED for {input_file}")
-    click.echo(f"   Differences found: {len(result['differences'])}")
-
-    if verbose:
-        click.echo("\nDifferences:")
-        for diff in result["differences"]:
-            click.echo(f"   • {diff}")
-
-
-def _display_verbose_source(result: dict) -> None:
-    """Display verbose source comparison."""
-    click.echo(
-        f"\nOriginal source ({len(result['original_source'].splitlines())} lines):",
-    )
-    for i, line in enumerate(result["original_source"].splitlines()[:10], 1):
-        click.echo(f"   {i:2d}: {line}")
-    if len(result["original_source"].splitlines()) > 10:
-        click.echo("      ... (truncated)")
-
-    click.echo(
-        f"\nReconstructed source ({len(result['reconstructed_source'].splitlines())} lines):",
-    )
-    for i, line in enumerate(result["reconstructed_source"].splitlines()[:10], 1):
-        click.echo(f"   {i:2d}: {line}")
-    if len(result["reconstructed_source"].splitlines()) > 10:
-        click.echo("      ... (truncated)")
 
 
 @roundtrip.command()
@@ -255,12 +208,7 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool) -> N
 
     """
     try:
-        # Read input file
-        with Path(input_file).open(encoding="utf-8") as f:
-            yara_source = f.read()
-
-        # Perform round-trip test (using simple version for now)
-        result = simple_roundtrip_test(yara_source)
+        result = test_roundtrip_file(input_file, format)
 
         # Display results
         if result["round_trip_successful"]:
@@ -273,8 +221,7 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool) -> N
 
         # Save detailed results if requested
         if output:
-            with Path(output).open("w", encoding="utf-8") as f:
-                json.dump(result, f, indent=2, ensure_ascii=False)
+            write_text(output, format_json(result, ensure_ascii=False))
             click.echo(f"\nDetailed results saved to {output}")
 
         # Exit with error if test failed
@@ -342,49 +289,27 @@ def pretty(
 
     """
     try:
-        # Parse input file
-        parser = Parser()
-        with Path(input_file).open(encoding="utf-8") as f:
-            yara_source = f.read()
+        ast, formatted_code = pretty_print_file(
+            input_file,
+            style,
+            indent_size,
+            max_line_length,
+            align_strings,
+            align_meta,
+            sort_imports,
+            sort_tags,
+        )
 
-        ast = parser.parse(yara_source)
-        if not ast:
-            msg = "Failed to parse YARA file"
-            raise ValueError(msg)
-
-        # Create pretty print options
-        if style == "compact":
-            options = StylePresets.compact()
-        elif style == "dense":
-            options = StylePresets.dense()
-        elif style == "verbose":
-            options = StylePresets.verbose()
-        else:  # readable
-            options = StylePresets.readable()
-
-        # Apply custom options
-        options.indent_size = indent_size
-        options.max_line_length = max_line_length
-        options.align_string_definitions = align_strings
-        options.align_meta_values = align_meta
-        options.sort_imports = sort_imports
-        options.sort_tags = sort_tags
-
-        # Pretty print
-        printer = PrettyPrinter(options)
-        formatted_code = printer.pretty_print(ast)
-
-        # Output result
         if output:
-            with Path(output).open("w", encoding="utf-8") as f:
-                f.write(formatted_code)
-            click.echo(f"✅ Pretty printed to {output}")
-            click.echo(f"   Style: {style}")
-            click.echo(f"   Rules: {len(ast.rules)}")
-            click.echo(f"   Indent size: {indent_size}")
-            click.echo(f"   Max line length: {max_line_length}")
-        else:
-            click.echo(formatted_code)
+            write_text(output, formatted_code)
+        display_pretty_result(
+            output,
+            style,
+            ast,
+            indent_size,
+            max_line_length,
+            formatted_code,
+        )
 
     except Exception as e:
         click.echo(f"❌ Error pretty printing {input_file}: {e}", err=True)
@@ -428,50 +353,28 @@ def pipeline(
 
     """
     try:
-        # Parse input file
-        parser = Parser()
-        with Path(input_file).open(encoding="utf-8") as f:
-            yara_source = f.read()
+        ast, yaml_content, pipeline_data = pipeline_serialize_file(
+            input_file,
+            pipeline_info,
+        )
 
-        ast = parser.parse(yara_source)
-        if not ast:
-            msg = "Failed to parse YARA file"
-            raise ValueError(msg)
-
-        # Parse pipeline info if provided
-        pipeline_data = None
-        if pipeline_info:
-            pipeline_data = json.loads(pipeline_info)
-
-        # Serialize for pipeline
-        yaml_content = serialize_for_pipeline(ast, pipeline_data)
-
-        # Output main file
         if output:
-            with Path(output).open("w", encoding="utf-8") as f:
-                f.write(yaml_content)
-            click.echo(f"✅ Pipeline YAML written to {output}")
-        else:
-            click.echo(yaml_content)
+            write_text(output, yaml_content)
 
-        # Generate manifest if requested
+        manifest_content = None
         if include_manifest:
-            manifest_content = create_rules_manifest(ast)
+            manifest_content = build_rules_manifest(ast)
             manifest_path = output.with_suffix(".manifest.yaml") if output else None
 
             if manifest_path:
-                with Path(manifest_path).open("w", encoding="utf-8") as f:
-                    f.write(manifest_content)
-                click.echo(f"✅ Rules manifest written to {manifest_path}")
-            else:
-                click.echo("\n--- Rules Manifest ---")
-                click.echo(manifest_content)
-
-        # Show statistics
-        click.echo("\nStatistics:")
-        click.echo(f"   Rules: {len(ast.rules)}")
-        click.echo(f"   Imports: {len(ast.imports)}")
-        click.echo(f"   Includes: {len(ast.includes)}")
+                write_text(manifest_path, manifest_content)
+        display_pipeline_result(
+            output,
+            yaml_content,
+            include_manifest,
+            manifest_content,
+            ast,
+        )
 
     except Exception as e:
         click.echo(f"❌ Error creating pipeline YAML for {input_file}: {e}", err=True)

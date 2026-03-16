@@ -39,7 +39,8 @@ class RuleOptimizer:
         total_dead_elims = 0
 
         current = yara_file
-        for passes_performed in range(passes):
+        passes_performed = 0
+        for _ in range(passes):
             # Expression optimization pass - for now just count rules with conditions
             expr_opts = 0
             for rule in current.rules:
@@ -49,7 +50,6 @@ class RuleOptimizer:
             total_expr_opts += expr_opts
 
             # Dead code elimination pass
-            old_rules = len(current.rules)
             current, dead_elims = self.dead_code_eliminator.eliminate(current)
             total_dead_elims += dead_elims
 
@@ -104,8 +104,3 @@ class RuleOptimizer:
         if rule.condition:
             rule.condition = self.expression_optimizer.optimize(rule.condition)
         return rule
-
-    def optimize_file(self, yara_file: YaraFile) -> YaraFile:
-        """Optimize a YARA file (simple version for compatibility)."""
-        optimized, _ = self.optimize(yara_file)
-        return optimized

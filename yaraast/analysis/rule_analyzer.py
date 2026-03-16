@@ -1,8 +1,11 @@
 """Main rule analyzer combining various analysis tools."""
 
-# type: ignore  # Analysis code allows gradual typing
+from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from yaraast.ast.rules import Rule
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.analysis.string_usage import StringUsageAnalyzer
@@ -41,7 +44,7 @@ class RuleAnalyzer:
             ),
         }
 
-    def analyze_rule(self, rule) -> dict[str, Any]:
+    def analyze_rule(self, rule: Rule) -> dict[str, Any]:
         """Analyze a single rule."""
         # Create a temporary YaraFile with just this rule for analysis
         temp_file = YaraFile(rules=[rule])
@@ -62,14 +65,8 @@ class RuleAnalyzer:
         }
 
         # Add string usage info if available
-        if (
-            "string_analysis" in full_analysis
-            and "unused_strings" in full_analysis["string_analysis"]
-        ):
-            unused = full_analysis["string_analysis"]["unused_strings"].get(
-                rule.name,
-                [],
-            )
+        if "string_analysis" in full_analysis:
+            unused = full_analysis["string_analysis"].get(rule.name, {}).get("unused", [])
             rule_analysis["unused_strings"] = unused
 
         return rule_analysis
@@ -77,8 +74,8 @@ class RuleAnalyzer:
     def _generate_summary(
         self,
         yara_file: YaraFile,
-        string_analysis: dict,
-        dependency_analysis: dict,
+        string_analysis: dict[str, Any],
+        dependency_analysis: dict[str, Any],
     ) -> dict[str, Any]:
         """Generate summary statistics."""
         total_rules = len(yara_file.rules)
@@ -104,8 +101,8 @@ class RuleAnalyzer:
 
     def _calculate_quality_metrics(
         self,
-        string_analysis: dict,
-        dependency_analysis: dict,
+        string_analysis: dict[str, Any],
+        dependency_analysis: dict[str, Any],
     ) -> dict[str, Any]:
         """Calculate quality metrics for the rules."""
         metrics = {}
@@ -152,8 +149,8 @@ class RuleAnalyzer:
 
     def _generate_recommendations(
         self,
-        string_analysis: dict,
-        dependency_analysis: dict,
+        string_analysis: dict[str, Any],
+        dependency_analysis: dict[str, Any],
     ) -> list[dict[str, str]]:
         """Generate recommendations for improving the rules."""
         recommendations = []
@@ -200,7 +197,7 @@ class RuleAnalyzer:
 
     def _check_circular_dependencies(
         self,
-        dependency_analysis: dict,
+        dependency_analysis: dict[str, Any],
     ) -> list[dict[str, str]]:
         """Check for circular dependencies."""
         recommendations = []
@@ -218,7 +215,7 @@ class RuleAnalyzer:
 
     def _check_high_dependencies(
         self,
-        dependency_analysis: dict,
+        dependency_analysis: dict[str, Any],
     ) -> list[dict[str, str]]:
         """Check for highly dependent rules."""
         recommendations = []
@@ -236,7 +233,7 @@ class RuleAnalyzer:
                 )
         return recommendations
 
-    def _check_low_string_usage(self, string_analysis: dict) -> list[dict[str, str]]:
+    def _check_low_string_usage(self, string_analysis: dict[str, Any]) -> list[dict[str, str]]:
         """Check for low string usage."""
         recommendations = []
         for rule, analysis in string_analysis.items():

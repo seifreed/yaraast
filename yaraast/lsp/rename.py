@@ -2,20 +2,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from lsprotocol.types import Position, Range, WorkspaceEdit
 
-from lsprotocol.types import Position, Range, TextEdit, WorkspaceEdit
-
-from yaraast.lsp.utils import get_word_at_position
-
-if TYPE_CHECKING:
-    pass
+from yaraast.lsp.runtime import DocumentContext, LspRuntime
 
 
 class RenameProvider:
     """Provides rename functionality."""
 
-    def prepare_rename(self, text: str, position: Position) -> Range | None:
+    def __init__(self, runtime: LspRuntime | None = None) -> None:
+        self.runtime = runtime
+
+    def prepare_rename(self, text: str, position: Position, uri: str | None = None) -> Range | None:
         """
         Prepare for rename operation.
 
@@ -26,15 +24,13 @@ class RenameProvider:
         Returns:
             Range of the symbol to rename or None if not renameable
         """
-        word, word_range = get_word_at_position(text, position)
-
-        if not word:
-            return None
-
-        # Only allow renaming of string identifiers and rule names
-        if word.startswith("$") or self._is_rule_name(text, position):
-            return word_range
-
+        resolved = (
+            self.runtime.resolve_symbol(uri, text, position)
+            if self.runtime and uri
+            else DocumentContext(uri or "file://local.yar", text).resolve_symbol(position)
+        )
+        if resolved is not None and resolved.kind in {"string", "rule"}:
+            return resolved.range
         return None
 
     def rename(
@@ -56,82 +52,36 @@ class RenameProvider:
         Returns:
             WorkspaceEdit with all the changes
         """
-        word, _ = get_word_at_position(text, position)
-
-        if not word:
+        doc = (
+            self.runtime.ensure_document(uri, text)
+            if self.runtime and uri
+            else DocumentContext(uri, text)
+        )
+        resolved = (
+            self.runtime.resolve_symbol(uri, text, position)
+            if self.runtime and uri
+            else doc.resolve_symbol(position)
+        )
+        if resolved is None:
             return None
 
-        edits = []
-        lines = text.split("\n")
-
         # Handle string identifier renaming
-        if word.startswith("$"):
-            base_identifier = word
-            # Ensure new_name has $ prefix
-            if not new_name.startswith("$"):
-                new_name = f"${new_name}"
-
-            # Find all occurrences of this identifier and its variants
-            for line_num, line in enumerate(lines):
-                # Check for all variants: $id, #id, @id, !id
-                base_name = base_identifier[1:]  # Remove $
-                for variant, new_variant in [
-                    (base_identifier, new_name),
-                    (f"#{base_name}", f"#{new_name[1:]}"),
-                    (f"@{base_name}", f"@{new_name[1:]}"),
-                    (f"!{base_name}", f"!{new_name[1:]}"),
-                ]:
-                    col = 0
-                    while True:
-                        col = line.find(variant, col)
-                        if col == -1:
-                            break
-
-                        # Check if it's a whole word
-                        if (col == 0 or not line[col - 1].isalnum()) and (
-                            col + len(variant) >= len(line)
-                            or not line[col + len(variant)].isalnum()
-                        ):
-                            edits.append(
-                                TextEdit(
-                                    range=Range(
-                                        start=Position(line=line_num, character=col),
-                                        end=Position(
-                                            line=line_num,
-                                            character=col + len(variant),
-                                        ),
-                                    ),
-                                    new_text=new_variant,
-                                )
-                            )
-                        col += len(variant)
+        if resolved.kind == "string":
+            base_identifier = resolved.normalized_name
+            edits = doc.build_string_rename_edits(base_identifier, new_name)
+            if edits:
+                return WorkspaceEdit(changes={uri: edits})
+            return None
 
         # Handle rule name renaming
-        elif self._is_rule_name(text, position):
-            for line_num, line in enumerate(lines):
-                col = 0
-                while True:
-                    col = line.find(word, col)
-                    if col == -1:
-                        break
-
-                    # Check if it's a whole word
-                    if (col == 0 or not line[col - 1].isalnum()) and (
-                        col + len(word) >= len(line) or not line[col + len(word)].isalnum()
-                    ):
-                        edits.append(
-                            TextEdit(
-                                range=Range(
-                                    start=Position(line=line_num, character=col),
-                                    end=Position(line=line_num, character=col + len(word)),
-                                ),
-                                new_text=new_name,
-                            )
-                        )
-                    col += len(word)
-
-        if edits:
-            return WorkspaceEdit(changes={uri: edits})
+        if resolved.kind == "rule":
+            if self.runtime:
+                changes = self.runtime.rename_rule(resolved.normalized_name, new_name)
+                if changes:
+                    return WorkspaceEdit(changes=changes)
+            edits = doc.rename_rule_edits(resolved.normalized_name, new_name)
+            if edits:
+                return WorkspaceEdit(changes={uri: edits})
 
         return None
 

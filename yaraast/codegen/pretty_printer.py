@@ -8,6 +8,36 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+from yaraast.codegen.pretty_printer_helpers import (
+    calculate_meta_alignment_column,
+    calculate_string_alignment_column,
+    expression_to_string,
+)
+from yaraast.codegen.pretty_printer_layout import visit_rule as layout_visit_rule
+from yaraast.codegen.pretty_printer_layout import visit_yara_file as layout_visit_yara_file
+from yaraast.codegen.pretty_printer_layout import (
+    write_condition_section as layout_write_condition_section,
+)
+from yaraast.codegen.pretty_printer_layout import (
+    write_string_definition as layout_write_string_definition,
+)
+from yaraast.codegen.pretty_printer_sections import (
+    write_hex_string_aligned as section_write_hex_string_aligned,
+)
+from yaraast.codegen.pretty_printer_sections import write_meta_entry as section_write_meta_entry
+from yaraast.codegen.pretty_printer_sections import write_meta_section as section_write_meta_section
+from yaraast.codegen.pretty_printer_sections import (
+    write_plain_string_aligned as section_write_plain_string_aligned,
+)
+from yaraast.codegen.pretty_printer_sections import (
+    write_regex_string_aligned as section_write_regex_string_aligned,
+)
+from yaraast.codegen.pretty_printer_sections import (
+    write_strings_section as section_write_strings_section,
+)
+from yaraast.codegen.pretty_printer_sections import (
+    write_wrapped_condition as section_write_wrapped_condition,
+)
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -83,327 +113,53 @@ class PrettyPrinter(CommentAwareCodeGenerator):
 
         # Calculate alignment columns if needed
         if self.options.align_string_definitions:
-            self._calculate_string_alignment_column(ast)
+            self._string_alignment_column = calculate_string_alignment_column(ast)
         if self.options.align_meta_values:
-            self._calculate_meta_alignment_column(ast)
+            self._meta_alignment_column = calculate_meta_alignment_column(
+                ast,
+                self.options.min_alignment_column,
+            )
 
         return self.visit_yara_file(ast)
 
     def visit_yara_file(self, node: YaraFile) -> str:
-        """Pretty print YARA file with enhanced formatting."""
-        # Imports section
-        if node.imports:
-            imports = (
-                sorted(node.imports, key=lambda x: x.module)
-                if self.options.sort_imports
-                else node.imports
-            )
-
-            for imp in imports:
-                self.visit_import(imp)
-                self._writeline()
-
-            # Add blank lines after imports
-            for _ in range(self.options.blank_lines_after_imports - 1):
-                self._writeline()
-
-        # Includes section
-        if node.includes:
-            includes = (
-                sorted(node.includes, key=lambda x: x.path)
-                if self.options.sort_includes
-                else node.includes
-            )
-
-            for inc in includes:
-                self.visit_include(inc)
-                self._writeline()
-
-            # Add blank lines after includes
-            for _ in range(self.options.blank_lines_after_includes):
-                self._writeline()
-
-        # Rules section
-        for i, rule in enumerate(node.rules):
-            if i > 0:
-                # Add blank lines between rules
-                for _ in range(self.options.blank_lines_before_rule):
-                    self._writeline()
-
-            self.visit_rule(rule)
-            self._writeline()
-
-        return self.buffer.getvalue()
+        return layout_visit_yara_file(self, node)
 
     def visit_rule(self, node: Rule) -> str:
-        """Pretty print rule with enhanced formatting."""
-        # Write leading comments
-        self._write_comments(node.leading_comments)
-
-        # Rule declaration line
-        line_parts = []
-
-        # Modifiers
-        if node.modifiers:
-            line_parts.extend(node.modifiers)
-
-        # Rule keyword and name
-        line_parts.extend(["rule", node.name])
-
-        # Tags
-        if node.tags:
-            tags = (
-                sorted([tag.name for tag in node.tags])
-                if self.options.sort_tags
-                else [tag.name for tag in node.tags]
-            )
-            line_parts.append(":")
-            line_parts.extend(tags)
-
-        # Write rule declaration
-        self._writeline(" ".join(line_parts) + " {")
-        self._indent()
-
-        # Meta section
-        if node.meta:
-            self._writeline("meta:")
-            self._indent()
-            self._write_meta_section(node.meta)
-            self._dedent()
-
-            # Blank line after meta
-            if node.strings or node.condition:
-                for _ in range(self.options.blank_lines_between_sections):
-                    self._writeline()
-
-        # Strings section
-        if node.strings:
-            self._writeline("strings:")
-            self._indent()
-            self._write_strings_section(node.strings)
-            self._dedent()
-
-            # Blank line after strings
-            if node.condition:
-                for _ in range(self.options.blank_lines_between_sections):
-                    self._writeline()
-
-        # Condition section
-        if node.condition:
-            self._writeline("condition:")
-            self._indent()
-            self._write_condition_section(node.condition)
-            self._dedent()
-
-        self._dedent()
-        self._writeline("}")
-
-        return self.buffer.getvalue()
+        return layout_visit_rule(self, node)
 
     def _write_meta_section(self, meta: dict[str, Any] | list[Any]) -> None:
-        """Write meta section with alignment."""
-        if isinstance(meta, dict):
-            items = list(meta.items())
-            if self.options.sort_meta_keys:
-                items.sort(key=lambda x: x[0])
-
-            for key, value in items:
-                self._write_meta_entry(key, value)
-        else:
-            # Handle list of meta entries
-            for entry in meta:
-                if hasattr(entry, "key") and hasattr(entry, "value"):
-                    self._write_meta_entry(entry.key, entry.value)
+        section_write_meta_section(self, meta)
 
     def _write_meta_entry(self, key: str, value: Any) -> None:
-        """Write a single meta entry with alignment."""
-        if self.options.align_meta_values and self._meta_alignment_column > 0:
-            # Calculate padding for alignment
-            key_part = f"{key} ="
-            padding = max(1, self._meta_alignment_column - len(key_part))
-            self._write(key_part + " " * padding)
-        else:
-            self._write(f"{key} = ")
-
-        # Format value based on type
-        if isinstance(value, str):
-            quote = '"' if self.options.quote_style == "double" else "'"
-            self._write(f"{quote}{value}{quote}")
-        elif isinstance(value, bool):
-            self._write("true" if value else "false")
-        else:
-            self._write(str(value))
-
-        self._writeline()
+        section_write_meta_entry(self, key, value)
 
     def _write_strings_section(self, strings: list[StringDefinition]) -> None:
-        """Write strings section with alignment."""
-        for string_def in strings:
-            self._write_string_definition(string_def)
+        section_write_strings_section(self, strings)
 
     def _write_string_definition(self, string_def: StringDefinition) -> None:
-        """Write string definition with alignment and formatting."""
-        if isinstance(string_def, PlainString):
-            self._write_plain_string_aligned(string_def)
-        elif isinstance(string_def, HexString):
-            self._write_hex_string_aligned(string_def)
-        elif isinstance(string_def, RegexString):
-            self._write_regex_string_aligned(string_def)
-        else:
-            # Fallback
-            self.visit(string_def)
-            self._writeline()
+        layout_write_string_definition(self, string_def)
 
     def _write_plain_string_aligned(self, node: PlainString) -> None:
-        """Write plain string with alignment."""
-        quote = '"' if self.options.quote_style == "double" else "'"
-
-        if self.options.align_string_definitions and self._string_alignment_column > 0:
-            # Align equals sign by padding identifier
-            padding = max(0, self._string_alignment_column - len(node.identifier))
-            self._write(f"{node.identifier}{' ' * padding} = {quote}{node.value}{quote}")
-        else:
-            self._write(f"{node.identifier} = {quote}{node.value}{quote}")
-
-        # Modifiers
-        if node.modifiers:
-            modifier_parts = []
-            for modifier in node.modifiers:
-                modifier_parts.append(modifier.name)
-            self._write(" " + " ".join(modifier_parts))
-
-        self._writeline()
+        section_write_plain_string_aligned(self, node)
 
     def _write_hex_string_aligned(self, node: HexString) -> None:
-        """Write hex string with alignment and formatting."""
-        # Build hex pattern
-        hex_parts = []
-        for token in node.tokens:
-            if hasattr(token, "value"):  # HexByte
-                # Handle both string and int values
-                if isinstance(token.value, str):
-                    hex_val = (
-                        token.value.upper() if self.options.hex_uppercase else token.value.lower()
-                    )
-                else:
-                    hex_val = (
-                        f"{token.value:02X}" if self.options.hex_uppercase else f"{token.value:02x}"
-                    )
-                hex_parts.append(hex_val)
-            elif hasattr(token, "min_jump"):  # HexJump
-                if token.min_jump == token.max_jump:
-                    hex_parts.append(f"[{token.min_jump}]")
-                else:
-                    hex_parts.append(f"[{token.min_jump}-{token.max_jump}]")
-            else:  # HexWildcard or others
-                hex_parts.append("??")
-
-        hex_pattern = " ".join(hex_parts) if self.options.hex_spacing else "".join(hex_parts)
-
-        if self.options.align_string_definitions and self._string_alignment_column > 0:
-            # Align equals sign by padding identifier
-            padding = max(0, self._string_alignment_column - len(node.identifier))
-            self._write(f"{node.identifier}{' ' * padding} = {{ {hex_pattern} }}")
-        else:
-            self._write(f"{node.identifier} = {{ {hex_pattern} }}")
-
-        # Modifiers
-        if node.modifiers:
-            modifier_parts = []
-            for modifier in node.modifiers:
-                modifier_parts.append(modifier.name)
-            self._write(" " + " ".join(modifier_parts))
-
-        self._writeline()
+        section_write_hex_string_aligned(self, node)
 
     def _write_regex_string_aligned(self, node: RegexString) -> None:
-        """Write regex string with alignment."""
-        if self.options.align_string_definitions and self._string_alignment_column > 0:
-            # Align equals sign by padding identifier
-            padding = max(0, self._string_alignment_column - len(node.identifier))
-            self._write(f"{node.identifier}{' ' * padding} = /{node.regex}/")
-        else:
-            self._write(f"{node.identifier} = /{node.regex}/")
-
-        # Modifiers
-        if node.modifiers:
-            modifier_parts = []
-            for modifier in node.modifiers:
-                modifier_parts.append(modifier.name)
-            self._write(" " + " ".join(modifier_parts))
-
-        self._writeline()
+        section_write_regex_string_aligned(self, node)
 
     def _write_condition_section(self, condition: Expression) -> None:
-        """Write condition section with formatting."""
-        if self.options.wrap_long_conditions:
-            # For now, simple implementation
-            condition_str = self._expression_to_string(condition)
-            if len(condition_str) > self.options.max_line_length:
-                # Simple line wrapping (could be enhanced)
-                self._write_wrapped_condition(condition_str)
-            else:
-                self._writeline(condition_str)
-        else:
-            condition_str = self._expression_to_string(condition)
-            self._writeline(condition_str)
+        layout_write_condition_section(self, condition)
 
     def _write_wrapped_condition(self, condition_str: str) -> None:
-        """Write condition with line wrapping."""
-        # Simple implementation - split on operators
-
-        current_line = ""
-        words = condition_str.split()
-
-        for word in words:
-            if len(current_line + " " + word) > self.options.max_line_length:
-                self._writeline(current_line)
-                current_line = "    " + word  # Add extra indent for continuation
-            elif current_line:
-                current_line += " " + word
-            else:
-                current_line = word
-
-        if current_line:
-            self._writeline(current_line)
+        section_write_wrapped_condition(self, condition_str)
 
     def _expression_to_string(self, expr: Expression) -> str:
         """Convert expression to string (simplified)."""
         # This is a simplified implementation
         # In practice, would use a separate visitor for expression serialization
-        from yaraast.codegen import CodeGenerator
-
-        generator = CodeGenerator()
-        # Use visit directly instead of generate which expects a full AST
-        return generator.visit(expr).strip()
-
-    def _calculate_string_alignment_column(self, ast: YaraFile) -> None:
-        """Calculate alignment column for string definitions (equals sign position)."""
-        max_length = 0
-
-        for rule in ast.rules:
-            for string_def in rule.strings:
-                # Calculate just the identifier length for equals sign alignment
-                length = len(string_def.identifier)
-                max_length = max(max_length, length)
-
-        # Column where equals sign should appear (after identifier + space)
-        self._string_alignment_column = max_length + 1
-
-    def _calculate_meta_alignment_column(self, ast: YaraFile) -> None:
-        """Calculate alignment column for meta values."""
-        max_length = 0
-
-        for rule in ast.rules:
-            if isinstance(rule.meta, dict):
-                for key in rule.meta:
-                    length = len(f"{key} =")
-                    max_length = max(max_length, length)
-
-        self._meta_alignment_column = min(
-            max_length + 2,
-            self.options.min_alignment_column,
-        )
+        return expression_to_string(expr)
 
 
 class StylePresets:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.expressions import BooleanLiteral, Identifier, StringIdentifier
-from yaraast.visitor.visitor import ASTTransformer
+from yaraast.visitor.base import ASTTransformer
 
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
@@ -96,7 +96,7 @@ class DeadCodeEliminator(ASTTransformer):
 
             # Keep only used rules (or all if we can't determine)
             if self.used_rules:
-                # Filter rules - keep if used or if it's a private rule that might be used internally
+                # Filter rules - keep if referenced by other rules, is private, or is a top-level rule
                 is_private = False
                 if hasattr(rule, "modifiers") and isinstance(
                     rule.modifiers,
@@ -106,7 +106,7 @@ class DeadCodeEliminator(ASTTransformer):
                 if (
                     rule.name in self.used_rules
                     or is_private
-                    or not self._has_external_references(rule)
+                    or not self._is_referenced_by_other_rules(rule.name)
                 ):
                     kept_rules.append(self.visit(rule))
             else:
@@ -115,6 +115,10 @@ class DeadCodeEliminator(ASTTransformer):
 
         node.rules = kept_rules
         return node
+
+    def _is_referenced_by_other_rules(self, rule_name: str) -> bool:
+        """Check if this rule is referenced by any other rule."""
+        return rule_name in self.used_rules
 
     def _has_external_references(self, rule: Rule) -> bool:
         """Check if rule references other rules."""

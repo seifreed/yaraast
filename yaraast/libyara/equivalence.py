@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from yaraast.codegen import CodeGenerator
-from yaraast.evaluation import YaraEvaluator
-from yaraast.parser import Parser
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.evaluation.evaluator import YaraEvaluator
+from yaraast.parser.parser import Parser
 
 from .compiler import LibyaraCompiler
 from .scanner import LibyaraScanner, ScanResult
@@ -57,6 +57,71 @@ class EquivalenceTester:
         self.compiler = LibyaraCompiler()
         self.scanner = LibyaraScanner()
 
+    @staticmethod
+    def _record_regeneration_failure(result: EquivalenceResult, error: Exception) -> None:
+        result.equivalent = False
+        result.code_equivalent = False
+        result.ast_differences.append(f"Re-generation failed: {error!s}")
+
+    @staticmethod
+    def _record_code_difference(
+        result: EquivalenceResult,
+        original_code: str,
+        regenerated_code: str,
+    ) -> None:
+        if original_code == regenerated_code:
+            return
+        result.equivalent = False
+        result.code_equivalent = False
+        result.ast_differences.append("Generated code differs after round-trip")
+
+    @staticmethod
+    def _record_ast_differences(
+        result: EquivalenceResult,
+        differences: list[str],
+    ) -> None:
+        if not differences:
+            return
+        result.equivalent = False
+        result.ast_equivalent = False
+        result.ast_differences.extend(differences)
+
+    @staticmethod
+    def _record_scan_differences(
+        result: EquivalenceResult,
+        differences: list[str],
+    ) -> None:
+        if not differences:
+            return
+        result.equivalent = False
+        result.scan_equivalent = False
+        result.scan_differences.extend(differences)
+
+    @staticmethod
+    def _record_eval_differences(
+        result: EquivalenceResult,
+        differences: list[str],
+    ) -> None:
+        if not differences:
+            return
+        result.equivalent = False
+        result.eval_equivalent = False
+        result.eval_differences.extend(differences)
+
+    def _generate_regenerated_code(
+        self,
+        reparsed_ast: YaraFile,
+        result: EquivalenceResult,
+    ) -> str | None:
+        """Generate code from a reparsed AST, recording failures in result."""
+        try:
+            regenerated_code = self.codegen.generate(reparsed_ast)
+            result.regenerated_code = regenerated_code
+        except Exception as e:
+            self._record_regeneration_failure(result, e)
+            return None
+        return regenerated_code
+
     def test_round_trip(
         self,
         original_ast: YaraFile,
@@ -94,27 +159,20 @@ class EquivalenceTester:
             return result
 
         # Step 3: Generate code from re-parsed AST
-        try:
-            regenerated_code = self.codegen.generate(reparsed_ast)
-            result.regenerated_code = regenerated_code
-        except Exception as e:
-            result.equivalent = False
-            result.code_equivalent = False
-            result.ast_differences.append(f"Re-generation failed: {e!s}")
+        regenerated_code = self._generate_regenerated_code(reparsed_ast, result)
+        if regenerated_code is None:
             return result
 
         # Step 4: Compare generated code (normalized)
-        if not self._compare_code(original_code, regenerated_code):
-            result.equivalent = False
-            result.code_equivalent = False
-            result.ast_differences.append("Generated code differs after round-trip")
+        self._record_code_difference(
+            result,
+            self._normalize_code(original_code),
+            self._normalize_code(regenerated_code),
+        )
 
         # Step 5: Compare AST structures
         ast_diffs = self._compare_ast(original_ast, reparsed_ast)
-        if ast_diffs:
-            result.equivalent = False
-            result.ast_equivalent = False
-            result.ast_differences.extend(ast_diffs)
+        self._record_ast_differences(result, ast_diffs)
 
         # Step 6: Compile both versions with libyara
         orig_compilation = self.compiler.compile_source(original_code)
@@ -141,17 +199,11 @@ class EquivalenceTester:
 
             # Compare scan results
             scan_diffs = self._compare_scans(orig_scan, regen_scan)
-            if scan_diffs:
-                result.equivalent = False
-                result.scan_equivalent = False
-                result.scan_differences.extend(scan_diffs)
+            self._record_scan_differences(result, scan_diffs)
 
             # Step 8: Compare with evaluation API
             eval_diffs = self._compare_evaluation(original_ast, reparsed_ast, test_data)
-            if eval_diffs:
-                result.equivalent = False
-                result.eval_equivalent = False
-                result.eval_differences.extend(eval_diffs)
+            self._record_eval_differences(result, eval_diffs)
 
         return result
 
@@ -184,19 +236,24 @@ class EquivalenceTester:
 
     def _compare_code(self, code1: str, code2: str) -> bool:
         """Compare two code strings (normalized)."""
+        return self._normalize_code(code1) == self._normalize_code(code2)
+
+    @staticmethod
+    def _normalize_code(code: str) -> str:
+        """Normalize code for equivalence comparisons."""
         # Normalize whitespace and line endings
-        norm1 = "\n".join(line.strip() for line in code1.strip().split("\n") if line.strip())
-        norm2 = "\n".join(line.strip() for line in code2.strip().split("\n") if line.strip())
-        return norm1 == norm2
+        return "\n".join(line.strip() for line in code.strip().split("\n") if line.strip())
 
     def _compare_ast(self, ast1: YaraFile, ast2: YaraFile) -> list[str]:
         """Compare two ASTs and return differences."""
         differences = []
 
-        # Compare imports
-        if len(ast1.imports) != len(ast2.imports):
+        # Compare imports by content
+        imports1 = sorted(imp.module for imp in ast1.imports)
+        imports2 = sorted(imp.module for imp in ast2.imports)
+        if imports1 != imports2:
             differences.append(
-                f"Import count differs: {len(ast1.imports)} vs {len(ast2.imports)}",
+                f"Imports differ: {imports1} vs {imports2}",
             )
 
         # Compare rules
@@ -213,11 +270,35 @@ class EquivalenceTester:
                         f"Rule {i} name differs: {rule1.name} vs {rule2.name}",
                     )
 
-                # Compare strings
+                # Compare modifiers
+                if sorted(rule1.modifiers) != sorted(rule2.modifiers):
+                    differences.append(
+                        f"Rule {rule1.name} modifiers differ: {rule1.modifiers} vs {rule2.modifiers}",
+                    )
+
+                # Compare strings by count, identifier, and type
                 if len(rule1.strings) != len(rule2.strings):
                     differences.append(
                         f"Rule {rule1.name} string count differs: "
                         f"{len(rule1.strings)} vs {len(rule2.strings)}",
+                    )
+                else:
+                    for j, (s1, s2) in enumerate(zip(rule1.strings, rule2.strings, strict=False)):
+                        if s1.identifier != s2.identifier:
+                            differences.append(
+                                f"Rule {rule1.name} string {j} identifier differs: {s1.identifier} vs {s2.identifier}",
+                            )
+                        if type(s1).__name__ != type(s2).__name__:
+                            differences.append(
+                                f"Rule {rule1.name} string {s1.identifier} type differs: {type(s1).__name__} vs {type(s2).__name__}",
+                            )
+
+                # Compare tags
+                tags1 = sorted(t.name if hasattr(t, "name") else str(t) for t in rule1.tags)
+                tags2 = sorted(t.name if hasattr(t, "name") else str(t) for t in rule2.tags)
+                if tags1 != tags2:
+                    differences.append(
+                        f"Rule {rule1.name} tags differ: {tags1} vs {tags2}",
                     )
 
         return differences

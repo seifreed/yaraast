@@ -3,7 +3,7 @@
 import pytest
 
 from yaraast.parser.parser import Parser
-from yaraast.visitor.visitor import BaseVisitor
+from yaraast.visitor.base import BaseVisitor
 
 
 class TestVisitorPattern:

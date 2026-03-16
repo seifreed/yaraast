@@ -15,6 +15,7 @@ from yaraast.parser.parser import Parser as YaraParser
 from yaraast.performance.streaming_parser import StreamingParser
 from yaraast.yaral.ast_nodes import YaraLFile
 from yaraast.yaral.parser import YaraLParser
+from yaraast.yarax.parser import YaraXParser
 
 
 class UnifiedParser:
@@ -61,16 +62,11 @@ class UnifiedParser:
 
         """
         if self.dialect == YaraDialect.YARA_L:
-            parser = YaraLParser(self.text)
-            return parser.parse()
+            return YaraLParser(self.text).parse()
         if self.dialect == YaraDialect.YARA_X:
-            # For now, use standard YARA parser with extensions
-            # Future: Add YARA-X specific parser extensions for new syntax features
-            parser = YaraParser(self.text)
-            return parser.parse()
+            return YaraXParser(self.text).parse()
         # Standard YARA
-        parser = YaraParser(self.text)
-        return parser.parse()
+        return YaraParser(self.text).parse()
 
     def get_dialect(self) -> YaraDialect:
         """Get the detected or specified dialect."""

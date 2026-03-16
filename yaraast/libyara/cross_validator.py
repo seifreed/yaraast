@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from yaraast.evaluation import YaraEvaluator
+from yaraast.evaluation.evaluator import YaraEvaluator
 
 from .compiler import LibyaraCompiler
 from .scanner import LibyaraScanner
@@ -92,47 +92,48 @@ class CrossValidator:
 
         # Step 2: Compile with libyara
         start_time = time.time()
-        try:
-            if externals:
-                self.compiler.externals = externals
+        if externals:
+            self.compiler.externals = externals
 
-            compilation = self.compiler.compile_ast(ast)
-            result.libyara_compile_time = time.time() - start_time
+        compilation = self.compiler.compile_ast(ast)
+        result.libyara_compile_time = time.time() - start_time
 
-            if not compilation.success:
-                result.valid = False
-                result.errors.extend(compilation.errors)
-                return result
-        except Exception as e:
+        if not compilation.success:
             result.valid = False
-            result.errors.append(f"LibYARA compilation failed: {e!s}")
+            result.errors.extend(compilation.errors)
             return result
 
         # Step 3: Scan with libyara
         start_time = time.time()
-        try:
-            scan_result = self.scanner.scan_data(compilation.compiled_rules, test_data)
-            result.libyara_scan_time = time.time() - start_time
+        scan_result = self.scanner.scan_data(compilation.compiled_rules, test_data)
+        result.libyara_scan_time = time.time() - start_time
 
-            if not scan_result.success:
-                result.valid = False
-                result.errors.extend(scan_result.errors)
-                return result
-
-            # Convert scan results to rule -> bool mapping
-            libyara_matched = set(scan_result.matched_rules)
-            for rule in ast.rules:
-                result.libyara_results[rule.name] = rule.name in libyara_matched
-
-        except Exception as e:
+        if not scan_result.success:
             result.valid = False
-            result.errors.append(f"LibYARA scanning failed: {e!s}")
+            result.errors.extend(scan_result.errors)
             return result
 
-        # Step 4: Compare results
-        result.rules_tested = len(yaraast_results)
+        # Convert scan results to rule -> bool mapping
+        libyara_matched = set(scan_result.matched_rules)
+        for rule in ast.rules:
+            result.libyara_results[rule.name] = rule.name in libyara_matched
+
+        # Step 4: Compare results (skip private rules — libyara doesn't report them)
+        private_rules = set()
+        for rule in ast.rules:
+            if (
+                hasattr(rule, "modifiers")
+                and isinstance(rule.modifiers, list | tuple)
+                and "private" in rule.modifiers
+            ):
+                private_rules.add(rule.name)
+
+        result.rules_tested = len(yaraast_results) - len(private_rules)
 
         for rule_name in yaraast_results:
+            if rule_name in private_rules:
+                continue
+
             yaraast_match = yaraast_results.get(rule_name, False)
             libyara_match = result.libyara_results.get(rule_name, False)
 
@@ -211,29 +212,35 @@ class CrossValidator:
 
         # Scan with libyara
         start_time = time.time()
-        try:
-            scan_result = self.scanner.scan_data(compiled_rules, test_data)
-            result.libyara_scan_time = time.time() - start_time
+        scan_result = self.scanner.scan_data(compiled_rules, test_data)
+        result.libyara_scan_time = time.time() - start_time
 
-            if not scan_result.success:
-                result.valid = False
-                result.errors.extend(scan_result.errors)
-                return result
-
-            # Convert scan results
-            libyara_matched = set(scan_result.matched_rules)
-            for rule in ast.rules:
-                result.libyara_results[rule.name] = rule.name in libyara_matched
-
-        except Exception as e:
+        if not scan_result.success:
             result.valid = False
-            result.errors.append(f"LibYARA scanning failed: {e!s}")
+            result.errors.extend(scan_result.errors)
             return result
 
-        # Compare results
-        result.rules_tested = len(yaraast_results)
+        # Convert scan results
+        libyara_matched = set(scan_result.matched_rules)
+        for rule in ast.rules:
+            result.libyara_results[rule.name] = rule.name in libyara_matched
+
+        # Compare results (skip private rules — libyara doesn't report them)
+        private_rules = set()
+        for rule in ast.rules:
+            if (
+                hasattr(rule, "modifiers")
+                and isinstance(rule.modifiers, list | tuple)
+                and "private" in rule.modifiers
+            ):
+                private_rules.add(rule.name)
+
+        result.rules_tested = len(yaraast_results) - len(private_rules)
 
         for rule_name in yaraast_results:
+            if rule_name in private_rules:
+                continue
+
             yaraast_match = yaraast_results.get(rule_name, False)
             libyara_match = result.libyara_results.get(rule_name, False)
 

@@ -1,0 +1,103 @@
+{
+  "large": {
+    "failures": {},
+    "file_count": 100,
+    "ok": true,
+    "status": {
+      "cache_stats": {
+        "document_analysis_entries": 509,
+        "rule_definition_entries": 101,
+        "rule_reference_entries": 0,
+        "rule_reference_record_entries": 0,
+        "workspace_generation": 2,
+        "workspace_symbol_queries": 2
+      },
+      "cache_workspace": true,
+      "cached_documents": 101,
+      "dirty_documents": 0,
+      "index_path": "/var/folders/7x/d5nhv_cs71d_01gnxqs5zztw0000gn/T/tmpsj21zns1/.yaraast/lsp-workspace-index.json",
+      "language_mode": "auto",
+      "latency": {
+        "document_symbols": {
+          "avg_ms": 0.020374980522319674,
+          "count": 1.0,
+          "max_ms": 0.020374980522319674,
+          "min_ms": 0.020374980522319674
+        }
+      },
+      "open_documents": 1,
+      "workspace_folders": [
+        "/var/folders/7x/d5nhv_cs71d_01gnxqs5zztw0000gn/T/tmpsj21zns1"
+      ],
+      "workspace_symbols": 609
+    },
+    "threshold_ms": 150.0
+  },
+  "medium": {
+    "failures": {},
+    "file_count": 25,
+    "ok": true,
+    "status": {
+      "cache_stats": {
+        "document_analysis_entries": 134,
+        "rule_definition_entries": 26,
+        "rule_reference_entries": 0,
+        "rule_reference_record_entries": 0,
+        "workspace_generation": 2,
+        "workspace_symbol_queries": 2
+      },
+      "cache_workspace": true,
+      "cached_documents": 26,
+      "dirty_documents": 0,
+      "index_path": "/var/folders/7x/d5nhv_cs71d_01gnxqs5zztw0000gn/T/tmpyqgoxfr4/.yaraast/lsp-workspace-index.json",
+      "language_mode": "auto",
+      "latency": {
+        "document_symbols": {
+          "avg_ms": 0.020583014702424407,
+          "count": 1.0,
+          "max_ms": 0.020583014702424407,
+          "min_ms": 0.020583014702424407
+        }
+      },
+      "open_documents": 1,
+      "workspace_folders": [
+        "/var/folders/7x/d5nhv_cs71d_01gnxqs5zztw0000gn/T/tmpyqgoxfr4"
+      ],
+      "workspace_symbols": 159
+    },
+    "threshold_ms": 100.0
+  },
+  "ok": true,
+  "single_document": {
+    "failures": {},
+    "ok": true,
+    "rule_count": 200,
+    "status": {
+      "cache_stats": {
+        "document_analysis_entries": 1003,
+        "rule_definition_entries": 200,
+        "rule_reference_entries": 0,
+        "rule_reference_record_entries": 0,
+        "workspace_generation": 2,
+        "workspace_symbol_queries": 1
+      },
+      "cache_workspace": true,
+      "cached_documents": 1,
+      "dirty_documents": 0,
+      "index_path": null,
+      "language_mode": "auto",
+      "latency": {
+        "document_symbols": {
+          "avg_ms": 5.9505419922061265,
+          "count": 1.0,
+          "max_ms": 5.9505419922061265,
+          "min_ms": 5.9505419922061265
+        }
+      },
+      "open_documents": 1,
+      "workspace_folders": [],
+      "workspace_symbols": 1601
+    },
+    "threshold_ms": 100.0
+  }
+}

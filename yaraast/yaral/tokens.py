@@ -7,6 +7,7 @@ class YaraLTokenType(Enum):
     """Token types specific to YARA-L."""
 
     # YARA-L specific sections
+    RULE = auto()
     EVENTS = auto()
     MATCH = auto()
     OUTCOME = auto()
