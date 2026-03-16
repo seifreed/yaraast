@@ -8,7 +8,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import PlainString
-from yaraast.lexer.lexer import LexerError
+from yaraast.lexer.lexer_errors import LexerError
 from yaraast.parser.error_tolerant_flow import (
     collect_rule_body,
     extract_rule_header,

@@ -239,7 +239,6 @@ class ASTDiffer:
             or result.removed_rules
         ):
             result.style_only_changes.append("spacing/formatting or whitespace/indentation changed")
-            result.has_changes = True  # Style-only changes are still changes
             result.change_summary["style_only_changes"] = len(result.style_only_changes)
             result.change_summary["style_changes"] = len(result.style_only_changes)
         return result

@@ -2,7 +2,8 @@
 
 from dataclasses import dataclass
 
-from yaraast.lexer.lexer import Lexer, LexerError
+from yaraast.lexer.lexer import Lexer
+from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.tokens import Token, TokenType
 
 

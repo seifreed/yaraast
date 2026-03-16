@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-from yaraast.analysis.optimization_helpers import (
-    extract_comparison,
-    from,
-    get_condition_pattern,
-    get_hex_prefix,
-    get_variable_name,
+from yaraast.analysis.optimization_grouping_helpers import (
     group_duplicate_strings,
     group_rules_by_pattern,
     hex_to_string,
-    import,
+)
+from yaraast.analysis.optimization_helpers import (
+    extract_comparison,
+    get_condition_pattern,
+    get_hex_prefix,
+    get_variable_name,
     should_be_hex,
-    yaraast.analysis.optimization_grouping_helpers,
 )
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (

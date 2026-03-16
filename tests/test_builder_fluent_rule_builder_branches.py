@@ -7,19 +7,16 @@ import pytest
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import BinaryExpression
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
-from yaraast.builder.fluent_rule_builder import (
-    FluentRuleBuilder,
+from yaraast.builder.fluent_file_builder import yara_file
+from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
+from yaraast.builder.fluent_rule_presets import (
     document_rule,
     example_rules,
-    from,
-    import,
     malware_rule,
     network_rule,
     packed_rule,
     rule,
     trojan_rule,
-    yara_file,
-    yaraast.builder.fluent_rule_presets,
 )
 
 

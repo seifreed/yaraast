@@ -6,6 +6,11 @@ from dataclasses import dataclass
 
 from lsprotocol.types import Range, TextEdit
 
+from yaraast.lsp.authoring_actions_basic import (  # noqa: F401
+    convert_plain_string_to_hex,
+    create_missing_string,
+    normalize_string_modifiers,
+)
 from yaraast.lsp.authoring_actions_common import replace_rule_text, require_rule_context
 from yaraast.lsp.authoring_actions_rewrites import (
     deduplicate_identical_strings as rewrite_deduplicate_identical_strings,

@@ -12,7 +12,6 @@ from yaraast.cli.lsp_reporting import (
     display_starting,
     get_console,
 )
-from yaraast.cli.lsp_services import create_lsp_server, start_lsp_server
 
 
 @click.command()
@@ -36,6 +35,8 @@ def lsp(stdio: bool, tcp: int | None, host: str) -> None:
     """
     console = get_console()
     try:
+        from yaraast.cli.lsp_services import create_lsp_server, start_lsp_server
+
         display_starting(console)
         server = create_lsp_server()
 

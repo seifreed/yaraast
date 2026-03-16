@@ -16,6 +16,7 @@ def test_lsp_command_missing_dependency_path() -> None:
 
     original_path = list(getattr(lsp_pkg, "__path__", []))
     original_server = sys.modules.pop("yaraast.lsp.server", None)
+    original_lsp_services = sys.modules.pop("yaraast.cli.lsp_services", None)
 
     try:
         # Make submodule discovery fail to force ImportError in command body.
@@ -27,3 +28,5 @@ def test_lsp_command_missing_dependency_path() -> None:
         lsp_pkg.__path__ = original_path
         if original_server is not None:
             sys.modules["yaraast.lsp.server"] = original_server
+        if original_lsp_services is not None:
+            sys.modules["yaraast.cli.lsp_services"] = original_lsp_services

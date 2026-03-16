@@ -6,7 +6,6 @@ interchange, and versioning in CI/CD pipelines.
 
 from yaraast.serialization.ast_diff import AstDiff, DiffResult, DiffType
 from yaraast.serialization.json_serializer import JsonSerializer
-from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 from yaraast.serialization.roundtrip_serializer import (
     EnhancedYamlSerializer,
     RoundTripSerializer,
@@ -15,6 +14,11 @@ from yaraast.serialization.roundtrip_serializer import (
     serialize_for_pipeline,
 )
 from yaraast.serialization.yaml_serializer import YamlSerializer
+
+try:
+    from yaraast.serialization.protobuf_serializer import ProtobufSerializer
+except ImportError:
+    ProtobufSerializer = None  # type: ignore[assignment,misc]
 
 __all__ = [
     "AstDiff",

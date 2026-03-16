@@ -11,7 +11,6 @@ from yaraast.cli.commands.fluent import fluent
 from yaraast.cli.commands.fmt_cmd import fmt
 from yaraast.cli.commands.format_cmd import format_yara, validate_syntax
 from yaraast.cli.commands.libyara_cmd import libyara
-from yaraast.cli.commands.lsp import lsp
 from yaraast.cli.commands.metrics import metrics
 from yaraast.cli.commands.optimize import optimize_cmd
 from yaraast.cli.commands.parse_cmd import parse
@@ -46,7 +45,6 @@ CLI_COMMANDS = (
     yarax,
     workspace,
     fluent,
-    lsp,
 )
 
 
@@ -57,3 +55,9 @@ def register_commands(cli: click.Group) -> None:
             cli.add_command(command[0], name=command[1])
         else:
             cli.add_command(command)
+    try:
+        from yaraast.cli.commands.lsp import lsp
+
+        cli.add_command(lsp)
+    except ImportError:
+        pass

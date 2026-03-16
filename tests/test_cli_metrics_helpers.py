@@ -8,6 +8,14 @@ from typing import Any
 import pytest
 
 from yaraast.cli.commands import metrics as metrics_cmd
+from yaraast.cli.metrics_reporting import (
+    _display_pattern_statistics,
+    _display_text_fallback,
+    _display_text_pattern_analysis,
+    _format_string_analysis_output,
+    _get_text_graph,
+)
+from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
@@ -42,20 +50,20 @@ def test_metrics_helper_text_functions(
 
     analyzer = ComplexityAnalyzer()
     metrics = analyzer.analyze(ast)
-    text = metrics_cmd._format_complexity_text(metrics)
+    text = metrics_cmd._format_complexity_output(metrics, "text")
     assert "YARA Rule Complexity Analysis" in text
 
-    analysis = metrics_cmd._analyze_string_patterns(ast)
-    output_text = metrics_cmd._format_string_analysis_output(analysis, "text")
+    analysis = _analyze_string_patterns(ast)
+    output_text = _format_string_analysis_output(analysis, "text")
     assert "YARA String Analysis" in output_text
 
     generator = DependencyGraphGenerator()
     generator.visit(ast)
     stats = generator.get_dependency_stats()
-    text_graph = metrics_cmd._get_text_graph(stats, generator.dependencies)
+    text_graph = _get_text_graph(stats, generator.dependencies)
     assert "Dependency Analysis" in text_graph
 
-    metrics_cmd._display_text_fallback("rules.yar", ast, generator)
+    _display_text_fallback("rules.yar", ast, generator)
     captured = capsys.readouterr().out
     assert "Dependency Analysis" in captured
 
@@ -79,7 +87,7 @@ def test_metrics_pattern_helpers(capsys: pytest.CaptureFixture[str]) -> None:
     ast = _parse_yara(code)
     generator = StringDiagramGenerator()
 
-    metrics_cmd._display_text_pattern_analysis(generator, ast)
-    metrics_cmd._display_pattern_statistics(generator)
+    _display_text_pattern_analysis(generator, ast)
+    _display_pattern_statistics(generator)
     output = capsys.readouterr().out
     assert "String Pattern Analysis" in output

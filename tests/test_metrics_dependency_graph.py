@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 from yaraast.metrics.dependency_graph_utils import (
     DependencyGraph,
-    DependencyGraphGenerator,
     analyze_dependencies,
     build_dependency_graph,
     export_dependency_graph,

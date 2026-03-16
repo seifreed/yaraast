@@ -58,11 +58,14 @@ performance = [
 visualization = [
     "graphviz>=0.20.0",
 ]
+serialization = [
+    "protobuf>=4.0.0",
+]
 quality = [
     "qlty>=0.1.0",
 ]
 all = [
-    "yaraast[dev,libyara,lsp,performance,visualization,quality]",
+    "yaraast[dev,libyara,lsp,performance,visualization,serialization,quality]",
 ]
 
 [project.scripts]
