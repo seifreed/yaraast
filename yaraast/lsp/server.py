@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from pygls.server import LanguageServer
+try:
+    from pygls.lsp.server import LanguageServer  # pygls >= 2.0
+except ImportError:
+    from pygls.server import LanguageServer  # pygls < 2.0
 
 from yaraast.lsp.server_factory import configure_providers, create_runtime
 from yaraast.lsp.server_features import register_initialize, register_server_features
@@ -21,6 +24,19 @@ class YaraLanguageServer(LanguageServer):
 
         # Register features
         register_server_features(self)
+
+    # Compatibility shims for pygls 1.x API used throughout the codebase.
+    # pygls 2.0 renamed these methods.
+
+    if not hasattr(LanguageServer, "show_message_log"):
+
+        def show_message_log(self, message: str, msg_type: Any = None) -> None:
+            self.window_log_message({"type": 4, "message": message})
+
+    if not hasattr(LanguageServer, "publish_diagnostics"):
+
+        def publish_diagnostics(self, uri: str, diagnostics: Any = None) -> None:
+            self.text_document_publish_diagnostics({"uri": uri, "diagnostics": diagnostics or []})
 
 
 def create_server() -> YaraLanguageServer:
