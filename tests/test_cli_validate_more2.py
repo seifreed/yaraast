@@ -3,9 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import click
+import pytest
 from click.testing import CliRunner
 
 from yaraast.cli.commands.validate import ValidateGroup, validate
+from yaraast.libyara import YARA_AVAILABLE
 
 
 def _write(path: Path, content: str) -> None:
@@ -39,6 +41,7 @@ def test_validate_group_resolve_command_empty_args() -> None:
     assert isinstance(validate, ValidateGroup)
 
 
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python is not installed")
 def test_validate_cross_handles_rule_parse_and_test_file_read_errors(tmp_path: Path) -> None:
     runner = CliRunner()
     invalid_rule = tmp_path / "invalid_rule.yar"
@@ -66,6 +69,7 @@ rule ok {
     assert "Error reading test file" in read_error.output
 
 
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python is not installed")
 def test_validate_roundtrip_handles_test_data_read_error(tmp_path: Path) -> None:
     runner = CliRunner()
     rule = tmp_path / "rule.yar"

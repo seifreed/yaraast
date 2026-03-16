@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import subprocess
+import sys
 from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "benchmark_lsp_runtime.py"
@@ -42,7 +43,7 @@ def test_lsp_runtime_regression_suite_reports_named_scenarios() -> None:
 def test_lsp_runtime_benchmark_script_can_write_results(tmp_path: Path) -> None:
     output = tmp_path / "runtime-benchmark.json"
     proc = subprocess.run(
-        ["venv/bin/python", str(SCRIPT_PATH), str(output)],
+        [sys.executable, str(SCRIPT_PATH), str(output)],
         cwd=Path(__file__).resolve().parents[1],
         capture_output=True,
         text=True,
@@ -61,7 +62,7 @@ def test_lsp_runtime_benchmark_script_can_write_history(tmp_path: Path) -> None:
     output = tmp_path / "runtime-benchmark.json"
     history_dir = tmp_path / "history"
     proc = subprocess.run(
-        ["venv/bin/python", str(SCRIPT_PATH), str(output), str(history_dir)],
+        [sys.executable, str(SCRIPT_PATH), str(output), str(history_dir)],
         cwd=Path(__file__).resolve().parents[1],
         capture_output=True,
         text=True,

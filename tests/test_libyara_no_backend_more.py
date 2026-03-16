@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 import textwrap
 from pathlib import Path
 
@@ -48,7 +49,7 @@ def test_libyara_modules_report_missing_backend_in_subprocess(tmp_path: Path) ->
     )
 
     result = subprocess.run(
-        ["venv/bin/python", "-c", code],
+        [sys.executable, "-c", code],
         cwd=os.getcwd(),
         env=env,
         capture_output=True,
