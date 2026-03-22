@@ -46,7 +46,7 @@ def test_serialize_services_export_import_validate_and_info(tmp_path: Path) -> N
     assert result_pbtxt and ptxt_out.exists()
 
     result_pb, stats_pb = ss.export_ast(ast, "protobuf", str(pbuf_out), minimal=False)
-    assert result_pb is None
+    assert result_pb is not None  # protobuf serialization now returns content
     assert stats_pb and isinstance(stats_pb, dict)
 
     ast_json = ss.import_ast(str(json_out), "json")

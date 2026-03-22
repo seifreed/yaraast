@@ -31,5 +31,5 @@ def export_with_serializer(
         return serializer.serialize(ast, output), None
     if output and output.endswith(".txt"):
         return serializer.serialize_text(ast, output), None
-    serializer.serialize(ast, output)
-    return None, serializer.get_serialization_stats(ast)
+    result = serializer.serialize(ast, output)
+    return result, serializer.get_serialization_stats(ast)

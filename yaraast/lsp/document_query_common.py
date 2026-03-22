@@ -4,6 +4,8 @@ from __future__ import annotations
 
 
 def whole_word_positions(line: str, word: str) -> list[int]:
+    if not word:
+        return []
     positions: list[int] = []
     col = 0
     while True:

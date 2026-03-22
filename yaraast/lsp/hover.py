@@ -274,6 +274,8 @@ class HoverProvider:
         word_range: Range,
     ) -> Hover | None:
         include_info = doc.get_include_info(include_path)
+        if include_info is None:
+            return None
 
         return render_include_hover(include_path, include_info["resolved_path"], word_range)
 

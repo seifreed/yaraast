@@ -46,7 +46,7 @@ def analyze_string_definitions(analyzer, rule) -> None:
 def check_hex_consolidation(analyzer, rule, hex_strings: list[HexString]) -> None:
     groups = defaultdict(list)
     for hex_str in hex_strings:
-        prefix = get_hex_prefix(hex_str, min(5, len(hex_str.tokens) - 1))
+        prefix = get_hex_prefix(hex_str, min(5, max(0, len(hex_str.tokens) - 1)))
         if prefix and len(prefix) >= 4:
             groups[prefix].append(hex_str)
     for similar in groups.values():

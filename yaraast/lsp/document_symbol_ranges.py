@@ -59,7 +59,7 @@ def location_to_symbol_range(location: Location, source_text: str) -> Range:
             start=Position(line=start_line, character=start_character),
             end=Position(
                 line=location.end_line - 1,
-                character=max(start_character + 1, location.end_column - 1),
+                character=max(start_character + 1, location.end_column),
             ),
         )
     lines = source_text.split("\n")

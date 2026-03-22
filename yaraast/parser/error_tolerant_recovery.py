@@ -155,6 +155,8 @@ def parse_condition(
     else:
         node = Identifier(condition_text)
     start = raw_line.find(condition_text) if raw_line else 0
+    if start < 0:
+        start = 0
     set_recovered_location(parser, node, line_num, raw_line, start, start + len(condition_text))
     return node
 

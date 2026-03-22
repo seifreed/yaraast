@@ -87,6 +87,8 @@ class FormattingProvider:
             if rule_line < 0:
                 continue
             rule_end = find_rule_end(lines, rule_line)
+            if rule_end < 0 or rule_end >= len(lines):
+                continue
             if start.line < rule_line or end.line > rule_end:
                 continue
             return (
