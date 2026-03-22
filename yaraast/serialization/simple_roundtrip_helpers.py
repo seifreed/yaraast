@@ -23,6 +23,7 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
     HexNibble,
     HexString,
     HexWildcard,
@@ -43,6 +44,8 @@ def _serialize_hex_token(token) -> dict[str, Any]:
         return {"type": "HexJump", "min_jump": token.min_jump, "max_jump": token.max_jump}
     if isinstance(token, HexNibble):
         return {"type": "HexNibble", "high": token.high, "value": token.value}
+    if isinstance(token, HexNegatedByte):
+        return {"type": "HexNegatedByte", "value": token.value}
     if isinstance(token, HexAlternative):
         return {
             "type": "HexAlternative",
@@ -62,6 +65,8 @@ def _deserialize_hex_token(data: dict[str, Any]):
         return HexJump(min_jump=data.get("min_jump"), max_jump=data.get("max_jump"))
     if token_type == "HexNibble":
         return HexNibble(high=data["high"], value=data["value"])
+    if token_type == "HexNegatedByte":
+        return HexNegatedByte(value=data["value"])
     if token_type == "HexAlternative":
         alternatives = [[_deserialize_hex_token(t) for t in alt] for alt in data["alternatives"]]
         return HexAlternative(alternatives=alternatives)
@@ -223,7 +228,9 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     )
 
     if "tags" in data:
-        rule.tags = data["tags"]
+        from yaraast.ast.rules import Tag
+
+        rule.tags = [Tag(name=t) if isinstance(t, str) else t for t in data["tags"]]
 
     if "meta" in data:
         rule.meta = [deserialize_meta(m) for m in data["meta"]]
@@ -250,8 +257,15 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         if isinstance(raw_tokens, list):
             tokens = [_deserialize_hex_token(t) for t in raw_tokens]
             return HexString(identifier=data["identifier"], tokens=tokens)
-        # Legacy format: tokens stored as string representation — fall back to PlainString
-        return PlainString(identifier=data["identifier"], value=str(raw_tokens))
+        # Legacy format: tokens stored as string representation — preserve as HexString with empty tokens
+        import warnings
+
+        warnings.warn(
+            f"HexString '{data['identifier']}' has non-list tokens in serialized data, "
+            "tokens will be empty after deserialization",
+            stacklevel=2,
+        )
+        return HexString(identifier=data["identifier"], tokens=[])
     if string_type == "RegexString":
         return RegexString(identifier=data["identifier"], regex=data["regex"])
     return PlainString(identifier=data.get("identifier", "$unknown"), value=data.get("data", ""))

@@ -303,6 +303,9 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_hex_byte(self, node: HexByte) -> str:
         return render_hex_byte(node)
 
+    def visit_hex_negated_byte(self, node) -> str:
+        return f"~{node.value:02X}"
+
     def visit_hex_wildcard(self, node: HexWildcard) -> str:
         return render_hex_wildcard(node)
 

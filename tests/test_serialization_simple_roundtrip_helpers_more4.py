@@ -46,7 +46,7 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
     assert serialize_string(StringDefinition(identifier="$z"))["type"] == "StringDefinition"
 
     restored_rule = deserialize_rule(serialized_rule)
-    assert restored_rule.tags == ["one", "two"]
+    assert [t.name for t in restored_rule.tags] == ["one", "two"]
     assert deserialize_meta({"key": "author", "value": "me"}).key == "author"
     assert deserialize_string({"type": "Unknown", "identifier": "$x", "data": "raw"}).value == "raw"
 
@@ -91,8 +91,8 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
     assert "error" in diff
 
     fallback = deserialize_string({"type": "HexString", "identifier": "$h", "tokens": "{ 41 }"})
-    assert isinstance(fallback, PlainString)
-    assert fallback.value == "{ 41 }"
+    assert isinstance(fallback, HexString)  # preserves type instead of converting to PlainString
+    assert fallback.tokens == []
 
     default_condition_rule = deserialize_rule({"name": "fallback", "condition": None})
     assert isinstance(default_condition_rule.condition, BooleanLiteral)

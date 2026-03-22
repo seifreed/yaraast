@@ -324,6 +324,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return matched == 0
         elif isinstance(quantifier, int):
             return matched >= quantifier
+        elif isinstance(quantifier, float):
+            required = int(len(string_set) * quantifier)
+            return matched >= required
 
         return False
 

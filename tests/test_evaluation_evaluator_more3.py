@@ -324,6 +324,7 @@ def test_evaluator_or_module_member_of_and_defined_paths() -> None:
         )
         is True
     )
+    # Float quantifier (percentage) is now handled — 50% of 0 strings = 0 required
     assert (
         ev.visit_of_expression(
             OfExpression(
@@ -331,7 +332,7 @@ def test_evaluator_or_module_member_of_and_defined_paths() -> None:
                 string_set=StringLiteral(value="them"),
             )
         )
-        is False
+        is True
     )
     assert (
         ev.visit_of_expression(

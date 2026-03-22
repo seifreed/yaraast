@@ -6,6 +6,8 @@ from typing import Any
 
 
 def format_literal(value: Any) -> str:
+    if value is None:
+        return ""
     if hasattr(value, "accept"):
         return ""
     if isinstance(value, str):

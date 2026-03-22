@@ -176,7 +176,9 @@ def infer_function_call(ctx, node: FunctionCall):
                     module_def = loader.get_module(actual_module)
                     if module_def and func_name in module_def.functions:
                         func_def = module_def.functions[func_name]
-                        if func_def.parameters and len(node.arguments) != len(func_def.parameters):
+                        if func_def.parameters is not None and len(node.arguments) != len(
+                            func_def.parameters
+                        ):
                             ctx.errors.append(
                                 f"Function '{func_name}' expects {len(func_def.parameters)} arguments, got {len(node.arguments)}",
                             )
