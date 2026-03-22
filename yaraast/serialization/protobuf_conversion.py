@@ -100,8 +100,7 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
 
 def convert_hex_token_to_protobuf(token, pb_token) -> None:
     """Convert a hex token to protobuf."""
-    from yaraast.ast.strings import HexByte, HexJump, HexWildcard
-    from yaraast.builder.hex_string_builder import HexNibble
+    from yaraast.ast.strings import HexByte, HexJump, HexNibble, HexWildcard
 
     if isinstance(token, HexByte):
         pb_token.byte.value = str(token.value)
@@ -117,6 +116,8 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
 
 def convert_expression_to_protobuf(expr, pb_expr) -> None:
     """Convert an AST expression to protobuf."""
+    import warnings
+
     from yaraast.ast.expressions import (
         BinaryExpression,
         BooleanLiteral,
@@ -150,6 +151,12 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     elif isinstance(expr, UnaryExpression):
         pb_expr.unary_expression.operator = expr.operator
         convert_expression_to_protobuf(expr.operand, pb_expr.unary_expression.operand)
+    else:
+        warnings.warn(
+            f"Protobuf serialization: unsupported expression type {type(expr).__name__}, "
+            "data will be lost",
+            stacklevel=2,
+        )
 
 
 def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
@@ -310,4 +317,11 @@ def protobuf_to_expression(pb_expr):
             operator=pb_expr.unary_expression.operator,
             operand=protobuf_to_expression(pb_expr.unary_expression.operand),
         )
+    import warnings
+
+    warnings.warn(
+        "Protobuf deserialization: unrecognized expression field, "
+        "substituting BooleanLiteral(true) — data may have been lost during serialization",
+        stacklevel=2,
+    )
     return BooleanLiteral(value=True)

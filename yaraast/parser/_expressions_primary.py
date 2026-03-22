@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
     DoubleLiteral,
@@ -246,23 +246,11 @@ class ExpressionPrimaryMixin:
         return self._parse_for_expression(self._previous())
 
     def _try_parse_string_operation(self) -> Expression | None:
-        """Try to parse string operations with AT/IN."""
+        """Try to parse string identifier/wildcard (AT/IN handled by postfix parser)."""
         if not self._check(TokenType.STRING_IDENTIFIER):
             return None
         start_token = self._advance()
         string_id = start_token.value
-
-        if self._match(TokenType.AT):
-            offset = self._parse_additive_expression()
-            return self._set_node_location_from_tokens(
-                AtExpression(string_id=string_id, offset=offset), start_token, self._previous()
-            )
-
-        if self._match(TokenType.IN):
-            range_expr = self._parse_additive_expression()
-            return self._set_node_location_from_tokens(
-                InExpression(subject=string_id, range=range_expr), start_token, self._previous()
-            )
 
         if string_id.endswith("*"):
             return self._set_node_location_from_token(

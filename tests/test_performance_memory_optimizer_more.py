@@ -32,7 +32,7 @@ def test_memory_optimizer_basic_and_stats() -> None:
     assert stats_before["total_objects"] >= 1
 
     optimized = optimizer.optimize(ast)
-    assert optimized is ast
+    assert optimized is not ast  # optimizer returns a new copy, not the original
 
     stats = optimizer.get_statistics()
     assert stats["nodes_processed"] >= 1

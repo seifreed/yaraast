@@ -330,11 +330,7 @@ class StreamingParser:
 
     def reset_statistics(self) -> None:
         """Reset parsing statistics."""
-        self._stats = {
-            "rules_parsed": 0,
-            "bytes_processed": 0,
-            "parse_errors": 0,
-        }
+        self._stats = default_streaming_stats()
 
     def estimate_memory_usage(self, file_path: str | Path) -> dict[str, Any]:
         """Estimate memory usage for parsing a file.

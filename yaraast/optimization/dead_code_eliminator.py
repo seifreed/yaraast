@@ -96,18 +96,18 @@ class DeadCodeEliminator(ASTTransformer):
 
             # Keep only used rules (or all if we can't determine)
             if self.used_rules:
-                # Filter rules - keep if referenced by other rules, is private, or is a top-level rule
+                # Determine if the rule is private (internal helper)
                 is_private = False
                 if hasattr(rule, "modifiers") and isinstance(
                     rule.modifiers,
                     list | tuple,
                 ):
-                    is_private = "private" in rule.modifiers
-                if (
-                    rule.name in self.used_rules
-                    or is_private
-                    or not self._is_referenced_by_other_rules(rule.name)
-                ):
+                    is_private = any(
+                        getattr(m, "modifier_type", None) and m.modifier_type.value == "private"
+                        for m in rule.modifiers
+                    )
+                # Remove only private rules that nobody references
+                if not is_private or rule.name in self.used_rules:
                     kept_rules.append(self.visit(rule))
             else:
                 # If no usage info, keep all rules but optimize them

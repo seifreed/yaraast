@@ -72,12 +72,12 @@ def analyze_regex_complexity(analyzer, regex: str) -> None:
 
 
 def calculate_cyclomatic_complexity(analyzer) -> int:
-    complexity = 1
-    complexity += analyzer.metrics.total_binary_ops
-    complexity += analyzer.metrics.for_expressions
-    complexity += analyzer.metrics.for_of_expressions
-    complexity += analyzer.metrics.of_expressions
-    return complexity
+    from yaraast.metrics.complexity_helpers import calculate_cyclomatic_complexity as calc_from_expr
+
+    rule = analyzer._current_rule
+    if rule and rule.condition:
+        return calc_from_expr(rule.condition)
+    return 1
 
 
 def calculate_derived_metrics(analyzer) -> None:

@@ -27,18 +27,20 @@ def render_in_expression(gen, node) -> str:
         StringOffset,
     )
 
+    subject = node.string_id if isinstance(node.subject, str) else gen.visit(node.subject)
+
     if isinstance(node.range, ParenthesesExpression):
         inner = node.range.expression
         if isinstance(inner, RangeExpression):
             range_expr = gen.visit(inner)
-            return f"{node.string_id} in ({range_expr})"
+            return f"{subject} in ({range_expr})"
         if isinstance(inner, StringOffset | StringCount | StringLength):
             range_expr = gen.visit(inner)
-            return f"{node.string_id} in {range_expr}"
+            return f"{subject} in {range_expr}"
         range_expr = gen.visit(node.range)
-        return f"{node.string_id} in {range_expr}"
+        return f"{subject} in {range_expr}"
     range_expr = gen.visit(node.range)
-    return f"{node.string_id} in {range_expr}"
+    return f"{subject} in {range_expr}"
 
 
 def render_of_expression(gen, node) -> str:

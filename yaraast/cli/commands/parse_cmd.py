@@ -5,8 +5,6 @@ from __future__ import annotations
 import click
 from rich.console import Console
 
-console = Console()
-
 from yaraast.cli.parse_reporting import (
     display_cli_error,
     generate_output_by_format,
@@ -14,6 +12,8 @@ from yaraast.cli.parse_reporting import (
 )
 from yaraast.cli.parse_services import parse_content_by_dialect
 from yaraast.cli.utils import read_text
+
+console = Console()
 
 
 @click.command()
@@ -46,6 +46,8 @@ def parse(input_file: str, output: str | None, output_format: str, dialect: str)
         )
         if show_status:
             report_parsing_errors(lexer_errors, parser_errors, ast)
+        if lexer_errors or parser_errors:
+            raise SystemExit(1)
         generate_output_by_format(ast, output_format, output)
 
     except Exception as e:

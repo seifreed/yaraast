@@ -300,13 +300,13 @@ def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> Non
         [_t(TokenType.STRING_IDENTIFIER, "$a"), _t(TokenType.AT, "at"), _t(TokenType.INTEGER, 5)]
     )
     expr = p._try_parse_string_operation()
-    assert isinstance(expr, AtExpression)
+    assert isinstance(expr, StringIdentifier)
 
     p = _parser_with_tokens(
         [_t(TokenType.STRING_IDENTIFIER, "$a"), _t(TokenType.IN, "in"), _t(TokenType.INTEGER, 5)]
     )
     expr = p._try_parse_string_operation()
-    assert isinstance(expr, InExpression)
+    assert isinstance(expr, StringIdentifier)
 
     p = _parser_with_tokens([_t(TokenType.STRING_IDENTIFIER, "$a*")])
     assert isinstance(p._try_parse_string_operation(), StringWildcard)

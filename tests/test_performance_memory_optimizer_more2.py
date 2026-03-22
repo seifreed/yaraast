@@ -37,7 +37,7 @@ def test_memory_optimizer_rule_list_usage_and_batch_paths() -> None:
     )
 
     optimized_rule = optimizer.optimize_rule(rule)
-    assert optimized_rule is rule
+    assert optimized_rule is not rule  # optimizer returns a new copy
 
     optimized_rules = optimizer.optimize_rules([rule])
     assert optimized_rules == [rule]
@@ -78,12 +78,12 @@ def test_memory_optimizer_transformer_visits_real_nodes() -> None:
     )
 
     optimized = transformer.visit(yara_file)
-    assert optimized is yara_file
+    assert optimized is not yara_file  # returns a new copy
     assert transformer.nodes_processed >= 1
-    assert yara_file.rules[0].location is None
-    assert yara_file.rules[0].name == "dup"
-    assert yara_file.rules[0].strings[0].value == "dup"
-    assert yara_file.imports[0].module == "pe"
+    assert optimized.rules[0].location is None
+    assert optimized.rules[0].name == "dup"
+    assert optimized.rules[0].strings[0].value == "dup"
+    assert optimized.imports[0].module == "pe"
     assert yara_file.includes[0].path == "common.yar"
 
 
@@ -101,26 +101,26 @@ def test_memory_optimizer_transformer_leaf_visitors_are_passthrough_or_pool() ->
     regex = RegexString(identifier="$r", regex="hello")
     hexs = HexString(identifier="$h", tokens=[HexByte(0x41)])
 
-    assert transformer.visit_string_literal(str_lit) is str_lit
-    assert transformer.visit_identifier(ident) is ident
-    assert transformer.visit_string_identifier(string_id) is string_id
-    assert transformer.visit_string_wildcard(wildcard) is wildcard
-    assert transformer.visit_binary_expression(binary) is binary
-    assert transformer.visit_unary_expression(unary) is unary
-    assert transformer.visit_hex_string(hexs) is hexs
-    assert transformer.visit_regex_string(regex) is regex
-    assert transformer.visit_plain_string(plain) is plain
+    result_str = transformer.visit_string_literal(str_lit)
+    result_ident = transformer.visit_identifier(ident)
+    result_sid = transformer.visit_string_identifier(string_id)
+    result_wc = transformer.visit_string_wildcard(wildcard)
+    result_bin = transformer.visit_binary_expression(binary)
+    result_un = transformer.visit_unary_expression(unary)
+    transformer.visit_hex_string(hexs)
+    result_regex = transformer.visit_regex_string(regex)
+    transformer.visit_plain_string(plain)
     assert transformer.visit_boolean_literal(BooleanLiteral(True)).value is True
     assert transformer.visit_integer_literal(IntegerLiteral(1)).value == 1
     assert transformer.visit_double_literal(DoubleLiteral(1.5)).value == 1.5
 
     assert pool["hello"] == "hello"
-    assert ident.name == "hello"
-    assert str_lit.value == "hello"
-    assert string_id.name == "$a"
-    assert wildcard.pattern == "$a*"
-    assert binary.operator == "and"
-    assert unary.operator == "not"
-    assert regex.regex == "hello"
+    assert result_ident.name == "hello"
+    assert result_str.value == "hello"
+    assert result_sid.name == "$a"
+    assert result_wc.pattern == "$a*"
+    assert result_bin.operator == "and"
+    assert result_un.operator == "not"
+    assert result_regex.regex == "hello"
     assert plain.identifier == "$p"
     assert hexs.identifier == "$h"

@@ -120,7 +120,7 @@ def find_circular_dependencies(graph: DependencyGraph) -> list[list[str]]:
 
         for neighbor in graph.get_dependencies(node):
             if neighbor not in visited:
-                dfs(neighbor, path.copy())
+                dfs(neighbor, path)
             elif neighbor in rec_stack:
                 cycle_start = path.index(neighbor)
                 cycle = [*path[cycle_start:], neighbor]
@@ -129,6 +129,7 @@ def find_circular_dependencies(graph: DependencyGraph) -> list[list[str]]:
                 if normalized not in cycles:
                     cycles.append(normalized)
 
+        path.pop()
         rec_stack.remove(node)
 
     for node in graph.nodes:

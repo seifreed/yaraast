@@ -60,6 +60,8 @@ def calculate_cyclomatic_complexity(expr: ASTNode) -> int:
         complexity += calculate_cyclomatic_complexity(expr.right) - 1
     if hasattr(expr, "operand"):
         complexity += calculate_cyclomatic_complexity(expr.operand) - 1
+    if hasattr(expr, "expression"):
+        complexity += calculate_cyclomatic_complexity(expr.expression) - 1
 
     return complexity
 

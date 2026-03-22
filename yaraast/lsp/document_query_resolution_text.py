@@ -58,7 +58,7 @@ def find_module_member_at_position(ctx, position) -> ResolvedSymbol | None:
             if member_end == member_start:
                 start += len(needle)
                 continue
-            if start <= position.character <= member_end:
+            if start <= position.character < member_end:
                 full_name = line[start:member_end]
                 return ResolvedSymbol(
                     ctx.uri,

@@ -74,7 +74,8 @@ def write_regex_string(gen, node) -> str:
     """Render a regex string definition."""
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
-    gen._write(f"{node.identifier} = /{node.regex}/")
+    escaped_regex = node.regex.replace("/", "\\/")
+    gen._write(f"{node.identifier} = /{escaped_regex}/")
     if hasattr(node, "modifiers") and node.modifiers:
         gen._write_modifiers(node.modifiers)
     return ""

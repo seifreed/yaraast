@@ -6,12 +6,21 @@ from typing import Any
 
 
 def visit_yara_file(serializer, node) -> dict[str, Any]:
-    return {
+    result: dict[str, Any] = {
         "type": "YaraFile",
         "imports": [serializer.visit(imp) for imp in node.imports],
         "includes": [serializer.visit(inc) for inc in node.includes],
         "rules": [serializer.visit(rule) for rule in node.rules],
     }
+    if getattr(node, "extern_rules", None):
+        result["extern_rules"] = [serializer.visit(er) for er in node.extern_rules]
+    if getattr(node, "extern_imports", None):
+        result["extern_imports"] = [serializer.visit(ei) for ei in node.extern_imports]
+    if getattr(node, "pragmas", None):
+        result["pragmas"] = [serializer.visit(p) for p in node.pragmas]
+    if getattr(node, "namespaces", None):
+        result["namespaces"] = [serializer.visit(ns) for ns in node.namespaces]
+    return result
 
 
 def visit_rule(serializer, node) -> dict[str, Any]:

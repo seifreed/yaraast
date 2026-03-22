@@ -140,7 +140,11 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         includes = [self._deserialize_include(inc) for inc in ast_data.get("includes", [])]
         rules = [self._deserialize_rule(rule) for rule in ast_data.get("rules", [])]
 
-        return YaraFile(imports=imports, includes=includes, rules=rules)
+        kwargs: dict = {"imports": imports, "includes": includes, "rules": rules}
+        for field_name in ("extern_rules", "extern_imports", "pragmas", "namespaces"):
+            if field_name in ast_data and ast_data[field_name]:
+                kwargs[field_name] = ast_data[field_name]
+        return YaraFile(**kwargs)
 
     def _simple_node(self, type_name: str, **fields: Any) -> dict[str, Any]:
         payload = {"type": type_name}
