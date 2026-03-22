@@ -40,13 +40,18 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
 def convert_rule_to_protobuf(rule, pb_rule) -> None:
     """Convert a single rule AST node to protobuf."""
     pb_rule.name = rule.name
-    pb_rule.modifiers.extend(rule.modifiers)
+    pb_rule.modifiers.extend(str(m) for m in rule.modifiers)
 
     for tag in rule.tags:
         pb_tag = pb_rule.tags.add()
         pb_tag.name = tag.name
 
-    for key, value in rule.meta.items():
+    meta_items = (
+        rule.meta.items()
+        if isinstance(rule.meta, dict)
+        else ((getattr(m, "key", ""), getattr(m, "value", "")) for m in rule.meta)
+    )
+    for key, value in meta_items:
         meta_val = pb_rule.meta[key]
         if isinstance(value, str):
             meta_val.string_value = value

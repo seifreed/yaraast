@@ -9,9 +9,9 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 
 def analyze_rule(analyzer, rule) -> None:
     analyzer._current_rule = rule
-    if "private" in rule.modifiers:
+    if any(str(m) == "private" for m in rule.modifiers):
         analyzer.metrics.private_rules += 1
-    if "global" in rule.modifiers:
+    if any(str(m) == "global" for m in rule.modifiers):
         analyzer.metrics.global_rules += 1
     if rule.strings:
         analyzer.metrics.rules_with_strings += 1

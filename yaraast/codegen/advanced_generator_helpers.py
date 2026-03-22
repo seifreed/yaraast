@@ -29,7 +29,8 @@ def collect_string_definitions(
         elif isinstance(string_def, HexString):
             value = format_hex_string(string_def, config)
         elif isinstance(string_def, RegexString):
-            value = f"/{string_def.regex}/"
+            escaped = string_def.regex.replace("/", "\\/")
+            value = f"/{escaped}/"
         else:
             value = ""
 

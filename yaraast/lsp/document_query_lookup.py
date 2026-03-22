@@ -76,7 +76,7 @@ def get_string_definition_info(ctx: DocumentContext, identifier: str) -> dict[st
         string_type = "string"
     modifiers = []
     if hasattr(string_def, "modifiers"):
-        modifiers = [m.name for m in string_def.modifiers]
+        modifiers = [m if isinstance(m, str) else str(m.name) for m in string_def.modifiers]
     result = {"identifier": identifier, "type": string_type, "value": value, "modifiers": modifiers}
     ctx.set_cached(cache_key, result)
     return result

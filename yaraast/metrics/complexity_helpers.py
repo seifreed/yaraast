@@ -31,9 +31,9 @@ def calculate_rule_complexity(rule: Rule) -> int:
         complexity += calc.calculate(rule.condition)
 
     # Add modifier complexity
-    if "private" in rule.modifiers:
+    if any(str(m) == "private" for m in rule.modifiers):
         complexity += 1
-    if "global" in rule.modifiers:
+    if any(str(m) == "global" for m in rule.modifiers):
         complexity += 1
 
     return complexity

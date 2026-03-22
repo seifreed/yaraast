@@ -58,8 +58,10 @@ def build_rules_manifest(ast) -> dict[str, Any]:
         )
     manifest["summary"] = {
         "total_rules": len(ast.rules),
-        "private_rules": len([r for r in ast.rules if "private" in r.modifiers]),
-        "global_rules": len([r for r in ast.rules if "global" in r.modifiers]),
+        "private_rules": len(
+            [r for r in ast.rules if any(str(m) == "private" for m in r.modifiers)]
+        ),
+        "global_rules": len([r for r in ast.rules if any(str(m) == "global" for m in r.modifiers)]),
         "tagged_rules": len([r for r in ast.rules if r.tags]),
         "imports": [imp.module for imp in ast.imports],
         "includes": [inc.path for inc in ast.includes],
