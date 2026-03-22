@@ -24,32 +24,35 @@ def _strip_string_literals(content: str) -> str:
     in_block_comment = False
 
     while i < len(content):
-        # Handle line comments
+        # Handle line comments — replace content with spaces
         if not in_block_comment and i < len(content) - 1 and content[i : i + 2] == "//":
             in_line_comment = True
-            result.append(content[i])
+            result.append(" ")
             i += 1
             continue
         if in_line_comment:
-            result.append(content[i])
             if content[i] == "\n":
+                result.append("\n")
                 in_line_comment = False
+            else:
+                result.append(" ")
             i += 1
             continue
 
-        # Handle block comments
+        # Handle block comments — replace content with spaces (preserve newlines)
         if not in_line_comment and i < len(content) - 1 and content[i : i + 2] == "/*":
             in_block_comment = True
-            result.append(content[i])
+            result.append(" ")
             i += 1
             continue
         if in_block_comment:
-            result.append(content[i])
             if i < len(content) - 1 and content[i : i + 2] == "*/":
-                result.append(content[i + 1])
+                result.append(" ")
+                result.append(" ")
                 in_block_comment = False
                 i += 2
                 continue
+            result.append("\n" if content[i] == "\n" else " ")
             i += 1
             continue
 

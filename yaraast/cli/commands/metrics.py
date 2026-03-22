@@ -83,6 +83,7 @@ def complexity(yara_file: str, output: str | None, format: str, quality_gate: in
         click.echo(message)
     else:
         click.echo(message, err=True)
+        raise SystemExit(1)
 
 
 @metrics.command()

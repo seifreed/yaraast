@@ -212,19 +212,18 @@ class RuleBuilder:
         multiline: bool = False,
     ) -> Self:
         """Add a regex string."""
-        # Add modifiers to pattern
-        if case_insensitive or dotall or multiline:
-            modifiers = ""
-            if case_insensitive:
-                modifiers += "i"
-            if dotall:
-                modifiers += "s"
-            if multiline:
-                modifiers += "m"
-            pattern = pattern + modifiers
+        from yaraast.ast.modifiers import StringModifier, StringModifierType
+
+        mods: list[StringModifier] = []
+        if case_insensitive:
+            mods.append(StringModifier(modifier_type=StringModifierType.NOCASE))
+        if dotall:
+            mods.append(StringModifier(modifier_type=StringModifierType.DOTALL))
+        if multiline:
+            mods.append(StringModifier(modifier_type=StringModifierType.MULTILINE))
 
         self._strings.append(
-            RegexString(identifier=identifier, regex=pattern, modifiers=[]),
+            RegexString(identifier=identifier, regex=pattern, modifiers=mods),
         )
         return self
 

@@ -84,6 +84,12 @@ class ErrorTolerantLexer(Lexer):
             except LexerError as e:
                 # Record the error with context
                 self._add_error(str(e).split(": ", 1)[1] if ": " in str(e) else str(e))
+                # Produce an error token for the skipped character
+                if self.position < len(self.text):
+                    err_char = self.text[self.position]
+                    self.tokens.append(
+                        Token(TokenType.UNKNOWN, err_char, self.line, self.column, 1)
+                    )
                 # Try to recover
                 self._recover_from_error()
 
@@ -220,7 +226,7 @@ class ErrorTolerantLexer(Lexer):
                     value += "\r"
                 elif next_char == "t":
                     value += "\t"
-                elif next_char == "x" and self.position + 2 < len(self.text):
+                elif next_char == "x" and self.position + 3 <= len(self.text):
                     # Hex escape
                     hex_digits = self.text[self.position + 1 : self.position + 3]
                     if all(c in "0123456789abcdefABCDEF" for c in hex_digits):

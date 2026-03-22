@@ -62,7 +62,7 @@ class CommentPreservingLexer(Lexer):
                 col_num += 2
 
                 # Read until */
-                while i < len(self.text) - 1:
+                while i < len(self.text):
                     if self.text[i : i + 2] == "*/":
                         comment_text += "*/"
                         i += 2
@@ -93,14 +93,14 @@ class CommentPreservingLexer(Lexer):
                 continue
 
             # Regular character
-            if self.text[i] == "\n":
+            text_without_comments.append(self.text[i])
+            i += 1
+
+            if self.text[i - 1] == "\n":
                 line_num += 1
                 col_num = 1
             else:
                 col_num += 1
-
-            text_without_comments.append(self.text[i])
-            i += 1
 
         # Second pass: tokenize text without comments using base lexer
         modified_text = "".join(text_without_comments)

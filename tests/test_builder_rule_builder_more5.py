@@ -38,7 +38,8 @@ def test_rule_builder_hex_regex_and_condition_variants() -> None:
     assert isinstance(hex_string.tokens[0], HexByte)
     assert isinstance(hex_string.tokens[1], HexWildcard)
     assert isinstance(rule.strings[1], RegexString)
-    assert rule.strings[1].regex == "ab.*sm"
+    assert rule.strings[1].regex == "ab.*"
+    assert len(rule.strings[1].modifiers) == 2  # dotall + multiline
     assert isinstance(rule.condition, StringIdentifier)
     assert rule.condition.name == "$a"
 

@@ -34,6 +34,11 @@ class StringIdentifierValidator(DefaultASTVisitor[None]):
         identifier = node.identifier if node.identifier.startswith("$") else f"${node.identifier}"
 
         if identifier == "$":
+            self.result.add_error(
+                f"Invalid empty string identifier '$' in rule '{self.current_rule_name}'",
+                node.location,
+                "String identifiers must have a name after '$', e.g. '$s1'.",
+            )
             return
 
         if identifier in self.current_rule_strings:

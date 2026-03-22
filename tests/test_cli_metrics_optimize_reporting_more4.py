@@ -41,8 +41,7 @@ def test_metrics_commands_more_paths(tmp_path: Path) -> None:
     yara_path = _write_metrics_rule(tmp_path)
 
     res = runner.invoke(metrics, ["complexity", str(yara_path), "--quality-gate", "101"])
-    assert res.exit_code == 0
-    assert "Quality gate warning" in res.output
+    assert res.exit_code == 1  # quality gate failure exits non-zero
 
     res = runner.invoke(metrics, ["graph", str(yara_path), "-t", "full", "-f", "dot"])
     assert res.exit_code == 0

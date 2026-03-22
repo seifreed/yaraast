@@ -35,6 +35,7 @@ class TypeEnvironment:
         if module is None:
             self.modules.add(alias)
         else:
+            self.modules.add(alias)
             self.modules.add(module)
             self.module_aliases[alias] = module
 

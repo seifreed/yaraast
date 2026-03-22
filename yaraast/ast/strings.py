@@ -65,6 +65,8 @@ class HexNegatedByte(HexToken):
     value: int = 0
 
     def accept(self, visitor: Any) -> Any:
+        if hasattr(visitor, "visit_hex_negated_byte"):
+            return visitor.visit_hex_negated_byte(self)
         return visitor.visit_hex_byte(self)
 
 

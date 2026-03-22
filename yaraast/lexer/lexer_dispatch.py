@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yaraast.lexer.lexer_errors import LexerError
+from yaraast.lexer.lexer_helpers import _skip_line_continuation
 from yaraast.lexer.lexer_tables import SINGLE_CHAR_TOKENS, TWO_CHAR_OPERATORS
 from yaraast.lexer.tokens import Token, TokenType
 
@@ -50,8 +51,8 @@ def read_next_token(lexer) -> Token | None:
         return Token(token_type, char, start_line, start_column, 1)
 
     if char == "\\" and lexer._peek_char() in (" ", "\t"):
-        lexer._advance()
-        return Token(TokenType.DIVIDE, "/", start_line, start_column, 1)
+        _skip_line_continuation(lexer)
+        return None
 
     msg = f"Unexpected character: {char}"
     raise LexerError(msg, lexer.line, lexer.column)

@@ -32,8 +32,9 @@ def _skip_line_continuation(lexer) -> None:
     while lexer._current_char() is not None and lexer._current_char() in " \t":
         lexer._advance()
     if lexer._current_char() is not None and lexer._current_char() in "\r\n":
+        prev = lexer._current_char()
         lexer._advance()
-        if lexer._current_char() == "\n":
+        if prev == "\r" and lexer._current_char() == "\n":
             lexer._advance()
 
 

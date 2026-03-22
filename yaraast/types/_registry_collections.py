@@ -63,9 +63,9 @@ class StructType(YaraType):
     def is_compatible_with(self, other: YaraType) -> bool:
         if not isinstance(other, StructType):
             return False
-        for field_name, field_type in self.fields.items():
-            if field_name not in other.fields:
-                return False
-            if not field_type.is_compatible_with(other.fields[field_name]):
-                return False
-        return True
+        if set(self.fields.keys()) != set(other.fields.keys()):
+            return False
+        return all(
+            field_type.is_compatible_with(other.fields[field_name])
+            for field_name, field_type in self.fields.items()
+        )

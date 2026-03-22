@@ -124,7 +124,11 @@ class CrossValidator:
             if (
                 hasattr(rule, "modifiers")
                 and isinstance(rule.modifiers, list | tuple)
-                and "private" in rule.modifiers
+                and any(
+                    (getattr(m, "modifier_type", None) and m.modifier_type.value == "private")
+                    or m == "private"
+                    for m in rule.modifiers
+                )
             ):
                 private_rules.add(rule.name)
 
@@ -231,7 +235,11 @@ class CrossValidator:
             if (
                 hasattr(rule, "modifiers")
                 and isinstance(rule.modifiers, list | tuple)
-                and "private" in rule.modifiers
+                and any(
+                    (getattr(m, "modifier_type", None) and m.modifier_type.value == "private")
+                    or m == "private"
+                    for m in rule.modifiers
+                )
             ):
                 private_rules.add(rule.name)
 

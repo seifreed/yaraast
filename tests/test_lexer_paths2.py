@@ -85,8 +85,9 @@ def test_lexer_regex_and_backslash_division_paths() -> None:
     assert regex_tokens
     assert "\x00i" in regex_tokens[0].value
 
+    # Backslash followed by space is a line continuation, not division
     tokens2 = Lexer("10 \\ 2").tokenize()
-    assert any(t.type == TokenType.DIVIDE for t in tokens2)
+    assert not any(t.type == TokenType.DIVIDE for t in tokens2)
 
 
 def test_lexer_skips_comments_inside_hex_string_and_reads_regex_modifiers() -> None:

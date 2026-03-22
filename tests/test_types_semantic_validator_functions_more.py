@@ -90,8 +90,30 @@ def test_function_validator_branches_for_arity_and_missing_actual_module_name() 
             ),
         },
     )
+    # Fewer args than defined is allowed (optional params)
     validator3.visit(FunctionCall(function="calc.sum", arguments=[IntegerLiteral(1)]))
-    assert any("expects 2 argument(s) (a, b), got 1" in err.message for err in result3.errors)
+    assert not any("expects" in err.message for err in result3.errors)
+
+    # More args than defined is an error
+    result4 = ValidationResult()
+    validator4 = FunctionCallValidator(result4, env3)
+    validator4.module_loader.modules["calc"] = ModuleDefinition(
+        name="calc",
+        functions={
+            "sum": FunctionDefinition(
+                name="sum",
+                return_type=AnyType(),
+                parameters=[("a", AnyType()), ("b", AnyType())],
+            ),
+        },
+    )
+    validator4.visit(
+        FunctionCall(
+            function="calc.sum",
+            arguments=[IntegerLiteral(1), IntegerLiteral(2), IntegerLiteral(3)],
+        )
+    )
+    assert any("expects at most 2 argument(s)" in err.message for err in result4.errors)
 
 
 def test_function_validator_visits_nested_condition_nodes() -> None:

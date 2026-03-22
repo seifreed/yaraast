@@ -25,6 +25,7 @@ def test_string_identifier_validator_covers_plain_hex_regex_and_empty_id() -> No
     validator.visit_rule(rule)
 
     assert result.is_valid is False
-    assert len(result.errors) == 1
-    assert "Duplicate string identifier '$a' in rule 'dup_rule'" in result.errors[0].message
+    assert len(result.errors) == 2
+    assert any("Duplicate string identifier '$a'" in e.message for e in result.errors)
+    assert any("Invalid empty string identifier '$'" in e.message for e in result.errors)
     assert validator.current_rule_strings == {"$a", "$b"}

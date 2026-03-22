@@ -112,12 +112,21 @@ def visit_binary_expression(analyzer, node) -> None:
             and right_cmp["op"] in [">", ">="]
             and analyzer._current_rule
         ):
-            analyzer.report.add_suggestion(
-                analyzer._current_rule.name,
-                "redundant_comparison",
-                f"Redundant comparisons on '{left_cmp['var']}' may be present; keep only the stricter one if semantics stay the same",
-                "low",
+            lv, rv = left_cmp["value"], right_cmp["value"]
+            is_redundant = (
+                (left_cmp["op"] == ">" and right_cmp["op"] == ">=" and lv >= rv)
+                or (left_cmp["op"] == ">=" and right_cmp["op"] == ">" and rv >= lv)
+                or (left_cmp["op"] == right_cmp["op"] and lv != rv)
             )
+            if is_redundant:
+                analyzer.report.add_suggestion(
+                    analyzer._current_rule.name,
+                    "redundant_comparison",
+                    f"Redundant comparisons on '{left_cmp['var']}': "
+                    f"{left_cmp['op']} {lv} and {right_cmp['op']} {rv}; "
+                    "keep only the stricter one",
+                    "low",
+                )
     analyzer.visit(node.left)
     analyzer.visit(node.right)
     analyzer._condition_depth -= 1

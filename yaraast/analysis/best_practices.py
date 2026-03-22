@@ -234,11 +234,9 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def _analyze_hex_string(self, rule: Rule, string: HexString) -> None:
         """Analyze hex string patterns."""
         # Count wildcards and jumps
-        wildcards = sum(
-            1
-            for token in string.tokens
-            if hasattr(token, "__class__") and token.__class__.__name__ == "HexWildcard"
-        )
+        from yaraast.ast.strings import HexWildcard
+
+        wildcards = sum(1 for token in string.tokens if isinstance(token, HexWildcard))
 
         # Too many wildcards might be inefficient
         if wildcards > len(string.tokens) * 0.5:

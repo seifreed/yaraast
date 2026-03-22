@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import builtins
 import contextlib
 from typing import Self
 
@@ -195,7 +194,7 @@ class HexStringBuilder:
 
     def _add_hex_byte_safely(self, part: str) -> None:
         """Add hex byte with error suppression."""
-        with contextlib.suppress(builtins.BaseException):
+        with contextlib.suppress(Exception):
             self.add(part)
 
     def build(self) -> list[HexToken]:
