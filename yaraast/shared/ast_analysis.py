@@ -86,12 +86,12 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
         )
 
         for string_def in getattr(rule, "strings", []):
-            self._analyze_string(string_def)
+            self._analyze_string(string_def, rule.name)
         if rule.condition:
             self._analyze_condition(rule.condition, rule.name)
         return super().visit_rule(rule)
 
-    def _analyze_string(self, string_def: Any) -> None:
+    def _analyze_string(self, string_def: Any, rule_name: str = "") -> None:
         string_structure = {
             "identifier": string_def.identifier,
             "type": type(string_def).__name__,
@@ -112,7 +112,8 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
         elif hasattr(string_def, "tokens"):
             string_structure["content_type"] = "hex"
             string_structure["token_count"] = len(getattr(string_def, "tokens", []))
-        self.string_signatures[string_def.identifier] = self._hash_dict(string_structure)
+        sig_key = f"{rule_name}:{string_def.identifier}" if rule_name else string_def.identifier
+        self.string_signatures[sig_key] = self._hash_dict(string_structure)
 
     def _analyze_condition(self, condition: Any, rule_name: str) -> None:
         self.condition_signatures[f"{rule_name}.condition"] = self._hash_dict(
@@ -144,9 +145,6 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
 class ASTDiffer:
     """Compare ASTs and identify logical vs stylistic changes."""
 
-    def __init__(self) -> None:
-        self.analyzer = ASTStructuralAnalyzer()
-
     def diff_files(self, file1_path: Path, file2_path: Path) -> ASTDiffResult:
         try:
             with Path(file1_path).open() as f:
@@ -158,7 +156,7 @@ class ASTDiffer:
             result = self.diff_asts(ast1, ast2)
             return self._detect_style_changes_from_text(content1, content2, result)
         except Exception as exc:
-            result = ASTDiffResult(has_changes=False)
+            result = ASTDiffResult(has_changes=True)
             result.logical_changes.append(f"Error comparing files: {exc}")
             return result
 
@@ -238,6 +236,7 @@ class ASTDiffer:
             or result.added_rules
             or result.removed_rules
         ):
+            result.has_changes = True
             result.style_only_changes.append("spacing/formatting or whitespace/indentation changed")
             result.change_summary["style_only_changes"] = len(result.style_only_changes)
             result.change_summary["style_changes"] = len(result.style_only_changes)

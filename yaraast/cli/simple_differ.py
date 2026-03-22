@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import difflib
+from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -49,64 +51,91 @@ class SimpleDiffer:
         self.generator = CodeGenerator()
 
     def diff(self, content1: str, content2: str) -> DiffResult:
-        """Diff two YARA file contents."""
+        """Diff two YARA file contents using LCS-based sequence matching."""
         lines1 = content1.splitlines()
         lines2 = content2.splitlines()
 
-        diff_lines = []
+        diff_lines: list[DiffLine] = []
         added = 0
         removed = 0
         modified = 0
 
-        # Simple line-by-line diff
-        max_lines = max(len(lines1), len(lines2))
+        matcher = difflib.SequenceMatcher(None, lines1, lines2)
+        line_num = 0
 
-        for i in range(max_lines):
-            if i >= len(lines1):
-                # Line added in content2
-                diff_lines.append(
-                    DiffLine(
-                        type=DiffType.ADD,
-                        line_num=i + 1,
-                        content=f"+ {lines2[i]}",
-                        new_content=lines2[i],
-                    ),
-                )
-                added += 1
-            elif i >= len(lines2):
-                # Line removed from content1
-                diff_lines.append(
-                    DiffLine(
-                        type=DiffType.REMOVE,
-                        line_num=i + 1,
-                        content=f"- {lines1[i]}",
-                        old_content=lines1[i],
-                    ),
-                )
-                removed += 1
-            elif lines1[i] != lines2[i]:
-                # Line modified
-                diff_lines.append(
-                    DiffLine(
-                        type=DiffType.MODIFY,
-                        line_num=i + 1,
-                        content=f"~ {lines2[i]}",
-                        old_content=lines1[i],
-                        new_content=lines2[i],
-                    ),
-                )
-                modified += 1
-            else:
-                # Line unchanged (context)
-                diff_lines.append(
-                    DiffLine(
-                        type=DiffType.CONTEXT,
-                        line_num=i + 1,
-                        content=f"  {lines1[i]}",
-                        old_content=lines1[i],
-                        new_content=lines1[i],
-                    ),
-                )
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == "equal":
+                for idx in range(i2 - i1):
+                    line_num += 1
+                    diff_lines.append(
+                        DiffLine(
+                            type=DiffType.CONTEXT,
+                            line_num=line_num,
+                            content=f"  {lines1[i1 + idx]}",
+                            old_content=lines1[i1 + idx],
+                            new_content=lines1[i1 + idx],
+                        ),
+                    )
+            elif tag == "replace":
+                old_chunk = lines1[i1:i2]
+                new_chunk = lines2[j1:j2]
+                for idx in range(max(len(old_chunk), len(new_chunk))):
+                    line_num += 1
+                    if idx < len(old_chunk) and idx < len(new_chunk):
+                        diff_lines.append(
+                            DiffLine(
+                                type=DiffType.MODIFY,
+                                line_num=line_num,
+                                content=f"~ {new_chunk[idx]}",
+                                old_content=old_chunk[idx],
+                                new_content=new_chunk[idx],
+                            ),
+                        )
+                        modified += 1
+                    elif idx < len(new_chunk):
+                        diff_lines.append(
+                            DiffLine(
+                                type=DiffType.ADD,
+                                line_num=line_num,
+                                content=f"+ {new_chunk[idx]}",
+                                new_content=new_chunk[idx],
+                            ),
+                        )
+                        added += 1
+                    else:
+                        diff_lines.append(
+                            DiffLine(
+                                type=DiffType.REMOVE,
+                                line_num=line_num,
+                                content=f"- {old_chunk[idx]}",
+                                old_content=old_chunk[idx],
+                            ),
+                        )
+                        removed += 1
+            elif tag == "insert":
+                for idx in range(j2 - j1):
+                    line_num += 1
+                    diff_lines.append(
+                        DiffLine(
+                            type=DiffType.ADD,
+                            line_num=line_num,
+                            content=f"+ {lines2[j1 + idx]}",
+                            new_content=lines2[j1 + idx],
+                        ),
+                    )
+                    added += 1
+            elif tag == "delete":
+                for idx in range(i2 - i1):
+                    line_num += 1
+                    diff_lines.append(
+                        DiffLine(
+                            type=DiffType.REMOVE,
+                            line_num=line_num,
+                            content=f"- {lines1[i1 + idx]}",
+                            old_content=lines1[i1 + idx],
+                        ),
+                    )
+                    removed += 1
 
         has_changes = added > 0 or removed > 0 or modified > 0
 
@@ -209,12 +238,12 @@ class SimpleASTDiffer(SimpleDiffer):
         self,
         dir1: str | Path,
         dir2: str | Path,
-    ) -> dict[str, DiffResult]:
+    ) -> dict[str, DiffResult | ASTDiffResult]:
         """Diff all YARA files in two directories."""
         dir1 = Path(dir1)
         dir2 = Path(dir2)
 
-        results = {}
+        results: dict[str, DiffResult | ASTDiffResult] = {}
 
         # Get all .yar files in both directories
         files1 = {p.relative_to(dir1) for p in dir1.glob("**/*.yar")}
@@ -290,15 +319,21 @@ def diff_lines(lines1: list[str], lines2: list[str]) -> list[DiffLine]:
 
 
 def diff_tokens(content1: str, content2: str) -> list[str]:
-    """Diff tokens in two contents."""
-    tokens1 = content1.split()
-    tokens2 = content2.split()
+    """Diff tokens in two contents, accounting for frequency."""
+    counts1 = Counter(content1.split())
+    counts2 = Counter(content2.split())
 
     changes = []
-    for token in set(tokens1) - set(tokens2):
-        changes.append(f"- {token}")
-    for token in set(tokens2) - set(tokens1):
-        changes.append(f"+ {token}")
+    all_tokens = sorted(set(counts1) | set(counts2))
+    for token in all_tokens:
+        c1 = counts1.get(token, 0)
+        c2 = counts2.get(token, 0)
+        if c1 > c2:
+            for _ in range(c1 - c2):
+                changes.append(f"- {token}")
+        elif c2 > c1:
+            for _ in range(c2 - c1):
+                changes.append(f"+ {token}")
 
     return changes
 
@@ -330,4 +365,4 @@ def format_diff(diff_result: DiffResult) -> str:
 
 def print_diff(diff_result: DiffResult) -> None:
     """Print diff result to stdout."""
-    format_diff(diff_result)
+    print(format_diff(diff_result))

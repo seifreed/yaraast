@@ -291,8 +291,8 @@ class TestASTStructuralAnalyzer:
         assert "test_rule" in analysis["rule_signatures"]
         assert analysis["total_rules"] == 1
         assert len(analysis["string_signatures"]) == 2
-        assert "$s1" in analysis["string_signatures"]
-        assert "$s2" in analysis["string_signatures"]
+        assert "test_rule:$s1" in analysis["string_signatures"]
+        assert "test_rule:$s2" in analysis["string_signatures"]
 
     def test_structural_hash_consistency(self) -> None:
         """Test that identical structures produce identical hashes."""

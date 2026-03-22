@@ -78,9 +78,7 @@ def show_style_changes(style_changes: list) -> None:
 
 
 def show_change_significance(result) -> None:
-    total_logical = (
-        len(result.logical_changes) + len(result.added_rules) + len(result.removed_rules)
-    )
+    total_logical = len(result.added_rules) + len(result.removed_rules) + len(result.modified_rules)
     total_style = len(result.style_only_changes)
 
     if total_logical > 0:

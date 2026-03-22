@@ -43,9 +43,9 @@ def test_ast_structural_analyzer_collects_signatures_and_empty_condition() -> No
     assert analysis["total_rules"] == 2
     assert "file" in analysis["structural_hash"]
     assert "r1" in analysis["rule_signatures"]
-    assert "$a" in analysis["string_signatures"]
-    assert "$r" in analysis["string_signatures"]
-    assert "$h" in analysis["string_signatures"]
+    assert "r1:$a" in analysis["string_signatures"]
+    assert "r1:$r" in analysis["string_signatures"]
+    assert "r1:$h" in analysis["string_signatures"]
     assert "r1.condition" in analysis["condition_signatures"]
 
     assert analyzer._get_condition_structure(None) == {"type": "empty"}
@@ -106,7 +106,7 @@ def test_ast_differ_diff_files_error_and_style_detection_paths(tmp_path: Path) -
     bad1.write_text("rule broken")
     bad2.write_text("rule also_broken")
     error_result = differ.diff_files(bad1, bad2)
-    assert error_result.has_changes is False
+    assert error_result.has_changes is True
     assert any("Error comparing files:" in c for c in error_result.logical_changes)
 
     same1 = tmp_path / "same1.yar"
@@ -156,8 +156,8 @@ def test_ast_differ_removed_strings_modified_strings_and_unary_condition() -> No
     assert cond["operand"]["type"] == "Identifier"
 
     result = ASTDiffer().diff_asts(ast1, ast2)
-    assert any("Removed strings: $gone" in change for change in result.logical_changes)
-    assert any("String '$a' content modified" in change for change in result.logical_changes)
+    assert any("Removed strings: r:$gone" in change for change in result.logical_changes)
+    assert any("String 'r:$a' content modified" in change for change in result.logical_changes)
 
 
 def test_ast_structural_analyzer_meta_list_and_regex_content_changes() -> None:
@@ -185,14 +185,14 @@ def test_ast_structural_analyzer_meta_list_and_regex_content_changes() -> None:
     analyzer = ASTStructuralAnalyzer()
     analysis = analyzer.analyze(ast1)
     assert "rx" in analysis["rule_signatures"]
-    assert "$r" in analysis["string_signatures"]
+    assert "rx:$r" in analysis["string_signatures"]
 
     cond = analyzer._get_condition_structure(StringCount("$r"))
     assert cond["type"] == "StringCount"
     assert cond["children"] == []
 
     result = ASTDiffer().diff_asts(ast1, ast2)
-    assert any("String '$r' content modified" in change for change in result.logical_changes)
+    assert any("String 'rx:$r' content modified" in change for change in result.logical_changes)
 
 
 def test_ast_differ_detects_style_only_changes_from_original_text(tmp_path: Path) -> None:
@@ -204,7 +204,7 @@ def test_ast_differ_detects_style_only_changes_from_original_text(tmp_path: Path
     file2.write_text('rule  s  {\n  strings:\n      $a   =   "abc"\n    condition:\n\t$a\n}')
 
     result = ASTDiffer().diff_files(file1, file2)
-    assert result.has_changes is False
+    assert result.has_changes is True
     assert result.style_only_changes
     assert any(
         "whitespace/indentation" in change or "spacing/formatting" in change
