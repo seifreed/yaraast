@@ -283,7 +283,10 @@ class CommentAwareParser(Parser):
             elif self._match(TokenType.HEX_STRING):
                 hex_content = self._previous().value.strip()
                 hex_tokens = self._parse_hex_tokens(hex_content)
-                string_def = HexString(identifier=identifier, tokens=hex_tokens)
+                modifiers = self._parse_string_modifiers()
+                string_def = HexString(
+                    identifier=identifier, tokens=hex_tokens, modifiers=modifiers
+                )
             elif self._match(TokenType.REGEX):
                 regex_val = self._previous().value
                 pattern, modifiers = self._parse_regex_value(regex_val)

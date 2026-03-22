@@ -107,6 +107,18 @@ class JsonSerializerDeserializeMixin:
             from yaraast.ast.strings import HexJump
 
             return HexJump(min_jump=data.get("min_jump"), max_jump=data.get("max_jump"))
+        if token_type == "HexNibble":  # nosec B105
+            from yaraast.ast.strings import HexNibble
+
+            return HexNibble(high=data.get("high", True), value=data.get("value", 0))
+        if token_type == "HexAlternative":  # nosec B105
+            from yaraast.ast.strings import HexAlternative
+
+            alternatives = [
+                [self._deserialize_hex_token(t) for t in alt]
+                for alt in data.get("alternatives", [])
+            ]
+            return HexAlternative(alternatives=alternatives)
         msg = f"Unknown hex token type: {token_type}"
         raise ValueError(msg)
 

@@ -280,7 +280,7 @@ class OptimizedMatcher:
             string_matches = []
             for string_match in match.strings:
                 # StringMatch has instances attribute which is a list of (offset, matched_data) tuples
-                for instance in string_match.instances:
+                for instance in string_match.instances if string_match.instances else []:
                     string_matches.append(
                         {
                             "offset": instance.offset,

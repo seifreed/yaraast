@@ -54,14 +54,14 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     assert pe64.section_index(".text") == 0
     assert pe64.section_index(".rdata") == -1
 
-    pe64.imports = ["kernel32.dll:CreateFileW", "user32.dll:MessageBoxW"]
-    assert MockPE.imports(pe64, "kernel32.dll", "CreateFileW") is True
-    assert MockPE.imports(pe64, "kernel32.dll", "CloseHandle") is False
-    assert MockPE.imports(pe64, "user32.dll") is True
+    pe64._import_list = ["kernel32.dll:CreateFileW", "user32.dll:MessageBoxW"]
+    assert pe64.imports("kernel32.dll", "CreateFileW") is True
+    assert pe64.imports("kernel32.dll", "CloseHandle") is False
+    assert pe64.imports("user32.dll") is True
 
-    pe64.exports = ["ExportedFn"]
-    assert MockPE.exports(pe64, "ExportedFn") is True
-    assert MockPE.exports(pe64, "Missing") is False
+    pe64._export_list = ["ExportedFn"]
+    assert pe64.exports("ExportedFn") is True
+    assert pe64.exports("Missing") is False
     assert pe64.locale(0x409) is False
     assert pe64.language(0x09) is False
     assert pe64.imphash()

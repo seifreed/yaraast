@@ -373,4 +373,4 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
         s._deserialize_expression({"type": "Nope"})
 
     with pytest.raises(ValueError, match="Unknown hex token type"):
-        s._deserialize_hex_token({"type": "HexAlternative"})
+        s._deserialize_hex_token({"type": "HexUnknownType"})

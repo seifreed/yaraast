@@ -55,8 +55,8 @@ class MockPE:
         self.version_info: dict[str, str] = {}
         self.number_of_resources = 0
         self.resource_timestamp = 0
-        self.imports = []
-        self.exports = []
+        self._import_list = []
+        self._export_list = []
         self.is_pe = False
         self.is_dll = False
         self.is_32bit = True
@@ -105,9 +105,12 @@ class MockPE:
 
     def imphash(self) -> str:
         """Compute MD5 of import table (simplified)."""
-        import_list = self.imports if isinstance(self.imports, list) else []
-        import_str = ",".join(sorted(import_list)).lower()
-        return hashlib.md5(import_str.encode()).hexdigest() if import_str else ""
+        import_str = ",".join(sorted(self._import_list)).lower()
+        return (
+            hashlib.md5(import_str.encode(), usedforsecurity=False).hexdigest()
+            if import_str
+            else ""
+        )
 
     def section_index(self, name: str) -> int:
         for i, section in enumerate(self.sections):
@@ -116,13 +119,12 @@ class MockPE:
         return -1
 
     def exports(self, name: str) -> bool:
-        return name in self.exports
+        return name in self._export_list
 
     def imports(self, dll: str, function: str | None = None) -> bool:
-        import_list = self.imports if isinstance(self.imports, list) else []
         if function:
-            return f"{dll}:{function}" in import_list
-        return any(imp.startswith(f"{dll}:") for imp in import_list)
+            return f"{dll}:{function}" in self._import_list
+        return any(imp.startswith(f"{dll}:") for imp in self._import_list)
 
     def locale(self, locale_id: int) -> bool:
         return False
@@ -242,7 +244,7 @@ class MockMath:
         region = self.data[offset : offset + size]
         n = len(region)
         mean_val = sum(region) / n
-        num = sum((region[i] - mean_val) * (region[(i + 1) % n] - mean_val) for i in range(n))
+        num = sum((region[i] - mean_val) * (region[i + 1] - mean_val) for i in range(n - 1))
         den = sum((b - mean_val) ** 2 for b in region)
         return num / den if den != 0 else 0.0
 
@@ -302,11 +304,11 @@ class HashModule:
 
     def md5(self, offset: int | None = None, size: int | None = None) -> str:
         region = self._get_region(offset, size)
-        return hashlib.md5(region).hexdigest()
+        return hashlib.md5(region, usedforsecurity=False).hexdigest()
 
     def sha1(self, offset: int | None = None, size: int | None = None) -> str:
         region = self._get_region(offset, size)
-        return hashlib.sha1(region).hexdigest()
+        return hashlib.sha1(region, usedforsecurity=False).hexdigest()
 
     def sha256(self, offset: int | None = None, size: int | None = None) -> str:
         region = self._get_region(offset, size)
