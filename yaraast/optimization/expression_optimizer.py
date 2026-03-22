@@ -88,42 +88,56 @@ class ExpressionOptimizer(ASTTransformer):
 
             # Arithmetic operations
             if node.operator == "+":
+                self.optimization_count += 1
                 return IntegerLiteral(value=left_val + right_val)
             if node.operator == "-":
+                self.optimization_count += 1
                 return IntegerLiteral(value=left_val - right_val)
             if node.operator == "*":
+                self.optimization_count += 1
                 return IntegerLiteral(value=left_val * right_val)
             if node.operator == "/" and right_val != 0:
-                # Use C-style truncation toward zero (int() truncates), not Python floor division
+                self.optimization_count += 1
                 return IntegerLiteral(value=int(left_val / right_val))
             if node.operator == "%" and right_val != 0:
-                # C-style modulo: result has same sign as dividend
+                self.optimization_count += 1
                 return IntegerLiteral(value=int(left_val - int(left_val / right_val) * right_val))
 
             # Bitwise operations
             if node.operator == "&":
+                self.optimization_count += 1
                 return IntegerLiteral(value=left_val & right_val)
             if node.operator == "|":
+                self.optimization_count += 1
                 return IntegerLiteral(value=left_val | right_val)
             if node.operator == "^":
+                self.optimization_count += 1
                 return IntegerLiteral(value=left_val ^ right_val)
             if node.operator == "<<":
+                self.optimization_count += 1
                 return IntegerLiteral(value=left_val << right_val)
             if node.operator == ">>":
+                self.optimization_count += 1
                 return IntegerLiteral(value=left_val >> right_val)
 
             # Comparison operations
             if node.operator == "==":
+                self.optimization_count += 1
                 return BooleanLiteral(value=left_val == right_val)
             if node.operator == "!=":
+                self.optimization_count += 1
                 return BooleanLiteral(value=left_val != right_val)
             if node.operator == "<":
+                self.optimization_count += 1
                 return BooleanLiteral(value=left_val < right_val)
             if node.operator == ">":
+                self.optimization_count += 1
                 return BooleanLiteral(value=left_val > right_val)
             if node.operator == "<=":
+                self.optimization_count += 1
                 return BooleanLiteral(value=left_val <= right_val)
             if node.operator == ">=":
+                self.optimization_count += 1
                 return BooleanLiteral(value=left_val >= right_val)
 
         # Identity operations

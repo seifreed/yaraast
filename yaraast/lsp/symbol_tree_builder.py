@@ -347,12 +347,39 @@ def find_line_containing(lines: list[str], text: str, start: int = 0) -> int:
     return -1
 
 
+def _count_braces_outside_literals(line: str) -> tuple[int, int]:
+    """Count { and } that are not inside string literals or comments."""
+    opens = 0
+    closes = 0
+    in_string = False
+    i = 0
+    while i < len(line):
+        ch = line[i]
+        if in_string:
+            if ch == "\\" and i + 1 < len(line):
+                i += 2
+                continue
+            if ch == '"':
+                in_string = False
+        elif ch == '"':
+            in_string = True
+        elif ch == "/" and i + 1 < len(line) and line[i + 1] == "/":
+            break  # rest of line is a comment
+        elif ch == "{":
+            opens += 1
+        elif ch == "}":
+            closes += 1
+        i += 1
+    return opens, closes
+
+
 def find_closing_brace(lines: list[str], start: int) -> int:
     depth = 0
     for i in range(start, len(lines)):
-        depth += lines[i].count("{")
-        depth -= lines[i].count("}")
-        if depth == 0 and "}" in lines[i]:
+        opens, closes = _count_braces_outside_literals(lines[i])
+        depth += opens
+        depth -= closes
+        if depth == 0 and closes > 0:
             return i
     return len(lines) - 1
 

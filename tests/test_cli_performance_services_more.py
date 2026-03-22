@@ -72,17 +72,17 @@ def test_build_parallel_summary_and_plans_cover_remaining_branches() -> None:
     assert summary["workers_used"] == 4
 
     summary2 = ps.build_parallel_summary(
-        [Path("a.yar")],
-        [_ast("a")],
+        [Path("a.yar")] * 6,
+        [_ast("a")] * 6,
         {
-            "avg_time_per_rule": 0.5,
-            "jobs_completed": 1,
+            "avg_time_per_rule": 1.5,
+            "jobs_completed": 6,
             "total_processing_time": 9.0,
             "max_workers": 4,
         },
         total_time=3.0,
     )
-    assert summary2["speedup"] == 3.0
+    assert summary2["speedup"] == 3.0  # 6 jobs * 1.5s avg = 9s sequential / 3s parallel
 
     summary3 = ps.build_parallel_summary(
         [Path("a.yar")],

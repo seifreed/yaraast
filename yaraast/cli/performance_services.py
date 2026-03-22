@@ -223,10 +223,12 @@ def build_parallel_summary(
     total_time: float,
 ) -> dict[str, Any]:
     avg_job_time = analyzer_stats.get("avg_job_time", analyzer_stats.get("avg_time_per_rule", 0.0))
+    jobs_completed = analyzer_stats.get("jobs_completed", 0)
     speedup = 1.0
-    if analyzer_stats.get("jobs_completed", 0) > 0:
-        sequential_estimate = analyzer_stats.get("total_processing_time", 0.0)
-        speedup = sequential_estimate / total_time if total_time > 0 else 1
+    if jobs_completed > 0 and total_time > 0:
+        # Estimate sequential time as sum of individual job times
+        sequential_estimate = avg_job_time * jobs_completed
+        speedup = sequential_estimate / total_time if sequential_estimate > 0 else 1.0
 
     return {
         "files_processed": len(file_paths),

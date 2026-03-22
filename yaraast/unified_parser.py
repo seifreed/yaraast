@@ -231,21 +231,21 @@ class UnifiedParser:
         use_streaming = force_streaming or (file_size > size_threshold_bytes)
 
         if use_streaming:
-            # Use StreamingParser for very large files (>100 MB by default)
-            # Trade-off: ~70% slower but ~30% less memory
-            # Only beneficial when memory is severely constrained
+            # Detect dialect before streaming — read a small sample for detection
+            if dialect is None:
+                detected = cls.detect_file_dialect(file_path_obj)
+                if detected in (YaraDialect.YARA_L, YaraDialect.YARA_X):
+                    # Streaming parser only supports standard YARA;
+                    # fall through to traditional parser for other dialects
+                    with open(file_path_obj, encoding="utf-8") as f:
+                        content = f.read()
+                    parser = cls(content, detected)
+                    return parser.parse()
 
-            # Extract imports/includes BEFORE streaming parse
-            # This is a fast O(k) operation where k = number of preamble lines
-            # Typically completes in <1ms even for files with hundreds of imports
+            # Use StreamingParser for very large standard YARA files
             imports, includes = cls._extract_preamble_fast(file_path_obj)
-
-            # Parse rules with streaming
             streaming_parser = StreamingParser()
             rules = list(streaming_parser.parse_file(file_path_obj))
-
-            # Return complete YaraFile with all components
-            # Now includes imports/includes that were previously lost
             return YaraFile(imports=imports, includes=includes, rules=rules)
 
         # Use traditional parser for smaller files (below threshold)
