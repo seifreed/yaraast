@@ -109,12 +109,12 @@ repos:
           ]
         exclude: ^(tests/|venv/|build/|dist/|.*_pb2\.py$)
 
-  # Additional security and quality checks
-  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-    rev: v1.3.2
+  # Dependency vulnerability scanning
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.10.0
     hooks:
-      - id: python-safety-dependencies-check
-        files: requirements.*\.txt$
+      - id: pip-audit
+        args: [--desc]
 
   # YAML formatting
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -134,5 +134,5 @@ ci:
   autoupdate_branch: ""
   autoupdate_commit_msg: "[pre-commit.ci] pre-commit autoupdate"
   autoupdate_schedule: weekly
-  skip: [python-safety-dependencies-check] # Skip safety check in CI
+  skip: [pip-audit] # Skip pip-audit in CI (runs separately)
   submodules: false
