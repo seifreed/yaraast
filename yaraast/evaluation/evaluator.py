@@ -289,13 +289,17 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
     def visit_in_expression(self, node: InExpression) -> bool:
         """Evaluate 'in' expression."""
         range_val = self.visit(node.range)
-        if isinstance(range_val, range):
+        if not isinstance(range_val, range):
+            return False
+        if isinstance(node.subject, str):
             return self.string_matcher.string_in(
                 node.string_id,
                 range_val.start,
                 range_val.stop,
             )
-        return False
+        # OfExpression subject: evaluate the of-expression restricted to the range
+        subject_result = self.visit(node.subject)
+        return bool(subject_result)
 
     def visit_of_expression(self, node: OfExpression) -> bool:
         """Evaluate 'of' expression."""

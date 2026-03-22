@@ -312,7 +312,7 @@ class YaraLEventsParsingMixin:
             return EventVariable(name=self._advance().value)
         if self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):
             # Reference list like %suspicious_ips%
-            return ReferenceList(name=self._advance().value)
+            return ReferenceList(name=self._advance().value.strip("%"))
         if self._check(BaseTokenType.REGEX):
             # Regex pattern
             pattern_token = self._advance()

@@ -15,10 +15,14 @@ def evaluate_arithmetic(left, right, operator):
     if operator == "/":
         if right == 0:
             return 0
-        return left // right if isinstance(left, int) else left / right
+        if isinstance(left, int):
+            return int(left / right)  # truncate toward zero (C/YARA semantics)
+        return left / right
     if operator == "%":
         if right == 0:
             return 0
+        if isinstance(left, int) and isinstance(right, int):
+            return int(left - int(left / right) * right)  # C/YARA: sign of dividend
         return left % right
     if operator == "<<":
         return left << right

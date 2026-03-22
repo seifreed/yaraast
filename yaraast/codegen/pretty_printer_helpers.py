@@ -15,10 +15,12 @@ def build_hex_pattern(node: HexString, *, hex_uppercase: bool, hex_spacing: bool
                 hex_val = f"{token.value:02X}" if hex_uppercase else f"{token.value:02x}"
             hex_parts.append(hex_val)
         elif hasattr(token, "min_jump"):  # HexJump
-            if token.min_jump == token.max_jump:
-                hex_parts.append(f"[{token.min_jump}]")
+            lo = token.min_jump if token.min_jump is not None else ""
+            hi = token.max_jump if token.max_jump is not None else ""
+            if lo == hi and lo != "":
+                hex_parts.append(f"[{lo}]")
             else:
-                hex_parts.append(f"[{token.min_jump}-{token.max_jump}]")
+                hex_parts.append(f"[{lo}-{hi}]")
         else:
             hex_parts.append("??")
 
@@ -32,15 +34,16 @@ def format_plain_string(node: PlainString, quote: str, padding: int) -> str:
 
 
 def format_regex_string(node: RegexString, padding: int) -> str:
+    escaped = node.regex.replace("/", "\\/")
     if padding > 0:
-        return f"{node.identifier}{' ' * padding} = /{node.regex}/"
-    return f"{node.identifier} = /{node.regex}/"
+        return f"{node.identifier}{' ' * padding} = /{escaped}/"
+    return f"{node.identifier} = /{escaped}/"
 
 
 def modifiers_to_string(modifiers) -> str:
     if not modifiers:
         return ""
-    return " " + " ".join(mod.name for mod in modifiers)
+    return " " + " ".join(mod if isinstance(mod, str) else str(mod.name) for mod in modifiers)
 
 
 def calculate_string_alignment_column(ast) -> int:

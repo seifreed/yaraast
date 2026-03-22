@@ -271,6 +271,8 @@ class NOfCondition(ConditionExpression):
     events: list[str]
 
     def accept(self, visitor: Any) -> Any:
+        if hasattr(visitor, "visit_yaral_n_of_condition"):
+            return visitor.visit_yaral_n_of_condition(self)
         return visitor.visit_yaral_condition_expression(self)
 
 
@@ -282,6 +284,8 @@ class NullCheckCondition(ConditionExpression):
     negated: bool = False  # True for 'is not null'
 
     def accept(self, visitor: Any) -> Any:
+        if hasattr(visitor, "visit_yaral_null_check_condition"):
+            return visitor.visit_yaral_null_check_condition(self)
         return visitor.visit_yaral_condition_expression(self)
 
 

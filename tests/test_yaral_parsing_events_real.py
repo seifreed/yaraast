@@ -103,7 +103,7 @@ def test_parse_event_value_supports_reference_lists_and_regex() -> None:
     regex_value = parser._parse_event_value()
 
     assert isinstance(ref_value, ReferenceList)
-    assert ref_value.name == "%blocked_ips%"
+    assert ref_value.name == "blocked_ips"
     assert isinstance(regex_value, RegexPattern)
     assert regex_value.pattern == "foo.*bar"
 

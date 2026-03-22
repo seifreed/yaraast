@@ -49,7 +49,10 @@ class AstHasher(ASTVisitor[str]):
         """Hash Rule node."""
         modifiers = "|".join(sorted(node.modifiers))
         tags = "|".join(self.visit(tag) for tag in node.tags)
-        meta = "|".join(f"{k}:{v}" for k, v in sorted(node.meta.items()))
+        if isinstance(node.meta, dict):
+            meta = "|".join(f"{k}:{v}" for k, v in sorted(node.meta.items()))
+        else:
+            meta = "|".join(f"{getattr(m, 'key', '')}:{getattr(m, 'value', '')}" for m in node.meta)
         strings = "|".join(self.visit(s) for s in node.strings)
         condition = self.visit(node.condition) if node.condition else ""
         return f"Rule({node.name},{modifiers},{tags},{meta},{strings},{condition})"

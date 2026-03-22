@@ -72,8 +72,10 @@ class DependencyGraph:
 
     def _add_include_dependency(self, file_key: str, include_path: str) -> None:
         """Add include dependency."""
-        # Note: include_path should be resolved to absolute path by IncludeResolver
+        if include_path not in self.nodes:
+            self.nodes[include_path] = DependencyNode(name=include_path, type="include")
         self.nodes[file_key].dependencies.add(include_path)
+        self.nodes[include_path].dependents.add(file_key)
 
     def _add_rule(self, file_key: str, rule: Rule) -> None:
         """Add rule to the graph and analyze its dependencies."""

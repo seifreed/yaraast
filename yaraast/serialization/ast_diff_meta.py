@@ -5,9 +5,16 @@ from __future__ import annotations
 __all__ = ["emit_meta_diff", "meta_payloads"]
 
 
+def _meta_to_dict(meta) -> dict:
+    """Convert meta (dict or list[MetaEntry]) to a comparable dict."""
+    if isinstance(meta, dict):
+        return dict(meta)
+    return {getattr(m, "key", str(i)): getattr(m, "value", m) for i, m in enumerate(meta)}
+
+
 def meta_payloads(old_rule, new_rule) -> tuple[dict, dict]:
     """Return comparable meta payloads."""
-    return dict(old_rule.meta), dict(new_rule.meta)
+    return _meta_to_dict(old_rule.meta), _meta_to_dict(new_rule.meta)
 
 
 def emit_meta_diff(
