@@ -35,7 +35,11 @@ def display_stream_summary(results, total_time: float):
     click.echo(f"Total files/rules processed: {len(results)}")
     click.echo(f"Successful: {len(successful)}")
     click.echo(f"Failed: {len(failed)}")
-    click.echo(f"Success rate: {len(successful) / len(results) * 100:.1f}%")
+    click.echo(
+        f"Success rate: {len(successful) / len(results) * 100:.1f}%"
+        if results
+        else "Success rate: N/A"
+    )
 
     return successful, failed
 

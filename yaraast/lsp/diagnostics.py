@@ -99,6 +99,7 @@ class DiagnosticsProvider:
 
         diagnostics = []
         started = time.perf_counter()
+        ast = None
 
         # Try to parse the file
         try:
@@ -151,13 +152,13 @@ class DiagnosticsProvider:
                 )
             )
 
-        # Configurable metadata validation
-        if self.runtime and self.runtime.config.metadata_validation:
+        # Configurable metadata validation (only if parsing succeeded)
+        if ast is not None and self.runtime and self.runtime.config.metadata_validation:
             with contextlib.suppress(Exception):
                 diagnostics.extend(self._validate_metadata(ast, self.runtime.config))
 
-        # Configurable rule name validation
-        if self.runtime and self.runtime.config.rule_name_validation:
+        # Configurable rule name validation (only if parsing succeeded)
+        if ast is not None and self.runtime and self.runtime.config.rule_name_validation:
             with contextlib.suppress(Exception):
                 diagnostics.extend(
                     self._validate_rule_names(ast, self.runtime.config.rule_name_validation)

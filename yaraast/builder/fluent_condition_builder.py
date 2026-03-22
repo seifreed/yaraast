@@ -83,7 +83,7 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def at_most_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At most N of the specified strings."""
-        conditions = [self._create_n_of(i, *strings) for i in range(n + 1)]
+        conditions = [self._create_n_of(i, *strings) for i in range(1, n + 1)]
         return FluentConditionBuilder(chain_or(conditions))
 
     def between_n_and_m_of(

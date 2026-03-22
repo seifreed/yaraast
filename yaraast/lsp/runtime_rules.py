@@ -88,7 +88,9 @@ def find_rule_reference_records(
     records: list[ReferenceRecord] = []
     definition = find_rule_definition(runtime, rule_name, current_uri)
     for doc in runtime.iter_workspace_documents():
-        for record in doc.rule_reference_records(rule_name, include_declaration=True):
+        for record in doc.rule_reference_records(
+            rule_name, include_declaration=include_declaration
+        ):
             if (
                 not include_declaration
                 and definition

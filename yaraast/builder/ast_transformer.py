@@ -241,7 +241,12 @@ class RuleTransformer:
         # For node types with children, recurse via generic traversal
         for child in expr.children():
             if isinstance(child, Expression):
-                self._rename_strings_in_expression(child, mapping)
+                new_child = self._rename_strings_in_expression(child, mapping)
+                if new_child is not child:
+                    for attr_name in vars(expr):
+                        if getattr(expr, attr_name) is child:
+                            setattr(expr, attr_name, new_child)
+                            break
 
         return expr
 
