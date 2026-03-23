@@ -12,7 +12,16 @@ from yaraast.cli.utils import format_json
 
 
 def format_complexity_text(metrics: Any) -> str:
-    lines = [
+    lines: list[str] = []
+    lines.extend(_format_overview_section(metrics))
+    lines.extend(_format_rules_section(metrics))
+    lines.extend(_format_quality_section(metrics))
+    return "\n".join(lines)
+
+
+def _format_overview_section(metrics: Any) -> list[str]:
+    """Format the overview table with file, rule, string, condition, and pattern metrics."""
+    return [
         "YARA Rule Complexity Analysis",
         "=" * 35,
         "",
@@ -54,6 +63,11 @@ def format_complexity_text(metrics: Any) -> str:
         f"  Regex quantifiers: {metrics.regex_quantifiers}",
         "",
     ]
+
+
+def _format_rules_section(metrics: Any) -> list[str]:
+    """Format per-rule details: cyclomatic complexity, complex rules, unused strings."""
+    lines: list[str] = []
     if metrics.cyclomatic_complexity:
         lines.extend(
             [
@@ -83,6 +97,12 @@ def format_complexity_text(metrics: Any) -> str:
                 "",
             ],
         )
+    return lines
+
+
+def _format_quality_section(metrics: Any) -> list[str]:
+    """Format the quality score section with module usage."""
+    lines: list[str] = []
     if metrics.module_usage:
         lines.extend(
             [
@@ -91,7 +111,7 @@ def format_complexity_text(metrics: Any) -> str:
                 "",
             ]
         )
-    return "\n".join(lines)
+    return lines
 
 
 def format_complexity_output(metrics: Any, fmt: str) -> str:

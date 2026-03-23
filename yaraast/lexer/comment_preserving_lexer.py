@@ -17,8 +17,25 @@ class CommentPreservingLexer(Lexer):
     def tokenize(self) -> list[Token]:
         """Tokenize input text and preserve comments."""
         # First pass: extract comments and their positions
-        comment_tokens = []
-        text_without_comments = []
+        comment_tokens, text_without_comments = self._strip_comments()
+
+        # Second pass: tokenize text without comments using base lexer
+        modified_text = "".join(text_without_comments)
+        base_lexer = Lexer(modified_text)
+        regular_tokens = base_lexer.tokenize()
+
+        # Merge comment tokens into the regular token stream
+        all_tokens = self._merge_comment_tokens(regular_tokens, comment_tokens)
+
+        # Store comments separately
+        self.comments = comment_tokens
+
+        return all_tokens
+
+    def _strip_comments(self) -> tuple[list[Token], list[str]]:
+        """First pass: extract comments and build text with comments replaced by spaces."""
+        comment_tokens: list[Token] = []
+        text_without_comments: list[str] = []
         line_num = 1
         col_num = 1
         i = 0
@@ -102,12 +119,13 @@ class CommentPreservingLexer(Lexer):
             else:
                 col_num += 1
 
-        # Second pass: tokenize text without comments using base lexer
-        modified_text = "".join(text_without_comments)
-        base_lexer = Lexer(modified_text)
-        regular_tokens = base_lexer.tokenize()
+        return comment_tokens, text_without_comments
 
-        # Merge comment tokens and regular tokens, sorted by position
+    @staticmethod
+    def _merge_comment_tokens(
+        regular_tokens: list[Token], comment_tokens: list[Token]
+    ) -> list[Token]:
+        """Merge comment tokens into regular tokens, sorted by position."""
         all_tokens = list(regular_tokens[:-1])  # Exclude EOF for now
         all_tokens.extend(comment_tokens)
 
@@ -116,9 +134,6 @@ class CommentPreservingLexer(Lexer):
 
         # Add EOF at the end
         all_tokens.append(regular_tokens[-1])
-
-        # Store comments separately
-        self.comments = comment_tokens
 
         return all_tokens
 

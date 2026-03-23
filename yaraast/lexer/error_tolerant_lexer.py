@@ -173,74 +173,10 @@ class ErrorTolerantLexer(Lexer):
 
         while self._current_char() and self._current_char() != '"':
             if self._current_char() == "\\":
-                # Look ahead to see what follows the backslash
-                self._advance()
-                next_char = self._current_char()
-
-                if next_char == "\\":
-                    value += "\\"
-                elif next_char == '"':
-                    # Check for special case: \" at end of string like "\TEMP\"
-                    look_ahead_pos = self.position + 1
-                    if look_ahead_pos < len(self.text):
-                        chars_after = self.text[look_ahead_pos : look_ahead_pos + 20]
-                        # Skip whitespace
-                        i = 0
-                        while i < len(chars_after) and chars_after[i] in " \t":
-                            i += 1
-                        chars_after = chars_after[i:]
-
-                        # Check if this looks like end of string
-                        if not chars_after or chars_after.startswith(
-                            (
-                                "ascii",
-                                "wide",
-                                "nocase",
-                                "fullword",
-                                "xor",
-                                "base64",
-                                "\n",
-                                "\r",
-                            ),
-                        ):
-                            # Treat as Windows path with backslash at end
-                            value += "\\"
-                            self._advance()  # consume quote
-
-                            # Add warning about non-standard syntax
-                            self._add_error(
-                                'String ends with \\" which is non-standard YARA syntax',
-                                severity="warning",
-                                suggestion='Consider using "\\\\" for literal backslash or escaping properly',
-                            )
-                            break
-                        # Normal escaped quote
-                        value += '"'
-                    else:
-                        value += "\\"
-                        self._advance()
-                        break
-                elif next_char == "n":
-                    value += "\n"
-                elif next_char == "r":
-                    value += "\r"
-                elif next_char == "t":
-                    value += "\t"
-                elif next_char == "x" and self.position + 3 <= len(self.text):
-                    # Hex escape
-                    hex_digits = self.text[self.position + 1 : self.position + 3]
-                    if all(c in "0123456789abcdefABCDEF" for c in hex_digits):
-                        value += chr(int(hex_digits, 16))
-                        self._advance()  # skip first hex digit
-                        self._advance()  # skip second hex digit
-                    else:
-                        value += "\\" + next_char
-                elif next_char is None:
-                    value += "\\"
+                result, should_break = self._handle_escape_sequence()
+                value += result
+                if should_break:
                     break
-                else:
-                    # Unknown escape - keep literal
-                    value += "\\" + next_char
             else:
                 value += self._current_char()
 
@@ -257,3 +193,79 @@ class ErrorTolerantLexer(Lexer):
 
         self._advance()  # skip closing quote
         return Token(TokenType.STRING, value, start_line, start_column)
+
+    def _handle_escape_sequence(self) -> tuple[str, bool]:
+        """Handle an escape sequence starting at the current backslash.
+
+        Returns (resolved_value, should_break) where should_break indicates
+        the string reading loop should terminate.
+        """
+        self._advance()  # skip backslash
+        next_char = self._current_char()
+
+        if next_char == "\\":
+            return "\\", False
+        if next_char == '"':
+            return self._handle_windows_path_heuristic()
+        if next_char == "n":
+            return "\n", False
+        if next_char == "r":
+            return "\r", False
+        if next_char == "t":
+            return "\t", False
+        if next_char == "x" and self.position + 3 <= len(self.text):
+            # Hex escape
+            hex_digits = self.text[self.position + 1 : self.position + 3]
+            if all(c in "0123456789abcdefABCDEF" for c in hex_digits):
+                value = chr(int(hex_digits, 16))
+                self._advance()  # skip first hex digit
+                self._advance()  # skip second hex digit
+                return value, False
+            return "\\" + next_char, False
+        if next_char is None:
+            return "\\", True
+        # Unknown escape - keep literal
+        return "\\" + next_char, False
+
+    def _handle_windows_path_heuristic(self) -> tuple[str, bool]:
+        r"""Handle \" that might be a Windows path ending with backslash.
+
+        Returns (resolved_value, should_break).
+        """
+        look_ahead_pos = self.position + 1
+        if look_ahead_pos < len(self.text):
+            chars_after = self.text[look_ahead_pos : look_ahead_pos + 20]
+            # Skip whitespace
+            i = 0
+            while i < len(chars_after) and chars_after[i] in " \t":
+                i += 1
+            chars_after = chars_after[i:]
+
+            # Check if this looks like end of string
+            if not chars_after or chars_after.startswith(
+                (
+                    "ascii",
+                    "wide",
+                    "nocase",
+                    "fullword",
+                    "xor",
+                    "base64",
+                    "\n",
+                    "\r",
+                ),
+            ):
+                # Treat as Windows path with backslash at end
+                self._advance()  # consume quote
+
+                # Add warning about non-standard syntax
+                self._add_error(
+                    'String ends with \\" which is non-standard YARA syntax',
+                    severity="warning",
+                    suggestion='Consider using "\\\\" for literal backslash or escaping properly',
+                )
+                return "\\", True
+            # Normal escaped quote
+            return '"', False
+        # At end of text — treat as literal backslash ending the string
+        self._advance()
+        return "\\", True

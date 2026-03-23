@@ -65,77 +65,24 @@ class SimpleDiffer:
 
         for tag, i1, i2, j1, j2 in matcher.get_opcodes():
             if tag == "equal":
-                for idx in range(i2 - i1):
-                    line_num += 1
-                    diff_lines.append(
-                        DiffLine(
-                            type=DiffType.CONTEXT,
-                            line_num=line_num,
-                            content=f"  {lines1[i1 + idx]}",
-                            old_content=lines1[i1 + idx],
-                            new_content=lines1[i1 + idx],
-                        ),
-                    )
+                new_lines, line_num = _process_equal(lines1, i1, i2, line_num)
+                diff_lines.extend(new_lines)
             elif tag == "replace":
-                old_chunk = lines1[i1:i2]
-                new_chunk = lines2[j1:j2]
-                for idx in range(max(len(old_chunk), len(new_chunk))):
-                    line_num += 1
-                    if idx < len(old_chunk) and idx < len(new_chunk):
-                        diff_lines.append(
-                            DiffLine(
-                                type=DiffType.MODIFY,
-                                line_num=line_num,
-                                content=f"~ {new_chunk[idx]}",
-                                old_content=old_chunk[idx],
-                                new_content=new_chunk[idx],
-                            ),
-                        )
-                        modified += 1
-                    elif idx < len(new_chunk):
-                        diff_lines.append(
-                            DiffLine(
-                                type=DiffType.ADD,
-                                line_num=line_num,
-                                content=f"+ {new_chunk[idx]}",
-                                new_content=new_chunk[idx],
-                            ),
-                        )
-                        added += 1
-                    else:
-                        diff_lines.append(
-                            DiffLine(
-                                type=DiffType.REMOVE,
-                                line_num=line_num,
-                                content=f"- {old_chunk[idx]}",
-                                old_content=old_chunk[idx],
-                            ),
-                        )
-                        removed += 1
+                new_lines, line_num, a, r, m = _process_replace(
+                    lines1, lines2, i1, i2, j1, j2, line_num
+                )
+                diff_lines.extend(new_lines)
+                added += a
+                removed += r
+                modified += m
             elif tag == "insert":
-                for idx in range(j2 - j1):
-                    line_num += 1
-                    diff_lines.append(
-                        DiffLine(
-                            type=DiffType.ADD,
-                            line_num=line_num,
-                            content=f"+ {lines2[j1 + idx]}",
-                            new_content=lines2[j1 + idx],
-                        ),
-                    )
-                    added += 1
+                new_lines, line_num, a = _process_insert(lines2, j1, j2, line_num)
+                diff_lines.extend(new_lines)
+                added += a
             elif tag == "delete":
-                for idx in range(i2 - i1):
-                    line_num += 1
-                    diff_lines.append(
-                        DiffLine(
-                            type=DiffType.REMOVE,
-                            line_num=line_num,
-                            content=f"- {lines1[i1 + idx]}",
-                            old_content=lines1[i1 + idx],
-                        ),
-                    )
-                    removed += 1
+                new_lines, line_num, r = _process_delete(lines1, i1, i2, line_num)
+                diff_lines.extend(new_lines)
+                removed += r
 
         has_changes = added > 0 or removed > 0 or modified > 0
 
@@ -149,6 +96,115 @@ class SimpleDiffer:
                 "total_changes": added + removed + modified,
             },
         )
+
+
+def _process_equal(
+    lines1: list[str], i1: int, i2: int, line_num: int
+) -> tuple[list[DiffLine], int]:
+    """Process an 'equal' opcode block, returning context lines."""
+    diff_lines: list[DiffLine] = []
+    for idx in range(i2 - i1):
+        line_num += 1
+        diff_lines.append(
+            DiffLine(
+                type=DiffType.CONTEXT,
+                line_num=line_num,
+                content=f"  {lines1[i1 + idx]}",
+                old_content=lines1[i1 + idx],
+                new_content=lines1[i1 + idx],
+            ),
+        )
+    return diff_lines, line_num
+
+
+def _process_replace(
+    lines1: list[str],
+    lines2: list[str],
+    i1: int,
+    i2: int,
+    j1: int,
+    j2: int,
+    line_num: int,
+) -> tuple[list[DiffLine], int, int, int, int]:
+    """Process a 'replace' opcode block, returning diff lines and counts."""
+    diff_lines: list[DiffLine] = []
+    added = 0
+    removed = 0
+    modified = 0
+    old_chunk = lines1[i1:i2]
+    new_chunk = lines2[j1:j2]
+    for idx in range(max(len(old_chunk), len(new_chunk))):
+        line_num += 1
+        if idx < len(old_chunk) and idx < len(new_chunk):
+            diff_lines.append(
+                DiffLine(
+                    type=DiffType.MODIFY,
+                    line_num=line_num,
+                    content=f"~ {new_chunk[idx]}",
+                    old_content=old_chunk[idx],
+                    new_content=new_chunk[idx],
+                ),
+            )
+            modified += 1
+        elif idx < len(new_chunk):
+            diff_lines.append(
+                DiffLine(
+                    type=DiffType.ADD,
+                    line_num=line_num,
+                    content=f"+ {new_chunk[idx]}",
+                    new_content=new_chunk[idx],
+                ),
+            )
+            added += 1
+        else:
+            diff_lines.append(
+                DiffLine(
+                    type=DiffType.REMOVE,
+                    line_num=line_num,
+                    content=f"- {old_chunk[idx]}",
+                    old_content=old_chunk[idx],
+                ),
+            )
+            removed += 1
+    return diff_lines, line_num, added, removed, modified
+
+
+def _process_insert(
+    lines2: list[str], j1: int, j2: int, line_num: int
+) -> tuple[list[DiffLine], int, int]:
+    """Process an 'insert' opcode block, returning added lines."""
+    diff_lines: list[DiffLine] = []
+    count = j2 - j1
+    for idx in range(count):
+        line_num += 1
+        diff_lines.append(
+            DiffLine(
+                type=DiffType.ADD,
+                line_num=line_num,
+                content=f"+ {lines2[j1 + idx]}",
+                new_content=lines2[j1 + idx],
+            ),
+        )
+    return diff_lines, line_num, count
+
+
+def _process_delete(
+    lines1: list[str], i1: int, i2: int, line_num: int
+) -> tuple[list[DiffLine], int, int]:
+    """Process a 'delete' opcode block, returning removed lines."""
+    diff_lines: list[DiffLine] = []
+    count = i2 - i1
+    for idx in range(count):
+        line_num += 1
+        diff_lines.append(
+            DiffLine(
+                type=DiffType.REMOVE,
+                line_num=line_num,
+                content=f"- {lines1[i1 + idx]}",
+                old_content=lines1[i1 + idx],
+            ),
+        )
+    return diff_lines, line_num, count
 
 
 @dataclass

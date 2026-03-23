@@ -46,86 +46,90 @@ def display_feature_showcase() -> None:
     """Print static feature showcase."""
     click.echo("🚀 YARA-X New Features:\n")
 
-    click.echo("1️⃣  WITH STATEMENTS")
-    click.echo("   Declare local variables for use in conditions:")
-    click.echo(
-        """
+    _display_syntax_features()
+
+    click.echo("\n✅ All features are fully supported in this implementation!")
+
+
+def _display_syntax_features() -> None:
+    """Display the syntax feature examples table."""
+    features = [
+        (
+            "1️⃣  WITH STATEMENTS",
+            "Declare local variables for use in conditions:",
+            """
    rule example_with {
        condition:
            with $a = "test", $b = 10:
                $a matches /test/ and #b > 5
    }
-   """
-    )
-
-    click.echo("2️⃣  ARRAY COMPREHENSIONS")
-    click.echo("   Create arrays with compact syntax:")
-    click.echo(
-        """
+   """,
+        ),
+        (
+            "2️⃣  ARRAY COMPREHENSIONS",
+            "Create arrays with compact syntax:",
+            """
    [x * 2 for x in (1, 2, 3)]
    [s for s in strings if s matches /test/]
-   """
-    )
-
-    click.echo("3️⃣  DICT COMPREHENSIONS")
-    click.echo("   Create dictionaries with compact syntax:")
-    click.echo(
-        """
+   """,
+        ),
+        (
+            "3️⃣  DICT COMPREHENSIONS",
+            "Create dictionaries with compact syntax:",
+            """
    {k: v * 2 for k, v in items}
    {s: #s for s in strings if #s > 0}
-   """
-    )
-
-    click.echo("4️⃣  TUPLE INDEXING")
-    click.echo("   Access tuple elements by index:")
-    click.echo(
-        """
+   """,
+        ),
+        (
+            "4️⃣  TUPLE INDEXING",
+            "Access tuple elements by index:",
+            """
    my_func()[0]  // First element of function result
    my_tuple[-1]  // Last element
-   """
-    )
-
-    click.echo("5️⃣  SLICE EXPRESSIONS")
-    click.echo("   Extract subsequences from arrays/strings:")
-    click.echo(
-        """
+   """,
+        ),
+        (
+            "5️⃣  SLICE EXPRESSIONS",
+            "Extract subsequences from arrays/strings:",
+            """
    array[1:5]    // Elements 1-4
    string[:-1]   // All but last character
    data[::2]     // Every second element
-   """
-    )
-
-    click.echo("6️⃣  LAMBDA EXPRESSIONS")
-    click.echo("   Anonymous functions for functional programming:")
-    click.echo(
-        """
+   """,
+        ),
+        (
+            "6️⃣  LAMBDA EXPRESSIONS",
+            "Anonymous functions for functional programming:",
+            """
    map(lambda x: x * 2, array)
    filter(lambda s: s matches /test/, strings)
-   """
-    )
-
-    click.echo("7️⃣  PATTERN MATCHING")
-    click.echo("   Match expressions for cleaner conditionals:")
-    click.echo(
-        """
+   """,
+        ),
+        (
+            "7️⃣  PATTERN MATCHING",
+            "Match expressions for cleaner conditionals:",
+            """
    match value {
        1 => "one",
        2 => "two",
        _ => "other"
    }
-   """
-    )
-
-    click.echo("8️⃣  SPREAD OPERATORS")
-    click.echo("   Unpack arrays and dicts:")
-    click.echo(
-        """
+   """,
+        ),
+        (
+            "8️⃣  SPREAD OPERATORS",
+            "Unpack arrays and dicts:",
+            """
    [...array1, ...array2]  // Combine arrays
    {**dict1, **dict2}      // Merge dictionaries
-   """
-    )
-
-    click.echo("\n✅ All features are fully supported in this implementation!")
+   """,
+        ),
+    ]
+    for title, description, example in features:
+        click.echo(title)
+        click.echo(f"   {description}")
+        click.echo(example)
 
 
 def display_playground_input(code: str, used_default: bool) -> None:

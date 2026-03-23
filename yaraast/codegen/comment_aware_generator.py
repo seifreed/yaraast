@@ -132,83 +132,94 @@ class CommentAwareCodeGenerator(CodeGenerator):
         # Write leading comments
         self._write_leading_comments(node.leading_comments)
 
-        # Write rule header
+        self._write_rule_header(node)
+        self._writeline()
+        self._indent()
+
+        self._write_meta_section(node)
+        self._write_strings_section(node)
+        self._write_condition_section(node)
+
+        # Close rule
+        self._writeline("}")
+
+        return ""
+
+    def _write_rule_header(self, node: Rule) -> None:
+        """Write rule modifiers, name, tags, and opening brace."""
         if node.modifiers:
             self._write(" ".join(str(m) for m in node.modifiers) + " ")
 
         self._write(f"rule {node.name}")
 
-        # Write tags
         if node.tags:
             self._write(" : ")
             self._write(
                 " ".join(tag.name if hasattr(tag, "name") else str(tag) for tag in node.tags),
             )
 
-        # Write opening brace
         self._write(" {")
 
-        # Write trailing comment for rule header
         if node.trailing_comment:
             self._write_comment(node.trailing_comment, inline=True)
 
-        self._writeline()
+    def _write_meta_section(self, node: Rule) -> None:
+        """Write the meta section with comments."""
+        if not node.meta:
+            return
+
+        self._writeline("meta:")
         self._indent()
 
-        # Write meta section
-        if node.meta:
-            self._writeline("meta:")
-            self._indent()
+        for meta in node.meta:
+            leading = getattr(meta, "leading_comments", [])
+            self._write_leading_comments(leading)
+            if hasattr(meta, "accept"):
+                self.visit(meta)
+            elif hasattr(meta, "key"):
+                self._write_meta_item(meta.key, meta.value)
+            trailing = getattr(meta, "trailing_comment", None)
+            if trailing:
+                self._write_comment(trailing, inline=True)
+            self._writeline()
 
-            for meta in node.meta:
-                leading = getattr(meta, "leading_comments", [])
-                self._write_leading_comments(leading)
-                if hasattr(meta, "accept"):
-                    self.visit(meta)
-                elif hasattr(meta, "key"):
-                    self._write_meta_item(meta.key, meta.value)
-                trailing = getattr(meta, "trailing_comment", None)
-                if trailing:
-                    self._write_comment(trailing, inline=True)
-                self._writeline()
+        self._dedent()
 
-            self._dedent()
+    def _write_strings_section(self, node: Rule) -> None:
+        """Write the strings section with comments."""
+        if not node.strings:
+            return
 
-        # Write strings section
-        if node.strings:
-            self._writeline("strings:")
-            self._indent()
+        self._writeline("strings:")
+        self._indent()
 
-            for string_def in node.strings:
-                self._write_leading_comments(string_def.leading_comments)
-                self.visit(string_def)
-                if string_def.trailing_comment:
-                    self._write_comment(string_def.trailing_comment, inline=True)
-                self._writeline()
+        for string_def in node.strings:
+            self._write_leading_comments(string_def.leading_comments)
+            self.visit(string_def)
+            if string_def.trailing_comment:
+                self._write_comment(string_def.trailing_comment, inline=True)
+            self._writeline()
 
-            self._dedent()
+        self._dedent()
 
-        # Write condition
-        if node.condition:
-            self._writeline("condition:")
-            self._indent()
+    def _write_condition_section(self, node: Rule) -> None:
+        """Write the condition section with comments."""
+        if not node.condition:
+            return
 
-            # Check if condition has comments
-            if hasattr(node.condition, "leading_comments"):
-                self._write_leading_comments(node.condition.leading_comments)
+        self._writeline("condition:")
+        self._indent()
 
-            condition_str = self.visit(node.condition)
-            self._writeline(condition_str)
+        if hasattr(node.condition, "leading_comments"):
+            self._write_leading_comments(node.condition.leading_comments)
 
-            if hasattr(node.condition, "trailing_comment") and node.condition.trailing_comment:
-                self._write_comment(node.condition.trailing_comment, inline=True)
+        condition_str = self.visit(node.condition)
+        self._writeline(condition_str)
 
-            self._dedent()
+        if hasattr(node.condition, "trailing_comment") and node.condition.trailing_comment:
+            self._write_comment(node.condition.trailing_comment, inline=True)
 
-        # Close rule
-        self._writeline("}")
-
-        return ""
+        self._dedent()
 
     def _write_meta_item(self, key: str, value: any) -> None:
         """Write a meta item."""
