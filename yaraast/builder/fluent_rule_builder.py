@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
     from yaraast.ast.base import YaraFile
     from yaraast.ast.expressions import Expression
+    from yaraast.builder.fluent_file_builder import FluentYaraFileBuilder
 
 
 class FluentRuleBuilder:
@@ -279,12 +280,6 @@ class FluentRuleBuilder:
         )
 
         rule = self._rule_builder.build()
-        if isinstance(rule.meta, list):
-            meta_dict: dict[str, object] = {}
-            for item in rule.meta:
-                if hasattr(item, "key") and hasattr(item, "value"):
-                    meta_dict[item.key] = item.value
-            rule.meta = meta_dict
         return rule
 
 
@@ -378,9 +373,6 @@ class FluentStringContext:
         """Add this string and start another."""
         self.rule_builder._string_builders.append(self.string_builder)
         return FluentStringContext(self.rule_builder, identifier)
-
-
-from yaraast.builder.fluent_file_builder import FluentYaraFileBuilder
 
 
 class FluentRuleBuilderWithFile(FluentRuleBuilder):
