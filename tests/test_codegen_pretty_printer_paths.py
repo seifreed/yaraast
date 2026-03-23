@@ -134,8 +134,9 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
         )
     )
     printer2._meta_alignment_column = 0
-    printer2._write_meta_section({"b": 2, "a": "x"})
-    printer2._write_meta_section([Meta("b", 2), object()])
+    from yaraast.ast.modifiers import MetaEntry
+
+    printer2._write_meta_section([MetaEntry(key="b", value=2), MetaEntry(key="a", value="x")])
     meta_out = printer2.buffer.getvalue()
     assert 'a = "x"' in meta_out
     assert "b = 2" in meta_out

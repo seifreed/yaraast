@@ -13,16 +13,8 @@ from yaraast.codegen.pretty_printer_helpers import (
 )
 
 
-def write_meta_section(printer, meta: dict[str, Any] | list[Any]) -> None:
+def write_meta_section(printer, meta: list) -> None:
     """Write meta entries preserving PrettyPrinter behavior."""
-    if isinstance(meta, dict):
-        items = list(meta.items())
-        if printer.options.sort_meta_keys:
-            items.sort(key=lambda x: x[0])
-        for key, value in items:
-            write_meta_entry(printer, key, value)
-        return
-
     entries = list(meta)
     if printer.options.sort_meta_keys:
         entries.sort(key=lambda x: getattr(x, "key", ""))

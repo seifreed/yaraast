@@ -114,10 +114,8 @@ class ASTTreeBuilder:
         from rich.markup import escape
 
         meta_tree = rule_tree.add("Meta")
-        if isinstance(meta, list):
-            self._add_list_meta_to_tree(meta_tree, meta, escape)
-        elif isinstance(meta, dict):
-            self._add_dict_meta_to_tree(meta_tree, meta, escape)
+
+        self._add_list_meta_to_tree(meta_tree, meta, escape)
 
     def _add_dict_meta_to_tree(self, meta_tree: Tree, meta_dict: dict, escape) -> None:
         """Add dictionary meta to tree."""

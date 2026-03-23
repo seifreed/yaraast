@@ -32,7 +32,7 @@ from yaraast.codegen.pretty_printer_helpers import (
 def test_generator_formatting_helpers_cover_all_branches() -> None:
     assert format_rule_modifiers([]) == ""
     assert format_rule_modifiers(["private", "global"]) == "private global"
-    assert format_rule_modifiers("private") == "private"
+    assert format_rule_modifiers("private") == ""  # bare strings no longer accepted
     assert format_rule_modifiers(123) == ""
 
     assert format_rule_tags([]) == ""

@@ -51,18 +51,12 @@ def format_integer_literal(value) -> str:
 
 def format_modifiers(modifiers, visit) -> str:
     """Format modifiers into a string with leading spaces."""
-    if not hasattr(modifiers, "__iter__") and not isinstance(modifiers, str):
+    if not isinstance(modifiers, list | tuple):
         return ""
-    if isinstance(modifiers, list | tuple):
-        parts = []
-        for mod in modifiers:
-            if isinstance(mod, str):
-                parts.append(mod)
-            elif hasattr(mod, "accept"):
-                parts.append(visit(mod))
-            else:
-                parts.append(str(mod))
-        return "".join(f" {part}" for part in parts)
-    if isinstance(modifiers, str):
-        return f" {modifiers}"
-    return ""
+    parts = []
+    for mod in modifiers:
+        if hasattr(mod, "accept"):
+            parts.append(visit(mod))
+        else:
+            parts.append(str(mod))
+    return "".join(f" {part}" for part in parts)

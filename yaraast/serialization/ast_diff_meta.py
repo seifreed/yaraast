@@ -7,8 +7,6 @@ __all__ = ["emit_meta_diff", "meta_payloads"]
 
 def _meta_to_dict(meta) -> dict:
     """Convert meta (list[MetaEntry]) to a comparable dict."""
-    if isinstance(meta, dict):
-        return dict(meta)
     return {getattr(m, "key", str(i)): getattr(m, "value", m) for i, m in enumerate(meta)}
 
 

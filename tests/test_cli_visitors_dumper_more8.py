@@ -45,13 +45,11 @@ def test_dumper_branches_for_modifiers_meta_and_generic_nodes() -> None:
     rule_str = Rule(name="r", modifiers="global")
     assert d._process_modifiers(rule_str) == ["global"]
 
-    rule_accept = Rule(name="r", modifiers=[])
-    rule_accept.modifiers = _AcceptOnly()  # non-list object with accept -> pass branch
-    assert d._process_modifiers(rule_accept) == []
+    rule_empty = Rule(name="r", modifiers=[])
+    assert d._process_modifiers(rule_empty) == []
 
-    rule_other = Rule(name="r", modifiers=[])
-    rule_other.modifiers = 999
-    assert d._process_modifiers(rule_other) == ["999"]
+    rule_str = Rule(name="r", modifiers=["private"])
+    assert d._process_modifiers(rule_str) == ["private"]
 
     # _process_meta list branch + ignored entries
     meta = d._process_meta([Meta(key="a", value=1), SimpleNamespace(foo=1)])
@@ -68,9 +66,8 @@ def test_dumper_branches_for_modifiers_meta_and_generic_nodes() -> None:
     assert "ascii" in ext and "3" in ext
     assert any(isinstance(v, dict) and v.get("type") == "StringModifier" for v in ext)
 
-    s_non_list = PlainString(identifier="$b", value="x")
-    s_non_list.modifiers = 42
-    assert d._extract_modifiers(s_non_list) == ["42"]
+    s_empty = PlainString(identifier="$b", value="x", modifiers=[])
+    assert d._extract_modifiers(s_empty) == []
 
     # hex token and expression/condition node dumpers
     assert d.visit_hex_token(HexToken())["type"] == "HexToken"

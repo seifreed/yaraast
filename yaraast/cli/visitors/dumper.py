@@ -102,20 +102,11 @@ class ASTDumper(ASTVisitor[dict]):
         """Process modifiers from rule node."""
         modifiers = []
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, list | tuple):
-                for mod in node.modifiers:
-                    if isinstance(mod, str):
-                        modifiers.append(mod)
-                    elif hasattr(mod, "accept"):
-                        modifiers.append(self.visit(mod))
-                    else:
-                        modifiers.append(str(mod))
-            elif isinstance(node.modifiers, str):
-                modifiers.append(node.modifiers)
-            elif hasattr(node.modifiers, "accept"):
-                pass
-            else:
-                modifiers.append(str(node.modifiers))
+            for mod in node.modifiers:
+                if hasattr(mod, "accept"):
+                    modifiers.append(self.visit(mod))
+                else:
+                    modifiers.append(str(mod))
         return modifiers
 
     def visit_tag(self, node: Tag) -> dict:
@@ -155,16 +146,11 @@ class ASTDumper(ASTVisitor[dict]):
         """Extract modifiers from a string node."""
         modifiers = []
         if hasattr(node, "modifiers") and node.modifiers:
-            if isinstance(node.modifiers, list | tuple):
-                for mod in node.modifiers:
-                    if isinstance(mod, str):
-                        modifiers.append(mod)
-                    elif hasattr(mod, "accept"):
-                        modifiers.append(self.visit(mod))
-                    else:
-                        modifiers.append(str(mod))
-            else:
-                modifiers.append(str(node.modifiers))
+            for mod in node.modifiers:
+                if hasattr(mod, "accept"):
+                    modifiers.append(self.visit(mod))
+                else:
+                    modifiers.append(str(mod))
         return modifiers
 
     def visit_string_modifier(self, node: StringModifier) -> dict:

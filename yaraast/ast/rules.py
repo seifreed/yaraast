@@ -50,9 +50,9 @@ class Rule(ASTNode):
     """YARA rule node with enhanced modifier and meta support."""
 
     name: str
-    modifiers: list[str | RuleModifier] = field(default_factory=list)
+    modifiers: list[RuleModifier] = field(default_factory=list)
     tags: list[Tag] = field(default_factory=list)
-    meta: dict[str, Any] | list[MetaEntry] = field(default_factory=list)
+    meta: list[MetaEntry] = field(default_factory=list)
     strings: list[StringDefinition] = field(default_factory=list)
     condition: Condition | None = None
     pragmas: list[InRulePragma] = field(default_factory=list)

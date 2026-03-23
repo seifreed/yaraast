@@ -8,8 +8,6 @@ def format_rule_modifiers(modifiers) -> str:
         return ""
     if isinstance(modifiers, list | tuple):
         return " ".join(str(m) for m in modifiers)
-    if isinstance(modifiers, str):
-        return modifiers
     return ""
 
 

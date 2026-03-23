@@ -108,7 +108,7 @@ def test_generator_helpers_escape_integer_and_modifiers() -> None:
     mod = StringModifier.from_name_value("ascii")
     assert format_modifiers(["wide", mod, 7], lambda node: f"<{node.name}>") == " wide <ascii> 7"
     assert format_modifiers(("nocase",), lambda node: "") == " nocase"
-    assert format_modifiers("private", lambda node: "") == " private"
+    assert format_modifiers("private", lambda node: "") == ""  # bare strings no longer accepted
     assert format_modifiers({"x"}, lambda node: "") == ""
     assert format_modifiers(123, lambda node: "") == ""
 
