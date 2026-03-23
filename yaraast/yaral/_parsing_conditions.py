@@ -68,167 +68,120 @@ class YaraLConditionParsingMixin:
         """Parse primary condition."""
         # Parenthesized expression
         if self._check(BaseTokenType.LPAREN):
-            self._advance()
-            expr = self._parse_condition_expression()
-            self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
-            return expr
+            return self._parse_parenthesized_condition()
 
         # Event count: #e > 5
         if self._check(BaseTokenType.STRING_COUNT):
-            self._advance()
-            event_name = self._consume(
-                BaseTokenType.IDENTIFIER,
-                "Expected event name after '#'",
-            ).value
-
-            # Parse comparison operator
-            operator = None
-            if self._check(BaseTokenType.GT):
-                operator = ">"
-                self._advance()
-            elif self._check(BaseTokenType.LT):
-                operator = "<"
-                self._advance()
-            elif self._check(BaseTokenType.GE):
-                operator = ">="
-                self._advance()
-            elif self._check(BaseTokenType.LE):
-                operator = "<="
-                self._advance()
-            elif self._check(BaseTokenType.EQ):
-                operator = "=="
-                self._advance()
-            elif self._check(BaseTokenType.NEQ):
-                operator = "!="
-                self._advance()
-            else:
-                msg = "Expected comparison operator"
-                raise YaraLParserError(msg, self._peek())
-
-            count = int(
-                self._consume(
-                    BaseTokenType.INTEGER,
-                    "Expected number after operator",
-                ).value,
-            )
-
-            return EventCountCondition(event=event_name, operator=operator, count=count)
+            return self._parse_event_count_condition()
 
         # Variable or event reference: $var or $e1
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
             BaseTokenType.STRING_IDENTIFIER
         ):
-            var_token = self._advance()
-            var_name = var_token.value
-
-            # Check if followed by comparison operator
-            if (
-                self._check(BaseTokenType.GT)
-                or self._check(BaseTokenType.LT)
-                or self._check(BaseTokenType.GE)
-                or self._check(BaseTokenType.LE)
-                or self._check(BaseTokenType.EQ)
-                or self._check(BaseTokenType.NEQ)
-            ):
-
-                # Parse comparison operator
-                operator = None
-                if self._check(BaseTokenType.GT):
-                    operator = ">"
-                    self._advance()
-                elif self._check(BaseTokenType.LT):
-                    operator = "<"
-                    self._advance()
-                elif self._check(BaseTokenType.GE):
-                    operator = ">="
-                    self._advance()
-                elif self._check(BaseTokenType.LE):
-                    operator = "<="
-                    self._advance()
-                elif self._check(BaseTokenType.EQ):
-                    operator = "=="
-                    self._advance()
-                elif self._check(BaseTokenType.NEQ):
-                    operator = "!="
-                    self._advance()
-
-                # Parse comparison value
-                value = None
-                if self._check(BaseTokenType.INTEGER):
-                    value = int(self._advance().value)
-                elif (
-                    self._check(BaseTokenType.STRING)
-                    or self._check_yaral_type(YaraLTokenType.EVENT_VAR)
-                    or self._check(BaseTokenType.STRING_IDENTIFIER)
-                    or self._check(BaseTokenType.IDENTIFIER)
-                ):
-                    value = self._advance().value
-                else:
-                    msg = "Expected value after comparison operator"
-                    raise YaraLParserError(msg, self._peek())
-
-                return VariableComparisonCondition(
-                    variable=var_name, operator=operator, value=value
-                )
-            # Just a variable reference (event exists)
-            event_name = var_name.lstrip("$")
-            return EventExistsCondition(event=event_name)
+            return self._parse_variable_condition()
 
         # Fallback: treat as exists condition
         if self._check(BaseTokenType.IDENTIFIER):
-            name = self._advance().value
-
-            # Check if followed by comparison operator
-            if (
-                self._check(BaseTokenType.GT)
-                or self._check(BaseTokenType.LT)
-                or self._check(BaseTokenType.GE)
-                or self._check(BaseTokenType.LE)
-                or self._check(BaseTokenType.EQ)
-                or self._check(BaseTokenType.NEQ)
-            ):
-
-                # Parse comparison operator
-                operator = None
-                if self._check(BaseTokenType.GT):
-                    operator = ">"
-                    self._advance()
-                elif self._check(BaseTokenType.LT):
-                    operator = "<"
-                    self._advance()
-                elif self._check(BaseTokenType.GE):
-                    operator = ">="
-                    self._advance()
-                elif self._check(BaseTokenType.LE):
-                    operator = "<="
-                    self._advance()
-                elif self._check(BaseTokenType.EQ):
-                    operator = "=="
-                    self._advance()
-                elif self._check(BaseTokenType.NEQ):
-                    operator = "!="
-                    self._advance()
-
-                # Parse comparison value
-                value = None
-                if self._check(BaseTokenType.INTEGER):
-                    value = int(self._advance().value)
-                elif (
-                    self._check(BaseTokenType.STRING)
-                    or self._check_yaral_type(YaraLTokenType.EVENT_VAR)
-                    or self._check(BaseTokenType.STRING_IDENTIFIER)
-                    or self._check(BaseTokenType.IDENTIFIER)
-                ):
-                    value = self._advance().value
-                else:
-                    msg = "Expected value after comparison operator"
-                    raise YaraLParserError(msg, self._peek())
-
-                return VariableComparisonCondition(variable=name, operator=operator, value=value)
-            return EventExistsCondition(event=name)
+            return self._parse_identifier_condition()
 
         msg = f"Unexpected token in condition: {self._peek()}"
         raise YaraLParserError(
             msg,
             self._peek(),
         )
+
+    def _parse_parenthesized_condition(self) -> ConditionExpression:
+        """Parse a parenthesized condition expression."""
+        self._advance()
+        expr = self._parse_condition_expression()
+        self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
+        return expr
+
+    def _parse_event_count_condition(self) -> EventCountCondition:
+        """Parse an event count condition: #e > 5."""
+        self._advance()
+        event_name = self._consume(
+            BaseTokenType.IDENTIFIER,
+            "Expected event name after '#'",
+        ).value
+
+        operator = self._consume_comparison_operator()
+        count = int(
+            self._consume(
+                BaseTokenType.INTEGER,
+                "Expected number after operator",
+            ).value,
+        )
+
+        return EventCountCondition(event=event_name, operator=operator, count=count)
+
+    def _consume_comparison_operator(self) -> str:
+        """Consume and return a comparison operator token."""
+        operator_map = {
+            BaseTokenType.GT: ">",
+            BaseTokenType.LT: "<",
+            BaseTokenType.GE: ">=",
+            BaseTokenType.LE: "<=",
+            BaseTokenType.EQ: "==",
+            BaseTokenType.NEQ: "!=",
+        }
+        for token_type, op in operator_map.items():
+            if self._check(token_type):
+                self._advance()
+                return op
+
+        msg = "Expected comparison operator"
+        raise YaraLParserError(msg, self._peek())
+
+    def _parse_comparison_value(self):
+        """Parse the value on the right side of a comparison."""
+        if self._check(BaseTokenType.INTEGER):
+            return int(self._advance().value)
+        if (
+            self._check(BaseTokenType.STRING)
+            or self._check_yaral_type(YaraLTokenType.EVENT_VAR)
+            or self._check(BaseTokenType.STRING_IDENTIFIER)
+            or self._check(BaseTokenType.IDENTIFIER)
+        ):
+            return self._advance().value
+
+        msg = "Expected value after comparison operator"
+        raise YaraLParserError(msg, self._peek())
+
+    def _check_comparison_operator(self) -> bool:
+        """Check if the current token is a comparison operator."""
+        return (
+            self._check(BaseTokenType.GT)
+            or self._check(BaseTokenType.LT)
+            or self._check(BaseTokenType.GE)
+            or self._check(BaseTokenType.LE)
+            or self._check(BaseTokenType.EQ)
+            or self._check(BaseTokenType.NEQ)
+        )
+
+    def _parse_variable_condition(self) -> ConditionExpression:
+        """Parse a condition starting with a variable ($var or $e1)."""
+        var_token = self._advance()
+        var_name = var_token.value
+
+        # Check if followed by comparison operator
+        if self._check_comparison_operator():
+            operator = self._consume_comparison_operator()
+            value = self._parse_comparison_value()
+            return VariableComparisonCondition(variable=var_name, operator=operator, value=value)
+
+        # Just a variable reference (event exists)
+        event_name = var_name.lstrip("$")
+        return EventExistsCondition(event=event_name)
+
+    def _parse_identifier_condition(self) -> ConditionExpression:
+        """Parse a condition starting with an identifier."""
+        name = self._advance().value
+
+        # Check if followed by comparison operator
+        if self._check_comparison_operator():
+            operator = self._consume_comparison_operator()
+            value = self._parse_comparison_value()
+            return VariableComparisonCondition(variable=name, operator=operator, value=value)
+
+        return EventExistsCondition(event=name)

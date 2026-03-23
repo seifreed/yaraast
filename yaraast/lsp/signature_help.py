@@ -4,163 +4,150 @@ from __future__ import annotations
 
 from lsprotocol.types import ParameterInformation, Position, SignatureHelp, SignatureInformation
 
+# Specification data: (label, documentation, [(param_label, param_doc), ...])
+_SIGNATURE_SPECS: dict[str, tuple[str, str, list[tuple[str, str]]]] = {
+    # PE module
+    "pe.imphash": (
+        "imphash() -> string",
+        "Calculate the import hash of a PE file",
+        [],
+    ),
+    "pe.exports": (
+        "exports(function_name: string) -> bool",
+        "Check if PE file exports a specific function",
+        [("function_name", "Name of the function to check")],
+    ),
+    "pe.imports": (
+        "imports(dll_name: string, function_name: string) -> bool",
+        "Check if PE file imports a specific function from a DLL",
+        [("dll_name", "Name of the DLL"), ("function_name", "Name of the function")],
+    ),
+    "pe.section_index": (
+        "section_index(name: string) -> int",
+        "Get the index of a section by name",
+        [("name", "Section name")],
+    ),
+    # ELF module
+    "elf.type": (
+        "type -> int",
+        "ELF file type constant",
+        [],
+    ),
+    # Hash module
+    "hash.md5": (
+        "md5(offset: int, length: int) -> string",
+        "Calculate MD5 hash of data region",
+        [("offset", "Starting offset"), ("length", "Number of bytes")],
+    ),
+    "hash.sha1": (
+        "sha1(offset: int, length: int) -> string",
+        "Calculate SHA1 hash of data region",
+        [("offset", "Starting offset"), ("length", "Number of bytes")],
+    ),
+    "hash.sha256": (
+        "sha256(offset: int, length: int) -> string",
+        "Calculate SHA256 hash of data region",
+        [("offset", "Starting offset"), ("length", "Number of bytes")],
+    ),
+    # Math module
+    "math.entropy": (
+        "entropy(offset: int, length: int) -> float",
+        "Calculate entropy of data region",
+        [("offset", "Starting offset"), ("length", "Number of bytes")],
+    ),
+    "math.mean": (
+        "mean(offset: int, length: int) -> float",
+        "Calculate mean of byte values in region",
+        [("offset", "Starting offset"), ("length", "Number of bytes")],
+    ),
+    "math.deviation": (
+        "deviation(offset: int, length: int, mean: float) -> float",
+        "Calculate standard deviation of byte values",
+        [("offset", "Starting offset"), ("length", "Number of bytes"), ("mean", "Mean value")],
+    ),
+    # Built-in functions
+    "uint8": (
+        "uint8(offset: int) -> int",
+        "Read unsigned 8-bit integer at offset",
+        [("offset", "File offset")],
+    ),
+    "uint16": (
+        "uint16(offset: int) -> int",
+        "Read unsigned 16-bit integer at offset",
+        [("offset", "File offset")],
+    ),
+    "uint32": (
+        "uint32(offset: int) -> int",
+        "Read unsigned 32-bit integer at offset",
+        [("offset", "File offset")],
+    ),
+    "int8": (
+        "int8(offset: int) -> int",
+        "Read signed 8-bit integer at offset",
+        [("offset", "File offset")],
+    ),
+    "int16": (
+        "int16(offset: int) -> int",
+        "Read signed 16-bit integer at offset",
+        [("offset", "File offset")],
+    ),
+    "int32": (
+        "int32(offset: int) -> int",
+        "Read signed 32-bit integer at offset",
+        [("offset", "File offset")],
+    ),
+    "uint8be": (
+        "uint8be(offset: int) -> int",
+        "Read unsigned 8-bit integer (big-endian) at offset",
+        [("offset", "File offset")],
+    ),
+    "uint16be": (
+        "uint16be(offset: int) -> int",
+        "Read unsigned 16-bit integer (big-endian) at offset",
+        [("offset", "File offset")],
+    ),
+    "uint32be": (
+        "uint32be(offset: int) -> int",
+        "Read unsigned 32-bit integer (big-endian) at offset",
+        [("offset", "File offset")],
+    ),
+    "int8be": (
+        "int8be(offset: int) -> int",
+        "Read signed 8-bit integer (big-endian) at offset",
+        [("offset", "File offset")],
+    ),
+    "int16be": (
+        "int16be(offset: int) -> int",
+        "Read signed 16-bit integer (big-endian) at offset",
+        [("offset", "File offset")],
+    ),
+    "int32be": (
+        "int32be(offset: int) -> int",
+        "Read signed 32-bit integer (big-endian) at offset",
+        [("offset", "File offset")],
+    ),
+}
+
+
+def _build_signature(spec: tuple[str, str, list[tuple[str, str]]]) -> SignatureInformation:
+    """Build a SignatureInformation from a spec tuple."""
+    label, doc, params = spec
+    return SignatureInformation(
+        label=label,
+        documentation=doc,
+        parameters=[
+            ParameterInformation(label=p_label, documentation=p_doc) for p_label, p_doc in params
+        ],
+    )
+
 
 class SignatureHelpProvider:
     """Provide signature help for functions."""
 
     def __init__(self) -> None:
         """Initialize signature help provider."""
-        # YARA module functions with signatures
         self.function_signatures = {
-            # PE module
-            "pe.imphash": SignatureInformation(
-                label="imphash() -> string",
-                documentation="Calculate the import hash of a PE file",
-                parameters=[],
-            ),
-            "pe.exports": SignatureInformation(
-                label="exports(function_name: string) -> bool",
-                documentation="Check if PE file exports a specific function",
-                parameters=[
-                    ParameterInformation(
-                        label="function_name",
-                        documentation="Name of the function to check",
-                    )
-                ],
-            ),
-            "pe.imports": SignatureInformation(
-                label="imports(dll_name: string, function_name: string) -> bool",
-                documentation="Check if PE file imports a specific function from a DLL",
-                parameters=[
-                    ParameterInformation(label="dll_name", documentation="Name of the DLL"),
-                    ParameterInformation(
-                        label="function_name", documentation="Name of the function"
-                    ),
-                ],
-            ),
-            "pe.section_index": SignatureInformation(
-                label="section_index(name: string) -> int",
-                documentation="Get the index of a section by name",
-                parameters=[ParameterInformation(label="name", documentation="Section name")],
-            ),
-            # ELF module
-            "elf.type": SignatureInformation(
-                label="type -> int",
-                documentation="ELF file type constant",
-                parameters=[],
-            ),
-            # Hash module
-            "hash.md5": SignatureInformation(
-                label="md5(offset: int, length: int) -> string",
-                documentation="Calculate MD5 hash of data region",
-                parameters=[
-                    ParameterInformation(label="offset", documentation="Starting offset"),
-                    ParameterInformation(label="length", documentation="Number of bytes"),
-                ],
-            ),
-            "hash.sha1": SignatureInformation(
-                label="sha1(offset: int, length: int) -> string",
-                documentation="Calculate SHA1 hash of data region",
-                parameters=[
-                    ParameterInformation(label="offset", documentation="Starting offset"),
-                    ParameterInformation(label="length", documentation="Number of bytes"),
-                ],
-            ),
-            "hash.sha256": SignatureInformation(
-                label="sha256(offset: int, length: int) -> string",
-                documentation="Calculate SHA256 hash of data region",
-                parameters=[
-                    ParameterInformation(label="offset", documentation="Starting offset"),
-                    ParameterInformation(label="length", documentation="Number of bytes"),
-                ],
-            ),
-            # Math module
-            "math.entropy": SignatureInformation(
-                label="entropy(offset: int, length: int) -> float",
-                documentation="Calculate entropy of data region",
-                parameters=[
-                    ParameterInformation(label="offset", documentation="Starting offset"),
-                    ParameterInformation(label="length", documentation="Number of bytes"),
-                ],
-            ),
-            "math.mean": SignatureInformation(
-                label="mean(offset: int, length: int) -> float",
-                documentation="Calculate mean of byte values in region",
-                parameters=[
-                    ParameterInformation(label="offset", documentation="Starting offset"),
-                    ParameterInformation(label="length", documentation="Number of bytes"),
-                ],
-            ),
-            "math.deviation": SignatureInformation(
-                label="deviation(offset: int, length: int, mean: float) -> float",
-                documentation="Calculate standard deviation of byte values",
-                parameters=[
-                    ParameterInformation(label="offset", documentation="Starting offset"),
-                    ParameterInformation(label="length", documentation="Number of bytes"),
-                    ParameterInformation(label="mean", documentation="Mean value"),
-                ],
-            ),
-            # Built-in functions
-            "uint8": SignatureInformation(
-                label="uint8(offset: int) -> int",
-                documentation="Read unsigned 8-bit integer at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "uint16": SignatureInformation(
-                label="uint16(offset: int) -> int",
-                documentation="Read unsigned 16-bit integer at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "uint32": SignatureInformation(
-                label="uint32(offset: int) -> int",
-                documentation="Read unsigned 32-bit integer at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "int8": SignatureInformation(
-                label="int8(offset: int) -> int",
-                documentation="Read signed 8-bit integer at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "int16": SignatureInformation(
-                label="int16(offset: int) -> int",
-                documentation="Read signed 16-bit integer at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "int32": SignatureInformation(
-                label="int32(offset: int) -> int",
-                documentation="Read signed 32-bit integer at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "uint8be": SignatureInformation(
-                label="uint8be(offset: int) -> int",
-                documentation="Read unsigned 8-bit integer (big-endian) at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "uint16be": SignatureInformation(
-                label="uint16be(offset: int) -> int",
-                documentation="Read unsigned 16-bit integer (big-endian) at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "uint32be": SignatureInformation(
-                label="uint32be(offset: int) -> int",
-                documentation="Read unsigned 32-bit integer (big-endian) at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "int8be": SignatureInformation(
-                label="int8be(offset: int) -> int",
-                documentation="Read signed 8-bit integer (big-endian) at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "int16be": SignatureInformation(
-                label="int16be(offset: int) -> int",
-                documentation="Read signed 16-bit integer (big-endian) at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
-            "int32be": SignatureInformation(
-                label="int32be(offset: int) -> int",
-                documentation="Read signed 32-bit integer (big-endian) at offset",
-                parameters=[ParameterInformation(label="offset", documentation="File offset")],
-            ),
+            name: _build_signature(spec) for name, spec in _SIGNATURE_SPECS.items()
         }
 
     def get_signature_help(self, text: str, position: Position) -> SignatureHelp | None:

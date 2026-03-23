@@ -49,69 +49,13 @@ class YaraLEventsParsingMixin:
 
         # Check for function calls like re.regex()
         if self._check(BaseTokenType.IDENTIFIER):
-            identifier = self._peek().value
-            # Check if it's a function call pattern: module.function or re.regex keyword
-            if identifier in ["re.regex", "re.capture", "strings", "net", "arrays"] or (
-                "." in identifier and identifier.split(".")[0] in ["re", "strings", "net", "arrays"]
-            ):
-                return self._parse_function_call_statement()
+            result = self._try_parse_function_call_start()
+            if result is not None:
+                return result
 
-        # Check for integer literal starting a comparison statement: 604800 <= $var - $other
+        # Check for integer literal starting a comparison statement
         if self._check(BaseTokenType.INTEGER):
-            # Parse the entire comparison expression and skip it
-            # This handles cases like: 604800 <= $field1 - $field2
-            self._advance()  # Consume integer
-
-            # Expect comparison operator
-            if (
-                self._check(BaseTokenType.LE)
-                or self._check(BaseTokenType.GE)
-                or self._check(BaseTokenType.LT)
-                or self._check(BaseTokenType.GT)
-                or self._check(BaseTokenType.EQ)
-                or self._check(BaseTokenType.NEQ)
-            ):
-                self._advance()  # Consume operator
-
-                # Now consume the right-hand side expression
-                # This could be complex: $var.field.path - $other.field.path
-                # We'll consume tokens until we hit a new statement or section
-                start_line = self._peek().line if not self._is_at_end() else -1
-
-                while not self._is_at_end():
-                    current_token = self._peek()
-
-                    # Stop if we hit a section keyword or closing brace
-                    if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
-                        break
-
-                    # Stop if we see a new line with a new statement pattern
-                    if current_token.line > start_line and (
-                        self._check_yaral_type(YaraLTokenType.EVENT_VAR)
-                        or self._check(BaseTokenType.STRING_IDENTIFIER)
-                        or self._check(BaseTokenType.INTEGER)
-                        or self._check(BaseTokenType.LPAREN)
-                    ):
-                        # Check if this looks like a new statement
-                        next_pos = self.current + 1
-                        if next_pos < len(self.tokens):
-                            next_token = self.tokens[next_pos]
-                            if (
-                                next_token.type == BaseTokenType.EQ
-                                or next_token.type == BaseTokenType.DOT
-                                or next_token.type == BaseTokenType.LE
-                                or next_token.type == BaseTokenType.GE
-                                or next_token.type == BaseTokenType.LT
-                                or next_token.type == BaseTokenType.GT
-                                or next_token.type == BaseTokenType.NEQ
-                            ):
-                                break
-
-                    self._advance()
-
-                return EventStatement()
-            # Not a comparison, unexpected
-            return EventStatement()
+            return self._parse_integer_comparison_statement()
 
         # Look for event variable ($e, $e1, etc.) or placeholder variable ($var)
         if not self._check_yaral_type(YaraLTokenType.EVENT_VAR) and not self._check(
@@ -125,84 +69,12 @@ class YaraLEventsParsingMixin:
         event_var = EventVariable(name=event_token.value)
 
         # Check if this is a variable assignment (e.g., $var = re.capture(...))
-        # or a field filter (e.g., $e.field = value)
         if self._check(BaseTokenType.EQ):
-            # Variable assignment: $var = expression
-            self._advance()  # Consume '='
-
-            # Parse the right-hand side expression
-            # This could be a function call, event field, or other expression
-
-            # Check if it's a function call
-            if self._check(BaseTokenType.IDENTIFIER):
-                # Could be a function call or start of field access
-                identifier = self._peek().value
-                # Check if it's a function call pattern (module.function or known function names)
-                if identifier in ["re.regex", "re.capture", "strings", "net", "arrays"] or (
-                    identifier.startswith("strings.")
-                    or identifier.startswith("re.")
-                    or identifier.startswith("net.")
-                    or identifier.startswith("arrays.")
-                    or identifier.startswith("math.")
-                ):
-                    return self._parse_function_call_statement()
-
-            # Handle field access on right side: $var = $event.field.path
-            if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
-                BaseTokenType.STRING_IDENTIFIER
-            ):
-                # Skip the entire right-hand side by consuming tokens until end of statement
-                # We consume tokens until we see another variable assignment pattern or section keyword
-                # Look ahead to determine when the statement ends
-                start_line = self._peek().line if not self._is_at_end() else -1
-
-                while not self._is_at_end():
-                    current_token = self._peek()
-
-                    # Stop if we hit a section keyword or closing brace
-                    if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
-                        break
-
-                    # Stop if we see a new line starting with a $ variable (potential new statement)
-                    # Only stop if it's on a different line AND appears to be a new statement
-                    if current_token.line > start_line and (
-                        self._check_yaral_type(YaraLTokenType.EVENT_VAR)
-                        or self._check(BaseTokenType.STRING_IDENTIFIER)
-                    ):
-                        # Peek ahead one more token to see if there's a . or =
-                        # If there's an =, it's definitely a new assignment statement
-                        # If there's a ., it could be $event.field which is also a new statement
-                        next_pos = self.current + 1
-                        if next_pos < len(self.tokens):
-                            next_token = self.tokens[next_pos]
-                            if (
-                                next_token.type == BaseTokenType.EQ
-                                or next_token.type == BaseTokenType.DOT
-                            ):
-                                # This is a new statement
-                                break
-
-                    self._advance()
-                return EventStatement()
-
-            # Otherwise skip this statement (not fully supported yet)
-            return EventStatement()
+            return self._parse_event_assignment(event_var)
 
         # Check if this is a comparison expression: $var != $other_var or $var in %list%
-        if (
-            self._check(BaseTokenType.NEQ)
-            or self._check(BaseTokenType.GT)
-            or self._check(BaseTokenType.LT)
-            or self._check(BaseTokenType.GE)
-            or self._check(BaseTokenType.LE)
-            or self._check_keyword("in")
-        ):
-            # Skip the comparison operator
-            self._advance()
-            # Skip the right-hand side value (could be variable, reference list, etc.)
-            if not self._is_at_end():
-                self._advance()
-            return EventStatement()
+        if self._check_comparison_or_in():
+            return self._parse_event_var_comparison()
 
         # Expect dot for field access
         self._consume(BaseTokenType.DOT, "Expected '.' after event variable")
@@ -211,11 +83,7 @@ class YaraLEventsParsingMixin:
         field_path = self._parse_field_path()
 
         # Check if we're at a section keyword or end of events section
-        # This handles cases where field access appears in complex expressions
-        # without an operator (e.g., arithmetic expressions that span the field)
         if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
-            # We've reached the end of the events section
-            # Return a generic EventStatement to allow the section parser to exit
             return EventStatement()
 
         # Parse operator
@@ -237,6 +105,151 @@ class YaraLEventsParsingMixin:
             value=value,
             modifiers=modifiers,
         )
+
+    def _try_parse_function_call_start(self) -> EventStatement | None:
+        """Try to parse a function call statement if the identifier matches a known pattern."""
+        identifier = self._peek().value
+        if identifier in ["re.regex", "re.capture", "strings", "net", "arrays"] or (
+            "." in identifier and identifier.split(".")[0] in ["re", "strings", "net", "arrays"]
+        ):
+            return self._parse_function_call_statement()
+        return None
+
+    def _check_comparison_or_in(self) -> bool:
+        """Check if the current token is a comparison operator or 'in' keyword."""
+        return (
+            self._check(BaseTokenType.NEQ)
+            or self._check(BaseTokenType.GT)
+            or self._check(BaseTokenType.LT)
+            or self._check(BaseTokenType.GE)
+            or self._check(BaseTokenType.LE)
+            or self._check_keyword("in")
+        )
+
+    def _parse_event_var_comparison(self) -> EventStatement:
+        """Parse a comparison expression starting after an event variable."""
+        # Skip the comparison operator
+        self._advance()
+        # Skip the right-hand side value (could be variable, reference list, etc.)
+        if not self._is_at_end():
+            self._advance()
+        return EventStatement()
+
+    def _parse_integer_comparison_statement(self) -> EventStatement:
+        """Parse a statement starting with an integer literal (e.g., 604800 <= $field1 - $field2)."""
+        self._advance()  # Consume integer
+
+        # Expect comparison operator
+        if self._check_comparison_operator():
+            self._advance()  # Consume operator
+            self._skip_to_next_statement()
+            return EventStatement()
+
+        # Not a comparison, unexpected
+        return EventStatement()
+
+    def _check_comparison_operator(self) -> bool:
+        """Check if current token is a comparison operator."""
+        return (
+            self._check(BaseTokenType.LE)
+            or self._check(BaseTokenType.GE)
+            or self._check(BaseTokenType.LT)
+            or self._check(BaseTokenType.GT)
+            or self._check(BaseTokenType.EQ)
+            or self._check(BaseTokenType.NEQ)
+        )
+
+    def _skip_to_next_statement(self) -> None:
+        """Consume tokens until the start of a new statement or section boundary."""
+        start_line = self._peek().line if not self._is_at_end() else -1
+
+        while not self._is_at_end():
+            current_token = self._peek()
+
+            # Stop if we hit a section keyword or closing brace
+            if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
+                break
+
+            # Stop if we see a new line with a new statement pattern
+            if (
+                current_token.line > start_line
+                and (
+                    self._check_yaral_type(YaraLTokenType.EVENT_VAR)
+                    or self._check(BaseTokenType.STRING_IDENTIFIER)
+                    or self._check(BaseTokenType.INTEGER)
+                    or self._check(BaseTokenType.LPAREN)
+                )
+                and self._looks_like_new_statement()
+            ):
+                break
+
+            self._advance()
+
+    def _looks_like_new_statement(self) -> bool:
+        """Check if the next token suggests a new statement."""
+        next_pos = self.current + 1
+        if next_pos < len(self.tokens):
+            next_token = self.tokens[next_pos]
+            return next_token.type in (
+                BaseTokenType.EQ,
+                BaseTokenType.DOT,
+                BaseTokenType.LE,
+                BaseTokenType.GE,
+                BaseTokenType.LT,
+                BaseTokenType.GT,
+                BaseTokenType.NEQ,
+            )
+        return False
+
+    def _parse_event_assignment(self, event_var: EventVariable) -> EventStatement:
+        """Parse an event assignment: $var = expression."""
+        self._advance()  # Consume '='
+
+        # Check if it's a function call
+        if self._check(BaseTokenType.IDENTIFIER):
+            identifier = self._peek().value
+            if identifier in ["re.regex", "re.capture", "strings", "net", "arrays"] or (
+                identifier.startswith("strings.")
+                or identifier.startswith("re.")
+                or identifier.startswith("net.")
+                or identifier.startswith("arrays.")
+                or identifier.startswith("math.")
+            ):
+                return self._parse_function_call_statement()
+
+        # Handle field access on right side: $var = $event.field.path
+        if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+            BaseTokenType.STRING_IDENTIFIER
+        ):
+            self._skip_rhs_expression()
+            return EventStatement()
+
+        # Otherwise skip this statement (not fully supported yet)
+        return EventStatement()
+
+    def _skip_rhs_expression(self) -> None:
+        """Skip the right-hand side of an assignment by consuming tokens until end of statement."""
+        start_line = self._peek().line if not self._is_at_end() else -1
+
+        while not self._is_at_end():
+            current_token = self._peek()
+
+            # Stop if we hit a section keyword or closing brace
+            if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
+                break
+
+            # Stop if we see a new line starting with a $ variable (potential new statement)
+            if current_token.line > start_line and (
+                self._check_yaral_type(YaraLTokenType.EVENT_VAR)
+                or self._check(BaseTokenType.STRING_IDENTIFIER)
+            ):
+                next_pos = self.current + 1
+                if next_pos < len(self.tokens):
+                    next_token = self.tokens[next_pos]
+                    if next_token.type == BaseTokenType.EQ or next_token.type == BaseTokenType.DOT:
+                        break
+
+            self._advance()
 
     def _parse_field_path(self) -> UDMFieldPath:
         """Parse UDM field path."""

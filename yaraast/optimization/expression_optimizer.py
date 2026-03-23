@@ -17,6 +17,113 @@ from yaraast.ast.expressions import (
 from yaraast.ast.rules import Rule
 from yaraast.visitor.base import ASTTransformer
 
+_SENTINEL = object()
+
+
+def _fold_boolean(left: BooleanLiteral, right: BooleanLiteral, operator: str):
+    """Fold constant boolean expressions. Returns result or _SENTINEL."""
+    if operator == "and":
+        return BooleanLiteral(value=left.value and right.value)
+    if operator == "or":
+        return BooleanLiteral(value=left.value or right.value)
+    return _SENTINEL
+
+
+_ARITHMETIC_OPS: dict[str, Any] = {
+    "+": lambda a, b: a + b,
+    "-": lambda a, b: a - b,
+    "*": lambda a, b: a * b,
+    "&": lambda a, b: a & b,
+    "|": lambda a, b: a | b,
+    "^": lambda a, b: a ^ b,
+    "<<": lambda a, b: a << b,
+    ">>": lambda a, b: a >> b,
+}
+
+_COMPARISON_OPS: dict[str, Any] = {
+    "==": lambda a, b: a == b,
+    "!=": lambda a, b: a != b,
+    "<": lambda a, b: a < b,
+    ">": lambda a, b: a > b,
+    "<=": lambda a, b: a <= b,
+    ">=": lambda a, b: a >= b,
+}
+
+
+def _fold_arithmetic(left_val: int, right_val: int, operator: str):
+    """Fold constant integer arithmetic. Returns result or _SENTINEL."""
+    if operator in _ARITHMETIC_OPS:
+        return IntegerLiteral(value=_ARITHMETIC_OPS[operator](left_val, right_val))
+    if operator == "/" and right_val != 0:
+        return IntegerLiteral(value=int(left_val / right_val))
+    if operator == "%" and right_val != 0:
+        return IntegerLiteral(value=int(left_val - int(left_val / right_val) * right_val))
+    return _SENTINEL
+
+
+def _fold_comparison(left_val: int, right_val: int, operator: str):
+    """Fold constant integer comparisons. Returns result or _SENTINEL."""
+    fn = _COMPARISON_OPS.get(operator)
+    if fn is not None:
+        return BooleanLiteral(value=fn(left_val, right_val))
+    return _SENTINEL
+
+
+def _simplify_identity(node: BinaryExpression) -> Expression | None:
+    """Simplify identity/annihilation patterns. Returns simplified or None."""
+    left, right, op = node.left, node.right, node.operator
+
+    # x + 0 = x, 0 + x = x
+    if op == "+" and isinstance(right, IntegerLiteral) and right.value == 0:
+        return left
+    if op == "+" and isinstance(left, IntegerLiteral) and left.value == 0:
+        return right
+
+    # x * 1 = x, 1 * x = x
+    if op == "*" and isinstance(right, IntegerLiteral) and right.value == 1:
+        return left
+    if op == "*" and isinstance(left, IntegerLiteral) and left.value == 1:
+        return right
+
+    # x * 0 = 0, 0 * x = 0
+    if op == "*" and isinstance(right, IntegerLiteral) and right.value == 0:
+        return IntegerLiteral(value=0)
+    if op == "*" and isinstance(left, IntegerLiteral) and left.value == 0:
+        return IntegerLiteral(value=0)
+
+    return None
+
+
+def _simplify_boolean_short_circuit(node: BinaryExpression) -> tuple[Expression | None, int]:
+    """Simplify boolean short-circuit patterns. Returns (result, opt_count)."""
+    count = 0
+
+    if isinstance(node.left, BooleanLiteral):
+        if node.operator == "and":
+            count += 1
+            if not node.left.value:
+                return BooleanLiteral(value=False), count
+            return node.right, count
+        if node.operator == "or":
+            count += 1
+            if node.left.value:
+                return BooleanLiteral(value=True), count
+            return node.right, count
+
+    if isinstance(node.right, BooleanLiteral):
+        if node.operator == "and":
+            count += 1
+            if not node.right.value:
+                return BooleanLiteral(value=False), count
+            return node.left, count
+        if node.operator == "or":
+            count += 1
+            if node.right.value:
+                return BooleanLiteral(value=True), count
+            return node.left, count
+
+    return None, 0
+
 
 class ExpressionOptimizer(ASTTransformer):
     """Optimizes expressions in YARA rules."""
@@ -67,136 +174,37 @@ class ExpressionOptimizer(ASTTransformer):
         node.right = self.visit(node.right)
 
         # Constant folding for boolean operations
-        if isinstance(node.left, BooleanLiteral) and isinstance(
-            node.right,
-            BooleanLiteral,
-        ):
-            if node.operator == "and":
+        if isinstance(node.left, BooleanLiteral) and isinstance(node.right, BooleanLiteral):
+            result = _fold_boolean(node.left, node.right, node.operator)
+            if result is not _SENTINEL:
                 self.optimization_count += 1
-                return BooleanLiteral(value=node.left.value and node.right.value)
-            if node.operator == "or":
-                self.optimization_count += 1
-                return BooleanLiteral(value=node.left.value or node.right.value)
+                return result
 
-        # Constant folding for integer arithmetic
-        if isinstance(node.left, IntegerLiteral) and isinstance(
-            node.right,
-            IntegerLiteral,
-        ):
+        # Constant folding for integer arithmetic and comparisons
+        if isinstance(node.left, IntegerLiteral) and isinstance(node.right, IntegerLiteral):
             left_val = node.left.value
             right_val = node.right.value
 
-            # Arithmetic operations
-            if node.operator == "+":
+            result = _fold_arithmetic(left_val, right_val, node.operator)
+            if result is not _SENTINEL:
                 self.optimization_count += 1
-                return IntegerLiteral(value=left_val + right_val)
-            if node.operator == "-":
-                self.optimization_count += 1
-                return IntegerLiteral(value=left_val - right_val)
-            if node.operator == "*":
-                self.optimization_count += 1
-                return IntegerLiteral(value=left_val * right_val)
-            if node.operator == "/" and right_val != 0:
-                self.optimization_count += 1
-                return IntegerLiteral(value=int(left_val / right_val))
-            if node.operator == "%" and right_val != 0:
-                self.optimization_count += 1
-                return IntegerLiteral(value=int(left_val - int(left_val / right_val) * right_val))
+                return result
 
-            # Bitwise operations
-            if node.operator == "&":
+            result = _fold_comparison(left_val, right_val, node.operator)
+            if result is not _SENTINEL:
                 self.optimization_count += 1
-                return IntegerLiteral(value=left_val & right_val)
-            if node.operator == "|":
-                self.optimization_count += 1
-                return IntegerLiteral(value=left_val | right_val)
-            if node.operator == "^":
-                self.optimization_count += 1
-                return IntegerLiteral(value=left_val ^ right_val)
-            if node.operator == "<<":
-                self.optimization_count += 1
-                return IntegerLiteral(value=left_val << right_val)
-            if node.operator == ">>":
-                self.optimization_count += 1
-                return IntegerLiteral(value=left_val >> right_val)
-
-            # Comparison operations
-            if node.operator == "==":
-                self.optimization_count += 1
-                return BooleanLiteral(value=left_val == right_val)
-            if node.operator == "!=":
-                self.optimization_count += 1
-                return BooleanLiteral(value=left_val != right_val)
-            if node.operator == "<":
-                self.optimization_count += 1
-                return BooleanLiteral(value=left_val < right_val)
-            if node.operator == ">":
-                self.optimization_count += 1
-                return BooleanLiteral(value=left_val > right_val)
-            if node.operator == "<=":
-                self.optimization_count += 1
-                return BooleanLiteral(value=left_val <= right_val)
-            if node.operator == ">=":
-                self.optimization_count += 1
-                return BooleanLiteral(value=left_val >= right_val)
+                return result
 
         # Identity operations
-        if (
-            node.operator == "+"
-            and isinstance(node.right, IntegerLiteral)
-            and node.right.value == 0
-        ):
-            return node.left
-        if node.operator == "+" and isinstance(node.left, IntegerLiteral) and node.left.value == 0:
-            return node.right
-
-        if (
-            node.operator == "*"
-            and isinstance(node.right, IntegerLiteral)
-            and node.right.value == 1
-        ):
-            return node.left
-        if node.operator == "*" and isinstance(node.left, IntegerLiteral) and node.left.value == 1:
-            return node.right
-
-        # Zero multiplication
-        if (
-            node.operator == "*"
-            and isinstance(node.right, IntegerLiteral)
-            and node.right.value == 0
-        ):
-            return IntegerLiteral(value=0)
-        if node.operator == "*" and isinstance(node.left, IntegerLiteral) and node.left.value == 0:
-            return IntegerLiteral(value=0)
+        identity = _simplify_identity(node)
+        if identity is not None:
+            return identity
 
         # Boolean simplifications
-        if isinstance(node.left, BooleanLiteral):
-            if node.operator == "and":
-                if not node.left.value:
-                    self.optimization_count += 1
-                    return BooleanLiteral(value=False)
-                self.optimization_count += 1
-                return node.right
-            if node.operator == "or":
-                if node.left.value:
-                    self.optimization_count += 1
-                    return BooleanLiteral(value=True)
-                self.optimization_count += 1
-                return node.right
-
-        if isinstance(node.right, BooleanLiteral):
-            if node.operator == "and":
-                if not node.right.value:
-                    self.optimization_count += 1
-                    return BooleanLiteral(value=False)
-                self.optimization_count += 1
-                return node.left
-            if node.operator == "or":
-                if node.right.value:
-                    self.optimization_count += 1
-                    return BooleanLiteral(value=True)
-                self.optimization_count += 1
-                return node.left
+        short_circuit, count = _simplify_boolean_short_circuit(node)
+        if short_circuit is not None:
+            self.optimization_count += count
+            return short_circuit
 
         return node
 
