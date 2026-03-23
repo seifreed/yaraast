@@ -19,17 +19,13 @@ from lsprotocol.types import (
 from yaraast.dialects import YaraDialect
 from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
 from yaraast.lsp.diagnostics_helpers import (
-    compiler_error_to_diagnostic as helper_compiler_error_to_diagnostic,
-)
-from yaraast.lsp.diagnostics_helpers import error_code as helper_error_code
-from yaraast.lsp.diagnostics_helpers import metadata_for_error as helper_metadata_for_error
-from yaraast.lsp.diagnostics_helpers import (
-    parser_error_to_diagnostic as helper_parser_error_to_diagnostic,
-)
-from yaraast.lsp.diagnostics_helpers import patches_for_error as helper_patches_for_error
-from yaraast.lsp.diagnostics_helpers import related_info as helper_related_info
-from yaraast.lsp.diagnostics_helpers import (
-    suggest_builtin_functions as helper_suggest_builtin_functions,
+    compiler_error_to_diagnostic,
+    error_code,
+    metadata_for_error,
+    parser_error_to_diagnostic,
+    patches_for_error,
+    related_info,
+    suggest_builtin_functions,
 )
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.parser.parser import ParserError
@@ -171,10 +167,10 @@ class DiagnosticsProvider:
         return diagnostics
 
     def _parser_error_to_diagnostic(self, error: ParserError) -> Diagnostic:
-        return helper_parser_error_to_diagnostic(error, DiagnosticData)
+        return parser_error_to_diagnostic(error, DiagnosticData)
 
     def _compiler_error_to_diagnostic(self, message: str) -> Diagnostic:
-        return helper_compiler_error_to_diagnostic(message, DiagnosticData)
+        return compiler_error_to_diagnostic(message, DiagnosticData)
 
     def _validation_error_to_diagnostic(
         self,
@@ -220,24 +216,24 @@ class DiagnosticsProvider:
         )
 
     def _error_code(self, error: ValidationError) -> str:
-        return helper_error_code(error)
+        return error_code(error)
 
     def _related_info(
         self,
         error: ValidationError,
         diagnostic_range: Range,
     ) -> list[DiagnosticRelatedInformation] | None:
-        return helper_related_info(error, diagnostic_range)
+        return related_info(error, diagnostic_range)
 
     def _patches_for_error(
         self,
         error: ValidationError,
         diagnostic_range: Range,
     ) -> list[DiagnosticPatch]:
-        return helper_patches_for_error(error, diagnostic_range, DiagnosticPatch)
+        return patches_for_error(error, diagnostic_range, DiagnosticPatch)
 
     def _metadata_for_error(self, error: ValidationError) -> dict[str, object]:
-        return helper_metadata_for_error(error)
+        return metadata_for_error(error)
 
     def _validate_metadata(self, ast: Any, config: Any) -> list[Diagnostic]:
         """Validate rule metadata against configurable validation rules."""
@@ -337,4 +333,4 @@ class DiagnosticsProvider:
         return results
 
     def _suggest_builtin_functions(self, function_name: str) -> list[str]:
-        return helper_suggest_builtin_functions(function_name)
+        return suggest_builtin_functions(function_name)

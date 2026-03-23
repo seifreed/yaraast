@@ -9,25 +9,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from yaraast.analysis.optimization_rule_analysis import (
-    analyze_condition_patterns as helper_analyze_condition_patterns,
-)
-from yaraast.analysis.optimization_rule_analysis import (
-    analyze_cross_rule_patterns as helper_analyze_cross_rule_patterns,
-)
-from yaraast.analysis.optimization_rule_analysis import (
-    analyze_string_definitions as helper_analyze_string_definitions,
-)
-from yaraast.analysis.optimization_rule_analysis import (
-    check_hex_consolidation as helper_check_hex_consolidation,
-)
-from yaraast.analysis.optimization_rule_analysis import (
-    check_overlapping_patterns as helper_check_overlapping_patterns,
-)
-from yaraast.analysis.optimization_rule_analysis import (
-    find_similar_rules as helper_find_similar_rules,
-)
-from yaraast.analysis.optimization_rule_analysis import (
-    visit_binary_expression as helper_visit_binary_expression,
+    analyze_condition_patterns,
+    analyze_cross_rule_patterns,
+    analyze_string_definitions,
+    check_hex_consolidation,
+    check_overlapping_patterns,
+    find_similar_rules,
+    visit_binary_expression,
 )
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import OfExpression
@@ -137,7 +125,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
 
     def _analyze_string_definitions(self, rule: Rule) -> None:
         """Analyze string definitions for optimization."""
-        helper_analyze_string_definitions(self, rule)
+        analyze_string_definitions(self, rule)
 
     def _check_hex_consolidation(
         self,
@@ -145,19 +133,19 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         hex_strings: list[HexString],
     ) -> None:
         """Check if hex strings can be consolidated."""
-        helper_check_hex_consolidation(self, rule, hex_strings)
+        check_hex_consolidation(self, rule, hex_strings)
 
     def _check_overlapping_patterns(self, rule: Rule, strings: list[Any]) -> None:
         """Check for patterns that might overlap."""
-        helper_check_overlapping_patterns(self, rule, strings)
+        check_overlapping_patterns(self, rule, strings)
 
     def _analyze_condition_patterns(self, rule: Rule) -> None:
         """Analyze condition for optimization patterns."""
-        helper_analyze_condition_patterns(self, rule)
+        analyze_condition_patterns(self, rule)
 
     def visit_binary_expression(self, node: BinaryExpression) -> None:
         """Analyze binary expressions."""
-        helper_visit_binary_expression(self, node)
+        visit_binary_expression(self, node)
 
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         """Track string references."""
@@ -186,11 +174,11 @@ class OptimizationAnalyzer(BaseVisitor[None]):
 
     def _analyze_cross_rule_patterns(self, rules: list[Rule]) -> None:
         """Analyze patterns across multiple rules."""
-        helper_analyze_cross_rule_patterns(self, rules)
+        analyze_cross_rule_patterns(self, rules)
 
     def _find_similar_rules(self, rules: list[Rule]) -> None:
         """Find rules with similar structure that could be combined."""
-        helper_find_similar_rules(self, rules)
+        find_similar_rules(self, rules)
 
     # Helper methods
 

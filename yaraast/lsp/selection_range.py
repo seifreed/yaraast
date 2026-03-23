@@ -6,15 +6,11 @@ from lsprotocol.types import Position, Range, SelectionRange
 
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.selection_range_helpers import (
-    build_selection_parent as helper_build_selection_parent,
+    build_selection_parent,
+    find_enclosing_rule_range,
+    find_enclosing_section_range,
+    line_range,
 )
-from yaraast.lsp.selection_range_helpers import (
-    find_enclosing_rule_range as helper_find_enclosing_rule_range,
-)
-from yaraast.lsp.selection_range_helpers import (
-    find_enclosing_section_range as helper_find_enclosing_section_range,
-)
-from yaraast.lsp.selection_range_helpers import line_range as helper_line_range
 from yaraast.lsp.utils import get_word_at_position
 
 
@@ -39,11 +35,11 @@ class SelectionRangeProvider:
                 continue
 
             word, word_range = get_word_at_position(text, position)
-            line_range = helper_line_range(lines, position.line)
+            current_line_range = line_range(lines, position.line)
 
-            parent: SelectionRange | None = SelectionRange(range=line_range, parent=None)
+            parent: SelectionRange | None = SelectionRange(range=current_line_range, parent=None)
             if doc is not None:
-                parent = helper_build_selection_parent(
+                parent = build_selection_parent(
                     doc.text,
                     position,
                     line_range,
@@ -58,7 +54,7 @@ class SelectionRangeProvider:
         return result
 
     def _find_enclosing_rule_range(self, text: str, position: Position) -> Range | None:
-        return helper_find_enclosing_rule_range(text, position)
+        return find_enclosing_rule_range(text, position)
 
     def _find_enclosing_section_range(self, text: str, position: Position) -> Range | None:
-        return helper_find_enclosing_section_range(text, position)
+        return find_enclosing_section_range(text, position)

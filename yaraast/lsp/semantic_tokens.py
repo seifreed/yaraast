@@ -9,11 +9,11 @@ from lsprotocol.types import Range, SemanticTokens, SemanticTokensLegend
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.tokens import TokenType
 from yaraast.lsp.runtime import LspRuntime
-from yaraast.lsp.semantic_tokens_helpers import encode_tokens as helper_encode_tokens
 from yaraast.lsp.semantic_tokens_helpers import (
-    encode_tokens_in_range as helper_encode_tokens_in_range,
+    encode_tokens,
+    encode_tokens_in_range,
+    map_token_type,
 )
-from yaraast.lsp.semantic_tokens_helpers import map_token_type as helper_map_token_type
 
 # Define semantic token types and modifiers according to LSP spec
 TOKEN_TYPES = [
@@ -92,7 +92,7 @@ class SemanticTokensProvider:
         try:
             lexer = Lexer(text)
             tokens = lexer.tokenize()
-            tokens_data = helper_encode_tokens(tokens, self._map_token_type, TOKEN_TYPES)
+            tokens_data = encode_tokens(tokens, self._map_token_type, TOKEN_TYPES)
 
         except Exception:
             # If tokenization fails, return empty tokens
@@ -128,9 +128,7 @@ class SemanticTokensProvider:
         try:
             lexer = Lexer(text)
             tokens = lexer.tokenize()
-            tokens_data = helper_encode_tokens_in_range(
-                tokens, range_, self._map_token_type, TOKEN_TYPES
-            )
+            tokens_data = encode_tokens_in_range(tokens, range_, self._map_token_type, TOKEN_TYPES)
 
         except Exception:
             pass
@@ -145,4 +143,4 @@ class SemanticTokensProvider:
         return result
 
     def _map_token_type(self, token_type: TokenType) -> str | None:
-        return helper_map_token_type(token_type)
+        return map_token_type(token_type)

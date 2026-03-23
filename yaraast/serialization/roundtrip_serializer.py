@@ -21,14 +21,10 @@ from yaraast.serialization.roundtrip_pipeline_helpers import (
     build_pipeline_metadata,
     build_pipeline_statistics,
     build_rules_manifest,
+    collect_all_tags,
+    count_string_types,
+    dump_pipeline_yaml,
 )
-from yaraast.serialization.roundtrip_pipeline_helpers import (
-    collect_all_tags as helper_collect_all_tags,
-)
-from yaraast.serialization.roundtrip_pipeline_helpers import (
-    count_string_types as helper_count_string_types,
-)
-from yaraast.serialization.roundtrip_pipeline_helpers import dump_pipeline_yaml
 from yaraast.serialization.yaml_serializer import YamlSerializer
 
 if TYPE_CHECKING:
@@ -214,11 +210,11 @@ class EnhancedYamlSerializer(YamlSerializer):
 
     def _collect_all_tags(self, ast: YaraFile) -> list[str]:
         """Collect all unique tags from rules."""
-        return helper_collect_all_tags(ast)
+        return collect_all_tags(ast)
 
     def _count_string_types(self, ast: YaraFile) -> dict[str, int]:
         """Count different types of string patterns."""
-        return helper_count_string_types(ast)
+        return count_string_types(ast)
 
 
 # Convenience functions

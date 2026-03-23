@@ -5,10 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from yaraast.cli.serialize_service_helpers import create_serializer as helper_create_serializer
-from yaraast.cli.serialize_service_helpers import (
-    export_with_serializer as helper_export_with_serializer,
-)
+from yaraast.cli.serialize_service_helpers import create_serializer, export_with_serializer
 from yaraast.cli.utils import read_text
 from yaraast.parser.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher
@@ -17,11 +14,11 @@ from yaraast.serialization.ast_diff import AstDiff, AstHasher
 def export_ast(
     ast: Any, fmt: str, output: str | None, minimal: bool
 ) -> tuple[str | None, dict | None]:
-    return helper_export_with_serializer(ast, fmt, output, minimal)
+    return export_with_serializer(ast, fmt, output, minimal)
 
 
 def import_ast(input_file: str, fmt: str):
-    serializer = helper_create_serializer(fmt, include_metadata=True)
+    serializer = create_serializer(fmt, include_metadata=True)
     return serializer.deserialize(input_path=input_file)
 
 

@@ -7,21 +7,13 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.strings import StringDefinition
 from yaraast.performance.string_analysis_helpers import (
-    analyze_cross_rule_patterns as helper_analyze_cross_rule_patterns,
-)
-from yaraast.performance.string_analysis_helpers import analyze_lengths as helper_analyze_lengths
-from yaraast.performance.string_analysis_helpers import (
-    categorize_patterns as helper_categorize_patterns,
-)
-from yaraast.performance.string_analysis_helpers import (
-    find_common_prefixes as helper_find_common_prefixes,
-)
-from yaraast.performance.string_analysis_helpers import (
-    find_common_suffixes as helper_find_common_suffixes,
-)
-from yaraast.performance.string_analysis_helpers import find_duplicates as helper_find_duplicates
-from yaraast.performance.string_analysis_helpers import (
-    find_optimizations as helper_find_optimizations,
+    analyze_cross_rule_patterns,
+    analyze_lengths,
+    categorize_patterns,
+    find_common_prefixes,
+    find_common_suffixes,
+    find_duplicates,
+    find_optimizations,
 )
 
 if TYPE_CHECKING:
@@ -150,30 +142,30 @@ class StringPatternAnalyzer:
         }
 
     def _find_duplicates(self, strings: list[str]) -> dict[str, int]:
-        return helper_find_duplicates(self, strings)
+        return find_duplicates(self, strings)
 
     def _find_common_prefixes(
         self,
         strings: list[str],
         min_length: int = 3,
     ) -> dict[str, list[str]]:
-        return helper_find_common_prefixes(self, strings, min_length)
+        return find_common_prefixes(self, strings, min_length)
 
     def _find_common_suffixes(
         self,
         strings: list[str],
         min_length: int = 3,
     ) -> dict[str, list[str]]:
-        return helper_find_common_suffixes(self, strings, min_length)
+        return find_common_suffixes(self, strings, min_length)
 
     def _analyze_lengths(self, strings: list[str]) -> dict[str, Any]:
-        return helper_analyze_lengths(strings)
+        return analyze_lengths(strings)
 
     def _categorize_patterns(
         self,
         patterns: list[str | StringDefinition],
     ) -> dict[str, int]:
-        return helper_categorize_patterns(self, patterns)
+        return categorize_patterns(self, patterns)
 
     def _find_optimizations(
         self,
@@ -182,10 +174,10 @@ class StringPatternAnalyzer:
         prefixes: dict[str, list[str]],
         suffixes: dict[str, list[str]],
     ) -> list[dict[str, Any]]:
-        return helper_find_optimizations(strings, duplicates, prefixes, suffixes)
+        return find_optimizations(strings, duplicates, prefixes, suffixes)
 
     def _analyze_cross_rule_patterns(self, rules: list[Rule]) -> dict[str, Any]:
-        return helper_analyze_cross_rule_patterns(rules)
+        return analyze_cross_rule_patterns(rules)
 
     def get_statistics(self) -> dict[str, Any]:
         """Get analyzer statistics."""
@@ -205,11 +197,9 @@ class StringPatternAnalyzer:
 
 
 def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
-    from yaraast.performance.string_performance_checks import (
-        analyze_rule_performance as helper_analyze_rule_performance,
-    )
+    from yaraast.performance.string_performance_checks import analyze_rule_performance
 
-    return helper_analyze_rule_performance(rule)
+    return analyze_rule_performance(rule)
 
 
 def _estimate_rule_cost(rule: Rule) -> int:

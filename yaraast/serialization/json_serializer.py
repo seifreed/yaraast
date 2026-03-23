@@ -7,76 +7,32 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from yaraast.serialization.json_serialize_visitors import (
-    visit_array_access as helper_visit_array_access,
+    visit_array_access,
+    visit_at_expression,
+    visit_binary_expression,
+    visit_comment_group,
+    visit_dictionary_access,
+    visit_for_expression,
+    visit_for_of_expression,
+    visit_function_call,
+    visit_hex_alternative,
+    visit_hex_string,
+    visit_in_expression,
+    visit_member_access,
+    visit_of_expression,
+    visit_parentheses_expression,
+    visit_plain_string,
+    visit_pragma_block,
+    visit_range_expression,
+    visit_regex_string,
+    visit_rule,
+    visit_set_expression,
+    visit_string_length,
+    visit_string_offset,
+    visit_string_operator_expression,
+    visit_unary_expression,
+    visit_yara_file,
 )
-from yaraast.serialization.json_serialize_visitors import (
-    visit_at_expression as helper_visit_at_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_binary_expression as helper_visit_binary_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_comment_group as helper_visit_comment_group,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_dictionary_access as helper_visit_dictionary_access,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_for_expression as helper_visit_for_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_for_of_expression as helper_visit_for_of_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_function_call as helper_visit_function_call,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_hex_alternative as helper_visit_hex_alternative,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_hex_string as helper_visit_hex_string,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_in_expression as helper_visit_in_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_member_access as helper_visit_member_access,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_of_expression as helper_visit_of_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_parentheses_expression as helper_visit_parentheses_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_plain_string as helper_visit_plain_string,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_pragma_block as helper_visit_pragma_block,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_range_expression as helper_visit_range_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_regex_string as helper_visit_regex_string,
-)
-from yaraast.serialization.json_serialize_visitors import visit_rule as helper_visit_rule
-from yaraast.serialization.json_serialize_visitors import (
-    visit_set_expression as helper_visit_set_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_string_length as helper_visit_string_length,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_string_offset as helper_visit_string_offset,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_string_operator_expression as helper_visit_string_operator_expression,
-)
-from yaraast.serialization.json_serialize_visitors import (
-    visit_unary_expression as helper_visit_unary_expression,
-)
-from yaraast.serialization.json_serialize_visitors import visit_yara_file as helper_visit_yara_file
 from yaraast.serialization.json_serializer_deserialize import JsonSerializerDeserializeMixin
 from yaraast.serialization.serializer_helpers import build_base_metadata, read_text, write_text
 from yaraast.visitor.visitor import ASTVisitor
@@ -152,7 +108,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return payload
 
     def visit_yara_file(self, node) -> dict[str, Any]:
-        return helper_visit_yara_file(self, node)
+        return visit_yara_file(self, node)
 
     def visit_import(self, node) -> dict[str, Any]:
         return self._simple_node("Import", module=node.module, alias=getattr(node, "alias", None))
@@ -161,7 +117,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node("Include", path=node.path)
 
     def visit_rule(self, node) -> dict[str, Any]:
-        return helper_visit_rule(self, node)
+        return visit_rule(self, node)
 
     def visit_tag(self, node) -> dict[str, Any]:
         return self._simple_node("Tag", name=node.name)
@@ -170,13 +126,13 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node("StringDefinition", identifier=node.identifier)
 
     def visit_plain_string(self, node) -> dict[str, Any]:
-        return helper_visit_plain_string(self, node)
+        return visit_plain_string(self, node)
 
     def visit_hex_string(self, node) -> dict[str, Any]:
-        return helper_visit_hex_string(self, node)
+        return visit_hex_string(self, node)
 
     def visit_regex_string(self, node) -> dict[str, Any]:
-        return helper_visit_regex_string(self, node)
+        return visit_regex_string(self, node)
 
     def visit_string_modifier(self, node) -> dict[str, Any]:
         return self._simple_node("StringModifier", name=node.name, value=node.value)
@@ -194,7 +150,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node("HexJump", min_jump=node.min_jump, max_jump=node.max_jump)
 
     def visit_hex_alternative(self, node) -> dict[str, Any]:
-        return helper_visit_hex_alternative(self, node)
+        return visit_hex_alternative(self, node)
 
     def visit_hex_nibble(self, node) -> dict[str, Any]:
         return self._simple_node("HexNibble", high=node.high, value=node.value)
@@ -216,10 +172,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node("StringCount", string_id=node.string_id)
 
     def visit_string_offset(self, node) -> dict[str, Any]:
-        return helper_visit_string_offset(self, node)
+        return visit_string_offset(self, node)
 
     def visit_string_length(self, node) -> dict[str, Any]:
-        return helper_visit_string_length(self, node)
+        return visit_string_length(self, node)
 
     def visit_integer_literal(self, node) -> dict[str, Any]:
         return self._simple_node("IntegerLiteral", value=node.value)
@@ -241,46 +197,46 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node("BooleanLiteral", value=node.value)
 
     def visit_binary_expression(self, node) -> dict[str, Any]:
-        return helper_visit_binary_expression(self, node)
+        return visit_binary_expression(self, node)
 
     def visit_unary_expression(self, node) -> dict[str, Any]:
-        return helper_visit_unary_expression(self, node)
+        return visit_unary_expression(self, node)
 
     def visit_parentheses_expression(self, node) -> dict[str, Any]:
-        return helper_visit_parentheses_expression(self, node)
+        return visit_parentheses_expression(self, node)
 
     def visit_set_expression(self, node) -> dict[str, Any]:
-        return helper_visit_set_expression(self, node)
+        return visit_set_expression(self, node)
 
     def visit_range_expression(self, node) -> dict[str, Any]:
-        return helper_visit_range_expression(self, node)
+        return visit_range_expression(self, node)
 
     def visit_function_call(self, node) -> dict[str, Any]:
-        return helper_visit_function_call(self, node)
+        return visit_function_call(self, node)
 
     def visit_array_access(self, node) -> dict[str, Any]:
-        return helper_visit_array_access(self, node)
+        return visit_array_access(self, node)
 
     def visit_member_access(self, node) -> dict[str, Any]:
-        return helper_visit_member_access(self, node)
+        return visit_member_access(self, node)
 
     def visit_condition(self, node) -> dict[str, Any]:
         return self._simple_node("Condition")
 
     def visit_for_expression(self, node) -> dict[str, Any]:
-        return helper_visit_for_expression(self, node)
+        return visit_for_expression(self, node)
 
     def visit_for_of_expression(self, node) -> dict[str, Any]:
-        return helper_visit_for_of_expression(self, node)
+        return visit_for_of_expression(self, node)
 
     def visit_at_expression(self, node) -> dict[str, Any]:
-        return helper_visit_at_expression(self, node)
+        return visit_at_expression(self, node)
 
     def visit_in_expression(self, node) -> dict[str, Any]:
-        return helper_visit_in_expression(self, node)
+        return visit_in_expression(self, node)
 
     def visit_of_expression(self, node) -> dict[str, Any]:
-        return helper_visit_of_expression(self, node)
+        return visit_of_expression(self, node)
 
     def visit_meta(self, node) -> dict[str, Any]:
         return self._simple_node("Meta", key=node.key, value=node.value)
@@ -289,19 +245,19 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node("ModuleReference", module=node.module)
 
     def visit_dictionary_access(self, node) -> dict[str, Any]:
-        return helper_visit_dictionary_access(self, node)
+        return visit_dictionary_access(self, node)
 
     def visit_comment(self, node) -> dict[str, Any]:
         return self._simple_node("Comment", text=node.text, is_multiline=node.is_multiline)
 
     def visit_comment_group(self, node) -> dict[str, Any]:
-        return helper_visit_comment_group(self, node)
+        return visit_comment_group(self, node)
 
     def visit_defined_expression(self, node) -> dict[str, Any]:
         return self._simple_node("DefinedExpression", expression=self.visit(node.expression))
 
     def visit_string_operator_expression(self, node) -> dict[str, Any]:
-        return helper_visit_string_operator_expression(self, node)
+        return visit_string_operator_expression(self, node)
 
     # Add missing abstract methods
     def visit_extern_import(self, node) -> dict[str, Any]:
@@ -341,4 +297,4 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         }
 
     def visit_pragma_block(self, node) -> dict[str, Any]:
-        return helper_visit_pragma_block(self, node)
+        return visit_pragma_block(self, node)

@@ -34,6 +34,7 @@ class StreamingParser:
         enable_gc: bool = False,
         progress_callback: Callable | None = None,
         dialect: YaraDialect | None = None,
+        dialect_parser_factory: Callable | None = None,
     ) -> None:
         """Initialize streaming parser.
 
@@ -43,6 +44,8 @@ class StreamingParser:
             enable_gc: Enable garbage collection between files
             progress_callback: Progress callback function
             dialect: YARA dialect to use (auto-detects if None)
+            dialect_parser_factory: Optional factory(text, dialect) -> YaraFile
+                for parsing non-standard dialects without circular imports
 
         """
         self.buffer_size = buffer_size
@@ -50,6 +53,7 @@ class StreamingParser:
         self.enable_gc = enable_gc
         self.progress_callback = progress_callback
         self.dialect = dialect
+        self._dialect_parser_factory = dialect_parser_factory
         self.parser = Parser()
         self._cancelled = False
         self._stats = default_streaming_stats()
@@ -311,13 +315,10 @@ class StreamingParser:
         try:
             dialect = self.dialect
             if dialect is not None and dialect != YaraDialect.YARA:
-                # Use UnifiedParser for non-standard dialects
-                from yaraast.unified_parser import UnifiedParser
-
-                unified = UnifiedParser(rule_text, dialect=dialect)
-                result = unified.parse()
-                if hasattr(result, "rules") and result.rules:
-                    return result.rules[0]
+                if self._dialect_parser_factory is not None:
+                    result = self._dialect_parser_factory(rule_text, dialect)
+                    if hasattr(result, "rules") and result.rules:
+                        return result.rules[0]
             else:
                 # Use standard parser (default, fastest path)
                 yara_file = self.parser.parse(rule_text)

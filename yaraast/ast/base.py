@@ -106,5 +106,5 @@ class YaraFile(ASTNode):
         return None
 
     def get_all_rules(self) -> list[Rule]:
-        """Get all rules (regular + extern converted to regular for compatibility)."""
-        return self.rules.copy()  # For now, just return regular rules
+        """Get a copy of all regular rules in this file."""
+        return self.rules.copy()

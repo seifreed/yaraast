@@ -13,11 +13,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from yaraast.analysis.best_practices_helpers import (
-    analyze_global_patterns as helper_analyze_global_patterns,
-)
-from yaraast.analysis.best_practices_helpers import get_hex_prefix as helper_get_hex_prefix
-from yaraast.analysis.best_practices_helpers import (
-    levenshtein_distance as helper_levenshtein_distance,
+    analyze_global_patterns,
+    get_hex_prefix,
+    levenshtein_distance,
 )
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import StringIdentifier
@@ -316,12 +314,12 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""
-        helper_analyze_global_patterns(self)
+        analyze_global_patterns(self)
 
     def _get_hex_prefix(self, hex_string: HexString, length: int) -> tuple[Any, ...]:
         """Get first N bytes of hex string for comparison."""
-        return helper_get_hex_prefix(hex_string, length)
+        return get_hex_prefix(hex_string, length)
 
     def _levenshtein_distance(self, s1: str, s2: str) -> int:
         """Calculate edit distance between two strings."""
-        return helper_levenshtein_distance(s1, s2)
+        return levenshtein_distance(s1, s2)

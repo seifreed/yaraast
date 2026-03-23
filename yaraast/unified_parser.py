@@ -244,7 +244,11 @@ class UnifiedParser:
 
             # Use StreamingParser for very large standard YARA files
             imports, includes = cls._extract_preamble_fast(file_path_obj)
-            streaming_parser = StreamingParser()
+
+            def _dialect_factory(text, d):
+                return cls(text, d).parse()
+
+            streaming_parser = StreamingParser(dialect_parser_factory=_dialect_factory)
             rules = list(streaming_parser.parse_file(file_path_obj))
             return YaraFile(imports=imports, includes=includes, rules=rules)
 
