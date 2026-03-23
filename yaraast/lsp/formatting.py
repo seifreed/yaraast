@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from lsprotocol.types import Position, Range, TextEdit
 
 from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
@@ -9,6 +11,8 @@ from yaraast.codegen.formatting import FormattingConfig
 from yaraast.lsp.parsing import parse_for_lsp
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.structure import find_rule_end, find_rule_line
+
+logger = logging.getLogger(__name__)
 
 
 class FormattingProvider:
@@ -40,6 +44,7 @@ class FormattingProvider:
 
             return [TextEdit(range=doc_range, new_text=formatted_text)]
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             return []
 
     def format_range(
@@ -66,6 +71,7 @@ class FormattingProvider:
             formatted_rule = self._generator(uri).generate(rule)
             return [TextEdit(range=rule_range, new_text=formatted_rule)]
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             return []
 
     def _generator(self, uri: str | None) -> AdvancedCodeGenerator:

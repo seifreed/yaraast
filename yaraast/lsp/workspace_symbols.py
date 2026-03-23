@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
+
+logger = logging.getLogger(__name__)
 
 
 class WorkspaceSymbolsProvider:
@@ -49,6 +52,7 @@ class WorkspaceSymbolsProvider:
                 symbols.extend(file_symbols)
 
             except Exception:
+                logger.debug("Operation failed in %s", __name__, exc_info=True)
                 # Skip files that fail to parse
                 continue
 
@@ -98,6 +102,7 @@ class WorkspaceSymbolsProvider:
             self.symbol_cache[cache_key] = (mtime, symbols)
 
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             # Return empty list if parsing fails
             pass
 

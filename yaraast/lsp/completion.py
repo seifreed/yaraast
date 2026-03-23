@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from lsprotocol.types import (
     CompletionItem,
     CompletionItemKind,
@@ -26,6 +28,8 @@ from yaraast.lsp.completion_helpers import (
 )
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.types.module_loader import ModuleLoader
+
+logger = logging.getLogger(__name__)
 
 
 class CompletionProvider:
@@ -154,6 +158,7 @@ class CompletionProvider:
                     try:
                         ast = parse_source(doc.text)
                     except Exception:
+                        logger.debug("Operation failed in %s", __name__, exc_info=True)
                         continue
                 if ast is None:
                     continue
@@ -169,7 +174,7 @@ class CompletionProvider:
                             )
                         )
         except Exception:
-            pass
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
         return items
 
     def _get_meta_completions(self) -> list[CompletionItem]:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 
 from lsprotocol.types import DocumentSymbol, Range
@@ -11,6 +12,8 @@ from yaraast.lsp.symbol_tree_builder import build_document_symbols
 from yaraast.lsp.symbol_tree_builder import find_closing_brace as _find_closing_brace_impl
 from yaraast.lsp.symbol_tree_builder import find_line_containing as _find_line_containing_impl
 from yaraast.lsp.symbol_tree_builder import make_range as _make_range_impl
+
+logger = logging.getLogger(__name__)
 
 
 class SymbolsProvider:
@@ -46,6 +49,7 @@ class SymbolsProvider:
             symbols = build_document_symbols(doc, lines)
 
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             # If parsing fails, return empty symbols
             symbols = []
 

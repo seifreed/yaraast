@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import logging
+
 from yaraast.lsp.authoring_actions_common import replace_rule_text, require_rule_context
 from yaraast.lsp.authoring_rewriters import OfThemTransformer, StringReferenceRewriter
 from yaraast.lsp.authoring_support import diff_preview, impact_title, string_signature
+
+logger = logging.getLogger(__name__)
 
 
 def optimize_rule(authoring, text: str, selection) -> object | None:
@@ -14,6 +18,7 @@ def optimize_rule(authoring, text: str, selection) -> object | None:
     try:
         ast = authoring._parser.parse(rule_context.text)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(ast.rules) != 1:
         return None
@@ -37,6 +42,7 @@ def roundtrip_rewrite_rule(authoring, text: str, selection) -> object | None:
         original_ast, serialized = authoring._roundtrip.parse_and_serialize(rule_context.text)
         reconstructed_ast, regenerated = authoring._roundtrip.deserialize_and_generate(serialized)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     diff = authoring._differ.diff_asts(original_ast, reconstructed_ast)
     if diff.logical_changes or diff.structural_changes or diff.added_rules or diff.removed_rules:
@@ -59,6 +65,7 @@ def deduplicate_identical_strings(authoring, text: str, selection) -> object | N
     try:
         ast = authoring._parser.parse(rule_context.text)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(ast.rules) != 1:
         return None
@@ -100,6 +107,7 @@ def rewrite_of_them(authoring, text: str, selection, *, mode: str, title: str) -
     try:
         ast = authoring._parser.parse(rule_context.text)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(ast.rules) != 1:
         return None

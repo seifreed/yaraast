@@ -118,7 +118,7 @@ class StringModifier(ASTNode):
         return self.modifier_type.value
 
 
-@dataclass
+@dataclass(frozen=True)
 class RuleModifier:
     """Rule-level modifier with proper type safety."""
 

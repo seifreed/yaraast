@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from lsprotocol.types import Location, Position, TextEdit
 
 from yaraast.lsp.document_types import ReferenceRecord, ResolvedSymbol, RuleLinkRecord, uri_to_path
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from yaraast.lsp.runtime import LspRuntime
@@ -127,6 +130,7 @@ def find_rule_reference_records_in_document(
         try:
             doc = runtime.get_document(document_uri)
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             return []
     if doc is None:
         return []
@@ -162,6 +166,7 @@ def get_rule_link_records_for_document(
         try:
             doc = runtime.get_document(document_uri)
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             return []
     workspace_rule_names = {
         record.name for record in runtime.workspace_symbol_records() if record.kind == "rule"

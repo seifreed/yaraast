@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from lsprotocol.types import CompletionItem, CompletionItemKind, InsertTextFormat, Position
@@ -9,6 +10,8 @@ from lsprotocol.types import CompletionItem, CompletionItemKind, InsertTextForma
 from yaraast.lsp.language_services import parse_source
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import LanguageMode
+
+logger = logging.getLogger(__name__)
 
 try:
     from yaraast.ast.conditions import ForExpression
@@ -353,7 +356,7 @@ def build_condition_completions(text: str, keywords: list[str]) -> list[Completi
                         ]
                     )
     except Exception:
-        pass
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
 
     # Also extract loop variables from for-expressions in condition
     try:
@@ -370,7 +373,7 @@ def build_condition_completions(text: str, keywords: list[str]) -> list[Completi
                             )
                         )
     except Exception:
-        pass
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
 
     items.extend(build_keyword_completions(keywords))
     return items
@@ -394,7 +397,7 @@ def _extract_loop_variables(node: Any) -> list[str]:
             for child in children_method():
                 variables.extend(_extract_loop_variables(child))
         except Exception:
-            pass
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
     return variables
 
 

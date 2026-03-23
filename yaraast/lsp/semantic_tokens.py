@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 
 from lsprotocol.types import Range, SemanticTokens, SemanticTokensLegend
@@ -14,6 +15,8 @@ from yaraast.lsp.semantic_tokens_helpers import (
     encode_tokens_in_range,
     map_token_type,
 )
+
+logger = logging.getLogger(__name__)
 
 # Define semantic token types and modifiers according to LSP spec
 TOKEN_TYPES = [
@@ -95,6 +98,7 @@ class SemanticTokensProvider:
             tokens_data = encode_tokens(tokens, self._map_token_type, TOKEN_TYPES)
 
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             # If tokenization fails, return empty tokens
             pass
 
@@ -131,7 +135,7 @@ class SemanticTokensProvider:
             tokens_data = encode_tokens_in_range(tokens, range_, self._map_token_type, TOKEN_TYPES)
 
         except Exception:
-            pass
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
 
         result = SemanticTokens(data=tokens_data)
         if ctx is not None and cache_key is not None:

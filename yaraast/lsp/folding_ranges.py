@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from lsprotocol.types import FoldingRange, FoldingRangeKind
 
 from yaraast.lsp.parsing import parse_for_lsp
 from yaraast.lsp.structure import find_rule_end, find_rule_line, find_section_range
+
+logger = logging.getLogger(__name__)
 
 
 class FoldingRangesProvider:
@@ -45,6 +48,7 @@ class FoldingRangesProvider:
             return ranges
 
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             # Fallback to regex-based folding
             return self._fallback_folding_ranges(text)
 

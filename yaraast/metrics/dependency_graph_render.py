@@ -18,7 +18,7 @@ def rule_cluster_label(rule_name: str, rule_info: dict) -> str:
     label = _escape_dot(rule_name)
     modifiers = rule_info.get("modifiers")
     if modifiers:
-        label += f"\\n[{', '.join(_escape_dot(m) for m in modifiers)}]"
+        label += f"\\n[{', '.join(_escape_dot(str(m)) for m in modifiers)}]"
     tags = rule_info.get("tags")
     if tags:
         label += f"\\n:{', '.join(_escape_dot(t) for t in tags)}"

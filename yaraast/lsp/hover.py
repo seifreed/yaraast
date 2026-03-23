@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, cast
 
 from lsprotocol.types import Hover, MarkupContent, MarkupKind, Position, Range
@@ -18,6 +19,8 @@ from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import DocumentContext, LspRuntime
 from yaraast.lsp.utils import get_word_at_position
 from yaraast.types.module_loader import ModuleLoader
+
+logger = logging.getLogger(__name__)
 
 
 class HoverProvider:
@@ -248,7 +251,7 @@ class HoverProvider:
                 return render_string_identifier_hover(base_identifier, string_info, word_range)
 
         except Exception:
-            pass
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
 
         return render_string_identifier_hover(base_identifier, None, word_range)
 
@@ -263,6 +266,7 @@ class HoverProvider:
             if meta_value is not None:
                 return render_meta_hover(key, meta_value, word_range)
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             return None
 
         return None
@@ -292,7 +296,7 @@ class HoverProvider:
                 return render_rule_hover(rule_name, rule_info, word_range)
 
         except Exception:
-            pass
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
 
         return None
 

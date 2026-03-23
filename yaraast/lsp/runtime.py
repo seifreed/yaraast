@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections import deque
 from typing import Any
 
@@ -40,6 +41,8 @@ from yaraast.lsp.runtime_workspace import (
 )
 from yaraast.lsp.runtime_workspace import workspace_symbols as runtime_workspace_symbols
 from yaraast.lsp.workspace_index import WorkspaceIndex
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "DocumentContext",
@@ -152,6 +155,7 @@ class LspRuntime:
         try:
             text = path.read_text(encoding="utf-8")
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             return None
         ctx = DocumentContext(uri, text, is_open=False, language_mode=self.config.language_mode)
         if self.config.cache_workspace:
@@ -217,6 +221,7 @@ class LspRuntime:
             try:
                 self.config.diagnostics_debounce_ms = max(0, int(settings["diagnosticsDebounceMs"]))
             except Exception:
+                logger.debug("Operation failed in %s", __name__, exc_info=True)
                 self.config.diagnostics_debounce_ms = 75
         if not self.config.cache_workspace:
             self.documents = {uri: doc for uri, doc in self.documents.items() if doc.is_open}
@@ -234,6 +239,7 @@ class LspRuntime:
                 try:
                     text = path.read_text(encoding="utf-8")
                 except Exception:
+                    logger.debug("Operation failed in %s", __name__, exc_info=True)
                     self.documents.pop(uri, None)
                     continue
                 if self.config.cache_workspace:

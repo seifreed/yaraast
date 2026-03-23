@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from lsprotocol.types import DocumentLink, Position, Range
 
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, SymbolRecord
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentLinksProvider:
@@ -47,6 +50,7 @@ class DocumentLinksProvider:
             links.extend(self._create_local_rule_reference_links(doc))
 
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             # Fallback to regex-based link detection
             links.extend(self._fallback_links(text, document_uri))
 

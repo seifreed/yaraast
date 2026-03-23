@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import logging
+
 from yaraast.ast.rules import Tag
 from yaraast.lsp.authoring_actions_common import replace_rule_text, require_rule_context
 from yaraast.lsp.authoring_support import diff_preview, impact_title
+
+logger = logging.getLogger(__name__)
 
 
 def sort_strings_by_identifier(authoring, text: str, selection) -> object | None:
@@ -14,6 +18,7 @@ def sort_strings_by_identifier(authoring, text: str, selection) -> object | None
     try:
         ast = authoring._parser.parse(rule_context.text)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(ast.rules) != 1:
         return None
@@ -42,6 +47,7 @@ def sort_meta_by_key(authoring, text: str, selection) -> object | None:
     try:
         ast = authoring._parser.parse(rule_context.text)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(ast.rules) != 1:
         return None
@@ -79,6 +85,7 @@ def sort_tags_alphabetically(authoring, text: str, selection) -> object | None:
     try:
         ast = authoring._parser.parse(rule_context.text)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(ast.rules) != 1:
         return None
@@ -107,6 +114,7 @@ def canonicalize_rule_structure(authoring, text: str, selection) -> object | Non
     try:
         original_ast = authoring._parser.parse(rule_context.text)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(original_ast.rules) != 1:
         return None
@@ -116,6 +124,7 @@ def canonicalize_rule_structure(authoring, text: str, selection) -> object | Non
     try:
         regenerated_ast = authoring._parser.parse(regenerated)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(regenerated_ast.rules) != 1:
         return None
@@ -137,6 +146,7 @@ def pretty_print_rule(authoring, text: str, selection) -> object | None:
     try:
         original_ast = authoring._parser.parse(rule_context.text)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(original_ast.rules) != 1:
         return None
@@ -146,6 +156,7 @@ def pretty_print_rule(authoring, text: str, selection) -> object | None:
     try:
         regenerated_ast = authoring._parser.parse(regenerated)
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
     if len(regenerated_ast.rules) != 1:
         return None

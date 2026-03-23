@@ -76,7 +76,7 @@ def _create_rule_branch(rules_branch: Tree, rule: Any) -> Tree:
     """Create a rule branch in the tree."""
     rule_text = f"rule {rule.name}"
     if hasattr(rule, "modifiers") and rule.modifiers:
-        rule_text = f"{' '.join(rule.modifiers)} {rule_text}"
+        rule_text = f"{' '.join(str(m) for m in rule.modifiers)} {rule_text}"
     return rules_branch.add(rule_text)
 
 

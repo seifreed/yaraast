@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from yaraast.lsp.lsp_types import (
     TEXT_DOCUMENT_DID_CHANGE,
     TEXT_DOCUMENT_DID_CLOSE,
@@ -18,6 +20,8 @@ from yaraast.lsp.lsp_types import (
     DidSaveTextDocumentParams,
 )
 from yaraast.lsp.server_feature_helpers import get_diagnostics, get_document_source
+
+logger = logging.getLogger(__name__)
 
 
 def register_document_handlers(server) -> None:
@@ -44,6 +48,7 @@ def register_document_handlers(server) -> None:
             try:
                 text = ls.workspace.get_text_document(uri).source
             except Exception:
+                logger.debug("Operation failed in %s", __name__, exc_info=True)
                 text = ""
         runtime = getattr(ls, "runtime", None)
         if runtime is not None:

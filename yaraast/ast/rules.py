@@ -50,16 +50,12 @@ class Rule(ASTNode):
     """YARA rule node with enhanced modifier and meta support."""
 
     name: str
-    modifiers: list[str | RuleModifier] = field(
-        default_factory=list,
-    )  # Support both old and new
+    modifiers: list[str | RuleModifier] = field(default_factory=list)
     tags: list[Tag] = field(default_factory=list)
-    meta: dict[str, Any] | list[MetaEntry] = field(
-        default_factory=dict,
-    )  # Support enhanced meta
+    meta: dict[str, Any] | list[MetaEntry] = field(default_factory=list)
     strings: list[StringDefinition] = field(default_factory=list)
     condition: Condition | None = None
-    pragmas: list[InRulePragma] = field(default_factory=list)  # In-rule pragmas
+    pragmas: list[InRulePragma] = field(default_factory=list)
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_rule(self)
@@ -67,28 +63,12 @@ class Rule(ASTNode):
     @property
     def is_private(self) -> bool:
         """Check if rule is private."""
-        for mod in self.modifiers:
-            if isinstance(mod, str) and mod == "private":
-                return True
-            if isinstance(mod, RuleModifier):
-                from yaraast.ast.modifiers import RuleModifierType
-
-                if mod.modifier_type == RuleModifierType.PRIVATE:
-                    return True
-        return False
+        return any(str(m) == "private" for m in self.modifiers)
 
     @property
     def is_global(self) -> bool:
         """Check if rule is global."""
-        for mod in self.modifiers:
-            if isinstance(mod, str) and mod == "global":
-                return True
-            if isinstance(mod, RuleModifier):
-                from yaraast.ast.modifiers import RuleModifierType
-
-                if mod.modifier_type == RuleModifierType.GLOBAL:
-                    return True
-        return False
+        return any(str(m) == "global" for m in self.modifiers)
 
     def get_meta_entries(self) -> list[MetaEntry]:
         """Get meta entries as enhanced MetaEntry objects."""

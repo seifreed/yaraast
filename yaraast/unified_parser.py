@@ -115,12 +115,14 @@ class UnifiedParser:
 
                 for line in f:
                     # Handle multi-line comments /* ... */
-                    if "/*" in line:
-                        in_multiline_comment = True
                     if in_multiline_comment:
                         if "*/" in line:
                             in_multiline_comment = False
                         continue
+                    if "/*" in line:
+                        in_multiline_comment = True
+                        if "*/" not in line:
+                            continue
 
                     # Remove single-line comments
                     if "//" in line:

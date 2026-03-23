@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 
 from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.document_context import DocumentContext
 from yaraast.lsp.document_types import SymbolRecord
+
+logger = logging.getLogger(__name__)
 
 
 class WorkspaceIndex:
@@ -38,6 +41,7 @@ class WorkspaceIndex:
         try:
             payload = json.loads(cache_path.read_text(encoding="utf-8"))
         except Exception:
+            logger.debug("Operation failed in %s", __name__, exc_info=True)
             return
         raw_symbols = payload.get("symbols", {})
         if not isinstance(raw_symbols, dict):

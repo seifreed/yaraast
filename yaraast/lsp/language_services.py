@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+
 from yaraast.parser.parser import Parser
+
+logger = logging.getLogger(__name__)
 
 
 def parse_source(text: str):
@@ -15,4 +19,5 @@ def parse_source(text: str):
         parser = Parser(text)
         return parser.parse()
     except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
         return None
