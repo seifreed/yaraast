@@ -134,7 +134,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         # Write rule header
         if node.modifiers:
-            self._write(" ".join(node.modifiers) + " ")
+            self._write(" ".join(str(m) for m in node.modifiers) + " ")
 
         self._write(f"rule {node.name}")
 
@@ -160,16 +160,17 @@ class CommentAwareCodeGenerator(CodeGenerator):
             self._writeline("meta:")
             self._indent()
 
-            if isinstance(node.meta, dict):
-                for key, value in node.meta.items():
-                    self._write_meta_item(key, value)
-            else:
-                for meta in node.meta:
-                    self._write_leading_comments(meta.leading_comments)
+            for meta in node.meta:
+                leading = getattr(meta, "leading_comments", [])
+                self._write_leading_comments(leading)
+                if hasattr(meta, "accept"):
                     self.visit(meta)
-                    if meta.trailing_comment:
-                        self._write_comment(meta.trailing_comment, inline=True)
-                    self._writeline()
+                elif hasattr(meta, "key"):
+                    self._write_meta_item(meta.key, meta.value)
+                trailing = getattr(meta, "trailing_comment", None)
+                if trailing:
+                    self._write_comment(trailing, inline=True)
+                self._writeline()
 
             self._dedent()
 

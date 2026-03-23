@@ -177,8 +177,8 @@ class TestRuleBuilderMetadata:
         rule = builder.build()
 
         assert len(rule.meta) == 1
-        assert isinstance(rule.meta, dict)
-        assert rule.meta["author"] == "John Doe"
+        assert isinstance(rule.meta, list)
+        assert rule.get_meta_value("author") == "John Doe"
 
     def test_add_meta_alias(self) -> None:
         """Add_meta should work as alias for with_meta."""
@@ -188,7 +188,7 @@ class TestRuleBuilderMetadata:
         rule = builder.build()
 
         assert len(rule.meta) == 1
-        assert rule.meta["version"] == 1
+        assert rule.get_meta_value("version") == 1
 
     def test_with_author_convenience_method(self) -> None:
         """With_author should add author metadata."""
@@ -198,7 +198,7 @@ class TestRuleBuilderMetadata:
         rule = builder.build()
 
         assert len(rule.meta) == 1
-        assert rule.meta["author"] == "Jane Smith"
+        assert rule.get_meta_value("author") == "Jane Smith"
 
     def test_with_description_convenience_method(self) -> None:
         """With_description should add description metadata."""
@@ -208,7 +208,7 @@ class TestRuleBuilderMetadata:
         rule = builder.build()
 
         assert len(rule.meta) == 1
-        assert rule.meta["description"] == "Detects malware"
+        assert rule.get_meta_value("description") == "Detects malware"
 
     def test_with_version_convenience_method(self) -> None:
         """With_version should add version metadata."""
@@ -218,7 +218,7 @@ class TestRuleBuilderMetadata:
         rule = builder.build()
 
         assert len(rule.meta) == 1
-        assert rule.meta["version"] == 2
+        assert rule.get_meta_value("version") == 2
 
     def test_multiple_metadata_fields(self) -> None:
         """Builder should support multiple metadata fields."""
@@ -230,10 +230,10 @@ class TestRuleBuilderMetadata:
         rule = builder.build()
 
         assert len(rule.meta) == 4
-        assert "author" in rule.meta
-        assert "description" in rule.meta
-        assert "version" in rule.meta
-        assert "date" in rule.meta
+        assert rule.get_meta_value("author") is not None
+        assert rule.get_meta_value("description") is not None
+        assert rule.get_meta_value("version") is not None
+        assert rule.get_meta_value("date") is not None
 
     def test_metadata_types(self) -> None:
         """Metadata should support string, int, and bool values."""
@@ -243,9 +243,9 @@ class TestRuleBuilderMetadata:
         rule = builder.build()
 
         assert len(rule.meta) == 3
-        assert rule.meta["name"] == "test"
-        assert rule.meta["count"] == 42
-        assert rule.meta["active"] is True
+        assert rule.get_meta_value("name") == "test"
+        assert rule.get_meta_value("count") == 42
+        assert rule.get_meta_value("active") is True
 
 
 class TestRuleBuilderPlainStrings:

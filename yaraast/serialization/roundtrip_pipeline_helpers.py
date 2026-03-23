@@ -49,9 +49,13 @@ def build_rules_manifest(ast) -> dict[str, Any]:
         manifest["rules"].append(
             {
                 "name": rule.name,
-                "modifiers": rule.modifiers,
+                "modifiers": [str(m) for m in rule.modifiers],
                 "tags": [tag.name for tag in rule.tags],
-                "meta": dict(rule.meta) if isinstance(rule.meta, dict) else {},
+                "meta": (
+                    {getattr(m, "key", ""): getattr(m, "value", "") for m in rule.meta}
+                    if rule.meta
+                    else {}
+                ),
                 "string_count": len(rule.strings),
                 "has_condition": rule.condition is not None,
             }

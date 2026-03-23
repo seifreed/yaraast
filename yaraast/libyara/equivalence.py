@@ -271,7 +271,9 @@ class EquivalenceTester:
                     )
 
                 # Compare modifiers
-                if sorted(rule1.modifiers) != sorted(rule2.modifiers):
+                if sorted(str(m) for m in rule1.modifiers) != sorted(
+                    str(m) for m in rule2.modifiers
+                ):
                     differences.append(
                         f"Rule {rule1.name} modifiers differ: {rule1.modifiers} vs {rule2.modifiers}",
                     )

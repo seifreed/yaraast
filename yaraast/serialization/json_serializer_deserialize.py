@@ -26,8 +26,10 @@ class JsonSerializerDeserializeMixin:
             from yaraast.ast.meta import Meta
 
             meta = [Meta(key=k, value=v) for k, v in meta_data.items()]
-        else:
+        elif isinstance(meta_data, list):
             meta = [self._deserialize_meta(m) for m in meta_data]
+        else:
+            meta = []
 
         strings = [self._deserialize_string(s) for s in data.get("strings", [])]
         condition = (

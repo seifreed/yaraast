@@ -125,8 +125,8 @@ class TestFluentRuleBuilder:
         assert rule_ast.name == "test_rule"
         assert len(rule_ast.tags) == 1
         assert rule_ast.tags[0].name == "test"
-        assert "author" in rule_ast.meta
-        assert rule_ast.meta["author"] == "Test Author"
+        assert rule_ast.get_meta_value("author") is not None
+        assert rule_ast.get_meta_value("author") == "Test Author"
         assert len(rule_ast.strings) == 1
         assert rule_ast.condition is not None
 
@@ -175,7 +175,7 @@ class TestFluentRuleBuilder:
 
         assert rule_ast.name == "test_malware"
         assert any(tag.name == "malware" for tag in rule_ast.tags)
-        assert "author" in rule_ast.meta
+        assert rule_ast.get_meta_value("author") is not None
         assert len(rule_ast.strings) > 0  # Should have MZ header
         assert rule_ast.condition is not None
 

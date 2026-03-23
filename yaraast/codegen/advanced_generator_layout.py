@@ -28,13 +28,7 @@ def visit_yara_file(generator, node) -> str:
     elif generator.config.sort_meta:
 
         def sort_key(rule):
-            has_meta = bool(
-                rule.meta
-                and (
-                    (isinstance(rule.meta, dict) and rule.meta)
-                    or (isinstance(rule.meta, list) and rule.meta)
-                )
-            )
+            has_meta = bool(rule.meta and (bool(rule.meta)))
             return (not has_meta, rule.name)
 
         rules = sorted(rules, key=sort_key)
@@ -48,7 +42,7 @@ def visit_yara_file(generator, node) -> str:
 
 def visit_rule(generator, node) -> str:
     if node.modifiers:
-        generator._write(" ".join(node.modifiers) + " ")
+        generator._write(" ".join(str(m) for m in node.modifiers) + " ")
     generator._write(f"rule {node.name}")
 
     if node.tags:

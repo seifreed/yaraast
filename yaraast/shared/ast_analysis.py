@@ -69,15 +69,12 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
 
     def visit_rule(self, rule: Any) -> Any:
         meta_data = getattr(rule, "meta", [])
-        if isinstance(meta_data, dict):
-            meta_keys = sorted(meta_data.keys())
-        else:
-            meta_keys = sorted([m.key for m in meta_data if hasattr(m, "key")])
+        meta_keys = sorted([getattr(m, "key", "") for m in meta_data if hasattr(m, "key")])
 
         self.rule_signatures[rule.name] = self._hash_dict(
             {
                 "name": rule.name,
-                "modifiers": sorted(getattr(rule, "modifiers", [])),
+                "modifiers": sorted(str(m) for m in getattr(rule, "modifiers", [])),
                 "tags": sorted([tag.name for tag in getattr(rule, "tags", [])]),
                 "meta_keys": meta_keys,
                 "string_identifiers": sorted([s.identifier for s in getattr(rule, "strings", [])]),

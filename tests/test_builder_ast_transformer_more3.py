@@ -37,7 +37,7 @@ def test_rule_transformer_renames_and_meta() -> None:
 
     assert transformed.name == "pre_r2_suf"
     assert any(t.name == "tag2" for t in transformed.tags)
-    assert transformed.meta["author"] == "you"
+    assert transformed.get_meta_value("author") == "you"
     assert transformed.condition.name == "$b"
 
 
@@ -60,14 +60,14 @@ def test_yara_file_transformer_and_merge() -> None:
         .build()
     )
     assert any(imp.module == "hash" for imp in transformed.imports)
-    assert all("private" in r.modifiers for r in transformed.rules)
+    assert all(any(str(m) == "private" for m in r.modifiers) for r in transformed.rules)
 
 
 def test_create_variant_and_collection() -> None:
     base = Rule(name="base")
     variant = create_variant_rule(base, "variant", tags=["x"], author="me", private=True)
     assert variant.name == "variant"
-    assert "private" in variant.modifiers
+    assert any(str(m) == "private" for m in variant.modifiers)
 
     collection = create_rule_collection([base, variant], "grp")
     assert collection.rules[0].name.startswith("grp_")

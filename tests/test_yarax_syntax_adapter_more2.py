@@ -28,7 +28,7 @@ def test_adapt_with_count_and_passthrough_paths() -> None:
     adapted, count = adapter.adapt_with_count(node)
 
     assert count == 0
-    assert adapted.rules[0].modifiers == ["private", "private"]
+    assert [str(m) for m in adapted.rules[0].modifiers] == ["private", "private"]
     assert adapted.rules[0].strings[0].value == "abcd"
 
 

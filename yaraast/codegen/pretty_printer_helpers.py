@@ -43,7 +43,7 @@ def format_regex_string(node: RegexString, padding: int) -> str:
 def modifiers_to_string(modifiers) -> str:
     if not modifiers:
         return ""
-    return " " + " ".join(mod if isinstance(mod, str) else str(mod.name) for mod in modifiers)
+    return " " + " ".join(str(mod) for mod in modifiers)
 
 
 def calculate_string_alignment_column(ast) -> int:
@@ -59,9 +59,9 @@ def calculate_meta_alignment_column(ast, min_alignment_column: int) -> int:
     """Calculate alignment column for meta values."""
     max_length = 0
     for rule in ast.rules:
-        if isinstance(rule.meta, dict):
-            for key in rule.meta:
-                max_length = max(max_length, len(f"{key} ="))
+        for entry in rule.meta:
+            if hasattr(entry, "key"):
+                max_length = max(max_length, len(f"{entry.key} ="))
     return max(max_length + 2, min_alignment_column)
 
 

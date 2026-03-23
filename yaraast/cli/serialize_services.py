@@ -51,7 +51,9 @@ def build_ast_info(ast: Any) -> dict[str, Any]:
                 "strings": len(rule.strings),
                 "tags": len(rule.tags),
                 "meta": len(rule.meta),
-                "modifiers": ", ".join(rule.modifiers) if rule.modifiers else "none",
+                "modifiers": (
+                    ", ".join(str(m) for m in rule.modifiers) if rule.modifiers else "none"
+                ),
             },
         )
     hasher = AstHasher()

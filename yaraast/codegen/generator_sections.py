@@ -9,13 +9,9 @@ def write_meta_section(gen, meta) -> None:
         return
     gen._writeline("meta:")
     gen._indent()
-    if isinstance(meta, dict):
-        for key, value in meta.items():
-            gen._writeline(gen._format_meta_value(key, value))
-    elif isinstance(meta, list):
-        for item in meta:
-            if hasattr(item, "key") and hasattr(item, "value"):
-                gen._writeline(gen._format_meta_value(item.key, item.value))
+    for item in meta:
+        if hasattr(item, "key") and hasattr(item, "value"):
+            gen._writeline(gen._format_meta_value(item.key, item.value))
     gen._dedent()
     gen._writeline()
 

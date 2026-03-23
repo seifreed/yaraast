@@ -49,10 +49,7 @@ def visit_rule(printer, node) -> str:
     printer._write_comments(node.leading_comments)
     line_parts = []
     if node.modifiers:
-        if isinstance(node.modifiers, str):
-            line_parts.append(node.modifiers)
-        else:
-            line_parts.extend(str(m) for m in node.modifiers)
+        line_parts.extend(str(m) for m in node.modifiers)
     line_parts.extend(["rule", node.name])
     if node.tags:
         tags = (

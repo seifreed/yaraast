@@ -7,16 +7,11 @@ from yaraast.codegen.formatting import StringStyle
 
 def process_meta_data(meta_data) -> list:
     """Normalize meta data into a list of meta-like objects."""
-    from yaraast.ast.meta import Meta
 
     processed_meta = []
-    if isinstance(meta_data, dict):
-        for key, value in meta_data.items():
-            processed_meta.append(Meta(key=key, value=value))
-    else:
-        for item in meta_data:
-            if hasattr(item, "key"):
-                processed_meta.append(item)
+    for item in meta_data:
+        if hasattr(item, "key"):
+            processed_meta.append(item)
     return processed_meta
 
 

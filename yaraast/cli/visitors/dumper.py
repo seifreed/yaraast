@@ -92,9 +92,7 @@ class ASTDumper(ASTVisitor[dict]):
     def _process_meta(self, meta) -> dict:
         """Process meta from rule node."""
         result = {}
-        if isinstance(meta, dict):
-            result = meta
-        elif isinstance(meta, list):
+        if isinstance(meta, list):
             for m in meta:
                 if hasattr(m, "key") and hasattr(m, "value"):
                     result[m.key] = m.value

@@ -251,9 +251,7 @@ class DiagnosticsProvider:
             # Build a dict of meta entries for lookup
             meta_dict: dict[str, Any] = {}
             meta = getattr(rule, "meta", None)
-            if isinstance(meta, dict):
-                meta_dict = dict(meta)
-            elif isinstance(meta, list):
+            if isinstance(meta, list):
                 for entry in meta:
                     key = getattr(entry, "key", None) or getattr(entry, "identifier", None)
                     val = getattr(entry, "value", None)

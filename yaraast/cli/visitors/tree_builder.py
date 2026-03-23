@@ -33,10 +33,10 @@ class ASTTreeBuilder:
             return Tree("None")
 
         if hasattr(node, "accept"):
-            try:
+            import contextlib
+
+            with contextlib.suppress(Exception):
                 return node.accept(self)
-            except Exception:
-                pass
 
         method_name = f"visit_{type(node).__name__.lower()}"
         return getattr(self, method_name)(node)
@@ -114,10 +114,10 @@ class ASTTreeBuilder:
         from rich.markup import escape
 
         meta_tree = rule_tree.add("Meta")
-        if isinstance(meta, dict):
-            self._add_dict_meta_to_tree(meta_tree, meta, escape)
-        elif isinstance(meta, list):
+        if isinstance(meta, list):
             self._add_list_meta_to_tree(meta_tree, meta, escape)
+        elif isinstance(meta, dict):
+            self._add_dict_meta_to_tree(meta_tree, meta, escape)
 
     def _add_dict_meta_to_tree(self, meta_tree: Tree, meta_dict: dict, escape) -> None:
         """Add dictionary meta to tree."""

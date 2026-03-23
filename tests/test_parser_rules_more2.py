@@ -50,9 +50,9 @@ def test_parse_rule_helpers_and_meta_section_variants() -> None:
     )
     rule = parser._parse_rule()
     assert rule.name == "demo"
-    assert rule.modifiers == ["private", "global"]
+    assert [str(m) for m in rule.modifiers] == ["private", "global"]
     assert [tag.name for tag in rule.tags] == ["tag1", "tag2"]
-    assert rule.meta == {"a": -1, "b": "x", "c": True, "d": False}
+    assert {m.key: m.value for m in rule.meta} == {"a": -1, "b": "x", "c": True, "d": False}
     assert len(rule.strings) == 1
     assert rule.condition is not None
 
@@ -163,7 +163,7 @@ def test_parse_import_include_and_rule_via_full_parse() -> None:
     assert ast.imports[0].alias == "pe_mod"
     assert ast.includes[0].path == "common.yar"
     assert ast.rules[0].name == "sample"
-    assert ast.rules[0].modifiers == ["private"]
+    assert [str(m) for m in ast.rules[0].modifiers] == ["private"]
 
     tokens = Lexer("rule only_condition { condition: true }").tokenize()
     parser = Parser("rule seed { condition: true }")

@@ -27,7 +27,7 @@ def test_syntax_adapter_removes_duplicate_modifiers() -> None:
     adapted, count = adapter.adapt(ast)
 
     assert count >= 1
-    assert adapted.rules[0].modifiers.count("private") == 1
+    assert sum(1 for m in adapted.rules[0].modifiers if str(m) == "private") == 1
 
 
 def test_syntax_adapter_pads_base64() -> None:

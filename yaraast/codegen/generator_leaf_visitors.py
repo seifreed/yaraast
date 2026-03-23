@@ -130,7 +130,7 @@ def visit_extern_namespace(node) -> str:
 
 
 def visit_extern_rule(node) -> str:
-    modifiers = " ".join(node.modifiers) if hasattr(node, "modifiers") else ""
+    modifiers = " ".join(str(m) for m in node.modifiers) if hasattr(node, "modifiers") else ""
     if modifiers:
         return f"{modifiers} rule {node.name}"
     return f"rule {node.name}"

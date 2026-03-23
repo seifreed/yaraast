@@ -46,12 +46,9 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         pb_tag = pb_rule.tags.add()
         pb_tag.name = tag.name
 
-    meta_items = (
-        rule.meta.items()
-        if isinstance(rule.meta, dict)
-        else ((getattr(m, "key", ""), getattr(m, "value", "")) for m in rule.meta)
-    )
-    for key, value in meta_items:
+    for entry in rule.meta:
+        key = getattr(entry, "key", "")
+        value = getattr(entry, "value", "")
         meta_val = pb_rule.meta[key]
         if isinstance(value, str):
             meta_val.string_value = value

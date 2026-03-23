@@ -58,10 +58,7 @@ class HtmlTreeNodesMixin:
     def _meta_section(self, meta) -> dict[str, Any] | None:
         if not meta:
             return None
-        if isinstance(meta, dict):
-            items = meta.items()
-        else:
-            items = ((getattr(m, "key", ""), getattr(m, "value", "")) for m in meta)
+        items = ((getattr(m, "key", ""), getattr(m, "value", "")) for m in meta)
         meta_children = [
             self._simple_node(
                 f"Meta: {html_mod.escape(str(key))}", "meta", value=html_mod.escape(str(value))

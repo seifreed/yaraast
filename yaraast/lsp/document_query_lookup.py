@@ -23,11 +23,13 @@ def get_meta_value(ctx: DocumentContext, key: str) -> Any | None:
         return None
     for rule in ctx._iter_rules(ast):
         meta = getattr(rule, "meta", None)
-        if isinstance(meta, dict) and key in meta:
-            result = meta[key]
-            ctx.set_cached(cache_key, result)
-            return result
-        if hasattr(meta, "entries"):
+        if isinstance(meta, list):
+            for entry in meta:
+                if getattr(entry, "key", None) == key:
+                    result = getattr(entry, "value", None)
+                    ctx.set_cached(cache_key, result)
+                    return result
+        elif hasattr(meta, "entries"):
             for entry in getattr(meta, "entries", []):
                 if getattr(entry, "key", None) == key:
                     result = getattr(entry, "value", None)

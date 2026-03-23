@@ -32,7 +32,7 @@ def test_fluent_rule_builder_additional_builder_paths() -> None:
     assert {s.identifier for s in built.strings} == {"$plain", "$pe", "$mail", "$re"}
     assert isinstance(next(s for s in built.strings if s.identifier == "$re"), RegexString)
     assert built.condition is not None
-    assert isinstance(built.meta, dict)
+    assert isinstance(built.meta, list)
 
     built_with_fluent_condition = (
         FluentRuleBuilder("fcb")
@@ -84,7 +84,8 @@ def test_ast_transformer_noop_and_list_meta_paths() -> None:
         .rename_strings({"$a": "$renamed"})
         .build()
     )
-    assert transformed_dict.meta == {"version": 1}
+    assert len(transformed_dict.meta) == 1
+    assert transformed_dict.get_meta_value("version") == 1
     assert [s.identifier for s in transformed_dict.strings] == ["$renamed", "$b"]
     assert isinstance(transformed_dict.condition, StringIdentifier)
     assert transformed_dict.condition.name == "$b"

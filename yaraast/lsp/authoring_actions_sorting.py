@@ -55,20 +55,12 @@ def sort_meta_by_key(authoring, text: str, selection) -> object | None:
     meta = getattr(rule, "meta", None)
     if not meta:
         return None
-    if isinstance(meta, dict):
-        current_keys = list(meta.keys())
-        sorted_items = sorted(meta.items())
-        sorted_keys = [key for key, _ in sorted_items]
-        if sorted_keys == current_keys:
-            return None
-        rule.meta = dict(sorted_items)
-    else:
-        current_keys = [entry.key for entry in meta if hasattr(entry, "key")]
-        sorted_meta = sorted(meta, key=lambda entry: getattr(entry, "key", ""))
-        sorted_keys = [entry.key for entry in sorted_meta if hasattr(entry, "key")]
-        if sorted_keys == current_keys:
-            return None
-        rule.meta = sorted_meta
+    current_keys = [getattr(entry, "key", "") for entry in meta]
+    sorted_meta = sorted(meta, key=lambda entry: getattr(entry, "key", ""))
+    sorted_keys = [getattr(entry, "key", "") for entry in sorted_meta]
+    if sorted_keys == current_keys:
+        return None
+    rule.meta = sorted_meta
     new_text = authoring._generator.generate(rule).rstrip("\n")
     return replace_rule_text(
         rule_context,

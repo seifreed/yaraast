@@ -19,15 +19,15 @@ def get_rule_info(ctx: DocumentContext, rule_name: str) -> dict[str, Any] | None
     modifiers = getattr(rule, "modifiers", None) or []
     tags = getattr(rule, "tags", None) or []
     meta = getattr(rule, "meta", None)
-    if isinstance(meta, dict):
-        meta_items = list(meta.items())
+    if isinstance(meta, list):
+        meta_items = [(getattr(m, "key", ""), getattr(m, "value", "")) for m in meta]
     elif hasattr(meta, "entries"):
         meta_items = [(entry.key, entry.value) for entry in getattr(meta, "entries", [])]
     else:
         meta_items = []
     result = {
         "name": rule_name,
-        "modifiers": [str(m) if not isinstance(m, str) else m for m in modifiers],
+        "modifiers": [str(m) for m in modifiers],
         "tags": [tag.name if hasattr(tag, "name") else str(tag) for tag in tags],
         "meta": meta_items,
         "strings_count": len(getattr(rule, "strings", None) or []),
@@ -49,8 +49,8 @@ def get_rule_meta_items(ctx: DocumentContext, rule_name: str) -> list[tuple[str,
     if rule is None:
         return []
     meta = getattr(rule, "meta", None)
-    if isinstance(meta, dict):
-        result = list(meta.items())
+    if isinstance(meta, list):
+        result = [(getattr(m, "key", ""), getattr(m, "value", "")) for m in meta]
     elif hasattr(meta, "entries"):
         result = [(entry.key, entry.value) for entry in getattr(meta, "entries", [])]
     else:

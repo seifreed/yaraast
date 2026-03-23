@@ -46,15 +46,12 @@ def append_meta_symbols(
         symbols.append(
             SymbolRecord("meta", "section_header", ctx.uri, meta_header_range, rule_name)
         )
-    items = (
-        meta.items()
-        if isinstance(meta, dict)
-        else (
-            ((entry.key, entry.value) for entry in getattr(meta, "entries", []))
-            if hasattr(meta, "entries")
-            else []
-        )
-    )
+    if isinstance(meta, list):
+        items = ((getattr(m, "key", ""), getattr(m, "value", "")) for m in meta)
+    elif hasattr(meta, "entries"):
+        items = ((entry.key, entry.value) for entry in getattr(meta, "entries", []))
+    else:
+        items = iter([])
     for key, _value in items:
         key_text = str(key)
         key_range = meta_item_range(meta, key_text, ctx.text)

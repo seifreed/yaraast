@@ -37,12 +37,12 @@ def test_clone_helpers_create_deep_independent_copies() -> None:
 
     cloned_rule.name = "changed"
     cloned_rule.tags[0].name = "changed_tag"
-    cloned_rule.meta["author"] = "other"
+    cloned_rule.meta[0].value = "other"
     cloned_rule.strings[0].identifier = "$b"
 
     assert original_rule.name == "orig"
     assert original_rule.tags[0].name == "t1"
-    assert original_rule.meta["author"] == "me"
+    assert original_rule.get_meta_value("author") == "me"
     assert original_rule.strings[0].identifier == "$a"
 
     original_file = YaraFile(
@@ -80,10 +80,10 @@ def test_rule_transformer_tag_modifier_meta_and_string_helpers() -> None:
 
     assert transformed.name == "pre_base_suf"
     assert {t.name for t in transformed.tags} == {"new", "t2"}
-    assert transformed.modifiers == ["private"]
-    assert transformed.meta["author"] == "you"
-    assert transformed.meta["description"] == "desc"
-    assert transformed.meta["version"] == 7
+    assert [str(m) for m in transformed.modifiers] == ["private"]
+    assert transformed.get_meta_value("author") == "you"
+    assert transformed.get_meta_value("description") == "desc"
+    assert transformed.get_meta_value("version") == 7
     assert transformed.strings[0].identifier == "$renamed"
     assert isinstance(transformed.condition, StringIdentifier)
     assert transformed.condition.name == "$renamed"
@@ -162,16 +162,16 @@ def test_yara_file_transformer_operations_and_filters() -> None:
     assert {imp.module for imp in transformed.imports} == {"pe", "math"}
     assert {inc.path for inc in transformed.includes} == {"a.yar", "b.yar"}
     assert [r.name for r in transformed.rules] == ["pre_renamed_suf", "pre_two_suf"]
-    assert all("private" in r.modifiers for r in transformed.rules)
-    assert all(r.meta["author"] == "team" for r in transformed.rules)
+    assert all(any(str(m) == "private" for m in r.modifiers) for r in transformed.rules)
+    assert all(r.get_meta_value("author") == "team" for r in transformed.rules)
 
 
 def test_convenience_transform_functions_and_variant_collection_merge_paths() -> None:
     base = _sample_rule("base")
 
     via_helper = transform_rule(base).make_public().make_global().build()
-    assert "private" not in via_helper.modifiers
-    assert "global" in via_helper.modifiers
+    assert not any(str(m) == "private" for m in via_helper.modifiers)
+    assert any(str(m) == "global" for m in via_helper.modifiers)
 
     variant = create_variant_rule(
         base,
@@ -185,9 +185,9 @@ def test_convenience_transform_functions_and_variant_collection_merge_paths() ->
     )
     assert variant.name == "pre_variant_suf"
     assert {t.name for t in variant.tags} == {"t1", "x", "y"}
-    assert variant.meta["author"] == "author2"
-    assert variant.meta["description"] == "desc2"
-    assert "private" in variant.modifiers
+    assert variant.get_meta_value("author") == "author2"
+    assert variant.get_meta_value("description") == "desc2"
+    assert any(str(m) == "private" for m in variant.modifiers)
 
     collection = create_rule_collection([base, variant], "grp")
     assert [r.name for r in collection.rules] == ["grp_base", "grp_pre_variant_suf"]

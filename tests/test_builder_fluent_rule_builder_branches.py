@@ -115,7 +115,7 @@ def test_convenience_factories_cover_common_builder_paths() -> None:
     malware = malware_rule("mal").build()
     assert malware.name == "mal"
     assert {t.name for t in malware.tags} == {"malware"}
-    assert malware.meta["author"] == "YARA AST"
+    assert malware.get_meta_value("author") == "YARA AST"
 
     trojan = trojan_rule("troj").build()
     assert {t.name for t in trojan.tags} == {"trojan", "malware"}
@@ -126,7 +126,7 @@ def test_convenience_factories_cover_common_builder_paths() -> None:
 
     document = document_rule("doc").build()
     assert {t.name for t in document.tags} == {"document"}
-    assert document.meta["author"] == "YARA AST"
+    assert document.get_meta_value("author") == "YARA AST"
 
     network = network_rule("net").build()
     assert {s.identifier for s in network.strings} == {"$ip", "$url"}
@@ -181,8 +181,8 @@ def test_rule_metadata_aliases_and_example_rules_paths() -> None:
     assert built.name == "alias_paths"
     assert "private" in {m.name for m in built.modifiers}
     assert "global" in {m.name for m in built.modifiers}
-    assert built.meta["author"] == "me"
-    assert built.meta["version"] == 3
+    assert built.get_meta_value("author") == "me"
+    assert built.get_meta_value("version") == 3
     assert {t.name for t in built.tags} == {"demo"}
     assert {s.identifier for s in built.strings} == {"$re", "$elf"}
 

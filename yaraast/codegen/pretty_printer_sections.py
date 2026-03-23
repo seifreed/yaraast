@@ -23,7 +23,10 @@ def write_meta_section(printer, meta: dict[str, Any] | list[Any]) -> None:
             write_meta_entry(printer, key, value)
         return
 
-    for entry in meta:
+    entries = list(meta)
+    if printer.options.sort_meta_keys:
+        entries.sort(key=lambda x: getattr(x, "key", ""))
+    for entry in entries:
         if hasattr(entry, "key") and hasattr(entry, "value"):
             write_meta_entry(printer, entry.key, entry.value)
 

@@ -133,12 +133,7 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
         data["tags"] = [tag.name if hasattr(tag, "name") else tag for tag in rule.tags]
 
     if rule.meta:
-        if isinstance(rule.meta, dict):
-            data["meta"] = [
-                {"type": "Meta", "key": key, "value": value} for key, value in rule.meta.items()
-            ]
-        else:
-            data["meta"] = [serialize_meta(m) for m in rule.meta]
+        data["meta"] = [serialize_meta(m) for m in rule.meta]
 
     if rule.strings:
         data["strings"] = [serialize_string(s) for s in rule.strings]

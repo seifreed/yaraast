@@ -1,5 +1,329 @@
 {
   "symbols": {
+    "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar": [
+      {
+        "container_name": null,
+        "kind": "rule",
+        "name": "detect_login",
+        "range": {
+          "end": {
+            "character": 17,
+            "line": 0
+          },
+          "start": {
+            "character": 5,
+            "line": 0
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": null,
+        "kind": "rule_block",
+        "name": "detect_login",
+        "range": {
+          "end": {
+            "character": 1,
+            "line": 12
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section",
+        "name": "meta",
+        "range": {
+          "end": {
+            "character": 25,
+            "line": 3
+          },
+          "start": {
+            "character": 0,
+            "line": 1
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section_header",
+        "name": "meta",
+        "range": {
+          "end": {
+            "character": 8,
+            "line": 1
+          },
+          "start": {
+            "character": 4,
+            "line": 1
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "meta",
+        "name": "author",
+        "range": {
+          "end": {
+            "character": 14,
+            "line": 2
+          },
+          "start": {
+            "character": 8,
+            "line": 2
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "meta",
+        "name": "severity",
+        "range": {
+          "end": {
+            "character": 16,
+            "line": 3
+          },
+          "start": {
+            "character": 8,
+            "line": 3
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section",
+        "name": "condition",
+        "range": {
+          "end": {
+            "character": 14,
+            "line": 9
+          },
+          "start": {
+            "character": 0,
+            "line": 8
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section_header",
+        "name": "condition",
+        "range": {
+          "end": {
+            "character": 13,
+            "line": 8
+          },
+          "start": {
+            "character": 4,
+            "line": 8
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "condition",
+        "name": "condition",
+        "range": {
+          "end": {
+            "character": 14,
+            "line": 9
+          },
+          "start": {
+            "character": 0,
+            "line": 8
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section",
+        "name": "events",
+        "range": {
+          "end": {
+            "character": 45,
+            "line": 5
+          },
+          "start": {
+            "character": 0,
+            "line": 4
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section_header",
+        "name": "events",
+        "range": {
+          "end": {
+            "character": 10,
+            "line": 4
+          },
+          "start": {
+            "character": 4,
+            "line": 4
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section",
+        "name": "match",
+        "range": {
+          "end": {
+            "character": 18,
+            "line": 7
+          },
+          "start": {
+            "character": 0,
+            "line": 6
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section_header",
+        "name": "match",
+        "range": {
+          "end": {
+            "character": 9,
+            "line": 6
+          },
+          "start": {
+            "character": 4,
+            "line": 6
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section",
+        "name": "outcome",
+        "range": {
+          "end": {
+            "character": 24,
+            "line": 11
+          },
+          "start": {
+            "character": 0,
+            "line": 10
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      },
+      {
+        "container_name": "detect_login",
+        "kind": "section_header",
+        "name": "outcome",
+        "range": {
+          "end": {
+            "character": 11,
+            "line": 10
+          },
+          "start": {
+            "character": 4,
+            "line": 10
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/common.yar"
+      }
+    ],
+    "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/user.yar": [
+      {
+        "container_name": null,
+        "kind": "rule",
+        "name": "wrapper",
+        "range": {
+          "end": {
+            "character": 12,
+            "line": 0
+          },
+          "start": {
+            "character": 5,
+            "line": 0
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/user.yar"
+      },
+      {
+        "container_name": null,
+        "kind": "rule_block",
+        "name": "wrapper",
+        "range": {
+          "end": {
+            "character": 1,
+            "line": 3
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/user.yar"
+      },
+      {
+        "container_name": "wrapper",
+        "kind": "section",
+        "name": "condition",
+        "range": {
+          "end": {
+            "character": 20,
+            "line": 2
+          },
+          "start": {
+            "character": 0,
+            "line": 1
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/user.yar"
+      },
+      {
+        "container_name": "wrapper",
+        "kind": "section_header",
+        "name": "condition",
+        "range": {
+          "end": {
+            "character": 13,
+            "line": 1
+          },
+          "start": {
+            "character": 4,
+            "line": 1
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/user.yar"
+      },
+      {
+        "container_name": "wrapper",
+        "kind": "condition",
+        "name": "condition",
+        "range": {
+          "end": {
+            "character": 20,
+            "line": 2
+          },
+          "start": {
+            "character": 0,
+            "line": 1
+          }
+        },
+        "uri": "file:///Users/seifreed/tools/malware/yaraast/.claude/worktrees/agent-a03f43ff/tests/fixtures/lsp_parity/yaral/user.yar"
+      }
+    ],
     "file:///Users/seifreed/tools/malware/yaraast/tests/fixtures/lsp_parity/yaral/common.yar": [
       {
         "container_name": null,

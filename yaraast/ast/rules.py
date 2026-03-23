@@ -57,6 +57,33 @@ class Rule(ASTNode):
     condition: Condition | None = None
     pragmas: list[InRulePragma] = field(default_factory=list)
 
+    def __post_init__(self) -> None:
+        """Normalize modifiers to RuleModifier and meta to list[MetaEntry]."""
+        # Normalize modifiers: convert str -> RuleModifier where possible
+        if self.modifiers:
+            if isinstance(self.modifiers, str):
+                # Handle bare string
+                try:
+                    self.modifiers = [RuleModifier.from_string(self.modifiers)]
+                except ValueError:
+                    self.modifiers = [self.modifiers]
+            elif isinstance(self.modifiers, list | tuple):
+                normalized_modifiers: list[str | RuleModifier] = []
+                for m in self.modifiers:
+                    if isinstance(m, str):
+                        try:
+                            normalized_modifiers.append(RuleModifier.from_string(m))
+                        except ValueError:
+                            normalized_modifiers.append(m)
+                    else:
+                        normalized_modifiers.append(m)
+                self.modifiers = normalized_modifiers
+            # else: non-standard type (e.g. custom objects) - leave as-is
+
+        # Normalize meta: convert dict -> list[MetaEntry]
+        if isinstance(self.meta, dict):
+            self.meta = [MetaEntry.from_key_value(k, v) for k, v in self.meta.items()]
+
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_rule(self)
 
@@ -72,10 +99,14 @@ class Rule(ASTNode):
 
     def get_meta_entries(self) -> list[MetaEntry]:
         """Get meta entries as enhanced MetaEntry objects."""
-        if isinstance(self.meta, list):
-            return self.meta
-        # Convert dict to MetaEntry list
-        return [MetaEntry.from_key_value(k, v) for k, v in self.meta.items()]
+        return self.meta
+
+    def get_meta_value(self, key: str, default: Any = None) -> Any:
+        """Get the value of a meta entry by key."""
+        for entry in self.meta:
+            if hasattr(entry, "key") and entry.key == key:
+                return entry.value
+        return default
 
     def get_private_meta(self) -> list[MetaEntry]:
         """Get only private meta entries."""

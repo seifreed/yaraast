@@ -16,7 +16,7 @@ def rule_children(generator, rule) -> list:
             generator._simple_node(
                 "Modifiers",
                 "modifiers",
-                value=", ".join(rule.modifiers),
+                value=", ".join(str(m) for m in rule.modifiers),
             ),
         )
 

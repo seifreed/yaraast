@@ -7,7 +7,7 @@ __all__ = ["emit_modifiers_diff", "modifier_payloads"]
 
 def modifier_payloads(old_rule, new_rule) -> tuple[set, set]:
     """Return comparable modifier payloads."""
-    return set(old_rule.modifiers), set(new_rule.modifiers)
+    return {str(m) for m in old_rule.modifiers}, {str(m) for m in new_rule.modifiers}
 
 
 def emit_modifiers_diff(

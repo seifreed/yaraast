@@ -27,9 +27,11 @@ def visit_rule(serializer, node) -> dict[str, Any]:
     return {
         "type": "Rule",
         "name": node.name,
-        "modifiers": node.modifiers,
+        "modifiers": [str(m) for m in node.modifiers],
         "tags": [serializer.visit(tag) for tag in node.tags],
-        "meta": node.meta,
+        "meta": [
+            {"key": getattr(m, "key", ""), "value": getattr(m, "value", "")} for m in node.meta
+        ],
         "strings": [serializer.visit(s) for s in node.strings],
         "condition": serializer.visit(node.condition) if node.condition else None,
     }

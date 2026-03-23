@@ -105,13 +105,9 @@ def _add_meta_to_rule(rule_branch: Tree, rule: Any) -> None:
         return
 
     meta_branch = rule_branch.add("meta")
-    if isinstance(rule.meta, dict):
-        for key, value in rule.meta.items():
-            meta_branch.add(f"{key} = {value}")
-    else:
-        for meta_item in rule.meta:
-            if hasattr(meta_item, "key"):
-                meta_branch.add(f"{meta_item.key} = {meta_item.value}")
+    for meta_item in rule.meta:
+        if hasattr(meta_item, "key"):
+            meta_branch.add(f"{meta_item.key} = {meta_item.value}")
 
 
 def _add_strings_to_rule(rule_branch: Tree, rule: Any) -> None:

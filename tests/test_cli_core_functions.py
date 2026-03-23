@@ -158,8 +158,14 @@ class TestCLIParsingFunctions:
         assert ast is not None
         assert len(ast.rules) == 2
         # Check that modifiers are preserved
-        assert "private" in ast.rules[0].modifiers or ast.rules[0].name == "private_test"
-        assert "global" in ast.rules[1].modifiers or ast.rules[1].name == "global_test"
+        assert (
+            any(str(m) == "private" for m in ast.rules[0].modifiers)
+            or ast.rules[0].name == "private_test"
+        )
+        assert (
+            any(str(m) == "global" for m in ast.rules[1].modifiers)
+            or ast.rules[1].name == "global_test"
+        )
 
     def test_parse_rule_with_tags(self) -> None:
         """Test parsing rule with multiple tags."""

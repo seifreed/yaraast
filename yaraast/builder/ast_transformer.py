@@ -36,7 +36,7 @@ class CloneTransformer:
             name=rule.name,
             modifiers=rule.modifiers.copy(),
             tags=[Tag(name=tag.name) for tag in rule.tags],
-            meta=rule.meta.copy(),
+            meta=[deepcopy(m) for m in rule.meta],
             strings=[CloneTransformer.clone(s) for s in rule.strings],
             condition=(CloneTransformer.clone(rule.condition) if rule.condition else None),
         )
@@ -96,13 +96,18 @@ class RuleTransformer:
 
     def add_modifier(self, modifier: str) -> RuleTransformer:
         """Add a modifier to the rule."""
-        if modifier not in self.rule.modifiers:
-            self.rule.modifiers.append(modifier)
+        if not any(str(m) == modifier for m in self.rule.modifiers):
+            try:
+                from yaraast.ast.modifiers import RuleModifier
+
+                self.rule.modifiers.append(RuleModifier.from_string(modifier))
+            except ValueError:
+                self.rule.modifiers.append(modifier)
         return self
 
     def remove_modifier(self, modifier: str) -> RuleTransformer:
         """Remove a modifier from the rule."""
-        self.rule.modifiers = [m for m in self.rule.modifiers if m != modifier]
+        self.rule.modifiers = [m for m in self.rule.modifiers if str(m) != modifier]
         return self
 
     def make_private(self) -> RuleTransformer:
@@ -119,14 +124,21 @@ class RuleTransformer:
 
     def add_meta(self, key: str, value: str | int | bool) -> RuleTransformer:
         """Add metadata."""
-        if isinstance(self.rule.meta, dict):
-            self.rule.meta[key] = value
+        from yaraast.ast.modifiers import MetaEntry
+
+        # Update existing entry or append new one
+        for entry in self.rule.meta:
+            if hasattr(entry, "key") and entry.key == key:
+                entry.value = value
+                return self
+        self.rule.meta.append(MetaEntry.from_key_value(key, value))
         return self
 
     def remove_meta(self, key: str) -> RuleTransformer:
         """Remove metadata."""
-        if isinstance(self.rule.meta, dict) and key in self.rule.meta:
-            del self.rule.meta[key]
+        self.rule.meta = [
+            entry for entry in self.rule.meta if not (hasattr(entry, "key") and entry.key == key)
+        ]
         return self
 
     def set_author(self, author: str) -> RuleTransformer:
@@ -352,7 +364,7 @@ class YaraFileTransformer:
 
     def filter_by_modifier(self, modifier: str) -> YaraFileTransformer:
         """Filter rules that have a specific modifier."""
-        return self.filter_rules(lambda rule: modifier in rule.modifiers)
+        return self.filter_rules(lambda rule: any(str(m) == modifier for m in rule.modifiers))
 
     def build(self) -> YaraFile:
         """Build the transformed YARA file."""

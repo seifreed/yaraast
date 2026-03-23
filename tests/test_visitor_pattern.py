@@ -238,7 +238,9 @@ class TestVisitorPatternAdvanced:
             def visit_rule(self, node):
                 if node.meta:
                     self.meta_data[node.name] = (
-                        dict(node.meta) if isinstance(node.meta, dict) else {}
+                        {getattr(m, "key", ""): getattr(m, "value", "") for m in node.meta}
+                        if node.meta
+                        else {}
                     )
                 super().visit_rule(node)
 

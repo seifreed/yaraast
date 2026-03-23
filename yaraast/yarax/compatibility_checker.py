@@ -92,16 +92,9 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
 
         # Visit rule components
         # Handle meta as either dict or list
-        if isinstance(node.meta, dict):
-            # Meta is a dictionary, check values
-            for _key, _value in node.meta.items():
-                # Check meta values directly
-                pass
-        elif isinstance(node.meta, list):
-            # Meta is a list of Meta objects
-            for meta in node.meta:
-                if hasattr(meta, "accept"):
-                    self.visit(meta)
+        for meta in node.meta:
+            if hasattr(meta, "accept"):
+                self.visit(meta)
 
         for string_def in node.strings:
             self.visit(string_def)

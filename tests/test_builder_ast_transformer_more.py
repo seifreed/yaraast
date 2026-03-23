@@ -52,7 +52,7 @@ def test_rule_transformer_renames_and_modifies() -> None:
 
     assert transformed.name == "pre_r1_suf"
     assert any(t.name == "new" for t in transformed.tags)
-    assert "private" in transformed.modifiers
+    assert any(str(m) == "private" for m in transformed.modifiers)
     assert transformed.strings[0].identifier == "$b"
 
 
