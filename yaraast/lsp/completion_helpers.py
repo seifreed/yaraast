@@ -313,69 +313,81 @@ def build_string_modifier_completions(
 def build_condition_completions(text: str, keywords: list[str]) -> list[CompletionItem]:
     """Build completions relevant to condition context."""
     items: list[CompletionItem] = []
+    ast = None
 
     try:
         ast = parse_source(text)
         if not ast:
             raise ValueError("Failed to parse")
-
-        for rule in ast.rules:
-            for string_def in rule.strings:
-                identifier = string_def.identifier
-                items.append(
-                    CompletionItem(
-                        label=identifier,
-                        kind=CompletionItemKind.Variable,
-                        detail="String identifier",
-                        insert_text=identifier,
-                    )
-                )
-
-                if identifier.startswith("$"):
-                    base_name = identifier[1:]
-                    items.extend(
-                        [
-                            CompletionItem(
-                                label=f"#{base_name}",
-                                kind=CompletionItemKind.Variable,
-                                detail="String count",
-                                insert_text=f"#{base_name}",
-                            ),
-                            CompletionItem(
-                                label=f"@{base_name}",
-                                kind=CompletionItemKind.Variable,
-                                detail="String offset",
-                                insert_text=f"@{base_name}",
-                            ),
-                            CompletionItem(
-                                label=f"!{base_name}",
-                                kind=CompletionItemKind.Variable,
-                                detail="String length",
-                                insert_text=f"!{base_name}",
-                            ),
-                        ]
-                    )
+        items.extend(_string_identifier_completions(ast))
     except Exception:
         logger.debug("Operation failed in %s", __name__, exc_info=True)
 
-    # Also extract loop variables from for-expressions in condition
     try:
         if ast:
-            for rule in ast.rules:
-                if rule.condition is not None:
-                    for var_name in _extract_loop_variables(rule.condition):
-                        items.append(
-                            CompletionItem(
-                                label=var_name,
-                                kind=CompletionItemKind.Variable,
-                                detail="Loop variable",
-                                insert_text=var_name,
-                            )
-                        )
+            items.extend(_loop_variable_completions(ast))
     except Exception:
         logger.debug("Operation failed in %s", __name__, exc_info=True)
 
     items.extend(build_keyword_completions(keywords))
+    return items
+
+
+def _string_identifier_completions(ast: Any) -> list[CompletionItem]:
+    """Build completions for string identifiers defined in the rule."""
+    items: list[CompletionItem] = []
+    for rule in ast.rules:
+        for string_def in rule.strings:
+            identifier = string_def.identifier
+            items.append(
+                CompletionItem(
+                    label=identifier,
+                    kind=CompletionItemKind.Variable,
+                    detail="String identifier",
+                    insert_text=identifier,
+                )
+            )
+            if identifier.startswith("$"):
+                base_name = identifier[1:]
+                items.extend(
+                    [
+                        CompletionItem(
+                            label=f"#{base_name}",
+                            kind=CompletionItemKind.Variable,
+                            detail="String count",
+                            insert_text=f"#{base_name}",
+                        ),
+                        CompletionItem(
+                            label=f"@{base_name}",
+                            kind=CompletionItemKind.Variable,
+                            detail="String offset",
+                            insert_text=f"@{base_name}",
+                        ),
+                        CompletionItem(
+                            label=f"!{base_name}",
+                            kind=CompletionItemKind.Variable,
+                            detail="String length",
+                            insert_text=f"!{base_name}",
+                        ),
+                    ]
+                )
+    return items
+
+
+def _loop_variable_completions(ast: Any) -> list[CompletionItem]:
+    """Build completions for loop variables from for-expressions in conditions."""
+    items: list[CompletionItem] = []
+    for rule in ast.rules:
+        if rule.condition is not None:
+            for var_name in _extract_loop_variables(rule.condition):
+                items.append(
+                    CompletionItem(
+                        label=var_name,
+                        kind=CompletionItemKind.Variable,
+                        detail="Loop variable",
+                        insert_text=var_name,
+                    )
+                )
     return items
 
 

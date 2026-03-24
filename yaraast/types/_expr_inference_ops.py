@@ -67,23 +67,26 @@ def infer_binary_expression(ctx, node: BinaryExpression):
     right_type = ctx.visit(node.right)
 
     if node.operator in ["and", "or"]:
-        if not isinstance(left_type, BooleanType | StringIdentifierType):
-            ctx.errors.append(f"Left operand of '{node.operator}' must be boolean, got {left_type}")
-        if not isinstance(right_type, BooleanType | StringIdentifierType):
-            ctx.errors.append(
-                f"Right operand of '{node.operator}' must be boolean, got {right_type}"
-            )
-        return BooleanType()
+        return _infer_logical_op(ctx, node.operator, left_type, right_type)
 
     if node.operator in ["<", "<=", ">", ">=", "==", "!="]:
-        if (left_type.is_numeric() and right_type.is_numeric()) or left_type.is_compatible_with(
-            right_type
-        ):
-            return BooleanType()
-        ctx.errors.append(f"Incompatible types for '{node.operator}': {left_type} and {right_type}")
-        return BooleanType()
+        return _infer_comparison_op(ctx, node.operator, left_type, right_type)
 
-    if node.operator in [
+    if node.operator in _STRING_OPS:
+        return _infer_string_op(ctx, node.operator, left_type, right_type)
+
+    if node.operator in ["+", "-", "*", "/", "%"]:
+        return _infer_arithmetic_op(ctx, node.operator, left_type, right_type)
+
+    if node.operator in ["&", "|", "^", "<<", ">>"]:
+        return _infer_bitwise_op(ctx, node.operator, left_type, right_type)
+
+    ctx.errors.append(f"Unknown binary operator: {node.operator}")
+    return UnknownType()
+
+
+_STRING_OPS = frozenset(
+    [
         "contains",
         "matches",
         "startswith",
@@ -92,55 +95,65 @@ def infer_binary_expression(ctx, node: BinaryExpression):
         "istartswith",
         "iendswith",
         "iequals",
-    ]:
-        if node.operator == "contains" and isinstance(left_type, ArrayType):
-            if not left_type.element_type.is_compatible_with(right_type):
-                ctx.errors.append(
-                    f"Array element type {left_type.element_type} not compatible with {right_type}",
-                )
-            return BooleanType()
+    ]
+)
 
-        if not left_type.is_string_like():
+
+def _infer_logical_op(ctx, operator, left_type, right_type):
+    if not isinstance(left_type, BooleanType | StringIdentifierType):
+        ctx.errors.append(f"Left operand of '{operator}' must be boolean, got {left_type}")
+    if not isinstance(right_type, BooleanType | StringIdentifierType):
+        ctx.errors.append(f"Right operand of '{operator}' must be boolean, got {right_type}")
+    return BooleanType()
+
+
+def _infer_comparison_op(ctx, operator, left_type, right_type):
+    if (left_type.is_numeric() and right_type.is_numeric()) or left_type.is_compatible_with(
+        right_type
+    ):
+        return BooleanType()
+    ctx.errors.append(f"Incompatible types for '{operator}': {left_type} and {right_type}")
+    return BooleanType()
+
+
+def _infer_string_op(ctx, operator, left_type, right_type):
+    if operator == "contains" and isinstance(left_type, ArrayType):
+        if not left_type.element_type.is_compatible_with(right_type):
             ctx.errors.append(
-                f"Left operand of '{node.operator}' must be string-like or array, got {left_type}",
-            )
-        if node.operator == "matches":
-            if not isinstance(right_type, StringType | RegexType):
-                ctx.errors.append(
-                    f"Right operand of 'matches' must be string or regex, got {right_type}"
-                )
-        elif not isinstance(right_type, StringType):
-            ctx.errors.append(
-                f"Right operand of '{node.operator}' must be string, got {right_type}"
+                f"Array element type {left_type.element_type} not compatible with {right_type}",
             )
         return BooleanType()
 
-    if node.operator in ["+", "-", "*", "/", "%"]:
-        if not left_type.is_numeric():
-            ctx.errors.append(f"Left operand of '{node.operator}' must be numeric, got {left_type}")
-        if not right_type.is_numeric():
+    if not left_type.is_string_like():
+        ctx.errors.append(
+            f"Left operand of '{operator}' must be string-like or array, got {left_type}",
+        )
+    if operator == "matches":
+        if not isinstance(right_type, StringType | RegexType):
             ctx.errors.append(
-                f"Right operand of '{node.operator}' must be numeric, got {right_type}"
+                f"Right operand of 'matches' must be string or regex, got {right_type}"
             )
-        if (
-            node.operator == "/"
-            or isinstance(left_type, DoubleType)
-            or isinstance(right_type, DoubleType)
-        ):
-            return DoubleType()
-        return IntegerType()
+    elif not isinstance(right_type, StringType):
+        ctx.errors.append(f"Right operand of '{operator}' must be string, got {right_type}")
+    return BooleanType()
 
-    if node.operator in ["&", "|", "^", "<<", ">>"]:
-        if not isinstance(left_type, IntegerType):
-            ctx.errors.append(f"Left operand of '{node.operator}' must be integer, got {left_type}")
-        if not isinstance(right_type, IntegerType):
-            ctx.errors.append(
-                f"Right operand of '{node.operator}' must be integer, got {right_type}"
-            )
-        return IntegerType()
 
-    ctx.errors.append(f"Unknown binary operator: {node.operator}")
-    return UnknownType()
+def _infer_arithmetic_op(ctx, operator, left_type, right_type):
+    if not left_type.is_numeric():
+        ctx.errors.append(f"Left operand of '{operator}' must be numeric, got {left_type}")
+    if not right_type.is_numeric():
+        ctx.errors.append(f"Right operand of '{operator}' must be numeric, got {right_type}")
+    if operator == "/" or isinstance(left_type, DoubleType) or isinstance(right_type, DoubleType):
+        return DoubleType()
+    return IntegerType()
+
+
+def _infer_bitwise_op(ctx, operator, left_type, right_type):
+    if not isinstance(left_type, IntegerType):
+        ctx.errors.append(f"Left operand of '{operator}' must be integer, got {left_type}")
+    if not isinstance(right_type, IntegerType):
+        ctx.errors.append(f"Right operand of '{operator}' must be integer, got {right_type}")
+    return IntegerType()
 
 
 def infer_unary_expression(ctx, node: UnaryExpression):

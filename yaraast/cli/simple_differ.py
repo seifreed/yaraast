@@ -306,63 +306,60 @@ class SimpleASTDiffer(SimpleDiffer):
         files2 = {p.relative_to(dir2) for p in dir2.glob("**/*.yar")}
 
         # Files in both directories
-        common_files = files1 & files2
-        for file in common_files:
-            file1 = dir1 / file
-            file2 = dir2 / file
-            results[str(file)] = self.diff_files(file1, file2)
+        for file in files1 & files2:
+            results[str(file)] = self.diff_files(dir1 / file, dir2 / file)
 
         # Files only in dir1 (removed)
-        removed_files = files1 - files2
-        for file in removed_files:
-            file1 = dir1 / file
-            with open(file1) as f:
-                content = f.read()
-
-            # Create a diff showing all lines as removed
-            lines = content.splitlines()
-            diff_lines = [
-                DiffLine(
-                    type=DiffType.REMOVE,
-                    line_num=i + 1,
-                    content=f"- {line}",
-                    old_content=line,
-                )
-                for i, line in enumerate(lines)
-            ]
-
-            results[str(file)] = DiffResult(
-                has_changes=True,
-                lines=diff_lines,
-                summary={"added": 0, "removed": len(lines), "modified": 0},
-            )
+        for file in files1 - files2:
+            results[str(file)] = _diff_result_for_removed_file(dir1 / file)
 
         # Files only in dir2 (added)
-        added_files = files2 - files1
-        for file in added_files:
-            file2 = dir2 / file
-            with open(file2) as f:
-                content = f.read()
-
-            # Create a diff showing all lines as added
-            lines = content.splitlines()
-            diff_lines = [
-                DiffLine(
-                    type=DiffType.ADD,
-                    line_num=i + 1,
-                    content=f"+ {line}",
-                    new_content=line,
-                )
-                for i, line in enumerate(lines)
-            ]
-
-            results[str(file)] = DiffResult(
-                has_changes=True,
-                lines=diff_lines,
-                summary={"added": len(lines), "removed": 0, "modified": 0},
-            )
+        for file in files2 - files1:
+            results[str(file)] = _diff_result_for_added_file(dir2 / file)
 
         return results
+
+
+def _diff_result_for_removed_file(file_path: Path) -> DiffResult:
+    """Create a DiffResult showing all lines of a file as removed."""
+    with open(file_path) as f:
+        content = f.read()
+    lines = content.splitlines()
+    diff_lines = [
+        DiffLine(
+            type=DiffType.REMOVE,
+            line_num=i + 1,
+            content=f"- {line}",
+            old_content=line,
+        )
+        for i, line in enumerate(lines)
+    ]
+    return DiffResult(
+        has_changes=True,
+        lines=diff_lines,
+        summary={"added": 0, "removed": len(lines), "modified": 0},
+    )
+
+
+def _diff_result_for_added_file(file_path: Path) -> DiffResult:
+    """Create a DiffResult showing all lines of a file as added."""
+    with open(file_path) as f:
+        content = f.read()
+    lines = content.splitlines()
+    diff_lines = [
+        DiffLine(
+            type=DiffType.ADD,
+            line_num=i + 1,
+            content=f"+ {line}",
+            new_content=line,
+        )
+        for i, line in enumerate(lines)
+    ]
+    return DiffResult(
+        has_changes=True,
+        lines=diff_lines,
+        summary={"added": len(lines), "removed": 0, "modified": 0},
+    )
 
 
 def diff_lines(lines1: list[str], lines2: list[str]) -> list[DiffLine]:

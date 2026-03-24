@@ -164,38 +164,19 @@ class ASTBenchmarker:
                 content = f.read()
 
             file_size = len(content.encode())
-
-            # Test roundtrip
-            times = []
-            for _ in range(iterations):
-                start = time.perf_counter()
-
-                parser = Parser(content)
-                ast = parser.parse()
-
-                generator = CodeGenerator()
-                generator.generate(ast)
-
-                end = time.perf_counter()
-                times.append(end - start)
-
-            avg_time = statistics.mean(times)
+            avg_time = self._time_roundtrip(content, iterations)
 
             # Parse once more for statistics
-            # Parser will be instantiated with content
             parser = Parser(content)
             ast = parser.parse()
-            rules_count = len(ast.rules)
-            strings_count = sum(len(rule.strings) for rule in ast.rules)
-            ast_nodes = self._count_ast_nodes(ast)
 
             result = BenchmarkResult(
                 operation="roundtrip",
                 file_size=file_size,
                 execution_time=avg_time,
-                rules_count=rules_count,
-                strings_count=strings_count,
-                ast_nodes=ast_nodes,
+                rules_count=len(ast.rules),
+                strings_count=sum(len(rule.strings) for rule in ast.rules),
+                ast_nodes=self._count_ast_nodes(ast),
                 success=True,
             )
 
@@ -217,6 +198,20 @@ class ASTBenchmarker:
             self.results.append(result)
 
         return results
+
+    @staticmethod
+    def _time_roundtrip(content: str, iterations: int) -> float:
+        """Run parse->generate roundtrip iterations and return average time."""
+        times = []
+        for _ in range(iterations):
+            start = time.perf_counter()
+            parser = Parser(content)
+            ast = parser.parse()
+            generator = CodeGenerator()
+            generator.generate(ast)
+            end = time.perf_counter()
+            times.append(end - start)
+        return statistics.mean(times)
 
     def _count_ast_nodes(self, ast: YaraFile) -> int:
         """Count total AST nodes."""

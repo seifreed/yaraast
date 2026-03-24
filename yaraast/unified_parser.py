@@ -10,12 +10,10 @@ from pathlib import Path
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include
-from yaraast.dialects import YaraDialect, detect_dialect
+from yaraast.dialects import DialectRegistry, YaraDialect, detect_dialect
 from yaraast.parser.parser import Parser as YaraParser
 from yaraast.performance.streaming_parser import StreamingParser
 from yaraast.yaral.ast_nodes import YaraLFile
-from yaraast.yaral.parser import YaraLParser
-from yaraast.yarax.parser import YaraXParser
 
 
 class UnifiedParser:
@@ -61,11 +59,11 @@ class UnifiedParser:
             AST representation appropriate for the dialect
 
         """
-        if self.dialect == YaraDialect.YARA_L:
-            return YaraLParser(self.text).parse()
-        if self.dialect == YaraDialect.YARA_X:
-            return YaraXParser(self.text).parse()
-        # Standard YARA
+        factory = DialectRegistry.get_parser_factory(self.dialect)
+        if factory:
+            result: YaraFile | YaraLFile = factory(self.text)
+            return result
+        # Standard YARA (default fallback)
         return YaraParser(self.text).parse()
 
     def get_dialect(self) -> YaraDialect:
@@ -247,8 +245,8 @@ class UnifiedParser:
             # Use StreamingParser for very large standard YARA files
             imports, includes = cls._extract_preamble_fast(file_path_obj)
 
-            def _dialect_factory(text, d):
-                return cls(text, d).parse()
+            def _dialect_factory(text, dialect):
+                return cls(text, dialect).parse()
 
             streaming_parser = StreamingParser(dialect_parser_factory=_dialect_factory)
             rules = list(streaming_parser.parse_file(file_path_obj))

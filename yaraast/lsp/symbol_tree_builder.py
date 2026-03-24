@@ -143,33 +143,7 @@ def _append_meta_section(
     )
     if meta_line < 0:
         return
-    meta_children: list[DocumentSymbol] = []
-    meta_items = doc.get_rule_meta_items(rule_name)
-    if not meta_items and hasattr(rule.meta, "entries"):
-        meta_items = [(entry.key, entry.value) for entry in getattr(rule.meta, "entries", [])]
-    for key, value in cast(Any, meta_items):
-        meta_record = doc.find_symbol_record("meta", key, rule_name)
-        key_line = (
-            meta_record.range.start.line
-            if meta_record is not None
-            else find_line_containing(lines, f"{key} =", meta_line)
-        )
-        key_range = (
-            meta_record.range
-            if meta_record is not None
-            else (
-                make_range(key_line, 0, key_line, len(lines[key_line])) if key_line >= 0 else None
-            )
-        )
-        if key_line >= 0 and key_range is not None:
-            meta_children.append(
-                DocumentSymbol(
-                    name=f"{key} = {value}",
-                    kind=SymbolKind.Property,
-                    range=key_range,
-                    selection_range=key_range,
-                )
-            )
+    meta_children = _build_meta_children(doc, lines, rule, rule_name, meta_line)
     if meta_children:
         rule_symbol.children.append(
             DocumentSymbol(
@@ -188,6 +162,40 @@ def _append_meta_section(
                 children=meta_children,
             )
         )
+
+
+def _build_meta_children(
+    doc, lines: list[str], rule: Any, rule_name: str, meta_line: int
+) -> list[DocumentSymbol]:
+    """Build DocumentSymbol children for each meta key-value pair."""
+    children: list[DocumentSymbol] = []
+    meta_items = doc.get_rule_meta_items(rule_name)
+    if not meta_items and hasattr(rule.meta, "entries"):
+        meta_items = [(entry.key, entry.value) for entry in getattr(rule.meta, "entries", [])]
+    for key, value in cast(Any, meta_items):
+        meta_record = doc.find_symbol_record("meta", key, rule_name)
+        key_line = (
+            meta_record.range.start.line
+            if meta_record is not None
+            else find_line_containing(lines, f"{key} =", meta_line)
+        )
+        key_range = (
+            meta_record.range
+            if meta_record is not None
+            else (
+                make_range(key_line, 0, key_line, len(lines[key_line])) if key_line >= 0 else None
+            )
+        )
+        if key_line >= 0 and key_range is not None:
+            children.append(
+                DocumentSymbol(
+                    name=f"{key} = {value}",
+                    kind=SymbolKind.Property,
+                    range=key_range,
+                    selection_range=key_range,
+                )
+            )
+    return children
 
 
 def _append_strings_section(

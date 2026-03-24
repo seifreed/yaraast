@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, cast
+from typing import Any
 
 from lsprotocol.types import Hover, MarkupContent, MarkupKind, Position, Range
 
@@ -234,66 +234,67 @@ class HoverProvider:
         word_range: Range,
     ) -> Hover | None:
         """Get hover for a module member (field or function)."""
+        member_info = self._resolve_member_info(doc_or_module, qualified_or_member)
+        if not member_info:
+            return None
+        return self._render_member_hover(member_info, word_range)
+
+    def _resolve_member_info(
+        self,
+        doc_or_module: DocumentContext | str,
+        qualified_or_member: str,
+    ) -> dict[str, Any] | None:
+        """Resolve module member info from a DocumentContext or raw module name."""
         if isinstance(doc_or_module, DocumentContext):
-            member_info = doc_or_module.get_module_member_info(qualified_or_member)
-        else:
-            module_name = str(doc_or_module)
-            member_name = qualified_or_member
-            member_info = None
-            module_def = self.module_loader.get_module(module_name)
-            if module_def:
-                if member_name in module_def.functions:
-                    func_def = module_def.functions[member_name]
-                    member_info = {
-                        "module": module_name,
-                        "member": member_name,
-                        "kind": "function",
-                        "parameters": list(getattr(func_def, "parameters", [])),
-                        "return_type": getattr(func_def, "return_type", "unknown"),
-                        "description": getattr(func_def, "description", None),
-                    }
-                else:
-                    fields = getattr(module_def, "fields", None) or {}
-                    if member_name in fields:
-                        field_def = fields[member_name]
-                        member_info = {
-                            "module": module_name,
-                            "member": member_name,
-                            "kind": "field",
-                            "type": getattr(field_def, "type", "unknown"),
-                            "description": getattr(field_def, "description", None),
-                        }
+            return doc_or_module.get_module_member_info(qualified_or_member)
 
-        if member_info:
-            module_name = str(member_info["module"])
-            member_name = str(member_info["member"])
-            if member_info["kind"] == "function":
-                params = ", ".join(
-                    f"{p[0]}: {p[1]}"
-                    for p in cast(list[tuple[str, Any]], member_info["parameters"])
-                )
-                signature = f"{module_name}.{member_name}({params}) -> {member_info['return_type']}"
-                value = f"**{member_name}** (function)\n\n```yara\n{signature}\n```"
-                if member_info.get("description"):
-                    value += f"\n\n{member_info['description']}"
+        module_name = str(doc_or_module)
+        member_name = qualified_or_member
+        module_def = self.module_loader.get_module(module_name)
+        if not module_def:
+            return None
 
-                return Hover(
-                    contents=render_module_function_hover(member_info, word_range).contents,
-                    range=word_range,
-                )
+        if member_name in module_def.functions:
+            func_def = module_def.functions[member_name]
+            return {
+                "module": module_name,
+                "member": member_name,
+                "kind": "function",
+                "parameters": list(getattr(func_def, "parameters", [])),
+                "return_type": getattr(func_def, "return_type", "unknown"),
+                "description": getattr(func_def, "description", None),
+            }
 
-            if member_info["kind"] == "field":
-                value = (
-                    f"**{member_name}** (field)\n\n```yara\n"
-                    f"{module_name}.{member_name}: {member_info['type']}\n```"
-                )
-                if member_info.get("description"):
-                    value += f"\n\n{member_info['description']}"
+        fields = getattr(module_def, "fields", None) or {}
+        if member_name in fields:
+            field_def = fields[member_name]
+            return {
+                "module": module_name,
+                "member": member_name,
+                "kind": "field",
+                "type": getattr(field_def, "type", "unknown"),
+                "description": getattr(field_def, "description", None),
+            }
 
-                return Hover(
-                    contents=render_module_field_hover(member_info, word_range).contents,
-                    range=word_range,
-                )
+        return None
+
+    def _render_member_hover(
+        self,
+        member_info: dict[str, Any],
+        word_range: Range,
+    ) -> Hover | None:
+        """Render a Hover for a resolved module member."""
+        if member_info["kind"] == "function":
+            return Hover(
+                contents=render_module_function_hover(member_info, word_range).contents,
+                range=word_range,
+            )
+
+        if member_info["kind"] == "field":
+            return Hover(
+                contents=render_module_field_hover(member_info, word_range).contents,
+                range=word_range,
+            )
 
         return None
 

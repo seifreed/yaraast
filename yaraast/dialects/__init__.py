@@ -1,7 +1,12 @@
 """YARA dialect support for YARA, YARA-X, and YARA-L."""
 
+from __future__ import annotations
+
 import re
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum, auto
+from typing import Any
 
 
 class YaraDialect(Enum):
@@ -76,6 +81,118 @@ def _strip_string_literals(content: str) -> str:
     return "".join(result)
 
 
+# -- Pattern lists for dialect detection --
+
+# YARA-L specific structural keywords (high confidence indicators)
+# Match these as section headers at the start of a line (possibly after whitespace)
+# to avoid false positives from strings containing these patterns
+yaral_structural_patterns = [
+    r"^\s*events\s*:",
+    r"^\s*match\s*:",
+    r"^\s*outcome\s*:",
+]
+
+# YARA-L UDM (Unified Data Model) field patterns
+# These start with $ followed by event variable and UDM field path
+# Example: $e.metadata.event_type, $e1.principal.hostname
+yaral_udm_patterns = [
+    r"\$\w+\.metadata\.event_type",
+    r"\$\w+\.principal\.",
+    r"\$\w+\.target\.",
+    r"\$\w+\.udm\.",
+]
+
+# YARA-L aggregation functions (unique to YARA-L)
+yaral_aggregation_patterns = [
+    r"\bcount_distinct\s*\(",
+    r"\barray_distinct\s*\(",
+    r"\bearliest\s*\(",
+    r"\blatest\s*\(",
+]
+
+# YARA-X specific features supported by this codebase.
+# Keep these patterns narrow to avoid false positives in standard YARA.
+yarax_patterns = [
+    r"\bwith\s+\$\w+\s*=",
+    r"\blambda(?:\s+\w+(?:\s*,\s*\w+)*)?\s*:",
+    r"\bmatch\s+[^{}]+\{[^{}]*=>",
+    r"\[[^\]]+\bfor\s+\w+\s+in\s+[^\]]+\]",
+    r"\{[^{}:]+:[^{}]+\bfor\s+\w+(?:\s*,\s*\w+)?\s+in\s+[^{}]+\}",
+]
+
+
+# -- Registry --
+
+
+@dataclass
+class DialectSpec:
+    """Registration spec for a YARA dialect."""
+
+    dialect: YaraDialect
+    parser_factory: Callable[[str], Any]  # text -> AST (YaraFile | YaraLFile)
+    detection_patterns: list[tuple[str, re.RegexFlag]]  # (regex, re_flags) pairs
+    priority: int = 0  # higher = checked first
+
+
+class DialectRegistry:
+    """Registry allowing dialect plugins without modifying UnifiedParser."""
+
+    _specs: list[DialectSpec] = []
+
+    @classmethod
+    def register(cls, spec: DialectSpec) -> None:
+        cls._specs.append(spec)
+        cls._specs.sort(key=lambda s: -s.priority)
+
+    @classmethod
+    def detect(cls, content: str) -> YaraDialect:
+        stripped = _strip_string_literals(content)
+        for spec in cls._specs:
+            for pattern, flags in spec.detection_patterns:
+                if re.search(pattern, stripped, flags):
+                    return spec.dialect
+        return YaraDialect.YARA
+
+    @classmethod
+    def get_parser_factory(cls, dialect: YaraDialect) -> Callable[[str], Any] | None:
+        for spec in cls._specs:
+            if spec.dialect == dialect:
+                return spec.parser_factory
+        return None
+
+    @classmethod
+    def clear(cls) -> None:
+        cls._specs.clear()
+
+
+def _register_builtins() -> None:
+    from yaraast.yaral.parser import YaraLParser
+    from yaraast.yarax.parser import YaraXParser
+
+    DialectRegistry.register(
+        DialectSpec(
+            dialect=YaraDialect.YARA_L,
+            parser_factory=lambda text: YaraLParser(text).parse(),
+            detection_patterns=[
+                (p, re.MULTILINE | re.IGNORECASE) for p in yaral_structural_patterns
+            ]
+            + [(p, re.IGNORECASE) for p in yaral_udm_patterns + yaral_aggregation_patterns],
+            priority=10,
+        )
+    )
+    DialectRegistry.register(
+        DialectSpec(
+            dialect=YaraDialect.YARA_X,
+            parser_factory=lambda text: YaraXParser(text).parse(),
+            detection_patterns=[(p, re.IGNORECASE | re.DOTALL) for p in yarax_patterns],
+            priority=5,
+        )
+    )
+
+
+_register_builtins()
+
+
 def detect_dialect(content: str) -> YaraDialect:
     """Detect the YARA dialect from content.
 
@@ -86,69 +203,7 @@ def detect_dialect(content: str) -> YaraDialect:
         The detected YARA dialect
 
     """
-    # Strip string literals to avoid false positives from patterns inside strings
-    stripped = _strip_string_literals(content)
-
-    # YARA-L specific structural keywords (high confidence indicators)
-    # Match these as section headers at the start of a line (possibly after whitespace)
-    # to avoid false positives from strings containing these patterns
-    yaral_structural_patterns = [
-        r"^\s*events\s*:",
-        r"^\s*match\s*:",
-        r"^\s*outcome\s*:",
-    ]
-
-    # YARA-L UDM (Unified Data Model) field patterns
-    # These start with $ followed by event variable and UDM field path
-    # Example: $e.metadata.event_type, $e1.principal.hostname
-    yaral_udm_patterns = [
-        r"\$\w+\.metadata\.event_type",
-        r"\$\w+\.principal\.",
-        r"\$\w+\.target\.",
-        r"\$\w+\.udm\.",
-    ]
-
-    # YARA-L aggregation functions (unique to YARA-L)
-    yaral_aggregation_patterns = [
-        r"\bcount_distinct\s*\(",
-        r"\barray_distinct\s*\(",
-        r"\bearliest\s*\(",
-        r"\blatest\s*\(",
-    ]
-
-    # YARA-X specific features supported by this codebase.
-    # Keep these patterns narrow to avoid false positives in standard YARA.
-    yarax_patterns = [
-        r"\bwith\s+\$\w+\s*=",
-        r"\blambda(?:\s+\w+(?:\s*,\s*\w+)*)?\s*:",
-        r"\bmatch\s+[^{}]+\{[^{}]*=>",
-        r"\[[^\]]+\bfor\s+\w+\s+in\s+[^\]]+\]",
-        r"\{[^{}:]+:[^{}]+\bfor\s+\w+(?:\s*,\s*\w+)?\s+in\s+[^{}]+\}",
-    ]
-
-    # Check for YARA-L structural indicators (highest priority)
-    # Use MULTILINE flag so ^ matches at start of each line
-    for pattern in yaral_structural_patterns:
-        if re.search(pattern, stripped, re.MULTILINE | re.IGNORECASE):
-            return YaraDialect.YARA_L
-
-    # Check for YARA-L UDM patterns
-    for pattern in yaral_udm_patterns:
-        if re.search(pattern, stripped, re.IGNORECASE):
-            return YaraDialect.YARA_L
-
-    # Check for YARA-L aggregation functions
-    for pattern in yaral_aggregation_patterns:
-        if re.search(pattern, stripped, re.IGNORECASE):
-            return YaraDialect.YARA_L
-
-    # Check for YARA-X indicators
-    for pattern in yarax_patterns:
-        if re.search(pattern, stripped, re.IGNORECASE | re.DOTALL):
-            return YaraDialect.YARA_X
-
-    # Default to standard YARA
-    return YaraDialect.YARA
+    return DialectRegistry.detect(content)
 
 
-__all__ = ["YaraDialect", "detect_dialect"]
+__all__ = ["DialectRegistry", "DialectSpec", "YaraDialect", "detect_dialect"]
