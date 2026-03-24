@@ -80,31 +80,10 @@ class UnifiedParser:
 
     @classmethod
     def _extract_preamble_fast(cls, file_path: Path) -> tuple[list[Import], list[Include]]:
-        """Fast extraction of imports and includes without full parsing.
+        """Extract imports/includes from file preamble without full parsing.
 
-        Reads only the file preamble (before first rule) and extracts
-        import/include statements using lightweight regex-based parsing.
-        This provides O(k) performance where k is the number of preamble lines
-        (typically <50), avoiding the need to parse the entire file.
-
-        Supports:
-        - Standard imports: import "pe"
-        - Aliased imports: import "pe" as windows
-        - Include statements: include "rules.yar"
-        - Handles comments (// and /* */)
-        - Handles whitespace variations
-
-        Args:
-            file_path: Path to YARA file
-
-        Returns:
-            Tuple of (imports, includes) lists. Returns empty lists on error
-            to ensure graceful degradation if preamble parsing fails.
-
-        Performance: O(k) where k is number of import/include lines
-
-        Copyright (c) Marc Rivero López
-        Licensed under GPLv3
+        Reads lines before the first ``rule`` keyword using regex matching.
+        O(k) where k is the number of preamble lines. Returns empty lists on error.
         """
         imports: list[Import] = []
         includes: list[Include] = []
@@ -183,38 +162,21 @@ class UnifiedParser:
     ) -> YaraFile | YaraLFile:
         """Parse a file with automatic dialect detection.
 
-        By default, uses Traditional Parser which is faster and better for most cases.
-        StreamingParser is available but only recommended for very large files (100+ MB)
-        or when memory is extremely limited (<500 MB available).
-
-        Performance (18 MB file benchmark):
-        - Traditional Parser: 10s, 612 MB (RECOMMENDED - default)
-        - StreamingParser:    17s, 422 MB (73% slower, 31% less memory)
+        Uses traditional parser by default. StreamingParser activates for files
+        >100 MB (configurable via streaming_threshold_mb).
 
         Args:
-            file_path: Path to the YARA rule file (str or Path object)
+            file_path: Path to the YARA rule file
             dialect: Optional dialect to force (auto-detected if None)
-            force_streaming: Set to True to explicitly use StreamingParser.
-                           Only recommended for files >100 MB or severe memory constraints.
-            streaming_threshold_mb: File size threshold in MB for auto-streaming
-                                   (default: 100 MB). Files larger than this will
-                                   automatically use StreamingParser. Set to None
-                                   to use DEFAULT_STREAMING_THRESHOLD_MB (100 MB).
+            force_streaming: Force StreamingParser for memory-constrained environments
+            streaming_threshold_mb: File size threshold in MB (default: 100)
 
         Returns:
             Parsed AST (YaraFile or YaraLFile depending on dialect)
 
         Raises:
             FileNotFoundError: If the file does not exist
-            PermissionError: If the file cannot be read due to permissions
             OSError: If there is an error accessing the file
-
-        Examples:
-            # Normal usage (uses Traditional Parser for best performance)
-            >>> ast = UnifiedParser.parse_file("rules.yar")
-
-            # Explicit streaming for very large files
-            >>> ast = UnifiedParser.parse_file("huge.yar", force_streaming=True)
 
         """
         # Normalize to Path early for consistent handling

@@ -41,58 +41,26 @@ class CommentPreservingLexer(Lexer):
         i = 0
 
         while i < len(self.text):
-            # Check for line comment
             if i < len(self.text) - 1 and self.text[i : i + 2] == "//":
-                start_line = line_num
-                start_col = col_num
-                comment_text = "//"
-                i += 2
-                col_num += 2
-
-                # Read until end of line
-                while i < len(self.text) and self.text[i] != "\n":
-                    comment_text += self.text[i]
-                    i += 1
-                    col_num += 1
-
+                comment_text, i, col_num = self._read_line_comment_text(i, col_num)
                 if self.preserve_comments:
                     comment_tokens.append(
                         Token(
                             TokenType.COMMENT,
                             comment_text,
-                            start_line,
-                            start_col,
+                            line_num,
+                            col_num - len(comment_text),
                             len(comment_text),
                         )
                     )
-
-                # Replace comment with space to preserve positions
                 text_without_comments.append(" " * len(comment_text))
                 continue
 
-            # Check for block comment
             if i < len(self.text) - 1 and self.text[i : i + 2] == "/*":
-                start_line = line_num
-                start_col = col_num
-                comment_text = "/*"
-                i += 2
-                col_num += 2
-
-                # Read until */
-                while i < len(self.text):
-                    if self.text[i : i + 2] == "*/":
-                        comment_text += "*/"
-                        i += 2
-                        col_num += 2
-                        break
-                    if self.text[i] == "\n":
-                        line_num += 1
-                        col_num = 1
-                    else:
-                        col_num += 1
-                    comment_text += self.text[i]
-                    i += 1
-
+                start_line, start_col = line_num, col_num
+                comment_text, i, line_num, col_num = self._read_block_comment_text(
+                    i, line_num, col_num
+                )
                 if self.preserve_comments:
                     comment_tokens.append(
                         Token(
@@ -103,16 +71,12 @@ class CommentPreservingLexer(Lexer):
                             len(comment_text),
                         )
                     )
-
-                # Replace comment with spaces (preserving newlines for line tracking)
                 for c in comment_text:
                     text_without_comments.append(c if c == "\n" else " ")
                 continue
 
-            # Regular character
             text_without_comments.append(self.text[i])
             i += 1
-
             if self.text[i - 1] == "\n":
                 line_num += 1
                 col_num = 1
@@ -120,6 +84,37 @@ class CommentPreservingLexer(Lexer):
                 col_num += 1
 
         return comment_tokens, text_without_comments
+
+    def _read_line_comment_text(self, i: int, col: int) -> tuple[str, int, int]:
+        """Read a // comment. Returns (text, new_i, new_col)."""
+        comment = "//"
+        i += 2
+        col += 2
+        while i < len(self.text) and self.text[i] != "\n":
+            comment += self.text[i]
+            i += 1
+            col += 1
+        return comment, i, col
+
+    def _read_block_comment_text(self, i: int, line: int, col: int) -> tuple[str, int, int, int]:
+        """Read a /* */ comment. Returns (text, new_i, new_line, new_col)."""
+        comment = "/*"
+        i += 2
+        col += 2
+        while i < len(self.text):
+            if self.text[i : i + 2] == "*/":
+                comment += "*/"
+                i += 2
+                col += 2
+                break
+            if self.text[i] == "\n":
+                line += 1
+                col = 1
+            else:
+                col += 1
+            comment += self.text[i]
+            i += 1
+        return comment, i, line, col
 
     @staticmethod
     def _merge_comment_tokens(

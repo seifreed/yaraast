@@ -174,38 +174,44 @@ class EquivalenceTester:
         ast_diffs = self._compare_ast(original_ast, reparsed_ast)
         self._record_ast_differences(result, ast_diffs)
 
-        # Step 6: Compile both versions with libyara
-        orig_compilation = self.compiler.compile_source(original_code)
-        result.original_compiles = orig_compilation.success
-        if not orig_compilation.success:
-            result.compilation_errors.extend(orig_compilation.errors)
-
-        regen_compilation = self.compiler.compile_source(regenerated_code)
-        result.regenerated_compiles = regen_compilation.success
-        if not regen_compilation.success:
-            result.compilation_errors.extend(regen_compilation.errors)
-
-        # Step 7: If test data provided, compare scanning results
-        if test_data and orig_compilation.success and regen_compilation.success:
-            # Scan with both rule sets
-            orig_scan = self.scanner.scan_data(
-                orig_compilation.compiled_rules,
-                test_data,
-            )
-            regen_scan = self.scanner.scan_data(
-                regen_compilation.compiled_rules,
-                test_data,
-            )
-
-            # Compare scan results
-            scan_diffs = self._compare_scans(orig_scan, regen_scan)
-            self._record_scan_differences(result, scan_diffs)
-
-            # Step 8: Compare with evaluation API
-            eval_diffs = self._compare_evaluation(original_ast, reparsed_ast, test_data)
-            self._record_eval_differences(result, eval_diffs)
-
+        # Step 6-8: Compile, scan, and evaluate
+        self._compile_and_compare(
+            result,
+            original_code,
+            regenerated_code,
+            original_ast,
+            reparsed_ast,
+            test_data,
+        )
         return result
+
+    def _compile_and_compare(
+        self,
+        result,
+        original_code,
+        regenerated_code,
+        original_ast,
+        reparsed_ast,
+        test_data,
+    ) -> None:
+        """Compile both versions, scan test data, and compare evaluation results."""
+        orig_comp = self.compiler.compile_source(original_code)
+        result.original_compiles = orig_comp.success
+        if not orig_comp.success:
+            result.compilation_errors.extend(orig_comp.errors)
+
+        regen_comp = self.compiler.compile_source(regenerated_code)
+        result.regenerated_compiles = regen_comp.success
+        if not regen_comp.success:
+            result.compilation_errors.extend(regen_comp.errors)
+
+        if test_data and orig_comp.success and regen_comp.success:
+            orig_scan = self.scanner.scan_data(orig_comp.compiled_rules, test_data)
+            regen_scan = self.scanner.scan_data(regen_comp.compiled_rules, test_data)
+            self._record_scan_differences(result, self._compare_scans(orig_scan, regen_scan))
+            self._record_eval_differences(
+                result, self._compare_evaluation(original_ast, reparsed_ast, test_data)
+            )
 
     def test_file_round_trip(
         self,
