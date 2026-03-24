@@ -6,6 +6,7 @@ import contextlib
 from typing import Self
 
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexToken, HexWildcard
+from yaraast.errors import ValidationError
 
 
 class HexStringBuilder:
@@ -26,7 +27,7 @@ class HexStringBuilder:
                 self._tokens.append(HexByte(value=value))
             else:
                 msg = f"Byte value must be 0-255, got {value}"
-                raise ValueError(msg)
+                raise ValidationError(msg)
         elif isinstance(value, str):
             # Parse hex string
             hex_val = value.upper().replace("0X", "")
@@ -36,10 +37,10 @@ class HexStringBuilder:
                     self._tokens.append(HexByte(value=byte_val))
                 except ValueError:
                     msg = f"Invalid hex value: {value}"
-                    raise ValueError(msg) from None
+                    raise ValidationError(msg) from None
             else:
                 msg = f"Hex value must be 2 characters, got {value}"
-                raise ValueError(msg)
+                raise ValidationError(msg)
         elif isinstance(value, HexToken):
             self._tokens.append(value)
         else:
@@ -64,7 +65,7 @@ class HexStringBuilder:
         """Add a nibble pattern like 'F?', '?F', etc."""
         if len(value) != 2:
             msg = "Nibble must be 2 characters"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         if value[0] == "?" and value[1] != "?":
             # ?X pattern - low nibble
@@ -73,7 +74,7 @@ class HexStringBuilder:
                 self._tokens.append(HexNibble(high=False, value=nibble_val))
             except ValueError:
                 msg = f"Invalid nibble pattern: {value}"
-                raise ValueError(msg) from None
+                raise ValidationError(msg) from None
         elif value[0] != "?" and value[1] == "?":
             # X? pattern - high nibble
             try:
@@ -81,10 +82,10 @@ class HexStringBuilder:
                 self._tokens.append(HexNibble(high=True, value=nibble_val))
             except ValueError:
                 msg = f"Invalid nibble pattern: {value}"
-                raise ValueError(msg) from None
+                raise ValidationError(msg) from None
         else:
             msg = f"Invalid nibble pattern: {value}"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         return self
 

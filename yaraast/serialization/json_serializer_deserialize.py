@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.errors import SerializationError
+
 
 def _deser_binary_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import BinaryExpression
@@ -355,7 +357,7 @@ class JsonSerializerDeserializeMixin:
                 modifiers=modifiers,
             )
         msg = f"Unknown string type: {string_type}"
-        raise ValueError(msg)
+        raise SerializationError(msg)
 
     def _deserialize_modifier(self, data: dict[str, Any]):
         from yaraast.ast.modifiers import StringModifier
@@ -390,7 +392,7 @@ class JsonSerializerDeserializeMixin:
             ]
             return HexAlternative(alternatives=alternatives)
         msg = f"Unknown hex token type: {token_type}"
-        raise ValueError(msg)
+        raise SerializationError(msg)
 
     def _deserialize_expression(self, data: dict[str, Any]):
         if not data:
@@ -402,4 +404,4 @@ class JsonSerializerDeserializeMixin:
             return factory(self, data)
 
         msg = f"Unknown expression type: {expr_type}"
-        raise ValueError(msg)
+        raise SerializationError(msg)

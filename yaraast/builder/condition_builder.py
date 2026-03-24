@@ -23,6 +23,7 @@ from yaraast.ast.expressions import (
     StringOffset,
     UnaryExpression,
 )
+from yaraast.errors import ValidationError
 
 
 class ConditionBuilder:
@@ -105,7 +106,7 @@ class ConditionBuilder:
         """Logical AND."""
         if not self._expression:
             msg = "Cannot apply AND to empty expression"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         right = other._expression if isinstance(other, ConditionBuilder) else other
         return ConditionBuilder(
@@ -116,7 +117,7 @@ class ConditionBuilder:
         """Logical OR."""
         if not self._expression:
             msg = "Cannot apply OR to empty expression"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         right = other._expression if isinstance(other, ConditionBuilder) else other
         return ConditionBuilder(
@@ -127,7 +128,7 @@ class ConditionBuilder:
         """Logical NOT."""
         if not self._expression:
             msg = "Cannot apply NOT to empty expression"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         return ConditionBuilder(
             UnaryExpression(operator="not", operand=self._expression),
@@ -188,7 +189,7 @@ class ConditionBuilder:
         """String at offset."""
         if not self._expression or not isinstance(self._expression, StringIdentifier):
             msg = "'at' can only be used with string identifiers"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         offset_expr = self._to_expression(offset)
         return ConditionBuilder(
@@ -203,7 +204,7 @@ class ConditionBuilder:
         """String in range."""
         if not self._expression or not isinstance(self._expression, StringIdentifier):
             msg = "'in' can only be used with string identifiers"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         start_expr = self._to_expression(start)
         end_expr = self._to_expression(end)
@@ -327,7 +328,7 @@ class ConditionBuilder:
         """Bitwise NOT."""
         if not self._expression:
             msg = "Cannot apply bitwise NOT to empty expression"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         return ConditionBuilder(UnaryExpression(operator="~", operand=self._expression))
 
@@ -344,7 +345,7 @@ class ConditionBuilder:
         """Group expression in parentheses."""
         if not self._expression:
             msg = "Cannot group empty expression"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         return ConditionBuilder(ParenthesesExpression(expression=self._expression))
 
@@ -357,7 +358,7 @@ class ConditionBuilder:
         """Create binary expression."""
         if not self._expression:
             msg = f"Cannot apply {op} to empty expression"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         right = self._to_expression(other)
         return ConditionBuilder(
@@ -372,7 +373,7 @@ class ConditionBuilder:
         if isinstance(value, ConditionBuilder):
             if not value._expression:
                 msg = "Empty condition builder"
-                raise ValueError(msg)
+                raise ValidationError(msg)
             return value._expression
         if isinstance(value, Expression):
             return value
@@ -389,7 +390,7 @@ class ConditionBuilder:
         """Build the final expression."""
         if not self._expression:
             msg = "Cannot build empty expression"
-            raise ValueError(msg)
+            raise ValidationError(msg)
         return self._expression
 
     # Static factory methods

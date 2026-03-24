@@ -10,6 +10,7 @@ from pathlib import Path
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include
+from yaraast.config import DEFAULT_STREAMING_THRESHOLD_MB as _DEFAULT_STREAMING_THRESHOLD_MB
 from yaraast.dialects import DialectRegistry, YaraDialect, detect_dialect
 from yaraast.parser.parser import Parser as YaraParser
 from yaraast.performance.streaming_parser import StreamingParser
@@ -47,7 +48,7 @@ class UnifiedParser:
     #
     # Default: Use Traditional Parser (set threshold very high)
     # To use StreamingParser: Set force_streaming=True explicitly
-    DEFAULT_STREAMING_THRESHOLD_MB = 100  # Only for very large files
+    DEFAULT_STREAMING_THRESHOLD_MB = _DEFAULT_STREAMING_THRESHOLD_MB
 
     def __init__(self, text: str, dialect: YaraDialect = None) -> None:
         """Initialize unified parser.

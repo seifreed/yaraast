@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.conditions import *
 from yaraast.ast.expressions import *
+from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import BUILTIN_READERS, LITTLE_ENDIAN_ALIASES
 from yaraast.evaluation.evaluator_ops import (
     evaluate_arithmetic,
@@ -202,7 +203,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return result
 
         msg = f"Unknown operator: {node.operator}"
-        raise ValueError(msg)
+        raise EvaluationError(msg)
 
     def visit_unary_expression(self, node: UnaryExpression) -> Any:
         """Evaluate unary expression."""
@@ -215,7 +216,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if node.operator == "~":
             return ~operand
         msg = f"Unknown unary operator: {node.operator}"
-        raise ValueError(msg)
+        raise EvaluationError(msg)
 
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> Any:
         """Evaluate parentheses expression."""
@@ -257,7 +258,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                     return func  # Attribute access, not function call
 
         msg = f"Unknown function: {node.function}"
-        raise ValueError(msg)
+        raise EvaluationError(msg)
 
     def visit_member_access(self, node: MemberAccess) -> Any:
         """Evaluate member access."""
@@ -427,7 +428,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             if node.module in self.context.modules:
                 return self.context.modules[node.module]
             msg = f"Unknown module: {node.module}"
-            raise ValueError(msg)
+            raise EvaluationError(msg)
         return None
 
     def visit_for_of_expression(self, node) -> bool:

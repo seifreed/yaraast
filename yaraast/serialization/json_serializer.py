@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.config import JSON_DEFAULT_INDENT
+from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
     visit_array_access,
     visit_at_expression,
@@ -50,7 +52,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to JSON format."""
         serialized = self._serialize_with_metadata(ast)
-        json_str = json.dumps(serialized, indent=2, ensure_ascii=False)
+        json_str = json.dumps(serialized, indent=JSON_DEFAULT_INDENT, ensure_ascii=False)
 
         if output_path:
             write_text(output_path, json_str)
@@ -68,7 +70,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
         if not json_str:
             msg = "No JSON input provided"
-            raise ValueError(msg)
+            raise SerializationError(msg)
 
         data = json.loads(json_str)
         return self._deserialize_ast(data)
@@ -90,7 +92,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         ast_data = data.get("ast", data)
         if ast_data.get("type") != "YaraFile":
             msg = f"Expected YaraFile, got {ast_data.get('type')}"
-            raise ValueError(msg)
+            raise SerializationError(msg)
 
         imports = [self._deserialize_import(imp) for imp in ast_data.get("imports", [])]
         includes = [self._deserialize_include(inc) for inc in ast_data.get("includes", [])]

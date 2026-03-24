@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 
@@ -40,14 +41,14 @@ def test_json_serializer_roundtrip() -> None:
 
 def test_json_serializer_missing_input() -> None:
     serializer = JsonSerializer()
-    with pytest.raises(ValueError, match="No JSON input provided"):
+    with pytest.raises(SerializationError, match="No JSON input provided"):
         serializer.deserialize(None)
 
 
 def test_json_serializer_bad_ast_type() -> None:
     serializer = JsonSerializer()
     payload = json.dumps({"type": "NotYaraFile"})
-    with pytest.raises(ValueError, match="Expected YaraFile"):
+    with pytest.raises(SerializationError, match="Expected YaraFile"):
         serializer.deserialize(payload)
 
 
@@ -71,7 +72,7 @@ def test_json_serializer_unknown_string_and_token_types() -> None:
             ],
         }
     }
-    with pytest.raises(ValueError, match="Unknown string type"):
+    with pytest.raises(SerializationError, match="Unknown string type"):
         serializer.deserialize(json.dumps(bad_string))
 
     bad_token = {
@@ -99,7 +100,7 @@ def test_json_serializer_unknown_string_and_token_types() -> None:
             ],
         }
     }
-    with pytest.raises(ValueError, match="Unknown hex token type"):
+    with pytest.raises(SerializationError, match="Unknown hex token type"):
         serializer.deserialize(json.dumps(bad_token))
 
 
@@ -123,5 +124,5 @@ def test_json_serializer_unknown_expression_type() -> None:
             ],
         }
     }
-    with pytest.raises(ValueError, match="Unknown expression type"):
+    with pytest.raises(SerializationError, match="Unknown expression type"):
         serializer.deserialize(json.dumps(bad_expr))

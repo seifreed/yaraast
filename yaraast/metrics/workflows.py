@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from yaraast.errors import ValidationError
 from yaraast.metrics.capabilities import get_capability
 from yaraast.metrics.facade import METRICS
 from yaraast.metrics.html_tree import HtmlTreeGenerator
@@ -212,7 +213,7 @@ def generate_dependency_graph_with_generator(
             ),
             generator,
         )
-    raise ValueError(f"Unknown graph type: {graph_type}")
+    raise ValidationError(f"Unknown graph type: {graph_type}")
 
 
 def determine_pattern_output_path(
@@ -244,7 +245,7 @@ def generate_pattern_diagram_with_generator(
         return generator.generate_pattern_similarity_diagram(ast, output_path, fmt)
     if pattern_type == "hex":
         return generator.generate_hex_pattern_diagram(ast, output_path, fmt)
-    raise ValueError(f"Unknown pattern type: {pattern_type}")
+    raise ValidationError(f"Unknown pattern type: {pattern_type}")
 
 
 def generate_html_tree_file(

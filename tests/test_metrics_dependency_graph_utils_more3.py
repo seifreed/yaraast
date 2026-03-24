@@ -31,6 +31,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.modules import DictionaryAccess
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Rule
+from yaraast.errors import ValidationError
 from yaraast.metrics.dependency_graph_utils import (
     DependencyGraph,
     build_dependency_graph,
@@ -120,5 +121,5 @@ def test_dependency_graph_order_and_export_error(tmp_path: Path) -> None:
     cycles = find_circular_dependencies(graph)
     assert cycles == []
 
-    with pytest.raises(ValueError, match="Unsupported format"):
+    with pytest.raises(ValidationError, match="Unsupported format"):
         export_dependency_graph(graph, tmp_path / "deps.bad", format="xml")

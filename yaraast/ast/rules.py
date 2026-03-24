@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
+from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
     from yaraast.ast.conditions import Condition
@@ -100,7 +101,7 @@ class Rule(ASTNode):
         if isinstance(modifiers, str):
             try:
                 return [RuleModifier.from_string(modifiers)]
-            except ValueError:
+            except (ValueError, ValidationError):
                 return [modifiers]
         if isinstance(modifiers, list | tuple):
             normalized: list[str | RuleModifier] = []
@@ -108,7 +109,7 @@ class Rule(ASTNode):
                 if isinstance(m, str):
                     try:
                         normalized.append(RuleModifier.from_string(m))
-                    except ValueError:
+                    except (ValueError, ValidationError):
                         normalized.append(m)
                 else:
                     normalized.append(m)

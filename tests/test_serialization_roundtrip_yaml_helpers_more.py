@@ -10,6 +10,7 @@ import yaml
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
+from yaraast.errors import SerializationError
 from yaraast.serialization.roundtrip_helpers import create_generator, detect_formatting
 from yaraast.serialization.roundtrip_models import FormattingInfo, RoundTripMetadata
 from yaraast.serialization.yaml_serializer import YamlSerializer
@@ -56,7 +57,7 @@ def test_yaml_serializer_error_and_output_paths(tmp_path: Path) -> None:
     serializer = YamlSerializer(include_metadata=True, flow_style=False)
     ast = _sample_ast()
 
-    with pytest.raises(ValueError, match="No YAML input provided"):
+    with pytest.raises(SerializationError, match="No YAML input provided"):
         serializer.deserialize()
 
     out = tmp_path / "ast.yaml"

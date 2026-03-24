@@ -20,6 +20,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     UnaryExpression,
 )
+from yaraast.errors import ValidationError
 
 
 class ExpressionBuilder:
@@ -138,7 +139,7 @@ class ExpressionBuilder:
         """Create AND expression chain."""
         if not expressions:
             msg = "At least one expression required"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         result = expressions[0]
         for expr in expressions[1:]:
@@ -151,7 +152,7 @@ class ExpressionBuilder:
         """Create OR expression chain."""
         if not expressions:
             msg = "At least one expression required"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         result = expressions[0]
         for expr in expressions[1:]:

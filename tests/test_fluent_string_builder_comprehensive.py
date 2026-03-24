@@ -32,6 +32,7 @@ from yaraast.builder.fluent_string_builder import (
     text,
     url_regex,
 )
+from yaraast.errors import ValidationError
 
 
 class TestFluentStringBuilderInitialization:
@@ -523,7 +524,7 @@ class TestFluentStringBuilderBuildMethod:
         """Build without content should raise ValueError."""
         builder = FluentStringBuilder("$empty")
 
-        with pytest.raises(ValueError, match="String content not set"):
+        with pytest.raises(ValidationError, match="String content not set"):
             builder.build()
 
     def test_build_with_invalid_type_raises_error(self) -> None:
@@ -532,7 +533,7 @@ class TestFluentStringBuilderBuildMethod:
         builder._string_type = "invalid_type"
         builder._content = "test"
 
-        with pytest.raises(ValueError, match="Unknown string type"):
+        with pytest.raises(ValidationError, match="Unknown string type"):
             builder.build()
 
     def test_build_plain_string_with_modifiers(self) -> None:

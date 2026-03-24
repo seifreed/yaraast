@@ -10,6 +10,7 @@ from urllib.parse import unquote, urlparse
 
 from lsprotocol.types import Location, Position, Range, SymbolInformation, SymbolKind
 
+from yaraast.config import DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
 from yaraast.dialects import YaraDialect, detect_dialect
 
 
@@ -49,7 +50,7 @@ class RuntimeConfig:
     metadata_validation: list[dict[str, Any]] = field(default_factory=list)
     code_formatting: dict[str, Any] = field(default_factory=dict)
     language_mode: LanguageMode = LanguageMode.AUTO
-    diagnostics_debounce_ms: int = 75
+    diagnostics_debounce_ms: int = DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
 
 
 @dataclass(slots=True)

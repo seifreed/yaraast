@@ -7,6 +7,7 @@ import pytest
 from yaraast.ast.conditions import ForExpression, InExpression
 from yaraast.ast.expressions import BinaryExpression, ParenthesesExpression
 from yaraast.builder.condition_builder import ConditionBuilder
+from yaraast.errors import ValidationError
 
 
 def test_condition_builder_basic_ops() -> None:
@@ -28,13 +29,13 @@ def test_condition_builder_group_and_for() -> None:
 
 
 def test_condition_builder_errors_on_empty() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         ConditionBuilder().and_(ConditionBuilder().true())
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         ConditionBuilder().group()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         ConditionBuilder().build()
 
     with pytest.raises(TypeError):

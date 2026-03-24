@@ -7,6 +7,7 @@ import pytest
 from yaraast.ast.expressions import Identifier
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.hex_string_builder import HexStringBuilder
+from yaraast.errors import ValidationError
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 
 
@@ -15,12 +16,12 @@ def test_condition_builder_n_of_them_and_empty_arithmetic_error() -> None:
     assert isinstance(expr.string_set, Identifier)
     assert expr.string_set.name == "them"
 
-    with pytest.raises(ValueError, match="Cannot apply \\+ to empty expression"):
+    with pytest.raises(ValidationError, match="Cannot apply \\+ to empty expression"):
         ConditionBuilder().add(1)
 
 
 def test_hex_string_builder_invalid_low_nibble_and_unknown_pattern_part() -> None:
-    with pytest.raises(ValueError, match="Invalid nibble pattern: \\?G"):
+    with pytest.raises(ValidationError, match="Invalid nibble pattern: \\?G"):
         HexStringBuilder().nibble("?G")
 
     builder = HexStringBuilder()

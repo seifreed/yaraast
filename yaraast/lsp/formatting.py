@@ -10,6 +10,7 @@ from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.formatting import FormattingConfig
 from yaraast.lsp.parsing import parse_for_lsp
 from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.safe_handler import lsp_safe_handler
 from yaraast.lsp.structure import find_rule_end, find_rule_line
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class FormattingProvider:
     def __init__(self, runtime: LspRuntime | None = None) -> None:
         self.runtime = runtime
 
+    @lsp_safe_handler(default=[])
     def format_document(self, text: str, uri: str | None = None) -> list[TextEdit]:
         """
         Format the entire document.
@@ -32,21 +34,18 @@ class FormattingProvider:
         Returns:
             List of text edits to apply
         """
-        try:
-            ast = self._parse(text, uri)
-            formatted_text = self._generator(uri).generate(ast)
+        ast = self._parse(text, uri)
+        formatted_text = self._generator(uri).generate(ast)
 
-            lines = text.split("\n")
-            doc_range = Range(
-                start=Position(line=0, character=0),
-                end=Position(line=max(len(lines) - 1, 0), character=len(lines[-1]) if lines else 0),
-            )
+        lines = text.split("\n")
+        doc_range = Range(
+            start=Position(line=0, character=0),
+            end=Position(line=max(len(lines) - 1, 0), character=len(lines[-1]) if lines else 0),
+        )
 
-            return [TextEdit(range=doc_range, new_text=formatted_text)]
-        except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
-            return []
+        return [TextEdit(range=doc_range, new_text=formatted_text)]
 
+    @lsp_safe_handler(default=[])
     def format_range(
         self,
         text: str,
@@ -61,18 +60,14 @@ class FormattingProvider:
         - if the range falls inside a rule, replace that full rule only
         - otherwise, fall back to whole-document formatting
         """
-        try:
-            ast = self._parse(text, uri)
-            rule_info = self._find_enclosing_rule(text, ast, start, end)
-            if rule_info is None:
-                return self.format_document(text, uri)
+        ast = self._parse(text, uri)
+        rule_info = self._find_enclosing_rule(text, ast, start, end)
+        if rule_info is None:
+            return self.format_document(text, uri)
 
-            rule, rule_range = rule_info
-            formatted_rule = self._generator(uri).generate(rule)
-            return [TextEdit(range=rule_range, new_text=formatted_rule)]
-        except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
-            return []
+        rule, rule_range = rule_info
+        formatted_rule = self._generator(uri).generate(rule)
+        return [TextEdit(range=rule_range, new_text=formatted_rule)]
 
     def _generator(self, uri: str | None) -> AdvancedCodeGenerator:
         return AdvancedCodeGenerator(self._config(uri))

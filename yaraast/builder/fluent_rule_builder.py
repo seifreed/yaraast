@@ -9,6 +9,7 @@ from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.builder.fluent_rule_helpers import apply_last_string_modifier, combine_condition
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
+from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -102,7 +103,7 @@ class FluentRuleBuilder:
             self._string_builders.append(identifier_or_builder)
         else:
             msg = "Either provide (identifier, value) or a FluentStringBuilder"
-            raise ValueError(
+            raise ValidationError(
                 msg,
             )
         return self

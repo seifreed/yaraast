@@ -13,7 +13,10 @@ from yaraast.errors import (
     EvaluationError,
     LexerError,
     ParseError,
+    ResolutionError,
     SemanticError,
+    SerializationError,
+    ValidationError,
     YaraASTError,
 )
 from yaraast.interfaces import ILexer
@@ -50,8 +53,11 @@ __all__ = [
     "LexerError",
     "ParseError",
     "Parser",
+    "ResolutionError",
     "RuleBuilder",
     "SemanticError",
+    "SerializationError",
+    "ValidationError",
     "YaraASTError",
     "YaraFileBuilder",
     "get_version_info",

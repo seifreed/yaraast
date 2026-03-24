@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.serializer_helpers import read_text
 from yaraast.serialization.yaml_serializer_helpers import enrich_yaml_metadata, serialize_yaml
@@ -38,7 +39,7 @@ class YamlSerializer(JsonSerializer):
 
         if not yaml_str:
             msg = "No YAML input provided"
-            raise ValueError(msg)
+            raise SerializationError(msg)
 
         data = yaml.safe_load(yaml_str)
         return self._deserialize_ast(data)

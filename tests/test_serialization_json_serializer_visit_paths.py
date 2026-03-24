@@ -55,6 +55,7 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
+from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
 
 
@@ -231,10 +232,10 @@ def test_json_serializer_deserialize_validates_input_and_supports_direct_ast_and
 ) -> None:
     serializer = JsonSerializer(include_metadata=False)
 
-    with pytest.raises(ValueError, match="No JSON input provided"):
+    with pytest.raises(SerializationError, match="No JSON input provided"):
         serializer.deserialize()
 
-    with pytest.raises(ValueError, match="Expected YaraFile, got Rule"):
+    with pytest.raises(SerializationError, match="Expected YaraFile, got Rule"):
         serializer.deserialize(json.dumps({"type": "Rule"}))
 
     direct_ast = {

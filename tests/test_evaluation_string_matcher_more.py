@@ -4,6 +4,7 @@ import pytest
 
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
+from yaraast.errors import EvaluationError
 from yaraast.evaluation.string_matcher import MatchResult, StringMatcher
 
 
@@ -12,7 +13,7 @@ def test_string_matcher_repr_and_match_all_argument_validation() -> None:
     assert repr(result) == "MatchResult($a at 3, 5 bytes)"
 
     matcher = StringMatcher()
-    with pytest.raises(ValueError, match="exactly 2 arguments"):
+    with pytest.raises(EvaluationError, match="exactly 2 arguments"):
         matcher.match_all(b"data")
 
     assert matcher.match_all([object()], b"abc") == {}

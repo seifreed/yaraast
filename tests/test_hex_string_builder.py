@@ -11,6 +11,7 @@ import pytest
 
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexWildcard
 from yaraast.builder.hex_string_builder import HexStringBuilder
+from yaraast.errors import ValidationError
 
 
 class TestHexStringBuilderBasicOperations:
@@ -150,28 +151,28 @@ class TestHexStringBuilderErrorHandling:
         """Add should reject byte values greater than 255."""
         builder = HexStringBuilder()
 
-        with pytest.raises(ValueError, match="Byte value must be 0-255"):
+        with pytest.raises(ValidationError, match="Byte value must be 0-255"):
             builder.add(256)
 
     def test_add_byte_value_negative(self) -> None:
         """Add should reject negative byte values."""
         builder = HexStringBuilder()
 
-        with pytest.raises(ValueError, match="Byte value must be 0-255"):
+        with pytest.raises(ValidationError, match="Byte value must be 0-255"):
             builder.add(-1)
 
     def test_add_hex_string_wrong_length(self) -> None:
         """Add should reject hex strings not exactly 2 characters."""
         builder = HexStringBuilder()
 
-        with pytest.raises(ValueError, match="Hex value must be 2 characters"):
+        with pytest.raises(ValidationError, match="Hex value must be 2 characters"):
             builder.add("ABC")
 
     def test_add_hex_string_invalid_characters(self) -> None:
         """Add should reject hex strings with invalid characters."""
         builder = HexStringBuilder()
 
-        with pytest.raises(ValueError, match="Invalid hex value"):
+        with pytest.raises(ValidationError, match="Invalid hex value"):
             builder.add("XY")
 
     def test_add_invalid_type(self) -> None:
@@ -273,28 +274,28 @@ class TestHexStringBuilderNibbles:
         """Nibble should reject patterns not exactly 2 characters."""
         builder = HexStringBuilder()
 
-        with pytest.raises(ValueError, match="Nibble must be 2 characters"):
+        with pytest.raises(ValidationError, match="Nibble must be 2 characters"):
             builder.nibble("F")
 
     def test_nibble_pattern_double_wildcard(self) -> None:
         """Nibble should reject double wildcard pattern."""
         builder = HexStringBuilder()
 
-        with pytest.raises(ValueError, match="Invalid nibble pattern"):
+        with pytest.raises(ValidationError, match="Invalid nibble pattern"):
             builder.nibble("??")
 
     def test_nibble_pattern_no_wildcard(self) -> None:
         """Nibble should reject patterns without wildcards."""
         builder = HexStringBuilder()
 
-        with pytest.raises(ValueError, match="Invalid nibble pattern"):
+        with pytest.raises(ValidationError, match="Invalid nibble pattern"):
             builder.nibble("FF")
 
     def test_nibble_pattern_invalid_hex_digit(self) -> None:
         """Nibble should reject invalid hex digits."""
         builder = HexStringBuilder()
 
-        with pytest.raises(ValueError, match="Invalid nibble pattern"):
+        with pytest.raises(ValidationError, match="Invalid nibble pattern"):
             builder.nibble("G?")
 
 

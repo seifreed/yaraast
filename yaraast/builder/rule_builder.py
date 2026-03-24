@@ -23,6 +23,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
+from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
     from yaraast.builder.hex_string_builder import HexStringBuilder
@@ -307,12 +308,12 @@ class RuleBuilder:
         """Build the Rule AST node."""
         if not self._name:
             msg = "Rule name is required"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         if not self._condition:
             if self._require_condition:
                 msg = "Rule condition is required"
-                raise ValueError(msg)
+                raise ValidationError(msg)
             self._condition = cast(Condition, BooleanLiteral(value=True))
 
         return Rule(

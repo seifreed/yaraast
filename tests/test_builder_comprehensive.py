@@ -28,6 +28,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.expression_builder import ExpressionBuilder
+from yaraast.errors import ValidationError
 
 
 class TestConditionBuilderStringReferences:
@@ -268,7 +269,7 @@ class TestConditionBuilderLogicalOperators:
         """And_ on empty expression should raise ValueError."""
         builder = ConditionBuilder()
 
-        with pytest.raises(ValueError, match="Cannot apply AND to empty expression"):
+        with pytest.raises(ValidationError, match="Cannot apply AND to empty expression"):
             builder.and_(ConditionBuilder().true())
 
     def test_or_combines_expressions(self) -> None:
@@ -286,7 +287,7 @@ class TestConditionBuilderLogicalOperators:
         """Or_ on empty expression should raise ValueError."""
         builder = ConditionBuilder()
 
-        with pytest.raises(ValueError, match="Cannot apply OR to empty expression"):
+        with pytest.raises(ValidationError, match="Cannot apply OR to empty expression"):
             builder.or_(ConditionBuilder().true())
 
     def test_not_negates_expression(self) -> None:
@@ -304,7 +305,7 @@ class TestConditionBuilderLogicalOperators:
         """Not_ on empty expression should raise ValueError."""
         builder = ConditionBuilder()
 
-        with pytest.raises(ValueError, match="Cannot apply NOT to empty expression"):
+        with pytest.raises(ValidationError, match="Cannot apply NOT to empty expression"):
             builder.not_()
 
 
@@ -478,7 +479,7 @@ class TestConditionBuilderSpecialConditions:
         """At on non-string identifier should raise ValueError."""
         builder = ConditionBuilder().integer(42)
 
-        with pytest.raises(ValueError, match="'at' can only be used with string identifiers"):
+        with pytest.raises(ValidationError, match="'at' can only be used with string identifiers"):
             builder.at(0)
 
     def test_in_range_creates_in_expression(self) -> None:
@@ -507,7 +508,7 @@ class TestConditionBuilderSpecialConditions:
         """In_range on non-string should raise ValueError."""
         builder = ConditionBuilder().filesize()
 
-        with pytest.raises(ValueError, match="'in' can only be used with string identifiers"):
+        with pytest.raises(ValidationError, match="'in' can only be used with string identifiers"):
             builder.in_range(0, 100)
 
 
@@ -714,7 +715,7 @@ class TestConditionBuilderBitwiseOperators:
         """Bitwise_not on empty expression should raise ValueError."""
         builder = ConditionBuilder()
 
-        with pytest.raises(ValueError, match="Cannot apply bitwise NOT to empty expression"):
+        with pytest.raises(ValidationError, match="Cannot apply bitwise NOT to empty expression"):
             builder.bitwise_not()
 
     def test_shift_left_creates_left_shift(self) -> None:
@@ -755,7 +756,7 @@ class TestConditionBuilderGrouping:
         """Group on empty expression should raise ValueError."""
         builder = ConditionBuilder()
 
-        with pytest.raises(ValueError, match="Cannot group empty expression"):
+        with pytest.raises(ValidationError, match="Cannot group empty expression"):
             builder.group()
 
 
@@ -813,7 +814,7 @@ class TestConditionBuilderHelperMethods:
         builder = ConditionBuilder()
         empty_builder = ConditionBuilder()
 
-        with pytest.raises(ValueError, match="Empty condition builder"):
+        with pytest.raises(ValidationError, match="Empty condition builder"):
             builder._to_expression(empty_builder)
 
     def test_to_expression_with_invalid_type_raises_error(self) -> None:
@@ -827,7 +828,7 @@ class TestConditionBuilderHelperMethods:
         """Build on empty expression should raise ValueError."""
         builder = ConditionBuilder()
 
-        with pytest.raises(ValueError, match="Cannot build empty expression"):
+        with pytest.raises(ValidationError, match="Cannot build empty expression"):
             builder.build()
 
 
@@ -1024,7 +1025,7 @@ class TestExpressionBuilder:
 
     def test_and_with_no_expressions_raises_error(self) -> None:
         """And_ with no expressions should raise ValueError."""
-        with pytest.raises(ValueError, match="At least one expression required"):
+        with pytest.raises(ValidationError, match="At least one expression required"):
             ExpressionBuilder.and_()
 
     def test_or_with_multiple_expressions(self) -> None:
@@ -1039,7 +1040,7 @@ class TestExpressionBuilder:
 
     def test_or_with_no_expressions_raises_error(self) -> None:
         """Or_ with no expressions should raise ValueError."""
-        with pytest.raises(ValueError, match="At least one expression required"):
+        with pytest.raises(ValidationError, match="At least one expression required"):
             ExpressionBuilder.or_()
 
     def test_not_creates_unary_expression(self) -> None:

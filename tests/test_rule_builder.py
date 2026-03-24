@@ -15,6 +15,7 @@ from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
+from yaraast.errors import ValidationError
 
 
 class TestRuleBuilderInitialization:
@@ -612,12 +613,12 @@ class TestRuleBuilderErrorCases:
         """Building without name should raise ValueError."""
         builder = RuleBuilder()
 
-        with pytest.raises(ValueError, match="Rule name is required"):
+        with pytest.raises(ValidationError, match="Rule name is required"):
             builder.build()
 
     def test_build_without_condition_raises_error(self) -> None:
         """Building without condition should raise ValueError."""
         builder = RuleBuilder(name="NoConditionRule")
 
-        with pytest.raises(ValueError, match="Rule condition is required"):
+        with pytest.raises(ValidationError, match="Rule condition is required"):
             builder.require_condition().build()

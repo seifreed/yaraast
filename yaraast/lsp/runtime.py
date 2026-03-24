@@ -8,6 +8,7 @@ from typing import Any
 
 from lsprotocol.types import Location, Position, SymbolInformation, TextEdit
 
+from yaraast.config import DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
 from yaraast.lsp.document_context import DocumentContext
 from yaraast.lsp.document_types import (
     LanguageMode,
@@ -111,11 +112,16 @@ class CacheManager:
 class LspRuntime:
     """Owns document cache, parsing cache and workspace index."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        index: WorkspaceIndex | None = None,
+        config: RuntimeConfig | None = None,
+        cache: CacheManager | None = None,
+    ) -> None:
         self.documents: dict[str, DocumentContext] = {}
-        self.index = WorkspaceIndex()
-        self.config = RuntimeConfig()
-        self.cache = CacheManager()
+        self.index = index or WorkspaceIndex()
+        self.config = config or RuntimeConfig()
+        self.cache = cache or CacheManager()
         self._latency: dict[str, deque[float]] = {}
         self._task_timestamps: dict[tuple[str, str], float] = {}
         self._dirty_documents: set[str] = set()
@@ -259,7 +265,7 @@ class LspRuntime:
                 self.config.diagnostics_debounce_ms = max(0, int(settings["diagnosticsDebounceMs"]))
             except Exception:
                 logger.debug("Operation failed in %s", __name__, exc_info=True)
-                self.config.diagnostics_debounce_ms = 75
+                self.config.diagnostics_debounce_ms = DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
         if not self.config.cache_workspace:
             self.documents = {uri: doc for uri, doc in self.documents.items() if doc.is_open}
         self.cache.bump_generation()

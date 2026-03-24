@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any
 
 from yaraast.ast.base import ASTNode
+from yaraast.errors import ValidationError
 
 
 class StringModifierType(Enum):
@@ -45,7 +46,7 @@ class StringModifierType(Enum):
         except ValueError:
             # For unknown modifiers, we could either raise an error or create a custom type
             msg = f"Unknown string modifier: {modifier_str}"
-            raise ValueError(msg) from None
+            raise ValidationError(msg) from None
 
     def __str__(self) -> str:
         """Return the string representation."""
@@ -65,7 +66,7 @@ class RuleModifierType(Enum):
             return cls(modifier_str.lower())
         except ValueError:
             msg = f"Unknown rule modifier: {modifier_str}"
-            raise ValueError(msg) from None
+            raise ValidationError(msg) from None
 
     def __str__(self) -> str:
         return self.value

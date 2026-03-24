@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from yaraast.config import MAX_PARSER_ERRORS
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.tokens import Token, TokenType
@@ -49,7 +50,7 @@ class LexerErrorInfo:
 class ErrorTolerantLexer(Lexer):
     """Lexer that collects errors and continues parsing."""
 
-    def __init__(self, text: str, max_errors: int = 100) -> None:
+    def __init__(self, text: str, max_errors: int = MAX_PARSER_ERRORS) -> None:
         super().__init__(text)
         self.errors: list[LexerErrorInfo] = []
         self.max_errors = max_errors

@@ -9,6 +9,7 @@ from yaraast.builder.fluent_condition_helpers import (
     build_string_set,
     chain_or,
 )
+from yaraast.errors import ValidationError
 from yaraast.metrics.html_tree_nodes_extra import HtmlTreeNodesExtraMixin
 
 
@@ -45,7 +46,7 @@ def test_fluent_condition_small_helpers_more() -> None:
 
     try:
         chain_or([])
-    except ValueError as exc:
+    except ValidationError as exc:
         assert "Expected at least one condition" in str(exc)
     else:
         raise AssertionError("chain_or([]) should raise")

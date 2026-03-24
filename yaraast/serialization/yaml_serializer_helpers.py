@@ -7,10 +7,11 @@ from typing import Any
 
 import yaml
 
+from yaraast.config import YAML_DEFAULT_WIDTH
 from yaraast.serialization.serializer_helpers import write_text
 
 
-def dump_yaml(data: Any, *, flow_style: bool, width: int = 120) -> str:
+def dump_yaml(data: Any, *, flow_style: bool, width: int = YAML_DEFAULT_WIDTH) -> str:
     """Render YAML with consistent formatting defaults."""
     return yaml.dump(
         data,
@@ -23,7 +24,7 @@ def dump_yaml(data: Any, *, flow_style: bool, width: int = 120) -> str:
 
 
 def serialize_yaml(
-    data: Any, output_path: str | Path | None, *, flow_style: bool, width: int = 120
+    data: Any, output_path: str | Path | None, *, flow_style: bool, width: int = YAML_DEFAULT_WIDTH
 ) -> str:
     """Dump YAML and optionally write it to disk."""
     yaml_str = dump_yaml(data, flow_style=flow_style, width=width)

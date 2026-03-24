@@ -28,6 +28,53 @@ from yaraast.lsp.document_types import (
 from yaraast.unified_parser import UnifiedParser
 
 
+class _SymbolIndex:
+    """Internal helper managing symbol indexing for a DocumentContext."""
+
+    def __init__(self) -> None:
+        self._symbols: list[SymbolRecord] | None = None
+        self._symbols_by_kind: dict[str, list[SymbolRecord]] | None = None
+        self._symbol_lookup: dict[tuple[str, str, str | None], SymbolRecord] | None = None
+
+    def invalidate(self) -> None:
+        self._symbols = None
+        self._symbols_by_kind = None
+        self._symbol_lookup = None
+
+    def get_symbols(self, doc: DocumentContext) -> list[SymbolRecord]:
+        if self._symbols is not None:
+            return self._symbols
+        ast = doc.ast()
+        if ast is None:
+            self._symbols = []
+            return self._symbols
+        self._symbols = build_symbols(doc, ast, doc.lines)
+        self._symbols_by_kind = None
+        self._symbol_lookup = None
+        return self._symbols
+
+    def _ensure_indexes(self, doc: DocumentContext) -> None:
+        if self._symbols_by_kind is not None and self._symbol_lookup is not None:
+            return
+        self._symbols_by_kind, self._symbol_lookup = build_symbol_indexes(self.get_symbols(doc))
+
+    def symbols_of_kind(self, doc: DocumentContext, kind: str) -> list[SymbolRecord]:
+        self._ensure_indexes(doc)
+        assert self._symbols_by_kind is not None
+        return self._symbols_by_kind.get(kind, [])
+
+    def find_record(
+        self,
+        doc: DocumentContext,
+        kind: str,
+        name: str,
+        container_name: str | None = None,
+    ) -> SymbolRecord | None:
+        self._ensure_indexes(doc)
+        assert self._symbol_lookup is not None
+        return self._symbol_lookup.get((kind, name, container_name))
+
+
 class DocumentContext:
     """Parsed/cached representation of a single document."""
 
@@ -48,14 +95,12 @@ class DocumentContext:
         self._ast: Any | None = None
         self._parse_error: Exception | None = None
         self._lines: list[str] | None = None
-        self._symbols: list[SymbolRecord] | None = None
-        self._symbols_by_kind: dict[str, list[SymbolRecord]] | None = None
-        self._symbol_lookup: dict[tuple[str, str, str | None], SymbolRecord] | None = None
+        self._symbol_index = _SymbolIndex()
         self._dialect: YaraDialect | None = None
         self._analysis_cache: dict[str, tuple[str, Any]] = {}
 
     def revision_key(self) -> str:
-        digest = hashlib.sha1(self.text.encode("utf-8")).hexdigest()
+        digest = hashlib.sha1(self.text.encode("utf-8"), usedforsecurity=False).hexdigest()
         return f"{self.version if self.version is not None else 'noversion'}:{digest}"
 
     def get_cached(self, key: str) -> Any | None:
@@ -89,9 +134,7 @@ class DocumentContext:
         self._ast = None
         self._parse_error = None
         self._lines = None
-        self._symbols = None
-        self._symbols_by_kind = None
-        self._symbol_lookup = None
+        self._symbol_index.invalidate()
         self._dialect = None
         self._analysis_cache = {}
 
@@ -101,9 +144,7 @@ class DocumentContext:
         self.language_mode = language_mode
         self._ast = None
         self._parse_error = None
-        self._symbols = None
-        self._symbols_by_kind = None
-        self._symbol_lookup = None
+        self._symbol_index.invalidate()
         self._dialect = None
         self._analysis_cache = {}
 
@@ -131,26 +172,10 @@ class DocumentContext:
         return self._parse_error
 
     def symbols(self) -> list[SymbolRecord]:
-        if self._symbols is not None:
-            return self._symbols
-        ast = self.ast()
-        if ast is None:
-            self._symbols = []
-            return self._symbols
-        self._symbols = build_symbols(self, ast, self.lines)
-        self._symbols_by_kind = None
-        self._symbol_lookup = None
-        return self._symbols
-
-    def _ensure_symbol_indexes(self) -> None:
-        if self._symbols_by_kind is not None and self._symbol_lookup is not None:
-            return
-        self._symbols_by_kind, self._symbol_lookup = build_symbol_indexes(self.symbols())
+        return self._symbol_index.get_symbols(self)
 
     def _symbols_of_kind(self, kind: str) -> list[SymbolRecord]:
-        self._ensure_symbol_indexes()
-        assert self._symbols_by_kind is not None
-        return self._symbols_by_kind.get(kind, [])
+        return self._symbol_index.symbols_of_kind(self, kind)
 
     def find_string_definition(self, identifier: str) -> Location | None:
         for symbol in self._symbols_of_kind("string"):
@@ -191,9 +216,7 @@ class DocumentContext:
         name: str,
         container_name: str | None = None,
     ) -> SymbolRecord | None:
-        self._ensure_symbol_indexes()
-        assert self._symbol_lookup is not None
-        return self._symbol_lookup.get((kind, name, container_name))
+        return self._symbol_index.find_record(self, kind, name, container_name)
 
     def get_module_info(self, module_name: str) -> dict[str, Any] | None:
         from yaraast.lsp.lsp_docs import MODULE_DOCS

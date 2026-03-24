@@ -51,82 +51,84 @@ def display_feature_showcase() -> None:
     click.echo("\n✅ All features are fully supported in this implementation!")
 
 
-def _display_syntax_features() -> None:
-    """Display the syntax feature examples table."""
-    features = [
-        (
-            "1️⃣  WITH STATEMENTS",
-            "Declare local variables for use in conditions:",
-            """
+_SYNTAX_FEATURE_EXAMPLES: list[tuple[str, str, str]] = [
+    (
+        "1️⃣  WITH STATEMENTS",
+        "Declare local variables for use in conditions:",
+        """
    rule example_with {
        condition:
            with $a = "test", $b = 10:
                $a matches /test/ and #b > 5
    }
    """,
-        ),
-        (
-            "2️⃣  ARRAY COMPREHENSIONS",
-            "Create arrays with compact syntax:",
-            """
+    ),
+    (
+        "2️⃣  ARRAY COMPREHENSIONS",
+        "Create arrays with compact syntax:",
+        """
    [x * 2 for x in (1, 2, 3)]
    [s for s in strings if s matches /test/]
    """,
-        ),
-        (
-            "3️⃣  DICT COMPREHENSIONS",
-            "Create dictionaries with compact syntax:",
-            """
+    ),
+    (
+        "3️⃣  DICT COMPREHENSIONS",
+        "Create dictionaries with compact syntax:",
+        """
    {k: v * 2 for k, v in items}
    {s: #s for s in strings if #s > 0}
    """,
-        ),
-        (
-            "4️⃣  TUPLE INDEXING",
-            "Access tuple elements by index:",
-            """
+    ),
+    (
+        "4️⃣  TUPLE INDEXING",
+        "Access tuple elements by index:",
+        """
    my_func()[0]  // First element of function result
    my_tuple[-1]  // Last element
    """,
-        ),
-        (
-            "5️⃣  SLICE EXPRESSIONS",
-            "Extract subsequences from arrays/strings:",
-            """
+    ),
+    (
+        "5️⃣  SLICE EXPRESSIONS",
+        "Extract subsequences from arrays/strings:",
+        """
    array[1:5]    // Elements 1-4
    string[:-1]   // All but last character
    data[::2]     // Every second element
    """,
-        ),
-        (
-            "6️⃣  LAMBDA EXPRESSIONS",
-            "Anonymous functions for functional programming:",
-            """
+    ),
+    (
+        "6️⃣  LAMBDA EXPRESSIONS",
+        "Anonymous functions for functional programming:",
+        """
    map(lambda x: x * 2, array)
    filter(lambda s: s matches /test/, strings)
    """,
-        ),
-        (
-            "7️⃣  PATTERN MATCHING",
-            "Match expressions for cleaner conditionals:",
-            """
+    ),
+    (
+        "7️⃣  PATTERN MATCHING",
+        "Match expressions for cleaner conditionals:",
+        """
    match value {
        1 => "one",
        2 => "two",
        _ => "other"
    }
    """,
-        ),
-        (
-            "8️⃣  SPREAD OPERATORS",
-            "Unpack arrays and dicts:",
-            """
+    ),
+    (
+        "8️⃣  SPREAD OPERATORS",
+        "Unpack arrays and dicts:",
+        """
    [...array1, ...array2]  // Combine arrays
    {**dict1, **dict2}      // Merge dictionaries
    """,
-        ),
-    ]
-    for title, description, example in features:
+    ),
+]
+
+
+def _display_syntax_features() -> None:
+    """Display the syntax feature examples table."""
+    for title, description, example in _SYNTAX_FEATURE_EXAMPLES:
         click.echo(title)
         click.echo(f"   {description}")
         click.echo(example)

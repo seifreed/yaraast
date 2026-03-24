@@ -14,6 +14,7 @@ from yaraast.ast.expressions import (
     StringIdentifier,
     StringLiteral,
 )
+from yaraast.errors import ValidationError
 
 
 def make_binary(left: Expression, operator: str, right: Expression) -> BinaryExpression:
@@ -51,7 +52,7 @@ def build_of_expression(quantifier: int | str, string_set: Expression) -> OfExpr
 
 def chain_or(conditions: list[Expression]) -> Expression:
     if not conditions:
-        raise ValueError("Expected at least one condition")
+        raise ValidationError("Expected at least one condition")
     result = conditions[0]
     for cond in conditions[1:]:
         result = BinaryExpression(left=result, operator="or", right=cond)

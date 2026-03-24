@@ -15,6 +15,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.builder.hex_string_builder import HexStringBuilder
+from yaraast.errors import ValidationError
 
 
 class FluentStringBuilder:
@@ -240,7 +241,7 @@ class FluentStringBuilder:
         """Build the string definition."""
         if self._content is None:
             msg = f"String content not set for {self.identifier}"
-            raise ValueError(msg)
+            raise ValidationError(msg)
 
         if self._string_type == "plain":
             return PlainString(
@@ -261,7 +262,7 @@ class FluentStringBuilder:
                 modifiers=list(self._modifiers),
             )
         msg = f"Unknown string type: {self._string_type}"
-        raise ValueError(msg)
+        raise ValidationError(msg)
 
     # Helper methods
     def _add_modifier(self, modifier_type: StringModifierType) -> None:

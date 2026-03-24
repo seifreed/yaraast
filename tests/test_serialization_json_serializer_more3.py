@@ -13,6 +13,7 @@ from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString
+from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
 
 
@@ -76,8 +77,8 @@ def test_json_deserialize_expressions() -> None:
 def test_json_deserialize_errors() -> None:
     serializer = JsonSerializer()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SerializationError):
         serializer._deserialize_string({"type": "UnknownString"})
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SerializationError):
         serializer._deserialize_expression({"type": "UnknownExpr"})

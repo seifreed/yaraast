@@ -31,6 +31,7 @@ from yaraast.ast.modules import ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import PlainString
+from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluator import YaraEvaluator
 
 
@@ -96,7 +97,7 @@ def test_binary_unary_function_member_array_and_errors() -> None:
         ev.visit_function_call(FunctionCall(function="uint16", arguments=[IntegerLiteral(value=0)]))
         == 513
     )
-    with pytest.raises(ValueError, match="Unknown function"):
+    with pytest.raises(EvaluationError, match="Unknown function"):
         ev.visit_function_call(FunctionCall(function="nope.fn", arguments=[]))
 
     obj = SimpleNamespace(v=9)
@@ -126,9 +127,9 @@ def test_binary_unary_function_member_array_and_errors() -> None:
         is None
     )
 
-    with pytest.raises(ValueError, match="Unknown operator"):
+    with pytest.raises(EvaluationError, match="Unknown operator"):
         ev.visit_binary_expression(BinaryExpression(IntegerLiteral(1), "???", IntegerLiteral(2)))
-    with pytest.raises(ValueError, match="Unknown unary operator"):
+    with pytest.raises(EvaluationError, match="Unknown unary operator"):
         ev.visit_unary_expression(UnaryExpression("!", IntegerLiteral(1)))
 
 
@@ -249,7 +250,7 @@ def test_for_of_and_module_reference_paths() -> None:
 
     ev.context.modules["pe"] = {"machine": 0x14C}
     assert ev.visit_module_reference(ModuleReference(module="pe")) == {"machine": 0x14C}
-    with pytest.raises(ValueError, match="Unknown module"):
+    with pytest.raises(EvaluationError, match="Unknown module"):
         ev.visit_module_reference(ModuleReference(module="missing"))
 
     # Member access on non-object types returns None gracefully
@@ -386,12 +387,12 @@ def test_evaluator_module_function_for_and_for_of_remaining_paths() -> None:
     )
     ev.evaluate_rule(rule)
 
-    with pytest.raises(ValueError, match="Unknown function: missing.abs"):
+    with pytest.raises(EvaluationError, match="Unknown function: missing.abs"):
         ev.visit_function_call(FunctionCall(function="missing.abs", arguments=[]))
 
-    with pytest.raises(ValueError, match="Unknown function: math.missing"):
+    with pytest.raises(EvaluationError, match="Unknown function: math.missing"):
         ev.visit_function_call(FunctionCall(function="math.missing", arguments=[]))
-    with pytest.raises(ValueError, match="Unknown function: missing"):
+    with pytest.raises(EvaluationError, match="Unknown function: missing"):
         ev.visit_function_call(FunctionCall(function="missing", arguments=[]))
 
     ev.context.variables["i"] = 99

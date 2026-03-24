@@ -108,67 +108,63 @@ class LibyaraCompiler:
             CompilationResult with compiled rules or errors
 
         """
-        errors = []
-        warnings = []
-
         try:
-            # Check if source contains null bytes
             if "\x00" in source:
-                # Use temporary file for sources with null bytes
-                import tempfile
-
-                with tempfile.NamedTemporaryFile(
-                    mode="w",
-                    suffix=".yar",
-                    delete=False,
-                ) as f:
-                    # Write as UTF-8, replacing any problematic characters
-                    f.write(source)
-                    temp_path = f.name
-
-                try:
-                    # Compile from file instead
-                    compiler = yara.compile(
-                        filepath=temp_path,
-                        externals=self.externals,
-                        includes=includes or False,
-                        error_on_warning=error_on_warning,
-                    )
-                finally:
-                    # Clean up temp file
-                    import os
-
-                    os.unlink(temp_path)
+                compiled = self._compile_via_tempfile(source, includes, error_on_warning)
             else:
-                # No null bytes, compile directly from source
-                compiler = yara.compile(
+                compiled = yara.compile(
                     source=source,
                     externals=self.externals,
-                    includes=includes or False,  # yara-python expects False, not {}
+                    includes=includes or False,
                     error_on_warning=error_on_warning,
                 )
 
-            # If we got here, compilation succeeded
             return CompilationResult(
                 success=True,
-                compiled_rules=compiler,
-                warnings=warnings,
+                compiled_rules=compiled,
                 source_code=source,
             )
 
         except yara.SyntaxError as e:
-            errors.append(f"Syntax error: {e!s}")
+            return CompilationResult(
+                success=False, errors=[f"Syntax error: {e!s}"], source_code=source
+            )
         except yara.Error as e:
-            errors.append(f"Compilation error: {e!s}")
+            return CompilationResult(
+                success=False, errors=[f"Compilation error: {e!s}"], source_code=source
+            )
         except Exception as e:
-            errors.append(f"Unexpected error: {e!s}")
+            return CompilationResult(
+                success=False, errors=[f"Unexpected error: {e!s}"], source_code=source
+            )
 
-        return CompilationResult(
-            success=False,
-            errors=errors,
-            warnings=warnings,
-            source_code=source,
-        )
+    def _compile_via_tempfile(
+        self,
+        source: str,
+        includes: dict[str, str] | None,
+        error_on_warning: bool,
+    ) -> Any:
+        """Compile source containing null bytes by writing to a temporary file."""
+        import os
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".yar",
+            delete=False,
+        ) as f:
+            f.write(source)
+            temp_path = f.name
+
+        try:
+            return yara.compile(
+                filepath=temp_path,
+                externals=self.externals,
+                includes=includes or False,
+                error_on_warning=error_on_warning,
+            )
+        finally:
+            os.unlink(temp_path)
 
     def compile_file(
         self,

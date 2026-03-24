@@ -13,8 +13,12 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+from yaraast.cli.commands.bench_cmd import bench
+from yaraast.cli.commands.diff_cmd import diff
+from yaraast.cli.commands.fmt_cmd import fmt
 from yaraast.cli.commands.format_cmd import format_yara
-from yaraast.cli.main import bench, diff, fmt, parse, validate
+from yaraast.cli.commands.parse_cmd import parse
+from yaraast.cli.commands.validate import validate
 
 
 class TestCLIParseCommandDirect:

@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.errors import EvaluationError
 
 
 @dataclass
@@ -43,7 +44,7 @@ class StringMatcher:
                 strings, data = args[0], args[1]
         else:
             msg = "match_all requires exactly 2 arguments"
-            raise ValueError(msg)
+            raise EvaluationError(msg)
 
         self.matches.clear()
 

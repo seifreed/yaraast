@@ -26,6 +26,7 @@ from yaraast.builder.fluent_condition_builder import (
     pe_is_dll,
     small_file,
 )
+from yaraast.errors import ValidationError
 
 
 def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
@@ -62,7 +63,7 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert isinstance(b.suspicious_entropy().build(), BinaryExpression)
     assert isinstance(b.packed_executable().build(), BinaryExpression)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         FluentConditionBuilder.create().build()
     assert isinstance(
         FluentConditionBuilder.match_string("$a").build(), type(b.string_matches("$a").build())
@@ -70,7 +71,7 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert isinstance(FluentConditionBuilder.always_true().build(), BooleanLiteral)
     assert isinstance(FluentConditionBuilder.always_false().build(), BooleanLiteral)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         condition().build()
     assert match("$a").build() is not None
     assert any_of_them().build() is not None

@@ -7,6 +7,7 @@ import pytest
 from yaraast.ast.conditions import ForExpression, OfExpression
 from yaraast.ast.expressions import ArrayAccess, BinaryExpression, IntegerLiteral, UnaryExpression
 from yaraast.builder.expression_builder import ExpressionBuilder
+from yaraast.errors import ValidationError
 
 
 def test_expression_builder_combinators() -> None:
@@ -42,8 +43,8 @@ def test_expression_builder_accessors_and_errors() -> None:
     assert isinstance(arr, ArrayAccess)
     assert isinstance(arr.index, IntegerLiteral)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         ExpressionBuilder.and_()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         ExpressionBuilder.or_()

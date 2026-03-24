@@ -25,3 +25,15 @@ class CodeGenError(YaraASTError):
 
 class EvaluationError(YaraASTError):
     """Error during rule evaluation."""
+
+
+class ValidationError(YaraASTError):
+    """Error during rule validation."""
+
+
+class SerializationError(YaraASTError):
+    """Error during AST serialization/deserialization."""
+
+
+class ResolutionError(YaraASTError):
+    """Error during include/import resolution."""

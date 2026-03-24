@@ -15,13 +15,14 @@ from yaraast.ast.modifiers import (
     create_rule_modifier,
     create_string_modifier,
 )
+from yaraast.errors import ValidationError
 
 
 def test_string_modifier_type_parsing_and_str() -> None:
     assert StringModifierType.from_string("AsCiI") == StringModifierType.ASCII
     assert str(StringModifierType.WIDE) == "wide"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         StringModifierType.from_string("unknown_mod")
 
 
@@ -29,7 +30,7 @@ def test_rule_modifier_type_parsing_and_str() -> None:
     assert RuleModifierType.from_string("PRIVATE") == RuleModifierType.PRIVATE
     assert str(RuleModifierType.GLOBAL) == "global"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         RuleModifierType.from_string("not-a-mod")
 
 

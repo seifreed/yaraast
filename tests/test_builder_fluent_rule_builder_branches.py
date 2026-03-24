@@ -18,6 +18,7 @@ from yaraast.builder.fluent_rule_presets import (
     rule,
     trojan_rule,
 )
+from yaraast.errors import ValidationError
 
 
 def _modifier_names(string_def: PlainString | HexString | RegexString) -> set[str]:
@@ -27,10 +28,10 @@ def _modifier_names(string_def: PlainString | HexString | RegexString) -> set[st
 def test_with_string_rejects_invalid_argument_shapes() -> None:
     builder = FluentRuleBuilder("invalid")
 
-    with pytest.raises(ValueError, match="Either provide"):
+    with pytest.raises(ValidationError, match="Either provide"):
         builder.with_string("$only_identifier")
 
-    with pytest.raises(ValueError, match="Either provide"):
+    with pytest.raises(ValidationError, match="Either provide"):
         builder.with_string(123)  # type: ignore[arg-type]
 
 

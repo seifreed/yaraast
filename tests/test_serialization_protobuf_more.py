@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 
@@ -49,5 +50,5 @@ def test_protobuf_stats_and_errors() -> None:
     assert stats["binary_size_bytes"] > 0
     assert stats["rules_count"] == 1
 
-    with pytest.raises(ValueError):
+    with pytest.raises(SerializationError):
         serializer.deserialize(binary_data=None)

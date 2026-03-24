@@ -7,6 +7,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.errors import ValidationError
 from yaraast.metrics.dependency_graph_finder import DependencyFinder
 
 if TYPE_CHECKING:
@@ -194,4 +195,4 @@ def export_dependency_graph(
             f.write(generate_dot_graph(graph))
     else:
         msg = f"Unsupported format: {format}"
-        raise ValueError(msg)
+        raise ValidationError(msg)

@@ -6,6 +6,7 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.errors import SerializationError
 from yaraast.serialization.protobuf_conversion import (
     ast_to_protobuf,
     convert_expression_to_protobuf,
@@ -75,7 +76,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
 
         if not binary_data:
             msg = "No binary data provided"
-            raise ValueError(msg)
+            raise SerializationError(msg)
 
         pb_yara_file = yara_ast_pb2.YaraFile()
         pb_yara_file.ParseFromString(binary_data)

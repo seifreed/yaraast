@@ -9,6 +9,7 @@ import pytest
 
 from yaraast.ast.base import ASTNode
 from yaraast.cli import metrics_services as ms
+from yaraast.errors import ValidationError
 from yaraast.parser import Parser
 
 
@@ -156,7 +157,7 @@ def test_metrics_services_graph_and_pattern_generation_with_generators(tmp_path:
     )
     assert out.endswith("c.svg")
 
-    with pytest.raises(ValueError, match="Unknown graph type"):
+    with pytest.raises(ValidationError, match="Unknown graph type"):
         ms.generate_dependency_graph_with_generator(
             dep, ast, "bad", str(tmp_path / "x.svg"), "svg", "dot"
         )
@@ -175,7 +176,7 @@ def test_metrics_services_graph_and_pattern_generation_with_generators(tmp_path:
         pat, ast, "hex", str(tmp_path / "hex.svg"), "svg"
     ).endswith("hex.svg")
 
-    with pytest.raises(ValueError, match="Unknown pattern type"):
+    with pytest.raises(ValidationError, match="Unknown pattern type"):
         ms.generate_pattern_diagram_with_generator(pat, ast, "bad", str(tmp_path / "z.svg"), "svg")
 
 

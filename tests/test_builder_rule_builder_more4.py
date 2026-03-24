@@ -7,6 +7,7 @@ import pytest
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.builder.rule_builder import RuleBuilder
+from yaraast.errors import ValidationError
 
 
 def test_rule_builder_strings_and_condition() -> None:
@@ -26,7 +27,7 @@ def test_rule_builder_strings_and_condition() -> None:
 
 def test_rule_builder_require_condition() -> None:
     builder = RuleBuilder("rule2").require_condition(True)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         builder.build()
 
     rule = RuleBuilder("rule3").with_condition(BooleanLiteral(value=True)).build()
