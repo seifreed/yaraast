@@ -45,6 +45,7 @@ from yaraast.lsp.workspace_index import WorkspaceIndex
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    "CacheManager",
     "DocumentContext",
     "LanguageMode",
     "LspRuntime",
@@ -58,17 +59,11 @@ __all__ = [
 ]
 
 
-class LspRuntime:
-    """Owns document cache, parsing cache and workspace index."""
+class CacheManager:
+    """Manages workspace caches with generation-based invalidation."""
 
     def __init__(self) -> None:
-        self.documents: dict[str, DocumentContext] = {}
-        self.index = WorkspaceIndex()
-        self.config = RuntimeConfig()
-        self._latency: dict[str, deque[float]] = {}
-        self._task_timestamps: dict[tuple[str, str], float] = {}
-        self._dirty_documents: set[str] = set()
-        self._workspace_generation = 0
+        self._generation = 0
         self._workspace_symbol_cache: dict[tuple[int, str], list[SymbolRecord]] = {}
         self._rule_definition_cache: dict[tuple[int, str, str | None], Location | None] = {}
         self._rule_references_cache: dict[tuple[int, str, bool, str | None], list[Location]] = {}
@@ -76,17 +71,59 @@ class LspRuntime:
             tuple[int, str, bool, str | None], list[ReferenceRecord]
         ] = {}
 
-    def _bump_workspace_generation(self) -> None:
-        self._workspace_generation += 1
+    @property
+    def generation(self) -> int:
+        return self._generation
+
+    def bump_generation(self) -> None:
+        """Invalidate all caches by incrementing generation."""
+        self._generation += 1
         self._workspace_symbol_cache = {}
         self._rule_definition_cache = {}
         self._rule_references_cache = {}
         self._rule_reference_records_cache = {}
 
+    @property
+    def workspace_symbol_cache(
+        self,
+    ) -> dict[tuple[int, str], list[SymbolRecord]]:
+        return self._workspace_symbol_cache
+
+    @property
+    def rule_definition_cache(
+        self,
+    ) -> dict[tuple[int, str, str | None], Location | None]:
+        return self._rule_definition_cache
+
+    @property
+    def rule_references_cache(
+        self,
+    ) -> dict[tuple[int, str, bool, str | None], list[Location]]:
+        return self._rule_references_cache
+
+    @property
+    def rule_reference_records_cache(
+        self,
+    ) -> dict[tuple[int, str, bool, str | None], list[ReferenceRecord]]:
+        return self._rule_reference_records_cache
+
+
+class LspRuntime:
+    """Owns document cache, parsing cache and workspace index."""
+
+    def __init__(self) -> None:
+        self.documents: dict[str, DocumentContext] = {}
+        self.index = WorkspaceIndex()
+        self.config = RuntimeConfig()
+        self.cache = CacheManager()
+        self._latency: dict[str, deque[float]] = {}
+        self._task_timestamps: dict[tuple[str, str], float] = {}
+        self._dirty_documents: set[str] = set()
+
     def _mark_dirty(self, uri: str) -> None:
         if self.config.cache_workspace:
             self._dirty_documents.add(uri)
-            self._bump_workspace_generation()
+            self.cache.bump_generation()
 
     def _sync_document_to_index(self, uri: str) -> None:
         if not self.config.cache_workspace:
@@ -95,11 +132,11 @@ class LspRuntime:
         if ctx is None:
             self.index.remove_document(uri)
             self._dirty_documents.discard(uri)
-            self._bump_workspace_generation()
+            self.cache.bump_generation()
             return
         self.index.update_document(ctx)
         self._dirty_documents.discard(uri)
-        self._bump_workspace_generation()
+        self.cache.bump_generation()
 
     def open_document(self, uri: str, text: str, version: int | None = None) -> DocumentContext:
         ctx = self.documents.get(uri)
@@ -225,7 +262,7 @@ class LspRuntime:
                 self.config.diagnostics_debounce_ms = 75
         if not self.config.cache_workspace:
             self.documents = {uri: doc for uri, doc in self.documents.items() if doc.is_open}
-        self._bump_workspace_generation()
+        self.cache.bump_generation()
 
     def handle_watched_files(self, changes: list[Any]) -> None:
         for change in changes:
@@ -252,7 +289,7 @@ class LspRuntime:
                 self.documents.pop(uri, None)
                 self.index.remove_document(uri)
                 self._dirty_documents.discard(uri)
-                self._bump_workspace_generation()
+                self.cache.bump_generation()
 
     def workspace_symbols(self, query: str) -> list[SymbolInformation]:
         return runtime_workspace_symbols(self, query)

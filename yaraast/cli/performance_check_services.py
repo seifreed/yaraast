@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
 from yaraast.cli.utils import read_text
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.performance.string_analyzer import StringPerformanceIssue, analyze_rule_performance
+
+
+class Severity(str, Enum):
+    """Issue severity levels."""
+
+    WARNING = "warning"
+    CRITICAL = "critical"
+    INFO = "info"
 
 
 def parse_performance_file(input_file: Path) -> Any:
@@ -25,14 +34,18 @@ def analyze_rule_issues(rule: Any) -> list[StringPerformanceIssue]:
 
 def filter_issues(
     issues: list[StringPerformanceIssue],
-    severity: str,
+    severity: str | Severity,
     limit: int | None,
 ) -> list[StringPerformanceIssue]:
-    """Filter issues by severity and limit."""
-    if severity == "warning":
-        issues = [i for i in issues if i.severity == "warning"]
-    elif severity == "critical":
-        issues = [i for i in issues if i.severity == "critical"]
+    """Filter issues by severity and limit.
+
+    Accepts both Severity enum values and plain strings for backward
+    compatibility (Severity inherits from str).
+    """
+    if severity == Severity.WARNING:
+        issues = [i for i in issues if i.severity == Severity.WARNING]
+    elif severity == Severity.CRITICAL:
+        issues = [i for i in issues if i.severity == Severity.CRITICAL]
 
     if limit:
         issues = issues[:limit]

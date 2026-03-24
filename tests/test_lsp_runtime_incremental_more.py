@@ -125,7 +125,7 @@ def test_runtime_workspace_symbol_cache_invalidates_on_document_change(tmp_path:
     first = runtime.workspace_symbol_records("")
     second = runtime.workspace_symbol_records("")
     assert [record.name for record in first] == [record.name for record in second]
-    assert runtime._workspace_symbol_cache
+    assert runtime.cache.workspace_symbol_cache
 
     runtime.update_document(uri, 'rule sample { strings: $a = "x" condition: $a }\n', version=2)
     third = runtime.workspace_symbol_records("")

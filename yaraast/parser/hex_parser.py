@@ -21,12 +21,13 @@ from yaraast.ast.strings import (
     HexToken,
     HexWildcard,
 )
+from yaraast.errors import YaraASTError
 
 if TYPE_CHECKING:
     from yaraast.lexer import Token
 
 
-class HexParseError(Exception):
+class HexParseError(YaraASTError):
     """Error during hex string parsing."""
 
     def __init__(self, message: str, position: int | None = None) -> None:

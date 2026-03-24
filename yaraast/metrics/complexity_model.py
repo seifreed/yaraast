@@ -5,6 +5,24 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+# Quality scoring thresholds
+MAX_SAFE_CONDITION_DEPTH = 8
+ELEVATED_CONDITION_DEPTH = 5
+CRITICAL_DEPTH_PENALTY = 20
+ELEVATED_DEPTH_PENALTY = 10
+MAX_UNUSED_STRING_PENALTY = 20
+UNUSED_STRING_PENALTY_PER_ITEM = 5
+MAX_COMPLEX_RULE_PENALTY = 25
+COMPLEX_RULE_PENALTY_PER_ITEM = 10
+META_COVERAGE_BONUS_THRESHOLD = 0.8
+META_COVERAGE_BONUS = 5
+
+# Grade thresholds
+GRADE_A_THRESHOLD = 90
+GRADE_B_THRESHOLD = 80
+GRADE_C_THRESHOLD = 70
+GRADE_D_THRESHOLD = 60
+
 
 @dataclass
 class ComplexityMetrics:
@@ -110,34 +128,40 @@ class ComplexityMetrics:
         score = 100.0
 
         # Deduct for complexity issues
-        if self.max_condition_depth > 8:
-            score -= 20
-        elif self.max_condition_depth > 5:
-            score -= 10
+        if self.max_condition_depth > MAX_SAFE_CONDITION_DEPTH:
+            score -= CRITICAL_DEPTH_PENALTY
+        elif self.max_condition_depth > ELEVATED_CONDITION_DEPTH:
+            score -= ELEVATED_DEPTH_PENALTY
 
         # Deduct for unused strings
         if self.unused_strings:
-            score -= min(20, len(self.unused_strings) * 5)
+            score -= min(
+                MAX_UNUSED_STRING_PENALTY,
+                len(self.unused_strings) * UNUSED_STRING_PENALTY_PER_ITEM,
+            )
 
         # Deduct for very complex rules
         if self.complex_rules:
-            score -= min(25, len(self.complex_rules) * 10)
+            score -= min(
+                MAX_COMPLEX_RULE_PENALTY,
+                len(self.complex_rules) * COMPLEX_RULE_PENALTY_PER_ITEM,
+            )
 
         # Bonus for good practices
-        if self.rules_with_meta / max(1, self.total_rules) > 0.8:
-            score += 5
+        if self.rules_with_meta / max(1, self.total_rules) > META_COVERAGE_BONUS_THRESHOLD:
+            score += META_COVERAGE_BONUS
 
         return max(0.0, score)
 
     def get_complexity_grade(self) -> str:
         """Get a letter grade derived from the heuristic quality score."""
         score = self.get_quality_score()
-        if score >= 90:
+        if score >= GRADE_A_THRESHOLD:
             return "A"
-        if score >= 80:
+        if score >= GRADE_B_THRESHOLD:
             return "B"
-        if score >= 70:
+        if score >= GRADE_C_THRESHOLD:
             return "C"
-        if score >= 60:
+        if score >= GRADE_D_THRESHOLD:
             return "D"
         return "F"

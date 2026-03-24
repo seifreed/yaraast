@@ -64,6 +64,9 @@ T = TypeVar("T", bound=ASTNode)
 class ASTTransformer(ASTVisitor[ASTNode]):
     """Transformer that rebuilds AST nodes with transformed children."""
 
+    def _default_visit(self, node: ASTNode) -> ASTNode:
+        return self._transform_node(node)
+
     def _transform_node(self, node: T) -> T:
         if not is_dataclass(node):
             return node

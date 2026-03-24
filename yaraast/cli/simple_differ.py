@@ -45,10 +45,14 @@ class DiffResult:
 class SimpleDiffer:
     """Simple differ for YARA files."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        parser: Parser | None = None,
+        generator: CodeGenerator | None = None,
+    ) -> None:
         """Initialize the differ."""
-        self.parser = Parser()
-        self.generator = CodeGenerator()
+        self.parser = parser or Parser()
+        self.generator = generator or CodeGenerator()
 
     def diff(self, content1: str, content2: str) -> DiffResult:
         """Diff two YARA file contents using LCS-based sequence matching."""
@@ -224,8 +228,12 @@ class ASTDiffResult:
 class SimpleASTDiffer(SimpleDiffer):
     """Simplified AST differ for CLI use."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(
+        self,
+        parser: Parser | None = None,
+        generator: CodeGenerator | None = None,
+    ) -> None:
+        super().__init__(parser=parser, generator=generator)
 
     def diff_files(self, file1: Path, file2: Path) -> ASTDiffResult:
         content1 = file1.read_text()

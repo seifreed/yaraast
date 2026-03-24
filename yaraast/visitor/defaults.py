@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TypeVar
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -65,6 +65,9 @@ class DefaultASTVisitor(ASTVisitor[T]):
 
     def __init__(self, default: T) -> None:
         self._default = default
+
+    def _default_visit(self, node: ASTNode) -> T:
+        return self._default
 
     def visit_yara_file(self, node: YaraFile) -> T:
         return self._default

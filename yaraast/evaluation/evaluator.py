@@ -44,11 +44,16 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
     _builtin_readers = BUILTIN_READERS
     _little_endian_aliases = LITTLE_ENDIAN_ALIASES
 
-    def __init__(self, data: bytes = b"", modules: MockModuleRegistry | None = None) -> None:
+    def __init__(
+        self,
+        data: bytes = b"",
+        modules: MockModuleRegistry | None = None,
+        string_matcher: StringMatcher | None = None,
+    ) -> None:
         super().__init__(default=None)
         self.data = data
         self.context = EvaluationContext(data=data)
-        self.string_matcher = StringMatcher()
+        self.string_matcher = string_matcher or StringMatcher()
         self.module_registry = modules or MockModuleRegistry()
         self._current_rule: Rule | None = None
 

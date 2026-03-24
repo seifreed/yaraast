@@ -22,6 +22,9 @@ class VisitorHelperProtocol(Protocol[T]):
 class BaseVisitorHelpersMixin(Generic[T]):  # noqa: UP046
     """Helper methods for BaseVisitor traversal."""
 
+    def _default_visit(self, node: ASTNode) -> T:
+        return cast(T, None)
+
     def _noop(self) -> T:
         return cast(T, None)
 

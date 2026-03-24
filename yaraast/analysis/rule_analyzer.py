@@ -15,9 +15,13 @@ from yaraast.ast.base import YaraFile
 class RuleAnalyzer:
     """Comprehensive analyzer for YARA rules."""
 
-    def __init__(self) -> None:
-        self.string_analyzer = StringUsageAnalyzer()
-        self.dependency_analyzer = DependencyAnalyzer()
+    def __init__(
+        self,
+        string_analyzer: StringUsageAnalyzer | None = None,
+        dependency_analyzer: DependencyAnalyzer | None = None,
+    ) -> None:
+        self.string_analyzer = string_analyzer or StringUsageAnalyzer()
+        self.dependency_analyzer = dependency_analyzer or DependencyAnalyzer()
 
     def analyze(self, yara_file: YaraFile) -> dict[str, Any]:
         """Perform comprehensive analysis of YARA file."""

@@ -39,18 +39,18 @@ def find_rule_definition(
     rule_name: str,
     current_uri: str | None = None,
 ) -> Location | None:
-    cache_key = (runtime._workspace_generation, rule_name, current_uri)
-    if cache_key in runtime._rule_definition_cache:
-        return runtime._rule_definition_cache[cache_key]
+    cache_key = (runtime.cache.generation, rule_name, current_uri)
+    if cache_key in runtime.cache.rule_definition_cache:
+        return runtime.cache.rule_definition_cache[cache_key]
     ordered_docs = runtime.iter_workspace_documents()
     if current_uri:
         ordered_docs.sort(key=lambda doc: doc.uri != current_uri)
     for doc in ordered_docs:
         location = doc.find_rule_definition(rule_name)
         if location is not None:
-            runtime._rule_definition_cache[cache_key] = location
+            runtime.cache.rule_definition_cache[cache_key] = location
             return location
-    runtime._rule_definition_cache[cache_key] = None
+    runtime.cache.rule_definition_cache[cache_key] = None
     return None
 
 
@@ -61,8 +61,8 @@ def find_rule_references(
     include_declaration: bool = True,
     current_uri: str | None = None,
 ) -> list[Location]:
-    cache_key = (runtime._workspace_generation, rule_name, include_declaration, current_uri)
-    cached = runtime._rule_references_cache.get(cache_key)
+    cache_key = (runtime.cache.generation, rule_name, include_declaration, current_uri)
+    cached = runtime.cache.rule_references_cache.get(cache_key)
     if cached is not None:
         return cached
     refs: list[Location] = []
@@ -73,7 +73,7 @@ def find_rule_references(
         refs = [
             ref for ref in refs if not (ref.uri == definition.uri and ref.range == definition.range)
         ]
-    runtime._rule_references_cache[cache_key] = refs
+    runtime.cache.rule_references_cache[cache_key] = refs
     return refs
 
 
@@ -84,8 +84,8 @@ def find_rule_reference_records(
     include_declaration: bool = True,
     current_uri: str | None = None,
 ) -> list[ReferenceRecord]:
-    cache_key = (runtime._workspace_generation, rule_name, include_declaration, current_uri)
-    cached = runtime._rule_reference_records_cache.get(cache_key)
+    cache_key = (runtime.cache.generation, rule_name, include_declaration, current_uri)
+    cached = runtime.cache.rule_reference_records_cache.get(cache_key)
     if cached is not None:
         return list(cached)
     records: list[ReferenceRecord] = []
@@ -110,7 +110,7 @@ def find_rule_reference_records(
             ):
                 record = ReferenceRecord(record.location, "declaration", "rule")
             records.append(record)
-    runtime._rule_reference_records_cache[cache_key] = records
+    runtime.cache.rule_reference_records_cache[cache_key] = records
     return records
 
 
@@ -171,7 +171,7 @@ def get_rule_link_records_for_document(
     workspace_rule_names = {
         record.name for record in runtime.workspace_symbol_records() if record.kind == "rule"
     }
-    cache_key = f"rule_link_records:{runtime._workspace_generation}:{document_uri}"
+    cache_key = f"rule_link_records:{runtime.cache.generation}:{document_uri}"
     cached = doc.get_cached(cache_key)
     if cached is not None:
         return cached

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from enum import Enum
 
 from yaraast.builder import (
     malware_rule,
@@ -15,6 +16,16 @@ from yaraast.builder import (
 )
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.codegen.generator import CodeGenerator
+
+
+class RuleTemplate(str, Enum):
+    """Supported rule template types."""
+
+    MALWARE = "malware"
+    TROJAN = "trojan"
+    PACKED = "packed"
+    DOCUMENT = "document"
+    NETWORK = "network"
 
 
 def generate_code(ast_or_rule) -> str:
@@ -223,32 +234,43 @@ def create_transformation_rules():
     return rules
 
 
+def _make_document_rule(rule_name: str):
+    """Create a document detection template rule."""
+    return (
+        rule(rule_name)
+        .tagged("document")
+        .text_string("$doc1", "%PDF-")
+        .text_string("$doc2", "PK\x03\x04")
+        .text_string("$doc3", "\xd0\xcf\x11\xe0")
+        .matches_any_of("$doc1", "$doc2", "$doc3")
+    )
+
+
+def _make_network_rule(rule_name: str):
+    """Create a network detection template rule."""
+    return (
+        rule(rule_name).tagged("network").ip_pattern().url_pattern().email_pattern().matches_any()
+    )
+
+
+_TEMPLATE_FACTORIES = {
+    RuleTemplate.MALWARE: lambda name: malware_rule(name),
+    RuleTemplate.TROJAN: lambda name: trojan_rule(name),
+    RuleTemplate.PACKED: lambda name: packed_rule(name),
+    RuleTemplate.DOCUMENT: _make_document_rule,
+    RuleTemplate.NETWORK: _make_network_rule,
+}
+
+
 def create_template_rule(rule_name: str, rule_type: str, author: str, tags: list[str]):
-    """Create a template rule based on type."""
-    if rule_type == "malware":
-        rule_ast = malware_rule(rule_name)
-    elif rule_type == "trojan":
-        rule_ast = trojan_rule(rule_name)
-    elif rule_type == "packed":
-        rule_ast = packed_rule(rule_name)
-    elif rule_type == "document":
-        rule_ast = (
-            rule(rule_name)
-            .tagged("document")
-            .text_string("$doc1", "%PDF-")
-            .text_string("$doc2", "PK\x03\x04")
-            .text_string("$doc3", "\xd0\xcf\x11\xe0")
-            .matches_any_of("$doc1", "$doc2", "$doc3")
-        )
-    elif rule_type == "network":
-        rule_ast = (
-            rule(rule_name)
-            .tagged("network")
-            .ip_pattern()
-            .url_pattern()
-            .email_pattern()
-            .matches_any()
-        )
+    """Create a template rule based on type.
+
+    Accepts both RuleTemplate enum values and plain strings for backward
+    compatibility.
+    """
+    factory = _TEMPLATE_FACTORIES.get(rule_type)  # type: ignore[arg-type]
+    if factory is not None:
+        rule_ast = factory(rule_name)
     else:
         rule_ast = rule(rule_name).tagged(rule_type)
 

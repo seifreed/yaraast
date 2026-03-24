@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from yaraast.errors import YaraASTError
+
 from .lexer import YaraLToken
 
 # Constants
 EXPECTED_FIELD_NAME_ERROR = "Expected field name"
 
 
-class YaraLParserError(Exception):
+class YaraLParserError(YaraASTError):
     """YARA-L parser error."""
 
     def __init__(self, message: str, token: YaraLToken | None = None) -> None:

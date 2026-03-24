@@ -8,6 +8,14 @@ from yaraast.builder import (
     YaraFileBuilder,
 )
 from yaraast.codegen import CodeGenerator
+from yaraast.errors import (
+    CodeGenError,
+    EvaluationError,
+    LexerError,
+    ParseError,
+    SemanticError,
+    YaraASTError,
+)
 from yaraast.interfaces import ILexer
 from yaraast.lexer import Lexer
 from yaraast.parser import Parser
@@ -31,14 +39,20 @@ __all__ = [
     "YARA_SYNTAX_VERSION",
     "ASTVisitor",
     "BaseVisitor",
+    "CodeGenError",
     "CodeGenerator",
+    "EvaluationError",
     "ConditionBuilder",
     "ExpressionBuilder",
     "HexStringBuilder",
     "ILexer",
     "Lexer",
+    "LexerError",
+    "ParseError",
     "Parser",
     "RuleBuilder",
+    "SemanticError",
+    "YaraASTError",
     "YaraFileBuilder",
     "get_version_info",
     "get_version_string",

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from yaraast.errors import YaraASTError
 
-class LexerError(Exception):
+
+class LexerError(YaraASTError):
     """Lexer error exception."""
 
     def __init__(self, message: str, line: int, column: int) -> None:

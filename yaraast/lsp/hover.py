@@ -17,6 +17,7 @@ from yaraast.lsp.hover_renderers import string_identifier_hover as render_string
 from yaraast.lsp.hover_renderers import workspace_rule_hover as render_workspace_rule_hover
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import DocumentContext, LspRuntime
+from yaraast.lsp.safe_handler import lsp_safe_handler
 from yaraast.lsp.utils import get_word_at_position
 from yaraast.types.module_loader import ModuleLoader
 
@@ -318,20 +319,16 @@ class HoverProvider:
 
         return render_string_identifier_hover(base_identifier, None, word_range)
 
+    @lsp_safe_handler
     def _get_meta_hover(
         self,
         doc: DocumentContext,
         key: str,
         word_range: Range,
     ) -> Hover | None:
-        try:
-            meta_value = doc.get_meta_value(key)
-            if meta_value is not None:
-                return render_meta_hover(key, meta_value, word_range)
-        except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
-            return None
-
+        meta_value = doc.get_meta_value(key)
+        if meta_value is not None:
+            return render_meta_hover(key, meta_value, word_range)
         return None
 
     def _get_include_hover(
@@ -346,6 +343,7 @@ class HoverProvider:
 
         return render_include_hover(include_path, include_info["resolved_path"], word_range)
 
+    @lsp_safe_handler
     def _get_rule_hover(
         self,
         doc: DocumentContext,
@@ -353,14 +351,9 @@ class HoverProvider:
         word_range: Range,
     ) -> Hover | None:
         """Get hover for a rule name."""
-        try:
-            rule_info = doc.get_rule_info(rule_name)
-            if rule_info is not None:
-                return render_rule_hover(rule_name, rule_info, word_range)
-
-        except Exception:
-            logger.debug("Operation failed in %s", __name__, exc_info=True)
-
+        rule_info = doc.get_rule_info(rule_name)
+        if rule_info is not None:
+            return render_rule_hover(rule_name, rule_info, word_range)
         return None
 
     def _get_workspace_rule_hover(
