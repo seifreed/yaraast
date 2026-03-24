@@ -93,78 +93,77 @@ class DiagnosticsProvider:
             if cached is not None:
                 return cached
 
-        diagnostics = []
+        diagnostics: list[Diagnostic] = []
         started = time.perf_counter()
-        ast = None
 
-        # Try to parse the file
-        try:
-            dialect = ctx.dialect() if ctx is not None else None
-            ast = UnifiedParser(text, dialect=dialect).parse()
-
-            if dialect not in {None, YaraDialect.YARA}:
-                validation_result = None
-            else:
-                validation_result = self.semantic_validator.validate(ast)
-
-            # Convert validation errors to LSP diagnostics
-            if validation_result is not None:
-                for error in validation_result.errors:
-                    diagnostics.append(
-                        self._validation_error_to_diagnostic(error, DiagnosticSeverity.Error)
-                    )
-
-                for warning in validation_result.warnings:
-                    diagnostics.append(
-                        self._validation_error_to_diagnostic(warning, DiagnosticSeverity.Warning)
-                    )
-
-            if (
-                self.compiler is not None
-                and dialect in {None, YaraDialect.YARA}
-                and (validation_result is None or not validation_result.errors)
-            ):
-                compilation = self.compiler.compile_source(text)
-                if not compilation.success:
-                    diagnostics.extend(
-                        self._compiler_error_to_diagnostic(error) for error in compilation.errors
-                    )
-
-        except ParserError as e:
-            # Convert parser errors to LSP diagnostics
-            diagnostics.append(self._parser_error_to_diagnostic(e))
-
-        except Exception as e:
-            # Catch any other errors and report them
-            diagnostics.append(
-                Diagnostic(
-                    range=Range(
-                        start=Position(line=0, character=0),
-                        end=Position(line=0, character=1),
-                    ),
-                    message=f"Unexpected error: {e!s}",
-                    severity=DiagnosticSeverity.Error,
-                    source="yaraast",
-                )
-            )
-
-        # Configurable metadata validation (only if parsing succeeded)
-        if ast is not None and self.runtime and self.runtime.config.metadata_validation:
-            with contextlib.suppress(Exception):
-                diagnostics.extend(self._validate_metadata(ast, self.runtime.config))
-
-        # Configurable rule name validation (only if parsing succeeded)
-        if ast is not None and self.runtime and self.runtime.config.rule_name_validation:
-            with contextlib.suppress(Exception):
-                diagnostics.extend(
-                    self._validate_rule_names(ast, self.runtime.config.rule_name_validation)
-                )
+        ast = self._parse_and_validate(text, ctx, diagnostics)
+        self._run_configurable_checks(ast, diagnostics)
 
         if ctx is not None:
             ctx.set_cached("diagnostics", diagnostics)
         if self.runtime is not None:
             self.runtime.record_latency("diagnostics", (time.perf_counter() - started) * 1000.0)
         return diagnostics
+
+    def _parse_and_validate(self, text: str, ctx, diagnostics: list[Diagnostic]):
+        """Parse text, run semantic validation and optional compilation."""
+        try:
+            dialect = ctx.dialect() if ctx is not None else None
+            ast = UnifiedParser(text, dialect=dialect).parse()
+
+            if dialect in {None, YaraDialect.YARA}:
+                self._collect_validation_diagnostics(ast, text, diagnostics)
+            return ast
+
+        except ParserError as e:
+            diagnostics.append(self._parser_error_to_diagnostic(e))
+        except Exception as e:
+            diagnostics.append(
+                Diagnostic(
+                    range=Range(
+                        start=Position(line=0, character=0), end=Position(line=0, character=1)
+                    ),
+                    message=f"Unexpected error: {e!s}",
+                    severity=DiagnosticSeverity.Error,
+                    source="yaraast",
+                )
+            )
+        return None
+
+    def _collect_validation_diagnostics(self, ast, text: str, diagnostics: list[Diagnostic]):
+        """Run semantic validation and optional libyara compilation."""
+        validation_result = self.semantic_validator.validate(ast)
+        if validation_result is not None:
+            for error in validation_result.errors:
+                diagnostics.append(
+                    self._validation_error_to_diagnostic(error, DiagnosticSeverity.Error)
+                )
+            for warning in validation_result.warnings:
+                diagnostics.append(
+                    self._validation_error_to_diagnostic(warning, DiagnosticSeverity.Warning)
+                )
+
+        if self.compiler is not None and (
+            validation_result is None or not validation_result.errors
+        ):
+            compilation = self.compiler.compile_source(text)
+            if not compilation.success:
+                diagnostics.extend(
+                    self._compiler_error_to_diagnostic(err) for err in compilation.errors
+                )
+
+    def _run_configurable_checks(self, ast, diagnostics: list[Diagnostic]):
+        """Run optional metadata and rule name validation if parsing succeeded."""
+        if ast is None or not self.runtime:
+            return
+        if self.runtime.config.metadata_validation:
+            with contextlib.suppress(Exception):
+                diagnostics.extend(self._validate_metadata(ast, self.runtime.config))
+        if self.runtime.config.rule_name_validation:
+            with contextlib.suppress(Exception):
+                diagnostics.extend(
+                    self._validate_rule_names(ast, self.runtime.config.rule_name_validation)
+                )
 
     def _parser_error_to_diagnostic(self, error: ParserError) -> Diagnostic:
         return parser_error_to_diagnostic(error, DiagnosticData)

@@ -84,19 +84,7 @@ class DirectASTCompiler:
         try:
             self.compilation_stats["total_compilations"] += 1
 
-            # Step 1: Apply optimizations if enabled
-            optimization_stats = None
-            if self.enable_optimization and self.optimizer:
-                opt_start = time.time()
-                optimized_ast = self.optimizer.optimize(ast)
-                opt_time = time.time() - opt_start
-
-                optimization_stats = self.optimizer.stats
-                self.compilation_stats["total_optimization_time"] += opt_time
-            else:
-                optimized_ast = ast
-
-            # Step 2: Generate optimized YARA source
+            optimized_ast, optimization_stats = self._apply_optimizations(ast)
             source_code = generate_source(optimized_ast)
 
             # Step 3: Count AST nodes for statistics
@@ -142,6 +130,17 @@ class DirectASTCompiler:
                 errors=[f"Direct compilation error: {e!s}"],
                 compilation_time=compilation_time,
             )
+
+    def _apply_optimizations(self, ast):
+        """Apply AST optimizations if enabled. Returns (optimized_ast, stats)."""
+        import time
+
+        if self.enable_optimization and self.optimizer:
+            opt_start = time.time()
+            optimized = self.optimizer.optimize(ast)
+            self.compilation_stats["total_optimization_time"] += time.time() - opt_start
+            return optimized, self.optimizer.stats
+        return ast, None
 
     def compile_to_yara(self, ast: YaraFile) -> str:
         """Compile AST to YARA source code.

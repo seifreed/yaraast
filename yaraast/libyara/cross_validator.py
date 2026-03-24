@@ -118,29 +118,19 @@ class CrossValidator:
         for rule in ast.rules:
             result.libyara_results[rule.name] = rule.name in libyara_matched
 
-        # Step 4: Compare results (skip private rules — libyara doesn't report them)
-        private_rules = set()
-        for rule in ast.rules:
-            if (
-                hasattr(rule, "modifiers")
-                and isinstance(rule.modifiers, list | tuple)
-                and any(
-                    (getattr(m, "modifier_type", None) and m.modifier_type.value == "private")
-                    or m == "private"
-                    for m in rule.modifiers
-                )
-            ):
-                private_rules.add(rule.name)
+        # Step 4: Compare results
+        self._compare_results(ast, yaraast_results, result)
+        return result
 
+    def _compare_results(self, ast, yaraast_results, result) -> None:
+        """Compare yaraast vs libyara results, skipping private rules."""
+        private_rules = {rule.name for rule in ast.rules if rule.is_private}
         result.rules_tested = len(yaraast_results) - len(private_rules)
-
         for rule_name in yaraast_results:
             if rule_name in private_rules:
                 continue
-
             yaraast_match = yaraast_results.get(rule_name, False)
             libyara_match = result.libyara_results.get(rule_name, False)
-
             if yaraast_match == libyara_match:
                 result.rules_matched += 1
             else:
@@ -148,8 +138,6 @@ class CrossValidator:
                 result.rules_differ.append(
                     f"{rule_name}: yaraast={yaraast_match}, libyara={libyara_match}",
                 )
-
-        return result
 
     def validate_batch(
         self,
@@ -229,35 +217,7 @@ class CrossValidator:
         for rule in ast.rules:
             result.libyara_results[rule.name] = rule.name in libyara_matched
 
-        # Compare results (skip private rules — libyara doesn't report them)
-        private_rules = set()
-        for rule in ast.rules:
-            if (
-                hasattr(rule, "modifiers")
-                and isinstance(rule.modifiers, list | tuple)
-                and any(
-                    (getattr(m, "modifier_type", None) and m.modifier_type.value == "private")
-                    or m == "private"
-                    for m in rule.modifiers
-                )
-            ):
-                private_rules.add(rule.name)
-
-        result.rules_tested = len(yaraast_results) - len(private_rules)
-
-        for rule_name in yaraast_results:
-            if rule_name in private_rules:
-                continue
-
-            yaraast_match = yaraast_results.get(rule_name, False)
-            libyara_match = result.libyara_results.get(rule_name, False)
-
-            if yaraast_match == libyara_match:
-                result.rules_matched += 1
-            else:
-                result.valid = False
-                result.rules_differ.append(
-                    f"{rule_name}: yaraast={yaraast_match}, libyara={libyara_match}",
-                )
+        # Compare results
+        self._compare_results(ast, yaraast_results, result)
 
         return result
