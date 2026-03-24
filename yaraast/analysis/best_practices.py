@@ -75,7 +75,17 @@ class AnalysisReport:
 
 
 class BestPracticesAnalyzer(BaseVisitor[None]):
-    """Analyze YARA AST for best practices and optimization opportunities."""
+    """Analyzes YARA rules for best practice compliance.
+
+    Examples:
+        >>> from yaraast.parser import Parser
+        >>> from yaraast.analysis.best_practices import BestPracticesAnalyzer
+        >>> ast = Parser().parse('rule test { condition: true }')
+        >>> analyzer = BestPracticesAnalyzer()
+        >>> report = analyzer.analyze(ast)
+        >>> len(report.suggestions) >= 0
+        True
+    """
 
     def __init__(self) -> None:
         self.report = AnalysisReport()

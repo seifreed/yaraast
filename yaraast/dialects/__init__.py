@@ -3,10 +3,20 @@
 from __future__ import annotations
 
 import re
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any
+from typing import Protocol, runtime_checkable
+
+
+@runtime_checkable
+class ParseResult(Protocol):
+    """Minimal protocol for dialect parse results."""
+
+    rules: list
+    imports: list
+    includes: list
 
 
 class YaraDialect(Enum):
@@ -129,7 +139,7 @@ class DialectSpec:
     """Registration spec for a YARA dialect."""
 
     dialect: YaraDialect
-    parser_factory: Callable[[str], Any]  # text -> AST (YaraFile | YaraLFile)
+    parser_factory: Callable[[str], ParseResult]  # text -> AST (YaraFile | YaraLFile)
     detection_patterns: list[tuple[str, re.RegexFlag]]  # (regex, re_flags) pairs
     priority: int = 0  # higher = checked first
 
@@ -138,31 +148,38 @@ class DialectRegistry:
     """Registry allowing dialect plugins without modifying UnifiedParser."""
 
     _specs: list[DialectSpec] = []
+    _lock = threading.Lock()
 
     @classmethod
     def register(cls, spec: DialectSpec) -> None:
-        cls._specs.append(spec)
-        cls._specs.sort(key=lambda s: -s.priority)
+        with cls._lock:
+            cls._specs.append(spec)
+            cls._specs.sort(key=lambda s: -s.priority)
 
     @classmethod
     def detect(cls, content: str) -> YaraDialect:
+        with cls._lock:
+            specs = list(cls._specs)  # snapshot under lock
         stripped = _strip_string_literals(content)
-        for spec in cls._specs:
+        for spec in specs:
             for pattern, flags in spec.detection_patterns:
                 if re.search(pattern, stripped, flags):
                     return spec.dialect
         return YaraDialect.YARA
 
     @classmethod
-    def get_parser_factory(cls, dialect: YaraDialect) -> Callable[[str], Any] | None:
-        for spec in cls._specs:
+    def get_parser_factory(cls, dialect: YaraDialect) -> Callable[[str], ParseResult] | None:
+        with cls._lock:
+            specs = list(cls._specs)
+        for spec in specs:
             if spec.dialect == dialect:
                 return spec.parser_factory
         return None
 
     @classmethod
     def clear(cls) -> None:
-        cls._specs.clear()
+        with cls._lock:
+            cls._specs.clear()
 
 
 def _register_builtins() -> None:
@@ -206,4 +223,4 @@ def detect_dialect(content: str) -> YaraDialect:
     return DialectRegistry.detect(content)
 
 
-__all__ = ["DialectRegistry", "DialectSpec", "YaraDialect", "detect_dialect"]
+__all__ = ["DialectRegistry", "DialectSpec", "ParseResult", "YaraDialect", "detect_dialect"]

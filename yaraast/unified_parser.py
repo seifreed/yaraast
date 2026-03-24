@@ -17,12 +17,20 @@ from yaraast.yaral.ast_nodes import YaraLFile
 
 
 class UnifiedParser:
-    """Unified parser that automatically detects and parses different YARA dialects.
+    """Multi-dialect YARA parser with automatic dialect detection.
 
     Supports:
     - Standard YARA
     - YARA-X (VirusTotal's next-gen YARA)
     - YARA-L (Google Chronicle)
+
+    Examples:
+        >>> from yaraast.unified_parser import UnifiedParser
+        >>> ast = UnifiedParser('rule test { condition: true }').parse()
+        >>> len(ast.rules)
+        1
+        >>> ast.rules[0].name
+        'test'
     """
 
     # Streaming threshold based on empirical benchmarks:

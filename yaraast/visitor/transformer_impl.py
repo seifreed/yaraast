@@ -83,170 +83,172 @@ class ASTTransformer(ASTVisitor[ASTNode]):
 
         return replace(node, **kwargs)
 
-    def visit_yara_file(self, node: YaraFile) -> ASTNode:
+    def visit_yara_file(self, node: YaraFile) -> YaraFile:
         return self._transform_node(node)
 
-    def visit_import(self, node: Import) -> ASTNode:
+    def visit_import(self, node: Import) -> Import:
         return self._transform_node(node)
 
-    def visit_include(self, node: Include) -> ASTNode:
+    def visit_include(self, node: Include) -> Include:
         return self._transform_node(node)
 
-    def visit_rule(self, node: Rule) -> ASTNode:
+    def visit_rule(self, node: Rule) -> Rule:
         return self._transform_node(node)
 
-    def visit_tag(self, node: Tag) -> ASTNode:
+    def visit_tag(self, node: Tag) -> Tag:
         return self._transform_node(node)
 
-    def visit_string_definition(self, node: StringDefinition) -> ASTNode:
+    def visit_string_definition(self, node: StringDefinition) -> StringDefinition:
         return self._transform_node(node)
 
-    def visit_plain_string(self, node: PlainString) -> ASTNode:
+    def visit_plain_string(self, node: PlainString) -> PlainString:
         return self._transform_node(node)
 
-    def visit_hex_string(self, node: HexString) -> ASTNode:
+    def visit_hex_string(self, node: HexString) -> HexString:
         return self._transform_node(node)
 
-    def visit_regex_string(self, node: RegexString) -> ASTNode:
+    def visit_regex_string(self, node: RegexString) -> RegexString:
         return self._transform_node(node)
 
-    def visit_string_modifier(self, node: StringModifier) -> ASTNode:
+    def visit_string_modifier(self, node: StringModifier) -> StringModifier:
         return self._transform_node(node)
 
-    def visit_hex_token(self, node: HexToken) -> ASTNode:
+    def visit_hex_token(self, node: HexToken) -> HexToken:
         return self._transform_node(node)
 
-    def visit_hex_byte(self, node: HexByte) -> ASTNode:
+    def visit_hex_byte(self, node: HexByte) -> HexByte:
         return self._transform_node(node)
 
-    def visit_hex_wildcard(self, node: HexWildcard) -> ASTNode:
+    def visit_hex_wildcard(self, node: HexWildcard) -> HexWildcard:
         return self._transform_node(node)
 
-    def visit_hex_jump(self, node: HexJump) -> ASTNode:
+    def visit_hex_jump(self, node: HexJump) -> HexJump:
         return self._transform_node(node)
 
-    def visit_hex_alternative(self, node: HexAlternative) -> ASTNode:
+    def visit_hex_alternative(self, node: HexAlternative) -> HexAlternative:
         return self._transform_node(node)
 
-    def visit_hex_nibble(self, node: HexNibble) -> ASTNode:
+    def visit_hex_nibble(self, node: HexNibble) -> HexNibble:
         return self._transform_node(node)
 
-    def visit_expression(self, node: Expression) -> ASTNode:
+    def visit_expression(self, node: Expression) -> Expression:
         return self._transform_node(node)
 
-    def visit_identifier(self, node: Identifier) -> ASTNode:
+    def visit_identifier(self, node: Identifier) -> Identifier:
         return self._transform_node(node)
 
-    def visit_string_identifier(self, node: StringIdentifier) -> ASTNode:
+    def visit_string_identifier(self, node: StringIdentifier) -> StringIdentifier:
         return self._transform_node(node)
 
-    def visit_string_wildcard(self, node: StringWildcard) -> ASTNode:
+    def visit_string_wildcard(self, node: StringWildcard) -> StringWildcard:
         return self._transform_node(node)
 
-    def visit_string_count(self, node: StringCount) -> ASTNode:
+    def visit_string_count(self, node: StringCount) -> StringCount:
         return self._transform_node(node)
 
-    def visit_string_offset(self, node: StringOffset) -> ASTNode:
+    def visit_string_offset(self, node: StringOffset) -> StringOffset:
         return self._transform_node(node)
 
-    def visit_string_length(self, node: StringLength) -> ASTNode:
+    def visit_string_length(self, node: StringLength) -> StringLength:
         return self._transform_node(node)
 
-    def visit_integer_literal(self, node: IntegerLiteral) -> ASTNode:
+    def visit_integer_literal(self, node: IntegerLiteral) -> IntegerLiteral:
         return self._transform_node(node)
 
-    def visit_double_literal(self, node: DoubleLiteral) -> ASTNode:
+    def visit_double_literal(self, node: DoubleLiteral) -> DoubleLiteral:
         return self._transform_node(node)
 
-    def visit_string_literal(self, node: StringLiteral) -> ASTNode:
+    def visit_string_literal(self, node: StringLiteral) -> StringLiteral:
         return self._transform_node(node)
 
-    def visit_regex_literal(self, node: RegexLiteral) -> ASTNode:
+    def visit_regex_literal(self, node: RegexLiteral) -> RegexLiteral:
         return self._transform_node(node)
 
-    def visit_boolean_literal(self, node: BooleanLiteral) -> ASTNode:
+    def visit_boolean_literal(self, node: BooleanLiteral) -> BooleanLiteral:
         return self._transform_node(node)
 
-    def visit_binary_expression(self, node: BinaryExpression) -> ASTNode:
+    def visit_binary_expression(self, node: BinaryExpression) -> BinaryExpression:
         return self._transform_node(node)
 
-    def visit_unary_expression(self, node: UnaryExpression) -> ASTNode:
+    def visit_unary_expression(self, node: UnaryExpression) -> UnaryExpression:
         return self._transform_node(node)
 
-    def visit_parentheses_expression(self, node: ParenthesesExpression) -> ASTNode:
+    def visit_parentheses_expression(self, node: ParenthesesExpression) -> ParenthesesExpression:
         return self._transform_node(node)
 
-    def visit_set_expression(self, node: SetExpression) -> ASTNode:
+    def visit_set_expression(self, node: SetExpression) -> SetExpression:
         return self._transform_node(node)
 
-    def visit_range_expression(self, node: RangeExpression) -> ASTNode:
+    def visit_range_expression(self, node: RangeExpression) -> RangeExpression:
         return self._transform_node(node)
 
-    def visit_function_call(self, node: FunctionCall) -> ASTNode:
+    def visit_function_call(self, node: FunctionCall) -> FunctionCall:
         return self._transform_node(node)
 
-    def visit_array_access(self, node: ArrayAccess) -> ASTNode:
+    def visit_array_access(self, node: ArrayAccess) -> ArrayAccess:
         return self._transform_node(node)
 
-    def visit_member_access(self, node: MemberAccess) -> ASTNode:
+    def visit_member_access(self, node: MemberAccess) -> MemberAccess:
         return self._transform_node(node)
 
-    def visit_condition(self, node: Condition) -> ASTNode:
+    def visit_condition(self, node: Condition) -> Condition:
         return self._transform_node(node)
 
-    def visit_for_expression(self, node: ForExpression) -> ASTNode:
+    def visit_for_expression(self, node: ForExpression) -> ForExpression:
         return self._transform_node(node)
 
-    def visit_for_of_expression(self, node: ForOfExpression) -> ASTNode:
+    def visit_for_of_expression(self, node: ForOfExpression) -> ForOfExpression:
         return self._transform_node(node)
 
-    def visit_at_expression(self, node: AtExpression) -> ASTNode:
+    def visit_at_expression(self, node: AtExpression) -> AtExpression:
         return self._transform_node(node)
 
-    def visit_in_expression(self, node: InExpression) -> ASTNode:
+    def visit_in_expression(self, node: InExpression) -> InExpression:
         return self._transform_node(node)
 
-    def visit_of_expression(self, node: OfExpression) -> ASTNode:
+    def visit_of_expression(self, node: OfExpression) -> OfExpression:
         return self._transform_node(node)
 
-    def visit_meta(self, node: Meta) -> ASTNode:
+    def visit_meta(self, node: Meta) -> Meta:
         return self._transform_node(node)
 
-    def visit_module_reference(self, node: ModuleReference) -> ASTNode:
+    def visit_module_reference(self, node: ModuleReference) -> ModuleReference:
         return self._transform_node(node)
 
-    def visit_dictionary_access(self, node: DictionaryAccess) -> ASTNode:
+    def visit_dictionary_access(self, node: DictionaryAccess) -> DictionaryAccess:
         return self._transform_node(node)
 
-    def visit_comment(self, node: Comment) -> ASTNode:
+    def visit_comment(self, node: Comment) -> Comment:
         return self._transform_node(node)
 
-    def visit_comment_group(self, node: CommentGroup) -> ASTNode:
+    def visit_comment_group(self, node: CommentGroup) -> CommentGroup:
         return self._transform_node(node)
 
-    def visit_defined_expression(self, node: DefinedExpression) -> ASTNode:
+    def visit_defined_expression(self, node: DefinedExpression) -> DefinedExpression:
         return self._transform_node(node)
 
-    def visit_string_operator_expression(self, node: StringOperatorExpression) -> ASTNode:
+    def visit_string_operator_expression(
+        self, node: StringOperatorExpression
+    ) -> StringOperatorExpression:
         return self._transform_node(node)
 
-    def visit_extern_rule(self, node: ExternRule) -> ASTNode:
+    def visit_extern_rule(self, node: ExternRule) -> ExternRule:
         return self._transform_node(node)
 
-    def visit_extern_rule_reference(self, node: ExternRuleReference) -> ASTNode:
+    def visit_extern_rule_reference(self, node: ExternRuleReference) -> ExternRuleReference:
         return self._transform_node(node)
 
-    def visit_extern_import(self, node: ExternImport) -> ASTNode:
+    def visit_extern_import(self, node: ExternImport) -> ExternImport:
         return self._transform_node(node)
 
-    def visit_extern_namespace(self, node: ExternNamespace) -> ASTNode:
+    def visit_extern_namespace(self, node: ExternNamespace) -> ExternNamespace:
         return self._transform_node(node)
 
-    def visit_pragma(self, node: Pragma) -> ASTNode:
+    def visit_pragma(self, node: Pragma) -> Pragma:
         return self._transform_node(node)
 
-    def visit_in_rule_pragma(self, node: InRulePragma) -> ASTNode:
+    def visit_in_rule_pragma(self, node: InRulePragma) -> InRulePragma:
         return self._transform_node(node)
 
-    def visit_pragma_block(self, node: PragmaBlock) -> ASTNode:
+    def visit_pragma_block(self, node: PragmaBlock) -> PragmaBlock:
         return self._transform_node(node)

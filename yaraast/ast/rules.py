@@ -59,30 +59,71 @@ class Rule(ASTNode):
 
     def __post_init__(self) -> None:
         """Normalize modifiers to RuleModifier and meta to list[MetaEntry]."""
-        # Normalize modifiers: convert str -> RuleModifier where possible
-        if self.modifiers:
-            if isinstance(self.modifiers, str):
-                # Handle bare string
-                try:
-                    self.modifiers = [RuleModifier.from_string(self.modifiers)]
-                except ValueError:
-                    self.modifiers = [self.modifiers]
-            elif isinstance(self.modifiers, list | tuple):
-                normalized_modifiers: list[str | RuleModifier] = []
-                for m in self.modifiers:
-                    if isinstance(m, str):
-                        try:
-                            normalized_modifiers.append(RuleModifier.from_string(m))
-                        except ValueError:
-                            normalized_modifiers.append(m)
-                    else:
-                        normalized_modifiers.append(m)
-                self.modifiers = normalized_modifiers
-            # else: non-standard type (e.g. custom objects) - leave as-is
-
-        # Normalize meta: convert dict -> list[MetaEntry]
+        self.modifiers = self._normalize_modifiers(self.modifiers)  # type: ignore[assignment]
         if isinstance(self.meta, dict):
-            self.meta = [MetaEntry.from_key_value(k, v) for k, v in self.meta.items()]
+            self.meta = self._normalize_meta(self.meta)
+
+    @classmethod
+    def from_raw(
+        cls,
+        name: str,
+        modifiers: list[Any] | str | None = None,
+        meta: dict[str, Any] | list[MetaEntry] | None = None,
+        **kwargs: Any,
+    ) -> Rule:
+        """Create a Rule with automatic normalization of modifiers and meta.
+
+        Accepts both legacy formats (str modifiers, dict meta) and normalized
+        formats (RuleModifier list, MetaEntry list).
+
+        Examples:
+            >>> rule = Rule.from_raw("test", modifiers=["private"], meta={"author": "me"})
+            >>> rule.is_private
+            True
+            >>> rule.get_meta_value("author")
+            'me'
+        """
+        normalized_mods = cls._normalize_modifiers(modifiers or [])
+        normalized_meta = cls._normalize_meta(meta or [])
+        return cls(
+            name=name,
+            modifiers=normalized_mods,  # type: ignore[arg-type]
+            meta=normalized_meta,
+            **kwargs,
+        )
+
+    @staticmethod
+    def _normalize_modifiers(modifiers: Any) -> list[str | RuleModifier]:
+        """Normalize modifiers to a list of RuleModifier."""
+        if not modifiers:
+            return []
+        if isinstance(modifiers, str):
+            try:
+                return [RuleModifier.from_string(modifiers)]
+            except ValueError:
+                return [modifiers]
+        if isinstance(modifiers, list | tuple):
+            normalized: list[str | RuleModifier] = []
+            for m in modifiers:
+                if isinstance(m, str):
+                    try:
+                        normalized.append(RuleModifier.from_string(m))
+                    except ValueError:
+                        normalized.append(m)
+                else:
+                    normalized.append(m)
+            return normalized
+        # non-standard type - leave as-is
+        return modifiers  # type: ignore[no-any-return]
+
+    @staticmethod
+    def _normalize_meta(meta: Any) -> list[MetaEntry]:
+        """Normalize meta to a list of MetaEntry."""
+        if not meta:
+            return []
+        if isinstance(meta, dict):
+            return [MetaEntry.from_key_value(k, v) for k, v in meta.items()]
+        return meta  # type: ignore[no-any-return]
 
     def accept(self, visitor: Any) -> Any:
         return visitor.visit_rule(self)

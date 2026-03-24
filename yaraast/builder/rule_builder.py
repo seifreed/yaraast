@@ -29,7 +29,20 @@ if TYPE_CHECKING:
 
 
 class RuleBuilder:
-    """Fluent builder for constructing YARA rules."""
+    """Fluent builder for constructing YARA rules programmatically.
+
+    Examples:
+        >>> from yaraast.builder.rule_builder import RuleBuilder
+        >>> rule = (RuleBuilder()
+        ...     .with_name("detect_malware")
+        ...     .with_tag("apt")
+        ...     .with_meta("author", "analyst")
+        ...     .with_plain_string("$s1", "malicious")
+        ...     .with_condition("any of them")
+        ...     .build())
+        >>> rule.name
+        'detect_malware'
+    """
 
     def __init__(self, name: str | None = None) -> None:
         self._name: str | None = name

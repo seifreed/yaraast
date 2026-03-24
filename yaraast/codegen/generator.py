@@ -153,7 +153,17 @@ from yaraast.visitor.visitor import ASTVisitor
 
 
 class CodeGenerator(ASTVisitor[str]):
-    """Generate YARA code from AST nodes."""
+    """Generates YARA source code from an AST.
+
+    Examples:
+        >>> from yaraast.parser import Parser
+        >>> from yaraast.codegen.generator import CodeGenerator
+        >>> ast = Parser().parse('rule test { condition: true }')
+        >>> gen = CodeGenerator()
+        >>> code = gen.generate(ast)
+        >>> 'rule test' in code
+        True
+    """
 
     def __init__(self, indent_size: int = 4) -> None:
         self.indent_size = indent_size
