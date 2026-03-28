@@ -15,6 +15,7 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter
 from yaraast.errors import YaraASTError
+from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
 from yaraast.visitor.base import BaseVisitor
 
@@ -273,14 +274,14 @@ class ASTFormatter:
     ) -> tuple[bool, str]:
         try:
             with Path(input_path).open() as f:
-                ast = Parser(f.read()).parse()
+                ast = CommentAwareParser().parse(f.read())
             formatted = self.format_ast(ast, style)
             if output_path:
                 with Path(output_path).open("w") as f:
                     f.write(formatted)
                 return True, f"Formatted file written to {output_path}"
             return True, formatted
-        except (YaraASTError, OSError) as exc:  # file I/O + parse + codegen errors
+        except (YaraASTError, OSError, Exception) as exc:  # file I/O + parse + codegen errors
             return False, f"Formatting error: {exc}"
 
     def format_ast(self, ast: YaraFile, style: str = "default") -> str:
@@ -295,7 +296,7 @@ class ASTFormatter:
         try:
             with Path(file_path).open() as f:
                 original = f.read()
-            formatted = self.pretty_printer.pretty_print(Parser(original).parse())
+            formatted = self.pretty_printer.pretty_print(CommentAwareParser().parse(original))
             if original.strip() == formatted.strip():
                 return False, []
             issues = []
@@ -306,5 +307,5 @@ class ASTFormatter:
                 if orig != fmt:
                     issues.append(f"Line {i}: formatting issue")
             return len(issues) > 0, issues
-        except (YaraASTError, OSError) as exc:  # file I/O + parse + codegen errors
+        except (YaraASTError, OSError, Exception) as exc:  # file I/O + parse + codegen errors
             return False, [f"Check error: {exc}"]

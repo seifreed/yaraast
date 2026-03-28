@@ -13,7 +13,8 @@ from yaraast.cli.format_reporting import (
     display_validation_success,
 )
 from yaraast.cli.format_services import build_format_stats, format_ast
-from yaraast.cli.utils import parse_yara_file, print_cli_error
+from yaraast.cli.utils import print_cli_error
+from yaraast.parser.comment_aware_parser import CommentAwareParser
 
 console = Console()
 
@@ -24,7 +25,8 @@ console = Console()
 def format_yara(input_file: str, output_file: str) -> None:
     """Format a YARA file with consistent style."""
     try:
-        ast = parse_yara_file(input_file)
+        source = Path(input_file).read_text(encoding="utf-8")
+        ast = CommentAwareParser().parse(source)
 
         formatted = format_ast(ast)
 
@@ -42,7 +44,8 @@ def format_yara(input_file: str, output_file: str) -> None:
 def validate_syntax(input_file: str) -> None:
     """Validate a YARA file for syntax errors."""
     try:
-        ast = parse_yara_file(input_file)
+        source = Path(input_file).read_text(encoding="utf-8")
+        ast = CommentAwareParser().parse(source)
 
         stats = build_format_stats(ast)
 

@@ -3,6 +3,13 @@
 from __future__ import annotations
 
 
+def _emit_comments(gen, node) -> None:
+    """Emit leading comments for an AST node."""
+    if hasattr(node, 'leading_comments') and node.leading_comments:
+        for comment in node.leading_comments:
+            gen._writeline(comment.text)
+
+
 def write_meta_section(gen, meta) -> None:
     """Write meta section if present."""
     if not meta:
@@ -11,6 +18,7 @@ def write_meta_section(gen, meta) -> None:
     gen._indent()
     for item in meta:
         if hasattr(item, "key") and hasattr(item, "value"):
+            _emit_comments(gen, item)
             gen._writeline(gen._format_meta_value(item.key, item.value))
     gen._dedent()
     gen._writeline()
@@ -23,6 +31,7 @@ def write_strings_section(gen, strings, *, has_condition: bool) -> None:
     gen._writeline("strings:")
     gen._indent()
     for string in strings:
+        _emit_comments(gen, string)
         gen.visit(string)
         gen._writeline()
     gen._dedent()
