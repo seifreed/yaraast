@@ -7,6 +7,7 @@ from typing import Any
 
 from yaraast.ast.base import ASTNode
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.errors import ParseError
 from yaraast.parser.parser import Parser
 from yaraast.serialization.simple_roundtrip_helpers import (
     deserialize_from_file,
@@ -69,7 +70,7 @@ class SimpleRoundTrip:
                 self.success_count += 1
 
             return success, original_ast, regenerated_ast
-        except (ValueError, TypeError, AttributeError):
+        except (ValueError, TypeError, AttributeError, ParseError):
             return False, None, None
 
     def test_batch(self, yara_codes: list[str]) -> list[tuple[bool, Any, Any]]:

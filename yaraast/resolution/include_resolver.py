@@ -95,65 +95,53 @@ class IncludeResolver:
             RecursionError: If circular include is detected.
 
         """
-        # Find the file
         resolved_path = self._find_file(file_path, base_path)
-
-        # Check cache
         cache_key = str(resolved_path)
         if cache_key in self.cache:
             cached = self.cache[cache_key]
-            # Verify checksum of this file AND all its includes
             current_checksum = self._calculate_checksum(resolved_path)
             if cached.checksum == current_checksum and self._includes_unchanged(cached):
                 return cached
 
-        # Check for circular includes
         if resolved_path in self.resolution_stack:
             cycle = " -> ".join(str(p) for p in self.resolution_stack)
             cycle += f" -> {resolved_path}"
             msg = f"Circular include detected: {cycle}"
             raise RecursionError(msg)
 
-        # Add to resolution stack
         self.resolution_stack.append(resolved_path)
-
         try:
-            # Read and parse file
-            content = resolved_path.read_text()
-            ast = self.parser.parse(content)
-            checksum = self._calculate_checksum_from_content(content)
-
-            # Create resolved file
-            resolved = ResolvedFile(
-                path=resolved_path,
-                content=content,
-                ast=ast,
-                checksum=checksum,
-            )
-
-            # Resolve includes
-            for include in ast.includes:
-                try:
-                    included_file = self.resolve_file(
-                        include.path,
-                        base_path=resolved_path.parent,
-                    )
-                    resolved.includes.append(included_file)
-                except RecursionError:
-                    # Re-raise RecursionError for circular includes
-                    raise
-                except FileNotFoundError:
-                    # Log error but continue parsing other includes
-                    pass
-
-            # Cache the result
-            self.cache[cache_key] = resolved
-
-            return resolved
-
+            return self._parse_and_resolve(resolved_path, cache_key)
         finally:
-            # Remove from resolution stack
             self.resolution_stack.pop()
+
+    def _parse_and_resolve(self, resolved_path: Path, cache_key: str) -> ResolvedFile:
+        """Parse file and recursively resolve its includes."""
+        content = resolved_path.read_text()
+        ast = self.parser.parse(content)
+        checksum = self._calculate_checksum_from_content(content)
+
+        resolved = ResolvedFile(
+            path=resolved_path,
+            content=content,
+            ast=ast,
+            checksum=checksum,
+        )
+
+        for include in ast.includes:
+            try:
+                included_file = self.resolve_file(
+                    include.path,
+                    base_path=resolved_path.parent,
+                )
+                resolved.includes.append(included_file)
+            except RecursionError:
+                raise
+            except FileNotFoundError:
+                pass
+
+        self.cache[cache_key] = resolved
+        return resolved
 
     def _find_file(self, file_path: str, base_path: Path | None = None) -> Path:
         """Find a file in search paths.
@@ -214,7 +202,7 @@ class IncludeResolver:
                 # Recursively check nested includes
                 if not self._includes_unchanged(included):
                     return False
-            except (FileNotFoundError, OSError):
+            except OSError:
                 return False
         return True
 

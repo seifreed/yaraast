@@ -2,23 +2,30 @@
 
 from __future__ import annotations
 
-import logging
-
 from yaraast.lsp.authoring_actions_common import replace_rule_text, require_rule_context
 from yaraast.lsp.authoring_rewriters import OfThemTransformer, StringReferenceRewriter
 from yaraast.lsp.authoring_support import diff_preview, impact_title, string_signature
+from yaraast.lsp.safe_handler import lsp_safe_handler
 
-logger = logging.getLogger(__name__)
+
+@lsp_safe_handler
+def _safe_parse(parser, text):
+    return parser.parse(text)
+
+
+@lsp_safe_handler
+def _safe_roundtrip(roundtrip, text):
+    original_ast, serialized = roundtrip.parse_and_serialize(text)
+    reconstructed_ast, regenerated = roundtrip.deserialize_and_generate(serialized)
+    return original_ast, reconstructed_ast, regenerated
 
 
 def optimize_rule(authoring, text: str, selection) -> object | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
-    try:
-        ast = authoring._parser.parse(rule_context.text)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    ast = _safe_parse(authoring._parser, rule_context.text)
+    if ast is None:
         return None
     if len(ast.rules) != 1:
         return None
@@ -38,12 +45,10 @@ def roundtrip_rewrite_rule(authoring, text: str, selection) -> object | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
-    try:
-        original_ast, serialized = authoring._roundtrip.parse_and_serialize(rule_context.text)
-        reconstructed_ast, regenerated = authoring._roundtrip.deserialize_and_generate(serialized)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    result = _safe_roundtrip(authoring._roundtrip, rule_context.text)
+    if result is None:
         return None
+    original_ast, reconstructed_ast, regenerated = result
     diff = authoring._differ.diff_asts(original_ast, reconstructed_ast)
     if diff.logical_changes or diff.structural_changes or diff.added_rules or diff.removed_rules:
         return None
@@ -62,10 +67,8 @@ def deduplicate_identical_strings(authoring, text: str, selection) -> object | N
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
-    try:
-        ast = authoring._parser.parse(rule_context.text)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    ast = _safe_parse(authoring._parser, rule_context.text)
+    if ast is None:
         return None
     if len(ast.rules) != 1:
         return None
@@ -104,10 +107,8 @@ def rewrite_of_them(authoring, text: str, selection, *, mode: str, title: str) -
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
-    try:
-        ast = authoring._parser.parse(rule_context.text)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    ast = _safe_parse(authoring._parser, rule_context.text)
+    if ast is None:
         return None
     if len(ast.rules) != 1:
         return None

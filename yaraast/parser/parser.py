@@ -8,6 +8,7 @@ https://www.gnu.org/licenses/gpl-3.0.html
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
+from yaraast.errors import ParseError
 from yaraast.interfaces import ILexer, IToken
 from yaraast.lexer import Lexer, TokenType
 
@@ -88,7 +89,7 @@ class Parser(
         # Ensure we have tokens to parse
         if not self.tokens:
             msg = "No text provided to parse"
-            raise ValueError(msg)
+            raise ParseError(msg)
 
         imports = []
         includes = []

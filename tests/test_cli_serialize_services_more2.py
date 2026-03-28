@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from yaraast.cli import serialize_services as ss
+from yaraast.errors import ValidationError
 
 YARA_CODE = """
 import "pe"
@@ -70,8 +71,8 @@ def test_serialize_services_compare_and_error_paths(tmp_path: Path) -> None:
 
     ast = ss.parse_yara_file(old_file)
 
-    with pytest.raises(ValueError, match="Unknown format"):
+    with pytest.raises(ValidationError, match="Unknown format"):
         ss.export_ast(ast, "badfmt", None, minimal=False)
 
-    with pytest.raises(ValueError, match="Unknown format"):
+    with pytest.raises(ValidationError, match="Unknown format"):
         ss.import_ast(str(old_file), "badfmt")

@@ -12,6 +12,7 @@ from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.cli.ast_tools import ASTFormatter, print_ast, visualize_ast
+from yaraast.errors import ValidationError
 
 
 def test_print_ast_and_visualize_formats() -> None:
@@ -49,10 +50,10 @@ def test_visualize_ast_invalid_format_raises() -> None:
     ast = YaraFile(rules=[Rule(name="x", condition=BooleanLiteral(value=True))])
     try:
         visualize_ast(ast, output_format="xml")
-    except ValueError as exc:
+    except (ValueError, ValidationError) as exc:
         assert "Unsupported output format" in str(exc)
     else:
-        raise AssertionError("Expected ValueError")
+        raise AssertionError("Expected ValidationError")
 
 
 def test_ast_formatter_output_and_errors(tmp_path) -> None:

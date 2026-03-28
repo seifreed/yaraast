@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.errors import ValidationError
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 from yaraast.serialization.yaml_serializer import YamlSerializer
@@ -16,7 +17,7 @@ def create_serializer(fmt: str, *, include_metadata: bool = True):
         return YamlSerializer(include_metadata=include_metadata)
     if fmt == "protobuf":
         return ProtobufSerializer(include_metadata=include_metadata)
-    raise ValueError(f"Unknown format: {fmt}")
+    raise ValidationError(f"Unknown format: {fmt}")
 
 
 def export_with_serializer(

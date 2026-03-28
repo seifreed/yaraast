@@ -23,6 +23,7 @@ from yaraast.cli.validate_services import (
     roundtrip_test,
     validate_rule_file,
 )
+from yaraast.errors import ValidationError
 from yaraast.libyara import YARA_AVAILABLE
 
 
@@ -70,7 +71,7 @@ def _parse_externals(external: tuple[str, ...]) -> dict[str, str]:
     """Parse external variables from command line."""
     try:
         return parse_externals(external)
-    except ValueError as exc:
+    except (ValueError, ValidationError) as exc:
         display_external_parse_error(exc)
         sys.exit(1)
 
@@ -147,7 +148,7 @@ def roundtrip(rule_file: str, test_data: str | None, verbose: bool) -> None:
     # Read test data if provided
     try:
         data = read_test_data(test_data)
-    except ValueError as exc:
+    except (ValueError, ValidationError) as exc:
         click.echo(str(exc), err=True)
         sys.exit(1)
 

@@ -7,6 +7,7 @@ from typing import Any
 
 from lsprotocol.types import CompletionItem, CompletionItemKind, InsertTextFormat, Position
 
+from yaraast.errors import ParseError
 from yaraast.lsp.language_services import parse_source
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import LanguageMode
@@ -318,7 +319,7 @@ def build_condition_completions(text: str, keywords: list[str]) -> list[Completi
     try:
         ast = parse_source(text)
         if not ast:
-            raise ValueError("Failed to parse")
+            raise ParseError("Failed to parse")
         items.extend(_string_identifier_completions(ast))
     except Exception:
         logger.debug("Operation failed in %s", __name__, exc_info=True)

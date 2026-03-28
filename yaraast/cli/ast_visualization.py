@@ -10,6 +10,7 @@ from rich.tree import Tree
 from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import format_json
 from yaraast.cli.visitors import ASTDumper
+from yaraast.errors import ValidationError
 
 
 def print_ast(ast: YaraFile, console: Console | None = None) -> None:
@@ -35,7 +36,7 @@ def visualize_ast(ast: YaraFile, output_format: str = "json") -> str:
         return format_json(data, indent=None)
 
     msg = f"Unsupported output format: {output_format}"
-    raise ValueError(msg)
+    raise ValidationError(msg)
 
 
 def _add_imports_to_tree(tree: Tree, imports: Any) -> None:

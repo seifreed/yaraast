@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.errors import ParseError
 from yaraast.lexer import Lexer
 from yaraast.parser._shared import ParserError
 from yaraast.parser.parser import Parser
@@ -38,7 +39,7 @@ def test_parser_init_text_with_injected_lexer() -> None:
 
 def test_parser_requires_text() -> None:
     parser = Parser()
-    with pytest.raises(ValueError, match="No text provided to parse"):
+    with pytest.raises(ParseError, match="No text provided to parse"):
         parser.parse()
 
 

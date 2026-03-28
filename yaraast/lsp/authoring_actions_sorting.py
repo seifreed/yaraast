@@ -2,23 +2,23 @@
 
 from __future__ import annotations
 
-import logging
-
 from yaraast.ast.rules import Tag
 from yaraast.lsp.authoring_actions_common import replace_rule_text, require_rule_context
 from yaraast.lsp.authoring_support import diff_preview, impact_title
+from yaraast.lsp.safe_handler import lsp_safe_handler
 
-logger = logging.getLogger(__name__)
+
+@lsp_safe_handler
+def _safe_parse(parser, text):
+    return parser.parse(text)
 
 
 def sort_strings_by_identifier(authoring, text: str, selection) -> object | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
-    try:
-        ast = authoring._parser.parse(rule_context.text)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    ast = _safe_parse(authoring._parser, rule_context.text)
+    if ast is None:
         return None
     if len(ast.rules) != 1:
         return None
@@ -44,10 +44,8 @@ def sort_meta_by_key(authoring, text: str, selection) -> object | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
-    try:
-        ast = authoring._parser.parse(rule_context.text)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    ast = _safe_parse(authoring._parser, rule_context.text)
+    if ast is None:
         return None
     if len(ast.rules) != 1:
         return None
@@ -74,10 +72,8 @@ def sort_tags_alphabetically(authoring, text: str, selection) -> object | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
-    try:
-        ast = authoring._parser.parse(rule_context.text)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    ast = _safe_parse(authoring._parser, rule_context.text)
+    if ast is None:
         return None
     if len(ast.rules) != 1:
         return None
@@ -103,20 +99,16 @@ def canonicalize_rule_structure(authoring, text: str, selection) -> object | Non
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
-    try:
-        original_ast = authoring._parser.parse(rule_context.text)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    original_ast = _safe_parse(authoring._parser, rule_context.text)
+    if original_ast is None:
         return None
     if len(original_ast.rules) != 1:
         return None
     regenerated = authoring._advanced_generator.generate(original_ast.rules[0]).rstrip("\n")
     if regenerated.strip() == rule_context.text.strip():
         return None
-    try:
-        regenerated_ast = authoring._parser.parse(regenerated)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    regenerated_ast = _safe_parse(authoring._parser, regenerated)
+    if regenerated_ast is None:
         return None
     if len(regenerated_ast.rules) != 1:
         return None
@@ -135,20 +127,16 @@ def pretty_print_rule(authoring, text: str, selection) -> object | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
-    try:
-        original_ast = authoring._parser.parse(rule_context.text)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    original_ast = _safe_parse(authoring._parser, rule_context.text)
+    if original_ast is None:
         return None
     if len(original_ast.rules) != 1:
         return None
     regenerated = authoring._ast_formatter.format_ast(original_ast, style="pretty").rstrip("\n")
     if regenerated.strip() == rule_context.text.strip():
         return None
-    try:
-        regenerated_ast = authoring._parser.parse(regenerated)
-    except Exception:
-        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    regenerated_ast = _safe_parse(authoring._parser, regenerated)
+    if regenerated_ast is None:
         return None
     if len(regenerated_ast.rules) != 1:
         return None

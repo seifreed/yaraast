@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from yaraast.cli.utils import parse_yara_file
+from yaraast.errors import ValidationError
 from yaraast.libyara.cross_validator import CrossValidator
 from yaraast.libyara.equivalence import EquivalenceTester
 from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
@@ -42,7 +43,7 @@ def parse_externals(external: tuple[str, ...]) -> dict[str, str]:
     for ext in external:
         if "=" not in ext:
             msg = f"Invalid external format: {ext}"
-            raise ValueError(msg)
+            raise ValidationError(msg)
         key, value = ext.split("=", 1)
         externals[key] = value
     return externals
@@ -58,4 +59,4 @@ def read_test_data(test_data_path: str | None) -> bytes | None:
             return f.read()
     except Exception as exc:
         msg = f"Error reading test data: {exc}"
-        raise ValueError(msg) from exc
+        raise ValidationError(msg) from exc

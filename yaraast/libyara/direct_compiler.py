@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.errors import EvaluationError
 from yaraast.libyara.ast_optimizer import ASTOptimizer
 from yaraast.libyara.direct_helpers import compile_source, count_ast_nodes, generate_source
 from yaraast.libyara.direct_models import DirectCompilationResult
@@ -194,6 +195,27 @@ class OptimizedMatcher:
             "total_data_scanned": 0,
         }
 
+    def _prepare_scan_args(
+        self, data: bytes | str | Path, fast_mode: bool, timeout: int | None, **kwargs
+    ) -> tuple[dict[str, Any], int]:
+        """Build scan arguments and compute data size."""
+        scan_args: dict[str, Any] = {"fast": fast_mode, **kwargs}
+        if timeout is not None:
+            scan_args["timeout"] = timeout
+
+        if isinstance(data, bytes):
+            scan_args["data"] = data
+            return scan_args, len(data)
+        if isinstance(data, str | Path):
+            scan_args["filepath"] = str(data)
+            return scan_args, Path(data).stat().st_size if Path(data).exists() else 0
+        if isinstance(data, int):
+            scan_args["pid"] = data
+            return scan_args, 0
+
+        msg = f"Unsupported data type: {type(data)}"
+        raise EvaluationError(msg)
+
     def scan(
         self,
         data: bytes | str | Path,
@@ -219,28 +241,7 @@ class OptimizedMatcher:
 
         try:
             self.scan_stats["total_scans"] += 1
-
-            # Prepare scan arguments
-            scan_args = {"fast": fast_mode, **kwargs}
-            # Only add timeout if it's not None
-            if timeout is not None:
-                scan_args["timeout"] = timeout
-
-            # Determine scan type and execute
-            if isinstance(data, bytes):
-                scan_args["data"] = data
-                data_size = len(data)
-            elif isinstance(data, str | Path):
-                scan_args["filepath"] = str(data)
-                data_size = Path(data).stat().st_size if Path(data).exists() else 0
-            elif isinstance(data, int):  # PID
-                scan_args["pid"] = data
-                data_size = 0  # Unknown for process scans
-            else:
-                msg = f"Unsupported data type: {type(data)}"
-                raise ValueError(msg)
-
-            # Perform scan
+            scan_args, data_size = self._prepare_scan_args(data, fast_mode, timeout, **kwargs)
             matches = self.rules.match(**scan_args)
 
             # Enhance matches with AST context

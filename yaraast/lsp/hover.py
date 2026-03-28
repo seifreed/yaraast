@@ -48,70 +48,39 @@ class HoverProvider:
         doc = (
             self.runtime.ensure_document(uri, text)
             if self.runtime and uri
-            else DocumentContext(
-                uri or "file://local.yar",
-                text,
-            )
+            else DocumentContext(uri or "file://local.yar", text)
         )
         resolved = doc.resolve_symbol(position)
         word, word_range = get_word_at_position(text, position)
 
-        # Check modules resolved structurally first.
-        result = self._hover_for_module(doc, resolved, word_range)
-        if result:
-            return result
-
-        # Check module members (e.g., pe.imphash)
-        result = self._hover_for_module_member(doc, resolved, word, word_range, position)
-        if result:
-            return result
-
-        # Check string identifiers and variants
-        result = self._hover_for_string(doc, resolved, word, word_range)
-        if result:
-            return result
-
-        # Check meta
-        if resolved and resolved.kind == "meta":
-            meta_hover = self._get_meta_hover(doc, resolved.normalized_name, resolved.range)
-            if meta_hover:
-                return meta_hover
-
-        # Check includes
-        if resolved and resolved.kind == "include":
-            include_hover = self._get_include_hover(doc, resolved.normalized_name, resolved.range)
-            if include_hover:
-                return include_hover
-
-        # Check sections
-        result = self._hover_for_section(resolved)
-        if result:
-            return result
-
-        if not word:
-            return None
-
-        # Check keywords
-        result = self._hover_for_keyword(word, word_range)
-        if result:
-            return result
-
-        # Check built-in functions
-        result = self._hover_for_builtin(word, word_range)
-        if result:
-            return result
-
-        # Check modules by word
-        result = self._hover_for_module_by_word(doc, word, word_range)
-        if result:
-            return result
-
-        # Check rule names
-        result = self._hover_for_rule(doc, resolved, word, word_range, uri)
-        if result:
-            return result
-
+        for checker in self._hover_checkers(doc, resolved, word, word_range, position, uri):
+            result = checker()
+            if result:
+                return result
         return None
+
+    def _hover_checkers(self, doc, resolved, word, word_range, position, uri):
+        """Yield hover check callables in priority order."""
+        return [
+            lambda: self._hover_for_module(doc, resolved, word_range),
+            lambda: self._hover_for_module_member(doc, resolved, word, word_range, position),
+            lambda: self._hover_for_string(doc, resolved, word, word_range),
+            lambda: (
+                self._get_meta_hover(doc, resolved.normalized_name, resolved.range)
+                if resolved and resolved.kind == "meta"
+                else None
+            ),
+            lambda: (
+                self._get_include_hover(doc, resolved.normalized_name, resolved.range)
+                if resolved and resolved.kind == "include"
+                else None
+            ),
+            lambda: self._hover_for_section(resolved),
+            lambda: self._hover_for_keyword(word, word_range) if word else None,
+            lambda: self._hover_for_builtin(word, word_range) if word else None,
+            lambda: self._hover_for_module_by_word(doc, word, word_range) if word else None,
+            lambda: self._hover_for_rule(doc, resolved, word, word_range, uri) if word else None,
+        ]
 
     def _hover_for_module(self, doc, resolved, word_range):
         """Get hover for a resolved module symbol."""

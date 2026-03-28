@@ -37,6 +37,19 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
     if node_location is None:
         return None
     node_range = location_to_range(node_location, ctx.text)
+
+    result = _resolve_typed_node(ctx, position, node, node_range)
+    if result is not None:
+        return result
+    return _resolve_expression_context(ctx, position, node)
+
+
+def _resolve_typed_node(
+    ctx: DocumentContext,
+    position: Position,
+    node,
+    node_range,
+) -> ResolvedSymbol | None:
     if isinstance(node, StringIdentifier):
         return resolved_if_contains(
             position, ResolvedSymbol(ctx.uri, node.name, node.name, "string", node_range)
@@ -92,6 +105,14 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
         return resolved_if_contains(
             position, ResolvedSymbol(ctx.uri, node.name, node.name, kind, node_range)
         )
+    return None
+
+
+def _resolve_expression_context(
+    ctx: DocumentContext,
+    position: Position,
+    node,
+) -> ResolvedSymbol | None:
     if isinstance(node, AtExpression | InExpression | OfExpression):
         word, word_range = get_word_at_position(ctx.text, position)
         if word.startswith(("$", "#", "@", "!")):

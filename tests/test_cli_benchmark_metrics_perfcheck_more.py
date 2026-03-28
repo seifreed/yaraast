@@ -159,7 +159,7 @@ def test_performance_check_no_issues_and_abort_paths(tmp_path: Path) -> None:
 
     result = runner.invoke(performance_check, [str(clean_rule), "--summary"])
     assert result.exit_code == 0
-    assert "Performance Issue Summary" in result.output
+    assert "No performance issues found" in result.output
 
     result = runner.invoke(performance_check, [str(tmp_path)])
     assert result.exit_code != 0
