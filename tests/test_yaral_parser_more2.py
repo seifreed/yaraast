@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-import pytest
-
-from yaraast.yaral._shared import YaraLParserError
 from yaraast.yaral.parser import YaraLParser
 
 
@@ -50,7 +47,7 @@ def test_parser_condition_count_and_compare() -> None:
     assert ast.rules[0].condition is not None
 
 
-def test_parser_rejects_comma_separated_match_vars() -> None:
+def test_parser_accepts_comma_separated_match_vars() -> None:
     code = dedent(
         """
         rule legacy_match {
@@ -64,5 +61,13 @@ def test_parser_rejects_comma_separated_match_vars() -> None:
         """,
     )
 
-    with pytest.raises(YaraLParserError):
-        YaraLParser(code).parse()
+    ast = YaraLParser(code).parse()
+    assert ast.rules[0].match is not None
+    variables = ast.rules[0].match.variables
+    assert len(variables) == 2
+    assert variables[0].variable == "var1"
+    assert variables[1].variable == "var2"
+    assert variables[0].time_window.duration == 5
+    assert variables[0].time_window.unit == "m"
+    assert variables[1].time_window.duration == 5
+    assert variables[1].time_window.unit == "m"

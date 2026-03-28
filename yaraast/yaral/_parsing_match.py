@@ -19,43 +19,48 @@ class YaraLMatchParsingMixin:
 
         variables = []
 
-        while not self._check_section_keyword() and not self._check(
-            BaseTokenType.RBRACE,
+        while (
+            not self._is_at_end()
+            and not self._check_section_keyword()
+            and not self._check(BaseTokenType.RBRACE)
         ):
-            # Parse match variables: each can be on its own line with its own time window
             if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
                 BaseTokenType.STRING_IDENTIFIER,
             ):
-                var_token = self._advance()
-                var_name = var_token.value.lstrip("$")  # Remove $ prefix
+                var_names = self._parse_match_variable_list()
 
-                # Reject comma-separated legacy syntax ($var1, $var2 over 5m)
-                if self._check(BaseTokenType.COMMA):
-                    raise YaraLParserError(
-                        "Comma-separated match variables are not supported",
-                        self._peek(),
-                    )
+                self._consume_keyword("over", "Expected 'over' after match variable(s)")
 
-                # New syntax: each variable has its own 'over' clause
-                # Expect 'over' keyword
-                self._consume_keyword("over", f"Expected 'over' after variable ${var_name}")
-
-                # Check for 'every' modifier
                 modifier = None
                 if self._check_keyword("every"):
                     modifier = "every"
                     self._advance()
 
-                # Parse time window for this variable
                 time_window = self._parse_time_window(modifier)
 
-                # Create MatchVariable for this single variable
-                variables.append(MatchVariable(variable=var_name, time_window=time_window))
+                for var_name in var_names:
+                    variables.append(MatchVariable(variable=var_name, time_window=time_window))
             else:
-                # Skip unknown tokens
                 self._advance()
 
         return MatchSection(variables=variables)
+
+    def _parse_match_variable_list(self) -> list[str]:
+        """Parse one or more comma-separated match variables ($a, $b, $c)."""
+        var_token = self._advance()
+        var_names = [var_token.value.lstrip("$")]
+
+        while self._check(BaseTokenType.COMMA):
+            self._advance()  # consume comma
+            if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+                BaseTokenType.STRING_IDENTIFIER,
+            ):
+                next_token = self._advance()
+                var_names.append(next_token.value.lstrip("$"))
+            else:
+                break
+
+        return var_names
 
     def _parse_time_window(self, modifier: str | None = None) -> TimeWindow:
         """Parse time window like 5m, 1h, 7d."""

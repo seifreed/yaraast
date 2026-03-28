@@ -57,7 +57,7 @@ def test_parse_match_section_with_multiple_variables_and_skip_token() -> None:
     assert section.variables[1].time_window.unit == "h"
 
 
-def test_parse_match_section_rejects_comma_separated_legacy_syntax() -> None:
+def test_parse_match_section_comma_separated_variables() -> None:
     parser = YaraLParser("")
     _set_tokens(
         parser,
@@ -66,12 +66,19 @@ def test_parse_match_section_rejects_comma_separated_legacy_syntax() -> None:
             _tok(T.COLON, ":"),
             _tok(T.STRING_IDENTIFIER, "$e1", YaraLTokenType.EVENT_VAR),
             _tok(T.COMMA, ","),
+            _tok(T.STRING_IDENTIFIER, "$e2", YaraLTokenType.EVENT_VAR),
+            _tok(T.IDENTIFIER, "over"),
+            _tok(T.IDENTIFIER, "5m", YaraLTokenType.TIME_LITERAL),
             _tok(T.EOF, None, YaraLTokenType.EOF),
         ],
     )
 
-    with pytest.raises(YaraLParserError, match="Comma-separated match variables are not supported"):
-        parser._parse_match_section()
+    match = parser._parse_match_section()
+    assert len(match.variables) == 2
+    assert match.variables[0].variable == "e1"
+    assert match.variables[1].variable == "e2"
+    assert match.variables[0].time_window.duration == 5
+    assert match.variables[1].time_window.duration == 5
 
 
 def test_parse_time_window_time_literal_integer_default_and_error() -> None:
