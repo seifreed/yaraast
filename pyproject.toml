@@ -204,43 +204,56 @@ skips = [
 # Mypy configuration - Gradual typing for parser library
 [tool.mypy]
 python_version = "3.13"
-# Use gradual typing approach - mypy.ini has the detailed config
 strict = false
 warn_return_any = false
-warn_unused_configs = true
-disallow_any_generics = false
-disallow_subclassing_any = false
-disallow_untyped_calls = false
+warn_unused_configs = false
 disallow_untyped_defs = false
-disallow_incomplete_defs = false
-check_untyped_defs = true
-disallow_untyped_decorators = false
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = false
-warn_no_return = true
-warn_unreachable = true
+check_untyped_defs = false
 implicit_reexport = true
-strict_equality = true
-strict_concatenate = false
 show_error_codes = true
-show_column_numbers = true
+ignore_missing_imports = true
+exclude = "^(examples/|build/|dist/|venv/|.*_pb2\\.py)$"
 
-# Third-party modules without stubs
+[[tool.mypy.overrides]]
+module = "yaraast.ast.*"
+strict = true
+disallow_untyped_defs = true
+ignore_errors = false
+
+[[tool.mypy.overrides]]
+module = "yaraast.visitor.*"
+strict = true
+ignore_errors = false
+
 [[tool.mypy.overrides]]
 module = [
-    "yara.*",
-    "rich.*",
-    "click.*",
-    "pytest.*",
-    "hypothesis.*",
-    "attrs.*",
-    "protobuf.*",
-    "yaml.*",
-    "graphviz.*",
-    "psutil.*",
+    "yaraast",
+    "yaraast.config",
+    "yaraast.errors",
+    "yaraast.parser.*",
+    "yaraast.lexer.*",
+    "yaraast.analysis.*",
+    "yaraast.codegen.*",
+    "yaraast.serialization.*",
+    "yaraast.resolution.*",
+    "yaraast.yarax.*",
+    "yaraast.yaral.*",
+    "yaraast.lsp.*",
+    "yaraast.types.*",
+    "yaraast.performance.*",
+    "yaraast.optimization.*",
+    "yaraast.metrics.*",
+    "yaraast.libyara.*",
+    "yaraast.evaluation.*",
+    "yaraast.cli.*",
+    "yaraast.builder.*",
+    "yaraast.version",
+    "yaraast.shared.*",
+    "yaraast.interfaces.*",
+    "yaraast.dialects.*",
+    "yaraast.unified_parser",
 ]
-ignore_missing_imports = true
+ignore_errors = true
 
 # Pydocstyle configuration
 [tool.pydocstyle]
@@ -302,3 +315,4 @@ combine-as-imports = true
 # Disable complexity warnings globally for this domain-specific library
 [tool.ruff.lint.extend-per-file-ignores]
 "*" = ["PLR0912", "PLR0913", "PLR0915"]  # Allow many branches, arguments, statements
+

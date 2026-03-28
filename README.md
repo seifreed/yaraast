@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/seifreed/yaraast/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/seifreed/yaraast/ci.yml?branch=main&style=flat-square&logo=github&label=CI" alt="CI"></a>
-  <a href="https://github.com/seifreed/yaraast/blob/main/LICENSE"><img src="https://img.shields.io/github/license/seifreed/yaraast?style=flat-square" alt="License"></a>
+  <a href="https://github.com/seifreed/yaraast/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/python-3.13%2B-blue?style=flat-square&logo=python&logoColor=white" alt="Python 3.13+">
 </p>
 
