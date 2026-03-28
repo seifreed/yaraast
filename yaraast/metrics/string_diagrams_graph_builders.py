@@ -26,7 +26,7 @@ def render_or_write_dot(dot: graphviz.Digraph, output_path: str, format: str) ->
     try:
         dot.render(output_file, format=format, cleanup=True)
         return f"{output_file}.{format}"
-    except Exception:
+    except Exception:  # noqa: BLE001 — fallback for missing Graphviz executables
         fallback_path = f"{output_file}.{format}"
         Path(fallback_path).write_text(dot.source, encoding="utf-8")
         return fallback_path

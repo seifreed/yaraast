@@ -3,31 +3,45 @@
 from __future__ import annotations
 
 import copy
-from typing import Any
+from typing import TYPE_CHECKING
 
 from yaraast.performance.memory_helpers import pooled_value
 
+if TYPE_CHECKING:
+    from yaraast.ast.base import ASTNode, YaraFile
+    from yaraast.ast.expressions import (
+        BinaryExpression,
+        Identifier,
+        StringIdentifier,
+        StringLiteral,
+        StringWildcard,
+        UnaryExpression,
+    )
+    from yaraast.ast.meta import Meta
+    from yaraast.ast.rules import Import, Include, Rule, Tag
+    from yaraast.ast.strings import HexString, PlainString, RegexString
 
-def _shallow(node: Any) -> Any:
+
+def _shallow(node: ASTNode) -> ASTNode:
     """Create a shallow copy of a dataclass node to avoid mutating the original."""
     return copy.copy(node)
 
 
-def visit_string_literal(transformer, node: Any) -> Any:
+def visit_string_literal(transformer, node: StringLiteral) -> StringLiteral:
     node = _shallow(node)
     if hasattr(node, "value") and isinstance(node.value, str):
         node.value = pooled_value(transformer.string_pool, node.value)
     return node
 
 
-def visit_identifier(transformer, node: Any) -> Any:
+def visit_identifier(transformer, node: Identifier) -> Identifier:
     node = _shallow(node)
     if hasattr(node, "name") and isinstance(node.name, str):
         node.name = pooled_value(transformer.string_pool, node.name)
     return node
 
 
-def visit_rule(transformer, node: Any) -> Any:
+def visit_rule(transformer, node: Rule) -> Rule:
     node = _shallow(node)
     if node.name:
         node.name = pooled_value(transformer.string_pool, node.name)
@@ -47,7 +61,7 @@ def visit_rule(transformer, node: Any) -> Any:
     return node
 
 
-def visit_plain_string(transformer, node: Any) -> Any:
+def visit_plain_string(transformer, node: PlainString) -> PlainString:
     node = _shallow(node)
     if hasattr(node, "value") and isinstance(node.value, str):
         node.value = pooled_value(transformer.string_pool, node.value)
@@ -56,7 +70,7 @@ def visit_plain_string(transformer, node: Any) -> Any:
     return node
 
 
-def visit_meta(transformer, node: Any) -> Any:
+def visit_meta(transformer, node: Meta) -> Meta:
     node = _shallow(node)
     if hasattr(node, "key") and isinstance(node.key, str):
         node.key = pooled_value(transformer.string_pool, node.key)
@@ -65,14 +79,14 @@ def visit_meta(transformer, node: Any) -> Any:
     return node
 
 
-def visit_tag(transformer, node: Any) -> Any:
+def visit_tag(transformer, node: Tag) -> Tag:
     node = _shallow(node)
     if hasattr(node, "name") and isinstance(node.name, str):
         node.name = pooled_value(transformer.string_pool, node.name)
     return node
 
 
-def visit_yara_file(transformer, node: Any) -> Any:
+def visit_yara_file(transformer, node: YaraFile) -> YaraFile:
     node = _shallow(node)
     if node.imports:
         node.imports = [transformer.visit(imp) for imp in node.imports]
@@ -83,35 +97,35 @@ def visit_yara_file(transformer, node: Any) -> Any:
     return node
 
 
-def visit_import(transformer, node: Any) -> Any:
+def visit_import(transformer, node: Import) -> Import:
     node = _shallow(node)
     if hasattr(node, "module") and isinstance(node.module, str):
         node.module = pooled_value(transformer.string_pool, node.module)
     return node
 
 
-def visit_include(transformer, node: Any) -> Any:
+def visit_include(transformer, node: Include) -> Include:
     node = _shallow(node)
     if hasattr(node, "path") and isinstance(node.path, str):
         node.path = pooled_value(transformer.string_pool, node.path)
     return node
 
 
-def visit_string_identifier(transformer, node: Any) -> Any:
+def visit_string_identifier(transformer, node: StringIdentifier) -> StringIdentifier:
     node = _shallow(node)
     if hasattr(node, "name") and isinstance(node.name, str):
         node.name = pooled_value(transformer.string_pool, node.name)
     return node
 
 
-def visit_string_wildcard(transformer, node: Any) -> Any:
+def visit_string_wildcard(transformer, node: StringWildcard) -> StringWildcard:
     node = _shallow(node)
     if hasattr(node, "pattern") and isinstance(node.pattern, str):
         node.pattern = pooled_value(transformer.string_pool, node.pattern)
     return node
 
 
-def visit_binary_expression(transformer, node: Any) -> Any:
+def visit_binary_expression(transformer, node: BinaryExpression) -> BinaryExpression:
     node = _shallow(node)
     if hasattr(node, "left"):
         node.left = transformer.visit(node.left)
@@ -122,7 +136,7 @@ def visit_binary_expression(transformer, node: Any) -> Any:
     return node
 
 
-def visit_unary_expression(transformer, node: Any) -> Any:
+def visit_unary_expression(transformer, node: UnaryExpression) -> UnaryExpression:
     node = _shallow(node)
     if hasattr(node, "operand"):
         node.operand = transformer.visit(node.operand)
@@ -131,14 +145,14 @@ def visit_unary_expression(transformer, node: Any) -> Any:
     return node
 
 
-def visit_hex_string(transformer, node: Any) -> Any:
+def visit_hex_string(transformer, node: HexString) -> HexString:
     node = _shallow(node)
     if hasattr(node, "identifier") and isinstance(node.identifier, str):
         node.identifier = pooled_value(transformer.string_pool, node.identifier)
     return node
 
 
-def visit_regex_string(transformer, node: Any) -> Any:
+def visit_regex_string(transformer, node: RegexString) -> RegexString:
     node = _shallow(node)
     if hasattr(node, "identifier") and isinstance(node.identifier, str):
         node.identifier = pooled_value(transformer.string_pool, node.identifier)

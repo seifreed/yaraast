@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import click
 
 from yaraast.cli.metrics_services import build_complexity_payload
 from yaraast.cli.utils import format_json
+from yaraast.metrics.complexity_model import ComplexityMetrics
 
 
-def format_complexity_text(metrics: Any) -> str:
+def format_complexity_text(metrics: ComplexityMetrics) -> str:
     lines: list[str] = []
     lines.extend(_format_overview_section(metrics))
     lines.extend(_format_rules_section(metrics))
@@ -19,7 +19,7 @@ def format_complexity_text(metrics: Any) -> str:
     return "\n".join(lines)
 
 
-def _format_overview_section(metrics: Any) -> list[str]:
+def _format_overview_section(metrics: ComplexityMetrics) -> list[str]:
     """Format the overview table with file, rule, string, condition, and pattern metrics."""
     return [
         "YARA Rule Complexity Analysis",
@@ -65,7 +65,7 @@ def _format_overview_section(metrics: Any) -> list[str]:
     ]
 
 
-def _format_rules_section(metrics: Any) -> list[str]:
+def _format_rules_section(metrics: ComplexityMetrics) -> list[str]:
     """Format per-rule details: cyclomatic complexity, complex rules, unused strings."""
     lines: list[str] = []
     if metrics.cyclomatic_complexity:
@@ -100,7 +100,7 @@ def _format_rules_section(metrics: Any) -> list[str]:
     return lines
 
 
-def _format_quality_section(metrics: Any) -> list[str]:
+def _format_quality_section(metrics: ComplexityMetrics) -> list[str]:
     """Format the quality score section with module usage."""
     lines: list[str] = []
     if metrics.module_usage:
@@ -114,7 +114,7 @@ def _format_quality_section(metrics: Any) -> list[str]:
     return lines
 
 
-def format_complexity_output(metrics: Any, fmt: str) -> str:
+def format_complexity_output(metrics: ComplexityMetrics, fmt: str) -> str:
     return (
         format_json(build_complexity_payload(metrics))
         if fmt == "json"

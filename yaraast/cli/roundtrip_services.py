@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import read_text
 from yaraast.codegen.pretty_printer import PrettyPrinter, StylePresets
 from yaraast.parser.parser import Parser
@@ -95,5 +96,5 @@ def pipeline_serialize_file(
     return ast, yaml_content, pipeline_data
 
 
-def build_rules_manifest(ast: Any) -> str:
+def build_rules_manifest(ast: YaraFile) -> str:
     return create_rules_manifest(ast)

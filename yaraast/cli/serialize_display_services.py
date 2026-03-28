@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from yaraast.ast.base import YaraFile
 from yaraast.serialization.ast_diff import DiffType
 
 console = Console()
@@ -96,7 +97,7 @@ def _display_diff_statistics(diff_result: Any) -> None:
 def build_validation_panel(
     input_file: str,
     format: str,
-    ast: Any | None,
+    ast: YaraFile | None,
     error: Exception | None,
 ) -> Panel:
     if error is None and ast is not None:

@@ -10,6 +10,7 @@ from typing import Any
 from yaraast.ast.base import YaraFile
 from yaraast.errors import ValidationError
 from yaraast.metrics.capabilities import get_capability
+from yaraast.metrics.complexity_model import ComplexityMetrics
 from yaraast.metrics.facade import METRICS
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
@@ -23,12 +24,12 @@ except ModuleNotFoundError:
 @dataclass
 class MetricsReportData:
     base_name: str
-    complexity_metrics: Any
+    complexity_metrics: ComplexityMetrics
     complexity_payload: dict[str, Any]
     generated_files: list[str]
 
 
-def analyze_complexity(ast: YaraFile) -> Any:
+def analyze_complexity(ast: YaraFile) -> ComplexityMetrics:
     analyzer = METRICS.new_complexity_analyzer()
     return analyzer.analyze(ast)
 
@@ -49,7 +50,7 @@ def is_graphviz_error(error: Exception) -> bool:
     return any(indicator.lower() in error_str.lower() for indicator in graphviz_indicators)
 
 
-def build_complexity_payload(metrics: Any) -> dict[str, Any]:
+def build_complexity_payload(metrics: ComplexityMetrics) -> dict[str, Any]:
     capability = get_capability("complexity")
     result = metrics.to_dict()
     result["quality_score"] = metrics.get_quality_score()

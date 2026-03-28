@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.serialize_service_helpers import create_serializer, export_with_serializer
 from yaraast.cli.utils import read_text
 from yaraast.parser.parser import Parser
@@ -12,7 +13,7 @@ from yaraast.serialization.ast_diff import AstDiff, AstHasher
 
 
 def export_ast(
-    ast: Any, fmt: str, output: str | None, minimal: bool
+    ast: YaraFile, fmt: str, output: str | None, minimal: bool
 ) -> tuple[str | None, dict | None]:
     return export_with_serializer(ast, fmt, output, minimal)
 
@@ -41,7 +42,7 @@ def validate_serialized(input_file: str | Path, fmt: str) -> Any:
     return import_ast(str(input_file), fmt)
 
 
-def build_ast_info(ast: Any) -> dict[str, Any]:
+def build_ast_info(ast: YaraFile) -> dict[str, Any]:
     rule_names = [rule.name for rule in ast.rules]
     rule_details = []
     for rule in ast.rules[:10]:

@@ -7,8 +7,8 @@ from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser.parser import Parser
 
@@ -280,7 +280,7 @@ class SimpleASTDiffer(SimpleDiffer):
             style_only_changes=[],
         )
 
-    def diff_ast(self, ast1: Any, ast2: Any) -> DiffResult:
+    def diff_ast(self, ast1: YaraFile, ast2: YaraFile) -> DiffResult:
         """Diff two ASTs by comparing their generated code."""
         code1 = self.generator.generate(ast1)
         code2 = self.generator.generate(ast2)
@@ -399,7 +399,7 @@ def diff_tokens(content1: str, content2: str) -> list[str]:
     return changes
 
 
-def diff_ast(ast1: Any, ast2: Any) -> DiffResult:
+def diff_ast(ast1: YaraFile, ast2: YaraFile) -> DiffResult:
     """Diff two ASTs."""
     differ = SimpleASTDiffer()
     return differ.diff_ast(ast1, ast2)

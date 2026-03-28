@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+
+from yaraast.ast.base import YaraFile
 
 
 class ParseStatus(Enum):
@@ -21,4 +22,4 @@ class ParseResult:
     parse_time: float
     rule_count: int
     import_count: int
-    ast: Any = None
+    ast: YaraFile | None = None

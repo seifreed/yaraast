@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
-
+from yaraast.ast.base import YaraFile
 from yaraast.errors import ValidationError
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
@@ -21,7 +20,7 @@ def create_serializer(fmt: str, *, include_metadata: bool = True):
 
 
 def export_with_serializer(
-    ast: Any, fmt: str, output: str | None, minimal: bool
+    ast: YaraFile, fmt: str, output: str | None, minimal: bool
 ) -> tuple[str | None, dict | None]:
     serializer = create_serializer(fmt, include_metadata=not minimal)
     if fmt == "json":

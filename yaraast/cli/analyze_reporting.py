@@ -9,6 +9,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from yaraast.analysis.best_practices import AnalysisReport
+from yaraast.analysis.optimization import OptimizationReport, OptimizationSuggestion
 from yaraast.cli.analyze_services import _filter_suggestions, _get_level_style, _get_severity_counts
 
 console = Console()
@@ -16,7 +18,7 @@ console = Console()
 
 def display_best_practices_report(
     rule_file: str,
-    report: Any,
+    report: AnalysisReport,
     verbose: bool,
     category: str,
 ) -> None:
@@ -46,7 +48,7 @@ def display_issues(suggestions: list[Any]) -> None:
             console.print(f"  {suggestion.format()}")
 
 
-def display_verbose_info(suggestions: list[Any], report: Any) -> None:
+def display_verbose_info(suggestions: list[Any], report: AnalysisReport) -> None:
     info_items = [s for s in suggestions if s.severity == "info"]
     if info_items:
         console.print("\n[bold blue]Suggestions:[/bold blue]")
@@ -70,13 +72,13 @@ def handle_exit_code(
     sys.exit(0)
 
 
-def display_optimization_report(rule_file: str, report: Any, verbose: bool) -> None:
+def display_optimization_report(rule_file: str, report: OptimizationReport, verbose: bool) -> None:
     console.print(f"\n[bold]Optimization Analysis:[/bold] {rule_file}\n")
     optimize_display_impact_summary(report)
     optimize_display_suggestions(report.suggestions, verbose)
 
 
-def optimize_display_impact_summary(report: Any) -> None:
+def optimize_display_impact_summary(report: OptimizationReport) -> None:
     table = Table(title="Optimization Opportunities")
     table.add_column("Impact", style="cyan")
     table.add_column("Count", justify="right")
@@ -111,7 +113,7 @@ def display_suggestions_by_level(level_suggestions: list[Any], level: str, verbo
             display_code_examples(suggestion)
 
 
-def display_code_examples(suggestion: Any) -> None:
+def display_code_examples(suggestion: OptimizationSuggestion) -> None:
     if suggestion.code_before:
         console.print(f"    Before: [dim]{suggestion.code_before}[/dim]")
     if suggestion.code_after:

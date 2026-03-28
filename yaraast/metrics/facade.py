@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.metrics.capabilities import CAPABILITIES, MetricsCapability, get_capability
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.dependency_graph import DependencyGraphGenerator
@@ -40,12 +41,14 @@ class MetricsSubsystem:
     def get_capability(self, name: str) -> MetricsCapability | None:
         return get_capability(name)
 
-    def analyze_complexity(self, ast: Any) -> Any:
+    def analyze_complexity(self, ast: YaraFile) -> Any:
         from yaraast.metrics.workflows import analyze_complexity
 
         return analyze_complexity(ast)
 
-    def build_report(self, ast: Any, output_dir: Path, base_name: str, image_format: str) -> Any:
+    def build_report(
+        self, ast: YaraFile, output_dir: Path, base_name: str, image_format: str
+    ) -> Any:
         from yaraast.metrics.workflows import build_report
 
         return build_report(ast, output_dir, base_name, image_format)
