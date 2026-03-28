@@ -58,7 +58,8 @@ jobs:
 
       - name: Verify package
         run: |
-          pip install dist/*.whl
+          WHEEL=$(ls dist/*.whl)
+          pip install "${WHEEL}[lsp,visualization,serialization,performance]"
           python -c "import yaraast; print(f'yaraast {yaraast.__version__} installed OK')"
           yaraast --version
 

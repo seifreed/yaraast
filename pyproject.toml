@@ -46,7 +46,6 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.8.0",
     "bandit>=1.7.0",
-    "pre-commit>=3.0.0",
     "pydocstyle>=6.3.0",
     "pip-audit>=2.10.0",
     "types-PyYAML>=6.0.0",
