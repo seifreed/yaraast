@@ -10,7 +10,6 @@ from yaraast.metrics.complexity_analysis_helpers import analyze_rule, calculate_
 from yaraast.metrics.complexity_model import ComplexityMetrics
 
 if TYPE_CHECKING:
-
     from yaraast.ast.base import YaraFile
     from yaraast.ast.expressions import BinaryExpression, UnaryExpression
     from yaraast.ast.rules import Rule

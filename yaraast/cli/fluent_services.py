@@ -138,11 +138,13 @@ def create_condition_demo_rules():
         .hex_string("$mz", "4D 5A")
         .hex_string("$pe", "50 45 00 00")
         .with_condition_builder(
-            lambda c: c.string_matches("$mz")
-            .at(0)
-            .and_(c.one_of("$a", "$b", "$c"))
-            .and_(c.filesize_gt(1024))
-            .and_(c.pe_is_exe()),
+            lambda c: (
+                c.string_matches("$mz")
+                .at(0)
+                .and_(c.one_of("$a", "$b", "$c"))
+                .and_(c.filesize_gt(1024))
+                .and_(c.pe_is_exe())
+            ),
         )
         .build(),
     )
@@ -171,10 +173,9 @@ def create_condition_demo_rules():
         .tagged("demo", "pe")
         .mz_header()
         .with_condition_builder(
-            lambda c: c.string_matches("$mz")
-            .at(0)
-            .and_(c.pe_is_dll())
-            .and_(c.pe_section_count_eq(3)),
+            lambda c: (
+                c.string_matches("$mz").at(0).and_(c.pe_is_dll()).and_(c.pe_section_count_eq(3))
+            ),
         )
         .build(),
     )
@@ -225,9 +226,11 @@ def create_transformation_rules():
         .add_tag("upx")
         .add_string(text("$upx", "UPX!").build())
         .transform_condition(
-            lambda cond: FluentConditionBuilder(cond)
-            .and_(FluentConditionBuilder().string_matches("$upx"))
-            .build(),
+            lambda cond: (
+                FluentConditionBuilder(cond)
+                .and_(FluentConditionBuilder().string_matches("$upx"))
+                .build()
+            ),
         )
         .build(),
     )

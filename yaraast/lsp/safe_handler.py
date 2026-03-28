@@ -18,9 +18,9 @@ def lsp_safe_handler[F: Callable[..., Any]](func: F) -> F: ...
 def lsp_safe_handler[F: Callable[..., Any]](*, default: Any) -> Callable[[F], F]: ...
 
 
-def lsp_safe_handler[
-    F: Callable[..., Any]
-](func: F | None = None, *, default: Any = None) -> F | Callable[[F], F]:
+def lsp_safe_handler[F: Callable[..., Any]](
+    func: F | None = None, *, default: Any = None
+) -> F | Callable[[F], F]:
     """Wrap LSP handler to catch exceptions and return a default value.
 
     LSP handlers use broad ``except Exception`` intentionally: the language

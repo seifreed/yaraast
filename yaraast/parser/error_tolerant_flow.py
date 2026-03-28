@@ -142,12 +142,16 @@ def _set_yara_file_location(yara_file: YaraFile) -> None:
     start_node = (
         yara_file.imports[0]
         if yara_file.imports
-        else yara_file.includes[0] if yara_file.includes else yara_file.rules[0]
+        else yara_file.includes[0]
+        if yara_file.includes
+        else yara_file.rules[0]
     )
     end_node = (
         yara_file.rules[-1]
         if yara_file.rules
-        else yara_file.includes[-1] if yara_file.includes else yara_file.imports[-1]
+        else yara_file.includes[-1]
+        if yara_file.includes
+        else yara_file.imports[-1]
     )
     start = start_node.location
     end = end_node.location

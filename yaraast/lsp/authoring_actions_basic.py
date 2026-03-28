@@ -48,7 +48,7 @@ def create_missing_string(
     return StructuralEdit(
         title=f"Add string definition for {identifier}",
         edit=TextEdit(range=Range(start=pos, end=pos), new_text=new_text),
-        preview=f'Insert {identifier} into {"strings" if strings_line >= 0 else "new strings section"}',
+        preview=f"Insert {identifier} into {'strings' if strings_line >= 0 else 'new strings section'}",
     )
 
 
