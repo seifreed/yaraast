@@ -9,15 +9,15 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/yaraast/"><img src="https://img.shields.io/pypi/v/yaraast?style=flat-square&logo=pypi&logoColor=white" alt="PyPI Version"></a>
-  <a href="https://pypi.org/project/yaraast/"><img src="https://img.shields.io/pypi/pyversions/yaraast?style=flat-square&logo=python&logoColor=white" alt="Python Versions"></a>
-  <a href="https://github.com/mriverolopez/yaraast/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License"></a>
-  <a href="https://yaraast.readthedocs.io/"><img src="https://img.shields.io/readthedocs/yaraast?style=flat-square&logo=readthedocs&logoColor=white" alt="Docs"></a>
+  <a href="https://github.com/seifreed/yaraast/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/seifreed/yaraast/ci.yml?branch=main&style=flat-square&logo=github&label=CI" alt="CI"></a>
+  <a href="https://github.com/seifreed/yaraast/blob/main/LICENSE"><img src="https://img.shields.io/github/license/seifreed/yaraast?style=flat-square" alt="License"></a>
+  <img src="https://img.shields.io/badge/python-3.13%2B-blue?style=flat-square&logo=python&logoColor=white" alt="Python 3.13+">
 </p>
 
 <p align="center">
-  <a href="https://github.com/mriverolopez/yaraast/stargazers"><img src="https://img.shields.io/github/stars/mriverolopez/yaraast?style=flat-square" alt="GitHub Stars"></a>
-  <a href="https://github.com/mriverolopez/yaraast/issues"><img src="https://img.shields.io/github/issues/mriverolopez/yaraast?style=flat-square" alt="GitHub Issues"></a>
+  <a href="https://github.com/seifreed/yaraast/stargazers"><img src="https://img.shields.io/github/stars/seifreed/yaraast?style=flat-square&logo=github" alt="GitHub Stars"></a>
+  <a href="https://github.com/seifreed/yaraast/issues"><img src="https://img.shields.io/github/issues/seifreed/yaraast?style=flat-square&logo=github" alt="GitHub Issues"></a>
+  <a href="https://github.com/seifreed/yaraast/tree/main/docs"><img src="https://img.shields.io/badge/docs-GitHub-blue?style=flat-square&logo=readthedocs&logoColor=white" alt="Docs"></a>
 </p>
 
 ---
