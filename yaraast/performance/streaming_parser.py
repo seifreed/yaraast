@@ -18,8 +18,8 @@ from yaraast.performance.streaming_result_builders import (
 )
 
 if TYPE_CHECKING:
-    import io
     from collections.abc import Callable, Iterator
+    import io
 
     from yaraast.ast.rules import Rule
 

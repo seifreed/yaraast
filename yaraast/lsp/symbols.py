@@ -8,10 +8,12 @@ import time
 from lsprotocol.types import DocumentSymbol, Range
 
 from yaraast.lsp.runtime import DocumentContext, LspRuntime
-from yaraast.lsp.symbol_tree_builder import build_document_symbols
-from yaraast.lsp.symbol_tree_builder import find_closing_brace as _find_closing_brace_impl
-from yaraast.lsp.symbol_tree_builder import find_line_containing as _find_line_containing_impl
-from yaraast.lsp.symbol_tree_builder import make_range as _make_range_impl
+from yaraast.lsp.symbol_tree_builder import (
+    build_document_symbols,
+    find_closing_brace as _find_closing_brace_impl,
+    find_line_containing as _find_line_containing_impl,
+    make_range as _make_range_impl,
+)
 
 logger = logging.getLogger(__name__)
 

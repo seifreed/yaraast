@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import re
-import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
+import re
+import threading
 from typing import Protocol, runtime_checkable
 
 

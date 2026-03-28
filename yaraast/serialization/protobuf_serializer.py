@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+import warnings
 
 from yaraast.errors import SerializationError
 from yaraast.serialization.protobuf_conversion import (

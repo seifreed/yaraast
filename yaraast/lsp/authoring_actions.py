@@ -14,19 +14,15 @@ from yaraast.lsp.authoring_actions_basic import (  # noqa: F401
 from yaraast.lsp.authoring_actions_common import replace_rule_text, require_rule_context
 from yaraast.lsp.authoring_actions_rewrites import (
     deduplicate_identical_strings as rewrite_deduplicate_identical_strings,
+    optimize_rule as rewrite_optimize_rule,
+    rewrite_of_them as rewrite_of_them_action,
+    roundtrip_rewrite_rule as rewrite_roundtrip_rule,
 )
-from yaraast.lsp.authoring_actions_rewrites import optimize_rule as rewrite_optimize_rule
-from yaraast.lsp.authoring_actions_rewrites import rewrite_of_them as rewrite_of_them_action
-from yaraast.lsp.authoring_actions_rewrites import roundtrip_rewrite_rule as rewrite_roundtrip_rule
 from yaraast.lsp.authoring_actions_sorting import (
     canonicalize_rule_structure as sort_canonicalize_rule_structure,
-)
-from yaraast.lsp.authoring_actions_sorting import pretty_print_rule as sort_pretty_print_rule
-from yaraast.lsp.authoring_actions_sorting import sort_meta_by_key as sort_sort_meta_by_key
-from yaraast.lsp.authoring_actions_sorting import (
+    pretty_print_rule as sort_pretty_print_rule,
+    sort_meta_by_key as sort_sort_meta_by_key,
     sort_strings_by_identifier as sort_sort_strings_by_identifier,
-)
-from yaraast.lsp.authoring_actions_sorting import (
     sort_tags_alphabetically as sort_sort_tags_alphabetically,
 )
 from yaraast.lsp.authoring_support import RuleContext

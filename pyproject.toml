@@ -108,6 +108,8 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 ensure_newline_before_comments = true
+force_sort_within_sections = true
+combine_as_imports = true
 skip_glob = ["venv/*", "build/*", "dist/*", "*_pb2.py"]
 
 # pytest configuration
@@ -278,6 +280,10 @@ ignore = [
     "F403",   # star imports (used in __init__.py for convenience)
     "F405",   # undefined from star imports (expected with star imports)
 ]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+combine-as-imports = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["T20", "S101", "D", "PLR2004"]  # Allow prints, asserts, missing docs in tests

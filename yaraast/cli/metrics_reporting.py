@@ -9,35 +9,21 @@ import click
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.cli.metrics_reporting_complexity import complexity_quality_message
-from yaraast.cli.metrics_reporting_complexity import emit_text_output as _emit_text_output
 from yaraast.cli.metrics_reporting_complexity import (
+    complexity_quality_message,
+    emit_text_output as _emit_text_output,
     format_complexity_output as _format_complexity_output,
-)
-from yaraast.cli.metrics_reporting_complexity import (
     format_complexity_text as _format_complexity_text,
 )
 from yaraast.cli.metrics_reporting_display import (
     display_graph_statistics as _display_graph_statistics,
-)
-from yaraast.cli.metrics_reporting_display import (
     display_graphviz_installation_help as _display_graphviz_installation_help,
-)
-from yaraast.cli.metrics_reporting_display import (
     display_graphviz_installation_instructions as _display_graphviz_installation_instructions,
-)
-from yaraast.cli.metrics_reporting_display import display_module_usage as _display_module_usage
-from yaraast.cli.metrics_reporting_display import (
+    display_module_usage as _display_module_usage,
     display_rule_dependencies as _display_rule_dependencies,
-)
-from yaraast.cli.metrics_reporting_display import (
     display_successful_graph_result as _display_successful_graph_result,
-)
-from yaraast.cli.metrics_reporting_display import display_text_fallback as _display_text_fallback
-from yaraast.cli.metrics_reporting_display import (
+    display_text_fallback as _display_text_fallback,
     display_text_statistics as _display_text_statistics,
-)
-from yaraast.cli.metrics_reporting_display import (
     graphviz_fallback_message as _graphviz_fallback_message,
 )
 from yaraast.cli.metrics_services import MetricsReportData

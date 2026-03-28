@@ -6,20 +6,10 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.metrics.string_diagrams_graph_builders import (
     add_pattern_relationships as builder_add_pattern_relationships,
-)
-from yaraast.metrics.string_diagrams_graph_builders import (
     generate_hex_pattern_diagram as builder_generate_hex_pattern_diagram,
-)
-from yaraast.metrics.string_diagrams_graph_builders import (
     generate_pattern_complexity_diagram as builder_generate_pattern_complexity_diagram,
-)
-from yaraast.metrics.string_diagrams_graph_builders import (
     generate_pattern_flow_diagram as builder_generate_pattern_flow_diagram,
-)
-from yaraast.metrics.string_diagrams_graph_builders import (
     generate_pattern_similarity_diagram as builder_generate_pattern_similarity_diagram,
-)
-from yaraast.metrics.string_diagrams_graph_builders import (
     render_or_write_dot as builder_render_or_write_dot,
 )
 

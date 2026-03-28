@@ -26,8 +26,7 @@ from yaraast.parser.error_tolerant_recovery import (
     set_recovered_location,
 )
 from yaraast.parser.error_tolerant_types import ParserError, ParseResult, format_parser_errors
-from yaraast.parser.parser import Parser
-from yaraast.parser.parser import ParserError as BaseParserError
+from yaraast.parser.parser import Parser, ParserError as BaseParserError
 
 
 class ErrorTolerantParser(Parser):

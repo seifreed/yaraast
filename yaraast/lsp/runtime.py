@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import logging
 from collections import deque
+import logging
 from typing import Any
 
 from lsprotocol.types import Location, Position, SymbolInformation, TextEdit
@@ -20,27 +20,25 @@ from yaraast.lsp.document_types import (
     path_to_uri,
     uri_to_path,
 )
-from yaraast.lsp.runtime_observability import get_latency_metrics as runtime_get_latency_metrics
-from yaraast.lsp.runtime_observability import get_status as runtime_get_status
-from yaraast.lsp.runtime_observability import record_latency as runtime_record_latency
-from yaraast.lsp.runtime_observability import should_debounce as runtime_should_debounce
-from yaraast.lsp.runtime_rules import find_rule_definition as runtime_find_rule_definition
+from yaraast.lsp.runtime_observability import (
+    get_latency_metrics as runtime_get_latency_metrics,
+    get_status as runtime_get_status,
+    record_latency as runtime_record_latency,
+    should_debounce as runtime_should_debounce,
+)
 from yaraast.lsp.runtime_rules import (
+    find_rule_definition as runtime_find_rule_definition,
     find_rule_reference_records as runtime_find_rule_reference_records,
-)
-from yaraast.lsp.runtime_rules import (
     find_rule_reference_records_in_document as runtime_find_rule_reference_records_in_document,
-)
-from yaraast.lsp.runtime_rules import find_rule_references as runtime_find_rule_references
-from yaraast.lsp.runtime_rules import (
+    find_rule_references as runtime_find_rule_references,
     get_rule_link_records_for_document as runtime_get_rule_link_records_for_document,
+    rename_rule as runtime_rename_rule,
+    resolve_symbol as runtime_resolve_symbol,
 )
-from yaraast.lsp.runtime_rules import rename_rule as runtime_rename_rule
-from yaraast.lsp.runtime_rules import resolve_symbol as runtime_resolve_symbol
 from yaraast.lsp.runtime_workspace import (
     workspace_symbol_records as runtime_workspace_symbol_records,
+    workspace_symbols as runtime_workspace_symbols,
 )
-from yaraast.lsp.runtime_workspace import workspace_symbols as runtime_workspace_symbols
 from yaraast.lsp.workspace_index import WorkspaceIndex
 
 logger = logging.getLogger(__name__)

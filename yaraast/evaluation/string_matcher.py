@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
+import re
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.errors import EvaluationError

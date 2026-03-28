@@ -2,12 +2,11 @@
 
 import attrs
 
-from yaraast.lexer.tokens import Token
-from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.lexer.tokens import Token, TokenType as BaseTokenType
 
-from .lexer_tables import EVENT_VAR_PATTERN
-from .lexer_tables import KEYWORDS as LEXER_KEYWORDS
 from .lexer_tables import (
+    EVENT_VAR_PATTERN,
+    KEYWORDS as LEXER_KEYWORDS,
     REFERENCE_LIST_PATTERN,
     SINGLE_CHAR_TOKENS,
     TIME_PATTERN,

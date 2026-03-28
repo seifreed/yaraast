@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import time
 from collections.abc import Iterable
 from pathlib import Path
+import time
 from typing import Any
 
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor

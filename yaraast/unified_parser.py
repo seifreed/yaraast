@@ -5,8 +5,8 @@ Licensed under GPLv3
 https://www.gnu.org/licenses/gpl-3.0.html
 """
 
-import re
 from pathlib import Path
+import re
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include

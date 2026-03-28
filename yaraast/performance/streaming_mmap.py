@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import mmap
 from collections.abc import Iterator
+import mmap
 
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.tokens import TokenType

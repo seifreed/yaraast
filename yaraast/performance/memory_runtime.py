@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import gc
-import weakref
 from contextlib import contextmanager
+import gc
 from typing import Any
+import weakref
 
 from yaraast.performance.memory_helpers import MemoryStats, clear_tracking, maybe_collect
 

@@ -8,26 +8,18 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
-from yaraast.performance.parallel_execution import analyze_rules as execution_analyze_rules
 from yaraast.performance.parallel_execution import (
+    analyze_rules as execution_analyze_rules,
     analyze_with_custom_function as execution_analyze_with_custom_function,
-)
-from yaraast.performance.parallel_execution import (
     batch_analyze_files as execution_batch_analyze_files,
-)
-from yaraast.performance.parallel_execution import (
     profile_performance as execution_profile_performance,
 )
 from yaraast.performance.parallel_job_actions import (
     analyze_complexity_parallel as job_analyze_complexity_parallel,
-)
-from yaraast.performance.parallel_job_actions import (
     generate_graphs_parallel as job_generate_graphs_parallel,
-)
-from yaraast.performance.parallel_job_actions import (
     parse_files_parallel as job_parse_files_parallel,
+    process_batch as job_process_batch,
 )
-from yaraast.performance.parallel_job_actions import process_batch as job_process_batch
 from yaraast.performance.parallel_job_helpers import (
     analyze_file_path,
     default_parallel_stats,

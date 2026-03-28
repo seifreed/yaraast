@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any
 
 from lsprotocol.types import Location, Position, Range, TextEdit
 
-import yaraast.lsp.document_queries as document_queries
 from yaraast.dialects import YaraDialect
+import yaraast.lsp.document_queries as document_queries
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import html as html_mod
 from collections.abc import Iterable
+import html as html_mod
 from pathlib import Path
 from typing import Any
 

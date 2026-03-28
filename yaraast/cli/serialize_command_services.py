@@ -11,9 +11,14 @@ from yaraast.cli.serialize_display_services import (
     _display_diff_summary,
     build_validation_panel,
 )
-from yaraast.cli.serialize_services import build_ast_info, compare_yara_files, export_ast
-from yaraast.cli.serialize_services import import_ast as import_ast_service
-from yaraast.cli.serialize_services import parse_yara_file, validate_serialized
+from yaraast.cli.serialize_services import (
+    build_ast_info,
+    compare_yara_files,
+    export_ast,
+    import_ast as import_ast_service,
+    parse_yara_file,
+    validate_serialized,
+)
 
 
 def export_serialized(

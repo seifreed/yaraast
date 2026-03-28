@@ -10,12 +10,8 @@ import graphviz
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 from yaraast.metrics.dependency_graph_generation import (
     generate_complexity_graph as dependency_generate_complexity_graph,
-)
-from yaraast.metrics.dependency_graph_generation import generate_graph as dependency_generate_graph
-from yaraast.metrics.dependency_graph_generation import (
+    generate_graph as dependency_generate_graph,
     generate_module_graph as dependency_generate_module_graph,
-)
-from yaraast.metrics.dependency_graph_generation import (
     generate_rule_graph as dependency_generate_rule_graph,
 )
 from yaraast.metrics.dependency_graph_graphviz import (

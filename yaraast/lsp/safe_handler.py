@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import functools
 import logging
-from collections.abc import Callable
 from typing import Any, overload
 
 logger = logging.getLogger(__name__)

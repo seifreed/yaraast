@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import graphlib
 from dataclasses import dataclass, field
+import graphlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import contextlib
-import sys
 from pathlib import Path
+import sys
 from typing import Any
 
 from yaraast.cli.utils import read_text

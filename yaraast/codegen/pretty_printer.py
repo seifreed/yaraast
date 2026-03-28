@@ -13,29 +13,19 @@ from yaraast.codegen.pretty_printer_helpers import (
     calculate_string_alignment_column,
     expression_to_string,
 )
-from yaraast.codegen.pretty_printer_layout import visit_rule as layout_visit_rule
-from yaraast.codegen.pretty_printer_layout import visit_yara_file as layout_visit_yara_file
 from yaraast.codegen.pretty_printer_layout import (
+    visit_rule as layout_visit_rule,
+    visit_yara_file as layout_visit_yara_file,
     write_condition_section as layout_write_condition_section,
-)
-from yaraast.codegen.pretty_printer_layout import (
     write_string_definition as layout_write_string_definition,
 )
 from yaraast.codegen.pretty_printer_sections import (
     write_hex_string_aligned as section_write_hex_string_aligned,
-)
-from yaraast.codegen.pretty_printer_sections import write_meta_entry as section_write_meta_entry
-from yaraast.codegen.pretty_printer_sections import write_meta_section as section_write_meta_section
-from yaraast.codegen.pretty_printer_sections import (
+    write_meta_entry as section_write_meta_entry,
+    write_meta_section as section_write_meta_section,
     write_plain_string_aligned as section_write_plain_string_aligned,
-)
-from yaraast.codegen.pretty_printer_sections import (
     write_regex_string_aligned as section_write_regex_string_aligned,
-)
-from yaraast.codegen.pretty_printer_sections import (
     write_strings_section as section_write_strings_section,
-)
-from yaraast.codegen.pretty_printer_sections import (
     write_wrapped_condition as section_write_wrapped_condition,
 )
 

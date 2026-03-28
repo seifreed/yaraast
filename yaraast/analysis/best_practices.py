@@ -7,9 +7,9 @@ identify patterns and suggest improvements.
 
 from __future__ import annotations
 
-import re
 from collections import Counter
 from dataclasses import dataclass, field
+import re
 from typing import Any
 
 from yaraast.analysis.best_practices_helpers import (

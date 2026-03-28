@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import contextlib
+from dataclasses import dataclass
 import re
 import time
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from lsprotocol.types import (

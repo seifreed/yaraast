@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import struct
 from collections.abc import Callable
+import struct
 
 
 def read_struct(data: bytes, fmt: str, offset: int, size: int) -> int:

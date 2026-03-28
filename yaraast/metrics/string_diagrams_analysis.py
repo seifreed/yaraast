@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import re
 from collections import defaultdict
+import re
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString

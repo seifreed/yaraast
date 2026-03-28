@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from lsprotocol.types import Range
 
-import yaraast.lsp.authoring_actions as authoring_actions
 from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.generator import CodeGenerator
+import yaraast.lsp.authoring_actions as authoring_actions
 from yaraast.lsp.authoring_actions import StructuralEdit
 from yaraast.lsp.authoring_support import (
     canonical_config,

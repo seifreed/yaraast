@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import statistics
-import time
 from dataclasses import dataclass
 from pathlib import Path
+import statistics
+import time
 from typing import Any
 
 from yaraast.ast.base import ASTNode, YaraFile

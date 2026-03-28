@@ -6,54 +6,31 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.performance.memory_runtime import (
     batch_process_with_memory_limit as runtime_batch_process_with_memory_limit,
-)
-from yaraast.performance.memory_runtime import clear_caches as runtime_clear_caches
-from yaraast.performance.memory_runtime import (
+    clear_caches as runtime_clear_caches,
     create_memory_efficient_ast as runtime_create_memory_efficient_ast,
-)
-from yaraast.performance.memory_runtime import force_cleanup as runtime_force_cleanup
-from yaraast.performance.memory_runtime import get_memory_stats as runtime_get_memory_stats
-from yaraast.performance.memory_runtime import get_memory_usage as runtime_get_memory_usage
-from yaraast.performance.memory_runtime import get_statistics as runtime_get_statistics
-from yaraast.performance.memory_runtime import init_optimizer_state, maybe_post_optimize_collect
-from yaraast.performance.memory_runtime import (
+    force_cleanup as runtime_force_cleanup,
+    get_memory_stats as runtime_get_memory_stats,
+    get_memory_usage as runtime_get_memory_usage,
+    get_statistics as runtime_get_statistics,
+    init_optimizer_state,
+    maybe_post_optimize_collect,
     memory_managed_context as runtime_memory_managed_context,
 )
 from yaraast.performance.memory_transformer_visitors import (
     visit_binary_expression as transformer_visit_binary_expression,
-)
-from yaraast.performance.memory_transformer_visitors import (
     visit_hex_string as transformer_visit_hex_string,
-)
-from yaraast.performance.memory_transformer_visitors import (
     visit_identifier as transformer_visit_identifier,
-)
-from yaraast.performance.memory_transformer_visitors import visit_import as transformer_visit_import
-from yaraast.performance.memory_transformer_visitors import (
+    visit_import as transformer_visit_import,
     visit_include as transformer_visit_include,
-)
-from yaraast.performance.memory_transformer_visitors import visit_meta as transformer_visit_meta
-from yaraast.performance.memory_transformer_visitors import (
+    visit_meta as transformer_visit_meta,
     visit_plain_string as transformer_visit_plain_string,
-)
-from yaraast.performance.memory_transformer_visitors import (
     visit_regex_string as transformer_visit_regex_string,
-)
-from yaraast.performance.memory_transformer_visitors import visit_rule as transformer_visit_rule
-from yaraast.performance.memory_transformer_visitors import (
+    visit_rule as transformer_visit_rule,
     visit_string_identifier as transformer_visit_string_identifier,
-)
-from yaraast.performance.memory_transformer_visitors import (
     visit_string_literal as transformer_visit_string_literal,
-)
-from yaraast.performance.memory_transformer_visitors import (
     visit_string_wildcard as transformer_visit_string_wildcard,
-)
-from yaraast.performance.memory_transformer_visitors import visit_tag as transformer_visit_tag
-from yaraast.performance.memory_transformer_visitors import (
+    visit_tag as transformer_visit_tag,
     visit_unary_expression as transformer_visit_unary_expression,
-)
-from yaraast.performance.memory_transformer_visitors import (
     visit_yara_file as transformer_visit_yara_file,
 )
 from yaraast.visitor.base import ASTTransformer

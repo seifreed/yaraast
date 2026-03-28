@@ -7,14 +7,16 @@ from typing import Any
 
 from lsprotocol.types import Hover, MarkupContent, MarkupKind, Position, Range
 
-from yaraast.lsp.hover_renderers import include_hover as render_include_hover
-from yaraast.lsp.hover_renderers import meta_hover as render_meta_hover
-from yaraast.lsp.hover_renderers import module_field_hover as render_module_field_hover
-from yaraast.lsp.hover_renderers import module_function_hover as render_module_function_hover
-from yaraast.lsp.hover_renderers import module_hover as render_module_hover
-from yaraast.lsp.hover_renderers import rule_hover as render_rule_hover
-from yaraast.lsp.hover_renderers import string_identifier_hover as render_string_identifier_hover
-from yaraast.lsp.hover_renderers import workspace_rule_hover as render_workspace_rule_hover
+from yaraast.lsp.hover_renderers import (
+    include_hover as render_include_hover,
+    meta_hover as render_meta_hover,
+    module_field_hover as render_module_field_hover,
+    module_function_hover as render_module_function_hover,
+    module_hover as render_module_hover,
+    rule_hover as render_rule_hover,
+    string_identifier_hover as render_string_identifier_hover,
+    workspace_rule_hover as render_workspace_rule_hover,
+)
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import DocumentContext, LspRuntime
 from yaraast.lsp.safe_handler import lsp_safe_handler

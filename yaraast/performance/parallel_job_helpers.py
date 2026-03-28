@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 import time
 import uuid
-from pathlib import Path
 
 from yaraast.performance.parallel_models import Job, JobStatus
 

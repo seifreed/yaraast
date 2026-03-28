@@ -6,11 +6,11 @@ and provide YARA module semantics for condition evaluation without requiring yar
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import hashlib
 import math
 import struct
 import time as time_mod
-from dataclasses import dataclass
 from typing import Any
 
 

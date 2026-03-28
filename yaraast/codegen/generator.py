@@ -50,32 +50,16 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
-from yaraast.codegen.generator_expression_visitors import visit_array_access as render_array_access
 from yaraast.codegen.generator_expression_visitors import (
+    visit_array_access as render_array_access,
     visit_at_expression as render_at_expression,
-)
-from yaraast.codegen.generator_expression_visitors import (
     visit_binary_expression as render_binary_expression,
-)
-from yaraast.codegen.generator_expression_visitors import (
     visit_for_expression as render_for_expression,
-)
-from yaraast.codegen.generator_expression_visitors import (
     visit_function_call as render_function_call,
-)
-from yaraast.codegen.generator_expression_visitors import (
     visit_member_access as render_member_access,
-)
-from yaraast.codegen.generator_expression_visitors import (
     visit_parentheses_expression as render_parentheses_expression,
-)
-from yaraast.codegen.generator_expression_visitors import (
     visit_range_expression as render_range_expression,
-)
-from yaraast.codegen.generator_expression_visitors import (
     visit_set_expression as render_set_expression,
-)
-from yaraast.codegen.generator_expression_visitors import (
     visit_unary_expression as render_unary_expression,
 )
 from yaraast.codegen.generator_expressions import (
@@ -89,50 +73,38 @@ from yaraast.codegen.generator_formatting import (
     format_rule_tags,
 )
 from yaraast.codegen.generator_helpers import escape_plain_string_value, format_modifiers
-from yaraast.codegen.generator_leaf_visitors import visit_boolean_literal as render_boolean_literal
-from yaraast.codegen.generator_leaf_visitors import visit_comment as render_comment
-from yaraast.codegen.generator_leaf_visitors import visit_comment_group as render_comment_group
 from yaraast.codegen.generator_leaf_visitors import (
+    visit_boolean_literal as render_boolean_literal,
+    visit_comment as render_comment,
+    visit_comment_group as render_comment_group,
     visit_defined_expression as render_defined_expression,
-)
-from yaraast.codegen.generator_leaf_visitors import (
     visit_dictionary_access as render_dictionary_access,
-)
-from yaraast.codegen.generator_leaf_visitors import visit_double_literal as render_double_literal
-from yaraast.codegen.generator_leaf_visitors import visit_extern_import as render_extern_import
-from yaraast.codegen.generator_leaf_visitors import (
+    visit_double_literal as render_double_literal,
+    visit_extern_import as render_extern_import,
     visit_extern_namespace as render_extern_namespace,
-)
-from yaraast.codegen.generator_leaf_visitors import visit_extern_rule as render_extern_rule
-from yaraast.codegen.generator_leaf_visitors import (
+    visit_extern_rule as render_extern_rule,
     visit_extern_rule_reference as render_extern_rule_reference,
-)
-from yaraast.codegen.generator_leaf_visitors import visit_hex_alternative as render_hex_alternative
-from yaraast.codegen.generator_leaf_visitors import visit_hex_byte as render_hex_byte
-from yaraast.codegen.generator_leaf_visitors import visit_hex_jump as render_hex_jump_leaf
-from yaraast.codegen.generator_leaf_visitors import visit_hex_nibble as render_hex_nibble
-from yaraast.codegen.generator_leaf_visitors import visit_hex_wildcard as render_hex_wildcard
-from yaraast.codegen.generator_leaf_visitors import visit_identifier as render_identifier
-from yaraast.codegen.generator_leaf_visitors import visit_in_rule_pragma as render_in_rule_pragma
-from yaraast.codegen.generator_leaf_visitors import visit_integer_literal as render_integer_literal
-from yaraast.codegen.generator_leaf_visitors import visit_meta as render_meta
-from yaraast.codegen.generator_leaf_visitors import (
+    visit_hex_alternative as render_hex_alternative,
+    visit_hex_byte as render_hex_byte,
+    visit_hex_jump as render_hex_jump_leaf,
+    visit_hex_nibble as render_hex_nibble,
+    visit_hex_wildcard as render_hex_wildcard,
+    visit_identifier as render_identifier,
+    visit_in_rule_pragma as render_in_rule_pragma,
+    visit_integer_literal as render_integer_literal,
+    visit_meta as render_meta,
     visit_module_reference as render_module_reference,
-)
-from yaraast.codegen.generator_leaf_visitors import visit_pragma as render_pragma
-from yaraast.codegen.generator_leaf_visitors import visit_pragma_block as render_pragma_block
-from yaraast.codegen.generator_leaf_visitors import visit_regex_literal as render_regex_literal
-from yaraast.codegen.generator_leaf_visitors import visit_string_count as render_string_count
-from yaraast.codegen.generator_leaf_visitors import (
+    visit_pragma as render_pragma,
+    visit_pragma_block as render_pragma_block,
+    visit_regex_literal as render_regex_literal,
+    visit_string_count as render_string_count,
     visit_string_identifier as render_string_identifier,
-)
-from yaraast.codegen.generator_leaf_visitors import visit_string_length as render_string_length
-from yaraast.codegen.generator_leaf_visitors import visit_string_literal as render_string_literal
-from yaraast.codegen.generator_leaf_visitors import visit_string_offset as render_string_offset
-from yaraast.codegen.generator_leaf_visitors import (
+    visit_string_length as render_string_length,
+    visit_string_literal as render_string_literal,
+    visit_string_offset as render_string_offset,
     visit_string_operator_expression as render_string_operator_expression,
+    visit_string_wildcard as render_string_wildcard,
 )
-from yaraast.codegen.generator_leaf_visitors import visit_string_wildcard as render_string_wildcard
 from yaraast.codegen.generator_sections import (
     write_condition_section,
     write_hex_string,
@@ -141,14 +113,14 @@ from yaraast.codegen.generator_sections import (
     write_regex_string,
     write_strings_section,
 )
-from yaraast.codegen.generator_structure_visitors import visit_import as render_import
-from yaraast.codegen.generator_structure_visitors import visit_include as render_include
-from yaraast.codegen.generator_structure_visitors import visit_rule as render_rule
 from yaraast.codegen.generator_structure_visitors import (
+    visit_import as render_import,
+    visit_include as render_include,
+    visit_rule as render_rule,
     visit_string_definition as render_string_definition,
+    visit_tag as render_tag,
+    visit_yara_file as render_yara_file,
 )
-from yaraast.codegen.generator_structure_visitors import visit_tag as render_tag
-from yaraast.codegen.generator_structure_visitors import visit_yara_file as render_yara_file
 from yaraast.visitor.visitor import ASTVisitor
 
 

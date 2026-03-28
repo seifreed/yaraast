@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-import tempfile
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+import tempfile
 from typing import TYPE_CHECKING, Any
 
 from yaraast.performance.batch_processor_ops import (
     analyze_complexity,
     parse_item,
     process_files_single,
+    process_large_file as process_large_file_ops,
+    serialize_item,
+    validate_item,
 )
-from yaraast.performance.batch_processor_ops import process_large_file as process_large_file_ops
-from yaraast.performance.batch_processor_ops import serialize_item, validate_item
 
 if TYPE_CHECKING:
     from collections.abc import Callable

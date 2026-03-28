@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import difflib
 from collections import Counter
 from dataclasses import dataclass
+import difflib
 from enum import Enum
 from pathlib import Path
 

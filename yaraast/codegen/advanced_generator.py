@@ -21,16 +21,12 @@ from yaraast.codegen.advanced_generator_helpers2 import (
     write_meta_key,
     write_meta_value,
 )
-from yaraast.codegen.advanced_generator_layout import generate_condition_string
-from yaraast.codegen.advanced_generator_layout import visit_rule as render_advanced_rule
-from yaraast.codegen.advanced_generator_layout import visit_yara_file as render_advanced_yara_file
 from yaraast.codegen.advanced_generator_layout import (
+    generate_condition_string,
+    visit_rule as render_advanced_rule,
+    visit_yara_file as render_advanced_yara_file,
     write_aligned_strings as write_advanced_aligned_strings,
-)
-from yaraast.codegen.advanced_generator_layout import (
     write_condition_section as write_advanced_condition_section,
-)
-from yaraast.codegen.advanced_generator_layout import (
     write_strings_section as write_advanced_strings_section,
 )
 from yaraast.codegen.formatting import FormattingConfig, IndentStyle

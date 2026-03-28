@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
+import time
 from typing import TYPE_CHECKING, Any
 
 from yaraast.evaluation.evaluator import YaraEvaluator

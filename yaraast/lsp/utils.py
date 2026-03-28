@@ -8,9 +8,11 @@ from lsprotocol.types import Position, Range
 
 from yaraast.ast.base import ASTNode, Location
 from yaraast.lexer.tokens import Token
-from yaraast.lsp.text_utils import get_word_at_position as text_get_word_at_position
-from yaraast.lsp.text_utils import offset_to_position as text_offset_to_position
-from yaraast.lsp.text_utils import position_to_offset as text_position_to_offset
+from yaraast.lsp.text_utils import (
+    get_word_at_position as text_get_word_at_position,
+    offset_to_position as text_offset_to_position,
+    position_to_offset as text_position_to_offset,
+)
 
 
 def token_to_range(token: Token) -> Range:

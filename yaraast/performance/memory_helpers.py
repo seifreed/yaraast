@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import gc
 from dataclasses import dataclass
+import gc
 from typing import Any
 
 
