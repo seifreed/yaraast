@@ -17,7 +17,7 @@ def test_fluent_template_document_and_network(tmp_path) -> None:
     )
     assert res_doc.exit_code == 0
     assert out_doc.exists()
-    content = out_doc.read_text()
+    content = out_doc.read_text(encoding="utf-8")
     assert "rule doc_rule" in content
     assert "t1" in content and "t2" in content
 

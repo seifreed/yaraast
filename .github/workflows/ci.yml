@@ -64,6 +64,9 @@ jobs:
           pip install -e ".[dev,lsp,visualization,serialization,performance]"
 
       - name: Run tests
+        env:
+          PYTHONIOENCODING: utf-8
+          PYTHONUTF8: "1"
         run: |
           python -m pytest tests/ -o "addopts=" --tb=short --ignore=tests/test_metrics_dependency_graph_graphviz_utils_more5.py
 

@@ -17,7 +17,11 @@ from yaraast.dialects import YaraDialect, detect_dialect
 def uri_to_path(uri: str) -> Path | None:
     if uri.startswith("file://"):
         parsed = urlparse(uri)
-        return Path(unquote(parsed.path))
+        decoded = unquote(parsed.path)
+        # On Windows, file:///C:/path yields /C:/path — strip leading slash
+        if len(decoded) >= 3 and decoded[0] == "/" and decoded[2] == ":":
+            decoded = decoded[1:]
+        return Path(decoded)
     if "://" in uri:
         return None
     return Path(uri)

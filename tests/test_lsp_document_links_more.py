@@ -5,6 +5,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from yaraast.lsp.document_links import DocumentLinksProvider
+from yaraast.lsp.document_types import path_to_uri
 from yaraast.lsp.runtime import DocumentContext
 
 
@@ -28,7 +29,7 @@ def test_document_links_import_and_include(tmp_path) -> None:
     doc_path.write_text(text)
 
     provider = DocumentLinksProvider()
-    links = provider.get_document_links(text, f"file://{doc_path}")
+    links = provider.get_document_links(text, path_to_uri(doc_path))
 
     assert len(links) >= 2
     targets = {link.target for link in links}
@@ -42,7 +43,7 @@ def test_document_links_fallback(tmp_path) -> None:
     doc_path.write_text(text)
 
     provider = DocumentLinksProvider()
-    links = provider._fallback_links(text, f"file://{doc_path}")
+    links = provider._fallback_links(text, path_to_uri(doc_path))
 
     assert any(link.target and "pe.html" in link.target for link in links)
 
@@ -62,7 +63,7 @@ def test_document_links_helper_edges(tmp_path) -> None:
     assert DocumentContext("file://\0bad", "").get_include_target_uri("missing.yar") is None
 
     fallback_links = provider._fallback_links(
-        'import "unknown"\ninclude "missing.yar"\nimport "pe"\n', f"file://{tmp_path / 'doc.yar'}"
+        'import "unknown"\ninclude "missing.yar"\nimport "pe"\n', path_to_uri(tmp_path / "doc.yar")
     )
     assert len(fallback_links) == 1
     assert "pe.html" in (fallback_links[0].target or "")
@@ -74,7 +75,7 @@ def test_document_links_parser_fallback_and_error_edges(tmp_path) -> None:
     provider = DocumentLinksProvider()
 
     broken_text = 'import "pe"\ninclude "inc.yar"\nrule bad { condition: '
-    links = provider.get_document_links(broken_text, f"file://{tmp_path / 'doc.yar'}")
+    links = provider.get_document_links(broken_text, path_to_uri(tmp_path / "doc.yar"))
     assert len(links) == 2
     assert DocumentContext("file://\0bad", "").get_include_target_uri("missing.yar") is None
 
