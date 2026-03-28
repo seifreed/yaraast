@@ -32,8 +32,8 @@ class EvaluationContext:
     filesize: int = field(init=False)
     entrypoint: int = 0
     string_matches: dict[str, list] = field(default_factory=dict)
-    modules: dict[str, Any] = field(default_factory=dict)
-    variables: dict[str, Any] = field(default_factory=dict)
+    modules: dict[str, object] = field(default_factory=dict)
+    variables: dict[str, object] = field(default_factory=dict)
 
     def __post_init__(self):
         self.filesize = len(self.data)

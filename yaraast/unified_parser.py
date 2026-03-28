@@ -202,26 +202,7 @@ class UnifiedParser:
         use_streaming = force_streaming or (file_size > size_threshold_bytes)
 
         if use_streaming:
-            # Detect dialect before streaming — read a small sample for detection
-            if dialect is None:
-                detected = cls.detect_file_dialect(file_path_obj)
-                if detected in (YaraDialect.YARA_L, YaraDialect.YARA_X):
-                    # Streaming parser only supports standard YARA;
-                    # fall through to traditional parser for other dialects
-                    with open(file_path_obj, encoding="utf-8") as f:
-                        content = f.read()
-                    parser = cls(content, detected)
-                    return parser.parse()
-
-            # Use StreamingParser for very large standard YARA files
-            imports, includes = cls._extract_preamble_fast(file_path_obj)
-
-            def _dialect_factory(text, dialect):
-                return cls(text, dialect).parse()
-
-            streaming_parser = StreamingParser(dialect_parser_factory=_dialect_factory)
-            rules = list(streaming_parser.parse_file(file_path_obj))
-            return YaraFile(imports=imports, includes=includes, rules=rules)
+            return cls._parse_file_streaming(file_path_obj, dialect)
 
         # Use traditional parser for smaller files (below threshold)
         # This is faster for small files as it avoids streaming overhead
@@ -230,6 +211,38 @@ class UnifiedParser:
 
         parser = cls(content, dialect)
         return parser.parse()
+
+    @classmethod
+    def _parse_file_streaming(
+        cls,
+        file_path_obj: Path,
+        dialect: YaraDialect | None,
+    ) -> YaraFile | YaraLFile:
+        """Parse a file using the streaming parser for large YARA files.
+
+        Falls back to traditional parsing for non-standard dialects since
+        the streaming parser only supports standard YARA.
+        """
+        # Detect dialect before streaming — read a small sample for detection
+        if dialect is None:
+            detected = cls.detect_file_dialect(file_path_obj)
+            if detected in (YaraDialect.YARA_L, YaraDialect.YARA_X):
+                # Streaming parser only supports standard YARA;
+                # fall through to traditional parser for other dialects
+                with open(file_path_obj, encoding="utf-8") as f:
+                    content = f.read()
+                parser = cls(content, detected)
+                return parser.parse()
+
+        # Use StreamingParser for very large standard YARA files
+        imports, includes = cls._extract_preamble_fast(file_path_obj)
+
+        def _dialect_factory(text, dialect):
+            return cls(text, dialect).parse()
+
+        streaming_parser = StreamingParser(dialect_parser_factory=_dialect_factory)
+        rules = list(streaming_parser.parse_file(file_path_obj))
+        return YaraFile(imports=imports, includes=includes, rules=rules)
 
     @classmethod
     def detect_file_dialect(cls, file_path: str) -> YaraDialect:

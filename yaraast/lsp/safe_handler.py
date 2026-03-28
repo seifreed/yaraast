@@ -23,6 +23,11 @@ def lsp_safe_handler(*, default: Any) -> Callable[[F], F]: ...
 def lsp_safe_handler(func: F | None = None, *, default: Any = None) -> F | Callable[[F], F]:
     """Wrap LSP handler to catch exceptions and return a default value.
 
+    LSP handlers use broad ``except Exception`` intentionally: the language
+    server must remain responsive even when individual operations fail on
+    malformed input.  Narrowing to domain exceptions would risk crashing
+    the server on unexpected edge cases.
+
     Can be used as:
         @lsp_safe_handler          # returns None on error
         @lsp_safe_handler(default=[])  # returns [] on error

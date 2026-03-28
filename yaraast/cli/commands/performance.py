@@ -191,23 +191,7 @@ def stream(
         if progress:
             click.echo()  # New line after progress
 
-        # Display statistics
-        successful, failed = display_stream_summary(results, total_time)
-
-        # Parser statistics
-        parser_stats = parser.get_statistics()
-        display_stream_details(successful, failed, parser_stats)
-
-        if output:
-            output_data = build_stream_output_data(
-                results,
-                successful,
-                failed,
-                total_time,
-                parser_stats,
-            )
-            write_json(output, output_data)
-            click.echo(f"\n📁 Detailed results saved to: {output}")
+        _display_stream_results(results, total_time, parser, output)
 
     except KeyboardInterrupt:
         parser.cancel()
@@ -215,6 +199,30 @@ def stream(
     except Exception as e:
         click.echo(f"\n❌ Error during streaming parse: {e}", err=True)
         raise click.Abort from None
+
+
+def _display_stream_results(
+    results: list,
+    total_time: float,
+    parser: StreamingParser,
+    output: str | None,
+) -> None:
+    """Display streaming parse statistics and optionally save results to file."""
+    successful, failed = display_stream_summary(results, total_time)
+
+    parser_stats = parser.get_statistics()
+    display_stream_details(successful, failed, parser_stats)
+
+    if output:
+        output_data = build_stream_output_data(
+            results,
+            successful,
+            failed,
+            total_time,
+            parser_stats,
+        )
+        write_json(output, output_data)
+        click.echo(f"\n📁 Detailed results saved to: {output}")
 
 
 @performance.command()

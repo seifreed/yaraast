@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file as _parse_yara_file
 from yaraast.metrics import workflows as _workflows
 
@@ -37,7 +38,7 @@ __all__ = [
 ]
 
 
-def analyze_complexity(ast: Any) -> Any:
+def analyze_complexity(ast: YaraFile) -> Any:
     return _workflows.analyze_complexity(ast)
 
 
@@ -50,7 +51,7 @@ def build_complexity_payload(metrics: Any) -> dict[str, Any]:
 
 
 def generate_dependency_graphs(
-    ast: Any,
+    ast: YaraFile,
     output_dir: str,
     base_name: str,
     image_format: str,
@@ -63,7 +64,7 @@ def generate_dependency_graphs(
 
 
 def generate_html_tree(
-    ast: Any,
+    ast: YaraFile,
     output_dir: str,
     base_name: str,
     interactive: bool = True,
@@ -75,7 +76,7 @@ def generate_html_tree(
 
 
 def generate_pattern_diagrams(
-    ast: Any,
+    ast: YaraFile,
     output_dir: str,
     base_name: str,
     image_format: str,
@@ -88,7 +89,9 @@ def generate_pattern_diagrams(
     )
 
 
-def build_report(ast: Any, output_dir: str, base_name: str, image_format: str) -> MetricsReportData:
+def build_report(
+    ast: YaraFile, output_dir: str, base_name: str, image_format: str
+) -> MetricsReportData:
     metrics = analyze_complexity(ast)
     payload = build_complexity_payload(metrics)
 
@@ -120,7 +123,7 @@ def determine_graph_output_path(
 
 
 def generate_dependency_graph(
-    ast: Any,
+    ast: YaraFile,
     graph_type: str,
     output_path: str,
     fmt: str,
@@ -134,7 +137,7 @@ def generate_dependency_graph(
 
 def generate_dependency_graph_with_generator(
     generator: Any,
-    ast: Any,
+    ast: YaraFile,
     graph_type: str,
     output_path: str,
     fmt: str,
@@ -151,13 +154,13 @@ def determine_pattern_output_path(
     return _workflows.determine_pattern_output_path(yara_file, output, pattern_type, fmt)
 
 
-def generate_pattern_diagram(ast: Any, pattern_type: str, output_path: str, fmt: str) -> str:
+def generate_pattern_diagram(ast: YaraFile, pattern_type: str, output_path: str, fmt: str) -> str:
     return _workflows.generate_pattern_diagram(ast, pattern_type, output_path, fmt)
 
 
 def generate_pattern_diagram_with_generator(
     generator: Any,
-    ast: Any,
+    ast: YaraFile,
     pattern_type: str,
     output_path: str,
     fmt: str,
@@ -168,7 +171,7 @@ def generate_pattern_diagram_with_generator(
 
 
 def generate_html_tree_file(
-    ast: Any,
+    ast: YaraFile,
     output_path: str,
     title: str,
     interactive: bool,
@@ -179,6 +182,6 @@ def generate_html_tree_file(
     )
 
 
-def parse_yara_file(yara_file: str) -> Any:
+def parse_yara_file(yara_file: str) -> YaraFile:
     """Parse a YARA file into an AST."""
     return _parse_yara_file(yara_file)

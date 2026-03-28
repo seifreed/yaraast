@@ -4,12 +4,18 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from lsprotocol.types import Location, Position, Range, TextEdit
 
 import yaraast.lsp.document_queries as document_queries
 from yaraast.dialects import YaraDialect
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.yaral.ast_nodes import YaraLFile
+
+    ASTRoot = YaraFile | YaraLFile
 from yaraast.lsp.document_rule_queries import (
     get_rule_info,
     get_rule_meta_items,
@@ -92,7 +98,7 @@ class DocumentContext:
         self.version = version
         self.is_open = is_open
         self.language_mode = language_mode
-        self._ast: Any | None = None
+        self._ast: ASTRoot | None = None
         self._parse_error: Exception | None = None
         self._lines: list[str] | None = None
         self._symbol_index = _SymbolIndex()
@@ -148,7 +154,7 @@ class DocumentContext:
         self._dialect = None
         self._analysis_cache = {}
 
-    def ast(self) -> Any | None:
+    def ast(self) -> ASTRoot | None:
         if self._ast is not None or self._parse_error is not None:
             return self._ast
         try:
