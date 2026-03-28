@@ -26,7 +26,7 @@ class TestIdentityTransformer:
     @settings(max_examples=50, deadline=5000)
     def test_identity_transform_preserves_structure(self, name: str) -> None:
         """Identity transformer produces equivalent codegen output."""
-        assume(name not in RESERVED)
+        assume(name.lower() not in RESERVED)
         text = f"rule {name} {{ condition: true }}"
         ast1 = Parser(text).parse()
         transformer = ASTTransformer()
@@ -40,7 +40,7 @@ class TestIdentityTransformer:
     @settings(max_examples=30, deadline=5000)
     def test_identity_transform_preserves_rule_count(self, name: str) -> None:
         """Identity transformer preserves number of rules."""
-        assume(name not in RESERVED)
+        assume(name.lower() not in RESERVED)
         text = f"rule {name} {{ condition: true }}"
         ast1 = Parser(text).parse()
         ast2 = ASTTransformer().visit(ast1)
@@ -50,7 +50,7 @@ class TestIdentityTransformer:
     @settings(max_examples=30, deadline=5000)
     def test_double_transform_idempotent(self, name: str) -> None:
         """Applying identity transform twice produces same result as once."""
-        assume(name not in RESERVED)
+        assume(name.lower() not in RESERVED)
         text = f"rule {name} {{ condition: true }}"
         ast = Parser(text).parse()
         t = ASTTransformer()

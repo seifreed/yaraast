@@ -1186,6 +1186,7 @@ class TestCLISerializeCommands:
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
+            f.flush()
 
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yaml") as out:
             output_file = Path(out.name)

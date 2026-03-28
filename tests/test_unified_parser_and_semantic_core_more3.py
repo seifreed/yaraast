@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -34,6 +35,7 @@ def test_validation_error_to_dict_with_location_and_suggestion() -> None:
     assert data["suggestion"] == "fix it"
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="chmod not effective on Windows")
 def test_unified_parser_parse_file_permission_and_oserror(tmp_path: Path) -> None:
     restricted_dir = tmp_path / "restricted"
     restricted_dir.mkdir()

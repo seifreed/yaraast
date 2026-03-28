@@ -65,7 +65,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/ -o "addopts=" -q --tb=short --ignore=tests/test_metrics_dependency_graph_graphviz_utils_more5.py
+          python -m pytest tests/ -o "addopts=" --tb=short --ignore=tests/test_metrics_dependency_graph_graphviz_utils_more5.py
 
   lint:
     name: Lint & Type Check

@@ -6,10 +6,12 @@ import json
 import os
 import signal
 import stat
+import sys
 import threading
 from pathlib import Path
 from textwrap import dedent
 
+import pytest
 from click.testing import CliRunner
 
 from yaraast.cli.commands.performance import performance
@@ -217,6 +219,7 @@ def test_performance_parallel_dependency_and_default_output_dir(tmp_path) -> Non
         assert Path("parallel_analysis_output").exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="chmod read-only not effective on Windows")
 def test_performance_batch_and_stream_abort_on_real_write_errors(tmp_path) -> None:
     runner = CliRunner()
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
@@ -255,6 +258,7 @@ def test_performance_batch_and_stream_abort_on_real_write_errors(tmp_path) -> No
     assert "Error during streaming parse" in stream.output
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="chmod read-only not effective on Windows")
 def test_performance_parallel_abort_on_real_complexity_write_error(tmp_path) -> None:
     runner = CliRunner()
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
@@ -282,6 +286,7 @@ def test_performance_parallel_abort_on_real_complexity_write_error(tmp_path) -> 
     assert "Error during parallel analysis" in result.output
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="SIGINT via os.kill not reliable on Windows")
 def test_performance_stream_and_parallel_handle_real_sigint(tmp_path) -> None:
     rules_dir = tmp_path / "sigint_rules"
     rules_dir.mkdir()
