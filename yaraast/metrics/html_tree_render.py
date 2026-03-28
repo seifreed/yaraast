@@ -5,8 +5,6 @@ from __future__ import annotations
 import html as html_mod
 from typing import Any
 
-from jinja2 import Template
-
 from yaraast.metrics.html_templates import HTML_TREE_TEMPLATE, INTERACTIVE_HTML_TREE_TEMPLATE
 
 
@@ -20,6 +18,8 @@ class HtmlTreeRenderMixin:
 
     def _render_template(self, template_text: str, **context: Any) -> str:
         """Render HTML template with shared settings."""
+        from jinja2 import Template
+
         return Template(template_text).render(**context)
 
     def _render_html_template(self, tree_data: dict[str, Any], title: str) -> str:

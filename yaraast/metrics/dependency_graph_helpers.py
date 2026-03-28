@@ -25,7 +25,7 @@ def render_graph(dot, output_path: str | None, format: str) -> str:
         output_file = str(output_path_obj.with_suffix(""))
         try:
             dot.render(output_file, format=format, cleanup=True)
-        except Exception:  # noqa: BLE001
+        except Exception:
             # Fallback for environments without Graphviz executables.
             fallback_path = f"{output_file}.{format}"
             Path(fallback_path).write_text(dot.source, encoding="utf-8")

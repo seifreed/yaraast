@@ -100,7 +100,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
         kwargs: dict = {"imports": imports, "includes": includes, "rules": rules}
         for field_name in ("extern_rules", "extern_imports", "pragmas", "namespaces"):
-            if field_name in ast_data and ast_data[field_name]:
+            if ast_data.get(field_name):
                 kwargs[field_name] = ast_data[field_name]
         return YaraFile(**kwargs)
 

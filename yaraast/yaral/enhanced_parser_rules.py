@@ -13,7 +13,7 @@ class EnhancedYaraLParserRulesMixin:
 
     def _parse_rule(
         self,
-    ) -> YaraLRule:  # noqa: C901 — recursive descent, sequential section parsing
+    ) -> YaraLRule:
         """Parse a complete YARA-L rule."""
         self._consume_keyword("rule")
 

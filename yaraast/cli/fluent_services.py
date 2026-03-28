@@ -269,10 +269,7 @@ def create_template_rule(rule_name: str, rule_type: str, author: str, tags: list
     compatibility.
     """
     factory = _TEMPLATE_FACTORIES.get(rule_type)  # type: ignore[arg-type]
-    if factory is not None:
-        rule_ast = factory(rule_name)
-    else:
-        rule_ast = rule(rule_name).tagged(rule_type)
+    rule_ast = factory(rule_name) if factory is not None else rule(rule_name).tagged(rule_type)
 
     rule_ast = rule_ast.authored_by(author)
     for tag in tags:
