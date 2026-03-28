@@ -5,7 +5,7 @@ from __future__ import annotations
 
 def _emit_comments(gen, node) -> None:
     """Emit leading comments for an AST node."""
-    if hasattr(node, 'leading_comments') and node.leading_comments:
+    if hasattr(node, "leading_comments") and node.leading_comments:
         for comment in node.leading_comments:
             gen._writeline(comment.text)
 

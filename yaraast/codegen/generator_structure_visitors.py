@@ -5,14 +5,14 @@ from __future__ import annotations
 
 def _emit_comments(generator, node) -> None:
     """Emit leading comments for an AST node."""
-    if hasattr(node, 'leading_comments') and node.leading_comments:
+    if hasattr(node, "leading_comments") and node.leading_comments:
         for comment in node.leading_comments:
             generator._writeline(comment.text)
 
 
 def _emit_trailing(generator, node) -> None:
     """Emit trailing comment for an AST node."""
-    if hasattr(node, 'trailing_comment') and node.trailing_comment:
+    if hasattr(node, "trailing_comment") and node.trailing_comment:
         generator._write(f"  {node.trailing_comment.text}")
 
 
