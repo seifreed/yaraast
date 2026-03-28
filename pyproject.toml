@@ -21,6 +21,9 @@ dependencies = [
     "rich>=13.0.0",
     "attrs>=23.0.0",
     "PyYAML>=6.0.0",
+    # Transitive security pins
+    "cryptography>=46.0.6",
+    "requests>=2.33.0",
 ]
 
 [project.optional-dependencies]
