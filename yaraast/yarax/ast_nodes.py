@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, _VisitorType
 from yaraast.ast.expressions import Expression
 
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ class WithStatement(ASTNode):
     declarations: list[WithDeclaration]
     body: Condition
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_with_statement(self)
 
 
@@ -35,7 +35,7 @@ class WithDeclaration(ASTNode):
     identifier: str  # Variable name (e.g., $a)
     value: Expression  # Initial value
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_with_declaration(self)
 
 
@@ -53,7 +53,7 @@ class ArrayComprehension(Expression):
     iterable: Expression | None = None  # Iterable to loop over
     condition: Expression | None = None  # Optional filter condition
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_array_comprehension(self)
 
 
@@ -73,7 +73,7 @@ class DictComprehension(Expression):
     iterable: Expression | None = None  # Iterable to loop over
     condition: Expression | None = None  # Optional filter condition
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_dict_comprehension(self)
 
 
@@ -88,7 +88,7 @@ class TupleExpression(Expression):
 
     elements: list[Expression]
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_tuple_expression(self)
 
 
@@ -105,7 +105,7 @@ class TupleIndexing(Expression):
     tuple_expr: Expression  # The tuple to index
     index: Expression  # Index (can be negative)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_tuple_indexing(self)
 
 
@@ -120,7 +120,7 @@ class ListExpression(Expression):
 
     elements: list[Expression]
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_list_expression(self)
 
 
@@ -135,7 +135,7 @@ class DictExpression(Expression):
 
     items: list[DictItem]
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_dict_expression(self)
 
 
@@ -146,7 +146,7 @@ class DictItem(ASTNode):
     key: Expression
     value: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_dict_item(self)
 
 
@@ -165,7 +165,7 @@ class SliceExpression(Expression):
     stop: Expression | None = None
     step: Expression | None = None
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_slice_expression(self)
 
 
@@ -181,7 +181,7 @@ class LambdaExpression(Expression):
     parameters: list[str]
     body: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_lambda_expression(self)
 
 
@@ -201,7 +201,7 @@ class PatternMatch(Expression):
     cases: list[MatchCase]
     default: Expression | None = None
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_pattern_match(self)
 
 
@@ -212,7 +212,7 @@ class MatchCase(ASTNode):
     pattern: Expression  # Pattern to match
     result: Expression  # Result if pattern matches
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_match_case(self)
 
 
@@ -228,5 +228,5 @@ class SpreadOperator(Expression):
     expression: Expression
     is_dict: bool = False  # True for dict spread (**), False for array spread (...)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_spread_operator(self)

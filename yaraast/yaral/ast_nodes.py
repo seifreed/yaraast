@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, _VisitorType
 
 
 @dataclass
@@ -20,7 +20,7 @@ class YaraLRule(ASTNode):
     outcome: OutcomeSection | None = None
     options: OptionsSection | None = None
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_rule(self)
 
     @property
@@ -41,7 +41,7 @@ class MetaSection(ASTNode):
 
     entries: list[MetaEntry] = field(default_factory=list)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_meta_section(self)
 
 
@@ -52,7 +52,7 @@ class MetaEntry(ASTNode):
     key: str
     value: str | int | bool
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_meta_entry(self)
 
 
@@ -62,7 +62,7 @@ class EventsSection(ASTNode):
 
     statements: list[EventStatement] = field(default_factory=list)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_events_section(self)
 
 
@@ -70,7 +70,7 @@ class EventsSection(ASTNode):
 class EventStatement(ASTNode):
     """Single event statement."""
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_event_statement(self)
 
 
@@ -84,7 +84,7 @@ class EventAssignment(EventStatement):
     value: str | int | EventVariable | UDMFieldPath | ReferenceList
     modifiers: list[str] = field(default_factory=list)  # nocase, etc.
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_event_assignment(self)
 
 
@@ -94,7 +94,7 @@ class EventVariable(ASTNode):
 
     name: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_event_variable(self)
 
 
@@ -108,7 +108,7 @@ class UDMFieldPath(ASTNode):
     def path(self) -> str:
         return ".".join(self.parts)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_udm_field_path(self)
 
 
@@ -123,7 +123,7 @@ class UDMFieldAccess(ASTNode):
     def full_path(self) -> str:
         return f"{self.event.name}.{self.field.path}"
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_udm_field_access(self)
 
 
@@ -133,7 +133,7 @@ class ReferenceList(ASTNode):
 
     name: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_reference_list(self)
 
 
@@ -143,7 +143,7 @@ class MatchSection(ASTNode):
 
     variables: list[MatchVariable] = field(default_factory=list)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_match_section(self)
 
 
@@ -155,7 +155,7 @@ class MatchVariable(ASTNode):
     time_window: TimeWindow
     grouping_field: UDMFieldAccess | None = None  # Field used for grouping
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_match_variable(self)
 
 
@@ -172,7 +172,7 @@ class TimeWindow(ASTNode):
         prefix = f"{self.modifier} " if self.modifier else ""
         return f"{prefix}{self.duration}{self.unit}"
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_time_window(self)
 
 
@@ -182,7 +182,7 @@ class ConditionSection(ASTNode):
 
     expression: ConditionExpression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_condition_section(self)
 
 
@@ -190,7 +190,7 @@ class ConditionSection(ASTNode):
 class ConditionExpression(ASTNode):
     """Base class for condition expressions."""
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_condition_expression(self)
 
 
@@ -202,7 +202,7 @@ class BinaryCondition(ConditionExpression):
     left: ConditionExpression
     right: ConditionExpression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_binary_condition(self)
 
 
@@ -213,7 +213,7 @@ class UnaryCondition(ConditionExpression):
     operator: str  # not
     operand: ConditionExpression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_unary_condition(self)
 
 
@@ -225,7 +225,7 @@ class EventCountCondition(ConditionExpression):
     operator: str  # >, <, >=, <=, ==, !=
     count: int
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_event_count_condition(self)
 
 
@@ -235,7 +235,7 @@ class EventExistsCondition(ConditionExpression):
 
     event: str  # Event variable name
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_event_exists_condition(self)
 
 
@@ -247,7 +247,7 @@ class VariableComparisonCondition(ConditionExpression):
     operator: str  # >, <, >=, <=, ==, !=
     value: Any  # Comparison value
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_variable_comparison_condition(self)
 
 
@@ -259,7 +259,7 @@ class JoinCondition(ConditionExpression):
     right_event: str
     join_type: str = "inner"  # inner, left, right, full
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_join_condition(self)
 
 
@@ -270,7 +270,7 @@ class NOfCondition(ConditionExpression):
     count: int
     events: list[str]
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         if hasattr(visitor, "visit_yaral_n_of_condition"):
             return visitor.visit_yaral_n_of_condition(self)
         return visitor.visit_yaral_condition_expression(self)
@@ -283,7 +283,7 @@ class NullCheckCondition(ConditionExpression):
     field: Any  # UDMFieldAccess
     negated: bool = False  # True for 'is not null'
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         if hasattr(visitor, "visit_yaral_null_check_condition"):
             return visitor.visit_yaral_null_check_condition(self)
         return visitor.visit_yaral_condition_expression(self)
@@ -295,7 +295,7 @@ class OutcomeSection(ASTNode):
 
     assignments: list[OutcomeAssignment] = field(default_factory=list)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_outcome_section(self)
 
 
@@ -306,7 +306,7 @@ class OutcomeAssignment(ASTNode):
     variable: str  # Variable name (with $)
     expression: OutcomeExpression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_outcome_assignment(self)
 
 
@@ -314,7 +314,7 @@ class OutcomeAssignment(ASTNode):
 class OutcomeExpression(ASTNode):
     """Base class for outcome expressions."""
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_outcome_expression(self)
 
 
@@ -330,7 +330,7 @@ class AggregationFunction(OutcomeExpression):
         args = ", ".join(str(arg) for arg in self.arguments)
         return f"{self.function}({args})"
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_aggregation_function(self)
 
 
@@ -342,7 +342,7 @@ class ConditionalExpression(OutcomeExpression):
     true_value: Any
     false_value: Any
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_conditional_expression(self)
 
 
@@ -354,7 +354,7 @@ class ArithmeticExpression(OutcomeExpression):
     left: Any
     right: Any
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_arithmetic_expression(self)
 
 
@@ -364,7 +364,7 @@ class OptionsSection(ASTNode):
 
     options: dict[str, Any] = field(default_factory=dict)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_options_section(self)
 
 
@@ -380,7 +380,7 @@ class RegexPattern(ASTNode):
         flags_str = " ".join(self.flags) if self.flags else ""
         return f"/{self.pattern}/ {flags_str}".strip()
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_regex_pattern(self)
 
 
@@ -391,7 +391,7 @@ class CIDRExpression(ASTNode):
     field: UDMFieldAccess
     cidr: str  # e.g., "192.168.1.0/24"
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_cidr_expression(self)
 
 
@@ -407,7 +407,7 @@ class FunctionCall(ASTNode):
         args = ", ".join(str(arg) for arg in self.arguments)
         return f"{self.function}({args})"
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_function_call(self)
 
 
@@ -421,7 +421,7 @@ class YaraLFile(ASTNode):
         """Add a rule to the file."""
         self.rules.append(rule)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_file(self)
 
 

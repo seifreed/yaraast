@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, _VisitorType
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.errors import ValidationError
 
@@ -22,7 +22,7 @@ class Import(ASTNode):
     module: str
     alias: str | None = None  # Support for 'import "module" as alias'
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_import(self)
 
 
@@ -32,7 +32,7 @@ class Include(ASTNode):
 
     path: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_include(self)
 
 
@@ -42,7 +42,7 @@ class Tag(ASTNode):
 
     name: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_tag(self)
 
 
@@ -94,7 +94,9 @@ class Rule(ASTNode):
         )
 
     @staticmethod
-    def _normalize_modifiers(modifiers: Any) -> list[str | RuleModifier]:
+    def _normalize_modifiers(
+        modifiers: list | tuple | str | None,
+    ) -> list[str | RuleModifier]:
         """Normalize modifiers to a list of RuleModifier."""
         if not modifiers:
             return []
@@ -118,7 +120,7 @@ class Rule(ASTNode):
         return modifiers  # type: ignore[no-any-return]
 
     @staticmethod
-    def _normalize_meta(meta: Any) -> list[MetaEntry]:
+    def _normalize_meta(meta: dict | list | tuple | None) -> list[MetaEntry]:
         """Normalize meta to a list of MetaEntry."""
         if not meta:
             return []
@@ -126,7 +128,7 @@ class Rule(ASTNode):
             return [MetaEntry.from_key_value(k, v) for k, v in meta.items()]
         return meta  # type: ignore[no-any-return]
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_rule(self)
 
     @property

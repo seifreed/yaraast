@@ -1,7 +1,6 @@
 """Token definitions for YARA lexer."""
 
 from enum import Enum, auto
-from typing import Any
 
 import attrs
 
@@ -112,7 +111,7 @@ class Token:
     """Token representation."""
 
     type: TokenType
-    value: Any
+    value: str | int | float | None
     line: int
     column: int
     length: int = 1

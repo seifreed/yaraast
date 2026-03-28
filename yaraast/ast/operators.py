@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from yaraast.ast.base import _VisitorType
 from yaraast.ast.expressions import Expression
 
 
@@ -14,7 +15,7 @@ class DefinedExpression(Expression):
 
     expression: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_defined_expression(self)
 
 
@@ -26,5 +27,5 @@ class StringOperatorExpression(Expression):
     operator: str  # "iequals", "icontains", "istartswith", "iendswith"
     right: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_operator_expression(self)

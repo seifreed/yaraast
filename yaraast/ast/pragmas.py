@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, _VisitorType
 
 
 class PragmaType(Enum):
@@ -53,7 +53,7 @@ class Pragma(ASTNode):
     arguments: list[str] = field(default_factory=list)
     scope: PragmaScope = PragmaScope.FILE
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_pragma(self)
 
     @property
@@ -204,7 +204,7 @@ class InRulePragma(ASTNode):
     pragma: Pragma
     position: str = "before_strings"  # "before_strings", "after_strings", "before_condition"
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_in_rule_pragma(self)
 
     @property
@@ -233,7 +233,7 @@ class PragmaBlock(ASTNode):
     pragmas: list[Pragma] = field(default_factory=list)
     scope: PragmaScope = PragmaScope.FILE
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_pragma_block(self)
 
     def add_pragma(self, pragma: Pragma) -> None:

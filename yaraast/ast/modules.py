@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from yaraast.ast.base import _VisitorType
 from yaraast.ast.expressions import Expression
 
 
@@ -14,7 +15,7 @@ class ModuleReference(Expression):
 
     module: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_module_reference(self)
 
 
@@ -25,5 +26,5 @@ class DictionaryAccess(Expression):
     object: Expression
     key: str | Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_dictionary_access(self)

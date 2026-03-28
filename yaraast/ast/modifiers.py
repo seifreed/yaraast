@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, _VisitorType
 from yaraast.errors import ValidationError
 
 
@@ -109,7 +109,7 @@ class StringModifier(ASTNode):
         """Get the modifier name for backward compatibility."""
         return self.modifier_type.value
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_modifier(self)
 
     def __str__(self) -> str:
@@ -145,14 +145,14 @@ class MetaEntry:
     """Enhanced meta entry with scope support."""
 
     key: str
-    value: Any
+    value: str | int | bool
     scope: MetaScope = MetaScope.PUBLIC
 
     @classmethod
     def from_key_value(
         cls,
         key: str,
-        value: Any,
+        value: str | int | bool,
         scope: str | None = None,
     ) -> "MetaEntry":
         """Create MetaEntry from key, value, and optional scope."""
@@ -188,7 +188,7 @@ def create_rule_modifier(name: str) -> RuleModifier:
     return RuleModifier.from_string(name)
 
 
-def create_meta_entry(key: str, value: Any, scope: str | None = None) -> MetaEntry:
+def create_meta_entry(key: str, value: str | int | bool, scope: str | None = None) -> MetaEntry:
     """Create a meta entry with optional scope."""
     return MetaEntry.from_key_value(key, value, scope)
 

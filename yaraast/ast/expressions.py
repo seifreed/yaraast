@@ -5,14 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, _VisitorType
 
 
 @dataclass
 class Expression(ASTNode):
     """Base class for all expressions."""
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_expression(self)
 
 
@@ -22,7 +22,7 @@ class Identifier(Expression):
 
     name: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_identifier(self)
 
 
@@ -32,7 +32,7 @@ class StringIdentifier(Expression):
 
     name: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_identifier(self)
 
 
@@ -42,7 +42,7 @@ class StringWildcard(Expression):
 
     pattern: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_wildcard(self)
 
 
@@ -52,7 +52,7 @@ class StringCount(Expression):
 
     string_id: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_count(self)
 
 
@@ -63,7 +63,7 @@ class StringOffset(Expression):
     string_id: str
     index: Expression | None = None
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_offset(self)
 
 
@@ -74,7 +74,7 @@ class StringLength(Expression):
     string_id: str
     index: Expression | None = None
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_length(self)
 
 
@@ -84,7 +84,7 @@ class IntegerLiteral(Expression):
 
     value: int
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_integer_literal(self)
 
 
@@ -94,7 +94,7 @@ class DoubleLiteral(Expression):
 
     value: float
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_double_literal(self)
 
 
@@ -104,7 +104,7 @@ class StringLiteral(Expression):
 
     value: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_literal(self)
 
 
@@ -115,7 +115,7 @@ class RegexLiteral(Expression):
     pattern: str
     modifiers: str = ""  # i for case-insensitive, s for single-line, etc.
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_regex_literal(self)
 
 
@@ -125,7 +125,7 @@ class BooleanLiteral(Expression):
 
     value: bool
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_boolean_literal(self)
 
 
@@ -137,7 +137,7 @@ class BinaryExpression(Expression):
     operator: str
     right: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_binary_expression(self)
 
 
@@ -148,7 +148,7 @@ class UnaryExpression(Expression):
     operator: str
     operand: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_unary_expression(self)
 
 
@@ -158,7 +158,7 @@ class ParenthesesExpression(Expression):
 
     expression: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_parentheses_expression(self)
 
 
@@ -168,7 +168,7 @@ class SetExpression(Expression):
 
     elements: list[Expression]
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_set_expression(self)
 
 
@@ -179,7 +179,7 @@ class RangeExpression(Expression):
     low: Expression
     high: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_range_expression(self)
 
 
@@ -190,7 +190,7 @@ class FunctionCall(Expression):
     function: str
     arguments: list[Expression]
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_function_call(self)
 
 
@@ -201,7 +201,7 @@ class ArrayAccess(Expression):
     array: Expression
     index: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_array_access(self)
 
 
@@ -212,5 +212,5 @@ class MemberAccess(Expression):
     object: Expression
     member: str
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_member_access(self)

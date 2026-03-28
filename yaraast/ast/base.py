@@ -11,6 +11,11 @@ if TYPE_CHECKING:
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
     from yaraast.ast.pragmas import Pragma, PragmaType
     from yaraast.ast.rules import Import, Include, Rule
+    from yaraast.visitor.visitor import ASTVisitor
+
+    _VisitorType = ASTVisitor[Any]
+else:
+    _VisitorType = Any
 
 
 @dataclass
@@ -37,7 +42,7 @@ class ASTNode(ABC):
     trailing_comment: Comment | None = field(default=None, init=False, compare=False)
 
     @abstractmethod
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         """Accept a visitor for the visitor pattern."""
 
     _METADATA_FIELDS = frozenset({"location", "leading_comments", "trailing_comment"})
@@ -70,7 +75,7 @@ class YaraFile(ASTNode):
     pragmas: list[Pragma] = field(default_factory=list)
     namespaces: list[ExternNamespace] = field(default_factory=list)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yara_file(self)
 
     def add_extern_rule(self, extern_rule: ExternRule) -> None:

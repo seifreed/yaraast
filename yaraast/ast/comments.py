@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Any
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, _VisitorType
 
 
 @dataclass
@@ -13,7 +13,7 @@ class Comment(ASTNode):
     text: str
     is_multiline: bool = False
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_comment(self)
 
 
@@ -23,5 +23,5 @@ class CommentGroup(ASTNode):
 
     comments: list[Comment]
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_comment_group(self)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, _VisitorType
 
 if TYPE_CHECKING:
     from yaraast.ast.modifiers import RuleModifier
@@ -23,7 +23,7 @@ class ExternRule(ASTNode):
     modifiers: list[RuleModifier] = field(default_factory=list)
     namespace: str | None = None  # Optional namespace for rule
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_rule(self)
 
     @property
@@ -58,7 +58,7 @@ class ExternRuleReference(ASTNode):
     rule_name: str
     namespace: str | None = None
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_rule_reference(self)
 
     @property
@@ -84,7 +84,7 @@ class ExternImport(ASTNode):
     alias: str | None = None
     rules: list[str] = field(default_factory=list)  # Specific rules to import
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_import(self)
 
     @property
@@ -116,7 +116,7 @@ class ExternNamespace(ASTNode):
     name: str
     extern_rules: list[ExternRule] = field(default_factory=list)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_extern_namespace(self)
 
     def add_extern_rule(self, extern_rule: ExternRule) -> None:

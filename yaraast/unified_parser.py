@@ -79,10 +79,29 @@ class UnifiedParser:
         """Get the detected or specified dialect."""
         return self.dialect
 
+    @staticmethod
+    def _strip_comments(line: str, in_multiline: bool) -> tuple[str | None, bool]:
+        """Strip comments from a preamble line.
+
+        Returns:
+            A tuple of (stripped_line_or_None, still_in_multiline_comment).
+            ``None`` means the entire line is inside a comment and should be skipped.
+        """
+        if in_multiline:
+            if "*/" in line:
+                return None, False
+            return None, True
+        if "/*" in line:
+            if "*/" not in line:
+                return None, True
+            # Multiline comment opened and closed on same line — skip it
+            return None, False
+        if "//" in line:
+            line = line.split("//", 1)[0]
+        return line, False
+
     @classmethod
-    def _extract_preamble_fast(  # noqa: C901 — single-pass line scanner, splitting harms readability
-        cls, file_path: Path
-    ) -> tuple[list[Import], list[Include]]:
+    def _extract_preamble_fast(cls, file_path: Path) -> tuple[list[Import], list[Include]]:
         """Extract imports/includes from file preamble without full parsing.
 
         Reads lines before the first ``rule`` keyword using regex matching.
@@ -92,9 +111,7 @@ class UnifiedParser:
         includes: list[Include] = []
 
         # Regex patterns for parsing
-        # Match: import "module_name" [as alias]
         import_pattern = re.compile(r'^\s*import\s+"([^"]+)"(?:\s+as\s+(\w+))?\s*$')
-        # Match: include "path/to/file.yar"
         include_pattern = re.compile(r'^\s*include\s+"([^"]+)"\s*$')
 
         try:
@@ -102,55 +119,32 @@ class UnifiedParser:
                 in_multiline_comment = False
 
                 for line in f:
-                    # Handle multi-line comments /* ... */
-                    if in_multiline_comment:
-                        if "*/" in line:
-                            in_multiline_comment = False
+                    clean_line, in_multiline_comment = cls._strip_comments(
+                        line, in_multiline_comment
+                    )
+                    if clean_line is None:
                         continue
-                    if "/*" in line:
-                        in_multiline_comment = True
-                        if "*/" not in line:
-                            continue
 
-                    # Remove single-line comments
-                    if "//" in line:
-                        line = line.split("//", 1)[0]
-
-                    stripped = line.strip()
-
-                    # Skip empty lines
+                    stripped = clean_line.strip()
                     if not stripped:
                         continue
 
-                    # Stop at first rule definition
-                    # This marks the end of the preamble section
+                    # Stop at first rule definition (end of preamble)
                     if stripped.startswith("rule "):
                         break
 
-                    # Try to match import statement
                     import_match = import_pattern.match(stripped)
                     if import_match:
-                        module_name = import_match.group(1)
-                        alias = import_match.group(2)  # May be None
-                        imports.append(Import(module=module_name, alias=alias))
+                        imports.append(
+                            Import(module=import_match.group(1), alias=import_match.group(2))
+                        )
                         continue
 
-                    # Try to match include statement
                     include_match = include_pattern.match(stripped)
                     if include_match:
-                        include_path = include_match.group(1)
-                        includes.append(Include(path=include_path))
-                        continue
-
-                    # If we encounter any other non-empty, non-comment line
-                    # that's not import/include and not a rule, it might be
-                    # a pragma or other directive - continue scanning
-                    # (pragmas/extern/etc. don't affect import/include extraction)
+                        includes.append(Include(path=include_match.group(1)))
 
         except (OSError, UnicodeDecodeError):
-            # On any file reading error, return empty lists
-            # This ensures streaming parser can still work, just without
-            # import/include information
             return [], []
 
         return imports, includes

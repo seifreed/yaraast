@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from yaraast.ast.base import _VisitorType
 from yaraast.ast.expressions import Expression
 
 
@@ -12,7 +13,7 @@ from yaraast.ast.expressions import Expression
 class Condition(Expression):
     """Base class for conditions."""
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_condition(self)
 
 
@@ -25,7 +26,7 @@ class ForExpression(Condition):
     iterable: Expression
     body: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_for_expression(self)
 
 
@@ -37,7 +38,7 @@ class ForOfExpression(Condition):
     string_set: Expression
     condition: Expression | None = None
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_for_of_expression(self)
 
 
@@ -48,7 +49,7 @@ class AtExpression(Condition):
     string_id: str
     offset: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_at_expression(self)
 
 
@@ -65,7 +66,7 @@ class InExpression(Condition):
         """Return string_id if subject is a string, None otherwise."""
         return self.subject if isinstance(self.subject, str) else None
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_in_expression(self)
 
 
@@ -76,5 +77,5 @@ class OfExpression(Condition):
     quantifier: Expression
     string_set: Expression
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_of_expression(self)

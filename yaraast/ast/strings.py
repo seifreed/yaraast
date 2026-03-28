@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, _VisitorType
 from yaraast.ast.modifiers import StringModifier
 
 
@@ -16,7 +16,7 @@ class StringDefinition(ASTNode):
     identifier: str
     modifiers: list[StringModifier] = field(default_factory=list)
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_definition(self)
 
 
@@ -26,7 +26,7 @@ class PlainString(StringDefinition):
 
     value: str = ""  # Add default
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_plain_string(self)
 
 
@@ -36,7 +36,7 @@ class HexString(StringDefinition):
 
     tokens: list[HexToken] = field(default_factory=list)  # Add default
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_string(self)
 
 
@@ -44,7 +44,7 @@ class HexString(StringDefinition):
 class HexToken(ASTNode):
     """Base class for hex string tokens."""
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_token(self)
 
 
@@ -54,7 +54,7 @@ class HexByte(HexToken):
 
     value: int = 0  # Add default
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_byte(self)
 
 
@@ -64,7 +64,7 @@ class HexNegatedByte(HexToken):
 
     value: int = 0
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         if hasattr(visitor, "visit_hex_negated_byte"):
             return visitor.visit_hex_negated_byte(self)
         return visitor.visit_hex_byte(self)
@@ -74,7 +74,7 @@ class HexNegatedByte(HexToken):
 class HexWildcard(HexToken):
     """Hex wildcard (?)."""
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_wildcard(self)
 
 
@@ -85,7 +85,7 @@ class HexJump(HexToken):
     min_jump: int | None = None
     max_jump: int | None = None
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_jump(self)
 
 
@@ -95,7 +95,7 @@ class HexAlternative(HexToken):
 
     alternatives: list[list[HexToken]] = field(default_factory=list)  # Add default
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_alternative(self)
 
 
@@ -106,7 +106,7 @@ class HexNibble(HexToken):
     high: bool  # True for X?, False for ?X
     value: int = 0  # 0-15
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_nibble(self)
 
 
@@ -116,5 +116,5 @@ class RegexString(StringDefinition):
 
     regex: str = ""  # Add default
 
-    def accept(self, visitor: Any) -> Any:
+    def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_regex_string(self)
