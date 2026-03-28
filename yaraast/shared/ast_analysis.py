@@ -114,7 +114,7 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
             ).hexdigest()
         elif hasattr(string_def, "tokens"):
             string_structure["content_type"] = "hex"
-            string_structure["token_count"] = len(getattr(string_def, "tokens", []))
+            string_structure["token_count"] = str(len(getattr(string_def, "tokens", [])))
         sig_key = f"{rule_name}:{string_def.identifier}" if rule_name else string_def.identifier
         self.string_signatures[sig_key] = self._hash_dict(string_structure)
 

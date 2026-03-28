@@ -7,16 +7,16 @@ from dataclasses import dataclass
 from enum import Enum, auto
 import re
 import threading
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @runtime_checkable
 class ParseResult(Protocol):
     """Minimal protocol for dialect parse results."""
 
-    rules: list
-    imports: list
-    includes: list
+    rules: list[Any]
+    imports: list[Any]
+    includes: list[Any]
 
 
 class YaraDialect(Enum):
@@ -139,7 +139,7 @@ class DialectSpec:
     """Registration spec for a YARA dialect."""
 
     dialect: YaraDialect
-    parser_factory: Callable[[str], ParseResult]  # text -> AST (YaraFile | YaraLFile)
+    parser_factory: Callable[[str], Any]  # text -> AST (YaraFile | YaraLFile)
     detection_patterns: list[tuple[str, re.RegexFlag]]  # (regex, re_flags) pairs
     priority: int = 0  # higher = checked first
 
@@ -168,7 +168,7 @@ class DialectRegistry:
         return YaraDialect.YARA
 
     @classmethod
-    def get_parser_factory(cls, dialect: YaraDialect) -> Callable[[str], ParseResult] | None:
+    def get_parser_factory(cls, dialect: YaraDialect) -> Callable[[str], Any] | None:
         with cls._lock:
             specs = list(cls._specs)
         for spec in specs:

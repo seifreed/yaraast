@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -95,7 +96,7 @@ class Rule(ASTNode):
 
     @staticmethod
     def _normalize_modifiers(
-        modifiers: list | tuple | str | None,
+        modifiers: Sequence[str | RuleModifier] | str | None,
     ) -> list[str | RuleModifier]:
         """Normalize modifiers to a list of RuleModifier."""
         if not modifiers:
@@ -116,17 +117,18 @@ class Rule(ASTNode):
                 else:
                     normalized.append(m)
             return normalized
-        # non-standard type - leave as-is
-        return modifiers  # type: ignore[no-any-return]
+        return [modifiers]  # type: ignore[list-item]
 
     @staticmethod
-    def _normalize_meta(meta: dict | list | tuple | None) -> list[MetaEntry]:
+    def _normalize_meta(
+        meta: list[MetaEntry] | tuple[MetaEntry, ...] | dict[str, str | int | bool] | None,
+    ) -> list[MetaEntry]:
         """Normalize meta to a list of MetaEntry."""
         if not meta:
             return []
         if isinstance(meta, dict):
             return [MetaEntry.from_key_value(k, v) for k, v in meta.items()]
-        return meta  # type: ignore[no-any-return]
+        return list(meta)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_rule(self)
