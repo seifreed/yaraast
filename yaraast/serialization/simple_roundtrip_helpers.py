@@ -297,7 +297,7 @@ def validate_roundtrip(node: ASTNode) -> tuple[bool, dict[str, Any]]:
             "differences": [] if is_valid else ["Code differs after roundtrip"],
         }
         return is_valid, diff
-    except Exception as e:
+    except Exception as e:  # serialization + codegen roundtrip errors
         return False, {"error": str(e)}
 
 
@@ -324,7 +324,7 @@ def simple_roundtrip_report(yara_source: str) -> dict[str, Any]:
                 ),
             },
         }
-    except Exception as e:
+    except Exception as e:  # parse + codegen roundtrip errors
         return {
             "original_source": yara_source,
             "reconstructed_source": "",

@@ -157,7 +157,7 @@ class ASTDiffer:
                 ast2 = Parser(content2).parse()
             result = self.diff_asts(ast1, ast2)
             return self._detect_style_changes_from_text(content1, content2, result)
-        except Exception as exc:
+        except Exception as exc:  # file I/O + parse errors from multiple paths
             result = ASTDiffResult(has_changes=True)
             result.logical_changes.append(f"Error comparing files: {exc}")
             return result
@@ -279,7 +279,7 @@ class ASTFormatter:
                     f.write(formatted)
                 return True, f"Formatted file written to {output_path}"
             return True, formatted
-        except Exception as exc:
+        except Exception as exc:  # file I/O + parse + codegen errors
             return False, f"Formatting error: {exc}"
 
     def format_ast(self, ast: YaraFile, style: str = "default") -> str:
@@ -305,5 +305,5 @@ class ASTFormatter:
                 if orig != fmt:
                     issues.append(f"Line {i}: formatting issue")
             return len(issues) > 0, issues
-        except Exception as exc:
+        except Exception as exc:  # file I/O + parse + codegen errors
             return False, [f"Check error: {exc}"]

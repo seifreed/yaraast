@@ -7,6 +7,7 @@ from typing import Any
 
 from lsprotocol.types import FoldingRange, FoldingRangeKind
 
+from yaraast.ast.rules import Rule
 from yaraast.lsp.parsing import parse_for_lsp
 from yaraast.lsp.structure import find_rule_end, find_rule_line, find_section_range
 
@@ -74,7 +75,7 @@ class FoldingRangesProvider:
 
         return None
 
-    def _get_rule_folding_range(self, text: str, rule: Any) -> FoldingRange | None:
+    def _get_rule_folding_range(self, text: str, rule: Rule) -> FoldingRange | None:
         """Get folding range for entire rule."""
         lines = text.split("\n")
 
@@ -88,7 +89,7 @@ class FoldingRangesProvider:
 
         return FoldingRange(start_line=start_line, end_line=end_line, kind=FoldingRangeKind.Region)
 
-    def _get_section_folding_ranges(self, text: str, rule: Any) -> list[FoldingRange]:
+    def _get_section_folding_ranges(self, text: str, rule: Rule) -> list[FoldingRange]:
         """Get folding ranges for rule sections (meta, strings, condition)."""
         ranges: list[FoldingRange] = []
         lines = text.split("\n")

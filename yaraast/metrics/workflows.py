@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from yaraast.ast.base import YaraFile
 from yaraast.errors import ValidationError
 from yaraast.metrics.capabilities import get_capability
 from yaraast.metrics.facade import METRICS
@@ -27,7 +28,7 @@ class MetricsReportData:
     generated_files: list[str]
 
 
-def analyze_complexity(ast: Any) -> Any:
+def analyze_complexity(ast: YaraFile) -> Any:
     analyzer = METRICS.new_complexity_analyzer()
     return analyzer.analyze(ast)
 
@@ -62,7 +63,7 @@ def build_complexity_payload(metrics: Any) -> dict[str, Any]:
 
 
 def generate_dependency_graphs(
-    ast: Any,
+    ast: YaraFile,
     output_dir: Path,
     base_name: str,
     image_format: str,
@@ -96,7 +97,7 @@ def generate_dependency_graphs(
 
 
 def generate_html_tree(
-    ast: Any,
+    ast: YaraFile,
     output_dir: Path,
     base_name: str,
     interactive: bool = True,
@@ -116,7 +117,7 @@ def generate_html_tree(
 
 
 def generate_pattern_diagrams(
-    ast: Any,
+    ast: YaraFile,
     output_dir: Path,
     base_name: str,
     image_format: str,
@@ -144,7 +145,7 @@ def generate_pattern_diagrams(
 
 
 def build_report(
-    ast: Any, output_dir: Path, base_name: str, image_format: str
+    ast: YaraFile, output_dir: Path, base_name: str, image_format: str
 ) -> MetricsReportData:
     metrics = analyze_complexity(ast)
     payload = build_complexity_payload(metrics)
@@ -152,13 +153,13 @@ def build_report(
     generated_files = []
     try:
         generated_files.extend(generate_dependency_graphs(ast, output_dir, base_name, image_format))
-    except Exception as exc:
+    except Exception as exc:  # suppress missing graphviz, re-raise others
         if not is_graphviz_error(exc):
             raise
     generated_files.append(generate_html_tree(ast, output_dir, base_name, interactive=True))
     try:
         generated_files.extend(generate_pattern_diagrams(ast, output_dir, base_name, image_format))
-    except Exception as exc:
+    except Exception as exc:  # suppress missing graphviz, re-raise others
         if not is_graphviz_error(exc):
             raise
 
@@ -180,7 +181,7 @@ def determine_graph_output_path(
 
 
 def generate_dependency_graph(
-    ast: Any, graph_type: str, output_path: str, fmt: str, engine: str
+    ast: YaraFile, graph_type: str, output_path: str, fmt: str, engine: str
 ) -> str:
     if DependencyGraphGenerator is None:
         msg = "Graph visualization requires the 'graphviz' Python package."
@@ -193,7 +194,7 @@ def generate_dependency_graph(
 
 def generate_dependency_graph_with_generator(
     generator: Any,
-    ast: Any,
+    ast: YaraFile,
     graph_type: str,
     output_path: str,
     fmt: str,
@@ -225,14 +226,14 @@ def determine_pattern_output_path(
     return f"{base_name}_patterns_{pattern_type}.{fmt}"
 
 
-def generate_pattern_diagram(ast: Any, pattern_type: str, output_path: str, fmt: str) -> str:
+def generate_pattern_diagram(ast: YaraFile, pattern_type: str, output_path: str, fmt: str) -> str:
     generator = METRICS.new_string_diagram_generator()
     return generate_pattern_diagram_with_generator(generator, ast, pattern_type, output_path, fmt)
 
 
 def generate_pattern_diagram_with_generator(
     generator: Any,
-    ast: Any,
+    ast: YaraFile,
     pattern_type: str,
     output_path: str,
     fmt: str,
@@ -249,7 +250,7 @@ def generate_pattern_diagram_with_generator(
 
 
 def generate_html_tree_file(
-    ast: Any,
+    ast: YaraFile,
     output_path: str,
     title: str,
     interactive: bool,

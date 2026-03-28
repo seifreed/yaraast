@@ -11,7 +11,9 @@ from yaraast.yaral.ast_nodes import MetaEntry, MetaSection, OptionsSection, Yara
 class EnhancedYaraLParserRulesMixin:
     """Mixin for rule/meta/options parsing."""
 
-    def _parse_rule(self) -> YaraLRule:
+    def _parse_rule(
+        self,
+    ) -> YaraLRule:  # noqa: C901 — recursive descent, sequential section parsing
         """Parse a complete YARA-L rule."""
         self._consume_keyword("rule")
 

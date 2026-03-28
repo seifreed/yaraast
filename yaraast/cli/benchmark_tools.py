@@ -79,7 +79,7 @@ class ASTBenchmarker:
             self.results.append(result)
             return result
 
-        except Exception as e:
+        except Exception as e:  # benchmark error boundary
             result = BenchmarkResult(
                 operation="parsing",
                 file_size=0,
@@ -137,7 +137,7 @@ class ASTBenchmarker:
             self.results.append(result)
             return result
 
-        except Exception as e:
+        except Exception as e:  # benchmark error boundary
             result = BenchmarkResult(
                 operation="codegen",
                 file_size=0,
@@ -183,7 +183,7 @@ class ASTBenchmarker:
             results.append(result)
             self.results.append(result)
 
-        except Exception as e:
+        except Exception as e:  # benchmark error boundary
             result = BenchmarkResult(
                 operation="roundtrip",
                 file_size=0,

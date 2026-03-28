@@ -6,6 +6,8 @@ from typing import Any, cast
 
 from lsprotocol.types import DocumentSymbol, Position, Range, SymbolKind
 
+from yaraast.ast.rules import Rule
+
 
 def build_document_symbols(doc, lines: list[str]) -> list[DocumentSymbol]:
     symbols: list[DocumentSymbol] = []
@@ -127,7 +129,7 @@ def _append_meta_section(
     rule_symbol: DocumentSymbol,
     doc,
     lines: list[str],
-    rule: Any,
+    rule: Rule,
     rule_name: str,
     rule_line: int,
     section_names: set[str],
@@ -202,7 +204,7 @@ def _append_strings_section(
     rule_symbol: DocumentSymbol,
     doc,
     lines: list[str],
-    rule: Any,
+    rule: Rule,
     rule_name: str,
     rule_line: int,
     section_names: set[str],
@@ -264,7 +266,7 @@ def _append_condition_section(
     rule_symbol: DocumentSymbol,
     doc,
     lines: list[str],
-    rule: Any,
+    rule: Rule,
     rule_name: str,
     rule_line: int,
     rule_end: int,
@@ -303,7 +305,7 @@ def _append_extra_sections(
     rule_symbol: DocumentSymbol,
     doc,
     lines: list[str],
-    rule: Any,
+    rule: Rule,
     rule_name: str,
     rule_line: int,
     section_names: set[str],

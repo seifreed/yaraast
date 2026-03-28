@@ -80,7 +80,9 @@ class UnifiedParser:
         return self.dialect
 
     @classmethod
-    def _extract_preamble_fast(cls, file_path: Path) -> tuple[list[Import], list[Include]]:
+    def _extract_preamble_fast(  # noqa: C901 — single-pass line scanner, splitting harms readability
+        cls, file_path: Path
+    ) -> tuple[list[Import], list[Include]]:
         """Extract imports/includes from file preamble without full parsing.
 
         Reads lines before the first ``rule`` keyword using regex matching.

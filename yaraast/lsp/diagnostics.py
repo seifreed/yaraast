@@ -33,6 +33,8 @@ from yaraast.types.semantic_validator import SemanticValidator
 from yaraast.unified_parser import UnifiedParser
 
 if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
+    from yaraast.lsp.document_types import RuntimeConfig
     from yaraast.types.semantic_validator import ValidationError
 
 
@@ -234,7 +236,7 @@ class DiagnosticsProvider:
     def _metadata_for_error(self, error: ValidationError) -> dict[str, object]:
         return metadata_for_error(error)
 
-    def _validate_metadata(self, ast: Any, config: Any) -> list[Diagnostic]:
+    def _validate_metadata(self, ast: YaraFile, config: RuntimeConfig) -> list[Diagnostic]:
         """Validate rule metadata against configurable validation rules."""
         results: list[Diagnostic] = []
         if ast is None or not hasattr(ast, "rules"):
@@ -299,7 +301,7 @@ class DiagnosticsProvider:
                         )
         return results
 
-    def _validate_rule_names(self, ast: Any, pattern_str: str) -> list[Diagnostic]:
+    def _validate_rule_names(self, ast: YaraFile, pattern_str: str) -> list[Diagnostic]:
         """Validate rule names against a configurable regex pattern."""
         results: list[Diagnostic] = []
         if ast is None or not hasattr(ast, "rules"):

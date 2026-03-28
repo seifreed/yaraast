@@ -68,6 +68,6 @@ def _parse_with_error_tolerant_parser(content: str) -> tuple:
         parser = Parser(content)
         ast = parser.parse()
         return ast, [], []
-    except Exception:
+    except Exception:  # fallback to error-tolerant parser on any parse failure
         error_parser = ErrorTolerantParser()
         return error_parser.parse_with_errors(content)

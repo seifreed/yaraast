@@ -61,7 +61,7 @@ def export(input_file: str, output: str | None, format: str, minimal: bool, pret
             result, stats = export_serialized(input_file, format, output, minimal)
         display_export_result(console, result, format, output, pretty, stats)
 
-    except Exception as e:
+    except Exception as e:  # CLI error boundary
         console.print(f"[red]❌ Error: {e}[/red]")
         raise click.Abort from e
 
@@ -92,7 +92,7 @@ def import_ast(input_file: str, format: str, output: str | None) -> None:
 
         display_import_result(console, input_file, format, ast, output)
 
-    except Exception as e:
+    except Exception as e:  # CLI error boundary
         console.print(f"[red]❌ Error: {e}[/red]")
         raise click.Abort from e
 
@@ -148,7 +148,7 @@ def diff(
                 write_diff_output(output_path, format, diff_data)
                 display_diff_saved(console, output_path, patch=False)
 
-    except Exception as e:
+    except Exception as e:  # CLI error boundary
         console.print(f"[red]❌ Error: {e}[/red]")
         raise click.Abort from e
 
@@ -179,7 +179,7 @@ def validate(input_file: str, format: str) -> None:
             console,
             panel,
         )
-    except Exception as e:
+    except Exception as e:  # CLI error boundary
         display_validation_result(
             console,
             validate_serialized_error(input_file, format, e),
@@ -203,7 +203,7 @@ def info(input_file: str) -> None:
 
         display_info(console, input_file, info_data)
 
-    except Exception as e:
+    except Exception as e:  # CLI error boundary
         console.print(f"[red]❌ Error: {e}[/red]")
         raise click.Abort from e
 

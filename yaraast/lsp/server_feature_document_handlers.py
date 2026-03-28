@@ -24,7 +24,8 @@ from yaraast.lsp.server_feature_helpers import get_diagnostics, get_document_sou
 logger = logging.getLogger(__name__)
 
 
-def register_document_handlers(server) -> None:
+def register_document_handlers(server) -> None:  # noqa: C901 — declarative handler registration
+    # Length is due to 7 short handler registrations; splitting would reduce locality.
     @server.feature(TEXT_DOCUMENT_DID_OPEN)
     async def did_open(ls, params: DidOpenTextDocumentParams) -> None:
         ls.show_message_log("Document opened")

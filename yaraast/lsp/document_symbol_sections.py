@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from lsprotocol.types import Position, Range
 
 from yaraast.ast.base import ASTNode
+from yaraast.ast.rules import Rule
 from yaraast.lsp.document_symbol_ranges import node_range, node_value_range
 from yaraast.lsp.document_types import SymbolRecord
 from yaraast.lsp.structure import (
@@ -25,7 +26,7 @@ def append_meta_symbols(
     ctx: DocumentContext,
     symbols: list[SymbolRecord],
     lines: list[str],
-    rule: Any,
+    rule: Rule,
     rule_name: str,
     rule_block_range: Range,
 ) -> None:
@@ -72,7 +73,7 @@ def append_string_symbols(
     ctx: DocumentContext,
     symbols: list[SymbolRecord],
     lines: list[str],
-    rule: Any,
+    rule: Rule,
     rule_name: str,
     rule_block_range: Range,
     source_text: str,
@@ -112,7 +113,7 @@ def append_condition_symbols(
     ctx: DocumentContext,
     symbols: list[SymbolRecord],
     lines: list[str],
-    rule: Any,
+    rule: Rule,
     rule_name: str,
     rule_block_range: Range,
     source_text: str,
@@ -140,7 +141,7 @@ def append_extra_section_symbols(
     ctx: DocumentContext,
     symbols: list[SymbolRecord],
     lines: list[str],
-    rule: Any,
+    rule: Rule,
     rule_name: str,
     rule_block_range: Range,
     source_text: str,
@@ -189,7 +190,7 @@ def section_content_range(header_range: Range, content_ranges: list[Range | None
     return Range(start=Position(line=header_range.start.line, character=0), end=end_range.end)
 
 
-def meta_item_ranges(rule: Any, source_text: str) -> list[Range | None]:
+def meta_item_ranges(rule: Rule, source_text: str) -> list[Range | None]:
     meta = getattr(rule, "meta", None)
     if isinstance(meta, list):
         return [node_range(item, source_text) for item in meta if isinstance(item, ASTNode)]
