@@ -41,7 +41,7 @@ def parse(file: str, output: str | None, show_features: bool):
     try:
         content = read_text(file)
 
-        ast, code = parse_yarax_content(content)
+        _ast, code = parse_yarax_content(content)
 
         if output:
             Path(output).write_text(code)
@@ -138,7 +138,7 @@ def playground(code: str | None, file: str | None):
 
     try:
         # Parse with YARA-X parser
-        ast, generated = parse_yarax_content(code)
+        _ast, generated = parse_yarax_content(code)
 
         features = detect_playground_features(code)
         display_playground_results(generated, features)

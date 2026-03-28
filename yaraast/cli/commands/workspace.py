@@ -108,7 +108,7 @@ def graph(directory, output, format) -> None:
     """Generate dependency graph for YARA files."""
     click.echo(f"Building dependency graph for: {directory}")
 
-    ws, report = analyze_workspace(directory, "*.yar", True, True)
+    _ws, report = analyze_workspace(directory, "*.yar", True, True)
     output_text = format_workspace_graph(report, format)
 
     # Output

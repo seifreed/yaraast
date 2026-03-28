@@ -174,7 +174,7 @@ def validate(input_file: str, format: str) -> None:
 
     """
     try:
-        ast, panel = validate_serialized_input(input_file, format)
+        _ast, panel = validate_serialized_input(input_file, format)
         display_validation_result(
             console,
             panel,

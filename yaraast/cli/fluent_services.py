@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from enum import Enum
+from enum import StrEnum
 
 from yaraast.builder import (
     malware_rule,
@@ -18,7 +18,7 @@ from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.codegen.generator import CodeGenerator
 
 
-class RuleTemplate(str, Enum):
+class RuleTemplate(StrEnum):
     """Supported rule template types."""
 
     MALWARE = "malware"

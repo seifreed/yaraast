@@ -49,7 +49,7 @@ def validate() -> None:
 def _validate_rule_file(rule_file: str) -> int:
     """Basic validation for backward-compatible `validate <file>` usage."""
     try:
-        ast, rules_count, imports_count, string_count = validate_rule_file(rule_file)
+        _ast, rules_count, imports_count, string_count = validate_rule_file(rule_file)
     except Exception as exc:
         display_rule_file_invalid(exc)
         return 1

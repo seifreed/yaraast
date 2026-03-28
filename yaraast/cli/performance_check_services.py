@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +11,7 @@ from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.performance.string_analyzer import StringPerformanceIssue, analyze_rule_performance
 
 
-class Severity(str, Enum):
+class Severity(StrEnum):
     """Issue severity levels."""
 
     WARNING = "warning"

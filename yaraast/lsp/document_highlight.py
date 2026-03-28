@@ -19,7 +19,7 @@ class DocumentHighlightProvider:
 
     def get_highlights(self, text: str, position: Position) -> list[DocumentHighlight]:
         """Get all highlights for symbol at position."""
-        word, word_range = get_word_at_position(text, position)
+        word, _word_range = get_word_at_position(text, position)
         if not word:
             return []
 

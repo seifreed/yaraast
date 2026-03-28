@@ -353,7 +353,7 @@ def pipeline(
 
     """
     try:
-        ast, yaml_content, pipeline_data = pipeline_serialize_file(
+        ast, yaml_content, _pipeline_data = pipeline_serialize_file(
             input_file,
             pipeline_info,
         )

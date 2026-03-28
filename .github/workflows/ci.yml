@@ -31,7 +31,7 @@ jobs:
             python-version: "3.13"
             arch: arm64
           # macOS x64 (Intel)
-          - os: macos-13
+          - os: macos-15
             python-version: "3.13"
             arch: x64
           # Windows x64
@@ -65,7 +65,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/ -o "addopts=" -q --tb=short --ignore=tests/test_cli_benchmark_metrics_perfcheck_more.py --ignore=tests/test_cli_direct.py --ignore=tests/test_metrics_dependency_graph_graphviz_utils_more5.py
+          python -m pytest tests/ -o "addopts=" -q --tb=short --ignore=tests/test_metrics_dependency_graph_graphviz_utils_more5.py
 
   lint:
     name: Lint & Type Check

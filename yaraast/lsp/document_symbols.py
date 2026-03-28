@@ -150,5 +150,5 @@ def build_symbol_indexes(
     lookup: dict[tuple[str, str, str | None], SymbolRecord] = {}
     for symbol in symbols:
         by_kind.setdefault(symbol.kind, []).append(symbol)
-        lookup[(symbol.kind, symbol.name, symbol.container_name)] = symbol
+        lookup[symbol.kind, symbol.name, symbol.container_name] = symbol
     return by_kind, lookup
