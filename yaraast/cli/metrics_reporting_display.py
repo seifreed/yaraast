@@ -7,6 +7,8 @@ from typing import Any
 
 import click
 
+from yaraast.ast.base import YaraFile
+
 
 def graphviz_fallback_message(output_kind: str) -> str:
     return f"⚠️ Graphviz not installed. Generating {output_kind} instead...\n"
@@ -65,7 +67,9 @@ def display_module_usage(generator: Any) -> None:
                 click.echo(f"  {rule} uses: {', '.join(modules)}")
 
 
-def display_text_fallback(yara_file: str, ast: Any, generator: Any) -> None:
+def display_text_fallback(
+    yara_file: str, ast: YaraFile, generator: Any
+) -> None:  # generator typing: protocol-compatible
     click.echo(graphviz_fallback_message("text representation"))
     generator.visit(ast)
     stats = generator.get_dependency_stats()

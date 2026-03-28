@@ -8,11 +8,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.conditions import Condition
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter
 from yaraast.parser.parser import Parser
 from yaraast.visitor.base import BaseVisitor
+
+StringDef = PlainString | HexString | RegexString
 
 
 @dataclass
@@ -67,7 +72,7 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
             self.visit(rule)
         return super().visit_yara_file(node)
 
-    def visit_rule(self, rule: Any) -> Any:
+    def visit_rule(self, rule: Rule) -> Any:
         meta_data = getattr(rule, "meta", [])
         meta_keys = sorted([getattr(m, "key", "") for m in meta_data if hasattr(m, "key")])
 
@@ -88,7 +93,7 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
             self._analyze_condition(rule.condition, rule.name)
         return super().visit_rule(rule)
 
-    def _analyze_string(self, string_def: Any, rule_name: str = "") -> None:
+    def _analyze_string(self, string_def: StringDef, rule_name: str = "") -> None:
         string_structure = {
             "identifier": string_def.identifier,
             "type": type(string_def).__name__,
@@ -112,12 +117,12 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
         sig_key = f"{rule_name}:{string_def.identifier}" if rule_name else string_def.identifier
         self.string_signatures[sig_key] = self._hash_dict(string_structure)
 
-    def _analyze_condition(self, condition: Any, rule_name: str) -> None:
+    def _analyze_condition(self, condition: Condition, rule_name: str) -> None:
         self.condition_signatures[f"{rule_name}.condition"] = self._hash_dict(
             self._get_condition_structure(condition)
         )
 
-    def _get_condition_structure(self, node: Any) -> dict[str, Any]:
+    def _get_condition_structure(self, node: ASTNode) -> dict[str, Any]:
         if node is None:
             return {"type": "empty"}
         structure: dict[str, Any] = {"type": type(node).__name__}
@@ -277,7 +282,7 @@ class ASTFormatter:
         except Exception as exc:
             return False, f"Formatting error: {exc}"
 
-    def format_ast(self, ast: Any, style: str = "default") -> str:
+    def format_ast(self, ast: YaraFile, style: str = "default") -> str:
         if style == "compact":
             return self.generator.generate(ast)
         if style in ("pretty", "verbose"):

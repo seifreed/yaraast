@@ -60,7 +60,20 @@ from yaraast.visitor.base import ASTTransformer
 
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
-    from yaraast.ast.rules import Rule
+    from yaraast.ast.expressions import (
+        BinaryExpression,
+        BooleanLiteral,
+        DoubleLiteral,
+        Identifier,
+        IntegerLiteral,
+        StringIdentifier,
+        StringLiteral,
+        StringWildcard,
+        UnaryExpression,
+    )
+    from yaraast.ast.meta import Meta
+    from yaraast.ast.rules import Import, Include, Rule, Tag
+    from yaraast.ast.strings import HexString, PlainString, RegexString
 
 
 class MemoryOptimizer:
@@ -131,7 +144,7 @@ class MemoryOptimizer:
         """Create a memory-managed context."""
         return runtime_memory_managed_context(self)
 
-    def track_object(self, obj: Any) -> None:
+    def track_object(self, obj: object) -> None:
         """Track an object for memory management."""
         if self.enable_tracking:
             self._tracked_objects.append(obj)
@@ -149,7 +162,7 @@ class MemoryOptimizer:
         """Create or reuse an AST from pool."""
         return runtime_create_memory_efficient_ast(self)
 
-    def return_ast_to_pool(self, ast: Any) -> None:
+    def return_ast_to_pool(self, ast: ASTNode) -> None:
         """Return an AST to the pool for reuse."""
         self._ast_pool.append(ast)
 
@@ -199,57 +212,57 @@ class MemoryOptimizerTransformer(ASTTransformer):
         self.nodes_processed += 1
         return super().visit(node)
 
-    def visit_string_literal(self, node: Any) -> Any:
+    def visit_string_literal(self, node: StringLiteral) -> StringLiteral:
         return transformer_visit_string_literal(self, node)
 
-    def visit_identifier(self, node: Any) -> Any:
+    def visit_identifier(self, node: Identifier) -> Identifier:
         return transformer_visit_identifier(self, node)
 
     def visit_rule(self, node: Rule) -> Rule:
         return transformer_visit_rule(self, node)
 
-    def visit_plain_string(self, node: Any) -> Any:
+    def visit_plain_string(self, node: PlainString) -> PlainString:
         return transformer_visit_plain_string(self, node)
 
-    def visit_meta(self, node: Any) -> Any:
+    def visit_meta(self, node: Meta) -> Meta:
         return transformer_visit_meta(self, node)
 
-    def visit_tag(self, node: Any) -> Any:
+    def visit_tag(self, node: Tag) -> Tag:
         return transformer_visit_tag(self, node)
 
     # Pass-through methods for other node types
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         return transformer_visit_yara_file(self, node)
 
-    def visit_import(self, node: Any) -> Any:
+    def visit_import(self, node: Import) -> Import:
         return transformer_visit_import(self, node)
 
-    def visit_include(self, node: Any) -> Any:
+    def visit_include(self, node: Include) -> Include:
         return transformer_visit_include(self, node)
 
-    def visit_boolean_literal(self, node: Any) -> Any:
+    def visit_boolean_literal(self, node: BooleanLiteral) -> BooleanLiteral:
         return node
 
-    def visit_integer_literal(self, node: Any) -> Any:
+    def visit_integer_literal(self, node: IntegerLiteral) -> IntegerLiteral:
         return node
 
-    def visit_double_literal(self, node: Any) -> Any:
+    def visit_double_literal(self, node: DoubleLiteral) -> DoubleLiteral:
         return node
 
-    def visit_string_identifier(self, node: Any) -> Any:
+    def visit_string_identifier(self, node: StringIdentifier) -> StringIdentifier:
         return transformer_visit_string_identifier(self, node)
 
-    def visit_string_wildcard(self, node: Any) -> Any:
+    def visit_string_wildcard(self, node: StringWildcard) -> StringWildcard:
         return transformer_visit_string_wildcard(self, node)
 
-    def visit_binary_expression(self, node: Any) -> Any:
+    def visit_binary_expression(self, node: BinaryExpression) -> BinaryExpression:
         return transformer_visit_binary_expression(self, node)
 
-    def visit_unary_expression(self, node: Any) -> Any:
+    def visit_unary_expression(self, node: UnaryExpression) -> UnaryExpression:
         return transformer_visit_unary_expression(self, node)
 
-    def visit_hex_string(self, node: Any) -> Any:
+    def visit_hex_string(self, node: HexString) -> HexString:
         return transformer_visit_hex_string(self, node)
 
-    def visit_regex_string(self, node: Any) -> Any:
+    def visit_regex_string(self, node: RegexString) -> RegexString:
         return transformer_visit_regex_string(self, node)

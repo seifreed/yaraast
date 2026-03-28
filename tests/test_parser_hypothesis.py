@@ -7,12 +7,17 @@ from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from yaraast.codegen import CodeGenerator
+from yaraast.lexer.lexer_tables import KEYWORDS as _LEXER_KEYWORDS
 from yaraast.parser.parser import Parser
+
+_ALL_KEYWORDS = frozenset(_LEXER_KEYWORDS.keys())
 
 
 def _valid_identifier() -> st.SearchStrategy[str]:
-    """Generate valid YARA identifiers."""
-    return st.from_regex(r"[a-zA-Z_][a-zA-Z0-9_]{0,20}", fullmatch=True)
+    """Generate valid YARA identifiers that are not keywords."""
+    return st.from_regex(r"[a-zA-Z_][a-zA-Z0-9_]{0,20}", fullmatch=True).filter(
+        lambda name: name.lower() not in _ALL_KEYWORDS
+    )
 
 
 def _simple_rule() -> st.SearchStrategy[str]:
@@ -56,35 +61,6 @@ def _build_rule_with_strings(name: str, strings: list[tuple[str, str]]) -> str:
     )
 
 
-YARA_KEYWORDS = frozenset(
-    {
-        "rule",
-        "condition",
-        "strings",
-        "meta",
-        "import",
-        "include",
-        "true",
-        "false",
-        "and",
-        "or",
-        "not",
-        "all",
-        "any",
-        "of",
-        "them",
-        "for",
-        "in",
-        "at",
-        "filesize",
-        "entrypoint",
-        "global",
-        "private",
-        "none",
-    }
-)
-
-
 @pytest.mark.hypothesis
 class TestParserRoundtrip:
     """Test that parse -> codegen -> parse produces equivalent ASTs."""
@@ -126,7 +102,7 @@ class TestParserRoundtrip:
     @settings(max_examples=50, deadline=5000)
     def test_rule_name_preserved(self, name: str) -> None:
         """Rule names are preserved through roundtrip."""
-        assume(name not in YARA_KEYWORDS)
+        assume(name.lower() not in _ALL_KEYWORDS)
         rule_text = f"rule {name} {{ condition: true }}"
         ast1 = Parser(rule_text).parse()
         generated = CodeGenerator().generate(ast1)

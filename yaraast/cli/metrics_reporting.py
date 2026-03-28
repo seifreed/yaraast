@@ -7,6 +7,8 @@ from typing import Any
 
 import click
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.cli.metrics_reporting_complexity import complexity_quality_message
 from yaraast.cli.metrics_reporting_complexity import emit_text_output as _emit_text_output
 from yaraast.cli.metrics_reporting_complexity import (
@@ -40,6 +42,8 @@ from yaraast.cli.metrics_reporting_display import (
 )
 from yaraast.cli.metrics_services import MetricsReportData
 from yaraast.cli.utils import format_json
+
+StringDef = PlainString | HexString | RegexString
 
 __all__ = [
     "_display_graph_statistics",
@@ -77,20 +81,20 @@ def _display_pattern_result(result_path: str) -> None:
         click.echo(result_path)
 
 
-def _display_plain_string(string_def: Any) -> None:
+def _display_plain_string(string_def: StringDef) -> None:
     """Display plain string information."""
     value_str = string_def.value
     display_value = f'"{value_str[:30]}..."' if len(str(value_str)) > 30 else f'"{value_str}"'
     click.echo(f"  📝 {string_def.identifier}: {display_value}")
 
 
-def _display_hex_string(string_def: Any) -> None:
+def _display_hex_string(string_def: StringDef) -> None:
     """Display hex string information."""
     token_count = len(string_def.tokens)
     click.echo(f"  🔢 {string_def.identifier}: HEX pattern ({token_count} tokens)")
 
 
-def _display_regex_string(string_def: Any) -> None:
+def _display_regex_string(string_def: StringDef) -> None:
     """Display regex string information."""
     click.echo(f"  🔍 {string_def.identifier}: /{string_def.regex}/")
 
@@ -105,7 +109,7 @@ def _display_pattern_summary(counts: dict[str, int]) -> None:
     click.echo(f"  Regex patterns: {counts['regex']}")
 
 
-def _analyze_pattern_counts(ast: Any) -> dict[str, int]:
+def _analyze_pattern_counts(ast: YaraFile) -> dict[str, int]:
     """Analyze and display pattern counts by type."""
     counts = {"plain": 0, "hex": 0, "regex": 0}
 
@@ -126,7 +130,9 @@ def _analyze_pattern_counts(ast: Any) -> dict[str, int]:
     return counts
 
 
-def _display_text_pattern_analysis(generator: Any, ast: Any) -> None:
+def _display_text_pattern_analysis(
+    generator: Any, ast: YaraFile
+) -> None:  # generator typing: protocol-compatible
     """Display text-based pattern analysis when GraphViz is not available."""
     click.echo(_graphviz_fallback_message("text analysis"))
 
@@ -139,7 +145,7 @@ def _display_text_pattern_analysis(generator: Any, ast: Any) -> None:
     _display_graphviz_installation_instructions()
 
 
-def _display_pattern_statistics(generator: Any) -> None:
+def _display_pattern_statistics(generator: Any) -> None:  # generator typing: protocol-compatible
     """Display pattern statistics if available."""
     try:
         pattern_stats = generator.get_pattern_statistics()
