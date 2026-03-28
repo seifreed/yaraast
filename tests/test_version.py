@@ -10,7 +10,13 @@ from yaraast import (
     get_version_info,
     get_version_string,
 )
-from yaraast.version import YARAX_COMPATIBLE, YARAX_SYNTAX_VERSION
+from yaraast.version import (
+    YARAX_COMPATIBLE,
+    YARAX_SYNTAX_VERSION,
+    YARAAST_VERSION_MAJOR,
+    YARAAST_VERSION_MINOR,
+    YARAAST_VERSION_PATCH,
+)
 
 
 def test_version_constants() -> None:
@@ -93,7 +99,7 @@ def test_version_comparison() -> None:
     assert yaraast_tuple <= (99, 99, 99)
 
     # Test specific version
-    assert yaraast_tuple == (1, 0, 0)  # Current version
+    assert yaraast_tuple == (YARAAST_VERSION_MAJOR, YARAAST_VERSION_MINOR, YARAAST_VERSION_PATCH)
 
 
 if __name__ == "__main__":
