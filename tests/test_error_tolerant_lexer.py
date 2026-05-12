@@ -9,13 +9,18 @@ Tests for error-tolerant lexer functionality.
 import pytest
 
 from yaraast.lexer.error_tolerant_lexer import ErrorTolerantLexer, LexerErrorInfo
-from yaraast.lexer.tokens import TokenType
+from yaraast.lexer.tokens import Token, TokenType
+
+
+def _string_value(token: Token) -> str:
+    assert isinstance(token.value, str)
+    return token.value
 
 
 class TestLexerErrorInfo:
     """Test LexerErrorInfo functionality."""
 
-    def test_error_info_creation(self):
+    def test_error_info_creation(self) -> None:
         """Test creation of lexer error information."""
         error = LexerErrorInfo(
             message="Test error",
@@ -33,7 +38,7 @@ class TestLexerErrorInfo:
         assert error.suggestion == "Fix it"
         assert error.severity == "error"
 
-    def test_error_info_defaults(self):
+    def test_error_info_defaults(self) -> None:
         """Test default values for error info."""
         error = LexerErrorInfo(
             message="Test error",
@@ -45,7 +50,7 @@ class TestLexerErrorInfo:
         assert error.suggestion is None
         assert error.severity == "error"
 
-    def test_format_error_basic(self):
+    def test_format_error_basic(self) -> None:
         """Test basic error formatting."""
         error = LexerErrorInfo(
             message="Unexpected character",
@@ -61,7 +66,7 @@ class TestLexerErrorInfo:
         assert "Column 5" in formatted
         assert "=" * 60 in formatted
 
-    def test_format_error_with_suggestion(self):
+    def test_format_error_with_suggestion(self) -> None:
         """Test error formatting with suggestion."""
         error = LexerErrorInfo(
             message="Syntax error",
@@ -76,7 +81,7 @@ class TestLexerErrorInfo:
         assert "Use correct syntax" in formatted
         assert "Suggestion:" in formatted
 
-    def test_format_error_multiline_context(self):
+    def test_format_error_multiline_context(self) -> None:
         """Test error formatting with multiline context."""
         error = LexerErrorInfo(
             message="Error",
@@ -90,7 +95,7 @@ class TestLexerErrorInfo:
         # Check that line numbers are shown
         assert "line1" in formatted or "error line" in formatted
 
-    def test_format_error_severity_levels(self):
+    def test_format_error_severity_levels(self) -> None:
         """Test formatting with different severity levels."""
         for severity in ["error", "warning", "info"]:
             error = LexerErrorInfo(
@@ -108,7 +113,7 @@ class TestLexerErrorInfo:
 class TestErrorTolerantLexer:
     """Test ErrorTolerantLexer functionality."""
 
-    def test_lexer_initialization(self):
+    def test_lexer_initialization(self) -> None:
         """Test lexer initialization."""
         text = "rule test { condition: true }"
         lexer = ErrorTolerantLexer(text)
@@ -117,14 +122,14 @@ class TestErrorTolerantLexer:
         assert lexer.max_errors == 100
         assert len(lexer.errors) == 0
 
-    def test_lexer_initialization_with_max_errors(self):
+    def test_lexer_initialization_with_max_errors(self) -> None:
         """Test lexer initialization with custom max_errors."""
         text = "rule test"
         lexer = ErrorTolerantLexer(text, max_errors=50)
 
         assert lexer.max_errors == 50
 
-    def test_tokenize_valid_rule(self):
+    def test_tokenize_valid_rule(self) -> None:
         """Test tokenizing a valid YARA rule."""
         text = """
         rule test {
@@ -139,7 +144,7 @@ class TestErrorTolerantLexer:
         assert len(errors) == 0
         assert tokens[-1].type == TokenType.EOF
 
-    def test_tokenize_with_lexer_error(self):
+    def test_tokenize_with_lexer_error(self) -> None:
         """Test tokenizing text with lexer errors."""
         # Invalid character that will cause a lexer error
         text = "rule test { condition: @ }"
@@ -150,7 +155,7 @@ class TestErrorTolerantLexer:
         assert len(tokens) > 0
         assert tokens[-1].type == TokenType.EOF
 
-    def test_tokenize_unterminated_string(self):
+    def test_tokenize_unterminated_string(self) -> None:
         """Test handling of unterminated string."""
         text = 'rule test { strings: $a = "unterminated }'
         lexer = ErrorTolerantLexer(text)
@@ -161,7 +166,7 @@ class TestErrorTolerantLexer:
         assert any("Unterminated string" in e.message for e in errors)
         assert tokens[-1].type == TokenType.EOF
 
-    def test_error_count_tracking(self):
+    def test_error_count_tracking(self) -> None:
         """Test that errors are tracked properly."""
         text = "rule test"
         lexer = ErrorTolerantLexer(text, max_errors=10)
@@ -172,7 +177,7 @@ class TestErrorTolerantLexer:
         # Verify we got an EOF token
         assert tokens[-1].type == TokenType.EOF
 
-    def test_recover_from_error_string(self):
+    def test_recover_from_error_string(self) -> None:
         """Test recovery from string errors."""
         text = 'rule test { strings: $a = "test" $b = "valid" }'
         lexer = ErrorTolerantLexer(text)
@@ -181,7 +186,7 @@ class TestErrorTolerantLexer:
         # Should recover and continue parsing
         assert tokens[-1].type == TokenType.EOF
 
-    def test_recover_from_error_hex_string(self):
+    def test_recover_from_error_hex_string(self) -> None:
         """Test recovery from hex string errors."""
         text = "rule test { strings: $a = { AB CD } }"
         lexer = ErrorTolerantLexer(text)
@@ -190,7 +195,7 @@ class TestErrorTolerantLexer:
         # Should parse hex string successfully
         assert tokens[-1].type == TokenType.EOF
 
-    def test_recover_from_error_regex(self):
+    def test_recover_from_error_regex(self) -> None:
         """Test recovery from regex-related errors."""
         text = "rule test { strings: $a = /test/ }"
         lexer = ErrorTolerantLexer(text)
@@ -199,7 +204,7 @@ class TestErrorTolerantLexer:
         # Should handle regex
         assert tokens[-1].type == TokenType.EOF
 
-    def test_add_error_with_context(self):
+    def test_add_error_with_context(self) -> None:
         """Test adding errors with context."""
         text = "line1\nline2\nline3"
         lexer = ErrorTolerantLexer(text)
@@ -217,7 +222,7 @@ class TestErrorTolerantLexer:
         assert error.severity == "warning"
         assert "line2" in error.context
 
-    def test_add_error_with_suggestion(self):
+    def test_add_error_with_suggestion(self) -> None:
         """Test adding errors with suggestions."""
         text = "test"
         lexer = ErrorTolerantLexer(text)
@@ -228,7 +233,7 @@ class TestErrorTolerantLexer:
         assert len(lexer.errors) > 0
         assert lexer.errors[-1].suggestion == "Try this instead"
 
-    def test_read_string_with_escaped_quote(self):
+    def test_read_string_with_escaped_quote(self) -> None:
         """Test reading string with escaped quotes."""
         text = r'rule test { strings: $a = "test \"quoted\" text" }'
         lexer = ErrorTolerantLexer(text)
@@ -237,9 +242,9 @@ class TestErrorTolerantLexer:
         # Find STRING token
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
         assert len(string_tokens) > 0
-        assert '"' in string_tokens[0].value
+        assert '"' in _string_value(string_tokens[0])
 
-    def test_read_string_with_backslash_at_end(self):
+    def test_read_string_with_backslash_at_end(self) -> None:
         """Test reading Windows-style path with backslash at end."""
         text = r'rule test { strings: $a = "C:\\TEMP\\" }'
         lexer = ErrorTolerantLexer(text)
@@ -248,7 +253,7 @@ class TestErrorTolerantLexer:
         # Should handle backslash at end with warning
         assert tokens[-1].type == TokenType.EOF
 
-    def test_read_string_with_escape_sequences(self):
+    def test_read_string_with_escape_sequences(self) -> None:
         """Test reading string with various escape sequences."""
         text = r'rule test { strings: $a = "line1\nline2\ttab\rreturn" }'
         lexer = ErrorTolerantLexer(text)
@@ -257,11 +262,12 @@ class TestErrorTolerantLexer:
         # Should parse escape sequences
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
         assert len(string_tokens) > 0
-        assert "\n" in string_tokens[0].value
-        assert "\t" in string_tokens[0].value
-        assert "\r" in string_tokens[0].value
+        string_value = _string_value(string_tokens[0])
+        assert "\n" in string_value
+        assert "\t" in string_value
+        assert "\r" in string_value
 
-    def test_read_string_with_hex_escape(self):
+    def test_read_string_with_hex_escape(self) -> None:
         """Test reading string with hex escape sequences."""
         text = r'rule test { strings: $a = "test\x41\x42" }'
         lexer = ErrorTolerantLexer(text)
@@ -271,7 +277,7 @@ class TestErrorTolerantLexer:
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
         assert len(string_tokens) > 0
 
-    def test_read_string_with_invalid_hex_escape(self):
+    def test_read_string_with_invalid_hex_escape(self) -> None:
         """Test reading string with invalid hex escape."""
         text = r'rule test { strings: $a = "test\xZZ" }'
         lexer = ErrorTolerantLexer(text)
@@ -280,7 +286,7 @@ class TestErrorTolerantLexer:
         # Should handle invalid hex escape
         assert tokens[-1].type == TokenType.EOF
 
-    def test_read_string_with_unknown_escape(self):
+    def test_read_string_with_unknown_escape(self) -> None:
         """Test reading string with unknown escape sequences."""
         text = r'rule test { strings: $a = "test\q" }'
         lexer = ErrorTolerantLexer(text)
@@ -290,7 +296,7 @@ class TestErrorTolerantLexer:
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
         assert len(string_tokens) > 0
 
-    def test_skip_to_whitespace(self):
+    def test_skip_to_whitespace(self) -> None:
         """Test skipping to whitespace."""
         text = "abcdef   "
         lexer = ErrorTolerantLexer(text)
@@ -301,7 +307,7 @@ class TestErrorTolerantLexer:
         # Should be at whitespace
         assert lexer.position >= 6
 
-    def test_skip_to_char(self):
+    def test_skip_to_char(self) -> None:
         """Test skipping to specific character."""
         text = "abc}def"
         lexer = ErrorTolerantLexer(text)
@@ -312,7 +318,7 @@ class TestErrorTolerantLexer:
         # Should be at the target character
         assert lexer._current_char() == "}"
 
-    def test_recover_from_unterminated_string_with_quote(self):
+    def test_recover_from_unterminated_string_with_quote(self) -> None:
         """Test recovery from unterminated string that finds closing quote."""
         text = 'test" more text'
         lexer = ErrorTolerantLexer(text)
@@ -323,7 +329,7 @@ class TestErrorTolerantLexer:
         # Should advance past the quote
         assert lexer.position > 0
 
-    def test_recover_from_unterminated_string_with_newline(self):
+    def test_recover_from_unterminated_string_with_newline(self) -> None:
         """Test recovery from unterminated string that finds newline."""
         text = "test\nmore"
         lexer = ErrorTolerantLexer(text)
@@ -334,7 +340,7 @@ class TestErrorTolerantLexer:
         # Should advance past the newline
         assert lexer.position > 0
 
-    def test_error_context_at_file_start(self):
+    def test_error_context_at_file_start(self) -> None:
         """Test error context extraction at start of file."""
         text = "line1\nline2\nline3"
         lexer = ErrorTolerantLexer(text)
@@ -347,7 +353,7 @@ class TestErrorTolerantLexer:
         assert len(lexer.errors) > 0
         assert lexer.errors[-1].context
 
-    def test_error_context_at_file_end(self):
+    def test_error_context_at_file_end(self) -> None:
         """Test error context extraction at end of file."""
         text = "line1\nline2\nline3"
         lexer = ErrorTolerantLexer(text)
@@ -360,7 +366,7 @@ class TestErrorTolerantLexer:
         assert len(lexer.errors) > 0
         assert lexer.errors[-1].context
 
-    def test_tokenize_empty_input(self):
+    def test_tokenize_empty_input(self) -> None:
         """Test tokenizing empty input."""
         lexer = ErrorTolerantLexer("")
         tokens, errors = lexer.tokenize()
@@ -370,7 +376,7 @@ class TestErrorTolerantLexer:
         assert tokens[0].type == TokenType.EOF
         assert len(errors) == 0
 
-    def test_tokenize_whitespace_only(self):
+    def test_tokenize_whitespace_only(self) -> None:
         """Test tokenizing whitespace-only input."""
         lexer = ErrorTolerantLexer("   \n\t  \n  ")
         tokens, errors = lexer.tokenize()
@@ -384,7 +390,7 @@ class TestErrorTolerantLexer:
         "severity",
         ["error", "warning", "info"],
     )
-    def test_add_error_severity_levels(self, severity):
+    def test_add_error_severity_levels(self, severity: str) -> None:
         """Test adding errors with different severity levels."""
         lexer = ErrorTolerantLexer("test")
         lexer.tokenize()
@@ -403,7 +409,11 @@ class TestErrorTolerantLexer:
             (r"\\", "\\"),
         ],
     )
-    def test_string_escape_sequences_parametrized(self, escape_seq, expected_char):
+    def test_string_escape_sequences_parametrized(
+        self,
+        escape_seq: str,
+        expected_char: str,
+    ) -> None:
         """Test various escape sequences in strings."""
         text = f'rule test {{ strings: $a = "test{escape_seq}end" }}'
         lexer = ErrorTolerantLexer(text)
@@ -411,9 +421,9 @@ class TestErrorTolerantLexer:
 
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
         assert len(string_tokens) > 0
-        assert expected_char in string_tokens[0].value
+        assert expected_char in _string_value(string_tokens[0])
 
-    def test_read_string_with_null_escape(self):
+    def test_read_string_with_null_escape(self) -> None:
         """Test reading string that encounters null during escape."""
         text = 'rule test { strings: $a = "test\\\\'
         lexer = ErrorTolerantLexer(text)
@@ -423,7 +433,7 @@ class TestErrorTolerantLexer:
         assert tokens[-1].type == TokenType.EOF
         assert len(errors) > 0
 
-    def test_complex_error_recovery_sequence(self):
+    def test_complex_error_recovery_sequence(self) -> None:
         """Test complex sequence of errors and recovery."""
         text = """
         rule test {
@@ -442,7 +452,7 @@ class TestErrorTolerantLexer:
         assert tokens[-1].type == TokenType.EOF
         # May have errors from unterminated strings/hex
 
-    def test_recover_from_error_default_case(self):
+    def test_recover_from_error_default_case(self) -> None:
         """Test default error recovery (advance one character)."""
         # Create a scenario where default recovery is used
         text = "rule test { condition: !!! }"
@@ -452,7 +462,7 @@ class TestErrorTolerantLexer:
         # Should recover and continue
         assert tokens[-1].type == TokenType.EOF
 
-    def test_position_tracking_through_errors(self):
+    def test_position_tracking_through_errors(self) -> None:
         """Test that position tracking works correctly through errors."""
         text = "rule test {\n  strings:\n    $a = @\n}"
         lexer = ErrorTolerantLexer(text)
@@ -462,7 +472,7 @@ class TestErrorTolerantLexer:
         assert tokens[-1].type == TokenType.EOF
         assert tokens[-1].line > 0
 
-    def test_skip_to_char_not_found(self):
+    def test_skip_to_char_not_found(self) -> None:
         """Test skipping to character that doesn't exist."""
         text = "abcdef"
         lexer = ErrorTolerantLexer(text)
@@ -473,7 +483,7 @@ class TestErrorTolerantLexer:
         # Should reach end of text
         assert lexer.position >= len(text)
 
-    def test_read_string_lookahead_windows_path(self):
+    def test_read_string_lookahead_windows_path(self) -> None:
         """Test lookahead logic for Windows path detection."""
         text = r'rule test { strings: $a = "C:\\Windows\\" ascii }'
         lexer = ErrorTolerantLexer(text)
@@ -482,7 +492,7 @@ class TestErrorTolerantLexer:
         # Should detect this as Windows path pattern
         assert tokens[-1].type == TokenType.EOF
 
-    def test_read_string_lookahead_various_modifiers(self):
+    def test_read_string_lookahead_various_modifiers(self) -> None:
         """Test lookahead with various string modifiers."""
         for modifier in ["ascii", "wide", "nocase", "fullword", "xor", "base64"]:
             text = f'rule test {{ strings: $a = "test\\" {modifier} }}'
@@ -491,7 +501,7 @@ class TestErrorTolerantLexer:
 
             assert tokens[-1].type == TokenType.EOF
 
-    def test_read_string_escape_at_very_end(self):
+    def test_read_string_escape_at_very_end(self) -> None:
         """Test string with escape at very end of input."""
         text = r'rule test { strings: $a = "test\\'
         lexer = ErrorTolerantLexer(text)
