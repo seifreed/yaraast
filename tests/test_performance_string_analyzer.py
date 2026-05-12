@@ -25,7 +25,7 @@ def test_string_pattern_analyzer_rule() -> None:
     rule = Rule(
         name="rule1",
         condition=BooleanLiteral(True),
-        strings=[PlainString("$a", "ab"), PlainString("$b", "cd")],
+        strings=[PlainString("$a", value="ab"), PlainString("$b", value="cd")],
     )
     analyzer = StringPatternAnalyzer()
     analysis = analyzer.analyze_rule(rule)
@@ -37,7 +37,7 @@ def test_analyze_rule_performance_and_cost() -> None:
     rule = Rule(
         name="rule2",
         condition=BooleanLiteral(True),
-        strings=[PlainString("$a", "ab"), RegexString("$b", ".*")],
+        strings=[PlainString("$a", value="ab"), RegexString("$b", regex=".*")],
     )
     issues = analyze_rule_performance(rule)
     assert issues

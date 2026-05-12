@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -50,7 +51,7 @@ class StringPatternAnalyzer:
 
     def analyze_patterns(
         self,
-        patterns: list[str | StringDefinition],
+        patterns: Sequence[str | StringDefinition],
     ) -> dict[str, Any]:
         """Analyze a list of string patterns.
 

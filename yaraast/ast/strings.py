@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from yaraast.ast.base import ASTNode, _VisitorType
-from yaraast.ast.modifiers import StringModifier
 
 
 @dataclass
@@ -14,7 +13,7 @@ class StringDefinition(ASTNode):
     """Base class for string definitions."""
 
     identifier: str
-    modifiers: list[StringModifier] = field(default_factory=list)
+    modifiers: list[Any] = field(default_factory=list)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_definition(self)
@@ -24,7 +23,7 @@ class StringDefinition(ASTNode):
 class PlainString(StringDefinition):
     """Plain text string definition."""
 
-    value: str = ""  # Add default
+    value: str | bytes = ""
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_plain_string(self)
@@ -34,7 +33,7 @@ class PlainString(StringDefinition):
 class HexString(StringDefinition):
     """Hex string definition."""
 
-    tokens: list[HexToken] = field(default_factory=list)  # Add default
+    tokens: list[Any] = field(default_factory=list)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_string(self)
@@ -52,7 +51,7 @@ class HexToken(ASTNode):
 class HexByte(HexToken):
     """Single hex byte."""
 
-    value: int = 0  # Add default
+    value: int | str = 0
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_byte(self)
@@ -93,7 +92,7 @@ class HexJump(HexToken):
 class HexAlternative(HexToken):
     """Hex alternative (a|b|c)."""
 
-    alternatives: list[list[HexToken]] = field(default_factory=list)  # Add default
+    alternatives: Any = field(default_factory=list)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_alternative(self)
@@ -104,7 +103,7 @@ class HexNibble(HexToken):
     """Hex nibble (half-byte) pattern."""
 
     high: bool  # True for X?, False for ?X
-    value: int = 0  # 0-15
+    value: int | str = 0
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_hex_nibble(self)
