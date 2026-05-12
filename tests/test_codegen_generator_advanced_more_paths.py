@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import Condition, InExpression
 from yaraast.ast.expressions import (
@@ -119,7 +121,7 @@ def test_advanced_generator_additional_paths() -> None:
     rule_with_meta = Rule(
         name="a_rule",
         modifiers=["private"],
-        tags=["x"],
+        tags=cast(Any, ["x"]),
         meta=[Meta("z", "quoted"), Meta("missing", "")],
         strings=[
             PlainString("$a", value="x"),
@@ -187,7 +189,7 @@ def test_advanced_generator_direct_remaining_branches() -> None:
         )
     )
 
-    invalid_meta_list = [Meta("k", ""), object()]
+    invalid_meta_list = cast(Any, [Meta("k", ""), object()])
     adv._write_meta_section(invalid_meta_list)
     meta_output = adv.buffer.getvalue()
     assert 'k = ""' in meta_output
@@ -259,7 +261,7 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
     )
 
     # Exercise the defensive continue in _write_meta_section when a key disappears.
-    adv._write_meta_section([FlakyMeta()])
+    adv._write_meta_section(cast(Any, [FlakyMeta()]))
     assert "meta:" in adv.buffer.getvalue()
 
     adv.buffer.seek(0)

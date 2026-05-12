@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral
@@ -66,7 +68,7 @@ def test_advanced_generator_meta_and_tags_branches() -> None:
 
     rule = Rule(
         name="meta_rule",
-        tags=[Tag("x"), "y", _AsText()],
+        tags=cast(Any, [Tag("x"), "y", _AsText()]),
         meta=meta_list,
         strings=[PlainString(identifier="$a", value="txt", modifiers=[mod])],
         condition=Condition(),

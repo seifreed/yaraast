@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -21,7 +23,7 @@ def test_ast_dumper_handles_tags_meta_and_modifiers() -> None:
     rule = Rule(
         name="r1",
         modifiers=[RuleModifier(RuleModifierType.PRIVATE), "global", 123],
-        tags=[Tag(name="alpha"), "beta"],
+        tags=cast(Any, [Tag(name="alpha"), "beta"]),
         meta=[Meta(key="owner", value="me"), Meta(key="flag", value=True)],
         strings=[PlainString(identifier="$a", value="x")],
         condition=Identifier(name="true"),

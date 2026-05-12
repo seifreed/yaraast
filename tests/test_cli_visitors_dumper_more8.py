@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 from yaraast.ast.expressions import (
     DoubleLiteral,
@@ -21,7 +22,7 @@ from yaraast.cli.visitors import ASTDumper
 
 
 class _AcceptOnly:
-    def accept(self, _visitor):
+    def accept(self, _visitor: object) -> dict[str, str]:
         return {"type": "AcceptOnly"}
 
 
@@ -30,7 +31,7 @@ class _AcceptOnlyModifier:
         self.name = name
         self.value = None
 
-    def accept(self, visitor):
+    def accept(self, visitor: Any) -> Any:
         return visitor.visit_string_modifier(self)
 
 
@@ -97,37 +98,43 @@ def test_dumper_extra_node_types_and_fallback_fields() -> None:
     assert d.visit_comment_group(SimpleNamespace(lines=["a", "b"]))["lines"] == ["a", "b"]
     assert (
         d.visit_for_expression(
-            SimpleNamespace(
-                quantifier="any",
-                variable="i",
-                iterable=IntegerLiteral(value=1),
-                body=IntegerLiteral(value=1),
+            cast(
+                Any,
+                SimpleNamespace(
+                    quantifier="any",
+                    variable="i",
+                    iterable=IntegerLiteral(value=1),
+                    body=IntegerLiteral(value=1),
+                ),
             )
         )["type"]
         == "ForExpression"
     )
     assert (
         d.visit_for_of_expression(
-            SimpleNamespace(quantifier=1, string_set=IntegerLiteral(value=1), condition=None)
+            cast(
+                Any,
+                SimpleNamespace(quantifier=1, string_set=IntegerLiteral(value=1), condition=None),
+            )
         )["quantifier"]
         == 1
     )
     assert (
-        d.visit_at_expression(SimpleNamespace(string_id="$a", offset=IntegerLiteral(value=1)))[
-            "type"
-        ]
+        d.visit_at_expression(
+            cast(Any, SimpleNamespace(string_id="$a", offset=IntegerLiteral(value=1)))
+        )["type"]
         == "AtExpression"
     )
     assert (
-        d.visit_in_expression(SimpleNamespace(string_id="$a", range=IntegerLiteral(value=1)))[
-            "type"
-        ]
+        d.visit_in_expression(
+            cast(Any, SimpleNamespace(string_id="$a", range=IntegerLiteral(value=1)))
+        )["type"]
         == "InExpression"
     )
     assert (
-        d.visit_of_expression(SimpleNamespace(quantifier=1, string_set=IntegerLiteral(value=1)))[
-            "quantifier"
-        ]
+        d.visit_of_expression(
+            cast(Any, SimpleNamespace(quantifier=1, string_set=IntegerLiteral(value=1)))
+        )["quantifier"]
         == 1
     )
     assert d.visit_meta(Meta(key="k", value="v"))["key"] == "k"
