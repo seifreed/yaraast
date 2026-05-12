@@ -32,9 +32,15 @@ class DependencyGraph:
         self.file_rules: dict[str, set[str]] = {}  # file_path -> rule_names
         self.rule_files: dict[str, str] = {}  # rule_name -> file_path
 
-    def add_file(self, file_path: Path, ast: YaraFile) -> None:
+    def add_file(
+        self,
+        file_path: Path,
+        ast: YaraFile,
+        include_resolutions: dict[str, Path] | None = None,
+    ) -> None:
         """Add a YARA file to the dependency graph."""
         file_key = str(file_path)
+        include_resolutions = include_resolutions or {}
 
         # Add file node
         if file_key not in self.nodes:
@@ -43,6 +49,9 @@ class DependencyGraph:
                 type="file",
                 file_path=file_path,
             )
+        else:
+            self.nodes[file_key].type = "file"
+            self.nodes[file_key].file_path = file_path
 
         # Track rules in this file
         self.file_rules[file_key] = set()
@@ -54,7 +63,8 @@ class DependencyGraph:
 
         # Add includes as dependencies
         for include_stmt in ast.includes:
-            self._add_include_dependency(file_key, include_stmt.path)
+            include_target = include_resolutions.get(include_stmt.path, include_stmt.path)
+            self._add_include_dependency(file_key, include_target)
 
         # Add rules and analyze their dependencies
         for rule in ast.rules:
@@ -70,12 +80,13 @@ class DependencyGraph:
         self.nodes[file_key].dependencies.add(module_name)
         self.nodes[module_name].dependents.add(file_key)
 
-    def _add_include_dependency(self, file_key: str, include_path: str) -> None:
+    def _add_include_dependency(self, file_key: str, include_path: str | Path) -> None:
         """Add include dependency."""
-        if include_path not in self.nodes:
-            self.nodes[include_path] = DependencyNode(name=include_path, type="include")
-        self.nodes[file_key].dependencies.add(include_path)
-        self.nodes[include_path].dependents.add(file_key)
+        include_key = str(include_path)
+        if include_key not in self.nodes:
+            self.nodes[include_key] = DependencyNode(name=include_key, type="include")
+        self.nodes[file_key].dependencies.add(include_key)
+        self.nodes[include_key].dependents.add(file_key)
 
     def _add_rule(self, file_key: str, rule: Rule) -> None:
         """Add rule to the graph and analyze its dependencies."""
@@ -123,6 +134,9 @@ class DependencyGraph:
 
     def get_file_dependents(self, file_path: str) -> set[str]:
         """Get all files that depend on this file (transitive)."""
+        resolved_path = str(Path(file_path).resolve())
+        if resolved_path in self.nodes:
+            return self._get_transitive_dependents(resolved_path)
         return self._get_transitive_dependents(file_path)
 
     def get_rule_dependencies(self, rule_name: str) -> set[str]:

@@ -94,7 +94,11 @@ class Workspace:
     def _add_to_dependency_graph(self, resolved: ResolvedFile) -> None:
         """Add resolved file and its includes to dependency graph."""
         # Add main file
-        self.dependency_graph.add_file(resolved.path, resolved.ast)
+        self.dependency_graph.add_file(
+            resolved.path,
+            resolved.ast,
+            include_resolutions=resolved.include_path_map,
+        )
 
         # Add includes recursively
         for include in resolved.includes:

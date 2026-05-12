@@ -24,6 +24,7 @@ class ResolvedFile:
     ast: YaraFile
     checksum: str
     includes: list[ResolvedFile] = field(default_factory=list)
+    include_path_map: dict[str, Path] = field(default_factory=dict)
 
     def get_all_rules(self) -> list[Rule]:
         """Get all rules including from includes."""
@@ -136,6 +137,7 @@ class IncludeResolver:
                     base_path=resolved_path.parent,
                 )
                 resolved.includes.append(included_file)
+                resolved.include_path_map[include.path] = included_file.path
             except RecursionError:
                 raise
             except FileNotFoundError:

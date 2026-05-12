@@ -113,6 +113,25 @@ def test_workspace_add_directory_relative_parallel_analysis_and_global_issues(
     assert set(report.file_results) == set(workspace.files)
 
 
+def test_workspace_dependency_graph_links_resolved_include_paths(tmp_path: Path) -> None:
+    root = tmp_path
+    parent = _write(root / "parent.yar", 'include "child.yar"\nrule parent { condition: true }')
+    child = _write(root / "child.yar", "rule child { condition: true }")
+
+    workspace = Workspace(str(root))
+    workspace.add_file(str(parent))
+
+    parent_key = str(parent.resolve())
+    child_key = str(child.resolve())
+    dependencies = workspace.get_file_dependencies(str(parent))
+    dependents = workspace.get_file_dependents(str(child))
+
+    assert child_key in dependencies
+    assert parent_key in dependents
+    assert workspace.dependency_graph.nodes[child_key].type == "file"
+    assert workspace.dependency_graph.get_statistics()["file_count"] == 2
+
+
 def test_workspace_sequential_analysis_with_relative_directory_and_nonrecursive(
     tmp_path: Path,
 ) -> None:
