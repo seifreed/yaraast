@@ -28,6 +28,10 @@ def test_string_matcher_match_string_for_plain_hex_regex_and_unknown_type() -> N
     plain_matches = matcher.match_string(plain, b"zabcabc")
     assert [m.offset for m in plain_matches] == [1, 4]
 
+    bytes_plain = PlainString("$bytes", value=b"\xffA", modifiers=[])
+    bytes_plain_matches = matcher.match_string(bytes_plain, b"z\xffA\xffA")
+    assert [m.offset for m in bytes_plain_matches] == [1, 3]
+
     hex_string = HexString("$h", tokens=[HexByte("41"), HexWildcard(), HexByte(0x43)])
     hex_matches = matcher.match_string(hex_string, b"zA1CA2C")
     assert [m.offset for m in hex_matches] == [1, 4]

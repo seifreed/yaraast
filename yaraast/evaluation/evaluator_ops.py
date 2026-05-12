@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 
-def evaluate_arithmetic(left, right, operator):
+def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
     if operator == "+":
         return left + right
     if operator == "-":
@@ -37,7 +38,7 @@ def evaluate_arithmetic(left, right, operator):
     return None
 
 
-def evaluate_comparison(left, right, operator):
+def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
     if operator == "==":
         return left == right
     if operator == "!=":
@@ -53,7 +54,7 @@ def evaluate_comparison(left, right, operator):
     return None
 
 
-def evaluate_string_operator(left, right, operator):
+def evaluate_string_operator(left: Any, right: Any, operator: str) -> bool | None:
     if operator == "contains":
         return right in left
     if operator == "icontains":

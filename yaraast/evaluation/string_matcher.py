@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 import re
+from typing import Any, overload
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.errors import EvaluationError
@@ -27,9 +29,26 @@ class StringMatcher:
 
     def __init__(self) -> None:
         self.matches: dict[str, list[MatchResult]] = {}
-        self._cache: dict[str, any] = {}
+        self._cache: dict[str, Any] = {}
 
-    def match_all(self, *args) -> dict[str, list[MatchResult]]:
+    @overload
+    def match_all(
+        self,
+        strings: Iterable[object],
+        data: bytes,
+    ) -> dict[str, list[MatchResult]]: ...
+
+    @overload
+    def match_all(
+        self,
+        data: bytes,
+        strings: Iterable[object],
+    ) -> dict[str, list[MatchResult]]: ...
+
+    @overload
+    def match_all(self, *args: object) -> dict[str, list[MatchResult]]: ...
+
+    def match_all(self, *args: object) -> dict[str, list[MatchResult]]:
         """Match all strings against data.
 
         Can be called as:
@@ -39,11 +58,20 @@ class StringMatcher:
         if len(args) == 2:
             # Determine order based on type
             if isinstance(args[0], bytes):
-                data, strings = args[0], args[1]
+                data = args[0]
+                strings = args[1]
             else:
-                strings, data = args[0], args[1]
+                strings = args[0]
+                data = args[1]
         else:
             msg = "match_all requires exactly 2 arguments"
+            raise EvaluationError(msg)
+
+        if not isinstance(data, bytes):
+            msg = "match_all data argument must be bytes"
+            raise EvaluationError(msg)
+        if not isinstance(strings, Iterable):
+            msg = "match_all strings argument must be iterable"
             raise EvaluationError(msg)
 
         self.matches.clear()
@@ -58,9 +86,9 @@ class StringMatcher:
 
         return self.matches
 
-    def match_string(self, string_def, data):
+    def match_string(self, string_def: object, data: bytes) -> list[MatchResult]:
         """Match a single string against data."""
-        matches = []
+        matches: list[MatchResult] = []
 
         if isinstance(string_def, PlainString):
             self._match_plain_string(data, string_def)
@@ -76,8 +104,12 @@ class StringMatcher:
 
     def _match_plain_string(self, data: bytes, string_def: PlainString) -> None:
         """Match plain string against data."""
-        matches = []
-        pattern = string_def.value.encode("utf-8")
+        matches: list[tuple[int, int]] = []
+        pattern = (
+            string_def.value
+            if isinstance(string_def.value, bytes)
+            else string_def.value.encode("utf-8")
+        )
 
         # Apply modifiers
         nocase = any(m.name == "nocase" for m in string_def.modifiers)
@@ -85,7 +117,7 @@ class StringMatcher:
         ascii_mod = any(m.name == "ascii" for m in string_def.modifiers)
         fullword = any(m.name == "fullword" for m in string_def.modifiers)
 
-        patterns_to_check = []
+        patterns_to_check: list[bytes] = []
 
         # ASCII version
         if not wide or ascii_mod:
@@ -125,8 +157,8 @@ class StringMatcher:
     def _match_hex_string(self, data: bytes, string_def: HexString) -> None:
         """Match hex string against data."""
         # Build pattern from hex tokens
-        pattern_bytes = []
-        wildcards = []
+        pattern_bytes: list[int] = []
+        wildcards: list[bool] = []
 
         for _i, token in enumerate(string_def.tokens):
             if hasattr(token, "value"):
@@ -177,7 +209,7 @@ class StringMatcher:
             return
 
         # Find all matches
-        matches = []
+        matches: list[tuple[int, int]] = []
         for match in regex.finditer(data):
             matches.append(
                 MatchResult(
@@ -192,7 +224,7 @@ class StringMatcher:
 
     def _find_all(self, data: bytes, pattern: bytes) -> list[tuple[int, int]]:
         """Find all occurrences of pattern in data."""
-        matches = []
+        matches: list[tuple[int, int]] = []
         start = 0
         pattern_len = len(pattern)
 
@@ -207,7 +239,7 @@ class StringMatcher:
 
     def _find_all_nocase(self, data: bytes, pattern: bytes) -> list[tuple[int, int]]:
         """Find all occurrences of pattern in data (case-insensitive)."""
-        matches = []
+        matches: list[int] = []
         data_lower = data.lower()
         pattern_lower = pattern.lower()
         pattern_len = len(pattern)
