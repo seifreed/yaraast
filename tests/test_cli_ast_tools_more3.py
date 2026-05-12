@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from io import StringIO
+from pathlib import Path
 
 from rich.console import Console
 
@@ -56,7 +57,7 @@ def test_visualize_ast_invalid_format_raises() -> None:
         raise AssertionError("Expected ValidationError")
 
 
-def test_ast_formatter_output_and_errors(tmp_path) -> None:
+def test_ast_formatter_output_and_errors(tmp_path: Path) -> None:
     good = tmp_path / "ok.yar"
     good.write_text('rule a { strings: $a = "x" condition: $a }', encoding="utf-8")
 

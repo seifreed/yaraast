@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from click.testing import CliRunner
+import pytest
 
 from yaraast.cli import performance_reporting as pr
 from yaraast.cli.commands.metrics import metrics
@@ -132,7 +133,10 @@ def test_optimize_error_path_with_invalid_utf8(tmp_path: Path) -> None:
     assert not output_file.exists()
 
 
-def test_performance_reporting_small_remaining_branches(capsys, tmp_path: Path) -> None:
+def test_performance_reporting_small_remaining_branches(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+) -> None:
     pr.report_complexity_analysis([{"other": 1}], tmp_path)
     out = capsys.readouterr().out
     assert "Complexity analysis saved" in out

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli import (
     optimize_services as osvc,
     parse_output_services as pos,
@@ -20,7 +21,7 @@ class _Err:
         return self.text
 
 
-def _sample_ast():
+def _sample_ast() -> YaraFile:
     return Parser().parse(
         """
 rule sample {
@@ -33,7 +34,9 @@ rule sample {
     )
 
 
-def test_display_parser_errors_truncates_after_five(capsys) -> None:
+def test_display_parser_errors_truncates_after_five(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     pos._display_parser_errors([_Err(f"parser-{i}") for i in range(7)])
 
     out = capsys.readouterr().out
@@ -52,7 +55,7 @@ def test_calculate_improvement_returns_none_when_not_better() -> None:
     assert osvc.calculate_improvement(before, after_worse) is None
 
 
-def test_export_ast_yaml_non_minimal_returns_yaml_string(tmp_path: Path) -> None:
+def test_export_ast_yaml_non_minimal_returns_yaml_string() -> None:
     ast = _sample_ast()
     result, stats = ssvc.export_ast(ast, "yaml", None, minimal=False)
 

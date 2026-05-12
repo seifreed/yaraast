@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli import validate_services as vs
 from yaraast.parser import Parser
 
 
-def _ast_with_regex_issue():
+def _ast_with_regex_issue() -> YaraFile:
     code = """
 rule regex_test {
     strings:

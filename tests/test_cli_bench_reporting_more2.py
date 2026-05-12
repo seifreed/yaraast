@@ -6,10 +6,12 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from yaraast.cli import bench_reporting as br
 
 
-def test_display_operation_result_and_none_case(capsys) -> None:
+def test_display_operation_result_and_none_case(capsys: pytest.CaptureFixture[str]) -> None:
     ok = SimpleNamespace(success=True, execution_time=0.01, rules_count=3, ast_nodes=10)
     br.display_operation_result("parse", ok)
     out = capsys.readouterr().out
@@ -28,7 +30,7 @@ def test_display_operation_result_and_none_case(capsys) -> None:
     assert out3 == ""
 
 
-def test_display_performance_comparison_paths(capsys) -> None:
+def test_display_performance_comparison_paths(capsys: pytest.CaptureFixture[str]) -> None:
     br.display_performance_comparison([{"file_name": "a", "results": {"codegen": object()}}])
     out = capsys.readouterr().out
     assert "Performance Comparison" in out
@@ -49,7 +51,10 @@ def test_display_performance_comparison_paths(capsys) -> None:
     assert "slow.yar" in out2
 
 
-def test_save_benchmark_results_writes_json(tmp_path: Path, capsys) -> None:
+def test_save_benchmark_results_writes_json(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     out_file = tmp_path / "bench.json"
     br.save_benchmark_results(
         output=str(out_file),

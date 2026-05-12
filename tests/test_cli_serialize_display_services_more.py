@@ -6,6 +6,9 @@ from types import SimpleNamespace
 
 from rich.console import Console
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.rules import Import, Include, Rule
 from yaraast.cli import serialize_display_services as sds
 from yaraast.serialization import DiffType
 
@@ -86,7 +89,14 @@ def test_display_protobuf_stats_and_diff_tables() -> None:
 
 
 def test_build_validation_panel_success_and_failure() -> None:
-    ast = SimpleNamespace(rules=[1, 2], imports=[1], includes=[])
+    ast = YaraFile(
+        imports=[Import(module="pe")],
+        includes=[Include(path="common.yar")],
+        rules=[
+            Rule(name="one", condition=BooleanLiteral(value=True)),
+            Rule(name="two", condition=BooleanLiteral(value=True)),
+        ],
+    )
     ok_panel = sds.build_validation_panel("a.json", "json", ast, None)
     err_panel = sds.build_validation_panel("a.json", "json", None, ValueError("bad"))
 

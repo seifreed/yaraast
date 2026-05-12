@@ -5,10 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from yaraast.cli import performance_reporting as pr
 
 
-def test_performance_reporting_operation_and_stream(capsys) -> None:
+def test_performance_reporting_operation_and_stream(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     result = SimpleNamespace(
         input_count=10,
         successful_count=8,
@@ -59,7 +63,10 @@ def test_performance_reporting_operation_and_stream(capsys) -> None:
     assert "and 2 more" in out4
 
 
-def test_performance_reporting_parallel_complexity_and_optimize(tmp_path: Path, capsys) -> None:
+def test_performance_reporting_parallel_complexity_and_optimize(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     pr.display_parallel_summary(
         {
             "files_processed": 5,

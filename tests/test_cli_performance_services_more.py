@@ -5,12 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli import performance_services as ps
 from yaraast.parser import Parser
 from yaraast.performance.streaming_parser import StreamingParser
 
 
-def _ast(name: str = "r"):
+def _ast(name: str = "r") -> YaraFile:
     return Parser().parse(f"rule {name} {{ condition: true }}")
 
 

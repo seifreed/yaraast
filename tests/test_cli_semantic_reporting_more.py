@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from yaraast.ast.base import Location
 from yaraast.cli import semantic_reporting as sr
 from yaraast.types.semantic_validator_core import ValidationError, ValidationResult
@@ -29,7 +31,9 @@ def _build_result(*, valid: bool, with_warning: bool = False) -> ValidationResul
     return result
 
 
-def test_semantic_reporting_error_paths_and_summary(capsys) -> None:
+def test_semantic_reporting_error_paths_and_summary(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     path = Path("sample.yar")
 
     sr.display_validation_start(path, quiet=False)
@@ -48,7 +52,10 @@ def test_semantic_reporting_error_paths_and_summary(capsys) -> None:
     assert "Found 3 warnings" in out
 
 
-def test_semantic_reporting_text_and_json_outputs(tmp_path: Path, capsys) -> None:
+def test_semantic_reporting_text_and_json_outputs(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     path = Path("rule.yar")
 
     ok = _build_result(valid=True, with_warning=False)

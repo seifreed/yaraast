@@ -5,10 +5,11 @@ from __future__ import annotations
 import contextlib
 from pathlib import Path
 import sys
-from typing import Any
+from typing import Any, NoReturn
 
 from yaraast.cli.utils import read_text
 from yaraast.types.semantic_validator import SemanticValidator
+from yaraast.types.semantic_validator_core import ValidationResult
 
 with contextlib.suppress(ImportError):
     from yaraast.parser import Parser
@@ -50,7 +51,7 @@ def _create_validation_context() -> dict[str, Any]:
     return {"parser": Parser(), "validator": SemanticValidator()}
 
 
-def _create_file_result(file_path, result):
+def _create_file_result(file_path: Path, result: ValidationResult) -> dict[str, object]:
     """Create result dictionary for a file."""
     return {
         "file": str(file_path),
@@ -61,7 +62,11 @@ def _create_file_result(file_path, result):
     }
 
 
-def _exit_with_appropriate_code(total_errors, total_warnings, strict):
+def _exit_with_appropriate_code(
+    total_errors: int,
+    total_warnings: int,
+    strict: bool,
+) -> NoReturn:
     """Exit with appropriate code based on results."""
     exit_code = 0
     if total_errors > 0 or (strict and total_warnings > 0):

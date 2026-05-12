@@ -3,30 +3,27 @@
 from __future__ import annotations
 
 from textwrap import dedent
-from typing import Any
 
 import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.commands import metrics as metrics_cmd
 from yaraast.cli.metrics_reporting import (
     _display_pattern_statistics,
     _display_text_fallback,
     _display_text_pattern_analysis,
+    _format_complexity_output,
     _format_string_analysis_output,
     _get_text_graph,
 )
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
 from yaraast.metrics.complexity import ComplexityAnalyzer
+from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
 
-try:
-    from yaraast.metrics.dependency_graph import DependencyGraphGenerator
-except ModuleNotFoundError:
-    DependencyGraphGenerator = None
 
-
-def _parse_yara(code: str) -> Any:
+def _parse_yara(code: str) -> YaraFile:
     parser = Parser()
     return parser.parse(dedent(code))
 
@@ -34,8 +31,6 @@ def _parse_yara(code: str) -> Any:
 def test_metrics_helper_text_functions(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    if DependencyGraphGenerator is None:
-        pytest.skip("graphviz package is not installed")
     code = """
     import "pe"
 
@@ -50,7 +45,7 @@ def test_metrics_helper_text_functions(
 
     analyzer = ComplexityAnalyzer()
     metrics = analyzer.analyze(ast)
-    text = metrics_cmd._format_complexity_output(metrics, "text")
+    text = _format_complexity_output(metrics, "text")
     assert "YARA Rule Complexity Analysis" in text
 
     analysis = _analyze_string_patterns(ast)
@@ -60,7 +55,10 @@ def test_metrics_helper_text_functions(
     generator = DependencyGraphGenerator()
     generator.visit(ast)
     stats = generator.get_dependency_stats()
-    text_graph = _get_text_graph(stats, generator.dependencies)
+    text_graph = _get_text_graph(
+        stats,
+        {rule: sorted(dependencies) for rule, dependencies in generator.dependencies.items()},
+    )
     assert "Dependency Analysis" in text_graph
 
     _display_text_fallback("rules.yar", ast, generator)

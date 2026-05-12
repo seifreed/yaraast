@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import click
@@ -20,7 +21,9 @@ class _Issue:
         return f"[{self.section}] {self.message}"
 
 
-def test_yaral_validation_results_json_and_text(capsys) -> None:
+def test_yaral_validation_results_json_and_text(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     ast = SimpleNamespace(rules=[1, 2])
     errors = [_Issue("error", "bad condition", "condition")]
     warnings = [_Issue("warning", "weak pattern", "events")]
@@ -44,7 +47,10 @@ def test_yaral_validation_results_json_and_text(capsys) -> None:
         yr.display_validation_results("f.yaral", ast, [], warnings, strict=True, output_json=False)
 
 
-def test_yaral_reporting_misc_helpers(tmp_path, capsys) -> None:
+def test_yaral_reporting_misc_helpers(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     out_file = tmp_path / "generated.yaral"
     yr.write_output(str(out_file), "rule x {}", "saved")
     assert out_file.read_text() == "rule x {}"

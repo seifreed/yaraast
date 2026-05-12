@@ -32,7 +32,7 @@ def test_parse_for_expression_success_and_error_paths() -> None:
 
     node_n = _expr_parser("3 of them")._parse_for_expression()
     assert isinstance(node_n, ForOfExpression)
-    assert node_n.quantifier == "3"
+    assert node_n.quantifier == 3
     assert node_n.condition is None
 
     node_for_of = _expr_parser("any of them : ( true )")._parse_for_expression()

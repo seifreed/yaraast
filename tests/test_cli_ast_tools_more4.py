@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from io import StringIO
+from pathlib import Path
 from typing import Any, cast
 
 from rich.console import Console
@@ -16,7 +17,7 @@ from yaraast.ast.strings import PlainString
 from yaraast.cli import ast_tools as at
 
 
-def test_ast_formatter_more_styles_and_check_paths(tmp_path) -> None:
+def test_ast_formatter_more_styles_and_check_paths(tmp_path: Path) -> None:
     path = tmp_path / "rule.yar"
     path.write_text(
         'rule x {\n    strings:\n        $a = "abc"\n    condition:\n        $a\n}\n',
@@ -98,7 +99,7 @@ def test_tree_helpers_cover_empty_and_non_dict_meta_paths() -> None:
     at._add_condition_to_rule(empty_branch, empty_rule)
 
 
-def test_add_meta_to_rule_with_dict_meta(tmp_path) -> None:
+def test_add_meta_to_rule_with_dict_meta(tmp_path: Path) -> None:
     root = Tree("root")
     branch = root.add("rule")
     rule = Rule(name="dict_meta", meta={"author": "me", "version": 1})

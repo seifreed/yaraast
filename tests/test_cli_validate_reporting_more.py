@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from yaraast.cli import validate_reporting as vr
 
 
@@ -35,7 +37,7 @@ def _result(valid: bool = True) -> SimpleNamespace:
     )
 
 
-def test_display_cross_results_branches(capsys) -> None:
+def test_display_cross_results_branches(capsys: pytest.CaptureFixture[str]) -> None:
     vr.display_cross_results(_result(valid=True), verbose=False)
     out = capsys.readouterr().out
     assert "Validation PASSED" in out
@@ -51,7 +53,7 @@ def test_display_cross_results_branches(capsys) -> None:
     assert "Rules tested" in out3
 
 
-def test_roundtrip_reporting_and_details(capsys) -> None:
+def test_roundtrip_reporting_and_details(capsys: pytest.CaptureFixture[str]) -> None:
     status_fn = vr.display_roundtrip_summary(_result(valid=False))
     out = capsys.readouterr().out
     assert "Round-trip FAILED" in out
@@ -67,7 +69,7 @@ def test_roundtrip_reporting_and_details(capsys) -> None:
     assert "Original code" in out3
 
 
-def test_simple_validate_reporters(capsys) -> None:
+def test_simple_validate_reporters(capsys: pytest.CaptureFixture[str]) -> None:
     vr.display_rule_file_valid(1, 2, 3)
     out = capsys.readouterr().out
     assert "Valid YARA file" in out
