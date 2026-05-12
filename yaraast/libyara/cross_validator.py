@@ -78,11 +78,9 @@ class CrossValidator:
         """
         result = ValidationResult(valid=True)
 
-        # Step 1: Evaluate with yaraast
         start_time = time.time()
         try:
-            evaluator = YaraEvaluator(test_data)
-            yaraast_results = evaluator.evaluate_file(ast)
+            yaraast_results = self._evaluate_with_yaraast(ast, test_data, externals)
             result.yaraast_results = yaraast_results
             result.yaraast_time = time.time() - start_time
         except Exception as e:
@@ -92,8 +90,7 @@ class CrossValidator:
 
         # Step 2: Compile with libyara
         start_time = time.time()
-        if externals:
-            self.compiler.externals = externals
+        self.compiler.externals = externals or {}
 
         compilation = self.compiler.compile_ast(ast)
         result.libyara_compile_time = time.time() - start_time
@@ -159,6 +156,7 @@ class CrossValidator:
         results = []
 
         # Compile once with libyara
+        self.compiler.externals = externals or {}
         compilation = self.compiler.compile_ast(ast)
         if not compilation.success:
             # Return error for all samples
@@ -190,11 +188,9 @@ class CrossValidator:
         """Validate single sample with pre-compiled rules."""
         result = ValidationResult(valid=True)
 
-        # Evaluate with yaraast
         start_time = time.time()
         try:
-            evaluator = YaraEvaluator(test_data)
-            yaraast_results = evaluator.evaluate_file(ast)
+            yaraast_results = self._evaluate_with_yaraast(ast, test_data, externals)
             result.yaraast_results = yaraast_results
             result.yaraast_time = time.time() - start_time
         except Exception as e:
@@ -221,3 +217,14 @@ class CrossValidator:
         self._compare_results(ast, yaraast_results, result)
 
         return result
+
+    @staticmethod
+    def _evaluate_with_yaraast(
+        ast: YaraFile,
+        test_data: bytes,
+        externals: dict[str, Any] | None,
+    ) -> dict[str, bool]:
+        evaluator = YaraEvaluator(test_data)
+        if externals:
+            evaluator.context.variables.update(externals)
+        return evaluator.evaluate_file(ast)

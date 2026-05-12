@@ -32,3 +32,35 @@ def test_cross_validator_single_and_batch() -> None:
     assert len(batch) == 2
     assert batch[0].valid is True
     assert batch[1].valid is True
+
+
+@pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
+def test_cross_validator_applies_externals_to_yaraast_and_batch_compile() -> None:
+    ast = Parser().parse("rule ext_rule { condition: ext_flag }")
+
+    validator = CrossValidator()
+    result = validator.validate(ast, b"payload", externals={"ext_flag": True})
+
+    assert result.valid is True
+    assert result.yaraast_results == {"ext_rule": True}
+    assert result.libyara_results == {"ext_rule": True}
+
+    fresh_validator = CrossValidator()
+    batch = fresh_validator.validate_batch(ast, [b"payload"], externals={"ext_flag": True})
+
+    assert len(batch) == 1
+    assert batch[0].valid is True
+    assert batch[0].yaraast_results == {"ext_rule": True}
+    assert batch[0].libyara_results == {"ext_rule": True}
+
+
+@pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
+def test_cross_validator_resets_compiler_externals_between_calls() -> None:
+    validator = CrossValidator()
+    ast = Parser().parse("rule plain_rule { condition: true }")
+
+    validator.validate(ast, b"payload", externals={"ext_flag": True})
+    result = validator.validate(ast, b"payload")
+
+    assert result.valid is True
+    assert validator.compiler.externals == {}
