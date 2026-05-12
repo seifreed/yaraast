@@ -101,6 +101,15 @@ global rule r2 : t1 t2 {
     assert [r.name for r in rules] == ["r1", "r2"]
 
 
+def test_streaming_parser_empty_file_yields_no_rules(tmp_path: Path) -> None:
+    path = tmp_path / "empty.yar"
+    path.write_text("", encoding="utf-8")
+
+    parser = StreamingParser()
+
+    assert list(parser.parse_file(path)) == []
+
+
 def test_streaming_parser_chunk_residual_callbacks_and_cancellation(tmp_path: Path) -> None:
     text = """
 rule a {

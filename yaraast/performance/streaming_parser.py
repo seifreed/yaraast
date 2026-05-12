@@ -75,6 +75,8 @@ class StreamingParser:
 
         """
         file_path = Path(file_path)
+        if file_path.stat().st_size == 0:
+            return
 
         with (
             open(file_path, "rb") as f,

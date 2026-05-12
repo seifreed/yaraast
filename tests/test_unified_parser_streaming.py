@@ -47,6 +47,18 @@ def test_parse_file_force_streaming_real(tmp_path: Path) -> None:
     assert {imp.module for imp in ast.imports} == {"pe", "math"}
 
 
+def test_parse_empty_file_force_streaming_real(tmp_path: Path) -> None:
+    f = tmp_path / "empty.yar"
+    f.write_text("", encoding="utf-8")
+
+    ast = UnifiedParser.parse_file(f, force_streaming=True)
+
+    assert isinstance(ast, YaraFile)
+    assert ast.rules == []
+    assert ast.imports == []
+    assert ast.includes == []
+
+
 def test_parse_file_auto_streaming_threshold_real(tmp_path: Path) -> None:
     f = tmp_path / "sample_auto_stream.yar"
     f.write_text(_sample_with_preamble(), encoding="utf-8")
