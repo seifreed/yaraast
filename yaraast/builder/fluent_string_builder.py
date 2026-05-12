@@ -147,7 +147,7 @@ class FluentStringBuilder:
         """Add XOR modifier with key range."""
         modifier = StringModifier(
             modifier_type=StringModifierType.XOR,
-            value={"min": min_key, "max": max_key},
+            value=(min_key, max_key),
         )
         self._modifiers.append(modifier)
         return self

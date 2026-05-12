@@ -15,6 +15,7 @@ from yaraast.ast.strings import (
     HexJump,
     HexNibble,
     HexString,
+    HexToken,
     HexWildcard,
     PlainString,
     RegexString,
@@ -33,6 +34,12 @@ from yaraast.builder.fluent_string_builder import (
     url_regex,
 )
 from yaraast.errors import ValidationError
+
+
+def _hex_content(builder: FluentStringBuilder) -> list[HexToken]:
+    content = builder._content
+    assert isinstance(content, list)
+    return content
 
 
 class TestFluentStringBuilderInitialization:
@@ -125,8 +132,9 @@ class TestFluentStringBuilderHexStrings:
         result = builder.hex_bytes(0x4D, 0x5A, 0x90)
 
         assert result is builder
-        assert len(builder._content) == 3
-        assert all(isinstance(t, HexByte) for t in builder._content)
+        tokens = _hex_content(builder)
+        assert len(tokens) == 3
+        assert all(isinstance(t, HexByte) for t in tokens)
 
     def test_hex_bytes_with_strings(self) -> None:
         """Hex_bytes method should accept string values."""
@@ -135,7 +143,7 @@ class TestFluentStringBuilderHexStrings:
         result = builder.hex_bytes("4D", "5A", "90")
 
         assert result is builder
-        assert len(builder._content) == 3
+        assert len(_hex_content(builder)) == 3
 
     def test_hex_bytes_with_wildcard_string(self) -> None:
         """Hex_bytes should recognize ?? as wildcard."""
@@ -144,7 +152,7 @@ class TestFluentStringBuilderHexStrings:
         result = builder.hex_bytes("FF", "??", "AA")
 
         assert result is builder
-        tokens = builder._content
+        tokens = _hex_content(builder)
         assert isinstance(tokens[1], HexWildcard)
 
     def test_hex_bytes_with_question_mark(self) -> None:
@@ -154,7 +162,7 @@ class TestFluentStringBuilderHexStrings:
         result = builder.hex_bytes("?")
 
         assert result is builder
-        assert isinstance(builder._content[0], HexWildcard)
+        assert isinstance(_hex_content(builder)[0], HexWildcard)
 
     def test_hex_builder_with_lambda(self) -> None:
         """Hex_builder method should accept builder function."""
@@ -164,7 +172,7 @@ class TestFluentStringBuilderHexStrings:
 
         assert result is builder
         assert builder._string_type == "hex"
-        assert len(builder._content) == 3
+        assert len(_hex_content(builder)) == 3
 
     def test_hex_build_creates_hex_string(self) -> None:
         """Building hex should create HexString."""
@@ -341,8 +349,7 @@ class TestFluentStringBuilderModifiers:
 
         assert result is builder
         assert len(builder._modifiers) == 1
-        assert builder._modifiers[0].value["min"] == 0
-        assert builder._modifiers[0].value["max"] == 255
+        assert builder._modifiers[0].value == (0, 255)
 
 
 class TestFluentStringBuilderRegexModifiers:
@@ -482,8 +489,9 @@ class TestFluentStringBuilderAdvancedHexPatterns:
         result = builder.wildcard_sequence(5)
 
         assert result is builder
-        assert len(builder._content) == 5
-        assert all(isinstance(t, HexWildcard) for t in builder._content)
+        tokens = _hex_content(builder)
+        assert len(tokens) == 5
+        assert all(isinstance(t, HexWildcard) for t in tokens)
 
     def test_mixed_pattern_parses_mixed_hex(self) -> None:
         """Mixed_pattern should parse hex with wildcards."""
@@ -492,7 +500,7 @@ class TestFluentStringBuilderAdvancedHexPatterns:
         result = builder.mixed_pattern("FF ?? AA")
 
         assert result is builder
-        assert len(builder._content) == 3
+        assert len(_hex_content(builder)) == 3
 
     def test_jump_pattern_creates_jump(self) -> None:
         """Jump_pattern should create jump token."""
@@ -501,10 +509,12 @@ class TestFluentStringBuilderAdvancedHexPatterns:
         result = builder.jump_pattern(2, 8)
 
         assert result is builder
-        assert len(builder._content) == 1
-        assert isinstance(builder._content[0], HexJump)
-        assert builder._content[0].min_jump == 2
-        assert builder._content[0].max_jump == 8
+        tokens = _hex_content(builder)
+        assert len(tokens) == 1
+        jump = tokens[0]
+        assert isinstance(jump, HexJump)
+        assert jump.min_jump == 2
+        assert jump.max_jump == 8
 
     def test_jump_pattern_without_max(self) -> None:
         """Jump_pattern without max should use min as max."""
@@ -513,8 +523,10 @@ class TestFluentStringBuilderAdvancedHexPatterns:
         result = builder.jump_pattern(5)
 
         assert result is builder
-        assert builder._content[0].min_jump == 5
-        assert builder._content[0].max_jump == 5
+        jump = _hex_content(builder)[0]
+        assert isinstance(jump, HexJump)
+        assert jump.min_jump == 5
+        assert jump.max_jump == 5
 
 
 class TestFluentStringBuilderBuildMethod:

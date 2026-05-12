@@ -96,7 +96,7 @@ class StringModifier(ASTNode):
     """Enhanced string modifier with proper type safety."""
 
     modifier_type: StringModifierType
-    value: str | int | float | None = None  # For modifiers that take parameters
+    value: str | int | float | tuple[int, int] | None = None
 
     @classmethod
     def from_name_value(cls, name: str, value: Any | None = None) -> "StringModifier":
