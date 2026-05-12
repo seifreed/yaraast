@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from yaraast.lsp.document_links import DocumentLinksProvider
@@ -9,7 +10,7 @@ from yaraast.lsp.document_types import path_to_uri
 from yaraast.lsp.runtime import DocumentContext
 
 
-def test_document_links_import_and_include(tmp_path) -> None:
+def test_document_links_import_and_include(tmp_path: Path) -> None:
     include_path = tmp_path / "inc.yar"
     include_path.write_text("rule inc { condition: true }")
 
@@ -32,12 +33,12 @@ def test_document_links_import_and_include(tmp_path) -> None:
     links = provider.get_document_links(text, path_to_uri(doc_path))
 
     assert len(links) >= 2
-    targets = {link.target for link in links}
+    targets = {link.target for link in links if link.target is not None}
     assert any("yara.readthedocs.io" in t for t in targets)
     assert any(t.startswith("file://") for t in targets)
 
 
-def test_document_links_fallback(tmp_path) -> None:
+def test_document_links_fallback(tmp_path: Path) -> None:
     text = 'import "pe"\ninclude "missing.yar"\n'
     doc_path = tmp_path / "doc.yar"
     doc_path.write_text(text)
@@ -48,7 +49,7 @@ def test_document_links_fallback(tmp_path) -> None:
     assert any(link.target and "pe.html" in link.target for link in links)
 
 
-def test_document_links_helper_edges(tmp_path) -> None:
+def test_document_links_helper_edges(tmp_path: Path) -> None:
     include_path = tmp_path / "inc.yar"
     include_path.write_text("rule inc { condition: true }")
 
@@ -69,7 +70,7 @@ def test_document_links_helper_edges(tmp_path) -> None:
     assert "pe.html" in (fallback_links[0].target or "")
 
 
-def test_document_links_parser_fallback_and_error_edges(tmp_path) -> None:
+def test_document_links_parser_fallback_and_error_edges(tmp_path: Path) -> None:
     include_path = tmp_path / "inc.yar"
     include_path.write_text("rule inc { condition: true }")
     provider = DocumentLinksProvider()
