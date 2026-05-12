@@ -24,7 +24,7 @@ class Condition(Expression):
 class ForExpression(Condition):
     """For expression (for any/all i in ...)."""
 
-    quantifier: str
+    quantifier: QuantifierValue
     variable: str
     iterable: Expression
     body: Expression

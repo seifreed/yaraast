@@ -41,7 +41,12 @@ def visit_member_access(generator, node) -> str:
 def visit_for_expression(generator, node) -> str:
     iterable = generator.visit(node.iterable)
     body = generator.visit(node.body)
-    return f"for {node.quantifier} {node.variable} in {iterable} : ({body})"
+    quantifier = (
+        generator.visit(node.quantifier)
+        if hasattr(node.quantifier, "accept")
+        else str(node.quantifier)
+    )
+    return f"for {quantifier} {node.variable} in {iterable} : ({body})"
 
 
 def visit_at_expression(generator, node) -> str:

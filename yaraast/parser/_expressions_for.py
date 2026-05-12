@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
+from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression, QuantifierValue
 from yaraast.ast.expressions import (
     ArrayAccess,
     Expression,
@@ -30,7 +30,10 @@ class ExpressionForMixin:
         elif self._match(TokenType.NONE):
             quantifier = "none"
         elif self._match(TokenType.INTEGER):
-            quantifier = str(self._previous().value)
+            quantifier = self._previous().value
+            if not isinstance(quantifier, int):
+                msg = "Expected integer quantifier after 'for'"
+                raise ParserError(msg, self._previous())
         else:
             msg = "Expected quantifier after 'for'"
             raise ParserError(msg, self._peek())
@@ -79,7 +82,11 @@ class ExpressionForMixin:
             self._previous(),
         )
 
-    def _parse_for_of_expression(self, quantifier: str, start_token=None) -> ForOfExpression:
+    def _parse_for_of_expression(
+        self,
+        quantifier: QuantifierValue,
+        start_token=None,
+    ) -> ForOfExpression:
         """Parse for...of expression."""
         start_token = start_token or self._peek()
         string_set = self._parse_expression()

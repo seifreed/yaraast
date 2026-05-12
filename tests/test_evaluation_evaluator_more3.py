@@ -33,6 +33,7 @@ from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import PlainString
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluator import YaraEvaluator
+from yaraast.parser import Parser
 
 
 def test_identifier_and_literal_paths() -> None:
@@ -449,3 +450,9 @@ def test_evaluator_module_function_for_and_for_of_remaining_paths() -> None:
         condition=BooleanLiteral(value=True),
     )
     assert ev.visit_for_of_expression(node_other) is False
+
+
+def test_parser_numeric_for_quantifier_evaluates_as_integer() -> None:
+    ast = Parser().parse("rule r { condition: for 2 i in (1,2,3) : (i > 1) }")
+
+    assert YaraEvaluator().evaluate_file(ast) == {"r": True}

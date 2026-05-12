@@ -375,8 +375,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     # Helper methods for reading data
 
-    def _resolve_quantifier(self, quantifier: Any) -> int | str:
-        if isinstance(quantifier, int | str):
+    def _resolve_quantifier(self, quantifier: QuantifierValue) -> int | str | float | Any:
+        if isinstance(quantifier, int | str | float):
             return quantifier
         return self.visit(quantifier)
 
