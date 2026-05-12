@@ -137,6 +137,17 @@ def test_process_files_parse_failures_and_recursive_directory(tmp_path: Path) ->
     assert rec.successful_count >= 2
 
 
+def test_process_files_validate_records_summary(tmp_path: Path) -> None:
+    rule_file = tmp_path / "valid.yar"
+    rule_file.write_text("rule ok { condition: true }", encoding="utf-8")
+
+    result = BatchProcessor().process_files([rule_file], BatchOperation.VALIDATE)
+
+    assert result.successful_count == 1
+    assert result.failed_count == 0
+    assert result.summary["valid.yar"] == {"valid": True, "rule_count": 1}
+
+
 def test_process_large_file_non_split_and_invalid_content(tmp_path: Path) -> None:
     valid = tmp_path / "big.yar"
     valid.write_text("rule a { condition: true }\nrule b { condition: true }\n", encoding="utf-8")

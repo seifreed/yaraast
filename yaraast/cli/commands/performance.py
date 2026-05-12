@@ -16,6 +16,7 @@ from yaraast.cli.performance_reporting import (
     report_complexity_analysis,
 )
 from yaraast.cli.performance_services import (
+    BATCH_OPERATION_CHOICES,
     build_batch_results_data,
     build_optimization_plan,
     build_parallel_summary,
@@ -52,7 +53,7 @@ def performance() -> None:
     "-op",
     multiple=True,
     type=click.Choice(
-        ["parse", "complexity", "dependency_graph", "html_tree", "serialize"],
+        BATCH_OPERATION_CHOICES,
     ),
     default=["parse", "complexity"],
     help="Operations to perform",

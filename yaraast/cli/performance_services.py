@@ -13,16 +13,19 @@ from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 from yaraast.performance.streaming_parser import StreamingParser
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
+BATCH_OPERATION_MAP = {
+    "parse": BatchOperation.PARSE,
+    "complexity": BatchOperation.COMPLEXITY,
+    "dependency_graph": BatchOperation.DEPENDENCY_GRAPH,
+    "html_tree": BatchOperation.HTML_TREE,
+    "serialize": BatchOperation.SERIALIZE,
+    "validate": BatchOperation.VALIDATE,
+}
+BATCH_OPERATION_CHOICES = tuple(BATCH_OPERATION_MAP)
+
 
 def convert_operations(operations: Iterable[str]) -> list[BatchOperation]:
-    operation_map = {
-        "parse": BatchOperation.PARSE,
-        "complexity": BatchOperation.COMPLEXITY,
-        "dependency_graph": BatchOperation.DEPENDENCY_GRAPH,
-        "html_tree": BatchOperation.HTML_TREE,
-        "serialize": BatchOperation.SERIALIZE,
-    }
-    return [operation_map[op] for op in operations if op in operation_map]
+    return [BATCH_OPERATION_MAP[op] for op in operations if op in BATCH_OPERATION_MAP]
 
 
 def run_batch_processing(

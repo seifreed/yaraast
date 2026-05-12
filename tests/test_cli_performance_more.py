@@ -83,6 +83,31 @@ def test_performance_batch_file_serialize_outputs_result(tmp_path: Path) -> None
     assert Path(payload["serialize"]["output_files"][0]).exists()
 
 
+def test_performance_batch_file_validate_outputs_result(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    out_dir = tmp_path / "batch_out"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        performance,
+        [
+            "batch",
+            file_path,
+            "--output-dir",
+            str(out_dir),
+            "--operations",
+            "validate",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads((out_dir / "batch_results.json").read_text(encoding="utf-8"))
+    validation_result = payload["validate"]
+    assert validation_result["successful_count"] == 1
+    assert validation_result["failed_count"] == 0
+    assert validation_result["summary"] == {"rule_count": 1, "valid": True}
+
+
 def test_performance_batch_file_dependency_graph_outputs_result(tmp_path: Path) -> None:
     file_path = _write(
         tmp_path,
