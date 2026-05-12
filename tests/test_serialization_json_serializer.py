@@ -6,12 +6,13 @@ import json
 
 import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 
 
-def _parse_yara(code: str):
+def _parse_yara(code: str) -> YaraFile:
     parser = Parser()
     return parser.parse(code)
 
