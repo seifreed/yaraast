@@ -53,7 +53,7 @@ def full(rule_file: str, output_format: str, output: str | None) -> None:
             }
             json_output = format_json(result)
             if output:
-                Path(output).write_text(json_output)
+                Path(output).write_text(json_output, encoding="utf-8")
             else:
                 click.echo(json_output)
             return

@@ -190,7 +190,7 @@ class LibyaraCompiler:
             )
 
         try:
-            source = filepath.read_text()
+            source = filepath.read_text(encoding="utf-8")
             return self.compile_source(source, error_on_warning=error_on_warning)
         except Exception as e:
             return CompilationResult(

@@ -53,7 +53,7 @@ def test_yaral_reporting_misc_helpers(
 ) -> None:
     out_file = tmp_path / "generated.yaral"
     yr.write_output(str(out_file), "rule x {}", "saved")
-    assert out_file.read_text() == "rule x {}"
+    assert out_file.read_text(encoding="utf-8") == "rule x {}"
     assert "saved" in capsys.readouterr().out
 
     yr.write_output(None, "inline", "ignored")

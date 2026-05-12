@@ -23,7 +23,7 @@ rule test_rule {
 }
 """
     rule_path = tmp_path / "rule.yar"
-    rule_path.write_text(rule_text.strip())
+    rule_path.write_text(rule_text.strip(), encoding="utf-8")
 
     with tempfile.NamedTemporaryFile(mode="wb", delete=False) as f:
         f.write(b"hello world")

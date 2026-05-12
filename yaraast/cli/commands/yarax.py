@@ -44,7 +44,7 @@ def parse(file: str, output: str | None, show_features: bool):
         _ast, code = parse_yarax_content(content)
 
         if output:
-            Path(output).write_text(code)
+            Path(output).write_text(code, encoding="utf-8")
             click.echo(f"✅ AST written to {output}")
         else:
             click.echo(code)
@@ -106,7 +106,7 @@ def convert(file: str, output: str | None, target: str):
             click.echo("⚠️  Converted to standard YARA (some features may be lost)")
 
         if output:
-            Path(output).write_text(converted)
+            Path(output).write_text(converted, encoding="utf-8")
             click.echo(f"✅ Converted file written to {output}")
         else:
             click.echo(converted)

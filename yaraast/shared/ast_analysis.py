@@ -151,10 +151,10 @@ class ASTDiffer:
 
     def diff_files(self, file1_path: Path, file2_path: Path) -> ASTDiffResult:
         try:
-            with Path(file1_path).open() as f:
+            with Path(file1_path).open(encoding="utf-8") as f:
                 content1 = f.read()
                 ast1 = Parser(content1).parse()
-            with Path(file2_path).open() as f:
+            with Path(file2_path).open(encoding="utf-8") as f:
                 content2 = f.read()
                 ast2 = Parser(content2).parse()
             result = self.diff_asts(ast1, ast2)
@@ -273,11 +273,11 @@ class ASTFormatter:
         style: str = "default",
     ) -> tuple[bool, str]:
         try:
-            with Path(input_path).open() as f:
+            with Path(input_path).open(encoding="utf-8") as f:
                 ast = CommentAwareParser().parse(f.read())
             formatted = self.format_ast(ast, style)
             if output_path:
-                with Path(output_path).open("w") as f:
+                with Path(output_path).open("w", encoding="utf-8") as f:
                     f.write(formatted)
                 return True, f"Formatted file written to {output_path}"
             return True, formatted
@@ -294,7 +294,7 @@ class ASTFormatter:
 
     def check_format(self, file_path: Path) -> tuple[bool, list[str]]:
         try:
-            with Path(file_path).open() as f:
+            with Path(file_path).open(encoding="utf-8") as f:
                 original = f.read()
             formatted = self.pretty_printer.pretty_print(CommentAwareParser().parse(original))
             if original.strip() == formatted.strip():

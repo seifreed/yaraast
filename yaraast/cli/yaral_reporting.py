@@ -62,7 +62,7 @@ def _display_text_results(ast, errors, warnings, strict):
 
 def write_output(output: str | None, code: str, success_message: str) -> None:
     if output:
-        Path(output).write_text(code)
+        Path(output).write_text(code, encoding="utf-8")
         click.echo(success_message)
     else:
         click.echo(code)

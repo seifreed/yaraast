@@ -18,7 +18,7 @@ def validate_rule_file(rule_file: str):
 
 
 def cross_validate_rules(rule_file: str, test_data: bytes, externals: dict[str, str]):
-    content = Path(rule_file).read_text()
+    content = Path(rule_file).read_text(encoding="utf-8")
     from yaraast.parser.parser import Parser
 
     parser = Parser(content)

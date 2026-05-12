@@ -12,7 +12,7 @@ from yaraast.cli.commands.yarax import yarax
 
 def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
-    path.write_text(dedent(content))
+    path.write_text(dedent(content), encoding="utf-8")
     return str(path)
 
 

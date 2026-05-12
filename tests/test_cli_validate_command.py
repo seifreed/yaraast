@@ -23,7 +23,7 @@ rule sample_validate {
 def test_validate_default_file(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     result = runner.invoke(validate, [str(yara_path)])
     assert result.exit_code == 0

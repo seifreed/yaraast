@@ -15,7 +15,7 @@ def analyze_file_complexity(file_path: str | Path) -> dict[str, Any]:
     """Analyze complexity of a YARA file."""
     parser = Parser()
 
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8") as f:
         content = f.read()
 
     ast = parser.parse(content)
