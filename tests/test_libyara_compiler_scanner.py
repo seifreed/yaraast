@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE
-from yaraast.libyara.compiler import LibyaraCompiler
+from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE, LibyaraCompiler
 from yaraast.libyara.scanner import LibyaraScanner
 
 

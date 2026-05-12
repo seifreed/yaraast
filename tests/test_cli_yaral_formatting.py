@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.cli.yaral_services import _format_line
-from yaraast.cli.yaral_services import format_yaral_code as _format_yaral_code
+from yaraast.cli.yaral_services import _format_line, format_yaral_code as _format_yaral_code
 
 
 def test_format_line_handles_sections_and_braces() -> None:

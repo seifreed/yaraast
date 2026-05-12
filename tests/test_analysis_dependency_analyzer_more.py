@@ -53,8 +53,7 @@ def test_dependency_analyzer_cycle_dedup_transitive_and_topological_none() -> No
 
 
 def test_dependency_analyzer_visit_rule_and_analyze_full_file() -> None:
-    ast = Parser().parse(
-        """
+    ast = Parser().parse("""
 import "pe"
 include "common.yar"
 
@@ -67,8 +66,7 @@ rule caller {
     condition:
         base and helper(base)
 }
-"""
-    )
+""")
     analyzer = DependencyAnalyzer()
     results = analyzer.analyze(ast)
 

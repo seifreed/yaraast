@@ -10,10 +10,10 @@ This script runs all benchmarking tools in sequence and generates
 a complete performance report.
 """
 
-import sys
-import time
 from importlib import util
 from pathlib import Path
+import sys
+import time
 
 
 def print_section(title: str) -> None:

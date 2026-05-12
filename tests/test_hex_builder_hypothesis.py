@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
+from hypothesis import given, settings, strategies as st
 import pytest
-from hypothesis import given, settings
-from hypothesis import strategies as st
 
 from yaraast.ast.strings import HexByte
 from yaraast.builder.hex_string_builder import HexStringBuilder
@@ -50,7 +49,7 @@ class TestHexBuilderProperties:
             builder.byte(b)
         tokens = builder.build()
         assert len(tokens) == len(bytes_list)
-        for token, expected in zip(tokens, bytes_list):
+        for token, expected in zip(tokens, bytes_list, strict=True):
             assert isinstance(token, HexByte)
             assert token.value == expected
 

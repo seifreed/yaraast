@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
 from click.testing import CliRunner
+import pytest
 
 from yaraast.cli.commands.lsp import lsp
 

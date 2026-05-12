@@ -8,10 +8,10 @@ Tests all major CLI functionality including parse, format, analyze, validate, an
 """
 
 import json
+from pathlib import Path
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -640,9 +640,7 @@ class TestCLIDiffCommand:
         }
         """
 
-        modified = (
-            original
-            + """
+        modified = original + """
         rule added {
             strings:
                 $s = "new"
@@ -650,7 +648,6 @@ class TestCLIDiffCommand:
                 $s
         }
         """
-        )
 
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
             f1.write(original.strip())

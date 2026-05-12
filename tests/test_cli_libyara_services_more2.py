@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-import yaraast.libyara as lib
 from yaraast.cli import libyara_services as ls
+import yaraast.libyara as lib
 
 
 def test_ensure_yara_available_branches() -> None:

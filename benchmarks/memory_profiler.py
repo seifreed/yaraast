@@ -9,10 +9,10 @@ This module provides detailed memory profiling capabilities
 for analyzing parser memory consumption patterns.
 """
 
-import gc
-import time
 from dataclasses import dataclass, field
+import gc
 from pathlib import Path
+import time
 
 import psutil
 

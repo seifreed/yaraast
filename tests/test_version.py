@@ -13,9 +13,6 @@ from yaraast import (
 from yaraast.version import (
     YARAX_COMPATIBLE,
     YARAX_SYNTAX_VERSION,
-    YARAAST_VERSION_MAJOR,
-    YARAAST_VERSION_MINOR,
-    YARAAST_VERSION_PATCH,
 )
 
 

@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
+from hypothesis import assume, given, settings, strategies as st
 import pytest
-from hypothesis import assume, given, settings
-from hypothesis import strategies as st
 
 from yaraast.codegen import CodeGenerator
 from yaraast.lexer.lexer_tables import KEYWORDS as _LEXER_KEYWORDS

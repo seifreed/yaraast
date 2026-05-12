@@ -12,8 +12,10 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
-from yaraast.metrics import string_diagrams as _string_diagrams  # noqa: F401
-from yaraast.metrics import string_diagrams_render as render
+from yaraast.metrics import (
+    string_diagrams as _string_diagrams,  # noqa: F401
+    string_diagrams_render as render,
+)
 from yaraast.metrics.string_diagrams_render import StringDiagramRenderMixin
 
 helpers = importlib.import_module("yaraast.metrics.string_diagrams_helpers")

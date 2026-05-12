@@ -10,11 +10,11 @@ comparing standard Parser vs StreamingParser, and measuring
 memory usage and throughput.
 """
 
+from dataclasses import dataclass, field
 import gc
 import json
-import time
-from dataclasses import dataclass, field
 from pathlib import Path
+import time
 from typing import Any
 
 import psutil

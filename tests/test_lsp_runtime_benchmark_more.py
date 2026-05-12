@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "benchmark_lsp_runtime.py"
 SPEC = importlib.util.spec_from_file_location("benchmark_lsp_runtime", SCRIPT_PATH)

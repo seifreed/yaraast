@@ -126,7 +126,7 @@ def test_parse_postfix_helpers_cover_success_and_error_paths() -> None:
     assert expr.subject is of_expr
 
     p = _parser_with_tokens([_t(TokenType.IDENTIFIER, "obj"), _t(TokenType.DOT, ".")])
-    with pytest.raises(ParserError, match="Expected member name after '.'"):
+    with pytest.raises(ParserError, match=r"Expected member name after '\.'"):
         p._parse_postfix_expression()
 
     p = _parser_with_tokens(

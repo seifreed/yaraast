@@ -390,8 +390,8 @@ def test_document_links_provider():
 
 def test_workspace_symbols_provider():
     """Test workspace symbols provider."""
-    import tempfile
     from pathlib import Path
+    import tempfile
 
     from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
 
@@ -401,16 +401,14 @@ def test_workspace_symbols_provider():
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create test YARA file
         test_file = Path(tmpdir) / "test.yar"
-        test_file.write_text(
-            """
+        test_file.write_text("""
             rule malware_detection {
                 strings:
                     $payload = "malicious"
                 condition:
                     $payload
             }
-            """
-        )
+            """)
 
         # Set workspace root
         provider.set_workspace_root(tmpdir)

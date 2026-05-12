@@ -124,8 +124,7 @@ def demo_complete_features() -> None:
             .alternative([0x50, 0x45], [0x4E, 0x45]),  # PE  # NE
         )
         .with_regex_string("$url", r"https?://[a-z0-9\.\-]+", nocase=True)
-        .with_condition(
-            """
+        .with_condition("""
             $mz at 0 and
             $hex_pattern and
             (#suspicious > 5 or @suspicious[1] < 100) and
@@ -133,8 +132,7 @@ def demo_complete_features() -> None:
             pe.number_of_sections > 3 and
             defined pe.version_info["CompanyName"] and
             pe.version_info["CompanyName"] icontains "microsoft"
-        """
-        )
+        """)
         .build()
     )
 

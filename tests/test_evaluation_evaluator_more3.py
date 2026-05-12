@@ -387,10 +387,10 @@ def test_evaluator_module_function_for_and_for_of_remaining_paths() -> None:
     )
     ev.evaluate_rule(rule)
 
-    with pytest.raises(EvaluationError, match="Unknown function: missing.abs"):
+    with pytest.raises(EvaluationError, match=r"Unknown function: missing\.abs"):
         ev.visit_function_call(FunctionCall(function="missing.abs", arguments=[]))
 
-    with pytest.raises(EvaluationError, match="Unknown function: math.missing"):
+    with pytest.raises(EvaluationError, match=r"Unknown function: math\.missing"):
         ev.visit_function_call(FunctionCall(function="math.missing", arguments=[]))
     with pytest.raises(EvaluationError, match="Unknown function: missing"):
         ev.visit_function_call(FunctionCall(function="missing", arguments=[]))

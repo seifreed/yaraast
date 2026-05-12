@@ -16,16 +16,14 @@ def test_parser_error_format_and_normal_parse_success() -> None:
     assert "rule x" not in e2.format_error()
 
     parser = ErrorTolerantParser()
-    valid = dedent(
-        """
+    valid = dedent("""
         import "pe"
         include "common.yar"
         rule ok {
             condition:
                 true
         }
-        """
-    )
+        """)
     result = parser.parse(valid)
     assert result.errors == []
     assert result.ast.rules and result.ast.rules[0].name == "ok"
@@ -33,8 +31,7 @@ def test_parser_error_format_and_normal_parse_success() -> None:
 
 def test_recovery_paths_for_invalid_import_include_rule_and_unknown_lines() -> None:
     parser = ErrorTolerantParser()
-    text = dedent(
-        """
+    text = dedent("""
         import ???
         include ???
         rule $bad {
@@ -42,8 +39,7 @@ def test_recovery_paths_for_invalid_import_include_rule_and_unknown_lines() -> N
                 true
         }
         stray tokens
-        """
-    )
+        """)
     result = parser.parse(text)
 
     assert parser.has_errors() is True
@@ -111,9 +107,7 @@ def test_parse_with_errors_api_and_format_errors_no_errors_branch() -> None:
 
 def test_recovered_nodes_include_basic_locations() -> None:
     parser = ErrorTolerantParser()
-    result = parser.parse(
-        dedent(
-            """
+    result = parser.parse(dedent("""
             import "pe"
             include "common.yar"
             rule sample {
@@ -124,9 +118,7 @@ def test_recovered_nodes_include_basic_locations() -> None:
                 condition:
                     $a
             }
-            """
-        )
-    )
+            """))
 
     assert result.ast.imports[0].location is not None
     assert result.ast.includes[0].location is not None

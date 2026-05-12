@@ -9,8 +9,8 @@ This module generates realistic YARA rule files of varying sizes
 and complexity levels for performance testing.
 """
 
-import random
 from pathlib import Path
+import random
 
 
 class YaraTestFileGenerator:

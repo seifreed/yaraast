@@ -3,10 +3,12 @@ from __future__ import annotations
 import pytest
 
 from yaraast.libyara.compiler import LibyaraCompiler
-from yaraast.libyara.direct_compiler import YARA_AVAILABLE as DIRECT_YARA
-from yaraast.libyara.direct_compiler import DirectASTCompiler, OptimizedMatcher
-from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_YARA
-from yaraast.libyara.scanner import LibyaraScanner
+from yaraast.libyara.direct_compiler import (
+    YARA_AVAILABLE as DIRECT_YARA,
+    DirectASTCompiler,
+    OptimizedMatcher,
+)
+from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_YARA, LibyaraScanner
 from yaraast.parser import Parser
 
 

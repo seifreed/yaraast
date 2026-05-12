@@ -2,8 +2,8 @@
 
 import json
 import os
-import tempfile
 from pathlib import Path
+import tempfile
 
 from yaraast.types.module_loader import ModuleLoader
 from yaraast.types.type_system import ArrayType, IntegerType

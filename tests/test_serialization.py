@@ -1,8 +1,8 @@
 """Test advanced serialization features."""
 
 import json
-import tempfile
 from pathlib import Path
+import tempfile
 
 import pytest
 import yaml

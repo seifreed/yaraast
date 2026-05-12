@@ -128,10 +128,7 @@ def test_lexer_reports_unterminated_regex_and_handles_hex_numbers_and_line_conti
 
 
 def test_lexer_covers_escape_sequences_and_malformed_string_endings() -> None:
-    string_tokens = [
-        t
-        for t in Lexer(
-            r"""
+    string_tokens = [t for t in Lexer(r"""
 rule r {
  strings:
    $a = "line\n\t\r\""
@@ -140,10 +137,7 @@ rule r {
  condition:
    all of them
 }
-"""
-        ).tokenize()
-        if t.type == TokenType.STRING
-    ]
+""").tokenize() if t.type == TokenType.STRING]
 
     assert string_tokens[0].value == 'line\n\t\r"'
     assert string_tokens[1].value == "A"
@@ -151,14 +145,12 @@ rule r {
 
 
 def test_lexer_reads_two_char_operators_numbers_and_string_markers() -> None:
-    tokens = Lexer(
-        """
+    tokens = Lexer("""
 rule r {
  condition:
    $* and $name* and #hits > 1 and @off >= 10KB and !len <= 2MB and 1.5 != 2
 }
-"""
-    ).tokenize()
+""").tokenize()
 
     by_type = {}
     for token in tokens:
@@ -183,20 +175,16 @@ def test_lexer_reports_unexpected_character_and_edge_regex_comment_paths() -> No
         Lexer("rule r { condition: /abc\\").tokenize()
 
     with pytest.raises(LexerError, match="Unterminated hex string"):
-        Lexer(
-            """
+        Lexer("""
 rule r {
  strings:
-   $a = { 4D // eof comment"""
-        ).tokenize()
+   $a = { 4D // eof comment""").tokenize()
 
     with pytest.raises(LexerError, match="Unterminated hex string"):
-        Lexer(
-            """
+        Lexer("""
 rule r {
  strings:
-   $a = { 4D /* eof block"""
-        ).tokenize()
+   $a = { 4D /* eof block""").tokenize()
 
 
 def test_lexer_context_helpers_cover_default_regex_and_comment_only_hex_cases() -> None:

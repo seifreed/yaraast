@@ -9,16 +9,14 @@ from yaraast.cli.commands.bench_cmd import bench
 
 
 def _write_rule(path: Path, name: str) -> None:
-    path.write_text(
-        f"""
+    path.write_text(f"""
 rule {name} {{
     strings:
         $a = "test"
     condition:
         $a
 }}
-""".strip()
-    )
+""".strip())
 
 
 def test_bench_command_compare_multiple_files_and_output_json(tmp_path: Path) -> None:

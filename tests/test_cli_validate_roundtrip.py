@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
+import tempfile
 
-import pytest
 from click.testing import CliRunner
+import pytest
 
 from yaraast.cli.main import cli
 from yaraast.libyara import YARA_AVAILABLE

@@ -17,11 +17,9 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Rule
 from yaraast.libyara.ast_optimizer import ASTOptimizer
-from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE
-from yaraast.libyara.compiler import LibyaraCompiler
+from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE, LibyaraCompiler
 from yaraast.libyara.direct_compiler import YARA_AVAILABLE, DirectASTCompiler, OptimizedMatcher
-from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_AVAILABLE
-from yaraast.libyara.scanner import LibyaraScanner
+from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_AVAILABLE, LibyaraScanner
 from yaraast.parser import Parser
 
 
@@ -184,16 +182,14 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
 def test_direct_matcher_hints_for_complex_rule() -> None:
     many_strings = "\n".join(f'$s{i} = "a"' for i in range(21))
     all_refs = " and ".join(f"$s{i}" for i in range(21))
-    ast = Parser().parse(
-        f"""
+    ast = Parser().parse(f"""
         rule complex_rule {{
             strings:
                 {many_strings}
             condition:
                 (((((((((true and true) and true) and true) and true) and true) and true) and true) and true) and true) and ({all_refs})
         }}
-        """
-    )
+        """)
     compiler = DirectASTCompiler(enable_optimization=False)
     result = compiler.compile_ast(ast)
     assert result.success is True

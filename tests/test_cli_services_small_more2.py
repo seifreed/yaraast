@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from yaraast.cli import optimize_services as osvc
-from yaraast.cli import parse_output_services as pos
-from yaraast.cli import serialize_services as ssvc
+from yaraast.cli import (
+    optimize_services as osvc,
+    parse_output_services as pos,
+    serialize_services as ssvc,
+)
 from yaraast.parser import Parser
 
 

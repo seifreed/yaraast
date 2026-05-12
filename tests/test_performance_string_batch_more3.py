@@ -69,16 +69,14 @@ def test_string_rule_performance_and_cost_extra_paths() -> None:
     )
     assert analyze_rule_performance(plain_long_rule) == []
 
-    regex_rule = _parse_rule(
-        """
+    regex_rule = _parse_rule("""
         rule regex_cost {
             strings:
                 $r = /ab+c/
             condition:
                 $r
         }
-        """
-    )
+        """)
     assert _estimate_rule_cost(regex_rule) >= 10
 
 

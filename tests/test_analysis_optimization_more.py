@@ -26,14 +26,12 @@ def test_optimization_report_format_and_high_impact_count() -> None:
 
 
 def test_optimization_analyzer_rule_without_condition_and_non_hex_plain_string() -> None:
-    ast = _parse(
-        """
+    ast = _parse("""
         rule no_condition {
             strings:
                 $a = "printable text"
         }
-        """
-    )
+        """)
 
     report = OptimizationAnalyzer().analyze(ast)
 
@@ -41,8 +39,7 @@ def test_optimization_analyzer_rule_without_condition_and_non_hex_plain_string()
 
 
 def test_optimization_analyzer_adds_string_hex_and_overlap_suggestions() -> None:
-    ast = _parse(
-        """
+    ast = _parse("""
         rule mixed_strings {
             strings:
                 $np = "\\x01\\x02A\\x03"
@@ -51,8 +48,7 @@ def test_optimization_analyzer_adds_string_hex_and_overlap_suggestions() -> None
             condition:
                 $short
         }
-        """
-    )
+        """)
 
     report = OptimizationAnalyzer().analyze(ast)
     descriptions = [s.description for s in report.suggestions]
@@ -145,8 +141,7 @@ def test_optimization_analyzer_binary_without_current_rule_and_inverse_overlap()
     )
     assert analyzer.report.suggestions == []
 
-    ast = _parse(
-        """
+    ast = _parse("""
         rule inverse_overlap {
             strings:
                 $big = "alphabet"
@@ -154,15 +149,13 @@ def test_optimization_analyzer_binary_without_current_rule_and_inverse_overlap()
             condition:
                 $big
         }
-        """
-    )
+        """)
     report = OptimizationAnalyzer().analyze(ast)
     assert any("'$small' is contained in '$big'" in s.description for s in report.suggestions)
 
 
 def test_optimization_analyzer_cross_rule_duplication_and_similarity() -> None:
-    ast = _parse(
-        """
+    ast = _parse("""
         rule dup1 {
             strings:
                 $a = "same"
@@ -211,8 +204,7 @@ def test_optimization_analyzer_cross_rule_duplication_and_similarity() -> None:
             condition:
                 $a
         }
-        """
-    )
+        """)
 
     report = OptimizationAnalyzer().analyze(ast)
     descriptions = [s.description for s in report.suggestions]

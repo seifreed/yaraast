@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
+from hypothesis import assume, given, settings, strategies as st
 import pytest
-from hypothesis import assume, given, settings
-from hypothesis import strategies as st
 
 from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.lexer_tables import KEYWORDS as _LEXER_KEYWORDS
@@ -93,6 +92,6 @@ class TestLexerProperties:
         tokens1 = Lexer(text).tokenize()
         tokens2 = Lexer(text).tokenize()
         assert len(tokens1) == len(tokens2)
-        for t1, t2 in zip(tokens1, tokens2):
+        for t1, t2 in zip(tokens1, tokens2, strict=True):
             assert t1.type == t2.type
             assert t1.value == t2.value

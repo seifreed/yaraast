@@ -59,8 +59,7 @@ def test_ast_structural_analyzer_collects_signatures_and_empty_condition() -> No
 
 
 def test_ast_differ_diff_asts_detects_structural_logical_and_condition_changes() -> None:
-    ast1 = Parser().parse(
-        """
+    ast1 = Parser().parse("""
 import "pe"
 
 rule same {
@@ -69,10 +68,8 @@ rule same {
     condition:
         $a
 }
-"""
-    )
-    ast2 = Parser().parse(
-        """
+""")
+    ast2 = Parser().parse("""
 rule same {
     strings:
         $a = "xyz"
@@ -85,8 +82,7 @@ rule added {
     condition:
         true
 }
-"""
-    )
+""")
 
     result = ASTDiffer().diff_asts(ast1, ast2)
     assert result.has_changes is True

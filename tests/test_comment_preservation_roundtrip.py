@@ -1,4 +1,5 @@
 """Tests for comment preservation through parse -> codegen roundtrip."""
+
 from __future__ import annotations
 
 from yaraast.codegen import CodeGenerator
@@ -9,13 +10,7 @@ class TestCommentPreservation:
     """Test that comments survive parse -> codegen roundtrip."""
 
     def test_leading_block_comment_preserved(self) -> None:
-        rule = (
-            "/* Rule description */\n"
-            "rule test {\n"
-            "    condition:\n"
-            "        true\n"
-            "}\n"
-        )
+        rule = "/* Rule description */\n" "rule test {\n" "    condition:\n" "        true\n" "}\n"
         ast = CommentAwareParser().parse(rule)
         output = CodeGenerator().generate(ast)
         assert "/* Rule description */" in output
@@ -35,13 +30,7 @@ class TestCommentPreservation:
         assert "comment */" in output
 
     def test_leading_line_comment_preserved(self) -> None:
-        rule = (
-            "// Line comment\n"
-            "rule test {\n"
-            "    condition:\n"
-            "        true\n"
-            "}\n"
-        )
+        rule = "// Line comment\n" "rule test {\n" "    condition:\n" "        true\n" "}\n"
         ast = CommentAwareParser().parse(rule)
         output = CodeGenerator().generate(ast)
         assert "// Line comment" in output

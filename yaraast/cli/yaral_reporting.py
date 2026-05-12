@@ -117,8 +117,7 @@ def display_structural_compare(differences: list[str]) -> None:
 def display_info(examples: bool, fields: bool, functions: bool, validator) -> None:
     if examples:
         click.echo("📚 Example YARA-L Rules:\n")
-        click.echo(
-            """rule suspicious_login_attempts {
+        click.echo("""rule suspicious_login_attempts {
     meta:
         author = "security-team"
         description = "Detect multiple failed login attempts"
@@ -139,8 +138,7 @@ def display_info(examples: bool, fields: bool, functions: bool, validator) -> No
         $risk_score = 50 + (#login * 10)
         $affected_user = $user
         $login_count = count($login)
-}"""
-        )
+}""")
 
     if fields:
         click.echo("📋 Valid UDM Field Namespaces:\n")

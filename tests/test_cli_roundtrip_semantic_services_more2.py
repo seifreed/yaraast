@@ -10,8 +10,8 @@ from yaraast.cli.roundtrip_services import (
     deserialize_roundtrip_file,
     pipeline_serialize_file,
     serialize_roundtrip_file,
+    test_roundtrip_file as run_roundtrip_file_test,
 )
-from yaraast.cli.roundtrip_services import test_roundtrip_file as run_roundtrip_file_test
 from yaraast.cli.semantic_services import _create_validation_context, _process_file
 from yaraast.parser import Parser
 

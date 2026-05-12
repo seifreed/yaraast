@@ -181,8 +181,7 @@ def test_attach_trailing_comments_group_and_single() -> None:
 
 def test_comment_aware_parser_populates_core_node_locations() -> None:
     parser = CommentAwareParser()
-    ast = parser.parse(
-        """
+    ast = parser.parse("""
 rule sample {
   meta:
     author = "me"
@@ -191,8 +190,7 @@ rule sample {
   condition:
     $a
 }
-""".lstrip()
-    )
+""".lstrip())
 
     rule = ast.rules[0]
     assert rule.location is not None

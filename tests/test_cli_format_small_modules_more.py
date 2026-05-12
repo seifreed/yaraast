@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
 import runpy
 import sys
-from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
+import pytest
 from rich.console import Console
 
 from yaraast.cli.commands.format_cmd import format_yara, validate_syntax
@@ -47,16 +47,14 @@ def test_format_reporting_helpers_render_messages() -> None:
 
 
 def test_format_services_format_ast_and_stats() -> None:
-    ast = Parser().parse(
-        """
+    ast = Parser().parse("""
         import "pe"
 
         rule sample {
             condition:
                 true
         }
-        """
-    )
+        """)
 
     formatted = format_ast(ast)
     stats = build_format_stats(ast)

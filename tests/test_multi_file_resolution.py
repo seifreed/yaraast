@@ -1,7 +1,7 @@
 """Tests for multi-file resolution functionality."""
 
-import tempfile
 from pathlib import Path
+import tempfile
 
 import pytest
 

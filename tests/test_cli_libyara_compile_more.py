@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
+import pytest
 
 from yaraast.cli.main import cli
 from yaraast.libyara import YARA_AVAILABLE

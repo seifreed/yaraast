@@ -10,9 +10,9 @@ using Python's built-in cProfile for identifying performance bottlenecks.
 """
 
 import cProfile
-import pstats
 from io import StringIO
 from pathlib import Path
+import pstats
 
 from yaraast.parser import Parser
 from yaraast.performance.streaming_parser import StreamingParser

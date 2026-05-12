@@ -821,7 +821,7 @@ class TestConditionBuilderHelperMethods:
         """_to_expression with invalid type should raise TypeError."""
         builder = ConditionBuilder()
 
-        with pytest.raises(TypeError, match="Cannot convert .* to expression"):
+        with pytest.raises(TypeError, match=r"Cannot convert .* to expression"):
             builder._to_expression([1, 2, 3])  # type: ignore
 
     def test_build_on_empty_raises_error(self) -> None:

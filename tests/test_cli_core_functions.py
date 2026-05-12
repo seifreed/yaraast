@@ -10,9 +10,9 @@ These tests validate the core logic of CLI commands without subprocess overhead.
 # Import ast_tools directly without triggering CLI package imports
 import importlib.util
 import json
+from pathlib import Path
 import sys
 import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -294,9 +294,7 @@ class TestCLIDifferFunctions:
         }
         """
 
-        modified = (
-            original
-            + """
+        modified = original + """
         rule test2 {
             strings:
                 $s = "new"
@@ -304,7 +302,6 @@ class TestCLIDifferFunctions:
                 $s
         }
         """
-        )
 
         parser = Parser()
         ast1 = parser.parse(original.strip())

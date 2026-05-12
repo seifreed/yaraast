@@ -1,7 +1,7 @@
 """Tests for metrics and visualization functionality."""
 
-import tempfile
 from pathlib import Path
+import tempfile
 
 import pytest
 

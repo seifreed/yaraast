@@ -1,7 +1,7 @@
 """Tests for libyara integration with direct AST compilation."""
 
-import tempfile
 from pathlib import Path
+import tempfile
 
 import pytest
 

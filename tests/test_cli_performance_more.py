@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 import signal
 import stat
 import sys
-import threading
-from pathlib import Path
 from textwrap import dedent
+import threading
 
-import pytest
 from click.testing import CliRunner
+import pytest
 
 from yaraast.cli.commands.performance import performance
 

@@ -15,8 +15,7 @@ def test_best_practices_report_helpers_and_integration_paths() -> None:
     assert len(report.get_by_category("style")) == 1
     assert report.suggestions[0].format() == "i [style] r1 (line 1): message"
 
-    ast = Parser().parse(
-        r"""
+    ast = Parser().parse(r"""
 rule bad1 {
     strings:
         $1 = "ab"
@@ -39,8 +38,7 @@ rule pe_only {
     condition:
         pe.is_pe
 }
-"""
-    )
+""")
     analyzer = BestPracticesAnalyzer()
     result = analyzer.analyze(ast)
 
@@ -61,8 +59,7 @@ rule pe_only {
 
 
 def test_best_practices_global_hex_patterns_and_helper_paths() -> None:
-    ast = Parser().parse(
-        """
+    ast = Parser().parse("""
 rule hx1 {
     meta:
         author = "x"
@@ -85,8 +82,7 @@ rule bare {
     condition:
         true
 }
-"""
-    )
+""")
     analyzer = BestPracticesAnalyzer()
     analyzer.analyze(ast)
 
@@ -119,8 +115,7 @@ rule bare {
     )
     assert prefix == (0x4D, None, 0x5A)
 
-    short_name_ast = Parser().parse(
-        """
+    short_name_ast = Parser().parse("""
 rule ab {
     meta:
         author = "x"
@@ -129,8 +124,7 @@ rule ab {
     condition:
         $a
 }
-"""
-    )
+""")
     short_report = BestPracticesAnalyzer().analyze(short_name_ast)
     assert any("more descriptive rule names" in s.message for s in short_report.suggestions)
 

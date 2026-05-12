@@ -1,7 +1,7 @@
 """Tests for performance optimization features."""
 
-import tempfile
 from pathlib import Path
+import tempfile
 
 import pytest
 

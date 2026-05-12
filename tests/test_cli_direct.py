@@ -10,8 +10,8 @@ These tests execute real CLI code paths without subprocess overhead.
 import json
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
+import pytest
 
 from yaraast.cli.commands.bench_cmd import bench
 from yaraast.cli.commands.diff_cmd import diff
@@ -438,9 +438,7 @@ class TestCLIDiffCommandDirect:
         }
         """
 
-        modified = (
-            original
-            + """
+        modified = original + """
         rule added {
             strings:
                 $s = "new"
@@ -448,7 +446,6 @@ class TestCLIDiffCommandDirect:
                 $s
         }
         """
-        )
 
         with self.runner.isolated_filesystem():
             file1 = Path("file1.yar")

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 import subprocess
 import sys
 import textwrap
-from pathlib import Path
 
 
 def test_libyara_modules_report_missing_backend_in_subprocess(tmp_path: Path) -> None:

@@ -84,7 +84,7 @@ def test_parse_event_statement_requires_dot_after_event_var() -> None:
         ],
     )
 
-    with pytest.raises(YaraLParserError, match="Expected '.' after event variable"):
+    with pytest.raises(YaraLParserError, match=r"Expected '\.' after event variable"):
         parser._parse_event_statement()
 
 

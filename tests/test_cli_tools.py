@@ -1,7 +1,7 @@
 """Tests for AST-based CLI tools."""
 
-import tempfile
 from pathlib import Path
+import tempfile
 
 from yaraast.cli.ast_tools import ASTBenchmarker, ASTDiffer, ASTFormatter, ASTStructuralAnalyzer
 from yaraast.parser import Parser

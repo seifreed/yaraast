@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import click
-import pytest
 from click.testing import CliRunner
+import pytest
 
 from yaraast.cli.commands.validate import ValidateGroup, validate
 from yaraast.libyara import YARA_AVAILABLE

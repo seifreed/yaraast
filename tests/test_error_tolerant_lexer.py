@@ -144,9 +144,9 @@ class TestErrorTolerantLexer:
         # Invalid character that will cause a lexer error
         text = "rule test { condition: @ }"
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
-        # Should collect errors but continue
+        # Should continue through the input and emit EOF.
         assert len(tokens) > 0
         assert tokens[-1].type == TokenType.EOF
 
@@ -176,7 +176,7 @@ class TestErrorTolerantLexer:
         """Test recovery from string errors."""
         text = 'rule test { strings: $a = "test" $b = "valid" }'
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should recover and continue parsing
         assert tokens[-1].type == TokenType.EOF
@@ -185,7 +185,7 @@ class TestErrorTolerantLexer:
         """Test recovery from hex string errors."""
         text = "rule test { strings: $a = { AB CD } }"
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should parse hex string successfully
         assert tokens[-1].type == TokenType.EOF
@@ -194,7 +194,7 @@ class TestErrorTolerantLexer:
         """Test recovery from regex-related errors."""
         text = "rule test { strings: $a = /test/ }"
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should handle regex
         assert tokens[-1].type == TokenType.EOF
@@ -232,7 +232,7 @@ class TestErrorTolerantLexer:
         """Test reading string with escaped quotes."""
         text = r'rule test { strings: $a = "test \"quoted\" text" }'
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Find STRING token
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
@@ -243,7 +243,7 @@ class TestErrorTolerantLexer:
         """Test reading Windows-style path with backslash at end."""
         text = r'rule test { strings: $a = "C:\\TEMP\\" }'
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should handle backslash at end with warning
         assert tokens[-1].type == TokenType.EOF
@@ -252,7 +252,7 @@ class TestErrorTolerantLexer:
         """Test reading string with various escape sequences."""
         text = r'rule test { strings: $a = "line1\nline2\ttab\rreturn" }'
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should parse escape sequences
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
@@ -265,7 +265,7 @@ class TestErrorTolerantLexer:
         """Test reading string with hex escape sequences."""
         text = r'rule test { strings: $a = "test\x41\x42" }'
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should parse hex escapes
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
@@ -275,7 +275,7 @@ class TestErrorTolerantLexer:
         """Test reading string with invalid hex escape."""
         text = r'rule test { strings: $a = "test\xZZ" }'
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should handle invalid hex escape
         assert tokens[-1].type == TokenType.EOF
@@ -284,7 +284,7 @@ class TestErrorTolerantLexer:
         """Test reading string with unknown escape sequences."""
         text = r'rule test { strings: $a = "test\q" }'
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should handle unknown escape
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
@@ -407,7 +407,7 @@ class TestErrorTolerantLexer:
         """Test various escape sequences in strings."""
         text = f'rule test {{ strings: $a = "test{escape_seq}end" }}'
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         string_tokens = [t for t in tokens if t.type == TokenType.STRING]
         assert len(string_tokens) > 0
@@ -436,7 +436,7 @@ class TestErrorTolerantLexer:
         }
         """
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should collect errors but finish parsing
         assert tokens[-1].type == TokenType.EOF
@@ -447,7 +447,7 @@ class TestErrorTolerantLexer:
         # Create a scenario where default recovery is used
         text = "rule test { condition: !!! }"
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should recover and continue
         assert tokens[-1].type == TokenType.EOF
@@ -456,7 +456,7 @@ class TestErrorTolerantLexer:
         """Test that position tracking works correctly through errors."""
         text = "rule test {\n  strings:\n    $a = @\n}"
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Verify EOF token has reasonable position
         assert tokens[-1].type == TokenType.EOF
@@ -477,7 +477,7 @@ class TestErrorTolerantLexer:
         """Test lookahead logic for Windows path detection."""
         text = r'rule test { strings: $a = "C:\\Windows\\" ascii }'
         lexer = ErrorTolerantLexer(text)
-        tokens, errors = lexer.tokenize()
+        tokens, _errors = lexer.tokenize()
 
         # Should detect this as Windows path pattern
         assert tokens[-1].type == TokenType.EOF
@@ -487,7 +487,7 @@ class TestErrorTolerantLexer:
         for modifier in ["ascii", "wide", "nocase", "fullword", "xor", "base64"]:
             text = f'rule test {{ strings: $a = "test\\" {modifier} }}'
             lexer = ErrorTolerantLexer(text)
-            tokens, errors = lexer.tokenize()
+            tokens, _errors = lexer.tokenize()
 
             assert tokens[-1].type == TokenType.EOF
 

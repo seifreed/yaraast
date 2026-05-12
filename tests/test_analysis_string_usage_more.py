@@ -18,8 +18,7 @@ from yaraast.parser import Parser
 
 
 def test_string_usage_analyzer_covers_offset_length_at_in_forof_and_of() -> None:
-    ast = Parser().parse(
-        """
+    ast = Parser().parse("""
 rule advanced {
     strings:
         $a = "abc"
@@ -28,8 +27,7 @@ rule advanced {
     condition:
         #a > 0 and @b[1] > 0 and !c[1] > 0 and $a at 0 and $b in (0..filesize) and all of them
 }
-"""
-    )
+""")
     analyzer = StringUsageAnalyzer()
     results = analyzer.analyze(ast)
 
@@ -42,8 +40,7 @@ rule advanced {
 
 def test_string_usage_analyzer_getters_and_direct_visitor_paths() -> None:
     analyzer = StringUsageAnalyzer()
-    ast = Parser().parse(
-        """
+    ast = Parser().parse("""
 rule one {
     strings:
         $a = "a"
@@ -57,8 +54,7 @@ rule two {
     condition:
         $b
 }
-"""
-    )
+""")
     analyzer.analyze(ast)
 
     assert analyzer.get_unused_strings("two") == {"two": ["$c"]}

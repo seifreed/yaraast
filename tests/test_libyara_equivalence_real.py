@@ -10,8 +10,7 @@ from yaraast.ast.rules import Rule
 from yaraast.codegen import CodeGenerator
 from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE
 from yaraast.libyara.equivalence import EquivalenceResult, EquivalenceTester
-from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_AVAILABLE
-from yaraast.libyara.scanner import MatchInfo, ScanResult
+from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_AVAILABLE, MatchInfo, ScanResult
 from yaraast.parser import Parser
 
 

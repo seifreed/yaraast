@@ -7,10 +7,12 @@ from types import SimpleNamespace
 
 from rich.console import Console
 
-from yaraast.cli import analyze_services as an
-from yaraast.cli import bench_services as bs
-from yaraast.cli import performance_check_reporting as pcr
-from yaraast.cli import workspace_services as ws
+from yaraast.cli import (
+    analyze_services as an,
+    bench_services as bs,
+    performance_check_reporting as pcr,
+    workspace_services as ws,
+)
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
 

@@ -43,8 +43,7 @@ def test_folding_ranges_helper_edges() -> None:
         is None
     )
 
-    parsed = Parser(
-        """
+    parsed = Parser("""
 rule a {
   meta:
     author = "me"
@@ -53,8 +52,7 @@ rule a {
   condition:
     $a
 }
-""".lstrip()
-    ).parse()
+""".lstrip()).parse()
     rule = parsed.rules[0]
     rule.name = "missing"
     assert provider._get_rule_folding_range("rule a {\n  condition:\n    true\n}\n", rule) is None

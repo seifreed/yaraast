@@ -11,15 +11,12 @@ from yaraast.cli.commands.performance import performance
 
 def _write_rule(path) -> None:
     path.write_text(
-        dedent(
-            """
+        dedent("""
             rule perf_rule {
                 condition:
                     true
             }
-            """
-        ).strip()
-        + "\n",
+            """).strip() + "\n",
         encoding="utf-8",
     )
 
