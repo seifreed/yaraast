@@ -4,12 +4,25 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from lsprotocol.types import Position, Range
 
 from yaraast.lsp.diagnostics import DiagnosticsProvider
-from yaraast.lsp.runtime import LspRuntime, path_to_uri
+from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 from yaraast.lsp.semantic_tokens import SemanticTokensProvider
+
+
+def _cache_stats(status: dict[str, object]) -> dict[str, Any]:
+    cache_stats = status["cache_stats"]
+    assert isinstance(cache_stats, dict)
+    return cache_stats
+
+
+def _string_info(doc: DocumentContext, identifier: str) -> dict[str, Any]:
+    info = doc.get_string_definition_info(identifier)
+    assert info is not None
+    return info
 
 
 def test_runtime_persists_workspace_symbol_index(tmp_path: Path) -> None:
@@ -58,7 +71,7 @@ def test_runtime_latency_metrics_and_debounce() -> None:
     assert runtime.should_debounce(uri, "push_diagnostics", debounce_ms=100) is True
 
     status = runtime.get_status()
-    cache_stats = status["cache_stats"]
+    cache_stats = _cache_stats(status)
     assert cache_stats["workspace_generation"] >= 0
     assert cache_stats["workspace_symbol_queries"] == 0
     assert cache_stats["rule_definition_entries"] == 0
@@ -104,7 +117,9 @@ rule sample {
     assert names.count("sample") == 1
     assert "$a" in names
 
-    doc = runtime.ensure_document(uri, runtime.get_document(uri).text)
+    loaded_doc = runtime.get_document(uri)
+    assert loaded_doc is not None
+    doc = runtime.ensure_document(uri, loaded_doc.text)
     sections = {(symbol.kind, symbol.name, symbol.container_name) for symbol in doc.symbols()}
     assert ("section", "strings", "sample") in sections
     assert ("section_header", "strings", "sample") in sections
@@ -284,7 +299,7 @@ rule sample {
     info_second = doc.get_rule_info("sample")
     assert info_first is info_second
     assert doc.get_rule_meta_items("sample") == [("author", "me")]
-    assert doc.get_string_definition_info("$a")["value"] == "x"
+    assert _string_info(doc, "$a")["value"] == "x"
 
     doc.update(text_v2, version=2)
 
@@ -292,7 +307,7 @@ rule sample {
     assert info_third is not info_first
     assert doc.get_rule_meta_items("sample") == [("author", "you")]
     assert doc.get_rule_string_identifiers("sample") == ["$b"]
-    assert doc.get_string_definition_info("$b")["value"] == "y"
+    assert _string_info(doc, "$b")["value"] == "y"
 
 
 def test_document_context_caches_local_navigation_helpers_per_revision() -> None:
@@ -789,7 +804,7 @@ rule local_rule {
     assert {record.role for record in records_first} == {"declaration", "use"}
 
     status = runtime.get_status()
-    cache_stats = status["cache_stats"]
+    cache_stats = _cache_stats(status)
     assert cache_stats["rule_definition_entries"] >= 1
     assert cache_stats["rule_reference_entries"] >= 1
     assert cache_stats["rule_reference_record_entries"] >= 1
