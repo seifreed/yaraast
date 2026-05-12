@@ -9,11 +9,8 @@ from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.tokens import TokenType
 
 
-def iter_rule_texts_from_mmap(mmapped_file: mmap.mmap) -> Iterator[str]:
-    """Yield complete rule texts from a memory-mapped YARA file."""
-    content = mmapped_file.read().decode("utf-8", errors="replace")
-    mmapped_file.seek(0)
-
+def iter_rule_texts_from_text(content: str) -> Iterator[str]:
+    """Yield complete rule texts from YARA source text."""
     line_starts = [0]
     for index, char in enumerate(content):
         if char == "\n":
@@ -76,3 +73,10 @@ def iter_rule_texts_from_mmap(mmapped_file: mmap.mmap) -> Iterator[str]:
         start_pos = get_char_pos(rule_start_token.line, rule_start_token.column)
         end_pos = get_char_pos(brace_end_token.line, brace_end_token.column) + 1
         yield content[start_pos:end_pos]
+
+
+def iter_rule_texts_from_mmap(mmapped_file: mmap.mmap) -> Iterator[str]:
+    """Yield complete rule texts from a memory-mapped YARA file."""
+    content = mmapped_file.read().decode("utf-8", errors="replace")
+    mmapped_file.seek(0)
+    yield from iter_rule_texts_from_text(content)

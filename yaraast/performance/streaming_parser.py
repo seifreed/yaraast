@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.dialects import YaraDialect
 from yaraast.parser.parser import Parser
-from yaraast.performance.streaming_mmap import iter_rule_texts_from_mmap
+from yaraast.performance.streaming_mmap import iter_rule_texts_from_mmap, iter_rule_texts_from_text
 from yaraast.performance.streaming_result_builders import (
     build_error_parse_result,
     build_file_parse_result,
@@ -97,11 +97,7 @@ class StreamingParser:
             Parsed rules one at a time
 
         """
-        buffer = ""
-        rule_buffer = []
-        in_rule = False
-        brace_count = 0
-
+        chunks: list[str] = []
         while True:
             chunk = stream.read(self.buffer_size)
             if not chunk:
@@ -110,48 +106,21 @@ class StreamingParser:
             if isinstance(chunk, bytes):
                 chunk = chunk.decode("utf-8", errors="replace")
 
-            buffer += chunk
+            chunks.append(chunk)
             self._stats["bytes_processed"] += len(chunk)
 
-            # Process lines
-            lines = buffer.split("\n")
-            buffer = lines[-1]  # Keep incomplete line
-
-            for line in lines[:-1]:
-                stripped = line.strip()
-
-                # Track rule boundaries
-                if stripped.startswith("rule ") and not in_rule:
-                    in_rule = True
-                    rule_buffer = [line]
-                    brace_count = line.count("{") - line.count("}")
-                elif in_rule:
-                    rule_buffer.append(line)
-                    brace_count += line.count("{") - line.count("}")
-
-                    # Complete rule found
-                    if brace_count == 0 and "}" in line:
-                        rule_text = "\n".join(rule_buffer)
-                        rule = self._parse_rule_text(rule_text)
-                        if rule:
-                            self._stats["rules_parsed"] += 1
-                            if callback:
-                                callback(rule)
-                            yield rule
-
-                        in_rule = False
-                        rule_buffer = []
-
-        # Handle any remaining buffer
-        if buffer and in_rule:
-            rule_buffer.append(buffer)
-            rule_text = "\n".join(rule_buffer)
+        content = "".join(chunks)
+        emitted_rule = False
+        for rule_text in iter_rule_texts_from_text(content):
+            emitted_rule = True
             rule = self._parse_rule_text(rule_text)
             if rule:
                 self._stats["rules_parsed"] += 1
                 if callback:
                     callback(rule)
                 yield rule
+        if not emitted_rule and "rule" in content:
+            self._stats["parse_errors"] += 1
 
     def parse_file_chunked(
         self,

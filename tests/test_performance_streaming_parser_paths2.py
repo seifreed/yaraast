@@ -31,6 +31,27 @@ def test_streaming_parser_bytes_stream_remaining_buffer_and_reset(tmp_path: Path
     assert results[0].status.name == "ERROR"
 
 
+def test_streaming_parser_parse_stream_ignores_braces_inside_strings() -> None:
+    parser = StreamingParser(buffer_size=8)
+    text = """
+rule brace_string {
+  strings:
+    $a = "}"
+  condition:
+    $a
+}
+rule second {
+  condition:
+    true
+}
+"""
+
+    rules = list(parser.parse_stream(io.StringIO(text)))
+
+    assert [rule.name for rule in rules] == ["brace_string", "second"]
+    assert parser.get_statistics()["parse_errors"] == 0
+
+
 def test_streaming_parser_progress_cancel_and_memory_paths(tmp_path: Path) -> None:
     p1 = tmp_path / "a.yar"
     p2 = tmp_path / "b.yar"
