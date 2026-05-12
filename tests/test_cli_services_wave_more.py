@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 from rich.console import Console
 
+from yaraast.analysis.best_practices import AnalysisReport, Suggestion
+from yaraast.analysis.optimization import OptimizationReport, OptimizationSuggestion
 from yaraast.cli import (
     analyze_services as an,
     bench_services as bs,
@@ -16,39 +18,30 @@ from yaraast.cli import (
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
 
-class _Suggestion:
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-
-    def format(self) -> str:
-        return f"{self.rule_name}:{self.message if hasattr(self, 'message') else self.description}"
-
-
 def test_analyze_services_formatting_helpers() -> None:
-    bp = SimpleNamespace(
+    bp = AnalysisReport(
         statistics={"rules": 2},
         suggestions=[
-            _Suggestion(
+            Suggestion(
                 rule_name="r1",
                 category="security",
                 severity="error",
                 message="bad",
-                location={"line": 1},
+                location="line 1",
             ),
-            _Suggestion(
+            Suggestion(
                 rule_name="r2",
                 category="style",
                 severity="warning",
                 message="meh",
-                location={"line": 2},
+                location="line 2",
             ),
         ],
-        get_by_severity=lambda sev: [s for s in bp.suggestions if s.severity == sev],
     )
-    opt = SimpleNamespace(
+    opt = OptimizationReport(
         statistics={"suggestions": 1},
         suggestions=[
-            _Suggestion(
+            OptimizationSuggestion(
                 rule_name="r1",
                 optimization_type="dedup",
                 impact="high",
@@ -84,20 +77,20 @@ def test_analyze_services_formatting_helpers() -> None:
 
 def test_bench_services_operations_and_summary() -> None:
     class _Result:
-        def __init__(self, success: bool):
+        def __init__(self, success: bool) -> None:
             self.success = success
 
     class _Bench:
-        def benchmark_parsing(self, *_args):
+        def benchmark_parsing(self, *_args: object) -> _Result:
             return _Result(True)
 
-        def benchmark_codegen(self, *_args):
+        def benchmark_codegen(self, *_args: object) -> _Result:
             return _Result(False)
 
-        def benchmark_roundtrip(self, *_args):
+        def benchmark_roundtrip(self, *_args: object) -> list[_Result]:
             return [_Result(True)]
 
-        def get_benchmark_summary(self):
+        def get_benchmark_summary(self) -> dict[str, int]:
             return {"total": 3}
 
     bench = _Bench()
