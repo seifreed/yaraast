@@ -20,11 +20,12 @@ from yaraast.lsp.lsp_types import (
     DidSaveTextDocumentParams,
 )
 from yaraast.lsp.server_feature_helpers import get_diagnostics, get_document_source
+from yaraast.lsp.server_protocol import FeatureRegistrationServer
 
 logger = logging.getLogger(__name__)
 
 
-def register_document_handlers(server) -> None:
+def register_document_handlers(server: FeatureRegistrationServer) -> None:
     # Length is due to 7 short handler registrations; splitting would reduce locality.
     @server.feature(TEXT_DOCUMENT_DID_OPEN)
     async def did_open(ls, params: DidOpenTextDocumentParams) -> None:

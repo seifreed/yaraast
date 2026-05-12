@@ -70,6 +70,7 @@ from yaraast.lsp.server_feature_helpers import (
     get_semantic_tokens,
     get_semantic_tokens_range,
 )
+from yaraast.lsp.server_protocol import FeatureRegistrationServer
 
 # ── Top-level handler functions ──────────────────────────────────────────
 
@@ -213,7 +214,7 @@ _SIMPLE_HANDLERS = [
 ]
 
 
-def register_language_handlers(server) -> None:
+def register_language_handlers(server: FeatureRegistrationServer) -> None:
     """Register all language feature handlers on the server."""
     # Simple handlers (no options)
     for protocol_const, handler in _SIMPLE_HANDLERS:

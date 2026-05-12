@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from types import SimpleNamespace
+from typing import Any
 
 from yaraast.lsp import server_features as sf
 
@@ -16,63 +18,63 @@ class _Workspace:
             )
         }
 
-    def get_text_document(self, uri: str):
+    def get_text_document(self, uri: str) -> SimpleNamespace:
         return self._docs[uri]
 
 
 class _Provider:
-    def __init__(self, value):
+    def __init__(self, value: Any) -> None:
         self.value = value
 
-    def get_completions(self, *_args):
+    def get_completions(self, *_args: Any) -> Any:
         return self.value
 
-    def get_hover(self, *_args):
+    def get_hover(self, *_args: Any) -> Any:
         return self.value
 
-    def get_definition(self, *_args):
+    def get_definition(self, *_args: Any) -> Any:
         return self.value
 
-    def get_references(self, *_args):
+    def get_references(self, *_args: Any) -> Any:
         return self.value
 
-    def get_symbols(self, *_args):
+    def get_symbols(self, *_args: Any) -> Any:
         return self.value
 
-    def format_document(self, *_args):
+    def format_document(self, *_args: Any) -> Any:
         return self.value
 
-    def format_range(self, *_args):
+    def format_range(self, *_args: Any) -> Any:
         return self.value
 
-    def get_code_actions(self, *_args):
+    def get_code_actions(self, *_args: Any) -> Any:
         return self.value
 
-    def prepare_rename(self, *_args):
+    def prepare_rename(self, *_args: Any) -> Any:
         return self.value
 
-    def rename(self, *_args):
+    def rename(self, *_args: Any) -> Any:
         return self.value
 
-    def get_semantic_tokens(self, *_args):
+    def get_semantic_tokens(self, *_args: Any) -> Any:
         return self.value
 
-    def get_semantic_tokens_range(self, *_args):
+    def get_semantic_tokens_range(self, *_args: Any) -> Any:
         return self.value
 
-    def get_signature_help(self, *_args):
+    def get_signature_help(self, *_args: Any) -> Any:
         return self.value
 
-    def get_highlights(self, *_args):
+    def get_highlights(self, *_args: Any) -> Any:
         return self.value
 
-    def get_folding_ranges(self, *_args):
+    def get_folding_ranges(self, *_args: Any) -> Any:
         return self.value
 
-    def get_document_links(self, *_args):
+    def get_document_links(self, *_args: Any) -> Any:
         return self.value
 
-    def get_selection_ranges(self, *_args):
+    def get_selection_ranges(self, *_args: Any) -> Any:
         return self.value
 
 
@@ -80,7 +82,7 @@ class _WorkspaceSymbolsProvider:
     def __init__(self) -> None:
         self.roots: list[str] = []
 
-    def get_workspace_symbols(self, query: str):
+    def get_workspace_symbols(self, query: str) -> list[dict[str, str]]:
         return [{"query": query}]
 
     def set_workspace_root(self, root: str) -> None:
@@ -89,9 +91,9 @@ class _WorkspaceSymbolsProvider:
 
 class FakeServer:
     def __init__(self) -> None:
-        self.handlers = {}
+        self.handlers: dict[str, Callable[..., Any]] = {}
         self.logs: list[str] = []
-        self.published = []
+        self.published: list[tuple[str, Any]] = []
 
         self.workspace = _Workspace()
         self.runtime = SimpleNamespace(
@@ -131,8 +133,8 @@ class FakeServer:
         self.document_links_provider = _Provider([{"l": 1}])
         self.workspace_symbols_provider = _WorkspaceSymbolsProvider()
 
-    def feature(self, name, *_opts):
-        def _decorator(func):
+    def feature(self, name: str, *_opts: Any) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+        def _decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             self.handlers[name] = func
             return func
 
@@ -141,15 +143,15 @@ class FakeServer:
     def show_message_log(self, msg: str) -> None:
         self.logs.append(msg)
 
-    def publish_diagnostics(self, uri: str, diagnostics) -> None:
+    def publish_diagnostics(self, uri: str, diagnostics: Any) -> None:
         self.published.append((uri, diagnostics))
 
 
-async def _call(server: FakeServer, name: str, params):
+async def _call(server: FakeServer, name: str, params: Any) -> Any:
     return await server.handlers[name](server, params)
 
 
-def _text_params(uri: str = "file:///a.yar"):
+def _text_params(uri: str = "file:///a.yar") -> SimpleNamespace:
     return SimpleNamespace(
         text_document=SimpleNamespace(uri=uri, text="rule a { condition: true }", version=1)
     )

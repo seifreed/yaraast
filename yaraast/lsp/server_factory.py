@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from yaraast.lsp.code_actions import CodeActionsProvider
 from yaraast.lsp.completion import CompletionProvider
 from yaraast.lsp.definition import DefinitionProvider
@@ -20,13 +22,16 @@ from yaraast.lsp.signature_help import SignatureHelpProvider
 from yaraast.lsp.symbols import SymbolsProvider
 from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
 
+if TYPE_CHECKING:
+    from yaraast.lsp.server import YaraLanguageServer
+
 
 def create_runtime() -> LspRuntime:
     """Create the runtime used by the language server."""
     return LspRuntime()
 
 
-def configure_providers(server, runtime: LspRuntime) -> None:
+def configure_providers(server: YaraLanguageServer, runtime: LspRuntime) -> None:
     """Attach all LSP providers to a server instance."""
     server.diagnostics_provider = DiagnosticsProvider(runtime)
     server.completion_provider = CompletionProvider(runtime)

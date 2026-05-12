@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from yaraast.lsp.lsp_types import (
     TEXT_DOCUMENT_CODE_ACTION,
     TEXT_DOCUMENT_COMPLETION,
@@ -37,9 +35,7 @@ from yaraast.lsp.server_feature_handlers import (
     register_server_features as _register_server_features,
 )
 from yaraast.lsp.server_feature_helpers import get_workspace_folders
-
-if TYPE_CHECKING:
-    from yaraast.lsp.server import YaraLanguageServer
+from yaraast.lsp.server_protocol import FeatureRegistrationServer
 
 __all__ = [
     "TEXT_DOCUMENT_CODE_ACTION",
@@ -74,12 +70,12 @@ __all__ = [
 ]
 
 
-def register_server_features(server: YaraLanguageServer) -> None:
+def register_server_features(server: FeatureRegistrationServer) -> None:
     """Register LSP features on the server."""
     _register_server_features(server)
 
 
-def register_initialize(server: YaraLanguageServer) -> None:
+def register_initialize(server: FeatureRegistrationServer) -> None:
     """Register initialize handler."""
 
     @server.feature("initialize")

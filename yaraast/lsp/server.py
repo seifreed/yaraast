@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 try:
     from pygls.lsp.server import LanguageServer  # pygls >= 2.0
@@ -12,9 +12,48 @@ except ImportError:
 from yaraast.lsp.server_factory import configure_providers, create_runtime
 from yaraast.lsp.server_features import register_initialize, register_server_features
 
+if TYPE_CHECKING:
+    from yaraast.lsp.code_actions import CodeActionsProvider
+    from yaraast.lsp.completion import CompletionProvider
+    from yaraast.lsp.definition import DefinitionProvider
+    from yaraast.lsp.diagnostics import DiagnosticsProvider
+    from yaraast.lsp.document_highlight import DocumentHighlightProvider
+    from yaraast.lsp.document_links import DocumentLinksProvider
+    from yaraast.lsp.folding_ranges import FoldingRangesProvider
+    from yaraast.lsp.formatting import FormattingProvider
+    from yaraast.lsp.hover import HoverProvider
+    from yaraast.lsp.references import ReferencesProvider
+    from yaraast.lsp.rename import RenameProvider
+    from yaraast.lsp.runtime import LspRuntime
+    from yaraast.lsp.selection_range import SelectionRangeProvider
+    from yaraast.lsp.semantic_tokens import SemanticTokensProvider
+    from yaraast.lsp.signature_help import SignatureHelpProvider
+    from yaraast.lsp.symbols import SymbolsProvider
+    from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
+
 
 class YaraLanguageServer(LanguageServer):
     """YARA Language Server."""
+
+    runtime: LspRuntime
+    diagnostics_provider: DiagnosticsProvider
+    completion_provider: CompletionProvider
+    hover_provider: HoverProvider
+    definition_provider: DefinitionProvider
+    references_provider: ReferencesProvider
+    symbols_provider: SymbolsProvider
+    formatting_provider: FormattingProvider
+    code_actions_provider: CodeActionsProvider
+    rename_provider: RenameProvider
+    semantic_tokens_provider: SemanticTokensProvider
+    selection_range_provider: SelectionRangeProvider
+    signature_help_provider: SignatureHelpProvider
+    document_highlight_provider: DocumentHighlightProvider
+    folding_ranges_provider: FoldingRangesProvider
+    document_links_provider: DocumentLinksProvider
+    workspace_symbols_provider: WorkspaceSymbolsProvider
+    protocol: Any
+    lsp: Any
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

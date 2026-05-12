@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from lsprotocol.types import SymbolInformation
+
 from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
 
 
@@ -16,7 +18,7 @@ def test_workspace_symbols_empty_and_exception_paths() -> None:
     assert provider.get_workspace_symbols("x") == []
 
     class ExplodingProvider(WorkspaceSymbolsProvider):
-        def _get_symbols_from_file(self, file_path: Path):
+        def _get_symbols_from_file(self, file_path: Path) -> list[SymbolInformation]:
             raise RuntimeError("boom")
 
     with TemporaryDirectory() as tmp:

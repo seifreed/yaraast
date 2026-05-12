@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from lsprotocol.types import Position, Range
+from pathlib import Path
+
+from lsprotocol.types import Hover, MarkupContent, Position, Range
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import BooleanLiteral
@@ -18,6 +20,16 @@ from yaraast.lsp.utils import (
     position_to_offset,
     token_to_range,
 )
+
+
+def _hover_text(hover: Hover) -> str:
+    assert isinstance(hover.contents, MarkupContent)
+    return hover.contents.value
+
+
+def _hover_range(hover: Hover) -> Range:
+    assert hover.range is not None
+    return hover.range
 
 
 def test_token_and_location_to_range() -> None:
@@ -81,11 +93,11 @@ def test_hover_provider_keywords_and_builtins() -> None:
 
     hover_keyword = provider.get_hover(text, Position(line=0, character=1))
     assert hover_keyword is not None
-    assert "keyword" in hover_keyword.contents.value
+    assert "keyword" in _hover_text(hover_keyword)
 
     hover_builtin = provider.get_hover(text, Position(line=0, character=25))
     assert hover_builtin is not None
-    assert "built-in function" in hover_builtin.contents.value
+    assert "built-in function" in _hover_text(hover_builtin)
 
 
 def test_hover_provider_module_and_string_identifier() -> None:
@@ -94,14 +106,14 @@ def test_hover_provider_module_and_string_identifier() -> None:
 
     hover_string = provider.get_hover(text, Position(line=0, character=41))
     assert hover_string is not None
-    assert "string" in hover_string.contents.value
+    assert "string" in _hover_text(hover_string)
 
     hover_module = provider.get_hover(text, Position(line=0, character=48))
     assert hover_module is not None
-    assert "imphash" in hover_module.contents.value
+    assert "imphash" in _hover_text(hover_module)
 
 
-def test_hover_provider_runtime_supports_prefixed_string_variant(tmp_path) -> None:
+def test_hover_provider_runtime_supports_prefixed_string_variant(tmp_path: Path) -> None:
     sample = tmp_path / "sample.yar"
     sample.write_text(
         """
@@ -122,10 +134,10 @@ rule test {
 
     hover_string = provider.get_hover(text, Position(line=4, character=5), uri)
     assert hover_string is not None
-    assert "$a" in hover_string.contents.value
+    assert "$a" in _hover_text(hover_string)
 
 
-def test_hover_provider_uses_structured_module_resolution_from_runtime(tmp_path) -> None:
+def test_hover_provider_uses_structured_module_resolution_from_runtime(tmp_path: Path) -> None:
     sample = tmp_path / "sample.yar"
     sample.write_text('import "pe"\nrule test { condition: pe.is_pe }\n', encoding="utf-8")
     text = sample.read_text(encoding="utf-8")
@@ -136,13 +148,14 @@ def test_hover_provider_uses_structured_module_resolution_from_runtime(tmp_path)
 
     hover_module = provider.get_hover(text, Position(line=0, character=9), uri)
     assert hover_module is not None
-    assert "(module)" in hover_module.contents.value
-    assert hover_module.range.start.line == 0
-    assert hover_module.range.start.character == 8
-    assert hover_module.range.end.character == 10
+    assert "(module)" in _hover_text(hover_module)
+    hover_module_range = _hover_range(hover_module)
+    assert hover_module_range.start.line == 0
+    assert hover_module_range.start.character == 8
+    assert hover_module_range.end.character == 10
 
 
-def test_hover_provider_uses_structured_include_resolution_from_runtime(tmp_path) -> None:
+def test_hover_provider_uses_structured_include_resolution_from_runtime(tmp_path: Path) -> None:
     include_file = tmp_path / "common.yar"
     include_file.write_text("rule common { condition: true }\n", encoding="utf-8")
     sample = tmp_path / "sample.yar"
@@ -155,15 +168,19 @@ def test_hover_provider_uses_structured_include_resolution_from_runtime(tmp_path
 
     hover_include = provider.get_hover(text, Position(line=0, character=10), uri)
     assert hover_include is not None
-    assert "(include)" in hover_include.contents.value
-    assert "common.yar" in hover_include.contents.value
-    assert str(include_file.resolve()) in hover_include.contents.value
-    assert hover_include.range.start.line == 0
-    assert hover_include.range.start.character == 9
-    assert hover_include.range.end.character == 19
+    hover_include_text = _hover_text(hover_include)
+    assert "(include)" in hover_include_text
+    assert "common.yar" in hover_include_text
+    assert str(include_file.resolve()) in hover_include_text
+    hover_include_range = _hover_range(hover_include)
+    assert hover_include_range.start.line == 0
+    assert hover_include_range.start.character == 9
+    assert hover_include_range.end.character == 19
 
 
-def test_hover_provider_uses_structured_module_member_resolution_from_runtime(tmp_path) -> None:
+def test_hover_provider_uses_structured_module_member_resolution_from_runtime(
+    tmp_path: Path,
+) -> None:
     sample = tmp_path / "sample.yar"
     sample.write_text('import "pe"\nrule test { condition: pe.imphash() }\n', encoding="utf-8")
     text = sample.read_text(encoding="utf-8")
@@ -174,10 +191,11 @@ def test_hover_provider_uses_structured_module_member_resolution_from_runtime(tm
 
     hover_member = provider.get_hover(text, Position(line=1, character=29), uri)
     assert hover_member is not None
-    assert "imphash" in hover_member.contents.value
-    assert hover_member.range.start.line == 1
-    assert hover_member.range.start.character == 23
-    assert hover_member.range.end.character == 33
+    assert "imphash" in _hover_text(hover_member)
+    hover_member_range = _hover_range(hover_member)
+    assert hover_member_range.start.line == 1
+    assert hover_member_range.start.character == 23
+    assert hover_member_range.end.character == 33
 
 
 def test_hover_provider_module_member_and_rule() -> None:
@@ -186,12 +204,12 @@ def test_hover_provider_module_member_and_rule() -> None:
 
     member_hover = provider._get_module_member_hover("pe", "imphash", word_range)
     assert member_hover is not None
-    assert "function" in member_hover.contents.value
+    assert "function" in _hover_text(member_hover)
 
     text = "rule test { condition: true }\nrule other { condition: test }"
     hover_rule = provider.get_hover(text, Position(line=1, character=24))
     assert hover_rule is not None
-    assert "(rule)" in hover_rule.contents.value
+    assert "(rule)" in _hover_text(hover_rule)
 
 
 def test_hover_provider_uses_local_structured_resolution_for_prefixed_string() -> None:
@@ -207,10 +225,10 @@ rule test {
 
     hover_string = provider.get_hover(text, Position(line=4, character=5), "file://local.yar")
     assert hover_string is not None
-    assert "$a" in hover_string.contents.value
+    assert "$a" in _hover_text(hover_string)
 
 
-def test_hover_provider_uses_structured_meta_and_section_resolution(tmp_path) -> None:
+def test_hover_provider_uses_structured_meta_and_section_resolution(tmp_path: Path) -> None:
     sample = tmp_path / "sample.yar"
     sample.write_text(
         """
@@ -233,16 +251,20 @@ rule sample {
 
     meta_hover = provider.get_hover(text, Position(line=2, character=5), uri)
     assert meta_hover is not None
-    assert "(metadata)" in meta_hover.contents.value
-    assert "me" in meta_hover.contents.value
-    assert meta_hover.range.start.line == 2
-    assert meta_hover.range.start.character == 4
-    assert meta_hover.range.end.character == 10
+    meta_hover_text = _hover_text(meta_hover)
+    assert "(metadata)" in meta_hover_text
+    assert "me" in meta_hover_text
+    meta_hover_range = _hover_range(meta_hover)
+    assert meta_hover_range.start.line == 2
+    assert meta_hover_range.start.character == 4
+    assert meta_hover_range.end.character == 10
 
     section_hover = provider.get_hover(text, Position(line=3, character=4), uri)
     assert section_hover is not None
-    assert "(section)" in section_hover.contents.value
-    assert "strings" in section_hover.contents.value
-    assert section_hover.range.start.line == 3
-    assert section_hover.range.start.character == 2
-    assert section_hover.range.end.character == 9
+    section_hover_text = _hover_text(section_hover)
+    assert "(section)" in section_hover_text
+    assert "strings" in section_hover_text
+    section_hover_range = _hover_range(section_hover)
+    assert section_hover_range.start.line == 3
+    assert section_hover_range.start.character == 2
+    assert section_hover_range.end.character == 9
