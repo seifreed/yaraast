@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 import tempfile
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 from yaraast.performance.batch_processor_ops import (
     analyze_complexity,
@@ -145,6 +145,22 @@ class BatchProcessor:
     def _validate_item(self, item: Rule) -> bool:
         return validate_item(item)
 
+    @overload
+    def process_files(
+        self,
+        file_paths: list[Path],
+        operations: BatchOperation,
+        output_dir: Path | None = None,
+    ) -> BatchResult: ...
+
+    @overload
+    def process_files(
+        self,
+        file_paths: list[Path],
+        operations: list[BatchOperation],
+        output_dir: Path | None = None,
+    ) -> dict[BatchOperation, BatchResult]: ...
+
     def process_files(
         self,
         file_paths: list[Path],
@@ -213,6 +229,26 @@ class BatchProcessor:
             "items_processed": 0,
             "failures": 0,
         }
+
+    @overload
+    def process_directory(
+        self,
+        directory: Path,
+        operations: BatchOperation,
+        output_dir: Path | None = None,
+        file_pattern: str = "*.yar",
+        recursive: bool = False,
+    ) -> BatchResult: ...
+
+    @overload
+    def process_directory(
+        self,
+        directory: Path,
+        operations: list[BatchOperation],
+        output_dir: Path | None = None,
+        file_pattern: str = "*.yar",
+        recursive: bool = False,
+    ) -> dict[BatchOperation, BatchResult]: ...
 
     def process_directory(
         self,
