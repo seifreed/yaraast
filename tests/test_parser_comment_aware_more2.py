@@ -11,7 +11,7 @@ from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 
 
-def _t(tt: TokenType, value, line: int, col: int = 1) -> Token:
+def _t(tt: TokenType, value: str | int | float | None, line: int, col: int = 1) -> Token:
     return Token(type=tt, value=value, line=line, column=col)
 
 

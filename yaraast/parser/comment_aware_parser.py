@@ -19,6 +19,7 @@ from yaraast.parser.comment_aware_helpers import (
 from yaraast.parser.parser import Parser
 
 if TYPE_CHECKING:
+    from yaraast.ast.expressions import Expression
     from yaraast.ast.rules import Rule
     from yaraast.ast.strings import StringDefinition
 
@@ -226,7 +227,7 @@ class CommentAwareParser(Parser):
                 self._advance()
                 attempts += 1
 
-    def _ensure_condition(self, condition):
+    def _ensure_condition(self, condition: Expression | None) -> Expression:
         """Ensure condition is not None, defaulting to true."""
         if condition is None:
             from yaraast.ast.expressions import BooleanLiteral
