@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
+
+from lsprotocol.types import DocumentSymbol
 
 from yaraast.lsp.document_links import DocumentLinksProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
 from yaraast.lsp.symbols import SymbolsProvider
+
+
+def _children(symbol: DocumentSymbol) -> Sequence[DocumentSymbol]:
+    assert symbol.children is not None
+    return symbol.children
 
 
 def test_document_links_include_module_docs_and_local_rule_links(tmp_path: Path) -> None:
@@ -77,26 +85,29 @@ rule local_rule {
     assert rule_symbol.selection_range.start.line == 2
     assert rule_symbol.selection_range.start.character == 5
     assert rule_symbol.selection_range.end.character == 15
-    condition_symbol = next(child for child in rule_symbol.children if child.name == "condition")
+    rule_children = _children(rule_symbol)
+    condition_symbol = next(child for child in rule_children if child.name == "condition")
     assert condition_symbol.range.start.line == 7
     assert condition_symbol.range.end.line >= 8
-    meta_symbol = next(child for child in rule_symbol.children if child.name == "meta")
+    meta_symbol = next(child for child in rule_children if child.name == "meta")
     assert meta_symbol.range.start.line == 3
     assert meta_symbol.range.end.line == 4
     assert meta_symbol.selection_range.start.line == 3
     assert meta_symbol.selection_range.start.character == 2
     assert meta_symbol.selection_range.end.character == 6
-    meta_child = next(child for child in meta_symbol.children if child.name.startswith("author ="))
+    meta_child = next(
+        child for child in _children(meta_symbol) if child.name.startswith("author =")
+    )
     assert meta_child.range.start.line == 4
     assert meta_child.range.start.character == 4
     assert meta_child.range.end.character == 10
-    strings_symbol = next(child for child in rule_symbol.children if child.name == "strings")
+    strings_symbol = next(child for child in rule_children if child.name == "strings")
     assert strings_symbol.range.start.line == 5
     assert strings_symbol.range.end.line == 6
     assert strings_symbol.selection_range.start.line == 5
     assert strings_symbol.selection_range.start.character == 2
     assert strings_symbol.selection_range.end.character == 9
-    string_child = next(child for child in strings_symbol.children if child.name == "$a")
+    string_child = next(child for child in _children(strings_symbol) if child.name == "$a")
     assert string_child.range.start.line == 6
 
 
@@ -124,13 +135,14 @@ rule login_event {
 
     symbols = provider.get_symbols(text, uri)
     rule_symbol = next(symbol for symbol in symbols if symbol.name == "login_event")
-    child_names = [child.name for child in rule_symbol.children]
+    rule_children = _children(rule_symbol)
+    child_names = [child.name for child in rule_children]
     assert "events" in child_names
     assert "match" in child_names
     assert "outcome" in child_names
     assert "condition" in child_names
-    events_symbol = next(child for child in rule_symbol.children if child.name == "events")
-    match_symbol = next(child for child in rule_symbol.children if child.name == "match")
+    events_symbol = next(child for child in rule_children if child.name == "events")
+    match_symbol = next(child for child in rule_children if child.name == "match")
     assert events_symbol.range.start.line == 1
     assert events_symbol.range.end.line == 2
     assert events_symbol.selection_range.start.line == 1
