@@ -199,17 +199,35 @@ class HexStringParser:
         Returns:
             HexJump token.
         """
-        if "-" in jump_str:
-            parts = jump_str.split("-")
-            if len(parts) == 2:
+        try:
+            if "-" in jump_str:
+                parts = jump_str.split("-")
+                if len(parts) != 2:
+                    msg = "Invalid jump range"
+                    raise HexParseError(msg, self.pos)
                 min_jump = int(parts[0]) if parts[0].strip() else None
                 max_jump = int(parts[1]) if parts[1].strip() else None
+                self._validate_jump_bounds(min_jump, max_jump)
                 return HexJump(min_jump=min_jump, max_jump=max_jump)
+
+            val = int(jump_str)
+            self._validate_jump_bounds(val, val)
+            return HexJump(min_jump=val, max_jump=val)
+        except ValueError:
+            msg = "Invalid jump range"
+            raise HexParseError(msg, self.pos) from None
+
+    def _validate_jump_bounds(self, min_jump: int | None, max_jump: int | None) -> None:
+        """Validate jump bounds."""
+        if min_jump is not None and min_jump < 0:
             msg = "Invalid jump range"
             raise HexParseError(msg, self.pos)
-
-        val = int(jump_str)
-        return HexJump(min_jump=val, max_jump=val)
+        if max_jump is not None and max_jump < 0:
+            msg = "Invalid jump range"
+            raise HexParseError(msg, self.pos)
+        if min_jump is not None and max_jump is not None and min_jump > max_jump:
+            msg = "Invalid jump range"
+            raise HexParseError(msg, self.pos)
 
     def _parse_alternative(self) -> HexAlternative:
         """Parse an alternative expression (a|b|c).

@@ -390,6 +390,17 @@ class TestHexStringBuilderJumps:
         assert _jump(tokens[0]).min_jump == 4
         assert _jump(tokens[0]).max_jump == 8
 
+    def test_jump_rejects_invalid_bounds(self) -> None:
+        """Jump methods should reject impossible ranges."""
+        with pytest.raises(ValidationError, match="Jump minimum must be non-negative"):
+            HexStringBuilder().jump_exact(-1)
+
+        with pytest.raises(ValidationError, match="Jump maximum must be non-negative"):
+            HexStringBuilder().jump_up_to(-1)
+
+        with pytest.raises(ValidationError, match="cannot exceed maximum"):
+            HexStringBuilder().jump_varying(5, 2)
+
     def test_jumps_in_pattern(self) -> None:
         """Jumps should work within byte patterns."""
         builder = HexStringBuilder()
@@ -644,6 +655,12 @@ class TestHexStringBuilderPattern:
         assert tokens[4].value == 4
         assert isinstance(tokens[5], HexByte)
         assert tokens[5].value == 0x50
+
+    def test_pattern_rejects_invalid_jump_ranges(self) -> None:
+        """Pattern parsing should reject invalid jumps."""
+        for pattern in ("[a]", "[5-2]", "[1-2-3]"):
+            with pytest.raises(ValidationError):
+                HexStringBuilder().pattern(pattern)
 
 
 class TestHexStringBuilderStaticMethods:

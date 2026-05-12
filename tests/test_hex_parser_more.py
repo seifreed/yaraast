@@ -41,6 +41,10 @@ def test_hex_parser_errors() -> None:
     with pytest.raises(HexParseError):
         parser.parse("GG")  # invalid hex
 
+    for pattern in ("[a]", "[5-2]", "[1-2-3]"):
+        with pytest.raises(HexParseError):
+            parser.parse(pattern)
+
 
 def test_hex_parser_alternative_edge_paths() -> None:
     parser = HexStringParser()

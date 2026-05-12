@@ -91,6 +91,7 @@ class HexStringBuilder:
 
     def jump(self, min_jump: int | None = None, max_jump: int | None = None) -> Self:
         """Add a jump [n-m]."""
+        self._validate_jump_bounds(min_jump, max_jump)
         self._tokens.append(HexJump(min_jump=min_jump, max_jump=max_jump))
         return self
 
@@ -185,13 +186,32 @@ class HexStringBuilder:
     def _process_jump_pattern(self, part: str) -> None:
         """Process jump pattern like [2-4]."""
         jump_str = part[1:-1]
-        if "-" in jump_str:
-            parts = jump_str.split("-")
-            min_j = int(parts[0]) if parts[0] else None
-            max_j = int(parts[1]) if parts[1] else None
-            self.jump(min_j, max_j)
-        else:
-            self.jump_exact(int(jump_str))
+        try:
+            if "-" in jump_str:
+                parts = jump_str.split("-")
+                if len(parts) != 2:
+                    msg = f"Invalid jump pattern: {part}"
+                    raise ValidationError(msg)
+                min_j = int(parts[0]) if parts[0] else None
+                max_j = int(parts[1]) if parts[1] else None
+                self.jump(min_j, max_j)
+            else:
+                self.jump_exact(int(jump_str))
+        except ValueError:
+            msg = f"Invalid jump pattern: {part}"
+            raise ValidationError(msg) from None
+
+    def _validate_jump_bounds(self, min_jump: int | None, max_jump: int | None) -> None:
+        """Validate jump bounds."""
+        if min_jump is not None and min_jump < 0:
+            msg = f"Jump minimum must be non-negative, got {min_jump}"
+            raise ValidationError(msg)
+        if max_jump is not None and max_jump < 0:
+            msg = f"Jump maximum must be non-negative, got {max_jump}"
+            raise ValidationError(msg)
+        if min_jump is not None and max_jump is not None and min_jump > max_jump:
+            msg = f"Jump minimum {min_jump} cannot exceed maximum {max_jump}"
+            raise ValidationError(msg)
 
     def _add_hex_byte_safely(self, part: str) -> None:
         """Add a hex byte token."""
