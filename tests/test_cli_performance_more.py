@@ -17,7 +17,7 @@ import pytest
 from yaraast.cli.commands.performance import performance
 
 
-def _write(tmp_path, name: str, content: str) -> str:
+def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content))
     return str(path)
@@ -34,7 +34,7 @@ def _sample_yara() -> str:
     """
 
 
-def test_performance_batch_file(tmp_path) -> None:
+def test_performance_batch_file(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     out_dir = tmp_path / "batch_out"
     runner = CliRunner()
@@ -59,7 +59,7 @@ def test_performance_batch_file(tmp_path) -> None:
     assert "parse" in payload
 
 
-def test_performance_stream_file(tmp_path) -> None:
+def test_performance_stream_file(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     out_file = tmp_path / "stream_results.json"
     runner = CliRunner()
@@ -80,7 +80,7 @@ def test_performance_stream_file(tmp_path) -> None:
     assert payload["summary"]["total_processed"] >= 1
 
 
-def test_performance_parallel_and_optimize(tmp_path) -> None:
+def test_performance_parallel_and_optimize(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     out_dir = tmp_path / "parallel_out"
     runner = CliRunner()
@@ -112,7 +112,7 @@ def test_performance_parallel_and_optimize(tmp_path) -> None:
     assert "Optimization Recommendations" in optimize.output
 
 
-def test_performance_batch_uses_default_output_dir_and_progress(tmp_path) -> None:
+def test_performance_batch_uses_default_output_dir_and_progress(tmp_path: Path) -> None:
     first = _write(tmp_path, "one.yar", _sample_yara())
     _write(tmp_path, "two.yar", _sample_yara().replace("perf_rule", "perf_rule_two"))
     runner = CliRunner()
@@ -135,7 +135,9 @@ def test_performance_batch_uses_default_output_dir_and_progress(tmp_path) -> Non
     assert first
 
 
-def test_performance_batch_directory_without_progress_covers_silent_callback(tmp_path) -> None:
+def test_performance_batch_directory_without_progress_covers_silent_callback(
+    tmp_path: Path,
+) -> None:
     _write(tmp_path, "one.yar", _sample_yara())
     _write(tmp_path, "two.yar", _sample_yara().replace("perf_rule", "silent_rule"))
     runner = CliRunner()
@@ -158,7 +160,7 @@ def test_performance_batch_directory_without_progress_covers_silent_callback(tmp
     assert (out_dir / "batch_results.json").exists()
 
 
-def test_performance_stream_progress_without_output_file(tmp_path) -> None:
+def test_performance_stream_progress_without_output_file(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     runner = CliRunner()
 
@@ -176,7 +178,7 @@ def test_performance_stream_progress_without_output_file(tmp_path) -> None:
     assert "rule.yar" in result.output
 
 
-def test_performance_parallel_empty_directory_and_failed_parse(tmp_path) -> None:
+def test_performance_parallel_empty_directory_and_failed_parse(tmp_path: Path) -> None:
     runner = CliRunner()
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
@@ -195,7 +197,7 @@ def test_performance_parallel_empty_directory_and_failed_parse(tmp_path) -> None
     assert "No files parsed successfully" in result.output
 
 
-def test_performance_parallel_dependency_and_default_output_dir(tmp_path) -> None:
+def test_performance_parallel_dependency_and_default_output_dir(tmp_path: Path) -> None:
     runner = CliRunner()
 
     with runner.isolated_filesystem(temp_dir=str(tmp_path)):
@@ -220,7 +222,7 @@ def test_performance_parallel_dependency_and_default_output_dir(tmp_path) -> Non
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="chmod read-only not effective on Windows")
-def test_performance_batch_and_stream_abort_on_real_write_errors(tmp_path) -> None:
+def test_performance_batch_and_stream_abort_on_real_write_errors(tmp_path: Path) -> None:
     runner = CliRunner()
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
 
@@ -259,7 +261,7 @@ def test_performance_batch_and_stream_abort_on_real_write_errors(tmp_path) -> No
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="chmod read-only not effective on Windows")
-def test_performance_parallel_abort_on_real_complexity_write_error(tmp_path) -> None:
+def test_performance_parallel_abort_on_real_complexity_write_error(tmp_path: Path) -> None:
     runner = CliRunner()
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     ro_dir = tmp_path / "readonly_parallel"
@@ -287,7 +289,7 @@ def test_performance_parallel_abort_on_real_complexity_write_error(tmp_path) -> 
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="SIGINT via os.kill not reliable on Windows")
-def test_performance_stream_and_parallel_handle_real_sigint(tmp_path) -> None:
+def test_performance_stream_and_parallel_handle_real_sigint(tmp_path: Path) -> None:
     rules_dir = tmp_path / "sigint_rules"
     rules_dir.mkdir()
     for i in range(2000):
