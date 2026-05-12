@@ -58,7 +58,12 @@ def performance() -> None:
     help="Operations to perform",
 )
 @click.option("--recursive", "-r", is_flag=True, help="Process directories recursively")
-@click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
+@click.option(
+    "--pattern",
+    "-p",
+    default=None,
+    help="File pattern to match; defaults to *.yar and *.yara",
+)
 @click.option("--progress", is_flag=True, help="Show progress information")
 def batch(
     input_path: str,
@@ -68,7 +73,7 @@ def batch(
     memory_limit: int,
     operations: tuple,
     recursive: bool,
-    pattern: str,
+    pattern: str | None,
     progress: bool,
 ) -> None:
     """Process large collections of YARA files in batches."""
@@ -133,7 +138,12 @@ def batch(
     help="Output file for parsing statistics",
 )
 @click.option("--memory-limit", "-m", type=int, default=500, help="Memory limit in MB")
-@click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
+@click.option(
+    "--pattern",
+    "-p",
+    default=None,
+    help="File pattern to match; defaults to *.yar and *.yara",
+)
 @click.option("--recursive", "-r", is_flag=True, help="Process directories recursively")
 @click.option(
     "--split-rules",
@@ -145,7 +155,7 @@ def stream(
     input_path: str,
     output: str | None,
     memory_limit: int,
-    pattern: str,
+    pattern: str | None,
     recursive: bool,
     split_rules: bool,
     progress: bool,

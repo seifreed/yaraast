@@ -139,7 +139,8 @@ def test_performance_batch_directory_without_progress_covers_silent_callback(
     tmp_path: Path,
 ) -> None:
     _write(tmp_path, "one.yar", _sample_yara())
-    _write(tmp_path, "two.yar", _sample_yara().replace("perf_rule", "silent_rule"))
+    _write(tmp_path, "two.yara", _sample_yara().replace("perf_rule", "silent_rule"))
+    _write(tmp_path, "native.yarax", _sample_yara().replace("perf_rule", "native_rule"))
     runner = CliRunner()
     out_dir = tmp_path / "silent_out"
 
@@ -158,6 +159,8 @@ def test_performance_batch_directory_without_progress_covers_silent_callback(
 
     assert result.exit_code == 0
     assert (out_dir / "batch_results.json").exists()
+    payload = json.loads((out_dir / "batch_results.json").read_text())
+    assert payload["parse"]["input_count"] == 2
 
 
 def test_performance_stream_progress_without_output_file(tmp_path: Path) -> None:

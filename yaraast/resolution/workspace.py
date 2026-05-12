@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -10,6 +9,7 @@ from yaraast.resolution.dependency_graph import DependencyGraph
 from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace_analysis import WorkspaceAnalyzer
 from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceReport
+from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
 if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
@@ -20,8 +20,6 @@ __all__ = [
     "WorkspaceAnalyzer",
     "WorkspaceReport",
 ]
-
-DEFAULT_YARA_FILE_PATTERNS = ("*.yar", "*.yara")
 
 
 class Workspace:
@@ -73,7 +71,7 @@ class Workspace:
     def add_directory(
         self,
         directory: str,
-        pattern: str | Iterable[str] | None = None,
+        pattern: FilePatterns = None,
         recursive: bool = True,
     ) -> None:
         """Add all YARA files from a directory.
@@ -88,35 +86,8 @@ class Workspace:
         if not dir_path.is_absolute():
             dir_path = self.root_path / dir_path
 
-        seen: set[Path] = set()
-        for file_path in self._iter_directory_files(dir_path, pattern, recursive):
-            if file_path.is_file():
-                if file_path in seen:
-                    continue
-                seen.add(file_path)
-                self.add_file(str(file_path))
-
-    def _iter_directory_files(
-        self,
-        directory: Path,
-        pattern: str | Iterable[str] | None,
-        recursive: bool,
-    ) -> Iterable[Path]:
-        patterns = self._normalize_patterns(pattern)
-        for file_pattern in patterns:
-            yield from (
-                directory.rglob(file_pattern) if recursive else directory.glob(file_pattern)
-            )
-
-    def _normalize_patterns(
-        self,
-        pattern: str | Iterable[str] | None,
-    ) -> tuple[str, ...]:
-        if pattern is None:
-            return DEFAULT_YARA_FILE_PATTERNS
-        if isinstance(pattern, str):
-            return (pattern,)
-        return tuple(pattern)
+        for file_path in iter_matching_files(dir_path, pattern, recursive):
+            self.add_file(str(file_path))
 
     def _add_to_dependency_graph(self, resolved: ResolvedFile) -> None:
         """Add resolved file and its includes to dependency graph."""

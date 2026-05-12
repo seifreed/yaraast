@@ -16,6 +16,7 @@ from yaraast.performance.streaming_result_builders import (
     default_streaming_stats,
     timed_now,
 )
+from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -197,11 +198,11 @@ class StreamingParser:
     def parse_directory(
         self,
         dir_path: Path,
-        pattern: str = "*.yar",
+        pattern: FilePatterns = None,
         recursive: bool = False,
     ) -> Iterator[Any]:
         """Parse all files in a directory."""
-        files = list(dir_path.rglob(pattern)) if recursive else list(dir_path.glob(pattern))
+        files = list(iter_matching_files(dir_path, pattern, recursive))
 
         yield from self.parse_files(files)
 

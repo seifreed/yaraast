@@ -16,6 +16,7 @@ from yaraast.performance.batch_processor_ops import (
     serialize_item,
     validate_item,
 )
+from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -236,7 +237,7 @@ class BatchProcessor:
         directory: Path,
         operations: BatchOperation,
         output_dir: Path | None = None,
-        file_pattern: str = "*.yar",
+        file_pattern: FilePatterns = None,
         recursive: bool = False,
     ) -> BatchResult: ...
 
@@ -246,7 +247,7 @@ class BatchProcessor:
         directory: Path,
         operations: list[BatchOperation],
         output_dir: Path | None = None,
-        file_pattern: str = "*.yar",
+        file_pattern: FilePatterns = None,
         recursive: bool = False,
     ) -> dict[BatchOperation, BatchResult]: ...
 
@@ -255,15 +256,11 @@ class BatchProcessor:
         directory: Path,
         operations: list[BatchOperation] | BatchOperation,
         output_dir: Path | None = None,
-        file_pattern: str = "*.yar",
+        file_pattern: FilePatterns = None,
         recursive: bool = False,
     ) -> dict[BatchOperation, BatchResult] | BatchResult:
         """Process all YARA files in a directory."""
-        # Find all matching files
-        if recursive:
-            file_paths = list(directory.rglob(file_pattern))
-        else:
-            file_paths = list(directory.glob(file_pattern))
+        file_paths = list(iter_matching_files(directory, file_pattern, recursive))
 
         # Process using process_files
         return self.process_files(file_paths, operations, output_dir)

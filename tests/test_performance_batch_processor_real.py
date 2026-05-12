@@ -116,7 +116,11 @@ def test_process_files_parse_failures_and_recursive_directory(tmp_path: Path) ->
     nested = tmp_path / "nested"
     nested.mkdir()
     good = nested / "ok.yar"
+    alt = nested / "ok_alt.yara"
+    native = nested / "native.yarax"
     good.write_text("rule ok { condition: true }", encoding="utf-8")
+    alt.write_text("rule ok_alt { condition: true }", encoding="utf-8")
+    native.write_text("rule native { condition: true }", encoding="utf-8")
 
     processor = BatchProcessor()
     failed = processor.process_files([bad], BatchOperation.PARSE, output_dir=tmp_path / "out")
@@ -129,8 +133,8 @@ def test_process_files_parse_failures_and_recursive_directory(tmp_path: Path) ->
         output_dir=tmp_path / "out2",
         recursive=True,
     )
-    assert rec.input_count >= 2
-    assert rec.successful_count >= 1
+    assert rec.input_count >= 3
+    assert rec.successful_count >= 2
 
 
 def test_process_large_file_non_split_and_invalid_content(tmp_path: Path) -> None:

@@ -18,7 +18,11 @@ def _ast(name: str = "r") -> YaraFile:
 def test_get_parse_iterator_collect_paths_and_stream_summary(tmp_path: Path) -> None:
     parser = StreamingParser()
     file_path = tmp_path / "one.yar"
+    yara_path = tmp_path / "two.yara"
+    yarax_path = tmp_path / "native.yarax"
     file_path.write_text("rule one { condition: true }\n", encoding="utf-8")
+    yara_path.write_text("rule two { condition: true }\n", encoding="utf-8")
+    yarax_path.write_text("rule native { condition: true }\n", encoding="utf-8")
 
     split_iter = list(ps.get_parse_iterator(parser, file_path, True, "*.yar", False))
     assert split_iter and split_iter[0].rule_name == "one"
@@ -26,12 +30,16 @@ def test_get_parse_iterator_collect_paths_and_stream_summary(tmp_path: Path) -> 
     parse_iter = list(ps.get_parse_iterator(parser, file_path, False, "*.yar", False))
     assert parse_iter and parse_iter[0].rule_name == "one"
 
-    dir_iter = list(ps.get_parse_iterator(parser, tmp_path, False, "*.yar", False))
-    assert dir_iter and dir_iter[0].rule_name == "one"
+    dir_iter = list(ps.get_parse_iterator(parser, tmp_path, False, None, False))
+    dir_paths = {Path(result.file_path).name for result in dir_iter}
+    assert {"one.yar", "two.yara"}.issubset(dir_paths)
+    assert "native.yarax" not in dir_paths
 
     missing = tmp_path / "missing"
     paths = ps.collect_file_paths((str(file_path), str(tmp_path), str(missing)))
     assert file_path in paths
+    assert yara_path in paths
+    assert yarax_path not in paths
     assert all(path.exists() for path in paths)
 
     summary = ps.summarize_stream_results(

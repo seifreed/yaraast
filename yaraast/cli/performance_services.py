@@ -11,6 +11,7 @@ from yaraast.performance.batch_processor import BatchOperation, BatchProcessor
 from yaraast.performance.memory_optimizer import MemoryOptimizer
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 from yaraast.performance.streaming_parser import StreamingParser
+from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
 
 def convert_operations(operations: Iterable[str]) -> list[BatchOperation]:
@@ -29,7 +30,7 @@ def run_batch_processing(
     output_dir: Path,
     batch_operations: list[BatchOperation],
     processor: BatchProcessor,
-    pattern: str,
+    pattern: FilePatterns,
     recursive: bool,
 ) -> tuple[dict, float]:
     start_time = time.time()
@@ -71,7 +72,7 @@ def get_parse_iterator(
     parser: StreamingParser,
     input_path: Path,
     split_rules: bool,
-    pattern: str,
+    pattern: FilePatterns,
     recursive: bool,
 ):
     if input_path.is_file():
@@ -128,7 +129,7 @@ def collect_file_paths(input_paths: tuple) -> list[Path]:
         if path.is_file():
             file_paths.append(path)
         elif path.is_dir():
-            file_paths.extend(path.rglob("*.yar"))
+            file_paths.extend(iter_matching_files(path, recursive=True))
     return file_paths
 
 

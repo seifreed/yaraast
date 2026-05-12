@@ -43,15 +43,21 @@ def test_streaming_parse_files_and_directory(tmp_path: Path) -> None:
     parser = StreamingParser()
     path1 = tmp_path / "r1.yar"
     path2 = tmp_path / "r2.yar"
+    path3 = tmp_path / "r3.yara"
+    yarax_path = tmp_path / "r4.yarax"
     path1.write_text("rule r1 { condition: true }", encoding="utf-8")
     path2.write_text("rule r2 { condition: true }", encoding="utf-8")
+    path3.write_text("rule r3 { condition: true }", encoding="utf-8")
+    yarax_path.write_text("rule r4 { condition: true }", encoding="utf-8")
 
     results = list(parser.parse_files([path1, path2]))
     assert len(results) == 2
     assert all(r.status.name in {"SUCCESS", "ERROR"} for r in results)
 
     dir_results = list(parser.parse_directory(tmp_path, recursive=False))
-    assert len(dir_results) >= 2
+    result_paths = {Path(result.file_path).name for result in dir_results}
+    assert {"r1.yar", "r2.yar", "r3.yara"}.issubset(result_paths)
+    assert "r4.yarax" not in result_paths
 
 
 def test_streaming_parse_with_progress_and_stats(tmp_path: Path) -> None:
