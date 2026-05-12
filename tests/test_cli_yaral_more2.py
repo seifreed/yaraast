@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -10,7 +11,7 @@ from click.testing import CliRunner
 from yaraast.cli.commands.yaral import yaral
 
 
-def _write(tmp_path, name: str, content: str) -> str:
+def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content))
     return str(path)
@@ -33,7 +34,7 @@ def _sample_rule() -> str:
     """
 
 
-def test_yaral_parse_json(tmp_path) -> None:
+def test_yaral_parse_json(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yaral", _sample_rule())
     runner = CliRunner()
 
@@ -43,7 +44,7 @@ def test_yaral_parse_json(tmp_path) -> None:
     assert "Successfully parsed" in result.output
 
 
-def test_yaral_validate_json_strict(tmp_path) -> None:
+def test_yaral_validate_json_strict(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yaral", _sample_rule())
     runner = CliRunner()
 
@@ -55,7 +56,7 @@ def test_yaral_validate_json_strict(tmp_path) -> None:
     assert payload["errors"] == []
 
 
-def test_yaral_generate_format_and_optimize(tmp_path) -> None:
+def test_yaral_generate_format_and_optimize(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yaral", _sample_rule())
     runner = CliRunner()
 
@@ -68,7 +69,7 @@ def test_yaral_generate_format_and_optimize(tmp_path) -> None:
     assert "Optimization Preview" in dry.output
 
 
-def test_yaral_compare_semantic_and_structural(tmp_path) -> None:
+def test_yaral_compare_semantic_and_structural(tmp_path: Path) -> None:
     file_a = _write(tmp_path, "a.yaral", _sample_rule())
     file_b = _write(tmp_path, "b.yaral", _sample_rule())
     file_c = _write(
