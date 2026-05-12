@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.ast.expressions import BooleanLiteral, Identifier, StringIdentifier
-from yaraast.ast.strings import HexByte, HexWildcard, PlainString, RegexString
+from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 
@@ -35,6 +35,7 @@ def test_rule_builder_hex_regex_and_condition_variants() -> None:
     )
 
     hex_string = rule.strings[0]
+    assert isinstance(hex_string, HexString)
     assert isinstance(hex_string.tokens[0], HexByte)
     assert isinstance(hex_string.tokens[1], HexWildcard)
     assert isinstance(rule.strings[1], RegexString)

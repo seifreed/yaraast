@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.ast.expressions import FunctionCall, Identifier, StringLiteral
 from yaraast.builder.fluent_condition_helpers import (
     build_entropy_call,
@@ -21,7 +23,7 @@ class _HtmlExtraVisitor(HtmlTreeNodesExtraMixin):
         self._counter += 1
         return f"n{self._counter}"
 
-    def visit(self, node):
+    def visit(self, node: Any) -> dict[str, str]:
         return {"id": self._get_node_id(), "value": getattr(node, "name", "node")}
 
 

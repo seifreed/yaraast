@@ -11,6 +11,10 @@ and complexity levels for performance testing.
 
 from pathlib import Path
 import random
+from typing import cast
+
+type ComplexityMix = dict[str, float]
+type GenerationStats = dict[str, int | float | str | ComplexityMix]
 
 
 class YaraTestFileGenerator:
@@ -296,8 +300,8 @@ class YaraTestFileGenerator:
         self,
         target_size_mb: float,
         output_path: Path,
-        complexity_mix: dict | None = None,
-    ) -> dict:
+        complexity_mix: ComplexityMix | None = None,
+    ) -> GenerationStats:
         """Generate a YARA file of specified size.
 
         Args:
@@ -333,7 +337,7 @@ class YaraTestFileGenerator:
         while current_size < target_bytes:
             # Select complexity based on mix
             rand_val = random.random()
-            cumulative = 0
+            cumulative = 0.0
             complexity = "medium"
 
             for comp, prob in complexity_mix.items():
@@ -372,7 +376,7 @@ class YaraTestFileGenerator:
 def generate_test_files(
     output_dir: Path,
     sizes_mb: list[float] | None = None,
-) -> list[dict]:
+) -> list[GenerationStats]:
     """Generate a suite of test files for benchmarking.
 
     Args:
@@ -388,7 +392,7 @@ def generate_test_files(
     output_dir.mkdir(parents=True, exist_ok=True)
     generator = YaraTestFileGenerator()
 
-    results = []
+    results: list[GenerationStats] = []
 
     for size_mb in sizes_mb:
         print(f"\nGenerating {size_mb}MB test file...")
@@ -418,4 +422,4 @@ if __name__ == "__main__":
 
     print("\nGeneration complete!")
     print(f"Total files: {len(results)}")
-    print(f"Total size: {sum(r['actual_size_mb'] for r in results):.2f} MB")
+    print(f"Total size: {sum(cast(float, r['actual_size_mb']) for r in results):.2f} MB")

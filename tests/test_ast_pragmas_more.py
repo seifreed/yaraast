@@ -101,13 +101,13 @@ def test_create_helpers_and_in_rule_positions() -> None:
 
 def test_pragma_accept_methods() -> None:
     class _Visitor:
-        def visit_pragma(self, node):
+        def visit_pragma(self, node: Pragma) -> tuple[str, str]:
             return ("pragma", node.name)
 
-        def visit_in_rule_pragma(self, node):
+        def visit_in_rule_pragma(self, node: InRulePragma) -> tuple[str, str]:
             return ("in_rule", node.position)
 
-        def visit_pragma_block(self, node):
+        def visit_pragma_block(self, node: PragmaBlock) -> tuple[str, int]:
             return ("block", len(node.pragmas))
 
     visitor = _Visitor()

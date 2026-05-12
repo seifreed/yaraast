@@ -8,7 +8,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include, Rule
 
 if TYPE_CHECKING:
-    from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
+    from yaraast.builder.fluent_rule_builder import FluentRuleBuilderWithFile
 
 
 class FluentYaraFileBuilder:
@@ -36,7 +36,7 @@ class FluentYaraFileBuilder:
         self.rules.append(rule)
         return self
 
-    def rule(self, name: str) -> FluentRuleBuilder:
+    def rule(self, name: str) -> FluentRuleBuilderWithFile:
         """Start building a rule."""
         from yaraast.builder.fluent_rule_builder import FluentRuleBuilderWithFile
 

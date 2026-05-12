@@ -8,7 +8,7 @@ from yaraast.ast.pragmas import IncludeOncePragma, Pragma, PragmaType
 
 
 class _Visitor:
-    def visit_yara_file(self, node):
+    def visit_yara_file(self, node: YaraFile) -> tuple[str, int, int]:
         return ("yara_file", len(node.rules), len(node.pragmas))
 
 

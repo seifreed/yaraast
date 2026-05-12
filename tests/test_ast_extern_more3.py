@@ -12,16 +12,16 @@ from yaraast.ast.extern import (
 
 
 class _Visitor:
-    def visit_extern_rule(self, node):
+    def visit_extern_rule(self, node: ExternRule) -> tuple[str, str]:
         return ("rule", node.name)
 
-    def visit_extern_rule_reference(self, node):
+    def visit_extern_rule_reference(self, node: ExternRuleReference) -> tuple[str, str]:
         return ("ref", node.qualified_name)
 
-    def visit_extern_import(self, node):
+    def visit_extern_import(self, node: ExternImport) -> tuple[str, str]:
         return ("import", node.module_path)
 
-    def visit_extern_namespace(self, node):
+    def visit_extern_namespace(self, node: ExternNamespace) -> tuple[str, str]:
         return ("namespace", node.name)
 
 

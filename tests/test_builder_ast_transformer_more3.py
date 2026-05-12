@@ -38,6 +38,7 @@ def test_rule_transformer_renames_and_meta() -> None:
     assert transformed.name == "pre_r2_suf"
     assert any(t.name == "tag2" for t in transformed.tags)
     assert transformed.get_meta_value("author") == "you"
+    assert isinstance(transformed.condition, StringIdentifier)
     assert transformed.condition.name == "$b"
 
 
