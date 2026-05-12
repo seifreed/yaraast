@@ -1,5 +1,7 @@
 """Tests for multi-file resolution functionality."""
 
+from __future__ import annotations
+
 from pathlib import Path
 import tempfile
 
@@ -8,7 +10,7 @@ import pytest
 from yaraast.resolution import DependencyGraph, IncludeResolver, Workspace
 
 
-def create_temp_file(directory, name, content):
+def create_temp_file(directory: Path, name: str, content: str) -> Path:
     """Helper to create temporary YARA files."""
     file_path = directory / name
     file_path.write_text(content)
@@ -20,8 +22,8 @@ class TestIncludeResolver:
 
     def test_basic_include_resolution(self) -> None:
         """Test basic include file resolution."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             # Create base rule
             base_content = """
@@ -57,8 +59,8 @@ rule common_rule {
 
     def test_nested_includes(self) -> None:
         """Test nested include resolution."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             # Create files with nested includes
             # main.yar -> lib1.yar -> lib2.yar
@@ -104,8 +106,8 @@ rule lib2_rule {
 
     def test_circular_include_detection(self) -> None:
         """Test detection of circular includes."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             # Create circular includes: a.yar -> b.yar -> a.yar
             a_content = """
@@ -126,8 +128,8 @@ rule rule_b { condition: true }
 
     def test_include_path_searching(self) -> None:
         """Test include path searching in multiple directories."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             # Create directory structure
             main_dir = tmpdir / "main"
@@ -156,8 +158,8 @@ rule library_rule { condition: true }
 
     def test_caching(self) -> None:
         """Test file caching."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             content = "rule test { condition: true }"
             test_file = create_temp_file(tmpdir, "test.yar", content)
@@ -187,8 +189,8 @@ class TestWorkspace:
 
     def test_workspace_add_file(self) -> None:
         """Test adding files to workspace."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             # Create test file
             content = """
@@ -213,8 +215,8 @@ rule test_rule {
 
     def test_workspace_add_directory(self) -> None:
         """Test adding directory to workspace."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             # Create multiple files
             for i in range(3):
@@ -242,8 +244,8 @@ rule test_rule {
 
     def test_workspace_analysis(self) -> None:
         """Test workspace analysis."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             # Create files with various issues
             good_content = """
@@ -288,8 +290,8 @@ rule unused_strings {
 
     def test_dependency_graph(self) -> None:
         """Test dependency graph building."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             # Create files with dependencies
             main_content = """
@@ -331,8 +333,8 @@ rule lib_rule {
 
     def test_find_rule(self) -> None:
         """Test finding rules in workspace."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
 
             # Create files with rules
             content1 = "rule unique_rule { condition: true }"

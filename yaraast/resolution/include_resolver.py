@@ -12,6 +12,7 @@ from yaraast.parser.parser import Parser
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+    from yaraast.ast.rules import Rule
 
 
 @dataclass
@@ -24,7 +25,7 @@ class ResolvedFile:
     checksum: str
     includes: list[ResolvedFile] = field(default_factory=list)
 
-    def get_all_rules(self):
+    def get_all_rules(self) -> list[Rule]:
         """Get all rules including from includes."""
         rules = list(self.ast.rules)
         for include in self.includes:

@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from yaraast.resolution.dependency_graph import DependencyGraph
 from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace_analysis import WorkspaceAnalyzer
 from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceReport
+
+if TYPE_CHECKING:
+    from yaraast.ast.rules import Rule
 
 __all__ = [
     "FileAnalysisResult",
@@ -123,7 +127,7 @@ class Workspace:
                     rules.append((rule.name, file_path))
         return rules
 
-    def find_rule(self, rule_name: str) -> tuple[str, any] | None:
+    def find_rule(self, rule_name: str) -> tuple[str, Rule] | None:
         """Find a rule by name. Returns (file_path, rule) or None."""
         for file_path, result in self.files.items():
             if result.resolved:
