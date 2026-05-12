@@ -50,6 +50,9 @@ class EventValidationMixin:
 
     def visit_event_variable(self, node: EventVariable) -> None:
         """Validate event variable."""
+        self._define_event_variable(node, allow_existing=False)
+
+    def _define_event_variable(self, node: EventVariable, *, allow_existing: bool) -> None:
         if not node.name.startswith("$"):
             self._add_error(
                 "events",
@@ -60,23 +63,25 @@ class EventValidationMixin:
         normalized = node.name.lstrip("$")
 
         if normalized in self.defined_events:
-            self._add_error(
-                "events",
-                f"Duplicate event variable: {node.name}",
-                "Use unique event variable names",
-            )
+            if not allow_existing:
+                self._add_error(
+                    "events",
+                    f"Duplicate event variable: {node.name}",
+                    "Use unique event variable names",
+                )
+            return
 
         self.defined_events.add(normalized)
 
     def visit_event_assignment(self, node: EventAssignment) -> None:
         """Validate event assignment."""
         if hasattr(node, "event_var") and node.event_var:
-            self.visit_event_variable(node.event_var)
+            self._define_event_variable(node.event_var, allow_existing=True)
 
         if node.field_path:
             self._validate_udm_field_path(node.field_path)
 
-        valid_operators = ["=", "!=", ">", "<", ">=", "<=", "=~", "!~"]
+        valid_operators = ["=", "!=", ">", "<", ">=", "<=", "=~", "!~", "in", "regex"]
         if node.operator not in valid_operators:
             self._add_error(
                 "events",
@@ -84,7 +89,7 @@ class EventValidationMixin:
                 f"Use one of: {', '.join(valid_operators)}",
             )
 
-        if node.operator in ["=~", "!~"] and not self._is_regex_value(node.value):
+        if node.operator in ["=~", "!~", "regex"] and not self._is_regex_value(node.value):
             self._add_warning(
                 "events",
                 f"Regex operator {node.operator} should be used with regex pattern",

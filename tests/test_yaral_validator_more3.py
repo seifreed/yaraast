@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from textwrap import dedent
+
 from yaraast.yaral.ast_nodes import (
     ConditionSection,
     EventAssignment,
@@ -12,6 +14,7 @@ from yaraast.yaral.ast_nodes import (
     YaraLFile,
     YaraLRule,
 )
+from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.validator import YaraLValidator
 
 
@@ -52,3 +55,24 @@ def test_validator_event_assignment_checks() -> None:
     assert any("Invalid operator" in err.message for err in errors)
     assert any("Unknown UDM namespace" in warn.message for warn in warnings)
     assert any("Regex operator" in warn.message for warn in warnings)
+
+
+def test_validator_accepts_repeated_event_constraints_in_and_regex() -> None:
+    code = dedent(
+        """
+        rule valid_event_operators {
+            events:
+                $e.metadata.event_type = "LOGIN"
+                $e.principal.ip in %trusted_ips%
+                $e.target.hostname regex /host-.*/
+            condition:
+                $e
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+    errors, warnings = YaraLValidator().validate(ast)
+
+    assert errors == []
+    assert not any("Duplicate event variable" in warning.message for warning in warnings)
