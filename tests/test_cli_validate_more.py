@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -9,13 +10,13 @@ from click.testing import CliRunner
 from yaraast.cli.commands.validate import validate
 
 
-def _write(tmp_path, name: str, content: str) -> str:
+def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content))
     return str(path)
 
 
-def test_validate_default_file(tmp_path) -> None:
+def test_validate_default_file(tmp_path: Path) -> None:
     code = """
     rule ok {
         condition:
@@ -31,7 +32,7 @@ def test_validate_default_file(tmp_path) -> None:
     assert "Valid YARA file" in result.output
 
 
-def test_validate_parse_externals_and_roundtrip_skip_when_no_yara(tmp_path) -> None:
+def test_validate_parse_externals_and_roundtrip_skip_when_no_yara(tmp_path: Path) -> None:
     # _parse_externals handling of invalid format
     runner = CliRunner()
     dummy_rule = _write(tmp_path, "r.yar", "rule r { condition: true }")

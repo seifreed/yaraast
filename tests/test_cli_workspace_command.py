@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -9,11 +10,11 @@ from click.testing import CliRunner
 from yaraast.cli.commands.workspace import workspace
 
 
-def _write_file(path, content: str) -> None:
+def _write_file(path: Path, content: str) -> None:
     path.write_text(dedent(content).strip() + "\n", encoding="utf-8")
 
 
-def test_workspace_analyze_and_graph(tmp_path) -> None:
+def test_workspace_analyze_and_graph(tmp_path: Path) -> None:
     yara_dir = tmp_path / "rules"
     yara_dir.mkdir()
 
@@ -46,7 +47,7 @@ def test_workspace_analyze_and_graph(tmp_path) -> None:
     assert output_path.exists()
 
 
-def test_workspace_resolve_with_tree(tmp_path) -> None:
+def test_workspace_resolve_with_tree(tmp_path: Path) -> None:
     include_path = tmp_path / "included.yar"
     _write_file(
         include_path,

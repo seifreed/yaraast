@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -10,7 +11,7 @@ from click.testing import CliRunner
 from yaraast.cli.commands.workspace import workspace
 
 
-def _write(tmp_path, name: str, content: str) -> str:
+def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content))
     return str(path)
@@ -27,7 +28,7 @@ def _sample_yara(rule_name: str = "sample") -> str:
     """
 
 
-def test_workspace_analyze_text_and_json(tmp_path) -> None:
+def test_workspace_analyze_text_and_json(tmp_path: Path) -> None:
     _write(tmp_path, "a.yar", _sample_yara("a"))
     _write(tmp_path, "b.yar", _sample_yara("b"))
 
@@ -50,7 +51,7 @@ def test_workspace_analyze_text_and_json(tmp_path) -> None:
     assert "files" in payload
 
 
-def test_workspace_graph_json(tmp_path) -> None:
+def test_workspace_graph_json(tmp_path: Path) -> None:
     _write(tmp_path, "a.yar", _sample_yara("a"))
 
     out_path = tmp_path / "graph.json"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -9,13 +10,13 @@ from click.testing import CliRunner
 from yaraast.cli.commands.yarax import yarax
 
 
-def _write_yarax(tmp_path, name: str, content: str) -> str:
+def _write_yarax(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content).strip() + "\n", encoding="utf-8")
     return str(path)
 
 
-def test_yarax_parse_show_features(tmp_path) -> None:
+def test_yarax_parse_show_features(tmp_path: Path) -> None:
     yarax_code = """
     rule yarax_demo {
         strings:
@@ -38,7 +39,7 @@ def test_yarax_parse_show_features(tmp_path) -> None:
     assert "with statements" in result.output
 
 
-def test_yarax_check_and_convert(tmp_path) -> None:
+def test_yarax_check_and_convert(tmp_path: Path) -> None:
     yara_code = """
     rule basic_rule {
         condition:

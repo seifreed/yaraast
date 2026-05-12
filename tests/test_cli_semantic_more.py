@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -10,7 +11,7 @@ from click.testing import CliRunner
 from yaraast.cli.commands.semantic import semantic
 
 
-def _write(tmp_path, name: str, content: str) -> str:
+def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content))
     return str(path)
@@ -27,7 +28,7 @@ def _sample_yara() -> str:
     """
 
 
-def test_semantic_cli_json_output(tmp_path) -> None:
+def test_semantic_cli_json_output(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     out_path = tmp_path / "results.json"
     runner = CliRunner()

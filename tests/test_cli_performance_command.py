@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -9,7 +10,7 @@ from click.testing import CliRunner
 from yaraast.cli.commands.performance import performance
 
 
-def _write_rule(path) -> None:
+def _write_rule(path: Path) -> None:
     path.write_text(
         dedent("""
             rule perf_rule {
@@ -21,7 +22,7 @@ def _write_rule(path) -> None:
     )
 
 
-def test_performance_batch_stream_parallel(tmp_path) -> None:
+def test_performance_batch_stream_parallel(tmp_path: Path) -> None:
     rule_path = tmp_path / "rule.yar"
     _write_rule(rule_path)
 

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from yaraast.cli import yarax_reporting as yr
 
 
-def test_yarax_reporting_features_and_issues(capsys) -> None:
+def test_yarax_reporting_features_and_issues(capsys: pytest.CaptureFixture[str]) -> None:
     yr.display_yarax_features(["with", "lambda"])
     out = capsys.readouterr().out
     assert "YARA-X Features Used" in out
@@ -30,7 +32,7 @@ def test_yarax_reporting_features_and_issues(capsys) -> None:
     assert "fix1" in captured.out
 
 
-def test_yarax_reporting_showcase_and_playground(capsys) -> None:
+def test_yarax_reporting_showcase_and_playground(capsys: pytest.CaptureFixture[str]) -> None:
     yr.display_feature_showcase()
     showcase = capsys.readouterr().out
     assert "WITH STATEMENTS" in showcase

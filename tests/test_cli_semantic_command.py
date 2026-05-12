@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -9,7 +10,7 @@ from click.testing import CliRunner
 from yaraast.cli.commands.semantic import semantic
 
 
-def test_semantic_command_json_output(tmp_path) -> None:
+def test_semantic_command_json_output(tmp_path: Path) -> None:
     yara_code = """
     rule semantic_ok {
         strings:

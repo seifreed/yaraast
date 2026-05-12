@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -10,7 +11,7 @@ from click.testing import CliRunner
 from yaraast.cli.commands.semantic import semantic
 
 
-def _write(tmp_path, name: str, content: str) -> str:
+def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content))
     return str(path)
@@ -23,7 +24,7 @@ def test_semantic_no_files() -> None:
     assert "No files provided" in result.output
 
 
-def test_semantic_strict_with_warning(tmp_path) -> None:
+def test_semantic_strict_with_warning(tmp_path: Path) -> None:
     # Unknown function should produce warning (not error)
     code = """
     rule warn_rule {
@@ -41,7 +42,7 @@ def test_semantic_strict_with_warning(tmp_path) -> None:
     assert payload[0]["warnings"]
 
 
-def test_semantic_text_output_file(tmp_path) -> None:
+def test_semantic_text_output_file(tmp_path: Path) -> None:
     code = """
     rule ok_rule {
         strings:

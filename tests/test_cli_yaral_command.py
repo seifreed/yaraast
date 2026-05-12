@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -9,13 +10,13 @@ from click.testing import CliRunner
 from yaraast.cli.commands.yaral import yaral
 
 
-def _write_yaral(tmp_path, name: str, content: str) -> str:
+def _write_yaral(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content).strip() + "\n", encoding="utf-8")
     return str(path)
 
 
-def test_yaral_parse_validate_and_info(tmp_path) -> None:
+def test_yaral_parse_validate_and_info(tmp_path: Path) -> None:
     yaral_code = """
     rule login_attempts {
         meta:
@@ -55,7 +56,7 @@ def test_yaral_parse_validate_and_info(tmp_path) -> None:
     assert "Available Aggregation Functions" in result.output
 
 
-def test_yaral_optimize_generate_compare(tmp_path) -> None:
+def test_yaral_optimize_generate_compare(tmp_path: Path) -> None:
     yaral_code = """
     rule download_events {
         events:
@@ -92,7 +93,7 @@ def test_yaral_optimize_generate_compare(tmp_path) -> None:
     assert "semantically equivalent" in result.output
 
 
-def test_yaral_parse_enhanced_writes_output(tmp_path) -> None:
+def test_yaral_parse_enhanced_writes_output(tmp_path: Path) -> None:
     yaral_code = """
     rule enhanced_parse {
         events:
