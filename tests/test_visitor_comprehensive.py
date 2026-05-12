@@ -7,6 +7,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -43,12 +45,13 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, Extern
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
-from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
+from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock, PragmaScope, PragmaType
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNibble,
     HexWildcard,
     PlainString,
     RegexString,
@@ -61,13 +64,13 @@ from yaraast.visitor.visitor import ASTVisitor
 class TestBaseVisitorComprehensive:
     """Comprehensive tests for BaseVisitor class."""
 
-    def test_visit_imports_and_includes(self):
+    def test_visit_imports_and_includes(self) -> None:
         """Test visiting import and include statements."""
 
         class ImportIncludeVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.imports = []
-                self.includes = []
+            def __init__(self) -> None:
+                self.imports: list[Any] = []
+                self.includes: list[Any] = []
 
             def visit_import(self, node: Import) -> None:
                 self.imports.append(node.module)
@@ -95,12 +98,12 @@ class TestBaseVisitorComprehensive:
         assert "elf" in visitor.imports
         assert "common.yar" in visitor.includes
 
-    def test_visit_tags(self):
+    def test_visit_tags(self) -> None:
         """Test visiting rule tags."""
 
         class TagVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.tags = []
+            def __init__(self) -> None:
+                self.tags: list[Any] = []
 
             def visit_tag(self, node: Tag) -> None:
                 self.tags.append(node.name)
@@ -122,12 +125,12 @@ class TestBaseVisitorComprehensive:
         assert "trojan" in visitor.tags
         assert "suspicious" in visitor.tags
 
-    def test_visit_hex_string_tokens(self):
+    def test_visit_hex_string_tokens(self) -> None:
         """Test visiting hex string and its tokens."""
 
         class HexTokenVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.hex_bytes = []
+            def __init__(self) -> None:
+                self.hex_bytes: list[Any] = []
                 self.wildcards = 0
                 self.jumps = 0
                 self.alternatives = 0
@@ -167,12 +170,12 @@ class TestBaseVisitorComprehensive:
         assert visitor.wildcards >= 1
         assert visitor.jumps >= 1
 
-    def test_visit_string_modifiers(self):
+    def test_visit_string_modifiers(self) -> None:
         """Test visiting string modifiers."""
 
         class ModifierVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.modifiers = []
+            def __init__(self) -> None:
+                self.modifiers: list[Any] = []
 
             def visit_string_modifier(self, node: StringModifier) -> None:
                 self.modifiers.append(node.name)
@@ -198,11 +201,11 @@ class TestBaseVisitorComprehensive:
         assert "ascii" in visitor.modifiers
         assert "nocase" in visitor.modifiers
 
-    def test_visit_regex_string(self):
+    def test_visit_regex_string(self) -> None:
         """Test visiting regex strings."""
 
         class RegexVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.regex_count = 0
 
             def visit_regex_string(self, node: RegexString) -> None:
@@ -227,16 +230,16 @@ class TestBaseVisitorComprehensive:
 
         assert visitor.regex_count == 2
 
-    def test_visit_literals(self):
+    def test_visit_literals(self) -> None:
         """Test visiting different literal types."""
 
         class LiteralVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.integers = []
-                self.doubles = []
-                self.strings = []
-                self.booleans = []
-                self.regexes = []
+            def __init__(self) -> None:
+                self.integers: list[Any] = []
+                self.doubles: list[Any] = []
+                self.strings: list[Any] = []
+                self.booleans: list[Any] = []
+                self.regexes: list[Any] = []
 
             def visit_integer_literal(self, node: IntegerLiteral) -> None:
                 self.integers.append(node.value)
@@ -276,15 +279,15 @@ class TestBaseVisitorComprehensive:
         assert 1024 in visitor.integers
         assert True in visitor.booleans
 
-    def test_visit_expressions(self):
+    def test_visit_expressions(self) -> None:
         """Test visiting various expression types."""
 
         class ExpressionVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.binary_ops = []
-                self.unary_ops = []
+            def __init__(self) -> None:
+                self.binary_ops: list[Any] = []
+                self.unary_ops: list[Any] = []
                 self.parentheses = 0
-                self.identifiers = []
+                self.identifiers: list[Any] = []
 
             def visit_binary_expression(self, node: BinaryExpression) -> None:
                 self.binary_ops.append(node.operator)
@@ -319,16 +322,16 @@ class TestBaseVisitorComprehensive:
         assert "and" in visitor.binary_ops or "or" in visitor.binary_ops
         assert visitor.parentheses >= 1
 
-    def test_visit_string_expressions(self):
+    def test_visit_string_expressions(self) -> None:
         """Test visiting string-related expressions."""
 
         class StringExprVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.string_ids = []
-                self.string_counts = []
-                self.string_offsets = []
-                self.string_lengths = []
-                self.wildcards = []
+            def __init__(self) -> None:
+                self.string_ids: list[Any] = []
+                self.string_counts: list[Any] = []
+                self.string_offsets: list[Any] = []
+                self.string_lengths: list[Any] = []
+                self.wildcards: list[Any] = []
 
             def visit_string_identifier(self, node: StringIdentifier) -> None:
                 self.string_ids.append(node.name)
@@ -372,11 +375,11 @@ class TestBaseVisitorComprehensive:
             or "a" in visitor.string_offsets
         )
 
-    def test_visit_set_and_range_expressions(self):
+    def test_visit_set_and_range_expressions(self) -> None:
         """Test visiting set and range expressions directly."""
 
         class SetRangeVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.sets = 0
                 self.ranges = 0
 
@@ -399,12 +402,12 @@ class TestBaseVisitorComprehensive:
         assert visitor.sets == 1
         assert visitor.ranges == 1
 
-    def test_visit_function_call(self):
+    def test_visit_function_call(self) -> None:
         """Test visiting function calls."""
 
         class FunctionVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.functions = []
+            def __init__(self) -> None:
+                self.functions: list[Any] = []
 
             def visit_function_call(self, node: FunctionCall) -> None:
                 self.functions.append(node.function)
@@ -426,13 +429,13 @@ class TestBaseVisitorComprehensive:
 
         assert "uint16" in visitor.functions or "uint32" in visitor.functions
 
-    def test_visit_array_and_member_access(self):
+    def test_visit_array_and_member_access(self) -> None:
         """Test visiting array and member access."""
 
         class AccessVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.array_accesses = 0
-                self.member_accesses = []
+                self.member_accesses: list[Any] = []
 
             def visit_array_access(self, node: ArrayAccess) -> None:
                 self.array_accesses += 1
@@ -458,11 +461,11 @@ class TestBaseVisitorComprehensive:
 
         assert visitor.array_accesses >= 1 or len(visitor.member_accesses) >= 1
 
-    def test_visit_condition_expressions(self):
+    def test_visit_condition_expressions(self) -> None:
         """Test visiting condition-specific expressions."""
 
         class ConditionVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.for_exprs = 0
                 self.for_of_exprs = 0
                 self.at_exprs = 0
@@ -518,13 +521,13 @@ class TestBaseVisitorComprehensive:
         )
         assert total >= 1
 
-    def test_visit_operators(self):
+    def test_visit_operators(self) -> None:
         """Test visiting defined and string operator expressions."""
 
         class OperatorVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.defined_exprs = 0
-                self.string_ops = []
+                self.string_ops: list[Any] = []
 
             def visit_defined_expression(self, node: DefinedExpression) -> None:
                 self.defined_exprs += 1
@@ -552,12 +555,12 @@ class TestBaseVisitorComprehensive:
         # Check if defined expressions or string operators were visited
         assert visitor.defined_exprs >= 0  # May or may not be present depending on parsing
 
-    def test_visit_comments(self):
+    def test_visit_comments(self) -> None:
         """Test visiting comments directly."""
 
         class CommentVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.comments = []
+            def __init__(self) -> None:
+                self.comments: list[Any] = []
                 self.comment_groups = 0
 
             def visit_comment(self, node: Comment) -> None:
@@ -582,12 +585,12 @@ class TestBaseVisitorComprehensive:
         assert len(visitor.comments) >= 2
         assert visitor.comment_groups == 1
 
-    def test_visit_pragmas(self):
+    def test_visit_pragmas(self) -> None:
         """Test visiting pragmas."""
 
         class PragmaVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.pragmas = []
+            def __init__(self) -> None:
+                self.pragmas: list[Any] = []
                 self.in_rule_pragmas = 0
                 self.pragma_blocks = 0
 
@@ -619,15 +622,15 @@ class TestBaseVisitorComprehensive:
         # No pragmas in standard YARA
         assert len(visitor.pragmas) == 0
 
-    def test_visit_extern_elements(self):
+    def test_visit_extern_elements(self) -> None:
         """Test visiting extern rules and imports."""
 
         class ExternVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.extern_rules = []
-                self.extern_refs = []
-                self.extern_imports = []
-                self.extern_namespaces = []
+            def __init__(self) -> None:
+                self.extern_rules: list[Any] = []
+                self.extern_refs: list[Any] = []
+                self.extern_imports: list[Any] = []
+                self.extern_namespaces: list[Any] = []
 
             def visit_extern_rule(self, node: ExternRule) -> None:
                 self.extern_rules.append(node.name)
@@ -661,12 +664,12 @@ class TestBaseVisitorComprehensive:
         # No extern elements in standard YARA
         assert len(visitor.extern_rules) == 0
 
-    def test_visit_meta(self):
+    def test_visit_meta(self) -> None:
         """Test visiting meta entries."""
 
         class MetaVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.meta_keys = []
+            def __init__(self) -> None:
+                self.meta_keys: list[Any] = []
 
             def visit_meta(self, node: Meta) -> None:
                 self.meta_keys.append(node.key)
@@ -691,12 +694,12 @@ class TestBaseVisitorComprehensive:
         # This test validates the method exists and works
         assert len(visitor.meta_keys) >= 0
 
-    def test_base_visitor_dispatch_via_accept(self):
+    def test_base_visitor_dispatch_via_accept(self) -> None:
         """Test that BaseVisitor.visit() correctly dispatches via node.accept()."""
 
         class DispatchTracker(BaseVisitor[str]):
-            def __init__(self):
-                self.visited_types = []
+            def __init__(self) -> None:
+                self.visited_types: list[Any] = []
 
             def visit_rule(self, node: Rule) -> str:
                 self.visited_types.append("Rule")
@@ -727,11 +730,11 @@ class TestBaseVisitorComprehensive:
         assert "Rule" in visitor.visited_types
         assert "PlainString" in visitor.visited_types
 
-    def test_visitor_with_optional_fields(self):
+    def test_visitor_with_optional_fields(self) -> None:
         """Test visiting nodes with optional/nullable fields."""
 
         class OptionalFieldVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.string_offsets_with_index = 0
                 self.string_lengths_with_index = 0
                 self.for_of_with_condition = 0
@@ -775,12 +778,12 @@ class TestBaseVisitorComprehensive:
 class TestDirectNodeVisitation:
     """Test direct visitation of AST nodes without parsing."""
 
-    def test_visit_all_hex_token_types(self):
+    def test_visit_all_hex_token_types(self) -> None:
         """Test visiting all hex token types directly."""
 
         class HexVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.visited = []
+            def __init__(self) -> None:
+                self.visited: list[Any] = []
 
             def visit_hex_byte(self, node: HexByte) -> None:
                 self.visited.append(("byte", node.value))
@@ -815,12 +818,12 @@ class TestDirectNodeVisitation:
         assert ("jump", 2, 4) in visitor.visited
         assert "alternative" in visitor.visited
 
-    def test_visit_all_expression_literals(self):
+    def test_visit_all_expression_literals(self) -> None:
         """Test visiting all literal expression types."""
 
         class LiteralCollector(BaseVisitor[None]):
-            def __init__(self):
-                self.values = []
+            def __init__(self) -> None:
+                self.values: list[Any] = []
 
             def visit_integer_literal(self, node: IntegerLiteral) -> None:
                 self.values.append(("int", node.value))
@@ -855,12 +858,12 @@ class TestDirectNodeVisitation:
         assert ("bool", True) in visitor.values
         assert ("regex", "test.*") in visitor.values
 
-    def test_visit_complex_expressions(self):
+    def test_visit_complex_expressions(self) -> None:
         """Test visiting complex expression structures."""
 
         class ExpressionCollector(BaseVisitor[None]):
-            def __init__(self):
-                self.visited = []
+            def __init__(self) -> None:
+                self.visited: list[Any] = []
 
             def visit_binary_expression(self, node: BinaryExpression) -> None:
                 self.visited.append(("binary", node.operator))
@@ -912,12 +915,12 @@ class TestDirectNodeVisitation:
         assert ("set", 2) in visitor.visited
         assert "range" in visitor.visited
 
-    def test_visit_string_expressions(self):
+    def test_visit_string_expressions(self) -> None:
         """Test visiting string-related expressions."""
 
         class StringExprCollector(BaseVisitor[None]):
-            def __init__(self):
-                self.visited = []
+            def __init__(self) -> None:
+                self.visited: list[Any] = []
 
             def visit_string_count(self, node: StringCount) -> None:
                 self.visited.append(("count", node.string_id))
@@ -953,12 +956,12 @@ class TestDirectNodeVisitation:
         assert ("id", "$d") in visitor.visited
         assert ("wildcard", "$test*") in visitor.visited
 
-    def test_visit_condition_expressions(self):
+    def test_visit_condition_expressions(self) -> None:
         """Test visiting condition-specific expressions."""
 
         class ConditionCollector(BaseVisitor[None]):
-            def __init__(self):
-                self.visited = []
+            def __init__(self) -> None:
+                self.visited: list[Any] = []
 
             def visit_at_expression(self, node: AtExpression) -> None:
                 self.visited.append(("at", node.string_id))
@@ -1014,12 +1017,12 @@ class TestDirectNodeVisitation:
         assert ("for", "i") in visitor.visited
         assert ("for_of", "any") in visitor.visited
 
-    def test_visit_extern_and_pragma_nodes(self):
+    def test_visit_extern_and_pragma_nodes(self) -> None:
         """Test visiting extern and pragma nodes."""
 
         class ExtendedVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.visited = []
+            def __init__(self) -> None:
+                self.visited: list[Any] = []
 
             def visit_extern_rule(self, node: ExternRule) -> None:
                 self.visited.append(("extern_rule", node.name))
@@ -1056,10 +1059,15 @@ class TestDirectNodeVisitation:
         visitor.visit(ExternImport(module_path="test.module", alias=None, rules=[]))
         visitor.visit(ExternNamespace(name="test_ns"))
 
-        pragma = Pragma(pragma_type="test", name="optimize", arguments=[], scope="global")
+        pragma = Pragma(
+            pragma_type=PragmaType.CUSTOM,
+            name="optimize",
+            arguments=[],
+            scope=PragmaScope.FILE,
+        )
         visitor.visit(pragma)
         visitor.visit(InRulePragma(pragma=pragma, position="before"))
-        visitor.visit(PragmaBlock(pragmas=[pragma], scope="global"))
+        visitor.visit(PragmaBlock(pragmas=[pragma], scope=PragmaScope.FILE))
 
         assert ("extern_rule", "test_extern") in visitor.visited
         assert ("extern_ref", "ref_rule") in visitor.visited
@@ -1069,13 +1077,13 @@ class TestDirectNodeVisitation:
         assert "in_rule_pragma" in visitor.visited
         assert ("pragma_block", 1) in visitor.visited
 
-    def test_visit_meta_and_modifiers(self):
+    def test_visit_meta_and_modifiers(self) -> None:
         """Test visiting meta and modifier nodes."""
 
         class MetaModifierVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.metas = []
-                self.modifiers = []
+            def __init__(self) -> None:
+                self.metas: list[Any] = []
+                self.modifiers: list[Any] = []
 
             def visit_meta(self, node: Meta) -> None:
                 self.metas.append((node.key, node.value))
@@ -1097,12 +1105,12 @@ class TestDirectNodeVisitation:
         assert "wide" in visitor.modifiers
         assert "nocase" in visitor.modifiers
 
-    def test_visit_operators(self):
+    def test_visit_operators(self) -> None:
         """Test visiting operator expressions."""
 
         class OperatorVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.visited = []
+            def __init__(self) -> None:
+                self.visited: list[Any] = []
 
             def visit_defined_expression(self, node: DefinedExpression) -> None:
                 self.visited.append("defined")
@@ -1126,12 +1134,12 @@ class TestDirectNodeVisitation:
         assert "defined" in visitor.visited
         assert ("string_op", "contains") in visitor.visited
 
-    def test_visit_function_and_access(self):
+    def test_visit_function_and_access(self) -> None:
         """Test visiting function calls and access expressions."""
 
         class AccessVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.visited = []
+            def __init__(self) -> None:
+                self.visited: list[Any] = []
 
             def visit_function_call(self, node: FunctionCall) -> None:
                 self.visited.append(("function", node.function, len(node.arguments)))
@@ -1163,7 +1171,7 @@ class TestDirectNodeVisitation:
 class TestASTVisitorAbstractBase:
     """Tests for ASTVisitor abstract base class."""
 
-    def test_visitor_dispatch_method(self):
+    def test_visitor_dispatch_method(self) -> None:
         """Test that ASTVisitor.visit() dispatches to node.accept()."""
 
         class TestVisitor(ASTVisitor[str]):
@@ -1180,160 +1188,160 @@ class TestASTVisitorAbstractBase:
                 return "YaraFile"
 
             # Implement all other abstract methods as minimal stubs
-            def visit_tag(self, node):
+            def visit_tag(self, node: Any) -> str:
                 return "Tag"
 
-            def visit_string_definition(self, node):
+            def visit_string_definition(self, node: Any) -> str:
                 return "StringDefinition"
 
-            def visit_plain_string(self, node):
+            def visit_plain_string(self, node: Any) -> str:
                 return "PlainString"
 
-            def visit_hex_string(self, node):
+            def visit_hex_string(self, node: Any) -> str:
                 return "HexString"
 
-            def visit_regex_string(self, node):
+            def visit_regex_string(self, node: Any) -> str:
                 return "RegexString"
 
-            def visit_string_modifier(self, node):
+            def visit_string_modifier(self, node: Any) -> str:
                 return "StringModifier"
 
-            def visit_hex_token(self, node):
+            def visit_hex_token(self, node: Any) -> str:
                 return "HexToken"
 
-            def visit_hex_byte(self, node):
+            def visit_hex_byte(self, node: Any) -> str:
                 return "HexByte"
 
-            def visit_hex_wildcard(self, node):
+            def visit_hex_wildcard(self, node: Any) -> str:
                 return "HexWildcard"
 
-            def visit_hex_jump(self, node):
+            def visit_hex_jump(self, node: Any) -> str:
                 return "HexJump"
 
-            def visit_hex_alternative(self, node):
+            def visit_hex_alternative(self, node: Any) -> str:
                 return "HexAlternative"
 
-            def visit_hex_nibble(self, node):
+            def visit_hex_nibble(self, node: Any) -> str:
                 return "HexNibble"
 
-            def visit_expression(self, node):
+            def visit_expression(self, node: Any) -> str:
                 return "Expression"
 
-            def visit_identifier(self, node):
+            def visit_identifier(self, node: Any) -> str:
                 return "Identifier"
 
-            def visit_string_identifier(self, node):
+            def visit_string_identifier(self, node: Any) -> str:
                 return "StringIdentifier"
 
-            def visit_string_wildcard(self, node):
+            def visit_string_wildcard(self, node: Any) -> str:
                 return "StringWildcard"
 
-            def visit_string_count(self, node):
+            def visit_string_count(self, node: Any) -> str:
                 return "StringCount"
 
-            def visit_string_offset(self, node):
+            def visit_string_offset(self, node: Any) -> str:
                 return "StringOffset"
 
-            def visit_string_length(self, node):
+            def visit_string_length(self, node: Any) -> str:
                 return "StringLength"
 
-            def visit_integer_literal(self, node):
+            def visit_integer_literal(self, node: Any) -> str:
                 return "IntegerLiteral"
 
-            def visit_double_literal(self, node):
+            def visit_double_literal(self, node: Any) -> str:
                 return "DoubleLiteral"
 
-            def visit_string_literal(self, node):
+            def visit_string_literal(self, node: Any) -> str:
                 return "StringLiteral"
 
-            def visit_regex_literal(self, node):
+            def visit_regex_literal(self, node: Any) -> str:
                 return "RegexLiteral"
 
-            def visit_boolean_literal(self, node):
+            def visit_boolean_literal(self, node: Any) -> str:
                 return "BooleanLiteral"
 
-            def visit_binary_expression(self, node):
+            def visit_binary_expression(self, node: Any) -> str:
                 return "BinaryExpression"
 
-            def visit_unary_expression(self, node):
+            def visit_unary_expression(self, node: Any) -> str:
                 return "UnaryExpression"
 
-            def visit_parentheses_expression(self, node):
+            def visit_parentheses_expression(self, node: Any) -> str:
                 return "ParenthesesExpression"
 
-            def visit_set_expression(self, node):
+            def visit_set_expression(self, node: Any) -> str:
                 return "SetExpression"
 
-            def visit_range_expression(self, node):
+            def visit_range_expression(self, node: Any) -> str:
                 return "RangeExpression"
 
-            def visit_function_call(self, node):
+            def visit_function_call(self, node: Any) -> str:
                 return "FunctionCall"
 
-            def visit_array_access(self, node):
+            def visit_array_access(self, node: Any) -> str:
                 return "ArrayAccess"
 
-            def visit_member_access(self, node):
+            def visit_member_access(self, node: Any) -> str:
                 return "MemberAccess"
 
-            def visit_condition(self, node):
+            def visit_condition(self, node: Any) -> str:
                 return "Condition"
 
-            def visit_for_expression(self, node):
+            def visit_for_expression(self, node: Any) -> str:
                 return "ForExpression"
 
-            def visit_for_of_expression(self, node):
+            def visit_for_of_expression(self, node: Any) -> str:
                 return "ForOfExpression"
 
-            def visit_at_expression(self, node):
+            def visit_at_expression(self, node: Any) -> str:
                 return "AtExpression"
 
-            def visit_in_expression(self, node):
+            def visit_in_expression(self, node: Any) -> str:
                 return "InExpression"
 
-            def visit_of_expression(self, node):
+            def visit_of_expression(self, node: Any) -> str:
                 return "OfExpression"
 
-            def visit_meta(self, node):
+            def visit_meta(self, node: Any) -> str:
                 return "Meta"
 
-            def visit_module_reference(self, node):
+            def visit_module_reference(self, node: Any) -> str:
                 return "ModuleReference"
 
-            def visit_dictionary_access(self, node):
+            def visit_dictionary_access(self, node: Any) -> str:
                 return "DictionaryAccess"
 
-            def visit_comment(self, node):
+            def visit_comment(self, node: Any) -> str:
                 return "Comment"
 
-            def visit_comment_group(self, node):
+            def visit_comment_group(self, node: Any) -> str:
                 return "CommentGroup"
 
-            def visit_defined_expression(self, node):
+            def visit_defined_expression(self, node: Any) -> str:
                 return "DefinedExpression"
 
-            def visit_string_operator_expression(self, node):
+            def visit_string_operator_expression(self, node: Any) -> str:
                 return "StringOperatorExpression"
 
-            def visit_extern_rule(self, node):
+            def visit_extern_rule(self, node: Any) -> str:
                 return "ExternRule"
 
-            def visit_extern_rule_reference(self, node):
+            def visit_extern_rule_reference(self, node: Any) -> str:
                 return "ExternRuleReference"
 
-            def visit_extern_import(self, node):
+            def visit_extern_import(self, node: Any) -> str:
                 return "ExternImport"
 
-            def visit_extern_namespace(self, node):
+            def visit_extern_namespace(self, node: Any) -> str:
                 return "ExternNamespace"
 
-            def visit_pragma(self, node):
+            def visit_pragma(self, node: Any) -> str:
                 return "Pragma"
 
-            def visit_in_rule_pragma(self, node):
+            def visit_in_rule_pragma(self, node: Any) -> str:
                 return "InRulePragma"
 
-            def visit_pragma_block(self, node):
+            def visit_pragma_block(self, node: Any) -> str:
                 return "PragmaBlock"
 
         rule = Rule(name="test", modifiers=[], tags=[], meta={}, strings=[])
@@ -1347,20 +1355,20 @@ class TestASTVisitorAbstractBase:
 class TestModuleAndDictionaryAccess:
     """Test module reference and dictionary access visitor methods."""
 
-    def test_visit_module_nodes_directly(self):
+    def test_visit_module_nodes_directly(self) -> None:
         """Test visiting module-specific AST nodes."""
         from yaraast.ast.modules import DictionaryAccess, ModuleReference
 
         class ModuleVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.module_refs = []
-                self.dict_accesses = []
+            def __init__(self) -> None:
+                self.module_refs: list[Any] = []
+                self.dict_accesses: list[Any] = []
 
-            def visit_module_reference(self, node) -> None:
+            def visit_module_reference(self, node: Any) -> None:
                 self.module_refs.append(node.module)
                 return super().visit_module_reference(node)
 
-            def visit_dictionary_access(self, node) -> None:
+            def visit_dictionary_access(self, node: Any) -> None:
                 self.dict_accesses.append(node.key)
                 return super().visit_dictionary_access(node)
 
@@ -1387,11 +1395,11 @@ class TestModuleAndDictionaryAccess:
 class TestYaraFileVisitor:
     """Test YaraFile-level visitor functionality."""
 
-    def test_visit_yara_file_with_all_elements(self):
+    def test_visit_yara_file_with_all_elements(self) -> None:
         """Test visiting YaraFile with all possible elements."""
 
         class FileElementCounter(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.counts = {
                     "imports": 0,
                     "includes": 0,
@@ -1422,9 +1430,9 @@ class TestYaraFileVisitor:
                 self.counts["extern_imports"] += 1
                 return super().visit_extern_import(node)
 
-            def visit_pragma_block(self, node: PragmaBlock) -> None:
+            def visit_pragma(self, node: Pragma) -> None:
                 self.counts["pragmas"] += 1
-                return super().visit_pragma_block(node)
+                return super().visit_pragma(node)
 
             def visit_extern_namespace(self, node: ExternNamespace) -> None:
                 self.counts["namespaces"] += 1
@@ -1437,7 +1445,13 @@ class TestYaraFileVisitor:
             rules=[Rule(name="test", modifiers=[], tags=[], meta={}, strings=[])],
             extern_rules=[ExternRule(name="ext_rule", modifiers=[])],
             extern_imports=[ExternImport(module_path="external.module")],
-            pragmas=[PragmaBlock(pragmas=[], scope="global")],
+            pragmas=[
+                Pragma(
+                    pragma_type=PragmaType.CUSTOM,
+                    name="optimize",
+                    scope=PragmaScope.FILE,
+                )
+            ],
             namespaces=[ExternNamespace(name="test_ns")],
         )
 
@@ -1452,11 +1466,11 @@ class TestYaraFileVisitor:
         assert visitor.counts["pragmas"] == 1
         assert visitor.counts["namespaces"] == 1
 
-    def test_visit_rule_with_all_components(self):
+    def test_visit_rule_with_all_components(self) -> None:
         """Test visiting Rule with all possible components."""
 
         class RuleComponentVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.components = {
                     "tags": 0,
                     "strings": 0,
@@ -1481,7 +1495,12 @@ class TestYaraFileVisitor:
                 return super().visit_in_rule_pragma(node)
 
         # Create rule with all components
-        pragma = Pragma(pragma_type="test", name="optimize", arguments=[], scope="rule")
+        pragma = Pragma(
+            pragma_type=PragmaType.CUSTOM,
+            name="optimize",
+            arguments=[],
+            scope=PragmaScope.RULE,
+        )
         rule = Rule(
             name="test",
             modifiers=[],
@@ -1500,11 +1519,11 @@ class TestYaraFileVisitor:
         assert visitor.components["condition"] is True
         assert visitor.components["pragmas"] == 1
 
-    def test_visit_rule_without_condition(self):
+    def test_visit_rule_without_condition(self) -> None:
         """Test visiting Rule without condition (edge case)."""
 
         class RuleVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.visited_rule = False
 
             def visit_rule(self, node: Rule) -> None:
@@ -1525,15 +1544,14 @@ class TestYaraFileVisitor:
 class TestHexNibbleVisitor:
     """Test hex nibble visitor support."""
 
-    def test_visit_hex_nibble(self):
+    def test_visit_hex_nibble(self) -> None:
         """Test visiting hex nibble nodes."""
-        from yaraast.builder.hex_string_builder import HexNibble
 
         class NibbleVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.nibbles = []
+            def __init__(self) -> None:
+                self.nibbles: list[Any] = []
 
-            def visit_hex_nibble(self, node) -> None:
+            def visit_hex_nibble(self, node: HexNibble) -> None:
                 self.nibbles.append((node.high, node.value))
                 return super().visit_hex_nibble(node)
 
@@ -1577,18 +1595,18 @@ class TestParametrizedVisitor:
             (Comment(text="test", is_multiline=False), "visit_comment"),
         ],
     )
-    def test_visit_simple_nodes(self, node, visitor_method):
+    def test_visit_simple_nodes(self, node: Any, visitor_method: str) -> None:
         """Test visiting simple AST nodes using parametrization."""
 
         class TrackingVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.visited_methods = []
+            def __init__(self) -> None:
+                self.visited_methods: list[Any] = []
 
-            def __getattribute__(self, name):
+            def __getattribute__(self, name: str) -> Any:
                 if name.startswith("visit_") and name != "visit":
                     original = object.__getattribute__(self, name)
 
-                    def wrapper(node):
+                    def wrapper(node: Any) -> Any:
                         object.__getattribute__(self, "visited_methods").append(name)
                         return original(node)
 
@@ -1608,12 +1626,18 @@ class TestParametrizedVisitor:
             (BinaryExpression, IntegerLiteral(value=10), IntegerLiteral(value=5), ">"),
         ],
     )
-    def test_visit_binary_expressions(self, expr_type, left, right, operator):
+    def test_visit_binary_expressions(
+        self,
+        expr_type: type[BinaryExpression],
+        left: Any,
+        right: Any,
+        operator: str,
+    ) -> None:
         """Test visiting binary expressions with various operators."""
 
         class BinaryVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.operators = []
+            def __init__(self) -> None:
+                self.operators: list[Any] = []
 
             def visit_binary_expression(self, node: BinaryExpression) -> None:
                 self.operators.append(node.operator)
@@ -1633,12 +1657,17 @@ class TestParametrizedVisitor:
             (PlainString, "$url", "http://example.com"),
         ],
     )
-    def test_visit_string_types(self, string_type, identifier, value):
+    def test_visit_string_types(
+        self,
+        string_type: type[PlainString],
+        identifier: str,
+        value: str,
+    ) -> None:
         """Test visiting different string definitions."""
 
         class StringVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.strings = []
+            def __init__(self) -> None:
+                self.strings: list[Any] = []
 
             def visit_plain_string(self, node: PlainString) -> None:
                 self.strings.append((node.identifier, node.value))
@@ -1657,12 +1686,12 @@ class TestParametrizedVisitor:
             {"quantifier": "any", "variable": "j", "has_iterable": True, "has_body": True},
         ],
     )
-    def test_visit_for_expressions(self, for_expr_data):
+    def test_visit_for_expressions(self, for_expr_data: dict[str, Any]) -> None:
         """Test visiting for expressions."""
 
         class ForVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.for_vars = []
+            def __init__(self) -> None:
+                self.for_vars: list[Any] = []
 
             def visit_for_expression(self, node: ForExpression) -> None:
                 self.for_vars.append(node.variable)
@@ -1684,11 +1713,11 @@ class TestParametrizedVisitor:
 class TestEdgeCasesAndNullHandling:
     """Test edge cases and null/None handling in visitors."""
 
-    def test_visit_string_offset_without_index(self):
+    def test_visit_string_offset_without_index(self) -> None:
         """Test visiting StringOffset without index."""
 
         class OffsetVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.offsets_without_index = 0
 
             def visit_string_offset(self, node: StringOffset) -> None:
@@ -1702,11 +1731,11 @@ class TestEdgeCasesAndNullHandling:
 
         assert visitor.offsets_without_index == 1
 
-    def test_visit_string_length_without_index(self):
+    def test_visit_string_length_without_index(self) -> None:
         """Test visiting StringLength without index."""
 
         class LengthVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.lengths_without_index = 0
 
             def visit_string_length(self, node: StringLength) -> None:
@@ -1720,11 +1749,11 @@ class TestEdgeCasesAndNullHandling:
 
         assert visitor.lengths_without_index == 1
 
-    def test_visit_for_of_without_condition(self):
+    def test_visit_for_of_without_condition(self) -> None:
         """Test visiting ForOfExpression without condition."""
 
         class ForOfVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.for_ofs_without_condition = 0
 
             def visit_for_of_expression(self, node: ForOfExpression) -> None:
@@ -1748,12 +1777,12 @@ class TestEdgeCasesAndNullHandling:
 
         assert visitor.for_ofs_without_condition == 1
 
-    def test_visit_in_expression_with_expression_subject(self):
+    def test_visit_in_expression_with_expression_subject(self) -> None:
         """Test visiting InExpression with an expression (not string) as subject."""
 
         class InExprVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.in_exprs = []
+            def __init__(self) -> None:
+                self.in_exprs: list[Any] = []
 
             def visit_in_expression(self, node: InExpression) -> None:
                 self.in_exprs.append(type(node.subject).__name__)
