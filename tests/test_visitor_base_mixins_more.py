@@ -15,9 +15,10 @@ class _Visitor(BaseVisitor[None]):
 def test_base_visitor_expression_and_condition_methods() -> None:
     visitor = _Visitor()
     condition = Condition()
-    condition.expression = BooleanLiteral(value=True)
+    literal = BooleanLiteral(value=True)
 
     assert visitor.visit_expression(Expression()) is None
+    assert visitor.visit_expression(literal) is None
     assert visitor.visit_condition(condition) is None
 
 

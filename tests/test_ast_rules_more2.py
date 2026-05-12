@@ -7,16 +7,16 @@ from yaraast.ast.rules import Import, Include, Rule, Tag
 
 
 class _Visitor:
-    def visit_import(self, node):
+    def visit_import(self, node: Import) -> tuple[str, str, str | None]:
         return ("import", node.module, node.alias)
 
-    def visit_include(self, node):
+    def visit_include(self, node: Include) -> tuple[str, str]:
         return ("include", node.path)
 
-    def visit_tag(self, node):
+    def visit_tag(self, node: Tag) -> tuple[str, str]:
         return ("tag", node.name)
 
-    def visit_rule(self, node):
+    def visit_rule(self, node: Rule) -> tuple[str, str]:
         return ("rule", node.name)
 
 

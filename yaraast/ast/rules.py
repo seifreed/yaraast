@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from yaraast.ast.base import ASTNode, _VisitorType
 from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
-    from yaraast.ast.conditions import Condition
+    from yaraast.ast.expressions import Expression
     from yaraast.ast.pragmas import InRulePragma
     from yaraast.ast.strings import StringDefinition
 
@@ -54,9 +54,9 @@ class Rule(ASTNode):
     name: str
     modifiers: Any = field(default_factory=list)
     tags: list[Tag] = field(default_factory=list)
-    meta: list[MetaEntry] = field(default_factory=list)
+    meta: Any = field(default_factory=list)
     strings: list[StringDefinition] = field(default_factory=list)
-    condition: Condition | None = None
+    condition: Expression | None = None
     pragmas: list[InRulePragma] = field(default_factory=list)
 
     def __post_init__(self) -> None:
@@ -145,7 +145,7 @@ class Rule(ASTNode):
 
     def get_meta_entries(self) -> list[MetaEntry]:
         """Get meta entries as enhanced MetaEntry objects."""
-        return self.meta
+        return cast(list[MetaEntry], self.meta)
 
     def get_meta_value(self, key: str, default: Any = None) -> Any:
         """Get the value of a meta entry by key."""

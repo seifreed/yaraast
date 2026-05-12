@@ -11,9 +11,8 @@ if TYPE_CHECKING:
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
     from yaraast.ast.pragmas import Pragma, PragmaType
     from yaraast.ast.rules import Import, Include, Rule
-    from yaraast.visitor.visitor import ASTVisitor
 
-    _VisitorType = ASTVisitor[Any]
+    _VisitorType = Any
 else:
     _VisitorType = Any
 
