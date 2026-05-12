@@ -51,6 +51,24 @@ def test_metrics_tree_output(tmp_path: Path) -> None:
     assert output.exists()
 
 
+def test_metrics_tree_collapsible_starts_children_collapsed(tmp_path: Path) -> None:
+    rule_path = _write_rule(tmp_path)
+    output = tmp_path / "collapsed_tree.html"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        ["metrics", "tree", str(rule_path), "--output", str(output), "--collapsible"],
+    )
+
+    assert result.exit_code == 0
+    html = output.read_text(encoding="utf-8")
+    assert "function toggleNode" in html
+    assert "data-node-id=" in html
+    assert 'style="display: none;"' in html
+    assert 'onclick="toggleNode' not in html
+
+
 def test_metrics_patterns_text_fallback(tmp_path: Path) -> None:
     rule_path = _write_rule(tmp_path)
     runner = CliRunner()

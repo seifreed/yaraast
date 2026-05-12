@@ -22,7 +22,12 @@ class HtmlTreeRenderMixin:
 
         return Template(template_text).render(**context)
 
-    def _render_html_template(self, tree_data: dict[str, Any], title: str) -> str:
+    def _render_html_template(
+        self,
+        tree_data: dict[str, Any],
+        title: str,
+        default_collapsed: bool = False,
+    ) -> str:
         """Render HTML template with tree data."""
         template_text = HTML_TREE_TEMPLATE
         # Calculate statistics
@@ -33,13 +38,14 @@ class HtmlTreeRenderMixin:
             title=title,
             tree_data=tree_data,
             stats=stats,
-            render_node=self._create_render_macro(),
+            render_node=self._create_render_macro(default_collapsed),
         )
 
     def _render_interactive_template(
         self,
         tree_data: dict[str, Any],
         title: str,
+        default_collapsed: bool = False,
     ) -> str:
         """Render interactive HTML template with search and filtering."""
         template_text = INTERACTIVE_HTML_TREE_TEMPLATE
@@ -47,10 +53,10 @@ class HtmlTreeRenderMixin:
             template_text,
             title=title,
             tree_data=tree_data,
-            render_node=self._create_render_macro(),
+            render_node=self._create_render_macro(default_collapsed),
         )
 
-    def _create_render_macro(self):
+    def _create_render_macro(self, default_collapsed: bool = False):
         """Create render macro function for Jinja2."""
 
         def render_node(node, depth):
@@ -59,7 +65,14 @@ class HtmlTreeRenderMixin:
             out = f'<div class="tree-node {node_class}">'
 
             if node.get("children"):
-                out += f'<span class="toggle expanded" id="{node_id}_toggle" onclick="toggleNode(\'{node_id}\')"></span>'
+                state_class = "collapsed" if default_collapsed else "expanded"
+                aria_expanded = "false" if default_collapsed else "true"
+                symbol = "▶" if default_collapsed else "▼"
+                out += (
+                    f'<button type="button" class="toggle {state_class}" '
+                    f'id="{node_id}_toggle" data-node-id="{node_id}" '
+                    f'aria-expanded="{aria_expanded}">{symbol}</button>'
+                )
 
             out += '<div class="node-content">'
             out += f'<span class="node-label">{_esc(node["label"])}</span>'
@@ -73,7 +86,8 @@ class HtmlTreeRenderMixin:
             out += "</div>"
 
             if node.get("children"):
-                out += f'<div class="children" id="{node_id}_children">'
+                style = ' style="display: none;"' if default_collapsed else ""
+                out += f'<div class="children" id="{node_id}_children"{style}>'
                 for child in node["children"]:
                     out += render_node(child, depth + 1)
                 out += "</div>"

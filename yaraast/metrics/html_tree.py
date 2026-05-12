@@ -35,12 +35,13 @@ class HtmlTreeGenerator(
         ast: YaraFile,
         output_path: str | None = None,
         title: str = "YARA AST Visualization",
+        default_collapsed: bool = False,
     ) -> str:
         """Generate HTML tree visualization."""
         self.node_counter = 0
         tree_data = self.visit(ast)
 
-        html_content = self._render_html_template(tree_data, title)
+        html_content = self._render_html_template(tree_data, title, default_collapsed)
 
         self._write_output(output_path, html_content)
 
@@ -51,12 +52,13 @@ class HtmlTreeGenerator(
         ast: YaraFile,
         output_path: str | None = None,
         title: str = "Interactive YARA AST",
+        default_collapsed: bool = False,
     ) -> str:
         """Generate interactive HTML with search and filtering."""
         self.node_counter = 0
         tree_data = self.visit(ast)
 
-        html_content = self._render_interactive_template(tree_data, title)
+        html_content = self._render_interactive_template(tree_data, title, default_collapsed)
 
         self._write_output(output_path, html_content)
 

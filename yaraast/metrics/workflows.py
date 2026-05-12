@@ -258,10 +258,11 @@ def generate_html_tree_file(
     title: str,
     interactive: bool,
     include_metadata: bool,
+    default_collapsed: bool = False,
 ) -> str:
     generator = HtmlTreeGenerator(include_metadata=include_metadata)
     if interactive:
-        generator.generate_interactive_html(ast, output_path, title)
+        generator.generate_interactive_html(ast, output_path, title, default_collapsed)
     else:
-        generator.generate_html(ast, output_path, title)
+        generator.generate_html(ast, output_path, title, default_collapsed)
     return output_path

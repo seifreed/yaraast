@@ -173,9 +173,10 @@ def generate_html_tree_file(
     title: str,
     interactive: bool,
     include_metadata: bool,
+    default_collapsed: bool = False,
 ) -> str:
     return _workflows.generate_html_tree_file(
-        ast, output_path, title, interactive, include_metadata
+        ast, output_path, title, interactive, include_metadata, default_collapsed
     )
 
 

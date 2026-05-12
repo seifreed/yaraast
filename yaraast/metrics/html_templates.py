@@ -46,11 +46,14 @@ HTML_TREE_TEMPLATE = """
         .tree-node.literal { background-color: #f9fbe7; border-left: 4px solid #cddc39; }
 
         .toggle {
+            background: transparent;
+            border: 0;
             cursor: pointer;
             user-select: none;
             font-weight: bold;
             color: #666;
             margin-right: 8px;
+            padding: 0;
         }
         .children {
             margin-left: 20px;
@@ -89,13 +92,24 @@ HTML_TREE_TEMPLATE = """
     </div>
 
     <script>
+        function toggleNode(nodeId) {
+            const children = document.getElementById(nodeId + '_children');
+            const toggle = document.getElementById(nodeId + '_toggle');
+            if (!children || !toggle) {
+                return;
+            }
+
+            const isHidden = children.style.display === 'none';
+            children.style.display = isHidden ? 'block' : 'none';
+            toggle.textContent = isHidden ? '▼' : '▶';
+            toggle.classList.toggle('expanded', isHidden);
+            toggle.classList.toggle('collapsed', !isHidden);
+            toggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        }
+
         document.querySelectorAll('.toggle').forEach(toggle => {
             toggle.addEventListener('click', () => {
-                const children = toggle.parentElement.nextElementSibling;
-                if (children) {
-                    children.style.display = children.style.display === 'none' ? 'block' : 'none';
-                    toggle.textContent = children.style.display === 'none' ? '▶' : '▼';
-                }
+                toggleNode(toggle.dataset.nodeId);
             });
         });
     </script>
@@ -157,11 +171,14 @@ INTERACTIVE_HTML_TREE_TEMPLATE = """
         .tree-node.literal { background-color: #f9fbe7; border-left: 4px solid #cddc39; }
 
         .toggle {
+            background: transparent;
+            border: 0;
             cursor: pointer;
             user-select: none;
             font-weight: bold;
             color: #666;
             margin-right: 8px;
+            padding: 0;
         }
         .children {
             margin-left: 20px;
@@ -198,13 +215,24 @@ INTERACTIVE_HTML_TREE_TEMPLATE = """
 
     <script>
         // Toggle functionality
+        function toggleNode(nodeId) {
+            const children = document.getElementById(nodeId + '_children');
+            const toggle = document.getElementById(nodeId + '_toggle');
+            if (!children || !toggle) {
+                return;
+            }
+
+            const isHidden = children.style.display === 'none';
+            children.style.display = isHidden ? 'block' : 'none';
+            toggle.textContent = isHidden ? '▼' : '▶';
+            toggle.classList.toggle('expanded', isHidden);
+            toggle.classList.toggle('collapsed', !isHidden);
+            toggle.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        }
+
         document.querySelectorAll('.toggle').forEach(toggle => {
             toggle.addEventListener('click', () => {
-                const children = toggle.parentElement.nextElementSibling;
-                if (children) {
-                    children.style.display = children.style.display === 'none' ? 'block' : 'none';
-                    toggle.textContent = children.style.display === 'none' ? '▶' : '▼';
-                }
+                toggleNode(toggle.dataset.nodeId);
             });
         });
 

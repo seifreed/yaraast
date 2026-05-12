@@ -150,7 +150,7 @@ def _is_graphviz_not_found_error(error: Exception) -> bool:
 )
 @click.option("--title", default="YARA AST Visualization", help="Page title")
 @click.option("--no-metadata", is_flag=True, help="Exclude metadata from visualization")
-@click.option("--collapsible", is_flag=True, help="Generate collapsible tree")
+@click.option("--collapsible", is_flag=True, help="Start generated tree collapsed")
 def tree(
     yara_file: str,
     output: str | None,
@@ -172,6 +172,7 @@ def tree(
         title,
         interactive=interactive,
         include_metadata=not no_metadata,
+        default_collapsed=collapsible,
     )
 
     click.echo(f"HTML tree visualization generated: {output}")
