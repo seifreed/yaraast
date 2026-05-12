@@ -74,8 +74,12 @@ class TestYaraLLexerComprehensive:
         regex_tokens = [t for t in tokens if t.type == BaseTokenType.REGEX]
 
         assert len(regex_tokens) == 2
-        assert r".*malicious\.com" in regex_tokens[0].value
-        assert r"^test-[0-9]+$" in regex_tokens[1].value
+        first_pattern = regex_tokens[0].value
+        second_pattern = regex_tokens[1].value
+        assert isinstance(first_pattern, str)
+        assert isinstance(second_pattern, str)
+        assert r".*malicious\.com" in first_pattern
+        assert r"^test-[0-9]+$" in second_pattern
 
     def test_lexer_two_char_operators(self) -> None:
         """Test lexing two-character operators."""
@@ -123,8 +127,12 @@ class TestYaraLLexerComprehensive:
 
         assert len(string_tokens) == 2
         # Escape sequences should be processed
-        assert '"' in string_tokens[0].value or "string" in string_tokens[0].value
-        assert "backslashes" in string_tokens[1].value
+        first_string = string_tokens[0].value
+        second_string = string_tokens[1].value
+        assert isinstance(first_string, str)
+        assert isinstance(second_string, str)
+        assert '"' in first_string or "string" in first_string
+        assert "backslashes" in second_string
 
     def test_lexer_regex_with_flags(self) -> None:
         """Test lexing regex patterns with flags."""
@@ -134,7 +142,9 @@ class TestYaraLLexerComprehensive:
         regex_tokens = [t for t in tokens if t.type == BaseTokenType.REGEX]
 
         assert len(regex_tokens) >= 1
-        assert "pattern" in regex_tokens[0].value
+        pattern = regex_tokens[0].value
+        assert isinstance(pattern, str)
+        assert "pattern" in pattern
 
     def test_lexer_numbers(self) -> None:
         """Test lexing integer and decimal numbers."""
