@@ -30,7 +30,7 @@ from yaraast.visitor.base import ASTTransformer
 class TestASTTransformerExpressions:
     """Test ASTTransformer on expression nodes."""
 
-    def test_transform_binary_expression(self):
+    def test_transform_binary_expression(self) -> None:
         """Test transforming binary expressions."""
         transformer = ASTTransformer()
 
@@ -44,7 +44,7 @@ class TestASTTransformerExpressions:
         assert isinstance(transformed, BinaryExpression)
         assert transformed.operator == "+"
 
-    def test_transform_unary_expression(self):
+    def test_transform_unary_expression(self) -> None:
         """Test transforming unary expressions."""
         transformer = ASTTransformer()
 
@@ -56,7 +56,7 @@ class TestASTTransformerExpressions:
         assert isinstance(transformed, UnaryExpression)
         assert transformed.operator == "not"
 
-    def test_transform_parentheses_expression(self):
+    def test_transform_parentheses_expression(self) -> None:
         """Test transforming parentheses expressions."""
         transformer = ASTTransformer()
 
@@ -69,7 +69,7 @@ class TestASTTransformerExpressions:
 
     # test_transform_set_expression removed due to bug in ASTTransformer
 
-    def test_transform_range_expression(self):
+    def test_transform_range_expression(self) -> None:
         """Test transforming range expressions."""
         transformer = ASTTransformer()
 
@@ -80,7 +80,7 @@ class TestASTTransformerExpressions:
         assert transformed is not None
         assert isinstance(transformed, RangeExpression)
 
-    def test_transform_defined_expression(self):
+    def test_transform_defined_expression(self) -> None:
         """Test transforming defined expressions."""
         from yaraast.ast.expressions import StringIdentifier
 
@@ -93,7 +93,7 @@ class TestASTTransformerExpressions:
         assert transformed is not None
         assert isinstance(transformed, DefinedExpression)
 
-    def test_transform_string_operator_expression(self):
+    def test_transform_string_operator_expression(self) -> None:
         """Test transforming string operator expressions."""
         from yaraast.ast.expressions import StringIdentifier, StringLiteral
 
@@ -112,7 +112,7 @@ class TestASTTransformerExpressions:
 class TestASTTransformerCoverage:
     """Tests specifically to increase transformer coverage without triggering bugs."""
 
-    def test_transformer_existence(self):
+    def test_transformer_existence(self) -> None:
         """Test that ASTTransformer can be instantiated."""
         transformer = ASTTransformer()
         assert transformer is not None
@@ -125,7 +125,7 @@ class TestASTTransformerCoverage:
 class TestASTTransformerOther:
     """Test ASTTransformer on other node types."""
 
-    def test_transform_comment(self):
+    def test_transform_comment(self) -> None:
         """Test transforming comments."""
         transformer = ASTTransformer()
 
@@ -137,7 +137,7 @@ class TestASTTransformerOther:
         assert isinstance(transformed, Comment)
         assert transformed.text == "Test comment"
 
-    def test_transform_comment_group(self):
+    def test_transform_comment_group(self) -> None:
         """Test transforming comment groups."""
         transformer = ASTTransformer()
 
@@ -154,7 +154,7 @@ class TestASTTransformerOther:
         assert isinstance(transformed, CommentGroup)
         assert len(transformed.comments) == 2
 
-    def test_transform_tag(self):
+    def test_transform_tag(self) -> None:
         """Test transforming tags."""
         transformer = ASTTransformer()
 
