@@ -3,13 +3,17 @@ from __future__ import annotations
 import pytest
 
 from yaraast.lexer.tokens import TokenType as T
-from yaraast.yaral.ast_nodes import AggregationFunction, ConditionalExpression
+from yaraast.yaral.ast_nodes import AggregationFunction, ConditionalExpression, UDMFieldAccess
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.tokens import YaraLTokenType
 
 
-def _tok(tt: T, value, yt: YaraLTokenType | None = None) -> YaraLToken:
+def _tok(
+    tt: T,
+    value: str | int | float | None,
+    yt: YaraLTokenType | None = None,
+) -> YaraLToken:
     return YaraLToken(type=tt, value=value, line=1, column=1, length=1, yaral_type=yt)
 
 
@@ -81,6 +85,7 @@ def test_enhanced_outcome_expression_aggregation_udm_string_int_and_error() -> N
         ],
     )
     access = p._parse_outcome_expression()
+    assert isinstance(access, UDMFieldAccess)
     assert access.field.parts == ["metadata", "event_type"]
 
     _set_tokens(p, [_tok(T.STRING, "abc")])

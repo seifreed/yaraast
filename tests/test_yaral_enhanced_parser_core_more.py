@@ -8,7 +8,11 @@ from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.tokens import YaraLTokenType
 
 
-def _tok(tt: T, value, yt: YaraLTokenType | None = None) -> YaraLToken:
+def _tok(
+    tt: T,
+    value: str | int | float | None,
+    yt: YaraLTokenType | None = None,
+) -> YaraLToken:
     return YaraLToken(type=tt, value=value, line=1, column=1, length=1, yaral_type=yt)
 
 
@@ -48,7 +52,9 @@ def test_enhanced_parser_keyword_type_peek_and_check_helpers() -> None:
     p._advance()
     assert p._check_keyword("rule")
     assert p._peek().value == "rule"
-    assert p._peek_ahead(1).value == "$e"
+    next_token = p._peek_ahead(1)
+    assert next_token is not None
+    assert next_token.value == "$e"
     assert p._peek_ahead(10) is None
     assert p._check(T.IDENTIFIER)
     p._advance()
