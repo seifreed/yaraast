@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.dialects import YaraDialect
 from yaraast.unified_parser import UnifiedParser
 
@@ -28,6 +29,7 @@ def test_parse_file_traditional_real(tmp_path: Path) -> None:
     f.write_text(_sample_with_preamble(), encoding="utf-8")
 
     ast = UnifiedParser.parse_file(f, streaming_threshold_mb=1024)
+    assert isinstance(ast, YaraFile)
     assert len(ast.rules) == 1
     assert len(ast.imports) == 2
     assert len(ast.includes) == 1
@@ -38,6 +40,7 @@ def test_parse_file_force_streaming_real(tmp_path: Path) -> None:
     f.write_text(_sample_with_preamble(), encoding="utf-8")
 
     ast = UnifiedParser.parse_file(f, force_streaming=True)
+    assert isinstance(ast, YaraFile)
     assert len(ast.rules) == 1
     assert len(ast.imports) == 2
     assert len(ast.includes) == 1
@@ -49,6 +52,7 @@ def test_parse_file_auto_streaming_threshold_real(tmp_path: Path) -> None:
     f.write_text(_sample_with_preamble(), encoding="utf-8")
 
     ast = UnifiedParser.parse_file(f, streaming_threshold_mb=0)
+    assert isinstance(ast, YaraFile)
     assert len(ast.rules) == 1
     assert len(ast.imports) == 2
 
