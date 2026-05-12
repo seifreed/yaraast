@@ -94,6 +94,7 @@ def find_rule_reference_records(
         for record in doc.rule_reference_records(
             rule_name, include_declaration=include_declaration
         ):
+            result_record = record
             if (
                 not include_declaration
                 and definition
@@ -108,8 +109,8 @@ def find_rule_reference_records(
                 and record.location.uri == definition.uri
                 and record.location.range == definition.range
             ):
-                record = ReferenceRecord(record.location, "declaration", "rule")
-            records.append(record)
+                result_record = ReferenceRecord(record.location, "declaration", "rule")
+            records.append(result_record)
     runtime.cache.rule_reference_records_cache[cache_key] = records
     return records
 
@@ -137,6 +138,7 @@ def find_rule_reference_records_in_document(
     definition = find_rule_definition(runtime, rule_name, current_uri)
     records: list[ReferenceRecord] = []
     for record in doc.rule_reference_records(rule_name, include_declaration=True):
+        result_record = record
         if (
             not include_declaration
             and definition
@@ -150,8 +152,8 @@ def find_rule_reference_records_in_document(
             and record.location.uri == definition.uri
             and record.location.range == definition.range
         ):
-            record = ReferenceRecord(record.location, "declaration", "rule")
-        records.append(record)
+            result_record = ReferenceRecord(record.location, "declaration", "rule")
+        records.append(result_record)
     return records
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from yaraast.yaral.validator_conditions import ConditionValidationMixin
 from yaraast.yaral.validator_events import EventValidationMixin
@@ -45,7 +45,7 @@ class YaraLValidator(
     """Semantic validator for YARA-L rules."""
 
     # Valid UDM fields for different event types
-    VALID_UDM_FIELDS = {
+    VALID_UDM_FIELDS: ClassVar[dict[str, list[str]]] = {
         "metadata": [
             "event_type",
             "event_timestamp",
@@ -111,7 +111,7 @@ class YaraLValidator(
     }
 
     # Valid aggregation functions
-    VALID_AGGREGATIONS = [
+    VALID_AGGREGATIONS: ClassVar[list[str]] = [
         "count",
         "count_distinct",
         "sum",
@@ -124,7 +124,16 @@ class YaraLValidator(
     ]
 
     # Valid time units for windows
-    VALID_TIME_UNITS = ["s", "m", "h", "d", "seconds", "minutes", "hours", "days"]
+    VALID_TIME_UNITS: ClassVar[list[str]] = [
+        "s",
+        "m",
+        "h",
+        "d",
+        "seconds",
+        "minutes",
+        "hours",
+        "days",
+    ]
 
     def __init__(self) -> None:
         """Initialize validator."""

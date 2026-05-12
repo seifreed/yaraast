@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 import re
 import threading
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, ClassVar, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -147,8 +147,8 @@ class DialectSpec:
 class DialectRegistry:
     """Registry allowing dialect plugins without modifying UnifiedParser."""
 
-    _specs: list[DialectSpec] = []
-    _lock = threading.Lock()
+    _specs: ClassVar[list[DialectSpec]] = []
+    _lock: ClassVar[Any] = threading.Lock()
 
     @classmethod
     def register(cls, spec: DialectSpec) -> None:
