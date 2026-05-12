@@ -1,7 +1,11 @@
 """Tests for performance optimization features."""
 
+from __future__ import annotations
+
+from collections.abc import Generator
 from pathlib import Path
 import tempfile
+from typing import Any
 
 import pytest
 
@@ -16,9 +20,9 @@ from yaraast.performance import (
 
 
 @pytest.fixture
-def sample_yara_files():
+def sample_yara_files() -> Generator[list[Path]]:
     """Create sample YARA files for testing."""
-    files = []
+    files: list[Path] = []
 
     # Create temporary directory
     temp_dir = Path(tempfile.mkdtemp())
@@ -72,7 +76,7 @@ rule TestRule3 : malware {
 
 
 @pytest.fixture
-def large_yara_file():
+def large_yara_file() -> Generator[Path]:
     """Create a large YARA file with multiple rules."""
     with tempfile.NamedTemporaryFile(suffix=".yar", delete=False) as tmp:
         temp_file = Path(tmp.name)
@@ -108,7 +112,7 @@ rule LargeRule{i} {{
 class TestStreamingParser:
     """Test streaming parser functionality."""
 
-    def test_parse_files(self, sample_yara_files) -> None:
+    def test_parse_files(self, sample_yara_files: list[Path]) -> None:
         """Test parsing multiple files with streaming parser."""
         parser = StreamingParser(max_memory_mb=100)
 
@@ -126,7 +130,7 @@ class TestStreamingParser:
             assert result.rule_count > 0
             assert result.parse_time > 0
 
-    def test_parse_directory(self, sample_yara_files) -> None:
+    def test_parse_directory(self, sample_yara_files: list[Path]) -> None:
         """Test parsing directory with streaming parser."""
         parser = StreamingParser()
 
@@ -140,7 +144,7 @@ class TestStreamingParser:
         successful = [r for r in results if r.status.value == "success"]
         assert len(successful) >= 3
 
-    def test_parse_rules_from_file(self, large_yara_file) -> None:
+    def test_parse_rules_from_file(self, large_yara_file: Path) -> None:
         """Test parsing individual rules from large file."""
         parser = StreamingParser()
 
@@ -158,7 +162,7 @@ class TestStreamingParser:
             assert result.rule_count == 1
             assert result.rule_name.startswith("LargeRule")
 
-    def test_memory_management(self, sample_yara_files) -> None:
+    def test_memory_management(self, sample_yara_files: list[Path]) -> None:
         """Test memory management during parsing."""
         parser = StreamingParser(max_memory_mb=50, enable_gc=True)
 
@@ -171,11 +175,11 @@ class TestStreamingParser:
         assert stats["files_successful"] == 3
         assert stats["total_parse_time"] > 0
 
-    def test_progress_callback(self, sample_yara_files) -> None:
+    def test_progress_callback(self, sample_yara_files: list[Path]) -> None:
         """Test progress callback functionality."""
-        progress_calls = []
+        progress_calls: list[tuple[int, int, str]] = []
 
-        def progress_callback(current, total, current_file) -> None:
+        def progress_callback(current: int, total: int, current_file: str) -> None:
             progress_calls.append((current, total, current_file))
 
         parser = StreamingParser(progress_callback=progress_callback)
@@ -187,7 +191,7 @@ class TestStreamingParser:
         assert progress_calls[-1][0] == 3  # Final call should be 3/3
         assert progress_calls[-1][1] == 3
 
-    def test_cancellation(self, sample_yara_files) -> None:
+    def test_cancellation(self, sample_yara_files: list[Path]) -> None:
         """Test parser cancellation."""
         parser = StreamingParser()
 
@@ -203,7 +207,7 @@ class TestStreamingParser:
 class TestParallelAnalyzer:
     """Test parallel analyzer functionality."""
 
-    def test_parse_files_parallel(self, sample_yara_files) -> None:
+    def test_parse_files_parallel(self, sample_yara_files: list[Path]) -> None:
         """Test parallel file parsing."""
         with ParallelAnalyzer(max_workers=2) as analyzer:
             jobs = analyzer.parse_files_parallel(sample_yara_files, chunk_size=2)
@@ -218,7 +222,7 @@ class TestParallelAnalyzer:
                     assert job.result is not None
                     assert isinstance(job.result, list)
 
-    def test_complexity_analysis_parallel(self, sample_yara_files) -> None:
+    def test_complexity_analysis_parallel(self, sample_yara_files: list[Path]) -> None:
         """Test parallel complexity analysis."""
         # First parse files
         parser = Parser()
@@ -241,10 +245,10 @@ class TestParallelAnalyzer:
                 assert "metrics" in job.result
                 assert "quality_score" in job.result
 
-    def test_batch_processing(self, sample_yara_files) -> None:
+    def test_batch_processing(self, sample_yara_files: list[Path]) -> None:
         """Test custom batch processing."""
 
-        def simple_worker(file_path, parameters):
+        def simple_worker(file_path: Path, parameters: dict[str, Any]) -> int:
             # Simple worker that returns file size
             return Path(file_path).stat().st_size
 
@@ -263,7 +267,7 @@ class TestParallelAnalyzer:
                     assert isinstance(job.result, int)  # File size
                     assert job.result > 0
 
-    def test_job_management(self, sample_yara_files) -> None:
+    def test_job_management(self, sample_yara_files: list[Path]) -> None:
         """Test job status and management."""
         with ParallelAnalyzer(max_workers=1) as analyzer:
             jobs = analyzer.parse_files_parallel(sample_yara_files, chunk_size=1)
@@ -281,7 +285,7 @@ class TestParallelAnalyzer:
 class TestBatchProcessor:
     """Test batch processor functionality."""
 
-    def test_process_files(self, sample_yara_files) -> None:
+    def test_process_files(self, sample_yara_files: list[Path]) -> None:
         """Test batch processing of files."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
@@ -306,7 +310,7 @@ class TestBatchProcessor:
             complexity_result = results[BatchOperation.COMPLEXITY]
             assert complexity_result.successful_count > 0
 
-    def test_process_directory(self, sample_yara_files) -> None:
+    def test_process_directory(self, sample_yara_files: list[Path]) -> None:
         """Test batch processing of directory."""
         directory = sample_yara_files[0].parent
 
@@ -328,7 +332,7 @@ class TestBatchProcessor:
             parse_result = results[BatchOperation.PARSE]
             assert parse_result.successful_count >= 3
 
-    def test_html_tree_generation(self, sample_yara_files) -> None:
+    def test_html_tree_generation(self, sample_yara_files: list[Path]) -> None:
         """Test HTML tree generation in batch."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
@@ -352,7 +356,7 @@ class TestBatchProcessor:
                 assert path.exists()
                 assert "<!DOCTYPE html>" in path.read_text(encoding="utf-8")
 
-    def test_large_file_processing(self, large_yara_file) -> None:
+    def test_large_file_processing(self, large_yara_file: Path) -> None:
         """Test processing of large file with rule splitting."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
@@ -396,7 +400,7 @@ class TestMemoryOptimizer:
         optimizer = MemoryOptimizer(gc_threshold=10, enable_tracking=True)
 
         # Create and track objects
-        objects = []
+        objects: list[str] = []
         for i in range(15):
             obj = f"test_object_{i}"
             objects.append(obj)
@@ -434,7 +438,7 @@ class TestMemoryOptimizer:
 
         items = list(range(100))
 
-        def simple_processor(item):
+        def simple_processor(item: int) -> int:
             return item * 2
 
         results = list(
@@ -472,7 +476,7 @@ class TestMemoryOptimizer:
 class TestPerformanceIntegration:
     """Test integration between performance components."""
 
-    def test_streaming_with_parallel_analysis(self, sample_yara_files) -> None:
+    def test_streaming_with_parallel_analysis(self, sample_yara_files: list[Path]) -> None:
         """Test combining streaming parser with parallel analyzer."""
         # Parse files with streaming parser
         streaming_parser = StreamingParser()
@@ -490,7 +494,10 @@ class TestPerformanceIntegration:
             successful_analyses = [j for j in complexity_jobs if j.status.value == "completed"]
             assert len(successful_analyses) == len(successful_asts)
 
-    def test_batch_processor_with_memory_optimizer(self, sample_yara_files) -> None:
+    def test_batch_processor_with_memory_optimizer(
+        self,
+        sample_yara_files: list[Path],
+    ) -> None:
         """Test batch processor using memory optimizer."""
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
@@ -511,7 +518,7 @@ class TestPerformanceIntegration:
             parse_result = results[BatchOperation.PARSE]
             assert parse_result.successful_count > 0
 
-    def test_end_to_end_performance_workflow(self, large_yara_file) -> None:
+    def test_end_to_end_performance_workflow(self, large_yara_file: Path) -> None:
         """Test complete performance workflow on large file."""
         with tempfile.TemporaryDirectory() as temp_dir:
             Path(temp_dir)
