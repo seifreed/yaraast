@@ -6,7 +6,7 @@ from typing import Any
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
-from ._shared import EXPECTED_FIELD_NAME_ERROR, YaraLParserError
+from ._shared import EXPECTED_FIELD_NAME_ERROR, YaraLParserError, split_regex_token_value
 from .ast_nodes import (
     EventAssignment,
     EventsSection,
@@ -333,7 +333,8 @@ class YaraLEventsParsingMixin:
         if self._check(BaseTokenType.REGEX):
             # Regex pattern
             pattern_token = self._advance()
-            return RegexPattern(pattern=pattern_token.value)
+            pattern, flags = split_regex_token_value(pattern_token.value)
+            return RegexPattern(pattern=pattern, flags=flags)
         # Could be another field reference
         return self._advance().value
 

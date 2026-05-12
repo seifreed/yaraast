@@ -5,6 +5,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from yaraast.yaral.ast_nodes import EventAssignment, ReferenceList, RegexPattern, UDMFieldAccess
+from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.parser import YaraLParser
 
 
@@ -71,6 +72,35 @@ def test_parser_event_assignment_value_can_be_udm_field_access() -> None:
     assert isinstance(statements[0].value, UDMFieldAccess)
     assert statements[0].value.event.name == "$e2"
     assert statements[0].value.field.path == "principal.ip"
+
+
+def test_parser_normalizes_regex_token_delimiters_for_generation() -> None:
+    code = dedent(
+        r"""
+        rule regex_roundtrip {
+            events:
+                $e.target.hostname regex /evil.*/ nocase
+            outcome:
+                $match = if($e.target.hostname = /evil.*/i, "YES", "NO")
+            condition:
+                $e
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+    event_value = ast.rules[0].events
+    assert event_value is not None
+    statement = event_value.statements[0]
+    assert isinstance(statement, EventAssignment)
+    assert isinstance(statement.value, RegexPattern)
+    assert statement.value.pattern == "evil.*"
+    assert statement.value.flags == []
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.target.hostname regex /evil.*/ nocase" in generated
+    assert '$match = if($e.target.hostname = /evil.*/i, "YES", "NO")' in generated
+    assert "//evil" not in generated
 
 
 def test_parser_match_multiple_variables_lines() -> None:

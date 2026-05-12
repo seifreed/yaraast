@@ -7,6 +7,7 @@ from typing import Any
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
 from ._parsing_outcome_args import OutcomeArgumentParsingMixin
+from ._shared import format_regex_token_value
 from .ast_nodes import (
     AggregationFunction,
     ConditionalExpression,
@@ -221,7 +222,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
         # Check for regex pattern
         if self._check(BaseTokenType.REGEX):
             pattern_token = self._advance()
-            return f"/{pattern_token.value}/"
+            return format_regex_token_value(pattern_token.value)
 
         # Delegate to existing argument parsing for other types
         return self._parse_outcome_argument_basic()

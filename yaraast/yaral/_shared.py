@@ -10,6 +10,21 @@ from .lexer import YaraLToken
 EXPECTED_FIELD_NAME_ERROR = "Expected field name"
 
 
+def split_regex_token_value(value: object) -> tuple[str, list[str]]:
+    """Return regex pattern and inline flags from a lexer token value."""
+    raw_value = "" if value is None else str(value)
+    if raw_value.startswith("/") and "/" in raw_value[1:]:
+        last_delimiter = raw_value.rfind("/")
+        return raw_value[1:last_delimiter], list(raw_value[last_delimiter + 1 :])
+    return raw_value, []
+
+
+def format_regex_token_value(value: object) -> str:
+    """Format a lexer regex token value with exactly one delimiter pair."""
+    pattern, flags = split_regex_token_value(value)
+    return f"/{pattern}/{''.join(flags)}"
+
+
 class YaraLParserError(YaraASTError):
     """YARA-L parser error."""
 
