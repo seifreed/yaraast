@@ -8,6 +8,9 @@ from typing import Any
 from yaraast.ast.base import _VisitorType
 from yaraast.ast.expressions import Expression
 
+type QuantifierValue = Expression | str | int | float
+type StringSetValue = Expression | str | list[str]
+
 
 @dataclass
 class Condition(Expression):
@@ -34,8 +37,8 @@ class ForExpression(Condition):
 class ForOfExpression(Condition):
     """For...of expression (for any of ($a, $b))."""
 
-    quantifier: str
-    string_set: Expression
+    quantifier: QuantifierValue
+    string_set: StringSetValue
     condition: Expression | None = None
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -74,8 +77,8 @@ class InExpression(Condition):
 class OfExpression(Condition):
     """Of expression (N of ($a, $b, $c))."""
 
-    quantifier: Expression
-    string_set: Expression
+    quantifier: QuantifierValue
+    string_set: StringSetValue
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_of_expression(self)

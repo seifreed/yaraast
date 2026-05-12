@@ -11,6 +11,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
+from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaBlock
 from yaraast.codegen.generator import CodeGenerator
 
@@ -49,6 +50,12 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
     of_expr = OfExpression(quantifier=Identifier("n"), string_set=Identifier("them"))
     assert gen.visit(of_expr) == "n of them"
 
+    of_list = OfExpression(quantifier=2, string_set=["$a", "$b"])
+    assert gen.visit(of_list) == "2 of ($a, $b)"
+
+    for_of_raw = ForOfExpression(quantifier="all", string_set="them", condition=None)
+    assert gen.visit(for_of_raw) == "all of them"
+
 
 def test_codegen_in_expression_parentheses_paths() -> None:
     gen = CodeGenerator()
@@ -81,24 +88,21 @@ def test_codegen_comment_extern_and_pragma_visit_methods() -> None:
     assert gen.visit(Comment("hello")) == "// hello"
 
     group = CommentGroup(comments=[Comment("one"), Comment("two")])
-    group.lines = ["one", "two"]
     assert gen.visit(group) == "// one\n// two"
 
     extern_import = ExternImport(module_path="mod.yar")
-    extern_import.module = extern_import.module_path
     assert gen.visit(extern_import) == 'import "mod.yar"'
 
     namespace = ExternNamespace(name="ext")
     assert gen.visit(namespace) == "namespace ext"
 
-    extern_rule_with_mod = ExternRule(name="R1", modifiers=["private"])
+    extern_rule_with_mod = ExternRule(name="R1", modifiers=[RuleModifier.from_string("private")])
     assert gen.visit(extern_rule_with_mod) == "private rule R1"
 
     extern_rule_no_mod = ExternRule(name="R2", modifiers=[])
     assert gen.visit(extern_rule_no_mod) == "rule R2"
 
     extern_ref = ExternRuleReference(rule_name="RemoteRule")
-    extern_ref.name = extern_ref.rule_name
     assert gen.visit(extern_ref) == "RemoteRule"
 
     file_pragma = CustomPragma(name="opt", arguments=["on"])

@@ -20,7 +20,7 @@ class ComplexityCalculator(MetricsVisitorBase):
         self._cognitive_depth = 0
         self._in_logical_op = False
 
-    def calculate(self, node: ASTNode) -> int:
+    def calculate(self, node: ASTNode | None) -> int:
         """Calculate complexity for an AST node."""
         if node is None:
             return 0

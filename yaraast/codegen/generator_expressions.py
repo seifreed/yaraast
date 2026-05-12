@@ -3,6 +3,14 @@
 from __future__ import annotations
 
 
+def _render_string_set(gen, string_set) -> str:
+    if hasattr(string_set, "accept"):
+        return gen.visit(string_set)
+    if isinstance(string_set, list):
+        return f"({', '.join(str(item) for item in string_set)})"
+    return str(string_set)
+
+
 def render_for_of_expression(gen, node) -> str:
     """Render a for-of expression."""
     if hasattr(node.quantifier, "accept"):
@@ -10,7 +18,7 @@ def render_for_of_expression(gen, node) -> str:
     else:
         quantifier = str(node.quantifier)
 
-    string_set = gen.visit(node.string_set)
+    string_set = _render_string_set(gen, node.string_set)
     if node.condition:
         condition = gen.visit(node.condition)
         return f"for {quantifier} of {string_set} : ({condition})"
@@ -56,5 +64,5 @@ def render_of_expression(gen, node) -> str:
         quantifier = f"{int(node.quantifier.value * 100)}%"
     else:
         quantifier = gen.visit(node.quantifier)
-    string_set = gen.visit(node.string_set)
+    string_set = _render_string_set(gen, node.string_set)
     return f"{quantifier} of {string_set}"

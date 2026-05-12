@@ -68,6 +68,7 @@ rule alpha {
 """.lstrip()
     ast = Parser().parse(text)
     rule = ast.rules[0]
+    assert rule.location is not None
 
     rule_range = location_to_range(rule.location, source_text=text)
     assert rule_range.start.line == 0

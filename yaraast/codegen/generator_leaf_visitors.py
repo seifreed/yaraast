@@ -137,7 +137,7 @@ def visit_extern_rule(node) -> str:
 
 
 def visit_extern_rule_reference(node) -> str:
-    return node.name
+    return node.qualified_name
 
 
 def visit_in_rule_pragma(node) -> str:

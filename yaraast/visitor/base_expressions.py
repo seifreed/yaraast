@@ -129,7 +129,8 @@ class BaseVisitorExpressionsMixin:
         return self._noop()
 
     def visit_for_of_expression(self: VisitorHelperProtocol[T], node: ForOfExpression) -> T:
-        self._visit_if(node.string_set)
+        if isinstance(node.string_set, ASTNode):
+            self._visit_if(node.string_set)
         self._visit_if(node.condition)
         return self._noop()
 
@@ -142,8 +143,10 @@ class BaseVisitorExpressionsMixin:
         return self._noop()
 
     def visit_of_expression(self: VisitorHelperProtocol[T], node: OfExpression) -> T:
-        self._visit_if(node.quantifier)
-        self._visit_if(node.string_set)
+        if isinstance(node.quantifier, ASTNode):
+            self._visit_if(node.quantifier)
+        if isinstance(node.string_set, ASTNode):
+            self._visit_if(node.string_set)
         return self._noop()
 
     def visit_module_reference(self: VisitorHelperProtocol[T], node: ModuleReference) -> T:
