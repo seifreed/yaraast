@@ -2,11 +2,28 @@
 
 from importlib import util
 
+from lsprotocol.types import Hover, Location, MarkupContent, TextEdit, WorkspaceEdit
 import pytest
 
 
+def _hover_text(hover: Hover) -> str:
+    assert isinstance(hover.contents, MarkupContent)
+    return hover.contents.value
+
+
+def _single_location(location: Location | list[Location]) -> Location:
+    assert not isinstance(location, list)
+    return location
+
+
+def _edit_changes(edit: WorkspaceEdit, uri: str) -> list[TextEdit]:
+    changes = edit.changes
+    assert changes is not None
+    return list(changes[uri])
+
+
 # Test basic LSP provider functionality
-def test_diagnostics_provider():
+def test_diagnostics_provider() -> None:
     """Test diagnostics provider."""
     from yaraast.lsp.diagnostics import DiagnosticsProvider
 
@@ -37,7 +54,7 @@ def test_diagnostics_provider():
     assert len(diagnostics) > 0, "Invalid code should have diagnostics"
 
 
-def test_completion_provider():
+def test_completion_provider() -> None:
     """Test completion provider."""
     from lsprotocol.types import Position
 
@@ -63,7 +80,7 @@ def test_completion_provider():
     assert "filesize" in completion_labels, "Should suggest 'filesize'"
 
 
-def test_hover_provider():
+def test_hover_provider() -> None:
     """Test hover provider."""
     from lsprotocol.types import Position
 
@@ -83,10 +100,10 @@ def test_hover_provider():
     hover = provider.get_hover(text, position)
 
     assert hover is not None, "Should provide hover for 'filesize'"
-    assert "filesize" in hover.contents.value.lower(), "Hover should mention filesize"
+    assert "filesize" in _hover_text(hover).lower(), "Hover should mention filesize"
 
 
-def test_definition_provider():
+def test_definition_provider() -> None:
     """Test definition provider."""
     from lsprotocol.types import Position
 
@@ -109,10 +126,11 @@ def test_definition_provider():
     location = provider.get_definition(text, position, uri)
 
     assert location is not None, "Should find definition of $payload"
+    location = _single_location(location)
     assert location.range.start.line >= 0, "Definition should have valid line number"
 
 
-def test_references_provider():
+def test_references_provider() -> None:
     """Test references provider."""
     from lsprotocol.types import Position
 
@@ -137,7 +155,7 @@ def test_references_provider():
     assert len(locations) >= 2, "Should find at least 2 references to $str"
 
 
-def test_symbols_provider():
+def test_symbols_provider() -> None:
     """Test document symbols provider."""
     from yaraast.lsp.symbols import SymbolsProvider
 
@@ -170,7 +188,7 @@ def test_symbols_provider():
     assert rule_symbol.children and len(rule_symbol.children) > 0, "Rule should have children"
 
 
-def test_formatting_provider():
+def test_formatting_provider() -> None:
     """Test formatting provider."""
     from yaraast.lsp.formatting import FormattingProvider
 
@@ -185,7 +203,7 @@ def test_formatting_provider():
     assert edits[0].new_text != unformatted, "Formatted text should be different"
 
 
-def test_code_actions_provider():
+def test_code_actions_provider() -> None:
     """Test code actions provider."""
     from lsprotocol.types import Diagnostic, DiagnosticSeverity, Position, Range
 
@@ -219,7 +237,7 @@ def test_code_actions_provider():
     assert any("import" in title.lower() for title in action_titles), "Should suggest adding import"
 
 
-def test_rename_provider():
+def test_rename_provider() -> None:
     """Test rename provider."""
     from lsprotocol.types import Position
 
@@ -247,13 +265,12 @@ def test_rename_provider():
     # Perform rename
     edit = provider.rename(text, position, "$new", uri)
     assert edit is not None, "Should provide rename edits"
-    assert uri in edit.changes, "Should have edits for the document"
 
-    edits_list = edit.changes[uri]
+    edits_list = _edit_changes(edit, uri)
     assert len(edits_list) >= 2, "Should rename all occurrences"
 
 
-def test_semantic_tokens_provider():
+def test_semantic_tokens_provider() -> None:
     """Test semantic tokens provider."""
     from yaraast.lsp.semantic_tokens import SemanticTokensProvider
 
@@ -283,7 +300,7 @@ PYGLS_AVAILABLE = util.find_spec("pygls") is not None
 
 
 @pytest.mark.skipif(not PYGLS_AVAILABLE, reason="pygls not installed")
-def test_language_server_creation():
+def test_language_server_creation() -> None:
     """Test that language server can be created."""
     from yaraast.lsp.server import create_server
 
@@ -292,7 +309,7 @@ def test_language_server_creation():
     assert server.name == "yaraast-lsp", "Server should have correct name"
 
 
-def test_signature_help_provider():
+def test_signature_help_provider() -> None:
     """Test signature help provider."""
     from lsprotocol.types import Position
 
@@ -315,7 +332,7 @@ def test_signature_help_provider():
     assert "uint32" in signature_help.signatures[0].label, "Signature should contain uint32"
 
 
-def test_document_highlight_provider():
+def test_document_highlight_provider() -> None:
     """Test document highlight provider."""
     from lsprotocol.types import Position
 
@@ -339,7 +356,7 @@ def test_document_highlight_provider():
     assert len(highlights) >= 2, "Should find at least 2 occurrences of $str"
 
 
-def test_folding_ranges_provider():
+def test_folding_ranges_provider() -> None:
     """Test folding ranges provider."""
     from yaraast.lsp.folding_ranges import FoldingRangesProvider
 
@@ -363,7 +380,7 @@ def test_folding_ranges_provider():
     assert len(ranges) >= 1, "Should have at least one folding range"
 
 
-def test_document_links_provider():
+def test_document_links_provider() -> None:
     """Test document links provider."""
     from yaraast.lsp.document_links import DocumentLinksProvider
 
@@ -388,7 +405,7 @@ def test_document_links_provider():
     assert any("pe" in str(target) for target in link_targets), "Should have link for pe module"
 
 
-def test_workspace_symbols_provider():
+def test_workspace_symbols_provider() -> None:
     """Test workspace symbols provider."""
     from pathlib import Path
     import tempfile
