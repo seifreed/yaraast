@@ -188,10 +188,10 @@ def export_dependency_graph(
     output_path = Path(output_path)
 
     if format == "json":
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             json.dump(graph.to_dict(), f, indent=2)
     elif format == "dot":
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(generate_dot_graph(graph))
     else:
         msg = f"Unsupported format: {format}"

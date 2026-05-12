@@ -21,7 +21,7 @@ def parse_item(item: str | Path) -> YaraFile | None:
     try:
         parser = Parser()
         if isinstance(item, Path):
-            with open(item) as handle:
+            with open(item, encoding="utf-8") as handle:
                 content = handle.read()
         else:
             content = item
@@ -61,7 +61,7 @@ def process_files_single(
 
     for index, file_path in enumerate(file_paths):
         try:
-            with open(file_path) as handle:
+            with open(file_path, encoding="utf-8") as handle:
                 content = handle.read()
             parsed = parse_item(content)
             if operation == BatchOperation.COMPLEXITY:
@@ -70,11 +70,11 @@ def process_files_single(
             elif operation == BatchOperation.HTML_TREE and output_dir:
                 output_file = output_dir / f"{file_path.stem}.html"
                 html_content = HtmlTreeGenerator().generate_html(parsed, None)
-                output_file.write_text(html_content)
+                output_file.write_text(html_content, encoding="utf-8")
                 result.output_files.append(str(output_file))
             elif operation == BatchOperation.SERIALIZE and output_dir:
                 output_file = output_dir / f"{file_path.stem}.json"
-                output_file.write_text(serialize_item(parsed))
+                output_file.write_text(serialize_item(parsed), encoding="utf-8")
                 result.output_files.append(str(output_file))
             result.successful_count += 1
         except Exception as exc:
@@ -99,7 +99,7 @@ def process_large_file(
 
     results = {}
     try:
-        with open(file_path) as handle:
+        with open(file_path, encoding="utf-8") as handle:
             content = handle.read()
         parsed = parse_item(content)
         input_count = len(parsed.rules) if (parsed and split_rules) else 1

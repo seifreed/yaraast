@@ -173,7 +173,7 @@ class StreamingParser:
 
             try:
                 start_time = timed_now()
-                content = Path(file_path).read_text()
+                content = Path(file_path).read_text(encoding="utf-8")
                 ast = self.parser.parse(content)
                 parse_time = timed_now() - start_time
 

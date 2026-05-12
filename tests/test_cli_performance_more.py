@@ -19,7 +19,7 @@ from yaraast.cli.commands.performance import performance
 
 def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
-    path.write_text(dedent(content))
+    path.write_text(dedent(content), encoding="utf-8")
     return str(path)
 
 
@@ -55,7 +55,7 @@ def test_performance_batch_file(tmp_path: Path) -> None:
     assert out_dir.exists()
     results_file = out_dir / "batch_results.json"
     assert results_file.exists()
-    payload = json.loads(results_file.read_text())
+    payload = json.loads(results_file.read_text(encoding="utf-8"))
     assert "parse" in payload
 
 
@@ -76,7 +76,7 @@ def test_performance_stream_file(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert out_file.exists()
-    payload = json.loads(out_file.read_text())
+    payload = json.loads(out_file.read_text(encoding="utf-8"))
     assert payload["summary"]["total_processed"] >= 1
 
 
@@ -159,7 +159,7 @@ def test_performance_batch_directory_without_progress_covers_silent_callback(
 
     assert result.exit_code == 0
     assert (out_dir / "batch_results.json").exists()
-    payload = json.loads((out_dir / "batch_results.json").read_text())
+    payload = json.loads((out_dir / "batch_results.json").read_text(encoding="utf-8"))
     assert payload["parse"]["input_count"] == 2
 
 

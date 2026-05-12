@@ -208,7 +208,7 @@ def optimize_yara_file(
 
     # Parse the file
     parser = Parser()
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8") as f:
         content = f.read()
     ast = parser.parse(content)
 
@@ -223,7 +223,7 @@ def optimize_yara_file(
 
         gen = CodeGenerator()
         output = gen.generate(ast)
-        with open(output_path, "w") as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(output)
 
     return ast, stats

@@ -42,7 +42,7 @@ class ASTBenchmarker:
         """Benchmark parsing performance."""
         try:
             # Read file once
-            with Path(file_path).open() as f:
+            with Path(file_path).open(encoding="utf-8") as f:
                 content = f.read()
 
             file_size = len(content.encode())
@@ -102,7 +102,7 @@ class ASTBenchmarker:
         try:
             # Parse file once
             # Parser will be instantiated with content
-            with Path(file_path).open() as f:
+            with Path(file_path).open(encoding="utf-8") as f:
                 content = f.read()
 
             file_size = len(content.encode())
@@ -160,7 +160,7 @@ class ASTBenchmarker:
         results = []
 
         try:
-            with Path(file_path).open() as f:
+            with Path(file_path).open(encoding="utf-8") as f:
                 content = f.read()
 
             file_size = len(content.encode())

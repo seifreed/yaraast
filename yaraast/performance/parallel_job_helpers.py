@@ -55,7 +55,7 @@ def analyze_file_path(path: str, analyzer) -> dict:
     from yaraast.parser.parser import Parser
 
     parser = Parser()
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         content = f.read()
 
     yara_file = parser.parse(content)
@@ -109,7 +109,7 @@ def parse_file_chunks(file_paths: list, chunk_size: int = 10) -> list[Job]:
             parser = Parser()
             results = []
             for file_path in chunk:
-                content = Path(file_path).read_text()
+                content = Path(file_path).read_text(encoding="utf-8")
                 ast = parser.parse(content)
                 results.append(ast)
             complete_job(job, results)
