@@ -28,6 +28,9 @@ def test_hex_string_builder_invalid_low_nibble_and_unknown_pattern_part() -> Non
     with pytest.raises(ValidationError, match="Invalid nibble pattern: \\?G"):
         HexStringBuilder().nibble("?G")
 
+    with pytest.raises(ValidationError, match="Invalid hex value: GG"):
+        HexStringBuilder().pattern("GG")
+
     builder = HexStringBuilder()
     builder.pattern("XYZ")
     assert builder.build() == []

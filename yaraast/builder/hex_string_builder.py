@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-import contextlib
 from typing import Self
 
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexToken, HexWildcard
@@ -195,9 +194,8 @@ class HexStringBuilder:
             self.jump_exact(int(jump_str))
 
     def _add_hex_byte_safely(self, part: str) -> None:
-        """Add hex byte with error suppression."""
-        with contextlib.suppress(Exception):
-            self.add(part)
+        """Add a hex byte token."""
+        self.add(part)
 
     def build(self) -> list[HexToken]:
         """Build the list of hex tokens."""
