@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TypedDict
 
-from lsprotocol.types import Position, Range
+from lsprotocol.types import Location, Position, Range
 
 from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.document_highlight import DocumentHighlightProvider
@@ -18,11 +19,28 @@ from yaraast.lsp.symbols import SymbolsProvider
 FIXTURES = Path(__file__).parent / "fixtures" / "lsp_parity"
 
 
+class MatrixResult(TypedDict):
+    hover: bool
+    definition: bool
+    references: int
+    rename_files: int
+    symbols: int
+    document_links: int
+    highlights: int
+    selection_ranges: int
+    semantic_tokens_range: int
+
+
 def _pos(line: int, char: int) -> Position:
     return Position(line=line, character=char)
 
 
-def _run_matrix(folder: str, dialect: str, position: Position) -> dict[str, object]:
+def _single_location(location: Location | list[Location]) -> Location:
+    assert not isinstance(location, list)
+    return location
+
+
+def _run_matrix(folder: str, dialect: str, position: Position) -> MatrixResult:
     root = FIXTURES / folder
     runtime = LspRuntime()
     runtime.update_config({"YARA": {"dialectMode": dialect}})
@@ -130,6 +148,7 @@ def test_lsp_parity_e2e_cross_file_include_and_module_edges() -> None:
 
     include_def = DefinitionProvider(runtime).get_definition(user_text, _pos(0, 11), user_uri)
     assert include_def is not None
+    include_def = _single_location(include_def)
     assert include_def.uri.endswith("/common.yar")
 
     module_hover = HoverProvider(runtime).get_hover(common_text, _pos(0, 9), common_uri)
@@ -158,6 +177,7 @@ def test_lsp_parity_e2e_yaral_cross_file_navigation_and_rename() -> None:
 
     definition = DefinitionProvider(runtime).get_definition(user_text, _pos(2, 10), user_uri)
     assert definition is not None
+    definition = _single_location(definition)
     assert definition.uri.endswith("/common.yar")
 
     references = ReferencesProvider(runtime).get_references(user_text, _pos(2, 10), user_uri)
