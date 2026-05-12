@@ -31,7 +31,7 @@ from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.parser import Parser
 
 
-def _t(tt: TokenType, value) -> Token:
+def _t(tt: TokenType, value: str | int | float | None) -> Token:
     return Token(type=tt, value=value, line=1, column=1)
 
 
@@ -244,11 +244,17 @@ def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> Non
     assert isinstance(node.index, IntegerLiteral)
 
     p = _parser_with_tokens([_t(TokenType.FILESIZE, "filesize")])
-    assert p._parse_primary_expression().name == "filesize"
+    keyword_expr = p._parse_primary_expression()
+    assert isinstance(keyword_expr, Identifier)
+    assert keyword_expr.name == "filesize"
     p = _parser_with_tokens([_t(TokenType.ENTRYPOINT, "entrypoint")])
-    assert p._parse_primary_expression().name == "entrypoint"
+    keyword_expr = p._parse_primary_expression()
+    assert isinstance(keyword_expr, Identifier)
+    assert keyword_expr.name == "entrypoint"
     p = _parser_with_tokens([_t(TokenType.THEM, "them")])
-    assert p._parse_primary_expression().name == "them"
+    keyword_expr = p._parse_primary_expression()
+    assert isinstance(keyword_expr, Identifier)
+    assert keyword_expr.name == "them"
 
     p = _parser_with_tokens([_t(TokenType.IDENTIFIER, "pe")])
     ident = p._parse_primary_expression()
@@ -299,14 +305,14 @@ def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> Non
     p = _parser_with_tokens(
         [_t(TokenType.STRING_IDENTIFIER, "$a"), _t(TokenType.AT, "at"), _t(TokenType.INTEGER, 5)]
     )
-    expr = p._try_parse_string_operation()
-    assert isinstance(expr, StringIdentifier)
+    string_expr = p._try_parse_string_operation()
+    assert isinstance(string_expr, StringIdentifier)
 
     p = _parser_with_tokens(
         [_t(TokenType.STRING_IDENTIFIER, "$a"), _t(TokenType.IN, "in"), _t(TokenType.INTEGER, 5)]
     )
-    expr = p._try_parse_string_operation()
-    assert isinstance(expr, StringIdentifier)
+    string_expr = p._try_parse_string_operation()
+    assert isinstance(string_expr, StringIdentifier)
 
     p = _parser_with_tokens([_t(TokenType.STRING_IDENTIFIER, "$a*")])
     assert isinstance(p._try_parse_string_operation(), StringWildcard)
@@ -326,8 +332,8 @@ def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> Non
             _t(TokenType.RPAREN, ")"),
         ]
     )
-    expr = p._try_parse_for_expression()
-    assert expr is not None
+    for_expr = p._try_parse_for_expression()
+    assert for_expr is not None
 
     p = _parser_with_tokens(
         [_t(TokenType.STRING_OFFSET, "@a"), _t(TokenType.LBRACKET, "["), _t(TokenType.INTEGER, 1)]
