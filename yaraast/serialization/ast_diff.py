@@ -143,7 +143,7 @@ class AstDiff:
         if output_path:
             import json
 
-            with Path(output_path).open("w") as f:
+            with Path(output_path).open("w", encoding="utf-8") as f:
                 json.dump(patch, f, indent=2)
 
         return patch

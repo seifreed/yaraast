@@ -265,7 +265,7 @@ class TestHtmlTreeGenerator:
             generator.generate_html(parsed_ast, str(output_path))
 
             assert output_path.exists()
-            content = output_path.read_text()
+            content = output_path.read_text(encoding="utf-8")
             assert "TestRule" in content
             assert "<!DOCTYPE html>" in content
 

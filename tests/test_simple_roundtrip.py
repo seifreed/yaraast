@@ -82,7 +82,7 @@ def test_simple_roundtrip_helpers(tmp_path: Path) -> None:
     assert len(batch) == 2
 
     file_path = tmp_path / "sample.yar"
-    file_path.write_text(yara_code)
+    file_path.write_text(yara_code, encoding="utf-8")
     ok2, _, _ = helper.test_file(file_path)
     assert isinstance(ok2, bool)
 

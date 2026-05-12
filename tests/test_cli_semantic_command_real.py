@@ -20,7 +20,7 @@ rule sem_rule {
 }
 """
     rule_path = tmp_path / "sem.yar"
-    rule_path.write_text(rule_text.strip())
+    rule_path.write_text(rule_text.strip(), encoding="utf-8")
 
     out_path = tmp_path / "out.json"
     runner = CliRunner()
@@ -31,6 +31,6 @@ rule sem_rule {
     )
 
     assert result.exit_code == 0
-    data = json.loads(out_path.read_text())
+    data = json.loads(out_path.read_text(encoding="utf-8"))
     assert isinstance(data, list)
     assert data[0]["is_valid"] is True

@@ -13,7 +13,7 @@ from yaraast.cli.commands.semantic import semantic
 
 def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
-    path.write_text(dedent(content))
+    path.write_text(dedent(content), encoding="utf-8")
     return str(path)
 
 
@@ -41,7 +41,7 @@ def test_semantic_cli_json_output(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert out_path.exists()
 
-    payload = json.loads(out_path.read_text())
+    payload = json.loads(out_path.read_text(encoding="utf-8"))
     assert len(payload) == 1
     assert payload[0]["file"].endswith("rule.yar")
     assert payload[0]["errors"] == []

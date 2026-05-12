@@ -48,8 +48,8 @@ def test_simple_ast_differ_files_and_ast(tmp_path: Path) -> None:
 
     p1 = tmp_path / "a.yar"
     p2 = tmp_path / "b.yar"
-    p1.write_text(rule1)
-    p2.write_text(rule2)
+    p1.write_text(rule1, encoding="utf-8")
+    p2.write_text(rule2, encoding="utf-8")
 
     differ = SimpleASTDiffer()
     result = differ.diff_files(p1, p2)

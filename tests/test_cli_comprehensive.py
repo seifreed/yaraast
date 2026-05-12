@@ -30,7 +30,9 @@ class TestCLIParseCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -41,6 +43,7 @@ class TestCLIParseCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -62,7 +65,9 @@ class TestCLIParseCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -81,6 +86,7 @@ class TestCLIParseCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -102,7 +108,9 @@ class TestCLIParseCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -121,6 +129,7 @@ class TestCLIParseCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -141,11 +150,15 @@ class TestCLIParseCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as out:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".json", encoding="utf-8"
+        ) as out:
             output_file = Path(out.name)
 
         try:
@@ -165,6 +178,7 @@ class TestCLIParseCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -172,7 +186,7 @@ class TestCLIParseCommand:
             assert output_file.stat().st_size > 0
 
             # Verify output is valid JSON
-            with output_file.open() as f:
+            with output_file.open(encoding="utf-8") as f:
                 json_data = json.load(f)
                 assert isinstance(json_data, dict)
 
@@ -192,7 +206,9 @@ class TestCLIParseCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -211,6 +227,7 @@ class TestCLIParseCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -224,7 +241,9 @@ class TestCLIParseCommand:
         """Test parsing an invalid YARA file."""
         invalid_yara = "this is not valid yara syntax"
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(invalid_yara)
             test_file = Path(f.name)
 
@@ -235,6 +254,7 @@ class TestCLIParseCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             # Should fail or show errors
@@ -260,7 +280,9 @@ class TestCLIParseCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -279,6 +301,7 @@ class TestCLIParseCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -297,11 +320,15 @@ class TestCLIFormatCommand:
         """Format a basic YARA file."""
         unformatted = """rule test{strings:$s="hello"condition:$s}"""
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(unformatted)
             input_file = Path(f.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as out:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as out:
             output_file = Path(out.name)
 
         try:
@@ -318,13 +345,14 @@ class TestCLIFormatCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
             assert output_file.exists()
 
             # Read formatted output
-            with output_file.open() as f:
+            with output_file.open(encoding="utf-8") as f:
                 formatted = f.read()
 
             # Should have proper formatting
@@ -352,11 +380,15 @@ class TestCLIFormatCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             input_file = Path(f.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as out:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as out:
             output_file = Path(out.name)
 
         try:
@@ -373,11 +405,12 @@ class TestCLIFormatCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
 
-            with output_file.open() as f:
+            with output_file.open(encoding="utf-8") as f:
                 formatted = f.read()
 
             # All key elements should be preserved
@@ -407,7 +440,9 @@ class TestCLIValidateCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(valid_yara.strip())
             test_file = Path(f.name)
 
@@ -418,6 +453,7 @@ class TestCLIValidateCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -430,7 +466,9 @@ class TestCLIValidateCommand:
         """Validate an invalid YARA file."""
         invalid_yara = "this is not valid yara"
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(invalid_yara)
             test_file = Path(f.name)
 
@@ -441,6 +479,7 @@ class TestCLIValidateCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             # Should fail or show invalid
@@ -462,7 +501,9 @@ class TestCLIValidateCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -473,6 +514,7 @@ class TestCLIValidateCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -490,7 +532,9 @@ class TestCLIFmtCommand:
         """Test format checking without modifying file."""
         poorly_formatted = """rule test{strings:$s="x"condition:$s}"""
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(poorly_formatted)
             test_file = Path(f.name)
 
@@ -501,10 +545,11 @@ class TestCLIFmtCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             # File should not be modified
-            with test_file.open() as f:
+            with test_file.open(encoding="utf-8") as f:
                 content = f.read()
             assert content == poorly_formatted
 
@@ -526,11 +571,15 @@ class TestCLIFmtCommand:
         """
 
         for style in ["default", "compact", "pretty", "verbose"]:
-            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".yar", encoding="utf-8"
+            ) as f:
                 f.write(yara_content.strip())
                 test_file = Path(f.name)
 
-            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as out:
+            with tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".yar", encoding="utf-8"
+            ) as out:
                 output_file = Path(out.name)
 
             try:
@@ -550,12 +599,13 @@ class TestCLIFmtCommand:
                     text=True,
                     check=False,
                     timeout=10,
+                    encoding="utf-8",
                 )
 
                 assert result.returncode == 0
                 assert output_file.exists()
 
-                with output_file.open() as f:
+                with output_file.open(encoding="utf-8") as f:
                     formatted = f.read()
                     assert "style_test" in formatted
 
@@ -568,7 +618,9 @@ class TestCLIFmtCommand:
         """Test showing diff of formatting changes."""
         unformatted = """rule diff_test{strings:$s="test"condition:$s}"""
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(unformatted)
             test_file = Path(f.name)
 
@@ -579,11 +631,12 @@ class TestCLIFmtCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             # Should show diff output
             # File should not be modified
-            with test_file.open() as f:
+            with test_file.open(encoding="utf-8") as f:
                 content = f.read()
             assert content == unformatted
 
@@ -605,11 +658,15 @@ class TestCLIDiffCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f1:
             f1.write(yara_content.strip())
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f2:
             f2.write(yara_content.strip())
             file2 = Path(f2.name)
 
@@ -620,6 +677,7 @@ class TestCLIDiffCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -649,11 +707,15 @@ class TestCLIDiffCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f1:
             f1.write(original.strip())
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f2:
             f2.write(modified.strip())
             file2 = Path(f2.name)
 
@@ -664,6 +726,7 @@ class TestCLIDiffCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -694,11 +757,15 @@ class TestCLIDiffCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f1:
             f1.write(file1_content.strip())
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f2:
             f2.write(file2_content.strip())
             file2 = Path(f2.name)
 
@@ -717,6 +784,7 @@ class TestCLIDiffCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -732,11 +800,15 @@ class TestCLIDiffCommand:
         file1 = """rule test { condition: true }"""
         file2 = """rule test { condition: false }"""
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f1:
             f1.write(file1)
             test_file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f2:
             f2.write(file2)
             test_file2 = Path(f2.name)
 
@@ -755,6 +827,7 @@ class TestCLIDiffCommand:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -781,7 +854,9 @@ class TestCLIBenchCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -800,6 +875,7 @@ class TestCLIBenchCommand:
                 text=True,
                 check=False,
                 timeout=30,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -821,7 +897,9 @@ class TestCLIBenchCommand:
         """
 
         for operation in ["parse", "codegen", "roundtrip"]:
-            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+            with tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".yar", encoding="utf-8"
+            ) as f:
                 f.write(yara_content.strip())
                 test_file = Path(f.name)
 
@@ -842,6 +920,7 @@ class TestCLIBenchCommand:
                     text=True,
                     check=False,
                     timeout=30,
+                    encoding="utf-8",
                 )
 
                 assert result.returncode == 0
@@ -862,11 +941,15 @@ class TestCLIBenchCommand:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as out:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".json", encoding="utf-8"
+        ) as out:
             output_file = Path(out.name)
 
         try:
@@ -886,13 +969,14 @@ class TestCLIBenchCommand:
                 text=True,
                 check=False,
                 timeout=30,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
             assert output_file.exists()
 
             # Verify output is valid JSON
-            with output_file.open() as f:
+            with output_file.open(encoding="utf-8") as f:
                 bench_data = json.load(f)
                 assert isinstance(bench_data, dict)
                 assert "timestamp" in bench_data or "files" in bench_data
@@ -917,7 +1001,9 @@ class TestCLIAnalyzeCommands:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -935,6 +1021,7 @@ class TestCLIAnalyzeCommands:
                 text=True,
                 check=False,
                 timeout=15,
+                encoding="utf-8",
             )
 
             # Should complete and show analysis
@@ -960,7 +1047,9 @@ class TestCLIAnalyzeCommands:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -979,6 +1068,7 @@ class TestCLIAnalyzeCommands:
                 text=True,
                 check=False,
                 timeout=15,
+                encoding="utf-8",
             )
 
             # Verbose should provide more details
@@ -999,7 +1089,9 @@ class TestCLIAnalyzeCommands:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -1017,6 +1109,7 @@ class TestCLIAnalyzeCommands:
                 text=True,
                 check=False,
                 timeout=15,
+                encoding="utf-8",
             )
 
             # Should show optimization analysis
@@ -1042,7 +1135,9 @@ class TestCLIAnalyzeCommands:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -1060,6 +1155,7 @@ class TestCLIAnalyzeCommands:
                 text=True,
                 check=False,
                 timeout=15,
+                encoding="utf-8",
             )
 
             # Should show comprehensive analysis
@@ -1079,11 +1175,15 @@ class TestCLIAnalyzeCommands:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as out:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".json", encoding="utf-8"
+        ) as out:
             output_file = Path(out.name)
 
         try:
@@ -1104,10 +1204,11 @@ class TestCLIAnalyzeCommands:
                 text=True,
                 check=False,
                 timeout=15,
+                encoding="utf-8",
             )
 
             if output_file.exists():
-                with output_file.open() as f:
+                with output_file.open(encoding="utf-8") as f:
                     analysis_data = json.load(f)
                     assert isinstance(analysis_data, dict)
 
@@ -1131,11 +1232,15 @@ class TestCLISerializeCommands:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as out:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".json", encoding="utf-8"
+        ) as out:
             output_file = Path(out.name)
 
         try:
@@ -1156,11 +1261,12 @@ class TestCLISerializeCommands:
                 text=True,
                 check=False,
                 timeout=15,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
             if output_file.exists():
-                with output_file.open() as f:
+                with output_file.open(encoding="utf-8") as f:
                     json_data = json.load(f)
                     assert isinstance(json_data, dict)
 
@@ -1180,12 +1286,16 @@ class TestCLISerializeCommands:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
             f.flush()
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yaml") as out:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yaml", encoding="utf-8"
+        ) as out:
             output_file = Path(out.name)
 
         try:
@@ -1206,6 +1316,7 @@ class TestCLISerializeCommands:
                 text=True,
                 check=False,
                 timeout=15,
+                encoding="utf-8",
             )
 
             if result.returncode == 0 and output_file.exists():
@@ -1229,6 +1340,7 @@ class TestCLIErrorHandling:
             text=True,
             check=False,
             timeout=10,
+            encoding="utf-8",
         )
 
         # Should fail gracefully
@@ -1242,6 +1354,7 @@ class TestCLIErrorHandling:
             text=True,
             check=False,
             timeout=10,
+            encoding="utf-8",
         )
 
         # Should show error or help
@@ -1255,6 +1368,7 @@ class TestCLIErrorHandling:
             text=True,
             check=False,
             timeout=10,
+            encoding="utf-8",
         )
 
         assert result.returncode == 0
@@ -1268,6 +1382,7 @@ class TestCLIErrorHandling:
             text=True,
             check=False,
             timeout=10,
+            encoding="utf-8",
         )
 
         assert result.returncode == 0
@@ -1293,11 +1408,15 @@ class TestCLIRoundtripIntegration:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(original_yara.strip())
             original_file = Path(f.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as fmt:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as fmt:
             formatted_file = Path(fmt.name)
 
         try:
@@ -1315,6 +1434,7 @@ class TestCLIRoundtripIntegration:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result1.returncode == 0
@@ -1334,6 +1454,7 @@ class TestCLIRoundtripIntegration:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result2.returncode == 0
@@ -1356,7 +1477,9 @@ class TestCLIRoundtripIntegration:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -1376,6 +1499,7 @@ class TestCLIRoundtripIntegration:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             result2 = subprocess.run(
@@ -1392,6 +1516,7 @@ class TestCLIRoundtripIntegration:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result1.returncode == 0
@@ -1423,7 +1548,9 @@ class TestCLIComplexRules:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -1442,6 +1569,7 @@ class TestCLIComplexRules:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -1464,7 +1592,9 @@ class TestCLIComplexRules:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -1483,6 +1613,7 @@ class TestCLIComplexRules:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -1506,7 +1637,9 @@ class TestCLIComplexRules:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -1525,6 +1658,7 @@ class TestCLIComplexRules:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -1548,7 +1682,9 @@ class TestCLIComplexRules:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -1567,6 +1703,7 @@ class TestCLIComplexRules:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0
@@ -1587,7 +1724,9 @@ class TestCLIComplexRules:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -1606,6 +1745,7 @@ class TestCLIComplexRules:
                 text=True,
                 check=False,
                 timeout=10,
+                encoding="utf-8",
             )
 
             assert result.returncode == 0

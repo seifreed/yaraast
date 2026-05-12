@@ -23,7 +23,7 @@ rule sample_cli_serialize {
 def test_serialize_export_import_validate_info(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     # export json
     json_path = tmp_path / "sample.json"
@@ -57,8 +57,8 @@ def test_serialize_diff(tmp_path: Path) -> None:
     runner = CliRunner()
     old_path = tmp_path / "old.yar"
     new_path = tmp_path / "new.yar"
-    old_path.write_text(_sample_rule())
-    new_path.write_text(_sample_rule() + "\nrule extra { condition: true }\n")
+    old_path.write_text(_sample_rule(), encoding="utf-8")
+    new_path.write_text(_sample_rule() + "\nrule extra { condition: true }\n", encoding="utf-8")
 
     result = runner.invoke(
         serialize,
@@ -70,7 +70,7 @@ def test_serialize_diff(tmp_path: Path) -> None:
 def test_serialize_import_invalid(tmp_path: Path) -> None:
     runner = CliRunner()
     bad_path = tmp_path / "bad.json"
-    bad_path.write_text("{not-json}")
+    bad_path.write_text("{not-json}", encoding="utf-8")
 
     result = runner.invoke(
         serialize,
@@ -82,7 +82,7 @@ def test_serialize_import_invalid(tmp_path: Path) -> None:
 def test_serialize_export_pretty(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     result = runner.invoke(
         serialize,

@@ -12,7 +12,7 @@ from yaraast.cli.commands.semantic import semantic
 
 def test_semantic_command_json_output(tmp_path: Path) -> None:
     rule_file = tmp_path / "sample.yar"
-    rule_file.write_text("rule a { condition: true }")
+    rule_file.write_text("rule a { condition: true }", encoding="utf-8")
 
     output = tmp_path / "results.json"
     runner = CliRunner()
@@ -22,5 +22,5 @@ def test_semantic_command_json_output(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0
-    data = json.loads(output.read_text())
+    data = json.loads(output.read_text(encoding="utf-8"))
     assert data[0]["file"].endswith("sample.yar")

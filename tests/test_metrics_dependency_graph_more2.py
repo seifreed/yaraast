@@ -61,8 +61,8 @@ def test_dependency_graph_export(tmp_path: Path) -> None:
     export_dependency_graph(graph, json_path, format="json")
     export_dependency_graph(graph, dot_path, format="dot")
 
-    assert json_path.read_text().strip().startswith("{")
-    assert "digraph" in dot_path.read_text()
+    assert json_path.read_text(encoding="utf-8").strip().startswith("{")
+    assert "digraph" in dot_path.read_text(encoding="utf-8")
 
     dot = generate_dot_graph(graph)
     assert "a" in dot

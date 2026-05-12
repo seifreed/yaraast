@@ -14,6 +14,7 @@ def test_optimize_command_dry_run_with_analyze(tmp_path: Path) -> None:
     output_file = tmp_path / "output.yar"
     input_file.write_text(
         'rule a { strings: $a = "x" condition: $a }',
+        encoding="utf-8",
     )
 
     runner = CliRunner()

@@ -13,7 +13,7 @@ from yaraast.cli.commands.semantic import semantic
 
 def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
-    path.write_text(dedent(content))
+    path.write_text(dedent(content), encoding="utf-8")
     return str(path)
 
 
@@ -62,6 +62,6 @@ def test_semantic_text_output_file(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert out_path.exists()
-    content = out_path.read_text()
+    content = out_path.read_text(encoding="utf-8")
     assert "File:" in content
     assert "Valid:" in content

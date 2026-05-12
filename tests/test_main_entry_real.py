@@ -12,6 +12,7 @@ def test_main_entry_help() -> None:
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8",
     )
     assert proc.returncode == 0
     assert "Usage" in proc.stdout
@@ -23,5 +24,6 @@ def test_main_entry_invalid_command_nonzero() -> None:
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8",
     )
     assert proc.returncode != 0

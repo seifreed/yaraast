@@ -33,8 +33,8 @@ def test_simple_ast_differ_files(tmp_path: Path) -> None:
     file1 = tmp_path / "a.yar"
     file2 = tmp_path / "b.yar"
 
-    file1.write_text("rule r1 { condition: true }")
-    file2.write_text("rule r2 { condition: true }")
+    file1.write_text("rule r1 { condition: true }", encoding="utf-8")
+    file2.write_text("rule r2 { condition: true }", encoding="utf-8")
 
     differ = SimpleASTDiffer()
     result = differ.diff_files(file1, file2)
@@ -48,8 +48,8 @@ def test_simple_ast_differ_modified_rule(tmp_path: Path) -> None:
     file1 = tmp_path / "a.yar"
     file2 = tmp_path / "b.yar"
 
-    file1.write_text("rule r1 { condition: true }")
-    file2.write_text("rule r1 { condition: false }")
+    file1.write_text("rule r1 { condition: true }", encoding="utf-8")
+    file2.write_text("rule r1 { condition: false }", encoding="utf-8")
 
     differ = SimpleASTDiffer()
     result = differ.diff_files(file1, file2)

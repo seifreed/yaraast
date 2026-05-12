@@ -362,7 +362,9 @@ class TestCLIBenchmarkFunctions:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -390,7 +392,9 @@ class TestCLIBenchmarkFunctions:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -417,7 +421,9 @@ class TestCLIBenchmarkFunctions:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -445,7 +451,9 @@ class TestCLIBenchmarkFunctions:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_content.strip())
             test_file = Path(f.name)
 
@@ -476,7 +484,9 @@ class TestCLIFormatterClass:
         """Test basic formatting."""
         unformatted = """rule test{strings:$s="hello"condition:$s}"""
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(unformatted)
             test_file = Path(f.name)
 
@@ -507,7 +517,9 @@ class TestCLIFormatterClass:
         formatter = ASTFormatter()
 
         # Test well-formatted file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(well_formatted)
             good_file = Path(f.name)
 
@@ -519,7 +531,9 @@ class TestCLIFormatterClass:
             good_file.unlink()
 
         # Test poorly formatted file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(poorly_formatted)
             bad_file = Path(f.name)
 

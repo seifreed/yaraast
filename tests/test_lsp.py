@@ -418,14 +418,17 @@ def test_workspace_symbols_provider() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create test YARA file
         test_file = Path(tmpdir) / "test.yar"
-        test_file.write_text("""
+        test_file.write_text(
+            """
             rule malware_detection {
                 strings:
                     $payload = "malicious"
                 condition:
                     $payload
             }
-            """)
+            """,
+            encoding="utf-8",
+        )
 
         # Set workspace root
         provider.set_workspace_root(tmpdir)

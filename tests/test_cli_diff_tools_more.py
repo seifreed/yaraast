@@ -99,16 +99,16 @@ def test_ast_differ_diff_files_error_and_style_detection_paths(tmp_path: Path) -
 
     bad1 = tmp_path / "bad1.yar"
     bad2 = tmp_path / "bad2.yar"
-    bad1.write_text("rule broken")
-    bad2.write_text("rule also_broken")
+    bad1.write_text("rule broken", encoding="utf-8")
+    bad2.write_text("rule also_broken", encoding="utf-8")
     error_result = differ.diff_files(bad1, bad2)
     assert error_result.has_changes is True
     assert any("Error comparing files:" in c for c in error_result.logical_changes)
 
     same1 = tmp_path / "same1.yar"
     same2 = tmp_path / "same2.yar"
-    same1.write_text("rule s { condition: true }")
-    same2.write_text("rule s { condition: true }")
+    same1.write_text("rule s { condition: true }", encoding="utf-8")
+    same2.write_text("rule s { condition: true }", encoding="utf-8")
     same_result = differ.diff_files(same1, same2)
     assert same_result.has_changes is False
     assert same_result.change_summary["style_changes"] == 0
@@ -196,8 +196,11 @@ def test_ast_differ_detects_style_only_changes_from_original_text(tmp_path: Path
     file2 = tmp_path / "style2.yar"
     file1.write_text(
         'rule s {\n    strings:\n        $a = "abc"\n    condition:\n        $a\n}',
+        encoding="utf-8",
     )
-    file2.write_text('rule  s  {\n  strings:\n      $a   =   "abc"\n    condition:\n\t$a\n}')
+    file2.write_text(
+        'rule  s  {\n  strings:\n      $a   =   "abc"\n    condition:\n\t$a\n}', encoding="utf-8"
+    )
 
     result = ASTDiffer().diff_files(file1, file2)
     assert result.has_changes is True

@@ -24,7 +24,7 @@ rule sample_roundtrip {
 def test_roundtrip_serialize_deserialize(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     json_path = tmp_path / "sample.json"
     result = runner.invoke(

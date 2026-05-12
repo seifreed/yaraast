@@ -31,7 +31,7 @@ def test_compile_source_with_null_byte() -> None:
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 def test_compile_file_and_save_rules() -> None:
     rule_text = "rule test { condition: true }"
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar", encoding="utf-8") as f:
         f.write(rule_text)
         rule_path = Path(f.name)
 

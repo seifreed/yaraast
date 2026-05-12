@@ -48,6 +48,7 @@ def test_lsp_runtime_benchmark_script_can_write_results(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8",
     )
     assert proc.returncode == 0
     assert output.exists()
@@ -67,6 +68,7 @@ def test_lsp_runtime_benchmark_script_can_write_history(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         check=False,
+        encoding="utf-8",
     )
     assert proc.returncode == 0
     history_files = list(history_dir.glob("lsp-runtime-*.json"))

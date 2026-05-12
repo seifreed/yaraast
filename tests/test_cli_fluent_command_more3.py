@@ -16,7 +16,7 @@ def test_fluent_examples_command_writes_file(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert output.exists()
-    content = output.read_text()
+    content = output.read_text(encoding="utf-8")
     assert "rule example_malware" in content
 
 
@@ -26,7 +26,7 @@ def test_fluent_string_patterns_command_writes_file(tmp_path: Path) -> None:
     result = runner.invoke(fluent, ["string-patterns", "--output", str(output)])
 
     assert result.exit_code == 0
-    content = output.read_text()
+    content = output.read_text(encoding="utf-8")
     assert "rule string_pattern_demo" in content
     assert "$mz" in content
 
@@ -51,6 +51,6 @@ def test_fluent_template_command_network(tmp_path: Path) -> None:
     )
 
     assert result.exit_code == 0
-    content = output.read_text()
+    content = output.read_text(encoding="utf-8")
     assert "rule net_rule" in content
     assert "Unit Test" in content

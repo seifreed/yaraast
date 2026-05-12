@@ -82,7 +82,12 @@ class TestJsonSerializer:
         parser = Parser()
         ast = parser.parse(rule_text)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".json",
+            delete=False,
+            encoding="utf-8",
+        ) as f:
             temp_path = f.name
 
         try:
@@ -90,7 +95,7 @@ class TestJsonSerializer:
             serializer.serialize(ast, temp_path)
 
             # Verify file was created and contains valid JSON
-            with Path(temp_path).open() as f:
+            with Path(temp_path).open(encoding="utf-8") as f:
                 data = json.load(f)
 
             assert data["ast"]["type"] == "YaraFile"

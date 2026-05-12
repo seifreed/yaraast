@@ -26,7 +26,7 @@ rule sample_perf {
 def test_analyze_full_and_best_practices(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     result = runner.invoke(analyze, ["full", str(yara_path), "-f", "json"])
     assert result.exit_code == 0
@@ -41,7 +41,7 @@ def test_analyze_full_and_best_practices(tmp_path: Path) -> None:
 def test_optimize_dry_run(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     out_path = tmp_path / "optimized.yar"
     result = runner.invoke(
@@ -54,7 +54,7 @@ def test_optimize_dry_run(tmp_path: Path) -> None:
 def test_performance_check_summary(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     result = runner.invoke(
         performance_check,

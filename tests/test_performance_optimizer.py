@@ -43,7 +43,7 @@ def test_performance_optimizer_rule_sorting() -> None:
 
 def test_performance_optimizer_file(tmp_path: Path) -> None:
     file_path = tmp_path / "rules.yar"
-    file_path.write_text(_sample_rule())
+    file_path.write_text(_sample_rule(), encoding="utf-8")
 
     optimized_ast, stats = optimize_yara_file(str(file_path))
     assert optimized_ast.rules

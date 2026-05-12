@@ -46,7 +46,7 @@ def test_complexity_expression_helpers() -> None:
 
 def test_analyze_file_complexity(tmp_path: Path) -> None:
     file_path = tmp_path / "sample.yar"
-    file_path.write_text("rule r1 { condition: true }")
+    file_path.write_text("rule r1 { condition: true }", encoding="utf-8")
 
     report = analyze_file_complexity(file_path)
     assert report["file"].endswith("sample.yar")

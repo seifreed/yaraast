@@ -63,7 +63,7 @@ rule TestRule3 : malware {
     # Write files
     for i, content in enumerate(yara_contents):
         file_path = temp_dir / f"test_{i}.yar"
-        file_path.write_text(content)
+        file_path.write_text(content, encoding="utf-8")
         files.append(file_path)
 
     yield files
@@ -102,7 +102,7 @@ rule LargeRule{i} {{
 }}
 """
 
-    temp_file.write_text(content)
+    temp_file.write_text(content, encoding="utf-8")
     yield temp_file
 
     if temp_file.exists():
@@ -228,7 +228,7 @@ class TestParallelAnalyzer:
         parser = Parser()
         asts = []
         for file_path in sample_yara_files:
-            content = file_path.read_text()
+            content = file_path.read_text(encoding="utf-8")
             ast = parser.parse(content)
             asts.append(ast)
 

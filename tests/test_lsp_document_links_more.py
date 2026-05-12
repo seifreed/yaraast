@@ -12,7 +12,7 @@ from yaraast.lsp.runtime import DocumentContext
 
 def test_document_links_import_and_include(tmp_path: Path) -> None:
     include_path = tmp_path / "inc.yar"
-    include_path.write_text("rule inc { condition: true }")
+    include_path.write_text("rule inc { condition: true }", encoding="utf-8")
 
     text = dedent(
         f"""
@@ -27,7 +27,7 @@ def test_document_links_import_and_include(tmp_path: Path) -> None:
     ).lstrip()
 
     doc_path = tmp_path / "main.yar"
-    doc_path.write_text(text)
+    doc_path.write_text(text, encoding="utf-8")
 
     provider = DocumentLinksProvider()
     links = provider.get_document_links(text, path_to_uri(doc_path))
@@ -41,7 +41,7 @@ def test_document_links_import_and_include(tmp_path: Path) -> None:
 def test_document_links_fallback(tmp_path: Path) -> None:
     text = 'import "pe"\ninclude "missing.yar"\n'
     doc_path = tmp_path / "doc.yar"
-    doc_path.write_text(text)
+    doc_path.write_text(text, encoding="utf-8")
 
     provider = DocumentLinksProvider()
     links = provider._fallback_links(text, path_to_uri(doc_path))
@@ -51,7 +51,7 @@ def test_document_links_fallback(tmp_path: Path) -> None:
 
 def test_document_links_helper_edges(tmp_path: Path) -> None:
     include_path = tmp_path / "inc.yar"
-    include_path.write_text("rule inc { condition: true }")
+    include_path.write_text("rule inc { condition: true }", encoding="utf-8")
 
     provider = DocumentLinksProvider()
     text = 'import "pe"\ninclude "inc.yar"\n'
@@ -91,7 +91,7 @@ def test_include_target_uri_escapes_special_path_characters(tmp_path: Path) -> N
 
 def test_document_links_parser_fallback_and_error_edges(tmp_path: Path) -> None:
     include_path = tmp_path / "inc.yar"
-    include_path.write_text("rule inc { condition: true }")
+    include_path.write_text("rule inc { condition: true }", encoding="utf-8")
     provider = DocumentLinksProvider()
 
     broken_text = 'import "pe"\ninclude "inc.yar"\nrule bad { condition: '

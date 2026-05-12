@@ -65,7 +65,7 @@ def test_performance_optimizer_handles_unexpected_string_values() -> None:
 def test_bench_command_skips_failed_operation_results(tmp_path: Path) -> None:
     runner = CliRunner()
     invalid_yara = tmp_path / "invalid.yar"
-    invalid_yara.write_text("rule broken { condition: }")
+    invalid_yara.write_text("rule broken { condition: }", encoding="utf-8")
 
     result = runner.invoke(
         bench,

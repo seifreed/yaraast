@@ -55,6 +55,7 @@ def test_libyara_modules_report_missing_backend_in_subprocess(tmp_path: Path) ->
         capture_output=True,
         text=True,
         check=True,
+        encoding="utf-8",
     )
 
     stdout = result.stdout

@@ -41,7 +41,7 @@ class TestCLIParseCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file)])
 
@@ -63,7 +63,7 @@ class TestCLIParseCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--format", "json"])
 
@@ -85,7 +85,7 @@ class TestCLIParseCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--format", "tree"])
 
@@ -106,7 +106,7 @@ class TestCLIParseCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
             output_file = Path("output.json")
 
             result = self.runner.invoke(
@@ -118,7 +118,7 @@ class TestCLIParseCommandDirect:
             assert output_file.stat().st_size > 0
 
             # Verify output is valid JSON
-            with output_file.open() as f:
+            with output_file.open(encoding="utf-8") as f:
                 json_data = json.load(f)
                 assert isinstance(json_data, dict)
 
@@ -135,7 +135,7 @@ class TestCLIParseCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--dialect", "auto"])
 
@@ -149,7 +149,7 @@ class TestCLIParseCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(invalid_yara)
+            test_file.write_text(invalid_yara, encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file)])
 
@@ -175,7 +175,7 @@ class TestCLIParseCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--format", "json"])
 
@@ -197,7 +197,7 @@ class TestCLIParseCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--format", "json"])
 
@@ -218,7 +218,7 @@ class TestCLIFormatCommandDirect:
         with self.runner.isolated_filesystem():
             input_file = Path("input.yar")
             output_file = Path("output.yar")
-            input_file.write_text(unformatted)
+            input_file.write_text(unformatted, encoding="utf-8")
 
             result = self.runner.invoke(format_yara, [str(input_file), str(output_file)])
 
@@ -226,7 +226,7 @@ class TestCLIFormatCommandDirect:
             assert output_file.exists()
 
             # Read formatted output
-            formatted = output_file.read_text()
+            formatted = output_file.read_text(encoding="utf-8")
 
             # Should have proper formatting
             assert "rule test" in formatted
@@ -251,13 +251,13 @@ class TestCLIFormatCommandDirect:
         with self.runner.isolated_filesystem():
             input_file = Path("input.yar")
             output_file = Path("output.yar")
-            input_file.write_text(yara_content.strip())
+            input_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(format_yara, [str(input_file), str(output_file)])
 
             assert result.exit_code == 0
 
-            formatted = output_file.read_text()
+            formatted = output_file.read_text(encoding="utf-8")
 
             # All key elements should be preserved
             assert "logic_test" in formatted
@@ -287,7 +287,7 @@ class TestCLIValidateCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(valid_yara.strip())
+            test_file.write_text(valid_yara.strip(), encoding="utf-8")
 
             result = self.runner.invoke(validate, [str(test_file)])
 
@@ -300,7 +300,7 @@ class TestCLIValidateCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(invalid_yara)
+            test_file.write_text(invalid_yara, encoding="utf-8")
 
             result = self.runner.invoke(validate, [str(test_file)])
 
@@ -322,7 +322,7 @@ class TestCLIValidateCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(validate, [str(test_file)])
 
@@ -344,12 +344,12 @@ class TestCLIFmtCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(poorly_formatted)
+            test_file.write_text(poorly_formatted, encoding="utf-8")
 
             self.runner.invoke(fmt, [str(test_file), "--check"])
 
             # File should not be modified
-            content = test_file.read_text()
+            content = test_file.read_text(encoding="utf-8")
             assert content == poorly_formatted
 
             # Should report needs formatting
@@ -370,7 +370,7 @@ class TestCLIFmtCommandDirect:
             with self.runner.isolated_filesystem():
                 test_file = Path("test.yar")
                 output_file = Path("output.yar")
-                test_file.write_text(yara_content.strip())
+                test_file.write_text(yara_content.strip(), encoding="utf-8")
 
                 result = self.runner.invoke(
                     fmt, [str(test_file), "--output", str(output_file), "--style", style]
@@ -379,7 +379,7 @@ class TestCLIFmtCommandDirect:
                 assert result.exit_code == 0
                 assert output_file.exists()
 
-                formatted = output_file.read_text()
+                formatted = output_file.read_text(encoding="utf-8")
                 assert "style_test" in formatted
 
     def test_fmt_with_diff_option(self) -> None:
@@ -388,13 +388,13 @@ class TestCLIFmtCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(unformatted)
+            test_file.write_text(unformatted, encoding="utf-8")
 
             self.runner.invoke(fmt, [str(test_file), "--diff"])
 
             # Should show diff output
             # File should not be modified
-            content = test_file.read_text()
+            content = test_file.read_text(encoding="utf-8")
             assert content == unformatted
 
 
@@ -419,8 +419,8 @@ class TestCLIDiffCommandDirect:
         with self.runner.isolated_filesystem():
             file1 = Path("file1.yar")
             file2 = Path("file2.yar")
-            file1.write_text(yara_content.strip())
-            file2.write_text(yara_content.strip())
+            file1.write_text(yara_content.strip(), encoding="utf-8")
+            file2.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(diff, [str(file1), str(file2)])
 
@@ -450,8 +450,8 @@ class TestCLIDiffCommandDirect:
         with self.runner.isolated_filesystem():
             file1 = Path("file1.yar")
             file2 = Path("file2.yar")
-            file1.write_text(original.strip())
-            file2.write_text(modified.strip())
+            file1.write_text(original.strip(), encoding="utf-8")
+            file2.write_text(modified.strip(), encoding="utf-8")
 
             result = self.runner.invoke(diff, [str(file1), str(file2)])
 
@@ -482,8 +482,8 @@ class TestCLIDiffCommandDirect:
         with self.runner.isolated_filesystem():
             file1 = Path("file1.yar")
             file2 = Path("file2.yar")
-            file1.write_text(file1_content.strip())
-            file2.write_text(file2_content.strip())
+            file1.write_text(file1_content.strip(), encoding="utf-8")
+            file2.write_text(file2_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(diff, [str(file1), str(file2), "--logical-only"])
 
@@ -499,8 +499,8 @@ class TestCLIDiffCommandDirect:
         with self.runner.isolated_filesystem():
             test_file1 = Path("file1.yar")
             test_file2 = Path("file2.yar")
-            test_file1.write_text(file1)
-            test_file2.write_text(file2)
+            test_file1.write_text(file1, encoding="utf-8")
+            test_file2.write_text(file2, encoding="utf-8")
 
             result = self.runner.invoke(diff, [str(test_file1), str(test_file2), "--summary"])
 
@@ -530,7 +530,7 @@ class TestCLIBenchCommandDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(bench, [str(test_file), "--iterations", "3"])
 
@@ -552,7 +552,7 @@ class TestCLIBenchCommandDirect:
         for operation in ["parse", "codegen", "roundtrip"]:
             with self.runner.isolated_filesystem():
                 test_file = Path("test.yar")
-                test_file.write_text(yara_content.strip())
+                test_file.write_text(yara_content.strip(), encoding="utf-8")
 
                 result = self.runner.invoke(
                     bench, [str(test_file), "--operations", operation, "--iterations", "2"]
@@ -576,7 +576,7 @@ class TestCLIBenchCommandDirect:
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
             output_file = Path("bench.json")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(
                 bench, [str(test_file), "--iterations", "2", "--output", str(output_file)]
@@ -586,7 +586,7 @@ class TestCLIBenchCommandDirect:
             assert output_file.exists()
 
             # Verify output is valid JSON
-            with output_file.open() as f:
+            with output_file.open(encoding="utf-8") as f:
                 bench_data = json.load(f)
                 assert isinstance(bench_data, dict)
                 assert "timestamp" in bench_data or "files" in bench_data
@@ -614,7 +614,7 @@ class TestCLIComplexRulesDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--format", "json"])
 
@@ -637,7 +637,7 @@ class TestCLIComplexRulesDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--format", "json"])
 
@@ -661,7 +661,7 @@ class TestCLIComplexRulesDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--format", "json"])
 
@@ -685,7 +685,7 @@ class TestCLIComplexRulesDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--format", "json"])
 
@@ -706,7 +706,7 @@ class TestCLIComplexRulesDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             result = self.runner.invoke(parse, [str(test_file), "--format", "json"])
 
@@ -740,7 +740,7 @@ class TestCLIRoundtripIntegrationDirect:
         with self.runner.isolated_filesystem():
             original_file = Path("original.yar")
             formatted_file = Path("formatted.yar")
-            original_file.write_text(original_yara.strip())
+            original_file.write_text(original_yara.strip(), encoding="utf-8")
 
             # Format the file
             result1 = self.runner.invoke(format_yara, [str(original_file), str(formatted_file)])
@@ -766,7 +766,7 @@ class TestCLIRoundtripIntegrationDirect:
 
         with self.runner.isolated_filesystem():
             test_file = Path("test.yar")
-            test_file.write_text(yara_content.strip())
+            test_file.write_text(yara_content.strip(), encoding="utf-8")
 
             # Parse twice
             result1 = self.runner.invoke(parse, [str(test_file), "--format", "json"])

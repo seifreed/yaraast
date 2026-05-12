@@ -42,7 +42,7 @@ def test_load_json_module() -> None:
 
     with tempfile.TemporaryDirectory() as tmpdir:
         json_path = Path(tmpdir) / "test_module.json"
-        with json_path.open("w") as f:
+        with json_path.open("w", encoding="utf-8") as f:
             json.dump(module_json, f)
 
         # Set environment variable
@@ -82,7 +82,7 @@ def test_exclusive_module_path() -> None:
 
     with tempfile.TemporaryDirectory() as tmpdir:
         json_path = Path(tmpdir) / "modules.json"
-        with json_path.open("w") as f:
+        with json_path.open("w", encoding="utf-8") as f:
             json.dump(module_json, f)
 
         # Set exclusive path
@@ -116,7 +116,7 @@ def test_complex_types() -> None:
 
     with tempfile.TemporaryDirectory() as tmpdir:
         json_path = Path(tmpdir) / "complex.json"
-        with json_path.open("w") as f:
+        with json_path.open("w", encoding="utf-8") as f:
             json.dump(module_json, f)
 
         os.environ["YARAAST_MODULE_SPEC_PATH"] = tmpdir

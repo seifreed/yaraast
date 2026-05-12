@@ -20,7 +20,7 @@ rule test_rule {
 }
 """
     rule_path = tmp_path / "sample.yar"
-    rule_path.write_text(rule_text.strip())
+    rule_path.write_text(rule_text.strip(), encoding="utf-8")
     return rule_path
 
 

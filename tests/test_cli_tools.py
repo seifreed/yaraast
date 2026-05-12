@@ -15,7 +15,9 @@ class TestASTFormatter:
         # Unformatted YARA
         unformatted = """rule test{strings:$a="hello"condition:$a}"""
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(unformatted)
             test_file = Path(f.name)
 
@@ -45,7 +47,9 @@ class TestASTFormatter:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -83,7 +87,9 @@ class TestASTFormatter:
         formatter = ASTFormatter()
 
         # Test well-formatted file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(well_formatted)
             good_file = Path(f.name)
 
@@ -96,7 +102,9 @@ class TestASTFormatter:
             good_file.unlink()
 
         # Test poorly formatted file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(poorly_formatted)
             bad_file = Path(f.name)
 
@@ -123,11 +131,15 @@ class TestASTDiffer:
         """
 
         # Create two identical files
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f1:
             f1.write(yara_code.strip())
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f2:
             f2.write(yara_code.strip())
             file2 = Path(f2.name)
 
@@ -171,11 +183,15 @@ class TestASTDiffer:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f1:
             f1.write(original.strip())
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f2:
             f2.write(modified.strip())
             file2 = Path(f2.name)
 
@@ -220,11 +236,15 @@ $s
         differ = ASTDiffer()
 
         # Test style-only change
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f1:
             f1.write(original)
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f2:
             f2.write(style_changed)
             file2 = Path(f2.name)
 
@@ -241,11 +261,15 @@ $s
             file2.unlink()
 
         # Test logical change
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f1:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f1:
             f1.write(original)
             file1 = Path(f1.name)
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f2:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f2:
             f2.write(logic_changed)
             file2 = Path(f2.name)
 
@@ -332,7 +356,9 @@ class TestASTBenchmarker:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -361,7 +387,9 @@ class TestASTBenchmarker:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -388,7 +416,9 @@ class TestASTBenchmarker:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -416,7 +446,9 @@ class TestASTBenchmarker:
         }
         """
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(yara_code.strip())
             test_file = Path(f.name)
 
@@ -447,7 +479,9 @@ class TestIntegration:
         """Test formatting a file then diffing the changes."""
         original = """rule test{strings:$s="hello"condition:$s}"""
 
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".yar", encoding="utf-8"
+        ) as f:
             f.write(original)
             original_file = Path(f.name)
 
@@ -462,6 +496,7 @@ class TestIntegration:
                 mode="w",
                 delete=False,
                 suffix=".yar",
+                encoding="utf-8",
             ) as f:
                 f.write(formatted)
                 formatted_file = Path(f.name)
@@ -492,7 +527,7 @@ if __name__ == "__main__":
     formatter = ASTFormatter()
     yara_test = 'rule test{strings:$s="hello"condition:$s}'
 
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar", encoding="utf-8") as f:
         f.write(yara_test)
         test_file = Path(f.name)
 
@@ -531,7 +566,7 @@ if __name__ == "__main__":
     # Test benchmarker
     benchmarker = ASTBenchmarker()
 
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar") as f:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".yar", encoding="utf-8") as f:
         f.write(yara_test.strip())
         bench_file = Path(f.name)
 

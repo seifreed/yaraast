@@ -27,7 +27,7 @@ rule sample_cli_metrics {
 def test_metrics_complexity_json(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     result = runner.invoke(
         metrics,
@@ -41,7 +41,7 @@ def test_metrics_complexity_text_output_file(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
     output_path = tmp_path / "metrics.txt"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     result = runner.invoke(
         metrics,
@@ -54,7 +54,7 @@ def test_metrics_complexity_text_output_file(tmp_path: Path) -> None:
 def test_metrics_graph_dot(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"
-    yara_path.write_text(_sample_rule())
+    yara_path.write_text(_sample_rule(), encoding="utf-8")
 
     output_path = tmp_path / "graph.dot"
     result = runner.invoke(

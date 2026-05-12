@@ -89,7 +89,9 @@ class TestOptimizedMatcher:
         """
 
         # Create test file
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".txt", encoding="utf-8"
+        ) as f:
             f.write("This is a test file with the word test in it.")
             test_file = Path(f.name)
 
