@@ -56,18 +56,18 @@ def _serialize_hex_token(token) -> dict[str, Any]:
 
 def _deserialize_hex_token(data: dict[str, Any]):
     """Deserialize a hex token from a dictionary."""
-    token_type = data.get("type")
-    if token_type == "HexByte":
+    hex_kind = data.get("type")
+    if hex_kind == "HexByte":
         return HexByte(value=data["value"])
-    if token_type == "HexWildcard":
+    if hex_kind == "HexWildcard":
         return HexWildcard()
-    if token_type == "HexJump":
+    if hex_kind == "HexJump":
         return HexJump(min_jump=data.get("min_jump"), max_jump=data.get("max_jump"))
-    if token_type == "HexNibble":
+    if hex_kind == "HexNibble":
         return HexNibble(high=data["high"], value=data["value"])
-    if token_type == "HexNegatedByte":
+    if hex_kind == "HexNegatedByte":
         return HexNegatedByte(value=data["value"])
-    if token_type == "HexAlternative":
+    if hex_kind == "HexAlternative":
         alternatives = [[_deserialize_hex_token(t) for t in alt] for alt in data["alternatives"]]
         return HexAlternative(alternatives=alternatives)
     return HexWildcard()

@@ -35,7 +35,15 @@ from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression
 from yaraast.ast.rules import Import, Include, Rule
-from yaraast.ast.strings import HexByte, HexJump, HexString, HexWildcard, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexString,
+    HexWildcard,
+    PlainString,
+    RegexString,
+)
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
 
@@ -372,6 +380,10 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
 
     with pytest.raises(SerializationError, match="Unknown expression type"):
         s._deserialize_expression({"type": "Nope"})
+
+    negated = s._deserialize_hex_token({"type": "HexNegatedByte", "value": 0x4D})
+    assert isinstance(negated, HexNegatedByte)
+    assert negated.value == 0x4D
 
     with pytest.raises(SerializationError, match="Unknown hex token type"):
         s._deserialize_hex_token({"type": "HexUnknownType"})

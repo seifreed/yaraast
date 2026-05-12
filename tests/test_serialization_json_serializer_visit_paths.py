@@ -48,6 +48,7 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
     HexNibble,
     HexString,
     HexWildcard,
@@ -70,6 +71,10 @@ def test_json_serializer_visit_methods_cover_remaining_nodes() -> None:
     assert s.visit_hex_byte(HexByte(0x4D))["type"] == "HexByte"
     assert s.visit_hex_wildcard(HexWildcard())["type"] == "HexWildcard"
     assert s.visit_hex_jump(HexJump(1, 2))["type"] == "HexJump"
+    assert s.visit_hex_negated_byte(HexNegatedByte(0x4D)) == {
+        "type": "HexNegatedByte",
+        "value": 0x4D,
+    }
     assert (
         s.visit_hex_alternative(HexAlternative([[HexByte(1)], [HexByte(2)]]))["type"]
         == "HexAlternative"

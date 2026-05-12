@@ -145,6 +145,9 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_hex_byte(self, node) -> dict[str, Any]:
         return self._simple_node("HexByte", value=node.value)
 
+    def visit_hex_negated_byte(self, node) -> dict[str, Any]:
+        return self._simple_node("HexNegatedByte", value=node.value)
+
     def visit_hex_wildcard(self, node) -> dict[str, Any]:
         return self._simple_node("HexWildcard")
 

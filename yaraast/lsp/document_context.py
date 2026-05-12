@@ -59,15 +59,18 @@ class _SymbolIndex:
         self._symbol_lookup = None
         return self._symbols
 
-    def _ensure_indexes(self, doc: DocumentContext) -> None:
+    def _ensure_indexes(
+        self,
+        doc: DocumentContext,
+    ) -> tuple[dict[str, list[SymbolRecord]], dict[tuple[str, str, str | None], SymbolRecord]]:
         if self._symbols_by_kind is not None and self._symbol_lookup is not None:
-            return
+            return self._symbols_by_kind, self._symbol_lookup
         self._symbols_by_kind, self._symbol_lookup = build_symbol_indexes(self.get_symbols(doc))
+        return self._symbols_by_kind, self._symbol_lookup
 
     def symbols_of_kind(self, doc: DocumentContext, kind: str) -> list[SymbolRecord]:
-        self._ensure_indexes(doc)
-        assert self._symbols_by_kind is not None
-        return self._symbols_by_kind.get(kind, [])
+        symbols_by_kind, _symbol_lookup = self._ensure_indexes(doc)
+        return symbols_by_kind.get(kind, [])
 
     def find_record(
         self,
@@ -76,9 +79,8 @@ class _SymbolIndex:
         name: str,
         container_name: str | None = None,
     ) -> SymbolRecord | None:
-        self._ensure_indexes(doc)
-        assert self._symbol_lookup is not None
-        return self._symbol_lookup.get((kind, name, container_name))
+        _symbols_by_kind, symbol_lookup = self._ensure_indexes(doc)
+        return symbol_lookup.get((kind, name, container_name))
 
 
 class DocumentContext:

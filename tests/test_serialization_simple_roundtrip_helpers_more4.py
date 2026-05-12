@@ -8,7 +8,14 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString, StringDefinition
+from yaraast.ast.strings import (
+    HexByte,
+    HexNegatedByte,
+    HexString,
+    PlainString,
+    RegexString,
+    StringDefinition,
+)
 from yaraast.serialization.simple_roundtrip_helpers import (
     _compare_normalized,
     deserialize_from_file,
@@ -93,6 +100,16 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
     fallback = deserialize_string({"type": "HexString", "identifier": "$h", "tokens": "{ 41 }"})
     assert isinstance(fallback, HexString)  # preserves type instead of converting to PlainString
     assert fallback.tokens == []
+
+    negated_hex = deserialize_string(
+        {
+            "type": "HexString",
+            "identifier": "$negated",
+            "tokens": [{"type": "HexNegatedByte", "value": 0x4D}],
+        }
+    )
+    assert isinstance(negated_hex, HexString)
+    assert negated_hex.tokens == [HexNegatedByte(value=0x4D)]
 
     default_condition_rule = deserialize_rule({"name": "fallback", "condition": None})
     assert isinstance(default_condition_rule.condition, BooleanLiteral)

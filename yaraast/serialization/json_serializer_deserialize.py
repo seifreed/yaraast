@@ -365,25 +365,29 @@ class JsonSerializerDeserializeMixin:
         return StringModifier.from_name_value(data["name"], data.get("value"))
 
     def _deserialize_hex_token(self, data: dict[str, Any]):
-        token_type = data.get("type")
+        hex_kind = data.get("type")
 
-        if token_type == "HexByte":  # nosec B105
+        if hex_kind == "HexByte":
             from yaraast.ast.strings import HexByte
 
             return HexByte(value=data["value"])
-        if token_type == "HexWildcard":  # nosec B105
+        if hex_kind == "HexWildcard":
             from yaraast.ast.strings import HexWildcard
 
             return HexWildcard()
-        if token_type == "HexJump":  # nosec B105
+        if hex_kind == "HexJump":
             from yaraast.ast.strings import HexJump
 
             return HexJump(min_jump=data.get("min_jump"), max_jump=data.get("max_jump"))
-        if token_type == "HexNibble":  # nosec B105
+        if hex_kind == "HexNibble":
             from yaraast.ast.strings import HexNibble
 
             return HexNibble(high=data.get("high", True), value=data.get("value", 0))
-        if token_type == "HexAlternative":  # nosec B105
+        if hex_kind == "HexNegatedByte":
+            from yaraast.ast.strings import HexNegatedByte
+
+            return HexNegatedByte(value=data["value"])
+        if hex_kind == "HexAlternative":
             from yaraast.ast.strings import HexAlternative
 
             alternatives = [
@@ -391,7 +395,7 @@ class JsonSerializerDeserializeMixin:
                 for alt in data.get("alternatives", [])
             ]
             return HexAlternative(alternatives=alternatives)
-        msg = f"Unknown hex token type: {token_type}"
+        msg = f"Unknown hex token type: {hex_kind}"
         raise SerializationError(msg)
 
     def _deserialize_expression(self, data: dict[str, Any]):
