@@ -5,11 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 
+from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 
 
-def _parse_rules() -> list:
+def _parse_rules() -> list[Rule]:
     code = """
     rule p1 { condition: true }
     rule p2 { condition: true }

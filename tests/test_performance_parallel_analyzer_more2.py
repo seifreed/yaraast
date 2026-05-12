@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 
@@ -20,26 +22,26 @@ def _rule_code(name: str = "r") -> str:
     """
 
 
-def _parsed_ast(name: str = "r"):
+def _parsed_ast(name: str = "r") -> YaraFile:
     return Parser().parse(_rule_code(name))
 
 
-def _worker_rule_name(rule, _parameters):
+def _worker_rule_name(rule: Rule, _parameters: dict[str, Any]) -> str:
     return rule.name
 
 
-def _worker_fail_on_b(rule, _parameters):
+def _worker_fail_on_b(rule: Rule, _parameters: dict[str, Any]) -> str:
     if getattr(rule, "name", "") == "b":
         msg = "bad rule"
         raise ValueError(msg)
     return rule.name
 
 
-def _custom_rule_name(rule):
+def _custom_rule_name(rule: Rule) -> dict[str, str]:
     return {"rule": rule.name}
 
 
-def _custom_fail_on_b(rule):
+def _custom_fail_on_b(rule: Rule) -> dict[str, str]:
     if getattr(rule, "name", "") == "b":
         msg = "custom failure"
         raise ValueError(msg)
@@ -98,7 +100,9 @@ def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> 
     failing_jobs = analyzer.process_batch(small_rules, _worker_fail_on_b, job_type="names")
     assert failing_jobs[0].status.value == "completed"
     assert failing_jobs[1].status.value == "failed"
-    assert "bad rule" in failing_jobs[1].error
+    failed_error = failing_jobs[1].error
+    assert failed_error is not None
+    assert "bad rule" in failed_error
 
 
 def test_parallel_analyzer_files_custom_and_graphs(tmp_path: Path) -> None:
