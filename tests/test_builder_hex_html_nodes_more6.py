@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import Identifier
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.hex_string_builder import HexStringBuilder
@@ -13,6 +16,7 @@ from yaraast.metrics.html_tree import HtmlTreeGenerator
 
 def test_condition_builder_n_of_them_and_empty_arithmetic_error() -> None:
     expr = ConditionBuilder().n_of(2, "them").build()
+    assert isinstance(expr, OfExpression)
     assert isinstance(expr.string_set, Identifier)
     assert expr.string_set.name == "them"
 
@@ -34,7 +38,7 @@ def test_html_tree_nodes_condition_section_none() -> None:
     assert gen._condition_section(None) is None
 
 
-def test_html_tree_nodes_write_meta_and_string_helpers(tmp_path) -> None:
+def test_html_tree_nodes_write_meta_and_string_helpers(tmp_path: Path) -> None:
     gen = HtmlTreeGenerator()
     out = tmp_path / "tree.html"
     gen._write_output(str(out), "<html>ok</html>")
