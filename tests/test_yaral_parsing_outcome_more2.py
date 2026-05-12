@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as T
+from yaraast.yaral.ast_nodes import AggregationFunction
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.tokens import YaraLTokenType
 
 
-def _tok(token_type: T, value: object, yaral_type: YaraLTokenType | None = None) -> YaraLToken:
+def _tok(
+    token_type: T,
+    value: str | int | float | None,
+    yaral_type: YaraLTokenType | None = None,
+) -> YaraLToken:
     return YaraLToken(
         type=token_type,
         value=value,
@@ -48,5 +53,6 @@ def test_parse_outcome_section_skips_unknown_and_aggregation_multiple_args() -> 
     section = parser._parse_outcome_section()
     assert len(section.assignments) == 1
     expr = section.assignments[0].expression
+    assert isinstance(expr, AggregationFunction)
     assert expr.function == "count"
     assert expr.arguments == [1, 2, 3]

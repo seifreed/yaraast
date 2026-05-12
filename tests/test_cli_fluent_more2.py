@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from click.testing import CliRunner
 
 from yaraast.cli.commands.fluent import fluent
 
 
-def test_fluent_template_document_and_network(tmp_path) -> None:
+def test_fluent_template_document_and_network(tmp_path: Path) -> None:
     runner = CliRunner()
 
     out_doc = tmp_path / "doc.yar"

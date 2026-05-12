@@ -17,7 +17,10 @@ from yaraast.yaral.tokens import YaraLTokenType
 
 
 def _tok(
-    token_type: T, value: object, line: int = 1, yaral_type: YaraLTokenType | None = None
+    token_type: T,
+    value: str | int | float | None,
+    line: int = 1,
+    yaral_type: YaraLTokenType | None = None,
 ) -> YaraLToken:
     return YaraLToken(
         type=token_type,
@@ -196,7 +199,7 @@ def test_parse_primary_condition_variable_comparison_variants(
     operator_token: T,
     expected_operator: str,
     value_token: T,
-    value: object,
+    value: str | int | float | None,
     yaral_type: YaraLTokenType | None,
 ) -> None:
     parser = YaraLParser("")
@@ -230,7 +233,7 @@ def test_parse_primary_condition_identifier_fallback_operator_variants(
     operator_token: T,
     expected_operator: str,
     value_token: T,
-    value: object,
+    value: str | int | float | None,
     yaral_type: YaraLTokenType | None,
 ) -> None:
     parser = YaraLParser("")

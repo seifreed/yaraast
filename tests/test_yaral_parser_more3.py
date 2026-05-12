@@ -38,6 +38,8 @@ def test_parser_events_match_outcome_options() -> None:
     statements = rule.events.statements
     assert len(statements) >= 4
     assert isinstance(statements[0], EventAssignment)
+    assert isinstance(statements[1], EventAssignment)
+    assert isinstance(statements[2], EventAssignment)
     assert isinstance(statements[1].value, ReferenceList)
     assert isinstance(statements[2].value, RegexPattern)
 

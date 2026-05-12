@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.expressions import Identifier, ParenthesesExpression
+from yaraast.ast.expressions import Identifier, IntegerLiteral, ParenthesesExpression
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
+    DictExpression,
     ListExpression,
     SliceExpression,
+    TupleExpression,
 )
 from yaraast.yarax.parser import YaraXParser
 
@@ -92,13 +94,17 @@ def test_parser_collections_regular_dict_parentheses_and_slice_variants() -> Non
         ],
     )
     regular = parser._parse_dict_or_comprehension()
+    assert isinstance(regular, DictExpression)
     assert len(regular.items) == 2
 
     parenthesized = YaraXParser("(1)").parse_expression()
     assert isinstance(parenthesized, ParenthesesExpression)
 
     trailing_tuple = YaraXParser("(1,)").parse_expression()
-    assert trailing_tuple.elements[0].value == 1
+    assert isinstance(trailing_tuple, TupleExpression)
+    tuple_value = trailing_tuple.elements[0]
+    assert isinstance(tuple_value, IntegerLiteral)
+    assert tuple_value.value == 1
 
     parser = _manual_parser(
         [

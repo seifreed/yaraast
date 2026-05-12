@@ -20,8 +20,12 @@ def _manual_parser(tokens: list[Token]) -> YaraXParser:
 def test_yarax_parser_helper_keyword_peek_and_consume_paths() -> None:
     parser = _manual_parser([_tok(TokenType.IDENTIFIER, "for"), _tok(TokenType.IDENTIFIER, "x")])
     assert parser._check_keyword("for")
-    assert parser._consume_keyword("for").value == "for"
-    assert parser._peek_ahead(0).value == "x"
+    keyword = parser._consume_keyword("for")
+    assert keyword is not None
+    assert keyword.value == "for"
+    next_token = parser._peek_ahead(0)
+    assert next_token is not None
+    assert next_token.value == "x"
     assert parser._peek_ahead(10) is None
 
     parser2 = _manual_parser([_tok(TokenType.IDENTIFIER, "nope")])
@@ -32,7 +36,7 @@ def test_yarax_parser_helper_keyword_peek_and_consume_paths() -> None:
 
 def test_yarax_parser_helper_consume_arrow_and_consume_errors() -> None:
     parser = _manual_parser([_tok(TokenType.ASSIGN, "="), _tok(TokenType.GT, ">")])
-    assert parser._consume_arrow() is None
+    parser._consume_arrow()
 
     parser_bad_arrow = _manual_parser([_tok(TokenType.ASSIGN, "="), _tok(TokenType.INTEGER, 1)])
     with pytest.raises(Exception, match="Expected '>'"):

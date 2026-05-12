@@ -12,7 +12,7 @@ from yaraast.yaral.tokens import YaraLTokenType
 
 def _tok(
     token_type: T,
-    value: object,
+    value: str | int | float | None,
     line: int = 1,
     yaral_type: YaraLTokenType | None = None,
 ) -> YaraLToken:

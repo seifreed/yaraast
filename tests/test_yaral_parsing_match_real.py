@@ -9,7 +9,11 @@ from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.tokens import YaraLTokenType
 
 
-def _tok(token_type: T, value: object, yaral_type: YaraLTokenType | None = None) -> YaraLToken:
+def _tok(
+    token_type: T,
+    value: str | int | float | None,
+    yaral_type: YaraLTokenType | None = None,
+) -> YaraLToken:
     return YaraLToken(
         type=token_type,
         value=value,
