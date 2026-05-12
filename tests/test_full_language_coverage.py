@@ -1,8 +1,11 @@
 """Test full YARA language coverage features."""
 
+from __future__ import annotations
+
 import pytest
 
 from yaraast import CodeGenerator, Parser
+from yaraast.ast.expressions import BinaryExpression, RegexLiteral
 from yaraast.types import TypeValidator
 
 
@@ -59,17 +62,16 @@ def test_regex_matches_regex() -> None:
     condition = rule.condition
 
     # Verify it's a binary expression with matches operator
+    assert isinstance(condition, BinaryExpression)
     assert condition.operator == "matches"
 
     # Check left side is regex literal
-    assert condition.left is not None
-    assert hasattr(condition.left, "pattern")
+    assert isinstance(condition.left, RegexLiteral)
     assert condition.left.pattern == "foo.*bar"
     assert condition.left.modifiers == "i"
 
     # Check right side is regex literal
-    assert condition.right is not None
-    assert hasattr(condition.right, "pattern")
+    assert isinstance(condition.right, RegexLiteral)
     assert condition.right.pattern == "b[a-z]+r"
     assert condition.right.modifiers == ""
 
