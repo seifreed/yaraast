@@ -75,6 +75,20 @@ def test_roundtrip_test_and_pretty(tmp_path: Path) -> None:
     assert "Pretty printed" in result.output
 
 
+def test_roundtrip_pretty_rejects_invalid_numeric_options(tmp_path: Path) -> None:
+    runner = CliRunner()
+    yara_path = tmp_path / "sample.yar"
+    yara_path.write_text(_simple_rule().strip(), encoding="utf-8")
+
+    indent = runner.invoke(roundtrip, ["pretty", str(yara_path), "--indent-size", "0"])
+    assert indent.exit_code == 2
+    assert "Invalid value for '--indent-size'" in indent.output
+
+    line_length = runner.invoke(roundtrip, ["pretty", str(yara_path), "--max-line-length", "0"])
+    assert line_length.exit_code == 2
+    assert "Invalid value for '--max-line-length'" in line_length.output
+
+
 def test_roundtrip_pipeline_with_manifest(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "sample.yar"

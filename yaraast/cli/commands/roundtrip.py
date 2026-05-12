@@ -247,8 +247,13 @@ def test(input_file: Path, format: str, output: Path | None, verbose: bool) -> N
     default="readable",
     help="Pretty printing style preset",
 )
-@click.option("--indent-size", type=int, default=4, help="Indentation size")
-@click.option("--max-line-length", type=int, default=120, help="Maximum line length")
+@click.option("--indent-size", type=click.IntRange(min=1), default=4, help="Indentation size")
+@click.option(
+    "--max-line-length",
+    type=click.IntRange(min=1),
+    default=120,
+    help="Maximum line length",
+)
 @click.option(
     "--align-strings/--no-align-strings",
     default=True,
