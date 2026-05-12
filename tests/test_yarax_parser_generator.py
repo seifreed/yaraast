@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BooleanLiteral, Identifier, IntegerLiteral
+from yaraast.ast.expressions import BooleanLiteral, Expression, Identifier, IntegerLiteral
 from yaraast.ast.rules import Rule
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -23,7 +23,7 @@ from yaraast.yarax.generator import YaraXGenerator
 from yaraast.yarax.parser import YaraXParser
 
 
-def _parse_expr(text: str):
+def _parse_expr(text: str) -> Expression:
     parser = YaraXParser(text)
     return parser.parse_expression()
 

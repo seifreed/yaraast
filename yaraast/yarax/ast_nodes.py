@@ -3,17 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from yaraast.ast.base import ASTNode, _VisitorType
+from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import Expression
-
-if TYPE_CHECKING:
-    from yaraast.ast.conditions import Condition
 
 
 @dataclass
-class WithStatement(ASTNode):
+class WithStatement(Condition):
     """YARA-X 'with' statement for declaring local variables.
 
     Example:
@@ -22,7 +20,7 @@ class WithStatement(ASTNode):
     """
 
     declarations: list[WithDeclaration]
-    body: Condition
+    body: Expression
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_with_statement(self)
