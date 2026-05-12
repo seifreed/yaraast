@@ -44,6 +44,8 @@ rule sample {
 """.lstrip(),
             encoding="utf-8",
         )
+        yarax = root / "native.yarax"
+        yarax.write_text("rule native_yarax { condition: true }\n", encoding="utf-8")
         bad = root / "bad.yar"
         bad.write_text('rule bad { strings: $a = "x" condition: }', encoding="utf-8")
 
@@ -54,6 +56,7 @@ rule sample {
         assert syms
         names = {s.name for s in syms}
         assert "sample" in names
+        assert "native_yarax" in names
         assert "$a" in names
 
         # Cache hit path

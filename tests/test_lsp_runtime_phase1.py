@@ -11,6 +11,7 @@ from yaraast.lsp.references import ReferencesProvider
 from yaraast.lsp.rename import RenameProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
 from yaraast.lsp.selection_range import SelectionRangeProvider
+from yaraast.lsp.workspace_index import WorkspaceIndex
 from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
 
 
@@ -96,6 +97,22 @@ rule beta {
 
     filtered = provider.get_workspace_symbols("bet")
     assert all("bet" in symbol.name.lower() for symbol in filtered)
+
+
+def test_workspace_index_discovers_multidialect_extensions(tmp_path: Path) -> None:
+    for name in ("classic.yar", "classic_alt.yara", "native.yaral", "native.yarax"):
+        (tmp_path / name).write_text("rule sample { condition: true }\n", encoding="utf-8")
+    (tmp_path / "ignored.txt").write_text("rule ignored { condition: true }\n", encoding="utf-8")
+
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
+
+    assert {path.name for path in index.iter_candidate_files()} == {
+        "classic.yar",
+        "classic_alt.yara",
+        "native.yaral",
+        "native.yarax",
+    }
 
 
 def test_selection_range_provider_returns_progressive_ranges() -> None:

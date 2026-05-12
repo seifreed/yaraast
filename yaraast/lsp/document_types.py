@@ -13,6 +13,8 @@ from lsprotocol.types import Location, Position, Range, SymbolInformation, Symbo
 from yaraast.config import DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
 from yaraast.dialects import YaraDialect, detect_dialect
 
+YARA_FILE_SUFFIXES = frozenset({".yar", ".yara", ".yaral", ".yarax"})
+
 
 def uri_to_path(uri: str) -> Path | None:
     if uri.startswith("file://"):

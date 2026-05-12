@@ -9,7 +9,7 @@ from pathlib import Path
 from lsprotocol.types import SymbolInformation
 
 from yaraast.lsp.document_context import DocumentContext
-from yaraast.lsp.document_types import SymbolRecord
+from yaraast.lsp.document_types import YARA_FILE_SUFFIXES, SymbolRecord
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +100,9 @@ class WorkspaceIndex:
         for folder in self.workspace_folders:
             if not folder.exists():
                 continue
-            if folder.is_file() and folder.suffix in {".yar", ".yara"}:
+            if folder.is_file() and folder.suffix.lower() in YARA_FILE_SUFFIXES:
                 files.add(folder)
                 continue
-            files.update(folder.rglob("*.yar"))
-            files.update(folder.rglob("*.yara"))
+            for suffix in YARA_FILE_SUFFIXES:
+                files.update(folder.rglob(f"*{suffix}"))
         return sorted(files)

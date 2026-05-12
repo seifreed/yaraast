@@ -7,6 +7,7 @@ from pathlib import Path
 
 from lsprotocol.types import SymbolInformation
 
+from yaraast.lsp.document_types import YARA_FILE_SUFFIXES
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 
 logger = logging.getLogger(__name__)
@@ -35,9 +36,11 @@ class WorkspaceSymbolsProvider:
         symbols = []
 
         # Find all YARA files in workspace
-        yara_files = list(self.workspace_root.rglob("*.yar")) + list(
-            self.workspace_root.rglob("*.yara")
-        )
+        yara_files = [
+            path
+            for suffix in YARA_FILE_SUFFIXES
+            for path in self.workspace_root.rglob(f"*{suffix}")
+        ]
 
         for yara_file in yara_files:
             try:
