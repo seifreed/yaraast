@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
+from yaraast.ast.base import YaraFile
 from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 from yaraast.metrics.dependency_graph_utils import (
     DependencyGraph,
@@ -17,12 +19,12 @@ from yaraast.metrics.dependency_graph_utils import (
 from yaraast.parser import Parser
 
 
-def _parse_yara(code: str):
+def _parse_yara(code: str) -> YaraFile:
     parser = Parser()
     return parser.parse(dedent(code))
 
 
-def test_dependency_graph_generator_outputs_dot_source(tmp_path) -> None:
+def test_dependency_graph_generator_outputs_dot_source(tmp_path: Path) -> None:
     code = """
     import "pe"
 
@@ -82,7 +84,7 @@ def test_dependency_graph_build_and_analysis() -> None:
     assert stats["total_dependencies"] >= 2
 
 
-def test_dependency_graph_cycles_and_order(tmp_path) -> None:
+def test_dependency_graph_cycles_and_order(tmp_path: Path) -> None:
     graph = DependencyGraph()
     graph.add_edge("a", "b")
     graph.add_edge("b", "c")

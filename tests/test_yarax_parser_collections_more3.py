@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.ast.expressions import Identifier
+from yaraast.ast.expressions import Expression, Identifier
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -28,7 +28,7 @@ def _manual_parser(tokens: list[Token]) -> YaraXParser:
     return parser
 
 
-def _parse_expr(text: str):
+def _parse_expr(text: str) -> Expression:
     return YaraXParser(text).parse_expression()
 
 

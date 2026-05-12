@@ -13,6 +13,7 @@ import cProfile
 from io import StringIO
 from pathlib import Path
 import pstats
+from typing import Any, cast
 
 from yaraast.parser import Parser
 from yaraast.performance.streaming_parser import StreamingParser
@@ -29,6 +30,11 @@ class ParserProfiler:
         """
         self.results_dir = results_dir
         self.results_dir.mkdir(parents=True, exist_ok=True)
+
+    @staticmethod
+    def _stats_data(stats: pstats.Stats) -> Any:
+        """Return raw pstats data exposed by CPython at runtime."""
+        return cast(Any, stats).stats
 
     def profile_standard_parser(
         self,
@@ -144,7 +150,7 @@ class ParserProfiler:
             f.write("Top 50 Functions by Cumulative Time\n")
             f.write("=" * 80 + "\n")
 
-            ps = pstats.Stats(stats.stats, stream=stream)
+            ps = pstats.Stats(self._stats_data(stats), stream=stream)
             ps.strip_dirs()
             ps.sort_stats("cumulative")
             ps.print_stats(50)
@@ -158,7 +164,7 @@ class ParserProfiler:
             f.write("Top 50 Functions by Total Time\n")
             f.write("=" * 80 + "\n")
 
-            ps = pstats.Stats(stats.stats, stream=stream)
+            ps = pstats.Stats(self._stats_data(stats), stream=stream)
             ps.strip_dirs()
             ps.sort_stats("tottime")
             ps.print_stats(50)
@@ -172,7 +178,7 @@ class ParserProfiler:
             f.write("Caller Information (Top 30)\n")
             f.write("=" * 80 + "\n")
 
-            ps = pstats.Stats(stats.stats, stream=stream)
+            ps = pstats.Stats(self._stats_data(stats), stream=stream)
             ps.strip_dirs()
             ps.sort_stats("cumulative")
             ps.print_callers(30)
@@ -184,7 +190,7 @@ class ParserProfiler:
     def compare_parsers(
         self,
         file_path: Path,
-    ) -> dict:
+    ) -> dict[str, pstats.Stats]:
         """Profile and compare both parser implementations.
 
         Args:
@@ -197,7 +203,7 @@ class ParserProfiler:
         print(f"Profiling comparison: {file_path.name}")
         print(f"{'=' * 60}")
 
-        results = {}
+        results: dict[str, pstats.Stats] = {}
 
         # Profile standard parser
         results["standard"] = self.profile_standard_parser(file_path)
@@ -212,7 +218,7 @@ class ParserProfiler:
 
     def _generate_comparison_report(
         self,
-        results: dict,
+        results: dict[str, pstats.Stats],
         file_path: Path,
     ) -> None:
         """Generate a comparison report between profiling results.
@@ -237,9 +243,10 @@ class ParserProfiler:
                 f.write(f"{parser_name.upper()} Parser:\n")
 
                 # Get total calls and primitive calls
-                total_calls = stats.total_calls
-                prim_calls = stats.prim_calls
-                total_time = stats.total_tt
+                stats_runtime = cast(Any, stats)
+                total_calls = int(stats_runtime.total_calls)
+                prim_calls = int(stats_runtime.prim_calls)
+                total_time = float(stats_runtime.total_tt)
 
                 f.write(f"  Total function calls: {total_calls:,}\n")
                 f.write(f"  Primitive calls: {prim_calls:,}\n")
@@ -247,7 +254,7 @@ class ParserProfiler:
 
                 # Get top 10 most time-consuming functions
                 stream = StringIO()
-                ps = pstats.Stats(stats.stats, stream=stream)
+                ps = pstats.Stats(self._stats_data(stats), stream=stream)
                 ps.strip_dirs()
                 ps.sort_stats("tottime")
                 ps.print_stats(10)

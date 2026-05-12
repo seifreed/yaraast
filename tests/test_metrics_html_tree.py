@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.parser import Parser
 
 
-def test_html_tree_generation(tmp_path) -> None:
+def test_html_tree_generation(tmp_path: Path) -> None:
     code = """
     import "pe"
 

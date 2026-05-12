@@ -60,7 +60,7 @@ class ParserBenchmark:
             Current memory usage in megabytes
         """
         process = psutil.Process()
-        return process.memory_info().rss / (1024 * 1024)
+        return float(process.memory_info().rss / (1024 * 1024))
 
     def benchmark_standard_parser(
         self,
@@ -425,7 +425,7 @@ class ParserBenchmark:
             f.write(f"Total benchmarks: {len(self.results)}\n\n")
 
             # Group results by file
-            results_by_file = {}
+            results_by_file: dict[str, list[BenchmarkResult]] = {}
             for result in self.results:
                 if result.file_path not in results_by_file:
                     results_by_file[result.file_path] = []

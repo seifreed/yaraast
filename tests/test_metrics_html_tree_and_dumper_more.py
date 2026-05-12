@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import (
@@ -45,7 +46,7 @@ def test_ast_dumper_direct_visitors_for_remaining_nodes() -> None:
             )
         ]
     )
-    assert dumper._process_modifiers(rule_with_accept_modifier) == [
+    assert dumper._process_modifiers(cast(Any, rule_with_accept_modifier)) == [
         {"type": "StringModifier", "name": "global", "value": None},
     ]
     assert dumper._process_meta(None) == {}
