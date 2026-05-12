@@ -72,6 +72,15 @@ def test_parallel_analyzer_direct_methods_and_stats(tmp_path: Path) -> None:
     assert reset["rules_analyzed"] == 0
     assert reset["errors"] == 0
     assert reset["total_time"] == 0.0
+    assert reset["jobs_submitted"] == 0
+    assert reset["jobs_completed"] == 0
+
+    jobs_after_reset = analyzer.parse_files_parallel([str(file_path)], chunk_size=1)
+    assert len(jobs_after_reset) == 1
+    assert jobs_after_reset[0].status.value == "completed"
+    reset_stats = analyzer.get_statistics()
+    assert reset_stats["jobs_submitted"] == 1
+    assert reset_stats["jobs_completed"] == 1
 
 
 def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> None:

@@ -21,12 +21,8 @@ def default_parallel_stats() -> dict[str, float | int]:
 
 
 def resettable_parallel_stats() -> dict[str, float | int]:
-    """Return the minimal reset statistics shape expected by tests."""
-    return {
-        "rules_analyzed": 0,
-        "total_time": 0.0,
-        "errors": 0,
-    }
+    """Return a fresh statistics shape for a reset analyzer."""
+    return default_parallel_stats()
 
 
 def start_job(job_type: str) -> Job:
