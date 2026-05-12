@@ -257,7 +257,7 @@ def _display_stream_results(
 @click.option(
     "--chunk-size",
     "-c",
-    type=int,
+    type=click.IntRange(min=1),
     default=10,
     help="Files per processing chunk",
 )

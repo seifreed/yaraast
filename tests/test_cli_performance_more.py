@@ -200,6 +200,22 @@ def test_performance_parallel_and_optimize(tmp_path: Path) -> None:
     assert "Optimization Recommendations" in optimize.output
 
 
+def test_performance_parallel_rejects_zero_chunk_size(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    result = CliRunner().invoke(
+        performance,
+        [
+            "parallel",
+            file_path,
+            "--chunk-size",
+            "0",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--chunk-size'" in result.output
+
+
 def test_performance_batch_uses_default_output_dir_and_progress(tmp_path: Path) -> None:
     first = _write(tmp_path, "one.yar", _sample_yara())
     _write(tmp_path, "two.yar", _sample_yara().replace("perf_rule", "perf_rule_two"))

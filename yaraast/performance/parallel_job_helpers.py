@@ -94,6 +94,10 @@ def export_graph_files(
 
 def parse_file_chunks(file_paths: list, chunk_size: int = 10) -> list[Job]:
     """Parse file paths in chunks and return job objects."""
+    if chunk_size < 1:
+        msg = "chunk_size must be at least 1"
+        raise ValueError(msg)
+
     from yaraast.parser.parser import Parser
 
     chunks = [file_paths[i : i + chunk_size] for i in range(0, len(file_paths), chunk_size)]

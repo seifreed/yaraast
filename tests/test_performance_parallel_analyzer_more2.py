@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
@@ -160,6 +162,9 @@ def test_parallel_analyzer_files_custom_and_graphs(tmp_path: Path) -> None:
     assert len(parse_jobs) == 2
     assert parse_jobs[0].is_completed and parse_jobs[1].is_completed
     assert any(job.status.value == "failed" for job in parse_jobs)
+
+    with pytest.raises(ValueError, match="chunk_size must be at least 1"):
+        analyzer.parse_files_parallel([str(good_a)], chunk_size=0)
 
     ast = _parsed_ast("graph_rule")
     graph_jobs = analyzer.generate_graphs_parallel([ast], tmp_path / "graphs", ["full", "rules"])
