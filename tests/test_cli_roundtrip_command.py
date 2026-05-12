@@ -41,3 +41,4 @@ def test_roundtrip_serialize_deserialize(tmp_path: Path) -> None:
     )
     assert result.exit_code == 0
     assert out_path.exists()
+    assert "Format: JSON" in result.output

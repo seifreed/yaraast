@@ -19,11 +19,12 @@ from yaraast.cli.lsp_reporting import (
     "--stdio",
     is_flag=True,
     default=True,
+    expose_value=False,
     help="Use stdio for communication (default)",
 )
 @click.option("--tcp", type=click.IntRange(min=1, max=65535), help="Use TCP on specified port")
 @click.option("--host", default="127.0.0.1", help="Host for TCP mode")
-def lsp(stdio: bool, tcp: int | None, host: str) -> None:
+def lsp(tcp: int | None, host: str) -> None:
     """Start the YARA Language Server.
 
     The language server provides IDE features like autocomplete, diagnostics,

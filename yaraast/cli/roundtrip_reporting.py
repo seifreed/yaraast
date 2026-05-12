@@ -77,6 +77,7 @@ def display_deserialize_result(
     """Display deserialize results."""
     if output:
         click.echo(f"✅ Generated YARA code to {output}")
+        click.echo(f"   Format: {fmt.upper()}")
         click.echo(f"   Rules: {len(ast.rules)}")
         click.echo(f"   Formatting preserved: {preserve_formatting}")
     else:
