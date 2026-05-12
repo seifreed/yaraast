@@ -37,6 +37,7 @@ def test_complexity_expression_helpers() -> None:
     code = "rule r1 { condition: (1 + 2 == 3) and true }"
     ast = Parser().parse(code)
     expr = ast.rules[0].condition
+    assert expr is not None
 
     assert calculate_expression_complexity(expr) >= 1
     assert calculate_cyclomatic_complexity(expr) >= 1
