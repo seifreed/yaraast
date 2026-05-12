@@ -10,7 +10,7 @@ from yaraast.yaral.ast_nodes import MatchSection, OutcomeAssignment, OutcomeSect
 class YaraLOptimizerOutcomeMixin:
     """Outcome, match, and options optimization methods."""
 
-    def _optimize_match_section(self, match: MatchSection) -> MatchSection:
+    def _optimize_match_section(self, match: MatchSection | None) -> MatchSection | None:
         if not match:
             return match
 
@@ -40,7 +40,7 @@ class YaraLOptimizerOutcomeMixin:
 
         return window
 
-    def _optimize_outcome_section(self, outcome: OutcomeSection) -> OutcomeSection:
+    def _optimize_outcome_section(self, outcome: Any) -> Any:
         if not outcome:
             return outcome
 

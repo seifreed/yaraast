@@ -163,7 +163,8 @@ class YaraLOptimizer(
         return node
 
     def visit_yaral_condition_section(self, node: ConditionSection) -> ConditionSection:
-        return self._optimize_condition_section(node)
+        optimized = self._optimize_condition_section(node)
+        return optimized if optimized is not None else node
 
     def visit_yaral_condition_expression(self, node: ConditionExpression) -> ConditionExpression:
         return node

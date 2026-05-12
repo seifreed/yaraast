@@ -33,8 +33,8 @@ from yaraast.yaral.validator import ValidationError, YaraLValidator
 
 @dataclass
 class OutcomeVariablesContainer:
-    variables: dict
-    conditional_expressions: list
+    variables: dict[str, object]
+    conditional_expressions: list[object]
 
 
 @dataclass
@@ -42,12 +42,11 @@ class EmptyLegacyOutcome:
     pass
 
 
-@dataclass
-class EmptyConditionSection:
-    expression: object | None = None
-
-
-def _assignment(field_parts: list[str], operator: str, value) -> EventAssignment:
+def _assignment(
+    field_parts: list[str],
+    operator: str,
+    value: str | int | EventVariable | UDMFieldPath,
+) -> EventAssignment:
     return EventAssignment(
         event_var=EventVariable(name="$e"),
         field_path=UDMFieldPath(parts=field_parts),
@@ -60,7 +59,8 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
     opt = YaraLOptimizer()
 
     assert opt._optimize_condition_section(None) is None
-    assert opt._optimize_condition_section(EmptyConditionSection()) == EmptyConditionSection()
+    empty_condition = ConditionSection(expression=None)
+    assert opt._optimize_condition_section(empty_condition) == empty_condition
 
     double_not = UnaryCondition(
         operator="not",
@@ -76,17 +76,17 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
             right=EventExistsCondition(event="r"),
         )
     )
+    assert isinstance(passthrough, BinaryCondition)
     assert passthrough.operator == "xor"
-    assert (
-        opt._optimize_binary_condition(
-            BinaryCondition(
-                operator="or",
-                left=EventExistsCondition(event="same"),
-                right=EventExistsCondition(event="same"),
-            )
-        ).event
-        == "same"
+    optimized_or = opt._optimize_binary_condition(
+        BinaryCondition(
+            operator="or",
+            left=EventExistsCondition(event="same"),
+            right=EventExistsCondition(event="same"),
+        )
     )
+    assert isinstance(optimized_or, EventExistsCondition)
+    assert optimized_or.event == "same"
 
     left = EventExistsCondition(event="left")
     right = EventExistsCondition(event="right")
@@ -104,7 +104,9 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
     assert opt._optimize_or_condition(left, left) == left
     assert opt._optimize_or_condition(left, right).operator == "or"
 
-    assert opt._create_true_condition().event == "true"
+    true_condition = opt._create_true_condition()
+    assert isinstance(true_condition, EventExistsCondition)
+    assert true_condition.event == "true"
     assert isinstance(opt._create_false_condition(), UnaryCondition)
 
     assert (
@@ -150,13 +152,13 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
         ]
     )
     optimized_match = opt._optimize_match_section(match)
+    assert optimized_match is not None
     assert optimized_match.variables[0].time_window.unit == "h"
     assert optimized_match.variables[1].time_window.unit == "d"
     legacy_var = MatchVariable(variable="legacy", time_window=TimeWindow(duration=1, unit="m"))
-    assert (
-        opt._optimize_match_section(MatchSection(variables=[legacy_var])).variables[0].variable
-        == "legacy"
-    )
+    optimized_legacy_match = opt._optimize_match_section(MatchSection(variables=[legacy_var]))
+    assert optimized_legacy_match is not None
+    assert optimized_legacy_match.variables[0].variable == "legacy"
     opaque_window = object()
     assert opt._optimize_time_window(opaque_window) is opaque_window
 
@@ -192,7 +194,7 @@ def test_yaral_validator_condition_and_outcome_mixins() -> None:
     validator = YaraLValidator()
     validator.current_rule = "r1"
 
-    validator._validate_condition_section(EmptyConditionSection())
+    validator._validate_condition_section(ConditionSection(expression=None))
     assert any("Condition section cannot be empty" in err.message for err in validator.errors)
 
     validator.errors.clear()
@@ -245,6 +247,7 @@ def test_yaral_optimizer_validator_and_rule_file_edge_paths() -> None:
     section = ConditionSection(expression=EventExistsCondition(event="edge"))
     optimized = opt.visit_yaral_condition_section(section)
     assert isinstance(optimized, ConditionSection)
+    assert isinstance(optimized.expression, EventExistsCondition)
     assert optimized.expression.event == "edge"
 
     issue = ValidationError(

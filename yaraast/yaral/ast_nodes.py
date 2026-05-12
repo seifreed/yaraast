@@ -7,7 +7,8 @@ from typing import Any
 
 from yaraast.ast.base import ASTNode, _VisitorType
 
-type OutcomeValue = ASTNode | str | int | float | bool | None
+type YaraLValue = ASTNode | str | int | float | bool | None
+type OutcomeValue = YaraLValue
 
 
 @dataclass
@@ -83,7 +84,7 @@ class EventAssignment(EventStatement):
     event_var: EventVariable
     field_path: UDMFieldPath
     operator: str  # =, !=, >, <, >=, <=, in, regex, etc.
-    value: str | int | EventVariable | UDMFieldPath | ReferenceList
+    value: YaraLValue
     modifiers: list[str] = field(default_factory=list)  # nocase, etc.
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -182,7 +183,7 @@ class TimeWindow(ASTNode):
 class ConditionSection(ASTNode):
     """YARA-L condition section."""
 
-    expression: ConditionExpression
+    expression: ConditionExpression | None
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_condition_section(self)
@@ -213,7 +214,7 @@ class UnaryCondition(ConditionExpression):
     """Unary condition (NOT)."""
 
     operator: str  # not
-    operand: ConditionExpression
+    operand: ConditionExpression | None
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_unary_condition(self)
@@ -325,7 +326,7 @@ class AggregationFunction(OutcomeExpression):
     """Aggregation function call."""
 
     function: str  # count, count_distinct, sum, min, max, array, etc.
-    arguments: list[UDMFieldAccess | str]
+    arguments: list[YaraLValue]
 
     @property
     def call_string(self) -> str:

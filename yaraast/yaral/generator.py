@@ -218,7 +218,8 @@ class YaraLGenerator(YaraLVisitor[str]):
         lines = [f"{self._indent()}condition:"]
         self._increase_indent()
 
-        lines.append(f"{self._indent()}{self.visit(node.expression)}")
+        expression = self.visit(node.expression) if node.expression is not None else ""
+        lines.append(f"{self._indent()}{expression}")
 
         self._decrease_indent()
         return "\n".join(lines)

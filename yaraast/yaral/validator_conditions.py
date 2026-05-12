@@ -31,6 +31,9 @@ class ConditionValidationMixin:
             )
 
     def visit_yaral_condition_section(self, node: ConditionSection) -> None:
+        if node.expression is None:
+            self._validate_condition_section(node)
+            return
         self.visit(node.expression)
 
     def visit_yaral_condition_expression(self, node: ConditionExpression) -> None:
@@ -41,7 +44,8 @@ class ConditionValidationMixin:
         self.visit(node.right)
 
     def visit_yaral_unary_condition(self, node: UnaryCondition) -> None:
-        self.visit(node.operand)
+        if node.operand is not None:
+            self.visit(node.operand)
 
     def visit_yaral_event_count_condition(self, node: EventCountCondition) -> None:
         self.used_events.add(node.event)

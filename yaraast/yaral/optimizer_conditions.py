@@ -16,7 +16,9 @@ from yaraast.yaral.ast_nodes import (
 class YaraLOptimizerConditionsMixin:
     """Condition optimization methods."""
 
-    def _optimize_condition_section(self, condition: ConditionSection) -> ConditionSection:
+    def _optimize_condition_section(
+        self, condition: ConditionSection | None
+    ) -> ConditionSection | None:
         if not condition or not condition.expression:
             return condition
 
@@ -27,19 +29,13 @@ class YaraLOptimizerConditionsMixin:
         if isinstance(expr, BinaryCondition):
             return self._optimize_binary_condition(expr)
 
-        if (
-            hasattr(expr, "operator")
-            and expr.operator == "not"
-            and hasattr(expr, "operand")
-            and hasattr(expr.operand, "operator")
-            and expr.operand.operator == "not"
-        ):
+        if isinstance(expr, UnaryCondition) and isinstance(expr.operand, UnaryCondition):
             self.stats.conditions_simplified += 1
-            return expr.operand.operand
+            return expr.operand.operand if expr.operand.operand is not None else expr
 
         return expr
 
-    def _optimize_binary_condition(self, cond: BinaryCondition) -> BinaryCondition:
+    def _optimize_binary_condition(self, cond: BinaryCondition) -> ConditionExpression:
         optimized_left = self._optimize_condition_expression(cond.left) if cond.left else cond.left
         optimized_right = (
             self._optimize_condition_expression(cond.right) if cond.right else cond.right

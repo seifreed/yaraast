@@ -84,15 +84,17 @@ class EventValidationMixin:
                 f"Use one of: {', '.join(valid_operators)}",
             )
 
-        if node.operator in ["=~", "!~"] and (
-            not isinstance(node.value, str)
-            or not (node.value.startswith("/") and node.value.endswith("/"))
-        ):
+        if node.operator in ["=~", "!~"] and not self._is_regex_value(node.value):
             self._add_warning(
                 "events",
                 f"Regex operator {node.operator} should be used with regex pattern",
                 "Use format: /pattern/",
             )
+
+    def _is_regex_value(self, value: object) -> bool:
+        if hasattr(value, "pattern"):
+            return True
+        return isinstance(value, str) and value.startswith("/") and value.endswith("/")
 
     def _validate_udm_field_path(self, node: UDMFieldPath) -> None:
         """Validate UDM field path."""

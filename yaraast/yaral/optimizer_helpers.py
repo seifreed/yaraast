@@ -10,7 +10,7 @@ from yaraast.yaral.ast_nodes import EventAssignment, UDMFieldPath
 class YaraLOptimizerHelpersMixin:
     """Shared helper methods for optimizer."""
 
-    def _field_path_to_string(self, field_path: UDMFieldPath) -> str:
+    def _field_path_to_string(self, field_path: UDMFieldPath | str) -> str:
         if hasattr(field_path, "parts"):
             return ".".join(field_path.parts)
         return str(field_path)
