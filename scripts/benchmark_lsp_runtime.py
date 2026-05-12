@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+from typing import Any
 
 from lsprotocol.types import Position
 
@@ -17,6 +18,10 @@ from yaraast.lsp.hover import HoverProvider
 from yaraast.lsp.references import ReferencesProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
 from yaraast.lsp.symbols import SymbolsProvider
+
+
+def _as_dict(value: object) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
 
 
 def _make_workspace(root: Path, file_count: int) -> list[Path]:
@@ -76,7 +81,7 @@ def run_benchmark(file_count: int, max_avg_ms: float) -> dict[str, object]:
         runtime.set_workspace_folders([str(root)])
         _exercise(runtime, files[-1])
         status = runtime.get_status()
-        latency = status.get("latency", {})
+        latency = _as_dict(status.get("latency", {}))
         failures = {
             name: metric["avg_ms"]
             for name, metric in latency.items()
@@ -103,7 +108,7 @@ def run_single_document_benchmark(rule_count: int, max_avg_ms: float) -> dict[st
     SymbolsProvider(runtime).get_symbols(text, uri)
     DocumentLinksProvider(runtime).get_document_links(text, uri)
     status = runtime.get_status()
-    latency = status.get("latency", {})
+    latency = _as_dict(status.get("latency", {}))
     failures = {
         name: metric["avg_ms"]
         for name, metric in latency.items()
@@ -141,9 +146,9 @@ def render_summary(payload: dict[str, object]) -> str:
         "| --- | --- | --- | --- |",
     ]
     for name in ("single_document", "medium", "large"):
-        report = payload.get(name, {})
+        report = _as_dict(payload.get(name, {}))
         threshold = report.get("threshold_ms", "n/a")
-        failures = report.get("failures", {})
+        failures = _as_dict(report.get("failures", {}))
         lines.append(f"| {name} | {report.get('ok')} | {threshold} ms | {len(failures)} |")
     return "\n".join(lines) + "\n"
 
@@ -158,10 +163,11 @@ def render_history_index(history_dir: Path) -> str:
     for json_path in sorted(history_dir.glob("lsp-runtime-*.json")):
         payload = json.loads(json_path.read_text(encoding="utf-8"))
         for name in ("single_document", "medium", "large"):
-            report = payload.get(name, {})
+            report = _as_dict(_as_dict(payload).get(name, {}))
+            failures = _as_dict(report.get("failures", {}))
             rows.append(
                 f"| {json_path.name} | {name} | {report.get('ok')} | "
-                f"{report.get('threshold_ms', 'n/a')} ms | {len(report.get('failures', {}))} |"
+                f"{report.get('threshold_ms', 'n/a')} ms | {len(failures)} |"
             )
     return "\n".join(rows) + "\n"
 
