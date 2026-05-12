@@ -132,6 +132,20 @@ def test_workspace_dependency_graph_links_resolved_include_paths(tmp_path: Path)
     assert workspace.dependency_graph.get_statistics()["file_count"] == 2
 
 
+def test_workspace_add_directory_default_includes_yara_extension(tmp_path: Path) -> None:
+    root = tmp_path
+    yar = _write(root / "classic.yar", "rule classic_yar { condition: true }")
+    yara = _write(root / "classic_alt.yara", "rule classic_yara { condition: true }")
+    yarax = _write(root / "native.yarax", "rule native_yarax { condition: true }")
+
+    workspace = Workspace(str(root))
+    workspace.add_directory(str(root))
+
+    assert str(yar) in workspace.files
+    assert str(yara) in workspace.files
+    assert str(yarax) not in workspace.files
+
+
 def test_workspace_sequential_analysis_with_relative_directory_and_nonrecursive(
     tmp_path: Path,
 ) -> None:

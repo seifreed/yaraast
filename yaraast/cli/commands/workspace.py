@@ -21,7 +21,12 @@ def workspace() -> None:
 
 @workspace.command()
 @click.argument("directory", type=click.Path(exists=True))
-@click.option("--pattern", "-p", default="*.yar", help="File pattern to match")
+@click.option(
+    "--pattern",
+    "-p",
+    default=None,
+    help="File pattern to match; defaults to *.yar and *.yara",
+)
 @click.option(
     "--recursive/--no-recursive",
     "-r/-R",
@@ -108,7 +113,7 @@ def graph(directory, output, format) -> None:
     """Generate dependency graph for YARA files."""
     click.echo(f"Building dependency graph for: {directory}")
 
-    _ws, report = analyze_workspace(directory, "*.yar", True, True)
+    _ws, report = analyze_workspace(directory, None, True, True)
     output_text = format_workspace_graph(report, format)
 
     # Output

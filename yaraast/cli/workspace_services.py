@@ -10,7 +10,7 @@ from yaraast.resolution.workspace import Workspace
 
 def analyze_workspace(
     directory: str,
-    pattern: str,
+    pattern: str | None,
     recursive: bool,
     parallel: bool,
 ) -> tuple[Workspace, Any]:

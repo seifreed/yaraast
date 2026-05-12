@@ -31,6 +31,7 @@ def _sample_yara(rule_name: str = "sample") -> str:
 def test_workspace_analyze_text_and_json(tmp_path: Path) -> None:
     _write(tmp_path, "a.yar", _sample_yara("a"))
     _write(tmp_path, "b.yar", _sample_yara("b"))
+    yara_path = _write(tmp_path, "c.yara", _sample_yara("c"))
 
     runner = CliRunner()
 
@@ -49,10 +50,12 @@ def test_workspace_analyze_text_and_json(tmp_path: Path) -> None:
     payload = json.loads(out_path.read_text())
     assert "statistics" in payload
     assert "files" in payload
+    assert yara_path in payload["files"]
 
 
 def test_workspace_graph_json(tmp_path: Path) -> None:
     _write(tmp_path, "a.yar", _sample_yara("a"))
+    _write(tmp_path, "b.yara", _sample_yara("b"))
 
     out_path = tmp_path / "graph.json"
     runner = CliRunner()
@@ -66,3 +69,4 @@ def test_workspace_graph_json(tmp_path: Path) -> None:
     assert out_path.exists()
     payload = json.loads(out_path.read_text())
     assert "nodes" in payload
+    assert any(path.endswith("b.yara") for path in payload["nodes"])

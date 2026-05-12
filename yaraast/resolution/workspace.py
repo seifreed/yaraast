@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -19,6 +20,8 @@ __all__ = [
     "WorkspaceAnalyzer",
     "WorkspaceReport",
 ]
+
+DEFAULT_YARA_FILE_PATTERNS = ("*.yar", "*.yara")
 
 
 class Workspace:
@@ -70,14 +73,14 @@ class Workspace:
     def add_directory(
         self,
         directory: str,
-        pattern: str = "*.yar",
+        pattern: str | Iterable[str] | None = None,
         recursive: bool = True,
     ) -> None:
         """Add all YARA files from a directory.
 
         Args:
             directory: Directory to scan.
-            pattern: File pattern to match (supports glob).
+            pattern: File pattern or patterns to match (supports glob).
             recursive: Whether to scan subdirectories.
 
         """
@@ -85,11 +88,35 @@ class Workspace:
         if not dir_path.is_absolute():
             dir_path = self.root_path / dir_path
 
-        files = dir_path.rglob(pattern) if recursive else dir_path.glob(pattern)
-
-        for file_path in files:
+        seen: set[Path] = set()
+        for file_path in self._iter_directory_files(dir_path, pattern, recursive):
             if file_path.is_file():
+                if file_path in seen:
+                    continue
+                seen.add(file_path)
                 self.add_file(str(file_path))
+
+    def _iter_directory_files(
+        self,
+        directory: Path,
+        pattern: str | Iterable[str] | None,
+        recursive: bool,
+    ) -> Iterable[Path]:
+        patterns = self._normalize_patterns(pattern)
+        for file_pattern in patterns:
+            yield from (
+                directory.rglob(file_pattern) if recursive else directory.glob(file_pattern)
+            )
+
+    def _normalize_patterns(
+        self,
+        pattern: str | Iterable[str] | None,
+    ) -> tuple[str, ...]:
+        if pattern is None:
+            return DEFAULT_YARA_FILE_PATTERNS
+        if isinstance(pattern, str):
+            return (pattern,)
+        return tuple(pattern)
 
     def _add_to_dependency_graph(self, resolved: ResolvedFile) -> None:
         """Add resolved file and its includes to dependency graph."""
