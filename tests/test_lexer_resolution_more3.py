@@ -110,10 +110,10 @@ def test_include_resolver_env_tree_and_cache_helpers(tmp_path: Path) -> None:
     env_dir = tmp_path / "env"
     env_dir.mkdir()
     env_file = env_dir / "envlib.yar"
-    env_file.write_text("rule envlib { condition: true }")
+    env_file.write_text("rule envlib { condition: true }", encoding="utf-8")
 
     main = tmp_path / "main.yar"
-    main.write_text('include "envlib.yar"\nrule main { condition: true }')
+    main.write_text('include "envlib.yar"\nrule main { condition: true }', encoding="utf-8")
 
     previous = os.environ.get("YARA_INCLUDE_PATH")
     os.environ["YARA_INCLUDE_PATH"] = os.pathsep.join([str(env_dir), str(env_dir)])

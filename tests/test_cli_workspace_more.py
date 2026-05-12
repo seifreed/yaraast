@@ -13,7 +13,7 @@ from yaraast.cli.commands.workspace import workspace
 
 def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
-    path.write_text(dedent(content))
+    path.write_text(dedent(content), encoding="utf-8")
     return str(path)
 
 
@@ -47,7 +47,7 @@ def test_workspace_analyze_text_and_json(tmp_path: Path) -> None:
     assert json_run.exit_code == 0
     assert out_path.exists()
 
-    payload = json.loads(out_path.read_text())
+    payload = json.loads(out_path.read_text(encoding="utf-8"))
     assert "statistics" in payload
     assert "files" in payload
     assert yara_path in payload["files"]
@@ -67,6 +67,6 @@ def test_workspace_graph_json(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert out_path.exists()
-    payload = json.loads(out_path.read_text())
+    payload = json.loads(out_path.read_text(encoding="utf-8"))
     assert "nodes" in payload
     assert any(path.endswith("b.yara") for path in payload["nodes"])

@@ -53,7 +53,7 @@ def analyze(directory, pattern, recursive, output, format, parallel) -> None:
 
     # Output
     if output:
-        Path(output).write_text(output_text)
+        Path(output).write_text(output_text, encoding="utf-8")
         click.echo(f"Report written to: {output}")
     else:
         click.echo(output_text)
@@ -118,7 +118,7 @@ def graph(directory, output, format) -> None:
 
     # Output
     if output:
-        Path(output).write_text(output_text)
+        Path(output).write_text(output_text, encoding="utf-8")
         click.echo(f"Graph written to: {output}")
         if format == "dot":
             click.echo(f"Visualize with: dot -Tpng {output} -o graph.png")

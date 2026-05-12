@@ -13,7 +13,7 @@ from yaraast.resolution import DependencyGraph, IncludeResolver, Workspace
 def create_temp_file(directory: Path, name: str, content: str) -> Path:
     """Helper to create temporary YARA files."""
     file_path = directory / name
-    file_path.write_text(content)
+    file_path.write_text(content, encoding="utf-8")
     return file_path
 
 
@@ -176,7 +176,7 @@ rule library_rule { condition: true }
             assert resolved1 is resolved2
 
             # Modify file
-            test_file.write_text("rule modified { condition: false }")
+            test_file.write_text("rule modified { condition: false }", encoding="utf-8")
 
             # Should get new object
             resolved3 = resolver.resolve_file(str(test_file))

@@ -119,7 +119,7 @@ class IncludeResolver:
 
     def _parse_and_resolve(self, resolved_path: Path, cache_key: str) -> ResolvedFile:
         """Parse file and recursively resolve its includes."""
-        content = resolved_path.read_text()
+        content = resolved_path.read_text(encoding="utf-8")
         ast = self.parser.parse(content)
         checksum = self._calculate_checksum_from_content(content)
 
@@ -211,7 +211,7 @@ class IncludeResolver:
 
     def _calculate_checksum(self, file_path: Path) -> str:
         """Calculate checksum of a file."""
-        content = file_path.read_text()
+        content = file_path.read_text(encoding="utf-8")
         return self._calculate_checksum_from_content(content)
 
     def _calculate_checksum_from_content(self, content: str) -> str:
