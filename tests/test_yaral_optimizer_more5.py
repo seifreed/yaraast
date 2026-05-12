@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from yaraast.ast.expressions import BooleanLiteral
+from dataclasses import dataclass
+
 from yaraast.yaral.ast_nodes import (
     BinaryCondition,
+    ConditionExpression,
     ConditionSection,
     EventExistsCondition,
     MatchSection,
@@ -15,6 +17,11 @@ from yaraast.yaral.ast_nodes import (
     YaraLRule,
 )
 from yaraast.yaral.optimizer import YaraLOptimizer
+
+
+@dataclass
+class BooleanCondition(ConditionExpression):
+    value: bool
 
 
 def test_yaral_optimizer_double_negation() -> None:
@@ -40,7 +47,7 @@ def test_yaral_optimizer_boolean_simplification_and_window() -> None:
         expression=BinaryCondition(
             operator="and",
             left=EventExistsCondition(event="e"),
-            right=BooleanLiteral(value=True),
+            right=BooleanCondition(value=True),
         )
     )
     match = MatchSection(variables=[MatchVariable(variable="e", time_window=TimeWindow(1440, "m"))])
@@ -49,4 +56,6 @@ def test_yaral_optimizer_boolean_simplification_and_window() -> None:
 
     optimized, stats = YaraLOptimizer().optimize(ast)
     assert stats.conditions_simplified >= 1
-    assert optimized.rules[0].match.variables[0].time_window.unit == "d"
+    optimized_match = optimized.rules[0].match
+    assert optimized_match is not None
+    assert optimized_match.variables[0].time_window.unit == "d"

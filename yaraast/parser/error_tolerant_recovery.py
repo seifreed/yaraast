@@ -8,7 +8,7 @@ from typing import Any
 from yaraast.ast.base import Location
 from yaraast.ast.expressions import BooleanLiteral, Identifier
 from yaraast.ast.meta import Meta
-from yaraast.ast.rules import Import, Include, Rule
+from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
 
 
@@ -56,7 +56,7 @@ def create_rule_from_body(
     parser, name: str, tags: list[str], body_lines: list[str], start_line: int = 0
 ) -> Rule:
     rule = Rule(name=name, condition=BooleanLiteral(True))
-    rule.tags = tags
+    rule.tags = [Tag(name=tag) for tag in tags]
     rule.meta = []
     rule.strings = []
     header_text = parser.lines[start_line] if 0 <= start_line < len(parser.lines) else ""

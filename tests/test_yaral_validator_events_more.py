@@ -15,9 +15,9 @@ from yaraast.yaral.validator import YaraLValidator
 
 
 @dataclass
-class LegacyEventStatement:
+class LegacyEventStatement(EventStatement):
     event: EventVariable | None = None
-    assignments: list = field(default_factory=list)
+    assignments: list[EventAssignment] = field(default_factory=list)
 
 
 def test_validator_events_section_empty_and_statement_without_assignments() -> None:

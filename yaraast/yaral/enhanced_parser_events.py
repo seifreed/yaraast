@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 from yaraast.yaral.ast_nodes import (
+    ConditionExpression,
     EventAssignment,
     EventsSection,
     EventStatement,
@@ -117,6 +118,6 @@ class EnhancedYaraLParserEventsMixin:
         """Parse temporal patterns like 'followed by', 'before', 'after'."""
         return None
 
-    def _parse_join_condition(self):
+    def _parse_join_condition(self) -> ConditionExpression:
         """Parse join condition for event correlation."""
         return self._parse_condition_expression()

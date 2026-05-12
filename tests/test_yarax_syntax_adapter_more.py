@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.strings import PlainString, RegexString
 from yaraast.parser import Parser
 from yaraast.yarax.compatibility_checker import CompatibilityIssue
 from yaraast.yarax.feature_flags import YaraXFeatures
 from yaraast.yarax.syntax_adapter import YaraXSyntaxAdapter
 
 
-def _parse_yara(code: str):
+def _parse_yara(code: str) -> YaraFile:
     return Parser().parse(dedent(code))
 
 
@@ -48,6 +50,7 @@ def test_syntax_adapter_pads_base64() -> None:
 
     assert count >= 1
     string_def = adapted.rules[0].strings[0]
+    assert isinstance(string_def, PlainString)
     assert len(string_def.value) >= 4
 
 
@@ -67,6 +70,7 @@ def test_syntax_adapter_escapes_regex_braces() -> None:
 
     assert count >= 1
     string_def = adapted.rules[0].strings[0]
+    assert isinstance(string_def, RegexString)
     assert "\\{" in string_def.regex
 
 

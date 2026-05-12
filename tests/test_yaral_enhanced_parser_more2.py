@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from yaraast.yaral.ast_nodes import ReferenceList, RegexPattern
+from yaraast.yaral.ast_nodes import EventAssignment, ReferenceList, RegexPattern
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 
 
@@ -27,8 +27,9 @@ def test_enhanced_parser_parses_not_matches_and_in() -> None:
     rule = ast.rules[0]
     assert rule.events is not None
     # Ensure regex/reference list parsed
-    assert any(isinstance(stmt.value, RegexPattern) for stmt in rule.events.statements)
-    assert any(isinstance(stmt.value, ReferenceList) for stmt in rule.events.statements)
+    assignments = [stmt for stmt in rule.events.statements if isinstance(stmt, EventAssignment)]
+    assert any(isinstance(stmt.value, RegexPattern) for stmt in assignments)
+    assert any(isinstance(stmt.value, ReferenceList) for stmt in assignments)
 
 
 def test_enhanced_parser_outcome_conditional_and_aggregation() -> None:

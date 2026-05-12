@@ -29,7 +29,9 @@ def test_adapt_with_count_and_passthrough_paths() -> None:
 
     assert count == 0
     assert [str(m) for m in adapted.rules[0].modifiers] == ["private", "private"]
-    assert adapted.rules[0].strings[0].value == "abcd"
+    adapted_string = adapted.rules[0].strings[0]
+    assert isinstance(adapted_string, PlainString)
+    assert adapted_string.value == "abcd"
 
 
 def test_regex_adaptation_helpers_cover_escape_unescape_and_quantifiers() -> None:

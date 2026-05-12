@@ -5,7 +5,8 @@ from __future__ import annotations
 from textwrap import dedent
 
 from yaraast.ast.expressions import BooleanLiteral, Identifier
-from yaraast.parser.error_tolerant_parser import ErrorTolerantParser, ParserError
+from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+from yaraast.parser.error_tolerant_types import ParserError
 
 
 def test_parser_error_format_and_normal_parse_success() -> None:
@@ -70,22 +71,32 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     rule = p._create_rule_from_body("r1", ["tag1"], body)
 
     assert rule.name == "r1"
-    assert rule.tags == ["tag1"]
+    assert [tag.name for tag in rule.tags] == ["tag1"]
     assert len(rule.meta) == 3
     assert len(rule.strings) == 3
     assert isinstance(rule.condition, Identifier)
     assert rule.condition.name == "complex and expr"
 
-    assert p._parse_meta_line('k = "v"').value == "v"
-    assert p._parse_meta_line("n = 9").value == 9
-    assert p._parse_meta_line("flag = false").value is False
+    string_meta = p._parse_meta_line('k = "v"')
+    integer_meta = p._parse_meta_line("n = 9")
+    boolean_meta = p._parse_meta_line("flag = false")
+    assert string_meta is not None
+    assert integer_meta is not None
+    assert boolean_meta is not None
+    assert string_meta.value == "v"
+    assert integer_meta.value == 9
+    assert boolean_meta.value is False
     assert p._parse_meta_line("invalid") is None
 
-    # Current implementation passes the extracted literal as the second positional
-    # arg to PlainString, which maps to modifiers; keep assertions aligned to behavior.
-    assert p._parse_string_line('$a = "x"').identifier == "$a"
-    assert p._parse_string_line("$a = { 41 }").identifier == "$a"
-    assert p._parse_string_line("$a = /abc/").identifier == "$a"
+    plain_string = p._parse_string_line('$a = "x"')
+    hex_string = p._parse_string_line("$a = { 41 }")
+    regex_string = p._parse_string_line("$a = /abc/")
+    assert plain_string is not None
+    assert hex_string is not None
+    assert regex_string is not None
+    assert plain_string.identifier == "$a"
+    assert hex_string.identifier == "$a"
+    assert regex_string.identifier == "$a"
     assert p._parse_string_line("broken") is None
 
     assert p._parse_condition("true") == BooleanLiteral(True)
@@ -128,4 +139,5 @@ def test_recovered_nodes_include_basic_locations() -> None:
     assert rule.location.end_line is not None
     assert rule.meta[0].location is not None
     assert rule.strings[0].location is not None
+    assert rule.condition is not None
     assert rule.condition.location is not None

@@ -7,6 +7,8 @@ from typing import Any
 
 from yaraast.ast.base import ASTNode, _VisitorType
 
+type OutcomeValue = ASTNode | str | int | float | bool | None
+
 
 @dataclass
 class YaraLRule(ASTNode):
@@ -304,7 +306,7 @@ class OutcomeAssignment(ASTNode):
     """Outcome variable assignment."""
 
     variable: str  # Variable name (with $)
-    expression: OutcomeExpression
+    expression: OutcomeValue
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_outcome_assignment(self)

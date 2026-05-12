@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yaraast.analysis.optimization import OptimizationAnalyzer, OptimizationReport
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import BinaryExpression, Identifier, IntegerLiteral, StringIdentifier
 from yaraast.ast.rules import Rule
@@ -10,7 +11,7 @@ from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.parser import Parser
 
 
-def _parse(source: str):
+def _parse(source: str) -> YaraFile:
     return Parser().parse(source)
 
 
