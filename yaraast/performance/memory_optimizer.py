@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import AbstractContextManager
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
+from yaraast.performance.memory_helpers import MemoryStats
 from yaraast.performance.memory_runtime import (
     batch_process_with_memory_limit as runtime_batch_process_with_memory_limit,
     clear_caches as runtime_clear_caches,
@@ -51,6 +54,8 @@ if TYPE_CHECKING:
     from yaraast.ast.meta import Meta
     from yaraast.ast.rules import Import, Include, Rule, Tag
     from yaraast.ast.strings import HexString, PlainString, RegexString
+
+_Node = TypeVar("_Node", bound="ASTNode")
 
 
 class MemoryOptimizer:
@@ -117,7 +122,7 @@ class MemoryOptimizer:
         """Get optimization statistics."""
         return runtime_get_statistics(self)
 
-    def memory_managed_context(self):
+    def memory_managed_context(self) -> AbstractContextManager[None]:
         """Create a memory-managed context."""
         return runtime_memory_managed_context(self)
 
@@ -127,7 +132,7 @@ class MemoryOptimizer:
             self._tracked_objects.append(obj)
             self._stats["total_objects"] = len(self._tracked_objects)
 
-    def get_memory_stats(self):
+    def get_memory_stats(self) -> MemoryStats:
         """Get memory statistics as an object."""
         return runtime_get_memory_stats(self)
 
@@ -135,7 +140,7 @@ class MemoryOptimizer:
         """Force garbage collection and cleanup."""
         return runtime_force_cleanup(self)
 
-    def create_memory_efficient_ast(self):
+    def create_memory_efficient_ast(self) -> ASTNode:
         """Create or reuse an AST from pool."""
         return runtime_create_memory_efficient_ast(self)
 
@@ -143,12 +148,12 @@ class MemoryOptimizer:
         """Return an AST to the pool for reuse."""
         self._ast_pool.append(ast)
 
-    def batch_process_with_memory_limit(
+    def batch_process_with_memory_limit[Item, Result](
         self,
-        items: list[Any],
-        processor: Any,
+        items: Sequence[Item],
+        processor: Callable[[Item], Result],
         batch_size: int = 10,
-    ):
+    ) -> Iterator[list[Result]]:
         """Process items in batches with memory management."""
         yield from runtime_batch_process_with_memory_limit(self, items, processor, batch_size)
 
@@ -184,10 +189,10 @@ class MemoryOptimizerTransformer(ASTTransformer):
         self.aggressive = aggressive
         self.nodes_processed = 0
 
-    def visit(self, node: ASTNode) -> ASTNode:
+    def visit(self, node: _Node) -> _Node:
         """Visit a node and optimize its memory usage."""
         self.nodes_processed += 1
-        return super().visit(node)
+        return cast(_Node, super().visit(node))
 
     def visit_string_literal(self, node: StringLiteral) -> StringLiteral:
         return transformer_visit_string_literal(self, node)

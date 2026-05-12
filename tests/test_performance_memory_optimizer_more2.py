@@ -82,7 +82,9 @@ def test_memory_optimizer_transformer_visits_real_nodes() -> None:
     assert transformer.nodes_processed >= 1
     assert optimized.rules[0].location is None
     assert optimized.rules[0].name == "dup"
-    assert optimized.rules[0].strings[0].value == "dup"
+    first_string = optimized.rules[0].strings[0]
+    assert isinstance(first_string, PlainString)
+    assert first_string.value == "dup"
     assert optimized.imports[0].module == "pe"
     assert yara_file.includes[0].path == "common.yar"
 

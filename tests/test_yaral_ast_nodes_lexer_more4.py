@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
     ArithmeticExpression,
+    BinaryCondition,
     CIDRExpression,
     ConditionalExpression,
     ConditionExpression,
@@ -20,6 +23,7 @@ from yaraast.yaral.ast_nodes import (
     MatchVariable,
     MetaEntry,
     MetaSection,
+    OptionsSection,
     OutcomeAssignment,
     OutcomeExpression,
     OutcomeSection,
@@ -28,6 +32,7 @@ from yaraast.yaral.ast_nodes import (
     TimeWindow,
     UDMFieldAccess,
     UDMFieldPath,
+    UnaryCondition,
     VariableComparisonCondition,
     YaraLFile,
     YaraLRule,
@@ -75,16 +80,16 @@ class _Visitor:
     def visit_yaral_time_window(self, node: TimeWindow) -> str:
         return node.as_string
 
-    def visit_yaral_condition_section(self, node: ConditionSection):
+    def visit_yaral_condition_section(self, node: ConditionSection) -> ConditionExpression:
         return node.expression
 
     def visit_yaral_condition_expression(self, node: ConditionExpression) -> str:
         return node.__class__.__name__
 
-    def visit_yaral_unary_condition(self, node) -> str:
+    def visit_yaral_unary_condition(self, node: UnaryCondition) -> str:
         return f"unary:{node.operator}"
 
-    def visit_yaral_binary_condition(self, node) -> str:
+    def visit_yaral_binary_condition(self, node: BinaryCondition) -> str:
         return node.operator
 
     def visit_yaral_event_count_condition(self, node: EventCountCondition) -> int:
@@ -123,7 +128,7 @@ class _Visitor:
     def visit_yaral_arithmetic_expression(self, node: ArithmeticExpression) -> str:
         return node.operator
 
-    def visit_yaral_options_section(self, node) -> dict:
+    def visit_yaral_options_section(self, node: OptionsSection) -> dict[str, Any]:
         return node.options
 
     def visit_yaral_regex_pattern(self, node: RegexPattern) -> str:
@@ -140,8 +145,6 @@ class _Visitor:
 
 
 def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
-    from yaraast.yaral.ast_nodes import UnaryCondition
-
     visitor = _Visitor()
 
     assert YaraLRule(name="r").accept(visitor) == "r"
@@ -169,9 +172,9 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
     expr = ConditionExpression()
     assert ConditionSection(expression=expr).accept(visitor) is expr
     assert expr.accept(visitor) == "ConditionExpression"
-    assert UnaryCondition(operator="not", operand=object()).accept(visitor) == "unary:not"
-    from yaraast.yaral.ast_nodes import BinaryCondition
-
+    assert (
+        UnaryCondition(operator="not", operand=ConditionExpression()).accept(visitor) == "unary:not"
+    )
     assert (
         BinaryCondition(
             operator="and", left=ConditionExpression(), right=ConditionExpression()
@@ -196,7 +199,6 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
     )
     assert AggregationFunction(function="count", arguments=["$e"]).accept(visitor) == "count($e)"
     assert ArithmeticExpression(operator="+", left=1, right=2).accept(visitor) == "+"
-    from yaraast.yaral.ast_nodes import OptionsSection
 
     assert OptionsSection(options={"sample": True}).accept(visitor) == {"sample": True}
     assert RegexPattern(pattern="abc", flags=["nocase"]).accept(visitor) == "/abc/ nocase"

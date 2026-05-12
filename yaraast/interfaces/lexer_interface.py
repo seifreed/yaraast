@@ -5,6 +5,7 @@ Licensed under GPLv3
 https://www.gnu.org/licenses/gpl-3.0.html
 """
 
+from collections.abc import Sequence
 from typing import Protocol
 
 from yaraast.interfaces.token_interface import IToken
@@ -19,14 +20,14 @@ class ILexer(Protocol):
 
     Example:
         class MockLexer:
-            def tokenize(self, text: str) -> list[IToken]:
+            def tokenize(self, text: str) -> Sequence[IToken]:
                 ...
 
         # MockLexer implicitly satisfies ILexer
         parser = Parser(lexer=MockLexer())
     """
 
-    def tokenize(self, text: str) -> list[IToken]:
+    def tokenize(self, text: str) -> Sequence[IToken]:
         """Tokenize the input text and return list of tokens.
 
         Args:

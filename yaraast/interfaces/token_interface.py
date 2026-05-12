@@ -13,8 +13,17 @@ from typing import Any, Protocol
 class IToken(Protocol):
     """Minimal token contract consumed by the parser."""
 
-    type: Enum
-    value: Any
-    line: int
-    column: int
-    length: int
+    @property
+    def type(self) -> Enum: ...
+
+    @property
+    def value(self) -> Any: ...
+
+    @property
+    def line(self) -> int: ...
+
+    @property
+    def column(self) -> int: ...
+
+    @property
+    def length(self) -> int: ...

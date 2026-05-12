@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+from yaraast.ast.base import YaraFile
 from yaraast.parser import Parser
 from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
 
 
-def _parse_yara(code: str):
+def _parse_yara(code: str) -> YaraFile:
     return Parser().parse(dedent(code))
 
 

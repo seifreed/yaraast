@@ -2,21 +2,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from types import SimpleNamespace
+from typing import cast
 
 from yaraast.ast.conditions import InExpression
-from yaraast.ast.expressions import StringLiteral
+from yaraast.ast.expressions import IntegerLiteral, StringLiteral
 from yaraast.serialization.ast_diff_hasher import AstHasher
 
 
 class _AcceptNode:
-    def __init__(self, visit_method: str, **attrs) -> None:
+    def __init__(self, visit_method: str, **attrs: object) -> None:
         self._visit_method = visit_method
         for key, value in attrs.items():
             setattr(self, key, value)
 
-    def accept(self, visitor):
-        return getattr(visitor, self._visit_method)(self)
+    def accept(self, visitor: AstHasher) -> str:
+        visit = cast(Callable[[object], str], getattr(visitor, self._visit_method))
+        return visit(self)
 
 
 def test_ast_hasher_string_and_expression_helpers() -> None:
@@ -188,7 +191,7 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
         == "At($a,Int(10))"
     )
 
-    in_expr = InExpression(subject="$a", range=_AcceptNode("visit_integer_literal", value=5))
+    in_expr = InExpression(subject="$a", range=IntegerLiteral(value=5))
     assert hasher.visit_in_expression(in_expr) == "In($a,Int(5))"
 
     of_with_nodes = hasher.visit_of_expression(

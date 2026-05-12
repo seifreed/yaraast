@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+from yaraast.ast.base import YaraFile
 from yaraast.parser import Parser
 from yaraast.performance.string_analyzer import StringPatternAnalyzer, analyze_rule_performance
 
 
-def _parse_yara(code: str):
+def _parse_yara(code: str) -> YaraFile:
     parser = Parser()
     return parser.parse(dedent(code))
 

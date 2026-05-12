@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from yaraast.ast.base import ASTNode, Location
 from yaraast.interfaces import IToken
 from yaraast.lexer import TokenType
@@ -10,7 +12,7 @@ from yaraast.lexer import TokenType
 class TokenStreamMixin:
     """Mixin providing token stream helpers."""
 
-    tokens: list[IToken]
+    tokens: Sequence[IToken]
     current: int
 
     def _match(self, *types: TokenType) -> bool:

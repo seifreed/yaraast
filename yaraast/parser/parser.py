@@ -7,6 +7,8 @@ https://www.gnu.org/licenses/gpl-3.0.html
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from yaraast.ast.base import YaraFile
 from yaraast.errors import ParseError
 from yaraast.interfaces import ILexer, IToken
@@ -55,7 +57,7 @@ class Parser(
         # Store the injected lexer or create a default one
         self._injected_lexer: ILexer | None = lexer
         self.lexer: Lexer | ILexer | None = None
-        self.tokens: list[IToken] = []
+        self.tokens: Sequence[IToken] = []
         self.current = 0
 
         if text is not None:
