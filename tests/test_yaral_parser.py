@@ -1,8 +1,10 @@
 """Tests for YARA-L parser."""
 
+from __future__ import annotations
+
 import pytest
 
-from yaraast.yaral.ast_nodes import AggregationFunction
+from yaraast.yaral.ast_nodes import AggregationFunction, EventAssignment
 from yaraast.yaral.parser import YaraLParser, YaraLParserError
 
 
@@ -58,6 +60,7 @@ class TestYaraLParser:
 
         # Check first event statement
         stmt1 = rule.events.statements[0]
+        assert isinstance(stmt1, EventAssignment)
         assert stmt1.event_var.name == "$e1"
         assert stmt1.field_path.path == "metadata.event_type"
         assert stmt1.operator == "="
@@ -193,6 +196,7 @@ class TestYaraLParser:
 
         # Check nocase modifier
         stmt1 = rule.events.statements[0]
+        assert isinstance(stmt1, EventAssignment)
         assert "nocase" in stmt1.modifiers
 
     def test_conditional_outcome(self) -> None:
