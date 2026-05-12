@@ -14,14 +14,14 @@ def graphviz_fallback_message(output_kind: str) -> str:
     return f"⚠️ Graphviz not installed. Generating {output_kind} instead...\n"
 
 
-def display_graphviz_installation_instructions():
+def display_graphviz_installation_instructions() -> None:
     click.echo("\n💡 To generate visual diagrams, install Graphviz:")
     click.echo("  macOS: brew install graphviz")
     click.echo("  Ubuntu: apt-get install graphviz")
     click.echo("  Windows: https://graphviz.org/download/")
 
 
-def display_graphviz_installation_help():
+def display_graphviz_installation_help() -> None:
     display_graphviz_installation_instructions()
 
 

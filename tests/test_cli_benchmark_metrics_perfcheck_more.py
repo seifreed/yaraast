@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 
 from click.testing import CliRunner
 import pytest
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import YaraFile
+from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.cli.benchmark_tools import ASTBenchmarker
 from yaraast.cli.commands.performance_check import performance_check
 from yaraast.cli.metrics_reporting import (
@@ -41,17 +43,24 @@ from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
 
+DependencyGraphGeneratorClass: Any = None
 try:
-    from yaraast.metrics.dependency_graph import DependencyGraphGenerator
+    from yaraast.metrics.dependency_graph import (
+        DependencyGraphGenerator as _DependencyGraphGeneratorClass,
+    )
 except ModuleNotFoundError:
-    DependencyGraphGenerator = None
+    pass
+else:
+    DependencyGraphGeneratorClass = _DependencyGraphGeneratorClass
 
 
-def _parse_yara(code: str) -> ASTNode:
-    return Parser().parse(dedent(code))
+def _parse_yara(code: str) -> YaraFile:
+    ast = Parser().parse(dedent(code))
+    assert isinstance(ast, YaraFile)
+    return ast
 
 
-def _sample_ast() -> ASTNode:
+def _sample_ast() -> YaraFile:
     return _parse_yara(
         """
         import "pe"
@@ -247,18 +256,21 @@ def test_metrics_reporting_complexity_and_string_outputs(
 def test_metrics_reporting_graph_and_pattern_helpers(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    if DependencyGraphGenerator is None:
+    if DependencyGraphGeneratorClass is None:
         pytest.skip("graphviz package is not installed")
     ast = _sample_ast()
 
-    dep_generator = DependencyGraphGenerator()
+    dep_generator = DependencyGraphGeneratorClass()
     dep_generator.visit(ast)
     dep_generator.dependencies["sample"].add("dependency_target")
     dep_generator.dependencies["dependency_target"] = set()
     dep_generator.module_references["sample"].add("pe")
 
     stats = dep_generator.get_dependency_stats()
-    text_graph = _get_text_graph(stats, dep_generator.dependencies)
+    text_graph = _get_text_graph(
+        stats,
+        {rule: sorted(deps) for rule, deps in dep_generator.dependencies.items()},
+    )
     assert "Dependency Analysis" in text_graph
     assert "Total rules: 2" in text_graph
     assert "sample → dependency_target" in text_graph
@@ -306,18 +318,6 @@ def test_metrics_reporting_graph_and_pattern_helpers(
 
 
 def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[str]) -> None:
-    class _Plain:
-        identifier = "$p"
-        value = "x" * 40
-
-    class _Hex:
-        identifier = "$h"
-        tokens = [1, 2, 3]
-
-    class _Regex:
-        identifier = "$r"
-        regex = "ab+"
-
     _display_pattern_result("digraph { a -> b }")
     _display_graphviz_installation_help()
     _display_pattern_statistics(
@@ -339,9 +339,9 @@ def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[
         _display_text_statistics,
     )
 
-    _display_plain_string(_Plain())
-    _display_hex_string(_Hex())
-    _display_regex_string(_Regex())
+    _display_plain_string(PlainString(identifier="$p", value="x" * 40))
+    _display_hex_string(HexString(identifier="$h", tokens=[1, 2, 3]))
+    _display_regex_string(RegexString(identifier="$r", regex="ab+"))
     _display_text_statistics(
         "sample.yar",
         {
@@ -386,7 +386,7 @@ def test_metrics_reporting_analyze_pattern_counts_and_string_branches(
 
 
 def test_metrics_reporting_empty_and_mixed_branches(capsys: pytest.CaptureFixture[str]) -> None:
-    if DependencyGraphGenerator is None:
+    if DependencyGraphGeneratorClass is None:
         pytest.skip("graphviz package is not installed")
     empty_ast = _parse_yara("rule empty { condition: true }")
     empty_metrics = ComplexityAnalyzer().analyze(empty_ast)
@@ -396,7 +396,7 @@ def test_metrics_reporting_empty_and_mixed_branches(capsys: pytest.CaptureFixtur
     assert "Unused Strings:" not in text
     assert "Module Usage:" not in text
 
-    dep_generator = DependencyGraphGenerator()
+    dep_generator = DependencyGraphGeneratorClass()
     dep_generator.dependencies["a"] = set()
     dep_generator.module_references["a"] = set()
     _display_rule_dependencies(dep_generator)
