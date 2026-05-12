@@ -124,12 +124,21 @@ def build_stream_output_data(
 
 def collect_file_paths(input_paths: tuple) -> list[Path]:
     file_paths = []
+    seen: set[Path] = set()
     for path in input_paths:
         path = Path(path)
+        candidates: Iterable[Path]
         if path.is_file():
-            file_paths.append(path)
+            candidates = [path]
         elif path.is_dir():
-            file_paths.extend(iter_matching_files(path, recursive=True))
+            candidates = iter_matching_files(path, recursive=True)
+        else:
+            candidates = []
+        for candidate in candidates:
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            file_paths.append(candidate)
     return file_paths
 
 

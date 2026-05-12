@@ -40,6 +40,7 @@ def test_get_parse_iterator_collect_paths_and_stream_summary(tmp_path: Path) -> 
     assert file_path in paths
     assert yara_path in paths
     assert yarax_path not in paths
+    assert paths.count(file_path) == 1
     assert all(path.exists() for path in paths)
 
     summary = ps.summarize_stream_results(
