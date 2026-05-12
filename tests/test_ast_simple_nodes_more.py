@@ -56,7 +56,12 @@ class _Visitor:
         return f"strdef:{node.identifier}"
 
     def visit_plain_string(self, node: PlainString) -> str:
-        return f"plain:{node.value}"
+        value = (
+            node.value.decode("utf-8", errors="replace")
+            if isinstance(node.value, bytes)
+            else node.value
+        )
+        return f"plain:{value}"
 
     def visit_regex_string(self, node: RegexString) -> str:
         return f"regex:{node.regex}"

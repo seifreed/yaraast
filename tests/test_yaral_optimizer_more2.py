@@ -74,11 +74,13 @@ def test_optimizer_condition_simplify_and_match_window() -> None:
         )
     )
     optimized_cond = optimizer._optimize_condition_section(condition)
+    assert optimized_cond is not None
     assert optimizer.stats.conditions_simplified >= 1
     assert optimized_cond.expression is not None
 
     match = MatchSection(variables=[MatchVariable(variable="e", time_window=TimeWindow(7200, "s"))])
     optimized_match = optimizer._optimize_match_section(match)
+    assert optimized_match is not None
     assert optimized_match.variables[0].time_window.unit == "h"
 
 

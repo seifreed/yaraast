@@ -121,4 +121,5 @@ def test_yaral_optimizer_simplifies_conditions_and_time_window() -> None:
 
     # Verify double negation path via direct call
     optimized_double = optimizer._optimize_condition_section(double_negation)
+    assert optimized_double is not None
     assert isinstance(optimized_double.expression, EventExistsCondition)

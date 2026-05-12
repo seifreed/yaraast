@@ -24,7 +24,8 @@ def test_parse_condition_supports_with_and_fallback_condition() -> None:
     assert isinstance(with_expr, WithStatement)
 
     plain = YaraXParser("true").parse_condition()
-    assert plain == BooleanLiteral(True)
+    assert isinstance(plain, BooleanLiteral)
+    assert plain.value is True
 
 
 def test_parse_with_declaration_rejects_invalid_variable_token() -> None:

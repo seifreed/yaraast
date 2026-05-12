@@ -80,7 +80,7 @@ class _Visitor:
     def visit_yaral_time_window(self, node: TimeWindow) -> str:
         return node.as_string
 
-    def visit_yaral_condition_section(self, node: ConditionSection) -> ConditionExpression:
+    def visit_yaral_condition_section(self, node: ConditionSection) -> ConditionExpression | None:
         return node.expression
 
     def visit_yaral_condition_expression(self, node: ConditionExpression) -> str:

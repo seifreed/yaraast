@@ -157,6 +157,34 @@ def test_batch_processor_process_files_complexity_summary(tmp_path: Path) -> Non
     assert "one" in result.summary
 
 
+def test_batch_processor_process_files_dependency_graph_outputs(tmp_path: Path) -> None:
+    code = """
+    rule one {
+        condition:
+            two
+    }
+
+    rule two {
+        condition:
+            true
+    }
+    """
+    path = tmp_path / "deps.yar"
+    path.write_text(dedent(code), encoding="utf-8")
+
+    out_dir = tmp_path / "graphs"
+    result = BatchProcessor().process_files(
+        [path], BatchOperation.DEPENDENCY_GRAPH, output_dir=out_dir
+    )
+
+    assert result.successful_count == 1
+    assert result.failed_count == 0
+    assert len(result.output_files) == 2
+    assert (out_dir / "deps_dependencies.json").exists()
+    assert (out_dir / "deps_dependencies.dot").exists()
+    assert result.summary["deps.yar"]["total_dependencies"] == 1
+
+
 def test_batch_processor_large_file_parse_and_serialize(tmp_path: Path) -> None:
     code = """
     rule a { condition: true }

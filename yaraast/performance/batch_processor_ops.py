@@ -121,6 +121,27 @@ def _process_large_validate(parsed: YaraFile, split_rules: bool, result: BatchRe
             result.errors.append(f"Validation failed for rule {key}")
 
 
+def _process_dependency_graph(
+    file_path: Path,
+    parsed: YaraFile,
+    output_dir: Path,
+    result: BatchResult,
+) -> None:
+    from yaraast.metrics.dependency_graph_utils import (
+        analyze_dependencies,
+        build_dependency_graph,
+        export_dependency_graph,
+    )
+
+    graph = build_dependency_graph(parsed)
+    json_output = output_dir / f"{file_path.stem}_dependencies.json"
+    dot_output = output_dir / f"{file_path.stem}_dependencies.dot"
+    export_dependency_graph(graph, json_output, "json")
+    export_dependency_graph(graph, dot_output, "dot")
+    result.output_files.extend([str(json_output), str(dot_output)])
+    result.summary[file_path.name] = analyze_dependencies(parsed)["stats"]
+
+
 def process_files_single(
     processor: BatchProcessor,
     file_paths: list[Path],
@@ -151,6 +172,8 @@ def process_files_single(
                 output_file = output_dir / f"{file_path.stem}.json"
                 output_file.write_text(serialize_item(parsed), encoding="utf-8")
                 result.output_files.append(str(output_file))
+            elif operation == BatchOperation.DEPENDENCY_GRAPH and output_dir:
+                _process_dependency_graph(file_path, parsed, output_dir, result)
             result.successful_count += 1
         except Exception as exc:
             result.failed_count += 1
@@ -196,6 +219,9 @@ def process_large_file(
                 _process_large_html_tree(file_path, parsed, output_dir, split_rules, result)
             elif operation == BatchOperation.VALIDATE:
                 _process_large_validate(parsed, split_rules, result)
+            elif operation == BatchOperation.DEPENDENCY_GRAPH:
+                _process_dependency_graph(file_path, parsed, output_dir, result)
+                result.successful_count = 1
             results[operation] = result
     except Exception as exc:
         for operation in operations:
