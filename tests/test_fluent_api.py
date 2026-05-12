@@ -2,6 +2,7 @@
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
+from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.builder import (
     all_of_them,
     any_of_them,
@@ -28,6 +29,7 @@ class TestFluentStringBuilder:
         """Test basic text string creation."""
         string_def = text("$test", "hello world").build()
 
+        assert isinstance(string_def, PlainString)
         assert string_def.identifier == "$test"
         assert string_def.value == "hello world"
         assert len(string_def.modifiers) == 0
@@ -36,6 +38,7 @@ class TestFluentStringBuilder:
         """Test text string with modifiers."""
         string_def = text("$test", "malware").nocase().wide().fullword().build()
 
+        assert isinstance(string_def, PlainString)
         assert string_def.identifier == "$test"
         assert string_def.value == "malware"
         assert len(string_def.modifiers) == 3
@@ -49,6 +52,7 @@ class TestFluentStringBuilder:
         """Test basic hex string creation."""
         string_def = hex_pattern("$hex", "4D 5A ?? 00").build()
 
+        assert isinstance(string_def, HexString)
         assert string_def.identifier == "$hex"
         assert len(string_def.tokens) > 0
 
@@ -59,6 +63,7 @@ class TestFluentStringBuilder:
             r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
         ).build()
 
+        assert isinstance(string_def, RegexString)
         assert string_def.identifier == "$email"
         assert "@" in string_def.regex
 
