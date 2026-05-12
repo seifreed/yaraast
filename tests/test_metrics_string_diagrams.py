@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
+from yaraast.ast.base import YaraFile
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
 
 
-def _parse_yara(code: str):
+def _parse_yara(code: str) -> YaraFile:
     parser = Parser()
     return parser.parse(dedent(code))
 
 
-def test_string_diagram_generators(tmp_path) -> None:
+def test_string_diagram_generators(tmp_path: Path) -> None:
     code = """
     rule patterns {
         strings:
@@ -55,7 +57,7 @@ def test_string_diagram_generators(tmp_path) -> None:
     assert stats["by_type"]["hex"] >= 1
 
 
-def test_hex_diagram_empty(tmp_path) -> None:
+def test_hex_diagram_empty(tmp_path: Path) -> None:
     code = """
     rule no_hex {
         strings:

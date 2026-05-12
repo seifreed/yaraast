@@ -14,6 +14,14 @@ from yaraast.serialization.ast_diff_hasher import AstHasher
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
 
+__all__ = [
+    "AstDiff",
+    "AstHasher",
+    "DiffNode",
+    "DiffResult",
+    "DiffType",
+]
+
 
 class DiffType(Enum):
     """Type of difference between AST nodes."""

@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
+from yaraast.ast.base import YaraFile
 from yaraast.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher, DiffType
 
 
-def _parse_yara(code: str):
+def _parse_yara(code: str) -> YaraFile:
     parser = Parser()
     return parser.parse(dedent(code))
 
@@ -37,7 +39,7 @@ def test_ast_hasher_stable_hash_and_node_hash() -> None:
     assert hasher._node_hashes["/rules/alpha"] == node_hash
 
 
-def test_ast_diff_detects_imports_rules_and_modifications(tmp_path) -> None:
+def test_ast_diff_detects_imports_rules_and_modifications(tmp_path: Path) -> None:
     old_code = """
     import "pe"
     include "base.yar"

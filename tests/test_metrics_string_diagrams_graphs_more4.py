@@ -17,7 +17,7 @@ class _DotFail:
     def __init__(self, source: str) -> None:
         self.source = source
 
-    def render(self, *_args, **_kwargs) -> None:
+    def render(self, *_args: object, **_kwargs: object) -> None:
         raise RuntimeError("render failed")
 
 

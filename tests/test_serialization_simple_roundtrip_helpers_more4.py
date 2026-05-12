@@ -35,7 +35,7 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
     rule = Rule(
         name="helper_rule",
         condition=BooleanLiteral(value=True),
-        tags=[Tag(name="one"), "two"],
+        tags=cast(Any, [Tag(name="one"), "two"]),
         meta=[Meta(key="author", value="me"), Meta(key="enabled", value=True)],
         strings=[
             PlainString(identifier="$a", value="x"),

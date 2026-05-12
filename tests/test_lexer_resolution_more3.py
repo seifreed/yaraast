@@ -68,7 +68,9 @@ def test_error_tolerant_lexer_max_errors_and_recovery_helpers() -> None:
     slash = ErrorTolerantLexer("/bad token")
     slash.position = 0
     slash._recover_from_error()
-    assert slash._current_char().isspace()
+    current = slash._current_char()
+    assert current is not None
+    assert current.isspace()
 
     hex_lexer = ErrorTolerantLexer("{AB")
     hex_lexer.position = 0
@@ -91,6 +93,7 @@ def test_error_tolerant_read_string_end_of_file_escape_variants() -> None:
     trailing_escaped_quote.position = 0
     token = trailing_escaped_quote._read_string()
     assert token.type == TokenType.STRING
+    assert isinstance(token.value, str)
     assert token.value.endswith("\\")
     assert trailing_escaped_quote.errors
 
@@ -98,6 +101,7 @@ def test_error_tolerant_read_string_end_of_file_escape_variants() -> None:
     trailing_backslash.position = 0
     token = trailing_backslash._read_string()
     assert token.type == TokenType.STRING
+    assert isinstance(token.value, str)
     assert token.value.endswith("\\")
     assert any("Unterminated string" in error.message for error in trailing_backslash.errors)
 

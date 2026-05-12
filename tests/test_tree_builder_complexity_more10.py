@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from io import StringIO
 from textwrap import dedent
+from typing import Any, NoReturn
 
 from rich.console import Console
 
@@ -29,14 +30,14 @@ from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.parser import Parser
 
 
-def _render(tree) -> str:
+def _render(tree: Any) -> str:
     console = Console(file=StringIO(), record=True, force_terminal=False)
     console.print(tree)
     return console.export_text()
 
 
 class _BrokenAccept:
-    def accept(self, _visitor):
+    def accept(self, _visitor: object) -> NoReturn:
         raise ValueError("boom")
 
 
