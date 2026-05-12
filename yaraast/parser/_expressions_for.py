@@ -20,7 +20,7 @@ from ._shared import ParserError
 class ExpressionForMixin:
     """Mixin with quantifier/for/of expression parsing."""
 
-    def _parse_for_expression(self, start_token=None) -> ForExpression:
+    def _parse_for_expression(self, start_token=None) -> ForExpression | ForOfExpression:
         """Parse for expression."""
         start_token = start_token or self._peek()
         if self._match(TokenType.ANY):

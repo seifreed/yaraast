@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.ast.conditions import ForExpression, ForOfExpression
 from yaraast.ast.expressions import ArrayAccess, FunctionCall, MemberAccess, StringLiteral
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.lexer import Lexer
@@ -20,18 +21,22 @@ def _expr_parser(text: str) -> Parser:
 
 def test_parse_for_expression_success_and_error_paths() -> None:
     node_any = _expr_parser("any i in 1 : ( true )")._parse_for_expression()
+    assert isinstance(node_any, ForExpression)
     assert node_any.quantifier == "any"
     assert node_any.variable == "i"
 
     node_all = _expr_parser("all j in 2 : ( j > 0 )")._parse_for_expression()
+    assert isinstance(node_all, ForExpression)
     assert node_all.quantifier == "all"
     assert node_all.variable == "j"
 
     node_n = _expr_parser("3 of them")._parse_for_expression()
+    assert isinstance(node_n, ForOfExpression)
     assert node_n.quantifier == "3"
     assert node_n.condition is None
 
     node_for_of = _expr_parser("any of them : ( true )")._parse_for_expression()
+    assert isinstance(node_for_of, ForOfExpression)
     assert node_for_of.quantifier == "any"
     assert node_for_of.condition is not None
 
