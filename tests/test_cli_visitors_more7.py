@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from io import StringIO
 from types import SimpleNamespace
+from typing import NoReturn
 
 import pytest
 from rich.console import Console
@@ -18,7 +19,7 @@ from yaraast.cli.visitors.formatters import (
 from yaraast.cli.visitors.tree_builder import ASTTreeBuilder
 
 
-def _render(tree) -> str:
+def _render(tree: object) -> str:
     console = Console(file=StringIO(), record=True, force_terminal=False)
     console.print(tree)
     return console.export_text()
@@ -93,7 +94,7 @@ def test_tree_builder_additional_branches() -> None:
     assert _render(fallback(object())).strip() == ""
 
     class BrokenAccept:
-        def accept(self, _visitor):
+        def accept(self, _visitor: object) -> NoReturn:
             raise RuntimeError("boom")
 
     rendered = _render(builder.visit(BrokenAccept()))
