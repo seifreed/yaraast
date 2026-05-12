@@ -104,8 +104,15 @@ def test_yaral_generator_renders_regex_reference_and_functions() -> None:
     generated = YaraLGenerator().generate(yaral_file)
     assert "rule gen_extra" in generated
     assert "$e.metadata.event_type =~ /AUTH.*/i" in generated
-    assert "$e.metadata.product_name = %products" in generated
+    assert "$e.metadata.product_name = %products%" in generated
     assert "over every 5m" in generated
     assert "$cidr = $e.principal.ip in 10.0.0.0/8" in generated
     assert "$calc = 1 + 2" in generated
     assert '$func = string_concat("a", "b")' in generated
+
+
+def test_yaral_generator_reference_list_has_balanced_delimiters() -> None:
+    generator = YaraLGenerator()
+
+    assert generator.visit_reference_list(ReferenceList(name="blocked_ips")) == "%blocked_ips%"
+    assert generator.visit_reference_list(ReferenceList(name="%blocked_ips%")) == "%blocked_ips%"

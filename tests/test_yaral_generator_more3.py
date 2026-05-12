@@ -89,5 +89,5 @@ def test_yaral_generator_full_sections() -> None:
     assert "outcome:" in code
     assert "options:" in code
     assert '$e.metadata.event_type = "LOGIN"' in code
-    assert "$e.target.ip in %bad_ips" in code
+    assert "$e.target.ip in %bad_ips%" in code
     assert "/evil.*/" in code

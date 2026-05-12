@@ -288,7 +288,7 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_reference_list(self, node: ReferenceList) -> str:
         """Generate code for reference list."""
-        return f"%{node.name}"
+        return f"%{node.name.strip('%')}%"
 
     def visit_regex_pattern(self, node: RegexPattern) -> str:
         """Generate code for regex pattern."""
