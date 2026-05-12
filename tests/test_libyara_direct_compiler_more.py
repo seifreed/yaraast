@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from yaraast.libyara.direct_compiler import YARA_AVAILABLE, DirectASTCompiler, OptimizedMatcher
@@ -9,7 +11,7 @@ from yaraast.parser import Parser
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
-def test_direct_compiler_and_matcher(tmp_path) -> None:
+def test_direct_compiler_and_matcher(tmp_path: Path) -> None:
     code = """
     rule direct_rule {
         strings:

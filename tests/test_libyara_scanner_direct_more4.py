@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -39,7 +40,7 @@ def test_optimized_matcher_stats_zero_branch() -> None:
 
 
 @pytest.mark.skipif(not SCANNER_YARA, reason="yara-python not available")
-def test_libyara_scanner_real_error_paths(tmp_path) -> None:
+def test_libyara_scanner_real_error_paths(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
     scanner = LibyaraScanner()
     ast = Parser().parse('rule a { strings: $x = "abc" condition: $x }')

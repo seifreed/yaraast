@@ -196,7 +196,7 @@ class OptimizedMatcher:
         }
 
     def _prepare_scan_args(
-        self, data: bytes | str | Path, fast_mode: bool, timeout: int | None, **kwargs
+        self, data: bytes | str | Path | int, fast_mode: bool, timeout: int | None, **kwargs
     ) -> tuple[dict[str, Any], int]:
         """Build scan arguments and compute data size."""
         scan_args: dict[str, Any] = {"fast": fast_mode, **kwargs}
@@ -218,7 +218,7 @@ class OptimizedMatcher:
 
     def scan(
         self,
-        data: bytes | str | Path,
+        data: bytes | str | Path | int,
         timeout: int | None = None,
         fast_mode: bool = False,
         **kwargs,

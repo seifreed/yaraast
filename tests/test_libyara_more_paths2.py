@@ -61,14 +61,25 @@ def test_ast_optimizer_rule_and_constant_paths() -> None:
 
     non_folded = BinaryExpression(left=Identifier("x"), operator="+", right=IntegerLiteral(value=1))
     optimized_non_folded = optimizer._optimize_condition(non_folded)
+    assert isinstance(optimized_non_folded, BinaryExpression)
+    assert isinstance(optimized_non_folded.left, Identifier)
+    assert isinstance(optimized_non_folded.right, IntegerLiteral)
     assert optimized_non_folded.left.name == "x"
     assert optimized_non_folded.right.value == 1
 
-    assert optimizer._fold_constants(IntegerLiteral(7), "-", IntegerLiteral(3)).value == 4
-    assert optimizer._fold_constants(IntegerLiteral(7), "*", IntegerLiteral(3)).value == 21
-    assert optimizer._fold_constants(IntegerLiteral(7), "%", IntegerLiteral(3)).value == 1
+    folded_sub = optimizer._fold_constants(IntegerLiteral(7), "-", IntegerLiteral(3))
+    folded_mul = optimizer._fold_constants(IntegerLiteral(7), "*", IntegerLiteral(3))
+    folded_mod = optimizer._fold_constants(IntegerLiteral(7), "%", IntegerLiteral(3))
+    assert folded_sub is not None
+    assert folded_mul is not None
+    assert folded_mod is not None
+    assert folded_sub.value == 4
+    assert folded_mul.value == 21
+    assert folded_mod.value == 1
     assert optimizer._fold_constants(IntegerLiteral(7), "/", IntegerLiteral(0)) is None
-    assert optimizer._fold_constants(IntegerLiteral("bad"), "+", IntegerLiteral(1)) is None
+    assert (
+        optimizer._fold_constants(IntegerLiteral(cast(Any, "bad")), "+", IntegerLiteral(1)) is None
+    )
 
 
 @pytest.mark.skipif(
