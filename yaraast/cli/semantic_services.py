@@ -45,7 +45,7 @@ def _add_file_to_issues(issues, file_path: Path) -> None:
             issue.location = Location(line=1, column=1, file=str(file_path))
 
 
-def _create_validation_context():
+def _create_validation_context() -> dict[str, Any]:
     """Create validation context with parser and validator."""
     return {"parser": Parser(), "validator": SemanticValidator()}
 

@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypeVar, overload
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.optimization.rule_optimizer import RuleOptimizer
 from yaraast.performance.memory_optimizer import MemoryOptimizer
+
+_Target = TypeVar("_Target")
 
 
 class PerformanceOptimizer:
@@ -23,11 +25,32 @@ class PerformanceOptimizer:
             "strings_optimized": 0,
         }
 
+    @overload
     def optimize(
         self,
-        target: Rule | YaraFile,
+        target: Rule,
         strategy: str = "balanced",
-    ) -> Rule | YaraFile:
+    ) -> Rule: ...
+
+    @overload
+    def optimize(
+        self,
+        target: YaraFile,
+        strategy: str = "balanced",
+    ) -> YaraFile: ...
+
+    @overload
+    def optimize(
+        self,
+        target: _Target,
+        strategy: str = "balanced",
+    ) -> _Target: ...
+
+    def optimize(
+        self,
+        target: Rule | YaraFile | _Target,
+        strategy: str = "balanced",
+    ) -> Rule | YaraFile | _Target:
         """Optimize a rule or file for performance.
 
         Args:
@@ -84,8 +107,11 @@ class PerformanceOptimizer:
         """Apply speed-specific optimizations to a rule (returns new sorted lists, not in-place)."""
         # Reorder string checks for better performance
         if rule.strings and isinstance(rule.strings, list):
+            optimizable_count = sum(
+                1 for string_def in rule.strings if self._is_optimizable_string(string_def)
+            )
             rule.strings = sorted(rule.strings, key=self._string_check_cost)
-            self._stats["strings_optimized"] += len(rule.strings)
+            self._stats["strings_optimized"] += optimizable_count
 
         # Future speed optimizations to implement:
         # - Reorder condition checks by complexity/selectivity
@@ -96,10 +122,18 @@ class PerformanceOptimizer:
         return rule
 
     @staticmethod
+    def _is_optimizable_string(string_def: StringDefinition) -> bool:
+        """Return whether a string definition has enough valid data to optimize."""
+        if isinstance(string_def, PlainString):
+            return isinstance(string_def.value, str | bytes)
+        return isinstance(string_def, HexString | RegexString)
+
+    @staticmethod
     def _string_check_cost(string_def: StringDefinition) -> int:
         """Estimate relative runtime cost for checking a string definition."""
         if isinstance(string_def, PlainString):
-            return len(string_def.value)
+            value = string_def.value
+            return len(value) if isinstance(value, str | bytes) else 300
         if isinstance(string_def, HexString):
             return 100 + len(string_def.tokens)
         if isinstance(string_def, RegexString):

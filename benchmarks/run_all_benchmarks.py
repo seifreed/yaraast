@@ -14,6 +14,7 @@ from importlib import util
 from pathlib import Path
 import sys
 import time
+from typing import cast
 
 
 def print_section(title: str) -> None:
@@ -86,7 +87,7 @@ def generate_test_files(benchmark_dir: Path) -> bool:
         results = generate_test_files(test_data_dir)
 
         print(f"\nSuccessfully generated {len(results)} test files")
-        total_size = sum(r["actual_size_mb"] for r in results)
+        total_size = sum(cast(float, r["actual_size_mb"]) for r in results)
         print(f"Total size: {total_size:.2f} MB")
 
         return True

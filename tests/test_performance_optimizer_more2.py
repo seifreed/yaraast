@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from click.testing import CliRunner
 
@@ -47,7 +48,9 @@ def test_performance_optimizer_handles_unexpected_string_values() -> None:
     optimizer = PerformanceOptimizer()
     rule = Rule(
         name="weird",
-        strings=[PlainString(identifier="$a", value=None)],  # runtime-malformed but real AST object
+        strings=[
+            PlainString(identifier="$a", value=cast(Any, None)),
+        ],  # runtime-malformed but real AST object
     )
 
     optimized = optimizer.optimize_rule(rule, strategy="speed")

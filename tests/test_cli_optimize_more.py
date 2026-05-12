@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
@@ -9,13 +10,13 @@ from click.testing import CliRunner
 from yaraast.cli.commands.optimize import optimize
 
 
-def _write(tmp_path, name: str, content: str) -> str:
+def _write(tmp_path: Path, name: str, content: str) -> str:
     path = tmp_path / name
     path.write_text(dedent(content))
     return str(path)
 
 
-def test_cli_optimize_dry_run(tmp_path) -> None:
+def test_cli_optimize_dry_run(tmp_path: Path) -> None:
     code = """
     rule opt {
         strings:
@@ -35,7 +36,7 @@ def test_cli_optimize_dry_run(tmp_path) -> None:
     assert "Dry run" in result.output
 
 
-def test_cli_optimize_analyze_and_write(tmp_path) -> None:
+def test_cli_optimize_analyze_and_write(tmp_path: Path) -> None:
     code = """
     rule opt2 {
         strings:

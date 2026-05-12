@@ -124,7 +124,7 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
             self._get_condition_structure(condition)
         )
 
-    def _get_condition_structure(self, node: ASTNode) -> dict[str, Any]:
+    def _get_condition_structure(self, node: ASTNode | None) -> dict[str, Any]:
         if node is None:
             return {"type": "empty"}
         structure: dict[str, Any] = {"type": type(node).__name__}

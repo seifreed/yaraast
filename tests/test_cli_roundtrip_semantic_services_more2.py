@@ -5,6 +5,7 @@ from pathlib import Path
 
 import yaml
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.roundtrip_services import (
     build_rules_manifest,
     deserialize_roundtrip_file,
@@ -101,7 +102,7 @@ def test_semantic_process_file_updates_existing_ast_location(tmp_path: Path) -> 
     ast.location = Location(line=1, column=1, file=None)
 
     class ParserWithPresetAst:
-        def parse(self, _content: str):
+        def parse(self, _content: str) -> YaraFile:
             return ast
 
     result = _process_file(file_path, ParserWithPresetAst(), context["validator"])

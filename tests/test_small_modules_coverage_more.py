@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+from typing import Any
 
 import click
 import pytest
@@ -16,7 +17,7 @@ class _Console:
     def __init__(self) -> None:
         self.lines: list[str] = []
 
-    def print(self, message) -> None:
+    def print(self, message: object) -> None:
         self.lines.append(str(message))
 
 
@@ -37,11 +38,20 @@ def test_lsp_init_exports_symbol() -> None:
 def test_run_or_abort_success_and_errors() -> None:
     console = _Console()
 
-    assert run_or_abort(lambda x: x + 1, console, 2) == 3
+    def increment(value: int) -> int:
+        return value + 1
+
+    def raise_libyara_error() -> Any:
+        raise LibYaraCommandError("x")
+
+    def raise_value_error() -> Any:
+        raise ValueError("bad")
+
+    assert run_or_abort(increment, console, 2) == 3
 
     with pytest.raises(click.Abort):
-        run_or_abort(lambda: (_ for _ in ()).throw(LibYaraCommandError("x")), console)
+        run_or_abort(raise_libyara_error, console)
 
     with pytest.raises(click.Abort):
-        run_or_abort(lambda: (_ for _ in ()).throw(ValueError("bad")), console)
+        run_or_abort(raise_value_error, console)
     assert any("Error: bad" in line for line in console.lines)
