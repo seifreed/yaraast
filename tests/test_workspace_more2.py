@@ -104,7 +104,8 @@ def test_workspace_add_directory_relative_parallel_analysis_and_global_issues(
     assert report.files_analyzed == 2
     assert report.total_rules == 2
     assert report.statistics["file_count"] == 2
-    assert report.statistics["rule_count"] == 1
+    assert report.statistics["rule_count"] == 2
+    assert report.statistics["graph_rule_count"] == 1
     assert report.statistics["include_count"] == 1
     assert report.statistics["rule_name_conflicts"] == 1
     assert "dup_rule" in report.statistics["conflicting_rules"]

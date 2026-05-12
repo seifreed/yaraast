@@ -138,7 +138,11 @@ class WorkspaceAnalyzer:
         report.statistics["total_type_errors"] = total_type_errors
 
         graph_stats = report.dependency_graph.get_statistics()
-        report.statistics.update(graph_stats)
+        for key, value in graph_stats.items():
+            if key in report.statistics:
+                report.statistics[f"graph_{key}"] = value
+            else:
+                report.statistics[key] = value
 
         rule_names = {}
         for file_path, result in report.file_results.items():
