@@ -68,6 +68,13 @@ def test_simple_roundtrip_runner_stats(tmp_path: Path) -> None:
     assert stats["successful_tests"] == 1
 
     file_path = tmp_path / "r1.yar"
-    file_path.write_text(source)
+    file_path.write_text(source, encoding="utf-8")
     ok, _, _ = runner.test_file(file_path)
     assert ok is True
+
+    yara_path = tmp_path / "r2.yara"
+    yara_path.write_text("rule r2 { condition: true }", encoding="utf-8")
+    directory_results = runner.test_directory(tmp_path)
+
+    assert {path.name for path, _, _, _ in directory_results} == {"r1.yar", "r2.yara"}
+    assert all(success for _, success, _, _ in directory_results)

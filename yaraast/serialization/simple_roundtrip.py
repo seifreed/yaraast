@@ -17,6 +17,7 @@ from yaraast.serialization.simple_roundtrip_helpers import (
     simple_roundtrip_report,
     validate_roundtrip,
 )
+from yaraast.shared.file_patterns import iter_matching_files
 
 
 class SimpleRoundtripSerializer:
@@ -79,13 +80,13 @@ class SimpleRoundTrip:
 
     def test_file(self, file_path: Path) -> tuple[bool, Any, Any]:
         """Test a YARA file."""
-        yara_code = file_path.read_text()
+        yara_code = file_path.read_text(encoding="utf-8")
         return self.test(yara_code)
 
     def test_directory(self, dir_path: Path) -> list[tuple[Path, bool, Any, Any]]:
         """Test all YARA files in a directory."""
         results = []
-        for yar_file in dir_path.glob("*.yar"):
+        for yar_file in iter_matching_files(dir_path):
             success, orig, regen = self.test_file(yar_file)
             results.append((yar_file, success, orig, regen))
         return results
