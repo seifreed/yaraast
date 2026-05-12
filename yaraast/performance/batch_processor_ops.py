@@ -7,14 +7,14 @@ import time
 from typing import TYPE_CHECKING, Any
 
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
+from yaraast.ast.base import YaraFile
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.parser.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
-    from yaraast.performance.batch_processor import BatchOperation, BatchProcessor
+    from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
 
 
 def parse_item(item: str | Path) -> YaraFile | None:
@@ -46,12 +46,87 @@ def validate_item(item: Rule) -> bool:
     return bool(item.name and item.condition)
 
 
+def _safe_output_stem(base_name: str, index: int, rule_name: str) -> str:
+    safe_rule_name = "".join(
+        char if char.isalnum() or char in "._-" else "_" for char in rule_name
+    ).strip("._-")
+    return f"{base_name}_{index:04d}_{safe_rule_name or 'rule'}"
+
+
+def _large_file_asts(
+    file_path: Path,
+    parsed: YaraFile,
+    split_rules: bool,
+) -> list[tuple[str, YaraFile]]:
+    if not split_rules:
+        return [(file_path.stem, parsed)]
+    return [
+        (
+            _safe_output_stem(file_path.stem, index, rule.name),
+            YaraFile(imports=parsed.imports, includes=parsed.includes, rules=[rule]),
+        )
+        for index, rule in enumerate(parsed.rules, 1)
+    ]
+
+
+def _process_large_serialize(
+    file_path: Path,
+    parsed: YaraFile,
+    output_dir: Path,
+    split_rules: bool,
+    result: BatchResult,
+) -> None:
+    for stem, ast in _large_file_asts(file_path, parsed, split_rules):
+        output_file = output_dir / f"{stem}.json"
+        output_file.write_text(serialize_item(ast), encoding="utf-8")
+        result.output_files.append(str(output_file))
+        result.successful_count += 1
+
+
+def _process_large_html_tree(
+    file_path: Path,
+    parsed: YaraFile,
+    output_dir: Path,
+    split_rules: bool,
+    result: BatchResult,
+) -> None:
+    for stem, ast in _large_file_asts(file_path, parsed, split_rules):
+        output_file = output_dir / f"{stem}.html"
+        html_content = HtmlTreeGenerator().generate_html(ast, None)
+        output_file.write_text(html_content, encoding="utf-8")
+        result.output_files.append(str(output_file))
+        result.successful_count += 1
+
+
+def _process_large_validate(parsed: YaraFile, split_rules: bool, result: BatchResult) -> None:
+    if not split_rules:
+        is_valid = all(validate_item(rule) for rule in parsed.rules)
+        result.summary["valid"] = is_valid
+        result.summary["rule_count"] = len(parsed.rules)
+        if is_valid:
+            result.successful_count = 1
+        else:
+            result.failed_count = 1
+            result.errors.append("Validation failed")
+        return
+
+    for index, rule in enumerate(parsed.rules, 1):
+        key = rule.name or f"rule_{index}"
+        is_valid = validate_item(rule)
+        result.summary[key] = is_valid
+        if is_valid:
+            result.successful_count += 1
+        else:
+            result.failed_count += 1
+            result.errors.append(f"Validation failed for rule {key}")
+
+
 def process_files_single(
     processor: BatchProcessor,
     file_paths: list[Path],
     operation: BatchOperation,
     output_dir: Path | None = None,
-):
+) -> BatchResult:
     from yaraast.performance.batch_processor import BatchOperation, BatchResult
 
     start_time = time.time()
@@ -91,14 +166,15 @@ def process_files_single(
 def process_large_file(
     processor: BatchProcessor,
     file_path: Path,
-    operations: list,
+    operations: list[BatchOperation],
     output_dir: Path,
     split_rules: bool = False,
-):
+) -> dict[BatchOperation, BatchResult]:
     from yaraast.performance.batch_processor import BatchOperation, BatchResult
 
-    results = {}
+    results: dict[BatchOperation, BatchResult] = {}
     try:
+        output_dir.mkdir(parents=True, exist_ok=True)
         with open(file_path, encoding="utf-8") as handle:
             content = handle.read()
         parsed = parse_item(content)
@@ -114,6 +190,12 @@ def process_large_file(
                         result.successful_count += 1
                 if not split_rules:
                     result.successful_count = 1
+            elif operation == BatchOperation.SERIALIZE:
+                _process_large_serialize(file_path, parsed, output_dir, split_rules, result)
+            elif operation == BatchOperation.HTML_TREE:
+                _process_large_html_tree(file_path, parsed, output_dir, split_rules, result)
+            elif operation == BatchOperation.VALIDATE:
+                _process_large_validate(parsed, split_rules, result)
             results[operation] = result
     except Exception as exc:
         for operation in operations:

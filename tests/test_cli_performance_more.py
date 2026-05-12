@@ -59,6 +59,30 @@ def test_performance_batch_file(tmp_path: Path) -> None:
     assert "parse" in payload
 
 
+def test_performance_batch_file_serialize_outputs_result(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    out_dir = tmp_path / "batch_out"
+    runner = CliRunner()
+
+    result = runner.invoke(
+        performance,
+        [
+            "batch",
+            file_path,
+            "--output-dir",
+            str(out_dir),
+            "--operations",
+            "serialize",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads((out_dir / "batch_results.json").read_text(encoding="utf-8"))
+    assert payload["serialize"]["successful_count"] == 1
+    assert payload["serialize"]["output_files"]
+    assert Path(payload["serialize"]["output_files"][0]).exists()
+
+
 def test_performance_stream_file(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     out_file = tmp_path / "stream_results.json"

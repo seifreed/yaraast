@@ -192,7 +192,7 @@ def test_process_rules_analyze_rules_optimize_rules_and_progress_callback() -> N
     assert any(call[0].startswith("Processing") for call in progress_calls)
 
 
-def test_process_large_file_with_unhandled_operation_keeps_result_entry(tmp_path: Path) -> None:
+def test_process_large_file_serializes_valid_input(tmp_path: Path) -> None:
     path = tmp_path / "rules.yar"
     path.write_text("rule r { condition: true }", encoding="utf-8")
 
@@ -205,6 +205,9 @@ def test_process_large_file_with_unhandled_operation_keeps_result_entry(tmp_path
     )
 
     assert BatchOperation.SERIALIZE in results
-    # Current implementation doesn't process this op in process_large_file.
-    assert results[BatchOperation.SERIALIZE].successful_count == 0
+    assert results[BatchOperation.SERIALIZE].successful_count == 1
     assert results[BatchOperation.SERIALIZE].failed_count == 0
+    assert len(results[BatchOperation.SERIALIZE].output_files) == 1
+    output = Path(results[BatchOperation.SERIALIZE].output_files[0])
+    assert output.exists()
+    assert '"rules"' in output.read_text(encoding="utf-8")

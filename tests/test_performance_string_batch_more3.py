@@ -157,7 +157,7 @@ def test_batch_processor_process_files_complexity_summary(tmp_path: Path) -> Non
     assert "one" in result.summary
 
 
-def test_batch_processor_large_file_parse_and_unhandled_ops(tmp_path: Path) -> None:
+def test_batch_processor_large_file_parse_and_serialize(tmp_path: Path) -> None:
     code = """
     rule a { condition: true }
     rule b { condition: true }
@@ -174,5 +174,6 @@ def test_batch_processor_large_file_parse_and_unhandled_ops(tmp_path: Path) -> N
     )
 
     assert results[BatchOperation.PARSE].successful_count == 1
-    assert results[BatchOperation.SERIALIZE].successful_count == 0
+    assert results[BatchOperation.SERIALIZE].successful_count == 1
     assert results[BatchOperation.SERIALIZE].failed_count == 0
+    assert results[BatchOperation.SERIALIZE].output_files
