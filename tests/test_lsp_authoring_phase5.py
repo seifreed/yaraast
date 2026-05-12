@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from lsprotocol.types import CodeActionKind, Diagnostic, Position, Range
+from lsprotocol.types import CodeAction, CodeActionKind, Diagnostic, Position, Range, TextEdit
 
 from yaraast.lsp.authoring import AuthoringActions
 from yaraast.lsp.code_actions import CodeActionsProvider
@@ -8,6 +8,21 @@ from yaraast.lsp.code_actions import CodeActionsProvider
 
 def _range(line: int, start: int, end: int) -> Range:
     return Range(start=Position(line=line, character=start), end=Position(line=line, character=end))
+
+
+def _first_edit(action: CodeAction, uri: str = "file://test.yar") -> TextEdit:
+    assert action.edit is not None
+    changes = action.edit.changes
+    assert changes is not None
+    return changes[uri][0]
+
+
+def _preview(action: CodeAction) -> str:
+    data = action.data
+    assert isinstance(data, dict)
+    preview = data["preview"]
+    assert isinstance(preview, str)
+    return preview
 
 
 def test_create_missing_string_action_adds_strings_section_when_missing() -> None:
@@ -27,7 +42,7 @@ rule demo {
     action = next(
         action for action in actions if action.title == "Add string definition for $missing"
     )
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert "strings:" in edit.new_text
     assert '$missing = ""' in edit.new_text
 
@@ -46,7 +61,7 @@ rule demo {
     actions = provider.get_code_actions(text, _range(2, 8, 36), [], "file://test.yar")
     action = next(action for action in actions if action.title == "Normalize string modifiers")
     assert action.kind == CodeActionKind.RefactorRewrite
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert edit.new_text.strip().endswith('"abc" ascii wide nocase')
 
 
@@ -64,7 +79,7 @@ rule demo {
     actions = provider.get_code_actions(text, _range(2, 8, 18), [], "file://test.yar")
     action = next(action for action in actions if action.title == "Convert string to hex")
     assert action.kind == CodeActionKind.RefactorRewrite
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert edit.new_text.strip().endswith("{ 41 42 43 }")
 
 
@@ -98,7 +113,7 @@ rule demo {
     actions = provider.get_code_actions(text, _range(4, 8, 19), [], "file://test.yar")
     action = next(action for action in actions if action.title == "Simplify rule condition")
     assert action.kind == CodeActionKind.RefactorRewrite
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert "true and" not in edit.new_text
     assert "$a" in edit.new_text
 
@@ -112,11 +127,11 @@ def test_roundtrip_rewrite_rule_refactor_action() -> None:
         action for action in actions if action.title.startswith("Normalize rule via round-trip")
     )
     assert action.kind == CodeActionKind.RefactorRewrite
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert "rule demo" in edit.new_text
     assert "strings:" in edit.new_text
     assert "condition:" in edit.new_text
-    assert "Round-trip rewrite validated by AST diff" in action.data["preview"]
+    assert "Round-trip rewrite validated by AST diff" in _preview(action)
 
 
 def test_deduplicate_identical_strings_refactor_action() -> None:
@@ -137,7 +152,7 @@ rule demo {
     )
     assert "(1 merged" in action.title
     assert "$b->$a" in action.title
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert '$b = "abc"' not in edit.new_text
     assert "$a or $a" in edit.new_text
 
@@ -160,7 +175,7 @@ rule demo {
     )
     assert "(2 entries" in action.title
     assert "$z->$a" in action.title
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert edit.new_text.index('$a = "a"') < edit.new_text.index('$z = "z"')
 
 
@@ -180,7 +195,7 @@ rule demo {
     action = next(action for action in actions if action.title.startswith("Sort meta by key"))
     assert "(2 entries" in action.title
     assert "z->a" in action.title
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert edit.new_text.index('a = "a"') < edit.new_text.index('z = "z"')
 
 
@@ -199,7 +214,7 @@ rule demo : ztag atag {
     )
     assert "(2 tags" in action.title
     assert "ztag->atag" in action.title
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert "rule demo : atag ztag" in edit.new_text
 
 
@@ -222,12 +237,12 @@ rule demo : ztag atag {
     action = next(
         action for action in actions if action.title.startswith("Canonicalize rule structure")
     )
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert edit.new_text.index("meta:") < edit.new_text.index("strings:")
     assert edit.new_text.index("strings:") < edit.new_text.index("condition:")
     assert edit.new_text.index('a = "1"') < edit.new_text.index('z = "2"')
     assert edit.new_text.index('$a = "a"') < edit.new_text.index('$z = "z"')
-    assert "Canonical section/meta/string order" in action.data["preview"]
+    assert "Canonical section/meta/string order" in _preview(action)
 
 
 def test_pretty_print_rule_with_ast_formatter_action() -> None:
@@ -240,12 +255,12 @@ def test_pretty_print_rule_with_ast_formatter_action() -> None:
         for action in actions
         if action.title.startswith("Pretty-print rule with AST formatter")
     )
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert "rule demo" in edit.new_text
     assert "strings:" in edit.new_text
     assert "condition:" in edit.new_text
     assert "(safe rewrite)" in action.title or "(style-only)" in action.title
-    assert "Pretty printer rewrite validated by AST diff" in action.data["preview"]
+    assert "Pretty printer rewrite validated by AST diff" in _preview(action)
 
 
 def test_expand_of_them_refactor_action() -> None:
@@ -266,7 +281,7 @@ rule demo {
     )
     assert "(2 strings" in action.title
     assert "$a..." in action.title
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert "any of ($a, $b)" in edit.new_text
 
 
@@ -290,7 +305,7 @@ rule demo {
     )
     assert "(2 strings" in action.title
     assert "$a..." in action.title
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert "all of them" in edit.new_text
 
 
@@ -310,7 +325,7 @@ rule demo {
     action = next(
         action for action in actions if action.title.startswith("Deduplicate identical strings")
     )
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert "#a > 0" in edit.new_text
     assert "@a[1] > 0" in edit.new_text
     assert "!a[1] > 0" in edit.new_text
@@ -391,5 +406,5 @@ rule demo {
     action = next(
         action for action in actions if action.title == "Add string definition for $missing"
     )
-    edit = action.edit.changes["file://test.yar"][0]
+    edit = _first_edit(action)
     assert edit.new_text.strip() == '$missing = ""'
