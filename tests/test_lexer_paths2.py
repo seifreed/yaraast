@@ -83,7 +83,9 @@ def test_lexer_regex_and_backslash_division_paths() -> None:
     tokens = Lexer(r"rule r { condition: /a\/b/i }").tokenize()
     regex_tokens = [t for t in tokens if t.type == TokenType.REGEX]
     assert regex_tokens
-    assert "\x00i" in regex_tokens[0].value
+    regex_value = regex_tokens[0].value
+    assert isinstance(regex_value, str)
+    assert "\x00i" in regex_value
 
     # Backslash followed by space is a line continuation, not division
     tokens2 = Lexer("10 \\ 2").tokenize()
@@ -103,14 +105,19 @@ rule r {
     tokens = Lexer(code).tokenize()
     hex_tokens = [t for t in tokens if t.type == TokenType.HEX_STRING]
     assert len(hex_tokens) == 1
-    assert "inline comment" not in hex_tokens[0].value
-    assert "block comment" not in hex_tokens[0].value
-    assert "4D" in hex_tokens[0].value
-    assert "5A" in hex_tokens[0].value
-    assert "90" in hex_tokens[0].value
+    hex_value = hex_tokens[0].value
+    assert isinstance(hex_value, str)
+    assert "inline comment" not in hex_value
+    assert "block comment" not in hex_value
+    assert "4D" in hex_value
+    assert "5A" in hex_value
+    assert "90" in hex_value
 
     regex_tokens = Lexer(r"rule r { condition: /ab+c/ims }").tokenize()
-    assert any(t.type == TokenType.REGEX and t.value.endswith("\x00ims") for t in regex_tokens)
+    assert any(
+        t.type == TokenType.REGEX and isinstance(t.value, str) and t.value.endswith("\x00ims")
+        for t in regex_tokens
+    )
 
 
 def test_lexer_reports_unterminated_regex_and_handles_hex_numbers_and_line_continuation_edge() -> (
@@ -152,7 +159,7 @@ rule r {
 }
 """).tokenize()
 
-    by_type = {}
+    by_type: dict[TokenType, list[Token]] = {}
     for token in tokens:
         by_type.setdefault(token.type, []).append(token)
 
