@@ -8,6 +8,8 @@ from typing import Any
 from yaraast.metrics.complexity_report_builder import generate_complexity_report
 from yaraast.parser.parser import Parser
 
+__all__ = ["analyze_file_complexity", "generate_complexity_report"]
+
 
 def analyze_file_complexity(file_path: str | Path) -> dict[str, Any]:
     """Analyze complexity of a YARA file."""

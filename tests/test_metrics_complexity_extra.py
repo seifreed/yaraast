@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from yaraast.metrics.complexity import ComplexityAnalyzer
@@ -15,7 +16,7 @@ from yaraast.metrics.complexity_reporting import analyze_file_complexity, genera
 from yaraast.parser import Parser
 
 
-def test_complexity_analyzer_metrics_and_report(tmp_path) -> None:
+def test_complexity_analyzer_metrics_and_report(tmp_path: Path) -> None:
     code = """
     import "pe"
 
