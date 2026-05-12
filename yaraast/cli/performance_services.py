@@ -265,6 +265,16 @@ def build_optimization_plan(
     memory_mb: int | None,
     target_time: int | None,
 ) -> dict[str, Any]:
+    if collection_size < 0:
+        msg = "collection_size must be at least 0"
+        raise ValueError(msg)
+    if memory_mb is not None and memory_mb < 1:
+        msg = "memory_mb must be at least 1"
+        raise ValueError(msg)
+    if target_time is not None and target_time < 1:
+        msg = "target_time must be at least 1"
+        raise ValueError(msg)
+
     recommendations = build_optimize_recommendations(collection_size)
     strategy = _build_strategy_messages(collection_size)
     memory_plan = _build_memory_plan(collection_size, memory_mb, recommendations)

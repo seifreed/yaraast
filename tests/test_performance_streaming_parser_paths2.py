@@ -5,6 +5,8 @@ import mmap
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
+
 from yaraast.performance.streaming_parser import StreamingParser
 
 
@@ -71,8 +73,8 @@ def test_streaming_parser_progress_cancel_and_memory_paths(tmp_path: Path) -> No
     parser2.cancel()
     assert list(parser2.parse_files([p1, p2])) == []
 
-    # _memory_limit_exceeded true path with 0MB threshold (current RSS > 0)
-    parser3 = StreamingParser(max_memory_mb=0)
+    # _memory_limit_exceeded true path with a tiny threshold (current RSS > 1 MB)
+    parser3 = StreamingParser(max_memory_mb=1)
     assert parser3._memory_limit_exceeded() is True
     parser3._maybe_collect_garbage()
 
@@ -156,8 +158,8 @@ def test_streaming_parser_parse_files_error_memory_except_and_rule_text_failures
     assert len(results) == 1
     assert results[0].status.name == "ERROR"
 
-    parser_bad_mem = StreamingParser(max_memory_mb=cast(Any, "bad"))
-    assert parser_bad_mem._memory_limit_exceeded() is False
+    with pytest.raises(TypeError, match="max_memory_mb must be an integer"):
+        StreamingParser(max_memory_mb=cast(Any, "bad"))
 
     assert parser._parse_rule_text('import "pe"') is None
 

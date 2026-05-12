@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.parser import Parser
 from yaraast.performance.memory_optimizer import MemoryOptimizer
@@ -73,3 +75,15 @@ def test_memory_optimizer_recommendations_and_pool() -> None:
     optimizer.return_ast_to_pool(ast1)
     ast2 = optimizer.create_memory_efficient_ast()
     assert ast2 is ast1
+
+
+def test_memory_optimizer_rejects_invalid_numeric_configuration() -> None:
+    with pytest.raises(ValueError, match="memory_limit_mb must be at least 1"):
+        MemoryOptimizer(memory_limit_mb=0)
+
+    with pytest.raises(ValueError, match="gc_threshold must be at least 1"):
+        MemoryOptimizer(gc_threshold=0)
+
+    optimizer = MemoryOptimizer()
+    with pytest.raises(ValueError, match="size must be at least 0"):
+        optimizer.optimize_for_large_collection(-1)

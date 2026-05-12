@@ -81,6 +81,10 @@ class BatchProcessor:
             msg = "max_workers must be at least 1"
             raise ValueError(msg)
 
+        if max_memory_mb < 1:
+            msg = "max_memory_mb must be at least 1"
+            raise ValueError(msg)
+
         if batch_size < 1:
             msg = "batch_size must be at least 1"
             raise ValueError(msg)

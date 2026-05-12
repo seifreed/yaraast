@@ -91,6 +91,22 @@ def test_performance_batch_rejects_zero_max_workers(tmp_path: Path) -> None:
     assert "Invalid value for '--max-workers'" in result.output
 
 
+def test_performance_batch_rejects_zero_memory_limit(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    result = CliRunner().invoke(
+        performance,
+        [
+            "batch",
+            file_path,
+            "--memory-limit",
+            "0",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--memory-limit'" in result.output
+
+
 def test_performance_batch_file_serialize_outputs_result(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     out_dir = tmp_path / "batch_out"
@@ -200,6 +216,22 @@ def test_performance_stream_file(tmp_path: Path) -> None:
     assert payload["summary"]["total_processed"] >= 1
 
 
+def test_performance_stream_rejects_zero_memory_limit(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    result = CliRunner().invoke(
+        performance,
+        [
+            "stream",
+            file_path,
+            "--memory-limit",
+            "0",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--memory-limit'" in result.output
+
+
 def test_performance_parallel_and_optimize(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     out_dir = tmp_path / "parallel_out"
@@ -230,6 +262,22 @@ def test_performance_parallel_and_optimize(tmp_path: Path) -> None:
 
     assert optimize.exit_code == 0
     assert "Optimization Recommendations" in optimize.output
+
+
+def test_performance_optimize_rejects_invalid_numeric_options() -> None:
+    runner = CliRunner()
+
+    collection = runner.invoke(performance, ["optimize", "--", "-1"])
+    assert collection.exit_code == 2
+    assert "Invalid value for 'COLLECTION_SIZE'" in collection.output
+
+    memory = runner.invoke(performance, ["optimize", "1", "--memory-mb", "0"])
+    assert memory.exit_code == 2
+    assert "Invalid value for '--memory-mb'" in memory.output
+
+    target = runner.invoke(performance, ["optimize", "1", "--target-time", "0"])
+    assert target.exit_code == 2
+    assert "Invalid value for '--target-time'" in target.output
 
 
 def test_performance_parallel_rejects_zero_chunk_size(tmp_path: Path) -> None:

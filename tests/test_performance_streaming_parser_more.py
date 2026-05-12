@@ -49,6 +49,11 @@ def test_streaming_parser_rejects_invalid_buffer_size() -> None:
         StreamingParser(buffer_size=0)
 
 
+def test_streaming_parser_rejects_invalid_memory_limit() -> None:
+    with pytest.raises(ValueError, match="max_memory_mb must be at least 1"):
+        StreamingParser(max_memory_mb=0)
+
+
 def test_streaming_parse_files_and_directory(tmp_path: Path) -> None:
     parser = StreamingParser()
     path1 = tmp_path / "r1.yar"

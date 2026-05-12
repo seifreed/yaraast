@@ -77,9 +77,16 @@ class MemoryOptimizer:
             enable_tracking: Enable object tracking
 
         """
+        if memory_limit_mb is not None and memory_limit_mb < 1:
+            msg = "memory_limit_mb must be at least 1"
+            raise ValueError(msg)
+        if gc_threshold is not None and gc_threshold < 1:
+            msg = "gc_threshold must be at least 1"
+            raise ValueError(msg)
+
         self.aggressive = aggressive
         self.memory_limit_mb = memory_limit_mb
-        self.gc_threshold = gc_threshold or 10
+        self.gc_threshold = gc_threshold if gc_threshold is not None else 10
         self.enable_tracking = enable_tracking
         init_optimizer_state(self)
 
@@ -159,6 +166,10 @@ class MemoryOptimizer:
 
     def optimize_for_large_collection(self, size: int) -> dict[str, Any]:
         """Get optimization recommendations for a collection size."""
+        if size < 0:
+            msg = "size must be at least 0"
+            raise ValueError(msg)
+
         recommendations = {
             "batch_size": 10,
             "use_streaming": False,

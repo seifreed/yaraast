@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.cli import performance_services as ps
 from yaraast.parser import Parser
@@ -114,6 +116,17 @@ def test_build_parallel_summary_and_plans_cover_remaining_branches() -> None:
     ]
     assert ps._build_memory_plan(10, None, {"memory_limit_mb": 64}) is None
     assert ps._build_time_plan(10, None) is None
+
+
+def test_build_optimization_plan_rejects_invalid_numeric_inputs() -> None:
+    with pytest.raises(ValueError, match="collection_size must be at least 0"):
+        ps.build_optimization_plan(-1, None, None)
+
+    with pytest.raises(ValueError, match="memory_mb must be at least 1"):
+        ps.build_optimization_plan(1, 0, None)
+
+    with pytest.raises(ValueError, match="target_time must be at least 1"):
+        ps.build_optimization_plan(1, None, 0)
 
 
 def test_run_parallel_analysis_and_build_output_data_more_paths(tmp_path: Path) -> None:

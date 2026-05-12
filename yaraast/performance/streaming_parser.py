@@ -53,6 +53,13 @@ class StreamingParser:
             msg = "buffer_size must be at least 1"
             raise ValueError(msg)
 
+        if max_memory_mb is not None and not isinstance(max_memory_mb, int):
+            msg = "max_memory_mb must be an integer"
+            raise TypeError(msg)
+        if max_memory_mb is not None and max_memory_mb < 1:
+            msg = "max_memory_mb must be at least 1"
+            raise ValueError(msg)
+
         self.buffer_size = buffer_size
         self.max_memory_mb = max_memory_mb
         self.enable_gc = enable_gc

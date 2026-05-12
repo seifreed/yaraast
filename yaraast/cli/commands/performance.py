@@ -47,7 +47,13 @@ def performance() -> None:
     help="Batch size for processing",
 )
 @click.option("--max-workers", "-w", type=click.IntRange(min=1), help="Maximum worker threads")
-@click.option("--memory-limit", "-m", type=int, default=1000, help="Memory limit in MB")
+@click.option(
+    "--memory-limit",
+    "-m",
+    type=click.IntRange(min=1),
+    default=1000,
+    help="Memory limit in MB",
+)
 @click.option(
     "--operations",
     "-op",
@@ -138,7 +144,13 @@ def batch(
     type=click.Path(),
     help="Output file for parsing statistics",
 )
-@click.option("--memory-limit", "-m", type=int, default=500, help="Memory limit in MB")
+@click.option(
+    "--memory-limit",
+    "-m",
+    type=click.IntRange(min=1),
+    default=500,
+    help="Memory limit in MB",
+)
 @click.option(
     "--pattern",
     "-p",
@@ -329,9 +341,9 @@ def parallel(
 
 
 @performance.command()
-@click.argument("collection_size", type=int)
-@click.option("--memory-mb", type=int, help="Available memory in MB")
-@click.option("--target-time", type=int, help="Target processing time in seconds")
+@click.argument("collection_size", type=click.IntRange(min=0))
+@click.option("--memory-mb", type=click.IntRange(min=1), help="Available memory in MB")
+@click.option("--target-time", type=click.IntRange(min=1), help="Target processing time in seconds")
 def optimize(collection_size: int, memory_mb: int | None, target_time: int | None) -> None:
     """Get optimization recommendations for processing large collections."""
     plan = build_optimization_plan(collection_size, memory_mb, target_time)
