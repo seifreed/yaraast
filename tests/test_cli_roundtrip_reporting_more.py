@@ -4,17 +4,21 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from yaraast.cli import roundtrip_reporting as rr
 
 
 class _Ast:
-    def __init__(self, rules=1, imports=0, includes=0):
+    def __init__(self, rules: int = 1, imports: int = 0, includes: int = 0) -> None:
         self.rules = [object()] * rules
         self.imports = [object()] * imports
         self.includes = [object()] * includes
 
 
-def test_display_verbose_source_truncates_both_sections(capsys) -> None:
+def test_display_verbose_source_truncates_both_sections(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     result = {
         "original_source": "\n".join(f"orig {i}" for i in range(12)),
         "reconstructed_source": "\n".join(f"new {i}" for i in range(12)),
@@ -28,7 +32,9 @@ def test_display_verbose_source_truncates_both_sections(capsys) -> None:
     assert out.count("... (truncated)") == 2
 
 
-def test_display_pipeline_result_manifest_header_without_content(capsys) -> None:
+def test_display_pipeline_result_manifest_header_without_content(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     rr.display_pipeline_result(
         output=None,
         yaml_content="yaml: 1",
@@ -45,7 +51,7 @@ def test_display_pipeline_result_manifest_header_without_content(capsys) -> None
     assert "Includes: 1" in out
 
 
-def test_display_test_failure_non_verbose(capsys) -> None:
+def test_display_test_failure_non_verbose(capsys: pytest.CaptureFixture[str]) -> None:
     rr._display_test_failure(
         Path("rule.yar"),
         {"differences": ["a", "b"]},
