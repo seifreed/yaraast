@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from lsprotocol.types import Position
+from lsprotocol.types import Hover, Location, MarkupContent, Position
 
 from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.hover import HoverProvider
@@ -16,6 +16,16 @@ FIXTURES = Path(__file__).parent / "fixtures" / "lsp_parity"
 
 def _pos(line: int, char: int) -> Position:
     return Position(line=line, character=char)
+
+
+def _hover_text(hover: Hover) -> str:
+    assert isinstance(hover.contents, MarkupContent)
+    return hover.contents.value
+
+
+def _single_location(location: Location | list[Location]) -> Location:
+    assert not isinstance(location, list)
+    return location
 
 
 def _runtime_for(folder: Path, dialect: str) -> tuple[LspRuntime, str, str]:
@@ -32,10 +42,11 @@ def _runtime_for(folder: Path, dialect: str) -> tuple[LspRuntime, str, str]:
 def test_lsp_parity_classic_requests() -> None:
     runtime, text, uri = _runtime_for(FIXTURES / "classic", "yara")
     hover = HoverProvider(runtime).get_hover(text, _pos(4, 10), uri)
-    assert hover is not None and "**shared_rule**" in hover.contents.value
+    assert hover is not None and "**shared_rule**" in _hover_text(hover)
 
     definition = DefinitionProvider(runtime).get_definition(text, _pos(4, 10), uri)
     assert definition is not None
+    definition = _single_location(definition)
     assert definition.uri.endswith("/common.yar")
 
     refs = ReferencesProvider(runtime).get_references(text, _pos(4, 10), uri)
@@ -52,10 +63,11 @@ def test_lsp_parity_classic_requests() -> None:
 def test_lsp_parity_yaral_requests() -> None:
     runtime, text, uri = _runtime_for(FIXTURES / "yaral", "yaral")
     hover = HoverProvider(runtime).get_hover(text, _pos(2, 10), uri)
-    assert hover is not None and "**detect_login**" in hover.contents.value
+    assert hover is not None and "**detect_login**" in _hover_text(hover)
 
     definition = DefinitionProvider(runtime).get_definition(text, _pos(2, 10), uri)
     assert definition is not None
+    definition = _single_location(definition)
     assert definition.uri.endswith("/common.yar")
 
     refs = ReferencesProvider(runtime).get_references(text, _pos(2, 10), uri)
@@ -73,10 +85,11 @@ def test_lsp_parity_yaral_requests() -> None:
 def test_lsp_parity_yarax_requests() -> None:
     runtime, text, uri = _runtime_for(FIXTURES / "yarax", "yarax")
     hover = HoverProvider(runtime).get_hover(text, _pos(3, 8), uri)
-    assert hover is not None and "**helper**" in hover.contents.value
+    assert hover is not None and "**helper**" in _hover_text(hover)
 
     definition = DefinitionProvider(runtime).get_definition(text, _pos(3, 8), uri)
     assert definition is not None
+    definition = _single_location(definition)
     assert definition.uri.endswith("/common.yar")
 
     refs = ReferencesProvider(runtime).get_references(text, _pos(3, 8), uri)
