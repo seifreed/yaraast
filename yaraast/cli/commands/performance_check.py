@@ -34,7 +34,7 @@ console = Console()
 )
 @click.option(
     "--limit",
-    type=int,
+    type=click.IntRange(min=1),
     default=None,
     help="Limit number of issues to show",
 )

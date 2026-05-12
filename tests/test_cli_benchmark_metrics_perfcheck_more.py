@@ -199,6 +199,17 @@ def test_performance_check_displays_issues(tmp_path: Path) -> None:
     assert "Found 1 performance issues" in result.output
 
 
+def test_performance_check_rejects_invalid_limit(tmp_path: Path) -> None:
+    runner = CliRunner()
+    clean_rule = tmp_path / "clean.yar"
+    clean_rule.write_text("rule clean { condition: true }", encoding="utf-8")
+
+    result = runner.invoke(performance_check, [str(clean_rule), "--limit", "0"])
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--limit'" in result.output
+
+
 def test_metrics_reporting_complexity_and_string_outputs(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.cli.performance_check_services import filter_issues, summarize_issues
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
@@ -29,6 +31,11 @@ def test_filter_issues_applies_warning_filter_and_limit() -> None:
     assert len(filtered) == 1
     assert filtered[0].severity == "warning"
     assert filtered[0].rule_name == "r1"
+
+
+def test_filter_issues_rejects_invalid_limit() -> None:
+    with pytest.raises(ValueError, match="limit must be at least 1"):
+        filter_issues([_issue("r1", "short_string", "warning")], "all", 0)
 
 
 def test_summarize_issues_counts_criticals_and_rules() -> None:

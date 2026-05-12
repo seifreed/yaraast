@@ -47,7 +47,11 @@ def filter_issues(
     elif severity == Severity.CRITICAL:
         issues = [i for i in issues if i.severity == Severity.CRITICAL]
 
-    if limit:
+    if limit is not None and limit < 1:
+        msg = "limit must be at least 1"
+        raise ValueError(msg)
+
+    if limit is not None:
         issues = issues[:limit]
 
     return issues
