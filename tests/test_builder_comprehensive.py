@@ -237,6 +237,7 @@ class TestConditionBuilderRangeAndAccess:
         expr = result.build()
 
         assert isinstance(expr, ArrayAccess)
+        assert isinstance(expr.index, IntegerLiteral)
         assert expr.index.value == 2
 
 
@@ -996,6 +997,7 @@ class TestExpressionBuilder:
         expr = ExpressionBuilder.all_of("$x", "$y")
 
         assert isinstance(expr, OfExpression)
+        assert isinstance(expr.quantifier, StringLiteral)
         assert expr.quantifier.value == "all"
 
     def test_n_of_creates_of_expression(self) -> None:
