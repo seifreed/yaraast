@@ -20,8 +20,10 @@ from yaraast import CodeGenerator, Parser
 
 ast_tools_path = Path(__file__).parent.parent / "yaraast" / "cli" / "ast_tools.py"
 spec = importlib.util.spec_from_file_location("ast_tools", ast_tools_path)
+assert spec is not None
 ast_tools = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = ast_tools
+assert spec.loader is not None
 spec.loader.exec_module(ast_tools)
 
 ASTBenchmarker = ast_tools.ASTBenchmarker
