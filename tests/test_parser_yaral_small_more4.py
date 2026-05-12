@@ -11,13 +11,13 @@ from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.tokens import YaraLTokenType
 
 
-def _t(tt: TokenType, value, line: int, col: int = 1) -> Token:
+def _t(tt: TokenType, value: str | int | float | None, line: int, col: int = 1) -> Token:
     return Token(type=tt, value=value, line=line, column=col)
 
 
 def _yt(
     token_type: TokenType,
-    value: object,
+    value: str | int | float | None,
     line: int = 1,
     yaral_type: YaraLTokenType | None = None,
 ) -> YaraLToken:
