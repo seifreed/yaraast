@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from io import StringIO
 from types import SimpleNamespace
+from typing import Any, cast
 
 from rich.console import Console
 
@@ -34,7 +35,7 @@ from yaraast.cli.visitors.formatters import (
 from yaraast.cli.visitors.tree_builder import ASTTreeBuilder
 
 
-def _render_tree(tree) -> str:
+def _render_tree(tree: Any) -> str:
     c = Console(file=StringIO(), record=True, force_terminal=False)
     c.print(tree)
     return c.export_text()
@@ -110,7 +111,7 @@ def test_tree_builder_rule_and_fallback_paths() -> None:
     rule = Rule(
         name="r1",
         modifiers=["private", RuleModifier.from_string("global")],
-        tags=[Tag(name="tag"), "extra"],
+        tags=cast(Any, [Tag(name="tag"), "extra"]),
         meta={"author": "me", "n": 1},
         strings=[
             PlainString(identifier="$a", value="x" * 40),

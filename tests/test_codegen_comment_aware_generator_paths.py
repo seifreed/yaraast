@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import Condition
@@ -66,7 +68,7 @@ def test_comment_aware_generator_full_file_paths() -> None:
     rule = Rule(
         name="r1",
         modifiers=["private"],
-        tags=[Tag("t1"), "t2"],
+        tags=cast(Any, [Tag("t1"), "t2"]),
         meta=[meta1],
         strings=[plain, hexs, regex],
         condition=cond,

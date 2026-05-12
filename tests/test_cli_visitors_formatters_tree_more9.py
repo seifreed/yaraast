@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from io import StringIO
 from types import SimpleNamespace
+from typing import Any, cast
 
 from rich.console import Console
 
@@ -20,14 +21,14 @@ from yaraast.cli.visitors.tree_builder import ASTTreeBuilder
 
 
 class _NoClassAttr:
-    def __getattribute__(self, name: str):
+    def __getattribute__(self, name: str) -> Any:
         if name == "__class__":
             raise AttributeError("hidden")
         return super().__getattribute__(name)
 
 
 class BinaryExpression:
-    def __init__(self, operator: str, left, right) -> None:
+    def __init__(self, operator: str, left: Any, right: Any) -> None:
         self.operator = operator
         self.left = left
         self.right = right
@@ -38,12 +39,12 @@ class _CustomMod:
 
 
 class _MetaKV:
-    def __init__(self, key: str, value) -> None:
+    def __init__(self, key: str, value: Any) -> None:
         self.key = key
         self.value = value
 
 
-def _render(tree) -> str:
+def _render(tree: Any) -> str:
     c = Console(file=StringIO(), record=True, force_terminal=False)
     c.print(tree)
     return c.export_text()
@@ -150,12 +151,12 @@ def test_expression_and_detailed_remaining_paths() -> None:
 
 
 class _BuilderEmptyCondition(ASTTreeBuilder):
-    def _get_condition_string(self, condition) -> str:
+    def _get_condition_string(self, condition: Any) -> str:
         return ""
 
 
 class _BuilderGeneratedEmpty(ASTTreeBuilder):
-    def _get_condition_string(self, condition) -> str:
+    def _get_condition_string(self, condition: Any) -> str:
         return super()._get_condition_string(condition)
 
 
@@ -184,7 +185,7 @@ def test_tree_builder_remaining_paths() -> None:
 
     # Condition fallback path when empty string.
     empty_builder = _BuilderEmptyCondition()
-    rule3 = Rule(name="r3", condition=SimpleNamespace())
+    rule3 = Rule(name="r3", condition=cast(Any, SimpleNamespace()))
     r3 = _render(empty_builder.visit_rule(rule3))
     assert "<complex condition>" in r3
 

@@ -6,10 +6,11 @@ from yaraast.analysis.best_practices import BestPracticesAnalyzer
 from yaraast.analysis.optimization import OptimizationAnalyzer
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
 from yaraast.analysis.string_usage import StringUsageAnalyzer
+from yaraast.ast.base import YaraFile
 from yaraast.parser import Parser
 
 
-def _parse_rule(text: str):
+def _parse_rule(text: str) -> YaraFile:
     parser = Parser()
     return parser.parse(text)
 
