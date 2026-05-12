@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import mmap
 from pathlib import Path
+from typing import Any, cast
 
 from yaraast.performance.streaming_parser import StreamingParser
 
@@ -125,7 +126,7 @@ def test_streaming_parser_parse_files_error_memory_except_and_rule_text_failures
     assert len(results) == 1
     assert results[0].status.name == "ERROR"
 
-    parser_bad_mem = StreamingParser(max_memory_mb="bad")  # type: ignore[arg-type]
+    parser_bad_mem = StreamingParser(max_memory_mb=cast(Any, "bad"))
     assert parser_bad_mem._memory_limit_exceeded() is False
 
     assert parser._parse_rule_text('import "pe"') is None

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from lsprotocol.types import Range, TextEdit
 
-from yaraast.lsp.authoring_actions_basic import (  # noqa: F401
+from yaraast.lsp.authoring_actions_basic import (
     convert_plain_string_to_hex,
     create_missing_string,
     normalize_string_modifiers,
@@ -26,6 +26,21 @@ from yaraast.lsp.authoring_actions_sorting import (
     sort_tags_alphabetically as sort_sort_tags_alphabetically,
 )
 from yaraast.lsp.authoring_support import RuleContext
+
+__all__ = [
+    "StructuralEdit",
+    "canonicalize_rule_structure",
+    "convert_plain_string_to_hex",
+    "create_missing_string",
+    "deduplicate_identical_strings",
+    "normalize_string_modifiers",
+    "optimize_rule",
+    "pretty_print_rule",
+    "roundtrip_rewrite_rule",
+    "sort_meta_by_key",
+    "sort_strings_by_identifier",
+    "sort_tags_alphabetically",
+]
 
 
 @dataclass(slots=True)

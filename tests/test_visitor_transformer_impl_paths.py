@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -59,7 +61,7 @@ from yaraast.visitor.transformer_impl import ASTTransformer
 def test_transformer_impl_visits_remaining_node_types() -> None:
     t = ASTTransformer()
 
-    assert t._transform_node("not-dataclass") == "not-dataclass"  # type: ignore[arg-type]
+    assert t._transform_node(cast(Any, "not-dataclass")) == "not-dataclass"
 
     assert isinstance(t.visit_import(Import("pe")), Import)
     assert isinstance(t.visit_include(Include("common.yar")), Include)

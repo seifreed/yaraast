@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 try:
-    from lsprotocol.types import (  # type: ignore
+    from lsprotocol.types import (
         TEXT_DOCUMENT_CODE_ACTION,
         TEXT_DOCUMENT_COMPLETION,
         TEXT_DOCUMENT_DEFINITION,
@@ -80,7 +80,7 @@ try:
         WorkspaceFoldersServerCapabilities,
         WorkspaceSymbolParams,
     )
-except ImportError:  # pragma: no cover - exercised in environments without lsprotocol
+except ImportError:
     import importlib
     import site
     import sys
@@ -92,7 +92,7 @@ except ImportError:  # pragma: no cover - exercised in environments without lspr
     sys.modules.pop("lsprotocol", None)
     sys.modules.pop("lsprotocol.types", None)
     importlib.invalidate_caches()
-    from lsprotocol.types import (  # type: ignore
+    from lsprotocol.types import (
         TEXT_DOCUMENT_CODE_ACTION,
         TEXT_DOCUMENT_COMPLETION,
         TEXT_DOCUMENT_DEFINITION,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
@@ -93,7 +94,7 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
     else:
         raise AssertionError("deserialize_from_file should fail on invalid JSON")
 
-    valid, diff = validate_roundtrip(None)  # type: ignore[arg-type]
+    valid, diff = validate_roundtrip(cast(Any, None))
     assert valid is False
     assert "error" in diff
 

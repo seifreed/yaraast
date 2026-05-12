@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -166,7 +167,7 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
     assert no_match["matches"] == []
     assert "No matches found - consider rule optimization" in no_match["optimization_hints"]
 
-    bad_type = matcher.scan(["bad-data"])  # type: ignore[list-item]
+    bad_type = matcher.scan(cast(Any, ["bad-data"]))
     assert bad_type["success"] is False
     assert "Unsupported data type" in bad_type["error"]
 

@@ -7,22 +7,14 @@ from typing import Any
 
 from lsprotocol.types import CompletionItem, CompletionItemKind, InsertTextFormat, Position
 
+from yaraast.ast.conditions import ForExpression
 from yaraast.errors import ParseError
 from yaraast.lsp.language_services import parse_source
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import LanguageMode
+from yaraast.yarax.ast_nodes import WithStatement
 
 logger = logging.getLogger(__name__)
-
-try:
-    from yaraast.ast.conditions import ForExpression
-except Exception:  # pragma: no cover
-    ForExpression = None  # type: ignore[assignment,misc]
-
-try:
-    from yaraast.yarax.ast_nodes import WithStatement
-except Exception:  # pragma: no cover
-    WithStatement = None  # type: ignore[assignment,misc]
 
 KEYWORDS: list[str] = list(KEYWORD_DOCS.keys())
 BUILTIN_FUNCTIONS: dict[str, str] = dict(BUILTIN_DOCS)

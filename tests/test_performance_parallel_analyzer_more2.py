@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from yaraast.parser import Parser
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
@@ -141,12 +142,15 @@ def test_parallel_analyzer_error_paths_without_mocks(tmp_path: Path) -> None:
     analyzer = ParallelAnalyzer(max_workers=1)
 
     bad_rules = [Parser().parse(_rule_code("ok")).rules[0], "not-a-rule"]
-    results = analyzer.analyze_rules(bad_rules, max_workers=1)  # type: ignore[arg-type]
+    results = analyzer.analyze_rules(cast(Any, bad_rules), max_workers=1)
     assert len(results) == 2
     assert any(item.get("analysis") is None for item in results if isinstance(item, dict))
     assert analyzer.get_statistics()["errors"] >= 1
 
-    bad_graph_jobs = analyzer.generate_graphs_parallel(["not-an-ast"], tmp_path / "bad_graphs")  # type: ignore[list-item]
+    bad_graph_jobs = analyzer.generate_graphs_parallel(
+        cast(Any, ["not-an-ast"]),
+        tmp_path / "bad_graphs",
+    )
     assert len(bad_graph_jobs) == 1
     assert bad_graph_jobs[0].status.value == "failed"
     assert bad_graph_jobs[0].error
@@ -162,7 +166,7 @@ def test_parallel_analyzer_context_manager_and_complexity_jobs() -> None:
         assert "metrics" in jobs[0].result
         assert "quality_score" in jobs[0].result
 
-        bad_jobs = analyzer.analyze_complexity_parallel(["not-an-ast"])  # type: ignore[list-item]
+        bad_jobs = analyzer.analyze_complexity_parallel(cast(Any, ["not-an-ast"]))
         assert len(bad_jobs) == 1
         assert bad_jobs[0].status.value == "failed"
         assert bad_jobs[0].error

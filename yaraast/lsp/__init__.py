@@ -1,8 +1,12 @@
 """YARAAST Language Server Protocol implementation."""
 
+from typing import Any
+
+YaraLanguageServer: Any
+
 try:
     from yaraast.lsp.server import YaraLanguageServer
-except Exception:
-    YaraLanguageServer = None  # type: ignore[assignment]
+except ImportError:
+    YaraLanguageServer = None
 
 __all__ = ["YaraLanguageServer"]

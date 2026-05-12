@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
@@ -44,7 +45,7 @@ def test_process_batch_custom_callable_exception_tracks_failure() -> None:
     processor = BatchProcessor(batch_size=2, progress_callback=progress)
 
     items = [{"ok": 10}, 42]
-    results = processor.process_batch(items, lambda x: x["ok"])  # type: ignore[index]
+    results = processor.process_batch(items, lambda x: cast(Any, x)["ok"])
 
     assert results == [10, None]
     stats = processor.get_statistics()

@@ -43,7 +43,7 @@ from yaraast.parser import Parser
 
 try:
     from yaraast.metrics.dependency_graph import DependencyGraphGenerator
-except ModuleNotFoundError:  # pragma: no cover - environment dependent
+except ModuleNotFoundError:
     DependencyGraphGenerator = None
 
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.conditions import OfExpression
@@ -32,7 +34,7 @@ def test_with_string_rejects_invalid_argument_shapes() -> None:
         builder.with_string("$only_identifier")
 
     with pytest.raises(ValidationError, match="Either provide"):
-        builder.with_string(123)  # type: ignore[arg-type]
+        builder.with_string(cast(Any, 123))
 
 
 def test_string_context_chaining_and_and_string_path() -> None:

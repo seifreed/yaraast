@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import importlib
+
 from click.testing import CliRunner
 import pytest
 
@@ -10,7 +12,7 @@ from yaraast.cli.commands.lsp import lsp
 
 def test_lsp_reports_missing_dependency() -> None:
     try:
-        from yaraast.lsp import server as _server  # noqa: F401
+        importlib.import_module("yaraast.lsp.server")
     except Exception:
         runner = CliRunner()
         result = runner.invoke(lsp, [])

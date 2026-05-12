@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 import tempfile
 
 import pytest
 
-try:
-    import yara  # noqa: F401
-
-    YARA_AVAILABLE = True
-except ImportError:
-    YARA_AVAILABLE = False
+YARA_AVAILABLE = importlib.util.find_spec("yara") is not None
 
 from yaraast.ast.expressions import IntegerLiteral
 from yaraast.libyara.ast_optimizer import ASTOptimizer

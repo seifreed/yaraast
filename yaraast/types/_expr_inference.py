@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -31,7 +32,10 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
+from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
 from yaraast.visitor.defaults import DefaultASTVisitor
 
 from . import _expr_inference_ops as ops
@@ -56,37 +60,37 @@ class _TypeBaseVisitor(DefaultASTVisitor[YaraType]):
     def __init__(self) -> None:
         super().__init__(default=UnknownType())
 
-    def visit_comment(self, _node):  # type: ignore[override]
+    def visit_comment(self, _node: Comment) -> YaraType:
         return UnknownType()
 
-    def visit_comment_group(self, _node):  # type: ignore[override]
+    def visit_comment_group(self, _node: CommentGroup) -> YaraType:
         return UnknownType()
 
-    def visit_defined_expression(self, _node):  # type: ignore[override]
+    def visit_defined_expression(self, _node: DefinedExpression) -> YaraType:
         return BooleanType()
 
-    def visit_string_operator_expression(self, _node):  # type: ignore[override]
+    def visit_string_operator_expression(self, _node: StringOperatorExpression) -> YaraType:
         return BooleanType()
 
-    def visit_extern_import(self, _node):  # type: ignore[override]
+    def visit_extern_import(self, _node: ExternImport) -> YaraType:
         return UnknownType()
 
-    def visit_extern_namespace(self, _node):  # type: ignore[override]
+    def visit_extern_namespace(self, _node: ExternNamespace) -> YaraType:
         return UnknownType()
 
-    def visit_extern_rule(self, _node):  # type: ignore[override]
+    def visit_extern_rule(self, _node: ExternRule) -> YaraType:
         return UnknownType()
 
-    def visit_extern_rule_reference(self, _node):  # type: ignore[override]
+    def visit_extern_rule_reference(self, _node: ExternRuleReference) -> YaraType:
         return UnknownType()
 
-    def visit_in_rule_pragma(self, _node):  # type: ignore[override]
+    def visit_in_rule_pragma(self, _node: InRulePragma) -> YaraType:
         return UnknownType()
 
-    def visit_pragma(self, _node):  # type: ignore[override]
+    def visit_pragma(self, _node: Pragma) -> YaraType:
         return UnknownType()
 
-    def visit_pragma_block(self, _node):  # type: ignore[override]
+    def visit_pragma_block(self, _node: PragmaBlock) -> YaraType:
         return UnknownType()
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Generic, Protocol, TypeVar, cast
+from typing import Protocol, TypeVar, cast
 
 from yaraast.ast.base import ASTNode
 from yaraast.visitor.visitor import ASTVisitor
@@ -19,7 +19,7 @@ class VisitorHelperProtocol(Protocol[T]):
     def _visit_if(self, node: ASTNode | None) -> None: ...
 
 
-class BaseVisitorHelpersMixin(Generic[T]):  # noqa: UP046
+class BaseVisitorHelpersMixin[T]:
     """Helper methods for BaseVisitor traversal."""
 
     def _default_visit(self, node: ASTNode) -> T:

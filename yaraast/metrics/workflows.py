@@ -15,10 +15,12 @@ from yaraast.metrics.facade import METRICS
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 
+DependencyGraphGenerator: Any
+
 try:
     from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 except ModuleNotFoundError:
-    DependencyGraphGenerator = None  # type: ignore[assignment]
+    DependencyGraphGenerator = None
 
 
 @dataclass

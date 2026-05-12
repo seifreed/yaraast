@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
@@ -23,7 +25,7 @@ def test_libyara_compiler_handles_read_and_save_failures(tmp_path) -> None:
 def test_libyara_compiler_handles_type_error_and_null_byte_source_paths() -> None:
     compiler = LibyaraCompiler()
 
-    type_error_result = compiler.compile_source(None)  # type: ignore[arg-type]
+    type_error_result = compiler.compile_source(cast(Any, None))
     assert type_error_result.success is False
     assert type_error_result.errors
     assert "Unexpected error" in type_error_result.errors[0]

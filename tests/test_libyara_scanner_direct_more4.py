@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.libyara.compiler import LibyaraCompiler
@@ -16,7 +18,7 @@ from yaraast.parser import Parser
 def test_direct_ast_compiler_invalid_ast_hits_error_result() -> None:
     compiler = DirectASTCompiler()
 
-    result = compiler.compile_ast(None)  # type: ignore[arg-type]
+    result = compiler.compile_ast(cast(Any, None))
 
     assert result.success is False
     assert result.errors

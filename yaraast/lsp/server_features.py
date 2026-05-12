@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from yaraast.lsp.lsp_types import (  # noqa: F401
+from yaraast.lsp.lsp_types import (
     TEXT_DOCUMENT_CODE_ACTION,
     TEXT_DOCUMENT_COMPLETION,
     TEXT_DOCUMENT_DEFINITION,
@@ -40,6 +40,38 @@ from yaraast.lsp.server_feature_helpers import get_workspace_folders
 
 if TYPE_CHECKING:
     from yaraast.lsp.server import YaraLanguageServer
+
+__all__ = [
+    "TEXT_DOCUMENT_CODE_ACTION",
+    "TEXT_DOCUMENT_COMPLETION",
+    "TEXT_DOCUMENT_DEFINITION",
+    "TEXT_DOCUMENT_DIAGNOSTIC",
+    "TEXT_DOCUMENT_DID_CHANGE",
+    "TEXT_DOCUMENT_DID_CLOSE",
+    "TEXT_DOCUMENT_DID_OPEN",
+    "TEXT_DOCUMENT_DID_SAVE",
+    "TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT",
+    "TEXT_DOCUMENT_DOCUMENT_LINK",
+    "TEXT_DOCUMENT_DOCUMENT_SYMBOL",
+    "TEXT_DOCUMENT_FOLDING_RANGE",
+    "TEXT_DOCUMENT_FORMATTING",
+    "TEXT_DOCUMENT_HOVER",
+    "TEXT_DOCUMENT_PREPARE_RENAME",
+    "TEXT_DOCUMENT_RANGE_FORMATTING",
+    "TEXT_DOCUMENT_REFERENCES",
+    "TEXT_DOCUMENT_RENAME",
+    "TEXT_DOCUMENT_SELECTION_RANGE",
+    "TEXT_DOCUMENT_SEMANTIC_TOKENS_FULL",
+    "TEXT_DOCUMENT_SEMANTIC_TOKENS_RANGE",
+    "TEXT_DOCUMENT_SIGNATURE_HELP",
+    "WORKSPACE_DID_CHANGE_CONFIGURATION",
+    "WORKSPACE_DID_CHANGE_WATCHED_FILES",
+    "WORKSPACE_SYMBOL",
+    "YARAAST_RUNTIME_STATUS",
+    "InitializeParams",
+    "register_initialize",
+    "register_server_features",
+]
 
 
 def register_server_features(server: YaraLanguageServer) -> None:

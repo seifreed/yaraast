@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -75,7 +76,7 @@ def test_generate_regenerated_code_helper_records_failure() -> None:
     tester = _tester_without_libyara_init()
     result = EquivalenceResult(equivalent=True)
 
-    regenerated = tester._generate_regenerated_code("not-an-ast", result)  # type: ignore[arg-type]
+    regenerated = tester._generate_regenerated_code(cast(Any, "not-an-ast"), result)
 
     assert regenerated is None
     assert result.equivalent is False
@@ -151,7 +152,7 @@ def test_compare_evaluation_captures_real_failure() -> None:
     tester = _tester_without_libyara_init()
     ast = Parser().parse("rule ok { condition: true }")
 
-    diffs = tester._compare_evaluation(ast, None, b"data")  # type: ignore[arg-type]
+    diffs = tester._compare_evaluation(ast, cast(Any, None), b"data")
 
     assert len(diffs) == 1
     assert diffs[0].startswith("Evaluation comparison failed:")
@@ -185,7 +186,7 @@ def test_file_round_trip_success_path_with_real_equivalence_tester() -> None:
 def test_round_trip_handles_codegen_failure_without_libyara_dependency() -> None:
     tester = _tester_without_libyara_init()
 
-    result = tester.test_round_trip("not-an-ast")  # type: ignore[arg-type]
+    result = tester.test_round_trip(cast(Any, "not-an-ast"))
 
     assert result.equivalent is False
     assert result.code_equivalent is False

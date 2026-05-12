@@ -52,7 +52,7 @@ class Rule(ASTNode):
     """YARA rule node with enhanced modifier and meta support."""
 
     name: str
-    modifiers: list[RuleModifier] = field(default_factory=list)
+    modifiers: Any = field(default_factory=list)
     tags: list[Tag] = field(default_factory=list)
     meta: list[MetaEntry] = field(default_factory=list)
     strings: list[StringDefinition] = field(default_factory=list)
@@ -61,7 +61,7 @@ class Rule(ASTNode):
 
     def __post_init__(self) -> None:
         """Normalize modifiers to RuleModifier and meta to list[MetaEntry]."""
-        self.modifiers = self._normalize_modifiers(self.modifiers)  # type: ignore[assignment]
+        self.modifiers = self._normalize_modifiers(self.modifiers)
         if isinstance(self.meta, dict):
             self.meta = self._normalize_meta(self.meta)
 
@@ -89,15 +89,15 @@ class Rule(ASTNode):
         normalized_meta = cls._normalize_meta(meta or [])
         return cls(
             name=name,
-            modifiers=normalized_mods,  # type: ignore[arg-type]
+            modifiers=normalized_mods,
             meta=normalized_meta,
             **kwargs,
         )
 
     @staticmethod
     def _normalize_modifiers(
-        modifiers: Sequence[str | RuleModifier] | str | None,
-    ) -> list[str | RuleModifier]:
+        modifiers: Sequence[Any] | str | None,
+    ) -> list[Any]:
         """Normalize modifiers to a list of RuleModifier."""
         if not modifiers:
             return []
@@ -107,7 +107,7 @@ class Rule(ASTNode):
             except (ValueError, ValidationError):
                 return [modifiers]
         if isinstance(modifiers, list | tuple):
-            normalized: list[str | RuleModifier] = []
+            normalized: list[Any] = []
             for m in modifiers:
                 if isinstance(m, str):
                     try:
@@ -117,7 +117,7 @@ class Rule(ASTNode):
                 else:
                     normalized.append(m)
             return normalized
-        return [modifiers]  # type: ignore[list-item]
+        return [modifiers]
 
     @staticmethod
     def _normalize_meta(

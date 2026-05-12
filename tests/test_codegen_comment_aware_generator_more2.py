@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import Condition
@@ -20,7 +22,7 @@ def test_comment_aware_generator_write_comments_and_generate_non_file_node() -> 
     assert "// two" in out
 
     rule = Rule(name="standalone", meta=[], strings=[], condition=None)
-    generated = gen.generate(rule)  # type: ignore[arg-type]
+    generated = gen.generate(cast(Any, rule))
     assert "rule standalone {" in generated
 
 

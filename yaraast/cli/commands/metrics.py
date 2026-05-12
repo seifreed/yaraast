@@ -34,12 +34,7 @@ from yaraast.cli.metrics_services import (
     parse_yara_file,
 )
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
-from yaraast.metrics import METRICS
-
-try:
-    from yaraast.metrics import DependencyGraphGenerator
-except ModuleNotFoundError:
-    DependencyGraphGenerator = None  # type: ignore[assignment]
+from yaraast.metrics import METRICS, DependencyGraphGenerator
 
 
 @click.group()

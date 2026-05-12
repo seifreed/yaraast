@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import yaml
 
@@ -50,7 +51,7 @@ def test_enhanced_yaml_serializer_counts_regex_strings() -> None:
 def test_simple_roundtrip_test_handles_real_type_error() -> None:
     runner = SimpleRoundTrip()
 
-    success, original_ast, regenerated_ast = runner.test(None)  # type: ignore[arg-type]
+    success, original_ast, regenerated_ast = runner.test(cast(Any, None))
 
     assert success is False
     assert original_ast is None

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.conditions import ForExpression, InExpression
@@ -39,4 +41,4 @@ def test_condition_builder_errors_on_empty() -> None:
         ConditionBuilder().build()
 
     with pytest.raises(TypeError):
-        ConditionBuilder().integer(1)._to_expression(3.14)  # type: ignore[arg-type]
+        ConditionBuilder().integer(1)._to_expression(cast(Any, 3.14))

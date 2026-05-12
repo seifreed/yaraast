@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.modifiers import StringModifier
@@ -75,7 +77,7 @@ def test_string_matcher_regex_invalid_nocase_and_range_queries() -> None:
     assert matcher.string_in("$re", 0, 5) is True
     assert matcher.string_in("$re", 5, 7) is False
 
-    invalid = RegexString("$bad", regex=None, modifiers=[])  # type: ignore[arg-type]
+    invalid = RegexString("$bad", regex=cast(Any, None), modifiers=[])
     matcher.match_all(b"anything", [invalid])
     assert matcher.matches["$bad"] == []
 

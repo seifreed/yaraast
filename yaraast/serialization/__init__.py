@@ -4,6 +4,8 @@ This module provides multiple serialization formats for AST persistence,
 interchange, and versioning in CI/CD pipelines.
 """
 
+from typing import Any
+
 from yaraast.serialization.ast_diff import AstDiff, DiffResult, DiffType
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.roundtrip_serializer import (
@@ -15,10 +17,12 @@ from yaraast.serialization.roundtrip_serializer import (
 )
 from yaraast.serialization.yaml_serializer import YamlSerializer
 
+ProtobufSerializer: Any
+
 try:
     from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 except ImportError:
-    ProtobufSerializer = None  # type: ignore[assignment,misc]
+    ProtobufSerializer = None
 
 __all__ = [
     "AstDiff",

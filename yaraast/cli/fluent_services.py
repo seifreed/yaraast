@@ -271,7 +271,12 @@ def create_template_rule(rule_name: str, rule_type: str, author: str, tags: list
     Accepts both RuleTemplate enum values and plain strings for backward
     compatibility.
     """
-    factory = _TEMPLATE_FACTORIES.get(rule_type)  # type: ignore[arg-type]
+    try:
+        template = RuleTemplate(rule_type)
+    except ValueError:
+        factory = None
+    else:
+        factory = _TEMPLATE_FACTORIES.get(template)
     rule_ast = factory(rule_name) if factory is not None else rule(rule_name).tagged(rule_type)
 
     rule_ast = rule_ast.authored_by(author)

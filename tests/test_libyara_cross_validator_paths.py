@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -73,7 +75,7 @@ def test_cross_validator_error_and_mismatch_paths() -> None:
     assert scan_error.errors
 
     # validate() scan_result.success path with evaluator success but libyara scan failure.
-    validate_scan_error = validator.validate(externals_ast, ["bad-data"])  # type: ignore[list-item]
+    validate_scan_error = validator.validate(externals_ast, cast(Any, ["bad-data"]))
     assert validate_scan_error.valid is False
     assert validate_scan_error.errors
 

@@ -7,6 +7,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
@@ -822,7 +824,7 @@ class TestConditionBuilderHelperMethods:
         builder = ConditionBuilder()
 
         with pytest.raises(TypeError, match=r"Cannot convert .* to expression"):
-            builder._to_expression([1, 2, 3])  # type: ignore
+            builder._to_expression(cast(Any, [1, 2, 3]))
 
     def test_build_on_empty_raises_error(self) -> None:
         """Build on empty expression should raise ValueError."""

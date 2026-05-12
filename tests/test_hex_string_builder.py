@@ -7,6 +7,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexWildcard
@@ -180,7 +182,7 @@ class TestHexStringBuilderErrorHandling:
         builder = HexStringBuilder()
 
         with pytest.raises(TypeError, match="Invalid type for hex value"):
-            builder.add([0xFF])  # type: ignore
+            builder.add(cast(Any, [0xFF]))
 
 
 class TestHexStringBuilderWildcards:
@@ -467,14 +469,14 @@ class TestHexStringBuilderAlternatives:
         builder = HexStringBuilder()
 
         with pytest.raises(TypeError, match="Invalid alternative type"):
-            builder.alternative(0xFF)  # type: ignore
+            builder.alternative(cast(Any, 0xFF))
 
     def test_alternative_invalid_value_in_list(self) -> None:
         """Alternative should reject invalid values in lists."""
         builder = HexStringBuilder()
 
         with pytest.raises(TypeError, match="Invalid alternative value type"):
-            builder.alternative([[0xFF, [0xAA]]])  # type: ignore
+            builder.alternative(cast(Any, [[0xFF, [0xAA]]]))
 
 
 class TestHexStringBuilderGrouping:

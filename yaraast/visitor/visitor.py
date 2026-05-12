@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from abc import ABC
 from typing import TypeVar, cast
 
 from yaraast.ast.base import ASTNode, YaraFile
@@ -60,7 +59,7 @@ from yaraast.ast.strings import (
 T = TypeVar("T")
 
 
-class ASTVisitor[T](ABC):  # noqa: B024
+class ASTVisitor[T]:
     """Base visitor class for traversing AST nodes.
 
     Subclasses only need to override the visit methods they care about.

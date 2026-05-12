@@ -5,15 +5,11 @@ import tempfile
 
 import pytest
 
+from yaraast.metrics import DependencyGraphGenerator
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.complexity_model import ComplexityMetrics
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
-
-try:
-    from yaraast.metrics.dependency_graph import DependencyGraphGenerator
-except ModuleNotFoundError:
-    DependencyGraphGenerator = None  # type: ignore[assignment]
 from yaraast.parser import Parser
 
 

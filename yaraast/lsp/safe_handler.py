@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 import functools
 import logging
-from typing import Any, overload
+from typing import Any, cast, overload
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ def lsp_safe_handler[F: Callable[..., Any]](
                 )
                 return default
 
-        return wrapper  # type: ignore[return-value]
+        return cast(F, wrapper)
 
     if func is not None:
         return decorator(func)

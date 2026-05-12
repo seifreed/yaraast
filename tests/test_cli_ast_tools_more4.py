@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from io import StringIO
+from typing import Any, cast
 
 from rich.console import Console
 from rich.tree import Tree
@@ -67,8 +68,8 @@ def test_tree_helpers_cover_empty_and_non_dict_meta_paths() -> None:
     rule = Rule(
         name="r1",
         modifiers=["private"],
-        tags=[Tag(name="t1"), "t2"],  # type: ignore[list-item]
-        meta=[MetaEntry.from_key_value("author", "me"), object()],  # type: ignore[list-item]
+        tags=cast(Any, [Tag(name="t1"), "t2"]),
+        meta=cast(Any, [MetaEntry.from_key_value("author", "me"), object()]),
         strings=[PlainString(identifier="$a", value="abc")],
         condition=BooleanLiteral(value=True),
     )

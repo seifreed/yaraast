@@ -7,12 +7,7 @@ from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.cli.utils import parse_yara_file as _parse_yara_file
-from yaraast.metrics import workflows as _workflows
-
-try:
-    from yaraast.metrics import DependencyGraphGenerator
-except ModuleNotFoundError:
-    DependencyGraphGenerator = None  # type: ignore[assignment]
+from yaraast.metrics import DependencyGraphGenerator, workflows as _workflows
 
 MetricsReportData = _workflows.MetricsReportData
 _DEFAULT_FACTORY = object()

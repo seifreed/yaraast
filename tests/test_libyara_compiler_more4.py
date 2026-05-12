@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -39,7 +40,7 @@ rule ok {
 def test_libyara_compiler_compile_ast_codegen_failure_and_syntax_error() -> None:
     compiler = LibyaraCompiler()
 
-    compile_ast_result = compiler.compile_ast(None)  # type: ignore[arg-type]
+    compile_ast_result = compiler.compile_ast(cast(Any, None))
     assert compile_ast_result.success is False
     assert compile_ast_result.errors
     assert compile_ast_result.errors[0].startswith("AST compilation error:")

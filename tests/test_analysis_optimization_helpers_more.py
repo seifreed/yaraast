@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.analysis.optimization_grouping_helpers import (
     group_duplicate_strings,
     group_rules_by_pattern,
@@ -46,7 +48,7 @@ def test_should_be_hex_and_hex_helpers() -> None:
     assert get_hex_prefix(full_prefix, 5) == (0xAA, 0xBB, 0xCC, 0xDD, "EE")
     assert hex_to_string(full_prefix) == "AA BB CC DD EE"
 
-    mixed = HexString(identifier="$h3", tokens=[HexByte(0x10), object()])  # type: ignore[list-item]
+    mixed = HexString(identifier="$h3", tokens=cast(Any, [HexByte(0x10), object()]))
     assert hex_to_string(mixed) == "10 ??"
 
 
