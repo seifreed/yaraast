@@ -49,6 +49,10 @@ class StreamingParser:
                 for parsing non-standard dialects without circular imports
 
         """
+        if buffer_size < 1:
+            msg = "buffer_size must be at least 1"
+            raise ValueError(msg)
+
         self.buffer_size = buffer_size
         self.max_memory_mb = max_memory_mb
         self.enable_gc = enable_gc
@@ -140,6 +144,10 @@ class StreamingParser:
             Lists of parsed rules
 
         """
+        if chunk_size < 1:
+            msg = "chunk_size must be at least 1"
+            raise ValueError(msg)
+
         chunk = []
 
         for rule in self.parse_file(file_path):

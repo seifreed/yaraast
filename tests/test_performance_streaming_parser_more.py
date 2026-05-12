@@ -6,6 +6,8 @@ import io
 from pathlib import Path
 from textwrap import dedent
 
+import pytest
+
 from yaraast.performance.streaming_parser import StreamingParser
 
 
@@ -37,6 +39,14 @@ def test_streaming_parse_stream_and_chunk(tmp_path: Path) -> None:
     chunks = list(parser.parse_file_chunked(path, chunk_size=1))
     assert len(chunks) == 2
     assert len(chunks[0]) == 1
+
+    with pytest.raises(ValueError, match="chunk_size must be at least 1"):
+        list(parser.parse_file_chunked(path, chunk_size=0))
+
+
+def test_streaming_parser_rejects_invalid_buffer_size() -> None:
+    with pytest.raises(ValueError, match="buffer_size must be at least 1"):
+        StreamingParser(buffer_size=0)
 
 
 def test_streaming_parse_files_and_directory(tmp_path: Path) -> None:
