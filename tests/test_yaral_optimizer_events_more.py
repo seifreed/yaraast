@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from yaraast.yaral.ast_nodes import (
     EventAssignment,
     EventsSection,
@@ -12,17 +10,7 @@ from yaraast.yaral.ast_nodes import (
     UDMFieldPath,
 )
 from yaraast.yaral.optimizer import YaraLOptimizer
-
-
-@dataclass
-class _Evt:
-    name: str
-
-
-@dataclass
-class _Stmt:
-    event: _Evt
-    assignments: list[EventAssignment]
+from yaraast.yaral.optimizer_events import LegacyEventStatement
 
 
 def _assign(field_parts: list[str], op: str, value: str | int) -> EventAssignment:
@@ -32,6 +20,10 @@ def _assign(field_parts: list[str], op: str, value: str | int) -> EventAssignmen
         operator=op,
         value=value,
     )
+
+
+def _stmt(event_name: str, assignments: list[EventAssignment]) -> LegacyEventStatement:
+    return LegacyEventStatement(event=EventVariable(name=event_name), assignments=assignments)
 
 
 def test_visit_events_section_short_circuit_for_event_assignment_nodes() -> None:
@@ -50,7 +42,7 @@ def test_optimize_event_statement_and_selectivity_scoring_paths() -> None:
         _assign(["principal", "user"], ">", 7),
         _assign(["metadata", "timestamp"], "=~", "/abc/"),
     ]
-    stmt = _Stmt(event=_Evt("evt"), assignments=assignments)
+    stmt = _stmt("evt", assignments)
 
     optimized_stmt = opt._optimize_event_statement(stmt)
     assert optimized_stmt is stmt
@@ -69,7 +61,7 @@ def test_optimize_event_statement_and_selectivity_scoring_paths() -> None:
     plain_stmt = EventStatement()
     assert opt.visit_event_statement(plain_stmt) is plain_stmt
     assert opt.visit_event_assignment(assignments[0]) is assignments[0]
-    empty_stmt = _Stmt(event=_Evt("evt"), assignments=[])
+    empty_stmt = _stmt("evt", [])
     assert opt._optimize_event_statement(empty_stmt) is empty_stmt
 
 
@@ -113,10 +105,10 @@ def test_remove_redundant_assignments_and_similarity_grouping() -> None:
     assert len(exact_redundant) == 1
     assert opt3.stats.redundant_checks_removed == 1
 
-    s1 = _Stmt(event=_Evt("login"), assignments=[a1, a4])
-    s2 = _Stmt(event=_Evt("login"), assignments=[_assign(["principal", "ip"], "=", "2.2.2.2")])
-    s3 = _Stmt(event=_Evt("dns"), assignments=[_assign(["principal", "ip"], "=", "3.3.3.3")])
-    s4 = _Stmt(event=_Evt("login"), assignments=[])
+    s1 = _stmt("login", [a1, a4])
+    s2 = _stmt("login", [_assign(["principal", "ip"], "=", "2.2.2.2")])
+    s3 = _stmt("dns", [_assign(["principal", "ip"], "=", "3.3.3.3")])
+    s4 = _stmt("login", [])
 
     assert opt._are_similar_events(s1, s2) is True
     assert opt._are_similar_events(s1, s3) is False
@@ -129,35 +121,35 @@ def test_remove_redundant_assignments_and_similarity_grouping() -> None:
 
 def test_combine_event_statements_edge_cases_and_compat_wrapper() -> None:
     opt = YaraLOptimizer()
-    s1 = _Stmt(event=_Evt("x"), assignments=[_assign(["principal", "ip"], "=", "1.1.1.1")])
-    s2 = _Stmt(event=_Evt("x"), assignments=[_assign(["principal", "hostname"], "=", "h")])
-    s3 = _Stmt(event=_Evt("x"), assignments=[_assign(["principal", "ip"], "=", "2.2.2.2")])
+    s1 = _stmt("x", [_assign(["principal", "ip"], "=", "1.1.1.1")])
+    s2 = _stmt("x", [_assign(["principal", "hostname"], "=", "h")])
+    s3 = _stmt("x", [_assign(["principal", "ip"], "=", "2.2.2.2")])
 
     assert opt._combine_event_statements([]) is None
     assert opt._combine_event_statements([s1]) is s1
 
     combined = opt._combine_event_statements([s1, s2, s3])
-    assert combined is not None
+    assert isinstance(combined, LegacyEventStatement)
     assert combined.event.name == "x"
+    assert combined.assignments is not None
     assert len(combined.assignments) == 2
 
-    s4 = _Stmt(event=_Evt("x"), assignments=[])
+    s4 = _stmt("x", [])
     combined2 = opt._combine_event_statements([s1, s4])
-    assert combined2 is not None
+    assert isinstance(combined2, LegacyEventStatement)
+    assert combined2.assignments is not None
     assert len(combined2.assignments) == 1
 
 
 def test_visit_events_section_grouping_branch_tracks_stats() -> None:
     opt = YaraLOptimizer()
-    s1 = _Stmt(event=_Evt("x"), assignments=[_assign(["principal", "ip"], "=", "1.1.1.1")])
-    s2 = _Stmt(event=_Evt("x"), assignments=[_assign(["principal", "ip"], "=", "2.2.2.2")])
+    s1 = _stmt("x", [_assign(["principal", "ip"], "=", "1.1.1.1")])
+    s2 = _stmt("x", [_assign(["principal", "ip"], "=", "2.2.2.2")])
 
     section = opt.visit_events_section(EventsSection(statements=[s1, s2]))
     assert len(section.statements) == 1
 
     assert opt.stats.events_optimized == 1
 
-    single = opt.visit_events_section(
-        EventsSection(statements=[_Stmt(event=_Evt("y"), assignments=[])])
-    )
+    single = opt.visit_events_section(EventsSection(statements=[_stmt("y", [])]))
     assert len(single.statements) == 1

@@ -19,7 +19,12 @@ from yaraast.yaral.ast_nodes import (
 from yaraast.yaral.optimizer import YaraLOptimizer
 
 
-def _assignment(event_name: str, parts: list[str], operator: str, value) -> EventAssignment:
+def _assignment(
+    event_name: str,
+    parts: list[str],
+    operator: str,
+    value: str | int | EventVariable | UDMFieldPath,
+) -> EventAssignment:
     return EventAssignment(
         event_var=EventVariable(name=event_name),
         field_path=UDMFieldPath(parts=parts),
