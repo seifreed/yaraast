@@ -9,6 +9,13 @@ from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace_analysis import WorkspaceAnalyzer
 from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceReport
 
+__all__ = [
+    "FileAnalysisResult",
+    "Workspace",
+    "WorkspaceAnalyzer",
+    "WorkspaceReport",
+]
+
 
 class Workspace:
     """Workspace for managing multiple YARA files."""

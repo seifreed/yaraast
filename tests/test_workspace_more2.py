@@ -8,6 +8,7 @@ from typing import cast
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Include, Rule
+from yaraast.ast.strings import StringDefinition
 from yaraast.resolution.include_resolver import ResolvedFile
 from yaraast.resolution.workspace import (
     FileAnalysisResult,
@@ -156,7 +157,15 @@ def test_workspace_analysis_handles_unresolved_results_analysis_errors_and_cycle
         resolved=ResolvedFile(
             path=broken_path,
             content="rule broken { condition: true }",
-            ast=YaraFile(rules=[Rule(name="broken", strings=None, condition=BooleanLiteral(True))]),
+            ast=YaraFile(
+                rules=[
+                    Rule(
+                        name="broken",
+                        strings=cast(list[StringDefinition], None),
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
             checksum="broken",
         ),
     )
