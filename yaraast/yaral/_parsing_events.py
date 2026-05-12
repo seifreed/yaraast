@@ -14,6 +14,7 @@ from .ast_nodes import (
     EventVariable,
     ReferenceList,
     RegexPattern,
+    UDMFieldAccess,
     UDMFieldPath,
 )
 from .tokens import YaraLTokenType
@@ -321,8 +322,11 @@ class YaraLEventsParsingMixin:
         if self._check(BaseTokenType.INTEGER):
             return int(self._advance().value)
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
-            # Reference to another event variable
-            return EventVariable(name=self._advance().value)
+            event = EventVariable(name=self._advance().value)
+            if self._check(BaseTokenType.DOT):
+                self._advance()
+                return UDMFieldAccess(event=event, field=self._parse_field_path())
+            return event
         if self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):
             # Reference list like %suspicious_ips%
             return ReferenceList(name=self._advance().value.strip("%"))

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from yaraast.yaral.ast_nodes import EventAssignment, ReferenceList, RegexPattern
+from yaraast.yaral.ast_nodes import EventAssignment, ReferenceList, RegexPattern, UDMFieldAccess
 from yaraast.yaral.parser import YaraLParser
 
 
@@ -46,6 +46,31 @@ def test_parser_events_match_outcome_options() -> None:
     match_var = rule.match.variables[0]
     assert match_var.time_window.modifier == "every"
     assert match_var.time_window.unit == "m"
+
+
+def test_parser_event_assignment_value_can_be_udm_field_access() -> None:
+    code = dedent(
+        """
+        rule field_join {
+            events:
+                $e1.principal.ip = $e2.principal.ip
+                $e1.metadata.event_type = "LOGIN"
+            condition:
+                $e1 and $e2
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+    events = ast.rules[0].events
+    assert events is not None
+    statements = events.statements
+
+    assert len(statements) == 2
+    assert isinstance(statements[0], EventAssignment)
+    assert isinstance(statements[0].value, UDMFieldAccess)
+    assert statements[0].value.event.name == "$e2"
+    assert statements[0].value.field.path == "principal.ip"
 
 
 def test_parser_match_multiple_variables_lines() -> None:
