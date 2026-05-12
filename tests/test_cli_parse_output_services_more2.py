@@ -7,6 +7,7 @@ from pathlib import Path
 import click
 import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli import parse_output_services as po
 from yaraast.parser import Parser
 
@@ -19,7 +20,7 @@ class _Err:
         return self.msg
 
 
-def _ast():
+def _ast() -> YaraFile:
     code = """
 rule t {
   strings:
@@ -28,10 +29,12 @@ rule t {
     $a
 }
 """.strip()
-    return Parser().parse(code)
+    ast = Parser().parse(code)
+    assert isinstance(ast, YaraFile)
+    return ast
 
 
-def test_parse_output_report_parsing_errors(capsys) -> None:
+def test_parse_output_report_parsing_errors(capsys: pytest.CaptureFixture[str]) -> None:
     lexer = [_Err("lex1"), _Err("lex2"), _Err("lex3"), _Err("lex4"), _Err("lex5"), _Err("lex6")]
     parser = [_Err("par1"), _Err("par2")]
 
@@ -47,7 +50,10 @@ def test_parse_output_report_parsing_errors(capsys) -> None:
         po._report_parsing_errors([_Err("x")], [], ast=None)
 
 
-def test_parse_output_generators_for_all_formats(tmp_path: Path, capsys) -> None:
+def test_parse_output_generators_for_all_formats(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     ast = _ast()
 
     po._generate_output_by_format(ast, "yara", None)
