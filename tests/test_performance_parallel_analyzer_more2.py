@@ -74,6 +74,7 @@ def test_parallel_analyzer_direct_methods_and_stats(tmp_path: Path) -> None:
     assert reset["total_time"] == 0.0
     assert reset["jobs_submitted"] == 0
     assert reset["jobs_completed"] == 0
+    assert reset["jobs_failed"] == 0
 
     jobs_after_reset = analyzer.parse_files_parallel([str(file_path)], chunk_size=1)
     assert len(jobs_after_reset) == 1
@@ -81,6 +82,7 @@ def test_parallel_analyzer_direct_methods_and_stats(tmp_path: Path) -> None:
     reset_stats = analyzer.get_statistics()
     assert reset_stats["jobs_submitted"] == 1
     assert reset_stats["jobs_completed"] == 1
+    assert reset_stats["jobs_failed"] == 0
 
 
 def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> None:
@@ -103,8 +105,13 @@ def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> 
     assert 1 in limited_profile["worker_performance"]
     assert 10_000 not in limited_profile["worker_performance"]
 
+    analyzer.reset_statistics()
     jobs = analyzer.process_batch(small_rules, _worker_rule_name, job_type="names")
     assert [job.result for job in jobs] == ["a", "b"]
+    stats = analyzer.get_statistics()
+    assert stats["jobs_submitted"] == 2
+    assert stats["jobs_completed"] == 2
+    assert stats["jobs_failed"] == 0
 
     failing_jobs = analyzer.process_batch(small_rules, _worker_fail_on_b, job_type="names")
     assert failing_jobs[0].status.value == "completed"
@@ -112,6 +119,10 @@ def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> 
     failed_error = failing_jobs[1].error
     assert failed_error is not None
     assert "bad rule" in failed_error
+    failing_stats = analyzer.get_statistics()
+    assert failing_stats["jobs_submitted"] == 4
+    assert failing_stats["jobs_completed"] == 3
+    assert failing_stats["jobs_failed"] == 1
 
 
 def test_parallel_analyzer_files_custom_and_graphs(tmp_path: Path) -> None:

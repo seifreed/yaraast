@@ -45,6 +45,7 @@ def analyze_complexity_parallel(
             analyzer._stats["jobs_completed"] += 1
         except Exception as exc:
             fail_job(job, exc)
+            analyzer._stats["jobs_failed"] += 1
     return jobs
 
 
@@ -60,6 +61,8 @@ def generate_graphs_parallel(
         analyzer._stats["jobs_submitted"] += 1
         if job.status == JobStatus.COMPLETED:
             analyzer._stats["jobs_completed"] += 1
+        elif job.status == JobStatus.FAILED:
+            analyzer._stats["jobs_failed"] += 1
     return jobs
 
 
@@ -74,6 +77,8 @@ def parse_files_parallel(
         analyzer._stats["jobs_submitted"] += 1
         if job.status == JobStatus.COMPLETED:
             analyzer._stats["jobs_completed"] += 1
+        elif job.status == JobStatus.FAILED:
+            analyzer._stats["jobs_failed"] += 1
     return jobs
 
 
@@ -85,4 +90,11 @@ def process_batch(
     parameters: dict | None = None,
 ) -> list[Job]:
     """Process arbitrary items through tracked job helpers."""
-    return process_items(items, worker_func, job_type=job_type, parameters=parameters)
+    jobs = process_items(items, worker_func, job_type=job_type, parameters=parameters)
+    for job in jobs:
+        analyzer._stats["jobs_submitted"] += 1
+        if job.status == JobStatus.COMPLETED:
+            analyzer._stats["jobs_completed"] += 1
+        elif job.status == JobStatus.FAILED:
+            analyzer._stats["jobs_failed"] += 1
+    return jobs

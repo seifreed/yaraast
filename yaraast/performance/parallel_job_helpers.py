@@ -17,6 +17,7 @@ def default_parallel_stats() -> dict[str, float | int]:
         "errors": 0,
         "jobs_submitted": 0,
         "jobs_completed": 0,
+        "jobs_failed": 0,
     }
 
 
