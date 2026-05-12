@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from lsprotocol.types import Position, Range
 
+from yaraast.lsp.document_types import path_to_uri
 from yaraast.types.module_loader import ModuleLoader
 
 if TYPE_CHECKING:
@@ -142,7 +143,7 @@ def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
 def get_include_target_uri(ctx: DocumentContext, include_path: str) -> str | None:
     include_info = ctx.get_include_info(include_path)
     resolved_path = include_info.get("resolved_path")
-    return f"file://{resolved_path}" if resolved_path else None
+    return path_to_uri(Path(resolved_path)) if resolved_path else None
 
 
 def get_dotted_symbol_at_position(

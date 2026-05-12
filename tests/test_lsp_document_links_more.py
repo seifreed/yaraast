@@ -70,6 +70,25 @@ def test_document_links_helper_edges(tmp_path: Path) -> None:
     assert "pe.html" in (fallback_links[0].target or "")
 
 
+def test_include_target_uri_escapes_special_path_characters(tmp_path: Path) -> None:
+    include_dir = tmp_path / "include dir"
+    include_dir.mkdir()
+    include_path = include_dir / "inc file.yar"
+    include_path.write_text("rule inc { condition: true }", encoding="utf-8")
+
+    main_path = tmp_path / "main file.yar"
+    doc = DocumentContext(
+        path_to_uri(main_path),
+        'include "include dir/inc file.yar"\nrule main { condition: true }\n',
+    )
+
+    target = doc.get_include_target_uri("include dir/inc file.yar")
+
+    assert target is not None
+    assert target == include_path.resolve().as_uri()
+    assert "%20" in target
+
+
 def test_document_links_parser_fallback_and_error_edges(tmp_path: Path) -> None:
     include_path = tmp_path / "inc.yar"
     include_path.write_text("rule inc { condition: true }")
