@@ -86,7 +86,7 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
     assert differences2[-1] == "... more differences"
 
     bad_json = tmp_path / "bad.json"
-    bad_json.write_text("{not-json")
+    bad_json.write_text("{not-json", encoding="utf-8")
     try:
         deserialize_from_file(bad_json)
     except Exception:

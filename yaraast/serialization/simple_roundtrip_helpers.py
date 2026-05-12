@@ -270,14 +270,14 @@ def serialize_to_file(node: ASTNode, file_path: str | Path) -> None:
     """Serialize an AST node to a JSON file."""
     data = serialize_node(node)
     file_path = Path(file_path)
-    with open(file_path, "w") as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
 def deserialize_from_file(file_path: str | Path) -> ASTNode:
     """Deserialize an AST node from a JSON file."""
     file_path = Path(file_path)
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8") as f:
         data = json.load(f)
     return deserialize_node(data)
 
