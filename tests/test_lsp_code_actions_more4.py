@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lsprotocol.types import CodeActionKind, Diagnostic, Position, Range
+from lsprotocol.types import CodeActionKind, Diagnostic, Position, Range, TextEdit, WorkspaceEdit
 
 from yaraast.lsp.code_actions import CodeActionsProvider
 from yaraast.lsp.diagnostics import DiagnosticData, DiagnosticPatch
@@ -10,6 +10,12 @@ from yaraast.lsp.diagnostics import DiagnosticData, DiagnosticPatch
 
 def _range(line: int, start: int, end: int) -> Range:
     return Range(start=Position(line=line, character=start), end=Position(line=line, character=end))
+
+
+def _change_set(edit: WorkspaceEdit, uri: str) -> list[TextEdit]:
+    changes = edit.changes
+    assert changes is not None
+    return list(changes[uri])
 
 
 def test_code_action_helpers_handle_unmatched_messages_and_missing_sections() -> None:
@@ -105,7 +111,7 @@ def test_code_action_structured_patches() -> None:
     actions = provider._create_structured_actions(diag, "file://test.yar")
     assert actions
     assert actions[0].edit is not None
-    assert actions[0].edit.changes["file://test.yar"][0].new_text == 'import "pe"\n'
+    assert _change_set(actions[0].edit, "file://test.yar")[0].new_text == 'import "pe"\n'
 
 
 def test_code_action_structured_patches_accept_serialized_ranges_and_skip_heuristics() -> None:
@@ -138,7 +144,7 @@ def test_code_action_structured_patches_accept_serialized_ranges_and_skip_heuris
     quickfixes = [action for action in actions if action.kind == CodeActionKind.QuickFix]
     assert len(quickfixes) == 1
     assert quickfixes[0].edit is not None
-    assert quickfixes[0].edit.changes["file://test.yar"][0].new_text == 'import "pe"\n'
+    assert _change_set(quickfixes[0].edit, "file://test.yar")[0].new_text == 'import "pe"\n'
 
 
 def test_code_action_uses_structured_metadata_for_import_without_message_regex() -> None:
@@ -320,7 +326,7 @@ rule sample {
         action for action in actions if action.title == "Remove extra argument(s) from uint8()"
     )
     assert action.edit is not None
-    assert action.edit.changes["file://test.yar"][0].new_text == "1"
+    assert _change_set(action.edit, "file://test.yar")[0].new_text == "1"
 
 
 def test_code_action_uses_compiler_undefined_identifier_metadata_for_missing_string() -> None:

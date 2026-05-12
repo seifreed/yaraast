@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from lsprotocol.types import FileChangeType, FileEvent, Position, Range
+from lsprotocol.types import FileChangeType, FileEvent, Location, Position, Range
 
 from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.references import ReferencesProvider
@@ -12,6 +12,11 @@ from yaraast.lsp.rename import RenameProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
 from yaraast.lsp.selection_range import SelectionRangeProvider
 from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
+
+
+def _single_location(location: Location | list[Location]) -> Location:
+    assert not isinstance(location, list)
+    return location
 
 
 def test_runtime_cross_file_definition_references_and_rename(tmp_path: Path) -> None:
@@ -44,6 +49,7 @@ rule local_rule {
         user_uri,
     )
     assert definition is not None
+    definition = _single_location(definition)
     assert definition.uri == path_to_uri(common)
 
     refs = ref_provider.get_references(

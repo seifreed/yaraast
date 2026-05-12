@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from lsprotocol.types import Position
 
 from yaraast.lsp.references import ReferencesProvider
@@ -67,7 +69,7 @@ rule a {
     assert len(locations) >= 4
 
 
-def test_references_provider_exposes_typed_records_cross_file(tmp_path) -> None:
+def test_references_provider_exposes_typed_records_cross_file(tmp_path: Path) -> None:
     common = tmp_path / "common.yar"
     user = tmp_path / "user.yar"
     common.write_text("rule shared_rule { condition: true }\n", encoding="utf-8")

@@ -79,6 +79,7 @@ def test_build_module_member_completions_uses_fields_and_attributes_fallback() -
     assert "f" in labels
     assert "flag" in labels
     flag = next(item for item in items if item.label == "flag")
+    assert flag.detail is not None
     assert "mod.flag:" in flag.detail
 
     module_with_attributes = _FakeModule(

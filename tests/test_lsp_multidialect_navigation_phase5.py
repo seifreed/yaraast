@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from lsprotocol.types import Position
+from lsprotocol.types import Hover, Location, MarkupContent, Position
 
 from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.hover import HoverProvider
@@ -13,6 +13,16 @@ from yaraast.lsp.runtime import LspRuntime, path_to_uri
 
 def _pos(line: int, char: int) -> Position:
     return Position(line=line, character=char)
+
+
+def _hover_text(hover: Hover) -> str:
+    assert isinstance(hover.contents, MarkupContent)
+    return hover.contents.value
+
+
+def _single_location(location: Location | list[Location]) -> Location:
+    assert not isinstance(location, list)
+    return location
 
 
 def test_hover_provider_supports_yaral_rule_metadata_and_sections() -> None:
@@ -43,7 +53,7 @@ rule wrapper {
 
     hover = provider.get_hover(text, _pos(16, 10), uri)
     assert hover is not None
-    value = hover.contents.value
+    value = _hover_text(hover)
     assert "**detect_login**" in value
     assert "Metadata" in value
     assert "**YARA-L:** events section present" in value
@@ -84,6 +94,7 @@ rule wrapper {
 
     definition = DefinitionProvider(runtime).get_definition(text, _pos(2, 10), uri)
     assert definition is not None
+    definition = _single_location(definition)
     assert definition.uri == path_to_uri(common)
 
     records = ReferencesProvider(runtime).get_reference_records(text, _pos(2, 10), uri)
@@ -111,8 +122,9 @@ rule sample {
 
     definition = DefinitionProvider(runtime).get_definition(text, _pos(4, 8), uri)
     assert definition is not None
+    definition = _single_location(definition)
     assert definition.range.start.line == 0
 
     hover = HoverProvider(runtime).get_hover(text, _pos(4, 8), uri)
     assert hover is not None
-    assert "**helper**" in hover.contents.value
+    assert "**helper**" in _hover_text(hover)
