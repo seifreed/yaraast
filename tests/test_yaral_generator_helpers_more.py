@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.yaral import generator_helpers as gh
 
 
 class _Visitable:
-    def accept(self, visitor):
+    def accept(self, visitor: Any) -> str:
         return "x"
 
 
