@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE, LibyaraCompiler
@@ -9,7 +11,7 @@ from yaraast.libyara.scanner import LibyaraScanner
 
 
 @pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
-def test_libyara_compile_source_and_scan(tmp_path) -> None:
+def test_libyara_compile_source_and_scan(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
     scanner = LibyaraScanner()
 
@@ -42,7 +44,7 @@ def test_libyara_compile_source_and_scan(tmp_path) -> None:
 
 
 @pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
-def test_libyara_compile_file_missing(tmp_path) -> None:
+def test_libyara_compile_file_missing(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
     missing = tmp_path / "missing.yar"
     result = compiler.compile_file(missing)

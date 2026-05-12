@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
@@ -8,7 +9,7 @@ from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
-def test_libyara_compiler_handles_read_and_save_failures(tmp_path) -> None:
+def test_libyara_compiler_handles_read_and_save_failures(tmp_path: Path) -> None:
     compiler = LibyaraCompiler()
 
     directory = tmp_path / "adir"
