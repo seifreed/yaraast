@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Import, Rule
 from yaraast.visitor import BaseVisitor
 
@@ -18,13 +19,13 @@ class TypeChecker(BaseVisitor[None]):
         self.inference = TypeInference(self.env)
         self.errors: list[str] = []
 
-    def check_compatibility(self, type1, type2) -> bool:
+    def check_compatibility(self, type1: object, type2: object) -> bool:
         """Check if two types are compatible."""
         if isinstance(type1, YaraType) and isinstance(type2, YaraType):
             return type1.is_compatible_with(type2)
         return type1 == type2
 
-    def infer_type(self, node):
+    def infer_type(self, node: Expression) -> YaraType:
         """Infer type from AST node."""
         return self.inference.infer(node)
 

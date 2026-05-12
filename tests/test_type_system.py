@@ -33,8 +33,10 @@ from yaraast.ast.expressions import (
     StringLength,
     StringLiteral,
     StringOffset,
+    StringWildcard,
     UnaryExpression,
 )
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import PlainString
 from yaraast.types.type_system import (
@@ -427,7 +429,7 @@ class TestModuleType:
 
     def test_module_type_get_attribute_type_exists(self) -> None:
         """Test getting existing attribute type from module."""
-        attributes = {"machine": IntegerType(), "is_dll": BooleanType()}
+        attributes: dict[str, YaraType] = {"machine": IntegerType(), "is_dll": BooleanType()}
         module_type = ModuleType(module_name="pe", attributes=attributes)
 
         machine_type = module_type.get_attribute_type("machine")
@@ -438,7 +440,7 @@ class TestModuleType:
 
     def test_module_type_get_attribute_type_not_exists(self) -> None:
         """Test getting non-existent attribute type from module."""
-        attributes = {"machine": IntegerType()}
+        attributes: dict[str, YaraType] = {"machine": IntegerType()}
         module_type = ModuleType(module_name="pe", attributes=attributes)
 
         result = module_type.get_attribute_type("nonexistent")
@@ -569,7 +571,7 @@ class TestStructType:
 
     def test_struct_type_string_representation_with_fields(self) -> None:
         """Test string representation of StructType with fields."""
-        fields = {"name": StringType(), "age": IntegerType()}
+        fields: dict[str, YaraType] = {"name": StringType(), "age": IntegerType()}
         struct_type = StructType(fields=fields)
         result = str(struct_type)
 
@@ -588,8 +590,8 @@ class TestStructType:
 
     def test_struct_type_compatible_with_compatible_field_types(self) -> None:
         """Test StructType is compatible when field types are compatible."""
-        fields1 = {"count": IntegerType()}
-        fields2 = {"count": DoubleType()}
+        fields1: dict[str, YaraType] = {"count": IntegerType()}
+        fields2: dict[str, YaraType] = {"count": DoubleType()}
         struct1 = StructType(fields=fields1)
         struct2 = StructType(fields=fields2)
         # IntegerType is compatible with DoubleType
@@ -597,16 +599,16 @@ class TestStructType:
 
     def test_struct_type_incompatible_with_missing_fields(self) -> None:
         """Test StructType is incompatible when fields are missing."""
-        fields1 = {"name": StringType(), "age": IntegerType()}
-        fields2 = {"name": StringType()}
+        fields1: dict[str, YaraType] = {"name": StringType(), "age": IntegerType()}
+        fields2: dict[str, YaraType] = {"name": StringType()}
         struct1 = StructType(fields=fields1)
         struct2 = StructType(fields=fields2)
         assert struct1.is_compatible_with(struct2) is False
 
     def test_struct_type_incompatible_with_different_field_types(self) -> None:
         """Test StructType is incompatible with different field types."""
-        fields1 = {"name": StringType()}
-        fields2 = {"name": IntegerType()}
+        fields1: dict[str, YaraType] = {"name": StringType()}
+        fields2: dict[str, YaraType] = {"name": IntegerType()}
         struct1 = StructType(fields=fields1)
         struct2 = StructType(fields=fields2)
         assert struct1.is_compatible_with(struct2) is False
@@ -648,14 +650,14 @@ class TestModuleDefinition:
 
     def test_module_definition_creation(self) -> None:
         """Test creating ModuleDefinition."""
-        attributes = {"version": StringType(), "count": IntegerType()}
+        attributes: dict[str, YaraType] = {"version": StringType(), "count": IntegerType()}
         functions = {
             "do_something": FunctionDefinition(
                 name="do_something",
                 return_type=BooleanType(),
             ),
         }
-        constants = {"MAX_SIZE": IntegerType()}
+        constants: dict[str, YaraType] = {"MAX_SIZE": IntegerType()}
 
         mod_def = ModuleDefinition(
             name="test_module",
@@ -1952,21 +1954,12 @@ class TestTypeInferenceEdgeCases:
         """Test inferring dictionary access."""
         env = TypeEnvironment()
 
-        # Create a mock dictionary access node
-        class DictionaryAccess:
-            def __init__(self, obj, key):
-                self.object = obj
-                self.key = key
-
-            def accept(self, visitor):
-                return visitor.visit_dictionary_access(self)
-
         dict_type = DictionaryType(key_type=StringType(), value_type=IntegerType())
         env.define("mydict", dict_type)
         inference = TypeInference(env)
 
         node = DictionaryAccess(
-            obj=Identifier(name="mydict"),
+            object=Identifier(name="mydict"),
             key=StringLiteral(value="key"),
         )
         result = inference.infer(node)
@@ -1976,20 +1969,12 @@ class TestTypeInferenceEdgeCases:
         """Test inferring dictionary access with wrong key type."""
         env = TypeEnvironment()
 
-        class DictionaryAccess:
-            def __init__(self, obj, key):
-                self.object = obj
-                self.key = key
-
-            def accept(self, visitor):
-                return visitor.visit_dictionary_access(self)
-
         dict_type = DictionaryType(key_type=StringType(), value_type=IntegerType())
         env.define("mydict", dict_type)
         inference = TypeInference(env)
 
         node = DictionaryAccess(
-            obj=Identifier(name="mydict"),
+            object=Identifier(name="mydict"),
             key=IntegerLiteral(value=0),
         )
         result = inference.infer(node)
@@ -2000,19 +1985,11 @@ class TestTypeInferenceEdgeCases:
         """Test inferring dictionary access on non-dictionary type."""
         env = TypeEnvironment()
 
-        class DictionaryAccess:
-            def __init__(self, obj, key):
-                self.object = obj
-                self.key = key
-
-            def accept(self, visitor):
-                return visitor.visit_dictionary_access(self)
-
         env.define("not_dict", IntegerType())
         inference = TypeInference(env)
 
         node = DictionaryAccess(
-            obj=Identifier(name="not_dict"),
+            object=Identifier(name="not_dict"),
             key=StringLiteral(value="key"),
         )
         result = inference.infer(node)
@@ -2025,13 +2002,6 @@ class TestTypeInferenceEdgeCases:
         env.add_module("pe")
         inference = TypeInference(env)
 
-        class ModuleReference:
-            def __init__(self, module):
-                self.module = module
-
-            def accept(self, visitor):
-                return visitor.visit_module_reference(self)
-
         node = ModuleReference(module="pe")
         result = inference.infer(node)
         assert isinstance(result, ModuleType)
@@ -2040,13 +2010,6 @@ class TestTypeInferenceEdgeCases:
         """Test inferring module reference when module not imported."""
         env = TypeEnvironment()
         inference = TypeInference(env)
-
-        class ModuleReference:
-            def __init__(self, module):
-                self.module = module
-
-            def accept(self, visitor):
-                return visitor.visit_module_reference(self)
 
         node = ModuleReference(module="pe")
         result = inference.infer(node)
@@ -2087,11 +2050,7 @@ class TestTypeInferenceEdgeCases:
         env = TypeEnvironment()
         inference = TypeInference(env)
 
-        class StringWildcard:
-            def accept(self, visitor):
-                return visitor.visit_string_wildcard(self)
-
-        node = StringWildcard()
+        node = StringWildcard(pattern="$*")
         result = inference.infer(node)
         assert isinstance(result, StringSetType)
 
