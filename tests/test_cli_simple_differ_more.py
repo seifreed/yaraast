@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from yaraast.cli.simple_differ import (
@@ -32,7 +33,7 @@ def test_simple_differ_line_changes() -> None:
     assert "~ x" in formatted
 
 
-def test_simple_ast_differ_files_and_ast(tmp_path) -> None:
+def test_simple_ast_differ_files_and_ast(tmp_path: Path) -> None:
     rule1 = dedent(
         """
         rule r1 { condition: true }

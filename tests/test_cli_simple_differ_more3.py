@@ -42,8 +42,12 @@ def test_simple_ast_differ_diff_directories_handles_common_added_and_removed_fil
 
     assert set(results) == {"common.yar", "removed.yar", "added.yar"}
     assert results["common.yar"].has_changes is True
-    assert results["removed.yar"].summary["removed"] > 0
-    assert results["added.yar"].summary["added"] > 0
+    removed = results["removed.yar"]
+    added = results["added.yar"]
+    assert isinstance(removed, DiffResult)
+    assert isinstance(added, DiffResult)
+    assert removed.summary["removed"] > 0
+    assert added.summary["added"] > 0
 
 
 def test_format_diff_no_changes_and_print_diff() -> None:
@@ -52,4 +56,4 @@ def test_format_diff_no_changes_and_print_diff() -> None:
     )
 
     assert format_diff(result) == "No changes"
-    assert print_diff(result) is None
+    print_diff(result)
