@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
-from lsprotocol.types import Position
+from pathlib import Path
+
+from lsprotocol.types import Position, TextEdit, WorkspaceEdit
 
 from yaraast.lsp.rename import RenameProvider
 
 
 def _pos(line: int, char: int) -> Position:
     return Position(line=line, character=char)
+
+
+def _first_change_set(edit: WorkspaceEdit) -> list[TextEdit]:
+    changes = edit.changes
+    assert changes is not None
+    return list(next(iter(changes.values())))
 
 
 def test_prepare_rename_string_identifier() -> None:
@@ -30,7 +38,7 @@ rule a {
     provider = RenameProvider()
     edit = provider.rename(text, _pos(4, 5), "b", "file://test.yar")
     assert edit is not None
-    changes = next(iter(edit.changes.values()))
+    changes = _first_change_set(edit)
     assert len(changes) >= 4
 
 
@@ -61,7 +69,7 @@ rule b { condition: a }
     provider = RenameProvider()
     edit = provider.rename(text, _pos(1, 20), "renamed", "file://test.yar")
     assert edit is not None
-    changes = next(iter(edit.changes.values()))
+    changes = _first_change_set(edit)
     assert any(change.new_text == "renamed" for change in changes)
 
 
@@ -88,17 +96,15 @@ rule a {
     provider = RenameProvider()
     edit = provider.rename(text, _pos(4, 5), "$renamed", "file://test.yar")
     assert edit is not None
-    changes = next(iter(edit.changes.values()))
+    changes = _first_change_set(edit)
     assert any(change.new_text == "$renamed" for change in changes)
     assert any(change.new_text == "#renamed" for change in changes)
 
 
-def test_prepare_rename_and_rename_prefixed_string_with_runtime(tmp_path) -> None:
-    from pathlib import Path
-
+def test_prepare_rename_and_rename_prefixed_string_with_runtime(tmp_path: Path) -> None:
     from yaraast.lsp.runtime import LspRuntime, path_to_uri
 
-    sample = Path(tmp_path) / "sample.yar"
+    sample = tmp_path / "sample.yar"
     sample.write_text(
         """
 rule a {
@@ -122,14 +128,14 @@ rule a {
 
     edit = provider.rename(text, _pos(4, 5), "renamed", uri)
     assert edit is not None
-    changes = next(iter(edit.changes.values()))
+    changes = _first_change_set(edit)
     assert any(change.new_text == "$renamed" for change in changes)
     assert any(change.new_text == "#renamed" for change in changes)
     assert any(change.new_text == "@renamed" for change in changes)
     assert any(change.new_text == "!renamed" for change in changes)
 
 
-def test_rename_rule_cross_file_with_runtime(tmp_path) -> None:
+def test_rename_rule_cross_file_with_runtime(tmp_path: Path) -> None:
     from yaraast.lsp.runtime import LspRuntime, path_to_uri
 
     common = tmp_path / "common.yar"
