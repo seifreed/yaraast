@@ -9,7 +9,7 @@ from yaraast.parser import Parser
 class TestOfInSyntax:
     """Test parsing of 'of' expressions with 'in' range syntax."""
 
-    def test_simple_string_in_range(self):
+    def test_simple_string_in_range(self) -> None:
         """Test that simple $string in (range) still works."""
         yara_code = """
         rule test {
@@ -25,7 +25,7 @@ class TestOfInSyntax:
         assert isinstance(ast.rules[0].condition.subject, str)
         assert ast.rules[0].condition.subject == "$a"
 
-    def test_all_of_wildcard_in_range(self):
+    def test_all_of_wildcard_in_range(self) -> None:
         """Test 'all of ($a*) in (range)' syntax."""
         yara_code = """
         rule test {
@@ -41,7 +41,7 @@ class TestOfInSyntax:
         assert isinstance(ast.rules[0].condition, InExpression)
         assert isinstance(ast.rules[0].condition.subject, OfExpression)
 
-    def test_any_of_strings_in_range(self):
+    def test_any_of_strings_in_range(self) -> None:
         """Test 'any of ($x*) in (range)' syntax."""
         yara_code = """
         rule test {
@@ -57,7 +57,7 @@ class TestOfInSyntax:
         assert isinstance(ast.rules[0].condition, InExpression)
         assert isinstance(ast.rules[0].condition.subject, OfExpression)
 
-    def test_numeric_quantifier_in_range(self):
+    def test_numeric_quantifier_in_range(self) -> None:
         """Test '2 of ($key*) in (range)' syntax."""
         yara_code = """
         rule test {
@@ -74,7 +74,7 @@ class TestOfInSyntax:
         assert isinstance(ast.rules[0].condition, InExpression)
         assert isinstance(ast.rules[0].condition.subject, OfExpression)
 
-    def test_all_of_them_in_range(self):
+    def test_all_of_them_in_range(self) -> None:
         """Test 'all of them in (range)' syntax."""
         yara_code = """
         rule test {
@@ -90,7 +90,7 @@ class TestOfInSyntax:
         assert isinstance(ast.rules[0].condition, InExpression)
         assert isinstance(ast.rules[0].condition.subject, OfExpression)
 
-    def test_complex_range_expression(self):
+    def test_complex_range_expression(self) -> None:
         """Test 'of' expression with complex range using offsets."""
         yara_code = """
         rule test {
@@ -105,7 +105,7 @@ class TestOfInSyntax:
         assert len(ast.rules) == 1
         assert isinstance(ast.rules[0].condition, InExpression)
 
-    def test_real_world_pattern_from_master_yara(self):
+    def test_real_world_pattern_from_master_yara(self) -> None:
         """Test real pattern from master_yara.yar."""
         yara_code = """
         rule test {
@@ -129,7 +129,7 @@ class TestOfInSyntax:
         assert len(ast.rules) == 1
         # The condition should parse without errors
 
-    def test_backward_compatibility_with_string_id_property(self):
+    def test_backward_compatibility_with_string_id_property(self) -> None:
         """Test that the string_id property works for backward compatibility."""
         yara_code = """
         rule test {
@@ -143,9 +143,10 @@ class TestOfInSyntax:
         in_expr = ast.rules[0].condition
 
         # Test backward compatibility property
+        assert isinstance(in_expr, InExpression)
         assert in_expr.string_id == "$a"
 
-    def test_of_expression_string_id_returns_none(self):
+    def test_of_expression_string_id_returns_none(self) -> None:
         """Test that string_id returns None for OfExpression subjects."""
         yara_code = """
         rule test {
@@ -160,6 +161,7 @@ class TestOfInSyntax:
         in_expr = ast.rules[0].condition
 
         # When subject is OfExpression, string_id should return None
+        assert isinstance(in_expr, InExpression)
         assert in_expr.string_id is None
 
 
