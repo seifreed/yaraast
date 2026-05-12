@@ -59,7 +59,7 @@ def metrics() -> None:
 )
 @click.option(
     "--quality-gate",
-    type=int,
+    type=click.IntRange(min=0, max=100),
     default=70,
     help="Quality gate threshold (0-100)",
 )
