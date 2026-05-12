@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, overload
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import (
@@ -131,6 +131,12 @@ class ExpressionOptimizer(ASTTransformer):
     def __init__(self) -> None:
         super().__init__()
         self.optimization_count = 0
+
+    @overload
+    def optimize(self, node: YaraFile) -> tuple[YaraFile, int]: ...
+
+    @overload
+    def optimize(self, node: Expression) -> Expression: ...
 
     def optimize(self, node: Expression | YaraFile) -> Expression | tuple[YaraFile, int]:
         """Optimize an expression or YaraFile.

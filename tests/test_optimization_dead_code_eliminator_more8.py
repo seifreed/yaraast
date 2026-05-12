@@ -48,7 +48,8 @@ def test_visit_methods_track_usage_and_passthrough_nodes() -> None:
     assert "ref_rule" in dce.used_rules
 
     assert dce.visit_identifier(Identifier("any")) == Identifier("any")
-    assert dce.visit_string_wildcard(StringWildcard("$x*")) is None
+    assert dce.visit_string_wildcard(StringWildcard("$x*")) == StringWildcard("$x*")
+    assert "$x*" in dce.used_strings
 
     assert dce.visit_string_count(StringCount("$c")) == StringCount("$c")
     assert dce.visit_string_offset(StringOffset("$o")) == StringOffset("$o")
@@ -119,6 +120,23 @@ def test_visit_rule_and_file_filtering_paths() -> None:
     assert all(r.name != "drop_false" for r in optimized.rules)
     kept_used = next(r for r in optimized.rules if r.name == "used")
     assert [s.identifier for s in kept_used.strings] == ["$a"]
+
+
+def test_string_wildcard_keeps_matching_strings() -> None:
+    dce = DeadCodeEliminator()
+    rule = Rule(
+        name="wildcard",
+        strings=[
+            PlainString(identifier="$api_one", value="a"),
+            PlainString(identifier="$api_two", value="b"),
+            PlainString(identifier="$other", value="c"),
+        ],
+        condition=StringWildcard("$api*"),
+    )
+
+    out_rule = dce.eliminate_dead_code(rule)
+
+    assert [string.identifier for string in out_rule.strings] == ["$api_one", "$api_two"]
 
 
 def test_eliminate_dead_code_single_rule_and_convenience_wrapper() -> None:
