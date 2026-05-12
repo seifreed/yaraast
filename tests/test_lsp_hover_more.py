@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from lsprotocol.types import Position
+from lsprotocol.types import Hover, MarkupContent, Position, Range
 
 from yaraast.lsp.hover import HoverProvider
 
@@ -13,17 +13,27 @@ def _pos(line: int, char: int) -> Position:
     return Position(line=line, character=char)
 
 
+def _hover_text(hover: Hover) -> str:
+    assert isinstance(hover.contents, MarkupContent)
+    return hover.contents.value
+
+
+def _hover_range(hover: Hover) -> Range:
+    assert hover.range is not None
+    return hover.range
+
+
 def test_hover_keyword_and_builtin() -> None:
     provider = HoverProvider()
     text = "rule x { condition: true }\nuint16(0)"
 
     hover_rule = provider.get_hover(text, _pos(0, 1))
     assert hover_rule is not None
-    assert "(keyword)" in hover_rule.contents.value
+    assert "(keyword)" in _hover_text(hover_rule)
 
     hover_uint = provider.get_hover(text, _pos(1, 1))
     assert hover_uint is not None
-    assert "built-in function" in hover_uint.contents.value
+    assert "built-in function" in _hover_text(hover_uint)
 
 
 def test_hover_module_and_string_identifier() -> None:
@@ -42,11 +52,11 @@ def test_hover_module_and_string_identifier() -> None:
 
     hover_module = provider.get_hover(text, _pos(0, 8))
     assert hover_module is not None
-    assert "(module)" in hover_module.contents.value
+    assert "(module)" in _hover_text(hover_module)
 
     hover_string = provider.get_hover(text, _pos(5, 8))
     assert hover_string is not None
-    assert "string" in hover_string.contents.value
+    assert "string" in _hover_text(hover_string)
 
 
 def test_hover_rule_name() -> None:
@@ -69,13 +79,16 @@ def test_hover_rule_name() -> None:
 
     hover_rule = provider.get_hover(text, _pos(9, 8))
     assert hover_rule is not None
-    assert "**alpha**" in hover_rule.contents.value
-    assert "Metadata" in hover_rule.contents.value
+    hover_rule_text = _hover_text(hover_rule)
+    assert "**alpha**" in hover_rule_text
+    assert "Metadata" in hover_rule_text
 
 
 def test_hover_module_member_direct() -> None:
     provider = HoverProvider()
-    word_range = provider.get_hover("pe.imphash", _pos(0, 1)).range
+    word_hover = provider.get_hover("pe.imphash", _pos(0, 1))
+    assert word_hover is not None
+    word_range = _hover_range(word_hover)
     hover = provider._get_module_member_hover("pe", "imphash", word_range)
     assert hover is not None
-    assert "function" in hover.contents.value
+    assert "function" in _hover_text(hover)
