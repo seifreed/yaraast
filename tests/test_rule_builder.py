@@ -395,7 +395,9 @@ class TestRuleBuilderHexStrings:
         rule = builder.build()
 
         assert len(rule.strings) == 1
-        assert len(rule.strings[0].tokens) == 4
+        hex_string = rule.strings[0]
+        assert isinstance(hex_string, HexString)
+        assert len(hex_string.tokens) == 4
 
 
 class TestRuleBuilderConditions:
