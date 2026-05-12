@@ -255,9 +255,9 @@ def _display_stream_results(
 @click.option(
     "--timeout",
     "-t",
-    type=float,
+    type=click.FloatRange(min=0.0, min_open=True),
     default=300.0,
-    help="Job timeout in seconds",
+    help="Analysis timeout in seconds",
 )
 @click.option(
     "--analysis-type",
@@ -297,6 +297,7 @@ def parallel(
     click.echo(f"   Max workers: {max_workers or 'auto'}")
     click.echo(f"   Chunk size: {chunk_size}")
     click.echo(f"   Analysis type: {analysis_type}")
+    click.echo(f"   Timeout: {timeout:g}s")
 
     try:
         click.echo("\n📋 Parsing files...")
@@ -306,6 +307,7 @@ def parallel(
             chunk_size,
             analysis_type,
             output_dir,
+            timeout,
         )
 
         successful_asts = run_results["successful_asts"]

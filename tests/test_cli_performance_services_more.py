@@ -158,3 +158,30 @@ def test_run_parallel_analysis_and_build_output_data_more_paths(tmp_path: Path) 
     out = ps.build_stream_output_data([result_obj], [result_obj], [], 0.5, {"peak_memory_mb": 1})
     assert out["summary"]["success_rate"] == 100.0
     assert out["results"][0]["status"] == "success"
+
+
+def test_run_parallel_analysis_rejects_invalid_timeout(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="timeout must be greater than 0"):
+        ps.run_parallel_analysis(
+            [],
+            max_workers=1,
+            chunk_size=1,
+            analysis_type="complexity",
+            output_dir=tmp_path,
+            timeout=0,
+        )
+
+
+def test_run_parallel_analysis_times_out_after_parse(tmp_path: Path) -> None:
+    file_path = tmp_path / "one.yar"
+    file_path.write_text("rule one { condition: true }\n", encoding="utf-8")
+
+    with pytest.raises(TimeoutError, match="timed out after"):
+        ps.run_parallel_analysis(
+            [file_path],
+            max_workers=1,
+            chunk_size=1,
+            analysis_type="complexity",
+            output_dir=tmp_path / "out",
+            timeout=0.000000001,
+        )

@@ -312,6 +312,22 @@ def test_performance_parallel_rejects_zero_max_workers(tmp_path: Path) -> None:
     assert "Invalid value for '--max-workers'" in result.output
 
 
+def test_performance_parallel_rejects_zero_timeout(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    result = CliRunner().invoke(
+        performance,
+        [
+            "parallel",
+            file_path,
+            "--timeout",
+            "0",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--timeout'" in result.output
+
+
 def test_performance_batch_uses_default_output_dir_and_progress(tmp_path: Path) -> None:
     first = _write(tmp_path, "one.yar", _sample_yara())
     _write(tmp_path, "two.yar", _sample_yara().replace("perf_rule", "perf_rule_two"))

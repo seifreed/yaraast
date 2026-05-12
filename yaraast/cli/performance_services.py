@@ -189,10 +189,13 @@ def run_parallel_analysis(
     chunk_size: int,
     analysis_type: str,
     output_dir: Path,
+    timeout: float | None = None,
 ) -> tuple[dict[str, Any], float]:
+    _validate_timeout(timeout)
     start_time = time.time()
     with ParallelAnalyzer(max_workers=max_workers) as analyzer:
         parse_jobs = analyzer.parse_files_parallel(file_paths, chunk_size)
+        _raise_if_analysis_timed_out(start_time, timeout, "parsing")
         successful_asts, file_names = extract_successful_asts(
             parse_jobs,
             file_paths,
@@ -204,6 +207,7 @@ def run_parallel_analysis(
             complexity_results = [
                 job.result for job in complexity_jobs if job.status.value == "completed"
             ]
+            _raise_if_analysis_timed_out(start_time, timeout, "complexity analysis")
         else:
             complexity_results = []
 
@@ -214,6 +218,7 @@ def run_parallel_analysis(
                 ["full", "rules"],
             )
             dependency_graphs = [job for job in graph_jobs if job.status.value == "completed"]
+            _raise_if_analysis_timed_out(start_time, timeout, "dependency graph generation")
         else:
             dependency_graphs = []
 
@@ -227,6 +232,26 @@ def run_parallel_analysis(
         "dependency_graphs": dependency_graphs,
         "analyzer_stats": analyzer_stats,
     }, total_time
+
+
+def _validate_timeout(timeout: float | None) -> None:
+    if timeout is not None and timeout <= 0:
+        msg = "timeout must be greater than 0"
+        raise ValueError(msg)
+
+
+def _raise_if_analysis_timed_out(
+    start_time: float,
+    timeout: float | None,
+    stage: str,
+) -> None:
+    if timeout is None:
+        return
+
+    elapsed = time.time() - start_time
+    if elapsed > timeout:
+        msg = f"parallel analysis timed out after {timeout:g} seconds during {stage}"
+        raise TimeoutError(msg)
 
 
 def build_parallel_summary(
