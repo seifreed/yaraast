@@ -14,6 +14,18 @@ from yaraast.types.semantic_validator_strings import (
 )
 from yaraast.types.type_system import TypeChecker, TypeEnvironment
 
+__all__ = [
+    "FunctionCallValidator",
+    "SemanticValidator",
+    "StringIdentifierValidator",
+    "ValidationError",
+    "ValidationResult",
+    "check_function_calls",
+    "check_string_uniqueness",
+    "validate_yara_file",
+    "validate_yara_rule",
+]
+
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.expressions import Expression

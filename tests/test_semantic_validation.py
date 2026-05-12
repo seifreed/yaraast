@@ -1,5 +1,7 @@
 """Tests for semantic validation."""
 
+from __future__ import annotations
+
 import pytest
 
 from yaraast.ast.base import Location
@@ -108,7 +110,7 @@ class TestValidationResult:
 class TestStringIdentifierValidator:
     """Tests for string identifier uniqueness validation."""
 
-    def create_rule_with_strings(self, string_identifiers):
+    def create_rule_with_strings(self, string_identifiers: list[str]) -> Rule:
         """Helper to create rule with string identifiers."""
         rule = Rule(name="test_rule")
         for identifier in string_identifiers:
