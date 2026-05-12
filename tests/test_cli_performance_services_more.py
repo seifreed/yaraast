@@ -56,6 +56,20 @@ def test_get_parse_iterator_collect_paths_and_stream_summary(tmp_path: Path) -> 
     assert len(summary["failed"]) == 1
 
 
+def test_collect_file_paths_deduplicates_relative_absolute_and_directory_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    file_path = tmp_path / "one.yar"
+    file_path.write_text("rule one { condition: true }\n", encoding="utf-8")
+
+    monkeypatch.chdir(tmp_path)
+    paths = ps.collect_file_paths(("one.yar", str(file_path), "."))
+    resolved_paths = [path.resolve() for path in paths]
+
+    assert resolved_paths.count(file_path.resolve()) == 1
+
+
 def test_extract_successful_asts_and_file_name_mapping_paths(tmp_path: Path) -> None:
     file_paths = [tmp_path / "a.yar"]
     ok_ast = _ast("ok")

@@ -128,8 +128,8 @@ def build_stream_output_data(
 def collect_file_paths(input_paths: tuple) -> list[Path]:
     file_paths = []
     seen: set[Path] = set()
-    for path in input_paths:
-        path = Path(path)
+    for raw_path in input_paths:
+        path = Path(raw_path)
         candidates: Iterable[Path]
         if path.is_file():
             candidates = [path]
@@ -138,9 +138,10 @@ def collect_file_paths(input_paths: tuple) -> list[Path]:
         else:
             candidates = []
         for candidate in candidates:
-            if candidate in seen:
+            canonical_candidate = candidate.resolve()
+            if canonical_candidate in seen:
                 continue
-            seen.add(candidate)
+            seen.add(canonical_candidate)
             file_paths.append(candidate)
     return file_paths
 
