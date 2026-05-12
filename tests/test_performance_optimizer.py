@@ -34,7 +34,9 @@ def test_performance_optimizer_rule_sorting() -> None:
 
     optimizer = PerformanceOptimizer()
     optimized = optimizer.optimize_rule(rule, strategy="balanced")
-    assert optimized.strings[0].value == "a"
+    first_string = optimized.strings[0]
+    assert isinstance(first_string, PlainString)
+    assert first_string.value == "a"
     stats = optimizer.get_statistics()
     assert stats["rules_optimized"] == 1
 

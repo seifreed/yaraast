@@ -6,6 +6,7 @@ from typing import Any
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
+from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.optimization.rule_optimizer import RuleOptimizer
 from yaraast.performance.memory_optimizer import MemoryOptimizer
 
@@ -83,13 +84,8 @@ class PerformanceOptimizer:
         """Apply speed-specific optimizations to a rule (returns new sorted lists, not in-place)."""
         # Reorder string checks for better performance
         if rule.strings and isinstance(rule.strings, list):
-            # Put shorter strings first (faster to check)
-            try:
-                rule.strings = sorted(rule.strings, key=lambda s: len(getattr(s, "value", "")))
-                self._stats["strings_optimized"] += len(rule.strings)
-            except (TypeError, AttributeError):
-                # Skip optimization if strings format is unexpected
-                pass
+            rule.strings = sorted(rule.strings, key=self._string_check_cost)
+            self._stats["strings_optimized"] += len(rule.strings)
 
         # Future speed optimizations to implement:
         # - Reorder condition checks by complexity/selectivity
@@ -98,6 +94,17 @@ class PerformanceOptimizer:
         # - Profile-guided optimization based on usage patterns
 
         return rule
+
+    @staticmethod
+    def _string_check_cost(string_def: StringDefinition) -> int:
+        """Estimate relative runtime cost for checking a string definition."""
+        if isinstance(string_def, PlainString):
+            return len(string_def.value)
+        if isinstance(string_def, HexString):
+            return 100 + len(string_def.tokens)
+        if isinstance(string_def, RegexString):
+            return 200 + len(string_def.regex)
+        return 300
 
     def _optimize_file_for_speed(self, yara_file: YaraFile) -> YaraFile:
         """Apply speed-specific optimizations to a file (creates sorted copies, not in-place)."""

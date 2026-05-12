@@ -5,11 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.strings import PlainString, RegexString
 from yaraast.parser import Parser
 from yaraast.performance.optimizer import PerformanceOptimizer, optimize_yara_file
 
 
-def _parse_yara(code: str):
+def _parse_yara(code: str) -> YaraFile:
     parser = Parser()
     return parser.parse(dedent(code))
 
@@ -37,6 +39,9 @@ def test_performance_optimizer_rule_and_file() -> None:
     rule = ast.rules[0]
     optimized_rule = optimizer.optimize_rule(rule, strategy="balanced")
     assert optimized_rule is rule
+    assert isinstance(rule.strings[0], PlainString)
+    assert rule.strings[0].identifier == "$a"
+    assert isinstance(rule.strings[-1], RegexString)
 
     optimized_file = optimizer.optimize(ast, strategy="speed")
     assert optimized_file is ast
