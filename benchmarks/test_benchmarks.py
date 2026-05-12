@@ -10,6 +10,8 @@ for continuous performance regression testing.
 """
 
 import gc
+from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -21,7 +23,11 @@ from yaraast.performance.streaming_parser import StreamingParser
 class TestParserBenchmarks:
     """Benchmark tests for standard Parser."""
 
-    def test_benchmark_small_file_parsing(self, benchmark, small_test_file):
+    def test_benchmark_small_file_parsing(
+        self,
+        benchmark: Any,
+        small_test_file: Path,
+    ) -> None:
         """Benchmark parsing a small YARA file.
 
         Purpose:
@@ -37,7 +43,7 @@ class TestParserBenchmarks:
             parsing efficiency without memory pressure.
         """
 
-        def parse_file():
+        def parse_file() -> Any:
             content = small_test_file.read_text(encoding="utf-8")
             parser = Parser(content)
             ast = parser.parse()
@@ -47,7 +53,11 @@ class TestParserBenchmarks:
         assert result is not None
         assert len(result.rules) > 0
 
-    def test_benchmark_medium_file_parsing(self, benchmark, medium_test_file):
+    def test_benchmark_medium_file_parsing(
+        self,
+        benchmark: Any,
+        medium_test_file: Path,
+    ) -> None:
         """Benchmark parsing a medium YARA file.
 
         Purpose:
@@ -63,7 +73,7 @@ class TestParserBenchmarks:
             requirements, representing typical production use cases.
         """
 
-        def parse_file():
+        def parse_file() -> Any:
             content = medium_test_file.read_text(encoding="utf-8")
             parser = Parser(content)
             ast = parser.parse()
@@ -74,7 +84,11 @@ class TestParserBenchmarks:
         assert len(result.rules) > 0
 
     @pytest.mark.slow
-    def test_benchmark_large_file_parsing(self, benchmark, large_test_file):
+    def test_benchmark_large_file_parsing(
+        self,
+        benchmark: Any,
+        large_test_file: Path,
+    ) -> None:
         """Benchmark parsing a large YARA file.
 
         Purpose:
@@ -90,7 +104,7 @@ class TestParserBenchmarks:
             problems that only appear under load.
         """
 
-        def parse_file():
+        def parse_file() -> Any:
             content = large_test_file.read_text(encoding="utf-8")
             parser = Parser(content)
             ast = parser.parse()
@@ -105,7 +119,11 @@ class TestParserBenchmarks:
 class TestStreamingParserBenchmarks:
     """Benchmark tests for StreamingParser."""
 
-    def test_benchmark_streaming_small_file(self, benchmark, small_test_file):
+    def test_benchmark_streaming_small_file(
+        self,
+        benchmark: Any,
+        small_test_file: Path,
+    ) -> None:
         """Benchmark streaming parser on small file.
 
         Purpose:
@@ -121,7 +139,7 @@ class TestStreamingParserBenchmarks:
             where streaming becomes beneficial.
         """
 
-        def parse_file():
+        def parse_file() -> Any:
             parser = StreamingParser(buffer_size=8192)
             rules = list(parser.parse_file(small_test_file))
             return rules
@@ -130,7 +148,11 @@ class TestStreamingParserBenchmarks:
         assert result is not None
         assert len(result) > 0
 
-    def test_benchmark_streaming_medium_file(self, benchmark, medium_test_file):
+    def test_benchmark_streaming_medium_file(
+        self,
+        benchmark: Any,
+        medium_test_file: Path,
+    ) -> None:
         """Benchmark streaming parser on medium file.
 
         Purpose:
@@ -146,7 +168,7 @@ class TestStreamingParserBenchmarks:
             through reduced peak memory consumption.
         """
 
-        def parse_file():
+        def parse_file() -> Any:
             parser = StreamingParser(buffer_size=8192)
             rules = list(parser.parse_file(medium_test_file))
             return rules
@@ -156,7 +178,11 @@ class TestStreamingParserBenchmarks:
         assert len(result) > 0
 
     @pytest.mark.slow
-    def test_benchmark_streaming_large_file(self, benchmark, large_test_file):
+    def test_benchmark_streaming_large_file(
+        self,
+        benchmark: Any,
+        large_test_file: Path,
+    ) -> None:
         """Benchmark streaming parser on large file.
 
         Purpose:
@@ -172,7 +198,7 @@ class TestStreamingParserBenchmarks:
             where memory efficiency is critical.
         """
 
-        def parse_file():
+        def parse_file() -> Any:
             parser = StreamingParser(buffer_size=8192)
             rules = list(parser.parse_file(large_test_file))
             return rules
@@ -188,11 +214,11 @@ class TestParserComparison:
 
     def test_compare_parsers_small_file(
         self,
-        benchmark,
-        small_test_file,
-        standard_parser,
-        streaming_parser,
-    ):
+        benchmark: Any,
+        small_test_file: Path,
+        standard_parser: type[Parser],
+        streaming_parser: type[StreamingParser],
+    ) -> None:
         """Compare both parsers on small file.
 
         Purpose:
@@ -212,10 +238,10 @@ class TestParserComparison:
 
     def test_memory_efficiency_comparison(
         self,
-        small_test_file,
-        standard_parser,
-        streaming_parser,
-    ):
+        small_test_file: Path,
+        standard_parser: type[Parser],
+        streaming_parser: type[StreamingParser],
+    ) -> None:
         """Compare memory usage between parsers.
 
         Purpose:
@@ -274,7 +300,11 @@ class TestParserComparison:
 class TestThroughputBenchmarks:
     """Throughput measurement tests."""
 
-    def test_rules_per_second_small(self, benchmark, small_test_file):
+    def test_rules_per_second_small(
+        self,
+        benchmark: Any,
+        small_test_file: Path,
+    ) -> None:
         """Measure rules per second on small file.
 
         Purpose:
@@ -290,7 +320,7 @@ class TestThroughputBenchmarks:
             and improvements across code changes.
         """
 
-        def parse_and_count():
+        def parse_and_count() -> int:
             content = small_test_file.read_text(encoding="utf-8")
             parser = Parser(content)
             ast = parser.parse()
@@ -306,7 +336,11 @@ class TestThroughputBenchmarks:
             throughput = result / mean_time
             print(f"\nThroughput: {throughput:.2f} rules/second")
 
-    def test_megabytes_per_second_medium(self, benchmark, medium_test_file):
+    def test_megabytes_per_second_medium(
+        self,
+        benchmark: Any,
+        medium_test_file: Path,
+    ) -> None:
         """Measure MB/s throughput on medium file.
 
         Purpose:
@@ -323,7 +357,7 @@ class TestThroughputBenchmarks:
         """
         file_size_mb = medium_test_file.stat().st_size / (1024 * 1024)
 
-        def parse_file():
+        def parse_file() -> Any:
             content = medium_test_file.read_text(encoding="utf-8")
             parser = Parser(content)
             ast = parser.parse()

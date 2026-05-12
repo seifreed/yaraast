@@ -10,18 +10,22 @@ performance regression testing.
 """
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from yaraast.parser import Parser
+from yaraast.performance.streaming_parser import StreamingParser
 
-def pytest_configure(config):
+
+def pytest_configure(config: Any) -> None:
     """Configure pytest for benchmark tests."""
     config.addinivalue_line("markers", "benchmark: mark test as a benchmark test")
     config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
 @pytest.fixture(scope="session")
-def benchmark_dir():
+def benchmark_dir() -> Path:
     """Provide the benchmarks directory path.
 
     Returns:
@@ -31,7 +35,7 @@ def benchmark_dir():
 
 
 @pytest.fixture(scope="session")
-def test_data_dir(benchmark_dir):
+def test_data_dir(benchmark_dir: Path) -> Path:
     """Provide the test data directory path.
 
     Returns:
@@ -41,7 +45,7 @@ def test_data_dir(benchmark_dir):
 
 
 @pytest.fixture(scope="session")
-def results_dir(benchmark_dir):
+def results_dir(benchmark_dir: Path) -> Path:
     """Provide the results directory path.
 
     Returns:
@@ -53,7 +57,7 @@ def results_dir(benchmark_dir):
 
 
 @pytest.fixture(scope="session")
-def small_test_file(test_data_dir):
+def small_test_file(test_data_dir: Path) -> Path:
     """Provide a small test file for quick benchmarks.
 
     Returns:
@@ -66,7 +70,7 @@ def small_test_file(test_data_dir):
 
 
 @pytest.fixture(scope="session")
-def medium_test_file(test_data_dir):
+def medium_test_file(test_data_dir: Path) -> Path:
     """Provide a medium test file for benchmarks.
 
     Returns:
@@ -79,7 +83,7 @@ def medium_test_file(test_data_dir):
 
 
 @pytest.fixture(scope="session")
-def large_test_file(test_data_dir):
+def large_test_file(test_data_dir: Path) -> Path:
     """Provide a large test file for stress testing.
 
     Returns:
@@ -92,24 +96,20 @@ def large_test_file(test_data_dir):
 
 
 @pytest.fixture(scope="function")
-def standard_parser():
+def standard_parser() -> type[Parser]:
     """Provide a fresh Parser instance.
 
     Returns:
         Parser class (not instance)
     """
-    from yaraast.parser import Parser
-
     return Parser
 
 
 @pytest.fixture(scope="function")
-def streaming_parser():
+def streaming_parser() -> type[StreamingParser]:
     """Provide a fresh StreamingParser instance.
 
     Returns:
         StreamingParser class (not instance)
     """
-    from yaraast.performance.streaming_parser import StreamingParser
-
     return StreamingParser
