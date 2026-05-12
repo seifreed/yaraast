@@ -109,6 +109,13 @@ def profile_performance(
             "rules_per_second": len(rules) / elapsed if elapsed > 0 else 0,
         }
 
+    if not results:
+        return {
+            "worker_performance": {},
+            "optimal_workers": None,
+            "rule_count": len(rules),
+        }
+
     return {
         "worker_performance": results,
         "optimal_workers": min(results, key=lambda key: results[key]["time"]),

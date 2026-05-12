@@ -105,6 +105,13 @@ def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> 
     assert 1 in limited_profile["worker_performance"]
     assert 10_000 not in limited_profile["worker_performance"]
 
+    invalid_profile = analyzer.profile_performance(small_rules, worker_counts=[10_000])
+    assert invalid_profile == {
+        "worker_performance": {},
+        "optimal_workers": None,
+        "rule_count": len(small_rules),
+    }
+
     analyzer.reset_statistics()
     jobs = analyzer.process_batch(small_rules, _worker_rule_name, job_type="names")
     assert [job.result for job in jobs] == ["a", "b"]
