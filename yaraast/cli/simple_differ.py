@@ -11,6 +11,7 @@ from pathlib import Path
 from yaraast.ast.base import YaraFile
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser.parser import Parser
+from yaraast.shared.file_patterns import iter_matching_files
 
 
 class DiffType(Enum):
@@ -236,8 +237,8 @@ class SimpleASTDiffer(SimpleDiffer):
         super().__init__(parser=parser, generator=generator)
 
     def diff_files(self, file1: Path, file2: Path) -> ASTDiffResult:
-        content1 = file1.read_text()
-        content2 = file2.read_text()
+        content1 = file1.read_text(encoding="utf-8")
+        content2 = file2.read_text(encoding="utf-8")
 
         ast1 = self.parser.parse(content1)
         ast2 = self.parser.parse(content2)
@@ -309,9 +310,8 @@ class SimpleASTDiffer(SimpleDiffer):
 
         results: dict[str, DiffResult | ASTDiffResult] = {}
 
-        # Get all .yar files in both directories
-        files1 = {p.relative_to(dir1) for p in dir1.glob("**/*.yar")}
-        files2 = {p.relative_to(dir2) for p in dir2.glob("**/*.yar")}
+        files1 = {path.relative_to(dir1) for path in iter_matching_files(dir1, recursive=True)}
+        files2 = {path.relative_to(dir2) for path in iter_matching_files(dir2, recursive=True)}
 
         # Files in both directories
         for file in files1 & files2:
@@ -330,7 +330,7 @@ class SimpleASTDiffer(SimpleDiffer):
 
 def _diff_result_for_removed_file(file_path: Path) -> DiffResult:
     """Create a DiffResult showing all lines of a file as removed."""
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8") as f:
         content = f.read()
     lines = content.splitlines()
     diff_lines = [
@@ -351,7 +351,7 @@ def _diff_result_for_removed_file(file_path: Path) -> DiffResult:
 
 def _diff_result_for_added_file(file_path: Path) -> DiffResult:
     """Create a DiffResult showing all lines of a file as added."""
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8") as f:
         content = f.read()
     lines = content.splitlines()
     diff_lines = [

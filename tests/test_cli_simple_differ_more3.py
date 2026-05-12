@@ -50,6 +50,26 @@ def test_simple_ast_differ_diff_directories_handles_common_added_and_removed_fil
     assert added.summary["added"] > 0
 
 
+def test_simple_ast_differ_diff_directories_includes_yara_files(tmp_path: Path) -> None:
+    dir1 = tmp_path / "dir1"
+    dir2 = tmp_path / "dir2"
+    dir1.mkdir()
+    dir2.mkdir()
+
+    (dir1 / "common.yara").write_text("rule common { condition: true }", encoding="utf-8")
+    (dir2 / "common.yara").write_text("rule common { condition: false }", encoding="utf-8")
+    (dir2 / "added.yara").write_text("rule added { condition: true }", encoding="utf-8")
+
+    differ = SimpleASTDiffer()
+    results = differ.diff_directories(dir1, dir2)
+
+    assert set(results) == {"common.yara", "added.yara"}
+    assert results["common.yara"].has_changes is True
+    added = results["added.yara"]
+    assert isinstance(added, DiffResult)
+    assert added.summary["added"] > 0
+
+
 def test_format_diff_no_changes_and_print_diff() -> None:
     result = DiffResult(
         has_changes=False, lines=[], summary={"added": 0, "removed": 0, "modified": 0}
