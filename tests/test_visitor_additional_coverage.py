@@ -7,6 +7,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from yaraast.parser.parser import Parser
@@ -16,82 +18,82 @@ from yaraast.visitor.base import BaseVisitor
 class TestAdditionalParserBasedCoverage:
     """Additional tests using real parsed YARA code to maximize coverage."""
 
-    def test_visit_complete_yara_file_structure(self):
+    def test_visit_complete_yara_file_structure(self) -> None:
         """Test visiting all components of a comprehensive YARA file."""
 
         class ComprehensiveVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.visited = set()
+            def __init__(self) -> None:
+                self.visited: set[str] = set()
 
-            def visit_yara_file(self, node):
+            def visit_yara_file(self, node: Any) -> None:
                 self.visited.add("yara_file")
                 return super().visit_yara_file(node)
 
-            def visit_import(self, node):
+            def visit_import(self, node: Any) -> None:
                 self.visited.add("import")
                 return super().visit_import(node)
 
-            def visit_rule(self, node):
+            def visit_rule(self, node: Any) -> None:
                 self.visited.add("rule")
                 return super().visit_rule(node)
 
-            def visit_plain_string(self, node):
+            def visit_plain_string(self, node: Any) -> None:
                 self.visited.add("plain_string")
                 return super().visit_plain_string(node)
 
-            def visit_hex_string(self, node):
+            def visit_hex_string(self, node: Any) -> None:
                 self.visited.add("hex_string")
                 return super().visit_hex_string(node)
 
-            def visit_regex_string(self, node):
+            def visit_regex_string(self, node: Any) -> None:
                 self.visited.add("regex_string")
                 return super().visit_regex_string(node)
 
-            def visit_string_modifier(self, node):
+            def visit_string_modifier(self, node: Any) -> None:
                 self.visited.add("string_modifier")
                 return super().visit_string_modifier(node)
 
-            def visit_hex_byte(self, node):
+            def visit_hex_byte(self, node: Any) -> None:
                 self.visited.add("hex_byte")
                 return super().visit_hex_byte(node)
 
-            def visit_hex_wildcard(self, node):
+            def visit_hex_wildcard(self, node: Any) -> None:
                 self.visited.add("hex_wildcard")
                 return super().visit_hex_wildcard(node)
 
-            def visit_hex_jump(self, node):
+            def visit_hex_jump(self, node: Any) -> None:
                 self.visited.add("hex_jump")
                 return super().visit_hex_jump(node)
 
-            def visit_tag(self, node):
+            def visit_tag(self, node: Any) -> None:
                 self.visited.add("tag")
                 return super().visit_tag(node)
 
-            def visit_binary_expression(self, node):
+            def visit_binary_expression(self, node: Any) -> None:
                 self.visited.add("binary_expression")
                 return super().visit_binary_expression(node)
 
-            def visit_function_call(self, node):
+            def visit_function_call(self, node: Any) -> None:
                 self.visited.add("function_call")
                 return super().visit_function_call(node)
 
-            def visit_member_access(self, node):
+            def visit_member_access(self, node: Any) -> None:
                 self.visited.add("member_access")
                 return super().visit_member_access(node)
 
-            def visit_integer_literal(self, node):
+            def visit_integer_literal(self, node: Any) -> None:
                 self.visited.add("integer_literal")
                 return super().visit_integer_literal(node)
 
-            def visit_boolean_literal(self, node):
+            def visit_boolean_literal(self, node: Any) -> None:
                 self.visited.add("boolean_literal")
                 return super().visit_boolean_literal(node)
 
-            def visit_string_identifier(self, node):
+            def visit_string_identifier(self, node: Any) -> None:
                 self.visited.add("string_identifier")
                 return super().visit_string_identifier(node)
 
-            def visit_identifier(self, node):
+            def visit_identifier(self, node: Any) -> None:
                 self.visited.add("identifier")
                 return super().visit_identifier(node)
 
@@ -136,24 +138,24 @@ class TestAdditionalParserBasedCoverage:
         assert "integer_literal" in visitor.visited
         assert "boolean_literal" in visitor.visited
 
-    def test_visit_count_and_offset_expressions(self):
+    def test_visit_count_and_offset_expressions(self) -> None:
         """Test visiting string count and offset expressions."""
 
         class CountOffsetVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.counts = 0
                 self.offsets = 0
                 self.lengths = 0
 
-            def visit_string_count(self, node):
+            def visit_string_count(self, node: Any) -> None:
                 self.counts += 1
                 return super().visit_string_count(node)
 
-            def visit_string_offset(self, node):
+            def visit_string_offset(self, node: Any) -> None:
                 self.offsets += 1
                 return super().visit_string_offset(node)
 
-            def visit_string_length(self, node):
+            def visit_string_length(self, node: Any) -> None:
                 self.lengths += 1
                 return super().visit_string_length(node)
 
@@ -175,19 +177,19 @@ class TestAdditionalParserBasedCoverage:
         # Verify string operations were visited
         assert visitor.counts >= 1 or visitor.offsets >= 1 or visitor.lengths >= 1
 
-    def test_visit_for_and_of_expressions(self):
+    def test_visit_for_and_of_expressions(self) -> None:
         """Test visiting for and of expressions."""
 
         class ForOfVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.for_exprs = 0
                 self.of_exprs = 0
 
-            def visit_for_expression(self, node):
+            def visit_for_expression(self, node: Any) -> None:
                 self.for_exprs += 1
                 return super().visit_for_expression(node)
 
-            def visit_of_expression(self, node):
+            def visit_of_expression(self, node: Any) -> None:
                 self.of_exprs += 1
                 return super().visit_of_expression(node)
 
@@ -211,19 +213,19 @@ class TestAdditionalParserBasedCoverage:
         assert visitor.for_exprs >= 1
         assert visitor.of_exprs >= 1
 
-    def test_visit_unary_and_parentheses(self):
+    def test_visit_unary_and_parentheses(self) -> None:
         """Test visiting unary and parentheses expressions."""
 
         class UnaryParenVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.unary = 0
                 self.paren = 0
 
-            def visit_unary_expression(self, node):
+            def visit_unary_expression(self, node: Any) -> None:
                 self.unary += 1
                 return super().visit_unary_expression(node)
 
-            def visit_parentheses_expression(self, node):
+            def visit_parentheses_expression(self, node: Any) -> None:
                 self.paren += 1
                 return super().visit_parentheses_expression(node)
 
@@ -242,14 +244,14 @@ class TestAdditionalParserBasedCoverage:
 
         assert visitor.unary >= 1 or visitor.paren >= 1
 
-    def test_visit_at_expression(self):
+    def test_visit_at_expression(self) -> None:
         """Test visiting at expressions."""
 
         class AtVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.at_exprs = 0
 
-            def visit_at_expression(self, node):
+            def visit_at_expression(self, node: Any) -> None:
                 self.at_exprs += 1
                 return super().visit_at_expression(node)
 
@@ -270,14 +272,14 @@ class TestAdditionalParserBasedCoverage:
 
         assert visitor.at_exprs >= 1
 
-    def test_visit_range_expression(self):
+    def test_visit_range_expression(self) -> None:
         """Test visiting range expressions in for loops."""
 
         class RangeVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.ranges = 0
 
-            def visit_range_expression(self, node):
+            def visit_range_expression(self, node: Any) -> None:
                 self.ranges += 1
                 return super().visit_range_expression(node)
 
@@ -296,22 +298,22 @@ class TestAdditionalParserBasedCoverage:
 
         assert visitor.ranges >= 1
 
-    def test_visit_all_literal_types(self):
+    def test_visit_all_literal_types(self) -> None:
         """Test visiting all types of literals."""
 
         class LiteralVisitor(BaseVisitor[None]):
-            def __init__(self):
-                self.literals = set()
+            def __init__(self) -> None:
+                self.literals: set[str] = set()
 
-            def visit_integer_literal(self, node):
+            def visit_integer_literal(self, node: Any) -> None:
                 self.literals.add("int")
                 return super().visit_integer_literal(node)
 
-            def visit_boolean_literal(self, node):
+            def visit_boolean_literal(self, node: Any) -> None:
                 self.literals.add("bool")
                 return super().visit_boolean_literal(node)
 
-            def visit_string_literal(self, node):
+            def visit_string_literal(self, node: Any) -> None:
                 self.literals.add("string")
                 return super().visit_string_literal(node)
 
@@ -333,14 +335,14 @@ class TestAdditionalParserBasedCoverage:
         assert "bool" in visitor.literals
         assert "int" in visitor.literals
 
-    def test_visit_set_expression_in_code(self):
+    def test_visit_set_expression_in_code(self) -> None:
         """Test visiting set expressions."""
 
         class SetVisitor(BaseVisitor[None]):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.sets = 0
 
-            def visit_set_expression(self, node):
+            def visit_set_expression(self, node: Any) -> None:
                 self.sets += 1
                 return super().visit_set_expression(node)
 
