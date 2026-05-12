@@ -5,6 +5,7 @@ from __future__ import annotations
 from hypothesis import assume, given, settings, strategies as st
 import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.codegen import CodeGenerator
 from yaraast.lexer.lexer_tables import KEYWORDS as _LEXER_KEYWORDS
 from yaraast.parser.parser import Parser
@@ -43,6 +44,7 @@ class TestIdentityTransformer:
         text = f"rule {name} {{ condition: true }}"
         ast1 = Parser(text).parse()
         ast2 = ASTTransformer().visit(ast1)
+        assert isinstance(ast2, YaraFile)
         assert len(ast2.rules) == len(ast1.rules)
 
     @given(name=_valid_identifier())
