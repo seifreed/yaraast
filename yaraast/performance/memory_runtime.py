@@ -94,6 +94,10 @@ def batch_process_with_memory_limit[Item, Result](
     processor: Callable[[Item], Result],
     batch_size: int = 10,
 ) -> Iterator[list[Result]]:
+    if batch_size < 1:
+        msg = "batch_size must be at least 1"
+        raise ValueError(msg)
+
     for index in range(0, len(items), batch_size):
         batch = items[index : index + batch_size]
         results = [processor(item) for item in batch]
