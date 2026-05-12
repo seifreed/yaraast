@@ -20,12 +20,19 @@ class WorkspaceAnalyzer:
         self.workspace = workspace
         self._report_lock = Lock()
 
+    @staticmethod
+    def _validate_max_workers(max_workers: int | None) -> None:
+        if max_workers is not None and max_workers < 1:
+            msg = "max_workers must be at least 1"
+            raise ValueError(msg)
+
     def analyze(
         self,
         parallel: bool = True,
         max_workers: int | None = None,
     ) -> WorkspaceReport:
         """Perform complete workspace analysis."""
+        self._validate_max_workers(max_workers)
         report = WorkspaceReport(
             files_analyzed=0,
             total_rules=0,
@@ -56,6 +63,7 @@ class WorkspaceAnalyzer:
         max_workers: int | None = None,
     ) -> None:
         """Analyze files in parallel."""
+        self._validate_max_workers(max_workers)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_file = {
                 executor.submit(self._analyze_file, result, report): (file_path, result)

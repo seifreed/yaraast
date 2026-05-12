@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Include, Rule
@@ -250,3 +252,22 @@ def test_workspace_parallel_analysis_records_future_failures(tmp_path: Path) -> 
 
     assert set(report.file_results) == {str(good_path), str(bad_path)}
     assert any("Analysis error:" in err for err in report.file_results[str(bad_path)].errors)
+
+
+def test_workspace_analysis_rejects_invalid_worker_count(tmp_path: Path) -> None:
+    workspace = Workspace(str(tmp_path))
+
+    with pytest.raises(ValueError, match="max_workers must be at least 1"):
+        workspace.analyze(parallel=True, max_workers=0)
+
+    analyzer = WorkspaceAnalyzer(workspace)
+    report = WorkspaceReport(
+        files_analyzed=0,
+        total_rules=0,
+        total_includes=0,
+        total_imports=0,
+        dependency_graph=workspace.dependency_graph,
+        file_results={},
+    )
+    with pytest.raises(ValueError, match="max_workers must be at least 1"):
+        analyzer._analyze_parallel(report, max_workers=0)
