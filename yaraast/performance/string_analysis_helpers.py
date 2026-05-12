@@ -91,6 +91,15 @@ def find_optimizations(
                 "prefixes": list(prefixes.keys())[:10],
             },
         )
+    if len(suffixes) > 5:
+        optimizations.append(
+            {
+                "type": "suffix_tree",
+                "impact": "medium",
+                "description": f"Found {len(suffixes)} common suffixes",
+                "suffixes": list(suffixes.keys())[:10],
+            },
+        )
     total_size = sum(len(s) for s in strings)
     unique_size = sum(len(s) for s in set(strings))
     if total_size > unique_size * 1.2:

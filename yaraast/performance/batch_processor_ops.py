@@ -212,7 +212,7 @@ def process_large_file(
             content = handle.read()
         parsed = parse_item(content)
         input_count = len(parsed.rules) if (parsed and split_rules) else 1
-        for operation in operations:
+        for index, operation in enumerate(operations, 1):
             result = BatchResult(operation=operation, input_count=input_count)
             if operation == BatchOperation.PARSE:
                 result.successful_count = len(parsed.rules) if split_rules else 1
@@ -233,6 +233,12 @@ def process_large_file(
                 _process_dependency_graph(file_path, parsed, output_dir, result)
                 result.successful_count = 1
             results[operation] = result
+            if processor.progress_callback:
+                processor.progress_callback(
+                    f"Processing {operation.value}",
+                    index,
+                    len(operations),
+                )
     except Exception as exc:
         for operation in operations:
             result = BatchResult(operation=operation, input_count=1)

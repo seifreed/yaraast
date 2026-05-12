@@ -49,6 +49,23 @@ def test_string_pattern_analyzer_empty_and_prefix_tree_paths() -> None:
     optimizations = analyzer._find_optimizations(strings, {}, prefixes, {})
     assert any(opt["type"] == "prefix_tree" for opt in optimizations)
 
+    suffix_strings = [
+        "alpha_shared_suffix",
+        "beta_shared_suffix",
+        "gamma_shared_suffix",
+        "delta_shared_suffix",
+        "epsilon_shared_suffix",
+        "zeta_shared_suffix",
+    ]
+    suffixes = analyzer._find_common_suffixes(suffix_strings)
+    suffix_optimizations = analyzer._find_optimizations(
+        suffix_strings,
+        {},
+        {},
+        suffixes,
+    )
+    assert any(opt["type"] == "suffix_tree" for opt in suffix_optimizations)
+
 
 def test_string_rule_performance_and_cost_extra_paths() -> None:
     no_strings_rule = Rule(name="nostrings", condition=Condition())
@@ -193,7 +210,12 @@ def test_batch_processor_large_file_parse_and_serialize(tmp_path: Path) -> None:
     path = tmp_path / "many.yar"
     path.write_text(dedent(code), encoding="utf-8")
 
-    processor = BatchProcessor()
+    progress_calls: list[tuple[str, int, int]] = []
+
+    def progress(stage: str, done: int, total: int) -> None:
+        progress_calls.append((stage, done, total))
+
+    processor = BatchProcessor(progress_callback=progress)
     results = processor.process_large_file(
         path,
         operations=[BatchOperation.PARSE, BatchOperation.SERIALIZE],
@@ -205,3 +227,7 @@ def test_batch_processor_large_file_parse_and_serialize(tmp_path: Path) -> None:
     assert results[BatchOperation.SERIALIZE].successful_count == 1
     assert results[BatchOperation.SERIALIZE].failed_count == 0
     assert results[BatchOperation.SERIALIZE].output_files
+    assert progress_calls == [
+        ("Processing parse", 1, 2),
+        ("Processing serialize", 2, 2),
+    ]
