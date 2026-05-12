@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -336,3 +337,21 @@ def test_register_server_features_and_initialize_handlers() -> None:
     assert "YARAAST Language Server initialized" in server.logs
     assert "/tmp/ws3" in server.workspace_symbols_provider.roots
     assert "/tmp/ws2" in server.workspace_symbols_provider.roots
+
+
+def test_initialize_decodes_workspace_folder_file_uris(tmp_path: Path) -> None:
+    server = FakeServer()
+    sf.register_initialize(server)
+
+    workspace_root = tmp_path / "rules with spaces"
+    workspace_root.mkdir()
+    server.handlers["initialize"](
+        SimpleNamespace(
+            root_uri=workspace_root.as_uri(),
+            root_path=None,
+            workspace_folders=[SimpleNamespace(uri=workspace_root.as_uri())],
+            initialization_options={},
+        )
+    )
+
+    assert server.workspace_symbols_provider.roots == [str(workspace_root)]

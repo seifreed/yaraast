@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from yaraast.lsp.document_types import uri_to_path
 from yaraast.lsp.lsp_types import InitializeParams, Range
 from yaraast.lsp.provider_call_helpers import call_range_with_optional_uri, call_with_optional_uri
 
@@ -44,10 +45,14 @@ def get_workspace_folders(params: InitializeParams) -> list[str]:
     for folder in workspace_folders:
         uri = getattr(folder, "uri", None)
         if isinstance(uri, str) and uri.startswith("file://"):
-            folders.append(uri.replace("file://", ""))
+            path = uri_to_path(uri)
+            if path is not None:
+                folders.append(str(path))
     root_uri = getattr(params, "root_uri", None)
     if isinstance(root_uri, str) and root_uri.startswith("file://"):
-        folders.append(root_uri.replace("file://", ""))
+        path = uri_to_path(root_uri)
+        if path is not None:
+            folders.append(str(path))
     root_path = getattr(params, "root_path", None)
     if isinstance(root_path, str):
         folders.append(root_path)
