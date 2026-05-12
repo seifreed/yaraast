@@ -144,6 +144,23 @@ def test_ast_benchmarker_success_error_and_summary(tmp_path: Path) -> None:
     assert failures_only.get_benchmark_summary() == {}
 
 
+def test_ast_benchmarker_rejects_invalid_iterations(tmp_path: Path) -> None:
+    benchmarker = ASTBenchmarker()
+    missing = tmp_path / "missing.yar"
+
+    with pytest.raises(ValueError, match="iterations must be at least 1"):
+        benchmarker.benchmark_parsing(missing, iterations=0)
+
+    with pytest.raises(ValueError, match="iterations must be at least 1"):
+        benchmarker.benchmark_codegen(missing, iterations=0)
+
+    with pytest.raises(ValueError, match="iterations must be at least 1"):
+        benchmarker.benchmark_roundtrip(missing, iterations=0)
+
+    with pytest.raises(ValueError, match="iterations must be at least 1"):
+        ASTBenchmarker._time_roundtrip("rule r { condition: true }", iterations=0)
+
+
 def test_performance_check_no_issues_and_abort_paths(tmp_path: Path) -> None:
     runner = CliRunner()
 

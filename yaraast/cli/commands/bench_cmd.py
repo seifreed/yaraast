@@ -34,7 +34,7 @@ console = Console()
 )
 @click.option(
     "--iterations",
-    type=int,
+    type=click.IntRange(min=1),
     default=10,
     help="Number of iterations per test",
 )

@@ -34,12 +34,19 @@ class ASTBenchmarker:
     def __init__(self) -> None:
         self.results: list[BenchmarkResult] = []
 
+    @staticmethod
+    def _validate_iterations(iterations: int) -> None:
+        if iterations < 1:
+            msg = "iterations must be at least 1"
+            raise ValueError(msg)
+
     def benchmark_parsing(
         self,
         file_path: Path,
         iterations: int = 10,
     ) -> BenchmarkResult:
         """Benchmark parsing performance."""
+        self._validate_iterations(iterations)
         try:
             # Read file once
             with Path(file_path).open(encoding="utf-8") as f:
@@ -99,6 +106,7 @@ class ASTBenchmarker:
         iterations: int = 10,
     ) -> BenchmarkResult:
         """Benchmark code generation performance."""
+        self._validate_iterations(iterations)
         try:
             # Parse file once
             # Parser will be instantiated with content
@@ -157,6 +165,7 @@ class ASTBenchmarker:
         iterations: int = 5,
     ) -> list[BenchmarkResult]:
         """Benchmark full parse->generate roundtrip."""
+        self._validate_iterations(iterations)
         results = []
 
         try:
@@ -202,6 +211,7 @@ class ASTBenchmarker:
     @staticmethod
     def _time_roundtrip(content: str, iterations: int) -> float:
         """Run parse->generate roundtrip iterations and return average time."""
+        ASTBenchmarker._validate_iterations(iterations)
         times = []
         for _ in range(iterations):
             start = time.perf_counter()
