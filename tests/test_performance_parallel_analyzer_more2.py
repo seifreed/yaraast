@@ -87,6 +87,26 @@ def test_parallel_analyzer_direct_methods_and_stats(tmp_path: Path) -> None:
     assert reset_stats["jobs_failed"] == 0
 
 
+def test_parallel_analyzer_rejects_invalid_worker_counts(tmp_path: Path) -> None:
+    ast = _parsed_ast("workers")
+    rules = ast.rules
+    file_path = tmp_path / "workers.yar"
+    file_path.write_text(_rule_code("workers"), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="max_workers must be at least 1"):
+        ParallelAnalyzer(max_workers=0)
+
+    analyzer = ParallelAnalyzer(max_workers=1)
+    with pytest.raises(ValueError, match="max_workers must be at least 1"):
+        analyzer.analyze_rules(rules, max_workers=0)
+    with pytest.raises(ValueError, match="max_workers must be at least 1"):
+        analyzer.batch_analyze_files([str(file_path)], max_workers=0)
+    with pytest.raises(ValueError, match="max_workers must be at least 1"):
+        analyzer.analyze_with_custom_function(rules, _custom_rule_name, max_workers=0)
+    with pytest.raises(ValueError, match="worker_counts must contain values at least 1"):
+        analyzer.profile_performance(rules, worker_counts=[0])
+
+
 def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> None:
     analyzer = ParallelAnalyzer(max_workers=1)
     small_rules = Parser().parse(_rule_code("a") + _rule_code("b")).rules

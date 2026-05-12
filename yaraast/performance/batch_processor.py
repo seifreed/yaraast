@@ -77,11 +77,15 @@ class BatchProcessor:
         progress_callback: Callable[[str, int, int], None] | None = None,
     ) -> None:
         """Initialize batch processor."""
+        if max_workers is not None and max_workers < 1:
+            msg = "max_workers must be at least 1"
+            raise ValueError(msg)
+
         if batch_size < 1:
             msg = "batch_size must be at least 1"
             raise ValueError(msg)
 
-        self.max_workers = max_workers or 4
+        self.max_workers = max_workers if max_workers is not None else 4
         self.max_memory_mb = max_memory_mb
         self.batch_size = batch_size
         self.temp_dir = Path(temp_dir) if temp_dir else Path(tempfile.gettempdir())

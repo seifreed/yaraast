@@ -45,7 +45,11 @@ class ParallelAnalyzer:
                         Defaults to CPU count.
 
         """
-        self.max_workers = max_workers or mp.cpu_count()
+        if max_workers is not None and max_workers < 1:
+            msg = "max_workers must be at least 1"
+            raise ValueError(msg)
+
+        self.max_workers = max_workers if max_workers is not None else mp.cpu_count()
         self.rule_analyzer = RuleAnalyzer()
         self._stats = default_parallel_stats()
 

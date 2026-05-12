@@ -14,13 +14,21 @@ if TYPE_CHECKING:
     from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 
 
+def _resolve_worker_count(analyzer: ParallelAnalyzer, max_workers: int | None) -> int:
+    worker_count = analyzer.max_workers if max_workers is None else max_workers
+    if worker_count < 1:
+        msg = "max_workers must be at least 1"
+        raise ValueError(msg)
+    return worker_count
+
+
 def analyze_rules(
     analyzer: ParallelAnalyzer,
     rules: list[Rule],
     max_workers: int | None = None,
 ) -> list[dict[str, Any]]:
     """Analyze multiple rules with a process pool."""
-    worker_count = max_workers or analyzer.max_workers
+    worker_count = _resolve_worker_count(analyzer, max_workers)
     results = []
     start_time = time.time()
     rules_analyzed = 0
@@ -54,7 +62,7 @@ def batch_analyze_files(
     max_workers: int | None = None,
 ) -> list[dict[str, Any]]:
     """Analyze multiple files with a thread pool."""
-    worker_count = max_workers or analyzer.max_workers
+    worker_count = _resolve_worker_count(analyzer, max_workers)
     results = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=worker_count) as executor:
         future_to_path = {
@@ -76,7 +84,7 @@ def analyze_with_custom_function(
     max_workers: int | None = None,
 ) -> list[Any]:
     """Run a custom rule analysis across a process pool."""
-    worker_count = max_workers or analyzer.max_workers
+    worker_count = _resolve_worker_count(analyzer, max_workers)
     results = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=worker_count) as executor:
         futures = [executor.submit(analyze_func, rule) for rule in rules]
@@ -99,6 +107,9 @@ def profile_performance(
 
     results = {}
     for workers in worker_counts:
+        if workers < 1:
+            msg = "worker_counts must contain values at least 1"
+            raise ValueError(msg)
         if workers > mp.cpu_count():
             continue
         start_time = time.time()

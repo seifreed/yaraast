@@ -33,6 +33,11 @@ def test_batch_processor_rejects_invalid_batch_sizes() -> None:
         processor.process_batch([1], None, batch_size=0)
 
 
+def test_batch_processor_rejects_invalid_worker_count() -> None:
+    with pytest.raises(ValueError, match="max_workers must be at least 1"):
+        BatchProcessor(max_workers=0)
+
+
 def test_process_batch_parse_handles_invalid_item_without_exceptions() -> None:
     processor = BatchProcessor(batch_size=1)
 

@@ -46,7 +46,7 @@ def performance() -> None:
     default=50,
     help="Batch size for processing",
 )
-@click.option("--max-workers", "-w", type=int, help="Maximum worker threads")
+@click.option("--max-workers", "-w", type=click.IntRange(min=1), help="Maximum worker threads")
 @click.option("--memory-limit", "-m", type=int, default=1000, help="Memory limit in MB")
 @click.option(
     "--operations",
@@ -239,7 +239,7 @@ def _display_stream_results(
 @performance.command()
 @click.argument("input_paths", nargs=-1, required=True, type=click.Path(exists=True))
 @click.option("--output-dir", "-o", type=click.Path(), help="Output directory")
-@click.option("--max-workers", "-w", type=int, help="Maximum worker threads")
+@click.option("--max-workers", "-w", type=click.IntRange(min=1), help="Maximum worker threads")
 @click.option(
     "--timeout",
     "-t",
