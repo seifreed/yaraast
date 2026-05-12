@@ -3,11 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+
 from yaraast.cli import diff_reporting as dr
 
 
-def _result(**overrides):
-    base = {
+def _result(**overrides: object) -> SimpleNamespace:
+    base: dict[str, object] = {
         "change_summary": {},
         "added_rules": [],
         "removed_rules": [],
@@ -20,7 +22,9 @@ def _result(**overrides):
     return SimpleNamespace(**base)
 
 
-def test_diff_reporting_headers_summary_and_rule_lists(capsys) -> None:
+def test_diff_reporting_headers_summary_and_rule_lists(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     dr.display_no_changes(Path("/tmp/a.yar"), Path("/tmp/b.yar"))
     dr.display_diff_header(Path("/tmp/a.yar"), Path("/tmp/b.yar"))
     dr.show_diff_summary(
@@ -43,7 +47,9 @@ def test_diff_reporting_headers_summary_and_rule_lists(capsys) -> None:
     assert "Style Changes: 2" in out
 
 
-def test_diff_reporting_details_style_and_significance(capsys) -> None:
+def test_diff_reporting_details_style_and_significance(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     many_styles = [f"style change {i}" for i in range(12)]
     result = _result(
         logical_changes=["logic 1", "logic 2"],
@@ -67,7 +73,9 @@ def test_diff_reporting_details_style_and_significance(capsys) -> None:
     assert "only 2 style changes" in out
 
 
-def test_diff_reporting_respects_logical_only_and_no_style_flags(capsys) -> None:
+def test_diff_reporting_respects_logical_only_and_no_style_flags(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     result = _result(
         logical_changes=[],
         structural_changes=[],
