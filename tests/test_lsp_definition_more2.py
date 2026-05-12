@@ -4,13 +4,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from lsprotocol.types import Position
+from lsprotocol.types import Location, Position
 
 from yaraast.lsp.definition import DefinitionProvider
 
 
 def _pos(line: int, char: int) -> Position:
     return Position(line=line, character=char)
+
+
+def _single_location(location: Location | list[Location]) -> Location:
+    assert not isinstance(location, list)
+    return location
 
 
 def test_definition_string_identifier() -> None:
@@ -26,6 +31,7 @@ rule a {
     provider = DefinitionProvider()
     location = provider.get_definition(text, _pos(4, 5), "file://test.yar")
     assert location is not None
+    location = _single_location(location)
     assert location.range.start.line == 2
 
 
@@ -38,6 +44,7 @@ rule b { condition: a }
     provider = DefinitionProvider()
     location = provider.get_definition(text, _pos(1, 20), "file://test.yar")
     assert location is not None
+    location = _single_location(location)
     assert location.range.start.line == 0
 
 
@@ -70,6 +77,7 @@ def test_definition_include_target(tmp_path: Path) -> None:
         sample.resolve().as_uri(),
     )
     assert location is not None
+    location = _single_location(location)
     assert location.uri == include_file.resolve().as_uri()
     assert location.range.start.line == 0
     assert location.range.start.character == 0
