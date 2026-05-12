@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import contextlib
 from typing import Self
 
@@ -114,14 +115,14 @@ class HexStringBuilder:
         """Add an unlimited jump [-]."""
         return self.jump(None, None)
 
-    def alternative(self, *alternatives: list[int | str | HexStringBuilder]) -> Self:
+    def alternative(self, *alternatives: list[int | str] | HexStringBuilder) -> Self:
         """Add an alternative group (a|b|c)."""
-        alt_tokens = []
+        alt_tokens: list[list[HexToken]] = []
 
         for alt in alternatives:
             if isinstance(alt, list):
                 # List of values
-                tokens = []
+                tokens: list[HexToken] = []
                 for val in alt:
                     if isinstance(val, int):
                         tokens.append(HexByte(value=val))
@@ -142,7 +143,7 @@ class HexStringBuilder:
         self._tokens.append(HexAlternative(alternatives=alt_tokens))
         return self
 
-    def group(self, builder_func) -> Self:
+    def group(self, builder_func: Callable[[HexStringBuilder], None]) -> Self:
         """Add a group using a builder function."""
         inner_builder = HexStringBuilder()
         builder_func(inner_builder)
