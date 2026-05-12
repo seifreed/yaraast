@@ -180,8 +180,13 @@ config.secret.json
 # Development directories
 qlty/
 .qlty/
-.claude/
 detection-rules/
+
+# Local agent instructions
+AGENTS.md
+CLAUDE.md
+claude.md
+.claude/
 
 # Debug and temporary development files
 debug_*.py
