@@ -42,7 +42,7 @@ def performance() -> None:
 @click.option(
     "--batch-size",
     "-b",
-    type=int,
+    type=click.IntRange(min=1),
     default=50,
     help="Batch size for processing",
 )

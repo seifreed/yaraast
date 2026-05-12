@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
+
 from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
 
@@ -20,6 +22,15 @@ def test_batch_result_properties_cover_zero_and_nonzero_branches() -> None:
     )
     assert done.success_rate == 75.0
     assert done.avg_processing_time == 0.3
+
+
+def test_batch_processor_rejects_invalid_batch_sizes() -> None:
+    with pytest.raises(ValueError, match="batch_size must be at least 1"):
+        BatchProcessor(batch_size=0)
+
+    processor = BatchProcessor(batch_size=1)
+    with pytest.raises(ValueError, match="batch_size must be at least 1"):
+        processor.process_batch([1], None, batch_size=0)
 
 
 def test_process_batch_parse_handles_invalid_item_without_exceptions() -> None:

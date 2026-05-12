@@ -59,6 +59,22 @@ def test_performance_batch_file(tmp_path: Path) -> None:
     assert "parse" in payload
 
 
+def test_performance_batch_rejects_zero_batch_size(tmp_path: Path) -> None:
+    file_path = _write(tmp_path, "rule.yar", _sample_yara())
+    result = CliRunner().invoke(
+        performance,
+        [
+            "batch",
+            file_path,
+            "--batch-size",
+            "0",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--batch-size'" in result.output
+
+
 def test_performance_batch_file_serialize_outputs_result(tmp_path: Path) -> None:
     file_path = _write(tmp_path, "rule.yar", _sample_yara())
     out_dir = tmp_path / "batch_out"

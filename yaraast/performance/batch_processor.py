@@ -77,6 +77,10 @@ class BatchProcessor:
         progress_callback: Callable[[str, int, int], None] | None = None,
     ) -> None:
         """Initialize batch processor."""
+        if batch_size < 1:
+            msg = "batch_size must be at least 1"
+            raise ValueError(msg)
+
         self.max_workers = max_workers or 4
         self.max_memory_mb = max_memory_mb
         self.batch_size = batch_size
@@ -95,7 +99,11 @@ class BatchProcessor:
         batch_size: int | None = None,
     ) -> list[Any]:
         """Process a batch of items."""
-        batch_size = batch_size or self.batch_size
+        batch_size = self.batch_size if batch_size is None else batch_size
+        if batch_size < 1:
+            msg = "batch_size must be at least 1"
+            raise ValueError(msg)
+
         results = []
 
         # Process in batches
