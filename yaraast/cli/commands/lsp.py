@@ -21,7 +21,7 @@ from yaraast.cli.lsp_reporting import (
     default=True,
     help="Use stdio for communication (default)",
 )
-@click.option("--tcp", type=int, help="Use TCP on specified port")
+@click.option("--tcp", type=click.IntRange(min=1, max=65535), help="Use TCP on specified port")
 @click.option("--host", default="127.0.0.1", help="Host for TCP mode")
 def lsp(stdio: bool, tcp: int | None, host: str) -> None:
     """Start the YARA Language Server.
@@ -40,7 +40,7 @@ def lsp(stdio: bool, tcp: int | None, host: str) -> None:
         display_starting(console)
         server = create_lsp_server()
 
-        if tcp:
+        if tcp is not None:
             display_listening_tcp(console, host, tcp)
         else:
             display_listening_stdio(console)

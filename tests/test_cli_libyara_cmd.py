@@ -102,3 +102,24 @@ def test_libyara_compile_and_scan(tmp_path: Path) -> None:
     )
     assert result.exit_code == 0
     assert "Compilation successful" in result.output
+
+
+def test_libyara_scan_rejects_invalid_timeout(tmp_path: Path) -> None:
+    rule_path = _write_rule(tmp_path)
+    target = _write_target(tmp_path)
+    runner = CliRunner()
+
+    result = runner.invoke(
+        cli,
+        [
+            "libyara",
+            "scan",
+            str(rule_path),
+            str(target),
+            "--timeout",
+            "0",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--timeout'" in result.output

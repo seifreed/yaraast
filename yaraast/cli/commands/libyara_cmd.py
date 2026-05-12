@@ -46,7 +46,7 @@ def compile(
 @click.argument("rules_file", type=click.Path(exists=True))
 @click.argument("target", type=click.Path(exists=True))
 @click.option("--optimize", is_flag=True, help="Use optimized AST compilation")
-@click.option("--timeout", type=int, help="Scan timeout in seconds")
+@click.option("--timeout", type=click.IntRange(min=1), help="Scan timeout in seconds")
 @click.option("--fast", is_flag=True, help="Fast mode (stop on first match)")
 @click.option("--stats", is_flag=True, help="Show scan statistics")
 def scan(

@@ -13,3 +13,12 @@ def test_cli_lsp_help_real() -> None:
     assert result.exit_code == 0
     assert "--stdio" in result.output
     assert "--tcp" in result.output
+
+
+def test_cli_lsp_rejects_invalid_tcp_port() -> None:
+    runner = CliRunner()
+
+    result = runner.invoke(lsp, ["--tcp", "0"])
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--tcp'" in result.output

@@ -31,11 +31,10 @@ def test_lsp_command_stdio_starts_in_cli_runner() -> None:
     assert "Using stdio for communication" in result.output
 
 
-def test_lsp_command_tcp_invalid_port_reports_start_error() -> None:
+def test_lsp_command_tcp_rejects_negative_port() -> None:
     runner = CliRunner()
 
     result = runner.invoke(lsp_cmd, ["--tcp=-1"])
 
-    assert result.exit_code != 0
-    assert "Listening on 127.0.0.1:-1" in result.output
-    assert "Error starting LSP server" in result.output
+    assert result.exit_code == 2
+    assert "Invalid value for '--tcp'" in result.output
