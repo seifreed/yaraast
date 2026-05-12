@@ -7,18 +7,20 @@ from typing import Any
 
 import pytest
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.cli import metrics_services as ms
 from yaraast.errors import ValidationError
 from yaraast.parser import Parser
 
 
-def _ast() -> ASTNode:
+def _ast() -> YaraFile:
     code = """
 rule a { condition: true }
 rule b { condition: a }
 """.strip()
-    return Parser().parse(code)
+    ast = Parser().parse(code)
+    assert isinstance(ast, YaraFile)
+    return ast
 
 
 type CallRecord = tuple[str, str, str] | tuple[str, str, str, str | int]
@@ -270,17 +272,35 @@ def test_metrics_services_error_paths_and_dependency_generator_success(tmp_path:
     original_pattern = ms.generate_pattern_diagrams
     try:
 
-        def _raise_dep(*_args: Any, **_kwargs: Any) -> None:
+        def _raise_dep(
+            ast: YaraFile,
+            output_dir: Path,
+            base_name: str,
+            image_format: str,
+            generator_factory: Any = None,
+        ) -> list[str]:
             raise ValueError("dep boom")
 
         ms.generate_dependency_graphs = _raise_dep
         with pytest.raises(ValueError, match="dep boom"):
             ms.build_report(ast, tmp_path, "x", "svg")
 
-        def _ok_dep(*_args: Any, **_kwargs: Any) -> list[str]:
+        def _ok_dep(
+            ast: YaraFile,
+            output_dir: Path,
+            base_name: str,
+            image_format: str,
+            generator_factory: Any = None,
+        ) -> list[str]:
             return []
 
-        def _raise_pattern(*_args: Any, **_kwargs: Any) -> None:
+        def _raise_pattern(
+            ast: YaraFile,
+            output_dir: Path,
+            base_name: str,
+            image_format: str,
+            generator_factory: Any = None,
+        ) -> list[str]:
             raise ValueError("pat boom")
 
         ms.generate_dependency_graphs = _ok_dep

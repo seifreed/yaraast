@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import YaraFile
@@ -14,6 +15,7 @@ _DEFAULT_FACTORY = object()
 
 
 __all__ = [
+    "DependencyGraphGenerator",
     "MetricsReportData",
     "analyze_complexity",
     "build_complexity_payload",
@@ -47,7 +49,7 @@ def build_complexity_payload(metrics: Any) -> dict[str, Any]:
 
 def generate_dependency_graphs(
     ast: YaraFile,
-    output_dir: str,
+    output_dir: Path,
     base_name: str,
     image_format: str,
     generator_factory: Any = _DEFAULT_FACTORY,
@@ -60,7 +62,7 @@ def generate_dependency_graphs(
 
 def generate_html_tree(
     ast: YaraFile,
-    output_dir: str,
+    output_dir: Path,
     base_name: str,
     interactive: bool = True,
     generator_factory: Any = None,
@@ -72,7 +74,7 @@ def generate_html_tree(
 
 def generate_pattern_diagrams(
     ast: YaraFile,
-    output_dir: str,
+    output_dir: Path,
     base_name: str,
     image_format: str,
     generator_factory: Any = None,
@@ -85,7 +87,7 @@ def generate_pattern_diagrams(
 
 
 def build_report(
-    ast: YaraFile, output_dir: str, base_name: str, image_format: str
+    ast: YaraFile, output_dir: Path, base_name: str, image_format: str
 ) -> MetricsReportData:
     metrics = analyze_complexity(ast)
     payload = build_complexity_payload(metrics)
@@ -123,7 +125,7 @@ def generate_dependency_graph(
     output_path: str,
     fmt: str,
     engine: str,
-) -> str:
+) -> tuple[str, Any]:
     if DependencyGraphGenerator is None:
         msg = "Graph visualization requires the 'graphviz' Python package."
         raise RuntimeError(msg)
@@ -137,7 +139,7 @@ def generate_dependency_graph_with_generator(
     output_path: str,
     fmt: str,
     engine: str,
-) -> str:
+) -> tuple[str, Any]:
     return _workflows.generate_dependency_graph_with_generator(
         generator, ast, graph_type, output_path, fmt, engine
     )

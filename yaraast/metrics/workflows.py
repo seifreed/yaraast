@@ -185,7 +185,7 @@ def determine_graph_output_path(
 
 def generate_dependency_graph(
     ast: YaraFile, graph_type: str, output_path: str, fmt: str, engine: str
-) -> str:
+) -> tuple[str, Any]:
     if DependencyGraphGenerator is None:
         msg = "Graph visualization requires the 'graphviz' Python package."
         raise RuntimeError(msg)
