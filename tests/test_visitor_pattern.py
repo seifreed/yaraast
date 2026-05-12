@@ -2,6 +2,9 @@
 
 import pytest
 
+from yaraast.ast.expressions import StringIdentifier
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
 from yaraast.parser.parser import Parser
 from yaraast.visitor.base import BaseVisitor
 
@@ -9,19 +12,19 @@ from yaraast.visitor.base import BaseVisitor
 class TestVisitorPattern:
     """Test visitor pattern implementation."""
 
-    def test_basic_visitor(self):
+    def test_basic_visitor(self) -> None:
         """Test basic visitor traversal."""
 
-        class CountingVisitor(BaseVisitor):
-            def __init__(self):
+        class CountingVisitor(BaseVisitor[None]):
+            def __init__(self) -> None:
                 self.rule_count = 0
                 self.string_count = 0
 
-            def visit_rule(self, node):
+            def visit_rule(self, node: Rule) -> None:
                 self.rule_count += 1
                 super().visit_rule(node)
 
-            def visit_plain_string(self, node):
+            def visit_plain_string(self, node: PlainString) -> None:
                 self.string_count += 1
                 super().visit_plain_string(node)
 
@@ -51,14 +54,14 @@ class TestVisitorPattern:
         assert visitor.rule_count == 2, "Should count 2 rules"
         assert visitor.string_count == 3, "Should count 3 strings"
 
-    def test_visitor_returns_values(self):
+    def test_visitor_returns_values(self) -> None:
         """Test visitor that returns values."""
 
         class NameCollectorVisitor(BaseVisitor[list[str]]):
-            def __init__(self):
-                self.names = []
+            def __init__(self) -> None:
+                self.names: list[str] = []
 
-            def visit_rule(self, node):
+            def visit_rule(self, node: Rule) -> list[str]:
                 self.names.append(node.name)
                 super().visit_rule(node)
                 return self.names
@@ -85,14 +88,14 @@ class TestVisitorPattern:
         assert "rule_two" in visitor.names
         assert len(visitor.names) == 2
 
-    def test_visitor_transformation(self):
+    def test_visitor_transformation(self) -> None:
         """Test visitor that transforms AST."""
 
-        class RuleRenamerVisitor(BaseVisitor):
-            def __init__(self, suffix="_renamed"):
+        class RuleRenamerVisitor(BaseVisitor[None]):
+            def __init__(self, suffix: str = "_renamed") -> None:
                 self.suffix = suffix
 
-            def visit_rule(self, node):
+            def visit_rule(self, node: Rule) -> None:
                 # Transform rule name
                 node.name = node.name + self.suffix
                 super().visit_rule(node)
@@ -112,14 +115,14 @@ class TestVisitorPattern:
 
         assert ast.rules[0].name == "original_name_modified"
 
-    def test_visitor_with_condition(self):
+    def test_visitor_with_condition(self) -> None:
         """Test visitor that processes conditions."""
 
-        class StringIdentifierCollector(BaseVisitor):
-            def __init__(self):
-                self.string_ids = []
+        class StringIdentifierCollector(BaseVisitor[None]):
+            def __init__(self) -> None:
+                self.string_ids: list[str] = []
 
-            def visit_string_identifier(self, node):
+            def visit_string_identifier(self, node: StringIdentifier) -> None:
                 if hasattr(node, "name"):
                     self.string_ids.append(node.name)
                 super().visit_string_identifier(node)
@@ -143,19 +146,19 @@ class TestVisitorPattern:
         # Should find string references in condition
         assert len(visitor.string_ids) >= 2
 
-    def test_visitor_inheritance(self):
+    def test_visitor_inheritance(self) -> None:
         """Test that visitor methods can be inherited."""
 
-        class CustomBaseVisitor(BaseVisitor):
-            def __init__(self):
-                self.visited = []
+        class CustomBaseVisitor(BaseVisitor[None]):
+            def __init__(self) -> None:
+                self.visited: list[tuple[str, str]] = []
 
-            def visit_rule(self, node):
+            def visit_rule(self, node: Rule) -> None:
                 self.visited.append(("rule", node.name))
                 super().visit_rule(node)
 
         class ExtendedVisitor(CustomBaseVisitor):
-            def visit_plain_string(self, node):
+            def visit_plain_string(self, node: PlainString) -> None:
                 self.visited.append(("string", node.identifier))
                 super().visit_plain_string(node)
 
@@ -181,16 +184,16 @@ class TestVisitorPattern:
         assert len(rule_visits) == 1
         assert len(string_visits) == 1
 
-    def test_visitor_early_exit(self):
+    def test_visitor_early_exit(self) -> None:
         """Test visitor can exit early."""
 
-        class EarlyExitVisitor(BaseVisitor):
-            def __init__(self, target_rule):
+        class EarlyExitVisitor(BaseVisitor[None]):
+            def __init__(self, target_rule: str) -> None:
                 self.target_rule = target_rule
                 self.found = False
                 self.rules_visited = 0
 
-            def visit_rule(self, node):
+            def visit_rule(self, node: Rule) -> None:
                 self.rules_visited += 1
                 if node.name == self.target_rule:
                     self.found = True
@@ -228,14 +231,14 @@ class TestVisitorPattern:
 class TestVisitorPatternAdvanced:
     """Advanced visitor pattern tests."""
 
-    def test_visitor_with_meta_collection(self):
+    def test_visitor_with_meta_collection(self) -> None:
         """Test collecting metadata."""
 
-        class MetaCollectorVisitor(BaseVisitor):
-            def __init__(self):
-                self.meta_data = {}
+        class MetaCollectorVisitor(BaseVisitor[None]):
+            def __init__(self) -> None:
+                self.meta_data: dict[str, dict[str, object]] = {}
 
-            def visit_rule(self, node):
+            def visit_rule(self, node: Rule) -> None:
                 if node.meta:
                     self.meta_data[node.name] = (
                         {getattr(m, "key", ""): getattr(m, "value", "") for m in node.meta}
@@ -263,14 +266,14 @@ class TestVisitorPatternAdvanced:
         assert "with_meta" in visitor.meta_data
         assert visitor.meta_data["with_meta"].get("author") == "test"
 
-    def test_visitor_exception_handling(self):
+    def test_visitor_exception_handling(self) -> None:
         """Test visitor handles exceptions gracefully."""
 
-        class FailingVisitor(BaseVisitor):
-            def __init__(self):
-                self.errors = []
+        class FailingVisitor(BaseVisitor[None]):
+            def __init__(self) -> None:
+                self.errors: list[str] = []
 
-            def visit_rule(self, node):
+            def visit_rule(self, node: Rule) -> None:
                 try:
                     # Simulate an error
                     if node.name == "bad_rule":
