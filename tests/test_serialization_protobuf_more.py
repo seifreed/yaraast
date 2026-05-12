@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 
 
-def _sample_ast():
+def _sample_ast() -> YaraFile:
     code = """
     import "pe"
     include "base.yar"
@@ -25,7 +28,7 @@ def _sample_ast():
     return Parser().parse(code)
 
 
-def test_protobuf_serialize_deserialize_roundtrip(tmp_path) -> None:
+def test_protobuf_serialize_deserialize_roundtrip(tmp_path: Path) -> None:
     ast = _sample_ast()
     serializer = ProtobufSerializer(include_metadata=True)
 

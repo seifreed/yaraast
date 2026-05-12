@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from textwrap import dedent
 
 from yaraast.parser import Parser
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 
 
-def test_protobuf_hex_regex_and_deserialize_file(tmp_path) -> None:
+def test_protobuf_hex_regex_and_deserialize_file(tmp_path: Path) -> None:
     code = dedent(
         """
         rule proto2 {

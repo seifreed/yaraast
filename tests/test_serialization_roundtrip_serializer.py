@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from textwrap import dedent
 
 import yaml
@@ -67,7 +68,7 @@ def test_roundtrip_test_reports_metadata_and_differences() -> None:
     assert result["metadata"]["reconstructed_rule_count"] == 1
 
 
-def test_enhanced_yaml_pipeline_and_manifest(tmp_path) -> None:
+def test_enhanced_yaml_pipeline_and_manifest(tmp_path: Path) -> None:
     serializer = RoundTripSerializer()
     ast, _ = serializer.parse_and_serialize(_sample_rule(), format="json")
 

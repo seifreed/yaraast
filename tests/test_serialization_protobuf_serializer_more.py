@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -9,6 +12,7 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
+    Expression,
     Identifier,
     IntegerLiteral,
     StringCount,
@@ -101,7 +105,7 @@ def test_protobuf_expression_conversion_paths() -> None:
 
     serializer = ProtobufSerializer()
 
-    expr_cases = [
+    expr_cases: list[tuple[Expression, Callable[[Any], bool]]] = [
         (Identifier(name="id"), lambda pb: pb.identifier.name == "id"),
         (StringIdentifier(name="$a"), lambda pb: pb.string_identifier.name == "$a"),
         (StringCount(string_id="$b"), lambda pb: pb.string_count.string_id == "$b"),

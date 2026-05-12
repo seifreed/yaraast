@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -23,7 +25,7 @@ from yaraast.ast.strings import (
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 
 
-def test_protobuf_serializer_roundtrip_paths_and_files(tmp_path) -> None:
+def test_protobuf_serializer_roundtrip_paths_and_files(tmp_path: Path) -> None:
     serializer = ProtobufSerializer(include_metadata=True)
     rule = Rule(
         name="pb",
