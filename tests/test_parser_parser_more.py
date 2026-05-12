@@ -6,6 +6,7 @@ import pytest
 
 from yaraast.errors import ParseError
 from yaraast.lexer import Lexer
+from yaraast.lexer.tokens import Token
 from yaraast.parser._shared import ParserError
 from yaraast.parser.parser import Parser
 
@@ -16,7 +17,7 @@ class DelegatingLexer:
     def __init__(self) -> None:
         self.calls: list[str] = []
 
-    def tokenize(self, text: str):
+    def tokenize(self, text: str) -> list[Token]:
         self.calls.append(text)
         return Lexer(text).tokenize()
 

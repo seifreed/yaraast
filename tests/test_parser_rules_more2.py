@@ -8,7 +8,7 @@ from yaraast.parser._shared import ParserError
 from yaraast.parser.parser import Parser
 
 
-def _t(tt: TokenType, value) -> Token:
+def _t(tt: TokenType, value: str | int | float | None) -> Token:
     return Token(type=tt, value=value, line=1, column=1)
 
 
