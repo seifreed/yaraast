@@ -18,6 +18,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.meta import Meta
+from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import (
     HexAlternative,
@@ -73,6 +74,27 @@ def _deserialize_hex_token(data: dict[str, Any]):
     return HexWildcard()
 
 
+def _serialize_modifiers(modifiers: list[Any]) -> list[dict[str, Any]]:
+    return [
+        {
+            "name": getattr(modifier, "name", str(modifier)),
+            "value": getattr(modifier, "value", None),
+        }
+        for modifier in modifiers
+    ]
+
+
+def _deserialize_modifiers(modifiers: list[Any]) -> list[StringModifier]:
+    return [
+        (
+            StringModifier.from_name_value(modifier["name"], modifier.get("value"))
+            if isinstance(modifier, dict)
+            else StringModifier.from_name_value(str(modifier))
+        )
+        for modifier in modifiers
+    ]
+
+
 def serialize_node(node: ASTNode) -> dict[str, Any]:
     """Serialize an AST node to a dictionary."""
     if isinstance(node, YaraFile):
@@ -80,7 +102,7 @@ def serialize_node(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, Rule):
         return serialize_rule(node)
     if isinstance(node, Import):
-        return {"type": "Import", "module": node.module}
+        return {"type": "Import", "module": node.module, "alias": node.alias}
     if isinstance(node, Include):
         return {"type": "Include", "path": node.path}
     if isinstance(node, BooleanLiteral):
@@ -126,6 +148,7 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     data: dict[str, Any] = {
         "type": "Rule",
         "name": rule.name,
+        "modifiers": [str(modifier) for modifier in rule.modifiers],
         "condition": serialize_node(rule.condition) if rule.condition else None,
     }
 
@@ -153,18 +176,21 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
             "type": "PlainString",
             "identifier": string_def.identifier,
             "value": string_def.value,
+            "modifiers": _serialize_modifiers(string_def.modifiers),
         }
     if isinstance(string_def, HexString):
         return {
             "type": "HexString",
             "identifier": string_def.identifier,
             "tokens": [_serialize_hex_token(t) for t in string_def.tokens],
+            "modifiers": _serialize_modifiers(string_def.modifiers),
         }
     if isinstance(string_def, RegexString):
         return {
             "type": "RegexString",
             "identifier": string_def.identifier,
             "regex": string_def.regex,
+            "modifiers": _serialize_modifiers(string_def.modifiers),
         }
     return {"type": "StringDefinition", "data": str(string_def)}
 
@@ -178,7 +204,7 @@ def deserialize_node(data: dict[str, Any]) -> ASTNode:
     if node_type == "Rule":
         return deserialize_rule(data)
     if node_type == "Import":
-        return Import(data["module"])
+        return Import(data["module"], alias=data.get("alias"))
     if node_type == "Include":
         return Include(data["path"])
     if node_type == "BooleanLiteral":
@@ -217,6 +243,7 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     """Deserialize a Rule."""
     rule = Rule(
         name=data["name"],
+        modifiers=data.get("modifiers", []),
         condition=(
             deserialize_node(data["condition"]) if data.get("condition") else BooleanLiteral(True)
         ),
@@ -246,12 +273,20 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     string_type = data.get("type")
 
     if string_type == "PlainString":
-        return PlainString(identifier=data["identifier"], value=data["value"])
+        return PlainString(
+            identifier=data["identifier"],
+            value=data["value"],
+            modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+        )
     if string_type == "HexString":
         raw_tokens = data.get("tokens", [])
         if isinstance(raw_tokens, list):
             tokens = [_deserialize_hex_token(t) for t in raw_tokens]
-            return HexString(identifier=data["identifier"], tokens=tokens)
+            return HexString(
+                identifier=data["identifier"],
+                tokens=tokens,
+                modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+            )
         # Legacy format: tokens stored as string representation — preserve as HexString with empty tokens
         import warnings
 
@@ -260,9 +295,17 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             "tokens will be empty after deserialization",
             stacklevel=2,
         )
-        return HexString(identifier=data["identifier"], tokens=[])
+        return HexString(
+            identifier=data["identifier"],
+            tokens=[],
+            modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+        )
     if string_type == "RegexString":
-        return RegexString(identifier=data["identifier"], regex=data["regex"])
+        return RegexString(
+            identifier=data["identifier"],
+            regex=data["regex"],
+            modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+        )
     return PlainString(identifier=data.get("identifier", "$unknown"), value=data.get("data", ""))
 
 

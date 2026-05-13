@@ -6,8 +6,9 @@ from pathlib import Path
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral
+from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import PlainString, RegexString
+from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.serialization.simple_roundtrip import SimpleRoundTrip, SimpleRoundtripSerializer
 
 
@@ -47,6 +48,46 @@ def test_simple_roundtrip_file_io(tmp_path: Path) -> None:
 
     assert isinstance(restored, YaraFile)
     assert restored.rules[0].strings
+
+
+def test_simple_roundtrip_preserves_alias_and_modifiers() -> None:
+    serializer = SimpleRoundtripSerializer()
+    ast = YaraFile(
+        imports=[Import(module="pe", alias="p")],
+        rules=[
+            Rule(
+                name="r1",
+                modifiers=["private"],
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="x",
+                        modifiers=[StringModifier.from_name_value("nocase")],
+                    ),
+                    HexString(
+                        identifier="$h",
+                        tokens=[HexByte(value=0x41)],
+                        modifiers=[StringModifier.from_name_value("wide")],
+                    ),
+                    RegexString(
+                        identifier="$r",
+                        regex="ab",
+                        modifiers=[StringModifier.from_name_value("ascii")],
+                    ),
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+
+    assert isinstance(restored, YaraFile)
+    assert restored.imports[0].alias == "p"
+    assert str(restored.rules[0].modifiers[0]) == "private"
+    assert restored.rules[0].strings[0].modifiers[0].name == "nocase"
+    assert restored.rules[0].strings[1].modifiers[0].name == "wide"
+    assert restored.rules[0].strings[2].modifiers[0].name == "ascii"
 
 
 def test_simple_roundtrip_validator() -> None:
