@@ -102,6 +102,34 @@ def test_ast_diff_detects_extended_file_field_changes() -> None:
     assert result.statistics["total_changes"] == len(result.differences)
 
 
+def test_ast_diff_treats_extended_file_field_reordering_as_unchanged() -> None:
+    cases = [
+        (
+            YaraFile(extern_imports=[ExternImport("b.yar"), ExternImport("a.yar")]),
+            YaraFile(extern_imports=[ExternImport("a.yar"), ExternImport("b.yar")]),
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("Beta"), ExternRule("Alpha")]),
+            YaraFile(extern_rules=[ExternRule("Alpha"), ExternRule("Beta")]),
+        ),
+        (
+            YaraFile(pragmas=[CustomPragma("vendor_b"), CustomPragma("vendor_a")]),
+            YaraFile(pragmas=[CustomPragma("vendor_a"), CustomPragma("vendor_b")]),
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace("beta"), ExternNamespace("alpha")]),
+            YaraFile(namespaces=[ExternNamespace("alpha"), ExternNamespace("beta")]),
+        ),
+    ]
+
+    for old_ast, new_ast in cases:
+        result = AstDiff().compare(old_ast, new_ast)
+
+        assert result.old_ast_hash == result.new_ast_hash
+        assert not result.has_changes
+        assert result.differences == []
+
+
 def test_ast_diff_treats_tag_reordering_as_unchanged() -> None:
     old_ast = _parse_yara(
         """

@@ -34,10 +34,10 @@ class AstHasher(ASTVisitor[str]):
         imports_hash = "|".join(sorted(self.visit(imp) for imp in node.imports))
         includes_hash = "|".join(sorted(self.visit(inc) for inc in node.includes))
         rules_hash = "|".join(sorted(self.visit(rule) for rule in node.rules))
-        extern_rules_hash = "|".join(self.visit(rule) for rule in node.extern_rules)
-        extern_imports_hash = "|".join(self.visit(imp) for imp in node.extern_imports)
-        pragmas_hash = "|".join(self.visit(pragma) for pragma in node.pragmas)
-        namespaces_hash = "|".join(self.visit(namespace) for namespace in node.namespaces)
+        extern_rules_hash = "|".join(sorted(self.visit(rule) for rule in node.extern_rules))
+        extern_imports_hash = "|".join(sorted(self.visit(imp) for imp in node.extern_imports))
+        pragmas_hash = "|".join(sorted(self.visit(pragma) for pragma in node.pragmas))
+        namespaces_hash = "|".join(sorted(self.visit(namespace) for namespace in node.namespaces))
         return (
             f"YaraFile({imports_hash}|{includes_hash}|{rules_hash}|"
             f"{extern_rules_hash}|{extern_imports_hash}|{pragmas_hash}|{namespaces_hash})"
