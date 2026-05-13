@@ -138,6 +138,19 @@ def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
     assert calculate_expression_complexity(ast.rules[0].condition) > 0
 
 
+def test_analyze_file_complexity_accepts_yarax_syntax(tmp_path: Path) -> None:
+    path = tmp_path / "native_yarax.yar"
+    path.write_text(
+        "rule x { condition: with xs = [1]: match xs { _ => true } }",
+        encoding="utf-8",
+    )
+
+    report = analyze_file_complexity(path)
+
+    assert report["file"] == str(path)
+    assert report["complexity"]["summary"]["total_rules"] == 1
+
+
 def test_complexity_complex_rules_use_current_rule_depth_only() -> None:
     code = """
     rule deep {
