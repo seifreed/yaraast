@@ -7,8 +7,10 @@ from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import MetaEntry, MetaScope
+from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier
+from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexByte,
@@ -22,9 +24,11 @@ from yaraast.serialization.simple_roundtrip_helpers import (
     _compare_normalized,
     deserialize_from_file,
     deserialize_meta,
+    deserialize_node,
     deserialize_rule,
     deserialize_string,
     serialize_meta,
+    serialize_node,
     serialize_rule,
     serialize_string,
     serialize_to_file,
@@ -84,6 +88,64 @@ def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     restored = deserialize_meta(serialized)
     assert isinstance(restored, MetaEntry)
     assert restored.scope == MetaScope.PRIVATE
+
+
+def test_simple_roundtrip_helpers_preserve_file_extensions_and_pragmas() -> None:
+    ast = YaraFile(
+        extern_rules=[
+            ExternRule(
+                name="ExternalRule",
+                modifiers=[RuleModifier.from_string("private")],
+                namespace="legacy",
+            ),
+        ],
+        extern_imports=[ExternImport("external_rules", alias="ext", rules=["ExternalRule"])],
+        pragmas=[
+            CustomPragma(
+                "optimize",
+                arguments=["off"],
+                parameters={"level": 2},
+                scope=PragmaScope.FILE,
+            )
+        ],
+        namespaces=[ExternNamespace("corp", extern_rules=[ExternRule(name="NamespacedRule")])],
+        rules=[
+            Rule(
+                name="uses_external",
+                pragmas=[
+                    InRulePragma(
+                        CustomPragma("rule_hint", parameters={"enabled": True}),
+                        position="before_condition",
+                    )
+                ],
+                condition=cast(
+                    Any,
+                    ExternRuleReference("ExternalRule", namespace="legacy"),
+                ),
+            )
+        ],
+    )
+
+    restored = deserialize_node(serialize_node(ast))
+
+    assert isinstance(restored, YaraFile)
+    assert restored.extern_rules[0].name == "ExternalRule"
+    assert str(restored.extern_rules[0].modifiers[0]) == "private"
+    assert restored.extern_rules[0].namespace == "legacy"
+    assert restored.extern_imports[0].module_path == "external_rules"
+    assert restored.extern_imports[0].alias == "ext"
+    assert restored.extern_imports[0].rules == ["ExternalRule"]
+    restored_file_pragma = restored.pragmas[0]
+    assert isinstance(restored_file_pragma, CustomPragma)
+    assert restored_file_pragma.parameters == {"level": 2}
+    assert restored.namespaces[0].name == "corp"
+    assert restored.namespaces[0].extern_rules[0].name == "NamespacedRule"
+    restored_rule_pragma = restored.rules[0].pragmas[0]
+    assert restored_rule_pragma.position == "before_condition"
+    assert isinstance(restored_rule_pragma.pragma, CustomPragma)
+    assert restored_rule_pragma.pragma.parameters == {"enabled": True}
+    assert isinstance(restored.rules[0].condition, ExternRuleReference)
+    assert restored.rules[0].condition.qualified_name == "legacy.ExternalRule"
 
 
 def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> None:

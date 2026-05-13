@@ -17,8 +17,20 @@ from yaraast.ast.expressions import (
     StringLiteral,
     UnaryExpression,
 )
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import MetaEntry, StringModifier
+from yaraast.ast.modifiers import MetaEntry, RuleModifier, StringModifier
+from yaraast.ast.pragmas import (
+    ConditionalDirective,
+    CustomPragma,
+    DefineDirective,
+    IncludeOncePragma,
+    InRulePragma,
+    Pragma,
+    PragmaScope,
+    PragmaType,
+    UndefDirective,
+)
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import (
     HexAlternative,
@@ -105,6 +117,35 @@ def serialize_node(node: ASTNode) -> dict[str, Any]:
         return {"type": "Import", "module": node.module, "alias": node.alias}
     if isinstance(node, Include):
         return {"type": "Include", "path": node.path}
+    if isinstance(node, ExternRule):
+        return serialize_extern_rule(node)
+    if isinstance(node, ExternRuleReference):
+        return {
+            "type": "ExternRuleReference",
+            "rule_name": node.rule_name,
+            "namespace": node.namespace,
+        }
+    if isinstance(node, ExternImport):
+        return {
+            "type": "ExternImport",
+            "module_path": node.module_path,
+            "alias": node.alias,
+            "rules": list(node.rules),
+        }
+    if isinstance(node, ExternNamespace):
+        return {
+            "type": "ExternNamespace",
+            "name": node.name,
+            "extern_rules": [serialize_extern_rule(rule) for rule in node.extern_rules],
+        }
+    if isinstance(node, InRulePragma):
+        return {
+            "type": "InRulePragma",
+            "pragma": serialize_pragma(node.pragma),
+            "position": node.position,
+        }
+    if isinstance(node, Pragma):
+        return serialize_pragma(node)
     if isinstance(node, BooleanLiteral):
         return {"type": "BooleanLiteral", "value": node.value}
     if isinstance(node, IntegerLiteral):
@@ -135,12 +176,21 @@ def serialize_node(node: ASTNode) -> dict[str, Any]:
 
 def serialize_yarafile(yf: YaraFile) -> dict[str, Any]:
     """Serialize a YaraFile."""
-    return {
+    data = {
         "type": "YaraFile",
         "imports": [serialize_node(imp) for imp in (yf.imports or [])],
         "includes": [serialize_node(inc) for inc in (yf.includes or [])],
         "rules": [serialize_node(rule) for rule in (yf.rules or [])],
     }
+    if yf.extern_rules:
+        data["extern_rules"] = [serialize_extern_rule(rule) for rule in yf.extern_rules]
+    if yf.extern_imports:
+        data["extern_imports"] = [serialize_node(imp) for imp in yf.extern_imports]
+    if yf.pragmas:
+        data["pragmas"] = [serialize_pragma(pragma) for pragma in yf.pragmas]
+    if yf.namespaces:
+        data["namespaces"] = [serialize_node(namespace) for namespace in yf.namespaces]
+    return data
 
 
 def serialize_rule(rule: Rule) -> dict[str, Any]:
@@ -161,6 +211,41 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     if rule.strings:
         data["strings"] = [serialize_string(s) for s in rule.strings]
 
+    if rule.pragmas:
+        data["pragmas"] = [serialize_node(pragma) for pragma in rule.pragmas]
+
+    return data
+
+
+def serialize_extern_rule(extern_rule: ExternRule) -> dict[str, Any]:
+    return {
+        "type": "ExternRule",
+        "name": extern_rule.name,
+        "modifiers": [str(modifier) for modifier in extern_rule.modifiers],
+        "namespace": extern_rule.namespace,
+    }
+
+
+def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
+    data = {
+        "type": "Pragma",
+        "pragma_type": pragma.pragma_type.value,
+        "name": pragma.name,
+        "arguments": list(pragma.arguments),
+        "scope": pragma.scope.value,
+    }
+    macro_name = getattr(pragma, "macro_name", "")
+    if macro_name:
+        data["macro_name"] = macro_name
+    macro_value = getattr(pragma, "macro_value", None)
+    if macro_value is not None:
+        data["macro_value"] = macro_value
+    condition = getattr(pragma, "condition", None)
+    if condition is not None:
+        data["condition"] = condition
+    parameters = getattr(pragma, "parameters", None)
+    if parameters:
+        data["parameters"] = dict(parameters)
     return data
 
 
@@ -212,6 +297,31 @@ def deserialize_node(data: dict[str, Any]) -> ASTNode:
         return Import(data["module"], alias=data.get("alias"))
     if node_type == "Include":
         return Include(data["path"])
+    if node_type == "ExternRule":
+        return deserialize_extern_rule(data)
+    if node_type == "ExternRuleReference":
+        return ExternRuleReference(
+            rule_name=data["rule_name"],
+            namespace=data.get("namespace"),
+        )
+    if node_type == "ExternImport":
+        return ExternImport(
+            module_path=data["module_path"],
+            alias=data.get("alias"),
+            rules=list(data.get("rules", [])),
+        )
+    if node_type == "ExternNamespace":
+        return ExternNamespace(
+            name=data["name"],
+            extern_rules=[deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])],
+        )
+    if node_type == "InRulePragma":
+        return InRulePragma(
+            pragma=deserialize_pragma(data["pragma"]),
+            position=data.get("position", "before_strings"),
+        )
+    if node_type == "Pragma":
+        return deserialize_pragma(data)
     if node_type == "BooleanLiteral":
         return BooleanLiteral(data["value"])
     if node_type == "IntegerLiteral":
@@ -241,6 +351,10 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
     yf.imports = [deserialize_node(imp) for imp in data.get("imports", [])]
     yf.includes = [deserialize_node(inc) for inc in data.get("includes", [])]
     yf.rules = [deserialize_node(rule) for rule in data.get("rules", [])]
+    yf.extern_rules = [deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])]
+    yf.extern_imports = [deserialize_node(imp) for imp in data.get("extern_imports", [])]
+    yf.pragmas = [deserialize_pragma(pragma) for pragma in data.get("pragmas", [])]
+    yf.namespaces = [deserialize_node(namespace) for namespace in data.get("namespaces", [])]
     return yf
 
 
@@ -265,7 +379,79 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     if "strings" in data:
         rule.strings = [deserialize_string(s) for s in data["strings"]]
 
+    if "pragmas" in data:
+        rule.pragmas = [cast_in_rule_pragma(deserialize_node(pragma)) for pragma in data["pragmas"]]
+
     return rule
+
+
+def _deserialize_rule_modifiers(modifiers: list[Any]) -> list[Any]:
+    normalized = []
+    for modifier in modifiers:
+        if isinstance(modifier, str):
+            try:
+                normalized.append(RuleModifier.from_string(modifier))
+            except ValueError:
+                normalized.append(modifier)
+        else:
+            normalized.append(modifier)
+    return normalized
+
+
+def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
+    return ExternRule(
+        name=data["name"],
+        modifiers=_deserialize_rule_modifiers(data.get("modifiers", [])),
+        namespace=data.get("namespace"),
+    )
+
+
+def _deserialize_pragma_scope(value: Any) -> PragmaScope:
+    try:
+        return PragmaScope(value or PragmaScope.FILE.value)
+    except ValueError:
+        return PragmaScope.FILE
+
+
+def deserialize_pragma(data: dict[str, Any]) -> Pragma:
+    pragma_type = PragmaType.from_string(
+        str(data.get("pragma_type", data.get("name", PragmaType.CUSTOM.value)))
+    )
+    scope = _deserialize_pragma_scope(data.get("scope"))
+
+    if pragma_type == PragmaType.INCLUDE_ONCE:
+        pragma = IncludeOncePragma()
+    elif pragma_type == PragmaType.DEFINE and "macro_name" in data:
+        pragma = DefineDirective(
+            macro_name=str(data["macro_name"]),
+            macro_value=data.get("macro_value"),
+        )
+    elif pragma_type == PragmaType.UNDEF and "macro_name" in data:
+        pragma = UndefDirective(macro_name=str(data["macro_name"]))
+    elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
+        pragma = ConditionalDirective(pragma_type, condition=data.get("condition"))
+    elif pragma_type == PragmaType.CUSTOM:
+        pragma = CustomPragma(
+            name=str(data.get("name", pragma_type.value)),
+            arguments=list(data.get("arguments", [])),
+            parameters=dict(data.get("parameters", {})),
+            scope=scope,
+        )
+    else:
+        pragma = Pragma(
+            pragma_type=pragma_type,
+            name=str(data.get("name", pragma_type.value)),
+            arguments=list(data.get("arguments", [])),
+            scope=scope,
+        )
+    pragma.scope = scope
+    return pragma
+
+
+def cast_in_rule_pragma(node: ASTNode) -> InRulePragma:
+    if isinstance(node, InRulePragma):
+        return node
+    return InRulePragma(pragma=Pragma(PragmaType.CUSTOM, "custom"))
 
 
 def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
