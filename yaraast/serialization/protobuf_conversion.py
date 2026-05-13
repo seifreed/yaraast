@@ -262,8 +262,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     elif isinstance(expr, AtExpression):
         pb_expr.at_expression.string_id = expr.string_id
         convert_expression_to_protobuf(expr.offset, pb_expr.at_expression.offset)
-    elif isinstance(expr, InExpression) and isinstance(expr.subject, str):
-        pb_expr.in_expression.string_id = expr.subject
+    elif isinstance(expr, InExpression):
+        if isinstance(expr.subject, str):
+            pb_expr.in_expression.string_id = expr.subject
+        else:
+            convert_expression_to_protobuf(expr.subject, pb_expr.in_expression.subject)
         convert_expression_to_protobuf(expr.range, pb_expr.in_expression.range)
     elif isinstance(expr, OfExpression):
         quantifier = _coerce_expression(expr.quantifier)
@@ -542,8 +545,13 @@ def protobuf_to_expression(pb_expr):
             offset=protobuf_to_expression(pb_expr.at_expression.offset),
         )
     if pb_expr.HasField("in_expression"):
+        subject = (
+            protobuf_to_expression(pb_expr.in_expression.subject)
+            if pb_expr.in_expression.HasField("subject")
+            else pb_expr.in_expression.string_id
+        )
         return InExpression(
-            subject=pb_expr.in_expression.string_id,
+            subject=subject,
             range=protobuf_to_expression(pb_expr.in_expression.range),
         )
     if pb_expr.HasField("of_expression"):

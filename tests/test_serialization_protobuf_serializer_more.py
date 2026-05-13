@@ -176,6 +176,10 @@ def test_protobuf_serializer_preserves_extended_expression_roundtrips() -> None:
         ),
         AtExpression("$a", IntegerLiteral(0)),
         InExpression("$a", RangeExpression(IntegerLiteral(0), IntegerLiteral(10))),
+        InExpression(
+            OfExpression(IntegerLiteral(1), Identifier("them")),
+            RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
+        ),
         OfExpression(IntegerLiteral(1), Identifier("them")),
         DefinedExpression(Identifier("pe")),
         StringOperatorExpression(

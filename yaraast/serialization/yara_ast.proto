@@ -259,6 +259,7 @@ message AtExpression {
 message InExpression {
     string string_id = 1;
     Expression range = 2;
+    Expression subject = 3;
 }
 
 message OfExpression {
