@@ -221,7 +221,11 @@ def _get_text_graph(stats: dict[str, Any], dependencies: dict[str, list[str]]) -
         lines.extend(
             [
                 "Rule Dependencies:",
-                *[f"  {rule} → {', '.join(deps)}" for rule, deps in dependencies.items() if deps],
+                *[
+                    f"  {rule} → {', '.join(sorted(deps))}"
+                    for rule, deps in sorted(dependencies.items())
+                    if deps
+                ],
             ],
         )
 

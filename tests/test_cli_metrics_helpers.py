@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from textwrap import dedent
+from types import SimpleNamespace
 
 import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.cli.commands import metrics as metrics_cmd
 from yaraast.cli.metrics_reporting import (
+    _display_module_usage,
     _display_pattern_statistics,
+    _display_rule_dependencies,
     _display_text_fallback,
     _display_text_pattern_analysis,
     _format_complexity_output,
@@ -69,6 +72,45 @@ def test_metrics_helper_text_functions(
 def test_metrics_graphviz_error_detection() -> None:
     err = Exception("failed to execute PosixPath('dot')")
     assert metrics_cmd._is_graphviz_not_found_error(err) is True
+
+
+def test_metrics_display_helpers_sort_set_backed_output(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    generator = SimpleNamespace(
+        dependencies={
+            "rule_z": {"dep_z", "dep_a", "dep_m", "dep_b", "dep_y", "dep_c"},
+            "rule_a": {"dep_b", "dep_a"},
+        },
+        module_references={
+            "rule_z": {"pe", "math", "dotnet", "elf"},
+            "rule_a": {"pe", "elf"},
+        },
+    )
+
+    _display_rule_dependencies(generator)
+    _display_module_usage(generator)
+
+    output = capsys.readouterr().out
+    assert "  rule_a → dep_a, dep_b" in output
+    assert "  rule_z → dep_a, dep_b, dep_c, dep_m, dep_y, dep_z" in output
+    assert output.index("  rule_a →") < output.index("  rule_z →")
+    assert "  rule_a uses: elf, pe" in output
+    assert "  rule_z uses: dotnet, elf, math, pe" in output
+    assert output.index("  rule_a uses:") < output.index("  rule_z uses:")
+
+    text_graph = _get_text_graph(
+        {
+            "total_rules": 2,
+            "total_imports": 0,
+            "rules_with_strings": 0,
+            "rules_using_modules": 0,
+        },
+        generator.dependencies,
+    )
+    assert "  rule_a → dep_a, dep_b" in text_graph
+    assert "  rule_z → dep_a, dep_b, dep_c, dep_m, dep_y, dep_z" in text_graph
+    assert text_graph.index("  rule_a →") < text_graph.index("  rule_z →")
 
 
 def test_metrics_pattern_helpers(capsys: pytest.CaptureFixture[str]) -> None:

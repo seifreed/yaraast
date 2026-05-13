@@ -54,17 +54,17 @@ def display_text_statistics(yara_file: str, stats: dict[str, Any]) -> None:
 def display_rule_dependencies(generator: Any) -> None:
     if generator.dependencies:
         click.echo("\n🔗 Rule Dependencies:")
-        for rule, deps in generator.dependencies.items():
+        for rule, deps in sorted(generator.dependencies.items()):
             if deps:
-                click.echo(f"  {rule} → {', '.join(deps)}")
+                click.echo(f"  {rule} → {', '.join(sorted(deps))}")
 
 
 def display_module_usage(generator: Any) -> None:
     if generator.module_references:
         click.echo("\n📦 Module Usage:")
-        for rule, modules in generator.module_references.items():
+        for rule, modules in sorted(generator.module_references.items()):
             if modules:
-                click.echo(f"  {rule} uses: {', '.join(modules)}")
+                click.echo(f"  {rule} uses: {', '.join(sorted(modules))}")
 
 
 def display_text_fallback(
