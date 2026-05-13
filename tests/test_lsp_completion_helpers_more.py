@@ -12,6 +12,7 @@ from yaraast.lsp.completion_helpers import (
     build_module_member_completions,
     get_current_module,
 )
+from yaraast.lsp.language_services import parse_source
 
 
 def _pos(line: int, char: int) -> Position:
@@ -105,3 +106,14 @@ def test_build_condition_completions_falls_back_to_keywords_on_invalid_text() ->
     )
     labels = {item.label for item in items}
     assert labels == {"rule", "condition"}
+
+
+def test_lsp_condition_completions_parse_yarax_sources() -> None:
+    text = 'rule x { strings: $a = "x" condition: with xs = [1]: match xs { _ => $a } }'
+
+    ast = parse_source(text)
+    items = build_condition_completions(text, ["with", "match"])
+
+    labels = {item.label for item in items}
+    assert ast.rules[0].condition.__class__.__name__ == "WithStatement"
+    assert "$a" in labels

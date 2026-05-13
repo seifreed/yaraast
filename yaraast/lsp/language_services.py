@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 from yaraast.lsp.safe_handler import lsp_safe_handler
-from yaraast.parser.parser import Parser
+from yaraast.unified_parser import UnifiedParser
 
 logger = logging.getLogger(__name__)
 
@@ -17,5 +17,4 @@ def parse_source(text: str):
     Note: No caching — lru_cache previously cached None on parse failures,
     making error recovery impossible until cache eviction.
     """
-    parser = Parser(text)
-    return parser.parse()
+    return UnifiedParser(text).parse()
