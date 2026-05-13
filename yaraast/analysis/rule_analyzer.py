@@ -281,7 +281,7 @@ class RuleAnalyzer:
             "string_usage": full_analysis["string_analysis"].get(rule_name, {}),
             "dependencies": self.dependency_analyzer.get_dependencies(rule_name),
             "dependents": self.dependency_analyzer.get_dependents(rule_name),
-            "transitive_dependencies": list(
+            "transitive_dependencies": sorted(
                 self.dependency_analyzer.get_transitive_dependencies(rule_name),
             ),
             "recommendations": [

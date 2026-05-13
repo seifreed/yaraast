@@ -42,6 +42,31 @@ rule detailed : t1 t2 {
     assert analyzer.get_rule_report("missing", ast) is None
 
 
+def test_rule_report_sorts_transitive_dependencies() -> None:
+    dependency_names = [
+        "dep_z",
+        "dep_a",
+        "dep_m",
+        "dep_b",
+        "dep_y",
+        "dep_c",
+        "dep_x",
+        "dep_d",
+    ]
+    yara_code = "\n".join(
+        [
+            "rule target { condition: " + " and ".join(dependency_names) + " }",
+            *[f"rule {name} {{ condition: true }}" for name in dependency_names],
+        ]
+    )
+    ast = Parser().parse(yara_code)
+
+    report = RuleAnalyzer().get_rule_report("target", ast)
+
+    assert report is not None
+    assert report["transitive_dependencies"] == sorted(dependency_names)
+
+
 def test_rule_analyzer_recommendations_and_metrics_paths() -> None:
     yara_code = """
 rule rule_a {
