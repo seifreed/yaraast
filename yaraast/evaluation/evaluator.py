@@ -144,9 +144,10 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def visit_string_identifier(self, node: StringIdentifier) -> bool:
         """String identifier evaluates to whether it matched."""
+        string_id = self._normalize_string_id(node.name)
         return (
-            node.name in self.context.string_matches
-            and len(self.context.string_matches[node.name]) > 0
+            string_id in self.context.string_matches
+            and len(self.context.string_matches[string_id]) > 0
         )
 
     def visit_string_wildcard(self, node) -> bool:
@@ -157,19 +158,19 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def visit_string_count(self, node: StringCount) -> int:
         """Get count of string matches."""
-        string_id = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
+        string_id = self._normalize_string_id(node.string_id)
         return self.string_matcher.get_match_count(string_id)
 
     def visit_string_offset(self, node: StringOffset) -> int:
         """Get offset of string match."""
-        string_id = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
+        string_id = self._normalize_string_id(node.string_id)
         index = self.visit(node.index) if node.index else 0
         offset = self.string_matcher.get_match_offset(string_id, index)
         return offset if offset is not None else -1
 
     def visit_string_length(self, node: StringLength) -> int:
         """Get length of string match."""
-        string_id = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
+        string_id = self._normalize_string_id(node.string_id)
         index = self.visit(node.index) if node.index else 0
         length = self.string_matcher.get_match_length(string_id, index)
         return length if length is not None else 0
@@ -290,7 +291,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
     def visit_at_expression(self, node: AtExpression) -> bool:
         """Evaluate 'at' expression."""
         offset = self.visit(node.offset)
-        return self.string_matcher.string_at(node.string_id, offset)
+        return self.string_matcher.string_at(self._normalize_string_id(node.string_id), offset)
 
     def visit_in_expression(self, node: InExpression) -> bool:
         """Evaluate 'in' expression."""
@@ -299,7 +300,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return False
         if isinstance(node.subject, str):
             return self.string_matcher.string_in(
-                node.string_id,
+                self._normalize_string_id(node.subject),
                 range_val.start,
                 range_val.stop,
             )
@@ -388,9 +389,16 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             if text == "them":
                 return list(self.context.string_matches.keys())
             if text.endswith("*"):
-                prefix = text.rstrip("*")
-                return [sid for sid in self.context.string_matches if sid.startswith(prefix)]
-            return [text]
+                raw_prefix = text[:-1].lstrip("#@!")
+                prefixes = (
+                    [raw_prefix] if raw_prefix.startswith("$") else [f"${raw_prefix}", raw_prefix]
+                )
+                return [
+                    sid
+                    for sid in self.context.string_matches
+                    if any(sid.startswith(prefix) for prefix in prefixes)
+                ]
+            return [self._normalize_string_id(text)]
 
         if isinstance(string_set_node, str):
             return expand_text(string_set_node)
@@ -419,15 +427,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             result = []
             for elem in string_set_node.elements:
                 if isinstance(elem, StringWildcard):
-                    pattern = elem.pattern
-                    prefix = pattern.rstrip("*")
-                    result.extend(
-                        sid for sid in self.context.string_matches if sid.startswith(prefix)
-                    )
+                    result.extend(expand_text(elem.pattern))
                 elif isinstance(elem, StringIdentifier):
-                    result.append(elem.name)
+                    result.append(self._normalize_string_id(elem.name))
                 else:
-                    result.append(str(self.visit(elem)))
+                    result.extend(expand_text(str(self.visit(elem))))
             return result
 
         # Try visiting the node and handling the result
@@ -439,6 +443,24 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         # Fallback: all defined strings
         return list(self.context.string_matches.keys())
+
+    def _normalize_string_id(self, string_id: Any) -> str:
+        text = str(string_id)
+        if text == "$":
+            implicit = self.context.variables.get("$")
+            if isinstance(implicit, str):
+                text = implicit
+
+        text = text.lstrip("#@!")
+        if text in self.context.string_matches:
+            return text
+        if text.startswith("$"):
+            return text
+
+        prefixed = f"${text}"
+        if prefixed in self.context.string_matches:
+            return prefixed
+        return prefixed
 
     # Base expression visitor (dispatch to specific expression types)
     def visit_expression(self, node: Expression) -> Any:

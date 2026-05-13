@@ -70,6 +70,7 @@ def test_string_count_offset_length_and_wildcard() -> None:
     assert ev.evaluate_rule(rule) is True
 
     assert ev.visit_string_identifier(StringIdentifier(name="$a")) is True
+    assert ev.visit_string_identifier(StringIdentifier(name="a")) is True
     assert ev.visit_string_wildcard(StringWildcard(pattern="$*")) is True
     assert ev.visit_string_count(StringCount(string_id="a")) == 2
     assert ev.visit_string_offset(StringOffset(string_id="$a", index=IntegerLiteral(value=0))) == 2
@@ -153,8 +154,17 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
         ev.visit_at_expression(AtExpression(string_id="$a", offset=IntegerLiteral(value=2))) is True
     )
     assert (
+        ev.visit_at_expression(AtExpression(string_id="a", offset=IntegerLiteral(value=2))) is True
+    )
+    assert (
         ev.visit_in_expression(
             InExpression(subject="$a", range=RangeExpression(IntegerLiteral(0), IntegerLiteral(5)))
+        )
+        is True
+    )
+    assert (
+        ev.visit_in_expression(
+            InExpression(subject="a", range=RangeExpression(IntegerLiteral(0), IntegerLiteral(5)))
         )
         is True
     )
@@ -266,6 +276,15 @@ def test_for_of_and_module_reference_paths() -> None:
         )
         is True
     )
+    assert (
+        ev.visit_for_of_expression(
+            ForOfExpression(quantifier="all", string_set="a*", condition=BooleanLiteral(True))
+        )
+        is True
+    )
+
+    parsed = Parser().parse('rule r { strings: $a = "ab" condition: for any of them : ($) }')
+    assert YaraEvaluator(data=b"xxabyy").evaluate_file(parsed) == {"r": True}
 
     ev.context.modules["pe"] = {"machine": 0x14C}
     assert ev.visit_module_reference(ModuleReference(module="pe")) == {"machine": 0x14C}
