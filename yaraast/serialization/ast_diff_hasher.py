@@ -318,11 +318,11 @@ class AstHasher(ASTVisitor[str]):
     def visit_extern_import(self, node) -> str:
         module_path = getattr(node, "module", getattr(node, "module_path", ""))
         alias = getattr(node, "alias", None)
-        rules = "|".join(getattr(node, "rules", []))
+        rules = "|".join(sorted(getattr(node, "rules", [])))
         return f"ExternImport({module_path},{alias},{rules})"
 
     def visit_extern_namespace(self, node) -> str:
-        rules = "|".join(self.visit(rule) for rule in getattr(node, "extern_rules", []))
+        rules = "|".join(sorted(self.visit(rule) for rule in getattr(node, "extern_rules", [])))
         return f"ExternNamespace({getattr(node, 'name', '')},{rules})"
 
     def visit_extern_rule(self, node) -> str:
