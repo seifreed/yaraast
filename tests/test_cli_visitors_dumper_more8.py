@@ -114,6 +114,18 @@ def test_dumper_extra_node_types_and_fallback_fields() -> None:
         )["type"]
         == "ForExpression"
     )
+    dumped_for = d.visit_for_expression(
+        cast(
+            Any,
+            SimpleNamespace(
+                quantifier=IntegerLiteral(value=2),
+                variable="i",
+                iterable=IntegerLiteral(value=1),
+                body=IntegerLiteral(value=1),
+            ),
+        )
+    )
+    assert dumped_for["quantifier"] == {"type": "IntegerLiteral", "value": 2}
     assert (
         d.visit_for_of_expression(
             cast(

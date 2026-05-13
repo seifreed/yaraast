@@ -288,7 +288,7 @@ class ASTDumper(ASTVisitor[dict]):
     def visit_for_expression(self, node: ForExpression) -> dict:
         return {
             "type": "ForExpression",
-            "quantifier": node.quantifier,
+            "quantifier": self._dump_value(node.quantifier),
             "variable": node.variable,
             "iterable": self.visit(node.iterable),
             "body": self.visit(node.body),

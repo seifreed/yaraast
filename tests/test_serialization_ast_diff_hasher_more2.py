@@ -161,6 +161,18 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
         )
         == "For(any,i,Id(xs),Bool(True))"
     )
+    assert (
+        hasher.visit_for_expression(
+            _AcceptNode(
+                "visit_for_expression",
+                quantifier=_AcceptNode("visit_integer_literal", value=2),
+                variable="i",
+                iterable=_AcceptNode("visit_identifier", name="xs"),
+                body=_AcceptNode("visit_boolean_literal", value=True),
+            ),
+        )
+        == "For(Int(2),i,Id(xs),Bool(True))"
+    )
 
     assert (
         hasher.visit_for_of_expression(

@@ -184,7 +184,10 @@ class AstHasher(ASTVisitor[str]):
         return "Condition()"
 
     def visit_for_expression(self, node) -> str:
-        return f"For({node.quantifier},{node.variable},{self.visit(node.iterable)},{self.visit(node.body)})"
+        quantifier = self._hash_value(node.quantifier)
+        return (
+            f"For({quantifier},{node.variable},{self.visit(node.iterable)},{self.visit(node.body)})"
+        )
 
     def visit_for_of_expression(self, node) -> str:
         cond = self.visit(node.condition) if node.condition else ""
