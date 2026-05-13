@@ -39,6 +39,35 @@ def test_compare_imports_and_includes_removed_and_alias_modified() -> None:
     assert paths["/includes/new.yar"].diff_type == DiffType.ADDED
 
 
+def test_compare_includes_emits_added_and_removed_paths_in_sorted_order() -> None:
+    result = DiffResult(old_ast_hash="old", new_ast_hash="new")
+
+    compare_includes(
+        [
+            Include(path="old_z.yar"),
+            Include(path="old_a.yar"),
+            Include(path="old_m.yar"),
+        ],
+        [
+            Include(path="new_z.yar"),
+            Include(path="new_a.yar"),
+            Include(path="new_m.yar"),
+        ],
+        result,
+        DiffNode,
+        DiffType,
+    )
+
+    assert [diff.path for diff in result.differences] == [
+        "/includes/new_a.yar",
+        "/includes/new_m.yar",
+        "/includes/new_z.yar",
+        "/includes/old_a.yar",
+        "/includes/old_m.yar",
+        "/includes/old_z.yar",
+    ]
+
+
 def test_compare_rules_removed_modifier_and_string_diffs() -> None:
     hasher = AstHasher()
     result = DiffResult(old_ast_hash="old", new_ast_hash="new")

@@ -64,7 +64,7 @@ def compare_includes(old_includes, new_includes, result, diff_node, diff_type) -
     old_paths = {inc.path for inc in old_includes}
     new_paths = {inc.path for inc in new_includes}
 
-    for path in new_paths - old_paths:
+    for path in sorted(new_paths - old_paths):
         result.differences.append(
             diff_node(
                 path=f"/includes/{path}",
@@ -74,7 +74,7 @@ def compare_includes(old_includes, new_includes, result, diff_node, diff_type) -
             ),
         )
 
-    for path in old_paths - new_paths:
+    for path in sorted(old_paths - new_paths):
         result.differences.append(
             diff_node(
                 path=f"/includes/{path}",
