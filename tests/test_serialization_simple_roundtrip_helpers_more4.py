@@ -33,7 +33,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier
+from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
@@ -114,6 +114,31 @@ def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     restored = deserialize_meta(serialized)
     assert isinstance(restored, MetaEntry)
     assert restored.scope == MetaScope.PRIVATE
+
+
+def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="xor_range",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("xor", (1, 3))],
+                    )
+                ],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+    path = tmp_path / "simple.json"
+
+    serialize_to_file(ast, path)
+    restored = deserialize_from_file(path)
+
+    assert isinstance(restored, YaraFile)
+    assert restored.rules[0].strings[0].modifiers[0].value == (1, 3)
 
 
 def test_simple_roundtrip_helpers_preserve_file_extensions_and_pragmas() -> None:

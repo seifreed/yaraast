@@ -106,11 +106,30 @@ def _deserialize_hex_token(data: dict[str, Any]):
     return HexWildcard()
 
 
+def _serialize_modifier_value(value: Any) -> Any:
+    if isinstance(value, tuple):
+        return list(value)
+    return value
+
+
+def _deserialize_modifier_value(name: str, value: Any) -> Any:
+    if name == "xor":
+        if isinstance(value, list) and len(value) == 2:
+            return (value[0], value[1])
+        if isinstance(value, str) and "-" in value:
+            low, high = value.split("-", maxsplit=1)
+            if low.isdigit() and high.isdigit():
+                return (int(low), int(high))
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+    return value
+
+
 def _serialize_modifiers(modifiers: list[Any]) -> list[dict[str, Any]]:
     return [
         {
             "name": getattr(modifier, "name", str(modifier)),
-            "value": getattr(modifier, "value", None),
+            "value": _serialize_modifier_value(getattr(modifier, "value", None)),
         }
         for modifier in modifiers
     ]
@@ -119,7 +138,10 @@ def _serialize_modifiers(modifiers: list[Any]) -> list[dict[str, Any]]:
 def _deserialize_modifiers(modifiers: list[Any]) -> list[StringModifier]:
     return [
         (
-            StringModifier.from_name_value(modifier["name"], modifier.get("value"))
+            StringModifier.from_name_value(
+                modifier["name"],
+                _deserialize_modifier_value(modifier["name"], modifier.get("value")),
+            )
             if isinstance(modifier, dict)
             else StringModifier.from_name_value(str(modifier))
         )
