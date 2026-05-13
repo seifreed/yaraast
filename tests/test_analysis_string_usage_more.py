@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from yaraast.analysis.string_usage import StringUsageAnalyzer
-from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
@@ -113,6 +119,28 @@ def test_string_usage_analyzer_visit_rule_without_strings_or_condition() -> None
     analyzer.visit_rule(rule)
     assert analyzer.defined_strings["empty"] == set()
     assert analyzer.used_strings["empty"] == set()
+
+
+def test_string_usage_analyzer_traverses_condition_quantifier_nodes() -> None:
+    analyzer = StringUsageAnalyzer()
+    analyzer.current_rule = "manual"
+    analyzer.defined_strings["manual"] = {"$a", "$b"}
+    analyzer.used_strings["manual"] = set()
+    analyzer.in_condition = True
+
+    analyzer.visit(
+        ForExpression(
+            quantifier=StringCount("$b"),
+            variable="i",
+            iterable=SetExpression([IntegerLiteral(1)]),
+            body=StringIdentifier("$a"),
+        )
+    )
+    assert analyzer.used_strings["manual"] == {"$a", "$b"}
+
+    analyzer.used_strings["manual"] = set()
+    analyzer.visit_for_of_expression(ForOfExpression(StringCount("$b"), "$a"))
+    assert analyzer.used_strings["manual"] == {"$a", "$b"}
 
 
 def test_string_usage_analyzer_partial_branch_paths() -> None:

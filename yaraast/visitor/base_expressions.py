@@ -124,11 +124,15 @@ class BaseVisitorExpressionsMixin:
         return self._noop()
 
     def visit_for_expression(self: VisitorHelperProtocol[T], node: ForExpression) -> T:
+        if isinstance(node.quantifier, ASTNode):
+            self._visit_if(node.quantifier)
         self._visit_if(node.iterable)
         self._visit_if(node.body)
         return self._noop()
 
     def visit_for_of_expression(self: VisitorHelperProtocol[T], node: ForOfExpression) -> T:
+        if isinstance(node.quantifier, ASTNode):
+            self._visit_if(node.quantifier)
         if isinstance(node.string_set, ASTNode):
             self._visit_if(node.string_set)
         self._visit_if(node.condition)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.metrics._visitor_base import MetricsVisitorBase
@@ -25,6 +25,13 @@ class ComplexityCalculator(MetricsVisitorBase):
         if node is None:
             return 0
         return node.accept(self)
+
+    def _calculate_ast_value(self, value: Any) -> int:
+        if hasattr(value, "accept"):
+            return self.calculate(value)
+        if isinstance(value, list):
+            return sum(self._calculate_ast_value(item) for item in value)
+        return 0
 
     # Simple expressions - base complexity 1
     def visit_boolean_literal(self, node) -> int:
@@ -97,6 +104,7 @@ class ComplexityCalculator(MetricsVisitorBase):
     def visit_for_expression(self, node: ForExpression) -> int:
         self._cognitive_depth += 1
         complexity = 5  # High base for loops
+        complexity += self._calculate_ast_value(node.quantifier)
         complexity += self.calculate(node.iterable)
         complexity += self.calculate(node.body)
         self._cognitive_depth -= 1
@@ -105,6 +113,7 @@ class ComplexityCalculator(MetricsVisitorBase):
     def visit_for_of_expression(self, node: ForOfExpression) -> int:
         self._cognitive_depth += 1
         complexity = 5  # High base for loops
+        complexity += self._calculate_ast_value(node.quantifier)
         if hasattr(node.string_set, "accept"):
             complexity += self.calculate(node.string_set)
         else:
@@ -116,6 +125,7 @@ class ComplexityCalculator(MetricsVisitorBase):
 
     def visit_of_expression(self, node: OfExpression) -> int:
         complexity = 4  # Base for of expressions
+        complexity += self._calculate_ast_value(node.quantifier)
         if hasattr(node.string_set, "accept"):
             complexity += self.calculate(node.string_set)
         elif isinstance(node.string_set, list):
@@ -146,7 +156,7 @@ class ComplexityCalculator(MetricsVisitorBase):
         return 2 + self.calculate(node.offset)
 
     def visit_in_expression(self, node) -> int:
-        subject_complexity = self.calculate(node.subject) if hasattr(node.subject, "accept") else 0
+        subject_complexity = self._calculate_ast_value(node.subject)
         return 2 + subject_complexity + self.calculate(node.range)
 
     def visit_defined_expression(self, node) -> int:

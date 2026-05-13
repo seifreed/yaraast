@@ -171,6 +171,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.visit(node.range)
 
     def visit_for_of_expression(self, node: ForOfExpression) -> None:
+        self._visit_ast_value(node.quantifier)
         self._visit_string_set_value(node.string_set)
 
         if node.condition:

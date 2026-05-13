@@ -53,10 +53,14 @@ class DependencyFinder(MetricsVisitorBase):
         self.visit(node.object)
 
     def visit_for_expression(self, node) -> None:
+        if hasattr(node.quantifier, "accept"):
+            self.visit(node.quantifier)
         self.visit(node.iterable)
         self.visit(node.body)
 
     def visit_for_of_expression(self, node) -> None:
+        if hasattr(node.quantifier, "accept"):
+            self.visit(node.quantifier)
         if hasattr(node.string_set, "accept"):
             self.visit(node.string_set)
         if node.condition:

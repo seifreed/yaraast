@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
-from yaraast.ast.conditions import Condition, InExpression
-from yaraast.ast.expressions import BooleanLiteral, Expression, Identifier, RangeExpression
+from yaraast.ast.conditions import Condition, ForExpression, ForOfExpression, InExpression
+from yaraast.ast.expressions import (
+    BooleanLiteral,
+    Expression,
+    Identifier,
+    IntegerLiteral,
+    RangeExpression,
+    SetExpression,
+)
 from yaraast.ast.strings import HexToken, StringDefinition
 from yaraast.visitor.base import BaseVisitor
 
@@ -48,3 +55,25 @@ def test_base_visitor_traverses_in_expression_subject_nodes() -> None:
     )
 
     assert visitor.identifiers == ["subject", "low", "high"]
+
+
+def test_base_visitor_traverses_condition_quantifier_nodes() -> None:
+    visitor = _RecordingVisitor()
+
+    visitor.visit(
+        ForExpression(
+            quantifier=Identifier("limit"),
+            variable="i",
+            iterable=SetExpression([IntegerLiteral(1)]),
+            body=Identifier("body"),
+        )
+    )
+    visitor.visit(
+        ForOfExpression(
+            quantifier=Identifier("count"),
+            string_set=Identifier("strings"),
+            condition=Identifier("condition"),
+        )
+    )
+
+    assert visitor.identifiers == ["limit", "body", "count", "strings", "condition"]

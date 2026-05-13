@@ -343,6 +343,8 @@ class ExpressionOptimizer(ASTTransformer):
         return node
 
     def visit_for_expression(self, node: Any) -> Any:
+        if hasattr(node, "quantifier"):
+            node.quantifier = self._optimize_ast_value(node.quantifier)
         if hasattr(node, "iterable"):
             node.iterable = self.visit(node.iterable)
         if hasattr(node, "body"):

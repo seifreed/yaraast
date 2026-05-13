@@ -82,6 +82,14 @@ def test_complexity_calculator_core_and_branches() -> None:
     )
     assert calc.calculate(for_expr) >= 7
 
+    for_expr_with_quantifier = ForExpression(
+        quantifier=Identifier(name="limit"),
+        variable="i",
+        iterable=Identifier(name="arr"),
+        body=BooleanLiteral(value=True),
+    )
+    assert calc.calculate(for_expr_with_quantifier) == 8
+
     for_of_node = ForOfExpression(
         quantifier="any",
         string_set=SetExpression(elements=[StringIdentifier(name="$a")]),
@@ -106,7 +114,7 @@ def test_complexity_calculator_core_and_branches() -> None:
     assert calc.calculate(of_expr_node) >= 5
 
     of_expr_list = OfExpression(quantifier=StringLiteral(value="2"), string_set=["$a", "$b", "$c"])
-    assert calc.calculate(of_expr_list) == 7
+    assert calc.calculate(of_expr_list) == 8
 
     set_expr = SetExpression(elements=[IntegerLiteral(value=1), IntegerLiteral(value=2)])
     assert calc.calculate(set_expr) == 3

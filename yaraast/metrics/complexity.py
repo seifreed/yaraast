@@ -75,6 +75,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._condition_depths.append(self._current_depth)
         self.metrics.for_expressions += 1
 
+        self._visit_ast_value(node.quantifier)
         self.visit(node.iterable)
         self.visit(node.body)
         self._current_depth -= 1
@@ -85,6 +86,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._condition_depths.append(self._current_depth)
         self.metrics.for_of_expressions += 1
 
+        self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
         if node.condition:
             self.visit(node.condition)

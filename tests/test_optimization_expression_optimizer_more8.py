@@ -166,7 +166,11 @@ def test_visit_collection_and_access_nodes_and_set_dedup() -> None:
 def test_visit_for_of_at_in_and_passthrough_methods() -> None:
     opt = ExpressionOptimizer()
 
-    for_node = SimpleNamespace(iterable=Identifier("it"), body=Identifier("body"))
+    for_node = SimpleNamespace(
+        quantifier=BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)),
+        iterable=Identifier("it"),
+        body=Identifier("body"),
+    )
     of_node = SimpleNamespace(quantifier=IntegerLiteral(2), string_set=Identifier("s"))
     raw_of_node = OfExpression(quantifier="any", string_set=["$a", "$b"])
     raw_for_of_node = ForOfExpression(
@@ -182,6 +186,7 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
     )
 
     assert opt.visit_for_expression(for_node).iterable == Identifier("it")
+    assert for_node.quantifier == IntegerLiteral(3)
     assert opt.visit_of_expression(of_node).string_set == Identifier("s")
     assert opt.visit_of_expression(raw_of_node).string_set == ["$a", "$b"]
     assert opt.visit_for_of_expression(raw_for_of_node).string_set == ["$a", "$b"]

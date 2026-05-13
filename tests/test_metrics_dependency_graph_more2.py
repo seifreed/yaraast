@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import InExpression
-from yaraast.ast.expressions import Identifier, IntegerLiteral, RangeExpression
+from yaraast.ast.conditions import ForExpression, InExpression
+from yaraast.ast.expressions import Identifier, IntegerLiteral, RangeExpression, SetExpression
 from yaraast.ast.rules import Rule
 from yaraast.metrics.dependency_graph_utils import (
     analyze_dependencies,
@@ -54,6 +54,28 @@ def test_dependency_graph_traverses_in_expression_subject_nodes() -> None:
     graph = build_dependency_graph(ast)
 
     assert graph.get_dependencies("caller") == {"base"}
+
+
+def test_dependency_graph_traverses_for_expression_quantifier_nodes() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="base", condition=IntegerLiteral(1)),
+            Rule(
+                name="caller",
+                condition=ForExpression(
+                    quantifier=Identifier("base"),
+                    variable="i",
+                    iterable=SetExpression([IntegerLiteral(1)]),
+                    body=Identifier("body"),
+                ),
+            ),
+            Rule(name="body", condition=IntegerLiteral(1)),
+        ]
+    )
+
+    graph = build_dependency_graph(ast)
+
+    assert graph.get_dependencies("caller") == {"base", "body"}
 
 
 def test_dependency_graph_cycles_and_order() -> None:
