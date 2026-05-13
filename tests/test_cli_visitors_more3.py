@@ -8,6 +8,7 @@ from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    DoubleLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
@@ -88,6 +89,16 @@ def test_condition_formatter_handles_parsed_of_literals() -> None:
 
     assert ConditionStringFormatter().format_condition(condition) == "any of them"
     assert ExpressionStringFormatter()._format_of_expression(condition, 0) == "any of them"
+
+    percent_ast = Parser().parse('rule r { strings: $a = "a" $b = "b" condition: 50% of them }')
+    percent_condition = percent_ast.rules[0].condition
+    assert ConditionStringFormatter().format_condition(percent_condition) == "50% of them"
+    assert ExpressionStringFormatter()._format_of_expression(percent_condition, 0) == "50% of them"
+    raw_percent = OfExpression(quantifier=0.5, string_set=Identifier("them"))
+    literal_percent = OfExpression(quantifier=DoubleLiteral(0.5), string_set=Identifier("them"))
+    assert ConditionStringFormatter().format_condition(raw_percent) == "50% of them"
+    assert ExpressionStringFormatter()._format_of_expression(literal_percent, 0) == "50% of them"
+
     assert (
         ExpressionStringFormatter()._format_string_set(
             OfExpression(quantifier="any", string_set=StringWildcard("$a*")),

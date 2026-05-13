@@ -20,6 +20,15 @@ def _node_text(value: Any, default: str) -> str:
     return default
 
 
+def _quantifier_text(value: Any, default: str, *, allow_percentage: bool = False) -> str:
+    raw_value = getattr(value, "value", None)
+    if allow_percentage and isinstance(raw_value, float):
+        return f"{int(raw_value * 100)}%"
+    if allow_percentage and isinstance(value, float):
+        return f"{int(value * 100)}%"
+    return _node_text(value, default)
+
+
 class ConditionStringFormatter:
     """Helper class to format condition strings with reduced complexity."""
 
@@ -61,7 +70,9 @@ class ConditionStringFormatter:
         return str(condition.value).lower() if hasattr(condition, "value") else "true"
 
     def _format_of_expression(self, condition: Any, _depth: int) -> str:
-        quantifier = _node_text(getattr(condition, "quantifier", "any"), "any")
+        quantifier = _quantifier_text(
+            getattr(condition, "quantifier", "any"), "any", allow_percentage=True
+        )
         string_set = _node_text(getattr(condition, "string_set", "them"), "them")
         return f"{quantifier} of {string_set}"
 
@@ -329,7 +340,9 @@ class ExpressionStringFormatter:
         return f'"{val}"'
 
     def _format_of_expression(self, expr: Any, depth: int) -> str:
-        quantifier = _node_text(getattr(expr, "quantifier", "any"), "any")
+        quantifier = _quantifier_text(
+            getattr(expr, "quantifier", "any"), "any", allow_percentage=True
+        )
         string_set = self._format_string_set(expr, depth)
         return f"{quantifier} of {string_set}"
 
