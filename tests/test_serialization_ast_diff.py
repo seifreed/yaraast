@@ -128,6 +128,76 @@ def test_ast_diff_treats_meta_reordering_as_unchanged() -> None:
     assert result.differences == []
 
 
+def test_ast_diff_treats_top_level_reordering_as_unchanged() -> None:
+    cases = [
+        (
+            """
+            import "pe"
+            import "elf"
+            rule stable {
+                condition:
+                    true
+            }
+            """,
+            """
+            import "elf"
+            import "pe"
+            rule stable {
+                condition:
+                    true
+            }
+            """,
+        ),
+        (
+            """
+            include "b.yar"
+            include "a.yar"
+            rule stable {
+                condition:
+                    true
+            }
+            """,
+            """
+            include "a.yar"
+            include "b.yar"
+            rule stable {
+                condition:
+                    true
+            }
+            """,
+        ),
+        (
+            """
+            rule beta {
+                condition:
+                    true
+            }
+            rule alpha {
+                condition:
+                    false
+            }
+            """,
+            """
+            rule alpha {
+                condition:
+                    false
+            }
+            rule beta {
+                condition:
+                    true
+            }
+            """,
+        ),
+    ]
+
+    for old_code, new_code in cases:
+        result = AstDiff().compare(_parse_yara(old_code), _parse_yara(new_code))
+
+        assert result.old_ast_hash == result.new_ast_hash
+        assert not result.has_changes
+        assert result.differences == []
+
+
 def test_ast_diff_detects_imports_rules_and_modifications(tmp_path: Path) -> None:
     old_code = """
     import "pe"

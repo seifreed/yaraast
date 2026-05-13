@@ -31,9 +31,9 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_yara_file(self, node: YaraFile) -> str:
         """Hash YaraFile node."""
-        imports_hash = "|".join(self.visit(imp) for imp in node.imports)
-        includes_hash = "|".join(self.visit(inc) for inc in node.includes)
-        rules_hash = "|".join(self.visit(rule) for rule in node.rules)
+        imports_hash = "|".join(sorted(self.visit(imp) for imp in node.imports))
+        includes_hash = "|".join(sorted(self.visit(inc) for inc in node.includes))
+        rules_hash = "|".join(sorted(self.visit(rule) for rule in node.rules))
         extern_rules_hash = "|".join(self.visit(rule) for rule in node.extern_rules)
         extern_imports_hash = "|".join(self.visit(imp) for imp in node.extern_imports)
         pragmas_hash = "|".join(self.visit(pragma) for pragma in node.pragmas)
