@@ -467,8 +467,10 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
         features = []
         for issue in self.issues:
             if issue.issue_type == "yarax_feature":
-                features.append(issue.message.split(": ", 1)[1])
-        return list(set(features))
+                feature = issue.message.split(": ", 1)[1]
+                if feature not in features:
+                    features.append(feature)
+        return features
 
     def _assess_migration_difficulty(self) -> str:
         """Assess difficulty of migrating to YARA-X."""

@@ -58,18 +58,20 @@ class DependencyAnalyzer(BaseVisitor[None]):
             self.visit(rule)
 
         return {
-            "rules": list(self.rule_names),
-            "dependencies": {rule: list(deps) for rule, deps in self.dependencies.items()},
+            "rules": sorted(self.rule_names),
+            "dependencies": {
+                rule: sorted(deps) for rule, deps in sorted(self.dependencies.items())
+            },
             "dependency_graph": self._build_dependency_graph(),
             "circular_dependencies": self._find_circular_dependencies(),
             "dependency_order": self._topological_sort(),
-            "imported_modules": list(self.imported_modules),
-            "included_files": list(self.included_files),
+            "imported_modules": sorted(self.imported_modules),
+            "included_files": sorted(self.included_files),
         }
 
     def get_dependencies(self, rule_name: str) -> list[str]:
         """Get direct dependencies of a rule."""
-        return list(self.dependencies.get(rule_name, set()))
+        return sorted(self.dependencies.get(rule_name, set()))
 
     def get_dependents(self, rule_name: str) -> list[str]:
         """Get rules that depend on the given rule."""
@@ -77,7 +79,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
         for rule, deps in self.dependencies.items():
             if rule_name in deps:
                 dependents.append(rule)
-        return dependents
+        return sorted(dependents)
 
     def get_transitive_dependencies(self, rule_name: str) -> set[str]:
         """Get all transitive dependencies of a rule."""
@@ -100,15 +102,15 @@ class DependencyAnalyzer(BaseVisitor[None]):
         """Build a dependency graph."""
         graph: dict[str, DependencyGraphEntry] = {}
 
-        for rule in self.rule_names:
+        for rule in sorted(self.rule_names):
             deps = self.dependencies.get(rule, set())
             dependents = self.get_dependents(rule)
             transitive = self.get_transitive_dependencies(rule)
 
             graph[rule] = {
-                "depends_on": list(deps),
+                "depends_on": sorted(deps),
                 "depended_by": dependents,
-                "transitive_dependencies": list(transitive),
+                "transitive_dependencies": sorted(transitive),
                 "is_independent": len(deps) == 0 and len(dependents) == 0,
             }
 
@@ -119,7 +121,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
         dfs_state = self._init_dfs_state()
         cycles = []
 
-        for rule in self.rule_names:
+        for rule in sorted(self.rule_names):
             if dfs_state["color"][rule] == dfs_state["white"]:
                 self._dfs_cycle_detection(rule, dfs_state, cycles)
 
@@ -143,7 +145,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
         state["color"][node] = state["gray"]
         state["path"].append(node)
 
-        for neighbor in self.dependencies.get(node, set()):
+        for neighbor in sorted(self.dependencies.get(node, set())):
             if neighbor in self.rule_names:  # Only check internal rules
                 if state["color"][neighbor] == state["gray"]:
                     # Found cycle - include the back-edge to close it
@@ -177,10 +179,10 @@ class DependencyAnalyzer(BaseVisitor[None]):
         if self._find_circular_dependencies():
             return None
 
-        in_degree = dict.fromkeys(self.rule_names, 0)
+        in_degree = dict.fromkeys(sorted(self.rule_names), 0)
 
         # Calculate in-degrees: if rule A depends on rule B, then A has incoming edge from B
-        for rule, deps in self.dependencies.items():
+        for rule, deps in sorted(self.dependencies.items()):
             in_degree[rule] = len([dep for dep in deps if dep in in_degree])
 
         # Find nodes with no incoming edges
@@ -192,7 +194,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
             result.append(current)
 
             # Reduce in-degree for dependent nodes
-            for rule, deps in self.dependencies.items():
+            for rule, deps in sorted(self.dependencies.items()):
                 if current in deps and rule in in_degree:
                     in_degree[rule] -= 1
                     if in_degree[rule] == 0:

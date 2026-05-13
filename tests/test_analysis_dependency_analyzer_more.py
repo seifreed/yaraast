@@ -91,6 +91,27 @@ rule caller {
     assert analyzer.current_rule is None
 
 
+def test_dependency_analyzer_public_lists_are_stably_sorted() -> None:
+    ast = YaraFile(
+        imports=[Import("pe"), Import("math")],
+        includes=[Include("z.yar"), Include("a.yar")],
+        rules=[
+            Rule(name="z_rule", condition=Identifier("a_rule")),
+            Rule(name="a_rule", condition=BooleanLiteral(True)),
+        ],
+    )
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert results["rules"] == ["a_rule", "z_rule"]
+    assert results["dependencies"] == {"z_rule": ["a_rule"]}
+    assert results["dependency_graph"]["z_rule"]["depends_on"] == ["a_rule"]
+    assert results["dependency_graph"]["a_rule"]["depended_by"] == ["z_rule"]
+    assert results["dependency_order"] == ["a_rule", "z_rule"]
+    assert results["imported_modules"] == ["math", "pe"]
+    assert results["included_files"] == ["a.yar", "z.yar"]
+
+
 def test_dependency_analyzer_traverses_in_expression_subject_nodes() -> None:
     ast = YaraFile(
         rules=[

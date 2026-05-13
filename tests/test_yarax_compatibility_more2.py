@@ -141,6 +141,15 @@ rule native_yarax {
     }.issubset(features)
     assert all(issue.severity == "error" for issue in issues if issue.issue_type == "yarax_feature")
     assert "with statements" in checker.get_report()["yarax_features_used"]
+    assert checker.get_report()["yarax_features_used"] == [
+        "with statements",
+        "list expressions",
+        "spread operators",
+        "lambda expressions",
+        "array comprehensions",
+        "dict comprehensions",
+        "pattern matching",
+    ]
 
 
 def test_checker_reports_nested_collection_only_yarax_features() -> None:
