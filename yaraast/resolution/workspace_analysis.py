@@ -64,6 +64,7 @@ class WorkspaceAnalyzer:
     ) -> None:
         """Analyze files in parallel."""
         self._validate_max_workers(max_workers)
+        completed_results: dict[str, FileAnalysisResult] = {}
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_file = {
                 executor.submit(self._analyze_file, result, report): (file_path, result)
@@ -74,10 +75,13 @@ class WorkspaceAnalyzer:
                 file_path, result = future_to_file[future]
                 try:
                     future.result()
-                    report.file_results[file_path] = result
                 except Exception as e:
                     result.errors.append(f"Analysis error: {e}")
-                    report.file_results[file_path] = result
+                completed_results[file_path] = result
+
+        for file_path in self.workspace.files:
+            if file_path in completed_results:
+                report.file_results[file_path] = completed_results[file_path]
 
     def _analyze_file(self, result: FileAnalysisResult, report: WorkspaceReport) -> None:
         """Analyze a single file."""

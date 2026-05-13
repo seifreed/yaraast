@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Event
 from typing import cast
 
 import pytest
@@ -252,6 +253,46 @@ def test_workspace_parallel_analysis_records_future_failures(tmp_path: Path) -> 
 
     assert set(report.file_results) == {str(good_path), str(bad_path)}
     assert any("Analysis error:" in err for err in report.file_results[str(bad_path)].errors)
+
+
+def test_workspace_parallel_analysis_preserves_file_order(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workspace = Workspace(str(tmp_path))
+    slow_path = tmp_path / "slow.yar"
+    fast_path = tmp_path / "fast.yar"
+
+    for path, rule_name in ((slow_path, "slow"), (fast_path, "fast")):
+        workspace.files[str(path)] = FileAnalysisResult(
+            path=path,
+            resolved=ResolvedFile(
+                path=path,
+                content=f"rule {rule_name} {{ condition: true }}",
+                ast=YaraFile(rules=[Rule(name=rule_name, condition=BooleanLiteral(True))]),
+                checksum=rule_name,
+            ),
+        )
+
+    original_analyze_file = WorkspaceAnalyzer._analyze_file
+    fast_finished = Event()
+
+    def delayed_analyze_file(
+        self: WorkspaceAnalyzer,
+        result: FileAnalysisResult,
+        report: WorkspaceReport,
+    ) -> None:
+        if result.path == slow_path:
+            fast_finished.wait(timeout=1)
+        original_analyze_file(self, result, report)
+        if result.path == fast_path:
+            fast_finished.set()
+
+    monkeypatch.setattr(WorkspaceAnalyzer, "_analyze_file", delayed_analyze_file)
+
+    report = workspace.analyze(parallel=True, max_workers=2)
+
+    assert list(report.file_results) == list(workspace.files)
 
 
 def test_workspace_analysis_rejects_invalid_worker_count(tmp_path: Path) -> None:
