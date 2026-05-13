@@ -204,13 +204,12 @@ def optimize_yara_file(
         Tuple of (optimized AST, statistics)
 
     """
-    from yaraast.parser.parser import Parser
+    from yaraast.parser.source import parse_yara_source
 
     # Parse the file
-    parser = Parser()
     with open(file_path, encoding="utf-8") as f:
         content = f.read()
-    ast = parser.parse(content)
+    ast = parse_yara_source(content)
 
     # Optimize
     optimizer = PerformanceOptimizer()
@@ -219,9 +218,9 @@ def optimize_yara_file(
 
     # Write output if requested
     if output_path:
-        from yaraast.codegen.generator import CodeGenerator
+        from yaraast.yarax.generator import YaraXGenerator
 
-        gen = CodeGenerator()
+        gen = YaraXGenerator()
         output = gen.generate(ast)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(output)

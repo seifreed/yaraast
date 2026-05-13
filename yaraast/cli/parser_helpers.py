@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from yaraast.ast.base import YaraFile
-from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.parser.parser import Parser
-from yaraast.yarax.parser import YaraXParser
+from yaraast.parser.source import parse_yara_source
 
 
 def create_parser() -> Parser:
@@ -13,8 +11,4 @@ def create_parser() -> Parser:
     return Parser()
 
 
-def parse_yara_source(content: str) -> YaraFile:
-    """Parse standard YARA or YARA-X source for CLI services."""
-    if detect_dialect(content) == YaraDialect.YARA_X:
-        return YaraXParser(content).parse()
-    return Parser().parse(content)
+__all__ = ["create_parser", "parse_yara_source"]

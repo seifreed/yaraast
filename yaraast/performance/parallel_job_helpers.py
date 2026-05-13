@@ -49,13 +49,12 @@ def fail_job(job: Job, error: Exception | str) -> Job:
 
 def analyze_file_path(path: str, analyzer) -> dict:
     """Parse and analyze a file path using a provided analyzer instance."""
-    from yaraast.parser.parser import Parser
+    from yaraast.parser.source import parse_yara_source
 
-    parser = Parser()
     with open(path, encoding="utf-8") as f:
         content = f.read()
 
-    yara_file = parser.parse(content)
+    yara_file = parse_yara_source(content)
     analysis = analyzer.analyze_file(yara_file)
     analysis["file"] = path
     return analysis
@@ -98,7 +97,7 @@ def parse_file_chunks(file_paths: list, chunk_size: int = 10) -> list[Job]:
         msg = "chunk_size must be at least 1"
         raise ValueError(msg)
 
-    from yaraast.parser.parser import Parser
+    from yaraast.parser.source import parse_yara_source
 
     chunks = [file_paths[i : i + chunk_size] for i in range(0, len(file_paths), chunk_size)]
     jobs: list[Job] = []
@@ -107,11 +106,10 @@ def parse_file_chunks(file_paths: list, chunk_size: int = 10) -> list[Job]:
         job = start_job("parse_files")
         jobs.append(job)
         try:
-            parser = Parser()
             results = []
             for file_path in chunk:
                 content = Path(file_path).read_text(encoding="utf-8")
-                ast = parser.parse(content)
+                ast = parse_yara_source(content)
                 results.append(ast)
             complete_job(job, results)
         except Exception as e:

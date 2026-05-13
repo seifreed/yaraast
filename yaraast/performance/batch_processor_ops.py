@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
 from yaraast.ast.base import YaraFile
 from yaraast.metrics.html_tree import HtmlTreeGenerator
-from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.json_serializer import JsonSerializer
 
 if TYPE_CHECKING:
@@ -19,13 +19,12 @@ if TYPE_CHECKING:
 
 def parse_item(item: str | Path) -> YaraFile | None:
     try:
-        parser = Parser()
         if isinstance(item, Path):
             with open(item, encoding="utf-8") as handle:
                 content = handle.read()
         else:
             content = item
-        return parser.parse(content)
+        return parse_yara_source(content)
     except (ValueError, TypeError, AttributeError):
         return None
 

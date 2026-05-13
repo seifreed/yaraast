@@ -9,6 +9,10 @@ from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
 
 
+def _yarax_rule() -> str:
+    return "rule x { condition: with xs = [1]: match xs { _ => true } }"
+
+
 def test_batch_result_properties_cover_zero_and_nonzero_branches() -> None:
     empty = BatchResult(operation=BatchOperation.PARSE, input_count=0)
     assert empty.success_rate == 0.0
@@ -55,6 +59,32 @@ def test_process_batch_parse_handles_invalid_item_without_exceptions() -> None:
     assert stats["items_processed"] == 2
     assert stats["failures"] == 0
     assert stats["batches_processed"] == 2
+
+
+def test_batch_processor_accepts_yarax_sources_and_files(tmp_path: Path) -> None:
+    source = _yarax_rule()
+    processor = BatchProcessor(batch_size=1)
+
+    parsed = processor.process_batch([source], BatchOperation.PARSE)[0]
+
+    assert parsed is not None
+    assert parsed.rules[0].name == "x"
+
+    path = tmp_path / "x.yar"
+    path.write_text(source, encoding="utf-8")
+    result = BatchProcessor().process_files([path], BatchOperation.PARSE)
+
+    assert result.successful_count == 1
+    assert result.failed_count == 0
+
+    large = BatchProcessor().process_large_file(
+        path,
+        operations=[BatchOperation.PARSE, BatchOperation.VALIDATE],
+        output_dir=tmp_path / "out",
+    )
+
+    assert large[BatchOperation.PARSE].successful_count == 1
+    assert large[BatchOperation.VALIDATE].successful_count == 1
 
 
 def test_process_batch_custom_callable_exception_tracks_failure() -> None:

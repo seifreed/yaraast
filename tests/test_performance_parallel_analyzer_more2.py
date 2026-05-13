@@ -24,6 +24,10 @@ def _rule_code(name: str = "r") -> str:
     """
 
 
+def _yarax_rule() -> str:
+    return "rule x { condition: with xs = [1]: match xs { _ => true } }"
+
+
 def _parsed_ast(name: str = "r") -> YaraFile:
     return Parser().parse(_rule_code(name))
 
@@ -85,6 +89,23 @@ def test_parallel_analyzer_direct_methods_and_stats(tmp_path: Path) -> None:
     assert reset_stats["jobs_submitted"] == 1
     assert reset_stats["jobs_completed"] == 1
     assert reset_stats["jobs_failed"] == 0
+
+
+def test_parallel_analyzer_accepts_yarax_files(tmp_path: Path) -> None:
+    file_path = tmp_path / "x.yar"
+    file_path.write_text(_yarax_rule(), encoding="utf-8")
+    analyzer = ParallelAnalyzer(max_workers=1)
+
+    by_path = analyzer._analyze_file_path(str(file_path))
+
+    assert by_path["file"] == str(file_path)
+    assert by_path["stats"]["total_rules"] == 1
+
+    jobs = analyzer.parse_files_parallel([str(file_path)], chunk_size=1)
+
+    assert len(jobs) == 1
+    assert jobs[0].status.value == "completed"
+    assert jobs[0].result[0].rules[0].name == "x"
 
 
 def test_parallel_analyzer_rejects_invalid_worker_counts(tmp_path: Path) -> None:
