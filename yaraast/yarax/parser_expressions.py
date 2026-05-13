@@ -46,7 +46,7 @@ class YaraXParserExpressionsMixin:
             if self._check(TokenType.COLON):
                 expr = self._parse_slice_expression(expr, None)
             else:
-                index = self._parse_or_expression()
+                index = self.parse_expression()
 
                 if self._check(TokenType.COLON):
                     expr = self._parse_slice_expression(expr, index)
@@ -72,14 +72,14 @@ class YaraXParserExpressionsMixin:
 
         self._consume(TokenType.COLON, "Expected ':' after lambda parameters")
 
-        body = self._parse_or_expression()
+        body = self.parse_expression()
         return LambdaExpression(parameters=parameters, body=body)
 
     def _parse_pattern_match(self) -> PatternMatch:
         """Parse pattern match expression."""
         self._consume_keyword("match")
 
-        value = self._parse_or_expression()
+        value = self.parse_expression()
 
         self._consume(TokenType.LBRACE, "Expected '{' after match value")
 
@@ -90,14 +90,14 @@ class YaraXParserExpressionsMixin:
             if self._check(TokenType.IDENTIFIER) and self._peek().value == "_":
                 self._advance()
                 self._consume_arrow()
-                default = self._parse_or_expression()
+                default = self.parse_expression()
 
                 if self._check(TokenType.COMMA):
                     self._advance()
             else:
-                pattern = self._parse_or_expression()
+                pattern = self.parse_expression()
                 self._consume_arrow()
-                result = self._parse_or_expression()
+                result = self.parse_expression()
                 cases.append(MatchCase(pattern=pattern, result=result))
 
                 if self._check(TokenType.COMMA):
@@ -112,7 +112,7 @@ class YaraXParserExpressionsMixin:
         if self._check(TokenType.COLON):
             return self._parse_slice_expression(expr, None)
 
-        index = self._parse_or_expression()
+        index = self.parse_expression()
 
         if self._check(TokenType.COLON):
             return self._parse_slice_expression(expr, index)

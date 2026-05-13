@@ -75,6 +75,20 @@ def test_yarax_list_and_spread_expression() -> None:
     assert any(isinstance(elem, SpreadOperator) for elem in expr.elements)
 
 
+def test_yarax_nested_extended_expressions_parse() -> None:
+    expr = _parse_expr('[[1], {"a": [2]}, lambda x: [x], match x { 1 => [2], _ => [] }]')
+    assert isinstance(expr, ListExpression)
+    assert isinstance(expr.elements[0], ListExpression)
+    assert isinstance(expr.elements[1], DictExpression)
+    assert isinstance(expr.elements[2], LambdaExpression)
+    assert isinstance(expr.elements[3], PatternMatch)
+
+    comprehension = _parse_expr("[x for x in [1, 2] if match x { 1 => true, _ => false }]")
+    assert isinstance(comprehension, ArrayComprehension)
+    assert isinstance(comprehension.iterable, ListExpression)
+    assert isinstance(comprehension.condition, PatternMatch)
+
+
 def test_yarax_array_comprehension() -> None:
     expr = _parse_expr("[x for x in items if x]")
     assert isinstance(expr, ArrayComprehension)

@@ -37,7 +37,7 @@ class YaraXParserCollectionsMixin:
         if self._is_spread_operator():
             return self._parse_spread_list()
 
-        first_expr = self._parse_or_expression()
+        first_expr = self.parse_expression()
 
         if self._check(TokenType.FOR) or self._check_keyword("for"):
             return self._parse_array_comprehension_body(first_expr)
@@ -70,10 +70,10 @@ class YaraXParserCollectionsMixin:
         while not self._check(TokenType.RBRACKET):
             if self._is_spread_operator():
                 self._consume_spread_operator()
-                expr = self._parse_or_expression()
+                expr = self.parse_expression()
                 elements.append(SpreadOperator(expression=expr, is_dict=False))
             else:
-                elements.append(self._parse_or_expression())
+                elements.append(self.parse_expression())
 
             if not self._check(TokenType.RBRACKET):
                 self._consume(TokenType.COMMA, "Expected ',' or ']'")
@@ -90,10 +90,10 @@ class YaraXParserCollectionsMixin:
                 break
             if self._is_spread_operator():
                 self._consume_spread_operator()
-                expr = self._parse_or_expression()
+                expr = self.parse_expression()
                 elements.append(SpreadOperator(expression=expr, is_dict=False))
             else:
-                elements.append(self._parse_or_expression())
+                elements.append(self.parse_expression())
 
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
         return ListExpression(elements=elements)
@@ -112,12 +112,12 @@ class YaraXParserCollectionsMixin:
         else:
             self._consume_keyword("in")
 
-        iterable = self._parse_or_expression()
+        iterable = self.parse_expression()
 
         condition = None
         if self._check_keyword("if"):
             self._advance()
-            condition = self._parse_or_expression()
+            condition = self.parse_expression()
 
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
 
@@ -139,9 +139,9 @@ class YaraXParserCollectionsMixin:
         if self._is_dict_spread_operator():
             return self._parse_dict_with_spread()
 
-        first_key = self._parse_or_expression()
+        first_key = self.parse_expression()
         self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
-        first_value = self._parse_or_expression()
+        first_value = self.parse_expression()
 
         if self._check(TokenType.FOR) or self._check_keyword("for"):
             return self._parse_dict_comprehension_body(first_key, first_value)
@@ -163,7 +163,7 @@ class YaraXParserCollectionsMixin:
             if self._check(TokenType.MULTIPLY) and self._is_dict_spread_operator():
                 self._advance()  # First *
                 self._advance()  # Second *
-                expr = self._parse_or_expression()
+                expr = self.parse_expression()
                 items.append(
                     DictItem(
                         key=StringLiteral(value="__spread__"),
@@ -171,9 +171,9 @@ class YaraXParserCollectionsMixin:
                     ),
                 )
             else:
-                key = self._parse_or_expression()
+                key = self.parse_expression()
                 self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
-                value = self._parse_or_expression()
+                value = self.parse_expression()
                 items.append(DictItem(key=key, value=value))
 
             if not self._check(TokenType.RBRACE):
@@ -191,9 +191,9 @@ class YaraXParserCollectionsMixin:
             if self._check(TokenType.RBRACE):
                 break
 
-            key = self._parse_or_expression()
+            key = self.parse_expression()
             self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
-            value = self._parse_or_expression()
+            value = self.parse_expression()
             items.append(DictItem(key=key, value=value))
 
         self._consume(TokenType.RBRACE, ERROR_EXPECTED_BRACE_CLOSE)
@@ -223,12 +223,12 @@ class YaraXParserCollectionsMixin:
         else:
             self._consume_keyword("in")
 
-        iterable = self._parse_or_expression()
+        iterable = self.parse_expression()
 
         condition = None
         if self._check_keyword("if"):
             self._advance()
-            condition = self._parse_or_expression()
+            condition = self.parse_expression()
 
         self._consume(TokenType.RBRACE, ERROR_EXPECTED_BRACE_CLOSE)
 
@@ -249,7 +249,7 @@ class YaraXParserCollectionsMixin:
             self._advance()
             return TupleExpression(elements=[])
 
-        first = self._parse_or_expression()
+        first = self.parse_expression()
 
         if self._check(TokenType.COMMA):
             elements = [first]
@@ -257,7 +257,7 @@ class YaraXParserCollectionsMixin:
                 self._advance()
                 if self._check(TokenType.RPAREN):
                     break
-                elements.append(self._parse_or_expression())
+                elements.append(self.parse_expression())
 
             self._consume(TokenType.RPAREN, "Expected ')'")
             return TupleExpression(elements=elements)
@@ -278,7 +278,7 @@ class YaraXParserCollectionsMixin:
         if self._check(TokenType.COLON):
             return self._parse_slice_expression(tuple_expr, None)
 
-        index = self._parse_or_expression()
+        index = self.parse_expression()
 
         if self._check(TokenType.COLON):
             return self._parse_slice_expression(tuple_expr, index)
@@ -298,13 +298,13 @@ class YaraXParserCollectionsMixin:
 
         stop = None
         if not self._check(TokenType.COLON) and not self._check(TokenType.RBRACKET):
-            stop = self._parse_or_expression()
+            stop = self.parse_expression()
 
         step = None
         if self._check(TokenType.COLON):
             self._advance()
             if not self._check(TokenType.RBRACKET):
-                step = self._parse_or_expression()
+                step = self.parse_expression()
 
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
 
