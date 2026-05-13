@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -47,11 +48,12 @@ from yaraast.ast.pragmas import (
     IncludeOncePragma,
     InRulePragma,
     Pragma,
+    PragmaBlock,
     PragmaScope,
     PragmaType,
     UndefDirective,
 )
-from yaraast.ast.rules import Import, Include, Rule
+from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
@@ -59,6 +61,7 @@ from yaraast.ast.strings import (
     HexNegatedByte,
     HexNibble,
     HexString,
+    HexToken,
     HexWildcard,
     PlainString,
     RegexString,
@@ -175,6 +178,31 @@ def serialize_node(node: ASTNode) -> dict[str, Any]:
         return {"type": "Import", "module": node.module, "alias": node.alias}
     if isinstance(node, Include):
         return {"type": "Include", "path": node.path}
+    if isinstance(node, Tag):
+        return {"type": "Tag", "name": node.name}
+    if isinstance(node, Meta):
+        return serialize_meta(node)
+    if isinstance(node, Comment):
+        return {
+            "type": "Comment",
+            "text": node.text,
+            "is_multiline": node.is_multiline,
+        }
+    if isinstance(node, CommentGroup):
+        return {
+            "type": "CommentGroup",
+            "comments": [serialize_node(comment) for comment in node.comments],
+        }
+    if isinstance(node, PlainString | HexString | RegexString):
+        return serialize_string(node)
+    if isinstance(node, HexToken):
+        return _serialize_hex_token(node)
+    if isinstance(node, StringModifier):
+        return {
+            "type": "StringModifier",
+            "name": node.name,
+            "value": _serialize_modifier_value(node.value),
+        }
     if isinstance(node, ExternRule):
         return serialize_extern_rule(node)
     if isinstance(node, ExternRuleReference):
@@ -201,6 +229,12 @@ def serialize_node(node: ASTNode) -> dict[str, Any]:
             "type": "InRulePragma",
             "pragma": serialize_pragma(node.pragma),
             "position": node.position,
+        }
+    if isinstance(node, PragmaBlock):
+        return {
+            "type": "PragmaBlock",
+            "pragmas": [serialize_pragma(pragma) for pragma in node.pragmas],
+            "scope": node.scope.value,
         }
     if isinstance(node, Pragma):
         return serialize_pragma(node)
@@ -454,6 +488,32 @@ def deserialize_node(data: dict[str, Any]) -> ASTNode:
         return Import(data["module"], alias=data.get("alias"))
     if node_type == "Include":
         return Include(data["path"])
+    if node_type == "Tag":
+        return Tag(data["name"])
+    if node_type == "Meta":
+        return Meta(data["key"], data["value"])
+    if node_type == "Comment":
+        return Comment(data["text"], is_multiline=data.get("is_multiline", False))
+    if node_type == "CommentGroup":
+        return CommentGroup(
+            [cast_comment(deserialize_node(comment)) for comment in data.get("comments", [])]
+        )
+    if node_type in {"PlainString", "HexString", "RegexString"}:
+        return deserialize_string(data)
+    if node_type in {
+        "HexByte",
+        "HexWildcard",
+        "HexJump",
+        "HexNibble",
+        "HexNegatedByte",
+        "HexAlternative",
+    }:
+        return _deserialize_hex_token(data)
+    if node_type == "StringModifier":
+        return StringModifier.from_name_value(
+            data["name"],
+            _deserialize_modifier_value(data["name"], data.get("value")),
+        )
     if node_type == "ExternRule":
         return deserialize_extern_rule(data)
     if node_type == "ExternRuleReference":
@@ -476,6 +536,11 @@ def deserialize_node(data: dict[str, Any]) -> ASTNode:
         return InRulePragma(
             pragma=deserialize_pragma(data["pragma"]),
             position=data.get("position", "before_strings"),
+        )
+    if node_type == "PragmaBlock":
+        return PragmaBlock(
+            pragmas=[deserialize_pragma(pragma) for pragma in data.get("pragmas", [])],
+            scope=_deserialize_pragma_scope(data.get("scope")),
         )
     if node_type == "Pragma":
         return deserialize_pragma(data)
@@ -690,6 +755,12 @@ def cast_in_rule_pragma(node: ASTNode) -> InRulePragma:
     if isinstance(node, InRulePragma):
         return node
     return InRulePragma(pragma=Pragma(PragmaType.CUSTOM, "custom"))
+
+
+def cast_comment(node: ASTNode) -> Comment:
+    if isinstance(node, Comment):
+        return node
+    return Comment(str(node))
 
 
 def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:

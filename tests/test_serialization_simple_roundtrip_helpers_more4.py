@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -36,12 +37,16 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
-from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
+from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaBlock, PragmaScope
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
+    HexAlternative,
     HexByte,
+    HexJump,
     HexNegatedByte,
+    HexNibble,
     HexString,
+    HexWildcard,
     PlainString,
     RegexString,
     StringDefinition,
@@ -231,6 +236,43 @@ def test_simple_roundtrip_helpers_preserve_extended_expression_nodes() -> None:
         DictionaryAccess(Identifier("arr"), IntegerLiteral(0)),
         DefinedExpression(DictionaryAccess(ModuleReference("pe"), "rich_signature")),
         StringOperatorExpression(StringLiteral("abc"), "icontains", StringLiteral("b")),
+    ]
+
+    for node in nodes:
+        assert deserialize_node(serialize_node(node)) == node
+
+
+def test_simple_roundtrip_helpers_preserve_direct_misc_ast_nodes() -> None:
+    nodes = [
+        Tag("packed"),
+        Meta("score", 7),
+        Comment("lead", is_multiline=True),
+        CommentGroup([Comment("a"), Comment("b", is_multiline=True)]),
+        PlainString(
+            identifier="$a",
+            value="abc",
+            modifiers=[StringModifier.from_name_value("wide")],
+        ),
+        RegexString("$r", [StringModifier.from_name_value("nocase")], "ab.*"),
+        HexString(
+            "$h",
+            [],
+            [
+                HexByte(0x41),
+                HexNegatedByte(0x42),
+                HexWildcard(),
+                HexJump(1, 3),
+                HexAlternative([[HexByte(0x43)], [HexNibble(False, 0xF)]]),
+            ],
+        ),
+        HexByte(0x41),
+        HexNegatedByte(0x42),
+        HexWildcard(),
+        HexJump(1, 3),
+        HexNibble(True, 0xA),
+        HexAlternative([[HexByte(0x41)], [HexByte(0x42)]]),
+        StringModifier.from_name_value("xor", (4, 8)),
+        PragmaBlock([CustomPragma("vendor", ["on"])], scope=PragmaScope.RULE),
     ]
 
     for node in nodes:
