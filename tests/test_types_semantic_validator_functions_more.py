@@ -155,6 +155,13 @@ def test_function_validator_visits_nested_condition_nodes() -> None:
             ),
             ForOfExpression(quantifier="all", string_set="them", condition=None),
             OfExpression(quantifier="any", string_set=["$a", "$b"]),
+            InExpression(
+                subject=OfExpression(
+                    quantifier=Identifier("q"),
+                    string_set=SetExpression([FunctionCall("nested_unknown", [])]),
+                ),
+                range=RangeExpression(low=IntegerLiteral(0), high=IntegerLiteral(2)),
+            ),
         ],
     )
 
@@ -162,3 +169,4 @@ def test_function_validator_visits_nested_condition_nodes() -> None:
 
     # Unknown top-level function warning plus successful traversal of nested nodes.
     assert any("Unknown function 'unknown'" in w.message for w in result.warnings)
+    assert any("Unknown function 'nested_unknown'" in w.message for w in result.warnings)

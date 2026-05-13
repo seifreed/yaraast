@@ -154,6 +154,8 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         self.visit(node.offset)
 
     def visit_in_expression(self, node) -> None:
+        if not isinstance(node.subject, str):
+            self._visit_ast_value(node.subject)
         self.visit(node.range)
 
     def visit_of_expression(self, node) -> None:
