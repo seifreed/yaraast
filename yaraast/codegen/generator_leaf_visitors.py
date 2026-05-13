@@ -88,7 +88,7 @@ def visit_boolean_literal(node) -> str:
 
 def visit_meta(node) -> str:
     if isinstance(node.value, str):
-        return f'{node.key} = "{node.value}"'
+        return f'{node.key} = "{escape_string_literal(node.value)}"'
     if isinstance(node.value, bool):
         return f"{node.key} = {'true' if node.value else 'false'}"
     return f"{node.key} = {node.value}"

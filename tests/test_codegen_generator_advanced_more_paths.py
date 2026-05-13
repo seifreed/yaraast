@@ -68,6 +68,7 @@ def test_codegen_generator_additional_visit_paths() -> None:
     assert gen.visit_condition(Condition()) == ""
     assert gen.visit_hex_token(HexByte(1)) == ""
     assert gen.visit_meta(Meta("k", "v")) == 'k = "v"'
+    assert gen.visit_meta(Meta("k", "a\nb\t\x00")) == 'k = "a\\nb\\t\\x00"'
     assert gen.visit_meta(Meta("k", False)) == "k = false"
     assert gen.visit_meta(Meta("k", 7)) == "k = 7"
     assert (
