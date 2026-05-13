@@ -323,8 +323,10 @@ def infer_module_or_condition(ctx, node):
 
     if isinstance(node, OfExpression):
         quant_type = _infer_quantifier_value(ctx, node.quantifier)
-        if not isinstance(quant_type, StringType | IntegerType):
-            ctx.errors.append(f"'of' quantifier must be string or integer, got {quant_type}")
+        if not isinstance(quant_type, StringType | IntegerType | DoubleType):
+            ctx.errors.append(
+                f"'of' quantifier must be string, integer, or percentage, got {quant_type}"
+            )
         set_type = _infer_string_set_value(ctx, node.string_set)
         if not isinstance(set_type, StringSetType):
             ctx.errors.append(f"'of' requires string set, got {set_type}")

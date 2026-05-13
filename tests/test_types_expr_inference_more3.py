@@ -7,6 +7,7 @@ from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, 
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    DoubleLiteral,
     Identifier,
     IntegerLiteral,
     RangeExpression,
@@ -136,7 +137,7 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
         ),
         BooleanType,
     )
-    assert any("'of' quantifier must be string or integer" in e for e in inf.errors)
+    assert any("'of' quantifier must be string, integer, or percentage" in e for e in inf.errors)
     assert any("'of' requires string set" in e for e in inf.errors)
 
     assert isinstance(
@@ -148,8 +149,20 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
         ),
         BooleanType,
     )
-    assert any("'of' quantifier must be string or integer" in e for e in inf.errors)
+    assert any("'of' quantifier must be string, integer, or percentage" in e for e in inf.errors)
     assert any("'of' requires string set" in e for e in inf.errors)
+
+    percent_of = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        percent_of.infer(
+            OfExpression(
+                quantifier=DoubleLiteral(value=0.5),
+                string_set=Identifier(name="them"),
+            )
+        ),
+        BooleanType,
+    )
+    assert percent_of.errors == []
 
 
 def test_expr_inference_helper_and_branch_edges() -> None:
