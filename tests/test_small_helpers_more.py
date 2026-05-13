@@ -149,3 +149,11 @@ def test_detect_dialect_yarax_signals() -> None:
 
     yarax_with_identifier = "rule x { condition: with xs = [1]: true }"
     assert detect_dialect(yarax_with_identifier) == YaraDialect.YARA_X
+
+
+def test_detect_dialect_ignores_yarax_signals_inside_regex_literals() -> None:
+    regex_string = r"rule classic { strings: $r = /with xs = [1]/ condition: $r }"
+    assert detect_dialect(regex_string) == YaraDialect.YARA
+
+    condition_regex = r'rule classic { condition: "abc" matches /lambda x:/ }'
+    assert detect_dialect(condition_regex) == YaraDialect.YARA

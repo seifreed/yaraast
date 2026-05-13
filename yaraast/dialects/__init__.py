@@ -27,11 +27,39 @@ class YaraDialect(Enum):
     YARA_L = auto()  # YARA-L (Google Chronicle)
 
 
+_REGEX_CONTEXT_KEYWORDS = {"and", "condition", "contains", "matches", "not", "or"}
+
+
+def _is_regex_literal_start(content: str, index: int) -> bool:
+    """Return whether a slash appears in a YARA regex-literal context."""
+    if content[index] != "/" or (index + 1 < len(content) and content[index + 1] in "/*"):
+        return False
+
+    previous = index - 1
+    while previous >= 0 and content[previous].isspace():
+        previous -= 1
+
+    if previous < 0:
+        return True
+
+    if content[previous] in "=(:,[!~":
+        return True
+
+    if content[previous].isalnum() or content[previous] == "_":
+        word_end = previous + 1
+        while previous >= 0 and (content[previous].isalnum() or content[previous] == "_"):
+            previous -= 1
+        return content[previous + 1 : word_end].lower() in _REGEX_CONTEXT_KEYWORDS
+
+    return False
+
+
 def _strip_string_literals(content: str) -> str:
-    """Remove string literal contents to avoid false positive dialect detection.
+    """Remove literal contents to avoid false positive dialect detection.
 
     Replaces the contents of double-quoted strings with empty strings,
-    handling escaped quotes properly.
+    handling escaped quotes properly. Regex literals are also replaced,
+    since YARA-X-looking snippets inside regex patterns are still classic YARA.
     """
     result: list[str] = []
     i = 0
@@ -83,6 +111,27 @@ def _strip_string_literals(content: str) -> str:
             if i < len(content):
                 result.append('"')
                 i += 1
+            continue
+
+        if _is_regex_literal_start(content, i):
+            result.append(" ")
+            i += 1
+            escaped = False
+            while i < len(content):
+                char = content[i]
+                result.append("\n" if char == "\n" else " ")
+                i += 1
+                if escaped:
+                    escaped = False
+                    continue
+                if char == "\\":
+                    escaped = True
+                    continue
+                if char == "/":
+                    while i < len(content) and content[i] in "ims":
+                        result.append(" ")
+                        i += 1
+                    break
             continue
 
         result.append(content[i])
