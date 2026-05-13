@@ -243,12 +243,14 @@ message ForExpression {
     string variable = 2;
     Expression iterable = 3;
     Expression body = 4;
+    Expression quantifier_expr = 5;
 }
 
 message ForOfExpression {
     string quantifier = 1;
     Expression string_set = 2;
     Expression condition = 3;
+    Expression quantifier_expr = 4;
 }
 
 message AtExpression {

@@ -48,6 +48,7 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
+from yaraast.serialization import yara_ast_pb2
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 
 
@@ -194,6 +195,47 @@ def test_protobuf_serializer_preserves_extended_expression_roundtrips() -> None:
         restored = serializer.deserialize(binary_data=serializer.serialize(ast))
 
         assert restored.rules[0].condition == expression
+
+
+def test_protobuf_serializer_preserves_expression_quantifiers() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    expressions: list[Expression] = [
+        ForExpression(
+            quantifier=IntegerLiteral(2),
+            variable="i",
+            iterable=RangeExpression(IntegerLiteral(0), IntegerLiteral(3)),
+            body=BooleanLiteral(True),
+        ),
+        ForOfExpression(
+            quantifier=IntegerLiteral(2),
+            string_set=Identifier("them"),
+            condition=StringIdentifier("$a"),
+        ),
+    ]
+
+    for expression in expressions:
+        ast = YaraFile(rules=[Rule(name="expr", condition=expression)])
+        restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+        assert restored.rules[0].condition == expression
+
+
+def test_protobuf_deserializes_legacy_numeric_quantifier_text() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "legacy"
+    pb_rule.condition.for_expression.quantifier = "2"
+    pb_rule.condition.for_expression.variable = "i"
+    pb_rule.condition.for_expression.iterable.range_expression.low.integer_literal.value = 0
+    pb_rule.condition.for_expression.iterable.range_expression.high.integer_literal.value = 3
+    pb_rule.condition.for_expression.body.boolean_literal.value = True
+
+    restored = serializer.deserialize(binary_data=pb_file.SerializeToString())
+    condition = restored.rules[0].condition
+
+    assert isinstance(condition, ForExpression)
+    assert condition.quantifier == 2
 
 
 def test_protobuf_serializer_without_metadata() -> None:

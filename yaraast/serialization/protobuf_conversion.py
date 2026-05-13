@@ -164,6 +164,18 @@ def _coerce_quantifier_text(value) -> str:
     return str(value)
 
 
+def _coerce_quantifier_expression(value):
+    if isinstance(value, str):
+        return None
+    return _coerce_expression(value)
+
+
+def _restore_quantifier_text(value: str):
+    if value.lstrip("-").isdigit() and value not in {"", "-"}:
+        return int(value)
+    return value
+
+
 def convert_expression_to_protobuf(expr, pb_expr) -> None:
     """Convert an AST expression to protobuf."""
     import warnings
@@ -249,11 +261,20 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         pb_expr.member_access.member = expr.member
     elif isinstance(expr, ForExpression):
         pb_expr.for_expression.quantifier = _coerce_quantifier_text(expr.quantifier)
+        quantifier = _coerce_quantifier_expression(expr.quantifier)
+        if quantifier is not None:
+            convert_expression_to_protobuf(quantifier, pb_expr.for_expression.quantifier_expr)
         pb_expr.for_expression.variable = expr.variable
         convert_expression_to_protobuf(expr.iterable, pb_expr.for_expression.iterable)
         convert_expression_to_protobuf(expr.body, pb_expr.for_expression.body)
     elif isinstance(expr, ForOfExpression):
         pb_expr.for_of_expression.quantifier = _coerce_quantifier_text(expr.quantifier)
+        quantifier = _coerce_quantifier_expression(expr.quantifier)
+        if quantifier is not None:
+            convert_expression_to_protobuf(
+                quantifier,
+                pb_expr.for_of_expression.quantifier_expr,
+            )
         string_set = _coerce_expression(expr.string_set)
         if string_set is not None:
             convert_expression_to_protobuf(string_set, pb_expr.for_of_expression.string_set)
@@ -524,14 +545,22 @@ def protobuf_to_expression(pb_expr):
         )
     if pb_expr.HasField("for_expression"):
         return ForExpression(
-            quantifier=pb_expr.for_expression.quantifier,
+            quantifier=(
+                protobuf_to_expression(pb_expr.for_expression.quantifier_expr)
+                if pb_expr.for_expression.HasField("quantifier_expr")
+                else _restore_quantifier_text(pb_expr.for_expression.quantifier)
+            ),
             variable=pb_expr.for_expression.variable,
             iterable=protobuf_to_expression(pb_expr.for_expression.iterable),
             body=protobuf_to_expression(pb_expr.for_expression.body),
         )
     if pb_expr.HasField("for_of_expression"):
         return ForOfExpression(
-            quantifier=pb_expr.for_of_expression.quantifier,
+            quantifier=(
+                protobuf_to_expression(pb_expr.for_of_expression.quantifier_expr)
+                if pb_expr.for_of_expression.HasField("quantifier_expr")
+                else _restore_quantifier_text(pb_expr.for_of_expression.quantifier)
+            ),
             string_set=protobuf_to_expression(pb_expr.for_of_expression.string_set),
             condition=(
                 protobuf_to_expression(pb_expr.for_of_expression.condition)
