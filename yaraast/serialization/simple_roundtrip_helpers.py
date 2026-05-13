@@ -67,6 +67,7 @@ from yaraast.ast.strings import (
     RegexString,
 )
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.parser import Parser
 
 
@@ -107,6 +108,14 @@ def _deserialize_hex_token(data: dict[str, Any]):
         alternatives = [[_deserialize_hex_token(t) for t in alt] for alt in data["alternatives"]]
         return HexAlternative(alternatives=alternatives)
     return HexWildcard()
+
+
+def _deserialize_legacy_hex_tokens(raw_tokens: str) -> list[HexToken]:
+    """Deserialize legacy hex tokens stored as YARA-style text."""
+    hex_content = raw_tokens.strip()
+    if hex_content.startswith("{") and hex_content.endswith("}"):
+        hex_content = hex_content[1:-1]
+    return HexStringParser().parse(hex_content)
 
 
 def _serialize_modifier_value(value: Any) -> Any:
@@ -869,7 +878,20 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                 ),
                 data,
             )
-        # Legacy format: tokens stored as string representation — preserve as HexString with empty tokens
+        if isinstance(raw_tokens, str):
+            try:
+                return _apply_node_metadata(
+                    HexString(
+                        identifier=data["identifier"],
+                        tokens=_deserialize_legacy_hex_tokens(raw_tokens),
+                        modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                    ),
+                    data,
+                )
+            except HexParseError:
+                pass
+
+        # Legacy format with invalid token payloads: preserve type but do not invent tokens.
         import warnings
 
         warnings.warn(

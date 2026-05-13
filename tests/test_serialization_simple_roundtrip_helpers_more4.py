@@ -342,7 +342,7 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
 
     fallback = deserialize_string({"type": "HexString", "identifier": "$h", "tokens": "{ 41 }"})
     assert isinstance(fallback, HexString)  # preserves type instead of converting to PlainString
-    assert fallback.tokens == []
+    assert fallback.tokens == [HexByte(value=0x41)]
 
     negated_hex = deserialize_string(
         {
