@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -48,7 +48,6 @@ class IncludeResolver:
         self.search_paths = self._init_search_paths(search_paths)
         self.cache: dict[str, ResolvedFile] = {}
         self.resolution_stack: list[Path] = []
-        self.parser = Parser()
 
     def _init_search_paths(self, search_paths: list[str] | None) -> list[Path]:
         """Initialize search paths from config and environment."""
@@ -120,7 +119,7 @@ class IncludeResolver:
     def _parse_and_resolve(self, resolved_path: Path, cache_key: str) -> ResolvedFile:
         """Parse file and recursively resolve its includes."""
         content = resolved_path.read_text(encoding="utf-8")
-        ast = self.parser.parse(content)
+        ast = parse_yara_source(content)
         checksum = self._calculate_checksum_from_content(content)
 
         resolved = ResolvedFile(

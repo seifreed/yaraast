@@ -57,6 +57,34 @@ rule common_rule {
             assert len(resolved.includes[0].ast.rules) == 1
             assert resolved.includes[0].ast.rules[0].name == "common_rule"
 
+    def test_include_resolution_accepts_yarax_syntax(self) -> None:
+        """Test include resolution with YARA-X syntax in included files."""
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+
+            main_content = """
+include "native_yarax.yar"
+
+rule main_rule {
+    condition:
+        native_rule
+}
+"""
+            yarax_content = """
+rule native_rule {
+    condition:
+        with xs = [1]: match xs { _ => true }
+}
+"""
+            main_file = create_temp_file(tmpdir, "main.yar", main_content)
+            create_temp_file(tmpdir, "native_yarax.yar", yarax_content)
+
+            resolver = IncludeResolver([str(tmpdir)])
+            resolved = resolver.resolve_file(str(main_file))
+
+            assert len(resolved.includes) == 1
+            assert resolved.includes[0].ast.rules[0].condition.__class__.__name__ == "WithStatement"
+
     def test_nested_includes(self) -> None:
         """Test nested include resolution."""
         with tempfile.TemporaryDirectory() as tmpdir_str:
