@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from yaraast.codegen.generator_helpers import escape_regex_delimiter
 from yaraast.yaral.generator_helpers import (
     format_literal,
     format_modifiers,
@@ -298,7 +299,7 @@ class YaraLGenerator(YaraLVisitor[str]):
     def visit_regex_pattern(self, node: RegexPattern) -> str:
         """Generate code for regex pattern."""
         flags = "".join(node.flags) if node.flags else ""
-        pattern = node.pattern.replace("/", "\\/")
+        pattern = escape_regex_delimiter(node.pattern)
         return f"/{pattern}/{flags}"
 
     def visit_options_section(self, node: OptionsSection) -> str:

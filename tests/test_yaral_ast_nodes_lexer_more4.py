@@ -202,6 +202,7 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
 
     assert OptionsSection(options={"sample": True}).accept(visitor) == {"sample": True}
     assert RegexPattern(pattern="abc", flags=["nocase"]).accept(visitor) == "/abc/ nocase"
+    assert RegexPattern(pattern="a\\/b", flags=["i"]).as_string == "/a\\/b/ i"
     assert CIDRExpression(field=access, cidr="10.0.0.0/8").accept(visitor) == "10.0.0.0/8"
 
     assert FunctionCall(function="re.regex", arguments=["$e", "x"]).call_string == "re.regex($e, x)"

@@ -6,6 +6,8 @@ from collections.abc import Callable
 import re
 from typing import Any
 
+from yaraast.regex_literals import escape_regex_delimiter as _escape_regex_delimiter
+
 REGEX_SUFFIX_MODIFIERS = frozenset({"i", "s"})
 REGEX_SUFFIX_NAMES = {"dotall": "s"}
 
@@ -42,6 +44,11 @@ def escape_plain_string_value(value: str | bytes) -> str:
         lambda m: f"\\x{ord(m.group(0)):02x}",
         escaped_value,
     )
+
+
+def escape_regex_delimiter(pattern: str) -> str:
+    """Escape unescaped '/' characters without double-escaping existing escapes."""
+    return _escape_regex_delimiter(pattern)
 
 
 def format_integer_literal(value) -> str:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from yaraast.lexer.tokens import TokenType as T
-from yaraast.yaral._shared import YaraLParserError
+from yaraast.yaral._shared import YaraLParserError, format_regex_token_value
 from yaraast.yaral.ast_nodes import ConditionalExpression, RegexPattern, UDMFieldAccess
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.parser import YaraLParser
@@ -195,6 +195,11 @@ def test_parse_outcome_argument_identifier_call_ops_regex_and_error() -> None:
     _set_tokens(parser4, [_tok(T.RBRACKET, "]"), _tok(T.EOF, None, YaraLTokenType.EOF)])
     with pytest.raises(YaraLParserError, match="Unexpected token in outcome"):
         parser4._parse_outcome_argument()
+
+
+def test_format_regex_token_value_escapes_unescaped_delimiters() -> None:
+    assert format_regex_token_value("foo/bar") == "/foo\\/bar/"
+    assert format_regex_token_value("foo\\/bar") == "/foo\\/bar/"
 
 
 def test_parse_outcome_field_path_supports_dot_and_bracket_forms() -> None:

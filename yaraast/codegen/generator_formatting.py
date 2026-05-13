@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.generator_helpers import escape_plain_string_value
+from yaraast.codegen.generator_helpers import escape_plain_string_value, escape_regex_delimiter
 
 
 def format_rule_modifiers(modifiers) -> str:
@@ -38,7 +38,7 @@ def escape_string_literal(value: str) -> str:
 
 
 def format_regex_literal(pattern: str, modifiers: str) -> str:
-    escaped_pattern = pattern.replace("/", "\\/")
+    escaped_pattern = escape_regex_delimiter(pattern)
     return f"/{escaped_pattern}/{modifiers}"
 
 

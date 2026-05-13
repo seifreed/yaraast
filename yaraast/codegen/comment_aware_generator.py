@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
-from yaraast.codegen.generator_helpers import format_regex_modifiers
+from yaraast.codegen.generator_helpers import escape_regex_delimiter, format_regex_modifiers
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -296,7 +296,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
-        regex = node.regex.replace("/", "\\/")
+        regex = escape_regex_delimiter(node.regex)
         self._write(f"{node.identifier} = /{regex}/")
 
         # Write regex modifiers

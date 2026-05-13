@@ -5,6 +5,7 @@ from __future__ import annotations
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
+    escape_regex_delimiter,
     format_modifier,
     format_regex_modifiers,
 )
@@ -40,7 +41,7 @@ def format_plain_string(node: PlainString, quote: str, padding: int) -> str:
 
 
 def format_regex_string(node: RegexString, padding: int) -> str:
-    escaped = node.regex.replace("/", "\\/")
+    escaped = escape_regex_delimiter(node.regex)
     if padding > 0:
         return f"{node.identifier}{' ' * padding} = /{escaped}/"
     return f"{node.identifier} = /{escaped}/"

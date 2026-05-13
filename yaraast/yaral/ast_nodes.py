@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from yaraast.ast.base import ASTNode, _VisitorType
+from yaraast.regex_literals import escape_regex_delimiter
 
 type YaraLValue = ASTNode | str | int | float | bool | None
 type OutcomeValue = YaraLValue
@@ -381,7 +382,8 @@ class RegexPattern(ASTNode):
     @property
     def as_string(self) -> str:
         flags_str = " ".join(self.flags) if self.flags else ""
-        return f"/{self.pattern}/ {flags_str}".strip()
+        pattern = escape_regex_delimiter(self.pattern)
+        return f"/{pattern}/ {flags_str}".strip()
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_regex_pattern(self)

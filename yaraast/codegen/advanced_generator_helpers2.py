@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from yaraast.codegen.formatting import StringStyle
-from yaraast.codegen.generator_helpers import format_modifiers, format_regex_modifiers
+from yaraast.codegen.generator_helpers import (
+    escape_regex_delimiter,
+    format_modifiers,
+    format_regex_modifiers,
+)
 
 
 def process_meta_data(meta_data) -> list:
@@ -86,7 +90,7 @@ def render_advanced_hex_string(gen, node) -> str:
 
 def render_advanced_regex_string(gen, node) -> str:
     """Render a regex string in advanced generator styles."""
-    regex = node.regex.replace("/", "\\/")
+    regex = escape_regex_delimiter(node.regex)
     if gen.config.string_style == StringStyle.COMPACT:
         gen._write(f"{node.identifier}=/{regex}/")
     else:

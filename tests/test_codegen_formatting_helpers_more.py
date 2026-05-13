@@ -18,6 +18,7 @@ from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
 )
+from yaraast.codegen.generator_helpers import escape_regex_delimiter
 from yaraast.codegen.pretty_printer_helpers import (
     build_hex_pattern,
     calculate_meta_alignment_column,
@@ -45,6 +46,9 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     assert escape_string_literal('a\\"b') == 'a\\\\\\"b'
     assert escape_string_literal("a\nb\t\x00") == "a\\nb\\t\\x00"
     assert format_regex_literal("ab+", "is") == "/ab+/is"
+    assert escape_regex_delimiter("a/b") == "a\\/b"
+    assert escape_regex_delimiter("a\\/b") == "a\\/b"
+    assert format_regex_literal("a\\/b", "") == "/a\\/b/"
     assert format_boolean_literal(True) == "true"
     assert format_boolean_literal(False) == "false"
 
@@ -66,11 +70,13 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
     plain = PlainString("$a", value="hello")
     bytes_plain = PlainString("$b", value=b'A"\x00\xff\\\n')
     regex = RegexString("$r", regex="ab+")
+    regex_with_slash = RegexString("$s", regex="a\\/b")
     assert format_plain_string(plain, '"', 3) == '$a    = "hello"'
     assert format_plain_string(plain, '"', 0) == '$a = "hello"'
     assert format_plain_string(bytes_plain, '"', 0) == '$b = "A\\"\\x00\\xff\\\\\\n"'
     assert format_regex_string(regex, 2) == "$r   = /ab+/"
     assert format_regex_string(regex, 0) == "$r = /ab+/"
+    assert format_regex_string(regex_with_slash, 0) == "$s = /a\\/b/"
 
     assert modifiers_to_string([]) == ""
     assert (

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.generator_helpers import format_regex_modifiers
+from yaraast.codegen.generator_helpers import escape_regex_delimiter, format_regex_modifiers
 
 
 def _emit_comments(gen, node) -> None:
@@ -81,7 +81,7 @@ def write_regex_string(gen, node) -> str:
     """Render a regex string definition."""
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
-    escaped_regex = node.regex.replace("/", "\\/")
+    escaped_regex = escape_regex_delimiter(node.regex)
     gen._write(f"{node.identifier} = /{escaped_regex}/")
     if hasattr(node, "modifiers") and node.modifiers:
         gen._write(format_regex_modifiers(node.modifiers, gen.visit))
