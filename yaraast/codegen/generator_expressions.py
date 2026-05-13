@@ -11,13 +11,23 @@ def _render_string_set(gen, string_set) -> str:
     return str(string_set)
 
 
+def _render_quantifier(gen, quantifier) -> str:
+    from yaraast.ast.expressions import DoubleLiteral, StringLiteral
+
+    if isinstance(quantifier, str | int):
+        return str(quantifier)
+    if isinstance(quantifier, float):
+        return f"{int(quantifier * 100)}%"
+    if isinstance(quantifier, StringLiteral):
+        return quantifier.value
+    if isinstance(quantifier, DoubleLiteral):
+        return f"{int(quantifier.value * 100)}%"
+    return gen.visit(quantifier)
+
+
 def render_for_of_expression(gen, node) -> str:
     """Render a for-of expression."""
-    if hasattr(node.quantifier, "accept"):
-        quantifier = gen.visit(node.quantifier)
-    else:
-        quantifier = str(node.quantifier)
-
+    quantifier = _render_quantifier(gen, node.quantifier)
     string_set = _render_string_set(gen, node.string_set)
     if node.condition:
         condition = gen.visit(node.condition)
@@ -57,16 +67,6 @@ def render_in_expression(gen, node) -> str:
 
 def render_of_expression(gen, node) -> str:
     """Render an of-expression."""
-    from yaraast.ast.expressions import DoubleLiteral, StringLiteral
-
-    if isinstance(node.quantifier, str | int):
-        quantifier = str(node.quantifier)
-    elif isinstance(node.quantifier, StringLiteral):
-        quantifier = node.quantifier.value
-    elif isinstance(node.quantifier, DoubleLiteral):
-        # Percentage quantifier: 0.5 → "50%"
-        quantifier = f"{int(node.quantifier.value * 100)}%"
-    else:
-        quantifier = gen.visit(node.quantifier)
+    quantifier = _render_quantifier(gen, node.quantifier)
     string_set = _render_string_set(gen, node.string_set)
     return f"{quantifier} of {string_set}"

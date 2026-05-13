@@ -5,6 +5,7 @@ from __future__ import annotations
 from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression, QuantifierValue
 from yaraast.ast.expressions import (
     ArrayAccess,
+    DoubleLiteral,
     Expression,
     FunctionCall,
     Identifier,
@@ -30,10 +31,20 @@ class ExpressionForMixin:
         elif self._match(TokenType.NONE):
             quantifier = "none"
         elif self._match(TokenType.INTEGER):
-            quantifier = self._previous().value
+            quantifier_token = self._previous()
+            quantifier = quantifier_token.value
             if not isinstance(quantifier, int):
                 msg = "Expected integer quantifier after 'for'"
-                raise ParserError(msg, self._previous())
+                raise ParserError(msg, quantifier_token)
+            if self._match(TokenType.MODULO):
+                if not self._match(TokenType.OF):
+                    msg = "Expected 'of' after percentage quantifier"
+                    raise ParserError(msg, self._peek())
+                percentage = self._set_node_location_from_token(
+                    DoubleLiteral(value=quantifier / 100.0),
+                    quantifier_token,
+                )
+                return self._parse_for_of_expression(percentage, start_token)
         else:
             msg = "Expected quantifier after 'for'"
             raise ParserError(msg, self._peek())

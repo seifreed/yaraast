@@ -3,6 +3,7 @@ from __future__ import annotations
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
+    DoubleLiteral,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
@@ -34,6 +35,13 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
     )
     assert gen.visit(for_of_with_ast_quantifier) == "for 2 of them : ($a)"
 
+    for_of_with_percent = ForOfExpression(
+        quantifier=DoubleLiteral(0.5),
+        string_set=Identifier("them"),
+        condition=Identifier("$a"),
+    )
+    assert gen.visit(for_of_with_percent) == "for 50% of them : ($a)"
+
     for_of_without_condition = ForOfExpression(
         quantifier="any",
         string_set=Identifier("them"),
@@ -52,6 +60,9 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
 
     of_list = OfExpression(quantifier=2, string_set=["$a", "$b"])
     assert gen.visit(of_list) == "2 of ($a, $b)"
+
+    of_raw_float = OfExpression(quantifier=0.5, string_set=Identifier("them"))
+    assert gen.visit(of_raw_float) == "50% of them"
 
     for_of_raw = ForOfExpression(quantifier="all", string_set="them", condition=None)
     assert gen.visit(for_of_raw) == "all of them"

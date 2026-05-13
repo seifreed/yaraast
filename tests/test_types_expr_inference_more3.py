@@ -225,3 +225,32 @@ def test_expr_inference_helper_and_branch_edges() -> None:
         BooleanType,
     )
     assert raw_for_of.errors == []
+
+    percent_for_of = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        percent_for_of.infer(
+            ForOfExpression(
+                quantifier=DoubleLiteral(value=0.5),
+                string_set=Identifier(name="them"),
+                condition=BooleanLiteral(value=True),
+            )
+        ),
+        BooleanType,
+    )
+    assert percent_for_of.errors == []
+
+    bad_for_of = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        bad_for_of.infer(
+            ForOfExpression(
+                quantifier=SetExpression(elements=[]),
+                string_set=Identifier(name="them"),
+                condition=None,
+            )
+        ),
+        BooleanType,
+    )
+    assert any(
+        "'for...of' quantifier must be string, integer, or percentage" in e
+        for e in bad_for_of.errors
+    )

@@ -286,6 +286,11 @@ def test_for_of_and_module_reference_paths() -> None:
     parsed = Parser().parse('rule r { strings: $a = "ab" condition: for any of them : ($) }')
     assert YaraEvaluator(data=b"xxabyy").evaluate_file(parsed) == {"r": True}
 
+    parsed_percent = Parser().parse(
+        'rule r { strings: $a = "ab" $b = "zz" condition: for 50% of them : ($) }'
+    )
+    assert YaraEvaluator(data=b"xxabyy").evaluate_file(parsed_percent) == {"r": True}
+
     ev.context.modules["pe"] = {"machine": 0x14C}
     assert ev.visit_module_reference(ModuleReference(module="pe")) == {"machine": 0x14C}
     with pytest.raises(EvaluationError, match="Unknown module"):
