@@ -8,6 +8,7 @@ from typing import Any, cast
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.meta import Meta
+from yaraast.ast.modifiers import MetaEntry, MetaScope
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexByte,
@@ -66,6 +67,23 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
     restored_file = deserialize_from_file(path)
     assert isinstance(restored_file, YaraFile)
     assert restored_file.rules[0].name == "helper_rule"
+
+
+def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
+    private_meta = MetaEntry.from_key_value("classification", "restricted", "private")
+
+    serialized = serialize_meta(private_meta)
+
+    assert serialized == {
+        "type": "MetaEntry",
+        "key": "classification",
+        "value": "restricted",
+        "scope": "private",
+    }
+
+    restored = deserialize_meta(serialized)
+    assert isinstance(restored, MetaEntry)
+    assert restored.scope == MetaScope.PRIVATE
 
 
 def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> None:

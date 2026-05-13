@@ -18,7 +18,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.modifiers import MetaEntry, StringModifier
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import (
     HexAlternative,
@@ -164,9 +164,14 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     return data
 
 
-def serialize_meta(meta: Meta) -> dict[str, Any]:
+def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
     """Serialize a Meta item."""
-    return {"type": "Meta", "key": meta.key, "value": meta.value}
+    data = {"type": "Meta", "key": meta.key, "value": meta.value}
+    scope = getattr(meta, "scope", None)
+    if scope is not None:
+        data["type"] = "MetaEntry"
+        data["scope"] = getattr(scope, "value", str(scope))
+    return data
 
 
 def serialize_string(string_def: Any) -> dict[str, Any]:
@@ -263,8 +268,11 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     return rule
 
 
-def deserialize_meta(data: dict[str, Any]) -> Meta:
+def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
     """Deserialize a Meta item."""
+    scope = data.get("scope")
+    if data.get("type") == "MetaEntry" or scope is not None:
+        return MetaEntry.from_key_value(data["key"], data["value"], scope)
     return Meta(data["key"], data["value"])
 
 
