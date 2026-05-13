@@ -41,6 +41,7 @@ message Rule {
     map<string, MetaValue> meta = 4;
     repeated StringDefinition strings = 5;
     Expression condition = 6;
+    map<string, string> meta_scopes = 7;
 }
 
 // Tag

@@ -37,7 +37,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
-from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.modifiers import MetaEntry, MetaScope, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Include, Rule, Tag
@@ -293,6 +293,28 @@ def test_protobuf_serializer_preserves_typed_string_modifier_values() -> None:
         (1, 3),
         "alphabet",
     ]
+
+
+def test_protobuf_serializer_preserves_meta_entry_scope() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="meta_scope",
+                meta=[
+                    MetaEntry.from_key_value("secret", "token", "private"),
+                    MetaEntry.from_key_value("owner", "team"),
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    scopes_by_key = {entry.key: entry.scope for entry in restored.rules[0].meta}
+
+    assert scopes_by_key == {"secret": MetaScope.PRIVATE, "owner": MetaScope.PUBLIC}
+    assert [entry.key for entry in restored.rules[0].get_private_meta()] == ["secret"]
 
 
 def test_protobuf_deserializes_legacy_xor_modifier_text_values() -> None:

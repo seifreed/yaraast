@@ -49,7 +49,10 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
     for entry in rule.meta:
         key = getattr(entry, "key", "")
         value = getattr(entry, "value", "")
+        scope = getattr(entry, "scope", None)
         meta_val = pb_rule.meta[key]
+        if scope is not None:
+            pb_rule.meta_scopes[key] = getattr(scope, "value", str(scope))
         if isinstance(value, str):
             meta_val.string_value = value
         elif isinstance(value, bool):
@@ -412,16 +415,23 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
 
             tags.append(Tag(name=pb_tag.name))
 
-        meta = {}
+        meta_values = {}
         for key, meta_val in pb_rule.meta.items():
             if meta_val.HasField("string_value"):
-                meta[key] = meta_val.string_value
+                meta_values[key] = meta_val.string_value
             elif meta_val.HasField("bool_value"):
-                meta[key] = meta_val.bool_value
+                meta_values[key] = meta_val.bool_value
             elif meta_val.HasField("int_value"):
-                meta[key] = meta_val.int_value
+                meta_values[key] = meta_val.int_value
             elif meta_val.HasField("double_value"):
-                meta[key] = meta_val.double_value
+                meta_values[key] = meta_val.double_value
+
+        from yaraast.ast.modifiers import MetaEntry
+
+        meta = [
+            MetaEntry.from_key_value(key, value, pb_rule.meta_scopes.get(key) or None)
+            for key, value in meta_values.items()
+        ]
 
         strings = []
         for pb_string in pb_rule.strings:
