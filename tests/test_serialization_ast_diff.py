@@ -6,6 +6,9 @@ from pathlib import Path
 from textwrap import dedent
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.modifiers import MetaEntry
+from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher, DiffType
 
@@ -37,6 +40,36 @@ def test_ast_hasher_stable_hash_and_node_hash() -> None:
     node_hash = hasher.hash_node(rule, "/rules/alpha")
     assert len(node_hash) == 12
     assert hasher._node_hashes["/rules/alpha"] == node_hash
+
+
+def test_ast_diff_detects_meta_scope_changes() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="meta_scope",
+                meta=[MetaEntry.from_key_value("secret", "token", "public")],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="meta_scope",
+                meta=[MetaEntry.from_key_value("secret", "token", "private")],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.has_changes
+    meta_diff = next(diff for diff in result.differences if diff.path == "/rules/meta_scope/meta")
+    assert isinstance(meta_diff.old_value, dict)
+    assert isinstance(meta_diff.new_value, dict)
+    assert meta_diff.old_value["secret"]["scope"] == "public"
+    assert meta_diff.new_value["secret"]["scope"] == "private"
 
 
 def test_ast_diff_detects_imports_rules_and_modifications(tmp_path: Path) -> None:

@@ -7,7 +7,15 @@ __all__ = ["emit_meta_diff", "meta_payloads"]
 
 def _meta_to_dict(meta) -> dict:
     """Convert meta (list[MetaEntry]) to a comparable dict."""
-    return {getattr(m, "key", str(i)): getattr(m, "value", m) for i, m in enumerate(meta)}
+    payload = {}
+    for i, item in enumerate(meta):
+        scope = getattr(item, "scope", None)
+        key = getattr(item, "key", str(i))
+        entry = {"value": getattr(item, "value", item)}
+        if scope is not None:
+            entry["scope"] = getattr(scope, "value", str(scope))
+        payload[key] = entry
+    return payload
 
 
 def meta_payloads(old_rule, new_rule) -> tuple[dict, dict]:
