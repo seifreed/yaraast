@@ -34,7 +34,14 @@ class AstHasher(ASTVisitor[str]):
         imports_hash = "|".join(self.visit(imp) for imp in node.imports)
         includes_hash = "|".join(self.visit(inc) for inc in node.includes)
         rules_hash = "|".join(self.visit(rule) for rule in node.rules)
-        return f"YaraFile({imports_hash}|{includes_hash}|{rules_hash})"
+        extern_rules_hash = "|".join(self.visit(rule) for rule in node.extern_rules)
+        extern_imports_hash = "|".join(self.visit(imp) for imp in node.extern_imports)
+        pragmas_hash = "|".join(self.visit(pragma) for pragma in node.pragmas)
+        namespaces_hash = "|".join(self.visit(namespace) for namespace in node.namespaces)
+        return (
+            f"YaraFile({imports_hash}|{includes_hash}|{rules_hash}|"
+            f"{extern_rules_hash}|{extern_imports_hash}|{pragmas_hash}|{namespaces_hash})"
+        )
 
     def visit_import(self, node) -> str:
         """Hash Import node."""
@@ -52,7 +59,8 @@ class AstHasher(ASTVisitor[str]):
         meta = "|".join(f"{getattr(m, 'key', '')}:{getattr(m, 'value', '')}" for m in node.meta)
         strings = "|".join(self.visit(s) for s in node.strings)
         condition = self.visit(node.condition) if node.condition else ""
-        return f"Rule({node.name},{modifiers},{tags},{meta},{strings},{condition})"
+        pragmas = "|".join(self.visit(pragma) for pragma in node.pragmas)
+        return f"Rule({node.name},{modifiers},{tags},{meta},{strings},{condition},{pragmas})"
 
     def visit_tag(self, node) -> str:
         """Hash Tag node."""
@@ -180,26 +188,27 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_for_of_expression(self, node) -> str:
         cond = self.visit(node.condition) if node.condition else ""
-        return f"ForOf({node.quantifier},{self.visit(node.string_set)},{cond})"
+        return (
+            f"ForOf({self._hash_value(node.quantifier)},{self._hash_value(node.string_set)},{cond})"
+        )
 
     def visit_at_expression(self, node) -> str:
         return f"At({node.string_id},{self.visit(node.offset)})"
 
     def visit_in_expression(self, node) -> str:
-        return f"In({node.string_id},{self.visit(node.range)})"
+        subject = getattr(node, "subject", getattr(node, "string_id", None))
+        return f"In({self._hash_value(subject)},{self.visit(node.range)})"
 
     def visit_of_expression(self, node) -> str:
-        quant = (
-            self.visit(node.quantifier)
-            if hasattr(node.quantifier, "accept")
-            else str(node.quantifier)
-        )
-        string_set = (
-            self.visit(node.string_set)
-            if hasattr(node.string_set, "accept")
-            else str(node.string_set)
-        )
-        return f"Of({quant},{string_set})"
+        return f"Of({self._hash_value(node.quantifier)},{self._hash_value(node.string_set)})"
+
+    def _hash_value(self, value) -> str:
+        """Hash AST values while preserving scalar/list values."""
+        if hasattr(value, "accept"):
+            return self.visit(value)
+        if isinstance(value, list):
+            return "[" + "|".join(self._hash_value(item) for item in value) + "]"
+        return "" if value is None else str(value)
 
     def visit_meta(self, node) -> str:
         return f"Meta({node.key},{node.value})"
@@ -224,25 +233,52 @@ class AstHasher(ASTVisitor[str]):
         return f"StrOp({self.visit(node.left)},{node.operator},{self.visit(node.right)})"
 
     def visit_extern_import(self, node) -> str:
-        return f"ExternImport({node.module if hasattr(node, 'module') else ''})"
+        module_path = getattr(node, "module", getattr(node, "module_path", ""))
+        alias = getattr(node, "alias", None)
+        rules = "|".join(getattr(node, "rules", []))
+        return f"ExternImport({module_path},{alias},{rules})"
 
     def visit_extern_namespace(self, node) -> str:
-        return f"ExternNamespace({node.name if hasattr(node, 'name') else ''})"
+        rules = "|".join(self.visit(rule) for rule in getattr(node, "extern_rules", []))
+        return f"ExternNamespace({getattr(node, 'name', '')},{rules})"
 
     def visit_extern_rule(self, node) -> str:
-        return f"ExternRule({node.name if hasattr(node, 'name') else ''})"
+        modifiers = "|".join(sorted(str(mod) for mod in getattr(node, "modifiers", [])))
+        namespace = getattr(node, "namespace", None)
+        return f"ExternRule({getattr(node, 'name', '')},{modifiers},{namespace})"
 
     def visit_extern_rule_reference(self, node) -> str:
-        return f"ExternRuleRef({node.name if hasattr(node, 'name') else ''})"
+        rule_name = getattr(node, "name", getattr(node, "rule_name", ""))
+        namespace = getattr(node, "namespace", None)
+        return f"ExternRuleRef({rule_name},{namespace})"
 
     def visit_in_rule_pragma(self, node) -> str:
-        return f"InRulePragma({node.pragma if hasattr(node, 'pragma') else ''})"
+        pragma = getattr(node, "pragma", "")
+        pragma_hash = self._hash_value(pragma)
+        position = getattr(node, "position", None)
+        if position is None:
+            return f"InRulePragma({pragma_hash})"
+        return f"InRulePragma({pragma_hash},{position})"
 
     def visit_pragma(self, node) -> str:
-        return f"Pragma({node.directive if hasattr(node, 'directive') else ''})"
+        if not hasattr(node, "pragma_type"):
+            return f"Pragma({getattr(node, 'directive', '')})"
+        args = "|".join(getattr(node, "arguments", []))
+        extra_parts = []
+        for field_name in ("macro_name", "macro_value", "condition"):
+            if hasattr(node, field_name):
+                extra_parts.append(f"{field_name}={getattr(node, field_name)}")
+        if hasattr(node, "parameters"):
+            parameters = ",".join(
+                f"{key}={value}" for key, value in sorted(node.parameters.items())
+            )
+            extra_parts.append(f"parameters={parameters}")
+        extra = "|".join(extra_parts)
+        return f"Pragma({node.pragma_type.value},{node.name},{args}," f"{node.scope.value},{extra})"
 
     def visit_pragma_block(self, node) -> str:
         pragmas = (
             ",".join([self.visit(p) for p in node.pragmas]) if hasattr(node, "pragmas") else ""
         )
-        return f"PragmaBlock({pragmas})"
+        scope = getattr(getattr(node, "scope", None), "value", None)
+        return f"PragmaBlock({pragmas},{scope})"

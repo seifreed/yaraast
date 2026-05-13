@@ -6,8 +6,13 @@ from collections.abc import Callable
 from types import SimpleNamespace
 from typing import cast
 
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import InExpression
-from yaraast.ast.expressions import IntegerLiteral, StringLiteral
+from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral, StringLiteral
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.modifiers import RuleModifier
+from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaType
+from yaraast.ast.rules import Rule
 from yaraast.serialization.ast_diff_hasher import AstHasher
 
 
@@ -250,14 +255,16 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
     )
     assert str_op == "StrOp(Id(a),contains,Str(b))"
 
-    assert hasher.visit_extern_import(SimpleNamespace(module="m")) == "ExternImport(m)"
-    assert hasher.visit_extern_import(SimpleNamespace()) == "ExternImport()"
-    assert hasher.visit_extern_namespace(SimpleNamespace(name="ns")) == "ExternNamespace(ns)"
-    assert hasher.visit_extern_namespace(SimpleNamespace()) == "ExternNamespace()"
-    assert hasher.visit_extern_rule(SimpleNamespace(name="r")) == "ExternRule(r)"
-    assert hasher.visit_extern_rule(SimpleNamespace()) == "ExternRule()"
-    assert hasher.visit_extern_rule_reference(SimpleNamespace(name="rr")) == "ExternRuleRef(rr)"
-    assert hasher.visit_extern_rule_reference(SimpleNamespace()) == "ExternRuleRef()"
+    assert hasher.visit_extern_import(SimpleNamespace(module="m")) == "ExternImport(m,None,)"
+    assert hasher.visit_extern_import(SimpleNamespace()) == "ExternImport(,None,)"
+    assert hasher.visit_extern_namespace(SimpleNamespace(name="ns")) == "ExternNamespace(ns,)"
+    assert hasher.visit_extern_namespace(SimpleNamespace()) == "ExternNamespace(,)"
+    assert hasher.visit_extern_rule(SimpleNamespace(name="r")) == "ExternRule(r,,None)"
+    assert hasher.visit_extern_rule(SimpleNamespace()) == "ExternRule(,,None)"
+    assert (
+        hasher.visit_extern_rule_reference(SimpleNamespace(name="rr")) == "ExternRuleRef(rr,None)"
+    )
+    assert hasher.visit_extern_rule_reference(SimpleNamespace()) == "ExternRuleRef(,None)"
     assert hasher.visit_in_rule_pragma(SimpleNamespace(pragma="opt")) == "InRulePragma(opt)"
     assert hasher.visit_in_rule_pragma(SimpleNamespace()) == "InRulePragma()"
     assert hasher.visit_pragma(SimpleNamespace(directive="enable")) == "Pragma(enable)"
@@ -272,8 +279,52 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
             ],
         ),
     )
-    assert pragma_block == "PragmaBlock(Pragma(a),Pragma(b))"
-    assert hasher.visit_pragma_block(SimpleNamespace()) == "PragmaBlock()"
+    assert pragma_block == "PragmaBlock(Pragma(a),Pragma(b),None)"
+    assert hasher.visit_pragma_block(SimpleNamespace()) == "PragmaBlock(,None)"
 
     # Keep one simple literal visitor exercised explicitly.
     assert hasher.visit_string_literal(StringLiteral(value="ok")) == "Str(ok)"
+
+
+def test_ast_hasher_preserves_extended_file_fields() -> None:
+    hasher = AstHasher()
+    ast = YaraFile(
+        extern_imports=[ExternImport(module_path="external.yar", alias="ext", rules=["R1"])],
+        extern_rules=[
+            ExternRule(
+                name="R1",
+                modifiers=[RuleModifier.from_string("private")],
+                namespace="ns",
+            )
+        ],
+        pragmas=[CustomPragma(name="vendor", parameters={"level": "strict"})],
+        namespaces=[ExternNamespace(name="ns", extern_rules=[ExternRule(name="Nested")])],
+        rules=[
+            Rule(
+                name="r1",
+                condition=BooleanLiteral(True),
+                pragmas=[
+                    InRulePragma(
+                        pragma=Pragma(PragmaType.PRAGMA, "optimize", ["fast"]),
+                        position="before_condition",
+                    )
+                ],
+            )
+        ],
+    )
+    ast_with_other_alias = YaraFile(
+        extern_imports=[ExternImport(module_path="external.yar", alias="other", rules=["R1"])],
+        extern_rules=ast.extern_rules,
+        pragmas=ast.pragmas,
+        namespaces=ast.namespaces,
+        rules=ast.rules,
+    )
+
+    ast_repr = hasher.visit_yara_file(ast)
+
+    assert "ExternImport(external.yar,ext,R1)" in ast_repr
+    assert "ExternRule(R1,private,ns)" in ast_repr
+    assert "Pragma(custom,vendor,,file,parameters=level=strict)" in ast_repr
+    assert "ExternNamespace(ns,ExternRule(Nested,,None))" in ast_repr
+    assert "InRulePragma(Pragma(pragma,optimize,fast,file,),before_condition)" in ast_repr
+    assert hasher.hash_ast(ast) != hasher.hash_ast(ast_with_other_alias)
