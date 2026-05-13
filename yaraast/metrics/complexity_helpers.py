@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 from yaraast.ast.base import ASTNode
 from yaraast.ast.conditions import ForExpression, ForOfExpression
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, RegexString
 from yaraast.metrics.complexity_calculator import ComplexityCalculator
+from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension, PatternMatch
 
 
 # Convenience functions
@@ -52,18 +55,56 @@ def calculate_cyclomatic_complexity(expr: ASTNode) -> int:
 
     if hasattr(expr, "operator") and expr.operator in ("and", "or"):
         complexity += 1
+    if isinstance(expr, ForExpression | ForOfExpression | ArrayComprehension | DictComprehension):
+        complexity += 1
+    if isinstance(expr, PatternMatch):
+        complexity += max(1, len(expr.cases) + (1 if expr.default else 0))
 
     # Recursively check children
-    if hasattr(expr, "left"):
-        complexity += calculate_cyclomatic_complexity(expr.left) - 1
-    if hasattr(expr, "right"):
-        complexity += calculate_cyclomatic_complexity(expr.right) - 1
-    if hasattr(expr, "operand"):
-        complexity += calculate_cyclomatic_complexity(expr.operand) - 1
-    if hasattr(expr, "expression"):
-        complexity += calculate_cyclomatic_complexity(expr.expression) - 1
+    for child in _iter_cyclomatic_children(expr):
+        complexity += calculate_cyclomatic_complexity(child) - 1
 
     return complexity
+
+
+def _iter_cyclomatic_children(expr: ASTNode) -> Iterator[ASTNode]:
+    child_attrs = (
+        "left",
+        "right",
+        "operand",
+        "expression",
+        "body",
+        "quantifier",
+        "iterable",
+        "condition",
+        "string_set",
+        "declarations",
+        "value",
+        "cases",
+        "default",
+        "pattern",
+        "result",
+        "elements",
+        "items",
+        "key",
+        "key_expression",
+        "value_expression",
+        "tuple_expr",
+        "index",
+        "target",
+        "start",
+        "stop",
+        "step",
+        "arguments",
+    )
+    for attr in child_attrs:
+        value = getattr(expr, attr, None)
+        if hasattr(value, "accept"):
+            yield value
+        elif isinstance(value, list):
+            for item in value:
+                if hasattr(item, "accept"):
+                    yield item
 
 
 def calculate_cognitive_complexity(expr: ASTNode) -> int:

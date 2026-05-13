@@ -22,8 +22,10 @@ def analyze_rule(analyzer, rule) -> None:
         analyzer.metrics.rules_with_tags += 1
     if rule.condition:
         analyzer._current_depth = 0
+        depth_start = len(analyzer._condition_depths)
         analyzer.visit(rule.condition)
-        rule_max_depth = max(analyzer._condition_depths) if analyzer._condition_depths else 0
+        rule_depths = analyzer._condition_depths[depth_start:]
+        rule_max_depth = max(rule_depths) if rule_depths else 0
         analyzer.metrics.max_condition_depth = max(
             analyzer.metrics.max_condition_depth, rule_max_depth
         )

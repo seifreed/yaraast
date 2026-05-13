@@ -14,6 +14,7 @@ from yaraast.metrics.complexity_helpers import (
 )
 from yaraast.metrics.complexity_reporting import analyze_file_complexity, generate_complexity_report
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def test_complexity_analyzer_metrics_and_report(tmp_path: Path) -> None:
@@ -114,3 +115,44 @@ def test_complexity_unused_strings_and_complex_rules() -> None:
     assert metrics.regex_groups >= 1
     assert metrics.regex_quantifiers >= 1
     assert "complex_unused" in metrics.complex_rules or metrics.max_condition_depth >= 1
+
+
+def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
+    code = """
+    rule yarax_complexity {
+        condition:
+            with xs = [1, 2]: match xs {
+                1 => pe.number_of_sections > 3,
+                _ => false,
+            }
+    }
+    """
+    ast = parse_yara_source(dedent(code))
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.max_condition_depth >= 2
+    assert metrics.total_binary_ops == 1
+    assert metrics.cyclomatic_complexity["yarax_complexity"] > 1
+    assert ast.rules[0].condition is not None
+    assert calculate_expression_complexity(ast.rules[0].condition) > 0
+
+
+def test_complexity_complex_rules_use_current_rule_depth_only() -> None:
+    code = """
+    rule deep {
+        condition:
+            ((((((((true and true) and true) and true) and true) and true) and true) and true) and true)
+    }
+
+    rule shallow {
+        condition:
+            true
+    }
+    """
+    ast = Parser().parse(dedent(code))
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert "deep" in metrics.complex_rules
+    assert "shallow" not in metrics.complex_rules

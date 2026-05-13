@@ -151,3 +151,72 @@ class ComplexityAnalyzer(MetricsVisitorBase):
     def visit_string_operator_expression(self, node) -> None:
         self.visit(node.left)
         self.visit(node.right)
+
+    def visit_with_statement(self, node) -> None:
+        self._current_depth += 1
+        self._condition_depths.append(self._current_depth)
+        for declaration in node.declarations:
+            self.visit(declaration)
+        self.visit(node.body)
+        self._current_depth -= 1
+
+    def visit_with_declaration(self, node) -> None:
+        self._visit_ast_value(node.value)
+
+    def visit_array_comprehension(self, node) -> None:
+        self._current_depth += 1
+        self._condition_depths.append(self._current_depth)
+        self._visit_ast_value(node.expression)
+        self._visit_ast_value(node.iterable)
+        self._visit_ast_value(node.condition)
+        self._current_depth -= 1
+
+    def visit_dict_comprehension(self, node) -> None:
+        self._current_depth += 1
+        self._condition_depths.append(self._current_depth)
+        self._visit_ast_value(node.key_expression)
+        self._visit_ast_value(node.value_expression)
+        self._visit_ast_value(node.iterable)
+        self._visit_ast_value(node.condition)
+        self._current_depth -= 1
+
+    def visit_tuple_expression(self, node) -> None:
+        self._visit_ast_value(node.elements)
+
+    def visit_tuple_indexing(self, node) -> None:
+        self._visit_ast_value(node.tuple_expr)
+        self._visit_ast_value(node.index)
+
+    def visit_list_expression(self, node) -> None:
+        self._visit_ast_value(node.elements)
+
+    def visit_dict_expression(self, node) -> None:
+        self._visit_ast_value(node.items)
+
+    def visit_dict_item(self, node) -> None:
+        self._visit_ast_value(node.key)
+        self._visit_ast_value(node.value)
+
+    def visit_slice_expression(self, node) -> None:
+        self._visit_ast_value(node.target)
+        self._visit_ast_value(node.start)
+        self._visit_ast_value(node.stop)
+        self._visit_ast_value(node.step)
+
+    def visit_lambda_expression(self, node) -> None:
+        self._visit_ast_value(node.body)
+
+    def visit_pattern_match(self, node) -> None:
+        self._current_depth += 1
+        self._condition_depths.append(self._current_depth)
+        self._visit_ast_value(node.value)
+        self._visit_ast_value(node.cases)
+        self._visit_ast_value(node.default)
+        self._current_depth -= 1
+
+    def visit_match_case(self, node) -> None:
+        self._visit_ast_value(node.pattern)
+        self._visit_ast_value(node.result)
+
+    def visit_spread_operator(self, node) -> None:
+        self._visit_ast_value(node.expression)

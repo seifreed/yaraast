@@ -170,3 +170,67 @@ class ComplexityCalculator(MetricsVisitorBase):
         if hasattr(node.key, "accept"):
             complexity += self.calculate(node.key)
         return complexity
+
+    def visit_with_statement(self, node) -> int:
+        complexity = 3 + self._calculate_ast_value(node.declarations)
+        complexity += self.calculate(node.body)
+        return complexity
+
+    def visit_with_declaration(self, node) -> int:
+        return 1 + self._calculate_ast_value(node.value)
+
+    def visit_array_comprehension(self, node) -> int:
+        self._cognitive_depth += 1
+        complexity = 5
+        complexity += self._calculate_ast_value(node.expression)
+        complexity += self._calculate_ast_value(node.iterable)
+        complexity += self._calculate_ast_value(node.condition)
+        self._cognitive_depth -= 1
+        return complexity
+
+    def visit_dict_comprehension(self, node) -> int:
+        self._cognitive_depth += 1
+        complexity = 6
+        complexity += self._calculate_ast_value(node.key_expression)
+        complexity += self._calculate_ast_value(node.value_expression)
+        complexity += self._calculate_ast_value(node.iterable)
+        complexity += self._calculate_ast_value(node.condition)
+        self._cognitive_depth -= 1
+        return complexity
+
+    def visit_tuple_expression(self, node) -> int:
+        return 1 + self._calculate_ast_value(node.elements)
+
+    def visit_tuple_indexing(self, node) -> int:
+        return 1 + self.calculate(node.tuple_expr) + self.calculate(node.index)
+
+    def visit_list_expression(self, node) -> int:
+        return 1 + self._calculate_ast_value(node.elements)
+
+    def visit_dict_expression(self, node) -> int:
+        return 1 + self._calculate_ast_value(node.items)
+
+    def visit_dict_item(self, node) -> int:
+        return 1 + self.calculate(node.key) + self.calculate(node.value)
+
+    def visit_slice_expression(self, node) -> int:
+        complexity = 1 + self.calculate(node.target)
+        complexity += self._calculate_ast_value(node.start)
+        complexity += self._calculate_ast_value(node.stop)
+        complexity += self._calculate_ast_value(node.step)
+        return complexity
+
+    def visit_lambda_expression(self, node) -> int:
+        return 2 + self.calculate(node.body)
+
+    def visit_pattern_match(self, node) -> int:
+        complexity = 4 + self.calculate(node.value)
+        complexity += self._calculate_ast_value(node.cases)
+        complexity += self._calculate_ast_value(node.default)
+        return complexity
+
+    def visit_match_case(self, node) -> int:
+        return 2 + self.calculate(node.pattern) + self.calculate(node.result)
+
+    def visit_spread_operator(self, node) -> int:
+        return 1 + self.calculate(node.expression)
