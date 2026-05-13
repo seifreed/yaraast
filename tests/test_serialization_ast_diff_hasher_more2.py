@@ -71,6 +71,7 @@ def test_ast_hasher_string_and_expression_helpers() -> None:
     assert hasher.visit_string_wildcard(SimpleNamespace(pattern="$a*")) == "$a*"
     assert hasher.visit_string_definition(SimpleNamespace(identifier="$a")) == "StringDef($a)"
     assert hasher.visit_hex_token(SimpleNamespace()) == "Token()"
+    assert hasher.visit_hex_negated_byte(SimpleNamespace(value="4D")) == "NegatedByte(4D)"
     assert hasher.visit_hex_alternative(SimpleNamespace()) == "Alt()"
     assert hasher.visit_hex_nibble(SimpleNamespace(high="A", value="F")) == "Nibble(A,F)"
     assert hasher.visit_expression(SimpleNamespace()) == "Expr()"

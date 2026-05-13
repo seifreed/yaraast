@@ -180,3 +180,12 @@ class HtmlTreeNodesTrivialMixin:
             "node_class": "hex-byte",
             "value": str(node.value),
         }
+
+    def visit_hex_negated_byte(self, node) -> dict[str, Any]:
+        """Visit negated hex byte node."""
+        return {
+            "id": self._get_node_id(),
+            "label": "Hex Negated Byte",
+            "node_class": "hex-negated-byte",
+            "value": str(node.value),
+        }

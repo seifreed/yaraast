@@ -101,6 +101,9 @@ class TypeChecker(BaseVisitor[None]):
     def visit_hex_byte(self, _node) -> None:
         return None
 
+    def visit_hex_negated_byte(self, _node) -> None:
+        return None
+
     def visit_hex_wildcard(self, _node) -> None:
         return None
 

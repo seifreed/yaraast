@@ -90,6 +90,10 @@ class AstHasher(ASTVisitor[str]):
         """Hash HexByte node."""
         return f"Byte({node.value})"
 
+    def visit_hex_negated_byte(self, node) -> str:
+        """Hash HexNegatedByte node."""
+        return f"NegatedByte({node.value})"
+
     def visit_hex_wildcard(self, node) -> str:
         """Hash HexWildcard node."""
         return "Wildcard()"

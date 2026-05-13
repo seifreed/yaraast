@@ -81,3 +81,5 @@ def test_trivial_visitors_return_serializable_nodes() -> None:
 
     hex_byte = gen.visit_hex_byte(SimpleNamespace(value=255))
     assert hex_byte["value"] == "255"
+    hex_negated = gen.visit_hex_negated_byte(SimpleNamespace(value=77))
+    assert hex_negated["value"] == "77"

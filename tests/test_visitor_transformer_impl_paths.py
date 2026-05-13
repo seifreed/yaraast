@@ -47,6 +47,7 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
     HexNibble,
     HexString,
     HexToken,
@@ -92,6 +93,7 @@ def test_transformer_impl_visits_remaining_node_types() -> None:
     )
     assert isinstance(t.visit_hex_token(HexToken()), HexToken)
     assert isinstance(t.visit_hex_byte(HexByte(1)), HexByte)
+    assert isinstance(t.visit_hex_negated_byte(HexNegatedByte(1)), HexNegatedByte)
     assert isinstance(t.visit_hex_wildcard(HexWildcard()), HexWildcard)
     assert isinstance(t.visit_hex_jump(HexJump(1, 2)), HexJump)
     assert isinstance(

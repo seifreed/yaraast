@@ -25,6 +25,7 @@ def test_default_ast_visitor_all_methods_return_default() -> None:
         "visit_string_modifier",
         "visit_hex_token",
         "visit_hex_byte",
+        "visit_hex_negated_byte",
         "visit_hex_wildcard",
         "visit_hex_jump",
         "visit_hex_alternative",

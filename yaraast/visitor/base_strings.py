@@ -9,6 +9,7 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
     HexNibble,
     HexString,
     HexToken,
@@ -48,6 +49,9 @@ class BaseVisitorStringsMixin:
         return self._noop()
 
     def visit_hex_byte(self: VisitorHelperProtocol[T], node: HexByte) -> T:
+        return self._noop()
+
+    def visit_hex_negated_byte(self: VisitorHelperProtocol[T], node: HexNegatedByte) -> T:
         return self._noop()
 
     def visit_hex_wildcard(self: VisitorHelperProtocol[T], node: HexWildcard) -> T:

@@ -174,6 +174,9 @@ class ASTDumper(ASTVisitor[dict]):
     def visit_hex_byte(self, node: HexByte) -> dict:
         return {"type": "HexByte", "value": node.value}
 
+    def visit_hex_negated_byte(self, node) -> dict:
+        return {"type": "HexNegatedByte", "value": node.value}
+
     def visit_hex_wildcard(self, node: HexWildcard) -> dict:
         return {"type": "HexWildcard"}
 

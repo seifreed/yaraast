@@ -21,7 +21,14 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaType
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexAlternative, HexByte, HexToken, HexWildcard, PlainString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexNegatedByte,
+    HexToken,
+    HexWildcard,
+    PlainString,
+)
 from yaraast.cli.visitors import ASTDumper
 
 
@@ -76,6 +83,7 @@ def test_dumper_branches_for_modifiers_meta_and_generic_nodes() -> None:
 
     # hex token and expression/condition node dumpers
     assert d.visit_hex_token(HexToken())["type"] == "HexToken"
+    assert d.visit(HexNegatedByte(value=0x4D)) == {"type": "HexNegatedByte", "value": 0x4D}
     assert d.visit_hex_wildcard(HexWildcard())["type"] == "HexWildcard"
     alt = HexAlternative(alternatives=[[HexByte(value=0x41)], [HexByte(value=0x42)]])
     assert d.visit_hex_alternative(alt)["alternatives"]

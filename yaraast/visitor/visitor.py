@@ -47,6 +47,7 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
     HexNibble,
     HexString,
     HexToken,
@@ -130,6 +131,10 @@ class ASTVisitor[T]:
 
     def visit_hex_byte(self, node: HexByte) -> T:
         """Visit HexByte node."""
+        return self._default_visit(node)
+
+    def visit_hex_negated_byte(self, node: HexNegatedByte) -> T:
+        """Visit HexNegatedByte node."""
         return self._default_visit(node)
 
     def visit_hex_wildcard(self, node: HexWildcard) -> T:
