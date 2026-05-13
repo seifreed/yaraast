@@ -181,7 +181,7 @@ class AstHasher(ASTVisitor[str]):
         return f"Parens({self.visit(node.expression)})"
 
     def visit_set_expression(self, node) -> str:
-        elements = "|".join(self.visit(elem) for elem in node.elements)
+        elements = "|".join(sorted(self.visit(elem) for elem in node.elements))
         return f"Set({elements})"
 
     def visit_range_expression(self, node) -> str:
@@ -209,7 +209,8 @@ class AstHasher(ASTVisitor[str]):
     def visit_for_of_expression(self, node) -> str:
         cond = self.visit(node.condition) if node.condition else ""
         return (
-            f"ForOf({self._hash_value(node.quantifier)},{self._hash_value(node.string_set)},{cond})"
+            f"ForOf({self._hash_value(node.quantifier)},"
+            f"{self._hash_string_set(node.string_set)},{cond})"
         )
 
     def visit_at_expression(self, node) -> str:
@@ -220,7 +221,7 @@ class AstHasher(ASTVisitor[str]):
         return f"In({self._hash_value(subject)},{self.visit(node.range)})"
 
     def visit_of_expression(self, node) -> str:
-        return f"Of({self._hash_value(node.quantifier)},{self._hash_value(node.string_set)})"
+        return f"Of({self._hash_value(node.quantifier)},{self._hash_string_set(node.string_set)})"
 
     def visit_with_statement(self, node) -> str:
         declarations = "|".join(self.visit(declaration) for declaration in node.declarations)
@@ -292,6 +293,12 @@ class AstHasher(ASTVisitor[str]):
     def _hash_modifiers(self, node) -> str:
         """Hash string modifiers as an order-insensitive set."""
         return "|".join(sorted(self._hash_value(mod) for mod in getattr(node, "modifiers", [])))
+
+    def _hash_string_set(self, value) -> str:
+        """Hash raw string-set lists as order-insensitive collections."""
+        if isinstance(value, list):
+            return "[" + "|".join(sorted(self._hash_value(item) for item in value)) + "]"
+        return self._hash_value(value)
 
     def visit_meta(self, node) -> str:
         return f"Meta({node.key},{node.value})"

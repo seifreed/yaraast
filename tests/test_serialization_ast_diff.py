@@ -6,6 +6,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry
@@ -174,6 +175,83 @@ def test_ast_diff_treats_string_modifier_reordering_as_unchanged() -> None:
 
     result = AstDiff().compare(old_ast, new_ast)
 
+    assert not result.has_changes
+    assert result.differences == []
+
+
+def test_ast_diff_treats_condition_string_set_reordering_as_unchanged() -> None:
+    cases = [
+        (
+            """
+            rule of_order {
+                strings:
+                    $a = "alpha"
+                    $b = "beta"
+                condition:
+                    2 of ($b, $a)
+            }
+            """,
+            """
+            rule of_order {
+                strings:
+                    $a = "alpha"
+                    $b = "beta"
+                condition:
+                    2 of ($a, $b)
+            }
+            """,
+        ),
+        (
+            """
+            rule for_of_order {
+                strings:
+                    $a = "alpha"
+                    $b = "beta"
+                condition:
+                    for any of ($b, $a) : (true)
+            }
+            """,
+            """
+            rule for_of_order {
+                strings:
+                    $a = "alpha"
+                    $b = "beta"
+                condition:
+                    for any of ($a, $b) : (true)
+            }
+            """,
+        ),
+    ]
+
+    for old_code, new_code in cases:
+        result = AstDiff().compare(_parse_yara(old_code), _parse_yara(new_code))
+
+        assert result.old_ast_hash == result.new_ast_hash
+        assert not result.has_changes
+        assert result.differences == []
+
+
+def test_ast_diff_treats_raw_string_set_reordering_as_unchanged() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="raw_set_order",
+                condition=OfExpression("any", ["$b", "$a"]),
+            ),
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="raw_set_order",
+                condition=OfExpression("any", ["$a", "$b"]),
+            ),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.old_ast_hash == result.new_ast_hash
     assert not result.has_changes
     assert result.differences == []
 
