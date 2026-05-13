@@ -143,6 +143,31 @@ rule native_yarax {
     assert "with statements" in checker.get_report()["yarax_features_used"]
 
 
+def test_checker_reports_nested_collection_only_yarax_features() -> None:
+    ast = YaraXParser(
+        """
+rule collection_features {
+    condition:
+        [true][0] and {"a": true}["a"] and "abc"[0:1] == "a" and (1, 2)[0] == 1
+}
+""",
+    ).parse()
+
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+    issues = checker.check(ast)
+    features = {
+        issue.message.split(": ", 1)[1] for issue in issues if issue.issue_type == "yarax_feature"
+    }
+
+    assert {
+        "dict expressions",
+        "list expressions",
+        "slice expressions",
+        "tuple expressions",
+        "tuple indexing",
+    }.issubset(features)
+
+
 def test_checker_assesses_migration_difficulty_levels() -> None:
     checker = YaraXCompatibilityChecker(YaraXFeatures.yarax_strict())
     assert checker.get_report()["migration_difficulty"] == "trivial"

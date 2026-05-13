@@ -276,7 +276,7 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
     def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
-        elif isinstance(value, list):
+        elif isinstance(value, list | tuple):
             for item in value:
                 self._visit_ast_value(item)
 
@@ -309,6 +309,61 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
 
     def visit_with_declaration(self, node) -> None:
         self._visit_ast_value(node.value)
+
+    def visit_binary_expression(self, node) -> None:
+        self._visit_ast_value(node.left)
+        self._visit_ast_value(node.right)
+
+    def visit_unary_expression(self, node) -> None:
+        self._visit_ast_value(node.operand)
+
+    def visit_parentheses_expression(self, node) -> None:
+        self._visit_ast_value(node.expression)
+
+    def visit_set_expression(self, node) -> None:
+        self._visit_ast_value(node.elements)
+
+    def visit_range_expression(self, node) -> None:
+        self._visit_ast_value(node.low)
+        self._visit_ast_value(node.high)
+
+    def visit_function_call(self, node) -> None:
+        self._visit_ast_value(node.arguments)
+
+    def visit_array_access(self, node) -> None:
+        self._visit_ast_value(node.array)
+        self._visit_ast_value(node.index)
+
+    def visit_member_access(self, node) -> None:
+        self._visit_ast_value(node.object)
+
+    def visit_dictionary_access(self, node) -> None:
+        self._visit_ast_value(node.object)
+        self._visit_ast_value(node.key)
+
+    def visit_defined_expression(self, node) -> None:
+        self._visit_ast_value(node.expression)
+
+    def visit_string_operator_expression(self, node) -> None:
+        self._visit_ast_value(node.left)
+        self._visit_ast_value(node.right)
+
+    def visit_for_expression(self, node) -> None:
+        self._visit_ast_value(node.quantifier)
+        self._visit_ast_value(node.iterable)
+        self._visit_ast_value(node.body)
+
+    def visit_for_of_expression(self, node) -> None:
+        self._visit_ast_value(node.quantifier)
+        self._visit_ast_value(node.string_set)
+        self._visit_ast_value(node.condition)
+
+    def visit_at_expression(self, node) -> None:
+        self._visit_ast_value(node.offset)
+
+    def visit_in_expression(self, node) -> None:
+        self._visit_ast_value(node.subject)
+        self._visit_ast_value(node.range)
 
     def visit_array_comprehension(self, node) -> None:
         self._add_yarax_feature("array comprehensions", node)

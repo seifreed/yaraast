@@ -32,6 +32,27 @@ def test_yarax_services_detection_helpers() -> None:
     assert "with $count" in default_code
 
 
+def test_yarax_services_detect_collection_only_features() -> None:
+    content = """
+rule collection_features {
+    condition:
+        [true][0] and {"a": true}["a"] and "abc"[0:1] == "a" and (1, 2)[0] == 1
+}
+"""
+
+    feats = set(ys.detect_yarax_features(content))
+
+    assert "dict expressions" in feats
+    assert "list expressions" in feats
+    assert "slice expressions" in feats
+    assert "tuple expressions" in feats
+    assert "tuple indexing" in feats
+
+    snippet_feats = ys.detect_playground_features('[true][0] and "abc"[0:1] == "a"')
+    assert "list expressions" in snippet_feats
+    assert "slice expressions" in snippet_feats
+
+
 def test_yarax_services_detection_helpers_ignore_literals_comments_and_regexes() -> None:
     content = r"""
 rule classic {

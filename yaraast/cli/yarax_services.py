@@ -7,11 +7,22 @@ import re
 from yaraast.cli.utils import parse_yara_file
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.dialects import _strip_string_literals
+from yaraast.errors import YaraASTError
 from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
 from yaraast.yarax.generator import YaraXGenerator
 from yaraast.yarax.parser import YaraXParser
+
+LIST_LITERAL_PATTERN = (
+    r"(?:^|\bcondition\s*:|\b(?:and|or|not)\s+|[=(:,]\s*)"
+    r"\[[^\]\n]*(?:,|\.{3}|\b(?:true|false|lambda|match)\b|\"\")[^\]\n]*\]"
+)
+DICT_LITERAL_PATTERN = (
+    r"(?:^|\bcondition\s*:|\b(?:and|or|not)\s+|[=(:,]\s*)" r"\{\s*(?:\"\"|\d+|true|false)\s*:"
+)
+SLICE_PATTERN = r"(?:[A-Za-z_$]\w*(?:\s*\([^)]*\))?|\"\"|\])\s*\[[^\]\n]*:[^\]\n]*\]"
+TUPLE_INDEXING_PATTERN = r"\([^()\n]*,[^()\n]*\)\s*\["
 
 
 def parse_yarax_content(content: str):
@@ -59,26 +70,54 @@ def convert_yarax_to_yara(content: str) -> str:
     return generator.generate(ast)
 
 
+def _features_from_parsed_ast(content: str) -> list[str]:
+    try:
+        ast = YaraXParser(content).parse()
+    except YaraASTError:
+        return []
+
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+    checker.check(ast)
+    return sorted(checker.get_report()["yarax_features_used"])
+
+
+def _add_feature(features: list[str], feature: str) -> None:
+    if feature not in features:
+        features.append(feature)
+
+
 def detect_yarax_features(content: str) -> list[str]:
+    parsed_features = _features_from_parsed_ast(content)
+    if parsed_features:
+        return parsed_features
+
     scan_content = _strip_string_literals(content)
     features = []
 
     if re.search(r"\bwith\s+\$?\w+\s*=", scan_content, re.IGNORECASE):
-        features.append("with statements")
+        _add_feature(features, "with statements")
     if re.search(r"\[[^\]]+\bfor\s+\w+\s+in\s+[^\]]+\]", scan_content, re.IGNORECASE):
-        features.append("array comprehensions")
+        _add_feature(features, "array comprehensions")
     if re.search(
         r"\{[^{}:]+:[^{}]+\bfor\s+\w+(?:\s*,\s*\w+)?\s+in\s+[^{}]+\}",
         scan_content,
         re.IGNORECASE,
     ):
-        features.append("dict comprehensions")
+        _add_feature(features, "dict comprehensions")
+    if re.search(LIST_LITERAL_PATTERN, scan_content, re.IGNORECASE):
+        _add_feature(features, "list expressions")
+    if re.search(DICT_LITERAL_PATTERN, scan_content, re.IGNORECASE):
+        _add_feature(features, "dict expressions")
+    if re.search(SLICE_PATTERN, scan_content, re.IGNORECASE):
+        _add_feature(features, "slice expressions")
+    if re.search(TUPLE_INDEXING_PATTERN, scan_content, re.IGNORECASE):
+        _add_feature(features, "tuple indexing")
     if re.search(r"\blambda(?:\s+\w+(?:\s*,\s*\w+)*)?\s*:", scan_content, re.IGNORECASE):
-        features.append("lambda expressions")
+        _add_feature(features, "lambda expressions")
     if re.search(r"\bmatch\s+[^{}]+\{[^{}]*=>", scan_content, re.IGNORECASE | re.DOTALL):
-        features.append("pattern matching")
+        _add_feature(features, "pattern matching")
     if re.search(r"(?<!\.)\.\.\.(?!\.)|\*\*", scan_content):
-        features.append("spread operators")
+        _add_feature(features, "spread operators")
 
     return features
 
@@ -105,12 +144,24 @@ rule yarax_demo {
 
 
 def detect_playground_features(content: str) -> list[str]:
+    parsed_features = _features_from_parsed_ast(content)
+    if parsed_features:
+        return parsed_features
+
     scan_content = _strip_string_literals(content)
     features = []
     if re.search(r"\bwith\s+\$?\w+\s*=", scan_content, re.IGNORECASE):
-        features.append("with statements")
+        _add_feature(features, "with statements")
     if re.search(r"\[[^\]]+\bfor\s+\w+\s+in\s+[^\]]+\]", scan_content, re.IGNORECASE):
-        features.append("comprehensions")
+        _add_feature(features, "comprehensions")
+    if re.search(LIST_LITERAL_PATTERN, scan_content, re.IGNORECASE):
+        _add_feature(features, "list expressions")
+    if re.search(DICT_LITERAL_PATTERN, scan_content, re.IGNORECASE):
+        _add_feature(features, "dict expressions")
+    if re.search(SLICE_PATTERN, scan_content, re.IGNORECASE):
+        _add_feature(features, "slice expressions")
+    if re.search(TUPLE_INDEXING_PATTERN, scan_content, re.IGNORECASE):
+        _add_feature(features, "tuple indexing")
     if re.search(r"\blambda(?:\s+\w+(?:\s*,\s*\w+)*)?\s*:", scan_content, re.IGNORECASE):
-        features.append("lambda expressions")
+        _add_feature(features, "lambda expressions")
     return features
