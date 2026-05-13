@@ -174,6 +174,11 @@ def _pragma_key(node) -> str:
     return f"{pragma_type}:{name}:{macro_name}"
 
 
+def _in_rule_pragma_key(node) -> str:
+    position = str(getattr(node, "position", ""))
+    return f"{position}:{_pragma_key(getattr(node, 'pragma', None))}"
+
+
 def _name_key(node) -> str:
     return str(getattr(node, "name", ""))
 
@@ -275,6 +280,8 @@ def compare_rule_content(
         diff_type,
     )
 
+    compare_rule_pragmas(old_rule, new_rule, base_path, result, hasher, diff_node, diff_type)
+
     compare_rule_condition(old_rule, new_rule, base_path, result, hasher, diff_node, diff_type)
 
 
@@ -290,6 +297,29 @@ def compare_rule_modifiers(old_rule, new_rule, base_path, result, diff_node, dif
     old_mods, new_mods = modifier_payloads(old_rule, new_rule)
     if old_mods != new_mods:
         emit_modifiers_diff(base_path, result, diff_node, diff_type, old_mods, new_mods)
+
+
+def compare_rule_pragmas(
+    old_rule,
+    new_rule,
+    base_path,
+    result,
+    hasher,
+    diff_node,
+    diff_type,
+) -> None:
+    """Compare rule-level pragmas."""
+    compare_node_collection(
+        old_rule.pragmas,
+        new_rule.pragmas,
+        f"{base_path}/pragmas",
+        "InRulePragma",
+        _in_rule_pragma_key,
+        result,
+        hasher,
+        diff_node,
+        diff_type,
+    )
 
 
 def compare_rule_tags(old_rule, new_rule, base_path, result, diff_node, diff_type) -> None:

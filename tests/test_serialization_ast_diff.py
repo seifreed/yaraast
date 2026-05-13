@@ -9,7 +9,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry
-from yaraast.ast.pragmas import CustomPragma
+from yaraast.ast.pragmas import CustomPragma, InRulePragma
 from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher, DiffType
@@ -100,6 +100,78 @@ def test_ast_diff_detects_extended_file_field_changes() -> None:
     assert by_path["/namespaces/corp"].diff_type == DiffType.MODIFIED
     assert result.has_changes
     assert result.statistics["total_changes"] == len(result.differences)
+
+
+def test_ast_diff_detects_in_rule_pragma_changes() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="stable",
+                condition=BooleanLiteral(value=True),
+                pragmas=[
+                    InRulePragma(
+                        pragma=CustomPragma("vendor", parameters={"level": "strict"}),
+                        position="before_condition",
+                    ),
+                ],
+            ),
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="stable",
+                condition=BooleanLiteral(value=True),
+                pragmas=[
+                    InRulePragma(
+                        pragma=CustomPragma("vendor", parameters={"level": "relaxed"}),
+                        position="before_condition",
+                    ),
+                ],
+            ),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    by_path = {diff.path: diff for diff in result.differences}
+    assert by_path["/rules/stable/pragmas/before_condition:custom:vendor:"].diff_type == (
+        DiffType.MODIFIED
+    )
+    assert result.has_changes
+
+
+def test_ast_diff_treats_in_rule_pragma_reordering_as_unchanged() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="stable",
+                condition=BooleanLiteral(value=True),
+                pragmas=[
+                    InRulePragma(CustomPragma("vendor_b"), position="before_condition"),
+                    InRulePragma(CustomPragma("vendor_a"), position="before_strings"),
+                ],
+            ),
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="stable",
+                condition=BooleanLiteral(value=True),
+                pragmas=[
+                    InRulePragma(CustomPragma("vendor_a"), position="before_strings"),
+                    InRulePragma(CustomPragma("vendor_b"), position="before_condition"),
+                ],
+            ),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.old_ast_hash == result.new_ast_hash
+    assert not result.has_changes
+    assert result.differences == []
 
 
 def test_ast_diff_treats_extended_file_field_reordering_as_unchanged() -> None:

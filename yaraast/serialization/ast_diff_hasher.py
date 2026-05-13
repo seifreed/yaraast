@@ -66,7 +66,7 @@ class AstHasher(ASTVisitor[str]):
         )
         strings = "|".join(self.visit(s) for s in node.strings)
         condition = self.visit(node.condition) if node.condition else ""
-        pragmas = "|".join(self.visit(pragma) for pragma in node.pragmas)
+        pragmas = "|".join(sorted(self.visit(pragma) for pragma in node.pragmas))
         return f"Rule({node.name},{modifiers},{tags},{meta},{strings},{condition},{pragmas})"
 
     def visit_tag(self, node) -> str:
