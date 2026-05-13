@@ -8,7 +8,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.markup import escape
 
-from yaraast.cli.parser_helpers import create_parser
+from yaraast.cli.parser_helpers import parse_yara_source
 
 
 def read_text(path: str | Path) -> str:
@@ -47,7 +47,7 @@ def format_json(
 
 def parse_yara_text(source: str) -> object:
     """Parse YARA source into an AST."""
-    return create_parser().parse(source)
+    return parse_yara_source(source)
 
 
 def parse_yara_file(path: str | Path) -> object:
