@@ -23,6 +23,8 @@ def parse_content_by_dialect(
             show_status,
             status_cb,
         )
+    elif dialect == "yara-x":
+        ast = _parse_yara_x_dialect(content, status_cb)
     elif dialect == "yara-l":
         ast = _parse_yara_l_dialect(content, status_cb)
     else:
@@ -41,10 +43,16 @@ def _parse_auto_detect_dialect(
     if show_status and status_cb:
         status_cb(f"[green]Detected dialect: {detected_dialect.name}[/green]")
 
-    if detected_dialect == YaraDialect.YARA_L:
+    if detected_dialect in {YaraDialect.YARA_L, YaraDialect.YARA_X}:
         ast = unified_parser.parse()
         return ast, [], []
     return _parse_with_error_tolerant_parser(content)
+
+
+def _parse_yara_x_dialect(content: str, status_cb: Callable[[str], None] | None) -> object:
+    if status_cb:
+        status_cb("[green]Using YARA-X parser[/green]")
+    return UnifiedParser(content, dialect=YaraDialect.YARA_X).parse()
 
 
 def _parse_yara_l_dialect(content: str, status_cb: Callable[[str], None] | None) -> object:

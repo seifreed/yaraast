@@ -8,9 +8,11 @@ import click
 from rich.console import Console
 from rich.syntax import Syntax
 
-from yaraast import CodeGenerator
 from yaraast.cli.utils import format_json, write_text
 from yaraast.cli.visitors import ASTDumper, ASTTreeBuilder
+from yaraast.yaral.ast_nodes import YaraLFile
+from yaraast.yaral.generator import YaraLGenerator
+from yaraast.yarax.generator import YaraXGenerator
 
 console = Console()
 
@@ -69,8 +71,10 @@ def _generate_output_by_format(ast, output_format: str, output: str | None) -> N
 
 def _generate_yara_output(ast, output: str | None) -> None:
     """Generate YARA code output."""
-    generator = CodeGenerator()
-    result = generator.generate(ast)
+    if isinstance(ast, YaraLFile):
+        result = YaraLGenerator().generate(ast)
+    else:
+        result = YaraXGenerator().generate(ast)
 
     if output:
         write_text(output, result)

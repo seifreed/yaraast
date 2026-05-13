@@ -36,3 +36,28 @@ rule ok {
     )
     assert error_result.exit_code != 0
     assert "Error" in error_result.output
+
+
+def test_parse_cmd_auto_yarax_outputs_extended_syntax(tmp_path: Path) -> None:
+    runner = CliRunner()
+    source = tmp_path / "yarax.yar"
+
+    _write(
+        source,
+        """
+rule yarax_sample {
+    condition:
+        with xs = [1]: match xs { _ => true }
+}
+""",
+    )
+
+    yara_result = runner.invoke(parse, [str(source), "--dialect", "auto"])
+    assert yara_result.exit_code == 0
+    assert "Detected dialect: YARA_X" in yara_result.output
+    assert "with xs = [1]" in yara_result.output
+    assert "match xs" in yara_result.output
+
+    json_result = runner.invoke(parse, [str(source), "--dialect", "yara-x", "--format", "json"])
+    assert json_result.exit_code == 0
+    assert '"type": "WithStatement"' in json_result.output

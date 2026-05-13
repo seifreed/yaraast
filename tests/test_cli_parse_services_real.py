@@ -3,6 +3,16 @@
 from __future__ import annotations
 
 from yaraast.cli.parse_services import parse_content_by_dialect
+from yaraast.yarax.ast_nodes import WithStatement
+
+
+def _yarax_code() -> str:
+    return """
+rule xr {
+  condition:
+    with xs = [1]: match xs { _ => true }
+}
+"""
 
 
 def test_parse_services_auto_yaral() -> None:
@@ -35,6 +45,17 @@ rule r {
     assert ast is not None
     assert lex == []
     assert par == []
+
+
+def test_parse_services_auto_yarax_preserves_extended_ast() -> None:
+    msgs: list[str] = []
+    ast, lex, par = parse_content_by_dialect(
+        _yarax_code(), "auto", show_status=True, status_cb=msgs.append
+    )
+    assert isinstance(ast.rules[0].condition, WithStatement)
+    assert lex == []
+    assert par == []
+    assert any("Detected dialect: YARA_X" in m for m in msgs)
 
 
 def test_parse_services_auto_yara_invalid_fallback() -> None:
@@ -72,3 +93,11 @@ rule std {
     assert ast_std is not None
     assert lex_s == []
     assert par_s == []
+
+    ast_yarax, lex_x, par_x = parse_content_by_dialect(
+        _yarax_code(), "yara-x", show_status=True, status_cb=msgs.append
+    )
+    assert isinstance(ast_yarax.rules[0].condition, WithStatement)
+    assert lex_x == []
+    assert par_x == []
+    assert any("Using YARA-X parser" in m for m in msgs)
