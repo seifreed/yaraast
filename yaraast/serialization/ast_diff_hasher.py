@@ -142,7 +142,15 @@ class AstHasher(ASTVisitor[str]):
         return "Token()"
 
     def visit_hex_alternative(self, node) -> str:
-        return "Alt()"
+        alternatives = []
+        for alternative in getattr(node, "alternatives", []):
+            if isinstance(alternative, list):
+                alternatives.append(" ".join(self._hash_value(token) for token in alternative))
+            else:
+                alternatives.append(self._hash_value(alternative))
+        if not alternatives:
+            return "Alt()"
+        return f"Alt({'|'.join(sorted(alternatives))})"
 
     def visit_hex_nibble(self, node) -> str:
         return f"Nibble({node.high},{node.value})"

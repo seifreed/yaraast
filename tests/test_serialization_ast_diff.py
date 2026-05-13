@@ -281,6 +281,35 @@ def test_ast_diff_treats_raw_string_set_reordering_as_unchanged() -> None:
     assert result.differences == []
 
 
+def test_ast_diff_detects_hex_alternative_changes() -> None:
+    old_ast = _parse_yara(
+        """
+        rule hex_alternative {
+            strings:
+                $a = { ( 4D | 5A ) }
+            condition:
+                $a
+        }
+        """,
+    )
+    new_ast = _parse_yara(
+        """
+        rule hex_alternative {
+            strings:
+                $a = { ( 4D | 6A ) }
+            condition:
+                $a
+        }
+        """,
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    by_path = {diff.path: diff for diff in result.differences}
+    assert by_path["/rules/hex_alternative/strings/$a"].diff_type == DiffType.MODIFIED
+    assert result.has_changes
+
+
 def test_ast_diff_detects_in_rule_pragma_changes() -> None:
     old_ast = YaraFile(
         rules=[
