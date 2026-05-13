@@ -8,12 +8,34 @@ from typing import cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import InExpression
-from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral, StringLiteral
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    Identifier,
+    IntegerLiteral,
+    StringLiteral,
+)
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaType
 from yaraast.ast.rules import Rule
 from yaraast.serialization.ast_diff_hasher import AstHasher
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    DictExpression,
+    DictItem,
+    LambdaExpression,
+    ListExpression,
+    MatchCase,
+    PatternMatch,
+    SliceExpression,
+    SpreadOperator,
+    TupleExpression,
+    TupleIndexing,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 class _AcceptNode:
@@ -297,6 +319,83 @@ def test_ast_hasher_condition_misc_and_extern_paths() -> None:
 
     # Keep one simple literal visitor exercised explicitly.
     assert hasher.visit_string_literal(StringLiteral(value="ok")) == "Str(ok)"
+
+
+def test_ast_hasher_yarax_expression_nodes() -> None:
+    hasher = AstHasher()
+
+    list_expr = ListExpression([IntegerLiteral(1), SpreadOperator(Identifier("rest"))])
+    assert hasher.visit(list_expr) == "List(Int(1)|Spread(Id(rest),False))"
+
+    dict_expr = DictExpression(
+        [
+            DictItem(Identifier("key"), StringLiteral("value")),
+            DictItem(Identifier("base"), SpreadOperator(Identifier("defaults"), True)),
+        ]
+    )
+    assert hasher.visit(dict_expr) == (
+        "DictExpr(DictItem(Id(key),Str(value))|" "DictItem(Id(base),Spread(Id(defaults),True)))"
+    )
+
+    assert hasher.visit(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)])) == (
+        "Tuple(Int(1)|Int(2))"
+    )
+    assert (
+        hasher.visit(
+            TupleIndexing(
+                TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]), IntegerLiteral(0)
+            )
+        )
+        == "TupleIndex(Tuple(Int(1)|Int(2)),Int(0))"
+    )
+    assert hasher.visit(SliceExpression(Identifier("xs"), stop=IntegerLiteral(2))) == (
+        "Slice(Id(xs),,Int(2),)"
+    )
+    assert (
+        hasher.visit(
+            LambdaExpression(["x"], BinaryExpression(Identifier("x"), ">", IntegerLiteral(0)))
+        )
+        == "Lambda(x,Binary(Id(x),>,Int(0)))"
+    )
+    assert (
+        hasher.visit(
+            ArrayComprehension(
+                expression=Identifier("x"),
+                variable="x",
+                iterable=Identifier("xs"),
+                condition=BinaryExpression(Identifier("x"), ">", IntegerLiteral(0)),
+            )
+        )
+        == "ArrayComp(Id(x),x,Id(xs),Binary(Id(x),>,Int(0)))"
+    )
+    assert (
+        hasher.visit(
+            DictComprehension(
+                key_expression=Identifier("k"),
+                value_expression=Identifier("v"),
+                key_variable="k",
+                value_variable="v",
+                iterable=Identifier("mapping"),
+            )
+        )
+        == "DictComp(Id(k),Id(v),k,v,Id(mapping),)"
+    )
+
+    pattern = PatternMatch(
+        value=Identifier("xs"),
+        cases=[MatchCase(IntegerLiteral(1), BooleanLiteral(True))],
+        default=BooleanLiteral(False),
+    )
+    assert hasher.visit(pattern) == "Match(Id(xs),Case(Int(1),Bool(True)),Bool(False))"
+
+    with_statement = WithStatement(
+        declarations=[WithDeclaration("xs", list_expr)],
+        body=pattern,
+    )
+    assert hasher.visit(with_statement) == (
+        "With(WithDecl(xs,List(Int(1)|Spread(Id(rest),False))),"
+        "Match(Id(xs),Case(Int(1),Bool(True)),Bool(False)))"
+    )
 
 
 def test_ast_hasher_preserves_extended_file_fields() -> None:

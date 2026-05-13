@@ -214,6 +214,65 @@ class AstHasher(ASTVisitor[str]):
     def visit_of_expression(self, node) -> str:
         return f"Of({self._hash_value(node.quantifier)},{self._hash_value(node.string_set)})"
 
+    def visit_with_statement(self, node) -> str:
+        declarations = "|".join(self.visit(declaration) for declaration in node.declarations)
+        return f"With({declarations},{self.visit(node.body)})"
+
+    def visit_with_declaration(self, node) -> str:
+        return f"WithDecl({node.identifier},{self.visit(node.value)})"
+
+    def visit_array_comprehension(self, node) -> str:
+        return (
+            f"ArrayComp({self._hash_value(node.expression)},{node.variable},"
+            f"{self._hash_value(node.iterable)},{self._hash_value(node.condition)})"
+        )
+
+    def visit_dict_comprehension(self, node) -> str:
+        return (
+            f"DictComp({self._hash_value(node.key_expression)},"
+            f"{self._hash_value(node.value_expression)},{node.key_variable},"
+            f"{node.value_variable},{self._hash_value(node.iterable)},"
+            f"{self._hash_value(node.condition)})"
+        )
+
+    def visit_tuple_expression(self, node) -> str:
+        elements = "|".join(self.visit(element) for element in node.elements)
+        return f"Tuple({elements})"
+
+    def visit_tuple_indexing(self, node) -> str:
+        return f"TupleIndex({self.visit(node.tuple_expr)},{self.visit(node.index)})"
+
+    def visit_list_expression(self, node) -> str:
+        elements = "|".join(self.visit(element) for element in node.elements)
+        return f"List({elements})"
+
+    def visit_dict_expression(self, node) -> str:
+        items = "|".join(self.visit(item) for item in node.items)
+        return f"DictExpr({items})"
+
+    def visit_dict_item(self, node) -> str:
+        return f"DictItem({self.visit(node.key)},{self.visit(node.value)})"
+
+    def visit_slice_expression(self, node) -> str:
+        return (
+            f"Slice({self.visit(node.target)},{self._hash_value(node.start)},"
+            f"{self._hash_value(node.stop)},{self._hash_value(node.step)})"
+        )
+
+    def visit_lambda_expression(self, node) -> str:
+        parameters = "|".join(node.parameters)
+        return f"Lambda({parameters},{self.visit(node.body)})"
+
+    def visit_pattern_match(self, node) -> str:
+        cases = "|".join(self.visit(case) for case in node.cases)
+        return f"Match({self.visit(node.value)},{cases},{self._hash_value(node.default)})"
+
+    def visit_match_case(self, node) -> str:
+        return f"Case({self.visit(node.pattern)},{self.visit(node.result)})"
+
+    def visit_spread_operator(self, node) -> str:
+        return f"Spread({self.visit(node.expression)},{node.is_dict})"
+
     def _hash_value(self, value) -> str:
         """Hash AST values while preserving scalar/list values."""
         if hasattr(value, "accept"):

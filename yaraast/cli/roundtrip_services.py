@@ -7,23 +7,15 @@ from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import YaraFile
+from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.cli.utils import read_text
 from yaraast.codegen.pretty_printer import PrettyPrinter, StylePresets
-from yaraast.dialects import YaraDialect, detect_dialect
-from yaraast.parser.parser import Parser
 from yaraast.serialization.roundtrip_serializer import (
     RoundTripSerializer,
     create_rules_manifest,
     roundtrip_yara,
     serialize_for_pipeline,
 )
-from yaraast.yarax.parser import YaraXParser
-
-
-def _parse_roundtrip_source(yara_source: str) -> YaraFile:
-    if detect_dialect(yara_source) == YaraDialect.YARA_X:
-        return YaraXParser(yara_source).parse()
-    return Parser().parse(yara_source)
 
 
 def serialize_roundtrip_file(
@@ -78,7 +70,7 @@ def pretty_print_file(
         raise ValueError(msg)
 
     yara_source = read_text(input_file)
-    ast = _parse_roundtrip_source(yara_source)
+    ast = parse_yara_source(yara_source)
     if style == "compact":
         options = StylePresets.compact()
     elif style == "dense":
@@ -103,7 +95,7 @@ def pipeline_serialize_file(
     pipeline_info: str | None,
 ) -> tuple[Any, str, dict | None]:
     yara_source = read_text(input_file)
-    ast = _parse_roundtrip_source(yara_source)
+    ast = parse_yara_source(yara_source)
     pipeline_data = json.loads(pipeline_info) if pipeline_info else None
     yaml_content = serialize_for_pipeline(ast, pipeline_data)
     return ast, yaml_content, pipeline_data

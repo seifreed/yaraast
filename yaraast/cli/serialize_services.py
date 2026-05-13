@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import YaraFile
+from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.cli.serialize_service_helpers import create_serializer, export_with_serializer
 from yaraast.cli.utils import read_text
-from yaraast.parser.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher
 
 
@@ -24,15 +24,13 @@ def import_ast(input_file: str, fmt: str):
 
 
 def parse_yara_file(input_file: str | Path) -> Any:
-    parser = Parser()
     content = read_text(input_file)
-    return parser.parse(content)
+    return parse_yara_source(content)
 
 
 def compare_yara_files(old_file: str | Path, new_file: str | Path) -> tuple[AstDiff, Any]:
-    parser = Parser()
-    old_ast = parser.parse(read_text(old_file))
-    new_ast = parser.parse(read_text(new_file))
+    old_ast = parse_yara_source(read_text(old_file))
+    new_ast = parse_yara_source(read_text(new_file))
     differ = AstDiff()
     diff_result = differ.compare(old_ast, new_ast)
     return differ, diff_result

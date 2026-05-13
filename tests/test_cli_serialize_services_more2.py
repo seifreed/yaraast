@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 
 from yaraast.cli import serialize_services as ss
 from yaraast.errors import ValidationError
+from yaraast.yarax.ast_nodes import WithStatement
 
 YARA_CODE = """
 import "pe"
@@ -17,6 +19,20 @@ rule one {
     $a = "x"
   condition:
     $a
+}
+""".strip()
+
+YARAX_CODE = """
+rule yarax_one {
+  condition:
+    with xs = [1]: match xs { _ => true }
+}
+""".strip()
+
+YARAX_CODE_CHANGED = """
+rule yarax_two {
+  condition:
+    with xs = [1]: match xs { _ => false }
 }
 """.strip()
 
@@ -76,3 +92,23 @@ def test_serialize_services_compare_and_error_paths(tmp_path: Path) -> None:
 
     with pytest.raises(ValidationError, match="Unknown format"):
         ss.import_ast(str(old_file), "badfmt")
+
+
+def test_serialize_services_parse_export_and_compare_yarax(tmp_path: Path) -> None:
+    old_file = tmp_path / "old_yarax.yar"
+    new_file = tmp_path / "new_yarax.yar"
+    old_file.write_text(YARAX_CODE, encoding="utf-8")
+    new_file.write_text(YARAX_CODE_CHANGED, encoding="utf-8")
+
+    ast = ss.parse_yara_file(old_file)
+    assert ast.rules[0].name == "yarax_one"
+    assert isinstance(ast.rules[0].condition, WithStatement)
+
+    result_json, stats = ss.export_ast(ast, "json", None, minimal=False)
+    assert result_json is not None
+    assert stats is None
+    serialized = json.loads(result_json)
+    assert serialized["ast"]["rules"][0]["condition"]["type"] == "WithStatement"
+
+    _differ, diff = ss.compare_yara_files(old_file, new_file)
+    assert diff.has_changes
