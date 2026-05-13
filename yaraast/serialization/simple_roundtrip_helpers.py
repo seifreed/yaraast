@@ -67,6 +67,7 @@ from yaraast.ast.strings import (
     RegexString,
 )
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.errors import SerializationError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.parser import Parser
 
@@ -107,7 +108,8 @@ def _deserialize_hex_token(data: dict[str, Any]):
     if hex_kind == "HexAlternative":
         alternatives = [[_deserialize_hex_token(t) for t in alt] for alt in data["alternatives"]]
         return HexAlternative(alternatives=alternatives)
-    return HexWildcard()
+    msg = f"Unknown hex token type: {hex_kind}"
+    raise SerializationError(msg)
 
 
 def _deserialize_legacy_hex_tokens(raw_tokens: str) -> list[HexToken]:

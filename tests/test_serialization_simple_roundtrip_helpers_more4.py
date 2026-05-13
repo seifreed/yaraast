@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
@@ -51,6 +53,7 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
+from yaraast.errors import SerializationError
 from yaraast.serialization.simple_roundtrip_helpers import (
     _compare_normalized,
     deserialize_from_file,
@@ -353,6 +356,15 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
     )
     assert isinstance(negated_hex, HexString)
     assert negated_hex.tokens == [HexNegatedByte(value=0x4D)]
+
+    with pytest.raises(SerializationError, match="Unknown hex token type"):
+        deserialize_string(
+            {
+                "type": "HexString",
+                "identifier": "$bad_hex",
+                "tokens": [{"type": "Unknown", "data": "literal"}],
+            }
+        )
 
     default_condition_rule = deserialize_rule({"name": "fallback", "condition": None})
     assert isinstance(default_condition_rule.condition, BooleanLiteral)
