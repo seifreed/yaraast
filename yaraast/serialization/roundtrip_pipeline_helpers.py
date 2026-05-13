@@ -46,20 +46,18 @@ def build_rules_manifest(ast) -> dict[str, Any]:
         "rules": [],
     }
     for rule in ast.rules:
-        manifest["rules"].append(
-            {
-                "name": rule.name,
-                "modifiers": [str(m) for m in rule.modifiers],
-                "tags": [tag.name for tag in rule.tags],
-                "meta": (
-                    {getattr(m, "key", ""): getattr(m, "value", "") for m in rule.meta}
-                    if rule.meta
-                    else {}
-                ),
-                "string_count": len(rule.strings),
-                "has_condition": rule.condition is not None,
-            }
-        )
+        rule_manifest = {
+            "name": rule.name,
+            "modifiers": [str(m) for m in rule.modifiers],
+            "tags": [tag.name for tag in rule.tags],
+            "meta": _build_rule_meta(rule),
+            "string_count": len(rule.strings),
+            "has_condition": rule.condition is not None,
+        }
+        meta_scopes = _build_rule_meta_scopes(rule)
+        if meta_scopes:
+            rule_manifest["meta_scopes"] = meta_scopes
+        manifest["rules"].append(rule_manifest)
     manifest["summary"] = {
         "total_rules": len(ast.rules),
         "private_rules": len(
@@ -71,6 +69,21 @@ def build_rules_manifest(ast) -> dict[str, Any]:
         "includes": [inc.path for inc in ast.includes],
     }
     return manifest
+
+
+def _build_rule_meta(rule) -> dict[str, Any]:
+    if not rule.meta:
+        return {}
+    return {getattr(meta, "key", ""): getattr(meta, "value", "") for meta in rule.meta}
+
+
+def _build_rule_meta_scopes(rule) -> dict[str, str]:
+    scopes = {}
+    for meta in rule.meta:
+        scope = getattr(meta, "scope", None)
+        if scope is not None:
+            scopes[getattr(meta, "key", "")] = getattr(scope, "value", str(scope))
+    return scopes
 
 
 def collect_all_tags(ast) -> list[str]:

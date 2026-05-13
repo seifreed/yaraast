@@ -6,6 +6,7 @@ import yaml
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString, RegexString
 from yaraast.serialization.roundtrip_serializer import (
@@ -59,3 +60,21 @@ def test_rules_manifest_and_helpers() -> None:
     pipeline_yaml = serialize_for_pipeline(ast, {"env": "ci"})
     pipeline = yaml.safe_load(pipeline_yaml)
     assert pipeline["pipeline_metadata"]["env"] == "ci"
+
+
+def test_rules_manifest_preserves_meta_scopes() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="scoped_meta",
+                meta=[MetaEntry.from_key_value("classification", "restricted", "private")],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    manifest_yaml = create_rules_manifest(ast)
+    manifest = yaml.safe_load(manifest_yaml)
+
+    assert manifest["rules"][0]["meta"] == {"classification": "restricted"}
+    assert manifest["rules"][0]["meta_scopes"] == {"classification": "private"}
