@@ -158,3 +158,18 @@ def test_string_matcher_hex_tokens_match_yara_token_semantics() -> None:
     negated_matches = matcher.match_string(negated, b"A\x01A\x00")
 
     assert [(match.offset, match.length) for match in negated_matches] == [(0, 2)]
+
+
+def test_string_matcher_plain_string_xor_modifier_matches_encoded_bytes() -> None:
+    matcher = StringMatcher()
+    xor_string = PlainString(
+        "$xor",
+        value="ABC",
+        modifiers=[StringModifier.from_name_value("xor", 1)],
+    )
+
+    matcher.match_all(b"ABC \x40\x43\x42", [xor_string])
+
+    assert [(match.offset, match.matched_data) for match in matcher.matches["$xor"]] == [
+        (4, b"\x40\x43\x42")
+    ]

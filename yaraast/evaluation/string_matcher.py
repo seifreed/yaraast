@@ -123,10 +123,11 @@ class StringMatcher:
         )
 
         # Apply modifiers
-        nocase = any(m.name == "nocase" for m in string_def.modifiers)
-        wide = any(m.name == "wide" for m in string_def.modifiers)
-        ascii_mod = any(m.name == "ascii" for m in string_def.modifiers)
-        fullword = any(m.name == "fullword" for m in string_def.modifiers)
+        modifier_names = {self._modifier_name(modifier) for modifier in string_def.modifiers}
+        nocase = "nocase" in modifier_names
+        wide = "wide" in modifier_names
+        ascii_mod = "ascii" in modifier_names
+        fullword = "fullword" in modifier_names
 
         patterns_to_check: list[bytes] = []
 
@@ -140,6 +141,14 @@ class StringMatcher:
             for byte in pattern:
                 wide_pattern += bytes([byte, 0])
             patterns_to_check.append(wide_pattern)
+
+        xor_keys = self._xor_keys(string_def.modifiers)
+        if xor_keys is not None:
+            patterns_to_check = [
+                bytes(byte ^ key for byte in search_pattern)
+                for search_pattern in patterns_to_check
+                for key in xor_keys
+            ]
 
         # Search for each pattern
         for search_pattern in patterns_to_check:
@@ -164,6 +173,50 @@ class StringMatcher:
             )
             for offset, length in matches
         ]
+
+    def _modifier_name(self, modifier: Any) -> str:
+        return str(getattr(modifier, "name", modifier))
+
+    def _modifier_value(self, modifier: Any) -> Any:
+        return getattr(modifier, "value", None)
+
+    def _xor_keys(self, modifiers: list[Any]) -> list[int] | None:
+        keys: list[int] = []
+        has_xor = False
+        for modifier in modifiers:
+            if self._modifier_name(modifier) != "xor":
+                continue
+            has_xor = True
+            value = self._modifier_value(modifier)
+            if value is None:
+                keys.extend(range(1, 256))
+            elif isinstance(value, tuple | list) and len(value) == 2:
+                low = self._parse_xor_key(value[0])
+                high = self._parse_xor_key(value[1])
+                keys.extend(range(low, high + 1))
+            elif isinstance(value, str) and "-" in value:
+                low_text, high_text = value.split("-", maxsplit=1)
+                low = self._parse_xor_key(low_text)
+                high = self._parse_xor_key(high_text)
+                keys.extend(range(low, high + 1))
+            else:
+                keys.append(self._parse_xor_key(value))
+
+        if not has_xor:
+            return None
+        return sorted({key for key in keys if 0 <= key <= 255})
+
+    def _parse_xor_key(self, value: Any) -> int:
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            text = value.strip()
+            if text.lower().startswith("0x"):
+                return int(text, 16)
+            if any(char in "abcdefABCDEF" for char in text):
+                return int(text, 16)
+            return int(text, 10)
+        return int(value)
 
     def _match_hex_string(self, data: bytes, string_def: HexString) -> None:
         """Match hex string against data."""
