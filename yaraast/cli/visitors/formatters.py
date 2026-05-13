@@ -200,8 +200,13 @@ class ConditionStringFormatter:
         return f"{arr}[{idx}]"
 
     def _format_for_expression(self, condition: Any, _depth: int) -> str:
-        var = getattr(condition, "identifier", "i")
-        return f"for {var} of ..."
+        quantifier = _node_text(getattr(condition, "quantifier", "any"), "any")
+        variable = getattr(condition, "variable", getattr(condition, "identifier", "i"))
+        iterable = (
+            self._expr_to_str(condition.iterable, 0) if hasattr(condition, "iterable") else "..."
+        )
+        body = self._expr_to_str(condition.body, 0) if hasattr(condition, "body") else "..."
+        return f"for {quantifier} {variable} in {iterable} : ({body})"
 
     def _collect_binary_parts(
         self, expr: Any, target_op: str, parts: list[str], depth: int

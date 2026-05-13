@@ -76,7 +76,7 @@ def test_condition_formatter_remaining_paths() -> None:
         SimpleNamespace(expression=SimpleNamespace(name="x", __class__=type("Identifier", (), {}))),
         0,
     ).startswith("(")
-    assert fmt._format_for_expression(SimpleNamespace(), 0) == "for i of ..."
+    assert fmt._format_for_expression(SimpleNamespace(), 0) == "for any i in ... : (...)"
 
     parts: list[str] = []
     left_only = BinaryExpression(

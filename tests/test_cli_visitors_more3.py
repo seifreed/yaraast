@@ -101,3 +101,12 @@ def test_condition_formatter_handles_parsed_of_literals() -> None:
         )
         == "($a, $b)"
     )
+
+
+def test_condition_formatter_handles_parsed_for_expression() -> None:
+    ast = Parser().parse("rule r { condition: for any i in (1..3) : (i > 1) }")
+
+    assert (
+        ConditionStringFormatter().format_condition(ast.rules[0].condition)
+        == "for any i in ((1..3)) : (i > 1)"
+    )
