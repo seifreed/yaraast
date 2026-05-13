@@ -5,11 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.conditions import OfExpression
-from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, UndefDirective
 from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
@@ -324,6 +325,35 @@ def test_ast_diff_treats_raw_string_set_reordering_as_unchanged() -> None:
             Rule(
                 name="raw_set_order",
                 condition=OfExpression("any", ["$a", "$b"]),
+            ),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.old_ast_hash == result.new_ast_hash
+    assert not result.has_changes
+    assert result.differences == []
+
+
+def test_ast_diff_ignores_dictionary_key_expression_metadata() -> None:
+    old_key = IntegerLiteral(1)
+    old_key.location = Location(1, 1)
+    new_key = IntegerLiteral(1)
+    new_key.location = Location(20, 7)
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="dict_key_metadata",
+                condition=DictionaryAccess(ModuleReference("module"), old_key),
+            ),
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="dict_key_metadata",
+                condition=DictionaryAccess(ModuleReference("module"), new_key),
             ),
         ],
     )

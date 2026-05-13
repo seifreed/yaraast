@@ -353,7 +353,7 @@ class AstHasher(ASTVisitor[str]):
         return f"ModRef({node.module})"
 
     def visit_dictionary_access(self, node) -> str:
-        return f"Dict({self.visit(node.object)},{node.key})"
+        return f"Dict({self.visit(node.object)},{self._hash_value(node.key)})"
 
     def visit_comment(self, node) -> str:
         return f"Comment({node.text},{node.is_multiline})"
