@@ -17,6 +17,7 @@ from yaraast.metrics.dependency_graph_utils import (
     get_dependency_order,
 )
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def _parse_yara(code: str) -> YaraFile:
@@ -82,6 +83,24 @@ def test_dependency_graph_build_and_analysis() -> None:
     assert stats["total_rules"] == 3
     assert stats["rules_with_deps"] == 2
     assert stats["total_dependencies"] >= 2
+
+
+def test_dependency_graph_generator_traverses_yarax_conditions() -> None:
+    ast = parse_yara_source("""
+        import "pe"
+
+        rule yarax_modules {
+            condition:
+                with xs = [1]: match xs {
+                    _ => pe.number_of_sections > 0,
+                }
+        }
+        """)
+
+    generator = DependencyGraphGenerator()
+    generator.visit(ast)
+
+    assert "pe" in generator.module_references["yarax_modules"]
 
 
 def test_dependency_graph_cycles_and_order(tmp_path: Path) -> None:

@@ -17,6 +17,7 @@ from yaraast.metrics.dependency_graph_utils import (
     get_dependency_order,
 )
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def test_dependency_graph_basic() -> None:
@@ -76,6 +77,20 @@ def test_dependency_graph_traverses_for_expression_quantifier_nodes() -> None:
     graph = build_dependency_graph(ast)
 
     assert graph.get_dependencies("caller") == {"base", "body"}
+
+
+def test_dependency_graph_traverses_yarax_with_match_nodes() -> None:
+    ast = parse_yara_source("""
+        rule base { condition: true }
+        rule caller {
+            condition:
+                with xs = [1]: match xs { _ => base }
+        }
+        """)
+
+    graph = build_dependency_graph(ast)
+
+    assert graph.get_dependencies("caller") == {"base"}
 
 
 def test_dependency_graph_cycles_and_order() -> None:
