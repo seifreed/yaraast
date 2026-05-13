@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from yaraast.cli import yarax_services as ys
 
 
@@ -45,6 +47,22 @@ def test_yarax_services_parse_and_convert_roundtrip(tmp_path: Path) -> None:
     file_path.write_text(yara_code, encoding="utf-8")
     ast_file = ys.parse_yara_file_ast(str(file_path))
     assert len(ast_file.rules) == 1
+
+
+def test_yarax_to_yara_conversion_rejects_yarax_only_syntax() -> None:
+    yarax_code = """
+rule native_yarax {
+    condition:
+        with xs = [1]: match xs { 1 => true, _ => false }
+}
+"""
+
+    with pytest.raises(ValueError) as exc_info:
+        ys.convert_yarax_to_yara(yarax_code)
+    message = str(exc_info.value)
+    assert "Cannot convert YARA-X-only syntax to standard YARA" in message
+    assert "pattern matching" in message
+    assert "with statements" in message
 
 
 def test_yarax_services_compatibility_check() -> None:

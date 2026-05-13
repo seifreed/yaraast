@@ -38,6 +38,21 @@ def convert_yara_to_yarax(content: str) -> str:
 def convert_yarax_to_yara(content: str) -> str:
     parser = YaraXParser(content)
     ast = parser.parse()
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+    blocking_features = [
+        issue
+        for issue in checker.check(ast)
+        if issue.issue_type == "yarax_feature" and issue.severity == "error"
+    ]
+    if blocking_features:
+        features = sorted(
+            {
+                issue.message.split(": ", 1)[1] if ": " in issue.message else issue.message
+                for issue in blocking_features
+            }
+        )
+        msg = "Cannot convert YARA-X-only syntax to standard YARA: " + ", ".join(features)
+        raise ValueError(msg)
     generator = CodeGenerator()
     return generator.generate(ast)
 
