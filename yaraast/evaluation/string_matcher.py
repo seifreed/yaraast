@@ -279,6 +279,8 @@ class StringMatcher:
                 flags |= re.IGNORECASE
             elif modifier.name == "dotall":
                 flags |= re.DOTALL
+            elif modifier.name == "multiline":
+                flags |= re.MULTILINE
 
         # Compile regex
         try:

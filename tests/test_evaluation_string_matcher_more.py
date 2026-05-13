@@ -110,6 +110,15 @@ def test_string_matcher_regex_dotall_modifier_matches_across_newline() -> None:
     assert matcher.get_match_offset("$dot", 0) == 0
     assert matcher.get_match_length("$dot", 0) == 3
 
+    multiline = RegexString(
+        "$multi",
+        regex="^b",
+        modifiers=[StringModifier.from_name_value("multiline")],
+    )
+    matcher.match_all(b"a\nb", [multiline])
+    assert matcher.get_match_count("$multi") == 1
+    assert matcher.get_match_offset("$multi", 0) == 2
+
 
 def test_string_matcher_wide_ascii_and_hex_helper_edge_cases() -> None:
     matcher = StringMatcher()
