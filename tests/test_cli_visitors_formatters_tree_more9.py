@@ -9,7 +9,10 @@ from typing import Any, cast
 from rich.console import Console
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import Identifier, IntegerLiteral, StringLiteral
+from yaraast.ast.expressions import Identifier, IntegerLiteral, RegexLiteral, StringLiteral
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
+from yaraast.ast.modules import ModuleReference
+from yaraast.ast.pragmas import CustomPragma, InRulePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexString, PlainString
 from yaraast.cli.visitors.formatters import (
@@ -208,6 +211,25 @@ def test_tree_builder_remaining_paths() -> None:
     assert "pragma" in _render(builder.visit_pragma(SimpleNamespace(name="once")))
     assert "block" in _render(builder.visit_pragma_block(SimpleNamespace()))
     assert "extern rule ref" in _render(builder.visit_extern_rule_reference(SimpleNamespace()))
+    assert "module pe" in _render(builder.visit_module_reference(ModuleReference("pe")))
+    assert "/ab.*/i" in _render(builder.visit_regex_literal(RegexLiteral("ab.*", "i")))
+    assert "ns.r1" in _render(
+        builder.visit_extern_rule_reference(ExternRuleReference("r1", namespace="ns"))
+    )
+
+    extended = YaraFile(
+        extern_imports=[ExternImport("mod.path")],
+        extern_rules=[ExternRule("ExtRule")],
+        pragmas=[CustomPragma("vendor")],
+        namespaces=[ExternNamespace("ns")],
+        rules=[Rule(name="with_pragma", pragmas=[InRulePragma(CustomPragma("inside"))])],
+    )
+    extended_txt = _render(builder.visit_yara_file(extended))
+    assert "mod.path" in extended_txt
+    assert "ExtRule" in extended_txt
+    assert "vendor" in extended_txt
+    assert "Namespaces" in extended_txt
+    assert "inside" in extended_txt
 
     # Cover plain/regex string visitor modifier branches.
     plain = builder.visit_plain_string(

@@ -59,6 +59,26 @@ class ASTTreeBuilder:
             for rule in node.rules:
                 rules_tree.add(self.visit(rule))
 
+        if node.extern_imports:
+            extern_imports_tree = tree.add("Extern Imports")
+            for extern_import in node.extern_imports:
+                extern_imports_tree.add(self.visit(extern_import))
+
+        if node.extern_rules:
+            extern_rules_tree = tree.add("Extern Rules")
+            for extern_rule in node.extern_rules:
+                extern_rules_tree.add(self.visit(extern_rule))
+
+        if node.pragmas:
+            pragmas_tree = tree.add("Pragmas")
+            for pragma in node.pragmas:
+                pragmas_tree.add(self.visit(pragma))
+
+        if node.namespaces:
+            namespaces_tree = tree.add("Namespaces")
+            for namespace in node.namespaces:
+                namespaces_tree.add(self.visit(namespace))
+
         return tree
 
     def visit_rule(self, node: Rule) -> Tree:
@@ -76,6 +96,11 @@ class ASTTreeBuilder:
 
         if node.condition:
             self._add_condition_to_tree(rule_tree, node.condition)
+
+        if node.pragmas:
+            pragmas_tree = rule_tree.add("Pragmas")
+            for pragma in node.pragmas:
+                pragmas_tree.add(self.visit(pragma))
 
         return rule_tree
 
@@ -264,7 +289,10 @@ class ASTTreeBuilder:
         return Tree("dict[...]")
 
     def visit_extern_import(self, node: Any) -> Tree:
-        return Tree(f"extern import {node.module if hasattr(node, 'module') else ''}")
+        module_path = getattr(node, "module", None)
+        if module_path is None:
+            module_path = getattr(node, "module_path", "")
+        return Tree(f"extern import {module_path}")
 
     def visit_extern_namespace(self, node: Any) -> Tree:
         return Tree(f"extern namespace {node.name if hasattr(node, 'name') else ''}")
@@ -273,25 +301,38 @@ class ASTTreeBuilder:
         return Tree(f"extern rule {node.name if hasattr(node, 'name') else ''}")
 
     def visit_extern_rule_reference(self, node: Any) -> Tree:
-        return Tree("extern rule ref")
+        rule_name = getattr(node, "rule_name", getattr(node, "name", ""))
+        namespace = getattr(node, "namespace", None)
+        qualified = f"{namespace}.{rule_name}" if namespace else rule_name
+        return Tree(f"extern rule ref {qualified}".rstrip())
 
     def visit_hex_nibble(self, node: Any) -> Tree:
         return Tree("~")
 
     def visit_in_rule_pragma(self, node: Any) -> Tree:
-        return Tree("pragma")
+        pragma = getattr(node, "pragma", None)
+        name = getattr(pragma, "name", getattr(node, "directive", ""))
+        position = getattr(node, "position", "")
+        label = f"pragma {name}".rstrip()
+        if position:
+            label = f"{label} ({position})"
+        return Tree(label)
 
     def visit_module_reference(self, node: Any) -> Tree:
-        return Tree(f"module {node.name if hasattr(node, 'name') else ''}")
+        module_name = getattr(node, "module", getattr(node, "name", ""))
+        return Tree(f"module {module_name}")
 
     def visit_pragma(self, node: Any) -> Tree:
         return Tree(f"pragma {node.name if hasattr(node, 'name') else ''}")
 
     def visit_pragma_block(self, node: Any) -> Tree:
-        return Tree("pragma block")
+        count = len(getattr(node, "pragmas", []))
+        return Tree(f"pragma block ({count})")
 
     def visit_regex_literal(self, node: Any) -> Tree:
-        return Tree(f"/{node.value if hasattr(node, 'value') else ''}/..")
+        pattern = getattr(node, "pattern", getattr(node, "value", ""))
+        modifiers = getattr(node, "modifiers", "")
+        return Tree(f"/{pattern}/{modifiers}")
 
     def visit_string_operator_expression(self, node: Any) -> Tree:
         return Tree("string op")

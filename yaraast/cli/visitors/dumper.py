@@ -51,12 +51,21 @@ class ASTDumper(ASTVisitor[dict]):
     """Dump AST to dictionary format."""
 
     def visit_yara_file(self, node: YaraFile) -> dict:
-        return {
+        result = {
             "type": "YaraFile",
             "imports": [self.visit(imp) for imp in node.imports],
             "includes": [self.visit(inc) for inc in node.includes],
             "rules": [self.visit(rule) for rule in node.rules],
         }
+        if node.extern_rules:
+            result["extern_rules"] = [self.visit(rule) for rule in node.extern_rules]
+        if node.extern_imports:
+            result["extern_imports"] = [self.visit(imp) for imp in node.extern_imports]
+        if node.pragmas:
+            result["pragmas"] = [self.visit(pragma) for pragma in node.pragmas]
+        if node.namespaces:
+            result["namespaces"] = [self.visit(namespace) for namespace in node.namespaces]
+        return result
 
     def visit_import(self, node: Import) -> dict:
         return {"type": "Import", "module": node.module}
@@ -69,7 +78,7 @@ class ASTDumper(ASTVisitor[dict]):
         meta = self._process_meta(node.meta)
         modifiers = self._process_modifiers(node)
 
-        return {
+        result = {
             "type": "Rule",
             "name": node.name,
             "modifiers": modifiers,
@@ -78,6 +87,9 @@ class ASTDumper(ASTVisitor[dict]):
             "strings": [self.visit(s) for s in node.strings],
             "condition": self.visit(node.condition) if node.condition else None,
         }
+        if node.pragmas:
+            result["pragmas"] = [self.visit(pragma) for pragma in node.pragmas]
+        return result
 
     def _process_tags(self, tags) -> list:
         """Process tags from rule node."""
@@ -287,10 +299,10 @@ class ASTDumper(ASTVisitor[dict]):
             "type": "ForOfExpression",
             "quantifier": (
                 node.quantifier
-                if isinstance(node.quantifier, str | int)
+                if isinstance(node.quantifier, str | int | float)
                 else self.visit(node.quantifier)
             ),
-            "string_set": self.visit(node.string_set),
+            "string_set": self._dump_value(node.string_set),
             "condition": self.visit(node.condition) if node.condition else None,
         }
 
@@ -302,9 +314,15 @@ class ASTDumper(ASTVisitor[dict]):
         }
 
     def visit_in_expression(self, node: InExpression) -> dict:
+        raw_subject = getattr(node, "subject", getattr(node, "string_id", None))
+        subject = self._dump_value(raw_subject)
+        string_id = getattr(
+            node, "string_id", raw_subject if isinstance(raw_subject, str) else None
+        )
         return {
             "type": "InExpression",
-            "string_id": node.string_id,
+            "string_id": string_id,
+            "subject": subject,
             "range": self.visit(node.range),
         }
 
@@ -313,11 +331,19 @@ class ASTDumper(ASTVisitor[dict]):
             "type": "OfExpression",
             "quantifier": (
                 node.quantifier
-                if isinstance(node.quantifier, str | int)
+                if isinstance(node.quantifier, str | int | float)
                 else self.visit(node.quantifier)
             ),
-            "string_set": self.visit(node.string_set),
+            "string_set": self._dump_value(node.string_set),
         }
+
+    def _dump_value(self, value):
+        """Dump AST values while leaving scalar/list values JSON-friendly."""
+        if hasattr(value, "accept"):
+            return self.visit(value)
+        if isinstance(value, list):
+            return [self._dump_value(item) for item in value]
+        return value
 
     def visit_meta(self, node: Meta) -> dict:
         return {"type": "Meta", "key": node.key, "value": node.value}
@@ -342,34 +368,86 @@ class ASTDumper(ASTVisitor[dict]):
         module_path = getattr(node, "module", None)
         if module_path is None:
             module_path = getattr(node, "module_path", None)
-        return {"type": "ExternImport", "module": module_path}
+        return {
+            "type": "ExternImport",
+            "module": module_path,
+            "module_path": module_path,
+            "alias": getattr(node, "alias", None),
+            "rules": list(getattr(node, "rules", [])),
+        }
 
     def visit_extern_namespace(self, node) -> dict:
-        return {"type": "ExternNamespace", "name": node.name}
+        return {
+            "type": "ExternNamespace",
+            "name": node.name,
+            "extern_rules": [self.visit(rule) for rule in getattr(node, "extern_rules", [])],
+        }
 
     def visit_extern_rule(self, node) -> dict:
-        return {"type": "ExternRule", "name": node.name}
+        return {
+            "type": "ExternRule",
+            "name": node.name,
+            "modifiers": [str(modifier) for modifier in getattr(node, "modifiers", [])],
+            "namespace": getattr(node, "namespace", None),
+        }
 
     def visit_extern_rule_reference(self, node) -> dict:
         rule_name = getattr(node, "name", None)
         if rule_name is None:
             rule_name = getattr(node, "rule_name", None)
-        return {"type": "ExternRuleReference", "name": rule_name}
+        return {
+            "type": "ExternRuleReference",
+            "name": rule_name,
+            "rule_name": rule_name,
+            "namespace": getattr(node, "namespace", None),
+        }
 
     def visit_hex_nibble(self, node) -> dict:
         return {"type": "HexNibble", "high": node.high, "value": node.value}
 
     def visit_in_rule_pragma(self, node) -> dict:
-        return {"type": "InRulePragma", "directive": node.directive}
+        pragma = getattr(node, "pragma", None)
+        directive = getattr(node, "directive", None)
+        if pragma is not None:
+            directive = getattr(pragma, "name", directive)
+        return {
+            "type": "InRulePragma",
+            "directive": directive,
+            "pragma": self._dump_value(pragma),
+            "position": getattr(node, "position", None),
+        }
 
     def visit_module_reference(self, node) -> dict:
         return {"type": "ModuleReference", "module": node.module}
 
     def visit_pragma(self, node) -> dict:
-        return {"type": "Pragma", "directive": node.directive}
+        directive = getattr(node, "directive", getattr(node, "name", None))
+        result = {"type": "Pragma", "directive": directive}
+        if hasattr(node, "pragma_type"):
+            result.update(
+                {
+                    "pragma_type": node.pragma_type.value,
+                    "name": node.name,
+                    "arguments": list(node.arguments),
+                    "scope": node.scope.value,
+                }
+            )
+        if hasattr(node, "macro_name"):
+            result["macro_name"] = node.macro_name
+        if hasattr(node, "macro_value"):
+            result["macro_value"] = node.macro_value
+        if hasattr(node, "condition"):
+            result["condition"] = node.condition
+        if hasattr(node, "parameters"):
+            result["parameters"] = dict(node.parameters)
+        return result
 
     def visit_pragma_block(self, node) -> dict:
-        return {"type": "PragmaBlock", "pragmas": [self.visit(p) for p in node.pragmas]}
+        return {
+            "type": "PragmaBlock",
+            "pragmas": [self.visit(p) for p in node.pragmas],
+            "scope": getattr(getattr(node, "scope", None), "value", None),
+        }
 
     def visit_regex_literal(self, node) -> dict:
         return {

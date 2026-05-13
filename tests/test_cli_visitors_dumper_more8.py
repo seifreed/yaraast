@@ -5,6 +5,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, cast
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import InExpression
 from yaraast.ast.expressions import (
     DoubleLiteral,
     Identifier,
@@ -14,8 +16,10 @@ from yaraast.ast.expressions import (
     StringLength,
     StringOffset,
 )
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier
+from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaType
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexAlternative, HexByte, HexToken, HexWildcard, PlainString
 from yaraast.cli.visitors import ASTDumper
@@ -143,3 +147,37 @@ def test_dumper_extra_node_types_and_fallback_fields() -> None:
     assert d.visit_in_rule_pragma(SimpleNamespace(directive="x"))["directive"] == "x"
     assert d.visit_pragma(SimpleNamespace(directive="p"))["directive"] == "p"
     assert d.visit_pragma_block(SimpleNamespace(pragmas=[]))["pragmas"] == []
+
+
+def test_dumper_preserves_real_extended_ast_nodes() -> None:
+    d = ASTDumper()
+    ast = YaraFile(
+        extern_imports=[ExternImport(module_path="external.yar", alias="ext", rules=["R1"])],
+        extern_rules=[ExternRule(name="R1", modifiers=[RuleModifier.from_string("private")])],
+        pragmas=[CustomPragma(name="vendor", arguments=["on"], parameters={"level": "strict"})],
+        namespaces=[ExternNamespace(name="ns", extern_rules=[ExternRule(name="Nested")])],
+        rules=[
+            Rule(
+                name="r1",
+                condition=InExpression(subject=Identifier("offset"), range=IntegerLiteral(10)),
+                pragmas=[
+                    InRulePragma(
+                        pragma=Pragma(PragmaType.PRAGMA, "optimize", ["fast"]),
+                        position="before_condition",
+                    )
+                ],
+            )
+        ],
+    )
+
+    dumped = d.visit(ast)
+
+    assert dumped["extern_imports"][0]["module_path"] == "external.yar"
+    assert dumped["extern_imports"][0]["alias"] == "ext"
+    assert dumped["extern_rules"][0]["modifiers"] == ["private"]
+    assert dumped["pragmas"][0]["parameters"] == {"level": "strict"}
+    assert dumped["namespaces"][0]["extern_rules"][0]["name"] == "Nested"
+    assert dumped["rules"][0]["pragmas"][0]["directive"] == "optimize"
+    assert dumped["rules"][0]["pragmas"][0]["position"] == "before_condition"
+    assert dumped["rules"][0]["condition"]["string_id"] is None
+    assert dumped["rules"][0]["condition"]["subject"] == {"type": "Identifier", "name": "offset"}
