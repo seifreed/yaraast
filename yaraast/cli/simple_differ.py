@@ -321,15 +321,15 @@ class SimpleASTDiffer(SimpleDiffer):
         files2 = {path.relative_to(dir2) for path in iter_matching_files(dir2, recursive=True)}
 
         # Files in both directories
-        for file in files1 & files2:
+        for file in sorted(files1 & files2, key=str):
             results[str(file)] = self.diff_files(dir1 / file, dir2 / file)
 
         # Files only in dir1 (removed)
-        for file in files1 - files2:
+        for file in sorted(files1 - files2, key=str):
             results[str(file)] = _diff_result_for_removed_file(dir1 / file)
 
         # Files only in dir2 (added)
-        for file in files2 - files1:
+        for file in sorted(files2 - files1, key=str):
             results[str(file)] = _diff_result_for_added_file(dir2 / file)
 
         return results

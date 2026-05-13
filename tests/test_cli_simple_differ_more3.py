@@ -50,6 +50,54 @@ def test_simple_ast_differ_diff_directories_handles_common_added_and_removed_fil
     assert added.summary["added"] > 0
 
 
+def test_simple_ast_differ_diff_directories_orders_results(tmp_path: Path) -> None:
+    dir1 = tmp_path / "dir1"
+    dir2 = tmp_path / "dir2"
+    dir1.mkdir()
+    dir2.mkdir()
+    common_files = [
+        "common_z.yar",
+        "common_a.yar",
+        "common_m.yar",
+        "common_b.yar",
+        "common_y.yar",
+        "common_c.yar",
+        "common_x.yar",
+        "common_d.yar",
+    ]
+    removed_files = ["removed_z.yar", "removed_a.yar", "removed_m.yar"]
+    added_files = ["added_z.yar", "added_a.yar", "added_m.yar"]
+
+    for file_name in common_files:
+        rule_name = file_name.removesuffix(".yar")
+        (dir1 / file_name).write_text(
+            f"rule {rule_name} {{ condition: true }}",
+            encoding="utf-8",
+        )
+        (dir2 / file_name).write_text(
+            f"rule {rule_name} {{ condition: false }}",
+            encoding="utf-8",
+        )
+
+    for file_name in removed_files:
+        rule_name = file_name.removesuffix(".yar")
+        (dir1 / file_name).write_text(
+            f"rule {rule_name} {{ condition: true }}",
+            encoding="utf-8",
+        )
+
+    for file_name in added_files:
+        rule_name = file_name.removesuffix(".yar")
+        (dir2 / file_name).write_text(
+            f"rule {rule_name} {{ condition: true }}",
+            encoding="utf-8",
+        )
+
+    results = SimpleASTDiffer().diff_directories(dir1, dir2)
+
+    assert list(results) == sorted(common_files) + sorted(removed_files) + sorted(added_files)
+
+
 def test_simple_ast_differ_diff_directories_includes_yara_files(tmp_path: Path) -> None:
     dir1 = tmp_path / "dir1"
     dir2 = tmp_path / "dir2"
