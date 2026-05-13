@@ -75,13 +75,20 @@ class YaraXSyntaxAdapter(ASTTransformer):
 
         # Check base64 length for YARA-X
         if self.target == "yarax":
-            has_base64 = any(m.name in ("base64", "base64wide") for m in modifiers)
+            has_base64 = any(
+                self._modifier_name(modifier) in ("base64", "base64wide") for modifier in modifiers
+            )
             if has_base64 and len(node.value) < self.features.minimum_base64_length:
                 # Pad the string to minimum length
                 # Pad with null bytes (\x00) to preserve semantic neutrality
                 # Using 'A' would change the base64-decoded result
                 padding_needed = self.features.minimum_base64_length - len(node.value)
-                new_value = node.value + "\x00" * padding_needed
+                padding = (
+                    b"\x00" * padding_needed
+                    if isinstance(node.value, bytes)
+                    else "\x00" * padding_needed
+                )
+                new_value = node.value + padding
                 self.adaptations_count += 1
                 return PlainString(
                     identifier=node.identifier,
@@ -90,6 +97,9 @@ class YaraXSyntaxAdapter(ASTTransformer):
                 )
 
         return node
+
+    def _modifier_name(self, modifier: object) -> str:
+        return str(getattr(modifier, "name", modifier))
 
     def visit_regex_string(self, node: RegexString) -> RegexString:
         """Adapt regex string syntax."""

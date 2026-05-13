@@ -48,6 +48,23 @@ def test_checker_covers_plain_regex_hex_and_quantifier_helpers() -> None:
     checker.visit_plain_string(plain)
     assert any(i.issue_type == "xor_fullword_boundary" for i in checker.issues)
 
+    checker.issues.clear()
+    checker.visit_plain_string(PlainString(identifier="$b", value=b"aa", modifiers=["base64"]))
+    assert any(i.issue_type == "base64_too_short" for i in checker.issues)
+
+    checker.issues.clear()
+    checker.visit_plain_string(
+        PlainString(
+            identifier="$xb",
+            value=b"-bad-",
+            modifiers=[
+                StringModifier(StringModifierType.XOR),
+                StringModifier(StringModifierType.FULLWORD),
+            ],
+        )
+    )
+    assert any(i.issue_type == "xor_fullword_boundary" for i in checker.issues)
+
     regex = RegexString(identifier="$r", regex=r"\g", modifiers=[])
     checker.visit_regex_string(regex)
     assert any(i.issue_type == "invalid_escape" for i in checker.issues)

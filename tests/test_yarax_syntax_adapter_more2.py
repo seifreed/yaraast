@@ -101,5 +101,13 @@ def test_base64_padding_and_regex_noop_paths() -> None:
     adapted = adapter.visit_plain_string(base64_string)
     assert adapted.value == "aa\x00\x00"  # Padded with null bytes for semantic neutrality
 
+    byte_base64_string = PlainString(
+        identifier="$bb",
+        value=b"aa",
+        modifiers=["base64"],
+    )
+    adapted_bytes = adapter.visit_plain_string(byte_base64_string)
+    assert adapted_bytes.value == b"aa\x00\x00"
+
     regex = RegexString(identifier="$r", regex=r"a\{2\}", modifiers=[])
     assert adapter.visit_regex_string(regex) is regex

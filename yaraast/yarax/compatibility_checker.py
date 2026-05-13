@@ -106,7 +106,9 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
     def visit_plain_string(self, node: PlainString) -> None:
         """Check plain string compatibility."""
         # Check base64 modifier
-        has_base64 = any(m.name in ("base64", "base64wide") for m in node.modifiers)
+        has_base64 = any(
+            self._modifier_name(modifier) in ("base64", "base64wide") for modifier in node.modifiers
+        )
         if (
             has_base64
             and self.features.minimum_base64_length > 0
@@ -121,14 +123,16 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
             )
 
         # Check XOR with fullword
-        has_xor = any(m.name == "xor" for m in node.modifiers)
-        has_fullword = any(m.name == "fullword" for m in node.modifiers)
+        has_xor = any(self._modifier_name(modifier) == "xor" for modifier in node.modifiers)
+        has_fullword = any(
+            self._modifier_name(modifier) == "fullword" for modifier in node.modifiers
+        )
 
         if (
             has_xor
             and has_fullword
             and self.features.strict_xor_fullword
-            and not re.match(r"^[a-zA-Z0-9].*[a-zA-Z0-9]$", node.value)
+            and not self._has_alnum_boundaries(node.value)
         ):
             self._add_issue(
                 "warning",
@@ -137,6 +141,19 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
                 "Ensure string has proper alphanumeric boundaries",
                 node.location,
             )
+
+    def _modifier_name(self, modifier: object) -> str:
+        return str(getattr(modifier, "name", modifier))
+
+    def _has_alnum_boundaries(self, value: str | bytes) -> bool:
+        if isinstance(value, bytes):
+            return (
+                bool(value) and self._is_ascii_alnum(value[0]) and self._is_ascii_alnum(value[-1])
+            )
+        return re.match(r"^[a-zA-Z0-9].*[a-zA-Z0-9]$", value) is not None
+
+    def _is_ascii_alnum(self, value: int) -> bool:
+        return 48 <= value <= 57 or 65 <= value <= 90 or 97 <= value <= 122
 
     def visit_regex_string(self, node: RegexString) -> None:
         """Check regex string compatibility."""
