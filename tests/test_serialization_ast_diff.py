@@ -97,6 +97,37 @@ def test_ast_diff_treats_tag_reordering_as_unchanged() -> None:
     assert result.differences == []
 
 
+def test_ast_diff_treats_meta_reordering_as_unchanged() -> None:
+    old_ast = _parse_yara(
+        """
+        rule meta_order {
+            meta:
+                b = 2
+                a = 1
+            condition:
+                true
+        }
+        """,
+    )
+    new_ast = _parse_yara(
+        """
+        rule meta_order {
+            meta:
+                a = 1
+                b = 2
+            condition:
+                true
+        }
+        """,
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.old_ast_hash == result.new_ast_hash
+    assert not result.has_changes
+    assert result.differences == []
+
+
 def test_ast_diff_detects_imports_rules_and_modifications(tmp_path: Path) -> None:
     old_code = """
     import "pe"

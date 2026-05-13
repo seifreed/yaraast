@@ -57,10 +57,12 @@ class AstHasher(ASTVisitor[str]):
         modifiers = "|".join(sorted(str(m) for m in node.modifiers))
         tags = "|".join(sorted(self.visit(tag) for tag in node.tags))
         meta = "|".join(
-            f"{getattr(m, 'key', '')}:"
-            f"{getattr(m, 'value', '')}:"
-            f"{getattr(getattr(m, 'scope', None), 'value', '')}"
-            for m in node.meta
+            sorted(
+                f"{getattr(m, 'key', '')}:"
+                f"{getattr(m, 'value', '')}:"
+                f"{getattr(getattr(m, 'scope', None), 'value', '')}"
+                for m in node.meta
+            )
         )
         strings = "|".join(self.visit(s) for s in node.strings)
         condition = self.visit(node.condition) if node.condition else ""
