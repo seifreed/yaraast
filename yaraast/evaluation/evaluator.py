@@ -304,12 +304,20 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 range_val.start,
                 range_val.stop,
             )
-        # OfExpression subject: evaluate the of-expression restricted to the range
-        subject_result = self.visit(node.subject)
-        return bool(subject_result)
+        if isinstance(node.subject, OfExpression):
+            return self._evaluate_of_expression(node.subject, match_range=range_val)
+        return bool(self.visit(node.subject))
 
     def visit_of_expression(self, node: OfExpression) -> bool:
         """Evaluate 'of' expression."""
+        return self._evaluate_of_expression(node)
+
+    def _evaluate_of_expression(
+        self,
+        node: OfExpression,
+        match_range: range | None = None,
+    ) -> bool:
+        """Evaluate an of-expression, optionally restricted to match offsets."""
         # Get quantifier value - could be int, string ("all", "any"), or expression
         quantifier = self._resolve_quantifier(node.quantifier)
 
@@ -318,7 +326,16 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         # Count matches
         matched = 0
         for string_id in string_set:
-            if self.string_matcher.get_match_count(string_id) > 0:
+            normalized_id = self._normalize_string_id(string_id)
+            if match_range is None:
+                has_match = self.string_matcher.get_match_count(normalized_id) > 0
+            else:
+                has_match = self.string_matcher.string_in(
+                    normalized_id,
+                    match_range.start,
+                    match_range.stop,
+                )
+            if has_match:
                 matched += 1
 
         # Evaluate quantifier

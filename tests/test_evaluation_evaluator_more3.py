@@ -298,6 +298,26 @@ def test_for_of_and_module_reference_paths() -> None:
     assert ev.visit_expression(BooleanLiteral(value=True)) is True
 
 
+def test_of_expression_in_range_uses_match_offsets() -> None:
+    def evaluate(condition: str) -> bool:
+        ast = Parser().parse(f"""
+            rule r {{
+                strings:
+                    $a = "ab"
+                    $b = "cd"
+                condition:
+                    {condition}
+            }}
+            """)
+        return YaraEvaluator(data=b"xxabyycd").evaluate_file(ast)["r"]
+
+    assert evaluate("any of them in (0..1)") is False
+    assert evaluate("any of them in (0..3)") is True
+    assert evaluate("2 of them in (0..3)") is False
+    assert evaluate("2 of them in (0..7)") is True
+    assert evaluate("all of them in (0..3)") is False
+
+
 def test_evaluate_file_with_alias_import_and_string_operator_expression() -> None:
     ev = YaraEvaluator(data=b"abc")
     file_ast = __import__("yaraast.ast.base", fromlist=["YaraFile"]).YaraFile(
