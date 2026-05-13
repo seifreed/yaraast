@@ -9,9 +9,11 @@ from enum import Enum
 from pathlib import Path
 
 from yaraast.ast.base import YaraFile
+from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser.parser import Parser
 from yaraast.shared.file_patterns import iter_matching_files
+from yaraast.yarax.generator import YaraXGenerator
 
 
 class DiffType(Enum):
@@ -52,8 +54,9 @@ class SimpleDiffer:
         generator: CodeGenerator | None = None,
     ) -> None:
         """Initialize the differ."""
+        self._parser_provided = parser is not None
         self.parser = parser or Parser()
-        self.generator = generator or CodeGenerator()
+        self.generator = generator or YaraXGenerator()
 
     def diff(self, content1: str, content2: str) -> DiffResult:
         """Diff two YARA file contents using LCS-based sequence matching."""
@@ -240,8 +243,12 @@ class SimpleASTDiffer(SimpleDiffer):
         content1 = file1.read_text(encoding="utf-8")
         content2 = file2.read_text(encoding="utf-8")
 
-        ast1 = self.parser.parse(content1)
-        ast2 = self.parser.parse(content2)
+        if self._parser_provided:
+            ast1 = self.parser.parse(content1)
+            ast2 = self.parser.parse(content2)
+        else:
+            ast1 = parse_yara_source(content1)
+            ast2 = parse_yara_source(content2)
 
         rules1 = {rule.name: rule for rule in ast1.rules}
         rules2 = {rule.name: rule for rule in ast2.rules}
