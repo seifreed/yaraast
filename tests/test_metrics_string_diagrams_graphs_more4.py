@@ -165,3 +165,25 @@ def test_graph_stats_and_labels_high_complexity_paths(tmp_path: Path) -> None:
     out = tmp_path / "similarity.svg"
     svg_fallback = gen.generate_pattern_similarity_diagram(ast, str(out), format="svg")
     assert Path(svg_fallback).exists()
+
+
+def test_similarity_diagram_orders_patterns_within_groups() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="r1",
+                strings=[
+                    PlainString(identifier=f"$s{i}", value=f"alpha{i}", modifiers=[])
+                    for i in range(10)
+                ],
+            )
+        ]
+    )
+
+    source = StringDiagramGenerator().generate_pattern_similarity_diagram(ast, format="dot")
+
+    positions = [source.index(f"\n\t\tpattern_{i} [") for i in range(1, 11)]
+    assert positions == sorted(positions)
+
+    edge_positions = [source.index(f"\tpattern_1 -> pattern_{i} [") for i in range(2, 11)]
+    assert edge_positions == sorted(edge_positions)

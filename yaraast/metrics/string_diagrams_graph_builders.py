@@ -15,6 +15,14 @@ from yaraast.metrics.string_diagrams_graphviz import (
 )
 
 
+def pattern_sort_key(pattern_id: str) -> tuple[str, int, str]:
+    """Sort generated pattern ids by numeric suffix when present."""
+    prefix, separator, suffix = pattern_id.rpartition("_")
+    if separator and suffix.isdigit():
+        return (prefix, int(suffix), "")
+    return (pattern_id, -1, pattern_id)
+
+
 def render_or_write_dot(dot: graphviz.Digraph, output_path: str, format: str) -> str:
     """Render graph output, with DOT/text fallback when executables are unavailable."""
     output_path_obj = Path(output_path)
@@ -125,13 +133,15 @@ def generate_pattern_similarity_diagram(
         "wheat",
     ]
 
-    for i, (group_type, patterns) in enumerate(similarity_groups.items()):
+    for i, (group_type, patterns) in enumerate(sorted(similarity_groups.items())):
         color = colors[i % len(colors)]
         with dot.subgraph(name=f"cluster_{i}") as cluster:
             cluster.attr(
                 label=f"{group_type} Patterns", style="filled", fillcolor=color, alpha="0.5"
             )
-            for pattern_id in patterns:
+            pattern_list = sorted(patterns, key=pattern_sort_key)
+
+            for pattern_id in pattern_list:
                 pattern_info = generator.string_patterns[pattern_id]
                 cluster.node(
                     pattern_id,
@@ -140,7 +150,6 @@ def generate_pattern_similarity_diagram(
                     fillcolor="white",
                 )
 
-            pattern_list = list(patterns)
             for j in range(len(pattern_list)):
                 for k in range(j + 1, len(pattern_list)):
                     similarity = generator._calculate_similarity(
