@@ -46,10 +46,12 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
         self.features = features or YaraXFeatures.yarax_strict()
         self.issues: list[CompatibilityIssue] = []
         self.current_rule: str | None = None
+        self._reported_yarax_features: set[str] = set()
 
     def check(self, yara_file: YaraFile) -> list[CompatibilityIssue]:
         """Check YARA file for compatibility issues."""
         self.issues.clear()
+        self._reported_yarax_features.clear()
         self.visit(yara_file)
         return self.issues
 
@@ -277,6 +279,95 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
         elif isinstance(value, list):
             for item in value:
                 self._visit_ast_value(item)
+
+    def _is_yara_compatibility_mode(self) -> bool:
+        return not self.features.modular_parser
+
+    def _add_yarax_feature(self, feature: str, node: Any, suggestion: str = "") -> None:
+        if not self._is_yara_compatibility_mode() or feature in self._reported_yarax_features:
+            return
+        self._reported_yarax_features.add(feature)
+        self._add_issue(
+            "error",
+            "yarax_feature",
+            f"Using YARA-X feature: {feature}",
+            suggestion or "Rewrite without YARA-X-specific syntax for YARA compatibility",
+            getattr(node, "location", None),
+        )
+
+    def visit_with_statement(self, node) -> None:
+        """Check YARA-X with statement compatibility."""
+        if not self.features.allow_with_statement:
+            self._add_yarax_feature(
+                "with statements",
+                node,
+                "Inline the declarations or rewrite the condition without with-statements",
+            )
+        for declaration in node.declarations:
+            self.visit(declaration)
+        self.visit(node.body)
+
+    def visit_with_declaration(self, node) -> None:
+        self._visit_ast_value(node.value)
+
+    def visit_array_comprehension(self, node) -> None:
+        self._add_yarax_feature("array comprehensions", node)
+        self._visit_ast_value(node.expression)
+        self._visit_ast_value(node.iterable)
+        self._visit_ast_value(node.condition)
+
+    def visit_dict_comprehension(self, node) -> None:
+        self._add_yarax_feature("dict comprehensions", node)
+        self._visit_ast_value(node.key_expression)
+        self._visit_ast_value(node.value_expression)
+        self._visit_ast_value(node.iterable)
+        self._visit_ast_value(node.condition)
+
+    def visit_tuple_expression(self, node) -> None:
+        self._add_yarax_feature("tuple expressions", node)
+        self._visit_ast_value(node.elements)
+
+    def visit_tuple_indexing(self, node) -> None:
+        self._add_yarax_feature("tuple indexing", node)
+        self._visit_ast_value(node.tuple_expr)
+        self._visit_ast_value(node.index)
+
+    def visit_list_expression(self, node) -> None:
+        self._add_yarax_feature("list expressions", node)
+        self._visit_ast_value(node.elements)
+
+    def visit_dict_expression(self, node) -> None:
+        self._add_yarax_feature("dict expressions", node)
+        self._visit_ast_value(node.items)
+
+    def visit_dict_item(self, node) -> None:
+        self._visit_ast_value(node.key)
+        self._visit_ast_value(node.value)
+
+    def visit_slice_expression(self, node) -> None:
+        self._add_yarax_feature("slice expressions", node)
+        self._visit_ast_value(node.target)
+        self._visit_ast_value(node.start)
+        self._visit_ast_value(node.stop)
+        self._visit_ast_value(node.step)
+
+    def visit_lambda_expression(self, node) -> None:
+        self._add_yarax_feature("lambda expressions", node)
+        self._visit_ast_value(node.body)
+
+    def visit_pattern_match(self, node) -> None:
+        self._add_yarax_feature("pattern matching", node)
+        self._visit_ast_value(node.value)
+        self._visit_ast_value(node.cases)
+        self._visit_ast_value(node.default)
+
+    def visit_match_case(self, node) -> None:
+        self._visit_ast_value(node.pattern)
+        self._visit_ast_value(node.result)
+
+    def visit_spread_operator(self, node) -> None:
+        self._add_yarax_feature("spread operators", node)
+        self._visit_ast_value(node.expression)
 
     def visit_identifier(self, node: Identifier) -> None:
         """Check for 'with' statement usage."""

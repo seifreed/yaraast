@@ -14,6 +14,7 @@ from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexJump, HexString, PlainString, RegexString
 from yaraast.yarax.compatibility_checker import CompatibilityIssue, YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
+from yaraast.yarax.parser import YaraXParser
 
 
 def test_compatibility_issue_string_and_rule_meta_paths() -> None:
@@ -104,6 +105,42 @@ def test_checker_reports_yarax_features_with_identifier_and_of_expression() -> N
         "boolean expressions in 'of' statement" in item for item in report["yarax_features_used"]
     )
     assert report["migration_difficulty"] == "moderate"
+
+
+def test_checker_reports_parsed_yarax_nodes_for_yara_compatibility() -> None:
+    ast = YaraXParser(
+        """
+rule native_yarax {
+    condition:
+        with xs = [1, ...arr],
+             f = lambda x: x,
+             ac = [x for x in [1, 2] if x],
+             dc = {k: v for k, v in data if v}:
+            match xs[0] { 1 => true, _ => false }
+}
+""",
+    ).parse()
+
+    strict_issues = YaraXCompatibilityChecker(YaraXFeatures.yarax_strict()).check(ast)
+    assert not any(issue.issue_type == "yarax_feature" for issue in strict_issues)
+
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+    issues = checker.check(ast)
+    features = {
+        issue.message.split(": ", 1)[1] for issue in issues if issue.issue_type == "yarax_feature"
+    }
+
+    assert {
+        "array comprehensions",
+        "dict comprehensions",
+        "lambda expressions",
+        "list expressions",
+        "pattern matching",
+        "spread operators",
+        "with statements",
+    }.issubset(features)
+    assert all(issue.severity == "error" for issue in issues if issue.issue_type == "yarax_feature")
+    assert "with statements" in checker.get_report()["yarax_features_used"]
 
 
 def test_checker_assesses_migration_difficulty_levels() -> None:
