@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from threading import Event
 from typing import Any, cast
 
 import pytest
@@ -106,6 +107,32 @@ def test_parallel_analyzer_accepts_yarax_files(tmp_path: Path) -> None:
     assert len(jobs) == 1
     assert jobs[0].status.value == "completed"
     assert jobs[0].result[0].rules[0].name == "x"
+
+
+def test_parallel_analyzer_batch_analyze_files_preserves_input_order(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    slow_path = tmp_path / "slow.yar"
+    fast_path = tmp_path / "fast.yar"
+    slow_path.write_text(_rule_code("slow"), encoding="utf-8")
+    fast_path.write_text(_rule_code("fast"), encoding="utf-8")
+    fast_finished = Event()
+    analyzer = ParallelAnalyzer(max_workers=2)
+
+    def delayed_analyze_file_path(file_path: str) -> dict[str, Any]:
+        if file_path == str(slow_path):
+            fast_finished.wait(timeout=1)
+        result = {"file": file_path, "analysis": file_path}
+        if file_path == str(fast_path):
+            fast_finished.set()
+        return result
+
+    monkeypatch.setattr(analyzer, "_analyze_file_path", delayed_analyze_file_path)
+
+    results = analyzer.batch_analyze_files([str(slow_path), str(fast_path)], max_workers=2)
+
+    assert [result["file"] for result in results] == [str(slow_path), str(fast_path)]
 
 
 def test_parallel_analyzer_rejects_invalid_worker_counts(tmp_path: Path) -> None:

@@ -29,31 +29,32 @@ def analyze_rules(
 ) -> list[dict[str, Any]]:
     """Analyze multiple rules with a process pool."""
     worker_count = _resolve_worker_count(analyzer, max_workers)
-    results = []
+    ordered_results: list[dict[str, Any] | None] = [None] * len(rules)
     start_time = time.time()
     rules_analyzed = 0
     errors = 0
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=worker_count) as executor:
         future_to_rule = {
-            executor.submit(analyzer._analyze_single_rule, rule): rule for rule in rules
+            executor.submit(analyzer._analyze_single_rule, rule): (index, rule)
+            for index, rule in enumerate(rules)
         }
         for future in concurrent.futures.as_completed(future_to_rule):
-            rule = future_to_rule[future]
+            index, rule = future_to_rule[future]
             try:
                 result = future.result()
-                results.append(result)
+                ordered_results[index] = result
                 rules_analyzed += 1
             except Exception as exc:
                 rule_name = getattr(rule, "name", str(rule))
-                results.append({"rule": rule_name, "error": str(exc), "analysis": None})
+                ordered_results[index] = {"rule": rule_name, "error": str(exc), "analysis": None}
                 errors += 1
 
     # Update stats atomically after all futures complete
     analyzer._stats["rules_analyzed"] += rules_analyzed
     analyzer._stats["errors"] += errors
     analyzer._stats["total_time"] = time.time() - start_time
-    return results
+    return [result for result in ordered_results if result is not None]
 
 
 def batch_analyze_files(
@@ -63,18 +64,19 @@ def batch_analyze_files(
 ) -> list[dict[str, Any]]:
     """Analyze multiple files with a thread pool."""
     worker_count = _resolve_worker_count(analyzer, max_workers)
-    results = []
+    ordered_results: list[dict[str, Any] | None] = [None] * len(file_paths)
     with concurrent.futures.ThreadPoolExecutor(max_workers=worker_count) as executor:
         future_to_path = {
-            executor.submit(analyzer._analyze_file_path, path): path for path in file_paths
+            executor.submit(analyzer._analyze_file_path, path): (index, path)
+            for index, path in enumerate(file_paths)
         }
         for future in concurrent.futures.as_completed(future_to_path):
-            path = future_to_path[future]
+            index, path = future_to_path[future]
             try:
-                results.append(future.result())
+                ordered_results[index] = future.result()
             except Exception as exc:
-                results.append({"file": path, "error": str(exc), "analysis": None})
-    return results
+                ordered_results[index] = {"file": path, "error": str(exc), "analysis": None}
+    return [result for result in ordered_results if result is not None]
 
 
 def analyze_with_custom_function(
@@ -85,14 +87,17 @@ def analyze_with_custom_function(
 ) -> list[Any]:
     """Run a custom rule analysis across a process pool."""
     worker_count = _resolve_worker_count(analyzer, max_workers)
-    results = []
+    results: list[Any] = [None] * len(rules)
     with concurrent.futures.ProcessPoolExecutor(max_workers=worker_count) as executor:
-        futures = [executor.submit(analyze_func, rule) for rule in rules]
-        for future in concurrent.futures.as_completed(futures):
+        future_to_index = {
+            executor.submit(analyze_func, rule): index for index, rule in enumerate(rules)
+        }
+        for future in concurrent.futures.as_completed(future_to_index):
+            index = future_to_index[future]
             try:
-                results.append(future.result())
+                results[index] = future.result()
             except Exception as exc:
-                results.append({"error": str(exc)})
+                results[index] = {"error": str(exc)}
     return results
 
 
