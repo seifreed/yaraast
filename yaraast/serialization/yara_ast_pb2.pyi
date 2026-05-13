@@ -14,6 +14,7 @@ class YaraFile(_message.Message):
         "includes",
         "metadata",
         "namespaces",
+        "node_metadata",
         "pragmas",
         "rules",
     )
@@ -25,6 +26,7 @@ class YaraFile(_message.Message):
     EXTERN_IMPORTS_FIELD_NUMBER: _ClassVar[int]
     PRAGMAS_FIELD_NUMBER: _ClassVar[int]
     NAMESPACES_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     imports: _containers.RepeatedCompositeFieldContainer[Import]
     includes: _containers.RepeatedCompositeFieldContainer[Include]
     rules: _containers.RepeatedCompositeFieldContainer[Rule]
@@ -33,6 +35,7 @@ class YaraFile(_message.Message):
     extern_imports: _containers.RepeatedCompositeFieldContainer[ExternImport]
     pragmas: _containers.RepeatedCompositeFieldContainer[Pragma]
     namespaces: _containers.RepeatedCompositeFieldContainer[ExternNamespace]
+    node_metadata: NodeMetadata
     def __init__(
         self,
         imports: _Iterable[Import | _Mapping] | None = ...,
@@ -43,6 +46,7 @@ class YaraFile(_message.Message):
         extern_imports: _Iterable[ExternImport | _Mapping] | None = ...,
         pragmas: _Iterable[Pragma | _Mapping] | None = ...,
         namespaces: _Iterable[ExternNamespace | _Mapping] | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class Metadata(_message.Message):
@@ -84,27 +88,115 @@ class Metadata(_message.Message):
         source_file: str | None = ...,
     ) -> None: ...
 
+class SourceLocation(_message.Message):
+    __slots__ = ("column", "end_column", "end_line", "file", "line")
+    LINE_FIELD_NUMBER: _ClassVar[int]
+    COLUMN_FIELD_NUMBER: _ClassVar[int]
+    FILE_FIELD_NUMBER: _ClassVar[int]
+    END_LINE_FIELD_NUMBER: _ClassVar[int]
+    END_COLUMN_FIELD_NUMBER: _ClassVar[int]
+    line: int
+    column: int
+    file: str
+    end_line: int
+    end_column: int
+    def __init__(
+        self,
+        line: int | None = ...,
+        column: int | None = ...,
+        file: str | None = ...,
+        end_line: int | None = ...,
+        end_column: int | None = ...,
+    ) -> None: ...
+
+class AstComment(_message.Message):
+    __slots__ = ("is_multiline", "node_metadata", "text")
+    TEXT_FIELD_NUMBER: _ClassVar[int]
+    IS_MULTILINE_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
+    text: str
+    is_multiline: bool
+    node_metadata: NodeMetadata
+    def __init__(
+        self,
+        text: str | None = ...,
+        is_multiline: bool | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
+    ) -> None: ...
+
+class AstCommentGroup(_message.Message):
+    __slots__ = ("comments", "node_metadata")
+    COMMENTS_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
+    comments: _containers.RepeatedCompositeFieldContainer[AstComment]
+    node_metadata: NodeMetadata
+    def __init__(
+        self,
+        comments: _Iterable[AstComment | _Mapping] | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
+    ) -> None: ...
+
+class CommentMetadata(_message.Message):
+    __slots__ = ("comment", "group")
+    COMMENT_FIELD_NUMBER: _ClassVar[int]
+    GROUP_FIELD_NUMBER: _ClassVar[int]
+    comment: AstComment
+    group: AstCommentGroup
+    def __init__(
+        self,
+        comment: AstComment | _Mapping | None = ...,
+        group: AstCommentGroup | _Mapping | None = ...,
+    ) -> None: ...
+
+class NodeMetadata(_message.Message):
+    __slots__ = ("leading_comments", "location", "trailing_comment")
+    LOCATION_FIELD_NUMBER: _ClassVar[int]
+    LEADING_COMMENTS_FIELD_NUMBER: _ClassVar[int]
+    TRAILING_COMMENT_FIELD_NUMBER: _ClassVar[int]
+    location: SourceLocation
+    leading_comments: _containers.RepeatedCompositeFieldContainer[CommentMetadata]
+    trailing_comment: CommentMetadata
+    def __init__(
+        self,
+        location: SourceLocation | _Mapping | None = ...,
+        leading_comments: _Iterable[CommentMetadata | _Mapping] | None = ...,
+        trailing_comment: CommentMetadata | _Mapping | None = ...,
+    ) -> None: ...
+
 class Import(_message.Message):
-    __slots__ = ("alias", "module")
+    __slots__ = ("alias", "module", "node_metadata")
     MODULE_FIELD_NUMBER: _ClassVar[int]
     ALIAS_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     module: str
     alias: str
-    def __init__(self, module: str | None = ..., alias: str | None = ...) -> None: ...
+    node_metadata: NodeMetadata
+    def __init__(
+        self,
+        module: str | None = ...,
+        alias: str | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
+    ) -> None: ...
 
 class Include(_message.Message):
-    __slots__ = ("path",)
+    __slots__ = ("node_metadata", "path")
     PATH_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     path: str
-    def __init__(self, path: str | None = ...) -> None: ...
+    node_metadata: NodeMetadata
+    def __init__(
+        self, path: str | None = ..., node_metadata: NodeMetadata | _Mapping | None = ...
+    ) -> None: ...
 
 class Rule(_message.Message):
     __slots__ = (
         "condition",
         "meta",
+        "meta_entries",
         "meta_scopes",
         "modifiers",
         "name",
+        "node_metadata",
         "pragmas",
         "strings",
         "tags",
@@ -136,6 +228,8 @@ class Rule(_message.Message):
     CONDITION_FIELD_NUMBER: _ClassVar[int]
     META_SCOPES_FIELD_NUMBER: _ClassVar[int]
     PRAGMAS_FIELD_NUMBER: _ClassVar[int]
+    META_ENTRIES_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     name: str
     modifiers: _containers.RepeatedScalarFieldContainer[str]
     tags: _containers.RepeatedCompositeFieldContainer[Tag]
@@ -144,6 +238,8 @@ class Rule(_message.Message):
     condition: Expression
     meta_scopes: _containers.ScalarMap[str, str]
     pragmas: _containers.RepeatedCompositeFieldContainer[InRulePragma]
+    meta_entries: _containers.RepeatedCompositeFieldContainer[RuleMetaEntry]
+    node_metadata: NodeMetadata
     def __init__(
         self,
         name: str | None = ...,
@@ -154,13 +250,19 @@ class Rule(_message.Message):
         condition: Expression | _Mapping | None = ...,
         meta_scopes: _Mapping[str, str] | None = ...,
         pragmas: _Iterable[InRulePragma | _Mapping] | None = ...,
+        meta_entries: _Iterable[RuleMetaEntry | _Mapping] | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class Tag(_message.Message):
-    __slots__ = ("name",)
+    __slots__ = ("name", "node_metadata")
     NAME_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     name: str
-    def __init__(self, name: str | None = ...) -> None: ...
+    node_metadata: NodeMetadata
+    def __init__(
+        self, name: str | None = ..., node_metadata: NodeMetadata | _Mapping | None = ...
+    ) -> None: ...
 
 class MetaValue(_message.Message):
     __slots__ = ("bool_value", "double_value", "int_value", "string_value")
@@ -180,44 +282,76 @@ class MetaValue(_message.Message):
         double_value: float | None = ...,
     ) -> None: ...
 
+class RuleMetaEntry(_message.Message):
+    __slots__ = ("ast_node", "key", "node_metadata", "scope", "value")
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    SCOPE_FIELD_NUMBER: _ClassVar[int]
+    AST_NODE_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
+    key: str
+    value: MetaValue
+    scope: str
+    ast_node: bool
+    node_metadata: NodeMetadata
+    def __init__(
+        self,
+        key: str | None = ...,
+        value: MetaValue | _Mapping | None = ...,
+        scope: str | None = ...,
+        ast_node: bool | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
+    ) -> None: ...
+
 class ExternRule(_message.Message):
-    __slots__ = ("modifiers", "name", "namespace")
+    __slots__ = ("modifiers", "name", "namespace", "node_metadata")
     NAME_FIELD_NUMBER: _ClassVar[int]
     MODIFIERS_FIELD_NUMBER: _ClassVar[int]
     NAMESPACE_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     name: str
     modifiers: _containers.RepeatedScalarFieldContainer[str]
     namespace: str
+    node_metadata: NodeMetadata
     def __init__(
         self,
         name: str | None = ...,
         modifiers: _Iterable[str] | None = ...,
         namespace: str | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class ExternImport(_message.Message):
-    __slots__ = ("alias", "module_path", "rules")
+    __slots__ = ("alias", "module_path", "node_metadata", "rules")
     MODULE_PATH_FIELD_NUMBER: _ClassVar[int]
     ALIAS_FIELD_NUMBER: _ClassVar[int]
     RULES_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     module_path: str
     alias: str
     rules: _containers.RepeatedScalarFieldContainer[str]
+    node_metadata: NodeMetadata
     def __init__(
         self,
         module_path: str | None = ...,
         alias: str | None = ...,
         rules: _Iterable[str] | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class ExternNamespace(_message.Message):
-    __slots__ = ("extern_rules", "name")
+    __slots__ = ("extern_rules", "name", "node_metadata")
     NAME_FIELD_NUMBER: _ClassVar[int]
     EXTERN_RULES_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     name: str
     extern_rules: _containers.RepeatedCompositeFieldContainer[ExternRule]
+    node_metadata: NodeMetadata
     def __init__(
-        self, name: str | None = ..., extern_rules: _Iterable[ExternRule | _Mapping] | None = ...
+        self,
+        name: str | None = ...,
+        extern_rules: _Iterable[ExternRule | _Mapping] | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class Pragma(_message.Message):
@@ -227,6 +361,7 @@ class Pragma(_message.Message):
         "macro_name",
         "macro_value",
         "name",
+        "node_metadata",
         "parameters",
         "pragma_type",
         "scope",
@@ -250,6 +385,7 @@ class Pragma(_message.Message):
     MACRO_VALUE_FIELD_NUMBER: _ClassVar[int]
     CONDITION_FIELD_NUMBER: _ClassVar[int]
     PARAMETERS_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     pragma_type: str
     name: str
     arguments: _containers.RepeatedScalarFieldContainer[str]
@@ -258,6 +394,7 @@ class Pragma(_message.Message):
     macro_value: str
     condition: str
     parameters: _containers.MessageMap[str, MetaValue]
+    node_metadata: NodeMetadata
     def __init__(
         self,
         pragma_type: str | None = ...,
@@ -268,34 +405,43 @@ class Pragma(_message.Message):
         macro_value: str | None = ...,
         condition: str | None = ...,
         parameters: _Mapping[str, MetaValue] | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class InRulePragma(_message.Message):
-    __slots__ = ("position", "pragma")
+    __slots__ = ("node_metadata", "position", "pragma")
     PRAGMA_FIELD_NUMBER: _ClassVar[int]
     POSITION_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     pragma: Pragma
     position: str
+    node_metadata: NodeMetadata
     def __init__(
-        self, pragma: Pragma | _Mapping | None = ..., position: str | None = ...
+        self,
+        pragma: Pragma | _Mapping | None = ...,
+        position: str | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class StringDefinition(_message.Message):
-    __slots__ = ("hex", "identifier", "plain", "regex")
+    __slots__ = ("hex", "identifier", "node_metadata", "plain", "regex")
     IDENTIFIER_FIELD_NUMBER: _ClassVar[int]
     PLAIN_FIELD_NUMBER: _ClassVar[int]
     HEX_FIELD_NUMBER: _ClassVar[int]
     REGEX_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     identifier: str
     plain: PlainString
     hex: HexString
     regex: RegexString
+    node_metadata: NodeMetadata
     def __init__(
         self,
         identifier: str | None = ...,
         plain: PlainString | _Mapping | None = ...,
         hex: HexString | _Mapping | None = ...,
         regex: RegexString | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class PlainString(_message.Message):
@@ -331,37 +477,50 @@ class RegexString(_message.Message):
     ) -> None: ...
 
 class StringModifier(_message.Message):
-    __slots__ = ("name", "tuple_value", "typed_value", "value")
+    __slots__ = ("name", "node_metadata", "tuple_value", "typed_value", "value")
     NAME_FIELD_NUMBER: _ClassVar[int]
     VALUE_FIELD_NUMBER: _ClassVar[int]
     TYPED_VALUE_FIELD_NUMBER: _ClassVar[int]
     TUPLE_VALUE_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     name: str
     value: str
     typed_value: MetaValue
     tuple_value: _containers.RepeatedScalarFieldContainer[int]
+    node_metadata: NodeMetadata
     def __init__(
         self,
         name: str | None = ...,
         value: str | None = ...,
         typed_value: MetaValue | _Mapping | None = ...,
         tuple_value: _Iterable[int] | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class HexToken(_message.Message):
-    __slots__ = ("alternative", "byte", "jump", "negated_byte", "nibble", "wildcard")
+    __slots__ = (
+        "alternative",
+        "byte",
+        "jump",
+        "negated_byte",
+        "nibble",
+        "node_metadata",
+        "wildcard",
+    )
     BYTE_FIELD_NUMBER: _ClassVar[int]
     WILDCARD_FIELD_NUMBER: _ClassVar[int]
     JUMP_FIELD_NUMBER: _ClassVar[int]
     ALTERNATIVE_FIELD_NUMBER: _ClassVar[int]
     NIBBLE_FIELD_NUMBER: _ClassVar[int]
     NEGATED_BYTE_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     byte: HexByte
     wildcard: HexWildcard
     jump: HexJump
     alternative: HexAlternative
     nibble: HexNibble
     negated_byte: HexNegatedByte
+    node_metadata: NodeMetadata
     def __init__(
         self,
         byte: HexByte | _Mapping | None = ...,
@@ -370,6 +529,7 @@ class HexToken(_message.Message):
         alternative: HexAlternative | _Mapping | None = ...,
         nibble: HexNibble | _Mapping | None = ...,
         negated_byte: HexNegatedByte | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class HexByte(_message.Message):
@@ -434,6 +594,7 @@ class Expression(_message.Message):
         "integer_literal",
         "member_access",
         "module_reference",
+        "node_metadata",
         "of_expression",
         "parentheses_expression",
         "range_expression",
@@ -477,6 +638,7 @@ class Expression(_message.Message):
     MODULE_REFERENCE_FIELD_NUMBER: _ClassVar[int]
     DICTIONARY_ACCESS_FIELD_NUMBER: _ClassVar[int]
     EXTERN_RULE_REFERENCE_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     identifier: Identifier
     string_identifier: StringIdentifier
     string_count: StringCount
@@ -506,6 +668,7 @@ class Expression(_message.Message):
     module_reference: ModuleReference
     dictionary_access: DictionaryAccess
     extern_rule_reference: ExternRuleReference
+    node_metadata: NodeMetadata
     def __init__(
         self,
         identifier: Identifier | _Mapping | None = ...,
@@ -537,6 +700,7 @@ class Expression(_message.Message):
         module_reference: ModuleReference | _Mapping | None = ...,
         dictionary_access: DictionaryAccess | _Mapping | None = ...,
         extern_rule_reference: ExternRuleReference | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
 class Identifier(_message.Message):

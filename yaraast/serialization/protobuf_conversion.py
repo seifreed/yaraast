@@ -7,6 +7,129 @@ import time
 from . import yara_ast_pb2
 
 
+def _protobuf_has_field(message, field_name: str) -> bool:
+    try:
+        return message.HasField(field_name)
+    except (AttributeError, ValueError):
+        return False
+
+
+def _node_has_metadata(node) -> bool:
+    return bool(
+        getattr(node, "location", None) is not None
+        or getattr(node, "leading_comments", None)
+        or getattr(node, "trailing_comment", None) is not None
+    )
+
+
+def _copy_location_to_protobuf(location, pb_location) -> None:
+    pb_location.line = location.line
+    pb_location.column = location.column
+    if location.file is not None:
+        pb_location.file = location.file
+    if location.end_line is not None:
+        pb_location.end_line = location.end_line
+    if location.end_column is not None:
+        pb_location.end_column = location.end_column
+
+
+def _protobuf_location_to_ast(pb_location):
+    from yaraast.ast.base import Location
+
+    return Location(
+        line=pb_location.line,
+        column=pb_location.column,
+        file=pb_location.file if _protobuf_has_field(pb_location, "file") else None,
+        end_line=pb_location.end_line if _protobuf_has_field(pb_location, "end_line") else None,
+        end_column=(
+            pb_location.end_column if _protobuf_has_field(pb_location, "end_column") else None
+        ),
+    )
+
+
+def _copy_comment_to_protobuf(comment, pb_comment) -> None:
+    pb_comment.text = comment.text
+    pb_comment.is_multiline = comment.is_multiline
+    _copy_node_metadata_to_protobuf(comment, pb_comment)
+
+
+def _copy_comment_metadata_to_protobuf(comment, pb_comment_metadata) -> None:
+    from yaraast.ast.comments import Comment, CommentGroup
+
+    if isinstance(comment, CommentGroup):
+        pb_group = pb_comment_metadata.group
+        for nested_comment in comment.comments:
+            _copy_comment_to_protobuf(nested_comment, pb_group.comments.add())
+        _copy_node_metadata_to_protobuf(comment, pb_group)
+    elif isinstance(comment, Comment):
+        _copy_comment_to_protobuf(comment, pb_comment_metadata.comment)
+    else:
+        pb_comment_metadata.comment.text = str(comment)
+
+
+def _protobuf_comment_to_ast(pb_comment):
+    from yaraast.ast.comments import Comment
+
+    comment = Comment(
+        text=pb_comment.text,
+        is_multiline=pb_comment.is_multiline,
+    )
+    return _apply_node_metadata_from_protobuf(pb_comment, comment)
+
+
+def _protobuf_comment_metadata_to_ast(pb_comment_metadata):
+    from yaraast.ast.comments import CommentGroup
+
+    if pb_comment_metadata.HasField("group"):
+        group = CommentGroup(
+            comments=[
+                _protobuf_comment_to_ast(pb_comment)
+                for pb_comment in pb_comment_metadata.group.comments
+            ]
+        )
+        return _apply_node_metadata_from_protobuf(pb_comment_metadata.group, group)
+    return _protobuf_comment_to_ast(pb_comment_metadata.comment)
+
+
+def _copy_node_metadata_to_protobuf(node, pb_owner) -> None:
+    if not _node_has_metadata(node) or not hasattr(pb_owner, "node_metadata"):
+        return
+
+    pb_metadata = pb_owner.node_metadata
+    location = getattr(node, "location", None)
+    if location is not None:
+        _copy_location_to_protobuf(location, pb_metadata.location)
+
+    for comment in getattr(node, "leading_comments", []):
+        _copy_comment_metadata_to_protobuf(comment, pb_metadata.leading_comments.add())
+
+    trailing_comment = getattr(node, "trailing_comment", None)
+    if trailing_comment is not None:
+        _copy_comment_metadata_to_protobuf(trailing_comment, pb_metadata.trailing_comment)
+
+
+def _apply_node_metadata_from_protobuf(pb_owner, node):
+    if not hasattr(pb_owner, "node_metadata") or not _protobuf_has_field(
+        pb_owner,
+        "node_metadata",
+    ):
+        return node
+
+    pb_metadata = pb_owner.node_metadata
+    if _protobuf_has_field(pb_metadata, "location"):
+        node.location = _protobuf_location_to_ast(pb_metadata.location)
+
+    if pb_metadata.leading_comments:
+        node.leading_comments = [
+            _protobuf_comment_metadata_to_ast(pb_comment)
+            for pb_comment in pb_metadata.leading_comments
+        ]
+
+    if _protobuf_has_field(pb_metadata, "trailing_comment"):
+        node.trailing_comment = _protobuf_comment_metadata_to_ast(pb_metadata.trailing_comment)
+    return node
+
+
 def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
     """Convert an AST to its protobuf representation."""
     pb_file = yara_ast_pb2.YaraFile()
@@ -16,10 +139,12 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
         pb_import.module = imp.module
         if hasattr(imp, "alias") and imp.alias:
             pb_import.alias = imp.alias
+        _copy_node_metadata_to_protobuf(imp, pb_import)
 
     for inc in ast.includes:
         pb_include = pb_file.includes.add()
         pb_include.path = inc.path
+        _copy_node_metadata_to_protobuf(inc, pb_include)
 
     for extern_rule in ast.extern_rules:
         convert_extern_rule_to_protobuf(extern_rule, pb_file.extern_rules.add())
@@ -46,6 +171,7 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
         pb_file.metadata.includes_count = len(ast.includes)
         pb_file.metadata.timestamp = int(time.time())
 
+    _copy_node_metadata_to_protobuf(ast, pb_file)
     return pb_file
 
 
@@ -53,18 +179,28 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
     """Convert a single rule AST node to protobuf."""
     pb_rule.name = rule.name
     pb_rule.modifiers.extend(str(m) for m in rule.modifiers)
+    _copy_node_metadata_to_protobuf(rule, pb_rule)
 
     for tag in rule.tags:
         pb_tag = pb_rule.tags.add()
         pb_tag.name = tag.name
+        _copy_node_metadata_to_protobuf(tag, pb_tag)
 
     for entry in rule.meta:
         key = getattr(entry, "key", "")
         value = getattr(entry, "value", "")
         scope = getattr(entry, "scope", None)
         meta_val = pb_rule.meta[key]
+        pb_meta_entry = pb_rule.meta_entries.add()
+        pb_meta_entry.key = key
+        _copy_python_value_to_meta_value(value, pb_meta_entry.value)
+        _copy_node_metadata_to_protobuf(entry, pb_meta_entry)
         if scope is not None:
-            pb_rule.meta_scopes[key] = getattr(scope, "value", str(scope))
+            scope_text = getattr(scope, "value", str(scope))
+            pb_rule.meta_scopes[key] = scope_text
+            pb_meta_entry.scope = scope_text
+        if hasattr(entry, "location") or hasattr(entry, "leading_comments"):
+            pb_meta_entry.ast_node = True
         if isinstance(value, str):
             meta_val.string_value = value
         elif isinstance(value, bool):
@@ -111,11 +247,27 @@ def _meta_value_to_python(pb_meta_value):
     return ""
 
 
+def protobuf_to_rule_meta_entry(pb_meta_entry):
+    from yaraast.ast.meta import Meta
+    from yaraast.ast.modifiers import MetaEntry
+
+    value = _meta_value_to_python(pb_meta_entry.value)
+    if pb_meta_entry.ast_node or _protobuf_has_field(pb_meta_entry, "node_metadata"):
+        meta = Meta(pb_meta_entry.key, value)
+        return _apply_node_metadata_from_protobuf(pb_meta_entry, meta)
+    return MetaEntry.from_key_value(
+        pb_meta_entry.key,
+        value,
+        pb_meta_entry.scope or None,
+    )
+
+
 def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
     pb_extern_rule.name = extern_rule.name
     pb_extern_rule.modifiers.extend(str(modifier) for modifier in extern_rule.modifiers)
     if extern_rule.namespace:
         pb_extern_rule.namespace = extern_rule.namespace
+    _copy_node_metadata_to_protobuf(extern_rule, pb_extern_rule)
 
 
 def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
@@ -123,10 +275,12 @@ def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
     if extern_import.alias:
         pb_extern_import.alias = extern_import.alias
     pb_extern_import.rules.extend(extern_import.rules)
+    _copy_node_metadata_to_protobuf(extern_import, pb_extern_import)
 
 
 def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
     pb_namespace.name = namespace.name
+    _copy_node_metadata_to_protobuf(namespace, pb_namespace)
     for extern_rule in namespace.extern_rules:
         convert_extern_rule_to_protobuf(extern_rule, pb_namespace.extern_rules.add())
 
@@ -150,11 +304,13 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
 
     for key, value in getattr(pragma, "parameters", {}).items():
         _copy_python_value_to_meta_value(value, pb_pragma.parameters[str(key)])
+    _copy_node_metadata_to_protobuf(pragma, pb_pragma)
 
 
 def convert_in_rule_pragma_to_protobuf(in_rule_pragma, pb_in_rule_pragma) -> None:
     convert_pragma_to_protobuf(in_rule_pragma.pragma, pb_in_rule_pragma.pragma)
     pb_in_rule_pragma.position = in_rule_pragma.position
+    _copy_node_metadata_to_protobuf(in_rule_pragma, pb_in_rule_pragma)
 
 
 def _modifier_value_text(value) -> str:
@@ -165,6 +321,7 @@ def _modifier_value_text(value) -> str:
 
 def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
     pb_mod.name = mod.name
+    _copy_node_metadata_to_protobuf(mod, pb_mod)
     if mod.value is None:
         return
 
@@ -185,6 +342,7 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
     """Convert a string definition to protobuf."""
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
+    _copy_node_metadata_to_protobuf(string_def, pb_string)
     if isinstance(string_def, PlainString):
         pb_string.plain.value = string_def.value
         for mod in string_def.modifiers:
@@ -218,6 +376,7 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
         HexWildcard,
     )
 
+    _copy_node_metadata_to_protobuf(token, pb_token)
     if isinstance(token, HexByte):
         pb_token.byte.value = str(token.value)
     elif isinstance(token, HexNegatedByte):
@@ -366,6 +525,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     from yaraast.ast.modules import DictionaryAccess, ModuleReference
     from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 
+    _copy_node_metadata_to_protobuf(expr, pb_expr)
     if isinstance(expr, Identifier):
         pb_expr.identifier.name = expr.name
     elif isinstance(expr, StringIdentifier):
@@ -488,15 +648,23 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
     imports = []
     for pb_import in pb_file.imports:
         imports.append(
-            Import(
-                module=pb_import.module,
-                alias=pb_import.alias if pb_import.alias else None,
+            _apply_node_metadata_from_protobuf(
+                pb_import,
+                Import(
+                    module=pb_import.module,
+                    alias=pb_import.alias if pb_import.alias else None,
+                ),
             ),
         )
 
     includes = []
     for pb_include in pb_file.includes:
-        includes.append(Include(path=pb_include.path))
+        includes.append(
+            _apply_node_metadata_from_protobuf(
+                pb_include,
+                Include(path=pb_include.path),
+            ),
+        )
 
     extern_rules = [protobuf_to_extern_rule(pb_rule) for pb_rule in pb_file.extern_rules]
     extern_imports = [protobuf_to_extern_import(pb_import) for pb_import in pb_file.extern_imports]
@@ -509,25 +677,35 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
         for pb_tag in pb_rule.tags:
             from yaraast.ast.rules import Tag
 
-            tags.append(Tag(name=pb_tag.name))
+            tags.append(
+                _apply_node_metadata_from_protobuf(
+                    pb_tag,
+                    Tag(name=pb_tag.name),
+                )
+            )
 
-        meta_values = {}
-        for key, meta_val in pb_rule.meta.items():
-            if meta_val.HasField("string_value"):
-                meta_values[key] = meta_val.string_value
-            elif meta_val.HasField("bool_value"):
-                meta_values[key] = meta_val.bool_value
-            elif meta_val.HasField("int_value"):
-                meta_values[key] = meta_val.int_value
-            elif meta_val.HasField("double_value"):
-                meta_values[key] = meta_val.double_value
+        if pb_rule.meta_entries:
+            meta = [
+                protobuf_to_rule_meta_entry(pb_meta_entry) for pb_meta_entry in pb_rule.meta_entries
+            ]
+        else:
+            meta_values = {}
+            for key, meta_val in pb_rule.meta.items():
+                if meta_val.HasField("string_value"):
+                    meta_values[key] = meta_val.string_value
+                elif meta_val.HasField("bool_value"):
+                    meta_values[key] = meta_val.bool_value
+                elif meta_val.HasField("int_value"):
+                    meta_values[key] = meta_val.int_value
+                elif meta_val.HasField("double_value"):
+                    meta_values[key] = meta_val.double_value
 
-        from yaraast.ast.modifiers import MetaEntry
+            from yaraast.ast.modifiers import MetaEntry
 
-        meta = [
-            MetaEntry.from_key_value(key, value, pb_rule.meta_scopes.get(key) or None)
-            for key, value in meta_values.items()
-        ]
+            meta = [
+                MetaEntry.from_key_value(key, value, pb_rule.meta_scopes.get(key) or None)
+                for key, value in meta_values.items()
+            ]
 
         strings = []
         for pb_string in pb_rule.strings:
@@ -542,19 +720,18 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
         )
         pragmas_for_rule = [protobuf_to_in_rule_pragma(pb_pragma) for pb_pragma in pb_rule.pragmas]
 
-        rules.append(
-            Rule(
-                name=pb_rule.name,
-                modifiers=list(pb_rule.modifiers),
-                tags=tags,
-                meta=meta,
-                strings=strings,
-                condition=condition,
-                pragmas=pragmas_for_rule,
-            )
+        rule = Rule(
+            name=pb_rule.name,
+            modifiers=list(pb_rule.modifiers),
+            tags=tags,
+            meta=meta,
+            strings=strings,
+            condition=condition,
+            pragmas=pragmas_for_rule,
         )
+        rules.append(_apply_node_metadata_from_protobuf(pb_rule, rule))
 
-    return YaraFile(
+    ast = YaraFile(
         imports=imports,
         includes=includes,
         rules=rules,
@@ -563,6 +740,7 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
         pragmas=pragmas,
         namespaces=namespaces,
     )
+    return _apply_node_metadata_from_protobuf(pb_file, ast)
 
 
 def protobuf_to_extern_rule(pb_extern_rule):
@@ -577,29 +755,40 @@ def protobuf_to_extern_rule(pb_extern_rule):
         except (ValueError, ValidationError):
             modifiers.append(modifier)
 
-    return ExternRule(
-        name=pb_extern_rule.name,
-        modifiers=modifiers,
-        namespace=pb_extern_rule.namespace or None,
+    return _apply_node_metadata_from_protobuf(
+        pb_extern_rule,
+        ExternRule(
+            name=pb_extern_rule.name,
+            modifiers=modifiers,
+            namespace=pb_extern_rule.namespace or None,
+        ),
     )
 
 
 def protobuf_to_extern_import(pb_extern_import):
     from yaraast.ast.extern import ExternImport
 
-    return ExternImport(
-        module_path=pb_extern_import.module_path,
-        alias=pb_extern_import.alias or None,
-        rules=list(pb_extern_import.rules),
+    return _apply_node_metadata_from_protobuf(
+        pb_extern_import,
+        ExternImport(
+            module_path=pb_extern_import.module_path,
+            alias=pb_extern_import.alias or None,
+            rules=list(pb_extern_import.rules),
+        ),
     )
 
 
 def protobuf_to_extern_namespace(pb_namespace):
     from yaraast.ast.extern import ExternNamespace
 
-    return ExternNamespace(
-        name=pb_namespace.name,
-        extern_rules=[protobuf_to_extern_rule(pb_rule) for pb_rule in pb_namespace.extern_rules],
+    return _apply_node_metadata_from_protobuf(
+        pb_namespace,
+        ExternNamespace(
+            name=pb_namespace.name,
+            extern_rules=[
+                protobuf_to_extern_rule(pb_rule) for pb_rule in pb_namespace.extern_rules
+            ],
+        ),
     )
 
 
@@ -658,15 +847,18 @@ def protobuf_to_pragma(pb_pragma):
             scope=scope,
         )
     pragma.scope = scope
-    return pragma
+    return _apply_node_metadata_from_protobuf(pb_pragma, pragma)
 
 
 def protobuf_to_in_rule_pragma(pb_in_rule_pragma):
     from yaraast.ast.pragmas import InRulePragma
 
-    return InRulePragma(
-        pragma=protobuf_to_pragma(pb_in_rule_pragma.pragma),
-        position=pb_in_rule_pragma.position or "before_strings",
+    return _apply_node_metadata_from_protobuf(
+        pb_in_rule_pragma,
+        InRulePragma(
+            pragma=protobuf_to_pragma(pb_in_rule_pragma.pragma),
+            position=pb_in_rule_pragma.position or "before_strings",
+        ),
     )
 
 
@@ -681,15 +873,24 @@ def _protobuf_to_hex_token(pb_token):
     )
 
     if pb_token.HasField("byte"):
-        return HexByte(value=int(pb_token.byte.value))
+        return _apply_node_metadata_from_protobuf(
+            pb_token,
+            HexByte(value=int(pb_token.byte.value)),
+        )
     if pb_token.HasField("negated_byte"):
-        return HexNegatedByte(value=int(pb_token.negated_byte.value))
+        return _apply_node_metadata_from_protobuf(
+            pb_token,
+            HexNegatedByte(value=int(pb_token.negated_byte.value)),
+        )
     if pb_token.HasField("wildcard"):
-        return HexWildcard()
+        return _apply_node_metadata_from_protobuf(pb_token, HexWildcard())
     if pb_token.HasField("jump"):
-        return HexJump(
-            min_jump=pb_token.jump.min_jump if pb_token.jump.HasField("min_jump") else None,
-            max_jump=pb_token.jump.max_jump if pb_token.jump.HasField("max_jump") else None,
+        return _apply_node_metadata_from_protobuf(
+            pb_token,
+            HexJump(
+                min_jump=pb_token.jump.min_jump if pb_token.jump.HasField("min_jump") else None,
+                max_jump=pb_token.jump.max_jump if pb_token.jump.HasField("max_jump") else None,
+            ),
         )
     if pb_token.HasField("alternative"):
         alternatives = []
@@ -700,9 +901,15 @@ def _protobuf_to_hex_token(pb_token):
                 if token is not None:
                     alternative.append(token)
             alternatives.append(alternative)
-        return HexAlternative(alternatives=alternatives)
+        return _apply_node_metadata_from_protobuf(
+            pb_token,
+            HexAlternative(alternatives=alternatives),
+        )
     if pb_token.HasField("nibble"):
-        return HexNibble(high=pb_token.nibble.high, value=pb_token.nibble.value)
+        return _apply_node_metadata_from_protobuf(
+            pb_token,
+            HexNibble(high=pb_token.nibble.high, value=pb_token.nibble.value),
+        )
     return None
 
 
@@ -747,9 +954,14 @@ def _protobuf_modifier_value(pb_modifier):
 def _protobuf_modifiers_to_ast(pb_modifiers):
     from yaraast.ast.modifiers import StringModifier
 
-    return [
-        StringModifier.from_name_value(m.name, _protobuf_modifier_value(m)) for m in pb_modifiers
-    ]
+    modifiers = []
+    for pb_modifier in pb_modifiers:
+        modifier = StringModifier.from_name_value(
+            pb_modifier.name,
+            _protobuf_modifier_value(pb_modifier),
+        )
+        modifiers.append(_apply_node_metadata_from_protobuf(pb_modifier, modifier))
+    return modifiers
 
 
 def protobuf_to_string(pb_string):
@@ -760,7 +972,7 @@ def protobuf_to_string(pb_string):
         modifiers = _protobuf_modifiers_to_ast(pb_string.plain.modifiers)
         s = PlainString(identifier=pb_string.identifier, value=pb_string.plain.value)
         s.modifiers = modifiers
-        return s
+        return _apply_node_metadata_from_protobuf(pb_string, s)
     if pb_string.HasField("hex"):
         tokens = []
         for pb_token in pb_string.hex.tokens:
@@ -770,12 +982,12 @@ def protobuf_to_string(pb_string):
         modifiers = _protobuf_modifiers_to_ast(pb_string.hex.modifiers)
         s = HexString(identifier=pb_string.identifier, tokens=tokens)
         s.modifiers = modifiers
-        return s
+        return _apply_node_metadata_from_protobuf(pb_string, s)
     if pb_string.HasField("regex"):
         modifiers = _protobuf_modifiers_to_ast(pb_string.regex.modifiers)
         s = RegexString(identifier=pb_string.identifier, regex=pb_string.regex.regex)
         s.modifiers = modifiers
-        return s
+        return _apply_node_metadata_from_protobuf(pb_string, s)
     return None
 
 
@@ -813,133 +1025,168 @@ def protobuf_to_expression(pb_expr):
     from yaraast.ast.modules import DictionaryAccess, ModuleReference
     from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 
+    def with_metadata(node):
+        return _apply_node_metadata_from_protobuf(pb_expr, node)
+
     if pb_expr.HasField("identifier"):
-        return Identifier(name=pb_expr.identifier.name)
+        return with_metadata(Identifier(name=pb_expr.identifier.name))
     if pb_expr.HasField("string_identifier"):
-        return StringIdentifier(name=pb_expr.string_identifier.name)
+        return with_metadata(StringIdentifier(name=pb_expr.string_identifier.name))
     if pb_expr.HasField("string_wildcard"):
-        return StringWildcard(pattern=pb_expr.string_wildcard.pattern)
+        return with_metadata(StringWildcard(pattern=pb_expr.string_wildcard.pattern))
     if pb_expr.HasField("string_count"):
-        return StringCount(string_id=pb_expr.string_count.string_id)
+        return with_metadata(StringCount(string_id=pb_expr.string_count.string_id))
     if pb_expr.HasField("string_offset"):
-        return StringOffset(
-            string_id=pb_expr.string_offset.string_id,
-            index=(
-                protobuf_to_expression(pb_expr.string_offset.index)
-                if pb_expr.string_offset.HasField("index")
-                else None
+        return with_metadata(
+            StringOffset(
+                string_id=pb_expr.string_offset.string_id,
+                index=(
+                    protobuf_to_expression(pb_expr.string_offset.index)
+                    if pb_expr.string_offset.HasField("index")
+                    else None
+                ),
             ),
         )
     if pb_expr.HasField("string_length"):
-        return StringLength(
-            string_id=pb_expr.string_length.string_id,
-            index=(
-                protobuf_to_expression(pb_expr.string_length.index)
-                if pb_expr.string_length.HasField("index")
-                else None
+        return with_metadata(
+            StringLength(
+                string_id=pb_expr.string_length.string_id,
+                index=(
+                    protobuf_to_expression(pb_expr.string_length.index)
+                    if pb_expr.string_length.HasField("index")
+                    else None
+                ),
             ),
         )
     if pb_expr.HasField("integer_literal"):
-        return IntegerLiteral(value=pb_expr.integer_literal.value)
+        return with_metadata(IntegerLiteral(value=pb_expr.integer_literal.value))
     if pb_expr.HasField("double_literal"):
-        return DoubleLiteral(value=pb_expr.double_literal.value)
+        return with_metadata(DoubleLiteral(value=pb_expr.double_literal.value))
     if pb_expr.HasField("string_literal"):
-        return StringLiteral(value=pb_expr.string_literal.value)
+        return with_metadata(StringLiteral(value=pb_expr.string_literal.value))
     if pb_expr.HasField("regex_literal"):
-        return RegexLiteral(
-            pattern=pb_expr.regex_literal.pattern,
-            modifiers=pb_expr.regex_literal.modifiers,
+        return with_metadata(
+            RegexLiteral(
+                pattern=pb_expr.regex_literal.pattern,
+                modifiers=pb_expr.regex_literal.modifiers,
+            ),
         )
     if pb_expr.HasField("boolean_literal"):
-        return BooleanLiteral(value=pb_expr.boolean_literal.value)
+        return with_metadata(BooleanLiteral(value=pb_expr.boolean_literal.value))
     if pb_expr.HasField("binary_expression"):
-        return BinaryExpression(
-            left=protobuf_to_expression(pb_expr.binary_expression.left),
-            operator=pb_expr.binary_expression.operator,
-            right=protobuf_to_expression(pb_expr.binary_expression.right),
+        return with_metadata(
+            BinaryExpression(
+                left=protobuf_to_expression(pb_expr.binary_expression.left),
+                operator=pb_expr.binary_expression.operator,
+                right=protobuf_to_expression(pb_expr.binary_expression.right),
+            ),
         )
     if pb_expr.HasField("unary_expression"):
-        return UnaryExpression(
-            operator=pb_expr.unary_expression.operator,
-            operand=protobuf_to_expression(pb_expr.unary_expression.operand),
+        return with_metadata(
+            UnaryExpression(
+                operator=pb_expr.unary_expression.operator,
+                operand=protobuf_to_expression(pb_expr.unary_expression.operand),
+            ),
         )
     if pb_expr.HasField("parentheses_expression"):
-        return ParenthesesExpression(
-            expression=protobuf_to_expression(pb_expr.parentheses_expression.expression)
+        return with_metadata(
+            ParenthesesExpression(
+                expression=protobuf_to_expression(pb_expr.parentheses_expression.expression)
+            )
         )
     if pb_expr.HasField("set_expression"):
-        return SetExpression(
-            elements=[
-                protobuf_to_expression(element) for element in pb_expr.set_expression.elements
-            ]
+        return with_metadata(
+            SetExpression(
+                elements=[
+                    protobuf_to_expression(element) for element in pb_expr.set_expression.elements
+                ]
+            )
         )
     if pb_expr.HasField("range_expression"):
-        return RangeExpression(
-            low=protobuf_to_expression(pb_expr.range_expression.low),
-            high=protobuf_to_expression(pb_expr.range_expression.high),
+        return with_metadata(
+            RangeExpression(
+                low=protobuf_to_expression(pb_expr.range_expression.low),
+                high=protobuf_to_expression(pb_expr.range_expression.high),
+            ),
         )
     if pb_expr.HasField("function_call"):
-        return FunctionCall(
-            function=pb_expr.function_call.function,
-            arguments=[
-                protobuf_to_expression(argument) for argument in pb_expr.function_call.arguments
-            ],
+        return with_metadata(
+            FunctionCall(
+                function=pb_expr.function_call.function,
+                arguments=[
+                    protobuf_to_expression(argument) for argument in pb_expr.function_call.arguments
+                ],
+            ),
         )
     if pb_expr.HasField("array_access"):
-        return ArrayAccess(
-            array=protobuf_to_expression(pb_expr.array_access.array),
-            index=protobuf_to_expression(pb_expr.array_access.index),
+        return with_metadata(
+            ArrayAccess(
+                array=protobuf_to_expression(pb_expr.array_access.array),
+                index=protobuf_to_expression(pb_expr.array_access.index),
+            ),
         )
     if pb_expr.HasField("member_access"):
-        return MemberAccess(
-            object=protobuf_to_expression(pb_expr.member_access.object),
-            member=pb_expr.member_access.member,
+        return with_metadata(
+            MemberAccess(
+                object=protobuf_to_expression(pb_expr.member_access.object),
+                member=pb_expr.member_access.member,
+            ),
         )
     if pb_expr.HasField("module_reference"):
-        return ModuleReference(module=pb_expr.module_reference.module)
+        return with_metadata(ModuleReference(module=pb_expr.module_reference.module))
     if pb_expr.HasField("dictionary_access"):
-        return DictionaryAccess(
-            object=protobuf_to_expression(pb_expr.dictionary_access.object),
-            key=(
-                protobuf_to_expression(pb_expr.dictionary_access.key_expr)
-                if pb_expr.dictionary_access.HasField("key_expr")
-                else pb_expr.dictionary_access.key
+        return with_metadata(
+            DictionaryAccess(
+                object=protobuf_to_expression(pb_expr.dictionary_access.object),
+                key=(
+                    protobuf_to_expression(pb_expr.dictionary_access.key_expr)
+                    if pb_expr.dictionary_access.HasField("key_expr")
+                    else pb_expr.dictionary_access.key
+                ),
             ),
         )
     if pb_expr.HasField("extern_rule_reference"):
-        return ExternRuleReference(
-            rule_name=pb_expr.extern_rule_reference.rule_name,
-            namespace=pb_expr.extern_rule_reference.namespace or None,
+        return with_metadata(
+            ExternRuleReference(
+                rule_name=pb_expr.extern_rule_reference.rule_name,
+                namespace=pb_expr.extern_rule_reference.namespace or None,
+            ),
         )
     if pb_expr.HasField("for_expression"):
-        return ForExpression(
-            quantifier=(
-                protobuf_to_expression(pb_expr.for_expression.quantifier_expr)
-                if pb_expr.for_expression.HasField("quantifier_expr")
-                else _restore_quantifier_text(pb_expr.for_expression.quantifier)
+        return with_metadata(
+            ForExpression(
+                quantifier=(
+                    protobuf_to_expression(pb_expr.for_expression.quantifier_expr)
+                    if pb_expr.for_expression.HasField("quantifier_expr")
+                    else _restore_quantifier_text(pb_expr.for_expression.quantifier)
+                ),
+                variable=pb_expr.for_expression.variable,
+                iterable=protobuf_to_expression(pb_expr.for_expression.iterable),
+                body=protobuf_to_expression(pb_expr.for_expression.body),
             ),
-            variable=pb_expr.for_expression.variable,
-            iterable=protobuf_to_expression(pb_expr.for_expression.iterable),
-            body=protobuf_to_expression(pb_expr.for_expression.body),
         )
     if pb_expr.HasField("for_of_expression"):
-        return ForOfExpression(
-            quantifier=(
-                protobuf_to_expression(pb_expr.for_of_expression.quantifier_expr)
-                if pb_expr.for_of_expression.HasField("quantifier_expr")
-                else _restore_quantifier_text(pb_expr.for_of_expression.quantifier)
-            ),
-            string_set=_protobuf_string_set_to_ast(pb_expr.for_of_expression),
-            condition=(
-                protobuf_to_expression(pb_expr.for_of_expression.condition)
-                if pb_expr.for_of_expression.HasField("condition")
-                else None
+        return with_metadata(
+            ForOfExpression(
+                quantifier=(
+                    protobuf_to_expression(pb_expr.for_of_expression.quantifier_expr)
+                    if pb_expr.for_of_expression.HasField("quantifier_expr")
+                    else _restore_quantifier_text(pb_expr.for_of_expression.quantifier)
+                ),
+                string_set=_protobuf_string_set_to_ast(pb_expr.for_of_expression),
+                condition=(
+                    protobuf_to_expression(pb_expr.for_of_expression.condition)
+                    if pb_expr.for_of_expression.HasField("condition")
+                    else None
+                ),
             ),
         )
     if pb_expr.HasField("at_expression"):
-        return AtExpression(
-            string_id=pb_expr.at_expression.string_id,
-            offset=protobuf_to_expression(pb_expr.at_expression.offset),
+        return with_metadata(
+            AtExpression(
+                string_id=pb_expr.at_expression.string_id,
+                offset=protobuf_to_expression(pb_expr.at_expression.offset),
+            ),
         )
     if pb_expr.HasField("in_expression"):
         subject = (
@@ -947,28 +1194,36 @@ def protobuf_to_expression(pb_expr):
             if pb_expr.in_expression.HasField("subject")
             else pb_expr.in_expression.string_id
         )
-        return InExpression(
-            subject=subject,
-            range=protobuf_to_expression(pb_expr.in_expression.range),
+        return with_metadata(
+            InExpression(
+                subject=subject,
+                range=protobuf_to_expression(pb_expr.in_expression.range),
+            ),
         )
     if pb_expr.HasField("of_expression"):
-        return OfExpression(
-            quantifier=(
-                _restore_quantifier_text(pb_expr.of_expression.quantifier_text)
-                if pb_expr.of_expression.HasField("quantifier_text")
-                else protobuf_to_expression(pb_expr.of_expression.quantifier)
+        return with_metadata(
+            OfExpression(
+                quantifier=(
+                    _restore_quantifier_text(pb_expr.of_expression.quantifier_text)
+                    if pb_expr.of_expression.HasField("quantifier_text")
+                    else protobuf_to_expression(pb_expr.of_expression.quantifier)
+                ),
+                string_set=_protobuf_string_set_to_ast(pb_expr.of_expression),
             ),
-            string_set=_protobuf_string_set_to_ast(pb_expr.of_expression),
         )
     if pb_expr.HasField("defined_expression"):
-        return DefinedExpression(
-            expression=protobuf_to_expression(pb_expr.defined_expression.expression)
+        return with_metadata(
+            DefinedExpression(
+                expression=protobuf_to_expression(pb_expr.defined_expression.expression)
+            )
         )
     if pb_expr.HasField("string_operator_expression"):
-        return StringOperatorExpression(
-            left=protobuf_to_expression(pb_expr.string_operator_expression.left),
-            operator=pb_expr.string_operator_expression.operator,
-            right=protobuf_to_expression(pb_expr.string_operator_expression.right),
+        return with_metadata(
+            StringOperatorExpression(
+                left=protobuf_to_expression(pb_expr.string_operator_expression.left),
+                operator=pb_expr.string_operator_expression.operator,
+                right=protobuf_to_expression(pb_expr.string_operator_expression.right),
+            ),
         )
     import warnings
 
@@ -977,4 +1232,4 @@ def protobuf_to_expression(pb_expr):
         "substituting BooleanLiteral(true) — data may have been lost during serialization",
         stacklevel=2,
     )
-    return BooleanLiteral(value=True)
+    return with_metadata(BooleanLiteral(value=True))

@@ -12,6 +12,7 @@ message YaraFile {
     repeated ExternImport extern_imports = 6;
     repeated Pragma pragmas = 7;
     repeated ExternNamespace namespaces = 8;
+    NodeMetadata node_metadata = 9;
 }
 
 // Metadata for serialization
@@ -26,15 +27,49 @@ message Metadata {
     string source_file = 8;
 }
 
+message SourceLocation {
+    int32 line = 1;
+    int32 column = 2;
+    optional string file = 3;
+    optional int32 end_line = 4;
+    optional int32 end_column = 5;
+}
+
+message AstComment {
+    string text = 1;
+    bool is_multiline = 2;
+    NodeMetadata node_metadata = 3;
+}
+
+message AstCommentGroup {
+    repeated AstComment comments = 1;
+    NodeMetadata node_metadata = 2;
+}
+
+message CommentMetadata {
+    oneof comment_type {
+        AstComment comment = 1;
+        AstCommentGroup group = 2;
+    }
+}
+
+message NodeMetadata {
+    SourceLocation location = 1;
+    repeated CommentMetadata leading_comments = 2;
+    CommentMetadata trailing_comment = 3;
+}
+
 // Import statement
 message Import {
     string module = 1;
     string alias = 2;
+    NodeMetadata node_metadata = 3;
 }
 
 // Include statement
 message Include {
     string path = 1;
+    NodeMetadata node_metadata = 2;
 }
 
 // Rule definition
@@ -47,11 +82,14 @@ message Rule {
     Expression condition = 6;
     map<string, string> meta_scopes = 7;
     repeated InRulePragma pragmas = 8;
+    repeated RuleMetaEntry meta_entries = 9;
+    NodeMetadata node_metadata = 10;
 }
 
 // Tag
 message Tag {
     string name = 1;
+    NodeMetadata node_metadata = 2;
 }
 
 // Meta value (can be string, int, or bool)
@@ -64,21 +102,32 @@ message MetaValue {
     }
 }
 
+message RuleMetaEntry {
+    string key = 1;
+    MetaValue value = 2;
+    string scope = 3;
+    bool ast_node = 4;
+    NodeMetadata node_metadata = 5;
+}
+
 message ExternRule {
     string name = 1;
     repeated string modifiers = 2;
     string namespace = 3;
+    NodeMetadata node_metadata = 4;
 }
 
 message ExternImport {
     string module_path = 1;
     string alias = 2;
     repeated string rules = 3;
+    NodeMetadata node_metadata = 4;
 }
 
 message ExternNamespace {
     string name = 1;
     repeated ExternRule extern_rules = 2;
+    NodeMetadata node_metadata = 3;
 }
 
 message Pragma {
@@ -90,11 +139,13 @@ message Pragma {
     optional string macro_value = 6;
     optional string condition = 7;
     map<string, MetaValue> parameters = 8;
+    NodeMetadata node_metadata = 9;
 }
 
 message InRulePragma {
     Pragma pragma = 1;
     string position = 2;
+    NodeMetadata node_metadata = 3;
 }
 
 // String definitions
@@ -105,6 +156,7 @@ message StringDefinition {
         HexString hex = 3;
         RegexString regex = 4;
     }
+    NodeMetadata node_metadata = 5;
 }
 
 message PlainString {
@@ -127,6 +179,7 @@ message StringModifier {
     string value = 2;
     MetaValue typed_value = 3;
     repeated int64 tuple_value = 4;
+    NodeMetadata node_metadata = 5;
 }
 
 // Hex tokens
@@ -139,6 +192,7 @@ message HexToken {
         HexNibble nibble = 5;
         HexNegatedByte negated_byte = 6;
     }
+    NodeMetadata node_metadata = 7;
 }
 
 message HexByte {
@@ -204,6 +258,7 @@ message Expression {
         DictionaryAccess dictionary_access = 28;
         ExternRuleReference extern_rule_reference = 29;
     }
+    NodeMetadata node_metadata = 30;
 }
 
 message Identifier {
