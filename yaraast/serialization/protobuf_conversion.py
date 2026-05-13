@@ -524,6 +524,19 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     from yaraast.ast.extern import ExternRuleReference
     from yaraast.ast.modules import DictionaryAccess, ModuleReference
     from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
+    from yaraast.yarax.ast_nodes import (
+        ArrayComprehension,
+        DictComprehension,
+        DictExpression,
+        LambdaExpression,
+        ListExpression,
+        PatternMatch,
+        SliceExpression,
+        SpreadOperator,
+        TupleExpression,
+        TupleIndexing,
+        WithStatement,
+    )
 
     _copy_node_metadata_to_protobuf(expr, pb_expr)
     if isinstance(expr, Identifier):
@@ -631,12 +644,104 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.left, pb_expr.string_operator_expression.left)
         pb_expr.string_operator_expression.operator = expr.operator
         convert_expression_to_protobuf(expr.right, pb_expr.string_operator_expression.right)
+    elif isinstance(expr, WithStatement):
+        for declaration in expr.declarations:
+            convert_with_declaration_to_protobuf(
+                declaration,
+                pb_expr.with_statement.declarations.add(),
+            )
+        convert_expression_to_protobuf(expr.body, pb_expr.with_statement.body)
+    elif isinstance(expr, ArrayComprehension):
+        if expr.expression is not None:
+            convert_expression_to_protobuf(
+                expr.expression,
+                pb_expr.array_comprehension.expression,
+            )
+        pb_expr.array_comprehension.variable = expr.variable
+        if expr.iterable is not None:
+            convert_expression_to_protobuf(expr.iterable, pb_expr.array_comprehension.iterable)
+        if expr.condition is not None:
+            convert_expression_to_protobuf(
+                expr.condition,
+                pb_expr.array_comprehension.condition,
+            )
+    elif isinstance(expr, DictComprehension):
+        if expr.key_expression is not None:
+            convert_expression_to_protobuf(
+                expr.key_expression,
+                pb_expr.dict_comprehension.key_expression,
+            )
+        if expr.value_expression is not None:
+            convert_expression_to_protobuf(
+                expr.value_expression,
+                pb_expr.dict_comprehension.value_expression,
+            )
+        pb_expr.dict_comprehension.key_variable = expr.key_variable
+        if expr.value_variable is not None:
+            pb_expr.dict_comprehension.value_variable = expr.value_variable
+        if expr.iterable is not None:
+            convert_expression_to_protobuf(expr.iterable, pb_expr.dict_comprehension.iterable)
+        if expr.condition is not None:
+            convert_expression_to_protobuf(
+                expr.condition,
+                pb_expr.dict_comprehension.condition,
+            )
+    elif isinstance(expr, TupleExpression):
+        for element in expr.elements:
+            convert_expression_to_protobuf(element, pb_expr.tuple_expression.elements.add())
+    elif isinstance(expr, TupleIndexing):
+        convert_expression_to_protobuf(expr.tuple_expr, pb_expr.tuple_indexing.tuple_expr)
+        convert_expression_to_protobuf(expr.index, pb_expr.tuple_indexing.index)
+    elif isinstance(expr, ListExpression):
+        for element in expr.elements:
+            convert_expression_to_protobuf(element, pb_expr.list_expression.elements.add())
+    elif isinstance(expr, DictExpression):
+        for item in expr.items:
+            convert_dict_item_to_protobuf(item, pb_expr.dict_expression.items.add())
+    elif isinstance(expr, SliceExpression):
+        convert_expression_to_protobuf(expr.target, pb_expr.slice_expression.target)
+        if expr.start is not None:
+            convert_expression_to_protobuf(expr.start, pb_expr.slice_expression.start)
+        if expr.stop is not None:
+            convert_expression_to_protobuf(expr.stop, pb_expr.slice_expression.stop)
+        if expr.step is not None:
+            convert_expression_to_protobuf(expr.step, pb_expr.slice_expression.step)
+    elif isinstance(expr, LambdaExpression):
+        pb_expr.lambda_expression.parameters.extend(expr.parameters)
+        convert_expression_to_protobuf(expr.body, pb_expr.lambda_expression.body)
+    elif isinstance(expr, PatternMatch):
+        convert_expression_to_protobuf(expr.value, pb_expr.pattern_match.value)
+        for case in expr.cases:
+            convert_match_case_to_protobuf(case, pb_expr.pattern_match.cases.add())
+        if expr.default is not None:
+            convert_expression_to_protobuf(expr.default, pb_expr.pattern_match.default)
+    elif isinstance(expr, SpreadOperator):
+        convert_expression_to_protobuf(expr.expression, pb_expr.spread_operator.expression)
+        pb_expr.spread_operator.is_dict = expr.is_dict
     else:
         warnings.warn(
             f"Protobuf serialization: unsupported expression type {type(expr).__name__}, "
             "data will be lost",
             stacklevel=2,
         )
+
+
+def convert_with_declaration_to_protobuf(declaration, pb_declaration) -> None:
+    pb_declaration.identifier = declaration.identifier
+    convert_expression_to_protobuf(declaration.value, pb_declaration.value)
+    _copy_node_metadata_to_protobuf(declaration, pb_declaration)
+
+
+def convert_dict_item_to_protobuf(item, pb_item) -> None:
+    convert_expression_to_protobuf(item.key, pb_item.key)
+    convert_expression_to_protobuf(item.value, pb_item.value)
+    _copy_node_metadata_to_protobuf(item, pb_item)
+
+
+def convert_match_case_to_protobuf(case, pb_case) -> None:
+    convert_expression_to_protobuf(case.pattern, pb_case.pattern)
+    convert_expression_to_protobuf(case.result, pb_case.result)
+    _copy_node_metadata_to_protobuf(case, pb_case)
 
 
 def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
@@ -1024,6 +1129,19 @@ def protobuf_to_expression(pb_expr):
     from yaraast.ast.extern import ExternRuleReference
     from yaraast.ast.modules import DictionaryAccess, ModuleReference
     from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
+    from yaraast.yarax.ast_nodes import (
+        ArrayComprehension,
+        DictComprehension,
+        DictExpression,
+        LambdaExpression,
+        ListExpression,
+        PatternMatch,
+        SliceExpression,
+        SpreadOperator,
+        TupleExpression,
+        TupleIndexing,
+        WithStatement,
+    )
 
     def with_metadata(node):
         return _apply_node_metadata_from_protobuf(pb_expr, node)
@@ -1225,6 +1343,144 @@ def protobuf_to_expression(pb_expr):
                 right=protobuf_to_expression(pb_expr.string_operator_expression.right),
             ),
         )
+    if pb_expr.HasField("with_statement"):
+        return with_metadata(
+            WithStatement(
+                declarations=[
+                    protobuf_to_with_declaration(declaration)
+                    for declaration in pb_expr.with_statement.declarations
+                ],
+                body=protobuf_to_expression(pb_expr.with_statement.body),
+            ),
+        )
+    if pb_expr.HasField("array_comprehension"):
+        return with_metadata(
+            ArrayComprehension(
+                expression=(
+                    protobuf_to_expression(pb_expr.array_comprehension.expression)
+                    if pb_expr.array_comprehension.HasField("expression")
+                    else None
+                ),
+                variable=pb_expr.array_comprehension.variable,
+                iterable=(
+                    protobuf_to_expression(pb_expr.array_comprehension.iterable)
+                    if pb_expr.array_comprehension.HasField("iterable")
+                    else None
+                ),
+                condition=(
+                    protobuf_to_expression(pb_expr.array_comprehension.condition)
+                    if pb_expr.array_comprehension.HasField("condition")
+                    else None
+                ),
+            ),
+        )
+    if pb_expr.HasField("dict_comprehension"):
+        return with_metadata(
+            DictComprehension(
+                key_expression=(
+                    protobuf_to_expression(pb_expr.dict_comprehension.key_expression)
+                    if pb_expr.dict_comprehension.HasField("key_expression")
+                    else None
+                ),
+                value_expression=(
+                    protobuf_to_expression(pb_expr.dict_comprehension.value_expression)
+                    if pb_expr.dict_comprehension.HasField("value_expression")
+                    else None
+                ),
+                key_variable=pb_expr.dict_comprehension.key_variable,
+                value_variable=(
+                    pb_expr.dict_comprehension.value_variable
+                    if pb_expr.dict_comprehension.HasField("value_variable")
+                    else None
+                ),
+                iterable=(
+                    protobuf_to_expression(pb_expr.dict_comprehension.iterable)
+                    if pb_expr.dict_comprehension.HasField("iterable")
+                    else None
+                ),
+                condition=(
+                    protobuf_to_expression(pb_expr.dict_comprehension.condition)
+                    if pb_expr.dict_comprehension.HasField("condition")
+                    else None
+                ),
+            ),
+        )
+    if pb_expr.HasField("tuple_expression"):
+        return with_metadata(
+            TupleExpression(
+                elements=[
+                    protobuf_to_expression(element) for element in pb_expr.tuple_expression.elements
+                ],
+            ),
+        )
+    if pb_expr.HasField("tuple_indexing"):
+        return with_metadata(
+            TupleIndexing(
+                tuple_expr=protobuf_to_expression(pb_expr.tuple_indexing.tuple_expr),
+                index=protobuf_to_expression(pb_expr.tuple_indexing.index),
+            ),
+        )
+    if pb_expr.HasField("list_expression"):
+        return with_metadata(
+            ListExpression(
+                elements=[
+                    protobuf_to_expression(element) for element in pb_expr.list_expression.elements
+                ],
+            ),
+        )
+    if pb_expr.HasField("dict_expression"):
+        return with_metadata(
+            DictExpression(
+                items=[protobuf_to_dict_item(item) for item in pb_expr.dict_expression.items],
+            ),
+        )
+    if pb_expr.HasField("slice_expression"):
+        return with_metadata(
+            SliceExpression(
+                target=protobuf_to_expression(pb_expr.slice_expression.target),
+                start=(
+                    protobuf_to_expression(pb_expr.slice_expression.start)
+                    if pb_expr.slice_expression.HasField("start")
+                    else None
+                ),
+                stop=(
+                    protobuf_to_expression(pb_expr.slice_expression.stop)
+                    if pb_expr.slice_expression.HasField("stop")
+                    else None
+                ),
+                step=(
+                    protobuf_to_expression(pb_expr.slice_expression.step)
+                    if pb_expr.slice_expression.HasField("step")
+                    else None
+                ),
+            ),
+        )
+    if pb_expr.HasField("lambda_expression"):
+        return with_metadata(
+            LambdaExpression(
+                parameters=list(pb_expr.lambda_expression.parameters),
+                body=protobuf_to_expression(pb_expr.lambda_expression.body),
+            ),
+        )
+    if pb_expr.HasField("pattern_match"):
+        return with_metadata(
+            PatternMatch(
+                value=protobuf_to_expression(pb_expr.pattern_match.value),
+                cases=[protobuf_to_match_case(case) for case in pb_expr.pattern_match.cases],
+                default=(
+                    protobuf_to_expression(pb_expr.pattern_match.default)
+                    if pb_expr.pattern_match.HasField("default")
+                    else None
+                ),
+            ),
+        )
+    if pb_expr.HasField("spread_operator"):
+        return with_metadata(
+            SpreadOperator(
+                expression=protobuf_to_expression(pb_expr.spread_operator.expression),
+                is_dict=pb_expr.spread_operator.is_dict,
+            ),
+        )
     import warnings
 
     warnings.warn(
@@ -1233,3 +1489,39 @@ def protobuf_to_expression(pb_expr):
         stacklevel=2,
     )
     return with_metadata(BooleanLiteral(value=True))
+
+
+def protobuf_to_with_declaration(pb_declaration):
+    from yaraast.yarax.ast_nodes import WithDeclaration
+
+    return _apply_node_metadata_from_protobuf(
+        pb_declaration,
+        WithDeclaration(
+            identifier=pb_declaration.identifier,
+            value=protobuf_to_expression(pb_declaration.value),
+        ),
+    )
+
+
+def protobuf_to_dict_item(pb_item):
+    from yaraast.yarax.ast_nodes import DictItem
+
+    return _apply_node_metadata_from_protobuf(
+        pb_item,
+        DictItem(
+            key=protobuf_to_expression(pb_item.key),
+            value=protobuf_to_expression(pb_item.value),
+        ),
+    )
+
+
+def protobuf_to_match_case(pb_case):
+    from yaraast.yarax.ast_nodes import MatchCase
+
+    return _apply_node_metadata_from_protobuf(
+        pb_case,
+        MatchCase(
+            pattern=protobuf_to_expression(pb_case.pattern),
+            result=protobuf_to_expression(pb_case.result),
+        ),
+    )

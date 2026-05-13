@@ -257,6 +257,17 @@ message Expression {
         ModuleReference module_reference = 27;
         DictionaryAccess dictionary_access = 28;
         ExternRuleReference extern_rule_reference = 29;
+        WithStatement with_statement = 31;
+        ArrayComprehension array_comprehension = 32;
+        DictComprehension dict_comprehension = 33;
+        TupleExpression tuple_expression = 34;
+        TupleIndexing tuple_indexing = 35;
+        ListExpression list_expression = 36;
+        DictExpression dict_expression = 37;
+        SliceExpression slice_expression = 38;
+        LambdaExpression lambda_expression = 39;
+        PatternMatch pattern_match = 40;
+        SpreadOperator spread_operator = 41;
     }
     NodeMetadata node_metadata = 30;
 }
@@ -406,4 +417,83 @@ message StringOperatorExpression {
     Expression left = 1;
     string operator = 2;
     Expression right = 3;
+}
+
+message WithStatement {
+    repeated WithDeclaration declarations = 1;
+    Expression body = 2;
+}
+
+message WithDeclaration {
+    string identifier = 1;
+    Expression value = 2;
+    NodeMetadata node_metadata = 3;
+}
+
+message ArrayComprehension {
+    Expression expression = 1;
+    string variable = 2;
+    Expression iterable = 3;
+    Expression condition = 4;
+}
+
+message DictComprehension {
+    Expression key_expression = 1;
+    Expression value_expression = 2;
+    string key_variable = 3;
+    optional string value_variable = 4;
+    Expression iterable = 5;
+    Expression condition = 6;
+}
+
+message TupleExpression {
+    repeated Expression elements = 1;
+}
+
+message TupleIndexing {
+    Expression tuple_expr = 1;
+    Expression index = 2;
+}
+
+message ListExpression {
+    repeated Expression elements = 1;
+}
+
+message DictExpression {
+    repeated DictItem items = 1;
+}
+
+message DictItem {
+    Expression key = 1;
+    Expression value = 2;
+    NodeMetadata node_metadata = 3;
+}
+
+message SliceExpression {
+    Expression target = 1;
+    Expression start = 2;
+    Expression stop = 3;
+    Expression step = 4;
+}
+
+message LambdaExpression {
+    repeated string parameters = 1;
+    Expression body = 2;
+}
+
+message PatternMatch {
+    Expression value = 1;
+    repeated MatchCase cases = 2;
+    Expression default = 3;
+}
+
+message MatchCase {
+    Expression pattern = 1;
+    Expression result = 2;
+    NodeMetadata node_metadata = 3;
+}
+
+message SpreadOperator {
+    Expression expression = 1;
+    bool is_dict = 2;
 }

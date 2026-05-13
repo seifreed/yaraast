@@ -579,10 +579,13 @@ class HexNibble(_message.Message):
 class Expression(_message.Message):
     __slots__ = (
         "array_access",
+        "array_comprehension",
         "at_expression",
         "binary_expression",
         "boolean_literal",
         "defined_expression",
+        "dict_comprehension",
+        "dict_expression",
         "dictionary_access",
         "double_literal",
         "extern_rule_reference",
@@ -592,14 +595,19 @@ class Expression(_message.Message):
         "identifier",
         "in_expression",
         "integer_literal",
+        "lambda_expression",
+        "list_expression",
         "member_access",
         "module_reference",
         "node_metadata",
         "of_expression",
         "parentheses_expression",
+        "pattern_match",
         "range_expression",
         "regex_literal",
         "set_expression",
+        "slice_expression",
+        "spread_operator",
         "string_count",
         "string_identifier",
         "string_length",
@@ -607,7 +615,10 @@ class Expression(_message.Message):
         "string_offset",
         "string_operator_expression",
         "string_wildcard",
+        "tuple_expression",
+        "tuple_indexing",
         "unary_expression",
+        "with_statement",
     )
     IDENTIFIER_FIELD_NUMBER: _ClassVar[int]
     STRING_IDENTIFIER_FIELD_NUMBER: _ClassVar[int]
@@ -638,6 +649,17 @@ class Expression(_message.Message):
     MODULE_REFERENCE_FIELD_NUMBER: _ClassVar[int]
     DICTIONARY_ACCESS_FIELD_NUMBER: _ClassVar[int]
     EXTERN_RULE_REFERENCE_FIELD_NUMBER: _ClassVar[int]
+    WITH_STATEMENT_FIELD_NUMBER: _ClassVar[int]
+    ARRAY_COMPREHENSION_FIELD_NUMBER: _ClassVar[int]
+    DICT_COMPREHENSION_FIELD_NUMBER: _ClassVar[int]
+    TUPLE_EXPRESSION_FIELD_NUMBER: _ClassVar[int]
+    TUPLE_INDEXING_FIELD_NUMBER: _ClassVar[int]
+    LIST_EXPRESSION_FIELD_NUMBER: _ClassVar[int]
+    DICT_EXPRESSION_FIELD_NUMBER: _ClassVar[int]
+    SLICE_EXPRESSION_FIELD_NUMBER: _ClassVar[int]
+    LAMBDA_EXPRESSION_FIELD_NUMBER: _ClassVar[int]
+    PATTERN_MATCH_FIELD_NUMBER: _ClassVar[int]
+    SPREAD_OPERATOR_FIELD_NUMBER: _ClassVar[int]
     NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     identifier: Identifier
     string_identifier: StringIdentifier
@@ -668,6 +690,17 @@ class Expression(_message.Message):
     module_reference: ModuleReference
     dictionary_access: DictionaryAccess
     extern_rule_reference: ExternRuleReference
+    with_statement: WithStatement
+    array_comprehension: ArrayComprehension
+    dict_comprehension: DictComprehension
+    tuple_expression: TupleExpression
+    tuple_indexing: TupleIndexing
+    list_expression: ListExpression
+    dict_expression: DictExpression
+    slice_expression: SliceExpression
+    lambda_expression: LambdaExpression
+    pattern_match: PatternMatch
+    spread_operator: SpreadOperator
     node_metadata: NodeMetadata
     def __init__(
         self,
@@ -700,6 +733,17 @@ class Expression(_message.Message):
         module_reference: ModuleReference | _Mapping | None = ...,
         dictionary_access: DictionaryAccess | _Mapping | None = ...,
         extern_rule_reference: ExternRuleReference | _Mapping | None = ...,
+        with_statement: WithStatement | _Mapping | None = ...,
+        array_comprehension: ArrayComprehension | _Mapping | None = ...,
+        dict_comprehension: DictComprehension | _Mapping | None = ...,
+        tuple_expression: TupleExpression | _Mapping | None = ...,
+        tuple_indexing: TupleIndexing | _Mapping | None = ...,
+        list_expression: ListExpression | _Mapping | None = ...,
+        dict_expression: DictExpression | _Mapping | None = ...,
+        slice_expression: SliceExpression | _Mapping | None = ...,
+        lambda_expression: LambdaExpression | _Mapping | None = ...,
+        pattern_match: PatternMatch | _Mapping | None = ...,
+        spread_operator: SpreadOperator | _Mapping | None = ...,
         node_metadata: NodeMetadata | _Mapping | None = ...,
     ) -> None: ...
 
@@ -1008,4 +1052,193 @@ class StringOperatorExpression(_message.Message):
         left: Expression | _Mapping | None = ...,
         operator: str | None = ...,
         right: Expression | _Mapping | None = ...,
+    ) -> None: ...
+
+class WithStatement(_message.Message):
+    __slots__ = ("body", "declarations")
+    DECLARATIONS_FIELD_NUMBER: _ClassVar[int]
+    BODY_FIELD_NUMBER: _ClassVar[int]
+    declarations: _containers.RepeatedCompositeFieldContainer[WithDeclaration]
+    body: Expression
+    def __init__(
+        self,
+        declarations: _Iterable[WithDeclaration | _Mapping] | None = ...,
+        body: Expression | _Mapping | None = ...,
+    ) -> None: ...
+
+class WithDeclaration(_message.Message):
+    __slots__ = ("identifier", "node_metadata", "value")
+    IDENTIFIER_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
+    identifier: str
+    value: Expression
+    node_metadata: NodeMetadata
+    def __init__(
+        self,
+        identifier: str | None = ...,
+        value: Expression | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
+    ) -> None: ...
+
+class ArrayComprehension(_message.Message):
+    __slots__ = ("condition", "expression", "iterable", "variable")
+    EXPRESSION_FIELD_NUMBER: _ClassVar[int]
+    VARIABLE_FIELD_NUMBER: _ClassVar[int]
+    ITERABLE_FIELD_NUMBER: _ClassVar[int]
+    CONDITION_FIELD_NUMBER: _ClassVar[int]
+    expression: Expression
+    variable: str
+    iterable: Expression
+    condition: Expression
+    def __init__(
+        self,
+        expression: Expression | _Mapping | None = ...,
+        variable: str | None = ...,
+        iterable: Expression | _Mapping | None = ...,
+        condition: Expression | _Mapping | None = ...,
+    ) -> None: ...
+
+class DictComprehension(_message.Message):
+    __slots__ = (
+        "condition",
+        "iterable",
+        "key_expression",
+        "key_variable",
+        "value_expression",
+        "value_variable",
+    )
+    KEY_EXPRESSION_FIELD_NUMBER: _ClassVar[int]
+    VALUE_EXPRESSION_FIELD_NUMBER: _ClassVar[int]
+    KEY_VARIABLE_FIELD_NUMBER: _ClassVar[int]
+    VALUE_VARIABLE_FIELD_NUMBER: _ClassVar[int]
+    ITERABLE_FIELD_NUMBER: _ClassVar[int]
+    CONDITION_FIELD_NUMBER: _ClassVar[int]
+    key_expression: Expression
+    value_expression: Expression
+    key_variable: str
+    value_variable: str
+    iterable: Expression
+    condition: Expression
+    def __init__(
+        self,
+        key_expression: Expression | _Mapping | None = ...,
+        value_expression: Expression | _Mapping | None = ...,
+        key_variable: str | None = ...,
+        value_variable: str | None = ...,
+        iterable: Expression | _Mapping | None = ...,
+        condition: Expression | _Mapping | None = ...,
+    ) -> None: ...
+
+class TupleExpression(_message.Message):
+    __slots__ = ("elements",)
+    ELEMENTS_FIELD_NUMBER: _ClassVar[int]
+    elements: _containers.RepeatedCompositeFieldContainer[Expression]
+    def __init__(self, elements: _Iterable[Expression | _Mapping] | None = ...) -> None: ...
+
+class TupleIndexing(_message.Message):
+    __slots__ = ("index", "tuple_expr")
+    TUPLE_EXPR_FIELD_NUMBER: _ClassVar[int]
+    INDEX_FIELD_NUMBER: _ClassVar[int]
+    tuple_expr: Expression
+    index: Expression
+    def __init__(
+        self,
+        tuple_expr: Expression | _Mapping | None = ...,
+        index: Expression | _Mapping | None = ...,
+    ) -> None: ...
+
+class ListExpression(_message.Message):
+    __slots__ = ("elements",)
+    ELEMENTS_FIELD_NUMBER: _ClassVar[int]
+    elements: _containers.RepeatedCompositeFieldContainer[Expression]
+    def __init__(self, elements: _Iterable[Expression | _Mapping] | None = ...) -> None: ...
+
+class DictExpression(_message.Message):
+    __slots__ = ("items",)
+    ITEMS_FIELD_NUMBER: _ClassVar[int]
+    items: _containers.RepeatedCompositeFieldContainer[DictItem]
+    def __init__(self, items: _Iterable[DictItem | _Mapping] | None = ...) -> None: ...
+
+class DictItem(_message.Message):
+    __slots__ = ("key", "node_metadata", "value")
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
+    key: Expression
+    value: Expression
+    node_metadata: NodeMetadata
+    def __init__(
+        self,
+        key: Expression | _Mapping | None = ...,
+        value: Expression | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
+    ) -> None: ...
+
+class SliceExpression(_message.Message):
+    __slots__ = ("start", "step", "stop", "target")
+    TARGET_FIELD_NUMBER: _ClassVar[int]
+    START_FIELD_NUMBER: _ClassVar[int]
+    STOP_FIELD_NUMBER: _ClassVar[int]
+    STEP_FIELD_NUMBER: _ClassVar[int]
+    target: Expression
+    start: Expression
+    stop: Expression
+    step: Expression
+    def __init__(
+        self,
+        target: Expression | _Mapping | None = ...,
+        start: Expression | _Mapping | None = ...,
+        stop: Expression | _Mapping | None = ...,
+        step: Expression | _Mapping | None = ...,
+    ) -> None: ...
+
+class LambdaExpression(_message.Message):
+    __slots__ = ("body", "parameters")
+    PARAMETERS_FIELD_NUMBER: _ClassVar[int]
+    BODY_FIELD_NUMBER: _ClassVar[int]
+    parameters: _containers.RepeatedScalarFieldContainer[str]
+    body: Expression
+    def __init__(
+        self, parameters: _Iterable[str] | None = ..., body: Expression | _Mapping | None = ...
+    ) -> None: ...
+
+class PatternMatch(_message.Message):
+    __slots__ = ("cases", "default", "value")
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    CASES_FIELD_NUMBER: _ClassVar[int]
+    DEFAULT_FIELD_NUMBER: _ClassVar[int]
+    value: Expression
+    cases: _containers.RepeatedCompositeFieldContainer[MatchCase]
+    default: Expression
+    def __init__(
+        self,
+        value: Expression | _Mapping | None = ...,
+        cases: _Iterable[MatchCase | _Mapping] | None = ...,
+        default: Expression | _Mapping | None = ...,
+    ) -> None: ...
+
+class MatchCase(_message.Message):
+    __slots__ = ("node_metadata", "pattern", "result")
+    PATTERN_FIELD_NUMBER: _ClassVar[int]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
+    pattern: Expression
+    result: Expression
+    node_metadata: NodeMetadata
+    def __init__(
+        self,
+        pattern: Expression | _Mapping | None = ...,
+        result: Expression | _Mapping | None = ...,
+        node_metadata: NodeMetadata | _Mapping | None = ...,
+    ) -> None: ...
+
+class SpreadOperator(_message.Message):
+    __slots__ = ("expression", "is_dict")
+    EXPRESSION_FIELD_NUMBER: _ClassVar[int]
+    IS_DICT_FIELD_NUMBER: _ClassVar[int]
+    expression: Expression
+    is_dict: bool
+    def __init__(
+        self, expression: Expression | _Mapping | None = ..., is_dict: bool | None = ...
     ) -> None: ...
