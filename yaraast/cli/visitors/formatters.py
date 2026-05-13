@@ -135,15 +135,15 @@ class ConditionStringFormatter:
         return getattr(condition, "name", "$string")
 
     def _format_string_count(self, condition: Any, _depth: int) -> str:
-        name = getattr(condition, "name", "string")
+        name = getattr(condition, "string_id", getattr(condition, "name", "string"))
         return f"#{name}"
 
     def _format_string_offset(self, condition: Any, _depth: int) -> str:
-        name = getattr(condition, "name", "string")
+        name = getattr(condition, "string_id", getattr(condition, "name", "string"))
         return f"@{name}"
 
     def _format_string_length(self, condition: Any, _depth: int) -> str:
-        name = getattr(condition, "name", "string")
+        name = getattr(condition, "string_id", getattr(condition, "name", "string"))
         return f"!{name}"
 
     def _format_function_call(self, condition: Any, depth: int) -> str:

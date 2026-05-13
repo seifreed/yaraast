@@ -10,7 +10,10 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     IntegerLiteral,
+    StringCount,
+    StringLength,
     StringLiteral,
+    StringOffset,
     StringWildcard,
 )
 from yaraast.ast.meta import Meta
@@ -59,6 +62,10 @@ def test_condition_formatter_literals_and_calls() -> None:
         function="hash.md5", arguments=[Identifier("x"), Identifier("y"), Identifier("z")]
     )
     assert formatter.format_condition(func).endswith("...)")
+
+    assert formatter.format_condition(StringCount("a")) == "#a"
+    assert formatter.format_condition(StringOffset("b")) == "@b"
+    assert formatter.format_condition(StringLength("c")) == "!c"
 
 
 def test_condition_formatter_of_expression_and_binary() -> None:
