@@ -170,6 +170,66 @@ def test_protobuf_serializer_preserves_hex_alternatives() -> None:
     assert string_def.tokens == [alternative]
 
 
+def test_protobuf_serializer_preserves_typed_string_modifier_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="typed_modifiers",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="a",
+                        modifiers=[StringModifier.from_name_value("xor", 5)],
+                    ),
+                    PlainString(
+                        identifier="$b",
+                        value="b",
+                        modifiers=[StringModifier.from_name_value("xor", (1, 3))],
+                    ),
+                    PlainString(
+                        identifier="$c",
+                        value="c",
+                        modifiers=[StringModifier.from_name_value("base64", "alphabet")],
+                    ),
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    restored_strings = restored.rules[0].strings
+
+    assert [string.modifiers[0].value for string in restored_strings] == [
+        5,
+        (1, 3),
+        "alphabet",
+    ]
+
+
+def test_protobuf_deserializes_legacy_xor_modifier_text_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "legacy_modifiers"
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$a"
+    pb_string.plain.value = "a"
+    key_modifier = pb_string.plain.modifiers.add()
+    key_modifier.name = "xor"
+    key_modifier.value = "5"
+    range_modifier = pb_string.plain.modifiers.add()
+    range_modifier.name = "xor"
+    range_modifier.value = "1-3"
+    pb_rule.condition.boolean_literal.value = True
+
+    restored = serializer.deserialize(binary_data=pb_file.SerializeToString())
+    modifiers = restored.rules[0].strings[0].modifiers
+
+    assert [modifier.value for modifier in modifiers] == [5, (1, 3)]
+
+
 def test_protobuf_serializer_preserves_extended_expression_roundtrips() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     expressions: list[Expression] = [

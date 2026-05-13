@@ -86,6 +86,8 @@ message RegexString {
 message StringModifier {
     string name = 1;
     string value = 2;
+    MetaValue typed_value = 3;
+    repeated int64 tuple_value = 4;
 }
 
 // Hex tokens

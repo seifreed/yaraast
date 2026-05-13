@@ -68,6 +68,30 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         convert_expression_to_protobuf(rule.condition, pb_rule.condition)
 
 
+def _modifier_value_text(value) -> str:
+    if isinstance(value, tuple) and len(value) == 2:
+        return f"{value[0]}-{value[1]}"
+    return str(value)
+
+
+def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
+    pb_mod.name = mod.name
+    if mod.value is None:
+        return
+
+    pb_mod.value = _modifier_value_text(mod.value)
+    if isinstance(mod.value, tuple) and len(mod.value) == 2:
+        pb_mod.tuple_value.extend([int(mod.value[0]), int(mod.value[1])])
+    elif isinstance(mod.value, bool):
+        pb_mod.typed_value.bool_value = mod.value
+    elif isinstance(mod.value, int):
+        pb_mod.typed_value.int_value = mod.value
+    elif isinstance(mod.value, float):
+        pb_mod.typed_value.double_value = mod.value
+    elif isinstance(mod.value, str):
+        pb_mod.typed_value.string_value = mod.value
+
+
 def convert_string_to_protobuf(string_def, pb_string) -> None:
     """Convert a string definition to protobuf."""
     from yaraast.ast.strings import HexString, PlainString, RegexString
@@ -76,9 +100,7 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
         pb_string.plain.value = string_def.value
         for mod in string_def.modifiers:
             pb_mod = pb_string.plain.modifiers.add()
-            pb_mod.name = mod.name
-            if mod.value:
-                pb_mod.value = mod.value
+            _copy_modifier_to_protobuf(mod, pb_mod)
 
     elif isinstance(string_def, HexString):
         for token in string_def.tokens:
@@ -87,17 +109,13 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
 
         for mod in string_def.modifiers:
             pb_mod = pb_string.hex.modifiers.add()
-            pb_mod.name = mod.name
-            if mod.value:
-                pb_mod.value = mod.value
+            _copy_modifier_to_protobuf(mod, pb_mod)
 
     elif isinstance(string_def, RegexString):
         pb_string.regex.regex = string_def.regex
         for mod in string_def.modifiers:
             pb_mod = pb_string.regex.modifiers.add()
-            pb_mod.name = mod.name
-            if mod.value:
-                pb_mod.value = mod.value
+            _copy_modifier_to_protobuf(mod, pb_mod)
 
 
 def convert_hex_token_to_protobuf(token, pb_token) -> None:
@@ -405,16 +423,58 @@ def _protobuf_to_hex_token(pb_token):
     return None
 
 
+def _typed_modifier_value(pb_modifier):
+    if pb_modifier.HasField("typed_value"):
+        typed_value = pb_modifier.typed_value
+        if typed_value.HasField("string_value"):
+            return typed_value.string_value
+        if typed_value.HasField("bool_value"):
+            return typed_value.bool_value
+        if typed_value.HasField("int_value"):
+            return typed_value.int_value
+        if typed_value.HasField("double_value"):
+            return typed_value.double_value
+    return None
+
+
+def _legacy_modifier_value(name: str, value: str):
+    if name == "xor":
+        if "-" in value:
+            low, high = value.split("-", maxsplit=1)
+            if low.isdigit() and high.isdigit():
+                return (int(low), int(high))
+        if value.isdigit():
+            return int(value)
+    return value
+
+
+def _protobuf_modifier_value(pb_modifier):
+    if len(pb_modifier.tuple_value) == 2:
+        return (pb_modifier.tuple_value[0], pb_modifier.tuple_value[1])
+
+    typed_value = _typed_modifier_value(pb_modifier)
+    if typed_value is not None:
+        return typed_value
+
+    if pb_modifier.value:
+        return _legacy_modifier_value(pb_modifier.name, pb_modifier.value)
+    return None
+
+
+def _protobuf_modifiers_to_ast(pb_modifiers):
+    from yaraast.ast.modifiers import StringModifier
+
+    return [
+        StringModifier.from_name_value(m.name, _protobuf_modifier_value(m)) for m in pb_modifiers
+    ]
+
+
 def protobuf_to_string(pb_string):
     """Convert a protobuf string definition back to AST."""
-    from yaraast.ast.modifiers import StringModifier
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
     if pb_string.HasField("plain"):
-        modifiers = [
-            StringModifier.from_name_value(m.name, m.value if m.value else None)
-            for m in pb_string.plain.modifiers
-        ]
+        modifiers = _protobuf_modifiers_to_ast(pb_string.plain.modifiers)
         s = PlainString(identifier=pb_string.identifier, value=pb_string.plain.value)
         s.modifiers = modifiers
         return s
@@ -424,18 +484,12 @@ def protobuf_to_string(pb_string):
             token = _protobuf_to_hex_token(pb_token)
             if token is not None:
                 tokens.append(token)
-        modifiers = [
-            StringModifier.from_name_value(m.name, m.value if m.value else None)
-            for m in pb_string.hex.modifiers
-        ]
+        modifiers = _protobuf_modifiers_to_ast(pb_string.hex.modifiers)
         s = HexString(identifier=pb_string.identifier, tokens=tokens)
         s.modifiers = modifiers
         return s
     if pb_string.HasField("regex"):
-        modifiers = [
-            StringModifier.from_name_value(m.name, m.value if m.value else None)
-            for m in pb_string.regex.modifiers
-        ]
+        modifiers = _protobuf_modifiers_to_ast(pb_string.regex.modifiers)
         s = RegexString(identifier=pb_string.identifier, regex=pb_string.regex.regex)
         s.modifiers = modifiers
         return s
