@@ -309,6 +309,13 @@ def infer_module_or_condition(ctx, node):
         return BooleanType()
 
     if isinstance(node, InExpression):
+        if not isinstance(node.subject, str):
+            subject_type = ctx.visit(node.subject)
+            if not isinstance(subject_type, BooleanType):
+                ctx.errors.append(
+                    f"'in' expression subject must be string identifier or of-expression, "
+                    f"got {subject_type}"
+                )
         range_type = ctx.visit(node.range)
         if not isinstance(range_type, RangeType):
             ctx.errors.append(f"'in' expression requires range, got {range_type}")

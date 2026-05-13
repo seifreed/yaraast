@@ -126,6 +126,21 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
 
     assert isinstance(
         inf.infer(
+            InExpression(
+                subject=OfExpression(
+                    quantifier=BooleanLiteral(value=True),
+                    string_set=IntegerLiteral(value=1),
+                ),
+                range=RangeExpression(IntegerLiteral(value=0), IntegerLiteral(value=1)),
+            )
+        ),
+        BooleanType,
+    )
+    assert any("'of' quantifier must be string or integer" in e for e in inf.errors)
+    assert any("'of' requires string set" in e for e in inf.errors)
+
+    assert isinstance(
+        inf.infer(
             OfExpression(
                 quantifier=BooleanLiteral(value=True),
                 string_set=IntegerLiteral(value=1),
