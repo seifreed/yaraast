@@ -49,7 +49,7 @@ def _set_node_attrs(target, *, shape: str, fillcolor: str, style: str | None = N
 
 def add_import_cluster(dot: graphviz.Digraph, imports: Iterable[str]) -> None:
     """Add import nodes cluster."""
-    imports = list(imports)
+    imports = sorted(imports)
     if not imports:
         return
     with _cluster(dot, "cluster_imports", "Imports", "lightcyan", "box", "lightblue") as cluster:
@@ -58,7 +58,7 @@ def add_import_cluster(dot: graphviz.Digraph, imports: Iterable[str]) -> None:
 
 def add_include_cluster(dot: graphviz.Digraph, includes: Iterable[str]) -> None:
     """Add include nodes cluster."""
-    includes = list(includes)
+    includes = sorted(includes)
     if not includes:
         return
     with _cluster(dot, "cluster_includes", "Includes", "lightyellow", "note", "yellow") as cluster:
@@ -85,7 +85,7 @@ def add_rule_graph_nodes(
     color_fn,
 ) -> None:
     """Add rule nodes for rule-only graphs."""
-    for rule_name, rule_info in rules.items():
+    for rule_name, rule_info in sorted(rules.items()):
         add_node(dot, rule_name, label_fn(rule_name, rule_info), fillcolor=color_fn(rule_info))
 
 
@@ -94,8 +94,8 @@ def add_rule_string_edges(
     string_references: dict[str, set[str]],
 ) -> None:
     """Add edges to string nodes for rule-only graphs."""
-    for rule_name, strings in string_references.items():
-        for string_id in strings:
+    for rule_name, strings in sorted(string_references.items()):
+        for string_id in sorted(strings):
             add_node(dot, string_id, string_id, shape="ellipse", fillcolor="lightyellow")
             add_edge(dot, rule_name, string_id, label="uses")
 
@@ -105,7 +105,7 @@ def add_string_reference_edges(
     string_references: dict[str, set[str]],
 ) -> None:
     """Add conceptual string reference edges for full graphs."""
-    for rule_name, strings in string_references.items():
+    for rule_name, strings in sorted(string_references.items()):
         if strings:
             strings_node = f"{rule_name}_strings"
             add_node(
@@ -122,14 +122,14 @@ def add_string_reference_edges(
 def add_module_nodes(dot: graphviz.Digraph, imports: Iterable[str]) -> None:
     """Add module nodes."""
     apply_module_graph_styles(dot)
-    for module in imports:
+    for module in sorted(imports):
         add_node(dot, f"mod_{module}", module_label(module), fillcolor="lightcyan")
 
 
 def add_module_rule_nodes(dot: graphviz.Digraph, rules: Iterable[str]) -> None:
     """Add rule nodes for module graphs."""
     apply_rule_node_style(dot)
-    for rule_name in rules:
+    for rule_name in sorted(rules):
         add_node(dot, rule_name, rule_name)
 
 
@@ -139,8 +139,8 @@ def add_module_edges(
     imports: set[str],
 ) -> None:
     """Add module dependency edges."""
-    for rule_name, modules in module_references.items():
-        for module in modules:
+    for rule_name, modules in sorted(module_references.items()):
+        for module in sorted(modules):
             if module in imports:
                 add_edge(dot, f"mod_{module}", rule_name, label="imported by")
 
@@ -193,7 +193,7 @@ def add_complexity_nodes(
     color_fn,
 ) -> None:
     """Add nodes for complexity graph."""
-    for rule_name, rule_info in rules.items():
+    for rule_name, rule_info in sorted(rules.items()):
         complexity = complexity_metrics.get(rule_name, 1)
         add_node(
             dot,
@@ -244,7 +244,7 @@ def _cluster(
 
 def add_cluster_nodes(cluster, rules: dict[str, dict], label_fn, color_fn) -> None:
     """Add labeled nodes with fillcolor to a cluster."""
-    for rule_name, rule_info in rules.items():
+    for rule_name, rule_info in sorted(rules.items()):
         cluster.node(
             rule_name,
             label_fn(rule_name, rule_info),
@@ -260,7 +260,7 @@ def add_prefixed_nodes(
     quote_labels: bool = False,
 ) -> None:
     """Add nodes with a fixed prefix and optional quoted labels."""
-    for item in items:
+    for item in sorted(items):
         label = _quote_label(item) if quote_labels else item
         cluster.node(f"{prefix}{item}", label)
 

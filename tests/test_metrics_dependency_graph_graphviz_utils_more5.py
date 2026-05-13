@@ -14,6 +14,8 @@ from yaraast.metrics.dependency_graph_graphviz import (
     add_import_cluster,
     add_include_cluster,
     add_module_edges,
+    add_module_nodes,
+    add_rule_string_edges,
     add_rules_cluster,
     add_string_reference_edges,
     create_graph,
@@ -51,6 +53,33 @@ def test_graphviz_helper_empty_paths_and_edge_styles() -> None:
     include_source = with_includes.source
     assert "cluster_includes" in include_source
     assert "include_common.yar" in include_source
+
+
+def test_graphviz_helpers_emit_stable_sorted_output() -> None:
+    module_dot = create_graph("modules", "LR")
+    add_module_nodes(module_dot, {"z", "a", "m"})
+    module_source = module_dot.source
+    assert (
+        module_source.index("mod_a") < module_source.index("mod_m") < module_source.index("mod_z")
+    )
+
+    string_dot = create_graph("strings", "LR")
+    add_rule_string_edges(string_dot, {"rule": {"$z", "$a", "$m"}})
+    string_source = string_dot.source
+    assert string_source.index('"$a"') < string_source.index('"$m"') < string_source.index('"$z"')
+
+    edges_dot = create_graph("edges", "LR")
+    add_module_edges(
+        edges_dot,
+        {"z_rule": {"z", "a"}, "a_rule": {"m"}},
+        {"z", "a", "m"},
+    )
+    edges_source = edges_dot.source
+    assert (
+        edges_source.index("mod_m -> a_rule")
+        < edges_source.index("mod_a -> z_rule")
+        < edges_source.index("mod_z -> z_rule")
+    )
 
 
 def test_dependency_utils_remaining_paths() -> None:
