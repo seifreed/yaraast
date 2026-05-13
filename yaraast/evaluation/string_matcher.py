@@ -391,11 +391,12 @@ class StringMatcher:
 
         # Check modifiers
         for modifier in string_def.modifiers:
-            if modifier.name == "nocase":
+            modifier_name = self._modifier_name(modifier)
+            if modifier_name in {"nocase", "i"}:
                 flags |= re.IGNORECASE
-            elif modifier.name == "dotall":
+            elif modifier_name in {"dotall", "s"}:
                 flags |= re.DOTALL
-            elif modifier.name == "multiline":
+            elif modifier_name in {"multiline", "m"}:
                 flags |= re.MULTILINE
 
         # Compile regex

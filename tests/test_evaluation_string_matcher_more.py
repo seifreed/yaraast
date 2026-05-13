@@ -120,6 +120,16 @@ def test_string_matcher_regex_dotall_modifier_matches_across_newline() -> None:
     assert matcher.get_match_offset("$multi", 0) == 2
 
 
+def test_string_matcher_regex_string_modifiers_accept_string_aliases() -> None:
+    matcher = StringMatcher()
+    regex = RegexString("$alias", regex="^b", modifiers=["i", "m"])
+
+    matcher.match_all(b"a\nB", [regex])
+
+    assert matcher.get_match_count("$alias") == 1
+    assert matcher.get_match_offset("$alias", 0) == 2
+
+
 def test_string_matcher_wide_ascii_and_hex_helper_edge_cases() -> None:
     matcher = StringMatcher()
     wide_ascii = PlainString(
