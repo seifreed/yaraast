@@ -5,6 +5,21 @@ from typing import Any
 from yaraast.cli.visitors.formatters_helpers import format_int_literal, truncate_string
 
 
+def _node_text(value: Any, default: str) -> str:
+    if isinstance(value, str):
+        return value
+
+    raw_value = getattr(value, "value", None)
+    if raw_value is not None:
+        return str(raw_value)
+
+    name = getattr(value, "name", None)
+    if name is not None:
+        return str(name)
+
+    return default
+
+
 class ConditionStringFormatter:
     """Helper class to format condition strings with reduced complexity."""
 
@@ -46,10 +61,8 @@ class ConditionStringFormatter:
         return str(condition.value).lower() if hasattr(condition, "value") else "true"
 
     def _format_of_expression(self, condition: Any, _depth: int) -> str:
-        quantifier = getattr(condition, "quantifier", "any")
-        string_set = "them"
-        if hasattr(condition, "string_set") and hasattr(condition.string_set, "name"):
-            string_set = condition.string_set.name
+        quantifier = _node_text(getattr(condition, "quantifier", "any"), "any")
+        string_set = _node_text(getattr(condition, "string_set", "them"), "them")
         return f"{quantifier} of {string_set}"
 
     def _format_binary_expression(self, condition: Any, depth: int) -> str:
@@ -298,7 +311,7 @@ class ExpressionStringFormatter:
         return f'"{val}"'
 
     def _format_of_expression(self, expr: Any, depth: int) -> str:
-        quantifier = getattr(expr, "quantifier", "any")
+        quantifier = _node_text(getattr(expr, "quantifier", "any"), "any")
         string_set = self._format_string_set(expr, depth)
         return f"{quantifier} of {string_set}"
 
@@ -308,8 +321,14 @@ class ExpressionStringFormatter:
             return "them"
 
         string_set = expr.string_set
+        if isinstance(string_set, str):
+            return string_set
+        if isinstance(string_set, list):
+            return "(" + ", ".join(_node_text(item, str(item)) for item in string_set) + ")"
         if hasattr(string_set, "name"):
             return string_set.name
+        if hasattr(string_set, "value"):
+            return str(string_set.value)
 
         if not hasattr(string_set, "__class__"):
             return "them"
@@ -340,6 +359,8 @@ class ExpressionStringFormatter:
 
     def _format_string_wildcard(self, string_set: Any) -> str:
         """Format a string wildcard like $a*."""
+        if hasattr(string_set, "pattern"):
+            return f"({string_set.pattern})"
         if hasattr(string_set, "prefix"):
             return f"(${string_set.prefix}*)"
         return "($*)"

@@ -11,12 +11,15 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     StringLiteral,
+    StringWildcard,
 )
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, RuleModifierType
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.cli.visitors import ASTDumper, ConditionStringFormatter
+from yaraast.cli.visitors.formatters import ExpressionStringFormatter
+from yaraast.parser import Parser
 
 
 def test_ast_dumper_handles_tags_meta_and_modifiers() -> None:
@@ -69,3 +72,25 @@ def test_condition_formatter_of_expression_and_binary() -> None:
         right=Identifier(name="b"),
     )
     assert formatter.format_condition(binary) == "a and b"
+
+
+def test_condition_formatter_handles_parsed_of_literals() -> None:
+    ast = Parser().parse('rule r { strings: $a = "a" condition: any of them }')
+    condition = ast.rules[0].condition
+
+    assert ConditionStringFormatter().format_condition(condition) == "any of them"
+    assert ExpressionStringFormatter()._format_of_expression(condition, 0) == "any of them"
+    assert (
+        ExpressionStringFormatter()._format_string_set(
+            OfExpression(quantifier="any", string_set=StringWildcard("$a*")),
+            0,
+        )
+        == "($a*)"
+    )
+    assert (
+        ExpressionStringFormatter()._format_string_set(
+            OfExpression(quantifier="any", string_set=["$a", "$b"]),
+            0,
+        )
+        == "($a, $b)"
+    )
