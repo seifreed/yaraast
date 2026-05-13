@@ -48,6 +48,7 @@ def generate_rule_graph(
     output_path: str | None = None,
     format: str = "svg",
 ) -> str:
+    reset_graph_state(generator)
     generator.visit(ast)
     dot = create_graph("YARA Rule Dependencies", rankdir="LR")
     from yaraast.metrics.dependency_graph_graphviz import apply_rule_graph_style
@@ -64,6 +65,7 @@ def generate_module_graph(
     output_path: str | None = None,
     format: str = "svg",
 ) -> str:
+    reset_graph_state(generator)
     generator.visit(ast)
     dot = create_graph("YARA Module Dependencies", rankdir="TB")
     add_module_nodes(dot, generator.imports)
@@ -79,6 +81,7 @@ def generate_complexity_graph(
     output_path: str | None = None,
     format: str = "svg",
 ) -> str:
+    reset_graph_state(generator)
     generator.visit(ast)
     dot = create_graph("YARA Complexity Visualization", rankdir="TB")
     add_complexity_nodes(

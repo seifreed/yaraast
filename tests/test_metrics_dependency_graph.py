@@ -65,6 +65,43 @@ def test_dependency_graph_generator_outputs_dot_source(tmp_path: Path) -> None:
     assert rendered.endswith(".svg")
 
 
+def test_dependency_graph_variant_generators_reset_between_inputs() -> None:
+    first_ast = _parse_yara("""
+    import "pe"
+
+    rule old_rule {
+        strings:
+            $a = "old"
+        condition:
+            $a and pe.number_of_sections > 0
+    }
+    """)
+    second_ast = _parse_yara("""
+    import "math"
+
+    rule new_rule {
+        condition:
+            math.entropy(0, filesize) > 0
+    }
+    """)
+    generator = DependencyGraphGenerator()
+
+    assert "old_rule" in generator.generate_rule_graph(first_ast)
+    second_rule_graph = generator.generate_rule_graph(second_ast)
+    assert "new_rule" in second_rule_graph
+    assert "old_rule" not in second_rule_graph
+
+    assert "Module: pe" in generator.generate_module_graph(first_ast)
+    second_module_graph = generator.generate_module_graph(second_ast)
+    assert "Module: math" in second_module_graph
+    assert "Module: pe" not in second_module_graph
+
+    assert "old_rule" in generator.generate_complexity_graph(first_ast, {"old_rule": 1})
+    second_complexity_graph = generator.generate_complexity_graph(second_ast, {"new_rule": 1})
+    assert "new_rule" in second_complexity_graph
+    assert "old_rule" not in second_complexity_graph
+
+
 def test_dependency_graph_build_and_analysis() -> None:
     code = """
     rule a { condition: true }
