@@ -13,6 +13,7 @@ from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE
 from yaraast.libyara.equivalence import EquivalenceResult, EquivalenceTester
 from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_AVAILABLE, MatchInfo, ScanResult
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def _tester_without_libyara_init() -> EquivalenceTester:
@@ -164,8 +165,47 @@ def test_file_round_trip_missing_file_returns_error_result() -> None:
     result = tester.test_file_round_trip("/definitely/missing/file.yar")
 
     assert result.equivalent is False
+    assert result.ast_equivalent is False
+    assert result.code_equivalent is False
+    assert result.original_compiles is False
+    assert result.regenerated_compiles is False
     assert result.ast_differences
     assert "Failed to parse file" in result.ast_differences[0]
+
+
+def test_round_trip_rejects_yarax_only_ast_before_codegen() -> None:
+    tester = _tester_without_libyara_init()
+    ast = parse_yara_source(
+        "rule x { condition: with xs = [1]: match xs { _ => true } }",
+    )
+
+    result = tester.test_round_trip(ast)
+
+    assert result.equivalent is False
+    assert result.ast_equivalent is False
+    assert result.code_equivalent is False
+    assert result.original_compiles is False
+    assert result.regenerated_compiles is False
+    assert result.original_code is None
+    assert result.ast_differences == [
+        "Cannot test libyara round-trip for YARA-X-only syntax: list expressions, "
+        "pattern matching, with statements"
+    ]
+
+
+def test_file_round_trip_parses_yarax_before_libyara_compatibility_check(tmp_path: Path) -> None:
+    tester = _tester_without_libyara_init()
+    rule_file = tmp_path / "native_yarax.yar"
+    rule_file.write_text(
+        "rule x { condition: with xs = [1]: match xs { _ => true } }",
+        encoding="utf-8",
+    )
+
+    result = tester.test_file_round_trip(str(rule_file))
+
+    assert result.equivalent is False
+    assert "Cannot test libyara round-trip for YARA-X-only syntax" in result.ast_differences[0]
+    assert "Failed to parse file" not in result.ast_differences[0]
 
 
 @pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
@@ -229,6 +269,7 @@ def test_round_trip_records_real_compilation_errors() -> None:
 
     result = tester.test_round_trip(ast)
 
+    assert result.equivalent is False
     assert result.original_compiles is False
     assert result.regenerated_compiles is False
     assert result.compilation_errors

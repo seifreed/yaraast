@@ -9,6 +9,9 @@ from typing import TYPE_CHECKING
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source
+from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
+from yaraast.yarax.feature_flags import YaraXFeatures
 
 from .compiler import LibyaraCompiler
 from .scanner import LibyaraScanner, ScanResult
@@ -61,7 +64,47 @@ class EquivalenceTester:
     def _record_regeneration_failure(result: EquivalenceResult, error: Exception) -> None:
         result.equivalent = False
         result.code_equivalent = False
+        result.original_compiles = False
+        result.regenerated_compiles = False
         result.ast_differences.append(f"Re-generation failed: {error!s}")
+
+    @staticmethod
+    def _unattempted_compile_result(
+        message: str,
+        *,
+        ast_equivalent: bool = False,
+        code_equivalent: bool = False,
+    ) -> EquivalenceResult:
+        return EquivalenceResult(
+            equivalent=False,
+            ast_equivalent=ast_equivalent,
+            ast_differences=[message],
+            code_equivalent=code_equivalent,
+            original_compiles=False,
+            regenerated_compiles=False,
+        )
+
+    @staticmethod
+    def _libyara_compatibility_error(ast: YaraFile) -> str | None:
+        if not hasattr(ast, "accept") or not hasattr(ast, "rules"):
+            return None
+
+        checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+        blocking = [
+            issue
+            for issue in checker.check(ast)
+            if issue.issue_type == "yarax_feature" and issue.severity == "error"
+        ]
+        if not blocking:
+            return None
+
+        features = sorted(
+            {
+                issue.message.split(": ", 1)[1] if ": " in issue.message else issue.message
+                for issue in blocking
+            }
+        )
+        return "Cannot test libyara round-trip for YARA-X-only syntax: " + ", ".join(features)
 
     @staticmethod
     def _record_code_difference(
@@ -139,15 +182,16 @@ class EquivalenceTester:
         """
         result = EquivalenceResult(equivalent=True)
 
+        compatibility_error = self._libyara_compatibility_error(original_ast)
+        if compatibility_error:
+            return self._unattempted_compile_result(compatibility_error)
+
         # Step 1: Generate code from original AST
         try:
             original_code = self.codegen.generate(original_ast)
             result.original_code = original_code
         except Exception as e:
-            result.equivalent = False
-            result.code_equivalent = False
-            result.ast_differences.append(f"Code generation failed: {e!s}")
-            return result
+            return self._unattempted_compile_result(f"Code generation failed: {e!s}")
 
         # Step 2: Parse the generated code
         try:
@@ -155,6 +199,9 @@ class EquivalenceTester:
         except Exception as e:
             result.equivalent = False
             result.ast_equivalent = False
+            result.code_equivalent = False
+            result.original_compiles = False
+            result.regenerated_compiles = False
             result.ast_differences.append(f"Re-parsing failed: {e!s}")
             return result
 
@@ -198,14 +245,16 @@ class EquivalenceTester:
         orig_comp = self.compiler.compile_source(original_code)
         result.original_compiles = orig_comp.success
         if not orig_comp.success:
+            result.equivalent = False
             result.compilation_errors.extend(orig_comp.errors)
 
         regen_comp = self.compiler.compile_source(regenerated_code)
         result.regenerated_compiles = regen_comp.success
         if not regen_comp.success:
+            result.equivalent = False
             result.compilation_errors.extend(regen_comp.errors)
 
-        if test_data and orig_comp.success and regen_comp.success:
+        if test_data is not None and orig_comp.success and regen_comp.success:
             orig_scan = self.scanner.scan_data(orig_comp.compiled_rules, test_data)
             regen_scan = self.scanner.scan_data(regen_comp.compiled_rules, test_data)
             self._record_scan_differences(result, self._compare_scans(orig_scan, regen_scan))
@@ -232,12 +281,11 @@ class EquivalenceTester:
             with Path(filepath).open(encoding="utf-8") as f:
                 original_code = f.read()
 
-            original_ast = self.parser.parse(original_code)
+            original_ast = parse_yara_source(original_code)
             return self.test_round_trip(original_ast, test_data)
         except Exception as e:
-            return EquivalenceResult(
-                equivalent=False,
-                ast_differences=[f"Failed to parse file: {e!s}"],
+            return self._unattempted_compile_result(
+                f"Failed to parse file: {e!s}",
             )
 
     def _compare_code(self, code1: str, code2: str) -> bool:
