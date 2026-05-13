@@ -58,7 +58,7 @@ class StructType(YaraType):
     fields: dict[str, YaraType] = field(default_factory=dict)
 
     def __str__(self) -> str:
-        return f"struct({', '.join(f'{k}: {v}' for k, v in self.fields.items())})"
+        return f"struct({', '.join(f'{k}: {v}' for k, v in sorted(self.fields.items()))})"
 
     def is_compatible_with(self, other: YaraType) -> bool:
         if not isinstance(other, StructType):

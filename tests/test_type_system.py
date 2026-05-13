@@ -573,13 +573,12 @@ class TestStructType:
         """Test string representation of StructType with fields."""
         fields: dict[str, YaraType] = {"name": StringType(), "age": IntegerType()}
         struct_type = StructType(fields=fields)
-        result = str(struct_type)
+        same_fields_different_order = StructType(
+            fields={"age": IntegerType(), "name": StringType()}
+        )
 
-        # Field order may vary, so check both possibilities
-        assert result in [
-            "struct(name: string, age: integer)",
-            "struct(age: integer, name: string)",
-        ]
+        assert str(struct_type) == "struct(age: integer, name: string)"
+        assert str(same_fields_different_order) == str(struct_type)
 
     def test_struct_type_compatible_with_same_fields(self) -> None:
         """Test StructType is compatible with same fields."""
