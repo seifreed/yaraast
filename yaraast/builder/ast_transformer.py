@@ -14,6 +14,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -101,7 +102,7 @@ class RuleTransformer:
                 from yaraast.ast.modifiers import RuleModifier
 
                 self.rule.modifiers.append(RuleModifier.from_string(modifier))
-            except ValueError:
+            except (ValueError, ValidationError):
                 self.rule.modifiers.append(modifier)
         return self
 

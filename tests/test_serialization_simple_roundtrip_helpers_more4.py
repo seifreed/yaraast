@@ -140,6 +140,22 @@ def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     assert restored.scope == MetaScope.PRIVATE
 
 
+def test_simple_roundtrip_helpers_preserve_unknown_extern_rule_modifier() -> None:
+    restored = deserialize_node(
+        {
+            "type": "ExternRule",
+            "name": "RemoteRule",
+            "modifiers": ["private", "vendor_modifier"],
+        }
+    )
+
+    assert isinstance(restored, ExternRule)
+    modifiers = cast(list[Any], restored.modifiers)
+    assert isinstance(modifiers[0], RuleModifier)
+    assert modifiers[0].name == "private"
+    assert modifiers[1] == "vendor_modifier"
+
+
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
     ast = YaraFile(
         rules=[

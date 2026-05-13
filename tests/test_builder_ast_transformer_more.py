@@ -56,6 +56,17 @@ def test_rule_transformer_renames_and_modifies() -> None:
     assert transformed.strings[0].identifier == "$b"
 
 
+def test_rule_transformer_preserves_unknown_rule_modifier() -> None:
+    transformed = (
+        RuleTransformer(_basic_rule("r1"))
+        .add_modifier("vendor_modifier")
+        .add_modifier("vendor_modifier")
+        .build()
+    )
+
+    assert [str(modifier) for modifier in transformed.modifiers] == ["vendor_modifier"]
+
+
 def test_yara_file_transformer_and_merge() -> None:
     rule1 = _basic_rule("r1")
     rule2 = _basic_rule("r2")

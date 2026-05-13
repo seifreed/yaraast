@@ -66,7 +66,7 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
-from yaraast.errors import SerializationError
+from yaraast.errors import SerializationError, ValidationError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import (
@@ -964,7 +964,7 @@ def _deserialize_rule_modifiers(modifiers: list[Any]) -> list[Any]:
         if isinstance(modifier, str):
             try:
                 normalized.append(RuleModifier.from_string(modifier))
-            except ValueError:
+            except (ValueError, ValidationError):
                 normalized.append(modifier)
         else:
             normalized.append(modifier)
