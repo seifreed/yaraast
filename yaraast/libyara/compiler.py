@@ -15,6 +15,7 @@ except ImportError:
     YARA_AVAILABLE = False
 
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -74,6 +75,8 @@ class LibyaraCompiler:
 
         """
         try:
+            ensure_libyara_compatible_ast(ast, action="compile")
+
             # Generate YARA source code from AST
             source_code = self.code_generator.generate(ast)
 

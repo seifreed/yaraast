@@ -8,10 +8,9 @@ from typing import TYPE_CHECKING
 
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.evaluation.evaluator import YaraEvaluator
+from yaraast.libyara.compatibility import libyara_compatibility_error
 from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
-from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
-from yaraast.yarax.feature_flags import YaraXFeatures
 
 from .compiler import LibyaraCompiler
 from .scanner import LibyaraScanner, ScanResult
@@ -86,25 +85,10 @@ class EquivalenceTester:
 
     @staticmethod
     def _libyara_compatibility_error(ast: YaraFile) -> str | None:
-        if not hasattr(ast, "accept") or not hasattr(ast, "rules"):
-            return None
-
-        checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
-        blocking = [
-            issue
-            for issue in checker.check(ast)
-            if issue.issue_type == "yarax_feature" and issue.severity == "error"
-        ]
-        if not blocking:
-            return None
-
-        features = sorted(
-            {
-                issue.message.split(": ", 1)[1] if ": " in issue.message else issue.message
-                for issue in blocking
-            }
+        return libyara_compatibility_error(
+            ast,
+            "Cannot test libyara round-trip for YARA-X-only syntax",
         )
-        return "Cannot test libyara round-trip for YARA-X-only syntax: " + ", ".join(features)
 
     @staticmethod
     def _record_code_difference(

@@ -6,8 +6,7 @@ from pathlib import Path
 
 from yaraast import CodeGenerator
 from yaraast.cli.utils import parse_yara_file
-from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
-from yaraast.yarax.feature_flags import YaraXFeatures
+from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
 
 
 def ensure_yara_available() -> None:
@@ -21,21 +20,7 @@ def ensure_yara_available() -> None:
 
 def ensure_yara_compatible_ast(ast) -> None:
     """Raise when an AST contains syntax libyara cannot compile."""
-    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
-    blocking = [
-        issue
-        for issue in checker.check(ast)
-        if issue.issue_type == "yarax_feature" and issue.severity == "error"
-    ]
-    if blocking:
-        features = sorted(
-            {
-                issue.message.split(": ", 1)[1] if ": " in issue.message else issue.message
-                for issue in blocking
-            }
-        )
-        msg = "Cannot use YARA-X-only syntax with libyara: " + ", ".join(features)
-        raise ValueError(msg)
+    ensure_libyara_compatible_ast(ast, action="use")
 
 
 def compile_yara(

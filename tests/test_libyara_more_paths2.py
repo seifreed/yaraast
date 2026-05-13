@@ -22,6 +22,7 @@ from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE, Libya
 from yaraast.libyara.direct_compiler import YARA_AVAILABLE, DirectASTCompiler, OptimizedMatcher
 from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_AVAILABLE, LibyaraScanner
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def test_ast_optimizer_rule_and_constant_paths() -> None:
@@ -188,6 +189,26 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
     assert matcher._get_ast_context_for_rule("missing") is None
     assert OptimizedMatcher(compiled.compiled_rules)._get_ast_context_for_rule("hint_rule") is None
     assert matcher._estimate_condition_complexity(None) == 0
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_direct_compiler_rejects_yarax_ast_before_codegen() -> None:
+    compiler = DirectASTCompiler(enable_optimization=False, debug_mode=True)
+    ast = parse_yara_source("rule x { condition: with xs = [1]: match xs { _ => true } }")
+
+    result = compiler.compile_ast(ast)
+
+    assert result.success is False
+    assert result.generated_source is None
+    assert result.errors
+    message = result.errors[0]
+    assert "Cannot compile YARA-X-only syntax with libyara" in message
+    assert "pattern matching" in message
+    assert "with statements" in message
+
+    with pytest.raises(ValueError) as exc_info:
+        compiler.compile_to_yara(ast)
+    assert "Cannot compile YARA-X-only syntax with libyara" in str(exc_info.value)
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")

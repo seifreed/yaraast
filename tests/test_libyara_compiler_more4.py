@@ -9,6 +9,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
+from yaraast.parser.source import parse_yara_source
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
@@ -60,3 +61,18 @@ def test_libyara_compiler_compile_ast_success() -> None:
 
     assert result.success is True
     assert result.compiled_rules is not None
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_libyara_compiler_rejects_yarax_ast_before_codegen() -> None:
+    compiler = LibyaraCompiler()
+    ast = parse_yara_source("rule x { condition: with xs = [1]: match xs { _ => true } }")
+
+    result = compiler.compile_ast(ast)
+
+    assert result.success is False
+    assert result.errors
+    message = result.errors[0]
+    assert "Cannot compile YARA-X-only syntax with libyara" in message
+    assert "pattern matching" in message
+    assert "with statements" in message

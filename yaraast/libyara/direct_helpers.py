@@ -5,11 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
 from yaraast.libyara.compiler import LibyaraCompiler
 from yaraast.libyara.direct_models import DirectCompilationResult
 
 
 def generate_source(ast) -> str:
+    ensure_libyara_compatible_ast(ast, action="compile")
     generator = CodeGenerator()
     return generator.generate(ast)
 
