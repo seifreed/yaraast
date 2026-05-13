@@ -13,6 +13,8 @@ from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString
+from yaraast.serialization import yara_ast_pb2
+from yaraast.serialization.protobuf_conversion import protobuf_to_ast
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 
 
@@ -108,6 +110,23 @@ def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     assert restored_rule_pragma.name == "rule_hint"
     assert restored_rule_pragma.scope == PragmaScope.RULE
     assert restored_rule_pragma.parameters == {"enabled": True}
+
+
+def test_protobuf_deserializes_legacy_meta_map_in_stable_key_order() -> None:
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "legacy_meta"
+    for key in ("zeta", "alpha", "middle", "beta"):
+        pb_rule.meta[key].string_value = key
+
+    restored = protobuf_to_ast(pb_file)
+
+    assert [entry.key for entry in restored.rules[0].meta] == [
+        "alpha",
+        "beta",
+        "middle",
+        "zeta",
+    ]
 
 
 def test_protobuf_serializer_preserves_extern_rule_reference_condition() -> None:

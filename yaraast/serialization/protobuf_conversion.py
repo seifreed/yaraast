@@ -809,7 +809,7 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
 
             meta = [
                 MetaEntry.from_key_value(key, value, pb_rule.meta_scopes.get(key) or None)
-                for key, value in meta_values.items()
+                for key, value in sorted(meta_values.items())
             ]
 
         strings = []
