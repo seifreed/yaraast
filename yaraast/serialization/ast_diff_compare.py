@@ -119,8 +119,8 @@ def compare_node_collection(
     diff_type,
 ) -> None:
     """Compare AST node collections by stable identity and structural hash."""
-    old_map = {key_func(node): node for node in old_nodes}
-    new_map = {key_func(node): node for node in new_nodes}
+    old_map = _nodes_by_key(old_nodes, key_func)
+    new_map = _nodes_by_key(new_nodes, key_func)
 
     for key in sorted(new_map.keys() - old_map.keys()):
         result.differences.append(
@@ -143,18 +143,32 @@ def compare_node_collection(
         )
 
     for key in sorted(old_map.keys() & new_map.keys()):
-        old_hash = hasher.visit(old_map[key])
-        new_hash = hasher.visit(new_map[key])
-        if old_hash != new_hash:
+        old_bucket = old_map[key]
+        new_bucket = new_map[key]
+        if len(old_bucket) == 1 and len(new_bucket) == 1:
+            old_value = hasher.visit(old_bucket[0])
+            new_value = hasher.visit(new_bucket[0])
+        else:
+            old_value = sorted(hasher.visit(node) for node in old_bucket)
+            new_value = sorted(hasher.visit(node) for node in new_bucket)
+        if old_value != new_value:
             result.differences.append(
                 diff_node(
                     path=f"{base_path}/{key}",
                     diff_type=diff_type.MODIFIED,
-                    old_value=old_hash,
-                    new_value=new_hash,
+                    old_value=old_value,
+                    new_value=new_value,
                     node_type=node_type,
                 ),
             )
+
+
+def _nodes_by_key(nodes, key_func) -> dict[str, list]:
+    """Group nodes by comparison key without dropping duplicates."""
+    grouped: dict[str, list] = {}
+    for node in nodes:
+        grouped.setdefault(key_func(node), []).append(node)
+    return grouped
 
 
 def _extern_import_key(node) -> str:

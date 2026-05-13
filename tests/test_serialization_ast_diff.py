@@ -103,6 +103,31 @@ def test_ast_diff_detects_extended_file_field_changes() -> None:
     assert result.statistics["total_changes"] == len(result.differences)
 
 
+def test_ast_diff_detects_duplicate_extended_file_field_key_changes() -> None:
+    old_ast = YaraFile(
+        pragmas=[
+            CustomPragma("vendor", arguments=["strict"]),
+            CustomPragma("vendor", arguments=["legacy"]),
+        ],
+    )
+    new_ast = YaraFile(
+        pragmas=[
+            CustomPragma("vendor", arguments=["legacy"]),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    by_path = {diff.path: diff for diff in result.differences}
+    diff = by_path["/pragmas/custom:vendor:"]
+    assert diff.diff_type == DiffType.MODIFIED
+    assert isinstance(diff.old_value, list)
+    assert isinstance(diff.new_value, list)
+    assert len(diff.old_value) == 2
+    assert len(diff.new_value) == 1
+    assert result.has_changes
+
+
 def test_ast_diff_detects_string_offset_and_length_index_changes() -> None:
     cases = [
         (
