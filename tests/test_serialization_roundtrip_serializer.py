@@ -46,6 +46,19 @@ def test_roundtrip_serializer_json_metadata() -> None:
     assert len(ast.rules) == 1
 
 
+def test_roundtrip_serializer_preserves_comments_in_serialized_ast() -> None:
+    serializer = RoundTripSerializer()
+    ast, serialized = serializer.parse_and_serialize(
+        "/* preserved */\nrule commented {\n    condition:\n        true\n}\n",
+        format="json",
+    )
+
+    data = json.loads(serialized)
+
+    assert ast.rules[0].leading_comments[0].text == "/* preserved */"
+    assert data["ast"]["rules"][0]["leading_comments"][0]["text"] == "/* preserved */"
+
+
 def test_roundtrip_serializer_yaml_reconstructs() -> None:
     serializer = RoundTripSerializer()
     _, serialized = serializer.parse_and_serialize(_sample_rule(), format="yaml")

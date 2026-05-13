@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.roundtrip_helpers import (
@@ -43,7 +44,7 @@ class RoundTripSerializer:
         self.preserve_formatting = preserve_formatting
         self.json_serializer = JsonSerializer(include_metadata=True)
         self.yaml_serializer = YamlSerializer(include_metadata=True)
-        self.parser = Parser()
+        self.parser = CommentAwareParser() if preserve_comments else Parser()
 
     def _detect_formatting(self, yara_source: str):
         """Backward-compatible wrapper used by tests."""

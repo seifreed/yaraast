@@ -78,10 +78,10 @@ rule sample_roundtrip {
     assert "Detailed results saved to" in result.output
 
 
-def test_roundtrip_test_failure_path_with_saved_results(tmp_path: Path) -> None:
+def test_roundtrip_test_commented_rule_success_with_saved_results(tmp_path: Path) -> None:
     runner = CliRunner()
     yara_path = tmp_path / "commented.yar"
-    out_path = tmp_path / "failed_results.json"
+    out_path = tmp_path / "commented_results.json"
     yara_path.write_text(_good_rule().strip(), encoding="utf-8")
 
     result = runner.invoke(
@@ -89,8 +89,8 @@ def test_roundtrip_test_failure_path_with_saved_results(tmp_path: Path) -> None:
         ["test", str(yara_path), "--format", "json", "--verbose", "-o", str(out_path)],
     )
 
-    assert result.exit_code != 0
-    assert "Round-trip test FAILED" in result.output
+    assert result.exit_code == 0
+    assert "Round-trip test PASSED" in result.output
     assert "Detailed results saved to" in result.output
     assert out_path.exists()
 
