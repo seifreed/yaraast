@@ -15,6 +15,10 @@ def _deserialize_ast_value(self, data):
     return data
 
 
+def _deserialize_optional_expression(self, data):
+    return self._deserialize_expression(data) if data else None
+
+
 def _deserialize_location(data: dict[str, Any]) -> Location:
     return Location(
         line=data["line"],
@@ -310,6 +314,141 @@ def _deser_extern_rule_reference(self, data: dict[str, Any]):
     return ExternRuleReference(rule_name=rule_name, namespace=data.get("namespace"))
 
 
+def _deser_with_statement(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import WithStatement
+
+    return WithStatement(
+        declarations=[
+            self._deserialize_expression(declaration)
+            for declaration in data.get("declarations", [])
+        ],
+        body=self._deserialize_expression(data["body"]),
+    )
+
+
+def _deser_with_declaration(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import WithDeclaration
+
+    return WithDeclaration(
+        identifier=data["identifier"],
+        value=self._deserialize_expression(data["value"]),
+    )
+
+
+def _deser_array_comprehension(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import ArrayComprehension
+
+    return ArrayComprehension(
+        expression=_deserialize_optional_expression(self, data.get("expression")),
+        variable=data.get("variable", ""),
+        iterable=_deserialize_optional_expression(self, data.get("iterable")),
+        condition=_deserialize_optional_expression(self, data.get("condition")),
+    )
+
+
+def _deser_dict_comprehension(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import DictComprehension
+
+    return DictComprehension(
+        key_expression=_deserialize_optional_expression(self, data.get("key_expression")),
+        value_expression=_deserialize_optional_expression(self, data.get("value_expression")),
+        key_variable=data.get("key_variable", ""),
+        value_variable=data.get("value_variable"),
+        iterable=_deserialize_optional_expression(self, data.get("iterable")),
+        condition=_deserialize_optional_expression(self, data.get("condition")),
+    )
+
+
+def _deser_tuple_expression(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import TupleExpression
+
+    return TupleExpression(
+        elements=[self._deserialize_expression(element) for element in data.get("elements", [])]
+    )
+
+
+def _deser_tuple_indexing(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import TupleIndexing
+
+    return TupleIndexing(
+        tuple_expr=self._deserialize_expression(data["tuple_expr"]),
+        index=self._deserialize_expression(data["index"]),
+    )
+
+
+def _deser_list_expression(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import ListExpression
+
+    return ListExpression(
+        elements=[self._deserialize_expression(element) for element in data.get("elements", [])]
+    )
+
+
+def _deser_dict_expression(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import DictExpression
+
+    return DictExpression(
+        items=[self._deserialize_expression(item) for item in data.get("items", [])]
+    )
+
+
+def _deser_dict_item(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import DictItem
+
+    return DictItem(
+        key=self._deserialize_expression(data["key"]),
+        value=self._deserialize_expression(data["value"]),
+    )
+
+
+def _deser_slice_expression(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import SliceExpression
+
+    return SliceExpression(
+        target=self._deserialize_expression(data["target"]),
+        start=_deserialize_optional_expression(self, data.get("start")),
+        stop=_deserialize_optional_expression(self, data.get("stop")),
+        step=_deserialize_optional_expression(self, data.get("step")),
+    )
+
+
+def _deser_lambda_expression(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import LambdaExpression
+
+    return LambdaExpression(
+        parameters=list(data.get("parameters", [])),
+        body=self._deserialize_expression(data["body"]),
+    )
+
+
+def _deser_pattern_match(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import PatternMatch
+
+    return PatternMatch(
+        value=self._deserialize_expression(data["value"]),
+        cases=[self._deserialize_expression(case) for case in data.get("cases", [])],
+        default=_deserialize_optional_expression(self, data.get("default")),
+    )
+
+
+def _deser_match_case(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import MatchCase
+
+    return MatchCase(
+        pattern=self._deserialize_expression(data["pattern"]),
+        result=self._deserialize_expression(data["result"]),
+    )
+
+
+def _deser_spread_operator(self, data: dict[str, Any]):
+    from yaraast.yarax.ast_nodes import SpreadOperator
+
+    return SpreadOperator(
+        expression=self._deserialize_expression(data["expression"]),
+        is_dict=data.get("is_dict", False),
+    )
+
+
 _EXPR_DESERIALIZERS: dict[str, Any] = {
     "BinaryExpression": _deser_binary_expression,
     "UnaryExpression": _deser_unary_expression,
@@ -340,6 +479,20 @@ _EXPR_DESERIALIZERS: dict[str, Any] = {
     "DefinedExpression": _deser_defined_expression,
     "StringOperatorExpression": _deser_string_operator_expression,
     "ExternRuleReference": _deser_extern_rule_reference,
+    "WithStatement": _deser_with_statement,
+    "WithDeclaration": _deser_with_declaration,
+    "ArrayComprehension": _deser_array_comprehension,
+    "DictComprehension": _deser_dict_comprehension,
+    "TupleExpression": _deser_tuple_expression,
+    "TupleIndexing": _deser_tuple_indexing,
+    "ListExpression": _deser_list_expression,
+    "DictExpression": _deser_dict_expression,
+    "DictItem": _deser_dict_item,
+    "SliceExpression": _deser_slice_expression,
+    "LambdaExpression": _deser_lambda_expression,
+    "PatternMatch": _deser_pattern_match,
+    "MatchCase": _deser_match_case,
+    "SpreadOperator": _deser_spread_operator,
 }
 
 

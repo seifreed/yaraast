@@ -11,9 +11,13 @@ from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
     visit_array_access,
+    visit_array_comprehension,
     visit_at_expression,
     visit_binary_expression,
     visit_comment_group,
+    visit_dict_comprehension,
+    visit_dict_expression,
+    visit_dict_item,
     visit_dictionary_access,
     visit_for_expression,
     visit_for_of_expression,
@@ -21,19 +25,29 @@ from yaraast.serialization.json_serialize_visitors import (
     visit_hex_alternative,
     visit_hex_string,
     visit_in_expression,
+    visit_lambda_expression,
+    visit_list_expression,
+    visit_match_case,
     visit_member_access,
     visit_of_expression,
     visit_parentheses_expression,
+    visit_pattern_match,
     visit_plain_string,
     visit_pragma_block,
     visit_range_expression,
     visit_regex_string,
     visit_rule,
     visit_set_expression,
+    visit_slice_expression,
+    visit_spread_operator,
     visit_string_length,
     visit_string_offset,
     visit_string_operator_expression,
+    visit_tuple_expression,
+    visit_tuple_indexing,
     visit_unary_expression,
+    visit_with_declaration,
+    visit_with_statement,
     visit_yara_file,
 )
 from yaraast.serialization.json_serializer_deserialize import JsonSerializerDeserializeMixin
@@ -372,3 +386,45 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
     def visit_pragma_block(self, node) -> dict[str, Any]:
         return visit_pragma_block(self, node)
+
+    def visit_with_statement(self, node) -> dict[str, Any]:
+        return visit_with_statement(self, node)
+
+    def visit_with_declaration(self, node) -> dict[str, Any]:
+        return visit_with_declaration(self, node)
+
+    def visit_array_comprehension(self, node) -> dict[str, Any]:
+        return visit_array_comprehension(self, node)
+
+    def visit_dict_comprehension(self, node) -> dict[str, Any]:
+        return visit_dict_comprehension(self, node)
+
+    def visit_tuple_expression(self, node) -> dict[str, Any]:
+        return visit_tuple_expression(self, node)
+
+    def visit_tuple_indexing(self, node) -> dict[str, Any]:
+        return visit_tuple_indexing(self, node)
+
+    def visit_list_expression(self, node) -> dict[str, Any]:
+        return visit_list_expression(self, node)
+
+    def visit_dict_expression(self, node) -> dict[str, Any]:
+        return visit_dict_expression(self, node)
+
+    def visit_dict_item(self, node) -> dict[str, Any]:
+        return visit_dict_item(self, node)
+
+    def visit_slice_expression(self, node) -> dict[str, Any]:
+        return visit_slice_expression(self, node)
+
+    def visit_lambda_expression(self, node) -> dict[str, Any]:
+        return visit_lambda_expression(self, node)
+
+    def visit_pattern_match(self, node) -> dict[str, Any]:
+        return visit_pattern_match(self, node)
+
+    def visit_match_case(self, node) -> dict[str, Any]:
+        return visit_match_case(self, node)
+
+    def visit_spread_operator(self, node) -> dict[str, Any]:
+        return visit_spread_operator(self, node)

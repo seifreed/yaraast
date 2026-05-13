@@ -227,3 +227,123 @@ def visit_pragma_block(serializer, node) -> dict[str, Any]:
         ),
         "scope": getattr(getattr(node, "scope", None), "value", "file"),
     }
+
+
+def visit_with_statement(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "WithStatement",
+        "declarations": [serializer.visit(decl) for decl in node.declarations],
+        "body": serializer.visit(node.body),
+    }
+
+
+def visit_with_declaration(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "WithDeclaration",
+        "identifier": node.identifier,
+        "value": serializer.visit(node.value),
+    }
+
+
+def visit_array_comprehension(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "ArrayComprehension",
+        "expression": serializer.visit(node.expression) if node.expression else None,
+        "variable": node.variable,
+        "iterable": serializer.visit(node.iterable) if node.iterable else None,
+        "condition": serializer.visit(node.condition) if node.condition else None,
+    }
+
+
+def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "DictComprehension",
+        "key_expression": serializer.visit(node.key_expression) if node.key_expression else None,
+        "value_expression": (
+            serializer.visit(node.value_expression) if node.value_expression else None
+        ),
+        "key_variable": node.key_variable,
+        "value_variable": node.value_variable,
+        "iterable": serializer.visit(node.iterable) if node.iterable else None,
+        "condition": serializer.visit(node.condition) if node.condition else None,
+    }
+
+
+def visit_tuple_expression(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "TupleExpression",
+        "elements": [serializer.visit(element) for element in node.elements],
+    }
+
+
+def visit_tuple_indexing(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "TupleIndexing",
+        "tuple_expr": serializer.visit(node.tuple_expr),
+        "index": serializer.visit(node.index),
+    }
+
+
+def visit_list_expression(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "ListExpression",
+        "elements": [serializer.visit(element) for element in node.elements],
+    }
+
+
+def visit_dict_expression(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "DictExpression",
+        "items": [serializer.visit(item) for item in node.items],
+    }
+
+
+def visit_dict_item(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "DictItem",
+        "key": serializer.visit(node.key),
+        "value": serializer.visit(node.value),
+    }
+
+
+def visit_slice_expression(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "SliceExpression",
+        "target": serializer.visit(node.target),
+        "start": serializer.visit(node.start) if node.start else None,
+        "stop": serializer.visit(node.stop) if node.stop else None,
+        "step": serializer.visit(node.step) if node.step else None,
+    }
+
+
+def visit_lambda_expression(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "LambdaExpression",
+        "parameters": list(node.parameters),
+        "body": serializer.visit(node.body),
+    }
+
+
+def visit_pattern_match(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "PatternMatch",
+        "value": serializer.visit(node.value),
+        "cases": [serializer.visit(case) for case in node.cases],
+        "default": serializer.visit(node.default) if node.default else None,
+    }
+
+
+def visit_match_case(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "MatchCase",
+        "pattern": serializer.visit(node.pattern),
+        "result": serializer.visit(node.result),
+    }
+
+
+def visit_spread_operator(serializer, node) -> dict[str, Any]:
+    return {
+        "type": "SpreadOperator",
+        "expression": serializer.visit(node.expression),
+        "is_dict": node.is_dict,
+    }

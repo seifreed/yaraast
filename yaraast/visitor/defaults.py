@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
@@ -57,6 +57,24 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.visitor.visitor import ASTVisitor
+
+if TYPE_CHECKING:
+    from yaraast.yarax.ast_nodes import (
+        ArrayComprehension,
+        DictComprehension,
+        DictExpression,
+        DictItem,
+        LambdaExpression,
+        ListExpression,
+        MatchCase,
+        PatternMatch,
+        SliceExpression,
+        SpreadOperator,
+        TupleExpression,
+        TupleIndexing,
+        WithDeclaration,
+        WithStatement,
+    )
 
 T = TypeVar("T")
 
@@ -239,4 +257,46 @@ class DefaultASTVisitor(ASTVisitor[T]):
         return self._default
 
     def visit_pragma_block(self, node: PragmaBlock) -> T:
+        return self._default
+
+    def visit_with_statement(self, node: WithStatement) -> T:
+        return self._default
+
+    def visit_with_declaration(self, node: WithDeclaration) -> T:
+        return self._default
+
+    def visit_array_comprehension(self, node: ArrayComprehension) -> T:
+        return self._default
+
+    def visit_dict_comprehension(self, node: DictComprehension) -> T:
+        return self._default
+
+    def visit_tuple_expression(self, node: TupleExpression) -> T:
+        return self._default
+
+    def visit_tuple_indexing(self, node: TupleIndexing) -> T:
+        return self._default
+
+    def visit_list_expression(self, node: ListExpression) -> T:
+        return self._default
+
+    def visit_dict_expression(self, node: DictExpression) -> T:
+        return self._default
+
+    def visit_dict_item(self, node: DictItem) -> T:
+        return self._default
+
+    def visit_slice_expression(self, node: SliceExpression) -> T:
+        return self._default
+
+    def visit_lambda_expression(self, node: LambdaExpression) -> T:
+        return self._default
+
+    def visit_pattern_match(self, node: PatternMatch) -> T:
+        return self._default
+
+    def visit_match_case(self, node: MatchCase) -> T:
+        return self._default
+
+    def visit_spread_operator(self, node: SpreadOperator) -> T:
         return self._default

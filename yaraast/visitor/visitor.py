@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypeVar, cast
+from typing import TYPE_CHECKING, TypeVar, cast
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
@@ -56,6 +56,24 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
+
+if TYPE_CHECKING:
+    from yaraast.yarax.ast_nodes import (
+        ArrayComprehension,
+        DictComprehension,
+        DictExpression,
+        DictItem,
+        LambdaExpression,
+        ListExpression,
+        MatchCase,
+        PatternMatch,
+        SliceExpression,
+        SpreadOperator,
+        TupleExpression,
+        TupleIndexing,
+        WithDeclaration,
+        WithStatement,
+    )
 
 T = TypeVar("T")
 
@@ -322,6 +340,63 @@ class ASTVisitor[T]:
 
     def visit_pragma_block(self, node: PragmaBlock) -> T:
         """Visit PragmaBlock node."""
+        return self._default_visit(node)
+
+    # YARA-X nodes
+    def visit_with_statement(self, node: WithStatement) -> T:
+        """Visit YARA-X WithStatement node."""
+        return self._default_visit(node)
+
+    def visit_with_declaration(self, node: WithDeclaration) -> T:
+        """Visit YARA-X WithDeclaration node."""
+        return self._default_visit(node)
+
+    def visit_array_comprehension(self, node: ArrayComprehension) -> T:
+        """Visit YARA-X ArrayComprehension node."""
+        return self._default_visit(node)
+
+    def visit_dict_comprehension(self, node: DictComprehension) -> T:
+        """Visit YARA-X DictComprehension node."""
+        return self._default_visit(node)
+
+    def visit_tuple_expression(self, node: TupleExpression) -> T:
+        """Visit YARA-X TupleExpression node."""
+        return self._default_visit(node)
+
+    def visit_tuple_indexing(self, node: TupleIndexing) -> T:
+        """Visit YARA-X TupleIndexing node."""
+        return self._default_visit(node)
+
+    def visit_list_expression(self, node: ListExpression) -> T:
+        """Visit YARA-X ListExpression node."""
+        return self._default_visit(node)
+
+    def visit_dict_expression(self, node: DictExpression) -> T:
+        """Visit YARA-X DictExpression node."""
+        return self._default_visit(node)
+
+    def visit_dict_item(self, node: DictItem) -> T:
+        """Visit YARA-X DictItem node."""
+        return self._default_visit(node)
+
+    def visit_slice_expression(self, node: SliceExpression) -> T:
+        """Visit YARA-X SliceExpression node."""
+        return self._default_visit(node)
+
+    def visit_lambda_expression(self, node: LambdaExpression) -> T:
+        """Visit YARA-X LambdaExpression node."""
+        return self._default_visit(node)
+
+    def visit_pattern_match(self, node: PatternMatch) -> T:
+        """Visit YARA-X PatternMatch node."""
+        return self._default_visit(node)
+
+    def visit_match_case(self, node: MatchCase) -> T:
+        """Visit YARA-X MatchCase node."""
+        return self._default_visit(node)
+
+    def visit_spread_operator(self, node: SpreadOperator) -> T:
+        """Visit YARA-X SpreadOperator node."""
         return self._default_visit(node)
 
 

@@ -466,3 +466,104 @@ class ASTDumper(ASTVisitor[dict]):
             "operator": node.operator,
             "right": self.visit(node.right),
         }
+
+    def visit_with_statement(self, node) -> dict:
+        return {
+            "type": "WithStatement",
+            "declarations": [self.visit(declaration) for declaration in node.declarations],
+            "body": self.visit(node.body),
+        }
+
+    def visit_with_declaration(self, node) -> dict:
+        return {
+            "type": "WithDeclaration",
+            "identifier": node.identifier,
+            "value": self.visit(node.value),
+        }
+
+    def visit_array_comprehension(self, node) -> dict:
+        return {
+            "type": "ArrayComprehension",
+            "expression": self._dump_value(node.expression),
+            "variable": node.variable,
+            "iterable": self._dump_value(node.iterable),
+            "condition": self._dump_value(node.condition),
+        }
+
+    def visit_dict_comprehension(self, node) -> dict:
+        return {
+            "type": "DictComprehension",
+            "key_expression": self._dump_value(node.key_expression),
+            "value_expression": self._dump_value(node.value_expression),
+            "key_variable": node.key_variable,
+            "value_variable": node.value_variable,
+            "iterable": self._dump_value(node.iterable),
+            "condition": self._dump_value(node.condition),
+        }
+
+    def visit_tuple_expression(self, node) -> dict:
+        return {
+            "type": "TupleExpression",
+            "elements": [self.visit(element) for element in node.elements],
+        }
+
+    def visit_tuple_indexing(self, node) -> dict:
+        return {
+            "type": "TupleIndexing",
+            "tuple_expr": self.visit(node.tuple_expr),
+            "index": self.visit(node.index),
+        }
+
+    def visit_list_expression(self, node) -> dict:
+        return {
+            "type": "ListExpression",
+            "elements": [self.visit(element) for element in node.elements],
+        }
+
+    def visit_dict_expression(self, node) -> dict:
+        return {"type": "DictExpression", "items": [self.visit(item) for item in node.items]}
+
+    def visit_dict_item(self, node) -> dict:
+        return {
+            "type": "DictItem",
+            "key": self.visit(node.key),
+            "value": self.visit(node.value),
+        }
+
+    def visit_slice_expression(self, node) -> dict:
+        return {
+            "type": "SliceExpression",
+            "target": self.visit(node.target),
+            "start": self._dump_value(node.start),
+            "stop": self._dump_value(node.stop),
+            "step": self._dump_value(node.step),
+        }
+
+    def visit_lambda_expression(self, node) -> dict:
+        return {
+            "type": "LambdaExpression",
+            "parameters": list(node.parameters),
+            "body": self.visit(node.body),
+        }
+
+    def visit_pattern_match(self, node) -> dict:
+        return {
+            "type": "PatternMatch",
+            "value": self.visit(node.value),
+            "cases": [self.visit(case) for case in node.cases],
+            "default": self._dump_value(node.default),
+        }
+
+    def visit_match_case(self, node) -> dict:
+        return {
+            "type": "MatchCase",
+            "pattern": self.visit(node.pattern),
+            "result": self.visit(node.result),
+        }
+
+    def visit_spread_operator(self, node) -> dict:
+        return {
+            "type": "SpreadOperator",
+            "expression": self.visit(node.expression),
+            "is_dict": node.is_dict,
+        }

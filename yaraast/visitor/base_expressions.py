@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.conditions import (
@@ -38,6 +38,24 @@ from yaraast.ast.expressions import (
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.visitor.base_helpers import VisitorHelperProtocol
+
+if TYPE_CHECKING:
+    from yaraast.yarax.ast_nodes import (
+        ArrayComprehension,
+        DictComprehension,
+        DictExpression,
+        DictItem,
+        LambdaExpression,
+        ListExpression,
+        MatchCase,
+        PatternMatch,
+        SliceExpression,
+        SpreadOperator,
+        TupleExpression,
+        TupleIndexing,
+        WithDeclaration,
+        WithStatement,
+    )
 
 T = TypeVar("T")
 
@@ -173,4 +191,74 @@ class BaseVisitorExpressionsMixin:
     ) -> T:
         self._visit_if(node.left)
         self._visit_if(node.right)
+        return self._noop()
+
+    def visit_with_statement(self: VisitorHelperProtocol[T], node: WithStatement) -> T:
+        self._visit_all(node.declarations)
+        self._visit_if(node.body)
+        return self._noop()
+
+    def visit_with_declaration(self: VisitorHelperProtocol[T], node: WithDeclaration) -> T:
+        self._visit_if(node.value)
+        return self._noop()
+
+    def visit_array_comprehension(self: VisitorHelperProtocol[T], node: ArrayComprehension) -> T:
+        self._visit_if(node.expression)
+        self._visit_if(node.iterable)
+        self._visit_if(node.condition)
+        return self._noop()
+
+    def visit_dict_comprehension(self: VisitorHelperProtocol[T], node: DictComprehension) -> T:
+        self._visit_if(node.key_expression)
+        self._visit_if(node.value_expression)
+        self._visit_if(node.iterable)
+        self._visit_if(node.condition)
+        return self._noop()
+
+    def visit_tuple_expression(self: VisitorHelperProtocol[T], node: TupleExpression) -> T:
+        self._visit_all(node.elements)
+        return self._noop()
+
+    def visit_tuple_indexing(self: VisitorHelperProtocol[T], node: TupleIndexing) -> T:
+        self._visit_if(node.tuple_expr)
+        self._visit_if(node.index)
+        return self._noop()
+
+    def visit_list_expression(self: VisitorHelperProtocol[T], node: ListExpression) -> T:
+        self._visit_all(node.elements)
+        return self._noop()
+
+    def visit_dict_expression(self: VisitorHelperProtocol[T], node: DictExpression) -> T:
+        self._visit_all(node.items)
+        return self._noop()
+
+    def visit_dict_item(self: VisitorHelperProtocol[T], node: DictItem) -> T:
+        self._visit_if(node.key)
+        self._visit_if(node.value)
+        return self._noop()
+
+    def visit_slice_expression(self: VisitorHelperProtocol[T], node: SliceExpression) -> T:
+        self._visit_if(node.target)
+        self._visit_if(node.start)
+        self._visit_if(node.stop)
+        self._visit_if(node.step)
+        return self._noop()
+
+    def visit_lambda_expression(self: VisitorHelperProtocol[T], node: LambdaExpression) -> T:
+        self._visit_if(node.body)
+        return self._noop()
+
+    def visit_pattern_match(self: VisitorHelperProtocol[T], node: PatternMatch) -> T:
+        self._visit_if(node.value)
+        self._visit_all(node.cases)
+        self._visit_if(node.default)
+        return self._noop()
+
+    def visit_match_case(self: VisitorHelperProtocol[T], node: MatchCase) -> T:
+        self._visit_if(node.pattern)
+        self._visit_if(node.result)
+        return self._noop()
+
+    def visit_spread_operator(self: VisitorHelperProtocol[T], node: SpreadOperator) -> T:
+        self._visit_if(node.expression)
         return self._noop()
