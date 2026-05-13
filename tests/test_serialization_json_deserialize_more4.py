@@ -24,6 +24,7 @@ from yaraast.ast.expressions import (
     RangeExpression,
     RegexLiteral,
     SetExpression,
+    StringCount,
     StringIdentifier,
     StringLength,
     StringLiteral,
@@ -224,8 +225,9 @@ def test_deserialize_expression_comprehensive_branches() -> None:
         s._deserialize_expression({"type": "StringWildcard", "pattern": "$a*"}),
         StringWildcard,
     )
-    with pytest.raises(TypeError):
-        s._deserialize_expression({"type": "StringCount", "string_id": "$a"})
+    string_count = s._deserialize_expression({"type": "StringCount", "string_id": "$a"})
+    assert isinstance(string_count, StringCount)
+    assert string_count.string_id == "$a"
     assert isinstance(
         s._deserialize_expression(
             {

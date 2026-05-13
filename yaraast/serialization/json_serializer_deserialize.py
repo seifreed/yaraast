@@ -87,11 +87,7 @@ def _deser_string_wildcard(self, data: dict[str, Any]):
 def _deser_string_count(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringCount
 
-    index = data.get("index")
-    return StringCount(
-        string_id=data["string_id"],
-        index=self._deserialize_expression(index) if index else None,
-    )
+    return StringCount(string_id=data["string_id"])
 
 
 def _deser_string_offset(self, data: dict[str, Any]):

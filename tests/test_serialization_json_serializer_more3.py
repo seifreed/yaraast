@@ -8,12 +8,19 @@ import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import InExpression
-from yaraast.ast.expressions import BinaryExpression, Identifier, IntegerLiteral, StringIdentifier
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    Identifier,
+    IntegerLiteral,
+    StringCount,
+    StringIdentifier,
+)
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString
 from yaraast.errors import SerializationError
+from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 
 
@@ -51,6 +58,18 @@ def test_json_serialize_deserialize_roundtrip() -> None:
     restored = serializer.deserialize(json_str)
     assert restored.rules[0].name == "r1"
     assert restored.rules[0].strings
+
+
+def test_json_roundtrip_preserves_string_count_conditions() -> None:
+    ast = Parser('rule r { strings: $a = "x" condition: #a > 0 }').parse()
+    serializer = JsonSerializer(include_metadata=True)
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    condition = restored.rules[0].condition
+
+    assert isinstance(condition, BinaryExpression)
+    assert isinstance(condition.left, StringCount)
+    assert condition.left.string_id == "a"
 
 
 def test_json_deserialize_expressions() -> None:
