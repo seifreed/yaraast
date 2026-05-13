@@ -194,8 +194,8 @@ class DependencyGraph:
         """Find dependency cycles in the graph."""
         # Build adjacency list for cycle detection
         graph = {}
-        for node_key, node in self.nodes.items():
-            graph[node_key] = list(node.dependencies)
+        for node_key, node in sorted(self.nodes.items()):
+            graph[node_key] = sorted(node.dependencies)
 
         # Use graphlib to find cycles
         ts = graphlib.TopologicalSorter(graph)
@@ -211,7 +211,12 @@ class DependencyGraph:
             if hasattr(e, "args") and len(e.args) > 1:
                 cycle_nodes = e.args[1]
                 if isinstance(cycle_nodes, list | tuple):
-                    cycles.append(list(cycle_nodes))
+                    unique_cycle = list(cycle_nodes)
+                    if len(unique_cycle) > 1 and unique_cycle[0] == unique_cycle[-1]:
+                        unique_cycle = unique_cycle[:-1]
+                    min_idx = unique_cycle.index(min(unique_cycle))
+                    normalized = unique_cycle[min_idx:] + unique_cycle[:min_idx]
+                    cycles.append([*normalized, normalized[0]])
             return cycles
 
     def get_isolated_nodes(self) -> set[str]:
@@ -245,7 +250,7 @@ class DependencyGraph:
         lines.append("  node [shape=box];")
 
         # Style nodes by type
-        for node_key, node in self.nodes.items():
+        for node_key, node in sorted(self.nodes.items()):
             label = node.name
             if node.type == "file":
                 style = "shape=folder,style=filled,fillcolor=lightblue"
@@ -263,9 +268,9 @@ class DependencyGraph:
             lines.append(f'  "{safe_key}" [label="{safe_label}",{style}];')
 
         # Add edges
-        for node_key, node in self.nodes.items():
+        for node_key, node in sorted(self.nodes.items()):
             safe_key = node_key.replace('"', '\\"').replace(":", "_")
-            for dep in node.dependencies:
+            for dep in sorted(node.dependencies):
                 safe_dep = dep.replace('"', '\\"').replace(":", "_")
                 lines.append(f'  "{safe_key}" -> "{safe_dep}";')
 

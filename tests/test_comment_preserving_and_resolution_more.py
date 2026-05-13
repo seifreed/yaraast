@@ -105,3 +105,27 @@ def test_dependency_graph_transitive_queries_cycles_and_export() -> None:
     resolved = graph.get_file_dependencies(".")
     assert isinstance(resolved, set)
     assert graph.get_file_dependents("missing") == set()
+
+
+def test_resolution_dependency_graph_public_outputs_are_stably_sorted() -> None:
+    graph = DependencyGraph()
+    graph.nodes["z_rule"] = DependencyNode("z_rule", "rule", dependencies={"z_dep", "a_dep"})
+    graph.nodes["a_rule"] = DependencyNode("a_rule", "rule")
+
+    assert graph.export_dot().splitlines() == [
+        "digraph YaraDependencies {",
+        "  rankdir=LR;",
+        "  node [shape=box];",
+        '  "a_rule" [label="a_rule",shape=box,style=filled,fillcolor=lightgreen];',
+        '  "z_rule" [label="z_rule",shape=box,style=filled,fillcolor=lightgreen];',
+        '  "z_rule" -> "a_dep";',
+        '  "z_rule" -> "z_dep";',
+        "}",
+    ]
+
+    cycle_graph = DependencyGraph()
+    cycle_graph.nodes["b_rule"] = DependencyNode("b_rule", "file", dependencies={"c_rule"})
+    cycle_graph.nodes["c_rule"] = DependencyNode("c_rule", "file", dependencies={"a_rule"})
+    cycle_graph.nodes["a_rule"] = DependencyNode("a_rule", "file", dependencies={"b_rule"})
+
+    assert cycle_graph.find_cycles() == [["a_rule", "c_rule", "b_rule", "a_rule"]]

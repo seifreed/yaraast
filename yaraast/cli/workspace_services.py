@@ -98,11 +98,11 @@ def format_workspace_graph(report: Any, fmt: str) -> str:
         return report.dependency_graph.export_dot()
 
     nodes = {}
-    for key, node in report.dependency_graph.nodes.items():
+    for key, node in sorted(report.dependency_graph.nodes.items()):
         nodes[key] = {
             "type": node.type,
-            "dependencies": list(node.dependencies),
-            "dependents": list(node.dependents),
+            "dependencies": sorted(node.dependencies),
+            "dependents": sorted(node.dependents),
             "metadata": node.metadata,
         }
     return format_json({"nodes": nodes})

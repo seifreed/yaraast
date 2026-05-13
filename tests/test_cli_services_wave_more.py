@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -167,6 +168,33 @@ def test_workspace_services_formatters() -> None:
     assert ws.format_workspace_output(report, "json") == js
     assert ws.format_workspace_output(report, "dot") == dot
     assert "Workspace Analysis Report" in ws.format_workspace_output(report, "text")
+
+
+def test_workspace_graph_json_lists_are_stably_sorted() -> None:
+    dep = SimpleNamespace(
+        export_dot=lambda: "digraph G {}",
+        nodes={
+            "z_node": SimpleNamespace(
+                type="rule",
+                dependencies={"z_dep", "a_dep"},
+                dependents={"z_parent", "a_parent"},
+                metadata={},
+            ),
+            "a_node": SimpleNamespace(
+                type="rule",
+                dependencies=set(),
+                dependents=set(),
+                metadata={},
+            ),
+        },
+    )
+    report = SimpleNamespace(dependency_graph=dep)
+
+    data = json.loads(ws.format_workspace_graph(report, "json"))
+
+    assert list(data["nodes"]) == ["a_node", "z_node"]
+    assert data["nodes"]["z_node"]["dependencies"] == ["a_dep", "z_dep"]
+    assert data["nodes"]["z_node"]["dependents"] == ["a_parent", "z_parent"]
 
 
 def test_performance_check_reporting_render() -> None:
