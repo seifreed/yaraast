@@ -66,6 +66,18 @@ def test_codegen_in_expression_parentheses_paths() -> None:
     )
     assert gen.visit(in_range) == "$a in (0..10)"
 
+    in_direct_range = InExpression(
+        subject="$a",
+        range=RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
+    )
+    assert gen.visit(in_direct_range) == "$a in (0..10)"
+
+    in_of_direct_range = InExpression(
+        subject=OfExpression(IntegerLiteral(1), Identifier("them")),
+        range=RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
+    )
+    assert gen.visit(in_of_direct_range) == "1 of them in (0..10)"
+
     in_single_ref = InExpression(
         subject="$a",
         range=ParenthesesExpression(StringCount("a")),

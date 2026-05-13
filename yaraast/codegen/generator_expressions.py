@@ -37,6 +37,10 @@ def render_in_expression(gen, node) -> str:
 
     subject = node.string_id if isinstance(node.subject, str) else gen.visit(node.subject)
 
+    if isinstance(node.range, RangeExpression):
+        range_expr = gen.visit(node.range)
+        return f"{subject} in ({range_expr})"
+
     if isinstance(node.range, ParenthesesExpression):
         inner = node.range.expression
         if isinstance(inner, RangeExpression):
