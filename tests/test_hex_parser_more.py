@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexWildcard
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexWildcard,
+)
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 
@@ -28,6 +35,18 @@ def test_hex_parser_alternatives_and_comments() -> None:
 
     assert any(isinstance(t, HexAlternative) for t in tokens)
     assert any(isinstance(t, HexByte) for t in tokens)
+
+
+def test_hex_parser_alternative_preserves_negated_byte() -> None:
+    parser = HexStringParser()
+
+    tokens = parser.parse("(~00 | 41)")
+
+    alternative = next(token for token in tokens if isinstance(token, HexAlternative))
+    assert isinstance(alternative.alternatives[0][0], HexNegatedByte)
+    assert alternative.alternatives[0][0].value == 0x00
+    assert isinstance(alternative.alternatives[1][0], HexByte)
+    assert alternative.alternatives[1][0].value == 0x41
 
 
 def test_hex_parser_errors() -> None:

@@ -268,6 +268,8 @@ class HexStringParser:
                 self.pos += 1
             elif char == "[":
                 current_alt.append(self._parse_jump())
+            elif char == "~":
+                current_alt.append(self._parse_negated_byte())
             elif char == "?":
                 current_alt.append(self._parse_wildcard())
             elif char in self.HEX_CHARS:
