@@ -68,6 +68,22 @@ from yaraast.serialization.simple_roundtrip_helpers import (
     serialize_to_file,
     validate_roundtrip,
 )
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    DictExpression,
+    DictItem,
+    LambdaExpression,
+    ListExpression,
+    MatchCase,
+    PatternMatch,
+    SliceExpression,
+    SpreadOperator,
+    TupleExpression,
+    TupleIndexing,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: Path) -> None:
@@ -239,6 +255,48 @@ def test_simple_roundtrip_helpers_preserve_extended_expression_nodes() -> None:
         DictionaryAccess(Identifier("arr"), IntegerLiteral(0)),
         DefinedExpression(DictionaryAccess(ModuleReference("pe"), "rich_signature")),
         StringOperatorExpression(StringLiteral("abc"), "icontains", StringLiteral("b")),
+        WithDeclaration("xs", ListExpression([IntegerLiteral(1)])),
+        DictItem(Identifier("key"), IntegerLiteral(1)),
+        MatchCase(IntegerLiteral(1), BooleanLiteral(True)),
+        ListExpression([IntegerLiteral(1), SpreadOperator(Identifier("more"))]),
+        DictExpression(
+            [
+                DictItem(Identifier("key"), IntegerLiteral(1)),
+                DictItem(Identifier("base"), SpreadOperator(Identifier("defaults"), True)),
+            ]
+        ),
+        TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]),
+        TupleIndexing(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)]), IntegerLiteral(0)),
+        SliceExpression(Identifier("xs"), stop=IntegerLiteral(2)),
+        LambdaExpression(["x"], BinaryExpression(Identifier("x"), ">", IntegerLiteral(0))),
+        ArrayComprehension(
+            expression=Identifier("x"),
+            variable="x",
+            iterable=Identifier("xs"),
+            condition=BinaryExpression(Identifier("x"), ">", IntegerLiteral(0)),
+        ),
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=Identifier("v"),
+            key_variable="k",
+            value_variable="v",
+            iterable=Identifier("mapping"),
+        ),
+        PatternMatch(
+            value=Identifier("first"),
+            cases=[MatchCase(IntegerLiteral(1), BooleanLiteral(True))],
+            default=BooleanLiteral(False),
+        ),
+        WithStatement(
+            declarations=[
+                WithDeclaration("xs", ListExpression([IntegerLiteral(1)])),
+            ],
+            body=PatternMatch(
+                value=Identifier("xs"),
+                cases=[MatchCase(IntegerLiteral(1), BooleanLiteral(True))],
+                default=BooleanLiteral(False),
+            ),
+        ),
     ]
 
     for node in nodes:

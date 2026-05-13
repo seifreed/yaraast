@@ -70,6 +70,22 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import SerializationError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.parser import Parser
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    DictExpression,
+    DictItem,
+    LambdaExpression,
+    ListExpression,
+    MatchCase,
+    PatternMatch,
+    SliceExpression,
+    SpreadOperator,
+    TupleExpression,
+    TupleIndexing,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 def _serialize_hex_token(token) -> dict[str, Any]:
@@ -422,6 +438,100 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "operator": node.operator,
             "right": serialize_node(node.right),
         }
+    if isinstance(node, WithStatement):
+        return {
+            "type": "WithStatement",
+            "declarations": [serialize_node(declaration) for declaration in node.declarations],
+            "body": serialize_node(node.body),
+        }
+    if isinstance(node, WithDeclaration):
+        return {
+            "type": "WithDeclaration",
+            "identifier": node.identifier,
+            "value": serialize_node(node.value),
+        }
+    if isinstance(node, ArrayComprehension):
+        return {
+            "type": "ArrayComprehension",
+            "expression": serialize_node(node.expression) if node.expression else None,
+            "variable": node.variable,
+            "iterable": serialize_node(node.iterable) if node.iterable else None,
+            "condition": serialize_node(node.condition) if node.condition else None,
+        }
+    if isinstance(node, DictComprehension):
+        return {
+            "type": "DictComprehension",
+            "key_expression": (
+                serialize_node(node.key_expression) if node.key_expression else None
+            ),
+            "value_expression": (
+                serialize_node(node.value_expression) if node.value_expression else None
+            ),
+            "key_variable": node.key_variable,
+            "value_variable": node.value_variable,
+            "iterable": serialize_node(node.iterable) if node.iterable else None,
+            "condition": serialize_node(node.condition) if node.condition else None,
+        }
+    if isinstance(node, TupleExpression):
+        return {
+            "type": "TupleExpression",
+            "elements": [serialize_node(element) for element in node.elements],
+        }
+    if isinstance(node, TupleIndexing):
+        return {
+            "type": "TupleIndexing",
+            "tuple_expr": serialize_node(node.tuple_expr),
+            "index": serialize_node(node.index),
+        }
+    if isinstance(node, ListExpression):
+        return {
+            "type": "ListExpression",
+            "elements": [serialize_node(element) for element in node.elements],
+        }
+    if isinstance(node, DictExpression):
+        return {
+            "type": "DictExpression",
+            "items": [serialize_node(item) for item in node.items],
+        }
+    if isinstance(node, DictItem):
+        return {
+            "type": "DictItem",
+            "key": serialize_node(node.key),
+            "value": serialize_node(node.value),
+        }
+    if isinstance(node, SliceExpression):
+        return {
+            "type": "SliceExpression",
+            "target": serialize_node(node.target),
+            "start": serialize_node(node.start) if node.start else None,
+            "stop": serialize_node(node.stop) if node.stop else None,
+            "step": serialize_node(node.step) if node.step else None,
+        }
+    if isinstance(node, LambdaExpression):
+        return {
+            "type": "LambdaExpression",
+            "parameters": list(node.parameters),
+            "body": serialize_node(node.body),
+        }
+    if isinstance(node, PatternMatch):
+        return {
+            "type": "PatternMatch",
+            "value": serialize_node(node.value),
+            "cases": [serialize_node(case) for case in node.cases],
+            "default": serialize_node(node.default) if node.default else None,
+        }
+    if isinstance(node, MatchCase):
+        return {
+            "type": "MatchCase",
+            "pattern": serialize_node(node.pattern),
+            "result": serialize_node(node.result),
+        }
+    if isinstance(node, SpreadOperator):
+        return {
+            "type": "SpreadOperator",
+            "expression": serialize_node(node.expression),
+            "is_dict": node.is_dict,
+        }
     return {"type": type(node).__name__, "data": str(node)}
 
 
@@ -722,6 +832,88 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             deserialize_node(left),
             data["operator"],
             deserialize_node(right),
+        )
+    if node_type == "WithStatement":
+        return WithStatement(
+            declarations=[
+                deserialize_node(declaration) for declaration in data.get("declarations", [])
+            ],
+            body=deserialize_node(data["body"]),
+        )
+    if node_type == "WithDeclaration":
+        return WithDeclaration(
+            identifier=data["identifier"],
+            value=deserialize_node(data["value"]),
+        )
+    if node_type == "ArrayComprehension":
+        return ArrayComprehension(
+            expression=deserialize_node(data["expression"]) if data.get("expression") else None,
+            variable=data.get("variable", ""),
+            iterable=deserialize_node(data["iterable"]) if data.get("iterable") else None,
+            condition=deserialize_node(data["condition"]) if data.get("condition") else None,
+        )
+    if node_type == "DictComprehension":
+        return DictComprehension(
+            key_expression=(
+                deserialize_node(data["key_expression"]) if data.get("key_expression") else None
+            ),
+            value_expression=(
+                deserialize_node(data["value_expression"]) if data.get("value_expression") else None
+            ),
+            key_variable=data.get("key_variable", ""),
+            value_variable=data.get("value_variable"),
+            iterable=deserialize_node(data["iterable"]) if data.get("iterable") else None,
+            condition=deserialize_node(data["condition"]) if data.get("condition") else None,
+        )
+    if node_type == "TupleExpression":
+        return TupleExpression(
+            elements=[deserialize_node(element) for element in data.get("elements", [])],
+        )
+    if node_type == "TupleIndexing":
+        return TupleIndexing(
+            tuple_expr=deserialize_node(data["tuple_expr"]),
+            index=deserialize_node(data["index"]),
+        )
+    if node_type == "ListExpression":
+        return ListExpression(
+            elements=[deserialize_node(element) for element in data.get("elements", [])],
+        )
+    if node_type == "DictExpression":
+        return DictExpression(
+            items=[deserialize_node(item) for item in data.get("items", [])],
+        )
+    if node_type == "DictItem":
+        return DictItem(
+            key=deserialize_node(data["key"]),
+            value=deserialize_node(data["value"]),
+        )
+    if node_type == "SliceExpression":
+        return SliceExpression(
+            target=deserialize_node(data["target"]),
+            start=deserialize_node(data["start"]) if data.get("start") else None,
+            stop=deserialize_node(data["stop"]) if data.get("stop") else None,
+            step=deserialize_node(data["step"]) if data.get("step") else None,
+        )
+    if node_type == "LambdaExpression":
+        return LambdaExpression(
+            parameters=list(data.get("parameters", [])),
+            body=deserialize_node(data["body"]),
+        )
+    if node_type == "PatternMatch":
+        return PatternMatch(
+            value=deserialize_node(data["value"]),
+            cases=[deserialize_node(case) for case in data.get("cases", [])],
+            default=deserialize_node(data["default"]) if data.get("default") else None,
+        )
+    if node_type == "MatchCase":
+        return MatchCase(
+            pattern=deserialize_node(data["pattern"]),
+            result=deserialize_node(data["result"]),
+        )
+    if node_type == "SpreadOperator":
+        return SpreadOperator(
+            expression=deserialize_node(data["expression"]),
+            is_dict=data.get("is_dict", False),
         )
     return Identifier(data.get("data", "unknown"))
 
