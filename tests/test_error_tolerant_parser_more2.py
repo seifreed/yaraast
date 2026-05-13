@@ -5,6 +5,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from yaraast.ast.expressions import BooleanLiteral, Identifier
+from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.error_tolerant_types import ParserError
 
@@ -74,6 +75,9 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     assert [tag.name for tag in rule.tags] == ["tag1"]
     assert len(rule.meta) == 3
     assert len(rule.strings) == 3
+    assert isinstance(rule.strings[0], PlainString)
+    assert isinstance(rule.strings[1], HexString)
+    assert isinstance(rule.strings[2], RegexString)
     assert isinstance(rule.condition, Identifier)
     assert rule.condition.name == "complex and expr"
 
@@ -91,12 +95,17 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     plain_string = p._parse_string_line('$a = "x"')
     hex_string = p._parse_string_line("$a = { 41 }")
     regex_string = p._parse_string_line("$a = /abc/")
-    assert plain_string is not None
-    assert hex_string is not None
-    assert regex_string is not None
+    regex_with_flags = p._parse_string_line("$a = /abc/im")
+    assert isinstance(plain_string, PlainString)
+    assert isinstance(hex_string, HexString)
+    assert isinstance(regex_string, RegexString)
+    assert isinstance(regex_with_flags, RegexString)
     assert plain_string.identifier == "$a"
     assert hex_string.identifier == "$a"
     assert regex_string.identifier == "$a"
+    assert len(hex_string.tokens) == 1
+    assert regex_string.regex == "abc"
+    assert [modifier.name for modifier in regex_with_flags.modifiers] == ["nocase", "multiline"]
     assert p._parse_string_line("broken") is None
 
     assert p._parse_condition("true") == BooleanLiteral(True)

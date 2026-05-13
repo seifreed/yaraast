@@ -8,8 +8,10 @@ from typing import Any
 from yaraast.ast.base import Location
 from yaraast.ast.expressions import BooleanLiteral, Identifier
 from yaraast.ast.meta import Meta
+from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import PlainString
+from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 
 def parse_import_line(parser, line: str, line_num: int) -> Import | None:
@@ -128,19 +130,49 @@ def parse_meta_line(
 
 def parse_string_line(
     parser, line: str, line_num: int | None = None, raw_line: str | None = None
-) -> PlainString | None:
-    for pattern in (
-        r'(\$\w+)\s*=\s*"([^"]*)"',
-        r"(\$\w+)\s*=\s*{([^}]+)}",
-        r"(\$\w+)\s*=\s*/([^/]+)/",
-    ):
-        match = re.match(pattern, line)
-        if match:
-            node = PlainString(identifier=match.group(1), value=match.group(2))
-            set_recovered_location(
-                parser, node, line_num, raw_line, match.start(1), match.end(2) + 1
-            )
-            return node
+) -> PlainString | HexString | RegexString | None:
+    plain_match = re.match(r'(\$\w+)\s*=\s*"([^"]*)"', line)
+    if plain_match:
+        node = PlainString(identifier=plain_match.group(1), value=plain_match.group(2))
+        set_recovered_location(
+            parser, node, line_num, raw_line, plain_match.start(1), plain_match.end(2) + 1
+        )
+        return node
+
+    hex_match = re.match(r"(\$\w+)\s*=\s*{([^}]*)}", line)
+    if hex_match:
+        try:
+            tokens = HexStringParser().parse(hex_match.group(2))
+        except HexParseError as exc:
+            parser._add_error(str(exc), line_num or 0, hex_match.start(2))
+            return None
+        node = HexString(identifier=hex_match.group(1), tokens=tokens)
+        set_recovered_location(
+            parser, node, line_num, raw_line, hex_match.start(1), hex_match.end(2) + 1
+        )
+        return node
+
+    regex_match = re.match(r"(\$\w+)\s*=\s*/((?:\\/|[^/])*)/([ism]*)", line)
+    if regex_match:
+        flag_modifiers = {
+            "i": "nocase",
+            "s": "dotall",
+            "m": "multiline",
+        }
+        modifiers = [
+            StringModifier.from_name_value(flag_modifiers[flag])
+            for flag in regex_match.group(3)
+            if flag in flag_modifiers
+        ]
+        node = RegexString(
+            identifier=regex_match.group(1),
+            regex=regex_match.group(2),
+            modifiers=modifiers,
+        )
+        set_recovered_location(
+            parser, node, line_num, raw_line, regex_match.start(1), regex_match.end(2) + 1
+        )
+        return node
     return None
 
 

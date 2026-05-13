@@ -7,7 +7,7 @@ from typing import Any
 from yaraast.ast.base import YaraFile
 from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule
-from yaraast.ast.strings import PlainString
+from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.lexer.lexer_errors import LexerError
 from yaraast.parser.error_tolerant_flow import (
     collect_rule_body,
@@ -137,7 +137,7 @@ class ErrorTolerantParser(Parser):
         line: str,
         line_num: int | None = None,
         raw_line: str | None = None,
-    ) -> PlainString | None:
+    ) -> PlainString | HexString | RegexString | None:
         """Parse a string definition line."""
         return parse_string_line(self, line, line_num, raw_line)
 
