@@ -58,6 +58,21 @@ from yaraast.ast.strings import (
 from yaraast.visitor.transformer_impl import ASTTransformer
 
 
+def test_transformer_impl_transforms_nested_hex_alternative_tokens() -> None:
+    class IncrementHexByteTransformer(ASTTransformer):
+        def visit_hex_byte(self, node: HexByte) -> HexByte:
+            return HexByte(value=cast(int, node.value) + 1)
+
+    transformed = IncrementHexByteTransformer().visit_hex_alternative(
+        HexAlternative([[HexByte(1)], [HexByte(2)]])
+    )
+
+    assert [[token.value for token in alternative] for alternative in transformed.alternatives] == [
+        [2],
+        [3],
+    ]
+
+
 def test_transformer_impl_visits_remaining_node_types() -> None:
     t = ASTTransformer()
 

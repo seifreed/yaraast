@@ -67,6 +67,21 @@ class ASTTransformer(ASTVisitor[ASTNode]):
     def _default_visit(self, node: ASTNode) -> ASTNode:
         return self._transform_node(node)
 
+    def _transform_value(self, value: Any) -> Any:
+        if isinstance(value, ASTNode):
+            return self.visit(value)
+        if isinstance(value, list):
+            return [self._transform_value(item) for item in value]
+        if isinstance(value, tuple):
+            return tuple(self._transform_value(item) for item in value)
+        if isinstance(value, set):
+            return {self._transform_value(item) for item in value}
+        if isinstance(value, frozenset):
+            return frozenset(self._transform_value(item) for item in value)
+        if isinstance(value, dict):
+            return {key: self._transform_value(item) for key, item in value.items()}
+        return value
+
     def _transform_node(self, node: T) -> T:
         if not is_dataclass(node):
             return node
@@ -76,13 +91,7 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             if not f.init:
                 continue
             value = getattr(node, f.name)
-            if isinstance(value, ASTNode):
-                kwargs[f.name] = self.visit(value)
-            elif isinstance(value, list):
-                new_list = [self.visit(v) if isinstance(v, ASTNode) else v for v in value]
-                kwargs[f.name] = new_list
-            else:
-                kwargs[f.name] = value
+            kwargs[f.name] = self._transform_value(value)
 
         return replace(node, **kwargs)
 
