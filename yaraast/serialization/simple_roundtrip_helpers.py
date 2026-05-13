@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -168,7 +168,56 @@ def _deserialize_ast_value(value: Any) -> Any:
     return value
 
 
+def _serialize_location(location: Location) -> dict[str, Any]:
+    data: dict[str, Any] = {"line": location.line, "column": location.column}
+    if location.file is not None:
+        data["file"] = location.file
+    if location.end_line is not None:
+        data["end_line"] = location.end_line
+    if location.end_column is not None:
+        data["end_column"] = location.end_column
+    return data
+
+
+def _deserialize_location(data: dict[str, Any]) -> Location:
+    return Location(
+        line=data["line"],
+        column=data["column"],
+        file=data.get("file"),
+        end_line=data.get("end_line"),
+        end_column=data.get("end_column"),
+    )
+
+
+def _with_node_metadata(node: ASTNode, data: dict[str, Any]) -> dict[str, Any]:
+    if node.location is not None:
+        data["location"] = _serialize_location(node.location)
+    if node.leading_comments:
+        data["leading_comments"] = [serialize_node(comment) for comment in node.leading_comments]
+    if node.trailing_comment is not None:
+        data["trailing_comment"] = serialize_node(node.trailing_comment)
+    return data
+
+
+def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
+    location = data.get("location")
+    if isinstance(location, dict):
+        node.location = _deserialize_location(location)
+    if data.get("leading_comments"):
+        node.leading_comments = [
+            cast_comment(deserialize_node(comment)) for comment in data["leading_comments"]
+        ]
+    trailing_comment = data.get("trailing_comment")
+    if isinstance(trailing_comment, dict):
+        node.trailing_comment = cast_trailing_comment(deserialize_node(trailing_comment))
+    return node
+
+
 def serialize_node(node: ASTNode) -> dict[str, Any]:
+    return _with_node_metadata(node, _serialize_node_payload(node))
+
+
+def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     """Serialize an AST node to a dictionary."""
     if isinstance(node, YaraFile):
         return serialize_yarafile(node)
@@ -447,36 +496,54 @@ def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
     if scope is not None:
         data["type"] = "MetaEntry"
         data["scope"] = getattr(scope, "value", str(scope))
+    if isinstance(meta, ASTNode):
+        return _with_node_metadata(meta, data)
     return data
 
 
 def serialize_string(string_def: Any) -> dict[str, Any]:
     """Serialize a string definition."""
     if isinstance(string_def, PlainString):
-        return {
-            "type": "PlainString",
-            "identifier": string_def.identifier,
-            "value": string_def.value,
-            "modifiers": _serialize_modifiers(string_def.modifiers),
-        }
+        return _with_node_metadata(
+            string_def,
+            {
+                "type": "PlainString",
+                "identifier": string_def.identifier,
+                "value": string_def.value,
+                "modifiers": _serialize_modifiers(string_def.modifiers),
+            },
+        )
     if isinstance(string_def, HexString):
-        return {
-            "type": "HexString",
-            "identifier": string_def.identifier,
-            "tokens": [_serialize_hex_token(t) for t in string_def.tokens],
-            "modifiers": _serialize_modifiers(string_def.modifiers),
-        }
+        return _with_node_metadata(
+            string_def,
+            {
+                "type": "HexString",
+                "identifier": string_def.identifier,
+                "tokens": [_serialize_hex_token(t) for t in string_def.tokens],
+                "modifiers": _serialize_modifiers(string_def.modifiers),
+            },
+        )
     if isinstance(string_def, RegexString):
-        return {
-            "type": "RegexString",
-            "identifier": string_def.identifier,
-            "regex": string_def.regex,
-            "modifiers": _serialize_modifiers(string_def.modifiers),
-        }
-    return {"type": "StringDefinition", "data": str(string_def)}
+        return _with_node_metadata(
+            string_def,
+            {
+                "type": "RegexString",
+                "identifier": string_def.identifier,
+                "regex": string_def.regex,
+                "modifiers": _serialize_modifiers(string_def.modifiers),
+            },
+        )
+    data = {"type": "StringDefinition", "data": str(string_def)}
+    if isinstance(string_def, ASTNode):
+        return _with_node_metadata(string_def, data)
+    return data
 
 
 def deserialize_node(data: dict[str, Any]) -> ASTNode:
+    return _apply_node_metadata(_deserialize_node_payload(data), data)
+
+
+def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     """Deserialize a dictionary to an AST node."""
     node_type = data.get("type")
 
@@ -763,12 +830,18 @@ def cast_comment(node: ASTNode) -> Comment:
     return Comment(str(node))
 
 
+def cast_trailing_comment(node: ASTNode) -> Any:
+    if isinstance(node, Comment | CommentGroup):
+        return node
+    return Comment(str(node))
+
+
 def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
     """Deserialize a Meta item."""
     scope = data.get("scope")
     if data.get("type") == "MetaEntry" or scope is not None:
         return MetaEntry.from_key_value(data["key"], data["value"], scope)
-    return Meta(data["key"], data["value"])
+    return _apply_node_metadata(Meta(data["key"], data["value"]), data)
 
 
 def deserialize_string(data: dict[str, Any]) -> Any:
@@ -776,19 +849,25 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     string_type = data.get("type")
 
     if string_type == "PlainString":
-        return PlainString(
-            identifier=data["identifier"],
-            value=data["value"],
-            modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+        return _apply_node_metadata(
+            PlainString(
+                identifier=data["identifier"],
+                value=data["value"],
+                modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+            ),
+            data,
         )
     if string_type == "HexString":
         raw_tokens = data.get("tokens", [])
         if isinstance(raw_tokens, list):
             tokens = [_deserialize_hex_token(t) for t in raw_tokens]
-            return HexString(
-                identifier=data["identifier"],
-                tokens=tokens,
-                modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+            return _apply_node_metadata(
+                HexString(
+                    identifier=data["identifier"],
+                    tokens=tokens,
+                    modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                ),
+                data,
             )
         # Legacy format: tokens stored as string representation — preserve as HexString with empty tokens
         import warnings
@@ -798,18 +877,27 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             "tokens will be empty after deserialization",
             stacklevel=2,
         )
-        return HexString(
-            identifier=data["identifier"],
-            tokens=[],
-            modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+        return _apply_node_metadata(
+            HexString(
+                identifier=data["identifier"],
+                tokens=[],
+                modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+            ),
+            data,
         )
     if string_type == "RegexString":
-        return RegexString(
-            identifier=data["identifier"],
-            regex=data["regex"],
-            modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+        return _apply_node_metadata(
+            RegexString(
+                identifier=data["identifier"],
+                regex=data["regex"],
+                modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+            ),
+            data,
         )
-    return PlainString(identifier=data.get("identifier", "$unknown"), value=data.get("data", ""))
+    return _apply_node_metadata(
+        PlainString(identifier=data.get("identifier", "$unknown"), value=data.get("data", "")),
+        data,
+    )
 
 
 def serialize_to_file(node: ASTNode, file_path: str | Path) -> None:

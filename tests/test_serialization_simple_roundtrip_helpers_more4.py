@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -277,6 +277,37 @@ def test_simple_roundtrip_helpers_preserve_direct_misc_ast_nodes() -> None:
 
     for node in nodes:
         assert deserialize_node(serialize_node(node)) == node
+
+
+def test_simple_roundtrip_helpers_preserve_node_comment_metadata(tmp_path: Path) -> None:
+    plain = PlainString(identifier="$a", value="abc")
+    plain.leading_comments = [Comment("string lead", is_multiline=True)]
+    condition = StringIdentifier("$a")
+    condition.trailing_comment = Comment("condition tail")
+    rule = Rule(name="commented", strings=[plain], condition=condition)
+    rule.leading_comments = [Comment("rule lead")]
+    rule.trailing_comment = Comment("rule tail")
+    ast = YaraFile(rules=[rule])
+    ast.location = Location(1, 1, file="sample.yar", end_line=6, end_column=1)
+    ast.trailing_comment = cast(Any, CommentGroup([Comment("file end"), Comment("final")]))
+    path = tmp_path / "comments.json"
+
+    serialize_to_file(ast, path)
+    restored = deserialize_from_file(path)
+
+    assert isinstance(restored, YaraFile)
+    assert restored.location == Location(1, 1, file="sample.yar", end_line=6, end_column=1)
+    assert isinstance(restored.trailing_comment, CommentGroup)
+    assert restored.trailing_comment.comments[1].text == "final"
+    assert restored.rules[0].leading_comments[0].text == "rule lead"
+    assert restored.rules[0].trailing_comment is not None
+    assert restored.rules[0].trailing_comment.text == "rule tail"
+    restored_plain = restored.rules[0].strings[0]
+    assert restored_plain.leading_comments[0].is_multiline is True
+    restored_condition = restored.rules[0].condition
+    assert restored_condition is not None
+    assert restored_condition.trailing_comment is not None
+    assert restored_condition.trailing_comment.text == "condition tail"
 
 
 def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> None:
