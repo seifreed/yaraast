@@ -7,6 +7,12 @@ from typing import Any
 from yaraast.errors import SerializationError
 
 
+def _deserialize_ast_value(self, data):
+    if isinstance(data, dict):
+        return self._deserialize_expression(data)
+    return data
+
+
 def _deser_binary_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import BinaryExpression
 
@@ -144,7 +150,7 @@ def _deser_for_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import ForExpression
 
     return ForExpression(
-        quantifier=data["quantifier"],
+        quantifier=_deserialize_ast_value(self, data["quantifier"]),
         variable=data.get("variable", "i"),
         iterable=self._deserialize_expression(data["iterable"]),
         body=self._deserialize_expression(data["body"]),
@@ -156,8 +162,8 @@ def _deser_for_of_expression(self, data: dict[str, Any]):
 
     condition = data.get("condition")
     return ForOfExpression(
-        quantifier=data["quantifier"],
-        string_set=self._deserialize_expression(data["string_set"]),
+        quantifier=_deserialize_ast_value(self, data["quantifier"]),
+        string_set=_deserialize_ast_value(self, data["string_set"]),
         condition=self._deserialize_expression(condition) if condition else None,
     )
 
@@ -189,8 +195,8 @@ def _deser_of_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import OfExpression
 
     return OfExpression(
-        quantifier=self._deserialize_expression(data["quantifier"]),
-        string_set=self._deserialize_expression(data["string_set"]),
+        quantifier=_deserialize_ast_value(self, data["quantifier"]),
+        string_set=_deserialize_ast_value(self, data["string_set"]),
     )
 
 

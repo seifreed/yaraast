@@ -5,6 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 
+def _serialize_ast_value(serializer, value):
+    if hasattr(value, "accept"):
+        return serializer.visit(value)
+    return value
+
+
 def visit_yara_file(serializer, node) -> dict[str, Any]:
     result: dict[str, Any] = {
         "type": "YaraFile",
@@ -144,7 +150,7 @@ def visit_member_access(serializer, node) -> dict[str, Any]:
 def visit_for_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ForExpression",
-        "quantifier": node.quantifier,
+        "quantifier": _serialize_ast_value(serializer, node.quantifier),
         "variable": node.variable,
         "iterable": serializer.visit(node.iterable),
         "body": serializer.visit(node.body),
@@ -154,12 +160,8 @@ def visit_for_expression(serializer, node) -> dict[str, Any]:
 def visit_for_of_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ForOfExpression",
-        "quantifier": (
-            serializer.visit(node.quantifier)
-            if hasattr(node.quantifier, "accept")
-            else node.quantifier
-        ),
-        "string_set": serializer.visit(node.string_set),
+        "quantifier": _serialize_ast_value(serializer, node.quantifier),
+        "string_set": _serialize_ast_value(serializer, node.string_set),
         "condition": serializer.visit(node.condition) if node.condition else None,
     }
 
@@ -173,18 +175,16 @@ def visit_at_expression(serializer, node) -> dict[str, Any]:
 
 
 def visit_in_expression(serializer, node) -> dict[str, Any]:
-    subject = serializer.visit(node.subject) if hasattr(node.subject, "accept") else node.subject
+    subject = _serialize_ast_value(serializer, node.subject)
     return {"type": "InExpression", "subject": subject, "range": serializer.visit(node.range)}
 
 
 def visit_of_expression(serializer, node) -> dict[str, Any]:
-    string_set = (
-        serializer.visit(node.string_set) if hasattr(node.string_set, "accept") else node.string_set
-    )
-    quantifier = (
-        serializer.visit(node.quantifier) if hasattr(node.quantifier, "accept") else node.quantifier
-    )
-    return {"type": "OfExpression", "quantifier": quantifier, "string_set": string_set}
+    return {
+        "type": "OfExpression",
+        "quantifier": _serialize_ast_value(serializer, node.quantifier),
+        "string_set": _serialize_ast_value(serializer, node.string_set),
+    }
 
 
 def visit_dictionary_access(serializer, node) -> dict[str, Any]:

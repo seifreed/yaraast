@@ -7,7 +7,7 @@ import json
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import InExpression
+from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -73,6 +73,57 @@ def test_json_roundtrip_preserves_string_count_conditions() -> None:
     assert isinstance(condition, BinaryExpression)
     assert isinstance(condition.left, StringCount)
     assert condition.left.string_id == "a"
+
+
+def test_json_roundtrip_preserves_raw_for_of_values() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="raw_them",
+                condition=ForOfExpression(
+                    quantifier="all",
+                    string_set="them",
+                    condition=None,
+                ),
+            ),
+            Rule(
+                name="raw_list",
+                condition=OfExpression(
+                    quantifier=IntegerLiteral(2),
+                    string_set=["$a", "$b"],
+                ),
+            ),
+            Rule(
+                name="expression_quantifier",
+                condition=ForExpression(
+                    quantifier=IntegerLiteral(2),
+                    variable="i",
+                    iterable=Identifier("items"),
+                    body=BooleanLiteral(True),
+                ),
+            ),
+        ]
+    )
+
+    serialized = json.loads(serializer.serialize(ast))
+    conditions = [rule["condition"] for rule in serialized["ast"]["rules"]]
+    assert conditions[0]["string_set"] == "them"
+    assert conditions[1]["string_set"] == ["$a", "$b"]
+    assert conditions[2]["quantifier"] == {"type": "IntegerLiteral", "value": 2}
+
+    restored = serializer.deserialize(json.dumps(serialized))
+    raw_them = restored.rules[0].condition
+    raw_list = restored.rules[1].condition
+    expression_quantifier = restored.rules[2].condition
+
+    assert isinstance(raw_them, ForOfExpression)
+    assert raw_them.string_set == "them"
+    assert isinstance(raw_list, OfExpression)
+    assert raw_list.string_set == ["$a", "$b"]
+    assert isinstance(expression_quantifier, ForExpression)
+    assert isinstance(expression_quantifier.quantifier, IntegerLiteral)
+    assert expression_quantifier.quantifier.value == 2
 
 
 def test_json_roundtrip_preserves_externs_and_pragmas() -> None:
