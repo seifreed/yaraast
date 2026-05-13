@@ -165,16 +165,22 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
     def visit_string_offset(self, node: StringOffset) -> int:
         """Get offset of string match."""
         string_id = self._normalize_string_id(node.string_id)
-        index = self.visit(node.index) if node.index else 0
+        index = self._resolve_match_index(node.index)
         offset = self.string_matcher.get_match_offset(string_id, index)
         return offset if offset is not None else -1
 
     def visit_string_length(self, node: StringLength) -> int:
         """Get length of string match."""
         string_id = self._normalize_string_id(node.string_id)
-        index = self.visit(node.index) if node.index else 0
+        index = self._resolve_match_index(node.index)
         length = self.string_matcher.get_match_length(string_id, index)
         return length if length is not None else 0
+
+    def _resolve_match_index(self, index_node: Expression | None) -> int:
+        if index_node is None:
+            return 0
+        index = self.visit(index_node)
+        return index - 1 if isinstance(index, int) else -1
 
     def visit_binary_expression(self, node: BinaryExpression) -> Any:
         """Evaluate binary expression."""

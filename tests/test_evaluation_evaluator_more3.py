@@ -79,10 +79,22 @@ def test_string_count_offset_length_and_wildcard() -> None:
     assert ev.visit_string_identifier(StringIdentifier(name="a")) is True
     assert ev.visit_string_wildcard(StringWildcard(pattern="$*")) is True
     assert ev.visit_string_count(StringCount(string_id="a")) == 2
-    assert ev.visit_string_offset(StringOffset(string_id="$a", index=IntegerLiteral(value=0))) == 2
+    assert ev.visit_string_offset(StringOffset(string_id="$a")) == 2
+    assert ev.visit_string_offset(StringOffset(string_id="$a", index=IntegerLiteral(value=1))) == 2
+    assert ev.visit_string_offset(StringOffset(string_id="$a", index=IntegerLiteral(value=2))) == 6
     assert ev.visit_string_length(StringLength(string_id="$a", index=IntegerLiteral(value=1))) == 2
     assert ev.visit_string_offset(StringOffset(string_id="$a", index=IntegerLiteral(value=9))) == -1
     assert ev.visit_string_length(StringLength(string_id="$a", index=IntegerLiteral(value=9))) == 0
+
+    ast = Parser().parse("""
+        rule indexed {
+            strings:
+                $a = "ab"
+            condition:
+                @a[1] == 2 and @a[2] == 6 and !a[1] == 2
+        }
+        """)
+    assert YaraEvaluator(data=b"xxabxxab").evaluate_file(ast) == {"indexed": True}
 
 
 def test_binary_unary_function_member_array_and_errors() -> None:

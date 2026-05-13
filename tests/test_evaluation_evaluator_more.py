@@ -27,7 +27,7 @@ def test_evaluator_string_count_and_offset() -> None:
         strings:
             $a = "abc"
         condition:
-            #a == 2 and @a[0] == 2
+            #a == 2 and @a[1] == 2
     }
     """
     ast = Parser().parse(code)
