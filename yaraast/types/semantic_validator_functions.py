@@ -63,7 +63,7 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
             return
 
         if func_name not in module_def.functions:
-            available_funcs = list(module_def.functions.keys())
+            available_funcs = sorted(module_def.functions)
             self.result.add_error(
                 f"Function '{func_name}' not found in module '{actual_module}'",
                 node.location,

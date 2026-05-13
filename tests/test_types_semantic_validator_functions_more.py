@@ -59,6 +59,24 @@ def test_function_validator_missing_module_spec_and_empty_module() -> None:
     assert any("No functions available" in e.suggestion for e in result2.errors if e.suggestion)
 
 
+def test_function_validator_sorts_available_functions_in_suggestions() -> None:
+    result = ValidationResult()
+    env = TypeEnvironment()
+    env.add_module("calc")
+    validator = FunctionCallValidator(result, env)
+    validator.module_loader.modules["calc"] = ModuleDefinition(
+        name="calc",
+        functions={
+            "zeta": FunctionDefinition(name="zeta", return_type=AnyType()),
+            "alpha": FunctionDefinition(name="alpha", return_type=AnyType()),
+        },
+    )
+
+    validator.visit(FunctionCall(function="calc.missing", arguments=[]))
+
+    assert result.errors[0].suggestion == "Available functions: alpha, zeta"
+
+
 def test_function_validator_branches_for_arity_and_missing_actual_module_name() -> None:
     result = ValidationResult()
     validator = FunctionCallValidator(result, BrokenEnv())
