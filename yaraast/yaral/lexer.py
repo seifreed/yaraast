@@ -2,6 +2,7 @@
 
 import attrs
 
+from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lexer.tokens import Token, TokenType as BaseTokenType
 
 from .lexer_tables import (
@@ -277,11 +278,19 @@ class YaraLLexer:
 
         value = ""
         while self.position < len(self.text) and self.text[self.position] != '"':
-            if self.text[self.position] == "\\" and self.position + 1 < len(self.text):
-                # Handle escape sequences
-                self.position += 2
-                self.column += 2
-                value += self.text[self.position - 1]
+            if self.text[self.position] == "\\":
+                next_char = (
+                    self.text[self.position + 1] if self.position + 1 < len(self.text) else None
+                )
+                handler = StringEscapeHandler(self.text, self.position + 1)
+                result = handler.handle_backslash(next_char)
+                value += "".join(result.chars)
+                advance = 2 if next_char is not None else 1
+                advance += result.advance_count
+                self.position += advance
+                self.column += advance
+                if result.ends_string:
+                    break
             else:
                 value += self.text[self.position]
                 self.position += 1

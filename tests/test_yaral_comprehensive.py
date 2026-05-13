@@ -120,19 +120,30 @@ class TestYaraLLexerComprehensive:
 
     def test_lexer_string_with_escapes(self) -> None:
         """Test lexing strings with escape sequences."""
-        lexer = YaraLLexer(r'"test\"string" "path\\with\\backslashes"')
+        lexer = YaraLLexer(
+            r'"test\"string" "path\\with\\backslashes" "line\nbreak" "literal\.dot" "hex\x41"'
+        )
         tokens = lexer.tokenize()
 
         string_tokens = [t for t in tokens if t.type == BaseTokenType.STRING]
 
-        assert len(string_tokens) == 2
+        assert len(string_tokens) == 5
         # Escape sequences should be processed
         first_string = string_tokens[0].value
         second_string = string_tokens[1].value
+        third_string = string_tokens[2].value
+        fourth_string = string_tokens[3].value
+        fifth_string = string_tokens[4].value
         assert isinstance(first_string, str)
         assert isinstance(second_string, str)
-        assert '"' in first_string or "string" in first_string
-        assert "backslashes" in second_string
+        assert isinstance(third_string, str)
+        assert isinstance(fourth_string, str)
+        assert isinstance(fifth_string, str)
+        assert first_string == 'test"string'
+        assert second_string == "path\\with\\backslashes"
+        assert third_string == "line\nbreak"
+        assert fourth_string == r"literal\.dot"
+        assert fifth_string == "hexA"
 
     def test_lexer_regex_with_flags(self) -> None:
         """Test lexing regex patterns with flags."""
