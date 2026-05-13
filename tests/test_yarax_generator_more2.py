@@ -73,7 +73,10 @@ def test_yarax_generator_covers_tuple_indexing_slice_and_parenthesized_target() 
     no_stop = SliceExpression(
         target=Identifier(name="arr"), start=IntegerLiteral(1), stop=None, step=None
     )
-    assert gen.visit(no_stop) == "arr[1]"
+    assert gen.visit(no_stop) == "arr[1:]"
+
+    full_slice = SliceExpression(target=Identifier(name="arr"), start=None, stop=None, step=None)
+    assert gen.visit(full_slice) == "arr[:]"
 
     with_step = SliceExpression(
         target=Identifier(name="arr"),

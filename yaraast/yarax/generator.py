@@ -144,27 +144,13 @@ class YaraXGenerator(BaseGenerator):
         """Generate code for slice expression."""
         target_str = self.visit(node.target)
 
-        # Build slice notation
-        slice_parts = []
+        slice_parts = [
+            self.visit(node.start) if node.start is not None else "",
+            self.visit(node.stop) if node.stop is not None else "",
+        ]
 
-        # Start
-        if node.start:
-            slice_parts.append(self.visit(node.start))
-        else:
-            slice_parts.append("")
-
-        # Stop
-        if node.stop:
-            slice_parts.append(self.visit(node.stop))
-        else:
-            slice_parts.append("")
-
-        # Step (only include if present)
-        if node.step:
+        if node.step is not None:
             slice_parts.append(self.visit(node.step))
-        elif len(slice_parts) == 2 and not slice_parts[1]:
-            # Remove trailing empty stop if no step
-            slice_parts = slice_parts[:1]
 
         slice_str = ":".join(slice_parts)
 
