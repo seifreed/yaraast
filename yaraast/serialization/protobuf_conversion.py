@@ -119,21 +119,83 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
         pb_token.nibble.value = token.value
 
 
+def _coerce_expression(value):
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        DoubleLiteral,
+        Expression,
+        Identifier,
+        IntegerLiteral,
+        SetExpression,
+        StringIdentifier,
+    )
+
+    if isinstance(value, Expression):
+        return value
+    if isinstance(value, bool):
+        return BooleanLiteral(value=value)
+    if isinstance(value, int):
+        return IntegerLiteral(value=value)
+    if isinstance(value, float):
+        return DoubleLiteral(value=value)
+    if isinstance(value, str):
+        return StringIdentifier(value) if value.startswith("$") else Identifier(value)
+    if isinstance(value, list):
+        return SetExpression([_coerce_expression(item) for item in value])
+    return None
+
+
+def _coerce_quantifier_text(value) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, bool):
+        return str(value).lower()
+    if isinstance(value, int | float):
+        return str(value)
+
+    raw_value = getattr(value, "value", None)
+    if raw_value is not None:
+        return str(raw_value)
+
+    name = getattr(value, "name", None)
+    if name is not None:
+        return str(name)
+
+    return str(value)
+
+
 def convert_expression_to_protobuf(expr, pb_expr) -> None:
     """Convert an AST expression to protobuf."""
     import warnings
 
+    from yaraast.ast.conditions import (
+        AtExpression,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
     from yaraast.ast.expressions import (
+        ArrayAccess,
         BinaryExpression,
         BooleanLiteral,
         DoubleLiteral,
+        FunctionCall,
         Identifier,
         IntegerLiteral,
+        MemberAccess,
+        ParenthesesExpression,
+        RangeExpression,
+        RegexLiteral,
+        SetExpression,
         StringCount,
         StringIdentifier,
+        StringLength,
         StringLiteral,
+        StringOffset,
         UnaryExpression,
     )
+    from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 
     if isinstance(expr, Identifier):
         pb_expr.identifier.name = expr.name
@@ -141,12 +203,23 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         pb_expr.string_identifier.name = expr.name
     elif isinstance(expr, StringCount):
         pb_expr.string_count.string_id = expr.string_id
+    elif isinstance(expr, StringOffset):
+        pb_expr.string_offset.string_id = expr.string_id
+        if expr.index is not None:
+            convert_expression_to_protobuf(expr.index, pb_expr.string_offset.index)
+    elif isinstance(expr, StringLength):
+        pb_expr.string_length.string_id = expr.string_id
+        if expr.index is not None:
+            convert_expression_to_protobuf(expr.index, pb_expr.string_length.index)
     elif isinstance(expr, IntegerLiteral):
         pb_expr.integer_literal.value = expr.value
     elif isinstance(expr, DoubleLiteral):
         pb_expr.double_literal.value = expr.value
     elif isinstance(expr, StringLiteral):
         pb_expr.string_literal.value = expr.value
+    elif isinstance(expr, RegexLiteral):
+        pb_expr.regex_literal.pattern = expr.pattern
+        pb_expr.regex_literal.modifiers = expr.modifiers
     elif isinstance(expr, BooleanLiteral):
         pb_expr.boolean_literal.value = expr.value
     elif isinstance(expr, BinaryExpression):
@@ -156,6 +229,54 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     elif isinstance(expr, UnaryExpression):
         pb_expr.unary_expression.operator = expr.operator
         convert_expression_to_protobuf(expr.operand, pb_expr.unary_expression.operand)
+    elif isinstance(expr, ParenthesesExpression):
+        convert_expression_to_protobuf(expr.expression, pb_expr.parentheses_expression.expression)
+    elif isinstance(expr, SetExpression):
+        for element in expr.elements:
+            convert_expression_to_protobuf(element, pb_expr.set_expression.elements.add())
+    elif isinstance(expr, RangeExpression):
+        convert_expression_to_protobuf(expr.low, pb_expr.range_expression.low)
+        convert_expression_to_protobuf(expr.high, pb_expr.range_expression.high)
+    elif isinstance(expr, FunctionCall):
+        pb_expr.function_call.function = expr.function
+        for argument in expr.arguments:
+            convert_expression_to_protobuf(argument, pb_expr.function_call.arguments.add())
+    elif isinstance(expr, ArrayAccess):
+        convert_expression_to_protobuf(expr.array, pb_expr.array_access.array)
+        convert_expression_to_protobuf(expr.index, pb_expr.array_access.index)
+    elif isinstance(expr, MemberAccess):
+        convert_expression_to_protobuf(expr.object, pb_expr.member_access.object)
+        pb_expr.member_access.member = expr.member
+    elif isinstance(expr, ForExpression):
+        pb_expr.for_expression.quantifier = _coerce_quantifier_text(expr.quantifier)
+        pb_expr.for_expression.variable = expr.variable
+        convert_expression_to_protobuf(expr.iterable, pb_expr.for_expression.iterable)
+        convert_expression_to_protobuf(expr.body, pb_expr.for_expression.body)
+    elif isinstance(expr, ForOfExpression):
+        pb_expr.for_of_expression.quantifier = _coerce_quantifier_text(expr.quantifier)
+        string_set = _coerce_expression(expr.string_set)
+        if string_set is not None:
+            convert_expression_to_protobuf(string_set, pb_expr.for_of_expression.string_set)
+        if expr.condition is not None:
+            convert_expression_to_protobuf(expr.condition, pb_expr.for_of_expression.condition)
+    elif isinstance(expr, AtExpression):
+        pb_expr.at_expression.string_id = expr.string_id
+        convert_expression_to_protobuf(expr.offset, pb_expr.at_expression.offset)
+    elif isinstance(expr, InExpression) and isinstance(expr.subject, str):
+        pb_expr.in_expression.string_id = expr.subject
+        convert_expression_to_protobuf(expr.range, pb_expr.in_expression.range)
+    elif isinstance(expr, OfExpression):
+        quantifier = _coerce_expression(expr.quantifier)
+        string_set = _coerce_expression(expr.string_set)
+        if quantifier is not None and string_set is not None:
+            convert_expression_to_protobuf(quantifier, pb_expr.of_expression.quantifier)
+            convert_expression_to_protobuf(string_set, pb_expr.of_expression.string_set)
+    elif isinstance(expr, DefinedExpression):
+        convert_expression_to_protobuf(expr.expression, pb_expr.defined_expression.expression)
+    elif isinstance(expr, StringOperatorExpression):
+        convert_expression_to_protobuf(expr.left, pb_expr.string_operator_expression.left)
+        pb_expr.string_operator_expression.operator = expr.operator
+        convert_expression_to_protobuf(expr.right, pb_expr.string_operator_expression.right)
     else:
         warnings.warn(
             f"Protobuf serialization: unsupported expression type {type(expr).__name__}, "
@@ -289,17 +410,34 @@ def protobuf_to_string(pb_string):
 
 def protobuf_to_expression(pb_expr):
     """Convert a protobuf expression back to AST."""
+    from yaraast.ast.conditions import (
+        AtExpression,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
     from yaraast.ast.expressions import (
+        ArrayAccess,
         BinaryExpression,
         BooleanLiteral,
         DoubleLiteral,
+        FunctionCall,
         Identifier,
         IntegerLiteral,
+        MemberAccess,
+        ParenthesesExpression,
+        RangeExpression,
+        RegexLiteral,
+        SetExpression,
         StringCount,
         StringIdentifier,
+        StringLength,
         StringLiteral,
+        StringOffset,
         UnaryExpression,
     )
+    from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 
     if pb_expr.HasField("identifier"):
         return Identifier(name=pb_expr.identifier.name)
@@ -307,12 +445,35 @@ def protobuf_to_expression(pb_expr):
         return StringIdentifier(name=pb_expr.string_identifier.name)
     if pb_expr.HasField("string_count"):
         return StringCount(string_id=pb_expr.string_count.string_id)
+    if pb_expr.HasField("string_offset"):
+        return StringOffset(
+            string_id=pb_expr.string_offset.string_id,
+            index=(
+                protobuf_to_expression(pb_expr.string_offset.index)
+                if pb_expr.string_offset.HasField("index")
+                else None
+            ),
+        )
+    if pb_expr.HasField("string_length"):
+        return StringLength(
+            string_id=pb_expr.string_length.string_id,
+            index=(
+                protobuf_to_expression(pb_expr.string_length.index)
+                if pb_expr.string_length.HasField("index")
+                else None
+            ),
+        )
     if pb_expr.HasField("integer_literal"):
         return IntegerLiteral(value=pb_expr.integer_literal.value)
     if pb_expr.HasField("double_literal"):
         return DoubleLiteral(value=pb_expr.double_literal.value)
     if pb_expr.HasField("string_literal"):
         return StringLiteral(value=pb_expr.string_literal.value)
+    if pb_expr.HasField("regex_literal"):
+        return RegexLiteral(
+            pattern=pb_expr.regex_literal.pattern,
+            modifiers=pb_expr.regex_literal.modifiers,
+        )
     if pb_expr.HasField("boolean_literal"):
         return BooleanLiteral(value=pb_expr.boolean_literal.value)
     if pb_expr.HasField("binary_expression"):
@@ -325,6 +486,80 @@ def protobuf_to_expression(pb_expr):
         return UnaryExpression(
             operator=pb_expr.unary_expression.operator,
             operand=protobuf_to_expression(pb_expr.unary_expression.operand),
+        )
+    if pb_expr.HasField("parentheses_expression"):
+        return ParenthesesExpression(
+            expression=protobuf_to_expression(pb_expr.parentheses_expression.expression)
+        )
+    if pb_expr.HasField("set_expression"):
+        return SetExpression(
+            elements=[
+                protobuf_to_expression(element) for element in pb_expr.set_expression.elements
+            ]
+        )
+    if pb_expr.HasField("range_expression"):
+        return RangeExpression(
+            low=protobuf_to_expression(pb_expr.range_expression.low),
+            high=protobuf_to_expression(pb_expr.range_expression.high),
+        )
+    if pb_expr.HasField("function_call"):
+        return FunctionCall(
+            function=pb_expr.function_call.function,
+            arguments=[
+                protobuf_to_expression(argument) for argument in pb_expr.function_call.arguments
+            ],
+        )
+    if pb_expr.HasField("array_access"):
+        return ArrayAccess(
+            array=protobuf_to_expression(pb_expr.array_access.array),
+            index=protobuf_to_expression(pb_expr.array_access.index),
+        )
+    if pb_expr.HasField("member_access"):
+        return MemberAccess(
+            object=protobuf_to_expression(pb_expr.member_access.object),
+            member=pb_expr.member_access.member,
+        )
+    if pb_expr.HasField("for_expression"):
+        return ForExpression(
+            quantifier=pb_expr.for_expression.quantifier,
+            variable=pb_expr.for_expression.variable,
+            iterable=protobuf_to_expression(pb_expr.for_expression.iterable),
+            body=protobuf_to_expression(pb_expr.for_expression.body),
+        )
+    if pb_expr.HasField("for_of_expression"):
+        return ForOfExpression(
+            quantifier=pb_expr.for_of_expression.quantifier,
+            string_set=protobuf_to_expression(pb_expr.for_of_expression.string_set),
+            condition=(
+                protobuf_to_expression(pb_expr.for_of_expression.condition)
+                if pb_expr.for_of_expression.HasField("condition")
+                else None
+            ),
+        )
+    if pb_expr.HasField("at_expression"):
+        return AtExpression(
+            string_id=pb_expr.at_expression.string_id,
+            offset=protobuf_to_expression(pb_expr.at_expression.offset),
+        )
+    if pb_expr.HasField("in_expression"):
+        return InExpression(
+            subject=pb_expr.in_expression.string_id,
+            range=protobuf_to_expression(pb_expr.in_expression.range),
+        )
+    if pb_expr.HasField("of_expression"):
+        return OfExpression(
+            quantifier=protobuf_to_expression(pb_expr.of_expression.quantifier),
+            string_set=protobuf_to_expression(pb_expr.of_expression.string_set),
+        )
+    if pb_expr.HasField("defined_expression"):
+        return DefinedExpression(
+            expression=protobuf_to_expression(pb_expr.defined_expression.expression)
+        )
+    if pb_expr.HasField("string_operator_expression"):
+        return StringOperatorExpression(
+            left=protobuf_to_expression(pb_expr.string_operator_expression.left),
+            operator=pb_expr.string_operator_expression.operator,
+            right=protobuf_to_expression(pb_expr.string_operator_expression.right),
         )
     import warnings
 

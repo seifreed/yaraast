@@ -8,19 +8,36 @@ from typing import Any
 import pytest
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
     Expression,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
+    MemberAccess,
+    ParenthesesExpression,
+    RangeExpression,
+    RegexLiteral,
+    SetExpression,
     StringCount,
     StringIdentifier,
+    StringLength,
     StringLiteral,
+    StringOffset,
     UnaryExpression,
 )
 from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexByte,
@@ -124,6 +141,55 @@ def test_protobuf_serializer_preserves_hex_jump_zero_and_open_bounds() -> None:
 
     assert isinstance(string_def, HexString)
     assert [(token.min_jump, token.max_jump) for token in string_def.tokens] == expected_jumps
+
+
+def test_protobuf_serializer_preserves_extended_expression_roundtrips() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    expressions: list[Expression] = [
+        BinaryExpression(
+            left=StringOffset("$a", IntegerLiteral(0)),
+            operator="==",
+            right=IntegerLiteral(0),
+        ),
+        BinaryExpression(
+            left=StringLength("$a", IntegerLiteral(0)),
+            operator=">",
+            right=IntegerLiteral(1),
+        ),
+        RegexLiteral(pattern="evil.*", modifiers="i"),
+        ParenthesesExpression(BooleanLiteral(True)),
+        SetExpression([StringIdentifier("$a"), StringIdentifier("$b")]),
+        RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
+        FunctionCall("math.entropy", [IntegerLiteral(0), IntegerLiteral(1)]),
+        ArrayAccess(Identifier("arr"), IntegerLiteral(0)),
+        MemberAccess(Identifier("pe"), "number_of_sections"),
+        ForExpression(
+            quantifier="any",
+            variable="i",
+            iterable=RangeExpression(IntegerLiteral(0), IntegerLiteral(2)),
+            body=BinaryExpression(Identifier("i"), ">", IntegerLiteral(0)),
+        ),
+        ForOfExpression(
+            quantifier="all",
+            string_set=Identifier("them"),
+            condition=StringIdentifier("$a"),
+        ),
+        AtExpression("$a", IntegerLiteral(0)),
+        InExpression("$a", RangeExpression(IntegerLiteral(0), IntegerLiteral(10))),
+        OfExpression(IntegerLiteral(1), Identifier("them")),
+        DefinedExpression(Identifier("pe")),
+        StringOperatorExpression(
+            left=StringLiteral("Alpha"),
+            operator="icontains",
+            right=StringLiteral("alp"),
+        ),
+    ]
+
+    for expression in expressions:
+        ast = YaraFile(rules=[Rule(name="expr", condition=expression)])
+        restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+        assert restored.rules[0].condition == expression
 
 
 def test_protobuf_serializer_without_metadata() -> None:
