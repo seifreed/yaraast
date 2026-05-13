@@ -75,18 +75,18 @@ class AstHasher(ASTVisitor[str]):
 
     def visit_plain_string(self, node) -> str:
         """Hash PlainString node."""
-        modifiers = "|".join(self.visit(mod) for mod in node.modifiers)
+        modifiers = self._hash_modifiers(node)
         return f"PlainString({node.identifier},{node.value},{modifiers})"
 
     def visit_hex_string(self, node) -> str:
         """Hash HexString node."""
         tokens = "|".join(self.visit(token) for token in node.tokens)
-        modifiers = "|".join(self.visit(mod) for mod in node.modifiers)
+        modifiers = self._hash_modifiers(node)
         return f"HexString({node.identifier},{tokens},{modifiers})"
 
     def visit_regex_string(self, node) -> str:
         """Hash RegexString node."""
-        modifiers = "|".join(self.visit(mod) for mod in node.modifiers)
+        modifiers = self._hash_modifiers(node)
         return f"RegexString({node.identifier},{node.regex},{modifiers})"
 
     def visit_string_modifier(self, node) -> str:
@@ -288,6 +288,10 @@ class AstHasher(ASTVisitor[str]):
         if isinstance(value, list):
             return "[" + "|".join(self._hash_value(item) for item in value) + "]"
         return "" if value is None else str(value)
+
+    def _hash_modifiers(self, node) -> str:
+        """Hash string modifiers as an order-insensitive set."""
+        return "|".join(sorted(self._hash_value(mod) for mod in getattr(node, "modifiers", [])))
 
     def visit_meta(self, node) -> str:
         return f"Meta({node.key},{node.value})"

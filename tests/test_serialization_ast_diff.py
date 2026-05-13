@@ -152,6 +152,32 @@ def test_ast_diff_detects_string_offset_and_length_index_changes() -> None:
         assert result.has_changes
 
 
+def test_ast_diff_treats_string_modifier_reordering_as_unchanged() -> None:
+    old_ast = _parse_yara("""
+        rule modifier_order {
+            strings:
+                $p = "alpha" ascii xor(1-2) fullword
+                $r = /alpha/ nocase wide fullword
+            condition:
+                $p and $r
+        }
+        """)
+    new_ast = _parse_yara("""
+        rule modifier_order {
+            strings:
+                $p = "alpha" fullword xor(1-2) ascii
+                $r = /alpha/ fullword wide nocase
+            condition:
+                $p and $r
+        }
+        """)
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert not result.has_changes
+    assert result.differences == []
+
+
 def test_ast_diff_detects_in_rule_pragma_changes() -> None:
     old_ast = YaraFile(
         rules=[
