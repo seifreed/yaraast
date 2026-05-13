@@ -10,7 +10,10 @@ from yaraast.cli import yarax_services as ys
 
 
 def test_yarax_services_detection_helpers() -> None:
-    content = "with x = 1: [i for i in (1,2)] {k:v for k,v in d} lambda x: x match y ... **"
+    content = (
+        "with x = 1: [i for i in (1,2)] {k:v for k,v in d} "
+        "lambda x: x match y { _ => true } ... **"
+    )
     feats = ys.detect_yarax_features(content)
     assert "with statements" in feats
     assert "array comprehensions" in feats
@@ -27,6 +30,22 @@ def test_yarax_services_detection_helpers() -> None:
     default_code = ys.get_default_playground_code()
     assert "rule yarax_demo" in default_code
     assert "with $count" in default_code
+
+
+def test_yarax_services_detection_helpers_ignore_literals_comments_and_regexes() -> None:
+    content = r"""
+rule classic {
+    meta:
+        description = "with xs = [1]: match xs { _ => true } lambda x: x ... **"
+    strings:
+        $a = /with xs = [1]: match xs { _ => true } lambda x: x ... \*\*/
+    condition:
+        $a // with xs = [1]: match xs { _ => true } lambda x: x ... **
+}
+"""
+
+    assert ys.detect_yarax_features(content) == []
+    assert ys.detect_playground_features(content) == []
 
 
 def test_yarax_services_parse_and_convert_roundtrip(tmp_path: Path) -> None:

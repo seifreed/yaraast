@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import re
+
 from yaraast.cli.utils import parse_yara_file
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.dialects import _strip_string_literals
 from yaraast.parser.parser import Parser
 from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
@@ -58,19 +61,24 @@ def convert_yarax_to_yara(content: str) -> str:
 
 
 def detect_yarax_features(content: str) -> list[str]:
+    scan_content = _strip_string_literals(content)
     features = []
 
-    if "with " in content:
+    if re.search(r"\bwith\s+\$?\w+\s*=", scan_content, re.IGNORECASE):
         features.append("with statements")
-    if " for " in content and "[" in content:
+    if re.search(r"\[[^\]]+\bfor\s+\w+\s+in\s+[^\]]+\]", scan_content, re.IGNORECASE):
         features.append("array comprehensions")
-    if " for " in content and "{" in content:
+    if re.search(
+        r"\{[^{}:]+:[^{}]+\bfor\s+\w+(?:\s*,\s*\w+)?\s+in\s+[^{}]+\}",
+        scan_content,
+        re.IGNORECASE,
+    ):
         features.append("dict comprehensions")
-    if "lambda" in content:
+    if re.search(r"\blambda(?:\s+\w+(?:\s*,\s*\w+)*)?\s*:", scan_content, re.IGNORECASE):
         features.append("lambda expressions")
-    if "match " in content:
+    if re.search(r"\bmatch\s+[^{}]+\{[^{}]*=>", scan_content, re.IGNORECASE | re.DOTALL):
         features.append("pattern matching")
-    if "..." in content or "**" in content:
+    if re.search(r"(?<!\.)\.\.\.(?!\.)|\*\*", scan_content):
         features.append("spread operators")
 
     return features
@@ -98,11 +106,12 @@ rule yarax_demo {
 
 
 def detect_playground_features(content: str) -> list[str]:
+    scan_content = _strip_string_literals(content)
     features = []
-    if "with " in content:
+    if re.search(r"\bwith\s+\$?\w+\s*=", scan_content, re.IGNORECASE):
         features.append("with statements")
-    if " for " in content and "[" in content:
+    if re.search(r"\[[^\]]+\bfor\s+\w+\s+in\s+[^\]]+\]", scan_content, re.IGNORECASE):
         features.append("comprehensions")
-    if "lambda" in content:
+    if re.search(r"\blambda(?:\s+\w+(?:\s*,\s*\w+)*)?\s*:", scan_content, re.IGNORECASE):
         features.append("lambda expressions")
     return features
