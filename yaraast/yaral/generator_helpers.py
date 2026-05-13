@@ -4,6 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.codegen.generator_helpers import escape_plain_string_value
+
+
+def quote_string_literal(value: str) -> str:
+    return f'"{escape_plain_string_value(value)}"'
+
 
 def format_literal(value: Any) -> str:
     if value is None:
@@ -13,7 +19,7 @@ def format_literal(value: Any) -> str:
     if isinstance(value, str):
         if value.startswith("$") or value.startswith("%"):
             return value
-        return f'"{value}"'
+        return quote_string_literal(value)
     if isinstance(value, bool):
         return "true" if value else "false"
     return str(value)

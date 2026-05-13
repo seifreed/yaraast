@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from yaraast.yaral.generator_helpers import format_literal, format_modifiers, format_udm_path
+from yaraast.yaral.generator_helpers import (
+    format_literal,
+    format_modifiers,
+    format_udm_path,
+    quote_string_literal,
+)
 from yaraast.yaral.visitor_base import YaraLVisitor
 
 if TYPE_CHECKING:
@@ -145,7 +150,7 @@ class YaraLGenerator(YaraLVisitor[str]):
         """Generate code for meta entry."""
         value = node.value
         if isinstance(value, str):
-            value = f'"{value}"'
+            value = quote_string_literal(value)
         elif isinstance(value, bool):
             value = "true" if value else "false"
 

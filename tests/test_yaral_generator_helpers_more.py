@@ -14,6 +14,11 @@ def test_format_literal_returns_empty_for_visitable_nodes() -> None:
     assert gh.format_literal(_Visitable()) == ""
 
 
+def test_format_literal_escapes_string_values() -> None:
+    assert gh.format_literal('a"b\n\t\x00') == '"a\\"b\\n\\t\\x00"'
+    assert gh.quote_string_literal('a"b\n\t\x00') == '"a\\"b\\n\\t\\x00"'
+
+
 def test_format_udm_path_handles_empty_and_bracket_parts() -> None:
     assert gh.format_udm_path([]) == ""
     assert gh.format_udm_path(["principal", "[0]", "ip"]) == "principal[0].ip"

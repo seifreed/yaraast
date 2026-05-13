@@ -174,6 +174,9 @@ def test_generator_renders_prefixed_methods_and_non_default_values() -> None:
 
     assert "score = 10" in code
     assert "enabled = false" in code
+    assert generator.visit_meta_entry(MetaEntry(key="description", value='a"b\n')) == (
+        'description = "a\\"b\\n"'
+    )
     assert "$e.metadata.event_type = /AUTH.*/i nocase" in code
     assert "$e over 10m" in code
     assert "$agg = count()" in code
