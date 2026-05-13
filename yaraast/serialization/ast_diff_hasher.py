@@ -154,9 +154,15 @@ class AstHasher(ASTVisitor[str]):
         return f"Count({node.string_id})"
 
     def visit_string_offset(self, node) -> str:
+        index = self._hash_value(getattr(node, "index", None))
+        if index:
+            return f"Offset({node.string_id},{index})"
         return f"Offset({node.string_id})"
 
     def visit_string_length(self, node) -> str:
+        index = self._hash_value(getattr(node, "index", None))
+        if index:
+            return f"Length({node.string_id},{index})"
         return f"Length({node.string_id})"
 
     def visit_double_literal(self, node) -> str:

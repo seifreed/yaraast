@@ -102,6 +102,56 @@ def test_ast_diff_detects_extended_file_field_changes() -> None:
     assert result.statistics["total_changes"] == len(result.differences)
 
 
+def test_ast_diff_detects_string_offset_and_length_index_changes() -> None:
+    cases = [
+        (
+            """
+            rule offset_index {
+                strings:
+                    $a = "alpha"
+                condition:
+                    @a[1] == 1
+            }
+            """,
+            """
+            rule offset_index {
+                strings:
+                    $a = "alpha"
+                condition:
+                    @a[2] == 1
+            }
+            """,
+            "/rules/offset_index/condition",
+        ),
+        (
+            """
+            rule length_index {
+                strings:
+                    $a = "alpha"
+                condition:
+                    !a[1] == 1
+            }
+            """,
+            """
+            rule length_index {
+                strings:
+                    $a = "alpha"
+                condition:
+                    !a[2] == 1
+            }
+            """,
+            "/rules/length_index/condition",
+        ),
+    ]
+
+    for old_code, new_code, diff_path in cases:
+        result = AstDiff().compare(_parse_yara(old_code), _parse_yara(new_code))
+
+        by_path = {diff.path: diff for diff in result.differences}
+        assert by_path[diff_path].diff_type == DiffType.MODIFIED
+        assert result.has_changes
+
+
 def test_ast_diff_detects_in_rule_pragma_changes() -> None:
     old_ast = YaraFile(
         rules=[
