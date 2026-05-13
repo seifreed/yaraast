@@ -70,8 +70,22 @@ def evaluate_string_operator(left: Any, right: Any, operator: str) -> bool | Non
     if operator == "iequals":
         return left.lower() == right.lower()
     if operator == "matches":
-        try:
-            return bool(re.search(right, left))
-        except (ValueError, TypeError, AttributeError):
-            return False
+        pattern = getattr(right, "pattern", right)
+        modifiers = getattr(right, "modifiers", "")
+        return evaluate_regex_match(left, pattern, modifiers)
     return None
+
+
+def evaluate_regex_match(left: Any, pattern: Any, modifiers: str = "") -> bool:
+    flags = 0
+    if "i" in modifiers:
+        flags |= re.IGNORECASE
+    if "s" in modifiers:
+        flags |= re.DOTALL
+    if "m" in modifiers:
+        flags |= re.MULTILINE
+
+    try:
+        return bool(re.search(pattern, left, flags))
+    except (ValueError, TypeError, AttributeError):
+        return False

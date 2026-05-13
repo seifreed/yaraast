@@ -13,6 +13,7 @@ from yaraast.evaluation.evaluation_helpers import BUILTIN_READERS, LITTLE_ENDIAN
 from yaraast.evaluation.evaluator_ops import (
     evaluate_arithmetic,
     evaluate_comparison,
+    evaluate_regex_match,
     evaluate_string_operator,
 )
 from yaraast.evaluation.mock_modules import MockModuleRegistry
@@ -198,6 +199,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         result = evaluate_comparison(left, right, node.operator)
         if result is not None:
             return result
+
+        if node.operator == "matches" and isinstance(node.right, RegexLiteral):
+            return evaluate_regex_match(left, node.right.pattern, node.right.modifiers)
 
         result = evaluate_string_operator(left, right, node.operator)
         if result is not None:

@@ -6,6 +6,7 @@ import re
 
 import pytest
 
+from yaraast.ast.expressions import RegexLiteral
 from yaraast.evaluation.evaluator_ops import (
     evaluate_arithmetic,
     evaluate_comparison,
@@ -47,6 +48,7 @@ def test_evaluate_string_operator_all_paths() -> None:
     assert evaluate_string_operator("Hello", "LO", "iendswith") is True
     assert evaluate_string_operator("Hello", "hello", "iequals") is True
     assert evaluate_string_operator("abc123", r"\d+", "matches") is True
+    assert evaluate_string_operator("ABC", RegexLiteral(pattern="abc", modifiers="i"), "matches")
     assert evaluate_string_operator(None, "a", "matches") is False
     with pytest.raises(re.error):
         evaluate_string_operator("abc", r"(", "matches")

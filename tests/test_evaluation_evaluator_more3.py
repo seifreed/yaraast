@@ -60,6 +60,12 @@ def test_identifier_and_literal_paths() -> None:
     assert ev.visit_identifier(Identifier(name="zzz")) is False
 
 
+def test_evaluator_matches_operator_honors_regex_modifiers() -> None:
+    ast = Parser().parse('rule r { condition: "FOO" matches /foo/i }')
+
+    assert YaraEvaluator().evaluate_file(ast) == {"r": True}
+
+
 def test_string_count_offset_length_and_wildcard() -> None:
     ev = YaraEvaluator(data=b"xxabxxab")
     rule = Rule(
