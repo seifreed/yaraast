@@ -403,6 +403,10 @@ class JsonSerializerDeserializeMixin:
     def _deserialize_meta(self, data: dict[str, Any]):
         from yaraast.ast.modifiers import MetaEntry
 
+        if data.get("leading_comments") or data.get("trailing_comment") or data.get("location"):
+            from yaraast.ast.meta import Meta
+
+            return self._apply_node_metadata(Meta(data["key"], data["value"]), data)
         return MetaEntry.from_key_value(
             data["key"],
             data["value"],

@@ -302,7 +302,9 @@ def test_json_serializer_preserves_node_comment_metadata() -> None:
     plain.leading_comments = [Comment("string lead", is_multiline=True)]
     condition = StringIdentifier("$a")
     condition.trailing_comment = Comment("condition tail")
-    rule = Rule(name="commented", strings=[plain], condition=condition)
+    meta = Meta("author", "me")
+    meta.leading_comments = [Comment("meta lead")]
+    rule = Rule(name="commented", meta=[meta], strings=[plain], condition=condition)
     rule.leading_comments = [Comment("rule lead")]
     rule.trailing_comment = Comment("rule tail")
     ast = YaraFile(rules=[rule])
@@ -318,6 +320,7 @@ def test_json_serializer_preserves_node_comment_metadata() -> None:
     assert restored.rules[0].leading_comments[0].text == "rule lead"
     assert restored.rules[0].trailing_comment is not None
     assert restored.rules[0].trailing_comment.text == "rule tail"
+    assert restored.rules[0].meta[0].leading_comments[0].text == "meta lead"
     restored_plain = restored.rules[0].strings[0]
     assert restored_plain.leading_comments[0].is_multiline is True
     restored_condition = restored.rules[0].condition

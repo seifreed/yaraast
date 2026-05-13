@@ -11,11 +11,13 @@ def _serialize_ast_value(serializer, value):
     return value
 
 
-def _serialize_meta_entry(meta) -> dict[str, Any]:
+def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     data = {"key": getattr(meta, "key", ""), "value": getattr(meta, "value", "")}
     scope = getattr(meta, "scope", None)
     if scope is not None:
         data["scope"] = getattr(scope, "value", str(scope))
+    if hasattr(meta, "accept"):
+        return serializer._with_node_metadata(meta, data)
     return data
 
 
@@ -43,7 +45,7 @@ def visit_rule(serializer, node) -> dict[str, Any]:
         "name": node.name,
         "modifiers": [str(m) for m in node.modifiers],
         "tags": [serializer.visit(tag) for tag in node.tags],
-        "meta": [_serialize_meta_entry(m) for m in node.meta],
+        "meta": [_serialize_meta_entry(serializer, m) for m in node.meta],
         "strings": [serializer.visit(s) for s in node.strings],
         "condition": serializer.visit(node.condition) if node.condition else None,
         "pragmas": [serializer.visit(pragma) for pragma in node.pragmas],
