@@ -239,6 +239,16 @@ def _deser_string_operator_expression(self, data: dict[str, Any]):
     )
 
 
+def _deser_extern_rule_reference(self, data: dict[str, Any]):
+    from yaraast.ast.extern import ExternRuleReference
+
+    rule_name = data.get("rule_name", data.get("name"))
+    if rule_name is None:
+        msg = "ExternRuleReference missing rule_name"
+        raise SerializationError(msg)
+    return ExternRuleReference(rule_name=rule_name, namespace=data.get("namespace"))
+
+
 _EXPR_DESERIALIZERS: dict[str, Any] = {
     "BinaryExpression": _deser_binary_expression,
     "UnaryExpression": _deser_unary_expression,
@@ -268,6 +278,7 @@ _EXPR_DESERIALIZERS: dict[str, Any] = {
     "DictionaryAccess": _deser_dictionary_access,
     "DefinedExpression": _deser_defined_expression,
     "StringOperatorExpression": _deser_string_operator_expression,
+    "ExternRuleReference": _deser_extern_rule_reference,
 }
 
 
@@ -303,6 +314,7 @@ class JsonSerializerDeserializeMixin:
         )
 
         tags = [self._deserialize_tag(t) for t in data.get("tags", [])]
+        pragmas = [self._deserialize_in_rule_pragma(p) for p in data.get("pragmas", [])]
 
         return Rule(
             name=data["name"],
@@ -311,6 +323,7 @@ class JsonSerializerDeserializeMixin:
             meta=meta,
             strings=strings,
             condition=condition,
+            pragmas=pragmas,
         )
 
     def _deserialize_tag(self, data: dict[str, Any]):
@@ -393,6 +406,102 @@ class JsonSerializerDeserializeMixin:
             return HexAlternative(alternatives=alternatives)
         msg = f"Unknown hex token type: {hex_kind}"
         raise SerializationError(msg)
+
+    def _deserialize_extern_import(self, data: dict[str, Any]):
+        from yaraast.ast.extern import ExternImport
+
+        module_path = data.get("module_path", data.get("module"))
+        if module_path is None:
+            msg = "ExternImport missing module_path"
+            raise SerializationError(msg)
+        return ExternImport(
+            module_path=module_path,
+            alias=data.get("alias"),
+            rules=list(data.get("rules", [])),
+        )
+
+    def _deserialize_extern_rule(self, data: dict[str, Any]):
+        from yaraast.ast.extern import ExternRule
+        from yaraast.ast.rules import Rule
+
+        return ExternRule(
+            name=data["name"],
+            modifiers=Rule._normalize_modifiers(data.get("modifiers", [])),
+            namespace=data.get("namespace"),
+        )
+
+    def _deserialize_extern_namespace(self, data: dict[str, Any]):
+        from yaraast.ast.extern import ExternNamespace
+
+        return ExternNamespace(
+            name=data["name"],
+            extern_rules=[
+                self._deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])
+            ],
+        )
+
+    def _deserialize_pragma(self, data: dict[str, Any]):
+        from yaraast.ast.pragmas import (
+            ConditionalDirective,
+            CustomPragma,
+            DefineDirective,
+            IncludeOncePragma,
+            Pragma,
+            PragmaScope,
+            PragmaType,
+            UndefDirective,
+        )
+
+        pragma_type = PragmaType.from_string(
+            str(data.get("pragma_type", data.get("name", PragmaType.CUSTOM.value)))
+        )
+        scope = PragmaScope(data.get("scope", PragmaScope.FILE.value))
+        name = data.get("name", pragma_type.value)
+        arguments = list(data.get("arguments", []))
+
+        if pragma_type == PragmaType.INCLUDE_ONCE:
+            pragma = IncludeOncePragma()
+        elif pragma_type == PragmaType.DEFINE and "macro_name" in data:
+            pragma = DefineDirective(
+                macro_name=str(data["macro_name"]),
+                macro_value=data.get("macro_value"),
+            )
+        elif pragma_type == PragmaType.UNDEF and "macro_name" in data:
+            pragma = UndefDirective(macro_name=str(data["macro_name"]))
+        elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
+            pragma = ConditionalDirective(pragma_type, condition=data.get("condition"))
+        elif pragma_type == PragmaType.CUSTOM:
+            pragma = CustomPragma(
+                name=name,
+                arguments=arguments,
+                parameters=dict(data.get("parameters", {})),
+                scope=scope,
+            )
+        else:
+            pragma = Pragma(
+                pragma_type=pragma_type,
+                name=name,
+                arguments=arguments,
+                scope=scope,
+            )
+        pragma.scope = scope
+        return pragma
+
+    def _deserialize_in_rule_pragma(self, data: dict[str, Any]):
+        from yaraast.ast.pragmas import InRulePragma
+
+        return InRulePragma(
+            pragma=self._deserialize_pragma(data["pragma"]),
+            position=data.get("position", "before_strings"),
+        )
+
+    def _deserialize_pragma_block(self, data: dict[str, Any]):
+        from yaraast.ast.pragmas import PragmaBlock, PragmaScope
+
+        return PragmaBlock(
+            pragmas=[self._deserialize_pragma(pragma) for pragma in data.get("pragmas", [])],
+            scope=PragmaScope(data.get("scope", PragmaScope.FILE.value)),
+        )
 
     def _deserialize_expression(self, data: dict[str, Any]):
         if not data:

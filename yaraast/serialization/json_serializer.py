@@ -99,9 +99,21 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         rules = [self._deserialize_rule(rule) for rule in ast_data.get("rules", [])]
 
         kwargs: dict = {"imports": imports, "includes": includes, "rules": rules}
-        for field_name in ("extern_rules", "extern_imports", "pragmas", "namespaces"):
-            if ast_data.get(field_name):
-                kwargs[field_name] = ast_data[field_name]
+        if ast_data.get("extern_rules"):
+            kwargs["extern_rules"] = [
+                self._deserialize_extern_rule(rule) for rule in ast_data["extern_rules"]
+            ]
+        if ast_data.get("extern_imports"):
+            kwargs["extern_imports"] = [
+                self._deserialize_extern_import(imp) for imp in ast_data["extern_imports"]
+            ]
+        if ast_data.get("pragmas"):
+            kwargs["pragmas"] = [self._deserialize_pragma(pragma) for pragma in ast_data["pragmas"]]
+        if ast_data.get("namespaces"):
+            kwargs["namespaces"] = [
+                self._deserialize_extern_namespace(namespace)
+                for namespace in ast_data["namespaces"]
+            ]
         return YaraFile(**kwargs)
 
     def _simple_node(self, type_name: str, **fields: Any) -> dict[str, Any]:
@@ -268,38 +280,57 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_extern_import(self, node) -> dict[str, Any]:
         return self._simple_node(
             "ExternImport",
-            module=node.module if hasattr(node, "module") else None,
+            module_path=node.module_path,
+            alias=node.alias,
+            rules=list(node.rules),
         )
 
     def visit_extern_namespace(self, node) -> dict[str, Any]:
         return self._simple_node(
             "ExternNamespace",
-            name=node.name if hasattr(node, "name") else None,
+            name=node.name,
+            extern_rules=[self.visit(rule) for rule in node.extern_rules],
         )
 
     def visit_extern_rule(self, node) -> dict[str, Any]:
         return {
             "type": "ExternRule",
-            "name": node.name if hasattr(node, "name") else None,
+            "name": node.name,
+            "modifiers": [str(modifier) for modifier in node.modifiers],
+            "namespace": node.namespace,
         }
 
     def visit_extern_rule_reference(self, node) -> dict[str, Any]:
         return {
             "type": "ExternRuleReference",
-            "name": node.name if hasattr(node, "name") else None,
+            "rule_name": node.rule_name,
+            "namespace": node.namespace,
         }
 
     def visit_in_rule_pragma(self, node) -> dict[str, Any]:
         return {
             "type": "InRulePragma",
-            "pragma": node.pragma if hasattr(node, "pragma") else None,
+            "pragma": self.visit(node.pragma),
+            "position": node.position,
         }
 
     def visit_pragma(self, node) -> dict[str, Any]:
-        return {
+        data = {
             "type": "Pragma",
-            "directive": node.directive if hasattr(node, "directive") else None,
+            "pragma_type": node.pragma_type.value,
+            "name": node.name,
+            "arguments": list(node.arguments),
+            "scope": node.scope.value,
         }
+        if hasattr(node, "macro_name"):
+            data["macro_name"] = node.macro_name
+        if hasattr(node, "macro_value"):
+            data["macro_value"] = node.macro_value
+        if hasattr(node, "condition"):
+            data["condition"] = node.condition
+        if hasattr(node, "parameters"):
+            data["parameters"] = dict(node.parameters)
+        return data
 
     def visit_pragma_block(self, node) -> dict[str, Any]:
         return visit_pragma_block(self, node)

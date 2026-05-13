@@ -10,13 +10,16 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import InExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
+    BooleanLiteral,
     Identifier,
     IntegerLiteral,
     StringCount,
     StringIdentifier,
 )
-from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
+from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, PragmaScope
 from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString
 from yaraast.errors import SerializationError
@@ -70,6 +73,81 @@ def test_json_roundtrip_preserves_string_count_conditions() -> None:
     assert isinstance(condition, BinaryExpression)
     assert isinstance(condition.left, StringCount)
     assert condition.left.string_id == "a"
+
+
+def test_json_roundtrip_preserves_externs_and_pragmas() -> None:
+    serializer = JsonSerializer(include_metadata=True)
+    ast = YaraFile(
+        extern_rules=[
+            ExternRule(
+                name="ExternalRule",
+                modifiers=[RuleModifier.from_string("private")],
+                namespace="ns",
+            )
+        ],
+        extern_imports=[
+            ExternImport(
+                module_path="external.yar",
+                alias="ext",
+                rules=["ExternalRule"],
+            )
+        ],
+        pragmas=[
+            CustomPragma(
+                name="vendor",
+                arguments=["on"],
+                parameters={"level": "strict"},
+                scope=PragmaScope.FILE,
+            )
+        ],
+        namespaces=[
+            ExternNamespace(
+                name="ns",
+                extern_rules=[ExternRule(name="NestedRule", namespace="ns")],
+            )
+        ],
+        rules=[
+            Rule(
+                name="r1",
+                pragmas=[
+                    InRulePragma(
+                        pragma=DefineDirective("LIMIT", "10"),
+                        position="before_condition",
+                    )
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ],
+    )
+
+    serialized = json.loads(serializer.serialize(ast))
+    ast_data = serialized["ast"]
+    assert ast_data["extern_imports"][0]["module_path"] == "external.yar"
+    assert ast_data["extern_rules"][0]["namespace"] == "ns"
+    assert ast_data["pragmas"][0]["parameters"] == {"level": "strict"}
+    assert ast_data["rules"][0]["pragmas"][0]["pragma"]["macro_name"] == "LIMIT"
+
+    restored = serializer.deserialize(json.dumps(serialized))
+    assert isinstance(restored.extern_imports[0], ExternImport)
+    assert restored.extern_imports[0].module_path == "external.yar"
+    assert restored.extern_imports[0].alias == "ext"
+    assert restored.extern_imports[0].rules == ["ExternalRule"]
+    assert isinstance(restored.extern_rules[0], ExternRule)
+    assert str(restored.extern_rules[0].modifiers[0]) == "private"
+    assert restored.extern_rules[0].namespace == "ns"
+    assert isinstance(restored.pragmas[0], CustomPragma)
+    assert restored.pragmas[0].parameters["level"] == "strict"
+    assert isinstance(restored.namespaces[0], ExternNamespace)
+    assert restored.namespaces[0].extern_rules[0].name == "NestedRule"
+    assert restored.rules[0].pragmas[0].position == "before_condition"
+    assert isinstance(restored.rules[0].pragmas[0].pragma, DefineDirective)
+    assert restored.rules[0].pragmas[0].pragma.macro_value == "10"
+
+    reference = serializer._deserialize_expression(
+        serializer.visit_extern_rule_reference(ExternRuleReference("ExternalRule", namespace="ns"))
+    )
+    assert isinstance(reference, ExternRuleReference)
+    assert reference.qualified_name == "ns.ExternalRule"
 
 
 def test_json_deserialize_expressions() -> None:

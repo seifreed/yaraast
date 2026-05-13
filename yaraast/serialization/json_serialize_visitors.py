@@ -34,6 +34,7 @@ def visit_rule(serializer, node) -> dict[str, Any]:
         ],
         "strings": [serializer.visit(s) for s in node.strings],
         "condition": serializer.visit(node.condition) if node.condition else None,
+        "pragmas": [serializer.visit(pragma) for pragma in node.pragmas],
     }
 
 
@@ -216,4 +217,5 @@ def visit_pragma_block(serializer, node) -> dict[str, Any]:
         "pragmas": (
             [serializer.visit(p) for p in node.pragmas] if hasattr(node, "pragmas") else []
         ),
+        "scope": getattr(getattr(node, "scope", None), "value", "file"),
     }

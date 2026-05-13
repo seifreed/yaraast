@@ -191,32 +191,57 @@ def test_json_serializer_visit_methods_cover_remaining_nodes() -> None:
     }
     assert s.visit_extern_import(ExternImport("mods.yar")) == {
         "type": "ExternImport",
-        "module": None,
+        "module_path": "mods.yar",
+        "alias": None,
+        "rules": [],
     }
     assert s.visit_extern_namespace(ExternNamespace("ns")) == {
         "type": "ExternNamespace",
         "name": "ns",
+        "extern_rules": [],
     }
     assert s.visit_extern_rule(ExternRule("R")) == {
         "type": "ExternRule",
         "name": "R",
+        "modifiers": [],
+        "namespace": None,
     }
     assert s.visit_extern_rule_reference(ExternRuleReference("R")) == {
         "type": "ExternRuleReference",
-        "name": None,
+        "rule_name": "R",
+        "namespace": None,
     }
     pragma = Pragma(PragmaType.PRAGMA, "pragma")
     assert s.visit_in_rule_pragma(InRulePragma(pragma)) == {
         "type": "InRulePragma",
-        "pragma": pragma,
+        "pragma": {
+            "type": "Pragma",
+            "pragma_type": "pragma",
+            "name": "pragma",
+            "arguments": [],
+            "scope": "file",
+        },
+        "position": "before_strings",
     }
     assert s.visit_pragma(pragma) == {
         "type": "Pragma",
-        "directive": None,
+        "pragma_type": "pragma",
+        "name": "pragma",
+        "arguments": [],
+        "scope": "file",
     }
     assert s.visit_pragma_block(PragmaBlock([pragma])) == {
         "type": "PragmaBlock",
-        "pragmas": [{"type": "Pragma", "directive": None}],
+        "pragmas": [
+            {
+                "type": "Pragma",
+                "pragma_type": "pragma",
+                "name": "pragma",
+                "arguments": [],
+                "scope": "file",
+            }
+        ],
+        "scope": "file",
     }
 
     rule = Rule(
