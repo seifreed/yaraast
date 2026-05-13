@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -27,6 +28,7 @@ from yaraast.serialization.roundtrip_pipeline_helpers import (
     dump_pipeline_yaml,
 )
 from yaraast.serialization.yaml_serializer import YamlSerializer
+from yaraast.yarax.parser import YaraXParser
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -46,6 +48,11 @@ class RoundTripSerializer:
         self.yaml_serializer = YamlSerializer(include_metadata=True)
         self.parser = CommentAwareParser() if preserve_comments else Parser()
 
+    def _parse_source(self, yara_source: str) -> YaraFile:
+        if detect_dialect(yara_source) == YaraDialect.YARA_X:
+            return YaraXParser(yara_source).parse()
+        return self.parser.parse(yara_source)
+
     def _detect_formatting(self, yara_source: str):
         """Backward-compatible wrapper used by tests."""
         return detect_formatting(yara_source)
@@ -61,7 +68,7 @@ class RoundTripSerializer:
         detect_formatting(yara_source)
 
         # Parse with comment preservation
-        ast = self.parser.parse(yara_source)
+        ast = self._parse_source(yara_source)
 
         # Create round-trip metadata
         metadata = build_roundtrip_metadata(

@@ -13,6 +13,22 @@ if TYPE_CHECKING:
     from yaraast.ast.meta import Meta
     from yaraast.ast.rules import Rule
     from yaraast.ast.strings import HexString, PlainString, RegexString
+    from yaraast.yarax.ast_nodes import (
+        ArrayComprehension,
+        DictComprehension,
+        DictExpression,
+        DictItem,
+        LambdaExpression,
+        ListExpression,
+        MatchCase,
+        PatternMatch,
+        SliceExpression,
+        SpreadOperator,
+        TupleExpression,
+        TupleIndexing,
+        WithDeclaration,
+        WithStatement,
+    )
 
 
 class CommentAwareCodeGenerator(CodeGenerator):
@@ -325,3 +341,95 @@ class CommentAwareCodeGenerator(CodeGenerator):
             self._write(str(node.value))
 
         return ""
+
+    def visit_with_statement(self, node: WithStatement) -> str:
+        declarations = ", ".join(self.visit(declaration) for declaration in node.declarations)
+        return f"with {declarations}: {self.visit(node.body)}"
+
+    def visit_with_declaration(self, node: WithDeclaration) -> str:
+        return f"{node.identifier} = {self.visit(node.value)}"
+
+    def visit_array_comprehension(self, node: ArrayComprehension) -> str:
+        result = (
+            f"[{self.visit(node.expression)} for {node.variable} " f"in {self.visit(node.iterable)}"
+        )
+        if node.condition:
+            result += f" if {self.visit(node.condition)}"
+        return result + "]"
+
+    def visit_dict_comprehension(self, node: DictComprehension) -> str:
+        variables = (
+            f"{node.key_variable}, {node.value_variable}"
+            if node.value_variable
+            else node.key_variable
+        )
+        result = (
+            f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
+            f"for {variables} in {self.visit(node.iterable)}"
+        )
+        if node.condition:
+            result += f" if {self.visit(node.condition)}"
+        return result + "}"
+
+    def visit_tuple_expression(self, node: TupleExpression) -> str:
+        if not node.elements:
+            return "()"
+        elements = [self.visit(element) for element in node.elements]
+        if len(elements) == 1:
+            return f"({elements[0]},)"
+        return f"({', '.join(elements)})"
+
+    def visit_tuple_indexing(self, node: TupleIndexing) -> str:
+        from yaraast.ast.expressions import FunctionCall, Identifier
+        from yaraast.yarax.ast_nodes import TupleExpression
+
+        tuple_str = self.visit(node.tuple_expr)
+        index_str = self.visit(node.index)
+        if isinstance(node.tuple_expr, FunctionCall | Identifier | TupleExpression):
+            return f"{tuple_str}[{index_str}]"
+        return f"({tuple_str})[{index_str}]"
+
+    def visit_list_expression(self, node: ListExpression) -> str:
+        return f"[{', '.join(self.visit(element) for element in node.elements)}]"
+
+    def visit_dict_expression(self, node: DictExpression) -> str:
+        from yaraast.yarax.ast_nodes import SpreadOperator
+
+        items = [
+            self.visit(item.value) if isinstance(item.value, SpreadOperator) else self.visit(item)
+            for item in node.items
+        ]
+        return f"{{{', '.join(items)}}}"
+
+    def visit_dict_item(self, node: DictItem) -> str:
+        return f"{self.visit(node.key)}: {self.visit(node.value)}"
+
+    def visit_slice_expression(self, node: SliceExpression) -> str:
+        parts = [
+            self.visit(node.start) if node.start is not None else "",
+            self.visit(node.stop) if node.stop is not None else "",
+        ]
+        if node.step is not None:
+            parts.append(self.visit(node.step))
+        return f"{self.visit(node.target)}[{':'.join(parts)}]"
+
+    def visit_lambda_expression(self, node: LambdaExpression) -> str:
+        parameters = ", ".join(node.parameters)
+        if parameters:
+            return f"lambda {parameters}: {self.visit(node.body)}"
+        return f"lambda: {self.visit(node.body)}"
+
+    def visit_pattern_match(self, node: PatternMatch) -> str:
+        lines = [f"match {self.visit(node.value)} {{"]
+        lines.extend(f"    {self.visit(case)}," for case in node.cases)
+        if node.default:
+            lines.append(f"    _ => {self.visit(node.default)},")
+        lines.append("}")
+        return "\n".join(lines)
+
+    def visit_match_case(self, node: MatchCase) -> str:
+        return f"{self.visit(node.pattern)} => {self.visit(node.result)}"
+
+    def visit_spread_operator(self, node: SpreadOperator) -> str:
+        prefix = "**" if node.is_dict else "..."
+        return f"{prefix}{self.visit(node.expression)}"

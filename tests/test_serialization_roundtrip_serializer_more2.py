@@ -7,6 +7,8 @@ import json
 import yaml
 
 from yaraast.serialization.roundtrip_serializer import RoundTripSerializer
+from yaraast.yarax.ast_nodes import WithStatement
+from yaraast.yarax.parser import YaraXParser
 
 
 def test_roundtrip_parse_and_serialize_json() -> None:
@@ -43,6 +45,20 @@ def test_roundtrip_deserialize_and_generate() -> None:
     ast, generated = serializer.deserialize_and_generate(serialized, format="json")
     assert ast.rules[0].name == "r1"
     assert "rule r1" in generated
+
+
+def test_roundtrip_serializer_handles_yarax_syntax() -> None:
+    source = "rule rx { condition: with xs = [1]: match xs { _ => true } }"
+    serializer = RoundTripSerializer()
+
+    ast, serialized = serializer.parse_and_serialize(source, format="json")
+    restored_ast, generated = serializer.deserialize_and_generate(serialized, format="json")
+
+    assert isinstance(ast.rules[0].condition, WithStatement)
+    assert isinstance(restored_ast.rules[0].condition, WithStatement)
+    assert "with xs = [1]" in generated
+    assert "match xs" in generated
+    YaraXParser(generated).parse()
 
 
 def test_roundtrip_test_result() -> None:
