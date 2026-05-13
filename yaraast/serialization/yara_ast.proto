@@ -202,6 +202,7 @@ message Expression {
         StringWildcard string_wildcard = 26;
         ModuleReference module_reference = 27;
         DictionaryAccess dictionary_access = 28;
+        ExternRuleReference extern_rule_reference = 29;
     }
 }
 
@@ -299,6 +300,11 @@ message DictionaryAccess {
     Expression object = 1;
     string key = 2;
     Expression key_expr = 3;
+}
+
+message ExternRuleReference {
+    string rule_name = 1;
+    string namespace = 2;
 }
 
 message ForExpression {

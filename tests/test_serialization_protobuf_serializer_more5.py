@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
-from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
 from yaraast.ast.rules import Rule
@@ -104,3 +106,25 @@ def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     assert restored_rule_pragma.name == "rule_hint"
     assert restored_rule_pragma.scope == PragmaScope.RULE
     assert restored_rule_pragma.parameters == {"enabled": True}
+
+
+def test_protobuf_serializer_preserves_extern_rule_reference_condition() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="uses_external",
+                condition=cast(
+                    Any,
+                    ExternRuleReference(rule_name="ExternalRule", namespace="legacy"),
+                ),
+            ),
+        ],
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    condition = restored.rules[0].condition
+
+    assert isinstance(condition, ExternRuleReference)
+    assert condition.rule_name == "ExternalRule"
+    assert condition.namespace == "legacy"

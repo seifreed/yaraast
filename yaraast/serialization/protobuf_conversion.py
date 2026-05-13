@@ -362,6 +362,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         StringWildcard,
         UnaryExpression,
     )
+    from yaraast.ast.extern import ExternRuleReference
     from yaraast.ast.modules import DictionaryAccess, ModuleReference
     from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 
@@ -425,6 +426,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             convert_expression_to_protobuf(expr.key, pb_expr.dictionary_access.key_expr)
         else:
             pb_expr.dictionary_access.key = str(expr.key)
+    elif isinstance(expr, ExternRuleReference):
+        pb_expr.extern_rule_reference.rule_name = expr.rule_name
+        if expr.namespace:
+            pb_expr.extern_rule_reference.namespace = expr.namespace
     elif isinstance(expr, ForExpression):
         pb_expr.for_expression.quantifier = _coerce_quantifier_text(expr.quantifier)
         quantifier = _coerce_quantifier_expression(expr.quantifier)
@@ -804,6 +809,7 @@ def protobuf_to_expression(pb_expr):
         StringWildcard,
         UnaryExpression,
     )
+    from yaraast.ast.extern import ExternRuleReference
     from yaraast.ast.modules import DictionaryAccess, ModuleReference
     from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 
@@ -899,6 +905,11 @@ def protobuf_to_expression(pb_expr):
                 if pb_expr.dictionary_access.HasField("key_expr")
                 else pb_expr.dictionary_access.key
             ),
+        )
+    if pb_expr.HasField("extern_rule_reference"):
+        return ExternRuleReference(
+            rule_name=pb_expr.extern_rule_reference.rule_name,
+            namespace=pb_expr.extern_rule_reference.namespace or None,
         )
     if pb_expr.HasField("for_expression"):
         return ForExpression(

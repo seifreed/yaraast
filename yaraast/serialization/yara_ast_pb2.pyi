@@ -425,6 +425,7 @@ class Expression(_message.Message):
         "defined_expression",
         "dictionary_access",
         "double_literal",
+        "extern_rule_reference",
         "for_expression",
         "for_of_expression",
         "function_call",
@@ -475,6 +476,7 @@ class Expression(_message.Message):
     STRING_WILDCARD_FIELD_NUMBER: _ClassVar[int]
     MODULE_REFERENCE_FIELD_NUMBER: _ClassVar[int]
     DICTIONARY_ACCESS_FIELD_NUMBER: _ClassVar[int]
+    EXTERN_RULE_REFERENCE_FIELD_NUMBER: _ClassVar[int]
     identifier: Identifier
     string_identifier: StringIdentifier
     string_count: StringCount
@@ -503,6 +505,7 @@ class Expression(_message.Message):
     string_wildcard: StringWildcard
     module_reference: ModuleReference
     dictionary_access: DictionaryAccess
+    extern_rule_reference: ExternRuleReference
     def __init__(
         self,
         identifier: Identifier | _Mapping | None = ...,
@@ -533,6 +536,7 @@ class Expression(_message.Message):
         string_wildcard: StringWildcard | _Mapping | None = ...,
         module_reference: ModuleReference | _Mapping | None = ...,
         dictionary_access: DictionaryAccess | _Mapping | None = ...,
+        extern_rule_reference: ExternRuleReference | _Mapping | None = ...,
     ) -> None: ...
 
 class Identifier(_message.Message):
@@ -708,6 +712,14 @@ class DictionaryAccess(_message.Message):
         key: str | None = ...,
         key_expr: Expression | _Mapping | None = ...,
     ) -> None: ...
+
+class ExternRuleReference(_message.Message):
+    __slots__ = ("namespace", "rule_name")
+    RULE_NAME_FIELD_NUMBER: _ClassVar[int]
+    NAMESPACE_FIELD_NUMBER: _ClassVar[int]
+    rule_name: str
+    namespace: str
+    def __init__(self, rule_name: str | None = ..., namespace: str | None = ...) -> None: ...
 
 class ForExpression(_message.Message):
     __slots__ = ("body", "iterable", "quantifier", "quantifier_expr", "variable")
