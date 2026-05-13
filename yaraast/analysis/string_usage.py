@@ -163,14 +163,11 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.visit(node.offset)
 
     def visit_in_expression(self, node: InExpression) -> None:
-        if self.current_rule and self.in_condition:
-            subject = (
-                node.subject
-                if isinstance(node.subject, str)
-                else getattr(node.subject, "name", None)
-            )
-            if subject:
-                self.used_strings[self.current_rule].add(self._normalize_string_id(subject))
+        if isinstance(node.subject, str):
+            if self.current_rule and self.in_condition:
+                self.used_strings[self.current_rule].add(self._normalize_string_id(node.subject))
+        else:
+            self.visit(node.subject)
         self.visit(node.range)
 
     def visit_for_of_expression(self, node: ForOfExpression) -> None:

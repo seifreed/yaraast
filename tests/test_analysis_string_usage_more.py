@@ -88,6 +88,9 @@ rule two {
     analyzer.visit_string_length(StringLength("$b", IntegerLiteral(1)))
     analyzer.visit_at_expression(AtExpression("$a", IntegerLiteral(0)))
     analyzer.visit_in_expression(InExpression("$b", IntegerLiteral(5)))
+    analyzer.visit_in_expression(
+        InExpression(OfExpression(IntegerLiteral(1), Identifier("them")), IntegerLiteral(5))
+    )
     analyzer.visit_for_of_expression(
         ForOfExpression("all", Identifier("them"), condition=StringIdentifier("$a")),
     )
