@@ -76,6 +76,16 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
         )
         == " ascii nocase"
     )
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+    assert (
+        modifiers_to_string(
+            [
+                StringModifier.from_name_value("xor", (1, 3)),
+                StringModifier.from_name_value("base64", alphabet),
+            ]
+        )
+        == f' xor(1-3) base64("{alphabet}")'
+    )
 
     ast = YaraFile(
         rules=[

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.codegen.generator_helpers import format_regex_modifiers
+from yaraast.codegen.generator_helpers import format_modifier, format_regex_modifiers
 
 
 def build_hex_pattern(node: HexString, *, hex_uppercase: bool, hex_spacing: bool) -> str:
@@ -44,7 +44,7 @@ def format_regex_string(node: RegexString, padding: int) -> str:
 def modifiers_to_string(modifiers) -> str:
     if not modifiers:
         return ""
-    return " " + " ".join(str(mod) for mod in modifiers)
+    return "".join(f" {format_modifier(mod)}" for mod in modifiers)
 
 
 def regex_modifiers_to_string(modifiers) -> str:
