@@ -15,6 +15,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.simple_roundtrip import (
     SimpleRoundTrip,
     SimpleRoundtripSerializer,
@@ -41,6 +42,10 @@ rule test_roundtrip : alpha beta {
 """
 
 
+def _yarax_rule() -> str:
+    return "rule x { condition: with xs = [1]: match xs { _ => true } }"
+
+
 def test_simple_roundtrip_serializer_in_memory() -> None:
     parser = Parser()
     ast = parser.parse(_sample_yara_rule())
@@ -55,6 +60,16 @@ def test_simple_roundtrip_serializer_in_memory() -> None:
     ok, diff = serializer.validate_roundtrip(ast)
     assert isinstance(ok, bool)
     assert "original_code" in diff
+
+
+def test_simple_roundtrip_serializer_validates_yarax_ast() -> None:
+    serializer = SimpleRoundtripSerializer()
+    ast = parse_yara_source(_yarax_rule())
+
+    ok, diff = serializer.validate_roundtrip(ast)
+
+    assert ok is True
+    assert "match xs" in diff["original_code"]
 
 
 def test_simple_roundtrip_serializer_file_io(tmp_path: Path) -> None:
@@ -94,6 +109,20 @@ def test_simple_roundtrip_helpers(tmp_path: Path) -> None:
 
     report = simple_roundtrip_test(yara_code)
     assert report["round_trip_successful"] in {True, False}
+
+
+def test_simple_roundtrip_helpers_accept_yarax() -> None:
+    helper = SimpleRoundTrip()
+
+    ok, original_ast, regenerated_ast = helper.test(_yarax_rule())
+    report = simple_roundtrip_test(_yarax_rule())
+
+    assert ok is True
+    assert original_ast.rules[0].name == "x"
+    assert regenerated_ast.rules[0].name == "x"
+    assert report["metadata"]["original_rule_count"] == 1
+    assert report["metadata"]["reconstructed_rule_count"] == 1
+    assert "Error during roundtrip" not in " ".join(report["differences"])
 
 
 def test_simple_roundtrip_serialize_primitives() -> None:

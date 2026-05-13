@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import ASTNode
-from yaraast.codegen.generator import CodeGenerator
-from yaraast.errors import ParseError
+from yaraast.errors import YaraASTError
 from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.simple_roundtrip_helpers import (
     deserialize_from_file,
     deserialize_node,
@@ -18,6 +18,7 @@ from yaraast.serialization.simple_roundtrip_helpers import (
     validate_roundtrip,
 )
 from yaraast.shared.file_patterns import iter_matching_files
+from yaraast.yarax.generator import YaraXGenerator
 
 
 class SimpleRoundtripSerializer:
@@ -26,7 +27,7 @@ class SimpleRoundtripSerializer:
     def __init__(self) -> None:
         """Initialize the serializer."""
         self.parser = Parser()
-        self.generator = CodeGenerator()
+        self.generator = YaraXGenerator()
 
     def serialize(self, node: ASTNode) -> dict[str, Any]:
         """Serialize an AST node to a dictionary."""
@@ -54,7 +55,7 @@ class SimpleRoundTrip:
 
     def __init__(self) -> None:
         self.parser = Parser()
-        self.generator = CodeGenerator()
+        self.generator = YaraXGenerator()
         self.test_count = 0
         self.success_count = 0
 
@@ -62,16 +63,16 @@ class SimpleRoundTrip:
         """Test roundtrip for a single YARA rule."""
         self.test_count += 1
         try:
-            original_ast = self.parser.parse(yara_code)
+            original_ast = parse_yara_source(yara_code)
             regenerated = self.generator.generate(original_ast)
-            regenerated_ast = self.parser.parse(regenerated)
+            regenerated_ast = parse_yara_source(regenerated)
 
             success = original_ast is not None and regenerated_ast is not None
             if success:
                 self.success_count += 1
 
             return success, original_ast, regenerated_ast
-        except (ValueError, TypeError, AttributeError, ParseError):
+        except (ValueError, TypeError, AttributeError, YaraASTError):
             return False, None, None
 
     def test_batch(self, yara_codes: list[str]) -> list[tuple[bool, Any, Any]]:

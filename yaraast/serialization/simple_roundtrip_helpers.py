@@ -66,10 +66,9 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
-from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import SerializationError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
-from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
@@ -86,6 +85,7 @@ from yaraast.yarax.ast_nodes import (
     WithDeclaration,
     WithStatement,
 )
+from yaraast.yarax.generator import YaraXGenerator
 
 
 def _serialize_hex_token(token) -> dict[str, Any]:
@@ -1134,7 +1134,7 @@ def deserialize_from_file(file_path: str | Path) -> ASTNode:
 
 def validate_roundtrip(node: ASTNode) -> tuple[bool, dict[str, Any]]:
     """Validate roundtrip serialization."""
-    generator = CodeGenerator()
+    generator = YaraXGenerator()
     try:
         serialized = serialize_node(node)
         deserialized = deserialize_node(serialized)
@@ -1153,15 +1153,14 @@ def validate_roundtrip(node: ASTNode) -> tuple[bool, dict[str, Any]]:
 
 def simple_roundtrip_report(yara_source: str) -> dict[str, Any]:
     """Perform a simple roundtrip test."""
-    parser = Parser()
-    generator = CodeGenerator()
+    generator = YaraXGenerator()
     try:
-        original_ast = parser.parse(yara_source)
+        original_ast = parse_yara_source(yara_source)
         reconstructed = generator.generate(original_ast)
         original_normalized = yara_source.strip()
         reconstructed_normalized = reconstructed.strip()
         success, differences = _compare_normalized(original_normalized, reconstructed_normalized)
-        reconstructed_ast = parser.parse(reconstructed)
+        reconstructed_ast = parse_yara_source(reconstructed)
         return {
             "original_source": original_normalized,
             "reconstructed_source": reconstructed_normalized,
