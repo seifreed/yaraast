@@ -7,6 +7,7 @@ import pytest
 
 from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
+from yaraast.performance.batch_processor_ops import parse_item
 
 
 def _yarax_rule() -> str:
@@ -59,6 +60,10 @@ def test_process_batch_parse_handles_invalid_item_without_exceptions() -> None:
     assert stats["items_processed"] == 2
     assert stats["failures"] == 0
     assert stats["batches_processed"] == 2
+
+
+def test_parse_item_returns_none_for_invalid_rule_syntax() -> None:
+    assert parse_item("rule bad { condition: }") is None
 
 
 def test_batch_processor_accepts_yarax_sources_and_files(tmp_path: Path) -> None:

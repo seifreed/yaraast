@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
 from yaraast.ast.base import YaraFile
+from yaraast.errors import YaraASTError
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -25,8 +26,15 @@ def parse_item(item: str | Path) -> YaraFile | None:
         else:
             content = item
         return parse_yara_source(content)
-    except (ValueError, TypeError, AttributeError):
+    except (OSError, UnicodeDecodeError, ValueError, TypeError, AttributeError, YaraASTError):
         return None
+
+
+def _require_parsed_item(parsed: YaraFile | None, file_path: Path) -> YaraFile:
+    if parsed is None:
+        msg = f"Failed to parse {file_path}"
+        raise ValueError(msg)
+    return parsed
 
 
 def analyze_complexity(item: Rule) -> dict[str, Any]:
@@ -158,7 +166,7 @@ def process_files_single(
         try:
             with open(file_path, encoding="utf-8") as handle:
                 content = handle.read()
-            parsed = parse_item(content)
+            parsed = _require_parsed_item(parse_item(content), file_path)
             if operation == BatchOperation.COMPLEXITY:
                 for rule in parsed.rules:
                     result.summary[rule.name] = analyze_complexity(rule)
@@ -209,8 +217,8 @@ def process_large_file(
         output_dir.mkdir(parents=True, exist_ok=True)
         with open(file_path, encoding="utf-8") as handle:
             content = handle.read()
-        parsed = parse_item(content)
-        input_count = len(parsed.rules) if (parsed and split_rules) else 1
+        parsed = _require_parsed_item(parse_item(content), file_path)
+        input_count = len(parsed.rules) if split_rules else 1
         for index, operation in enumerate(operations, 1):
             result = BatchResult(operation=operation, input_count=input_count)
             if operation == BatchOperation.PARSE:
