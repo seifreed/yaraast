@@ -78,7 +78,7 @@ def visit_rule(generator, node) -> str:
                 generator._write_blank_lines(generator.config.blank_lines_between_sections)
             generator._write_strings_section(node.strings)
             sections_written += 1
-        elif section == "condition":
+        elif section == "condition" and node.condition is not None:
             if sections_written > 0:
                 generator._write_blank_lines(generator.config.blank_lines_between_sections)
             generator._write_condition_section(node.condition)

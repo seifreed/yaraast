@@ -107,6 +107,13 @@ def test_advanced_generator_aligned_plain_strings_escape_values() -> None:
         assert '$b = "A\\"\\x00"' in out
 
 
+def test_advanced_generator_skips_missing_condition() -> None:
+    out = AdvancedCodeGenerator().generate(YaraFile(rules=[Rule(name="partial")]))
+
+    assert "rule partial {" in out
+    assert "condition:" not in out
+
+
 def test_advanced_generator_meta_and_tags_branches() -> None:
     mod = StringModifier(StringModifierType.NOCASE)
     meta_list = [Meta("b", '"already"'), _KeyOnly("missing_value"), Meta("a", True)]
