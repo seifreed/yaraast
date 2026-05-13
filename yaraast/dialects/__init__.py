@@ -123,7 +123,7 @@ yaral_aggregation_patterns = [
 # YARA-X specific features supported by this codebase.
 # Keep these patterns narrow to avoid false positives in standard YARA.
 yarax_patterns = [
-    r"\bwith\s+\$\w+\s*=",
+    r"\bwith\s+\$?\w+\s*=",
     r"\blambda(?:\s+\w+(?:\s*,\s*\w+)*)?\s*:",
     r"\bmatch\s+[^{}]+\{[^{}]*=>",
     r"\[[^\]]+\bfor\s+\w+\s+in\s+[^\]]+\]",

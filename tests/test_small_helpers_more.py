@@ -146,3 +146,6 @@ def test_detect_dialect_yarax_signals() -> None:
 
     yarax_with = 'rule x { condition: with $a = "test", $b = 2: true }'
     assert detect_dialect(yarax_with) == YaraDialect.YARA_X
+
+    yarax_with_identifier = "rule x { condition: with xs = [1]: true }"
+    assert detect_dialect(yarax_with_identifier) == YaraDialect.YARA_X
