@@ -43,6 +43,7 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     assert format_meta_value("n", 7) == "n = 7"
 
     assert escape_string_literal('a\\"b') == 'a\\\\\\"b'
+    assert escape_string_literal("a\nb\t\x00") == "a\\nb\\t\\x00"
     assert format_regex_literal("ab+", "is") == "/ab+/is"
     assert format_boolean_literal(True) == "true"
     assert format_boolean_literal(False) == "false"

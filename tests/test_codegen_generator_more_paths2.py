@@ -144,6 +144,7 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
     gen = CodeGenerator()
 
     assert gen.visit_string_literal(StringLiteral('a"b')) == '"a\\"b"'
+    assert gen.visit_string_literal(StringLiteral("a\nb\t\x00")) == '"a\\nb\\t\\x00"'
     assert gen.visit_regex_literal(RegexLiteral("ab.*", "i")) == "/ab.*/i"
     assert gen.visit_double_literal(DoubleLiteral(1.5)) == "1.5"
     assert (

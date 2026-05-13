@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yaraast.codegen.generator_helpers import escape_plain_string_value
+
 
 def format_rule_modifiers(modifiers) -> str:
     if not modifiers:
@@ -32,9 +34,7 @@ def format_meta_value(key: str, value) -> str:
 
 
 def escape_string_literal(value: str) -> str:
-    escaped = value.replace("\\", "\\\\")
-    escaped = escaped.replace('"', '\\"')
-    return escaped
+    return escape_plain_string_value(value)
 
 
 def format_regex_literal(pattern: str, modifiers: str) -> str:
