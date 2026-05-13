@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
-from yaraast.ast.conditions import Condition
-from yaraast.ast.expressions import BooleanLiteral, Expression
+from yaraast.ast.conditions import Condition, InExpression
+from yaraast.ast.expressions import BooleanLiteral, Expression, Identifier, RangeExpression
 from yaraast.ast.strings import HexToken, StringDefinition
 from yaraast.visitor.base import BaseVisitor
 
 
 class _Visitor(BaseVisitor[None]):
     pass
+
+
+class _RecordingVisitor(BaseVisitor[None]):
+    def __init__(self) -> None:
+        self.identifiers: list[str] = []
+
+    def visit_identifier(self, node: Identifier) -> None:
+        self.identifiers.append(node.name)
 
 
 def test_base_visitor_expression_and_condition_methods() -> None:
@@ -27,3 +35,16 @@ def test_base_visitor_string_definition_and_hex_token_methods() -> None:
 
     assert visitor.visit_string_definition(StringDefinition(identifier="$a")) is None
     assert visitor.visit_hex_token(HexToken()) is None
+
+
+def test_base_visitor_traverses_in_expression_subject_nodes() -> None:
+    visitor = _RecordingVisitor()
+
+    visitor.visit(
+        InExpression(
+            subject=Identifier("subject"),
+            range=RangeExpression(low=Identifier("low"), high=Identifier("high")),
+        )
+    )
+
+    assert visitor.identifiers == ["subject", "low", "high"]

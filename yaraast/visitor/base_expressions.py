@@ -139,6 +139,8 @@ class BaseVisitorExpressionsMixin:
         return self._noop()
 
     def visit_in_expression(self: VisitorHelperProtocol[T], node: InExpression) -> T:
+        if isinstance(node.subject, ASTNode):
+            self._visit_if(node.subject)
         self._visit_if(node.range)
         return self._noop()
 

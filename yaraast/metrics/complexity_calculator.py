@@ -146,7 +146,8 @@ class ComplexityCalculator(MetricsVisitorBase):
         return 2 + self.calculate(node.offset)
 
     def visit_in_expression(self, node) -> int:
-        return 2 + self.calculate(node.range)
+        subject_complexity = self.calculate(node.subject) if hasattr(node.subject, "accept") else 0
+        return 2 + subject_complexity + self.calculate(node.range)
 
     def visit_defined_expression(self, node) -> int:
         return 1 + self.calculate(node.expression)

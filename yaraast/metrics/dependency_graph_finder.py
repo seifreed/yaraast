@@ -66,6 +66,8 @@ class DependencyFinder(MetricsVisitorBase):
         self.visit(node.offset)
 
     def visit_in_expression(self, node) -> None:
+        if hasattr(node.subject, "accept"):
+            self.visit(node.subject)
         self.visit(node.range)
 
     def visit_of_expression(self, node) -> None:

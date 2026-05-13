@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from yaraast.analysis.dependency_analyzer import DependencyAnalyzer
-from yaraast.ast.expressions import FunctionCall, Identifier, IntegerLiteral
+from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import InExpression
+from yaraast.ast.expressions import FunctionCall, Identifier, IntegerLiteral, RangeExpression
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.parser import Parser
 
@@ -80,3 +82,22 @@ rule caller {
     rule = Rule(name="empty", condition=None)
     analyzer.visit_rule(rule)
     assert analyzer.current_rule is None
+
+
+def test_dependency_analyzer_traverses_in_expression_subject_nodes() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="base", condition=IntegerLiteral(1)),
+            Rule(
+                name="caller",
+                condition=InExpression(
+                    subject=Identifier("base"),
+                    range=RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
+                ),
+            ),
+        ]
+    )
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert results["dependencies"]["caller"] == ["base"]

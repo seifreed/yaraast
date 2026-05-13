@@ -187,6 +187,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         self.visit(node.offset)
 
     def visit_in_expression(self, node) -> None:
+        self._visit_ast_value(node.subject)
         self.visit(node.range)
 
     def visit_of_expression(self, node) -> None:

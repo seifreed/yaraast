@@ -378,6 +378,8 @@ class ExpressionOptimizer(ASTTransformer):
         return node
 
     def visit_in_expression(self, node: Any) -> Any:
+        if hasattr(node, "subject"):
+            node.subject = self._optimize_ast_value(node.subject)
         if hasattr(node, "range"):
             node.range = self.visit(node.range)
         return node

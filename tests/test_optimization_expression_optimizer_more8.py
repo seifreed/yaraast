@@ -176,6 +176,10 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
     )
     at_node = SimpleNamespace(offset=IntegerLiteral(4))
     in_node = SimpleNamespace(range=Identifier("r"))
+    in_node_with_subject = SimpleNamespace(
+        subject=BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)),
+        range=Identifier("r"),
+    )
 
     assert opt.visit_for_expression(for_node).iterable == Identifier("it")
     assert opt.visit_of_expression(of_node).string_set == Identifier("s")
@@ -183,6 +187,7 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
     assert opt.visit_for_of_expression(raw_for_of_node).string_set == ["$a", "$b"]
     assert opt.visit_at_expression(at_node).offset == IntegerLiteral(4)
     assert opt.visit_in_expression(in_node).range == Identifier("r")
+    assert opt.visit_in_expression(in_node_with_subject).subject == IntegerLiteral(3)
 
     no_attrs = SimpleNamespace()
     assert opt.visit_array_access(no_attrs) is no_attrs
