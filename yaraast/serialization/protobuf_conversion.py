@@ -102,7 +102,7 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
 
 def convert_hex_token_to_protobuf(token, pb_token) -> None:
     """Convert a hex token to protobuf."""
-    from yaraast.ast.strings import HexByte, HexJump, HexNibble, HexWildcard
+    from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexWildcard
 
     if isinstance(token, HexByte):
         pb_token.byte.value = str(token.value)
@@ -114,6 +114,11 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
             pb_token.jump.min_jump = token.min_jump
         if token.max_jump is not None:
             pb_token.jump.max_jump = token.max_jump
+    elif isinstance(token, HexAlternative):
+        for alternative in token.alternatives:
+            pb_alternative = pb_token.alternative.alternatives.add()
+            for alternative_token in alternative:
+                convert_hex_token_to_protobuf(alternative_token, pb_alternative.tokens.add())
     elif isinstance(token, HexNibble):
         pb_token.nibble.high = token.high
         pb_token.nibble.value = token.value
@@ -373,18 +378,37 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
     return YaraFile(imports=imports, includes=includes, rules=rules)
 
 
+def _protobuf_to_hex_token(pb_token):
+    from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexWildcard
+
+    if pb_token.HasField("byte"):
+        return HexByte(value=int(pb_token.byte.value))
+    if pb_token.HasField("wildcard"):
+        return HexWildcard()
+    if pb_token.HasField("jump"):
+        return HexJump(
+            min_jump=pb_token.jump.min_jump if pb_token.jump.HasField("min_jump") else None,
+            max_jump=pb_token.jump.max_jump if pb_token.jump.HasField("max_jump") else None,
+        )
+    if pb_token.HasField("alternative"):
+        alternatives = []
+        for pb_alternative in pb_token.alternative.alternatives:
+            alternative = []
+            for nested_pb_token in pb_alternative.tokens:
+                token = _protobuf_to_hex_token(nested_pb_token)
+                if token is not None:
+                    alternative.append(token)
+            alternatives.append(alternative)
+        return HexAlternative(alternatives=alternatives)
+    if pb_token.HasField("nibble"):
+        return HexNibble(high=pb_token.nibble.high, value=pb_token.nibble.value)
+    return None
+
+
 def protobuf_to_string(pb_string):
     """Convert a protobuf string definition back to AST."""
     from yaraast.ast.modifiers import StringModifier
-    from yaraast.ast.strings import (
-        HexByte,
-        HexJump,
-        HexNibble,
-        HexString,
-        HexWildcard,
-        PlainString,
-        RegexString,
-    )
+    from yaraast.ast.strings import HexString, PlainString, RegexString
 
     if pb_string.HasField("plain"):
         modifiers = [
@@ -397,23 +421,9 @@ def protobuf_to_string(pb_string):
     if pb_string.HasField("hex"):
         tokens = []
         for pb_token in pb_string.hex.tokens:
-            if pb_token.HasField("byte"):
-                tokens.append(HexByte(value=int(pb_token.byte.value)))
-            elif pb_token.HasField("wildcard"):
-                tokens.append(HexWildcard())
-            elif pb_token.HasField("jump"):
-                tokens.append(
-                    HexJump(
-                        min_jump=(
-                            pb_token.jump.min_jump if pb_token.jump.HasField("min_jump") else None
-                        ),
-                        max_jump=(
-                            pb_token.jump.max_jump if pb_token.jump.HasField("max_jump") else None
-                        ),
-                    )
-                )
-            elif pb_token.HasField("nibble"):
-                tokens.append(HexNibble(high=pb_token.nibble.high, value=pb_token.nibble.value))
+            token = _protobuf_to_hex_token(pb_token)
+            if token is not None:
+                tokens.append(token)
         modifiers = [
             StringModifier.from_name_value(m.name, m.value if m.value else None)
             for m in pb_string.hex.modifiers

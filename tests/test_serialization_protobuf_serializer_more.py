@@ -40,6 +40,7 @@ from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
+    HexAlternative,
     HexByte,
     HexJump,
     HexNibble,
@@ -142,6 +143,31 @@ def test_protobuf_serializer_preserves_hex_jump_zero_and_open_bounds() -> None:
 
     assert isinstance(string_def, HexString)
     assert [(token.min_jump, token.max_jump) for token in string_def.tokens] == expected_jumps
+
+
+def test_protobuf_serializer_preserves_hex_alternatives() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    alternative = HexAlternative(
+        alternatives=[
+            [HexByte(value=0xAA), HexWildcard()],
+            [HexJump(min_jump=1, max_jump=3), HexNibble(high=False, value=0xF)],
+        ]
+    )
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="hex_alternative",
+                strings=[HexString(identifier="$h", tokens=[alternative])],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    string_def = restored.rules[0].strings[0]
+
+    assert isinstance(string_def, HexString)
+    assert string_def.tokens == [alternative]
 
 
 def test_protobuf_serializer_preserves_extended_expression_roundtrips() -> None:
