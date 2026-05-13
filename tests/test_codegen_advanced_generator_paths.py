@@ -88,6 +88,25 @@ def test_advanced_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
     assert "/ab.*/ i" not in aligned
 
 
+def test_advanced_generator_aligned_plain_strings_escape_values() -> None:
+    rule = Rule(
+        name="escaped_strings",
+        strings=[
+            PlainString(identifier="$a", value="a\nb"),
+            PlainString(identifier="$b", value=b'A"\x00'),
+        ],
+        condition=BinaryExpression(StringIdentifier("$a"), "and", StringIdentifier("$b")),
+    )
+
+    for style in (StringStyle.ALIGNED, StringStyle.TABULAR):
+        out = AdvancedCodeGenerator(FormattingConfig(string_style=style)).generate(
+            YaraFile(rules=[rule])
+        )
+
+        assert '$a = "a\\nb"' in out
+        assert '$b = "A\\"\\x00"' in out
+
+
 def test_advanced_generator_meta_and_tags_branches() -> None:
     mod = StringModifier(StringModifierType.NOCASE)
     meta_list = [Meta("b", '"already"'), _KeyOnly("missing_value"), Meta("a", True)]

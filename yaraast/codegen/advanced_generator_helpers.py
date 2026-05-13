@@ -14,7 +14,11 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.codegen.formatting import HexStyle, StringStyle
-from yaraast.codegen.generator_helpers import format_modifier, split_regex_modifiers
+from yaraast.codegen.generator_helpers import (
+    escape_plain_string_value,
+    format_modifier,
+    split_regex_modifiers,
+)
 
 
 def collect_string_definitions(
@@ -26,7 +30,7 @@ def collect_string_definitions(
     for string_def in strings:
         identifier = string_def.identifier
         if isinstance(string_def, PlainString):
-            value = f'"{string_def.value}"'
+            value = f'"{escape_plain_string_value(string_def.value)}"'
         elif isinstance(string_def, HexString):
             value = format_hex_string(string_def, config)
         elif isinstance(string_def, RegexString):
