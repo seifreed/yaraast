@@ -21,6 +21,18 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
         pb_include = pb_file.includes.add()
         pb_include.path = inc.path
 
+    for extern_rule in ast.extern_rules:
+        convert_extern_rule_to_protobuf(extern_rule, pb_file.extern_rules.add())
+
+    for extern_import in ast.extern_imports:
+        convert_extern_import_to_protobuf(extern_import, pb_file.extern_imports.add())
+
+    for pragma in ast.pragmas:
+        convert_pragma_to_protobuf(pragma, pb_file.pragmas.add())
+
+    for namespace in ast.namespaces:
+        convert_extern_namespace_to_protobuf(namespace, pb_file.namespaces.add())
+
     for rule in ast.rules:
         pb_rule = pb_file.rules.add()
         convert_rule_to_protobuf(rule, pb_rule)
@@ -69,6 +81,80 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
 
     if rule.condition:
         convert_expression_to_protobuf(rule.condition, pb_rule.condition)
+
+    for pragma in rule.pragmas:
+        convert_in_rule_pragma_to_protobuf(pragma, pb_rule.pragmas.add())
+
+
+def _copy_python_value_to_meta_value(value, pb_meta_value) -> None:
+    if isinstance(value, str):
+        pb_meta_value.string_value = value
+    elif isinstance(value, bool):
+        pb_meta_value.bool_value = value
+    elif isinstance(value, int):
+        pb_meta_value.int_value = value
+    elif isinstance(value, float):
+        pb_meta_value.double_value = value
+    else:
+        pb_meta_value.string_value = str(value)
+
+
+def _meta_value_to_python(pb_meta_value):
+    if pb_meta_value.HasField("string_value"):
+        return pb_meta_value.string_value
+    if pb_meta_value.HasField("bool_value"):
+        return pb_meta_value.bool_value
+    if pb_meta_value.HasField("int_value"):
+        return pb_meta_value.int_value
+    if pb_meta_value.HasField("double_value"):
+        return pb_meta_value.double_value
+    return ""
+
+
+def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
+    pb_extern_rule.name = extern_rule.name
+    pb_extern_rule.modifiers.extend(str(modifier) for modifier in extern_rule.modifiers)
+    if extern_rule.namespace:
+        pb_extern_rule.namespace = extern_rule.namespace
+
+
+def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
+    pb_extern_import.module_path = extern_import.module_path
+    if extern_import.alias:
+        pb_extern_import.alias = extern_import.alias
+    pb_extern_import.rules.extend(extern_import.rules)
+
+
+def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
+    pb_namespace.name = namespace.name
+    for extern_rule in namespace.extern_rules:
+        convert_extern_rule_to_protobuf(extern_rule, pb_namespace.extern_rules.add())
+
+
+def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
+    scope = getattr(pragma, "scope", None)
+    pb_pragma.pragma_type = getattr(pragma.pragma_type, "value", str(pragma.pragma_type))
+    pb_pragma.name = pragma.name
+    pb_pragma.arguments.extend(pragma.arguments)
+    pb_pragma.scope = getattr(scope, "value", str(scope)) if scope is not None else ""
+
+    macro_name = getattr(pragma, "macro_name", "")
+    if macro_name:
+        pb_pragma.macro_name = macro_name
+    macro_value = getattr(pragma, "macro_value", None)
+    if macro_value is not None:
+        pb_pragma.macro_value = macro_value
+    condition = getattr(pragma, "condition", None)
+    if condition is not None:
+        pb_pragma.condition = condition
+
+    for key, value in getattr(pragma, "parameters", {}).items():
+        _copy_python_value_to_meta_value(value, pb_pragma.parameters[str(key)])
+
+
+def convert_in_rule_pragma_to_protobuf(in_rule_pragma, pb_in_rule_pragma) -> None:
+    convert_pragma_to_protobuf(in_rule_pragma.pragma, pb_in_rule_pragma.pragma)
+    pb_in_rule_pragma.position = in_rule_pragma.position
 
 
 def _modifier_value_text(value) -> str:
@@ -407,6 +493,11 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
     for pb_include in pb_file.includes:
         includes.append(Include(path=pb_include.path))
 
+    extern_rules = [protobuf_to_extern_rule(pb_rule) for pb_rule in pb_file.extern_rules]
+    extern_imports = [protobuf_to_extern_import(pb_import) for pb_import in pb_file.extern_imports]
+    pragmas = [protobuf_to_pragma(pb_pragma) for pb_pragma in pb_file.pragmas]
+    namespaces = [protobuf_to_extern_namespace(pb_namespace) for pb_namespace in pb_file.namespaces]
+
     rules = []
     for pb_rule in pb_file.rules:
         tags = []
@@ -444,6 +535,7 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
             if pb_rule.HasField("condition")
             else BooleanLiteral(value=True)
         )
+        pragmas_for_rule = [protobuf_to_in_rule_pragma(pb_pragma) for pb_pragma in pb_rule.pragmas]
 
         rules.append(
             Rule(
@@ -453,10 +545,124 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
                 meta=meta,
                 strings=strings,
                 condition=condition,
+                pragmas=pragmas_for_rule,
             )
         )
 
-    return YaraFile(imports=imports, includes=includes, rules=rules)
+    return YaraFile(
+        imports=imports,
+        includes=includes,
+        rules=rules,
+        extern_rules=extern_rules,
+        extern_imports=extern_imports,
+        pragmas=pragmas,
+        namespaces=namespaces,
+    )
+
+
+def protobuf_to_extern_rule(pb_extern_rule):
+    from yaraast.ast.extern import ExternRule
+    from yaraast.ast.modifiers import RuleModifier
+    from yaraast.errors import ValidationError
+
+    modifiers = []
+    for modifier in pb_extern_rule.modifiers:
+        try:
+            modifiers.append(RuleModifier.from_string(modifier))
+        except (ValueError, ValidationError):
+            modifiers.append(modifier)
+
+    return ExternRule(
+        name=pb_extern_rule.name,
+        modifiers=modifiers,
+        namespace=pb_extern_rule.namespace or None,
+    )
+
+
+def protobuf_to_extern_import(pb_extern_import):
+    from yaraast.ast.extern import ExternImport
+
+    return ExternImport(
+        module_path=pb_extern_import.module_path,
+        alias=pb_extern_import.alias or None,
+        rules=list(pb_extern_import.rules),
+    )
+
+
+def protobuf_to_extern_namespace(pb_namespace):
+    from yaraast.ast.extern import ExternNamespace
+
+    return ExternNamespace(
+        name=pb_namespace.name,
+        extern_rules=[protobuf_to_extern_rule(pb_rule) for pb_rule in pb_namespace.extern_rules],
+    )
+
+
+def _protobuf_pragma_scope(scope_text):
+    from yaraast.ast.pragmas import PragmaScope
+
+    try:
+        return PragmaScope(scope_text or PragmaScope.FILE.value)
+    except ValueError:
+        return PragmaScope.FILE
+
+
+def protobuf_to_pragma(pb_pragma):
+    from yaraast.ast.pragmas import (
+        ConditionalDirective,
+        CustomPragma,
+        DefineDirective,
+        IncludeOncePragma,
+        Pragma,
+        PragmaType,
+        UndefDirective,
+    )
+
+    pragma_type = PragmaType.from_string(
+        pb_pragma.pragma_type or pb_pragma.name or PragmaType.CUSTOM.value
+    )
+    scope = _protobuf_pragma_scope(pb_pragma.scope)
+    parameters = {key: _meta_value_to_python(value) for key, value in pb_pragma.parameters.items()}
+
+    if pragma_type == PragmaType.INCLUDE_ONCE:
+        pragma = IncludeOncePragma()
+    elif pragma_type == PragmaType.DEFINE and pb_pragma.macro_name:
+        pragma = DefineDirective(
+            macro_name=pb_pragma.macro_name,
+            macro_value=pb_pragma.macro_value if pb_pragma.HasField("macro_value") else None,
+        )
+    elif pragma_type == PragmaType.UNDEF and pb_pragma.macro_name:
+        pragma = UndefDirective(macro_name=pb_pragma.macro_name)
+    elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
+        pragma = ConditionalDirective(
+            pragma_type,
+            condition=pb_pragma.condition if pb_pragma.HasField("condition") else None,
+        )
+    elif pragma_type == PragmaType.CUSTOM:
+        pragma = CustomPragma(
+            name=pb_pragma.name,
+            arguments=list(pb_pragma.arguments),
+            parameters=parameters,
+            scope=scope,
+        )
+    else:
+        pragma = Pragma(
+            pragma_type=pragma_type,
+            name=pb_pragma.name,
+            arguments=list(pb_pragma.arguments),
+            scope=scope,
+        )
+    pragma.scope = scope
+    return pragma
+
+
+def protobuf_to_in_rule_pragma(pb_in_rule_pragma):
+    from yaraast.ast.pragmas import InRulePragma
+
+    return InRulePragma(
+        pragma=protobuf_to_pragma(pb_in_rule_pragma.pragma),
+        position=pb_in_rule_pragma.position or "before_strings",
+    )
 
 
 def _protobuf_to_hex_token(pb_token):

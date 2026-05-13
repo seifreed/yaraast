@@ -8,6 +8,10 @@ message YaraFile {
     repeated Include includes = 2;
     repeated Rule rules = 3;
     Metadata metadata = 4;
+    repeated ExternRule extern_rules = 5;
+    repeated ExternImport extern_imports = 6;
+    repeated Pragma pragmas = 7;
+    repeated ExternNamespace namespaces = 8;
 }
 
 // Metadata for serialization
@@ -42,6 +46,7 @@ message Rule {
     repeated StringDefinition strings = 5;
     Expression condition = 6;
     map<string, string> meta_scopes = 7;
+    repeated InRulePragma pragmas = 8;
 }
 
 // Tag
@@ -57,6 +62,39 @@ message MetaValue {
         bool bool_value = 3;
         double double_value = 4;
     }
+}
+
+message ExternRule {
+    string name = 1;
+    repeated string modifiers = 2;
+    string namespace = 3;
+}
+
+message ExternImport {
+    string module_path = 1;
+    string alias = 2;
+    repeated string rules = 3;
+}
+
+message ExternNamespace {
+    string name = 1;
+    repeated ExternRule extern_rules = 2;
+}
+
+message Pragma {
+    string pragma_type = 1;
+    string name = 2;
+    repeated string arguments = 3;
+    string scope = 4;
+    string macro_name = 5;
+    optional string macro_value = 6;
+    optional string condition = 7;
+    map<string, MetaValue> parameters = 8;
+}
+
+message InRulePragma {
+    Pragma pragma = 1;
+    string position = 2;
 }
 
 // String definitions
