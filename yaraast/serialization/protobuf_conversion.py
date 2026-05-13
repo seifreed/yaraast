@@ -109,8 +109,11 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
     elif isinstance(token, HexWildcard):
         pb_token.wildcard.CopyFrom(yara_ast_pb2.HexWildcard())
     elif isinstance(token, HexJump):
-        pb_token.jump.min_jump = token.min_jump or 0
-        pb_token.jump.max_jump = token.max_jump or 0
+        pb_token.jump.SetInParent()
+        if token.min_jump is not None:
+            pb_token.jump.min_jump = token.min_jump
+        if token.max_jump is not None:
+            pb_token.jump.max_jump = token.max_jump
     elif isinstance(token, HexNibble):
         pb_token.nibble.high = token.high
         pb_token.nibble.value = token.value
@@ -256,8 +259,12 @@ def protobuf_to_string(pb_string):
             elif pb_token.HasField("jump"):
                 tokens.append(
                     HexJump(
-                        min_jump=pb_token.jump.min_jump or None,
-                        max_jump=pb_token.jump.max_jump or None,
+                        min_jump=(
+                            pb_token.jump.min_jump if pb_token.jump.HasField("min_jump") else None
+                        ),
+                        max_jump=(
+                            pb_token.jump.max_jump if pb_token.jump.HasField("max_jump") else None
+                        ),
                     )
                 )
             elif pb_token.HasField("nibble"):

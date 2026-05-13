@@ -62,7 +62,7 @@ visualization = [
     "jinja2>=3.0.0",
 ]
 serialization = [
-    "protobuf>=4.0.0",
+    "protobuf>=7.34.1",
 ]
 quality = [
     "qlty>=0.1.0",

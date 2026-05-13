@@ -92,6 +92,40 @@ def test_protobuf_serializer_roundtrip_and_metadata() -> None:
     assert restored.rules[0].condition is not None  # Condition is preserved (no longer placeholder)
 
 
+def test_protobuf_serializer_preserves_hex_jump_zero_and_open_bounds() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    expected_jumps = [
+        (0, 100),
+        (None, None),
+        (0, 0),
+        (None, 8),
+        (4, None),
+    ]
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="jump_bounds",
+                strings=[
+                    HexString(
+                        identifier="$h",
+                        tokens=[
+                            HexJump(min_jump=min_jump, max_jump=max_jump)
+                            for min_jump, max_jump in expected_jumps
+                        ],
+                    )
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    string_def = restored.rules[0].strings[0]
+
+    assert isinstance(string_def, HexString)
+    assert [(token.min_jump, token.max_jump) for token in string_def.tokens] == expected_jumps
+
+
 def test_protobuf_serializer_without_metadata() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = _sample_ast()

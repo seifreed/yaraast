@@ -108,8 +108,8 @@ message HexWildcard {
 }
 
 message HexJump {
-    int32 min_jump = 1;
-    int32 max_jump = 2;
+    optional int32 min_jump = 1;
+    optional int32 max_jump = 2;
 }
 
 message HexAlternative {
