@@ -174,6 +174,37 @@ def test_ast_diff_treats_in_rule_pragma_reordering_as_unchanged() -> None:
     assert result.differences == []
 
 
+def test_ast_diff_treats_rule_string_reordering_as_unchanged() -> None:
+    old_ast = _parse_yara(
+        """
+        rule string_order {
+            strings:
+                $b = "beta"
+                $a = "alpha"
+            condition:
+                any of them
+        }
+        """,
+    )
+    new_ast = _parse_yara(
+        """
+        rule string_order {
+            strings:
+                $a = "alpha"
+                $b = "beta"
+            condition:
+                any of them
+        }
+        """,
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.old_ast_hash == result.new_ast_hash
+    assert not result.has_changes
+    assert result.differences == []
+
+
 def test_ast_diff_treats_extended_file_field_reordering_as_unchanged() -> None:
     cases = [
         (
