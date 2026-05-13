@@ -5,6 +5,7 @@ from typing import Any, cast
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import Condition
+from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.rules import Rule
@@ -90,11 +91,22 @@ def test_comment_aware_generator_import_include_without_trailing_comments() -> N
 
     file_ast = YaraFile(
         imports=[Import("pe")],
-        includes=[Include("common.yar")],
+        includes=[Include("common.yar"), Include("more.yar")],
         rules=[],
     )
 
     out = CommentAwareCodeGenerator().generate(file_ast)
 
     assert 'import "pe"' in out
-    assert 'include "common.yar"' in out
+    assert 'include "common.yar"\ninclude "more.yar"' in out
+
+
+def test_comment_aware_generator_condition_trailing_comment_stays_on_condition_line() -> None:
+    condition = BooleanLiteral(True)
+    condition.trailing_comment = Comment("condition tail")
+    file_ast = YaraFile(rules=[Rule(name="commented_condition", condition=condition)])
+
+    out = CommentAwareCodeGenerator().generate(file_ast)
+
+    assert "true  // condition tail\n    }" in out
+    assert "// condition tail    }" not in out

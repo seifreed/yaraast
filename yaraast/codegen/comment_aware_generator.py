@@ -110,7 +110,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
             self.visit(inc)
             if inc.trailing_comment:
                 self._write_comment(inc.trailing_comment, inline=True)
-                self._writeline()
+            self._writeline()
 
         if node.includes:
             self._writeline()
@@ -215,10 +215,18 @@ class CommentAwareCodeGenerator(CodeGenerator):
             self._write_leading_comments(node.condition.leading_comments)
 
         condition_str = self.visit(node.condition)
-        self._writeline(condition_str)
-
-        if hasattr(node.condition, "trailing_comment") and node.condition.trailing_comment:
-            self._write_comment(node.condition.trailing_comment, inline=True)
+        trailing = getattr(node.condition, "trailing_comment", None)
+        if condition_str:
+            indent = " " * (self.indent_level * self.indent_size)
+            self._write(indent)
+            self._write(condition_str)
+            if trailing:
+                self._write_comment(trailing, inline=True)
+            self._writeline()
+        elif trailing:
+            self._write_comment(trailing)
+        else:
+            self._writeline()
 
         self._dedent()
 
