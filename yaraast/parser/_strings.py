@@ -7,7 +7,7 @@ from yaraast.ast.strings import HexString, HexToken, PlainString, RegexString, S
 from yaraast.lexer import TokenType
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
-from ._shared import ParserError
+from ._shared import ParserError, parse_regex_value
 
 
 class StringParsingMixin:
@@ -57,8 +57,8 @@ class StringParsingMixin:
                     )
                 )
             elif self._match(TokenType.REGEX):
-                regex = self._previous().value
-                modifiers = self._parse_string_modifiers()
+                regex, regex_modifiers = parse_regex_value(self._previous().value)
+                modifiers = [*regex_modifiers, *self._parse_string_modifiers()]
                 strings.append(
                     self._set_node_location_from_tokens(
                         RegexString(identifier=identifier, regex=regex, modifiers=modifiers),

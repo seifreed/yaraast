@@ -73,3 +73,7 @@ def test_parse_regex_value_branches() -> None:
     pattern_mix, mods_mix = parse_regex_value("abc\x00isx")
     assert pattern_mix == "abc"
     assert [m.name for m in mods_mix] == ["nocase", "dotall"]
+
+    pattern_m, mods_m = parse_regex_value("abc\x00m")
+    assert pattern_m == "abc"
+    assert [m.name for m in mods_m] == ["multiline"]

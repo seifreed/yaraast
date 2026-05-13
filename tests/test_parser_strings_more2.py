@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.ast.strings import RegexString
+from yaraast.codegen.generator import CodeGenerator
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.parser import Parser
@@ -54,6 +56,19 @@ def test_parse_strings_section_success_and_main_errors() -> None:
     )
     with pytest.raises(ParserError, match="Invalid string value"):
         p._parse_strings_section()
+
+
+def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:
+    ast = Parser("rule r { strings: $r = /ab+c/ims condition: $r }").parse()
+    regex = ast.rules[0].strings[0]
+
+    assert isinstance(regex, RegexString)
+    assert regex.regex == "ab+c"
+    assert [modifier.name for modifier in regex.modifiers] == ["nocase", "multiline", "dotall"]
+
+    generated = CodeGenerator().generate(ast)
+    assert "\x00" not in generated
+    assert "$r = /ab+c/ nocase multiline dotall" in generated
 
 
 def test_parse_string_modifiers_xor_variants_and_errors() -> None:
