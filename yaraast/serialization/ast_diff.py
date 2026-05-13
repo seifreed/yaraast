@@ -8,7 +8,12 @@ from pathlib import Path
 import time
 from typing import TYPE_CHECKING, Any
 
-from yaraast.serialization.ast_diff_compare import compare_imports, compare_includes, compare_rules
+from yaraast.serialization.ast_diff_compare import (
+    compare_extended_file_fields,
+    compare_imports,
+    compare_includes,
+    compare_rules,
+)
 from yaraast.serialization.ast_diff_hasher import AstHasher
 
 if TYPE_CHECKING:
@@ -113,6 +118,7 @@ class AstDiff:
         # Compare file-level elements
         compare_imports(old_ast.imports, new_ast.imports, result, DiffNode, DiffType)
         compare_includes(old_ast.includes, new_ast.includes, result, DiffNode, DiffType)
+        compare_extended_file_fields(old_ast, new_ast, result, self.hasher, DiffNode, DiffType)
         compare_rules(old_ast.rules, new_ast.rules, result, self.hasher, DiffNode, DiffType)
 
         # Add statistics

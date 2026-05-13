@@ -7,7 +7,9 @@ from textwrap import dedent
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry
+from yaraast.ast.pragmas import CustomPragma
 from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher, DiffType
@@ -70,6 +72,34 @@ def test_ast_diff_detects_meta_scope_changes() -> None:
     assert isinstance(meta_diff.new_value, dict)
     assert meta_diff.old_value["secret"]["scope"] == "public"
     assert meta_diff.new_value["secret"]["scope"] == "private"
+
+
+def test_ast_diff_detects_extended_file_field_changes() -> None:
+    old_ast = YaraFile(
+        extern_imports=[ExternImport(module_path="external.yar", alias="ext")],
+        extern_rules=[ExternRule(name="RemoteRule")],
+        pragmas=[CustomPragma(name="vendor", parameters={"level": "strict"})],
+        namespaces=[ExternNamespace(name="corp", extern_rules=[ExternRule(name="Nested")])],
+        rules=[Rule(name="stable", condition=BooleanLiteral(value=True))],
+    )
+    new_ast = YaraFile(
+        extern_imports=[ExternImport(module_path="external.yar", alias="renamed")],
+        extern_rules=[ExternRule(name="OtherRule")],
+        pragmas=[CustomPragma(name="vendor", parameters={"level": "relaxed"})],
+        namespaces=[ExternNamespace(name="corp", extern_rules=[ExternRule(name="Changed")])],
+        rules=[Rule(name="stable", condition=BooleanLiteral(value=True))],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    by_path = {diff.path: diff for diff in result.differences}
+    assert by_path["/extern_imports/external.yar"].diff_type == DiffType.MODIFIED
+    assert by_path["/extern_rules/RemoteRule"].diff_type == DiffType.REMOVED
+    assert by_path["/extern_rules/OtherRule"].diff_type == DiffType.ADDED
+    assert by_path["/pragmas/custom:vendor:"].diff_type == DiffType.MODIFIED
+    assert by_path["/namespaces/corp"].diff_type == DiffType.MODIFIED
+    assert result.has_changes
+    assert result.statistics["total_changes"] == len(result.differences)
 
 
 def test_ast_diff_treats_tag_reordering_as_unchanged() -> None:

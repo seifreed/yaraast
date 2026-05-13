@@ -59,6 +59,125 @@ def compare_imports(old_imports, new_imports, result, diff_node, diff_type) -> N
                 )
 
 
+def compare_extended_file_fields(old_ast, new_ast, result, hasher, diff_node, diff_type) -> None:
+    """Compare extended file-level AST collections."""
+    compare_node_collection(
+        old_ast.extern_imports,
+        new_ast.extern_imports,
+        "/extern_imports",
+        "ExternImport",
+        _extern_import_key,
+        result,
+        hasher,
+        diff_node,
+        diff_type,
+    )
+    compare_node_collection(
+        old_ast.extern_rules,
+        new_ast.extern_rules,
+        "/extern_rules",
+        "ExternRule",
+        _extern_rule_key,
+        result,
+        hasher,
+        diff_node,
+        diff_type,
+    )
+    compare_node_collection(
+        old_ast.pragmas,
+        new_ast.pragmas,
+        "/pragmas",
+        "Pragma",
+        _pragma_key,
+        result,
+        hasher,
+        diff_node,
+        diff_type,
+    )
+    compare_node_collection(
+        old_ast.namespaces,
+        new_ast.namespaces,
+        "/namespaces",
+        "ExternNamespace",
+        _name_key,
+        result,
+        hasher,
+        diff_node,
+        diff_type,
+    )
+
+
+def compare_node_collection(
+    old_nodes,
+    new_nodes,
+    base_path: str,
+    node_type: str,
+    key_func,
+    result,
+    hasher,
+    diff_node,
+    diff_type,
+) -> None:
+    """Compare AST node collections by stable identity and structural hash."""
+    old_map = {key_func(node): node for node in old_nodes}
+    new_map = {key_func(node): node for node in new_nodes}
+
+    for key in sorted(new_map.keys() - old_map.keys()):
+        result.differences.append(
+            diff_node(
+                path=f"{base_path}/{key}",
+                diff_type=diff_type.ADDED,
+                new_value=key,
+                node_type=node_type,
+            ),
+        )
+
+    for key in sorted(old_map.keys() - new_map.keys()):
+        result.differences.append(
+            diff_node(
+                path=f"{base_path}/{key}",
+                diff_type=diff_type.REMOVED,
+                old_value=key,
+                node_type=node_type,
+            ),
+        )
+
+    for key in sorted(old_map.keys() & new_map.keys()):
+        old_hash = hasher.visit(old_map[key])
+        new_hash = hasher.visit(new_map[key])
+        if old_hash != new_hash:
+            result.differences.append(
+                diff_node(
+                    path=f"{base_path}/{key}",
+                    diff_type=diff_type.MODIFIED,
+                    old_value=old_hash,
+                    new_value=new_hash,
+                    node_type=node_type,
+                ),
+            )
+
+
+def _extern_import_key(node) -> str:
+    return str(getattr(node, "module_path", getattr(node, "module", "")))
+
+
+def _extern_rule_key(node) -> str:
+    name = str(getattr(node, "name", ""))
+    namespace = getattr(node, "namespace", None)
+    return f"{namespace}.{name}" if namespace else name
+
+
+def _pragma_key(node) -> str:
+    pragma_type = getattr(getattr(node, "pragma_type", None), "value", "")
+    name = str(getattr(node, "name", ""))
+    macro_name = str(getattr(node, "macro_name", ""))
+    return f"{pragma_type}:{name}:{macro_name}"
+
+
+def _name_key(node) -> str:
+    return str(getattr(node, "name", ""))
+
+
 def compare_includes(old_includes, new_includes, result, diff_node, diff_type) -> None:
     """Compare include lists."""
     old_paths = {inc.path for inc in old_includes}
