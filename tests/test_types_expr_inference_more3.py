@@ -183,3 +183,17 @@ def test_expr_inference_helper_and_branch_edges() -> None:
         ),
     )
     assert isinstance(fo, BooleanType)
+
+    raw_of = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        raw_of.infer(OfExpression(quantifier="any", string_set=["$a", "$b"])),
+        BooleanType,
+    )
+    assert raw_of.errors == []
+
+    raw_for_of = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        raw_for_of.infer(ForOfExpression(quantifier="all", string_set="them", condition=None)),
+        BooleanType,
+    )
+    assert raw_for_of.errors == []

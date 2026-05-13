@@ -153,6 +153,8 @@ def test_function_validator_visits_nested_condition_nodes() -> None:
                 quantifier=Identifier("q"),
                 string_set=SetExpression([Identifier("s")]),
             ),
+            ForOfExpression(quantifier="all", string_set="them", condition=None),
+            OfExpression(quantifier="any", string_set=["$a", "$b"]),
         ],
     )
 

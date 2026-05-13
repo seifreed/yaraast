@@ -79,6 +79,7 @@ def test_checker_reports_yarax_features_with_identifier_and_of_expression() -> N
         ),
     )
     checker.visit_of_expression(of_expr)
+    checker.visit_of_expression(OfExpression(quantifier="any", string_set=["$a", "$b"]))
     report = checker.get_report()
 
     assert "yarax_feature" in report["issues_by_type"]

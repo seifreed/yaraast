@@ -179,7 +179,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         self.visit(node.body)
 
     def visit_for_of_expression(self, node) -> None:
-        self.visit(node.string_set)
+        self._visit_ast_value(node.string_set)
         if node.condition:
             self.visit(node.condition)
 
@@ -208,6 +208,13 @@ class DependencyGraphGenerator(MetricsVisitorBase):
     def visit_string_operator_expression(self, node) -> None:
         self.visit(node.left)
         self.visit(node.right)
+
+    def _visit_ast_value(self, value) -> None:
+        if hasattr(value, "accept"):
+            self.visit(value)
+        elif isinstance(value, list):
+            for item in value:
+                self._visit_ast_value(item)
 
 
 # Analysis helpers live in dependency_graph_utils for a smaller public surface.

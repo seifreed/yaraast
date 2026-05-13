@@ -85,7 +85,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._condition_depths.append(self._current_depth)
         self.metrics.for_of_expressions += 1
 
-        self.visit(node.string_set)
+        self._visit_ast_value(node.string_set)
         if node.condition:
             self.visit(node.condition)
         self._current_depth -= 1
@@ -98,6 +98,13 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             self.visit(node.quantifier)
         if hasattr(node.string_set, "accept"):
             self.visit(node.string_set)
+
+    def _visit_ast_value(self, value) -> None:
+        if hasattr(value, "accept"):
+            self.visit(value)
+        elif isinstance(value, list):
+            for item in value:
+                self._visit_ast_value(item)
 
     def visit_string_identifier(self, node) -> None:
         """Track string usage."""

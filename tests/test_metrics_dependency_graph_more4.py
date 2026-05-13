@@ -138,6 +138,12 @@ def test_dependency_graph_generator_remaining_visitors_and_stats() -> None:
             condition=None,
         )
     )
+    gen.visit_for_of_expression(
+        ForOfExpression(quantifier="all", string_set="them", condition=None)
+    )
+    gen.visit_for_of_expression(
+        ForOfExpression(quantifier="all", string_set=["$a", "$b"], condition=None)
+    )
     gen.visit_module_reference(ModuleReference(module="pe"))
     gen.visit_dictionary_access(
         DictionaryAccess(object=ModuleReference(module="pe"), key=StringLiteral(value="k"))

@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.rules import Rule
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.complexity_helpers import (
     calculate_cognitive_complexity,
@@ -31,6 +35,21 @@ rule r1 {
     assert metrics.total_rules == 1
     assert metrics.total_imports == 1
     assert metrics.rules_with_strings == 1
+
+
+def test_complexity_analyzer_accepts_raw_string_sets() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="for_raw", condition=ForOfExpression("all", "them", condition=None)),
+            Rule(name="of_raw", condition=OfExpression("any", ["$a", "$b"])),
+            Rule(name="for_list", condition=ForOfExpression("any", ["$a"], BooleanLiteral(True))),
+        ],
+    )
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.for_of_expressions == 2
+    assert metrics.of_expressions == 1
 
 
 def test_complexity_expression_helpers() -> None:

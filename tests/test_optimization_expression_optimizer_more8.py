@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
@@ -167,11 +168,19 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
 
     for_node = SimpleNamespace(iterable=Identifier("it"), body=Identifier("body"))
     of_node = SimpleNamespace(quantifier=IntegerLiteral(2), string_set=Identifier("s"))
+    raw_of_node = OfExpression(quantifier="any", string_set=["$a", "$b"])
+    raw_for_of_node = ForOfExpression(
+        quantifier="all",
+        string_set=["$a", "$b"],
+        condition=BooleanLiteral(True),
+    )
     at_node = SimpleNamespace(offset=IntegerLiteral(4))
     in_node = SimpleNamespace(range=Identifier("r"))
 
     assert opt.visit_for_expression(for_node).iterable == Identifier("it")
     assert opt.visit_of_expression(of_node).string_set == Identifier("s")
+    assert opt.visit_of_expression(raw_of_node).string_set == ["$a", "$b"]
+    assert opt.visit_for_of_expression(raw_for_of_node).string_set == ["$a", "$b"]
     assert opt.visit_at_expression(at_node).offset == IntegerLiteral(4)
     assert opt.visit_in_expression(in_node).range == Identifier("r")
 

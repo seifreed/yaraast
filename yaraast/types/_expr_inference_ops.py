@@ -274,6 +274,26 @@ def infer_set_or_range(ctx, node):
     return RangeType()
 
 
+def _infer_quantifier_value(ctx, value):
+    if hasattr(value, "accept"):
+        return ctx.visit(value)
+    if isinstance(value, int):
+        return IntegerType()
+    if isinstance(value, float):
+        return DoubleType()
+    if isinstance(value, str):
+        return StringType()
+    return UnknownType()
+
+
+def _infer_string_set_value(ctx, value):
+    if hasattr(value, "accept"):
+        return ctx.visit(value)
+    if isinstance(value, str | list):
+        return StringSetType()
+    return UnknownType()
+
+
 def infer_module_or_condition(ctx, node):
     if isinstance(node, ModuleReference) or hasattr(node, "module"):
         module_type = ctx._resolve_module_type(node.module)
@@ -295,10 +315,10 @@ def infer_module_or_condition(ctx, node):
         return BooleanType()
 
     if isinstance(node, OfExpression):
-        quant_type = ctx.visit(node.quantifier)
+        quant_type = _infer_quantifier_value(ctx, node.quantifier)
         if not isinstance(quant_type, StringType | IntegerType):
             ctx.errors.append(f"'of' quantifier must be string or integer, got {quant_type}")
-        set_type = ctx.visit(node.string_set)
+        set_type = _infer_string_set_value(ctx, node.string_set)
         if not isinstance(set_type, StringSetType):
             ctx.errors.append(f"'of' requires string set, got {set_type}")
         return BooleanType()
@@ -324,7 +344,7 @@ def infer_module_or_condition(ctx, node):
         ctx.env.pop_scope()
         return BooleanType()
 
-    set_type = ctx.visit(node.string_set)
+    set_type = _infer_string_set_value(ctx, node.string_set)
     if not isinstance(set_type, StringSetType):
         ctx.errors.append(f"'for...of' requires string set, got {set_type}")
     if node.condition:

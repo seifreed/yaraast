@@ -349,12 +349,28 @@ class ExpressionOptimizer(ASTTransformer):
             node.body = self.visit(node.body)
         return node
 
+    def visit_for_of_expression(self, node: Any) -> Any:
+        if hasattr(node, "quantifier"):
+            node.quantifier = self._optimize_ast_value(node.quantifier)
+        if hasattr(node, "string_set"):
+            node.string_set = self._optimize_ast_value(node.string_set)
+        if hasattr(node, "condition") and node.condition:
+            node.condition = self.visit(node.condition)
+        return node
+
     def visit_of_expression(self, node: Any) -> Any:
         if hasattr(node, "quantifier"):
-            node.quantifier = self.visit(node.quantifier)
+            node.quantifier = self._optimize_ast_value(node.quantifier)
         if hasattr(node, "string_set"):
-            node.string_set = self.visit(node.string_set)
+            node.string_set = self._optimize_ast_value(node.string_set)
         return node
+
+    def _optimize_ast_value(self, value: Any) -> Any:
+        if hasattr(value, "accept"):
+            return self.visit(value)
+        if isinstance(value, list):
+            return [self._optimize_ast_value(item) for item in value]
+        return value
 
     def visit_at_expression(self, node: Any) -> Any:
         if hasattr(node, "offset"):

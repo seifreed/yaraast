@@ -95,6 +95,14 @@ rule two {
 
     assert analyzer.used_strings["manual"] == {"$a", "$b"}
 
+    analyzer.used_strings["manual"] = set()
+    analyzer.visit_for_of_expression(ForOfExpression("all", "them", condition=None))
+    assert analyzer.used_strings["manual"] == {"$a", "$b"}
+
+    analyzer.used_strings["manual"] = set()
+    analyzer.visit_of_expression(OfExpression("any", ["$a", "$b"]))
+    assert analyzer.used_strings["manual"] == {"$a", "$b"}
+
 
 def test_string_usage_analyzer_visit_rule_without_strings_or_condition() -> None:
     analyzer = StringUsageAnalyzer()

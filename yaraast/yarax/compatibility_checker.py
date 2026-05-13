@@ -251,8 +251,15 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
                     )
                     break
 
-        self.visit(node.quantifier)
-        self.visit(node.string_set)
+        self._visit_ast_value(node.quantifier)
+        self._visit_ast_value(node.string_set)
+
+    def _visit_ast_value(self, value: Any) -> None:
+        if hasattr(value, "accept"):
+            self.visit(value)
+        elif isinstance(value, list):
+            for item in value:
+                self._visit_ast_value(item)
 
     def visit_identifier(self, node: Identifier) -> None:
         """Check for 'with' statement usage."""

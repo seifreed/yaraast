@@ -174,34 +174,51 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.visit(node.range)
 
     def visit_for_of_expression(self, node: ForOfExpression) -> None:
-        # Handle "them" keyword
-        if isinstance(node.string_set, Identifier) and node.string_set.name == "them":
-            # "them" refers to all defined strings
-            if self.current_rule:
-                self.used_strings[self.current_rule].update(
-                    self.defined_strings[self.current_rule],
-                )
-        else:
-            self.visit(node.string_set)
+        self._visit_string_set_value(node.string_set)
 
         if node.condition:
             self.visit(node.condition)
 
     def visit_of_expression(self, node: OfExpression) -> None:
-        self.visit(node.quantifier)
+        self._visit_ast_value(node.quantifier)
+        self._visit_string_set_value(node.string_set)
 
-        # Handle special case of "them" keyword
-        if (
-            hasattr(node.string_set, "name")
-            and node.string_set.name == "them"
-            and self.current_rule
-        ):
-            # "them" refers to all defined strings in the current rule
+    def _visit_ast_value(self, value) -> None:
+        if hasattr(value, "accept"):
+            self.visit(value)
+        elif isinstance(value, list):
+            for item in value:
+                self._visit_ast_value(item)
+
+    def _visit_string_set_value(self, string_set) -> None:
+        if isinstance(string_set, str):
+            self._mark_string_set_text(string_set)
+            return
+        if isinstance(string_set, list):
+            for item in string_set:
+                if isinstance(item, str):
+                    self._mark_string_set_text(item)
+                else:
+                    self._visit_ast_value(item)
+            return
+        if isinstance(string_set, Identifier) and string_set.name == "them":
+            self._mark_all_current_rule_strings()
+            return
+        self._visit_ast_value(string_set)
+
+    def _mark_string_set_text(self, text: str) -> None:
+        if not (self.current_rule and self.in_condition):
+            return
+        if text == "them":
+            self._mark_all_current_rule_strings()
+        else:
+            self.used_strings[self.current_rule].add(self._normalize_string_id(text))
+
+    def _mark_all_current_rule_strings(self) -> None:
+        if self.current_rule:
             self.used_strings[self.current_rule].update(
                 self.defined_strings[self.current_rule],
             )
-        else:
-            self.visit(node.string_set)
 
     def visit_set_expression(self, node: SetExpression) -> None:
         for element in node.elements:
