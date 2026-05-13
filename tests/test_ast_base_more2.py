@@ -7,7 +7,7 @@ from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.extern import ExternRule
 from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import PlainString
+from yaraast.ast.strings import HexAlternative, HexByte, HexWildcard, PlainString
 from yaraast.parser import Parser
 
 
@@ -28,6 +28,14 @@ def test_ast_node_children_and_location() -> None:
     loc = Location(line=10, column=5, file="test.yar")
     rule.location = loc
     assert rule.location.file == "test.yar"
+
+
+def test_ast_node_children_flattens_nested_ast_lists() -> None:
+    byte = HexByte(value=0x11)
+    wildcard = HexWildcard()
+    alternative = HexAlternative(alternatives=[[byte], [wildcard]])
+
+    assert alternative.children() == [byte, wildcard]
 
 
 def test_yarafile_helpers() -> None:

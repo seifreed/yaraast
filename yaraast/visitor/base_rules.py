@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import TypeVar
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.visitor.base_helpers import VisitorHelperProtocol
@@ -33,6 +34,16 @@ class BaseVisitorRulesMixin:
 
     def visit_rule(self: VisitorHelperProtocol[T], node: Rule) -> T:
         self._visit_all(node.tags)
+        meta_values: Iterable[object]
+        if isinstance(node.meta, dict):
+            meta_values = node.meta.values()
+        elif isinstance(node.meta, list | tuple):
+            meta_values = node.meta
+        else:
+            meta_values = ()
+        for item in meta_values:
+            if isinstance(item, ASTNode):
+                self._visit_if(item)
         self._visit_all(node.strings)
         self._visit_if(node.condition)
         self._visit_all(node.pragmas)

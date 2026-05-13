@@ -19,12 +19,14 @@ class BaseVisitorMiscMixin:
         return self._noop()
 
     def visit_comment_group(self: VisitorHelperProtocol[T], node: CommentGroup) -> T:
+        self._visit_all(node.comments)
         return self._noop()
 
     def visit_extern_import(self: VisitorHelperProtocol[T], node: ExternImport) -> T:
         return self._noop()
 
     def visit_extern_namespace(self: VisitorHelperProtocol[T], node: ExternNamespace) -> T:
+        self._visit_all(node.extern_rules)
         return self._noop()
 
     def visit_extern_rule(self: VisitorHelperProtocol[T], node: ExternRule) -> T:

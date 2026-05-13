@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -50,15 +51,27 @@ class ASTNode(ABC):
         """Return semantic child nodes (excludes metadata like location and comments)."""
         from dataclasses import fields
 
+        def collect_from_items(values: Iterable[Any]) -> list[ASTNode]:
+            nested_children: list[ASTNode] = []
+            for item in values:
+                nested_children.extend(collect_children(item))
+            return nested_children
+
+        def collect_children(value: Any) -> list[ASTNode]:
+            if isinstance(value, ASTNode):
+                return [value]
+            if isinstance(value, Mapping):
+                return collect_from_items(value.values())
+            if isinstance(value, list | tuple | set | frozenset):
+                return collect_from_items(value)
+            return []
+
         children = []
         for f in fields(self):
             if f.name in self._METADATA_FIELDS:
                 continue
             value = getattr(self, f.name)
-            if isinstance(value, ASTNode):
-                children.append(value)
-            elif isinstance(value, list):
-                children.extend(v for v in value if isinstance(v, ASTNode))
+            children.extend(collect_children(value))
         return children
 
 

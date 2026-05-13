@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import Condition, ForExpression, ForOfExpression, InExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
@@ -11,6 +12,9 @@ from yaraast.ast.expressions import (
     RangeExpression,
     SetExpression,
 )
+from yaraast.ast.extern import ExternNamespace, ExternRule
+from yaraast.ast.meta import Meta
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexToken, StringDefinition
 from yaraast.visitor.base import BaseVisitor
 
@@ -25,6 +29,22 @@ class _RecordingVisitor(BaseVisitor[None]):
 
     def visit_identifier(self, node: Identifier) -> None:
         self.identifiers.append(node.name)
+
+
+class _StructuralRecordingVisitor(BaseVisitor[None]):
+    def __init__(self) -> None:
+        self.comments: list[str] = []
+        self.extern_rules: list[str] = []
+        self.meta_keys: list[str] = []
+
+    def visit_comment(self, node: Comment) -> None:
+        self.comments.append(node.text)
+
+    def visit_extern_rule(self, node: ExternRule) -> None:
+        self.extern_rules.append(node.name)
+
+    def visit_meta(self, node: Meta) -> None:
+        self.meta_keys.append(node.key)
 
 
 def test_base_visitor_expression_and_condition_methods() -> None:
@@ -77,3 +97,15 @@ def test_base_visitor_traverses_condition_quantifier_nodes() -> None:
     )
 
     assert visitor.identifiers == ["limit", "body", "count", "strings", "condition"]
+
+
+def test_base_visitor_traverses_nested_structural_nodes() -> None:
+    visitor = _StructuralRecordingVisitor()
+
+    visitor.visit(Rule(name="with_meta", meta=[Meta(key="author", value="unit")]))
+    visitor.visit(CommentGroup([Comment("one"), Comment("two")]))
+    visitor.visit(ExternNamespace(name="ns", extern_rules=[ExternRule(name="Nested")]))
+
+    assert visitor.meta_keys == ["author"]
+    assert visitor.comments == ["one", "two"]
+    assert visitor.extern_rules == ["Nested"]
