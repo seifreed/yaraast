@@ -6,6 +6,7 @@ from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, Of
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
+    DoubleLiteral,
     FunctionCall,
     Identifier,
     MemberAccess,
@@ -294,6 +295,14 @@ def _infer_string_set_value(ctx, value):
     return UnknownType()
 
 
+def _percentage_quantifier_value(value):
+    if isinstance(value, DoubleLiteral):
+        return value.value
+    if isinstance(value, float):
+        return value
+    return None
+
+
 def infer_module_or_condition(ctx, node):
     if isinstance(node, ModuleReference) or hasattr(node, "module"):
         module_type = ctx._resolve_module_type(node.module)
@@ -327,6 +336,9 @@ def infer_module_or_condition(ctx, node):
             ctx.errors.append(
                 f"'of' quantifier must be string, integer, or percentage, got {quant_type}"
             )
+        percentage = _percentage_quantifier_value(node.quantifier)
+        if percentage is not None and not 0 < percentage <= 1:
+            ctx.errors.append("'of' percentage quantifier must be between 1 and 100")
         set_type = _infer_string_set_value(ctx, node.string_set)
         if not isinstance(set_type, StringSetType):
             ctx.errors.append(f"'of' requires string set, got {set_type}")

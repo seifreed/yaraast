@@ -164,6 +164,22 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
     )
     assert percent_of.errors == []
 
+    for percentage in (0.0, 1.01):
+        bad_percent_of = ExpressionTypeInference(TypeEnvironment())
+        assert isinstance(
+            bad_percent_of.infer(
+                OfExpression(
+                    quantifier=DoubleLiteral(value=percentage),
+                    string_set=Identifier(name="them"),
+                )
+            ),
+            BooleanType,
+        )
+        assert any(
+            "'of' percentage quantifier must be between 1 and 100" in e
+            for e in bad_percent_of.errors
+        )
+
 
 def test_expr_inference_helper_and_branch_edges() -> None:
     env = TypeEnvironment()

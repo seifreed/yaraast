@@ -302,6 +302,18 @@ def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> Non
     )
     assert isinstance(p._parse_primary_expression(), OfExpression)
 
+    for percentage in (0, 101):
+        p = _parser_with_tokens(
+            [
+                _t(TokenType.INTEGER, percentage),
+                _t(TokenType.MODULO, "%"),
+                _t(TokenType.OF, "of"),
+                _t(TokenType.THEM, "them"),
+            ]
+        )
+        with pytest.raises(ParserError, match="Percentage quantifier must be between 1 and 100"):
+            p._parse_primary_expression()
+
     p = _parser_with_tokens(
         [_t(TokenType.STRING_IDENTIFIER, "$a"), _t(TokenType.AT, "at"), _t(TokenType.INTEGER, 5)]
     )
