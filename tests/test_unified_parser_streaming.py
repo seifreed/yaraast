@@ -93,6 +93,22 @@ rule x { condition: true }
     assert includes[0].path == "a.yar"
 
 
+def test_extract_preamble_fast_stops_at_modified_rule(tmp_path: Path) -> None:
+    f = tmp_path / "pre_modified.yar"
+    f.write_text(
+        """
+import "pe"
+private global rule x { condition: true }
+include "late.yar"
+""",
+        encoding="utf-8",
+    )
+
+    imports, includes = UnifiedParser._extract_preamble_fast(f)
+    assert [import_.module for import_ in imports] == ["pe"]
+    assert includes == []
+
+
 def test_parse_file_missing_raises_real(tmp_path: Path) -> None:
     missing = tmp_path / "missing.yar"
     with pytest.raises(FileNotFoundError):

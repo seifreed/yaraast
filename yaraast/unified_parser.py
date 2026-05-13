@@ -113,6 +113,7 @@ class UnifiedParser:
         # Regex patterns for parsing
         import_pattern = re.compile(r'^\s*import\s+"([^"]+)"(?:\s+as\s+(\w+))?\s*$')
         include_pattern = re.compile(r'^\s*include\s+"([^"]+)"\s*$')
+        rule_start_pattern = re.compile(r"^(?:(?:private|global)\s+)*rule\b", re.IGNORECASE)
 
         try:
             with open(file_path, encoding="utf-8") as f:
@@ -130,7 +131,7 @@ class UnifiedParser:
                         continue
 
                     # Stop at first rule definition (end of preamble)
-                    if stripped.startswith("rule "):
+                    if rule_start_pattern.match(stripped):
                         break
 
                     import_match = import_pattern.match(stripped)
