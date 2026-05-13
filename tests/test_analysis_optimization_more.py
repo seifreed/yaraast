@@ -91,6 +91,22 @@ def test_optimization_analyzer_hex_paths_condition_refs_and_specificity() -> Non
     assert not any("common prefix" in d for d in descriptions)
 
 
+def test_optimization_analyzer_detects_parsed_any_of_them_specificity() -> None:
+    strings = "\n".join(f'        $s{i} = "v{i}"' for i in range(11))
+    ast = _parse(f"""
+rule parsed_many {{
+    strings:
+{strings}
+    condition:
+        any of them
+}}
+""")
+
+    report = OptimizationAnalyzer().analyze(ast)
+
+    assert any("'any of them' with many strings" in s.description for s in report.suggestions)
+
+
 def test_optimization_analyzer_handles_regex_strings_and_mixed_hex_groups() -> None:
     mixed_rule = Rule(
         name="mixed_rule",

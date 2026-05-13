@@ -25,6 +25,21 @@ from yaraast.ast.strings import HexString
 from yaraast.visitor.base import BaseVisitor
 
 
+def _expression_text(value: Any) -> str | None:
+    if isinstance(value, str):
+        return value
+
+    raw_value = getattr(value, "value", None)
+    if raw_value is not None:
+        return str(raw_value)
+
+    name = getattr(value, "name", None)
+    if name is not None:
+        return str(name)
+
+    return None
+
+
 @dataclass
 class OptimizationSuggestion:
     """An optimization suggestion."""
@@ -155,12 +170,8 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         """Analyze 'of' expressions."""
         # Check for 'any of them' which could be more specific
         if (
-            (
-                hasattr(node.quantifier, "name")
-                and node.quantifier.name == "any"
-                and hasattr(node.string_set, "name")
-                and node.string_set.name == "them"
-            )
+            _expression_text(node.quantifier) == "any"
+            and _expression_text(node.string_set) == "them"
             and self._current_rule
             and len(self._current_rule.strings) > 10
         ):
