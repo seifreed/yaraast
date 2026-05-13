@@ -921,7 +921,9 @@ def protobuf_to_pragma(pb_pragma):
         pb_pragma.pragma_type or pb_pragma.name or PragmaType.CUSTOM.value
     )
     scope = _protobuf_pragma_scope(pb_pragma.scope)
-    parameters = {key: _meta_value_to_python(value) for key, value in pb_pragma.parameters.items()}
+    parameters = {
+        key: _meta_value_to_python(value) for key, value in sorted(pb_pragma.parameters.items())
+    }
 
     if pragma_type == PragmaType.INCLUDE_ONCE:
         pragma = IncludeOncePragma()

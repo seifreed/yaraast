@@ -129,6 +129,42 @@ def test_protobuf_deserializes_legacy_meta_map_in_stable_key_order() -> None:
     ]
 
 
+def test_protobuf_deserializes_pragma_parameters_in_stable_key_order() -> None:
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_pragma = pb_file.pragmas.add()
+    pb_pragma.pragma_type = "custom"
+    pb_pragma.name = "vendor"
+    for key in ("k9", "k1", "k5", "k2", "k8", "k3", "k7", "k4"):
+        pb_pragma.parameters[key].string_value = key
+
+    restored = protobuf_to_ast(pb_file)
+
+    assert isinstance(restored.pragmas[0], CustomPragma)
+    assert list(restored.pragmas[0].parameters) == [
+        "k1",
+        "k2",
+        "k3",
+        "k4",
+        "k5",
+        "k7",
+        "k8",
+        "k9",
+    ]
+
+
+def test_protobuf_serializer_uses_deterministic_map_encoding() -> None:
+    keys = ("k9", "k1", "k5", "k2", "k8", "k3", "k7", "k4")
+    serializer = ProtobufSerializer(include_metadata=False)
+    first = YaraFile(
+        pragmas=[CustomPragma("vendor", parameters={key: key for key in keys})],
+    )
+    second = YaraFile(
+        pragmas=[CustomPragma("vendor", parameters={key: key for key in reversed(keys)})],
+    )
+
+    assert serializer.serialize(first) == serializer.serialize(second)
+
+
 def test_protobuf_serializer_preserves_extern_rule_reference_condition() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

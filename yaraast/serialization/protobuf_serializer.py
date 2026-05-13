@@ -41,7 +41,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> bytes:
         """Serialize AST to Protobuf binary format."""
         pb_yara_file = self._ast_to_protobuf(ast)
-        binary_data = pb_yara_file.SerializeToString()
+        binary_data = pb_yara_file.SerializeToString(deterministic=True)
 
         if output_path:
             with Path(output_path).open("wb") as f:
@@ -110,7 +110,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
     def get_serialization_stats(self, ast: YaraFile) -> dict[str, Any]:
         """Get statistics about the serialization."""
         pb_file = self._ast_to_protobuf(ast)
-        binary_size = len(pb_file.SerializeToString())
+        binary_size = len(pb_file.SerializeToString(deterministic=True))
         text_size = len(str(pb_file))
 
         return {
