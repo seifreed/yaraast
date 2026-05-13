@@ -191,3 +191,6 @@ def test_generator_renders_prefixed_methods_and_non_default_values() -> None:
         generator.visit_yaral_event_assignment(event_assignment)
         == "$e.metadata.event_type = /AUTH.*/i nocase"
     )
+    assert generator.visit_regex_pattern(RegexPattern(pattern="foo/bar", flags=["i"])) == (
+        "/foo\\/bar/i"
+    )
