@@ -39,6 +39,7 @@ from yaraast.cli.metrics_reporting import (
 )
 from yaraast.cli.metrics_services import MetricsReportData
 from yaraast.cli.metrics_string_services import _analyze_string_patterns
+from yaraast.cli.performance_check_services import parse_performance_file
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 from yaraast.parser import Parser
@@ -80,6 +81,10 @@ def _sample_ast() -> YaraFile:
         }
         """,
     )
+
+
+def _yarax_rule() -> str:
+    return "rule x { condition: with xs = [1]: match xs { _ => true } }"
 
 
 def test_ast_benchmarker_success_error_and_summary(tmp_path: Path) -> None:
@@ -142,6 +147,21 @@ def test_ast_benchmarker_success_error_and_summary(tmp_path: Path) -> None:
     failures_only.benchmark_codegen(tmp_path / "missing_only_codegen.yar", iterations=1)
     failures_only.benchmark_roundtrip(tmp_path / "missing_only_roundtrip.yar", iterations=1)
     assert failures_only.get_benchmark_summary() == {}
+
+
+def test_ast_benchmarker_supports_yarax_roundtrip(tmp_path: Path) -> None:
+    yara_path = tmp_path / "bench_yarax.yar"
+    yara_path.write_text(_yarax_rule(), encoding="utf-8")
+    benchmarker = ASTBenchmarker()
+
+    parsing = benchmarker.benchmark_parsing(yara_path, iterations=1)
+    codegen = benchmarker.benchmark_codegen(yara_path, iterations=1)
+    roundtrip = benchmarker.benchmark_roundtrip(yara_path, iterations=1)[0]
+
+    assert parsing.success is True
+    assert codegen.success is True
+    assert roundtrip.success is True
+    assert parsing.rules_count == 1
 
 
 def test_ast_benchmarker_rejects_invalid_iterations(tmp_path: Path) -> None:
@@ -214,6 +234,15 @@ def test_performance_check_displays_issues(tmp_path: Path) -> None:
     assert "Performance Issues" in result.output
     assert "Suggestions:" in result.output
     assert "Found 1 performance issues" in result.output
+
+
+def test_performance_check_parser_preserves_yarax_condition(tmp_path: Path) -> None:
+    yarax_path = tmp_path / "perf_yarax.yar"
+    yarax_path.write_text(_yarax_rule(), encoding="utf-8")
+
+    ast = parse_performance_file(yarax_path)
+
+    assert ast.rules[0].condition.__class__.__name__ == "WithStatement"
 
 
 def test_performance_check_rejects_invalid_limit(tmp_path: Path) -> None:

@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Any
 
 from yaraast.cli.utils import read_text
+from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+from yaraast.parser.source import parse_yara_source
 from yaraast.performance.string_analyzer import StringPerformanceIssue, analyze_rule_performance
 
 
@@ -22,6 +24,8 @@ class Severity(StrEnum):
 def parse_performance_file(input_file: Path) -> Any:
     """Parse a YARA file and return AST or None."""
     content = read_text(input_file)
+    if detect_dialect(content) == YaraDialect.YARA_X:
+        return parse_yara_source(content)
     parser = ErrorTolerantParser()
     ast, _, _ = parser.parse_with_errors(content)
     return ast

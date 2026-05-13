@@ -22,9 +22,10 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, RuleModifierType
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import PlainString
-from yaraast.cli.visitors import ASTDumper, ConditionStringFormatter
+from yaraast.cli.visitors import ASTDumper, ASTTreeBuilder, ConditionStringFormatter
 from yaraast.cli.visitors.formatters import ExpressionStringFormatter
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def test_ast_dumper_handles_tags_meta_and_modifiers() -> None:
@@ -150,3 +151,12 @@ def test_condition_formatter_handles_for_of_expression_details() -> None:
     )
     assert ConditionStringFormatter().format_condition(built) == "for 2 of ($a*) : (true)"
     assert ExpressionStringFormatter().format_expression(built) == "for 2 of ($a*) : (true)"
+
+
+def test_tree_builder_formats_yarax_condition() -> None:
+    ast = parse_yara_source("rule x { condition: with xs = [1]: match xs { _ => true } }")
+
+    condition = ASTTreeBuilder()._get_condition_string(ast.rules[0].condition)
+
+    assert "with xs = [1]" in condition
+    assert "match xs" in condition

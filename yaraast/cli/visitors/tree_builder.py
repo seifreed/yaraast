@@ -197,12 +197,12 @@ class ASTTreeBuilder:
     def _get_condition_string(self, condition) -> str:
         """Get condition string using generator or fallback."""
         try:
-            from yaraast.codegen.generator import CodeGenerator
+            from yaraast.yarax.generator import YaraXGenerator
 
-            condition_str = CodeGenerator().generate(condition).strip()
+            condition_str = YaraXGenerator().visit(condition).strip()
             if not condition_str:
                 condition_str = self._condition_to_string(condition)
-        except (ValueError, TypeError, AttributeError):
+        except (NotImplementedError, ValueError, TypeError, AttributeError):
             condition_str = self._condition_to_string(condition)
         return condition_str
 

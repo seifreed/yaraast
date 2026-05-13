@@ -9,8 +9,8 @@ import time
 from typing import Any
 
 from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.codegen.generator import CodeGenerator
-from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source
+from yaraast.yarax.generator import YaraXGenerator
 
 
 @dataclass
@@ -53,11 +53,8 @@ class ASTBenchmarker:
                 content = f.read()
 
             file_size = len(content.encode())
-            # Parser will be instantiated with content
-
             # Warm up
-            parser = Parser(content)
-            ast = parser.parse()
+            ast = parse_yara_source(content)
             rules_count = len(ast.rules)
             strings_count = sum(len(rule.strings) for rule in ast.rules)
             ast_nodes = self._count_ast_nodes(ast)
@@ -66,8 +63,7 @@ class ASTBenchmarker:
             times = []
             for _ in range(iterations):
                 start = time.perf_counter()
-                parser = Parser(content)
-                ast = parser.parse()
+                ast = parse_yara_source(content)
                 end = time.perf_counter()
                 times.append(end - start)
 
@@ -109,18 +105,16 @@ class ASTBenchmarker:
         self._validate_iterations(iterations)
         try:
             # Parse file once
-            # Parser will be instantiated with content
             with Path(file_path).open(encoding="utf-8") as f:
                 content = f.read()
 
             file_size = len(content.encode())
-            parser = Parser(content)
-            ast = parser.parse()
+            ast = parse_yara_source(content)
             rules_count = len(ast.rules)
             strings_count = sum(len(rule.strings) for rule in ast.rules)
             ast_nodes = self._count_ast_nodes(ast)
 
-            generator = CodeGenerator()
+            generator = YaraXGenerator()
 
             # Benchmark
             times = []
@@ -176,8 +170,7 @@ class ASTBenchmarker:
             avg_time = self._time_roundtrip(content, iterations)
 
             # Parse once more for statistics
-            parser = Parser(content)
-            ast = parser.parse()
+            ast = parse_yara_source(content)
 
             result = BenchmarkResult(
                 operation="roundtrip",
@@ -215,9 +208,8 @@ class ASTBenchmarker:
         times = []
         for _ in range(iterations):
             start = time.perf_counter()
-            parser = Parser(content)
-            ast = parser.parse()
-            generator = CodeGenerator()
+            ast = parse_yara_source(content)
+            generator = YaraXGenerator()
             generator.generate(ast)
             end = time.perf_counter()
             times.append(end - start)

@@ -79,6 +79,22 @@ def test_streaming_parser_progress_cancel_and_memory_paths(tmp_path: Path) -> No
     parser3._maybe_collect_garbage()
 
 
+def test_streaming_parser_parse_files_supports_yarax(tmp_path: Path) -> None:
+    path = tmp_path / "yarax.yar"
+    path.write_text(
+        "rule x { condition: with xs = [1]: match xs { _ => true } }",
+        encoding="utf-8",
+    )
+    parser = StreamingParser()
+
+    rows = list(parser.parse_files([path]))
+
+    assert len(rows) == 1
+    assert rows[0].status.name == "SUCCESS"
+    assert rows[0].ast is not None
+    assert rows[0].ast.rules[0].condition.__class__.__name__ == "WithStatement"
+
+
 def test_streaming_parser_mmap_import_include_and_token_branches(tmp_path: Path) -> None:
     code = """
 import "pe"

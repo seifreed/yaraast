@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.dialects import YaraDialect
 from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source
 from yaraast.performance.streaming_mmap import iter_rule_texts_from_mmap, iter_rule_texts_from_text
 from yaraast.performance.streaming_result_builders import (
     build_error_parse_result,
@@ -191,7 +192,7 @@ class StreamingParser:
             try:
                 start_time = timed_now()
                 content = Path(file_path).read_text(encoding="utf-8")
-                ast = self.parser.parse(content)
+                ast = self._parse_content(content)
                 parse_time = timed_now() - start_time
 
                 self._stats["files_processed"] += 1
@@ -300,21 +301,22 @@ class StreamingParser:
     def _parse_rule_text(self, rule_text: str) -> Rule | None:
         """Parse a single rule text using the appropriate dialect parser."""
         try:
-            dialect = self.dialect
-            if dialect is not None and dialect != YaraDialect.YARA:
-                if self._dialect_parser_factory is not None:
-                    result = self._dialect_parser_factory(rule_text, dialect)
-                    if hasattr(result, "rules") and result.rules:
-                        return result.rules[0]
-            else:
-                # Use standard parser (default, fastest path)
-                yara_file = self.parser.parse(rule_text)
-                if yara_file.rules:
-                    return yara_file.rules[0]
+            yara_file = self._parse_content(rule_text)
+            if yara_file.rules:
+                return yara_file.rules[0]
         except Exception:
             self._stats["parse_errors"] += 1
 
         return None
+
+    def _parse_content(self, content: str) -> Any:
+        """Parse full content using the configured dialect or auto-detection."""
+        if self.dialect is not None:
+            if self.dialect != YaraDialect.YARA and self._dialect_parser_factory is not None:
+                return self._dialect_parser_factory(content, self.dialect)
+            if self.dialect == YaraDialect.YARA:
+                return self.parser.parse(content)
+        return parse_yara_source(content)
 
     def reset_statistics(self) -> None:
         """Reset parsing statistics."""
