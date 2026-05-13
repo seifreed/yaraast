@@ -266,7 +266,11 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return visit_of_expression(self, node)
 
     def visit_meta(self, node) -> dict[str, Any]:
-        return self._simple_node("Meta", key=node.key, value=node.value)
+        data = self._simple_node("Meta", key=node.key, value=node.value)
+        scope = getattr(node, "scope", None)
+        if scope is not None:
+            data["scope"] = getattr(scope, "value", str(scope))
+        return data
 
     def visit_module_reference(self, node) -> dict[str, Any]:
         return self._simple_node("ModuleReference", module=node.module)

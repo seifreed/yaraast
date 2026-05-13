@@ -241,8 +241,6 @@ class CommentAwareCodeGenerator(CodeGenerator):
         else:
             self._write(str(value))
 
-        self._writeline()
-
     def visit_plain_string(self, node: PlainString) -> str:
         """Generate code for PlainString with comments."""
         from yaraast.codegen.generator_helpers import escape_plain_string_value

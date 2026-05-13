@@ -338,9 +338,13 @@ class JsonSerializerDeserializeMixin:
         return Tag(name=data["name"])
 
     def _deserialize_meta(self, data: dict[str, Any]):
-        from yaraast.ast.meta import Meta
+        from yaraast.ast.modifiers import MetaEntry
 
-        return Meta(key=data["key"], value=data["value"])
+        return MetaEntry.from_key_value(
+            data["key"],
+            data["value"],
+            data.get("scope"),
+        )
 
     def _deserialize_string(self, data: dict[str, Any]):
         string_type = data.get("type")

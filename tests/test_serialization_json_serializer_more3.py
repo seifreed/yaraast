@@ -17,7 +17,7 @@ from yaraast.ast.expressions import (
     StringIdentifier,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
-from yaraast.ast.modifiers import RuleModifier, StringModifier
+from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, PragmaScope
 from yaraast.ast.rules import Import, Rule
@@ -162,6 +162,32 @@ def test_json_roundtrip_preserves_typed_string_modifier_values() -> None:
         (1, 3),
         "alphabet",
     ]
+
+
+def test_json_roundtrip_preserves_meta_entry_scope() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="meta_scope",
+                meta=[
+                    MetaEntry.from_key_value("secret", "token", "private"),
+                    MetaEntry.from_key_value("owner", "team"),
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    serialized = json.loads(serializer.serialize(ast))
+    restored = serializer.deserialize(json.dumps(serialized))
+
+    assert serialized["ast"]["rules"][0]["meta"][0]["scope"] == "private"
+    assert [entry.scope for entry in restored.rules[0].meta] == [
+        MetaScope.PRIVATE,
+        MetaScope.PUBLIC,
+    ]
+    assert [entry.key for entry in restored.rules[0].get_private_meta()] == ["secret"]
 
 
 def test_json_roundtrip_preserves_externs_and_pragmas() -> None:
