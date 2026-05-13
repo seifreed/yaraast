@@ -126,6 +126,44 @@ def test_json_roundtrip_preserves_raw_for_of_values() -> None:
     assert expression_quantifier.quantifier.value == 2
 
 
+def test_json_roundtrip_preserves_typed_string_modifier_values() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="typed_modifiers",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="a",
+                        modifiers=[StringModifier.from_name_value("xor", 5)],
+                    ),
+                    PlainString(
+                        identifier="$b",
+                        value="b",
+                        modifiers=[StringModifier.from_name_value("xor", (1, 3))],
+                    ),
+                    PlainString(
+                        identifier="$c",
+                        value="c",
+                        modifiers=[StringModifier.from_name_value("base64", "alphabet")],
+                    ),
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    restored_strings = restored.rules[0].strings
+
+    assert [string.modifiers[0].value for string in restored_strings] == [
+        5,
+        (1, 3),
+        "alphabet",
+    ]
+
+
 def test_json_roundtrip_preserves_externs_and_pragmas() -> None:
     serializer = JsonSerializer(include_metadata=True)
     ast = YaraFile(

@@ -43,6 +43,12 @@ if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
 
 
+def _serialize_modifier_value(value: Any) -> Any:
+    if isinstance(value, tuple):
+        return list(value)
+    return value
+
+
 class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]]):
     """Enhanced JSON serializer for YARA AST with metadata."""
 
@@ -149,7 +155,11 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return visit_regex_string(self, node)
 
     def visit_string_modifier(self, node) -> dict[str, Any]:
-        return self._simple_node("StringModifier", name=node.name, value=node.value)
+        return self._simple_node(
+            "StringModifier",
+            name=node.name,
+            value=_serialize_modifier_value(node.value),
+        )
 
     def visit_hex_token(self, node) -> dict[str, Any]:
         return self._simple_node("HexToken")

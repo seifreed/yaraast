@@ -374,10 +374,26 @@ class JsonSerializerDeserializeMixin:
         msg = f"Unknown string type: {string_type}"
         raise SerializationError(msg)
 
+    def _deserialize_modifier_value(self, name: str, value: Any) -> Any:
+        if name == "xor":
+            if isinstance(value, list) and len(value) == 2:
+                return (value[0], value[1])
+            if isinstance(value, str) and "-" in value:
+                low, high = value.split("-", maxsplit=1)
+                if low.isdigit() and high.isdigit():
+                    return (int(low), int(high))
+            if isinstance(value, str) and value.isdigit():
+                return int(value)
+        return value
+
     def _deserialize_modifier(self, data: dict[str, Any]):
         from yaraast.ast.modifiers import StringModifier
 
-        return StringModifier.from_name_value(data["name"], data.get("value"))
+        name = data["name"]
+        return StringModifier.from_name_value(
+            name,
+            self._deserialize_modifier_value(name, data.get("value")),
+        )
 
     def _deserialize_hex_token(self, data: dict[str, Any]):
         hex_kind = data.get("type")
