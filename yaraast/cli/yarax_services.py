@@ -7,7 +7,7 @@ import re
 from yaraast.cli.utils import parse_yara_file
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.dialects import _strip_string_literals
-from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source
 from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
 from yaraast.yarax.generator import YaraXGenerator
@@ -32,8 +32,7 @@ def check_yarax_compatibility(ast, strict: bool):
 
 
 def convert_yara_to_yarax(content: str) -> str:
-    parser = Parser(content)
-    ast = parser.parse()
+    ast = parse_yara_source(content)
     generator = YaraXGenerator()
     return generator.generate(ast)
 

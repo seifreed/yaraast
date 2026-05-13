@@ -58,6 +58,11 @@ def test_yarax_services_parse_and_convert_roundtrip(tmp_path: Path) -> None:
 
     converted_to_yarax = ys.convert_yara_to_yarax(yara_code)
     assert "rule a" in converted_to_yarax
+    native_yarax = ys.convert_yara_to_yarax(
+        "rule x { condition: with xs = [1]: match xs { _ => true } }"
+    )
+    assert "with xs = [1]" in native_yarax
+    assert "match xs" in native_yarax
 
     converted_to_yara = ys.convert_yarax_to_yara(yarax_code)
     assert "rule b" in converted_to_yara

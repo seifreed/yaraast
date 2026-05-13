@@ -23,6 +23,22 @@ def test_ensure_yara_available_branches() -> None:
         lib.YARA_AVAILABLE = original
 
 
+def test_libyara_services_reject_yarax_only_syntax(tmp_path: Path) -> None:
+    rule_file = tmp_path / "native_yarax.yar"
+    rule_file.write_text(
+        "rule x { condition: with xs = [1]: match xs { _ => true } }",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError) as exc_info:
+        ls.optimize_yara(str(rule_file))
+
+    message = str(exc_info.value)
+    assert "Cannot use YARA-X-only syntax with libyara" in message
+    assert "with statements" in message
+    assert "pattern matching" in message
+
+
 def test_scan_yara_compile_failure_branch_real(tmp_path: Path) -> None:
     rule_file = tmp_path / "r.yar"
     target_file = tmp_path / "sample.bin"

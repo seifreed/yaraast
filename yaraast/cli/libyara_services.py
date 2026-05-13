@@ -6,6 +6,8 @@ from pathlib import Path
 
 from yaraast import CodeGenerator
 from yaraast.cli.utils import parse_yara_file
+from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
+from yaraast.yarax.feature_flags import YaraXFeatures
 
 
 def ensure_yara_available() -> None:
@@ -17,6 +19,25 @@ def ensure_yara_available() -> None:
         raise RuntimeError(msg)
 
 
+def ensure_yara_compatible_ast(ast) -> None:
+    """Raise when an AST contains syntax libyara cannot compile."""
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+    blocking = [
+        issue
+        for issue in checker.check(ast)
+        if issue.issue_type == "yarax_feature" and issue.severity == "error"
+    ]
+    if blocking:
+        features = sorted(
+            {
+                issue.message.split(": ", 1)[1] if ": " in issue.message else issue.message
+                for issue in blocking
+            }
+        )
+        msg = "Cannot use YARA-X-only syntax with libyara: " + ", ".join(features)
+        raise ValueError(msg)
+
+
 def compile_yara(
     input_file: str,
     optimize: bool,
@@ -26,6 +47,7 @@ def compile_yara(
     from yaraast.libyara import DirectASTCompiler
 
     ast = parse_yara_file(input_file)
+    ensure_yara_compatible_ast(ast)
     compiler = DirectASTCompiler(enable_optimization=optimize, debug_mode=debug)
     result = compiler.compile_ast(ast)
     return result, compiler, ast
@@ -42,6 +64,7 @@ def scan_yara(
     from yaraast.libyara import DirectASTCompiler, OptimizedMatcher
 
     ast = parse_yara_file(rules_file)
+    ensure_yara_compatible_ast(ast)
     compiler = DirectASTCompiler(enable_optimization=optimize)
     compile_result = compiler.compile_ast(ast)
     if not compile_result.success:
@@ -61,6 +84,7 @@ def optimize_yara(input_file: str):
     from yaraast.libyara import ASTOptimizer
 
     ast = parse_yara_file(input_file)
+    ensure_yara_compatible_ast(ast)
     optimizer = ASTOptimizer()
     optimized_ast = optimizer.optimize(ast)
 
