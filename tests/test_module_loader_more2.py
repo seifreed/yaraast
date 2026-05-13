@@ -37,6 +37,15 @@ def test_module_loader_handles_invalid_files_and_unknown_types(tmp_path: Path) -
     assert isinstance(loader._parse_type({"type": "mystery"}), AnyType)
 
 
+def test_module_loader_ignores_unreadable_module_specs(tmp_path: Path) -> None:
+    loader = ModuleLoader()
+    before = dict(loader.modules)
+
+    loader._load_module_file(tmp_path)
+
+    assert loader.modules == before
+
+
 def test_module_loader_parses_parameter_forms_and_lists_modules(tmp_path: Path) -> None:
     module_json = {
         "name": "calc",

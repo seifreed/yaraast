@@ -75,7 +75,7 @@ class ModuleLoader:
                         module = self._parse_module(module_data["name"], module_data)
                         if module:
                             self.modules[module.name] = module
-        except (ValueError, TypeError, AttributeError):
+        except (OSError, ValueError, TypeError, AttributeError):
             pass
 
     def _parse_module(self, name: str, data: dict[str, Any]) -> ModuleDefinition | None:
