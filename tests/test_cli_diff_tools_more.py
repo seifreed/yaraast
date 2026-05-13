@@ -17,6 +17,10 @@ from yaraast.cli.diff_tools import ASTDiffer, ASTStructuralAnalyzer
 from yaraast.parser import Parser
 
 
+def _yarax_rule(value: str) -> str:
+    return f"rule x {{ condition: with xs = [1]: match xs {{ _ => {value} }} }}"
+
+
 def test_ast_structural_analyzer_collects_signatures_and_empty_condition() -> None:
     ast = YaraFile(
         imports=[],
@@ -116,6 +120,19 @@ def test_ast_differ_diff_files_error_and_style_detection_paths(tmp_path: Path) -
     ast = Parser().parse("rule s { condition: true }")
     style_result = differ._detect_style_changes(ast, ast, differ.diff_asts(ast, ast))
     assert style_result.style_only_changes == []
+
+
+def test_ast_differ_diff_files_accepts_yarax(tmp_path: Path) -> None:
+    file1 = tmp_path / "old.yar"
+    file2 = tmp_path / "new.yar"
+    file1.write_text(_yarax_rule("true"), encoding="utf-8")
+    file2.write_text(_yarax_rule("false"), encoding="utf-8")
+
+    result = ASTDiffer().diff_files(file1, file2)
+
+    assert result.has_changes is True
+    assert "x" not in result.added_rules
+    assert any("Condition logic changed in rule 'x'" in c for c in result.logical_changes)
 
 
 def test_ast_differ_removed_strings_modified_strings_and_unary_condition() -> None:

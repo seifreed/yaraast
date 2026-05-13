@@ -16,6 +16,11 @@ from yaraast.cli.format_reporting import (
 )
 from yaraast.cli.format_services import build_format_stats, format_ast
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
+
+
+def _yarax_rule() -> str:
+    return "rule x { condition: with xs = [1]: match xs { _ => true } }"
 
 
 def test_package_main_module_runs_without_error() -> None:
@@ -62,6 +67,27 @@ def test_format_services_format_ast_and_stats() -> None:
     assert 'import "pe"' in formatted
     assert "rule sample" in formatted
     assert stats == {"rules": 1, "imports": 1}
+
+
+def test_format_services_and_command_accept_yarax(tmp_path: Path) -> None:
+    ast = Parser().parse("rule classic { condition: true }")
+    yarax_ast = parse_yara_source(_yarax_rule())
+
+    assert "rule classic" in format_ast(ast)
+    assert "with xs = [1]" in format_ast(yarax_ast)
+
+    runner = CliRunner()
+    input_file = tmp_path / "x.yar"
+    output_file = tmp_path / "out.yar"
+    input_file.write_text(_yarax_rule(), encoding="utf-8")
+
+    validate_result = runner.invoke(validate_syntax, [str(input_file)])
+    format_result = runner.invoke(format_yara, [str(input_file), str(output_file)])
+
+    assert validate_result.exit_code == 0
+    assert "Valid YARA file" in validate_result.output
+    assert format_result.exit_code == 0
+    assert "match xs" in output_file.read_text(encoding="utf-8")
 
 
 def test_format_command_validate_syntax_success_and_error(tmp_path: Path) -> None:

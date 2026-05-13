@@ -11,6 +11,10 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content.strip() + "\n", encoding="utf-8")
 
 
+def _yarax_rule() -> str:
+    return "rule x { condition: with xs = [1]: match xs { _ => true } }"
+
+
 def test_fmt_cmd_check_and_diff_paths(tmp_path: Path) -> None:
     runner = CliRunner()
     formatted = tmp_path / "formatted.yar"
@@ -67,3 +71,16 @@ def test_fmt_cmd_formats_to_separate_output(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert output.exists()
     assert "Formatted file written" in result.output
+
+
+def test_fmt_cmd_formats_yarax(tmp_path: Path) -> None:
+    runner = CliRunner()
+    source = tmp_path / "x.yar"
+    output = tmp_path / "x_out.yar"
+    _write(source, _yarax_rule())
+
+    result = runner.invoke(fmt, [str(source), "--output", str(output), "--style", "pretty"])
+
+    assert result.exit_code == 0
+    assert output.exists()
+    assert "match xs" in output.read_text(encoding="utf-8")

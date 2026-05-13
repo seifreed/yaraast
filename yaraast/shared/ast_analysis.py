@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from collections.abc import Mapping
+from dataclasses import dataclass, field, fields
 import hashlib
 import json
 from pathlib import Path
@@ -12,12 +13,11 @@ from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.conditions import Condition
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter
 from yaraast.errors import YaraASTError
-from yaraast.parser.comment_aware_parser import CommentAwareParser
-from yaraast.parser.parser import Parser
+from yaraast.parser.source import parse_yara_source, parse_yara_source_with_comments
 from yaraast.visitor.base import BaseVisitor
+from yaraast.yarax.generator import YaraXGenerator
 
 StringDef = PlainString | HexString | RegexString
 
@@ -128,18 +128,33 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
         if node is None:
             return {"type": "empty"}
         structure: dict[str, Any] = {"type": type(node).__name__}
-        if hasattr(node, "operator"):
-            structure["operator"] = node.operator
-        if hasattr(node, "left") and hasattr(node, "right"):
-            structure["left"] = self._get_condition_structure(node.left)
-            structure["right"] = self._get_condition_structure(node.right)
-        elif hasattr(node, "operand"):
-            structure["operand"] = self._get_condition_structure(node.operand)
-        elif hasattr(node, "children"):
-            structure["children"] = [
-                self._get_condition_structure(child) for child in node.children()
-            ]
+        for field_info in fields(node):
+            if field_info.name in ASTNode._METADATA_FIELDS:
+                continue
+            structure[field_info.name] = self._condition_value_structure(
+                getattr(node, field_info.name)
+            )
+        structure["children"] = [self._get_condition_structure(child) for child in node.children()]
         return structure
+
+    def _condition_value_structure(self, value: Any) -> Any:
+        if isinstance(value, ASTNode):
+            return self._get_condition_structure(value)
+        if isinstance(value, Mapping):
+            return {
+                str(key): self._condition_value_structure(item)
+                for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+            }
+        if isinstance(value, list | tuple):
+            return [self._condition_value_structure(item) for item in value]
+        if isinstance(value, set | frozenset):
+            return sorted(
+                [self._condition_value_structure(item) for item in value],
+                key=str,
+            )
+        if isinstance(value, str | int | float | bool) or value is None:
+            return value
+        return str(value)
 
     def _hash_dict(self, data: dict[str, Any]) -> str:
         payload = json.dumps(data, sort_keys=True, default=str, separators=(",", ":"))
@@ -153,10 +168,10 @@ class ASTDiffer:
         try:
             with Path(file1_path).open(encoding="utf-8") as f:
                 content1 = f.read()
-                ast1 = Parser(content1).parse()
+                ast1 = parse_yara_source(content1)
             with Path(file2_path).open(encoding="utf-8") as f:
                 content2 = f.read()
-                ast2 = Parser(content2).parse()
+                ast2 = parse_yara_source(content2)
             result = self.diff_asts(ast1, ast2)
             return self._detect_style_changes_from_text(content1, content2, result)
         except (YaraASTError, OSError) as exc:  # file I/O + parse errors from multiple paths
@@ -263,7 +278,7 @@ class ASTFormatter:
     """AST-based code formatter using CodeGenerator."""
 
     def __init__(self) -> None:
-        self.generator = CodeGenerator()
+        self.generator = YaraXGenerator()
         self.pretty_printer = PrettyPrinter()
 
     def format_file(
@@ -274,7 +289,7 @@ class ASTFormatter:
     ) -> tuple[bool, str]:
         try:
             with Path(input_path).open(encoding="utf-8") as f:
-                ast = CommentAwareParser().parse(f.read())
+                ast = parse_yara_source_with_comments(f.read())
             formatted = self.format_ast(ast, style)
             if output_path:
                 with Path(output_path).open("w", encoding="utf-8") as f:
@@ -296,7 +311,7 @@ class ASTFormatter:
         try:
             with Path(file_path).open(encoding="utf-8") as f:
                 original = f.read()
-            formatted = self.pretty_printer.pretty_print(CommentAwareParser().parse(original))
+            formatted = self.pretty_printer.pretty_print(parse_yara_source_with_comments(original))
             if original.strip() == formatted.strip():
                 return False, []
             issues = []

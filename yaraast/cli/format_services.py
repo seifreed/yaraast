@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from yaraast import CodeGenerator
+from yaraast.yarax.generator import YaraXGenerator
 
 
 def format_ast(ast) -> str:
-    generator = CodeGenerator()
+    generator = YaraXGenerator()
     return generator.generate(ast)
 
 
