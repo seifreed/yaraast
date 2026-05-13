@@ -185,7 +185,10 @@ class AdvancedCodeGenerator(CodeGenerator):
 
     # Default visit methods (delegate to parent)
     def visit_import(self, node: Import) -> str:
-        self._writeline(f'import "{node.module}"')
+        import_line = f'import "{node.module}"'
+        if node.alias:
+            import_line += f" as {node.alias}"
+        self._writeline(import_line)
         return ""
 
     def visit_include(self, node: Include) -> str:
