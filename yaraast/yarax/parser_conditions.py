@@ -15,7 +15,7 @@ class YaraXParserConditionsMixin:
         """Parse condition with YARA-X extensions."""
         if self._check_keyword("with"):
             return self._parse_with_statement()
-        return super()._parse_condition()
+        return self.parse_expression()
 
     def parse_condition(self) -> Condition:
         """Parse condition with YARA-X extensions."""
@@ -31,7 +31,7 @@ class YaraXParserConditionsMixin:
             declarations.append(self._parse_with_declaration())
 
         self._consume(TokenType.COLON, "Expected ':' after with declarations")
-        body = super()._parse_condition()
+        body = self._parse_condition()
         return WithStatement(declarations=declarations, body=body)
 
     def _parse_with_declaration(self) -> WithDeclaration:

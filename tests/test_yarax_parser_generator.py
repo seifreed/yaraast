@@ -3,7 +3,16 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BooleanLiteral, Expression, Identifier, IntegerLiteral
+from yaraast.ast.conditions import OfExpression
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    Expression,
+    FunctionCall,
+    Identifier,
+    IntegerLiteral,
+    SetExpression,
+)
 from yaraast.ast.rules import Rule
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -87,6 +96,43 @@ def test_yarax_nested_extended_expressions_parse() -> None:
     assert isinstance(comprehension, ArrayComprehension)
     assert isinstance(comprehension.iterable, ListExpression)
     assert isinstance(comprehension.condition, PatternMatch)
+
+
+def test_yarax_extended_expressions_parse_in_full_expression_contexts() -> None:
+    ast = YaraXParser(
+        """
+rule yarax_match_condition {
+    condition:
+        match x { 1 => true, _ => false }
+}
+""",
+    ).parse()
+    assert isinstance(ast.rules[0].condition, PatternMatch)
+
+    expr = _parse_expr("enabled and match x { 1 => true, _ => false }")
+    assert isinstance(expr, BinaryExpression)
+    assert isinstance(expr.right, PatternMatch)
+
+    call = _parse_expr("fn([1], match x { 1 => 2, _ => 3 })")
+    assert isinstance(call, FunctionCall)
+    assert isinstance(call.arguments[0], ListExpression)
+    assert isinstance(call.arguments[1], PatternMatch)
+
+    of_expr = _parse_expr("any of ($a, $b)")
+    assert isinstance(of_expr, OfExpression)
+    assert isinstance(of_expr.string_set, SetExpression)
+
+    with_ast = YaraXParser(
+        """
+rule yarax_with_match_body {
+    condition:
+        with y = [1]: match x { 1 => true, _ => false }
+}
+""",
+    ).parse()
+    condition = with_ast.rules[0].condition
+    assert isinstance(condition, WithStatement)
+    assert isinstance(condition.body, PatternMatch)
 
 
 def test_yarax_array_comprehension() -> None:

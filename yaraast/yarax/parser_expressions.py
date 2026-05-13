@@ -17,8 +17,21 @@ from yaraast.yarax.parser_helpers import ERROR_EXPECTED_BRACE_CLOSE, ERROR_EXPEC
 class YaraXParserExpressionsMixin:
     """Expression parsing for YARA-X."""
 
+    _parsing_of_string_set: bool = False
+
     def parse_expression(self) -> Expression:
         """Parse expression with YARA-X extensions."""
+        return self._parse_expression()
+
+    def _parse_expression(self) -> Expression:
+        """Parse a full expression with YARA-X primary expressions."""
+        return self._parse_or_expression()
+
+    def _parse_primary_expression(self) -> Expression:
+        """Parse primary expression with YARA-X extensions."""
+        if self._parsing_of_string_set:
+            return super()._parse_primary_expression()
+
         if self._check(TokenType.LBRACKET):
             return self._parse_list_or_comprehension()
 
@@ -34,29 +47,20 @@ class YaraXParserExpressionsMixin:
         if self._check_keyword("match"):
             return self._parse_pattern_match()
 
-        return super()._parse_or_expression()
+        return super()._parse_primary_expression()
 
     def parse_primary_expression(self) -> Expression:
-        """Parse primary expression with YARA-X extensions."""
-        expr = super()._parse_primary_expression()
+        """Parse primary expression and postfix operators with YARA-X extensions."""
+        return self._parse_postfix_expression()
 
-        while self._check(TokenType.LBRACKET):
-            self._advance()
-
-            if self._check(TokenType.COLON):
-                expr = self._parse_slice_expression(expr, None)
-            else:
-                index = self.parse_expression()
-
-                if self._check(TokenType.COLON):
-                    expr = self._parse_slice_expression(expr, index)
-                else:
-                    self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
-                    from yaraast.ast.expressions import ArrayAccess
-
-                    expr = ArrayAccess(array=expr, index=index)
-
-        return expr
+    def _parse_of_string_set(self) -> Expression:
+        """Parse YARA string sets without treating parenthesized sets as tuples."""
+        old_value = self._parsing_of_string_set
+        self._parsing_of_string_set = True
+        try:
+            return super()._parse_of_string_set()
+        finally:
+            self._parsing_of_string_set = old_value
 
     def _parse_lambda(self) -> LambdaExpression:
         """Parse lambda expression."""
