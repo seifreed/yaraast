@@ -160,6 +160,9 @@ message Expression {
         OfExpression of_expression = 23;
         DefinedExpression defined_expression = 24;
         StringOperatorExpression string_operator_expression = 25;
+        StringWildcard string_wildcard = 26;
+        ModuleReference module_reference = 27;
+        DictionaryAccess dictionary_access = 28;
     }
 }
 
@@ -169,6 +172,10 @@ message Identifier {
 
 message StringIdentifier {
     string name = 1;
+}
+
+message StringWildcard {
+    string pattern = 1;
 }
 
 message StringCount {
@@ -245,6 +252,16 @@ message MemberAccess {
     string member = 2;
 }
 
+message ModuleReference {
+    string module = 1;
+}
+
+message DictionaryAccess {
+    Expression object = 1;
+    string key = 2;
+    Expression key_expr = 3;
+}
+
 message ForExpression {
     string quantifier = 1;
     string variable = 2;
@@ -258,6 +275,8 @@ message ForOfExpression {
     Expression string_set = 2;
     Expression condition = 3;
     Expression quantifier_expr = 4;
+    optional string string_set_text = 5;
+    repeated string string_set_items = 6;
 }
 
 message AtExpression {
@@ -274,6 +293,9 @@ message InExpression {
 message OfExpression {
     Expression quantifier = 1;
     Expression string_set = 2;
+    optional string quantifier_text = 3;
+    optional string string_set_text = 4;
+    repeated string string_set_items = 5;
 }
 
 message DefinedExpression {

@@ -34,9 +34,11 @@ from yaraast.ast.expressions import (
     StringLength,
     StringLiteral,
     StringOffset,
+    StringWildcard,
     UnaryExpression,
 )
 from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
@@ -189,6 +191,70 @@ def test_protobuf_serializer_preserves_hex_negated_bytes() -> None:
 
     assert isinstance(string_def, HexString)
     assert string_def.tokens == [negated]
+
+
+def test_protobuf_serializer_preserves_module_dictionary_and_wildcard_expressions() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    condition = BinaryExpression(
+        left=DictionaryAccess(
+            object=ModuleReference(module="pe"),
+            key=StringLiteral(value="CompanyName"),
+        ),
+        operator="or",
+        right=OfExpression(
+            quantifier="any",
+            string_set=StringWildcard(pattern="$api*"),
+        ),
+    )
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="module_dictionary_wildcard",
+                condition=condition,
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert restored.rules[0].condition == condition
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        ForOfExpression(
+            quantifier=2,
+            string_set=["$a", "$b"],
+            condition=BooleanLiteral(value=True),
+        ),
+        ForOfExpression(
+            quantifier="any",
+            string_set="$api*",
+            condition=BooleanLiteral(value=True),
+        ),
+        OfExpression(
+            quantifier=2,
+            string_set=["$a", "$b"],
+        ),
+    ],
+)
+def test_protobuf_serializer_preserves_condition_string_set_value_shapes(
+    condition: Expression,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="string_set_shapes",
+                condition=condition,
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert restored.rules[0].condition == condition
 
 
 def test_protobuf_serializer_preserves_typed_string_modifier_values() -> None:

@@ -197,15 +197,47 @@ def _coerce_quantifier_text(value) -> str:
 
 
 def _coerce_quantifier_expression(value):
+    from yaraast.ast.expressions import Expression
+
+    return value if isinstance(value, Expression) else None
+
+
+def _copy_string_set_to_protobuf(value, pb_owner) -> None:
     if isinstance(value, str):
-        return None
-    return _coerce_expression(value)
+        pb_owner.string_set_text = value
+        return
+
+    if isinstance(value, list):
+        pb_owner.string_set_items.extend(str(item) for item in value)
+        return
+
+    string_set = _coerce_expression(value)
+    if string_set is not None:
+        convert_expression_to_protobuf(string_set, pb_owner.string_set)
 
 
 def _restore_quantifier_text(value: str):
+    lower_value = value.lower()
+    if lower_value == "true":
+        return True
+    if lower_value == "false":
+        return False
     if value.lstrip("-").isdigit() and value not in {"", "-"}:
         return int(value)
+    try:
+        if any(marker in value for marker in (".", "e", "E")):
+            return float(value)
+    except ValueError:
+        pass
     return value
+
+
+def _protobuf_string_set_to_ast(pb_owner):
+    if pb_owner.HasField("string_set_text"):
+        return pb_owner.string_set_text
+    if pb_owner.string_set_items:
+        return list(pb_owner.string_set_items)
+    return protobuf_to_expression(pb_owner.string_set)
 
 
 def convert_expression_to_protobuf(expr, pb_expr) -> None:
@@ -224,6 +256,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         BinaryExpression,
         BooleanLiteral,
         DoubleLiteral,
+        Expression,
         FunctionCall,
         Identifier,
         IntegerLiteral,
@@ -237,14 +270,18 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         StringLength,
         StringLiteral,
         StringOffset,
+        StringWildcard,
         UnaryExpression,
     )
+    from yaraast.ast.modules import DictionaryAccess, ModuleReference
     from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 
     if isinstance(expr, Identifier):
         pb_expr.identifier.name = expr.name
     elif isinstance(expr, StringIdentifier):
         pb_expr.string_identifier.name = expr.name
+    elif isinstance(expr, StringWildcard):
+        pb_expr.string_wildcard.pattern = expr.pattern
     elif isinstance(expr, StringCount):
         pb_expr.string_count.string_id = expr.string_id
     elif isinstance(expr, StringOffset):
@@ -291,6 +328,14 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     elif isinstance(expr, MemberAccess):
         convert_expression_to_protobuf(expr.object, pb_expr.member_access.object)
         pb_expr.member_access.member = expr.member
+    elif isinstance(expr, ModuleReference):
+        pb_expr.module_reference.module = expr.module
+    elif isinstance(expr, DictionaryAccess):
+        convert_expression_to_protobuf(expr.object, pb_expr.dictionary_access.object)
+        if isinstance(expr.key, Expression):
+            convert_expression_to_protobuf(expr.key, pb_expr.dictionary_access.key_expr)
+        else:
+            pb_expr.dictionary_access.key = str(expr.key)
     elif isinstance(expr, ForExpression):
         pb_expr.for_expression.quantifier = _coerce_quantifier_text(expr.quantifier)
         quantifier = _coerce_quantifier_expression(expr.quantifier)
@@ -307,9 +352,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 quantifier,
                 pb_expr.for_of_expression.quantifier_expr,
             )
-        string_set = _coerce_expression(expr.string_set)
-        if string_set is not None:
-            convert_expression_to_protobuf(string_set, pb_expr.for_of_expression.string_set)
+        _copy_string_set_to_protobuf(expr.string_set, pb_expr.for_of_expression)
         if expr.condition is not None:
             convert_expression_to_protobuf(expr.condition, pb_expr.for_of_expression.condition)
     elif isinstance(expr, AtExpression):
@@ -322,11 +365,12 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             convert_expression_to_protobuf(expr.subject, pb_expr.in_expression.subject)
         convert_expression_to_protobuf(expr.range, pb_expr.in_expression.range)
     elif isinstance(expr, OfExpression):
-        quantifier = _coerce_expression(expr.quantifier)
-        string_set = _coerce_expression(expr.string_set)
-        if quantifier is not None and string_set is not None:
+        quantifier = _coerce_quantifier_expression(expr.quantifier)
+        if quantifier is not None:
             convert_expression_to_protobuf(quantifier, pb_expr.of_expression.quantifier)
-            convert_expression_to_protobuf(string_set, pb_expr.of_expression.string_set)
+        else:
+            pb_expr.of_expression.quantifier_text = _coerce_quantifier_text(expr.quantifier)
+        _copy_string_set_to_protobuf(expr.string_set, pb_expr.of_expression)
     elif isinstance(expr, DefinedExpression):
         convert_expression_to_protobuf(expr.expression, pb_expr.defined_expression.expression)
     elif isinstance(expr, StringOperatorExpression):
@@ -541,14 +585,18 @@ def protobuf_to_expression(pb_expr):
         StringLength,
         StringLiteral,
         StringOffset,
+        StringWildcard,
         UnaryExpression,
     )
+    from yaraast.ast.modules import DictionaryAccess, ModuleReference
     from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 
     if pb_expr.HasField("identifier"):
         return Identifier(name=pb_expr.identifier.name)
     if pb_expr.HasField("string_identifier"):
         return StringIdentifier(name=pb_expr.string_identifier.name)
+    if pb_expr.HasField("string_wildcard"):
+        return StringWildcard(pattern=pb_expr.string_wildcard.pattern)
     if pb_expr.HasField("string_count"):
         return StringCount(string_id=pb_expr.string_count.string_id)
     if pb_expr.HasField("string_offset"):
@@ -625,6 +673,17 @@ def protobuf_to_expression(pb_expr):
             object=protobuf_to_expression(pb_expr.member_access.object),
             member=pb_expr.member_access.member,
         )
+    if pb_expr.HasField("module_reference"):
+        return ModuleReference(module=pb_expr.module_reference.module)
+    if pb_expr.HasField("dictionary_access"):
+        return DictionaryAccess(
+            object=protobuf_to_expression(pb_expr.dictionary_access.object),
+            key=(
+                protobuf_to_expression(pb_expr.dictionary_access.key_expr)
+                if pb_expr.dictionary_access.HasField("key_expr")
+                else pb_expr.dictionary_access.key
+            ),
+        )
     if pb_expr.HasField("for_expression"):
         return ForExpression(
             quantifier=(
@@ -643,7 +702,7 @@ def protobuf_to_expression(pb_expr):
                 if pb_expr.for_of_expression.HasField("quantifier_expr")
                 else _restore_quantifier_text(pb_expr.for_of_expression.quantifier)
             ),
-            string_set=protobuf_to_expression(pb_expr.for_of_expression.string_set),
+            string_set=_protobuf_string_set_to_ast(pb_expr.for_of_expression),
             condition=(
                 protobuf_to_expression(pb_expr.for_of_expression.condition)
                 if pb_expr.for_of_expression.HasField("condition")
@@ -667,8 +726,12 @@ def protobuf_to_expression(pb_expr):
         )
     if pb_expr.HasField("of_expression"):
         return OfExpression(
-            quantifier=protobuf_to_expression(pb_expr.of_expression.quantifier),
-            string_set=protobuf_to_expression(pb_expr.of_expression.string_set),
+            quantifier=(
+                _restore_quantifier_text(pb_expr.of_expression.quantifier_text)
+                if pb_expr.of_expression.HasField("quantifier_text")
+                else protobuf_to_expression(pb_expr.of_expression.quantifier)
+            ),
+            string_set=_protobuf_string_set_to_ast(pb_expr.of_expression),
         )
     if pb_expr.HasField("defined_expression"):
         return DefinedExpression(
