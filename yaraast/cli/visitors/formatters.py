@@ -51,7 +51,7 @@ class ConditionStringFormatter:
             "MemberAccess": lambda c, d: self._format_member_access(c, d),
             "ArrayAccess": lambda c, d: self._format_array_access(c, d),
             "ForExpression": self._format_for_expression,
-            "ForOfExpression": lambda c, d: "for ... of ...",
+            "ForOfExpression": self._format_for_of_expression,
         }
 
         formatter = formatters.get(class_name, lambda c, d: f"<{class_name}>")
@@ -208,6 +208,14 @@ class ConditionStringFormatter:
         body = self._expr_to_str(condition.body, 0) if hasattr(condition, "body") else "..."
         return f"for {quantifier} {variable} in {iterable} : ({body})"
 
+    def _format_for_of_expression(self, condition: Any, _depth: int) -> str:
+        quantifier = _node_text(getattr(condition, "quantifier", "any"), "any")
+        string_set = ExpressionStringFormatter()._format_string_set(condition, 0)
+        body = getattr(condition, "condition", None)
+        if body is None:
+            return f"{quantifier} of {string_set}"
+        return f"for {quantifier} of {string_set} : ({self._expr_to_str(body, 0)})"
+
     def _collect_binary_parts(
         self, expr: Any, target_op: str, parts: list[str], depth: int
     ) -> None:
@@ -262,11 +270,13 @@ class ExpressionStringFormatter:
             "StringIdentifier": self._format_string_identifier,
             "Identifier": self._format_identifier,
             "IntegerLiteral": self._format_integer_literal,
+            "BooleanLiteral": self._format_boolean_literal,
             "StringLiteral": self._format_string_literal,
             "OfExpression": self._format_of_expression,
             "StringCount": self._format_string_count,
             "StringOffset": self._format_string_offset,
             "ForExpression": self._format_for_expression,
+            "ForOfExpression": self._format_for_of_expression,
             "MemberAccess": self._format_member_access,
             "RangeExpression": self._format_range_expression,
         }
@@ -310,6 +320,9 @@ class ExpressionStringFormatter:
 
     def _format_integer_literal(self, expr: Any, _depth: int) -> str:
         return format_int_literal(getattr(expr, "value", 0))
+
+    def _format_boolean_literal(self, expr: Any, _depth: int) -> str:
+        return str(getattr(expr, "value", True)).lower()
 
     def _format_string_literal(self, expr: Any, _depth: int) -> str:
         val = truncate_string(getattr(expr, "value", ""), 30)
@@ -381,13 +394,22 @@ class ExpressionStringFormatter:
         return f"@{sid}"
 
     def _format_for_expression(self, expr: Any, depth: int) -> str:
-        quantifier = getattr(expr, "quantifier", "any")
+        quantifier = _node_text(getattr(expr, "quantifier", "any"), "any")
         variable = getattr(expr, "variable", "i")
         iterable = (
             self.format_expression(expr.iterable, depth + 1) if hasattr(expr, "iterable") else "..."
         )
         body = self.format_expression(expr.body, depth + 1) if hasattr(expr, "body") else "..."
         return f"for {quantifier} {variable} in {iterable} : ({body})"
+
+    def _format_for_of_expression(self, expr: Any, depth: int) -> str:
+        quantifier = _node_text(getattr(expr, "quantifier", "any"), "any")
+        string_set = self._format_string_set(expr, depth)
+        condition = getattr(expr, "condition", None)
+        if condition is None:
+            return f"{quantifier} of {string_set}"
+        body = self.format_expression(condition, depth + 1)
+        return f"for {quantifier} of {string_set} : ({body})"
 
     def _format_member_access(self, expr: Any, depth: int) -> str:
         obj = self.format_expression(expr.object, depth + 1) if hasattr(expr, "object") else "?"

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from yaraast.ast.conditions import OfExpression
+from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
+    BooleanLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
@@ -110,3 +111,31 @@ def test_condition_formatter_handles_parsed_for_expression() -> None:
         ConditionStringFormatter().format_condition(ast.rules[0].condition)
         == "for any i in ((1..3)) : (i > 1)"
     )
+
+    built = ForExpression(
+        quantifier=IntegerLiteral(2),
+        variable="i",
+        iterable=Identifier("items"),
+        body=Identifier("i"),
+    )
+    assert ExpressionStringFormatter().format_expression(built) == "for 2 i in items : (i)"
+
+
+def test_condition_formatter_handles_for_of_expression_details() -> None:
+    ast = Parser().parse('rule r { strings: $a = "a" condition: for any of them : ($) }')
+    condition = ast.rules[0].condition
+
+    assert ConditionStringFormatter().format_condition(condition) == "for any of them : ($)"
+    assert ExpressionStringFormatter().format_expression(condition) == "for any of them : ($)"
+
+    raw_without_body = ForOfExpression(quantifier="all", string_set=["$a", "$b"], condition=None)
+    assert ConditionStringFormatter().format_condition(raw_without_body) == "all of ($a, $b)"
+    assert ExpressionStringFormatter().format_expression(raw_without_body) == "all of ($a, $b)"
+
+    built = ForOfExpression(
+        quantifier=IntegerLiteral(2),
+        string_set=StringWildcard("$a*"),
+        condition=BooleanLiteral(True),
+    )
+    assert ConditionStringFormatter().format_condition(built) == "for 2 of ($a*) : (true)"
+    assert ExpressionStringFormatter().format_expression(built) == "for 2 of ($a*) : (true)"
