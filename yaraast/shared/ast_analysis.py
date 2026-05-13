@@ -77,6 +77,18 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
     def visit_rule(self, rule: Rule) -> Any:
         meta_data = getattr(rule, "meta", [])
         meta_keys = sorted([getattr(m, "key", "") for m in meta_data if hasattr(m, "key")])
+        meta_entries = sorted(
+            [
+                {
+                    "key": getattr(meta, "key", ""),
+                    "value": self._condition_value_structure(getattr(meta, "value", "")),
+                    "scope": getattr(getattr(meta, "scope", None), "value", ""),
+                }
+                for meta in meta_data
+                if hasattr(meta, "key")
+            ],
+            key=lambda item: (str(item["key"]), str(item["value"]), str(item["scope"])),
+        )
 
         self.rule_signatures[rule.name] = self._hash_dict(
             {
@@ -84,6 +96,7 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
                 "modifiers": sorted(str(m) for m in getattr(rule, "modifiers", [])),
                 "tags": sorted([tag.name for tag in getattr(rule, "tags", [])]),
                 "meta_keys": meta_keys,
+                "meta_entries": meta_entries,
                 "string_identifiers": sorted([s.identifier for s in getattr(rule, "strings", [])]),
                 "has_condition": rule.condition is not None,
             }
@@ -115,7 +128,9 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
             ).hexdigest()
         elif hasattr(string_def, "tokens"):
             string_structure["content_type"] = "hex"
-            string_structure["token_count"] = str(len(getattr(string_def, "tokens", [])))
+            tokens = getattr(string_def, "tokens", [])
+            string_structure["token_count"] = str(len(tokens))
+            string_structure["tokens"] = self._condition_value_structure(tokens)
         sig_key = f"{rule_name}:{string_def.identifier}" if rule_name else string_def.identifier
         self.string_signatures[sig_key] = self._hash_dict(string_structure)
 

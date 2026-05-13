@@ -266,6 +266,60 @@ def test_ast_structural_analyzer_meta_list_and_regex_content_changes() -> None:
     assert any("String 'rx:$r' content modified" in change for change in result.logical_changes)
 
 
+def test_ast_differ_detects_hex_token_content_changes() -> None:
+    ast1 = YaraFile(
+        rules=[
+            Rule(
+                name="hex_rule",
+                strings=[HexString("$h", tokens=[HexByte(0x41), HexByte(0x42)])],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+    ast2 = YaraFile(
+        rules=[
+            Rule(
+                name="hex_rule",
+                strings=[HexString("$h", tokens=[HexByte(0x41), HexByte(0x43)])],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    result = ASTDiffer().diff_asts(ast1, ast2)
+
+    assert result.has_changes is True
+    assert any(
+        "String 'hex_rule:$h' content modified" in change for change in result.logical_changes
+    )
+
+
+def test_ast_differ_detects_meta_value_changes() -> None:
+    ast1 = YaraFile(
+        rules=[
+            Rule(
+                name="meta_rule",
+                meta=[MetaEntry.from_key_value("version", "one")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+    ast2 = YaraFile(
+        rules=[
+            Rule(
+                name="meta_rule",
+                meta=[MetaEntry.from_key_value("version", "two")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    result = ASTDiffer().diff_asts(ast1, ast2)
+
+    assert result.has_changes is True
+    assert "meta_rule" in result.modified_rules
+
+
 def test_ast_differ_detects_style_only_changes_from_original_text(tmp_path: Path) -> None:
     file1 = tmp_path / "style1.yar"
     file2 = tmp_path / "style2.yar"
