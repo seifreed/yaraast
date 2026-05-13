@@ -319,23 +319,34 @@ def _modifier_value_text(value) -> str:
     return str(value)
 
 
+def _format_unknown_modifier(name: str, value) -> str:
+    if value is None:
+        return name
+    if isinstance(value, tuple) and len(value) == 2:
+        return f"{name}({value[0]}-{value[1]})"
+    if isinstance(value, str):
+        return f'{name}("{value}")'
+    return f"{name}({value})"
+
+
 def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
-    pb_mod.name = mod.name
+    pb_mod.name = getattr(mod, "name", str(mod))
     _copy_node_metadata_to_protobuf(mod, pb_mod)
-    if mod.value is None:
+    value = getattr(mod, "value", None)
+    if value is None:
         return
 
-    pb_mod.value = _modifier_value_text(mod.value)
-    if isinstance(mod.value, tuple) and len(mod.value) == 2:
-        pb_mod.tuple_value.extend([int(mod.value[0]), int(mod.value[1])])
-    elif isinstance(mod.value, bool):
-        pb_mod.typed_value.bool_value = mod.value
-    elif isinstance(mod.value, int):
-        pb_mod.typed_value.int_value = mod.value
-    elif isinstance(mod.value, float):
-        pb_mod.typed_value.double_value = mod.value
-    elif isinstance(mod.value, str):
-        pb_mod.typed_value.string_value = mod.value
+    pb_mod.value = _modifier_value_text(value)
+    if isinstance(value, tuple) and len(value) == 2:
+        pb_mod.tuple_value.extend([int(value[0]), int(value[1])])
+    elif isinstance(value, bool):
+        pb_mod.typed_value.bool_value = value
+    elif isinstance(value, int):
+        pb_mod.typed_value.int_value = value
+    elif isinstance(value, float):
+        pb_mod.typed_value.double_value = value
+    elif isinstance(value, str):
+        pb_mod.typed_value.string_value = value
 
 
 def convert_string_to_protobuf(string_def, pb_string) -> None:
@@ -1060,14 +1071,18 @@ def _protobuf_modifier_value(pb_modifier):
 
 def _protobuf_modifiers_to_ast(pb_modifiers):
     from yaraast.ast.modifiers import StringModifier
+    from yaraast.errors import ValidationError
 
     modifiers = []
     for pb_modifier in pb_modifiers:
-        modifier = StringModifier.from_name_value(
-            pb_modifier.name,
-            _protobuf_modifier_value(pb_modifier),
-        )
-        modifiers.append(_apply_node_metadata_from_protobuf(pb_modifier, modifier))
+        name = pb_modifier.name
+        value = _protobuf_modifier_value(pb_modifier)
+        try:
+            modifier = StringModifier.from_name_value(name, value)
+        except (ValueError, ValidationError):
+            modifiers.append(_format_unknown_modifier(name, value))
+        else:
+            modifiers.append(_apply_node_metadata_from_protobuf(pb_modifier, modifier))
     return modifiers
 
 

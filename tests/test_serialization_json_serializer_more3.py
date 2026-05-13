@@ -164,6 +164,56 @@ def test_json_roundtrip_preserves_typed_string_modifier_values() -> None:
     ]
 
 
+def test_json_roundtrip_preserves_string_modifier_aliases() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="regex_aliases",
+                strings=[
+                    RegexString(
+                        identifier="$r",
+                        regex="ab.*",
+                        modifiers=["i", "s", StringModifier.from_name_value("fullword")],
+                    ),
+                ],
+                condition=StringIdentifier("$r"),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    modifiers = restored.rules[0].strings[0].modifiers
+
+    assert modifiers[:2] == ["i", "s"]
+    assert isinstance(modifiers[2], StringModifier)
+    assert modifiers[2].name == "fullword"
+
+    legacy = serializer.deserialize(
+        json.dumps(
+            {
+                "type": "YaraFile",
+                "rules": [
+                    {
+                        "type": "Rule",
+                        "name": "legacy_aliases",
+                        "strings": [
+                            {
+                                "type": "RegexString",
+                                "identifier": "$r",
+                                "regex": "ab.*",
+                                "modifiers": ["i", "s"],
+                            }
+                        ],
+                        "condition": {"type": "StringIdentifier", "name": "$r"},
+                    }
+                ],
+            }
+        )
+    )
+    assert legacy.rules[0].strings[0].modifiers == ["i", "s"]
+
+
 def test_json_roundtrip_preserves_meta_entry_scope() -> None:
     serializer = JsonSerializer(include_metadata=False)
     ast = YaraFile(

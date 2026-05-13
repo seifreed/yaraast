@@ -6,7 +6,7 @@ from typing import Any
 
 from yaraast.ast.base import ASTNode, Location
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.errors import SerializationError
+from yaraast.errors import SerializationError, ValidationError
 
 
 def _deserialize_ast_value(self, data):
@@ -619,14 +619,28 @@ class JsonSerializerDeserializeMixin:
                 return int(value)
         return value
 
-    def _deserialize_modifier(self, data: dict[str, Any]):
+    def _format_unknown_modifier(self, name: str, value: Any) -> str:
+        if value is None:
+            return name
+        if isinstance(value, tuple) and len(value) == 2:
+            return f"{name}({value[0]}-{value[1]})"
+        if isinstance(value, str):
+            return f'{name}("{value}")'
+        return f"{name}({value})"
+
+    def _deserialize_modifier(self, data: Any):
         from yaraast.ast.modifiers import StringModifier
 
-        name = data["name"]
-        return StringModifier.from_name_value(
-            name,
-            self._deserialize_modifier_value(name, data.get("value")),
-        )
+        if isinstance(data, dict):
+            name = str(data["name"])
+            value = self._deserialize_modifier_value(name, data.get("value"))
+        else:
+            name = str(data)
+            value = None
+        try:
+            return StringModifier.from_name_value(name, value)
+        except (ValueError, ValidationError):
+            return self._format_unknown_modifier(name, value)
 
     def _deserialize_hex_token(self, data: dict[str, Any]):
         hex_kind = data.get("type")

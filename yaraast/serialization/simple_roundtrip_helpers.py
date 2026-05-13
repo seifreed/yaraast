@@ -165,18 +165,32 @@ def _serialize_modifiers(modifiers: list[Any]) -> list[dict[str, Any]]:
     ]
 
 
-def _deserialize_modifiers(modifiers: list[Any]) -> list[StringModifier]:
-    return [
-        (
-            StringModifier.from_name_value(
-                modifier["name"],
-                _deserialize_modifier_value(modifier["name"], modifier.get("value")),
-            )
-            if isinstance(modifier, dict)
-            else StringModifier.from_name_value(str(modifier))
-        )
-        for modifier in modifiers
-    ]
+def _format_unknown_modifier(name: str, value: Any) -> str:
+    if value is None:
+        return name
+    if isinstance(value, tuple) and len(value) == 2:
+        return f"{name}({value[0]}-{value[1]})"
+    if isinstance(value, str):
+        return f'{name}("{value}")'
+    return f"{name}({value})"
+
+
+def _deserialize_modifier(modifier: Any) -> Any:
+    if isinstance(modifier, dict):
+        name = str(modifier["name"])
+        value = _deserialize_modifier_value(name, modifier.get("value"))
+    else:
+        name = str(modifier)
+        value = None
+
+    try:
+        return StringModifier.from_name_value(name, value)
+    except (ValueError, ValidationError):
+        return _format_unknown_modifier(name, value)
+
+
+def _deserialize_modifiers(modifiers: list[Any]) -> list[Any]:
+    return [_deserialize_modifier(modifier) for modifier in modifiers]
 
 
 def _serialize_ast_value(value: Any) -> Any:
@@ -698,10 +712,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     }:
         return _deserialize_hex_token(data)
     if node_type == "StringModifier":
-        return StringModifier.from_name_value(
-            data["name"],
-            _deserialize_modifier_value(data["name"], data.get("value")),
-        )
+        return _deserialize_modifier(data)
     if node_type == "ExternRule":
         return deserialize_extern_rule(data)
     if node_type == "ExternRuleReference":

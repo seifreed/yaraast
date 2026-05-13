@@ -6,13 +6,13 @@ from typing import Any, cast
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.expressions import BooleanLiteral, StringIdentifier
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexByte, HexString, PlainString
+from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.serialization import yara_ast_pb2
 from yaraast.serialization.protobuf_conversion import protobuf_to_ast
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
@@ -38,6 +38,32 @@ def test_protobuf_serializer_hex_modifier_with_value() -> None:
 
     text = serializer.serialize_text(ast)
     assert "10-20" in text
+
+
+def test_protobuf_serializer_preserves_string_modifier_aliases() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="regex_aliases",
+                strings=[
+                    RegexString(
+                        identifier="$r",
+                        regex="ab.*",
+                        modifiers=["i", "s", StringModifier.from_name_value("fullword")],
+                    ),
+                ],
+                condition=StringIdentifier("$r"),
+            ),
+        ],
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    modifiers = restored.rules[0].strings[0].modifiers
+
+    assert modifiers[:2] == ["i", "s"]
+    assert isinstance(modifiers[2], StringModifier)
+    assert modifiers[2].name == "fullword"
 
 
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:

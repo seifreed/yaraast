@@ -11,6 +11,22 @@ def _serialize_ast_value(serializer, value):
     return value
 
 
+def _serialize_modifier_value(value: Any) -> Any:
+    if isinstance(value, tuple):
+        return list(value)
+    return value
+
+
+def _serialize_string_modifier(serializer, modifier) -> dict[str, Any]:
+    if hasattr(modifier, "accept"):
+        return serializer.visit(modifier)
+    return {
+        "type": "StringModifier",
+        "name": getattr(modifier, "name", str(modifier)),
+        "value": _serialize_modifier_value(getattr(modifier, "value", None)),
+    }
+
+
 def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     data = {"key": getattr(meta, "key", ""), "value": getattr(meta, "value", "")}
     scope = getattr(meta, "scope", None)
@@ -57,7 +73,7 @@ def visit_plain_string(serializer, node) -> dict[str, Any]:
         "type": "PlainString",
         "identifier": node.identifier,
         "value": node.value,
-        "modifiers": [serializer.visit(mod) for mod in node.modifiers],
+        "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
 
 
@@ -66,7 +82,7 @@ def visit_hex_string(serializer, node) -> dict[str, Any]:
         "type": "HexString",
         "identifier": node.identifier,
         "tokens": [serializer.visit(token) for token in node.tokens],
-        "modifiers": [serializer.visit(mod) for mod in node.modifiers],
+        "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
 
 
@@ -75,7 +91,7 @@ def visit_regex_string(serializer, node) -> dict[str, Any]:
         "type": "RegexString",
         "identifier": node.identifier,
         "regex": node.regex,
-        "modifiers": [serializer.visit(mod) for mod in node.modifiers],
+        "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
 
 

@@ -156,6 +156,30 @@ def test_simple_roundtrip_helpers_preserve_unknown_extern_rule_modifier() -> Non
     assert modifiers[1] == "vendor_modifier"
 
 
+def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
+    regex = RegexString(
+        identifier="$r",
+        regex="ab.*",
+        modifiers=["i", "s", StringModifier.from_name_value("fullword")],
+    )
+    plain = PlainString(
+        identifier="$a",
+        value="abc",
+        modifiers=["vendor_modifier"],
+    )
+
+    restored_regex = deserialize_node(serialize_node(regex))
+    restored_plain = deserialize_node(serialize_node(plain))
+
+    assert isinstance(restored_regex, RegexString)
+    regex_modifiers = restored_regex.modifiers
+    assert regex_modifiers[:2] == ["i", "s"]
+    assert isinstance(regex_modifiers[2], StringModifier)
+    assert regex_modifiers[2].name == "fullword"
+    assert isinstance(restored_plain, PlainString)
+    assert restored_plain.modifiers == ["vendor_modifier"]
+
+
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
     ast = YaraFile(
         rules=[
