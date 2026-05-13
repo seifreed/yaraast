@@ -7,19 +7,39 @@ from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
+    MemberAccess,
+    ParenthesesExpression,
+    RangeExpression,
+    RegexLiteral,
+    SetExpression,
+    StringCount,
     StringIdentifier,
+    StringLength,
     StringLiteral,
+    StringOffset,
+    StringWildcard,
     UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaEntry, RuleModifier, StringModifier
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import (
     ConditionalDirective,
     CustomPragma,
@@ -107,6 +127,22 @@ def _deserialize_modifiers(modifiers: list[Any]) -> list[StringModifier]:
     ]
 
 
+def _serialize_ast_value(value: Any) -> Any:
+    if isinstance(value, ASTNode):
+        return serialize_node(value)
+    if isinstance(value, list):
+        return [_serialize_ast_value(item) for item in value]
+    return value
+
+
+def _deserialize_ast_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return deserialize_node(value)
+    if isinstance(value, list):
+        return [_deserialize_ast_value(item) for item in value]
+    return value
+
+
 def serialize_node(node: ASTNode) -> dict[str, Any]:
     """Serialize an AST node to a dictionary."""
     if isinstance(node, YaraFile):
@@ -154,10 +190,28 @@ def serialize_node(node: ASTNode) -> dict[str, Any]:
         return {"type": "DoubleLiteral", "value": node.value}
     if isinstance(node, StringLiteral):
         return {"type": "StringLiteral", "value": node.value}
+    if isinstance(node, RegexLiteral):
+        return {"type": "RegexLiteral", "pattern": node.pattern, "modifiers": node.modifiers}
     if isinstance(node, Identifier):
         return {"type": "Identifier", "name": node.name}
     if isinstance(node, StringIdentifier):
         return {"type": "StringIdentifier", "name": node.name}
+    if isinstance(node, StringWildcard):
+        return {"type": "StringWildcard", "pattern": node.pattern}
+    if isinstance(node, StringCount):
+        return {"type": "StringCount", "string_id": node.string_id}
+    if isinstance(node, StringOffset):
+        return {
+            "type": "StringOffset",
+            "string_id": node.string_id,
+            "index": serialize_node(node.index) if node.index else None,
+        }
+    if isinstance(node, StringLength):
+        return {
+            "type": "StringLength",
+            "string_id": node.string_id,
+            "index": serialize_node(node.index) if node.index else None,
+        }
     if isinstance(node, BinaryExpression):
         return {
             "type": "BinaryExpression",
@@ -170,6 +224,87 @@ def serialize_node(node: ASTNode) -> dict[str, Any]:
             "type": "UnaryExpression",
             "operator": node.operator,
             "operand": serialize_node(node.operand),
+        }
+    if isinstance(node, ParenthesesExpression):
+        return {"type": "ParenthesesExpression", "expression": serialize_node(node.expression)}
+    if isinstance(node, SetExpression):
+        return {
+            "type": "SetExpression",
+            "elements": [serialize_node(element) for element in node.elements],
+        }
+    if isinstance(node, RangeExpression):
+        return {
+            "type": "RangeExpression",
+            "low": serialize_node(node.low),
+            "high": serialize_node(node.high),
+        }
+    if isinstance(node, FunctionCall):
+        return {
+            "type": "FunctionCall",
+            "function": node.function,
+            "arguments": [serialize_node(argument) for argument in node.arguments],
+        }
+    if isinstance(node, ArrayAccess):
+        return {
+            "type": "ArrayAccess",
+            "array": serialize_node(node.array),
+            "index": serialize_node(node.index),
+        }
+    if isinstance(node, MemberAccess):
+        return {
+            "type": "MemberAccess",
+            "object": serialize_node(node.object),
+            "member": node.member,
+        }
+    if isinstance(node, ForExpression):
+        return {
+            "type": "ForExpression",
+            "quantifier": _serialize_ast_value(node.quantifier),
+            "variable": node.variable,
+            "iterable": serialize_node(node.iterable),
+            "body": serialize_node(node.body),
+        }
+    if isinstance(node, ForOfExpression):
+        return {
+            "type": "ForOfExpression",
+            "quantifier": _serialize_ast_value(node.quantifier),
+            "string_set": _serialize_ast_value(node.string_set),
+            "condition": serialize_node(node.condition) if node.condition else None,
+        }
+    if isinstance(node, AtExpression):
+        return {
+            "type": "AtExpression",
+            "string_id": node.string_id,
+            "offset": serialize_node(node.offset),
+        }
+    if isinstance(node, InExpression):
+        return {
+            "type": "InExpression",
+            "subject": _serialize_ast_value(node.subject),
+            "range": serialize_node(node.range),
+        }
+    if isinstance(node, OfExpression):
+        return {
+            "type": "OfExpression",
+            "quantifier": _serialize_ast_value(node.quantifier),
+            "string_set": _serialize_ast_value(node.string_set),
+        }
+    if isinstance(node, ModuleReference):
+        return {"type": "ModuleReference", "module": node.module}
+    if isinstance(node, DictionaryAccess):
+        return {
+            "type": "DictionaryAccess",
+            "object": serialize_node(node.object),
+            "key": _serialize_ast_value(node.key),
+        }
+    if isinstance(node, DefinedExpression):
+        return {"type": "DefinedExpression", "expression": serialize_node(node.expression)}
+    if isinstance(node, StringOperatorExpression):
+        return {
+            "type": "StringOperatorExpression",
+            "left": serialize_node(node.left),
+            "operator": node.operator,
+            "right": serialize_node(node.right),
         }
     return {"type": type(node).__name__, "data": str(node)}
 
@@ -330,10 +465,22 @@ def deserialize_node(data: dict[str, Any]) -> ASTNode:
         return DoubleLiteral(data["value"])
     if node_type == "StringLiteral":
         return StringLiteral(data["value"])
+    if node_type == "RegexLiteral":
+        return RegexLiteral(data["pattern"], data.get("modifiers", ""))
     if node_type == "Identifier":
         return Identifier(data["name"])
     if node_type == "StringIdentifier":
         return StringIdentifier(data["name"])
+    if node_type == "StringWildcard":
+        return StringWildcard(data["pattern"])
+    if node_type == "StringCount":
+        return StringCount(data["string_id"])
+    if node_type == "StringOffset":
+        index = data.get("index")
+        return StringOffset(data["string_id"], deserialize_node(index) if index else None)
+    if node_type == "StringLength":
+        index = data.get("index")
+        return StringLength(data["string_id"], deserialize_node(index) if index else None)
     if node_type == "BinaryExpression":
         return BinaryExpression(
             deserialize_node(data["left"]),
@@ -342,6 +489,75 @@ def deserialize_node(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "UnaryExpression":
         return UnaryExpression(data["operator"], deserialize_node(data["operand"]))
+    if node_type == "ParenthesesExpression":
+        return ParenthesesExpression(deserialize_node(data["expression"]))
+    if node_type == "SetExpression":
+        return SetExpression([deserialize_node(element) for element in data.get("elements", [])])
+    if node_type == "RangeExpression":
+        return RangeExpression(deserialize_node(data["low"]), deserialize_node(data["high"]))
+    if node_type == "FunctionCall":
+        return FunctionCall(
+            data["function"],
+            [deserialize_node(argument) for argument in data.get("arguments", [])],
+        )
+    if node_type == "ArrayAccess":
+        return ArrayAccess(deserialize_node(data["array"]), deserialize_node(data["index"]))
+    if node_type == "MemberAccess":
+        return MemberAccess(deserialize_node(data["object"]), data["member"])
+    if node_type == "ForExpression":
+        return ForExpression(
+            _deserialize_ast_value(data["quantifier"]),
+            data.get("variable", "i"),
+            deserialize_node(data["iterable"]),
+            deserialize_node(data["body"]),
+        )
+    if node_type == "ForOfExpression":
+        condition = data.get("condition")
+        return ForOfExpression(
+            _deserialize_ast_value(data["quantifier"]),
+            _deserialize_ast_value(data["string_set"]),
+            deserialize_node(condition) if condition else None,
+        )
+    if node_type == "AtExpression":
+        return AtExpression(data["string_id"], deserialize_node(data["offset"]))
+    if node_type == "InExpression":
+        subject = data.get("subject")
+        if subject is None and "string_id" in data:
+            subject = data["string_id"]
+        return InExpression(_deserialize_ast_value(subject), deserialize_node(data["range"]))
+    if node_type == "OfExpression":
+        return OfExpression(
+            _deserialize_ast_value(data["quantifier"]),
+            _deserialize_ast_value(data["string_set"]),
+        )
+    if node_type == "ModuleReference":
+        return ModuleReference(data["module"])
+    if node_type == "DictionaryAccess":
+        return DictionaryAccess(
+            deserialize_node(data["object"]),
+            _deserialize_ast_value(data.get("key")),
+        )
+    if node_type == "DefinedExpression":
+        expression = data.get("expression")
+        if expression is None and "identifier" in data:
+            expression = {"type": "Identifier", "name": data["identifier"]}
+        return DefinedExpression(deserialize_node(expression))
+    if node_type == "StringOperatorExpression":
+        left = data.get("left")
+        right = data.get("right")
+        if left is None and "subject" in data:
+            left = data["subject"]
+        if right is None and "pattern" in data:
+            right = {"type": "StringLiteral", "value": data.get("pattern", "")}
+        if left is None:
+            left = {"type": "Identifier", "name": "true"}
+        if right is None:
+            right = {"type": "Identifier", "name": "true"}
+        return StringOperatorExpression(
+            deserialize_node(left),
+            data["operator"],
+            deserialize_node(right),
+        )
     return Identifier(data.get("data", "unknown"))
 
 

@@ -6,10 +6,36 @@ from pathlib import Path
 from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
+from yaraast.ast.expressions import (
+    ArrayAccess,
+    BinaryExpression,
+    BooleanLiteral,
+    FunctionCall,
+    Identifier,
+    IntegerLiteral,
+    MemberAccess,
+    ParenthesesExpression,
+    RangeExpression,
+    RegexLiteral,
+    SetExpression,
+    StringIdentifier,
+    StringLength,
+    StringLiteral,
+    StringOffset,
+    StringWildcard,
+)
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
@@ -146,6 +172,44 @@ def test_simple_roundtrip_helpers_preserve_file_extensions_and_pragmas() -> None
     assert restored_rule_pragma.pragma.parameters == {"enabled": True}
     assert isinstance(restored.rules[0].condition, ExternRuleReference)
     assert restored.rules[0].condition.qualified_name == "legacy.ExternalRule"
+
+
+def test_simple_roundtrip_helpers_preserve_extended_expression_nodes() -> None:
+    nodes = [
+        StringWildcard("$a*"),
+        StringOffset("$a", IntegerLiteral(1)),
+        StringLength("$a", IntegerLiteral(2)),
+        RegexLiteral("ab.*", "i"),
+        ParenthesesExpression(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2))),
+        SetExpression([StringIdentifier("$a"), StringWildcard("$b*")]),
+        RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
+        FunctionCall("math.entropy", [IntegerLiteral(0), IntegerLiteral(10)]),
+        ArrayAccess(Identifier("arr"), IntegerLiteral(1)),
+        MemberAccess(ModuleReference("pe"), "is_dll"),
+        ForExpression(
+            "any",
+            "i",
+            RangeExpression(IntegerLiteral(1), IntegerLiteral(3)),
+            BinaryExpression(Identifier("i"), ">", IntegerLiteral(1)),
+        ),
+        ForOfExpression(
+            "all",
+            SetExpression([StringIdentifier("$a")]),
+            condition=AtExpression("$a", IntegerLiteral(0)),
+        ),
+        InExpression(
+            OfExpression("any", Identifier("them")),
+            RangeExpression(IntegerLiteral(0), IntegerLiteral(20)),
+        ),
+        OfExpression(IntegerLiteral(1), ["$a", "$b"]),
+        DictionaryAccess(MemberAccess(ModuleReference("pe"), "version_info"), "CompanyName"),
+        DictionaryAccess(Identifier("arr"), IntegerLiteral(0)),
+        DefinedExpression(DictionaryAccess(ModuleReference("pe"), "rich_signature")),
+        StringOperatorExpression(StringLiteral("abc"), "icontains", StringLiteral("b")),
+    ]
+
+    for node in nodes:
+        assert deserialize_node(serialize_node(node)) == node
 
 
 def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> None:
