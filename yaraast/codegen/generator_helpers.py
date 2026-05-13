@@ -10,8 +10,27 @@ REGEX_SUFFIX_MODIFIERS = frozenset({"i", "s"})
 REGEX_SUFFIX_NAMES = {"dotall": "s"}
 
 
-def escape_plain_string_value(value: str) -> str:
+def _escape_plain_byte(value: int) -> str:
+    if value == 0x5C:
+        return "\\\\"
+    if value == 0x22:
+        return '\\"'
+    if value == 0x0A:
+        return "\\n"
+    if value == 0x0D:
+        return "\\r"
+    if value == 0x09:
+        return "\\t"
+    if 0x20 <= value <= 0x7E:
+        return chr(value)
+    return f"\\x{value:02x}"
+
+
+def escape_plain_string_value(value: str | bytes) -> str:
     """Escape plain string content for YARA output."""
+    if isinstance(value, bytes):
+        return "".join(_escape_plain_byte(byte) for byte in value)
+
     escaped_value = value.replace("\\", "\\\\")
     escaped_value = escaped_value.replace('"', '\\"')
     escaped_value = escaped_value.replace("\n", "\\n")

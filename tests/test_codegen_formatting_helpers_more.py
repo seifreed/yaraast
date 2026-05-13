@@ -64,9 +64,11 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
     assert build_hex_pattern(hex_node, hex_uppercase=False, hex_spacing=False) == "4d5a[2][1-3]??"
 
     plain = PlainString("$a", value="hello")
+    bytes_plain = PlainString("$b", value=b'A"\x00\xff\\\n')
     regex = RegexString("$r", regex="ab+")
     assert format_plain_string(plain, '"', 3) == '$a    = "hello"'
     assert format_plain_string(plain, '"', 0) == '$a = "hello"'
+    assert format_plain_string(bytes_plain, '"', 0) == '$b = "A\\"\\x00\\xff\\\\\\n"'
     assert format_regex_string(regex, 2) == "$r   = /ab+/"
     assert format_regex_string(regex, 0) == "$r = /ab+/"
 

@@ -240,3 +240,7 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     plain_no_mods = CodeGenerator()
     assert plain_no_mods.visit_plain_string(PlainString("$a", value="x")) == ""
     assert plain_no_mods.buffer.getvalue().endswith('$a = "x"')
+
+    bytes_plain = CodeGenerator()
+    assert bytes_plain.visit_plain_string(PlainString("$b", value=b'A"\x00\xff\\\n')) == ""
+    assert bytes_plain.buffer.getvalue().endswith('$b = "A\\"\\x00\\xff\\\\\\n"')

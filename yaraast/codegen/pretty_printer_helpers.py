@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.codegen.generator_helpers import format_modifier, format_regex_modifiers
+from yaraast.codegen.generator_helpers import (
+    escape_plain_string_value,
+    format_modifier,
+    format_regex_modifiers,
+)
 
 
 def build_hex_pattern(node: HexString, *, hex_uppercase: bool, hex_spacing: bool) -> str:
@@ -29,9 +33,10 @@ def build_hex_pattern(node: HexString, *, hex_uppercase: bool, hex_spacing: bool
 
 
 def format_plain_string(node: PlainString, quote: str, padding: int) -> str:
+    escaped_value = escape_plain_string_value(node.value)
     if padding > 0:
-        return f"{node.identifier}{' ' * padding} = {quote}{node.value}{quote}"
-    return f"{node.identifier} = {quote}{node.value}{quote}"
+        return f"{node.identifier}{' ' * padding} = {quote}{escaped_value}{quote}"
+    return f"{node.identifier} = {quote}{escaped_value}{quote}"
 
 
 def format_regex_string(node: RegexString, padding: int) -> str:
