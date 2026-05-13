@@ -83,7 +83,7 @@ def compare_extended_file_fields(old_ast, new_ast, result, hasher, diff_node, di
         diff_node,
         diff_type,
     )
-    compare_node_collection(
+    compare_pragma_collection(
         old_ast.pragmas,
         new_ast.pragmas,
         "/pragmas",
@@ -161,6 +161,41 @@ def compare_node_collection(
                     node_type=node_type,
                 ),
             )
+
+
+def compare_pragma_collection(
+    old_pragmas,
+    new_pragmas,
+    base_path: str,
+    node_type: str,
+    key_func,
+    result,
+    hasher,
+    diff_node,
+    diff_type,
+) -> None:
+    """Compare pragma collections, including semantically relevant ordering."""
+    compare_node_collection(
+        old_pragmas,
+        new_pragmas,
+        base_path,
+        node_type,
+        key_func,
+        result,
+        hasher,
+        diff_node,
+        diff_type,
+    )
+    _emit_pragma_order_diff(
+        old_pragmas,
+        new_pragmas,
+        f"{base_path}/order",
+        node_type,
+        result,
+        hasher,
+        diff_node,
+        diff_type,
+    )
 
 
 def _nodes_by_key(nodes, key_func) -> dict[str, list]:
@@ -334,6 +369,110 @@ def compare_rule_pragmas(
         diff_node,
         diff_type,
     )
+    _emit_in_rule_pragma_order_diff(
+        old_rule.pragmas,
+        new_rule.pragmas,
+        f"{base_path}/pragmas/order",
+        result,
+        hasher,
+        diff_node,
+        diff_type,
+    )
+
+
+def _emit_in_rule_pragma_order_diff(
+    old_pragmas,
+    new_pragmas,
+    path: str,
+    result,
+    hasher,
+    diff_node,
+    diff_type,
+) -> None:
+    old_signature = _in_rule_pragma_order_signature(old_pragmas, hasher)
+    new_signature = _in_rule_pragma_order_signature(new_pragmas, hasher)
+    if old_signature == new_signature:
+        return
+    if sorted(hasher.visit(pragma) for pragma in old_pragmas) != sorted(
+        hasher.visit(pragma) for pragma in new_pragmas
+    ):
+        return
+    result.differences.append(
+        diff_node(
+            path=path,
+            diff_type=diff_type.MODIFIED,
+            old_value=old_signature,
+            new_value=new_signature,
+            node_type="InRulePragmaOrder",
+        ),
+    )
+
+
+def _emit_pragma_order_diff(
+    old_pragmas,
+    new_pragmas,
+    path: str,
+    node_type: str,
+    result,
+    hasher,
+    diff_node,
+    diff_type,
+) -> None:
+    old_signature = _pragma_order_signature(old_pragmas, hasher)
+    new_signature = _pragma_order_signature(new_pragmas, hasher)
+    if old_signature == new_signature:
+        return
+    if sorted(hasher.visit(pragma) for pragma in old_pragmas) != sorted(
+        hasher.visit(pragma) for pragma in new_pragmas
+    ):
+        return
+    result.differences.append(
+        diff_node(
+            path=path,
+            diff_type=diff_type.MODIFIED,
+            old_value=old_signature,
+            new_value=new_signature,
+            node_type=f"{node_type}Order",
+        ),
+    )
+
+
+def _in_rule_pragma_order_signature(pragmas, hasher) -> list[str]:
+    grouped: dict[str, list] = {}
+    for pragma in pragmas:
+        position = str(getattr(pragma, "position", ""))
+        grouped.setdefault(position, []).append(pragma)
+    return [
+        f"{position}:{_pragma_order_signature(grouped[position], hasher)}"
+        for position in sorted(grouped)
+    ]
+
+
+def _pragma_order_signature(pragmas, hasher) -> list[str]:
+    signature: list[str] = []
+    unordered_run: list[str] = []
+
+    def flush_unordered_run() -> None:
+        if unordered_run:
+            signature.append("Set(" + "|".join(sorted(unordered_run)) + ")")
+            unordered_run.clear()
+
+    for pragma in pragmas:
+        pragma_hash = hasher.visit(pragma)
+        if _is_order_insensitive_pragma(pragma):
+            unordered_run.append(pragma_hash)
+        else:
+            flush_unordered_run()
+            signature.append(pragma_hash)
+
+    flush_unordered_run()
+    return signature
+
+
+def _is_order_insensitive_pragma(node) -> bool:
+    pragma = getattr(node, "pragma", node)
+    pragma_type = getattr(getattr(pragma, "pragma_type", None), "value", None)
+    return pragma_type in {"custom", "include_once"}
 
 
 def compare_rule_tags(old_rule, new_rule, base_path, result, diff_node, diff_type) -> None:

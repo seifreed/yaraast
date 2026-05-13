@@ -36,7 +36,7 @@ class AstHasher(ASTVisitor[str]):
         rules_hash = "|".join(sorted(self.visit(rule) for rule in node.rules))
         extern_rules_hash = "|".join(sorted(self.visit(rule) for rule in node.extern_rules))
         extern_imports_hash = "|".join(sorted(self.visit(imp) for imp in node.extern_imports))
-        pragmas_hash = "|".join(sorted(self.visit(pragma) for pragma in node.pragmas))
+        pragmas_hash = self._hash_pragma_sequence(node.pragmas)
         namespaces_hash = "|".join(sorted(self.visit(namespace) for namespace in node.namespaces))
         return (
             f"YaraFile({imports_hash}|{includes_hash}|{rules_hash}|"
@@ -66,7 +66,7 @@ class AstHasher(ASTVisitor[str]):
         )
         strings = "|".join(sorted(self.visit(s) for s in node.strings))
         condition = self.visit(node.condition) if node.condition else ""
-        pragmas = "|".join(sorted(self.visit(pragma) for pragma in node.pragmas))
+        pragmas = self._hash_in_rule_pragmas(node.pragmas)
         return f"Rule({node.name},{modifiers},{tags},{meta},{strings},{condition},{pragmas})"
 
     def visit_tag(self, node) -> str:
@@ -307,6 +307,44 @@ class AstHasher(ASTVisitor[str]):
         if isinstance(value, list):
             return "[" + "|".join(sorted(self._hash_value(item) for item in value)) + "]"
         return self._hash_value(value)
+
+    def _hash_in_rule_pragmas(self, pragmas) -> str:
+        """Hash rule pragmas by position while preserving sequential directives."""
+        grouped: dict[str, list] = {}
+        for pragma in pragmas:
+            position = str(getattr(pragma, "position", ""))
+            grouped.setdefault(position, []).append(pragma)
+        return "|".join(
+            f"{position}:{self._hash_pragma_sequence(grouped[position])}"
+            for position in sorted(grouped)
+        )
+
+    def _hash_pragma_sequence(self, pragmas) -> str:
+        """Hash pragma sequences, sorting only contiguous order-insensitive runs."""
+        parts: list[str] = []
+        unordered_run: list[str] = []
+
+        def flush_unordered_run() -> None:
+            if unordered_run:
+                parts.append("Set(" + "|".join(sorted(unordered_run)) + ")")
+                unordered_run.clear()
+
+        for pragma in pragmas:
+            pragma_hash = self.visit(pragma)
+            if self._is_order_insensitive_pragma(pragma):
+                unordered_run.append(pragma_hash)
+            else:
+                flush_unordered_run()
+                parts.append(pragma_hash)
+
+        flush_unordered_run()
+        return "|".join(parts)
+
+    @staticmethod
+    def _is_order_insensitive_pragma(node) -> bool:
+        pragma = getattr(node, "pragma", node)
+        pragma_type = getattr(getattr(pragma, "pragma_type", None), "value", None)
+        return pragma_type in {"custom", "include_once"}
 
     def visit_meta(self, node) -> str:
         return f"Meta({node.key},{node.value})"

@@ -10,7 +10,7 @@ from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry
-from yaraast.ast.pragmas import CustomPragma, InRulePragma
+from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, UndefDirective
 from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher, DiffType
@@ -125,6 +125,60 @@ def test_ast_diff_detects_duplicate_extended_file_field_key_changes() -> None:
     assert isinstance(diff.new_value, list)
     assert len(diff.old_value) == 2
     assert len(diff.new_value) == 1
+    assert result.has_changes
+
+
+def test_ast_diff_detects_order_sensitive_file_pragma_reordering() -> None:
+    old_ast = YaraFile(
+        pragmas=[
+            DefineDirective("FEATURE", "1"),
+            UndefDirective("FEATURE"),
+        ],
+    )
+    new_ast = YaraFile(
+        pragmas=[
+            UndefDirective("FEATURE"),
+            DefineDirective("FEATURE", "1"),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    by_path = {diff.path: diff for diff in result.differences}
+    assert by_path["/pragmas/order"].diff_type == DiffType.MODIFIED
+    assert result.old_ast_hash != result.new_ast_hash
+    assert result.has_changes
+
+
+def test_ast_diff_detects_order_sensitive_in_rule_pragma_reordering() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="stable",
+                pragmas=[
+                    InRulePragma(DefineDirective("FEATURE", "1"), position="before_condition"),
+                    InRulePragma(UndefDirective("FEATURE"), position="before_condition"),
+                ],
+            ),
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="stable",
+                pragmas=[
+                    InRulePragma(UndefDirective("FEATURE"), position="before_condition"),
+                    InRulePragma(DefineDirective("FEATURE", "1"), position="before_condition"),
+                ],
+            ),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    by_path = {diff.path: diff for diff in result.differences}
+    assert by_path["/rules/stable/pragmas/order"].diff_type == DiffType.MODIFIED
+    assert result.old_ast_hash != result.new_ast_hash
     assert result.has_changes
 
 
