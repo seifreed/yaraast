@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
+from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
     BooleanLiteral,
@@ -182,23 +182,6 @@ def test_parse_postfix_helpers_cover_success_and_error_paths() -> None:
         )
         == "unknown.c"
     )
-
-
-def test_parse_for_of_percentage_quantifier() -> None:
-    ast = Parser().parse("""
-        rule r {
-            strings:
-                $a = "a"
-                $b = "b"
-            condition:
-                for 50% of them : ($)
-        }
-        """)
-
-    condition = ast.rules[0].condition
-    assert isinstance(condition, ForOfExpression)
-    assert isinstance(condition.quantifier, DoubleLiteral)
-    assert condition.quantifier.value == 0.5
 
 
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:

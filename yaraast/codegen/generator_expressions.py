@@ -11,16 +11,16 @@ def _render_string_set(gen, string_set) -> str:
     return str(string_set)
 
 
-def _render_quantifier(gen, quantifier) -> str:
+def _render_quantifier(gen, quantifier, *, allow_percentage: bool = False) -> str:
     from yaraast.ast.expressions import DoubleLiteral, StringLiteral
 
     if isinstance(quantifier, str | int):
         return str(quantifier)
-    if isinstance(quantifier, float):
+    if isinstance(quantifier, float) and allow_percentage:
         return f"{int(quantifier * 100)}%"
     if isinstance(quantifier, StringLiteral):
         return quantifier.value
-    if isinstance(quantifier, DoubleLiteral):
+    if isinstance(quantifier, DoubleLiteral) and allow_percentage:
         return f"{int(quantifier.value * 100)}%"
     return gen.visit(quantifier)
 
@@ -67,6 +67,6 @@ def render_in_expression(gen, node) -> str:
 
 def render_of_expression(gen, node) -> str:
     """Render an of-expression."""
-    quantifier = _render_quantifier(gen, node.quantifier)
+    quantifier = _render_quantifier(gen, node.quantifier, allow_percentage=True)
     string_set = _render_string_set(gen, node.string_set)
     return f"{quantifier} of {string_set}"

@@ -286,11 +286,6 @@ def test_for_of_and_module_reference_paths() -> None:
     parsed = Parser().parse('rule r { strings: $a = "ab" condition: for any of them : ($) }')
     assert YaraEvaluator(data=b"xxabyy").evaluate_file(parsed) == {"r": True}
 
-    parsed_percent = Parser().parse(
-        'rule r { strings: $a = "ab" $b = "zz" condition: for 50% of them : ($) }'
-    )
-    assert YaraEvaluator(data=b"xxabyy").evaluate_file(parsed_percent) == {"r": True}
-
     ev.context.modules["pe"] = {"machine": 0x14C}
     assert ev.visit_module_reference(ModuleReference(module="pe")) == {"machine": 0x14C}
     with pytest.raises(EvaluationError, match="Unknown module"):
@@ -321,6 +316,46 @@ def test_of_expression_in_range_uses_match_offsets() -> None:
     assert evaluate("2 of them in (0..3)") is False
     assert evaluate("2 of them in (0..7)") is True
     assert evaluate("all of them in (0..3)") is False
+
+
+def test_percentage_of_expression_uses_ratio_threshold() -> None:
+    def evaluate(condition: str, data: bytes) -> bool:
+        ast = Parser().parse(f"""
+            rule r {{
+                strings:
+                    $a = "a"
+                    $b = "b"
+                    $c = "c"
+                condition:
+                    {condition}
+            }}
+            """)
+        return YaraEvaluator(data=data).evaluate_file(ast)["r"]
+
+    assert evaluate("50% of them", b"a") is False
+    assert evaluate("50% of them", b"ab") is True
+
+    rule = Rule(
+        name="r",
+        strings=[
+            PlainString(identifier="$a", value="a"),
+            PlainString(identifier="$b", value="b"),
+            PlainString(identifier="$c", value="c"),
+        ],
+        condition=BooleanLiteral(value=True),
+    )
+    evaluator = YaraEvaluator(data=b"a")
+    evaluator.evaluate_rule(rule)
+    assert (
+        evaluator.visit_for_of_expression(
+            ForOfExpression(
+                quantifier=DoubleLiteral(value=0.5),
+                string_set=Identifier(name="them"),
+                condition=None,
+            )
+        )
+        is False
+    )
 
 
 def test_evaluate_file_with_alias_import_and_string_operator_expression() -> None:
@@ -388,7 +423,6 @@ def test_evaluator_or_module_member_of_and_defined_paths() -> None:
         )
         is True
     )
-    # Float quantifier (percentage) is now handled — 50% of 0 strings = 0 required
     assert (
         ev.visit_of_expression(
             OfExpression(

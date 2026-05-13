@@ -349,8 +349,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         elif isinstance(quantifier, int):
             return matched >= quantifier
         elif isinstance(quantifier, float):
-            required = int(len(string_set) * quantifier)
-            return matched >= required
+            return len(string_set) > 0 and (matched / len(string_set)) >= quantifier
 
         return False
 
@@ -532,9 +531,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         elif isinstance(quantifier, int):
             return matches >= quantifier
         elif isinstance(quantifier, float):
-            # Percentage (e.g., 50% of them)
-            required = int(len(string_set) * quantifier)
-            return matches >= required
+            return len(string_set) > 0 and (matches / len(string_set)) >= quantifier
 
         return False
 

@@ -237,7 +237,9 @@ def test_expr_inference_helper_and_branch_edges() -> None:
         ),
         BooleanType,
     )
-    assert percent_for_of.errors == []
+    assert any(
+        "'for...of' quantifier must be string or integer" in e for e in percent_for_of.errors
+    )
 
     bad_for_of = ExpressionTypeInference(TypeEnvironment())
     assert isinstance(
@@ -250,7 +252,4 @@ def test_expr_inference_helper_and_branch_edges() -> None:
         ),
         BooleanType,
     )
-    assert any(
-        "'for...of' quantifier must be string, integer, or percentage" in e
-        for e in bad_for_of.errors
-    )
+    assert any("'for...of' quantifier must be string or integer" in e for e in bad_for_of.errors)
