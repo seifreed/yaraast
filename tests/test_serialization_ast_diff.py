@@ -72,6 +72,31 @@ def test_ast_diff_detects_meta_scope_changes() -> None:
     assert meta_diff.new_value["secret"]["scope"] == "private"
 
 
+def test_ast_diff_treats_tag_reordering_as_unchanged() -> None:
+    old_ast = _parse_yara(
+        """
+        rule tagged : beta alpha {
+            condition:
+                true
+        }
+        """,
+    )
+    new_ast = _parse_yara(
+        """
+        rule tagged : alpha beta {
+            condition:
+                true
+        }
+        """,
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.old_ast_hash == result.new_ast_hash
+    assert not result.has_changes
+    assert result.differences == []
+
+
 def test_ast_diff_detects_imports_rules_and_modifications(tmp_path: Path) -> None:
     old_code = """
     import "pe"

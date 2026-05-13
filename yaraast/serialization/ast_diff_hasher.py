@@ -55,7 +55,7 @@ class AstHasher(ASTVisitor[str]):
     def visit_rule(self, node) -> str:
         """Hash Rule node."""
         modifiers = "|".join(sorted(str(m) for m in node.modifiers))
-        tags = "|".join(self.visit(tag) for tag in node.tags)
+        tags = "|".join(sorted(self.visit(tag) for tag in node.tags))
         meta = "|".join(
             f"{getattr(m, 'key', '')}:"
             f"{getattr(m, 'value', '')}:"
