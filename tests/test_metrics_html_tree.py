@@ -7,6 +7,7 @@ from textwrap import dedent
 
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def test_html_tree_generation(tmp_path: Path) -> None:
@@ -39,3 +40,17 @@ def test_html_tree_generation(tmp_path: Path) -> None:
 
     assert interactive_path.exists()
     assert "<title>Interactive Title</title>" in interactive
+
+
+def test_html_tree_generation_accepts_yarax_nodes() -> None:
+    ast = parse_yara_source("""
+        rule native_yarax {
+            condition:
+                with xs = [1]: match xs { _ => true }
+        }
+        """)
+
+    html = HtmlTreeGenerator().generate_html(ast)
+
+    assert "With Statement" in html
+    assert "Pattern Match" in html
