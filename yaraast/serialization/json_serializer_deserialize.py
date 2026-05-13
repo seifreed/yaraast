@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.ast.base import ASTNode, Location
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.errors import SerializationError
 
 
@@ -11,6 +13,59 @@ def _deserialize_ast_value(self, data):
     if isinstance(data, dict):
         return self._deserialize_expression(data)
     return data
+
+
+def _deserialize_location(data: dict[str, Any]) -> Location:
+    return Location(
+        line=data["line"],
+        column=data["column"],
+        file=data.get("file"),
+        end_line=data.get("end_line"),
+        end_column=data.get("end_column"),
+    )
+
+
+def _deserialize_comment_node(self, data: dict[str, Any]) -> Any:
+    node_type = data.get("type")
+    if node_type == "Comment":
+        return _apply_node_metadata(
+            self,
+            Comment(data["text"], is_multiline=data.get("is_multiline", False)),
+            data,
+        )
+    if node_type == "CommentGroup":
+        return _apply_node_metadata(
+            self,
+            CommentGroup(
+                [
+                    _cast_comment(_deserialize_comment_node(self, c))
+                    for c in data.get("comments", [])
+                ]
+            ),
+            data,
+        )
+    return Comment(str(data))
+
+
+def _cast_comment(node: Any) -> Comment:
+    if isinstance(node, Comment):
+        return node
+    return Comment(str(node))
+
+
+def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
+    location = data.get("location")
+    if isinstance(location, dict):
+        node.location = _deserialize_location(location)
+    if data.get("leading_comments"):
+        node.leading_comments = [
+            _cast_comment(_deserialize_comment_node(self, comment))
+            for comment in data["leading_comments"]
+        ]
+    trailing_comment = data.get("trailing_comment")
+    if isinstance(trailing_comment, dict):
+        node.trailing_comment = _deserialize_comment_node(self, trailing_comment)
+    return node
 
 
 def _deser_binary_expression(self, data: dict[str, Any]):
@@ -291,15 +346,20 @@ _EXPR_DESERIALIZERS: dict[str, Any] = {
 class JsonSerializerDeserializeMixin:
     """Mixin with JSON deserialization helpers."""
 
+    def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
+        return _apply_node_metadata(self, node, data)
+
     def _deserialize_import(self, data: dict[str, Any]):
         from yaraast.ast.rules import Import
 
-        return Import(module=data["module"], alias=data.get("alias"))
+        return self._apply_node_metadata(
+            Import(module=data["module"], alias=data.get("alias")), data
+        )
 
     def _deserialize_include(self, data: dict[str, Any]):
         from yaraast.ast.rules import Include
 
-        return Include(path=data["path"])
+        return self._apply_node_metadata(Include(path=data["path"]), data)
 
     def _deserialize_rule(self, data: dict[str, Any]):
         from yaraast.ast.rules import Rule
@@ -322,20 +382,23 @@ class JsonSerializerDeserializeMixin:
         tags = [self._deserialize_tag(t) for t in data.get("tags", [])]
         pragmas = [self._deserialize_in_rule_pragma(p) for p in data.get("pragmas", [])]
 
-        return Rule(
-            name=data["name"],
-            modifiers=data.get("modifiers", []),
-            tags=tags,
-            meta=meta,
-            strings=strings,
-            condition=condition,
-            pragmas=pragmas,
+        return self._apply_node_metadata(
+            Rule(
+                name=data["name"],
+                modifiers=data.get("modifiers", []),
+                tags=tags,
+                meta=meta,
+                strings=strings,
+                condition=condition,
+                pragmas=pragmas,
+            ),
+            data,
         )
 
     def _deserialize_tag(self, data: dict[str, Any]):
         from yaraast.ast.rules import Tag
 
-        return Tag(name=data["name"])
+        return self._apply_node_metadata(Tag(name=data["name"]), data)
 
     def _deserialize_meta(self, data: dict[str, Any]):
         from yaraast.ast.modifiers import MetaEntry
@@ -353,27 +416,36 @@ class JsonSerializerDeserializeMixin:
         if string_type == "PlainString":
             from yaraast.ast.strings import PlainString
 
-            return PlainString(
-                identifier=data["identifier"],
-                value=data["value"],
-                modifiers=modifiers,
+            return self._apply_node_metadata(
+                PlainString(
+                    identifier=data["identifier"],
+                    value=data["value"],
+                    modifiers=modifiers,
+                ),
+                data,
             )
         if string_type == "HexString":
             from yaraast.ast.strings import HexString
 
             tokens = [self._deserialize_hex_token(t) for t in data.get("tokens", [])]
-            return HexString(
-                identifier=data["identifier"],
-                tokens=tokens,
-                modifiers=modifiers,
+            return self._apply_node_metadata(
+                HexString(
+                    identifier=data["identifier"],
+                    tokens=tokens,
+                    modifiers=modifiers,
+                ),
+                data,
             )
         if string_type == "RegexString":
             from yaraast.ast.strings import RegexString
 
-            return RegexString(
-                identifier=data["identifier"],
-                regex=data["regex"],
-                modifiers=modifiers,
+            return self._apply_node_metadata(
+                RegexString(
+                    identifier=data["identifier"],
+                    regex=data["regex"],
+                    modifiers=modifiers,
+                ),
+                data,
             )
         msg = f"Unknown string type: {string_type}"
         raise SerializationError(msg)
@@ -405,23 +477,29 @@ class JsonSerializerDeserializeMixin:
         if hex_kind == "HexByte":
             from yaraast.ast.strings import HexByte
 
-            return HexByte(value=data["value"])
+            return self._apply_node_metadata(HexByte(value=data["value"]), data)
         if hex_kind == "HexWildcard":
             from yaraast.ast.strings import HexWildcard
 
-            return HexWildcard()
+            return self._apply_node_metadata(HexWildcard(), data)
         if hex_kind == "HexJump":
             from yaraast.ast.strings import HexJump
 
-            return HexJump(min_jump=data.get("min_jump"), max_jump=data.get("max_jump"))
+            return self._apply_node_metadata(
+                HexJump(min_jump=data.get("min_jump"), max_jump=data.get("max_jump")),
+                data,
+            )
         if hex_kind == "HexNibble":
             from yaraast.ast.strings import HexNibble
 
-            return HexNibble(high=data.get("high", True), value=data.get("value", 0))
+            return self._apply_node_metadata(
+                HexNibble(high=data.get("high", True), value=data.get("value", 0)),
+                data,
+            )
         if hex_kind == "HexNegatedByte":
             from yaraast.ast.strings import HexNegatedByte
 
-            return HexNegatedByte(value=data["value"])
+            return self._apply_node_metadata(HexNegatedByte(value=data["value"]), data)
         if hex_kind == "HexAlternative":
             from yaraast.ast.strings import HexAlternative
 
@@ -429,7 +507,7 @@ class JsonSerializerDeserializeMixin:
                 [self._deserialize_hex_token(t) for t in alt]
                 for alt in data.get("alternatives", [])
             ]
-            return HexAlternative(alternatives=alternatives)
+            return self._apply_node_metadata(HexAlternative(alternatives=alternatives), data)
         msg = f"Unknown hex token type: {hex_kind}"
         raise SerializationError(msg)
 
@@ -440,30 +518,39 @@ class JsonSerializerDeserializeMixin:
         if module_path is None:
             msg = "ExternImport missing module_path"
             raise SerializationError(msg)
-        return ExternImport(
-            module_path=module_path,
-            alias=data.get("alias"),
-            rules=list(data.get("rules", [])),
+        return self._apply_node_metadata(
+            ExternImport(
+                module_path=module_path,
+                alias=data.get("alias"),
+                rules=list(data.get("rules", [])),
+            ),
+            data,
         )
 
     def _deserialize_extern_rule(self, data: dict[str, Any]):
         from yaraast.ast.extern import ExternRule
         from yaraast.ast.rules import Rule
 
-        return ExternRule(
-            name=data["name"],
-            modifiers=Rule._normalize_modifiers(data.get("modifiers", [])),
-            namespace=data.get("namespace"),
+        return self._apply_node_metadata(
+            ExternRule(
+                name=data["name"],
+                modifiers=Rule._normalize_modifiers(data.get("modifiers", [])),
+                namespace=data.get("namespace"),
+            ),
+            data,
         )
 
     def _deserialize_extern_namespace(self, data: dict[str, Any]):
         from yaraast.ast.extern import ExternNamespace
 
-        return ExternNamespace(
-            name=data["name"],
-            extern_rules=[
-                self._deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])
-            ],
+        return self._apply_node_metadata(
+            ExternNamespace(
+                name=data["name"],
+                extern_rules=[
+                    self._deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])
+                ],
+            ),
+            data,
         )
 
     def _deserialize_pragma(self, data: dict[str, Any]):
@@ -511,22 +598,28 @@ class JsonSerializerDeserializeMixin:
                 scope=scope,
             )
         pragma.scope = scope
-        return pragma
+        return self._apply_node_metadata(pragma, data)
 
     def _deserialize_in_rule_pragma(self, data: dict[str, Any]):
         from yaraast.ast.pragmas import InRulePragma
 
-        return InRulePragma(
-            pragma=self._deserialize_pragma(data["pragma"]),
-            position=data.get("position", "before_strings"),
+        return self._apply_node_metadata(
+            InRulePragma(
+                pragma=self._deserialize_pragma(data["pragma"]),
+                position=data.get("position", "before_strings"),
+            ),
+            data,
         )
 
     def _deserialize_pragma_block(self, data: dict[str, Any]):
         from yaraast.ast.pragmas import PragmaBlock, PragmaScope
 
-        return PragmaBlock(
-            pragmas=[self._deserialize_pragma(pragma) for pragma in data.get("pragmas", [])],
-            scope=PragmaScope(data.get("scope", PragmaScope.FILE.value)),
+        return self._apply_node_metadata(
+            PragmaBlock(
+                pragmas=[self._deserialize_pragma(pragma) for pragma in data.get("pragmas", [])],
+                scope=PragmaScope(data.get("scope", PragmaScope.FILE.value)),
+            ),
+            data,
         )
 
     def _deserialize_expression(self, data: dict[str, Any]):
@@ -536,7 +629,10 @@ class JsonSerializerDeserializeMixin:
         expr_type = data.get("type")
         factory = _EXPR_DESERIALIZERS.get(expr_type)
         if factory:
-            return factory(self, data)
+            node = factory(self, data)
+            if isinstance(node, ASTNode):
+                return self._apply_node_metadata(node, data)
+            return node
 
         msg = f"Unknown expression type: {expr_type}"
         raise SerializationError(msg)

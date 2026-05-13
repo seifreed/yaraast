@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
@@ -54,6 +55,29 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
 
     def __init__(self, include_metadata: bool = True) -> None:
         self.include_metadata = include_metadata
+
+    def visit(self, node: ASTNode) -> dict[str, Any]:
+        """Visit a node and attach common AST metadata when present."""
+        return self._with_node_metadata(node, super().visit(node))
+
+    def _serialize_location(self, location: Location) -> dict[str, Any]:
+        data: dict[str, Any] = {"line": location.line, "column": location.column}
+        if location.file is not None:
+            data["file"] = location.file
+        if location.end_line is not None:
+            data["end_line"] = location.end_line
+        if location.end_column is not None:
+            data["end_column"] = location.end_column
+        return data
+
+    def _with_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> dict[str, Any]:
+        if node.location is not None:
+            data["location"] = self._serialize_location(node.location)
+        if node.leading_comments:
+            data["leading_comments"] = [self.visit(comment) for comment in node.leading_comments]
+        if node.trailing_comment is not None:
+            data["trailing_comment"] = self.visit(node.trailing_comment)
+        return data
 
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to JSON format."""
@@ -120,7 +144,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
                 self._deserialize_extern_namespace(namespace)
                 for namespace in ast_data["namespaces"]
             ]
-        return YaraFile(**kwargs)
+        return self._apply_node_metadata(YaraFile(**kwargs), ast_data)
 
     def _simple_node(self, type_name: str, **fields: Any) -> dict[str, Any]:
         payload = {"type": type_name}

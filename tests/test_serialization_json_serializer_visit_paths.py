@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -294,6 +295,35 @@ def test_json_serializer_deserialize_validates_input_and_supports_direct_ast_and
     path.write_text(json.dumps({"ast": direct_ast}), encoding="utf-8")
     ast_from_file = serializer.deserialize(input_path=path)
     assert ast_from_file.rules[0].name == "r"
+
+
+def test_json_serializer_preserves_node_comment_metadata() -> None:
+    plain = PlainString(identifier="$a", value="abc")
+    plain.leading_comments = [Comment("string lead", is_multiline=True)]
+    condition = StringIdentifier("$a")
+    condition.trailing_comment = Comment("condition tail")
+    rule = Rule(name="commented", strings=[plain], condition=condition)
+    rule.leading_comments = [Comment("rule lead")]
+    rule.trailing_comment = Comment("rule tail")
+    ast = YaraFile(rules=[rule])
+    ast.location = Location(1, 1, file="sample.yar", end_line=6, end_column=1)
+    ast.trailing_comment = cast(Any, CommentGroup([Comment("file end"), Comment("final")]))
+    serializer = JsonSerializer(include_metadata=False)
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+
+    assert restored.location == Location(1, 1, file="sample.yar", end_line=6, end_column=1)
+    assert isinstance(restored.trailing_comment, CommentGroup)
+    assert restored.trailing_comment.comments[1].text == "final"
+    assert restored.rules[0].leading_comments[0].text == "rule lead"
+    assert restored.rules[0].trailing_comment is not None
+    assert restored.rules[0].trailing_comment.text == "rule tail"
+    restored_plain = restored.rules[0].strings[0]
+    assert restored_plain.leading_comments[0].is_multiline is True
+    restored_condition = restored.rules[0].condition
+    assert restored_condition is not None
+    assert restored_condition.trailing_comment is not None
+    assert restored_condition.trailing_comment.text == "condition tail"
 
 
 def test_json_serializer_visit_include_and_roundtrip_without_metadata(tmp_path: Path) -> None:
