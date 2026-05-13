@@ -7,7 +7,18 @@ from dataclasses import dataclass
 import re
 from typing import Any, overload
 
-from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    HexToken,
+    HexWildcard,
+    PlainString,
+    RegexString,
+)
 from yaraast.errors import EvaluationError
 
 
@@ -156,36 +167,105 @@ class StringMatcher:
 
     def _match_hex_string(self, data: bytes, string_def: HexString) -> None:
         """Match hex string against data."""
-        # Build pattern from hex tokens
-        pattern_bytes: list[int] = []
-        wildcards: list[bool] = []
-
-        for _i, token in enumerate(string_def.tokens):
-            if hasattr(token, "value"):
-                # Hex byte
-                if isinstance(token.value, str):
-                    pattern_bytes.append(int(token.value, 16))
-                else:
-                    pattern_bytes.append(token.value)
-                wildcards.append(False)
-            else:
-                # Wildcard
-                pattern_bytes.append(0)  # Placeholder
-                wildcards.append(True)
-
-        # Search for pattern
-        matches = self._find_hex_pattern(data, pattern_bytes, wildcards)
-
-        # Store results
+        matches = self._find_hex_token_pattern(data, string_def.tokens)
         self.matches[string_def.identifier] = [
             MatchResult(
                 string_def.identifier,
                 offset,
-                len(pattern_bytes),
-                data[offset : offset + len(pattern_bytes)],
+                length,
+                data[offset : offset + length],
             )
-            for offset in matches
+            for offset, length in matches
         ]
+
+    def _find_hex_token_pattern(
+        self,
+        data: bytes,
+        tokens: list[Any],
+    ) -> list[tuple[int, int]]:
+        """Find a hex token pattern with jumps, alternatives, nibbles, and negation."""
+        if not tokens:
+            return []
+
+        matches: list[tuple[int, int]] = []
+        seen: set[tuple[int, int]] = set()
+        for start in range(len(data)):
+            for end in self._match_hex_tokens_from(data, tokens, start):
+                match = (start, end - start)
+                if match not in seen:
+                    seen.add(match)
+                    matches.append(match)
+        return matches
+
+    def _match_hex_tokens_from(
+        self,
+        data: bytes,
+        tokens: list[Any],
+        start: int,
+    ) -> list[int]:
+        positions = [start]
+        for token in tokens:
+            next_positions: list[int] = []
+            for pos in positions:
+                next_positions.extend(self._match_hex_token(data, token, pos))
+            if not next_positions:
+                return []
+            positions = sorted(set(next_positions))
+        return positions
+
+    def _match_hex_token(self, data: bytes, token: Any, pos: int) -> list[int]:
+        if isinstance(token, HexByte):
+            return (
+                [pos + 1] if pos < len(data) and data[pos] == self._hex_value(token.value) else []
+            )
+        if isinstance(token, HexWildcard):
+            return [pos + 1] if pos < len(data) else []
+        if isinstance(token, HexNibble):
+            return self._match_hex_nibble(data, token, pos)
+        if isinstance(token, HexNegatedByte):
+            value = self._hex_value(token.value)
+            return [pos + 1] if pos < len(data) and data[pos] != value else []
+        if isinstance(token, HexJump):
+            return self._match_hex_jump(data, token, pos)
+        if isinstance(token, HexAlternative):
+            return self._match_hex_alternative(data, token, pos)
+        if isinstance(token, HexToken):
+            return [pos + 1] if pos < len(data) else []
+        return []
+
+    def _match_hex_nibble(self, data: bytes, token: HexNibble, pos: int) -> list[int]:
+        if pos >= len(data):
+            return []
+        value = self._hex_value(token.value)
+        byte = data[pos]
+        if token.high:
+            return [pos + 1] if byte >> 4 == value else []
+        return [pos + 1] if byte & 0x0F == value else []
+
+    def _match_hex_jump(self, data: bytes, token: HexJump, pos: int) -> list[int]:
+        min_jump = token.min_jump if token.min_jump is not None else 0
+        max_jump = token.max_jump if token.max_jump is not None else len(data) - pos
+        max_jump = min(max_jump, len(data) - pos)
+        if min_jump > max_jump:
+            return []
+        return [pos + size for size in range(min_jump, max_jump + 1)]
+
+    def _match_hex_alternative(
+        self,
+        data: bytes,
+        token: HexAlternative,
+        pos: int,
+    ) -> list[int]:
+        positions: list[int] = []
+        for alternative in token.alternatives:
+            alt_tokens = alternative if isinstance(alternative, list) else [alternative]
+            positions.extend(self._match_hex_tokens_from(data, alt_tokens, pos))
+        return positions
+
+    def _hex_value(self, value: int | str) -> int:
+        if isinstance(value, str):
+            return int(value, 16)
+        return value
 
     def _match_regex_string(self, data: bytes, string_def: RegexString) -> None:
         """Match regex string against data."""

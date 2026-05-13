@@ -5,7 +5,17 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.modifiers import StringModifier
-from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    HexWildcard,
+    PlainString,
+    RegexString,
+)
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.string_matcher import MatchResult, StringMatcher
 
@@ -117,3 +127,25 @@ def test_string_matcher_wide_ascii_and_hex_helper_edge_cases() -> None:
 
     assert matcher._find_hex_pattern(b"abc", [], []) == []
     assert matcher._find_hex_pattern(b"ab", [0x61, 0x62, 0x63], [False, False, False]) == []
+
+
+def test_string_matcher_hex_tokens_match_yara_token_semantics() -> None:
+    matcher = StringMatcher()
+    hex_string = HexString(
+        "$h",
+        tokens=[
+            HexByte(0x41),
+            HexJump(2, 2),
+            HexAlternative([[HexNibble(high=True, value=0x4)], [HexNegatedByte(0x3B)]]),
+            HexNibble(high=False, value=0xF),
+        ],
+    )
+
+    matches = matcher.match_string(hex_string, b"AxyB\x0fAz\xff\x3b\x0f")
+
+    assert [(match.offset, match.length) for match in matches] == [(0, 5)]
+
+    negated = HexString("$n", tokens=[HexByte(0x41), HexNegatedByte(0x00)])
+    negated_matches = matcher.match_string(negated, b"A\x01A\x00")
+
+    assert [(match.offset, match.length) for match in negated_matches] == [(0, 2)]
