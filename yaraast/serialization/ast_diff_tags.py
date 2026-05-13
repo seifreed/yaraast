@@ -23,8 +23,8 @@ def emit_tags_diff(
         diff_node(
             path=f"{base_path}/tags",
             diff_type=diff_type.MODIFIED,
-            old_value=list(old_tags),
-            new_value=list(new_tags),
+            old_value=sorted(old_tags),
+            new_value=sorted(new_tags),
             node_type="RuleTags",
         ),
     )

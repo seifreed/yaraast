@@ -282,24 +282,24 @@ def parallel(
     chunk_size: int,
 ) -> None:
     """Analyze YARA files in parallel using thread pooling."""
-    file_paths = collect_file_paths(input_paths)
-
-    if not file_paths:
-        click.echo("❌ No YARA files found to process")
-        return
-
-    if not output_dir:
-        output_dir = Path.cwd() / "parallel_analysis_output"
-    output_dir = Path(output_dir)
-    output_dir.mkdir(exist_ok=True)
-
-    click.echo(f"🚀 Starting parallel analysis of {len(file_paths)} files...")
-    click.echo(f"   Max workers: {max_workers or 'auto'}")
-    click.echo(f"   Chunk size: {chunk_size}")
-    click.echo(f"   Analysis type: {analysis_type}")
-    click.echo(f"   Timeout: {timeout:g}s")
-
     try:
+        file_paths = collect_file_paths(input_paths)
+
+        if not file_paths:
+            click.echo("❌ No YARA files found to process")
+            return
+
+        if not output_dir:
+            output_dir = Path.cwd() / "parallel_analysis_output"
+        output_dir = Path(output_dir)
+        output_dir.mkdir(exist_ok=True)
+
+        click.echo(f"🚀 Starting parallel analysis of {len(file_paths)} files...")
+        click.echo(f"   Max workers: {max_workers or 'auto'}")
+        click.echo(f"   Chunk size: {chunk_size}")
+        click.echo(f"   Analysis type: {analysis_type}")
+        click.echo(f"   Timeout: {timeout:g}s")
+
         click.echo("\n📋 Parsing files...")
         run_results, total_time = run_parallel_analysis(
             file_paths,

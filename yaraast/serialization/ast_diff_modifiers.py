@@ -23,8 +23,8 @@ def emit_modifiers_diff(
         diff_node(
             path=f"{base_path}/modifiers",
             diff_type=diff_type.MODIFIED,
-            old_value=list(old_mods),
-            new_value=list(new_mods),
+            old_value=sorted(old_mods),
+            new_value=sorted(new_mods),
             node_type="RuleModifiers",
         ),
     )
