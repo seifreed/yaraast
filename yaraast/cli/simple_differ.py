@@ -257,7 +257,7 @@ class SimpleASTDiffer(SimpleDiffer):
         removed_rules = sorted(set(rules1) - set(rules2))
 
         modified_rules: list[str] = []
-        for name in set(rules1) & set(rules2):
+        for name in sorted(set(rules1) & set(rules2)):
             if repr(rules1[name]) != repr(rules2[name]):
                 modified_rules.append(name)
 

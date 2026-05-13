@@ -58,6 +58,39 @@ def test_simple_ast_differ_modified_rule(tmp_path: Path) -> None:
     assert result.modified_rules == ["r1"]
 
 
+def test_simple_ast_differ_modified_rules_are_sorted(tmp_path: Path) -> None:
+    file1 = tmp_path / "old.yar"
+    file2 = tmp_path / "new.yar"
+    names = [
+        "zeta",
+        "alpha",
+        "mu",
+        "beta",
+        "theta",
+        "delta",
+        "omega",
+        "kappa",
+        "eta",
+        "gamma",
+    ]
+
+    file1.write_text(
+        "\n".join(f"rule {name} {{ condition: true }}" for name in names),
+        encoding="utf-8",
+    )
+    file2.write_text(
+        "\n".join(f"rule {name} {{ condition: false }}" for name in names),
+        encoding="utf-8",
+    )
+
+    result = SimpleASTDiffer().diff_files(file1, file2)
+
+    assert result.modified_rules == sorted(names)
+    assert [change.removeprefix("Rule modified: ") for change in result.logical_changes] == sorted(
+        names
+    )
+
+
 def test_simple_ast_differ_handles_yarax_files(tmp_path: Path) -> None:
     file1 = tmp_path / "old.yar"
     file2 = tmp_path / "new.yar"
