@@ -64,21 +64,27 @@ def parse_rule_with_recovery(parser, start_line: int) -> tuple[Rule | None, int]
         rule_name, tags, body_lines=rule_body_lines, start_line=start_line
     )
     if rule:
-        rule.modifiers = modifiers
+        rule.modifiers = Rule._normalize_modifiers(modifiers)
     return rule, current_line - start_line + 1
 
 
 def extract_rule_header(parser, line: str, line_num: int) -> tuple[str | None, list, list[str]]:
     """Extract rule name and tags from a rule declaration."""
-    match = re.match(r"(?:(?:private|global)\s+)*rule\s+(\w+)\s*(?:\:\s*([^{]+))?\s*\{?", line)
+    match = re.match(
+        r"(?P<modifiers>(?:(?:private|global)\s+)*)rule\s+(?P<name>\w+)"
+        r"\s*(?:\:\s*(?P<tags>[^{]+))?\s*\{?",
+        line,
+        re.IGNORECASE,
+    )
     if not match:
         parser._add_error(f"Invalid rule declaration: {line}", line_num, 0)
         return None, [], []
 
-    rule_name = match.group(1)
-    tags_str = match.group(2)
+    rule_name = match.group("name")
+    tags_str = match.group("tags")
     tags = [tag.strip() for tag in tags_str.split()] if tags_str else []
-    return rule_name, tags, []
+    modifiers = [modifier.lower() for modifier in match.group("modifiers").split()]
+    return rule_name, tags, modifiers
 
 
 def _count_braces_outside_literals(line: str) -> int:

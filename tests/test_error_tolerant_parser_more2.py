@@ -49,6 +49,24 @@ def test_recovery_paths_for_invalid_import_include_rule_and_unknown_lines() -> N
     assert parser.get_errors() == result.errors
 
 
+def test_error_tolerant_parser_preserves_rule_modifiers() -> None:
+    parser = ErrorTolerantParser()
+    result = parser.parse(
+        dedent("""
+        private global rule guarded {
+            condition:
+                true
+        }
+        """),
+    )
+
+    assert result.ast.rules
+    rule = result.ast.rules[0]
+    assert rule.is_private is True
+    assert rule.is_global is True
+    assert [str(modifier) for modifier in rule.modifiers] == ["private", "global"]
+
+
 def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     p = ErrorTolerantParser()
 
