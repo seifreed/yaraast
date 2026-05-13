@@ -144,7 +144,7 @@ class DependencyGraph:
         rule_key = f"rule:{rule_name}"
         if rule_key not in self.nodes:
             return set()
-        return self.nodes[rule_key].dependencies
+        return self.nodes[rule_key].dependencies.copy()
 
     def _get_transitive_dependencies(self, node_key: str) -> set[str]:
         """Get transitive dependencies of a node."""

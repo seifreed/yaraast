@@ -107,6 +107,16 @@ def test_dependency_graph_transitive_queries_cycles_and_export() -> None:
     assert graph.get_file_dependents("missing") == set()
 
 
+def test_rule_dependency_getter_does_not_expose_internal_set() -> None:
+    graph = DependencyGraph()
+    graph.nodes["rule:test"] = DependencyNode("test", "rule", dependencies={"dep"})
+
+    dependencies = graph.get_rule_dependencies("test")
+    dependencies.add("mutated")
+
+    assert graph.nodes["rule:test"].dependencies == {"dep"}
+
+
 def test_resolution_dependency_graph_public_outputs_are_stably_sorted() -> None:
     graph = DependencyGraph()
     graph.nodes["z_rule"] = DependencyNode("z_rule", "rule", dependencies={"z_dep", "a_dep"})
