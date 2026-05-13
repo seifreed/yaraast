@@ -10,11 +10,14 @@ from yaraast.cli.roundtrip_services import (
     build_rules_manifest,
     deserialize_roundtrip_file,
     pipeline_serialize_file,
+    pretty_print_file,
     serialize_roundtrip_file,
     test_roundtrip_file as run_roundtrip_file_test,
 )
 from yaraast.cli.semantic_services import _create_validation_context, _process_file
 from yaraast.parser import Parser
+from yaraast.yarax.ast_nodes import WithStatement
+from yaraast.yarax.parser import YaraXParser
 
 
 def _write_rule(path: Path) -> None:
@@ -25,6 +28,18 @@ rule sample {
         $a = "abc"
     condition:
         $a
+}
+""".strip(),
+        encoding="utf-8",
+    )
+
+
+def _write_yarax_rule(path: Path) -> None:
+    path.write_text(
+        """
+rule yarax_sample {
+    condition:
+        with xs = [1]: match xs { _ => true }
 }
 """.strip(),
         encoding="utf-8",
@@ -73,8 +88,6 @@ def test_roundtrip_pipeline_and_manifest_services(tmp_path: Path) -> None:
 
 
 def test_roundtrip_pretty_print_compact_and_verbose_styles(tmp_path: Path) -> None:
-    from yaraast.cli.roundtrip_services import pretty_print_file
-
     yara_path = tmp_path / "styles.yar"
     _write_rule(yara_path)
 
@@ -89,6 +102,27 @@ def test_roundtrip_pretty_print_compact_and_verbose_styles(tmp_path: Path) -> No
     )
     assert ast_verbose.rules[0].name == "sample"
     assert "condition:" in verbose
+
+
+def test_roundtrip_pretty_and_pipeline_services_parse_yarax(tmp_path: Path) -> None:
+    yara_path = tmp_path / "yarax.yar"
+    _write_yarax_rule(yara_path)
+
+    pretty_ast, pretty_output = pretty_print_file(
+        yara_path, "readable", 4, 120, False, False, False, False
+    )
+    assert isinstance(pretty_ast.rules[0].condition, WithStatement)
+    assert "with xs = [1]" in pretty_output
+    assert "match xs" in pretty_output
+    assert "        _ => true," in pretty_output
+    assert "    }\n}" in pretty_output
+    YaraXParser(pretty_output).parse()
+
+    pipeline_ast, yaml_content, pipeline_data = pipeline_serialize_file(yara_path, None)
+    assert isinstance(pipeline_ast.rules[0].condition, WithStatement)
+    assert pipeline_data is None
+    loaded = yaml.safe_load(yaml_content)
+    assert loaded["ast"]["rules"][0]["condition"]["type"] == "WithStatement"
 
 
 def test_semantic_process_file_updates_existing_ast_location(tmp_path: Path) -> None:

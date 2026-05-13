@@ -138,6 +138,11 @@ def write_string_definition(printer, string_def) -> None:
 
 def write_condition_section(printer, condition) -> None:
     condition_str = expression_to_string(condition)
+    if "\n" in condition_str:
+        for line in condition_str.splitlines():
+            printer._writeline(line)
+        return
+
     if (
         printer.options.wrap_long_conditions
         and len(condition_str) > printer.options.max_line_length

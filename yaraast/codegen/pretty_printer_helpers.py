@@ -79,8 +79,8 @@ def calculate_meta_alignment_column(ast, min_alignment_column: int) -> int:
 
 
 def expression_to_string(expr) -> str:
-    """Render an expression with CodeGenerator."""
-    from yaraast.codegen.generator import CodeGenerator
+    """Render an expression with the comment-aware generator."""
+    from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 
-    generator = CodeGenerator()
+    generator = CommentAwareCodeGenerator()
     return generator.visit(expr).strip()
