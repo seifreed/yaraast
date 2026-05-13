@@ -45,10 +45,37 @@ def test_semantic_text_summary_and_processing_error(tmp_path: Path) -> None:
 
     result = runner.invoke(semantic, [str(good_file), str(bad_input)])
 
-    assert result.exit_code == 0
+    assert result.exit_code == 1
     assert "Validating" in result.output
     assert "Validated 2 file(s)" in result.output
     assert "Error processing" in result.output
+    assert "Found 1 errors" in result.output
+    assert "All files passed validation" not in result.output
+
+
+def test_semantic_yarax_rule_passes_validation(tmp_path: Path) -> None:
+    runner = CliRunner()
+    file_path = _write(
+        tmp_path,
+        "yarax_semantic.yar",
+        "rule x { condition: with xs = [1]: match xs { _ => true } }",
+    )
+
+    result = runner.invoke(semantic, [str(file_path), "--quiet"])
+
+    assert result.exit_code == 0
+    assert "Error processing" not in result.output
+
+
+def test_semantic_invalid_file_exits_with_error(tmp_path: Path) -> None:
+    runner = CliRunner()
+    file_path = _write(tmp_path, "invalid.yar", "rule bad { condition:")
+
+    result = runner.invoke(semantic, [str(file_path)])
+
+    assert result.exit_code == 1
+    assert "Error processing" in result.output
+    assert "Found 1 errors" in result.output
 
 
 def test_semantic_json_stdout_emits_results(tmp_path: Path) -> None:

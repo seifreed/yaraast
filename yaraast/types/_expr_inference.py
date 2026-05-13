@@ -40,7 +40,9 @@ from yaraast.visitor.defaults import DefaultASTVisitor
 
 from . import _expr_inference_ops as ops
 from ._registry import (
+    ArrayType,
     BooleanType,
+    DictionaryType,
     DoubleType,
     IntegerType,
     ModuleType,
@@ -98,6 +100,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
     """Type inference visitor for expressions."""
 
     def __init__(self, env: TypeEnvironment) -> None:
+        super().__init__()
         self.env = env
         self.errors: list[str] = []
 
@@ -214,3 +217,128 @@ class ExpressionTypeInference(_TypeBaseVisitor):
 
     def visit_for_of_expression(self, node: ForOfExpression) -> YaraType:
         return ops.infer_module_or_condition(self, node)
+
+    def visit_with_statement(self, node) -> YaraType:
+        self.env.push_scope()
+        for declaration in node.declarations:
+            self.visit(declaration)
+        body_type = self.visit(node.body)
+        self.env.pop_scope()
+        return body_type
+
+    def visit_with_declaration(self, node) -> YaraType:
+        value_type = self.visit(node.value)
+        self.env.define(node.identifier, value_type)
+        self.env.define(node.identifier.lstrip("$"), value_type)
+        return value_type
+
+    def visit_list_expression(self, node) -> YaraType:
+        return ArrayType(self._infer_common_type(node.elements))
+
+    def visit_tuple_expression(self, node) -> YaraType:
+        return ArrayType(self._infer_common_type(node.elements))
+
+    def visit_dict_expression(self, node) -> YaraType:
+        keys = [item.key for item in node.items]
+        values = [item.value for item in node.items]
+        return DictionaryType(
+            self._infer_common_type(keys),
+            self._infer_common_type(values),
+        )
+
+    def visit_dict_item(self, node) -> YaraType:
+        return self.visit(node.value)
+
+    def visit_array_comprehension(self, node) -> YaraType:
+        self.env.push_scope()
+        self._define_iteration_variable(node.variable, node.iterable)
+        if node.condition is not None:
+            condition_type = self.visit(node.condition)
+            if not isinstance(condition_type, BooleanType):
+                self.errors.append(
+                    f"Array comprehension filter must be boolean, got {condition_type}"
+                )
+        element_type = self.visit(node.expression) if node.expression is not None else UnknownType()
+        self.env.pop_scope()
+        return ArrayType(element_type)
+
+    def visit_dict_comprehension(self, node) -> YaraType:
+        self.env.push_scope()
+        self._define_iteration_variable(node.key_variable, node.iterable)
+        if node.value_variable:
+            self.env.define(node.value_variable, UnknownType())
+        if node.condition is not None:
+            condition_type = self.visit(node.condition)
+            if not isinstance(condition_type, BooleanType):
+                self.errors.append(
+                    f"Dict comprehension filter must be boolean, got {condition_type}"
+                )
+        key_type = (
+            self.visit(node.key_expression) if node.key_expression is not None else UnknownType()
+        )
+        value_type = (
+            self.visit(node.value_expression)
+            if node.value_expression is not None
+            else UnknownType()
+        )
+        self.env.pop_scope()
+        return DictionaryType(key_type, value_type)
+
+    def visit_tuple_indexing(self, node) -> YaraType:
+        tuple_type = self.visit(node.tuple_expr)
+        index_type = self.visit(node.index)
+        if not isinstance(index_type, IntegerType):
+            self.errors.append(f"Tuple index must be integer, got {index_type}")
+        if isinstance(tuple_type, ArrayType):
+            return tuple_type.element_type
+        return UnknownType()
+
+    def visit_slice_expression(self, node) -> YaraType:
+        target_type = self.visit(node.target)
+        for bound in (node.start, node.stop, node.step):
+            if bound is not None and not isinstance(self.visit(bound), IntegerType):
+                self.errors.append("Slice bounds must be integer")
+        if isinstance(target_type, ArrayType | StringType):
+            return target_type
+        return UnknownType()
+
+    def visit_lambda_expression(self, node) -> YaraType:
+        self.env.push_scope()
+        for parameter in node.parameters:
+            self.env.define(parameter, UnknownType())
+        self.visit(node.body)
+        self.env.pop_scope()
+        return UnknownType()
+
+    def visit_pattern_match(self, node) -> YaraType:
+        self.visit(node.value)
+        result_nodes = [case.result for case in node.cases]
+        if node.default is not None:
+            result_nodes.append(node.default)
+        return self._infer_common_type(result_nodes)
+
+    def visit_match_case(self, node) -> YaraType:
+        self.visit(node.pattern)
+        return self.visit(node.result)
+
+    def visit_spread_operator(self, node) -> YaraType:
+        return self.visit(node.expression)
+
+    def _define_iteration_variable(self, variable: str, iterable) -> None:
+        iter_type = self.visit(iterable) if iterable is not None else UnknownType()
+        if isinstance(iter_type, ArrayType):
+            self.env.define(variable, iter_type.element_type)
+        else:
+            self.env.define(variable, UnknownType())
+
+    def _infer_common_type(self, nodes: list) -> YaraType:
+        if not nodes:
+            return UnknownType()
+        first_type = self.visit(nodes[0])
+        for node in nodes[1:]:
+            current_type = self.visit(node)
+            if not first_type.is_compatible_with(current_type):
+                self.errors.append(
+                    f"Collection elements must have compatible types: {first_type} vs {current_type}"
+                )
+        return first_type

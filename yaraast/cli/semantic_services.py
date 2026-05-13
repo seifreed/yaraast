@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
-import contextlib
 from pathlib import Path
 import sys
 from typing import Any, NoReturn
 
 from yaraast.cli.utils import read_text
+from yaraast.parser.source import parse_yara_source
 from yaraast.types.semantic_validator import SemanticValidator
-from yaraast.types.semantic_validator_core import ValidationResult
+from yaraast.types.semantic_validator_core import ValidationError, ValidationResult
 
-with contextlib.suppress(ImportError):
-    from yaraast.parser import Parser
+
+class DialectAwareParser:
+    """Parser adapter for semantic validation across supported YARA dialects."""
+
+    def parse(self, content: str) -> Any:
+        return parse_yara_source(content)
 
 
 def _process_file(file_path: Path, parser: Any, validator: Any) -> Any:
@@ -48,7 +52,7 @@ def _add_file_to_issues(issues, file_path: Path) -> None:
 
 def _create_validation_context() -> dict[str, Any]:
     """Create validation context with parser and validator."""
-    return {"parser": Parser(), "validator": SemanticValidator()}
+    return {"parser": DialectAwareParser(), "validator": SemanticValidator()}
 
 
 def _create_file_result(file_path: Path, result: ValidationResult) -> dict[str, object]:
@@ -60,6 +64,21 @@ def _create_file_result(file_path: Path, result: ValidationResult) -> dict[str, 
         "warnings": [warning.to_dict() for warning in result.warnings],
         "total_issues": result.total_issues,
     }
+
+
+def _create_processing_error_result(file_path: Path, error: Exception) -> dict[str, object]:
+    """Create a validation-style result for files that could not be processed."""
+    from yaraast.ast.base import Location
+
+    result = ValidationResult(is_valid=False)
+    result.errors.append(
+        ValidationError(
+            message=str(error),
+            location=Location(line=1, column=1, file=str(file_path)),
+            error_type="processing",
+        )
+    )
+    return _create_file_result(file_path, result)
 
 
 def _exit_with_appropriate_code(

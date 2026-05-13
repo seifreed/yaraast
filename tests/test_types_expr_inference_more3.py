@@ -22,6 +22,7 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, Extern
 from yaraast.ast.modules import DictionaryAccess
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock, PragmaType
+from yaraast.parser.source import parse_yara_source
 from yaraast.types._expr_inference import ExpressionTypeInference, _TypeBaseVisitor
 from yaraast.types._registry import (
     BooleanType,
@@ -269,3 +270,25 @@ def test_expr_inference_helper_and_branch_edges() -> None:
         BooleanType,
     )
     assert any("'for...of' quantifier must be string or integer" in e for e in bad_for_of.errors)
+
+
+def test_expr_inference_handles_yarax_with_match_collections() -> None:
+    ast = parse_yara_source("rule x { condition: with xs = [1]: match xs { _ => true } }")
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    assert ast.rules[0].condition is not None
+    out = inf.infer(ast.rules[0].condition)
+
+    assert isinstance(out, BooleanType)
+    assert inf.errors == []
+
+
+def test_expr_inference_reports_yarax_collection_mismatches() -> None:
+    ast = parse_yara_source('rule x { condition: with xs = [1, "x"]: match xs { _ => true } }')
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    assert ast.rules[0].condition is not None
+    out = inf.infer(ast.rules[0].condition)
+
+    assert isinstance(out, BooleanType)
+    assert any("Collection elements must have compatible types" in error for error in inf.errors)

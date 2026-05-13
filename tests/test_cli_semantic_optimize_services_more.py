@@ -33,7 +33,7 @@ def test_add_file_to_issues_creates_location_when_missing(tmp_path: Path) -> Non
 def test_create_validation_context_builds_real_parser_and_validator() -> None:
     context = _create_validation_context()
 
-    assert context["parser"].__class__.__name__ == "Parser"
+    assert context["parser"].__class__.__name__ == "DialectAwareParser"
     assert context["validator"].__class__.__name__ == "SemanticValidator"
 
 

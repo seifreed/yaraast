@@ -17,6 +17,7 @@ from yaraast.cli.semantic_reporting import (
 )
 from yaraast.cli.semantic_services import (
     _create_file_result,
+    _create_processing_error_result,
     _create_validation_context,
     _exit_with_appropriate_code,
     _process_file,
@@ -95,6 +96,8 @@ def semantic(
                 display_text_results(file_path, result, warnings, suggestions, quiet)
         except Exception as e:
             display_processing_error(file_path, e)
+            all_results.append(_create_processing_error_result(file_path, e))
+            total_errors += 1
             continue
 
     if not quiet and format == "text":

@@ -162,6 +162,67 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
 
+    def visit_with_statement(self, node) -> None:
+        for declaration in node.declarations:
+            self.visit(declaration)
+        self.visit(node.body)
+
+    def visit_with_declaration(self, node) -> None:
+        self.visit(node.value)
+
+    def visit_array_comprehension(self, node) -> None:
+        self._visit_ast_value(node.expression)
+        self._visit_ast_value(node.iterable)
+        self._visit_ast_value(node.condition)
+
+    def visit_dict_comprehension(self, node) -> None:
+        self._visit_ast_value(node.key_expression)
+        self._visit_ast_value(node.value_expression)
+        self._visit_ast_value(node.iterable)
+        self._visit_ast_value(node.condition)
+
+    def visit_tuple_expression(self, node) -> None:
+        for element in node.elements:
+            self.visit(element)
+
+    def visit_tuple_indexing(self, node) -> None:
+        self.visit(node.tuple_expr)
+        self.visit(node.index)
+
+    def visit_list_expression(self, node) -> None:
+        for element in node.elements:
+            self.visit(element)
+
+    def visit_dict_expression(self, node) -> None:
+        for item in node.items:
+            self.visit(item)
+
+    def visit_dict_item(self, node) -> None:
+        self.visit(node.key)
+        self.visit(node.value)
+
+    def visit_slice_expression(self, node) -> None:
+        self.visit(node.target)
+        self._visit_ast_value(node.start)
+        self._visit_ast_value(node.stop)
+        self._visit_ast_value(node.step)
+
+    def visit_lambda_expression(self, node) -> None:
+        self.visit(node.body)
+
+    def visit_pattern_match(self, node) -> None:
+        self.visit(node.value)
+        for case in node.cases:
+            self.visit(case)
+        self._visit_ast_value(node.default)
+
+    def visit_match_case(self, node) -> None:
+        self.visit(node.pattern)
+        self.visit(node.result)
+
+    def visit_spread_operator(self, node) -> None:
+        self.visit(node.expression)
+
     def _visit_ast_value(self, value) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
