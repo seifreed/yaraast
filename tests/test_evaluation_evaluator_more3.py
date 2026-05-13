@@ -6,7 +6,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
@@ -233,8 +239,6 @@ def test_for_of_and_module_reference_paths() -> None:
     )
     ev.evaluate_rule(rule)
 
-    from yaraast.ast.conditions import ForOfExpression
-
     node_any = ForOfExpression(
         quantifier="any",
         string_set=Identifier(name="them"),
@@ -248,6 +252,20 @@ def test_for_of_and_module_reference_paths() -> None:
         condition=None,
     )
     assert ev.visit_for_of_expression(node_pct) is True
+
+    assert ev.visit_of_expression(OfExpression(quantifier="any", string_set="them")) is True
+    assert (
+        ev.visit_for_of_expression(
+            ForOfExpression(quantifier="any", string_set=["$a", "$missing"], condition=None)
+        )
+        is True
+    )
+    assert (
+        ev.visit_for_of_expression(
+            ForOfExpression(quantifier="all", string_set="$a*", condition=BooleanLiteral(True))
+        )
+        is True
+    )
 
     ev.context.modules["pe"] = {"machine": 0x14C}
     assert ev.visit_module_reference(ModuleReference(module="pe")) == {"machine": 0x14C}

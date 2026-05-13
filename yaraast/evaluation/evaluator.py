@@ -384,6 +384,32 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Resolve a string set to a list of string identifiers for 'of'/'for...of' evaluation."""
         from yaraast.ast.expressions import SetExpression, StringIdentifier, StringWildcard
 
+        def expand_text(text: str) -> list[str]:
+            if text == "them":
+                return list(self.context.string_matches.keys())
+            if text.endswith("*"):
+                prefix = text.rstrip("*")
+                return [sid for sid in self.context.string_matches if sid.startswith(prefix)]
+            return [text]
+
+        if isinstance(string_set_node, str):
+            return expand_text(string_set_node)
+
+        if isinstance(string_set_node, list):
+            result = []
+            for elem in string_set_node:
+                if isinstance(elem, str):
+                    result.extend(expand_text(elem))
+                elif isinstance(elem, StringWildcard):
+                    result.extend(expand_text(elem.pattern))
+                elif isinstance(elem, StringIdentifier):
+                    result.append(elem.name)
+                elif hasattr(elem, "accept"):
+                    result.extend(expand_text(str(self.visit(elem))))
+                else:
+                    result.append(str(elem))
+            return result
+
         # "them" keyword → all matched strings
         if hasattr(string_set_node, "name") and string_set_node.name == "them":
             return list(self.context.string_matches.keys())
