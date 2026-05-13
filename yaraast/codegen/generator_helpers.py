@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import re
+from typing import Any
+
+REGEX_SUFFIX_MODIFIERS = frozenset({"i", "s"})
+REGEX_SUFFIX_NAMES = {"dotall": "s"}
 
 
 def escape_plain_string_value(value: str) -> str:
@@ -49,14 +54,64 @@ def format_integer_literal(value) -> str:
     return str(int_value)
 
 
-def format_modifiers(modifiers, visit) -> str:
+def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) -> str:
+    """Format one string modifier for YARA output."""
+    if visit is not None and hasattr(modifier, "accept"):
+        return visit(modifier)
+
+    if (
+        hasattr(modifier, "modifier_type")
+        and hasattr(modifier, "name")
+        and hasattr(modifier, "value")
+    ):
+        name = modifier.name
+        value = modifier.value
+        if value is not None:
+            if isinstance(value, tuple):
+                return f"{name}({value[0]}-{value[1]})"
+            if isinstance(value, str):
+                return f'{name}("{value}")'
+            return f"{name}({value})"
+        return str(name)
+
+    return str(modifier)
+
+
+def format_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> str:
     """Format modifiers into a string with leading spaces."""
     if not isinstance(modifiers, list | tuple):
         return ""
     parts = []
     for mod in modifiers:
-        if hasattr(mod, "accept"):
-            parts.append(visit(mod))
-        else:
-            parts.append(str(mod))
+        parts.append(format_modifier(mod, visit))
     return "".join(f" {part}" for part in parts)
+
+
+def split_regex_modifiers(
+    modifiers,
+    visit: Callable[[Any], str] | None = None,
+) -> tuple[str, list[str]]:
+    """Split regex inline flags from spaced string modifiers."""
+    if not isinstance(modifiers, list | tuple):
+        return "", []
+
+    suffix_parts = []
+    spaced_parts = []
+    for mod in modifiers:
+        if isinstance(mod, str) and mod in REGEX_SUFFIX_MODIFIERS:
+            suffix_parts.append(mod)
+        elif isinstance(mod, str) and mod in REGEX_SUFFIX_NAMES:
+            suffix_parts.append(REGEX_SUFFIX_NAMES[mod])
+        elif getattr(mod, "name", None) in REGEX_SUFFIX_NAMES:
+            suffix_parts.append(REGEX_SUFFIX_NAMES[mod.name])
+        else:
+            spaced_parts.append(format_modifier(mod, visit))
+
+    return "".join(suffix_parts), spaced_parts
+
+
+def format_regex_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> str:
+    """Format regex modifiers, keeping inline regex flags adjacent to the literal."""
+    suffix, spaced_parts = split_regex_modifiers(modifiers, visit)
+    spaced = "".join(f" {part}" for part in spaced_parts)
+    return f"{suffix}{spaced}"

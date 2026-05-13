@@ -111,6 +111,35 @@ def test_codegen_generator_meta_and_string_section_variants() -> None:
     assert gen5.buffer.getvalue() == ""
 
 
+def test_codegen_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
+    gen = CodeGenerator()
+    rule = Rule(
+        name="regex_aliases",
+        strings=[
+            RegexString(
+                "$r",
+                regex="ab.*",
+                modifiers=["i", "s", StringModifier.from_name_value("fullword")],
+            ),
+            RegexString(
+                "$s",
+                regex="cd.*",
+                modifiers=[
+                    StringModifier.from_name_value("dotall"),
+                    StringModifier.from_name_value("fullword"),
+                ],
+            ),
+        ],
+        condition=BinaryExpression(StringIdentifier("$r"), "or", StringIdentifier("$s")),
+    )
+
+    out = gen.generate(YaraFile(rules=[rule]))
+
+    assert "$r = /ab.*/is fullword" in out
+    assert "$s = /cd.*/s fullword" in out
+    assert "$r = /ab.*/ i" not in out
+
+
 def test_codegen_generator_expression_and_condition_paths() -> None:
     gen = CodeGenerator()
 

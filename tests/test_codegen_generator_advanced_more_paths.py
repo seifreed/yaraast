@@ -293,7 +293,7 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
         == ""
     )
     plain_output = adv2.buffer.getvalue()
-    assert plain_output == '$a = "x" '
+    assert plain_output == '$a = "x" ascii'
 
     adv2.buffer.seek(0)
     adv2.buffer.truncate(0)
@@ -306,7 +306,7 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
         == ""
     )
     hex_output = adv2.buffer.getvalue()
-    assert hex_output in {"$h = { 4d } ", "$h = { 4D } "}
+    assert hex_output in {"$h = { 4d } wide", "$h = { 4D } wide"}
 
     adv2.buffer.seek(0)
     adv2.buffer.truncate(0)
@@ -316,7 +316,7 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
         )
         == ""
     )
-    assert adv2.buffer.getvalue() == "$r = /abc/ "
+    assert adv2.buffer.getvalue() == "$r = /abc/ nocase"
 
     adv3 = AdvancedCodeGenerator(FormattingConfig(space_after_comma=True))
     assert adv3.visit_set_expression(

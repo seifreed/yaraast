@@ -14,6 +14,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.codegen.formatting import HexStyle, StringStyle
+from yaraast.codegen.generator_helpers import format_modifier, split_regex_modifiers
 
 
 def collect_string_definitions(
@@ -30,16 +31,16 @@ def collect_string_definitions(
             value = format_hex_string(string_def, config)
         elif isinstance(string_def, RegexString):
             escaped = string_def.regex.replace("/", "\\/")
-            value = f"/{escaped}/"
+            suffix, spaced_modifiers = split_regex_modifiers(string_def.modifiers)
+            value = f"/{escaped}/{suffix}"
         else:
             value = ""
+            spaced_modifiers = []
 
-        modifiers = []
-        for mod in string_def.modifiers:
-            if mod.value is not None:
-                modifiers.append(f"{mod.name}({mod.value})")
-            else:
-                modifiers.append(mod.name)
+        if isinstance(string_def, RegexString):
+            modifiers = spaced_modifiers
+        else:
+            modifiers = [format_modifier(mod) for mod in string_def.modifiers]
 
         collected.append((identifier, value, modifiers))
 

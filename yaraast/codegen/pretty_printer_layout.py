@@ -8,6 +8,7 @@ from yaraast.codegen.pretty_printer_helpers import (
     format_plain_string,
     format_regex_string,
     modifiers_to_string,
+    regex_modifiers_to_string,
 )
 
 
@@ -128,7 +129,7 @@ def write_string_definition(printer, string_def) -> None:
             else 0
         )
         printer._write(format_regex_string(string_def, padding))
-        printer._write(modifiers_to_string(string_def.modifiers))
+        printer._write(regex_modifiers_to_string(string_def.modifiers))
         printer._writeline()
         return
 

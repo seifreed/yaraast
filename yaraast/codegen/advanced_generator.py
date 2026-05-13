@@ -193,19 +193,10 @@ class AdvancedCodeGenerator(CodeGenerator):
         return ""
 
     def visit_plain_string(self, node: PlainString) -> str:
-        result = render_advanced_plain_string(self, node)
-        for modifier in node.modifiers:
-            self.visit(modifier)
-        return result
+        return render_advanced_plain_string(self, node)
 
     def visit_hex_string(self, node: HexString) -> str:
-        result = render_advanced_hex_string(self, node)
-        for modifier in node.modifiers:
-            self.visit(modifier)
-        return result
+        return render_advanced_hex_string(self, node)
 
     def visit_regex_string(self, node: RegexString) -> str:
-        result = render_advanced_regex_string(self, node)
-        for modifier in node.modifiers:
-            self.visit(modifier)
-        return result
+        return render_advanced_regex_string(self, node)

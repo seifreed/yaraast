@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yaraast.codegen.formatting import StringStyle
+from yaraast.codegen.generator_helpers import format_modifiers, format_regex_modifiers
 
 
 def process_meta_data(meta_data) -> list:
@@ -68,8 +69,7 @@ def render_advanced_plain_string(gen, node) -> str:
         gen._write(f'{node.identifier}="{escaped}"')
     else:
         gen._write(f'{node.identifier} = "{escaped}"')
-    for _modifier in node.modifiers:
-        gen._write(" ")
+    gen._write(format_modifiers(node.modifiers))
     return ""
 
 
@@ -80,8 +80,7 @@ def render_advanced_hex_string(gen, node) -> str:
         gen._write(f"{node.identifier}={hex_str}")
     else:
         gen._write(f"{node.identifier} = {hex_str}")
-    for _modifier in node.modifiers:
-        gen._write(" ")
+    gen._write(format_modifiers(node.modifiers))
     return ""
 
 
@@ -92,6 +91,5 @@ def render_advanced_regex_string(gen, node) -> str:
         gen._write(f"{node.identifier}=/{regex}/")
     else:
         gen._write(f"{node.identifier} = /{regex}/")
-    for _modifier in node.modifiers:
-        gen._write(" ")
+    gen._write(format_regex_modifiers(node.modifiers))
     return ""

@@ -68,7 +68,7 @@ def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:
 
     generated = CodeGenerator().generate(ast)
     assert "\x00" not in generated
-    assert "$r = /ab+c/ nocase multiline dotall" in generated
+    assert "$r = /ab+c/s nocase multiline" in generated
 
 
 def test_parse_string_modifiers_xor_variants_and_errors() -> None:

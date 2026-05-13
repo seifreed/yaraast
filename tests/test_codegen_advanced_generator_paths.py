@@ -4,11 +4,11 @@ from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import Condition
-from yaraast.ast.expressions import BinaryExpression, BooleanLiteral
+from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, StringIdentifier
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.rules import Import, Rule, Tag
-from yaraast.ast.strings import PlainString
+from yaraast.ast.strings import PlainString, RegexString
 from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
 
@@ -60,6 +60,32 @@ def test_advanced_generator_long_condition_path_and_string_styles() -> None:
 
     assert '$a="v"' in out
     assert "condition:" in out
+
+
+def test_advanced_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
+    rule = Rule(
+        name="regex_aliases",
+        strings=[
+            RegexString(
+                "$r",
+                regex="ab.*",
+                modifiers=["i", "s", StringModifier(StringModifierType.FULLWORD)],
+            )
+        ],
+        condition=StringIdentifier("$r"),
+    )
+
+    compact = AdvancedCodeGenerator(FormattingConfig(string_style=StringStyle.COMPACT)).generate(
+        YaraFile(rules=[rule])
+    )
+    aligned = AdvancedCodeGenerator(FormattingConfig(string_style=StringStyle.ALIGNED)).generate(
+        YaraFile(rules=[rule])
+    )
+
+    assert "$r=/ab.*/is fullword" in compact
+    assert "$r = /ab.*/is  fullword" in aligned
+    assert "/ab.*/ i" not in compact
+    assert "/ab.*/ i" not in aligned
 
 
 def test_advanced_generator_meta_and_tags_branches() -> None:

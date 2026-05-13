@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.generator_helpers import format_regex_modifiers
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -292,13 +293,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         # Write regex modifiers
         if node.modifiers:
-            for mod in node.modifiers:
-                if isinstance(mod, str):
-                    self._write(mod)
-                else:
-                    self._write(" ")
-                    mod_str = self.visit(mod)
-                    self._write(mod_str)
+            self._write(format_regex_modifiers(node.modifiers, self.visit))
 
         return ""
 

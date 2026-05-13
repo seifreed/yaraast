@@ -2,8 +2,15 @@ from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import Condition
-from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier, IntegerLiteral
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    Identifier,
+    IntegerLiteral,
+    StringIdentifier,
+)
 from yaraast.ast.meta import Meta
+from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString, StringDefinition
 from yaraast.codegen.pretty_printer import (
@@ -51,6 +58,25 @@ def test_pretty_printer_paths_for_includes_modifiers_wrapping_and_fallback() -> 
     assert "$h = { 4D 5A }" in out
     assert "$r = /ab.*/" in out
     assert "condition:" in out
+
+
+def test_pretty_printer_regex_suffix_alias_modifiers_are_adjacent() -> None:
+    rule = Rule(
+        name="regex_aliases",
+        strings=[
+            RegexString(
+                "$r",
+                regex="ab.*",
+                modifiers=["i", "s", StringModifier.from_name_value("fullword")],
+            )
+        ],
+        condition=StringIdentifier("$r"),
+    )
+
+    out = PrettyPrinter(PrettyPrintOptions()).pretty_print(YaraFile(rules=[rule]))
+
+    assert "$r  = /ab.*/is fullword" in out
+    assert "$r = /ab.*/ i" not in out
 
 
 def test_pretty_printer_style_presets_and_convenience_functions() -> None:

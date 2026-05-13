@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yaraast.codegen.generator_helpers import format_regex_modifiers
+
 
 def _emit_comments(gen, node) -> None:
     """Emit leading comments for an AST node."""
@@ -82,5 +84,5 @@ def write_regex_string(gen, node) -> str:
     escaped_regex = node.regex.replace("/", "\\/")
     gen._write(f"{node.identifier} = /{escaped_regex}/")
     if hasattr(node, "modifiers") and node.modifiers:
-        gen._write_modifiers(node.modifiers)
+        gen._write(format_regex_modifiers(node.modifiers, gen.visit))
     return ""

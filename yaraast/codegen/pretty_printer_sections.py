@@ -10,6 +10,7 @@ from yaraast.codegen.pretty_printer_helpers import (
     format_plain_string,
     format_regex_string,
     modifiers_to_string,
+    regex_modifiers_to_string,
 )
 
 
@@ -84,7 +85,7 @@ def write_regex_string_aligned(printer, node: RegexString) -> None:
         printer._write(format_regex_string(node, padding))
     else:
         printer._write(format_regex_string(node, 0))
-    printer._write(modifiers_to_string(node.modifiers))
+    printer._write(regex_modifiers_to_string(node.modifiers))
     printer._writeline()
 
 
