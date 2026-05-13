@@ -240,3 +240,28 @@ def test_performance_check_reporting_render() -> None:
     assert "Performance Issue Summary" in out
     assert "Rules with issues" in out
     assert "critical issues" in out
+
+
+def test_performance_check_suggestions_are_sorted() -> None:
+    console = Console(record=True, width=120)
+    issues = [
+        StringPerformanceIssue(
+            rule_name=f"r{index}",
+            string_id="$a",
+            issue_type="perf",
+            severity="medium",
+            description="desc",
+            suggestion=suggestion,
+        )
+        for index, suggestion in enumerate(
+            ["z suggestion", "a suggestion", "m suggestion", "b suggestion"],
+            start=1,
+        )
+    ]
+
+    pcr.display_issues(console, issues)
+
+    out = console.export_text()
+    assert out.index("a suggestion") < out.index("b suggestion")
+    assert out.index("b suggestion") < out.index("m suggestion")
+    assert out.index("m suggestion") < out.index("z suggestion")

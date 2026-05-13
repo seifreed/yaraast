@@ -46,7 +46,7 @@ def display_issues(console: Console, issues: list[StringPerformanceIssue]) -> No
 
     console.print("\n[cyan]Suggestions:[/cyan]")
     unique_suggestions = {i.suggestion for i in issues if i.suggestion}
-    for suggestion in unique_suggestions:
+    for suggestion in sorted(unique_suggestions):
         console.print(f"  • {suggestion}")
 
 
