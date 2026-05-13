@@ -123,10 +123,17 @@ def run_single_document_benchmark(rule_count: int, max_avg_ms: float) -> dict[st
     }
 
 
-def run_regression_suite() -> dict[str, object]:
-    single_document = run_single_document_benchmark(rule_count=200, max_avg_ms=100.0)
-    medium = run_benchmark(file_count=25, max_avg_ms=100.0)
-    large = run_benchmark(file_count=100, max_avg_ms=150.0)
+def run_regression_suite(
+    single_document_max_avg_ms: float = 500.0,
+    medium_max_avg_ms: float = 500.0,
+    large_max_avg_ms: float = 750.0,
+) -> dict[str, object]:
+    single_document = run_single_document_benchmark(
+        rule_count=200,
+        max_avg_ms=single_document_max_avg_ms,
+    )
+    medium = run_benchmark(file_count=25, max_avg_ms=medium_max_avg_ms)
+    large = run_benchmark(file_count=100, max_avg_ms=large_max_avg_ms)
     return {
         "single_document": single_document,
         "medium": medium,

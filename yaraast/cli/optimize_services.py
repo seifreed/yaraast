@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from yaraast.codegen.generator import CodeGenerator
+from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
+from yaraast.parser.source import parse_yara_source
 from yaraast.performance.optimizer import PerformanceOptimizer
 from yaraast.performance.string_analyzer import analyze_rule_performance
+from yaraast.yarax.generator import YaraXGenerator
 
 
 @dataclass
@@ -17,6 +19,8 @@ class OptimizationAnalysis:
 
 
 def parse_yara_with_tolerance(content: str):
+    if detect_dialect(content) == YaraDialect.YARA_X:
+        return parse_yara_source(content), [], []
     parser = ErrorTolerantParser()
     return parser.parse_with_errors(content)
 
@@ -38,7 +42,7 @@ def optimize_ast(ast):
 
 
 def generate_code(ast) -> str:
-    generator = CodeGenerator()
+    generator = YaraXGenerator()
     return generator.generate(ast)
 
 

@@ -39,6 +39,20 @@ rule sample {
     assert "Optimized YARA file written" in real.output
 
 
+def test_optimize_command_preserves_yarax_output(tmp_path: Path) -> None:
+    runner = CliRunner()
+    src = tmp_path / "x.yar"
+    out = tmp_path / "optimized.yar"
+    _write(src, "rule x { condition: with xs = [1]: match xs { _ => true } }")
+
+    result = runner.invoke(optimize, [str(src), str(out)])
+
+    assert result.exit_code == 0
+    output = out.read_text(encoding="utf-8")
+    assert "with xs = [1]" in output
+    assert "match xs" in output
+
+
 def test_optimize_command_real_read_error(tmp_path: Path) -> None:
     runner = CliRunner()
     src = tmp_path / "rule.yar"

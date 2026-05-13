@@ -34,6 +34,10 @@ rule sample {
     )
 
 
+def _yarax_rule() -> str:
+    return "rule x { condition: with xs = [1]: match xs { _ => true } }"
+
+
 def test_display_parser_errors_truncates_after_five(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -53,6 +57,17 @@ def test_calculate_improvement_returns_none_when_not_better() -> None:
 
     assert osvc.calculate_improvement(before, after_equal) is None
     assert osvc.calculate_improvement(before, after_worse) is None
+
+
+def test_optimize_services_preserve_yarax_condition() -> None:
+    ast, errors, warnings = osvc.parse_yara_with_tolerance(_yarax_rule())
+    generated = osvc.generate_code(ast)
+
+    assert errors == []
+    assert warnings == []
+    assert ast.rules[0].condition.__class__.__name__ == "WithStatement"
+    assert "with xs = [1]" in generated
+    assert "match xs" in generated
 
 
 def test_export_ast_yaml_non_minimal_returns_yaml_string() -> None:
