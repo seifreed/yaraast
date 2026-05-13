@@ -45,5 +45,5 @@ class YaraXParserConditionsMixin:
 
             raise ParserError(ERROR_EXPECTED_VARIABLE, self._peek())
         self._consume(TokenType.ASSIGN, "Expected '=' in with declaration")
-        value = self._parse_or_expression()
+        value = self.parse_expression()
         return WithDeclaration(identifier=identifier, value=value)

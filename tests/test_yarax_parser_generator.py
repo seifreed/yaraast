@@ -49,6 +49,26 @@ rule yarax_with {
     assert 'with $a = "test", $b = 2: true' in output
 
 
+def test_yarax_with_statement_accepts_extended_expression_values() -> None:
+    yarax_code = """
+rule yarax_with_extended {
+    condition:
+        with xs = [1, 2], f = lambda x: x, m = match x { 1 => 2, _ => 3 }:
+            true
+}
+"""
+
+    parser = YaraXParser(yarax_code)
+    ast = parser.parse()
+
+    rule = ast.rules[0]
+    assert isinstance(rule.condition, WithStatement)
+    values = [declaration.value for declaration in rule.condition.declarations]
+    assert isinstance(values[0], ListExpression)
+    assert isinstance(values[1], LambdaExpression)
+    assert isinstance(values[2], PatternMatch)
+
+
 def test_yarax_list_and_spread_expression() -> None:
     expr = _parse_expr("[1, ...arr, 4]")
     assert isinstance(expr, ListExpression)
