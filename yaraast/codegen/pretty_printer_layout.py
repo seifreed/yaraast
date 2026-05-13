@@ -96,13 +96,12 @@ def write_string_definition(printer, string_def) -> None:
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
     if isinstance(string_def, PlainString):
-        quote = '"' if printer.options.quote_style == "double" else "'"
         padding = (
             max(0, printer._string_alignment_column - len(string_def.identifier))
             if printer.options.align_string_definitions and printer._string_alignment_column > 0
             else 0
         )
-        printer._write(format_plain_string(string_def, quote, padding))
+        printer._write(format_plain_string(string_def, '"', padding))
         printer._write(modifiers_to_string(string_def.modifiers))
         printer._writeline()
         return

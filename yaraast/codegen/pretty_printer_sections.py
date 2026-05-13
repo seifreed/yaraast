@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
+from yaraast.codegen.generator_formatting import escape_string_literal
 from yaraast.codegen.pretty_printer_helpers import (
     build_hex_pattern,
     format_plain_string,
@@ -34,8 +35,7 @@ def write_meta_entry(printer, key: str, value: Any) -> None:
         printer._write(f"{key} = ")
 
     if isinstance(value, str):
-        quote = '"' if printer.options.quote_style == "double" else "'"
-        printer._write(f"{quote}{value}{quote}")
+        printer._write(f'"{escape_string_literal(value)}"')
     elif isinstance(value, bool):
         printer._write("true" if value else "false")
     else:
@@ -52,12 +52,11 @@ def write_strings_section(printer, strings: list[StringDefinition]) -> None:
 
 def write_plain_string_aligned(printer, node: PlainString) -> None:
     """Write a plain string honoring alignment options."""
-    quote = '"' if printer.options.quote_style == "double" else "'"
     if printer.options.align_string_definitions and printer._string_alignment_column > 0:
         padding = max(0, printer._string_alignment_column - len(node.identifier))
-        printer._write(format_plain_string(node, quote, padding))
+        printer._write(format_plain_string(node, '"', padding))
     else:
-        printer._write(format_plain_string(node, quote, 0))
+        printer._write(format_plain_string(node, '"', 0))
     printer._write(modifiers_to_string(node.modifiers))
     printer._writeline()
 
