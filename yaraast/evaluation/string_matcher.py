@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from collections.abc import Iterable
 from dataclasses import dataclass
 import re
@@ -128,19 +129,40 @@ class StringMatcher:
         wide = "wide" in modifier_names
         ascii_mod = "ascii" in modifier_names
         fullword = "fullword" in modifier_names
+        base64_mod = "base64" in modifier_names
+        base64wide_mod = "base64wide" in modifier_names
 
-        patterns_to_check: list[bytes] = []
+        raw_patterns: list[bytes] = []
 
         # ASCII version
         if not wide or ascii_mod:
-            patterns_to_check.append(pattern)
+            raw_patterns.append(pattern)
 
         # Wide version (UTF-16LE)
+        wide_pattern = b""
         if wide:
-            wide_pattern = b""
             for byte in pattern:
                 wide_pattern += bytes([byte, 0])
-            patterns_to_check.append(wide_pattern)
+            raw_patterns.append(wide_pattern)
+
+        if base64_mod or base64wide_mod:
+            patterns_to_check: list[bytes] = []
+            for raw_pattern in raw_patterns:
+                if base64_mod:
+                    patterns_to_check.extend(
+                        self._base64_patterns(raw_pattern, string_def.modifiers, "base64")
+                    )
+                if base64wide_mod:
+                    patterns_to_check.extend(
+                        self._base64_patterns(
+                            raw_pattern,
+                            string_def.modifiers,
+                            "base64wide",
+                            wide_output=True,
+                        )
+                    )
+        else:
+            patterns_to_check = raw_patterns
 
         xor_keys = self._xor_keys(string_def.modifiers)
         if xor_keys is not None:
@@ -217,6 +239,47 @@ class StringMatcher:
                 return int(text, 16)
             return int(text, 10)
         return int(value)
+
+    def _base64_patterns(
+        self,
+        pattern: bytes,
+        modifiers: list[Any],
+        modifier_name: str,
+        *,
+        wide_output: bool = False,
+    ) -> list[bytes]:
+        patterns: list[bytes] = []
+        seen: set[bytes] = set()
+        for modifier in modifiers:
+            if self._modifier_name(modifier) != modifier_name:
+                continue
+            alphabet = self._modifier_value(modifier)
+            for prefix_len in range(3):
+                encoded = base64.b64encode((b"\x00" * prefix_len) + pattern)
+                encoded = self._translate_base64_alphabet(encoded, alphabet)
+                encoded = self._trim_base64_alignment(encoded, prefix_len, len(pattern))
+                if wide_output:
+                    encoded = b"".join(bytes([byte, 0]) for byte in encoded)
+                if not encoded or encoded in seen:
+                    continue
+                seen.add(encoded)
+                patterns.append(encoded)
+        return patterns
+
+    def _translate_base64_alphabet(self, encoded: bytes, alphabet: Any) -> bytes:
+        if not isinstance(alphabet, str) or len(alphabet) != 64:
+            return encoded
+        standard = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        return encoded.translate(bytes.maketrans(standard, alphabet.encode("ascii")))
+
+    def _trim_base64_alignment(self, encoded: bytes, prefix_len: int, pattern_len: int) -> bytes:
+        start_trim_by_prefix = (0, 2, 3)
+        end_trim_by_remainder = (0, 3, 2)
+        start = start_trim_by_prefix[prefix_len]
+        end_trim = end_trim_by_remainder[(prefix_len + pattern_len) % 3]
+        if end_trim:
+            return encoded[start:-end_trim]
+        return encoded[start:]
 
     def _match_hex_string(self, data: bytes, string_def: HexString) -> None:
         """Match hex string against data."""
@@ -374,7 +437,7 @@ class StringMatcher:
 
     def _find_all_nocase(self, data: bytes, pattern: bytes) -> list[tuple[int, int]]:
         """Find all occurrences of pattern in data (case-insensitive)."""
-        matches: list[int] = []
+        matches: list[tuple[int, int]] = []
         data_lower = data.lower()
         pattern_lower = pattern.lower()
         pattern_len = len(pattern)

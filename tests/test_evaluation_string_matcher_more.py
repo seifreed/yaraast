@@ -173,3 +173,47 @@ def test_string_matcher_plain_string_xor_modifier_matches_encoded_bytes() -> Non
     assert [(match.offset, match.matched_data) for match in matcher.matches["$xor"]] == [
         (4, b"\x40\x43\x42")
     ]
+
+
+def test_string_matcher_plain_string_base64_modifier_matches_encoded_text() -> None:
+    matcher = StringMatcher()
+    base64_string = PlainString(
+        "$b64",
+        value="ABC",
+        modifiers=[StringModifier.from_name_value("base64")],
+    )
+
+    matcher.match_all(b"ABC QUJD FCQ BQk", [base64_string])
+
+    assert [(match.offset, match.matched_data) for match in matcher.matches["$b64"]] == [
+        (4, b"QUJD"),
+        (9, b"FCQ"),
+        (13, b"BQk"),
+    ]
+
+    base64wide_string = PlainString(
+        "$b64w",
+        value="AB",
+        modifiers=[StringModifier.from_name_value("base64wide")],
+    )
+    matcher.match_all(b"AB Q\x00U\x00 F\x00C\x00 B\x00Q\x00 QQBCAA==", [base64wide_string])
+    assert [(match.offset, match.matched_data) for match in matcher.matches["$b64w"]] == [
+        (3, b"Q\x00U\x00"),
+        (8, b"F\x00C\x00"),
+        (13, b"B\x00Q\x00"),
+    ]
+
+    custom_alphabet_string = PlainString(
+        "$b64custom",
+        value=b"\xfb\xff",
+        modifiers=[
+            StringModifier.from_name_value(
+                "base64",
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_",
+            )
+        ],
+    )
+    matcher.match_all(b"+/ -_", [custom_alphabet_string])
+    assert [(match.offset, match.matched_data) for match in matcher.matches["$b64custom"]] == [
+        (3, b"-_"),
+    ]
