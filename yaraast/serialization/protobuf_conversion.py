@@ -120,10 +120,19 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
 
 def convert_hex_token_to_protobuf(token, pb_token) -> None:
     """Convert a hex token to protobuf."""
-    from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexWildcard
+    from yaraast.ast.strings import (
+        HexAlternative,
+        HexByte,
+        HexJump,
+        HexNegatedByte,
+        HexNibble,
+        HexWildcard,
+    )
 
     if isinstance(token, HexByte):
         pb_token.byte.value = str(token.value)
+    elif isinstance(token, HexNegatedByte):
+        pb_token.negated_byte.value = str(token.value)
     elif isinstance(token, HexWildcard):
         pb_token.wildcard.CopyFrom(yara_ast_pb2.HexWildcard())
     elif isinstance(token, HexJump):
@@ -397,10 +406,19 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
 
 
 def _protobuf_to_hex_token(pb_token):
-    from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexWildcard
+    from yaraast.ast.strings import (
+        HexAlternative,
+        HexByte,
+        HexJump,
+        HexNegatedByte,
+        HexNibble,
+        HexWildcard,
+    )
 
     if pb_token.HasField("byte"):
         return HexByte(value=int(pb_token.byte.value))
+    if pb_token.HasField("negated_byte"):
+        return HexNegatedByte(value=int(pb_token.negated_byte.value))
     if pb_token.HasField("wildcard"):
         return HexWildcard()
     if pb_token.HasField("jump"):

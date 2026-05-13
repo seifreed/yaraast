@@ -98,10 +98,15 @@ message HexToken {
         HexJump jump = 3;
         HexAlternative alternative = 4;
         HexNibble nibble = 5;
+        HexNegatedByte negated_byte = 6;
     }
 }
 
 message HexByte {
+    string value = 1;
+}
+
+message HexNegatedByte {
     string value = 1;
 }
 

@@ -43,6 +43,7 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
     HexNibble,
     HexString,
     HexWildcard,
@@ -168,6 +169,26 @@ def test_protobuf_serializer_preserves_hex_alternatives() -> None:
 
     assert isinstance(string_def, HexString)
     assert string_def.tokens == [alternative]
+
+
+def test_protobuf_serializer_preserves_hex_negated_bytes() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    negated = HexNegatedByte(value=0x4D)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="hex_negated_byte",
+                strings=[HexString(identifier="$h", tokens=[negated])],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    string_def = restored.rules[0].strings[0]
+
+    assert isinstance(string_def, HexString)
+    assert string_def.tokens == [negated]
 
 
 def test_protobuf_serializer_preserves_typed_string_modifier_values() -> None:
