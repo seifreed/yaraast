@@ -52,8 +52,10 @@ class DependencyGraph:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
-            "nodes": list(self.nodes),
-            "edges": {from_node: list(to_nodes) for from_node, to_nodes in self.edges.items()},
+            "nodes": sorted(self.nodes),
+            "edges": {
+                from_node: sorted(to_nodes) for from_node, to_nodes in sorted(self.edges.items())
+            },
         }
 
     def from_dict(self, data: dict[str, Any]) -> None:
@@ -119,21 +121,22 @@ def find_circular_dependencies(graph: DependencyGraph) -> list[list[str]]:
         rec_stack.add(node)
         path.append(node)
 
-        for neighbor in graph.get_dependencies(node):
+        for neighbor in sorted(graph.get_dependencies(node)):
             if neighbor not in visited:
                 dfs(neighbor, path)
             elif neighbor in rec_stack:
                 cycle_start = path.index(neighbor)
-                cycle = [*path[cycle_start:], neighbor]
-                min_idx = cycle.index(min(cycle))
-                normalized = cycle[min_idx:] + cycle[:min_idx]
+                cycle_nodes = path[cycle_start:]
+                min_idx = cycle_nodes.index(min(cycle_nodes))
+                rotated = cycle_nodes[min_idx:] + cycle_nodes[:min_idx]
+                normalized = [*rotated, rotated[0]]
                 if normalized not in cycles:
                     cycles.append(normalized)
 
         path.pop()
         rec_stack.remove(node)
 
-    for node in graph.nodes:
+    for node in sorted(graph.nodes):
         if node not in visited:
             dfs(node, [])
 
@@ -142,22 +145,22 @@ def find_circular_dependencies(graph: DependencyGraph) -> list[list[str]]:
 
 def get_dependency_order(graph: DependencyGraph) -> list[str]:
     """Get topological order of rules (dependencies first)."""
-    in_degree = {node: len(graph.get_dependencies(node)) for node in graph.nodes}
+    in_degree = {node: len(graph.get_dependencies(node)) for node in sorted(graph.nodes)}
 
-    queue = [node for node in graph.nodes if in_degree[node] == 0]
+    queue = [node for node in sorted(graph.nodes) if in_degree[node] == 0]
     result = []
 
     while queue:
         node = queue.pop(0)
         result.append(node)
 
-        for dependent in graph.get_dependents(node):
+        for dependent in sorted(graph.get_dependents(node)):
             in_degree[dependent] -= 1
             if in_degree[dependent] == 0:
                 queue.append(dependent)
 
     if len(result) != len(graph.nodes):
-        return list(graph.nodes)
+        return sorted(graph.nodes)
 
     return result
 

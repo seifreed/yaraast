@@ -356,8 +356,8 @@ class EquivalenceTester:
         rules2 = set(scan2.matched_rules)
 
         if rules1 != rules2:
-            only_in_1 = rules1 - rules2
-            only_in_2 = rules2 - rules1
+            only_in_1 = sorted(rules1 - rules2)
+            only_in_2 = sorted(rules2 - rules1)
 
             if only_in_1:
                 differences.append(f"Rules matched only in original: {only_in_1}")
@@ -384,7 +384,7 @@ class EquivalenceTester:
             results2 = eval2.evaluate_file(ast2)
 
             # Compare results
-            for rule_name in set(results1.keys()) | set(results2.keys()):
+            for rule_name in sorted(set(results1.keys()) | set(results2.keys())):
                 if rule_name not in results1:
                     differences.append(
                         f"Rule {rule_name} missing in original evaluation",

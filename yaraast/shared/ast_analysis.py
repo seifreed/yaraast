@@ -190,11 +190,11 @@ class ASTDiffer:
 
         rules1 = set(analysis1["rule_signatures"].keys())
         rules2 = set(analysis2["rule_signatures"].keys())
-        result.added_rules = list(rules2 - rules1)
-        result.removed_rules = list(rules1 - rules2)
+        result.added_rules = sorted(rules2 - rules1)
+        result.removed_rules = sorted(rules1 - rules2)
         result.modified_rules = []
 
-        for rule_name in rules1 & rules2:
+        for rule_name in sorted(rules1 & rules2):
             if analysis1["rule_signatures"][rule_name] != analysis2["rule_signatures"][rule_name]:
                 result.modified_rules.append(rule_name)
                 result.logical_changes.append(
@@ -203,14 +203,14 @@ class ASTDiffer:
 
         strings1 = set(analysis1["string_signatures"].keys())
         strings2 = set(analysis2["string_signatures"].keys())
-        added_strings = strings2 - strings1
-        removed_strings = strings1 - strings2
+        added_strings = sorted(strings2 - strings1)
+        removed_strings = sorted(strings1 - strings2)
         if added_strings:
             result.logical_changes.append(f"Added strings: {', '.join(added_strings)}")
         if removed_strings:
             result.logical_changes.append(f"Removed strings: {', '.join(removed_strings)}")
 
-        for string_id in strings1 & strings2:
+        for string_id in sorted(strings1 & strings2):
             if (
                 analysis1["string_signatures"][string_id]
                 != analysis2["string_signatures"][string_id]
@@ -219,7 +219,7 @@ class ASTDiffer:
 
         conditions1 = analysis1["condition_signatures"]
         conditions2 = analysis2["condition_signatures"]
-        for condition_name in set(conditions1) & set(conditions2):
+        for condition_name in sorted(set(conditions1) & set(conditions2)):
             if conditions1[condition_name] != conditions2[condition_name]:
                 rule_name = condition_name.removesuffix(".condition")
                 result.logical_changes.append(f"Condition logic changed in rule '{rule_name}'")

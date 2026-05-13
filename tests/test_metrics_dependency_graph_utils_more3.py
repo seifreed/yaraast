@@ -123,3 +123,23 @@ def test_dependency_graph_order_and_export_error(tmp_path: Path) -> None:
 
     with pytest.raises(ValidationError, match="Unsupported format"):
         export_dependency_graph(graph, tmp_path / "deps.bad", format="xml")
+
+
+def test_dependency_graph_public_outputs_are_stably_sorted() -> None:
+    graph = DependencyGraph()
+    graph.add_edge("z_rule", "m_rule")
+    graph.add_edge("z_rule", "a_rule")
+    graph.add_node("solo")
+
+    assert graph.to_dict() == {
+        "nodes": ["a_rule", "m_rule", "solo", "z_rule"],
+        "edges": {"z_rule": ["a_rule", "m_rule"]},
+    }
+    assert get_dependency_order(graph) == ["a_rule", "m_rule", "solo", "z_rule"]
+
+    cycle_graph = DependencyGraph()
+    cycle_graph.add_edge("b_rule", "c_rule")
+    cycle_graph.add_edge("c_rule", "a_rule")
+    cycle_graph.add_edge("a_rule", "b_rule")
+
+    assert find_circular_dependencies(cycle_graph) == [["a_rule", "b_rule", "c_rule", "a_rule"]]

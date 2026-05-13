@@ -149,6 +149,39 @@ def test_compare_scans_reports_one_sided_differences() -> None:
     assert any("only in regenerated" in d for d in only_regenerated)
 
 
+def test_compare_scan_and_evaluation_differences_are_stably_sorted() -> None:
+    tester = _tester_without_libyara_init()
+
+    scan_diffs = tester._compare_scans(
+        ScanResult(
+            success=True,
+            matches=[
+                MatchInfo(rule="z_rule", namespace="default", tags=[], meta={}, strings=[]),
+                MatchInfo(rule="a_rule", namespace="default", tags=[], meta={}, strings=[]),
+                MatchInfo(rule="m_rule", namespace="default", tags=[], meta={}, strings=[]),
+            ],
+        ),
+        ScanResult(success=True, matches=[]),
+    )
+    assert scan_diffs == ["Rules matched only in original: ['a_rule', 'm_rule', 'z_rule']"]
+
+    original = Parser().parse("""
+rule z_rule { condition: true }
+rule a_rule { condition: true }
+rule m_rule { condition: true }
+""")
+    regenerated = Parser().parse("rule other_rule { condition: true }")
+
+    eval_diffs = tester._compare_evaluation(original, regenerated, b"sample")
+
+    assert eval_diffs == [
+        "Rule a_rule missing in regenerated evaluation",
+        "Rule m_rule missing in regenerated evaluation",
+        "Rule other_rule missing in original evaluation",
+        "Rule z_rule missing in regenerated evaluation",
+    ]
+
+
 def test_compare_evaluation_captures_real_failure() -> None:
     tester = _tester_without_libyara_init()
     ast = Parser().parse("rule ok { condition: true }")

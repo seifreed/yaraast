@@ -118,7 +118,9 @@ class ComplexityMetrics:
                 "cyclomatic_complexity": self.cyclomatic_complexity,
             },
             "dependencies": {
-                "string_dependencies": {k: list(v) for k, v in self.string_dependencies.items()},
+                "string_dependencies": {
+                    k: sorted(v) for k, v in sorted(self.string_dependencies.items())
+                },
                 "module_usage": self.module_usage,
             },
         }

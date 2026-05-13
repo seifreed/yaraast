@@ -98,6 +98,64 @@ rule added {
     assert result.change_summary["added_rules"] == 1
 
 
+def test_ast_differ_public_change_lists_are_stably_sorted() -> None:
+    ast1 = Parser().parse("""
+rule z_removed { condition: true }
+rule a_removed { condition: true }
+rule m_removed { condition: true }
+
+rule z_changed { condition: true }
+rule a_changed { condition: true }
+rule m_changed { condition: true }
+
+rule string_changes {
+    strings:
+        $z = "z"
+        $a = "a"
+        $m = "m"
+    condition:
+        any of them
+}
+""")
+    ast2 = Parser().parse("""
+rule z_added { condition: true }
+rule a_added { condition: true }
+rule m_added { condition: true }
+
+rule z_changed { condition: false }
+rule a_changed { condition: false }
+rule m_changed { condition: false }
+
+rule string_changes {
+    strings:
+        $y = "y"
+        $b = "b"
+        $n = "n"
+    condition:
+        any of them
+}
+""")
+
+    result = ASTDiffer().diff_asts(ast1, ast2)
+
+    assert result.added_rules == ["a_added", "m_added", "z_added"]
+    assert result.removed_rules == ["a_removed", "m_removed", "z_removed"]
+    assert result.modified_rules == ["string_changes"]
+    assert "Added strings: string_changes:$b, string_changes:$n, string_changes:$y" in (
+        result.logical_changes
+    )
+    assert "Removed strings: string_changes:$a, string_changes:$m, string_changes:$z" in (
+        result.logical_changes
+    )
+    assert [
+        change for change in result.logical_changes if change.startswith("Condition logic changed")
+    ] == [
+        "Condition logic changed in rule 'a_changed'",
+        "Condition logic changed in rule 'm_changed'",
+        "Condition logic changed in rule 'z_changed'",
+    ]
+
+
 def test_ast_differ_diff_files_error_and_style_detection_paths(tmp_path: Path) -> None:
     differ = ASTDiffer()
 

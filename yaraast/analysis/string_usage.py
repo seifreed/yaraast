@@ -47,10 +47,10 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             undefined = used - defined
 
             results[rule_name] = {
-                "defined": list(defined),
-                "used": list(used),
-                "unused": list(unused),
-                "undefined": list(undefined),
+                "defined": sorted(defined),
+                "used": sorted(used),
+                "unused": sorted(unused),
+                "undefined": sorted(undefined),
                 "usage_rate": len(used) / len(defined) if defined else 0,
             }
 
@@ -65,13 +65,13 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         if rule_name:
             defined = self.defined_strings.get(rule_name, set())
             used = self.used_strings.get(rule_name, set())
-            return {rule_name: list(defined - used)}
+            return {rule_name: sorted(defined - used)}
 
         unused = {}
         for rule in self.defined_strings:
             defined = self.defined_strings[rule]
             used = self.used_strings.get(rule, set())
-            unused_in_rule = list(defined - used)
+            unused_in_rule = sorted(defined - used)
             if unused_in_rule:
                 unused[rule] = unused_in_rule
 
@@ -85,13 +85,13 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         if rule_name:
             defined = self.defined_strings.get(rule_name, set())
             used = self.used_strings.get(rule_name, set())
-            return {rule_name: list(used - defined)}
+            return {rule_name: sorted(used - defined)}
 
         undefined = {}
         for rule in self.used_strings:
             defined = self.defined_strings.get(rule, set())
             used = self.used_strings[rule]
-            undefined_in_rule = list(used - defined)
+            undefined_in_rule = sorted(used - defined)
             if undefined_in_rule:
                 undefined[rule] = undefined_in_rule
 

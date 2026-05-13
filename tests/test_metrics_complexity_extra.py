@@ -117,6 +117,28 @@ def test_complexity_unused_strings_and_complex_rules() -> None:
     assert "complex_unused" in metrics.complex_rules or metrics.max_condition_depth >= 1
 
 
+def test_complexity_unused_strings_are_stably_sorted() -> None:
+    code = """
+    rule sorted_unused {
+        strings:
+            $z = "z"
+            $a = "a"
+            $m = "m"
+        condition:
+            false
+    }
+    """
+    ast = Parser().parse(dedent(code))
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.unused_strings == [
+        "sorted_unused:$a",
+        "sorted_unused:$m",
+        "sorted_unused:$z",
+    ]
+
+
 def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
     code = """
     rule yarax_complexity {

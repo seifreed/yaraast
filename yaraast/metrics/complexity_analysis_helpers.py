@@ -89,7 +89,7 @@ def calculate_derived_metrics(analyzer) -> None:
         )
     for rule_name, string_ids in analyzer._rule_strings.items():
         used_strings = analyzer._string_usage.get(rule_name, set())
-        for unused_string in string_ids - used_strings:
+        for unused_string in sorted(string_ids - used_strings):
             analyzer.metrics.unused_strings.append(f"{rule_name}:{unused_string}")
     for rule_name, string_ids in analyzer._string_usage.items():
         if string_ids:

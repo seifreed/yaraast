@@ -88,7 +88,7 @@ def test_complexity_model_to_dict_quality_score_and_grades() -> None:
 
     data = metrics.to_dict()
     assert data["file_metrics"]["total_rules"] == 10
-    assert sorted(data["dependencies"]["string_dependencies"]["r1"]) == ["$a", "$b"]
+    assert data["dependencies"]["string_dependencies"]["r1"] == ["$a", "$b"]
     assert data["quality_metrics"]["complex_rules"] == ["r1", "r2"]
 
     score = metrics.get_quality_score()
@@ -139,3 +139,17 @@ def test_complexity_model_to_dict_quality_score_and_grades() -> None:
 
     for case_metrics, expected in grade_cases:
         assert case_metrics.get_complexity_grade() == expected
+
+
+def test_complexity_model_dependency_lists_are_stably_sorted() -> None:
+    metrics = ComplexityMetrics(
+        string_dependencies={
+            "z_rule": {"$z", "$a"},
+            "a_rule": {"$m", "$b"},
+        },
+    )
+
+    assert metrics.to_dict()["dependencies"]["string_dependencies"] == {
+        "a_rule": ["$b", "$m"],
+        "z_rule": ["$a", "$z"],
+    }

@@ -113,6 +113,31 @@ rule two {
     assert analyzer.used_strings["manual"] == {"$a", "$b"}
 
 
+def test_string_usage_public_lists_are_stably_sorted() -> None:
+    ast = Parser().parse("""
+rule ordered_usage {
+    strings:
+        $z = "z"
+        $a = "a"
+        $m = "m"
+    condition:
+        $a or $missing_z or $missing_a
+}
+""")
+    analyzer = StringUsageAnalyzer()
+
+    results = analyzer.analyze(ast)
+
+    assert results["ordered_usage"]["defined"] == ["$a", "$m", "$z"]
+    assert results["ordered_usage"]["used"] == ["$a", "$missing_a", "$missing_z"]
+    assert results["ordered_usage"]["unused"] == ["$m", "$z"]
+    assert results["ordered_usage"]["undefined"] == ["$missing_a", "$missing_z"]
+    assert analyzer.get_unused_strings("ordered_usage") == {"ordered_usage": ["$m", "$z"]}
+    assert analyzer.get_undefined_strings("ordered_usage") == {
+        "ordered_usage": ["$missing_a", "$missing_z"]
+    }
+
+
 def test_string_usage_analyzer_visit_rule_without_strings_or_condition() -> None:
     analyzer = StringUsageAnalyzer()
     rule = Rule(name="empty", strings=[], condition=None)
