@@ -42,6 +42,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         for rule_name in self.defined_strings:
             defined = self.defined_strings.get(rule_name, set())
             used = self.used_strings.get(rule_name, set())
+            defined_used = defined & used
 
             unused = defined - used
             undefined = used - defined
@@ -51,7 +52,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
                 "used": sorted(used),
                 "unused": sorted(unused),
                 "undefined": sorted(undefined),
-                "usage_rate": len(used) / len(defined) if defined else 0,
+                "usage_rate": len(defined_used) / len(defined) if defined else 0,
             }
 
         return results

@@ -138,6 +138,23 @@ rule ordered_usage {
     }
 
 
+def test_string_usage_rate_ignores_undefined_references() -> None:
+    ast = Parser().parse("""
+rule inflated_usage {
+    strings:
+        $a = "a"
+    condition:
+        $a and $missing
+}
+""")
+
+    result = StringUsageAnalyzer().analyze(ast)["inflated_usage"]
+
+    assert result["used"] == ["$a", "$missing"]
+    assert result["undefined"] == ["$missing"]
+    assert result["usage_rate"] == 1.0
+
+
 def test_string_usage_analyzer_visit_rule_without_strings_or_condition() -> None:
     analyzer = StringUsageAnalyzer()
     rule = Rule(name="empty", strings=[], condition=None)
