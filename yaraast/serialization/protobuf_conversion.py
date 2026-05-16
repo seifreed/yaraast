@@ -496,6 +496,8 @@ def _protobuf_string_set_to_ast(pb_owner):
         return pb_owner.string_set_text
     if pb_owner.string_set_items:
         return list(pb_owner.string_set_items)
+    if not pb_owner.HasField("string_set"):
+        return []
     return protobuf_to_expression(pb_owner.string_set)
 
 

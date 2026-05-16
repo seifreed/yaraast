@@ -6,7 +6,8 @@ from typing import Any, cast
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.expressions import BooleanLiteral, StringIdentifier
+from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral, StringIdentifier
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, StringModifier
@@ -211,6 +212,25 @@ def test_protobuf_serializer_preserves_extern_rule_reference_condition() -> None
     assert isinstance(condition, ExternRuleReference)
     assert condition.rule_name == "ExternalRule"
     assert condition.namespace == "legacy"
+
+
+def test_protobuf_serializer_preserves_empty_string_sets() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(name="of_empty", condition=OfExpression(IntegerLiteral(0), [])),
+            Rule(name="for_of_empty", condition=ForOfExpression("any", [], None)),
+        ],
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    of_condition = restored.rules[0].condition
+    for_of_condition = restored.rules[1].condition
+    assert isinstance(of_condition, OfExpression)
+    assert of_condition.string_set == []
+    assert isinstance(for_of_condition, ForOfExpression)
+    assert for_of_condition.string_set == []
 
 
 def test_protobuf_serializer_preserves_node_comment_metadata() -> None:
