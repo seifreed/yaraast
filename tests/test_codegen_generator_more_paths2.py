@@ -129,6 +129,18 @@ def test_codegen_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
                     StringModifier.from_name_value("fullword"),
                 ],
             ),
+            RegexString(
+                "$m",
+                regex="^line",
+                modifiers=["m"],
+            ),
+            RegexString(
+                "$ml",
+                regex="^named",
+                modifiers=[
+                    StringModifier.from_name_value("multiline"),
+                ],
+            ),
         ],
         condition=BinaryExpression(StringIdentifier("$r"), "or", StringIdentifier("$s")),
     )
@@ -137,7 +149,11 @@ def test_codegen_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
 
     assert "$r = /ab.*/is fullword" in out
     assert "$s = /cd.*/s fullword" in out
+    assert "$m = /^line/m" in out
+    assert "$ml = /^named/m" in out
     assert "$r = /ab.*/ i" not in out
+    assert "$m = /^line/ m" not in out
+    assert "$ml = /^named/ multiline" not in out
 
 
 def test_codegen_generator_expression_and_condition_paths() -> None:

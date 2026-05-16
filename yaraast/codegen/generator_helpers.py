@@ -8,8 +8,8 @@ from typing import Any
 
 from yaraast.regex_literals import escape_regex_delimiter as _escape_regex_delimiter
 
-REGEX_SUFFIX_MODIFIERS = frozenset({"i", "s"})
-REGEX_SUFFIX_NAMES = {"dotall": "s"}
+REGEX_SUFFIX_MODIFIERS = frozenset({"i", "m", "s"})
+REGEX_SUFFIX_NAMES = {"dotall": "s", "multiline": "m"}
 
 
 def _escape_plain_byte(value: int) -> str:
