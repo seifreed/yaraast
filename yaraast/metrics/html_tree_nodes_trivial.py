@@ -162,7 +162,7 @@ class HtmlTreeNodesTrivialMixin:
     def visit_string_modifier(self, node) -> dict[str, Any]:
         """Visit string modifier node."""
         value = f"{node.name}"
-        if node.value:
+        if node.value is not None:
             value += f"({node.value})"
 
         return {

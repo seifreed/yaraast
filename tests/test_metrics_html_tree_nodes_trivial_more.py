@@ -75,8 +75,10 @@ def test_trivial_visitors_return_serializable_nodes() -> None:
     assert tag["value"] == "malware"
 
     modifier_with_value = gen.visit_string_modifier(SimpleNamespace(name="xor", value="0x10"))
+    modifier_with_zero_value = gen.visit_string_modifier(SimpleNamespace(name="xor", value=0))
     modifier_without_value = gen.visit_string_modifier(SimpleNamespace(name="wide", value=None))
     assert modifier_with_value["value"] == "xor(0x10)"
+    assert modifier_with_zero_value["value"] == "xor(0)"
     assert modifier_without_value["value"] == "wide"
 
     hex_byte = gen.visit_hex_byte(SimpleNamespace(value=255))
