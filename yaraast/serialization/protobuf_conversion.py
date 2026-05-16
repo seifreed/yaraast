@@ -760,7 +760,6 @@ def convert_match_case_to_protobuf(case, pb_case) -> None:
 def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
     """Convert a protobuf message back to a basic AST."""
     from yaraast.ast.base import YaraFile
-    from yaraast.ast.expressions import BooleanLiteral
     from yaraast.ast.rules import Import, Include, Rule
 
     imports = []
@@ -832,9 +831,7 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
                 strings.append(string_def)
 
         condition = (
-            protobuf_to_expression(pb_rule.condition)
-            if pb_rule.HasField("condition")
-            else BooleanLiteral(value=True)
+            protobuf_to_expression(pb_rule.condition) if pb_rule.HasField("condition") else None
         )
         pragmas_for_rule = [protobuf_to_in_rule_pragma(pb_pragma) for pb_pragma in pb_rule.pragmas]
 

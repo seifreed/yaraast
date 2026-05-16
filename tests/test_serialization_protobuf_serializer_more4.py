@@ -81,6 +81,7 @@ def test_protobuf_serializer_roundtrip_paths_and_files(tmp_path: Path) -> None:
     restored = serializer.deserialize(input_path=bin_path)
     assert len(restored.rules) == 2
     assert restored.rules[0].name == "pb"
+    assert restored.rules[1].condition is None
 
     stats = serializer.get_serialization_stats(ast)
     assert stats["rules_count"] == 2
