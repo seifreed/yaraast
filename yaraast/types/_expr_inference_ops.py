@@ -345,6 +345,10 @@ def infer_module_or_condition(ctx, node):
         return BooleanType()
 
     if isinstance(node, ForExpression):
+        quant_type = _infer_quantifier_value(ctx, node.quantifier)
+        if not isinstance(quant_type, StringType | IntegerType):
+            ctx.errors.append(f"'for' quantifier must be string or integer, got {quant_type}")
+
         # Warn if loop variable shadows a defined string
         if ctx.env.has_string(node.variable) or ctx.env.has_string(f"${node.variable}"):
             ctx.errors.append(

@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -180,6 +186,27 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
             "'of' percentage quantifier must be between 1 and 100" in e
             for e in bad_percent_of.errors
         )
+
+
+def test_expr_inference_validates_for_expression_quantifier_type() -> None:
+    inf = ExpressionTypeInference(TypeEnvironment())
+
+    assert isinstance(
+        inf.infer(
+            ForExpression(
+                quantifier=BooleanLiteral(value=True),
+                variable="i",
+                iterable=RangeExpression(
+                    low=IntegerLiteral(value=1),
+                    high=IntegerLiteral(value=2),
+                ),
+                body=BooleanLiteral(value=True),
+            )
+        ),
+        BooleanType,
+    )
+
+    assert any("'for' quantifier must be string or integer" in e for e in inf.errors)
 
 
 def test_expr_inference_helper_and_branch_edges() -> None:
