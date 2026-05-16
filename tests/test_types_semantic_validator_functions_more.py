@@ -12,6 +12,7 @@ from yaraast.ast.conditions import (
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
+    BooleanLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
@@ -188,3 +189,27 @@ def test_function_validator_visits_nested_condition_nodes() -> None:
     # Unknown top-level function warning plus successful traversal of nested nodes.
     assert any("Unknown function 'unknown'" in w.message for w in result.warnings)
     assert any("Unknown function 'nested_unknown'" in w.message for w in result.warnings)
+
+
+def test_function_validator_visits_for_quantifier_expressions() -> None:
+    result = ValidationResult()
+    validator = FunctionCallValidator(result, TypeEnvironment())
+
+    validator.visit(
+        ForExpression(
+            quantifier=FunctionCall("missing_for_quantifier", []),
+            variable="i",
+            iterable=SetExpression([IntegerLiteral(1)]),
+            body=BooleanLiteral(True),
+        )
+    )
+    validator.visit(
+        ForOfExpression(
+            quantifier=FunctionCall("missing_for_of_quantifier", []),
+            string_set="them",
+        )
+    )
+
+    warnings = [warning.message for warning in result.warnings]
+    assert any("missing_for_quantifier" in warning for warning in warnings)
+    assert any("missing_for_of_quantifier" in warning for warning in warnings)

@@ -142,10 +142,12 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         self.visit(node.index)
 
     def visit_for_expression(self, node) -> None:
+        self._visit_ast_value(node.quantifier)
         self.visit(node.iterable)
         self.visit(node.body)
 
     def visit_for_of_expression(self, node) -> None:
+        self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
         if node.condition:
             self.visit(node.condition)
