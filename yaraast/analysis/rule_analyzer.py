@@ -115,8 +115,10 @@ class RuleAnalyzer:
         total_defined = 0
         total_used = 0
         for rule_data in string_analysis.values():
-            total_defined += len(rule_data["defined"])
-            total_used += len(rule_data["used"])
+            defined = set(rule_data["defined"])
+            used = set(rule_data["used"])
+            total_defined += len(defined)
+            total_used += len(defined & used)
 
         metrics["string_usage_efficiency"] = total_used / total_defined if total_defined > 0 else 0
 

@@ -58,6 +58,24 @@ rule test_undefined {
     assert "$undefined" in rule_analysis["undefined"]
 
 
+def test_rule_analyzer_string_efficiency_ignores_undefined_references() -> None:
+    yara_code = """
+rule test_efficiency {
+    strings:
+        $defined = "test"
+
+    condition:
+        $defined and $undefined
+}
+"""
+
+    ast = Parser().parse(yara_code)
+
+    metrics = RuleAnalyzer().analyze(ast)["quality_metrics"]
+
+    assert metrics["string_usage_efficiency"] == 1.0
+
+
 def test_dependency_analysis() -> None:
     """Test dependency analysis between rules."""
     yara_code = """
