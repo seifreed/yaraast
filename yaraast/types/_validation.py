@@ -11,13 +11,29 @@ from ._inference import TypeInference
 from ._registry import BooleanType, IntegerType, StringIdentifierType, TypeEnvironment, YaraType
 
 
+def _copy_type_environment(env: TypeEnvironment) -> TypeEnvironment:
+    copied = TypeEnvironment()
+    copied.scopes = [dict(scope) for scope in env.scopes]
+    copied.modules = set(env.modules)
+    copied.module_aliases = dict(env.module_aliases)
+    copied.strings = set(env.strings)
+    copied.rules = set(env.rules)
+    return copied
+
+
 class TypeChecker(BaseVisitor[None]):
     """Type checker for YARA rules."""
 
     def __init__(self, env: TypeEnvironment | None = None) -> None:
-        self.env = env if env is not None else TypeEnvironment()
+        self._base_env = _copy_type_environment(env) if env is not None else None
+        self.env = self._fresh_environment()
         self.inference = TypeInference(self.env)
         self.errors: list[str] = []
+
+    def _fresh_environment(self) -> TypeEnvironment:
+        if self._base_env is not None:
+            return _copy_type_environment(self._base_env)
+        return TypeEnvironment()
 
     def check_compatibility(self, type1: object, type2: object) -> bool:
         """Check if two types are compatible."""
@@ -32,6 +48,8 @@ class TypeChecker(BaseVisitor[None]):
     def check(self, ast: YaraFile) -> list[str]:
         """Type check a YARA file and return errors."""
         self.errors = []
+        self.env = self._fresh_environment()
+        self.inference = TypeInference(self.env)
         self.visit(ast)
         self.errors.extend(self.inference.errors)
         return self.errors

@@ -1425,6 +1425,32 @@ class TestTypeChecker:
         assert len(errors) == 1
         assert "must be boolean, integer, or string identifier" in errors[0]
 
+    def test_check_resets_environment_between_files(self) -> None:
+        checker = TypeChecker()
+        first_ast = YaraFile(
+            rules=[
+                Rule(
+                    name="first",
+                    strings=[PlainString(identifier="$a", value="test")],
+                    condition=StringIdentifier("$a"),
+                )
+            ]
+        )
+        second_ast = YaraFile(
+            rules=[
+                Rule(
+                    name="second",
+                    strings=[],
+                    condition=StringIdentifier("$a"),
+                )
+            ]
+        )
+
+        assert checker.check(first_ast) == []
+        errors = checker.check(second_ast)
+
+        assert "Undefined string: $a" in errors
+
     def test_infer_type_delegates_to_inference(self) -> None:
         """Test infer_type delegates to TypeInference."""
         checker = TypeChecker()
