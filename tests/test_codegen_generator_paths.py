@@ -3,6 +3,7 @@ from __future__ import annotations
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
+    BooleanLiteral,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
@@ -58,6 +59,10 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
 
     for_of_raw = ForOfExpression(quantifier="all", string_set="them", condition=None)
     assert gen.visit(for_of_raw) == "all of them"
+
+
+def test_codegen_generate_returns_direct_expression_output() -> None:
+    assert CodeGenerator().generate(BooleanLiteral(True)) == "true"
 
 
 def test_codegen_in_expression_parentheses_paths() -> None:

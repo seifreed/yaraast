@@ -52,7 +52,9 @@ class AdvancedCodeGenerator(CodeGenerator):
         self.buffer = StringIO()
         self.indent_level = 0
         self._string_definitions = []
-        self.visit(node)
+        result = self.visit(node)
+        if result:
+            return result
         return self.buffer.getvalue()
 
     def _get_indent(self) -> str:

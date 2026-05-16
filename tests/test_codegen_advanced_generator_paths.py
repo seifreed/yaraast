@@ -115,6 +115,10 @@ def test_advanced_generator_skips_missing_condition() -> None:
     assert "condition:" not in out
 
 
+def test_advanced_generator_generate_returns_direct_expression_output() -> None:
+    assert AdvancedCodeGenerator().generate(BooleanLiteral(True)) == "true"
+
+
 def test_advanced_generator_meta_and_tags_branches() -> None:
     mod = StringModifier(StringModifierType.NOCASE)
     meta_list = [Meta("b", '"already"'), _KeyOnly("missing_value"), Meta("a", True)]
