@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from yaraast.ast.base import ASTNode
+from yaraast.ast.modifiers import StringModifierType
+from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.types.semantic_validator_core import ValidationResult
 from yaraast.visitor.defaults import DefaultASTVisitor
 
@@ -58,6 +60,46 @@ class StringIdentifierValidator(DefaultASTVisitor[None]):
 
     def visit_regex_string(self, node) -> None:
         self.visit_string_definition(node)
+
+
+class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
+    """Validator for string modifiers that only make sense on regex strings."""
+
+    _REGEX_ONLY_MODIFIERS = {
+        StringModifierType.DOTALL.value,
+        StringModifierType.MULTILINE.value,
+    }
+
+    def __init__(self, result: ValidationResult) -> None:
+        super().__init__(default=None)
+        self.result = result
+        self.current_rule_name: str | None = None
+
+    def visit_rule(self, node: Rule) -> None:
+        self.current_rule_name = node.name
+        for string_def in node.strings:
+            self.visit(string_def)
+
+    def visit_plain_string(self, node: PlainString) -> None:
+        self._check_non_regex_string(node, "plain")
+
+    def visit_hex_string(self, node: HexString) -> None:
+        self._check_non_regex_string(node, "hex")
+
+    def visit_regex_string(self, node: RegexString) -> None:
+        return None
+
+    def _check_non_regex_string(self, node: StringDefinition, string_type: str) -> None:
+        for modifier in node.modifiers:
+            name = getattr(modifier, "name", str(modifier))
+            if name not in self._REGEX_ONLY_MODIFIERS:
+                continue
+
+            self.result.add_error(
+                f"Regex-only modifier '{name}' used on {string_type} string '{node.identifier}' in rule '{self.current_rule_name}'",
+                node.location,
+                "Use the modifier on a regex string or remove it from this string definition.",
+            )
 
 
 class UndefinedStringDetector:

@@ -243,6 +243,8 @@ class FluentStringBuilder:
             msg = f"String content not set for {self.identifier}"
             raise ValidationError(msg)
 
+        self._validate_modifier_compatibility()
+
         if self._string_type == "plain":
             return PlainString(
                 identifier=self.identifier,
@@ -271,6 +273,16 @@ class FluentStringBuilder:
         self._modifiers = [m for m in self._modifiers if m.modifier_type != modifier_type]
         # Add new modifier
         self._modifiers.append(StringModifier(modifier_type=modifier_type))
+
+    def _validate_modifier_compatibility(self) -> None:
+        regex_only = {StringModifierType.DOTALL, StringModifierType.MULTILINE}
+        invalid = [
+            modifier.name for modifier in self._modifiers if modifier.modifier_type in regex_only
+        ]
+        if invalid and self._string_type != "regex":
+            names = ", ".join(invalid)
+            msg = f"Regex-only modifier(s) cannot be used with {self._string_type} string {self.identifier}: {names}"
+            raise ValidationError(msg)
 
     def _parse_hex_pattern(self, pattern: str) -> list[HexToken]:
         """Parse hex pattern string into tokens."""

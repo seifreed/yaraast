@@ -10,6 +10,7 @@ from yaraast.types.semantic_validator_functions import FunctionCallValidator
 from yaraast.types.semantic_validator_helpers import populate_env_for_file, populate_env_for_rule
 from yaraast.types.semantic_validator_strings import (
     StringIdentifierValidator,
+    StringModifierApplicabilityValidator,
     UndefinedStringDetector,
 )
 from yaraast.types.type_system import TypeChecker, TypeEnvironment
@@ -18,6 +19,7 @@ __all__ = [
     "FunctionCallValidator",
     "SemanticValidator",
     "StringIdentifierValidator",
+    "StringModifierApplicabilityValidator",
     "ValidationError",
     "ValidationResult",
     "check_function_calls",
@@ -46,8 +48,10 @@ class SemanticValidator:
         populate_env_for_file(ast, env)
 
         string_validator = StringIdentifierValidator(result)
+        modifier_validator = StringModifierApplicabilityValidator(result)
         for rule in ast.rules:
             string_validator.visit(rule)
+            modifier_validator.visit(rule)
 
         # Detect undefined strings referenced in conditions
         undefined_detector = UndefinedStringDetector(result)
@@ -85,6 +89,8 @@ class SemanticValidator:
 
         string_validator = StringIdentifierValidator(result)
         string_validator.visit(rule)
+        modifier_validator = StringModifierApplicabilityValidator(result)
+        modifier_validator.visit(rule)
 
         if rule.condition:
             function_validator = FunctionCallValidator(result, env)
