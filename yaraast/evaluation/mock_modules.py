@@ -327,8 +327,8 @@ class HashModule:
     def _get_region(self, offset: int | None, size: int | None) -> bytes:
         if offset is None and size is None:
             return self.data
-        off = offset or 0
-        sz = size or (len(self.data) - off)
+        off = 0 if offset is None else offset
+        sz = len(self.data) - off if size is None else size
         return self.data[off : off + sz]
 
 

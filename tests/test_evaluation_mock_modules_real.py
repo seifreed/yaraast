@@ -5,6 +5,7 @@ from __future__ import annotations
 import struct
 
 from yaraast.evaluation.mock_modules import (
+    HashModule,
     MockDotNet,
     MockELF,
     MockMath,
@@ -103,3 +104,16 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert registry.get_module("custom") is custom
     registry.reset()
     assert registry.get_module("custom") is None
+
+
+def test_hash_module_respects_zero_length_regions() -> None:
+    hash_module = HashModule(b"abc")
+
+    assert hash_module.md5(0, 0) == "d41d8cd98f00b204e9800998ecf8427e"
+    assert hash_module.sha1(0, 0) == "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+    assert (
+        hash_module.sha256(0, 0) == "e3b0c44298fc1c149afbf4c8996fb924"
+        "27ae41e4649b934ca495991b7852b855"
+    )
+    assert hash_module.checksum32(0, 0) == 0
+    assert hash_module.crc32(0, 0) == 0
