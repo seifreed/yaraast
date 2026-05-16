@@ -16,6 +16,9 @@ from yaraast.analysis.optimization_helpers import (
 )
 from yaraast.ast.strings import HexString, PlainString
 
+LOWER_BOUND_OPERATORS = frozenset({">", ">="})
+UPPER_BOUND_OPERATORS = frozenset({"<", "<="})
+
 
 def analyze_string_definitions(analyzer, rule) -> None:
     hex_strings = []
@@ -108,25 +111,27 @@ def visit_binary_expression(analyzer, node) -> None:
             left_cmp
             and right_cmp
             and left_cmp["var"] == right_cmp["var"]
-            and left_cmp["op"] in [">", ">="]
-            and right_cmp["op"] in [">", ">="]
+            and (
+                (
+                    left_cmp["op"] in LOWER_BOUND_OPERATORS
+                    and right_cmp["op"] in LOWER_BOUND_OPERATORS
+                )
+                or (
+                    left_cmp["op"] in UPPER_BOUND_OPERATORS
+                    and right_cmp["op"] in UPPER_BOUND_OPERATORS
+                )
+            )
             and analyzer._current_rule
         ):
             lv, rv = left_cmp["value"], right_cmp["value"]
-            is_redundant = (
-                (left_cmp["op"] == ">" and right_cmp["op"] == ">=" and lv >= rv)
-                or (left_cmp["op"] == ">=" and right_cmp["op"] == ">" and rv >= lv)
-                or (left_cmp["op"] == right_cmp["op"] and lv != rv)
+            analyzer.report.add_suggestion(
+                analyzer._current_rule.name,
+                "redundant_comparison",
+                f"Redundant comparisons on '{left_cmp['var']}': "
+                f"{left_cmp['op']} {lv} and {right_cmp['op']} {rv}; "
+                "keep only the stricter one",
+                "low",
             )
-            if is_redundant:
-                analyzer.report.add_suggestion(
-                    analyzer._current_rule.name,
-                    "redundant_comparison",
-                    f"Redundant comparisons on '{left_cmp['var']}': "
-                    f"{left_cmp['op']} {lv} and {right_cmp['op']} {rv}; "
-                    "keep only the stricter one",
-                    "low",
-                )
     analyzer.visit(node.left)
     analyzer.visit(node.right)
     analyzer._condition_depth -= 1

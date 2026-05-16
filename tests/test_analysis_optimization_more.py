@@ -107,6 +107,19 @@ rule parsed_many {{
     assert any("'any of them' with many strings" in s.description for s in report.suggestions)
 
 
+def test_optimization_analyzer_detects_redundant_upper_bound_comparisons() -> None:
+    ast = _parse("""
+        rule redundant_upper_bound {
+            condition:
+                filesize < 100 and filesize < 50
+        }
+        """)
+
+    report = OptimizationAnalyzer().analyze(ast)
+
+    assert any("Redundant comparisons" in s.description for s in report.suggestions)
+
+
 def test_optimization_analyzer_handles_regex_strings_and_mixed_hex_groups() -> None:
     mixed_rule = Rule(
         name="mixed_rule",
