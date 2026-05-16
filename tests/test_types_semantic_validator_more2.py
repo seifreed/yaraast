@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import FunctionCall, Identifier, StringIdentifier
+from yaraast.ast.expressions import FunctionCall, Identifier, StringIdentifier, StringLiteral
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.types.semantic_validator import (
@@ -45,6 +45,15 @@ def test_validate_rule_detects_undefined_string_references() -> None:
 
     assert result.is_valid is False
     assert any("Undefined string '$missing'" in error.message for error in result.errors)
+
+
+def test_validate_rule_detects_invalid_condition_type() -> None:
+    rule = Rule(name="bad_type", strings=[], condition=StringLiteral("invalid"))
+
+    result = SemanticValidator().validate_rule(rule)
+
+    assert result.is_valid is False
+    assert any("Rule condition must be boolean" in error.message for error in result.errors)
 
 
 def test_validate_expression_and_convenience_functions() -> None:

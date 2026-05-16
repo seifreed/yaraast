@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from yaraast.ast.base import YaraFile
 from yaraast.types.module_loader import ModuleLoader
 from yaraast.types.semantic_validator_core import ValidationError, ValidationResult
 from yaraast.types.semantic_validator_functions import FunctionCallValidator
@@ -98,6 +99,15 @@ class SemanticValidator:
         if rule.condition:
             function_validator = FunctionCallValidator(result, env)
             function_validator.visit(rule.condition)
+
+        type_checker = TypeChecker(env)
+        type_errors = type_checker.check(YaraFile(rules=[rule]))
+
+        for error_msg in type_errors:
+            result.add_error(
+                error_msg,
+                suggestion="Check variable types and function signatures",
+            )
 
         return result
 

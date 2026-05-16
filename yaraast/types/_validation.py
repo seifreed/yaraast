@@ -14,8 +14,8 @@ from ._registry import BooleanType, IntegerType, StringIdentifierType, TypeEnvir
 class TypeChecker(BaseVisitor[None]):
     """Type checker for YARA rules."""
 
-    def __init__(self) -> None:
-        self.env = TypeEnvironment()
+    def __init__(self, env: TypeEnvironment | None = None) -> None:
+        self.env = env if env is not None else TypeEnvironment()
         self.inference = TypeInference(self.env)
         self.errors: list[str] = []
 
