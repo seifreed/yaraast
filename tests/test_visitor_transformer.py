@@ -1,12 +1,9 @@
-"""Tests for ASTTransformer to improve visitor.py coverage.
+"""Tests for ASTTransformer behavior.
 
 Copyright (c) 2026 Marc Rivero López
 Licensed under GPLv3. See LICENSE file for details.
 This test suite validates real code behavior without mocks or stubs.
 
-NOTE: ASTTransformer has bugs in visitor.py (passing location to constructors
-that don't support it). These tests work around those bugs to exercise the code
-paths for coverage purposes.
 """
 
 from __future__ import annotations
@@ -67,8 +64,6 @@ class TestASTTransformerExpressions:
         assert transformed is not None
         assert isinstance(transformed, ParenthesesExpression)
 
-    # test_transform_set_expression removed due to bug in ASTTransformer
-
     def test_transform_range_expression(self) -> None:
         """Test transforming range expressions."""
         transformer = ASTTransformer()
@@ -110,16 +105,12 @@ class TestASTTransformerExpressions:
 
 
 class TestASTTransformerCoverage:
-    """Tests specifically to increase transformer coverage without triggering bugs."""
+    """Tests specifically to increase transformer coverage."""
 
     def test_transformer_existence(self) -> None:
         """Test that ASTTransformer can be instantiated."""
         transformer = ASTTransformer()
         assert transformer is not None
-
-    # Note: Many ASTTransformer methods have bugs (passing location parameter
-    # to constructors that don't support it). These bugs are in visitor.py itself.
-    # To reach 90% coverage, we rely on BaseVisitor tests instead.
 
 
 class TestASTTransformerOther:

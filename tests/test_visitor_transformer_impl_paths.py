@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-import pytest
-
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
@@ -189,9 +187,12 @@ def test_transformer_impl_visits_remaining_node_types() -> None:
     assert isinstance(t.visit_extern_import(ExternImport("mods.yar")), ExternImport)
     assert isinstance(t.visit_extern_namespace(ExternNamespace("ns")), ExternNamespace)
 
-    pragma = CustomPragma("demo")
-    with pytest.raises(TypeError):
-        t.visit_pragma(pragma)
+    pragma = CustomPragma("demo", arguments=["arg"], parameters={"enabled": BooleanLiteral(True)})
+    transformed_pragma = t.visit_pragma(pragma)
+    assert isinstance(transformed_pragma, CustomPragma)
+    assert transformed_pragma.name == "demo"
+    assert transformed_pragma.arguments == ["arg"]
+    assert isinstance(transformed_pragma.parameters["enabled"], BooleanLiteral)
     regular_pragma = Pragma(PragmaType.PRAGMA, "pragma")
     assert isinstance(t.visit_in_rule_pragma(InRulePragma(regular_pragma)), InRulePragma)
     assert isinstance(t.visit_pragma_block(PragmaBlock([regular_pragma])), PragmaBlock)

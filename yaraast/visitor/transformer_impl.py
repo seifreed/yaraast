@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import copy
 from dataclasses import fields, is_dataclass, replace
 from typing import Any, TypeVar
 
@@ -94,7 +95,18 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             value = getattr(node, f.name)
             kwargs[f.name] = self._transform_value(value)
 
-        return replace(node, **kwargs)
+        try:
+            return replace(node, **kwargs)
+        except TypeError as exc:
+            if "unexpected keyword argument" not in str(exc):
+                raise
+            return self._copy_with_transformed_fields(node, kwargs)
+
+    def _copy_with_transformed_fields(self, node: T, kwargs: dict[str, Any]) -> T:
+        transformed = copy(node)
+        for name, value in kwargs.items():
+            object.__setattr__(transformed, name, value)
+        return transformed
 
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         return self._transform_node(node)
