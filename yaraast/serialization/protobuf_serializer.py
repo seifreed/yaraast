@@ -74,7 +74,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
             with Path(input_path).open("rb") as f:
                 binary_data = f.read()
 
-        if not binary_data:
+        if binary_data is None:
             msg = "No binary data provided"
             raise SerializationError(msg)
 

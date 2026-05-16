@@ -97,3 +97,14 @@ def test_protobuf_serializer_deserialize_binary_data_directly() -> None:
     restored = serializer.deserialize(binary_data=data)
     assert len(restored.rules) == 1
     assert restored.rules[0].name == "x"
+
+
+def test_protobuf_serializer_roundtrips_empty_file() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    data = serializer.serialize(YaraFile())
+
+    restored = serializer.deserialize(binary_data=data)
+
+    assert restored.imports == []
+    assert restored.includes == []
+    assert restored.rules == []

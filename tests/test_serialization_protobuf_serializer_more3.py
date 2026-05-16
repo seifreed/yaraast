@@ -42,4 +42,4 @@ def test_protobuf_serializer_stats_and_modifiers() -> None:
 def test_protobuf_serializer_empty_data_error() -> None:
     serializer = ProtobufSerializer()
     with pytest.raises(SerializationError):
-        serializer.deserialize(binary_data=b"")
+        serializer.deserialize()
