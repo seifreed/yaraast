@@ -13,6 +13,13 @@ if TYPE_CHECKING:
     from yaraast.ast.conditions import ForExpression
     from yaraast.ast.expressions import FunctionCall, Identifier
     from yaraast.ast.rules import Import, Include, Rule
+    from yaraast.yarax.ast_nodes import (
+        ArrayComprehension,
+        DictComprehension,
+        LambdaExpression,
+        WithDeclaration,
+        WithStatement,
+    )
 
 
 class DependencyGraphEntry(TypedDict):
@@ -243,11 +250,70 @@ class DependencyAnalyzer(BaseVisitor[None]):
         if isinstance(node.quantifier, ASTNode):
             self.visit(node.quantifier)
         self.visit(node.iterable)
-        self.local_scopes.append({node.variable})
+        self._push_local_scope(node.variable)
         try:
             self.visit(node.body)
         finally:
-            self.local_scopes.pop()
+            self._pop_local_scope()
+
+    def visit_with_statement(self, node: WithStatement) -> None:
+        self._push_local_scope()
+        try:
+            for declaration in node.declarations:
+                self.visit(declaration)
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def visit_with_declaration(self, node: WithDeclaration) -> None:
+        self.visit(node.value)
+        self._define_local(node.identifier)
+
+    def visit_array_comprehension(self, node: ArrayComprehension) -> None:
+        self._visit_if(node.iterable)
+        self._push_local_scope(node.variable)
+        try:
+            self._visit_if(node.condition)
+            self._visit_if(node.expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_dict_comprehension(self, node: DictComprehension) -> None:
+        self._visit_if(node.iterable)
+        names = [node.key_variable]
+        if node.value_variable:
+            names.append(node.value_variable)
+        self._push_local_scope(*names)
+        try:
+            self._visit_if(node.condition)
+            self._visit_if(node.key_expression)
+            self._visit_if(node.value_expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_lambda_expression(self, node: LambdaExpression) -> None:
+        self._push_local_scope(*node.parameters)
+        try:
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
 
     def _is_local(self, name: str) -> bool:
         return any(name in scope for scope in reversed(self.local_scopes))
+
+    def _push_local_scope(self, *names: str) -> None:
+        scope: set[str] = set()
+        for name in names:
+            scope.update(self._local_name_variants(name))
+        self.local_scopes.append(scope)
+
+    def _pop_local_scope(self) -> None:
+        self.local_scopes.pop()
+
+    def _define_local(self, name: str) -> None:
+        if self.local_scopes:
+            self.local_scopes[-1].update(self._local_name_variants(name))
+
+    @staticmethod
+    def _local_name_variants(name: str) -> set[str]:
+        return {name, name.lstrip("$")}

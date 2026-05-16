@@ -13,6 +13,14 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.parser import Parser
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    LambdaExpression,
+    ListExpression,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 def test_dependency_analyzer_import_include_and_direct_visitors() -> None:
@@ -168,3 +176,37 @@ rule caller {
     results = DependencyAnalyzer().analyze(ast)
 
     assert "caller" not in results["dependencies"]
+
+
+def test_dependency_analyzer_ignores_yarax_local_variable_shadowing_rules() -> None:
+    shadowed_rules = [
+        Rule(name="x", condition=BooleanLiteral(True)),
+        Rule(name="k", condition=BooleanLiteral(True)),
+        Rule(name="v", condition=BooleanLiteral(True)),
+    ]
+    cases = [
+        ArrayComprehension(
+            expression=Identifier("x"),
+            variable="x",
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=Identifier("v"),
+            key_variable="k",
+            value_variable="v",
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        WithStatement(
+            declarations=[WithDeclaration("x", IntegerLiteral(1))],
+            body=Identifier("x"),
+        ),
+        LambdaExpression(parameters=["x"], body=Identifier("x")),
+    ]
+
+    for condition in cases:
+        ast = YaraFile(rules=[*shadowed_rules, Rule(name="caller", condition=condition)])
+
+        results = DependencyAnalyzer().analyze(ast)
+
+        assert "caller" not in results["dependencies"]
