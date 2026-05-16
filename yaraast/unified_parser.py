@@ -87,18 +87,32 @@ class UnifiedParser:
             A tuple of (stripped_line_or_None, still_in_multiline_comment).
             ``None`` means the entire line is inside a comment and should be skipped.
         """
-        if in_multiline:
-            if "*/" in line:
-                return None, False
-            return None, True
-        if "/*" in line:
-            if "*/" not in line:
-                return None, True
-            # Multiline comment opened and closed on same line — skip it
-            return None, False
-        if "//" in line:
-            line = line.split("//", 1)[0]
-        return line, False
+        result: list[str] = []
+        index = 0
+
+        while index < len(line):
+            if in_multiline:
+                end = line.find("*/", index)
+                if end == -1:
+                    clean_line = "".join(result)
+                    return (clean_line if clean_line.strip() else None), True
+                index = end + 2
+                in_multiline = False
+                continue
+
+            if line.startswith("/*", index):
+                in_multiline = True
+                index += 2
+                continue
+
+            if line.startswith("//", index):
+                break
+
+            result.append(line[index])
+            index += 1
+
+        clean_line = "".join(result)
+        return (clean_line if clean_line.strip() else None), in_multiline
 
     @classmethod
     def _extract_preamble_fast(cls, file_path: Path) -> tuple[list[Import], list[Include]]:

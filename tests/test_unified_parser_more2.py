@@ -69,7 +69,9 @@ def test_extract_preamble_fast_handles_comments_and_aliases() -> None:
 /* top block
 still in comment */
 import "pe" as pe_mod
+import "hash" /* inline block comment */
 include "base.yar"
+/* closed block */ include "extra.yar"
 // line comment
 rule r { condition: true }
 """.lstrip(),
@@ -77,11 +79,13 @@ rule r { condition: true }
         )
 
         imports, includes = UnifiedParser._extract_preamble_fast(p)
-        assert len(imports) == 1
+        assert len(imports) == 2
         assert imports[0].module == "pe"
         assert imports[0].alias == "pe_mod"
-        assert len(includes) == 1
+        assert imports[1].module == "hash"
+        assert len(includes) == 2
         assert includes[0].path == "base.yar"
+        assert includes[1].path == "extra.yar"
 
 
 def test_extract_preamble_fast_error_and_parse_file_not_found() -> None:
