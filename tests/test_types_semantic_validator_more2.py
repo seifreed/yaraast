@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import FunctionCall, Identifier
+from yaraast.ast.expressions import FunctionCall, Identifier, StringIdentifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.types.semantic_validator import (
@@ -36,6 +36,15 @@ def test_validate_rule_with_and_without_env_and_condition() -> None:
     r2 = _rule(with_condition=False)
     res2 = validator.validate_rule(r2, env)
     assert res2.errors  # duplicate id still caught
+
+
+def test_validate_rule_detects_undefined_string_references() -> None:
+    rule = Rule(name="missing_string", strings=[], condition=StringIdentifier("$missing"))
+
+    result = SemanticValidator().validate_rule(rule)
+
+    assert result.is_valid is False
+    assert any("Undefined string '$missing'" in error.message for error in result.errors)
 
 
 def test_validate_expression_and_convenience_functions() -> None:

@@ -92,6 +92,9 @@ class SemanticValidator:
         modifier_validator = StringModifierApplicabilityValidator(result)
         modifier_validator.visit(rule)
 
+        undefined_detector = UndefinedStringDetector(result)
+        undefined_detector.check_rule(rule)
+
         if rule.condition:
             function_validator = FunctionCallValidator(result, env)
             function_validator.visit(rule.condition)
