@@ -150,3 +150,21 @@ def test_dependency_analyzer_traverses_for_expression_quantifier_nodes() -> None
     results = DependencyAnalyzer().analyze(ast)
 
     assert results["dependencies"]["caller"] == ["base"]
+
+
+def test_dependency_analyzer_ignores_for_expression_local_variable_shadowing_rule() -> None:
+    ast = Parser().parse("""
+rule i {
+    condition:
+        true
+}
+
+rule caller {
+    condition:
+        for all i in (1, 2, 3) : (i > 0)
+}
+""")
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert "caller" not in results["dependencies"]

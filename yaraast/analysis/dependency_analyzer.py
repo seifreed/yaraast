@@ -5,10 +5,12 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from yaraast.ast.base import ASTNode
 from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+    from yaraast.ast.conditions import ForExpression
     from yaraast.ast.expressions import FunctionCall, Identifier
     from yaraast.ast.rules import Import, Include, Rule
 
@@ -33,6 +35,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
         self.current_rule: str | None = None
         self.imported_modules: set[str] = set()
         self.included_files: set[str] = set()
+        self.local_scopes: list[set[str]] = []
 
     def analyze(self, yara_file: YaraFile) -> dict[str, Any]:
         """Analyze dependencies in YARA file."""
@@ -41,6 +44,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
         self.imported_modules.clear()
         self.included_files.clear()
         self.current_rule = None
+        self.local_scopes.clear()
 
         # First pass: collect all rule names
         for rule in yara_file.rules:
@@ -220,13 +224,30 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def visit_identifier(self, node: Identifier) -> None:
         # Check if identifier is a rule reference
-        if self.current_rule and node.name in self.rule_names:
+        if self.current_rule and node.name in self.rule_names and not self._is_local(node.name):
             self.dependencies[self.current_rule].add(node.name)
 
     def visit_function_call(self, node: FunctionCall) -> None:
         # Some functions might reference rules
-        if node.function in self.rule_names and self.current_rule:
+        if (
+            node.function in self.rule_names
+            and self.current_rule
+            and not self._is_local(node.function)
+        ):
             self.dependencies[self.current_rule].add(node.function)
 
         # Visit arguments (BaseVisitor.visit_function_call does this, but we call super)
         super().visit_function_call(node)
+
+    def visit_for_expression(self, node: ForExpression) -> None:
+        if isinstance(node.quantifier, ASTNode):
+            self.visit(node.quantifier)
+        self.visit(node.iterable)
+        self.local_scopes.append({node.variable})
+        try:
+            self.visit(node.body)
+        finally:
+            self.local_scopes.pop()
+
+    def _is_local(self, name: str) -> bool:
+        return any(name in scope for scope in reversed(self.local_scopes))
