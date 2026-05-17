@@ -304,6 +304,33 @@ def _deserialize_string_list_field(data: dict[str, Any], field: str, context: st
     raise SerializationError(msg)
 
 
+def _deserialize_dict_field(data: dict[str, Any], field: str, context: str) -> dict[str, Any]:
+    value = data.get(field, {})
+    if isinstance(value, dict):
+        if all(isinstance(key, str) for key in value):
+            return value
+        msg = f"{context} {field} keys must be strings"
+        raise SerializationError(msg)
+    msg = f"{context} {field} must be a dictionary"
+    raise SerializationError(msg)
+
+
+def _deserialize_pragma_type(data: dict[str, Any]) -> PragmaType:
+    if "pragma_type" in data:
+        value = data["pragma_type"]
+        field = "pragma_type"
+    elif "name" in data:
+        value = data["name"]
+        field = "name"
+    else:
+        value = PragmaType.CUSTOM.value
+        field = "pragma_type"
+    if isinstance(value, str):
+        return PragmaType.from_string(value)
+    msg = f"Pragma {field} must be a string"
+    raise SerializationError(msg)
+
+
 def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
     value = data["value"]
     if isinstance(value, str | bool):
@@ -922,12 +949,14 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "InRulePragma":
         return InRulePragma(
             pragma=deserialize_pragma(data["pragma"]),
-            position=data.get("position", "before_strings"),
+            position=_deserialize_optional_string_field(
+                data, "position", "InRulePragma", "before_strings"
+            ),
         )
     if node_type == "PragmaBlock":
         return PragmaBlock(
             pragmas=[deserialize_pragma(pragma) for pragma in data.get("pragmas", [])],
-            scope=_deserialize_pragma_scope(data.get("scope")),
+            scope=_deserialize_pragma_scope(data.get("scope"), "PragmaBlock"),
         )
     if node_type == "Pragma":
         return deserialize_pragma(data)
@@ -1185,42 +1214,51 @@ def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
     )
 
 
-def _deserialize_pragma_scope(value: Any) -> PragmaScope:
-    try:
-        return PragmaScope(value or PragmaScope.FILE.value)
-    except ValueError:
+def _deserialize_pragma_scope(value: Any, context: str = "Pragma") -> PragmaScope:
+    if value is None:
         return PragmaScope.FILE
+    if not isinstance(value, str):
+        msg = f"{context} scope must be a string"
+        raise SerializationError(msg)
+    try:
+        return PragmaScope(value)
+    except ValueError as exc:
+        msg = f"{context} scope must be a valid pragma scope"
+        raise SerializationError(msg) from exc
 
 
 def deserialize_pragma(data: dict[str, Any]) -> Pragma:
-    pragma_type = PragmaType.from_string(
-        str(data.get("pragma_type", data.get("name", PragmaType.CUSTOM.value)))
-    )
+    pragma_type = _deserialize_pragma_type(data)
     scope = _deserialize_pragma_scope(data.get("scope"))
+    name = _deserialize_optional_string_field(data, "name", "Pragma", pragma_type.value)
+    arguments = _deserialize_string_list_field(data, "arguments", "Pragma")
 
     if pragma_type == PragmaType.INCLUDE_ONCE:
         pragma = IncludeOncePragma()
     elif pragma_type == PragmaType.DEFINE and "macro_name" in data:
         pragma = DefineDirective(
-            macro_name=str(data["macro_name"]),
-            macro_value=data.get("macro_value"),
+            macro_name=_deserialize_string_field(data, "macro_name", "Pragma"),
+            macro_value=_deserialize_nullable_string_field(data, "macro_value", "Pragma"),
         )
     elif pragma_type == PragmaType.UNDEF and "macro_name" in data:
-        pragma = UndefDirective(macro_name=str(data["macro_name"]))
+        pragma = UndefDirective(macro_name=_deserialize_string_field(data, "macro_name", "Pragma"))
     elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
-        pragma = ConditionalDirective(pragma_type, condition=data.get("condition"))
+        pragma = ConditionalDirective(
+            pragma_type,
+            condition=_deserialize_nullable_string_field(data, "condition", "Pragma"),
+        )
     elif pragma_type == PragmaType.CUSTOM:
         pragma = CustomPragma(
-            name=str(data.get("name", pragma_type.value)),
-            arguments=list(data.get("arguments", [])),
-            parameters=dict(data.get("parameters", {})),
+            name=name,
+            arguments=arguments,
+            parameters=_deserialize_dict_field(data, "parameters", "Pragma"),
             scope=scope,
         )
     else:
         pragma = Pragma(
             pragma_type=pragma_type,
-            name=str(data.get("name", pragma_type.value)),
-            arguments=list(data.get("arguments", [])),
+            name=name,
+            arguments=arguments,
             scope=scope,
         )
     pragma.scope = scope

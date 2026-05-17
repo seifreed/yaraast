@@ -149,6 +149,40 @@ def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
         )
 
 
+def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
+    s = JsonSerializer()
+
+    with pytest.raises(SerializationError, match="Pragma name must be a string"):
+        s._deserialize_pragma({"pragma_type": "custom", "name": ["vendor"]})
+
+    with pytest.raises(SerializationError, match="Pragma arguments must be a list of strings"):
+        s._deserialize_pragma({"pragma_type": "custom", "name": "vendor", "arguments": "on"})
+
+    with pytest.raises(SerializationError, match="Pragma parameters must be a dictionary"):
+        s._deserialize_pragma(
+            {"pragma_type": "custom", "name": "vendor", "parameters": ["level", "strict"]}
+        )
+
+    with pytest.raises(SerializationError, match="Pragma macro_name must be a string"):
+        s._deserialize_pragma({"pragma_type": "define", "macro_name": True})
+
+    with pytest.raises(SerializationError, match="Pragma macro_value must be a string"):
+        s._deserialize_pragma(
+            {"pragma_type": "define", "macro_name": "LIMIT", "macro_value": ["10"]}
+        )
+
+    with pytest.raises(SerializationError, match="Pragma condition must be a string"):
+        s._deserialize_pragma({"pragma_type": "ifdef", "condition": True})
+
+    with pytest.raises(SerializationError, match="InRulePragma position must be a string"):
+        s._deserialize_in_rule_pragma(
+            {
+                "pragma": {"pragma_type": "custom", "name": "vendor"},
+                "position": True,
+            }
+        )
+
+
 def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
     s = JsonSerializer()
 

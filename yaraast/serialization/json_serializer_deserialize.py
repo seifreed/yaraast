@@ -136,6 +136,50 @@ def _deserialize_string_list_field(data: dict[str, Any], field: str, context: st
     raise SerializationError(msg)
 
 
+def _deserialize_dict_field(data: dict[str, Any], field: str, context: str) -> dict[str, Any]:
+    value = data.get(field, {})
+    if isinstance(value, dict):
+        if all(isinstance(key, str) for key in value):
+            return value
+        msg = f"{context} {field} keys must be strings"
+        raise SerializationError(msg)
+    msg = f"{context} {field} must be a dictionary"
+    raise SerializationError(msg)
+
+
+def _deserialize_pragma_type(data: dict[str, Any]):
+    from yaraast.ast.pragmas import PragmaType
+
+    if "pragma_type" in data:
+        value = data["pragma_type"]
+        field = "pragma_type"
+    elif "name" in data:
+        value = data["name"]
+        field = "name"
+    else:
+        value = PragmaType.CUSTOM.value
+        field = "pragma_type"
+    if isinstance(value, str):
+        return PragmaType.from_string(value)
+    msg = f"Pragma {field} must be a string"
+    raise SerializationError(msg)
+
+
+def _deserialize_pragma_scope(value: Any, context: str):
+    from yaraast.ast.pragmas import PragmaScope
+
+    if value is None:
+        return PragmaScope.FILE
+    if not isinstance(value, str):
+        msg = f"{context} scope must be a string"
+        raise SerializationError(msg)
+    try:
+        return PragmaScope(value)
+    except ValueError as exc:
+        msg = f"{context} scope must be a valid pragma scope"
+        raise SerializationError(msg) from exc
+
+
 def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
     value = data["value"]
     if isinstance(value, str | bool):
@@ -917,34 +961,36 @@ class JsonSerializerDeserializeMixin:
             DefineDirective,
             IncludeOncePragma,
             Pragma,
-            PragmaScope,
             PragmaType,
             UndefDirective,
         )
 
-        pragma_type = PragmaType.from_string(
-            str(data.get("pragma_type", data.get("name", PragmaType.CUSTOM.value)))
-        )
-        scope = PragmaScope(data.get("scope", PragmaScope.FILE.value))
-        name = data.get("name", pragma_type.value)
-        arguments = list(data.get("arguments", []))
+        pragma_type = _deserialize_pragma_type(data)
+        scope = _deserialize_pragma_scope(data.get("scope"), "Pragma")
+        name = _deserialize_optional_string_field(data, "name", "Pragma", pragma_type.value)
+        arguments = _deserialize_string_list_field(data, "arguments", "Pragma")
 
         if pragma_type == PragmaType.INCLUDE_ONCE:
             pragma = IncludeOncePragma()
         elif pragma_type == PragmaType.DEFINE and "macro_name" in data:
             pragma = DefineDirective(
-                macro_name=str(data["macro_name"]),
-                macro_value=data.get("macro_value"),
+                macro_name=_deserialize_string_field(data, "macro_name", "Pragma"),
+                macro_value=_deserialize_nullable_string_field(data, "macro_value", "Pragma"),
             )
         elif pragma_type == PragmaType.UNDEF and "macro_name" in data:
-            pragma = UndefDirective(macro_name=str(data["macro_name"]))
+            pragma = UndefDirective(
+                macro_name=_deserialize_string_field(data, "macro_name", "Pragma")
+            )
         elif pragma_type in {PragmaType.IFDEF, PragmaType.IFNDEF, PragmaType.ENDIF}:
-            pragma = ConditionalDirective(pragma_type, condition=data.get("condition"))
+            pragma = ConditionalDirective(
+                pragma_type,
+                condition=_deserialize_nullable_string_field(data, "condition", "Pragma"),
+            )
         elif pragma_type == PragmaType.CUSTOM:
             pragma = CustomPragma(
                 name=name,
                 arguments=arguments,
-                parameters=dict(data.get("parameters", {})),
+                parameters=_deserialize_dict_field(data, "parameters", "Pragma"),
                 scope=scope,
             )
         else:
@@ -963,18 +1009,20 @@ class JsonSerializerDeserializeMixin:
         return self._apply_node_metadata(
             InRulePragma(
                 pragma=self._deserialize_pragma(data["pragma"]),
-                position=data.get("position", "before_strings"),
+                position=_deserialize_optional_string_field(
+                    data, "position", "InRulePragma", "before_strings"
+                ),
             ),
             data,
         )
 
     def _deserialize_pragma_block(self, data: dict[str, Any]):
-        from yaraast.ast.pragmas import PragmaBlock, PragmaScope
+        from yaraast.ast.pragmas import PragmaBlock
 
         return self._apply_node_metadata(
             PragmaBlock(
                 pragmas=[self._deserialize_pragma(pragma) for pragma in data.get("pragmas", [])],
-                scope=PragmaScope(data.get("scope", PragmaScope.FILE.value)),
+                scope=_deserialize_pragma_scope(data.get("scope"), "PragmaBlock"),
             ),
             data,
         )

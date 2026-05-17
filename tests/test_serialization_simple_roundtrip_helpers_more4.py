@@ -178,6 +178,51 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
         deserialize_node({"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": True})
 
 
+def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
+    with pytest.raises(SerializationError, match="Pragma name must be a string"):
+        deserialize_node({"type": "Pragma", "pragma_type": "custom", "name": ["vendor"]})
+
+    with pytest.raises(SerializationError, match="Pragma arguments must be a list of strings"):
+        deserialize_node(
+            {"type": "Pragma", "pragma_type": "custom", "name": "vendor", "arguments": "on"}
+        )
+
+    with pytest.raises(SerializationError, match="Pragma parameters must be a dictionary"):
+        deserialize_node(
+            {
+                "type": "Pragma",
+                "pragma_type": "custom",
+                "name": "vendor",
+                "parameters": ["level", "strict"],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="Pragma macro_name must be a string"):
+        deserialize_node({"type": "Pragma", "pragma_type": "define", "macro_name": True})
+
+    with pytest.raises(SerializationError, match="Pragma macro_value must be a string"):
+        deserialize_node(
+            {
+                "type": "Pragma",
+                "pragma_type": "define",
+                "macro_name": "LIMIT",
+                "macro_value": ["10"],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="Pragma condition must be a string"):
+        deserialize_node({"type": "Pragma", "pragma_type": "ifdef", "condition": True})
+
+    with pytest.raises(SerializationError, match="InRulePragma position must be a string"):
+        deserialize_node(
+            {
+                "type": "InRulePragma",
+                "pragma": {"pragma_type": "custom", "name": "vendor"},
+                "position": True,
+            }
+        )
+
+
 def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     private_meta = MetaEntry.from_key_value("classification", "restricted", "private")
 
