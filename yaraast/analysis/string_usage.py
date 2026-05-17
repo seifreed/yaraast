@@ -31,6 +31,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     def __init__(self) -> None:
         self.defined_strings: dict[str, set[str]] = {}  # rule_name -> set of string ids
+        self.anonymous_strings: dict[str, set[str]] = {}  # rule_name -> anonymous internal ids
         self.used_strings: dict[str, set[str]] = {}  # rule_name -> set of string ids
         self.current_rule: str | None = None
         self.in_condition: bool = False
@@ -38,6 +39,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def analyze(self, yara_file: YaraFile) -> dict[str, dict[str, Any]]:
         """Analyze string usage in YARA file."""
         self.defined_strings.clear()
+        self.anonymous_strings.clear()
         self.used_strings.clear()
 
         self.visit(yara_file)
@@ -111,6 +113,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def visit_rule(self, node: Rule) -> None:
         self.current_rule = node.name
         self.defined_strings[node.name] = set()
+        self.anonymous_strings[node.name] = set()
         self.used_strings[node.name] = set()
         self.in_condition = False
 
@@ -128,7 +131,10 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     def visit_string_definition(self, node: StringDefinition) -> None:
         if self.current_rule:
-            self.defined_strings[self.current_rule].add(node.identifier)
+            normalized = self._normalize_string_id(node.identifier)
+            self.defined_strings[self.current_rule].add(normalized)
+            if getattr(node, "is_anonymous", False):
+                self.anonymous_strings[self.current_rule].add(normalized)
 
     def visit_plain_string(self, node: PlainString) -> None:
         self.visit_string_definition(node)
@@ -239,10 +245,15 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             return
 
         normalized = self._normalize_string_id(pattern)
+        if normalized == "$*":
+            self._mark_all_current_rule_strings()
+            return
+
+        anonymous = self.anonymous_strings.get(self.current_rule, set())
         matches = {
             string_id
             for string_id in self.defined_strings.get(self.current_rule, set())
-            if fnmatchcase(string_id, normalized)
+            if string_id not in anonymous and fnmatchcase(string_id, normalized)
         }
         if matches:
             self.used_strings[self.current_rule].update(matches)

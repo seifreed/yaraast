@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from yaraast.analysis.string_usage import StringUsageAnalyzer
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -239,6 +240,48 @@ rule wildcard_usage {
     analyzer.visit_of_expression(OfExpression("any", StringWildcard("$api*")))
 
     assert analyzer.used_strings["manual"] == {"$api1", "$api2"}
+
+
+def test_string_usage_analyzer_named_wildcard_ignores_anonymous_internal_ids() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="anonymous_usage",
+                strings=[
+                    PlainString(identifier="$alpha", value="a"),
+                    PlainString(identifier="$anon_1", value="anonymous", is_anonymous=True),
+                ],
+                condition=StringWildcard("$a*"),
+            )
+        ]
+    )
+
+    result = StringUsageAnalyzer().analyze(ast)["anonymous_usage"]
+
+    assert result["used"] == ["$alpha"]
+    assert result["unused"] == ["$anon_1"]
+    assert result["undefined"] == []
+
+
+def test_string_usage_analyzer_global_wildcard_keeps_anonymous_strings() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="anonymous_global_usage",
+                strings=[
+                    PlainString(identifier="$alpha", value="a"),
+                    PlainString(identifier="$anon_1", value="anonymous", is_anonymous=True),
+                ],
+                condition=StringWildcard("$*"),
+            )
+        ]
+    )
+
+    result = StringUsageAnalyzer().analyze(ast)["anonymous_global_usage"]
+
+    assert result["used"] == ["$alpha", "$anon_1"]
+    assert result["unused"] == []
+    assert result["undefined"] == []
 
 
 def test_string_usage_analyzer_partial_branch_paths() -> None:
