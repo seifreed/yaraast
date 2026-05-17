@@ -163,6 +163,18 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="DoubleLiteral value must be numeric"):
         s._deserialize_expression({"type": "DoubleLiteral", "value": "1.5"})
 
+    with pytest.raises(SerializationError, match="StringLiteral value must be a string"):
+        s._deserialize_expression({"type": "StringLiteral", "value": True})
+
+    with pytest.raises(SerializationError, match="Identifier name must be a string"):
+        s._deserialize_expression({"type": "Identifier", "name": ["id"]})
+
+    with pytest.raises(SerializationError, match="RegexLiteral pattern must be a string"):
+        s._deserialize_expression({"type": "RegexLiteral", "pattern": 123})
+
+    with pytest.raises(SerializationError, match="RegexLiteral modifiers must be a string"):
+        s._deserialize_expression({"type": "RegexLiteral", "pattern": "abc", "modifiers": ["i"]})
+
 
 def test_deserialize_expression_comprehensive_branches() -> None:
     s = JsonSerializer()

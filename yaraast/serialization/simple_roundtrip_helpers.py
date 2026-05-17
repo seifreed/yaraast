@@ -210,6 +210,24 @@ def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
     raise SerializationError(msg)
 
 
+def _deserialize_string_field(data: dict[str, Any], field: str, context: str) -> str:
+    value = data[field]
+    if isinstance(value, str):
+        return value
+    msg = f"{context} {field} must be a string"
+    raise SerializationError(msg)
+
+
+def _deserialize_optional_string_field(
+    data: dict[str, Any], field: str, context: str, default: str = ""
+) -> str:
+    value = data.get(field, default)
+    if isinstance(value, str):
+        return value
+    msg = f"{context} {field} must be a string"
+    raise SerializationError(msg)
+
+
 def _deserialize_modifier_value(name: str, value: Any) -> Any:
     if name == "xor":
         if isinstance(value, list) and len(value) == 2:
@@ -820,23 +838,32 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "DoubleLiteral":
         return DoubleLiteral(_deserialize_double_literal_value(data))
     if node_type == "StringLiteral":
-        return StringLiteral(data["value"])
+        return StringLiteral(_deserialize_string_field(data, "value", "StringLiteral"))
     if node_type == "RegexLiteral":
-        return RegexLiteral(data["pattern"], data.get("modifiers", ""))
+        return RegexLiteral(
+            _deserialize_string_field(data, "pattern", "RegexLiteral"),
+            _deserialize_optional_string_field(data, "modifiers", "RegexLiteral"),
+        )
     if node_type == "Identifier":
-        return Identifier(data["name"])
+        return Identifier(_deserialize_string_field(data, "name", "Identifier"))
     if node_type == "StringIdentifier":
-        return StringIdentifier(data["name"])
+        return StringIdentifier(_deserialize_string_field(data, "name", "StringIdentifier"))
     if node_type == "StringWildcard":
-        return StringWildcard(data["pattern"])
+        return StringWildcard(_deserialize_string_field(data, "pattern", "StringWildcard"))
     if node_type == "StringCount":
-        return StringCount(data["string_id"])
+        return StringCount(_deserialize_string_field(data, "string_id", "StringCount"))
     if node_type == "StringOffset":
         index = data.get("index")
-        return StringOffset(data["string_id"], deserialize_node(index) if index else None)
+        return StringOffset(
+            _deserialize_string_field(data, "string_id", "StringOffset"),
+            deserialize_node(index) if index else None,
+        )
     if node_type == "StringLength":
         index = data.get("index")
-        return StringLength(data["string_id"], deserialize_node(index) if index else None)
+        return StringLength(
+            _deserialize_string_field(data, "string_id", "StringLength"),
+            deserialize_node(index) if index else None,
+        )
     if node_type == "BinaryExpression":
         return BinaryExpression(
             deserialize_node(data["left"]),

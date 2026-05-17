@@ -93,6 +93,24 @@ def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
     raise SerializationError(msg)
 
 
+def _deserialize_string_field(data: dict[str, Any], field: str, context: str) -> str:
+    value = data[field]
+    if isinstance(value, str):
+        return value
+    msg = f"{context} {field} must be a string"
+    raise SerializationError(msg)
+
+
+def _deserialize_optional_string_field(
+    data: dict[str, Any], field: str, context: str, default: str = ""
+) -> str:
+    value = data.get(field, default)
+    if isinstance(value, str):
+        return value
+    msg = f"{context} {field} must be a string"
+    raise SerializationError(msg)
+
+
 def _cast_comment(node: Any) -> Comment:
     if isinstance(node, Comment):
         return node
@@ -176,25 +194,25 @@ def _deser_member_access(self, data: dict[str, Any]):
 def _deser_identifier(self, data: dict[str, Any]):
     from yaraast.ast.expressions import Identifier
 
-    return Identifier(name=data["name"])
+    return Identifier(name=_deserialize_string_field(data, "name", "Identifier"))
 
 
 def _deser_string_identifier(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringIdentifier
 
-    return StringIdentifier(name=data["name"])
+    return StringIdentifier(name=_deserialize_string_field(data, "name", "StringIdentifier"))
 
 
 def _deser_string_wildcard(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringWildcard
 
-    return StringWildcard(pattern=data["pattern"])
+    return StringWildcard(pattern=_deserialize_string_field(data, "pattern", "StringWildcard"))
 
 
 def _deser_string_count(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringCount
 
-    return StringCount(string_id=data["string_id"])
+    return StringCount(string_id=_deserialize_string_field(data, "string_id", "StringCount"))
 
 
 def _deser_string_offset(self, data: dict[str, Any]):
@@ -202,7 +220,7 @@ def _deser_string_offset(self, data: dict[str, Any]):
 
     index = data.get("index")
     return StringOffset(
-        string_id=data["string_id"],
+        string_id=_deserialize_string_field(data, "string_id", "StringOffset"),
         index=self._deserialize_expression(index) if index else None,
     )
 
@@ -212,7 +230,7 @@ def _deser_string_length(self, data: dict[str, Any]):
 
     index = data.get("index")
     return StringLength(
-        string_id=data["string_id"],
+        string_id=_deserialize_string_field(data, "string_id", "StringLength"),
         index=self._deserialize_expression(index) if index else None,
     )
 
@@ -232,13 +250,16 @@ def _deser_double_literal(self, data: dict[str, Any]):
 def _deser_string_literal(self, data: dict[str, Any]):
     from yaraast.ast.expressions import StringLiteral
 
-    return StringLiteral(value=data["value"])
+    return StringLiteral(value=_deserialize_string_field(data, "value", "StringLiteral"))
 
 
 def _deser_regex_literal(self, data: dict[str, Any]):
     from yaraast.ast.expressions import RegexLiteral
 
-    return RegexLiteral(pattern=data["pattern"], modifiers=data.get("modifiers", ""))
+    return RegexLiteral(
+        pattern=_deserialize_string_field(data, "pattern", "RegexLiteral"),
+        modifiers=_deserialize_optional_string_field(data, "modifiers", "RegexLiteral"),
+    )
 
 
 def _deser_boolean_literal(self, data: dict[str, Any]):
