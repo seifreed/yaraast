@@ -79,6 +79,16 @@ def test_integer_division_and_modulo_by_zero_do_not_fold() -> None:
     assert opt.visit(mod) is mod
 
 
+def test_negative_shift_counts_do_not_crash_or_fold() -> None:
+    opt = ExpressionOptimizer()
+    expr = BinaryExpression(IntegerLiteral(1), "<<", UnaryExpression("-", IntegerLiteral(1)))
+
+    optimized = opt.visit(expr)
+
+    assert optimized is expr
+    assert expr.right == IntegerLiteral(-1)
+
+
 def test_identity_and_boolean_shortcuts_remaining_paths() -> None:
     opt = ExpressionOptimizer()
     x = Identifier("x")

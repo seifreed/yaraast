@@ -52,6 +52,8 @@ _COMPARISON_OPS: dict[str, Any] = {
 
 def _fold_arithmetic(left_val: int, right_val: int, operator: str):
     """Fold constant integer arithmetic. Returns result or _SENTINEL."""
+    if operator in ("<<", ">>") and right_val < 0:
+        return _SENTINEL
     if operator in _ARITHMETIC_OPS:
         return IntegerLiteral(value=_ARITHMETIC_OPS[operator](left_val, right_val))
     if operator == "/" and right_val != 0:
