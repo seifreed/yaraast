@@ -205,6 +205,28 @@ def test_simple_roundtrip_deserialize_string_requires_literal_true_for_anonymous
     assert plain.is_anonymous is False
 
 
+def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> None:
+    with pytest.raises(SerializationError, match="PlainString identifier must be a string"):
+        deserialize_string(
+            {"type": "PlainString", "identifier": ["$a"], "value": "abc", "modifiers": []}
+        )
+
+    with pytest.raises(SerializationError, match="PlainString value must be a string or bytes"):
+        deserialize_string(
+            {"type": "PlainString", "identifier": "$a", "value": True, "modifiers": []}
+        )
+
+    with pytest.raises(SerializationError, match="HexString identifier must be a string"):
+        deserialize_string(
+            {"type": "HexString", "identifier": ["$h"], "tokens": [], "modifiers": []}
+        )
+
+    with pytest.raises(SerializationError, match="RegexString regex must be a string"):
+        deserialize_string(
+            {"type": "RegexString", "identifier": "$r", "regex": 123, "modifiers": []}
+        )
+
+
 def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="IntegerLiteral value must be an integer"):
         deserialize_node({"type": "IntegerLiteral", "value": True})

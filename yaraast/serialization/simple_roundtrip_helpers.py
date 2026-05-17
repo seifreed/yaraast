@@ -174,6 +174,11 @@ def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> N
 def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
     value = data["value"]
     if data.get("value_encoding") != "base64":
+        if isinstance(value, str | bytes):
+            return value
+        msg = "PlainString value must be a string or bytes"
+        raise SerializationError(msg)
+    if isinstance(value, bytes):
         return value
     try:
         return base64.b64decode(str(value).encode("ascii"), validate=True)
@@ -1162,7 +1167,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     if string_type == "PlainString":
         return _apply_node_metadata(
             PlainString(
-                identifier=data["identifier"],
+                identifier=_deserialize_string_field(data, "identifier", "PlainString"),
                 value=_deserialize_plain_string_value(data),
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
                 is_anonymous=_deserialize_is_anonymous(data),
@@ -1175,7 +1180,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             tokens = [_deserialize_hex_token(t) for t in raw_tokens]
             return _apply_node_metadata(
                 HexString(
-                    identifier=data["identifier"],
+                    identifier=_deserialize_string_field(data, "identifier", "HexString"),
                     tokens=tokens,
                     modifiers=_deserialize_modifiers(data.get("modifiers", [])),
                     is_anonymous=_deserialize_is_anonymous(data),
@@ -1186,7 +1191,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             try:
                 return _apply_node_metadata(
                     HexString(
-                        identifier=data["identifier"],
+                        identifier=_deserialize_string_field(data, "identifier", "HexString"),
                         tokens=_deserialize_legacy_hex_tokens(raw_tokens),
                         modifiers=_deserialize_modifiers(data.get("modifiers", [])),
                         is_anonymous=_deserialize_is_anonymous(data),
@@ -1206,7 +1211,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         )
         return _apply_node_metadata(
             HexString(
-                identifier=data["identifier"],
+                identifier=_deserialize_string_field(data, "identifier", "HexString"),
                 tokens=[],
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
                 is_anonymous=_deserialize_is_anonymous(data),
@@ -1216,8 +1221,8 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     if string_type == "RegexString":
         return _apply_node_metadata(
             RegexString(
-                identifier=data["identifier"],
-                regex=data["regex"],
+                identifier=_deserialize_string_field(data, "identifier", "RegexString"),
+                regex=_deserialize_string_field(data, "regex", "RegexString"),
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
                 is_anonymous=_deserialize_is_anonymous(data),
             ),

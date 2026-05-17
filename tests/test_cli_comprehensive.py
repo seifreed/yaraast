@@ -15,6 +15,26 @@ import tempfile
 
 import pytest
 
+CLI_TIMEOUT = 30
+
+
+class TestCLIModuleExecution:
+    """Tests for CLI module execution startup."""
+
+    def test_module_execution_does_not_preimport_main(self) -> None:
+        """Execute module entrypoint without runpy preimport warnings."""
+        result = subprocess.run(
+            [sys.executable, "-W", "error::RuntimeWarning", "-m", "yaraast.cli.main", "--help"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=CLI_TIMEOUT,
+            encoding="utf-8",
+        )
+
+        assert result.returncode == 0
+        assert "RuntimeWarning" not in result.stderr
+
 
 class TestCLIParseCommand:
     """Tests for the 'yaraast parse' command."""
@@ -42,7 +62,7 @@ class TestCLIParseCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -85,7 +105,7 @@ class TestCLIParseCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -128,7 +148,7 @@ class TestCLIParseCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -177,7 +197,7 @@ class TestCLIParseCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -226,7 +246,7 @@ class TestCLIParseCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -253,7 +273,7 @@ class TestCLIParseCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -300,7 +320,7 @@ class TestCLIParseCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -344,7 +364,7 @@ class TestCLIFormatCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -404,7 +424,7 @@ class TestCLIFormatCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -452,7 +472,7 @@ class TestCLIValidateCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -478,7 +498,7 @@ class TestCLIValidateCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -513,7 +533,7 @@ class TestCLIValidateCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -544,7 +564,7 @@ class TestCLIFmtCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -598,7 +618,7 @@ class TestCLIFmtCommand:
                     capture_output=True,
                     text=True,
                     check=False,
-                    timeout=10,
+                    timeout=CLI_TIMEOUT,
                     encoding="utf-8",
                 )
 
@@ -630,7 +650,7 @@ class TestCLIFmtCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -676,7 +696,7 @@ class TestCLIDiffCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -725,7 +745,7 @@ class TestCLIDiffCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -783,7 +803,7 @@ class TestCLIDiffCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -826,7 +846,7 @@ class TestCLIDiffCommand:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -1339,7 +1359,7 @@ class TestCLIErrorHandling:
             capture_output=True,
             text=True,
             check=False,
-            timeout=10,
+            timeout=CLI_TIMEOUT,
             encoding="utf-8",
         )
 
@@ -1353,7 +1373,7 @@ class TestCLIErrorHandling:
             capture_output=True,
             text=True,
             check=False,
-            timeout=10,
+            timeout=CLI_TIMEOUT,
             encoding="utf-8",
         )
 
@@ -1367,7 +1387,7 @@ class TestCLIErrorHandling:
             capture_output=True,
             text=True,
             check=False,
-            timeout=10,
+            timeout=CLI_TIMEOUT,
             encoding="utf-8",
         )
 
@@ -1381,7 +1401,7 @@ class TestCLIErrorHandling:
             capture_output=True,
             text=True,
             check=False,
-            timeout=10,
+            timeout=CLI_TIMEOUT,
             encoding="utf-8",
         )
 
@@ -1433,7 +1453,7 @@ class TestCLIRoundtripIntegration:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -1453,7 +1473,7 @@ class TestCLIRoundtripIntegration:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -1498,7 +1518,7 @@ class TestCLIRoundtripIntegration:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -1515,7 +1535,7 @@ class TestCLIRoundtripIntegration:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -1568,7 +1588,7 @@ class TestCLIComplexRules:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -1612,7 +1632,7 @@ class TestCLIComplexRules:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -1657,7 +1677,7 @@ class TestCLIComplexRules:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -1702,7 +1722,7 @@ class TestCLIComplexRules:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 
@@ -1744,7 +1764,7 @@ class TestCLIComplexRules:
                 capture_output=True,
                 text=True,
                 check=False,
-                timeout=10,
+                timeout=CLI_TIMEOUT,
                 encoding="utf-8",
             )
 

@@ -57,6 +57,11 @@ def _deserialize_comment_node(self, data: dict[str, Any]) -> Any:
 def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
     value = data["value"]
     if data.get("value_encoding") != "base64":
+        if isinstance(value, str | bytes):
+            return value
+        msg = "PlainString value must be a string or bytes"
+        raise SerializationError(msg)
+    if isinstance(value, bytes):
         return value
     try:
         return base64.b64decode(str(value).encode("ascii"), validate=True)
@@ -638,7 +643,7 @@ class JsonSerializerDeserializeMixin:
 
             return self._apply_node_metadata(
                 PlainString(
-                    identifier=data["identifier"],
+                    identifier=_deserialize_string_field(data, "identifier", "PlainString"),
                     value=_deserialize_plain_string_value(data),
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),
@@ -651,7 +656,7 @@ class JsonSerializerDeserializeMixin:
             tokens = [self._deserialize_hex_token(t) for t in data.get("tokens", [])]
             return self._apply_node_metadata(
                 HexString(
-                    identifier=data["identifier"],
+                    identifier=_deserialize_string_field(data, "identifier", "HexString"),
                     tokens=tokens,
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),
@@ -663,8 +668,8 @@ class JsonSerializerDeserializeMixin:
 
             return self._apply_node_metadata(
                 RegexString(
-                    identifier=data["identifier"],
-                    regex=data["regex"],
+                    identifier=_deserialize_string_field(data, "identifier", "RegexString"),
+                    regex=_deserialize_string_field(data, "regex", "RegexString"),
                     modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),
                 ),
