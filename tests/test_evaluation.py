@@ -326,7 +326,7 @@ class TestYaraEvaluator:
             strings:
                 $a = "test"
             condition:
-                for all i in (0..2): ( @a[i] < 100 )
+                for all i in (1..3): ( @a[i] < 100 )
         }
         """
         ast = parser.parse(rule_text)

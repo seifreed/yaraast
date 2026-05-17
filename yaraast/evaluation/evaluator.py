@@ -12,6 +12,7 @@ from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import (
     BUILTIN_READERS,
     LITTLE_ENDIAN_ALIASES,
+    YARA_UNDEFINED,
     is_yara_undefined,
 )
 from yaraast.evaluation.evaluator_ops import (
@@ -203,19 +204,19 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         string_id = self._normalize_string_id(node.string_id)
         return self.string_matcher.get_match_count(string_id)
 
-    def visit_string_offset(self, node: StringOffset) -> int:
+    def visit_string_offset(self, node: StringOffset) -> Any:
         """Get offset of string match."""
         string_id = self._normalize_string_id(node.string_id)
         index = self._resolve_match_index(node.index)
         offset = self.string_matcher.get_match_offset(string_id, index)
-        return offset if offset is not None else -1
+        return offset if offset is not None else YARA_UNDEFINED
 
-    def visit_string_length(self, node: StringLength) -> int:
+    def visit_string_length(self, node: StringLength) -> Any:
         """Get length of string match."""
         string_id = self._normalize_string_id(node.string_id)
         index = self._resolve_match_index(node.index)
         length = self.string_matcher.get_match_length(string_id, index)
-        return length if length is not None else 0
+        return length if length is not None else YARA_UNDEFINED
 
     def _resolve_match_index(self, index_node: Expression | None) -> int:
         if index_node is None:

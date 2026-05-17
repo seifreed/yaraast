@@ -38,6 +38,7 @@ from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import PlainString
 from yaraast.errors import EvaluationError
+from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.parser import Parser
 from yaraast.yarax.ast_nodes import (
@@ -176,8 +177,14 @@ def test_string_count_offset_length_and_wildcard() -> None:
     assert ev.visit_string_offset(StringOffset(string_id="$a", index=IntegerLiteral(value=1))) == 2
     assert ev.visit_string_offset(StringOffset(string_id="$a", index=IntegerLiteral(value=2))) == 6
     assert ev.visit_string_length(StringLength(string_id="$a", index=IntegerLiteral(value=1))) == 2
-    assert ev.visit_string_offset(StringOffset(string_id="$a", index=IntegerLiteral(value=9))) == -1
-    assert ev.visit_string_length(StringLength(string_id="$a", index=IntegerLiteral(value=9))) == 0
+    assert (
+        ev.visit_string_offset(StringOffset(string_id="$a", index=IntegerLiteral(value=9)))
+        is YARA_UNDEFINED
+    )
+    assert (
+        ev.visit_string_length(StringLength(string_id="$a", index=IntegerLiteral(value=9)))
+        is YARA_UNDEFINED
+    )
 
     ast = Parser().parse("""
         rule indexed {
@@ -412,6 +419,53 @@ def test_defined_expression_evaluates_general_expressions() -> None:
         "defined_boolean_literal": True,
         "defined_arithmetic": True,
         "undefined_arithmetic": False,
+    }
+
+
+def test_missing_string_offset_and_length_evaluate_as_undefined() -> None:
+    ast = Parser().parse("""
+        rule missing_offset_comparison {
+            strings:
+                $a = "zz"
+            condition:
+                @a == -1
+        }
+
+        rule missing_offset_defined {
+            strings:
+                $a = "zz"
+            condition:
+                defined @a
+        }
+
+        rule missing_length_comparison {
+            strings:
+                $a = "zz"
+            condition:
+                !a == 0
+        }
+
+        rule missing_length_defined {
+            strings:
+                $a = "zz"
+            condition:
+                defined !a
+        }
+
+        rule missing_index_defined {
+            strings:
+                $a = "ab"
+            condition:
+                defined @a[2] or defined !a[2]
+        }
+    """)
+
+    assert YaraEvaluator(data=b"ab").evaluate_file(ast) == {
+        "missing_offset_comparison": False,
+        "missing_offset_defined": False,
+        "missing_length_comparison": False,
+        "missing_length_defined": False,
+        "missing_index_defined": False,
     }
 
 
