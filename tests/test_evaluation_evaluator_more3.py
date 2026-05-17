@@ -434,6 +434,26 @@ def test_evaluate_file_defined_module_reference_after_import() -> None:
     assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"imported_module": True}
 
 
+def test_evaluate_file_resolves_forward_rule_references() -> None:
+    ast = Parser().parse("""
+        rule first {
+            strings:
+                $a = "missing"
+            condition:
+                second and #a == 0
+        }
+
+        rule second {
+            strings:
+                $b = "abc"
+            condition:
+                $b
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"first": True, "second": True}
+
+
 def test_evaluate_file_resets_imported_modules_between_files() -> None:
     evaluator = YaraEvaluator(data=b"abc")
     with_import = Parser().parse("""

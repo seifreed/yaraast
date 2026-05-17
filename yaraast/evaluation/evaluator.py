@@ -63,6 +63,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Evaluate all rules in a YARA file."""
         results = {}
         self._rule_results = {}  # Track evaluated rule results for cross-references
+        self._rule_map = {rule.name: rule for rule in yara_file.rules}
+        self._evaluating_rules = set()
         self.context.modules = {}
 
         # Process imports
@@ -78,11 +80,39 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         # Evaluate each rule
         for rule in yara_file.rules:
-            result = self.evaluate_rule(rule)
+            result = self._evaluate_rule_by_name(rule.name)
             results[rule.name] = result
-            self._rule_results[rule.name] = result
 
         return results
+
+    def _evaluate_rule_by_name(self, rule_name: str) -> bool:
+        if rule_name in self._rule_results:
+            return bool(self._rule_results[rule_name])
+        if rule_name in self._evaluating_rules:
+            return False
+
+        rule = self._rule_map.get(rule_name)
+        if rule is None:
+            return False
+
+        saved_rule = self._current_rule
+        saved_context_matches = {
+            string_id: list(matches) for string_id, matches in self.context.string_matches.items()
+        }
+        saved_matcher_matches = {
+            string_id: list(matches) for string_id, matches in self.string_matcher.matches.items()
+        }
+
+        self._evaluating_rules.add(rule_name)
+        try:
+            result = self.evaluate_rule(rule)
+            self._rule_results[rule_name] = result
+            return result
+        finally:
+            self._evaluating_rules.discard(rule_name)
+            self._current_rule = saved_rule
+            self.context.string_matches = saved_context_matches
+            self.string_matcher.matches = saved_matcher_matches
 
     def evaluate_rule(self, rule: Rule) -> bool:
         """Evaluate a single rule."""
@@ -140,6 +170,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         # Check rule references (condition: other_rule)
         if hasattr(self, "_rule_results") and node.name in self._rule_results:
             return self._rule_results[node.name]
+        if hasattr(self, "_rule_map") and node.name in self._rule_map:
+            return self._evaluate_rule_by_name(node.name)
 
         # Unknown identifier evaluates to false (graceful handling)
         return False
