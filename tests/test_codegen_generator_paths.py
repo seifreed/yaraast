@@ -11,6 +11,7 @@ from yaraast.ast.expressions import (
     RangeExpression,
     StringCount,
     StringLiteral,
+    StringWildcard,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modifiers import RuleModifier
@@ -51,6 +52,13 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
     )
     assert gen.visit(for_of_literal_float) == "50% of them"
 
+    for_of_wildcard = ForOfExpression(
+        quantifier="any",
+        string_set=StringWildcard("$a*"),
+        condition=BooleanLiteral(True),
+    )
+    assert gen.visit(for_of_wildcard) == "for any of ($a*) : (true)"
+
     of_int = OfExpression(quantifier=3, string_set=Identifier("them"))
     assert gen.visit(of_int) == "3 of them"
 
@@ -62,6 +70,9 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
 
     of_list = OfExpression(quantifier=2, string_set=["$a", "$b"])
     assert gen.visit(of_list) == "2 of ($a, $b)"
+
+    of_wildcard = OfExpression(quantifier="any", string_set=StringWildcard("$a*"))
+    assert gen.visit(of_wildcard) == "any of ($a*)"
 
     of_raw_float = OfExpression(quantifier=0.5, string_set=Identifier("them"))
     assert gen.visit(of_raw_float) == "50% of them"

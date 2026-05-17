@@ -4,6 +4,10 @@ from __future__ import annotations
 
 
 def _render_string_set(gen, string_set) -> str:
+    from yaraast.ast.expressions import StringWildcard
+
+    if isinstance(string_set, StringWildcard):
+        return f"({gen.visit(string_set)})"
     if hasattr(string_set, "accept"):
         return gen.visit(string_set)
     if isinstance(string_set, list):
