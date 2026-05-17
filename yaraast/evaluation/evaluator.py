@@ -264,7 +264,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         if node.operator == "not":
             if is_yara_undefined(operand):
-                return False
+                return operand
             return not operand
         if node.operator == "-":
             if is_yara_undefined(operand):

@@ -210,6 +210,12 @@ def test_binary_unary_function_member_array_and_errors() -> None:
         is True
     )
     assert ev.visit_unary_expression(UnaryExpression("not", BooleanLiteral(False))) is True
+    assert (
+        ev.visit_unary_expression(
+            UnaryExpression("not", FunctionCall("uint8", [IntegerLiteral(4)]))
+        )
+        is YARA_UNDEFINED
+    )
     assert ev.visit_unary_expression(UnaryExpression("-", IntegerLiteral(2))) == -2
     assert ev.visit_unary_expression(UnaryExpression("~", IntegerLiteral(1))) == ~1
     assert ev.visit_parentheses_expression(ParenthesesExpression(BooleanLiteral(True))) is True
@@ -305,6 +311,25 @@ def test_builtin_integer_readers_return_undefined_outside_file() -> None:
         "invalid_integer_reader_comparison": False,
         "invalid_integer_reader_defined": False,
         "invalid_integer_reader_not_defined": True,
+    }
+
+
+def test_defined_not_undefined_reader_matches_libyara() -> None:
+    ast = Parser().parse("""
+        rule not_undefined_condition {
+            condition:
+                not uint8(filesize)
+        }
+
+        rule defined_not_undefined {
+            condition:
+                defined (not uint8(filesize))
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {
+        "not_undefined_condition": False,
+        "defined_not_undefined": False,
     }
 
 
