@@ -92,6 +92,13 @@ def test_lexer_regex_and_backslash_division_paths() -> None:
     assert not any(t.type == TokenType.DIVIDE for t in tokens2)
 
 
+def test_lexer_slash_after_expression_operand_is_division() -> None:
+    tokens = Lexer("rule r { condition: 4 / 2 == 2 and filesize / 2 >= 1 }").tokenize()
+
+    assert [token.type for token in tokens].count(TokenType.DIVIDE) == 2
+    assert not any(token.type == TokenType.REGEX for token in tokens)
+
+
 def test_lexer_skips_comments_inside_hex_string_and_reads_regex_modifiers() -> None:
     code = """
 rule r {
@@ -205,7 +212,7 @@ def test_lexer_context_helpers_cover_default_regex_and_comment_only_hex_cases() 
 
     lex3 = Lexer("/")
     lex3.tokens = [Token(TokenType.IDENTIFIER, "x", 1, 1)]
-    assert lex3._is_regex_context() is True
+    assert lex3._is_regex_context() is False
 
     lex3b = Lexer("/")
     lex3b.tokens = [

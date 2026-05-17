@@ -301,6 +301,17 @@ def test_builtin_integer_readers_return_undefined_outside_file() -> None:
     }
 
 
+def test_division_operator_parses_and_evaluates() -> None:
+    ast = Parser().parse("""
+        rule integer_division {
+            condition:
+                5 / 2 == 2 and filesize / 2 == 2
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abcd").evaluate_file(ast) == {"integer_division": True}
+
+
 def test_condition_paths_for_at_in_of_for_and_defined() -> None:
     ev = YaraEvaluator(data=b"00abcd00")
     rule = Rule(

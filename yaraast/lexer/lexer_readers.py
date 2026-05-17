@@ -206,6 +206,24 @@ def _read_prefixed_identifier(lexer, prefix: str, token_type: TokenType) -> Toke
 def is_regex_context(lexer) -> bool:
     if not lexer.tokens:
         return True
+    expression_end_tokens = {
+        TokenType.INTEGER,
+        TokenType.DOUBLE,
+        TokenType.STRING,
+        TokenType.HEX_STRING,
+        TokenType.REGEX,
+        TokenType.BOOLEAN_TRUE,
+        TokenType.BOOLEAN_FALSE,
+        TokenType.IDENTIFIER,
+        TokenType.STRING_IDENTIFIER,
+        TokenType.STRING_COUNT,
+        TokenType.STRING_OFFSET,
+        TokenType.STRING_LENGTH,
+        TokenType.FILESIZE,
+        TokenType.ENTRYPOINT,
+        TokenType.RPAREN,
+        TokenType.RBRACKET,
+    }
     i = len(lexer.tokens) - 1
     while i >= 0:
         token = lexer.tokens[i]
@@ -224,7 +242,7 @@ def is_regex_context(lexer) -> bool:
         if token.type == TokenType.CONDITION:
             return True
         if token.type not in (TokenType.NEWLINE, TokenType.COMMENT):
-            if token.type in (TokenType.RPAREN, TokenType.RBRACKET):
+            if token.type in expression_end_tokens:
                 return False
             break
         i -= 1
