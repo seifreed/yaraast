@@ -109,6 +109,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "md5": ("s", [("offset", "i"), ("size", "i")]),
             "sha1": ("s", [("offset", "i"), ("size", "i")]),
             "sha256": ("s", [("offset", "i"), ("size", "i")]),
+            "checksum32": ("i", [("offset", "i"), ("size", "i")]),
             "crc32": ("i", [("offset", "i"), ("size", "i")]),
         },
     },

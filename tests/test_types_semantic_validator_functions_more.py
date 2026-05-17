@@ -82,6 +82,19 @@ def test_function_validator_sorts_available_functions_in_suggestions() -> None:
     assert result.errors[0].suggestion == "Available functions: alpha, zeta"
 
 
+def test_function_validator_accepts_hash_checksum32_function() -> None:
+    result = ValidationResult()
+    env = TypeEnvironment()
+    env.add_module("hash")
+
+    FunctionCallValidator(result, env).visit(
+        FunctionCall(function="hash.checksum32", arguments=[IntegerLiteral(0), IntegerLiteral(1)])
+    )
+
+    assert result.is_valid is True
+    assert result.errors == []
+
+
 def test_function_validator_branches_for_arity_and_missing_actual_module_name() -> None:
     result = ValidationResult()
     validator = FunctionCallValidator(result, BrokenEnv())

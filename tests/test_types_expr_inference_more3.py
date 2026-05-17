@@ -195,6 +195,19 @@ def test_expr_inference_validates_module_function_argument_types() -> None:
     )
 
 
+def test_expr_inference_accepts_hash_checksum32_function() -> None:
+    env = TypeEnvironment()
+    env.add_module("hash")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(
+        FunctionCall(function="hash.checksum32", arguments=[IntegerLiteral(0), IntegerLiteral(1)])
+    )
+
+    assert isinstance(out, IntegerType)
+    assert inf.errors == []
+
+
 def test_expr_inference_validates_builtin_reader_offset_type() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)
