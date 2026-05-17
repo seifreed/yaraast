@@ -339,36 +339,7 @@ class ExpressionOptimizer(ASTTransformer):
 
     def visit_set_expression(self, node: Any) -> Any:
         if hasattr(node, "elements"):
-            # Optimize elements first
             node.elements = [self.visit(elem) for elem in node.elements]
-
-            # Remove duplicates from integer literals
-            seen = set()
-            unique_elements = []
-            duplicates_removed = 0
-
-            for elem in node.elements:
-                # Create a hashable representation for comparison
-                if isinstance(elem, IntegerLiteral):
-                    key = ("int", elem.value)
-                elif isinstance(elem, BooleanLiteral):
-                    key = ("bool", elem.value)
-                elif hasattr(elem, "name"):
-                    key = ("name", elem.name)
-                else:
-                    # For other types, keep them all (can't easily detect duplicates)
-                    unique_elements.append(elem)
-                    continue
-
-                if key not in seen:
-                    seen.add(key)
-                    unique_elements.append(elem)
-                else:
-                    duplicates_removed += 1
-
-            if duplicates_removed > 0:
-                self.optimization_count += duplicates_removed
-                node.elements = unique_elements
 
         return node
 

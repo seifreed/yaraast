@@ -185,12 +185,12 @@ rule range_test {
     assert stats["expression_optimizations"] > 0
 
 
-def test_set_expression_optimization() -> None:
-    """Test set expression optimization."""
+def test_set_expression_duplicates_are_preserved() -> None:
+    """Set duplicates are semantic for for-in quantifiers."""
     yara_code = """
 rule set_test {
     condition:
-        any of (1, 2, 1, 3, 2, 3)  // Duplicates should be removed
+        for 2 i in (1, 1) : (i == 1)
 }
 """
 
@@ -198,10 +198,12 @@ rule set_test {
     ast = parser.parse(yara_code)
 
     optimizer = ExpressionOptimizer()
-    _, count = optimizer.optimize(ast)
+    optimized, count = optimizer.optimize(ast)
 
-    # Should remove duplicates
-    assert count > 0
+    output = CodeGenerator().generate(optimized)
+
+    assert count == 0
+    assert "(1, 1)" in output
 
 
 if __name__ == "__main__":
@@ -211,5 +213,5 @@ if __name__ == "__main__":
     test_comprehensive_optimization()
     test_nested_expression_optimization()
     test_range_optimization()
-    test_set_expression_optimization()
+    test_set_expression_duplicates_are_preserved()
     print("✓ All optimization tests passed")

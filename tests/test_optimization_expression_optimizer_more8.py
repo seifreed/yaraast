@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.conditions import ForExpression, ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
@@ -181,7 +181,7 @@ def test_unary_parentheses_and_convenience_function() -> None:
     assert optimize_expression(expr) == BooleanLiteral(False)
 
 
-def test_visit_collection_and_access_nodes_and_set_dedup() -> None:
+def test_visit_collection_and_access_nodes_preserves_set_duplicates() -> None:
     opt = ExpressionOptimizer()
 
     arr = ArrayAccess(array=Identifier("arr"), index=IntegerLiteral(1))
@@ -215,13 +215,29 @@ def test_visit_collection_and_access_nodes_and_set_dedup() -> None:
         ]
     )
     out_set = opt.visit_set_expression(aset)
-    assert len(out_set.elements) == 5
-    assert opt.optimization_count >= 3
+    assert len(out_set.elements) == 8
+    assert opt.optimization_count == 0
 
     unique_set = SetExpression(elements=[IntegerLiteral(1), BooleanLiteral(False), Identifier("b")])
     untouched = opt.visit_set_expression(unique_set)
     assert untouched is unique_set
     assert len(untouched.elements) == 3
+
+
+def test_for_expression_duplicate_iterable_values_are_semantic() -> None:
+    opt = ExpressionOptimizer()
+    expr = ForExpression(
+        quantifier=2,
+        variable="i",
+        iterable=SetExpression([IntegerLiteral(1), IntegerLiteral(1)]),
+        body=BinaryExpression(Identifier("i"), "==", IntegerLiteral(1)),
+    )
+
+    optimized = opt.visit_for_expression(expr)
+
+    assert isinstance(optimized.iterable, SetExpression)
+    assert optimized.iterable.elements == [IntegerLiteral(1), IntegerLiteral(1)]
+    assert opt.optimization_count == 0
 
 
 def test_string_offset_and_length_indexes_are_optimized() -> None:
