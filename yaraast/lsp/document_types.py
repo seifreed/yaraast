@@ -24,6 +24,14 @@ def _required_symbol_string(data: dict[str, Any], key: str) -> str:
     return value
 
 
+def _required_position_int(data: dict[str, Any], key: str) -> int:
+    value = data.get(key)
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    msg = f"SymbolRecord range {key} must be a non-negative integer"
+    raise ValueError(msg)
+
+
 def uri_to_path(uri: str) -> Path | None:
     if uri.startswith("file://"):
         parsed = urlparse(uri)
@@ -105,12 +113,12 @@ class SymbolRecord:
             uri=_required_symbol_string(data, "uri"),
             range=Range(
                 start=Position(
-                    line=int(start.get("line", 0)),
-                    character=int(start.get("character", 0)),
+                    line=_required_position_int(start, "line"),
+                    character=_required_position_int(start, "character"),
                 ),
                 end=Position(
-                    line=int(end.get("line", 0)),
-                    character=int(end.get("character", 0)),
+                    line=_required_position_int(end, "line"),
+                    character=_required_position_int(end, "character"),
                 ),
             ),
             container_name=container_name if isinstance(container_name, str) else None,

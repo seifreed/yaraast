@@ -168,6 +168,61 @@ def test_workspace_index_skips_malformed_cached_symbols(tmp_path: Path) -> None:
     assert [symbol.name for symbol in index.search_records("")] == ["good"]
 
 
+def test_workspace_index_skips_cached_symbols_with_invalid_position_scalars(
+    tmp_path: Path,
+) -> None:
+    cache_dir = tmp_path / ".yaraast"
+    cache_dir.mkdir()
+    cache_file = cache_dir / "lsp-workspace-index.json"
+    cache_file.write_text(
+        """
+{
+  "symbols": {
+    "file:///bool.yar": [
+      {
+        "name": "bool_pos",
+        "kind": "rule",
+        "uri": "file:///bool.yar",
+        "range": {
+          "start": {"line": true, "character": 0},
+          "end": {"line": 0, "character": 3}
+        }
+      }
+    ],
+    "file:///negative.yar": [
+      {
+        "name": "negative_pos",
+        "kind": "rule",
+        "uri": "file:///negative.yar",
+        "range": {
+          "start": {"line": -1, "character": 0},
+          "end": {"line": 0, "character": 3}
+        }
+      }
+    ],
+    "file:///good.yar": [
+      {
+        "name": "good",
+        "kind": "rule",
+        "uri": "file:///good.yar",
+        "range": {
+          "start": {"line": 0, "character": 0},
+          "end": {"line": 0, "character": 4}
+        }
+      }
+    ]
+  }
+}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
+
+    assert [symbol.name for symbol in index.search_records("")] == ["good"]
+
+
 def test_workspace_index_ignores_non_object_cache_payload(tmp_path: Path) -> None:
     cache_dir = tmp_path / ".yaraast"
     cache_dir.mkdir()
