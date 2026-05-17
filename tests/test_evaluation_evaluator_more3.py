@@ -561,6 +561,15 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
         ev.visit_of_expression(
             OfExpression(
                 quantifier=IntegerLiteral(value=0),
+                string_set=SetExpression([StringLiteral("$b")]),
+            )
+        )
+        is True
+    )
+    assert (
+        ev.visit_of_expression(
+            OfExpression(
+                quantifier=IntegerLiteral(value=0),
                 string_set=SetExpression([StringLiteral("$a")]),
             )
         )
@@ -611,6 +620,13 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
 
     assert ev.visit_regex_literal(SimpleNamespace(pattern="ab.*")) == "ab.*"
     assert ev.visit_module_reference(SimpleNamespace()) is None
+
+
+def test_zero_of_matches_libyara_none_semantics() -> None:
+    ast = Parser().parse('rule r { strings: $a = "A" condition: 0 of them }')
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"r": True}
+    assert YaraEvaluator(data=b"A").evaluate_file(ast) == {"r": False}
 
 
 def test_for_of_and_module_reference_paths() -> None:
