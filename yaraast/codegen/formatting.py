@@ -4,6 +4,43 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
+
+
+def _coerce_enum[EnumT: Enum](enum_type: type[EnumT], value: object, default: EnumT) -> EnumT:
+    try:
+        return enum_type(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _coerce_bool(value: object, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    return default
+
+
+def _coerce_int(value: object, default: int, *, minimum: int | None = None) -> int:
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        result = value
+    elif isinstance(value, str):
+        try:
+            result = int(value)
+        except ValueError:
+            return default
+    else:
+        return default
+    if minimum is not None:
+        return max(minimum, result)
+    return result
+
+
+def _coerce_section_order(value: object, default: list[str]) -> list[str]:
+    if isinstance(value, list) and all(isinstance(section, str) for section in value):
+        return list(value)
+    return default
 
 
 class IndentStyle(Enum):
@@ -81,7 +118,7 @@ class FormattingConfig:
     preserve_comments: bool = True
     comment_style: str = "//"  # or "/*"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         """Convert config to dictionary."""
         return {
             "indent_style": self.indent_style.value,
@@ -108,52 +145,82 @@ class FormattingConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> FormattingConfig:
+    def from_dict(cls, data: dict[str, Any]) -> FormattingConfig:
         """Create config from dictionary."""
         config = cls()
 
         if "indent_style" in data:
-            config.indent_style = IndentStyle(data["indent_style"])
+            config.indent_style = _coerce_enum(
+                IndentStyle, data["indent_style"], config.indent_style
+            )
         if "indent_size" in data:
-            config.indent_size = data["indent_size"]
+            config.indent_size = _coerce_int(data["indent_size"], config.indent_size, minimum=0)
         if "brace_style" in data:
-            config.brace_style = BraceStyle(data["brace_style"])
+            config.brace_style = _coerce_enum(BraceStyle, data["brace_style"], config.brace_style)
         if "space_before_colon" in data:
-            config.space_before_colon = data["space_before_colon"]
+            config.space_before_colon = _coerce_bool(
+                data["space_before_colon"], config.space_before_colon
+            )
         if "space_after_colon" in data:
-            config.space_after_colon = data["space_after_colon"]
+            config.space_after_colon = _coerce_bool(
+                data["space_after_colon"], config.space_after_colon
+            )
         if "space_around_operators" in data:
-            config.space_around_operators = data["space_around_operators"]
+            config.space_around_operators = _coerce_bool(
+                data["space_around_operators"], config.space_around_operators
+            )
         if "space_after_comma" in data:
-            config.space_after_comma = data["space_after_comma"]
+            config.space_after_comma = _coerce_bool(
+                data["space_after_comma"], config.space_after_comma
+            )
         if "string_style" in data:
-            config.string_style = StringStyle(data["string_style"])
+            config.string_style = _coerce_enum(
+                StringStyle, data["string_style"], config.string_style
+            )
         if "align_string_modifiers" in data:
-            config.align_string_modifiers = data["align_string_modifiers"]
+            config.align_string_modifiers = _coerce_bool(
+                data["align_string_modifiers"], config.align_string_modifiers
+            )
         if "hex_style" in data:
-            config.hex_style = HexStyle(data["hex_style"])
+            config.hex_style = _coerce_enum(HexStyle, data["hex_style"], config.hex_style)
         if "hex_group_size" in data:
-            config.hex_group_size = data["hex_group_size"]
+            config.hex_group_size = _coerce_int(
+                data["hex_group_size"], config.hex_group_size, minimum=0
+            )
         if "blank_lines_between_rules" in data:
-            config.blank_lines_between_rules = data["blank_lines_between_rules"]
+            config.blank_lines_between_rules = _coerce_int(
+                data["blank_lines_between_rules"], config.blank_lines_between_rules, minimum=0
+            )
         if "blank_lines_between_sections" in data:
-            config.blank_lines_between_sections = data["blank_lines_between_sections"]
+            config.blank_lines_between_sections = _coerce_int(
+                data["blank_lines_between_sections"],
+                config.blank_lines_between_sections,
+                minimum=0,
+            )
         if "max_line_length" in data:
-            config.max_line_length = data["max_line_length"]
+            config.max_line_length = _coerce_int(
+                data["max_line_length"], config.max_line_length, minimum=1
+            )
         if "sort_imports" in data:
-            config.sort_imports = data["sort_imports"]
+            config.sort_imports = _coerce_bool(data["sort_imports"], config.sort_imports)
         if "sort_rules" in data:
-            config.sort_rules = data["sort_rules"]
+            config.sort_rules = _coerce_bool(data["sort_rules"], config.sort_rules)
         if "sort_meta" in data:
-            config.sort_meta = data["sort_meta"]
+            config.sort_meta = _coerce_bool(data["sort_meta"], config.sort_meta)
         if "sort_strings" in data:
-            config.sort_strings = data["sort_strings"]
+            config.sort_strings = _coerce_bool(data["sort_strings"], config.sort_strings)
         if "section_order" in data:
-            config.section_order = data["section_order"]
+            config.section_order = _coerce_section_order(
+                data["section_order"], config.section_order
+            )
         if "preserve_comments" in data:
-            config.preserve_comments = data["preserve_comments"]
+            config.preserve_comments = _coerce_bool(
+                data["preserve_comments"], config.preserve_comments
+            )
         if "comment_style" in data:
-            config.comment_style = data["comment_style"]
+            comment_style = data["comment_style"]
+            if isinstance(comment_style, str):
+                config.comment_style = comment_style
 
         return config
 

@@ -52,6 +52,17 @@ def test_formatting_uses_runtime_code_formatting_config() -> None:
     assert "{\n" in formatted
 
 
+def test_formatting_ignores_invalid_runtime_enum_config() -> None:
+    runtime = LspRuntime()
+    runtime.update_config({"YARA": {"codeFormatting": {"brace_style": "diagonal"}}})
+    provider = FormattingProvider(runtime)
+
+    edits = provider.format_document("rule a { condition: true }", "file:///sample.yar")
+
+    assert edits
+    assert "rule a" in edits[0].new_text
+
+
 def test_formatting_range_formats_enclosing_rule_only() -> None:
     runtime = LspRuntime()
     provider = FormattingProvider(runtime)
