@@ -42,6 +42,9 @@ def _string_set_item_text(item: Any, formatter: Any, depth: int) -> str:
     name = getattr(item, "name", None)
     if name is not None:
         return str(name)
+    raw_value = getattr(item, "value", None)
+    if raw_value is not None:
+        return str(raw_value)
     if hasattr(item, "accept"):
         return formatter.format_expression(item, depth)
     return _node_text(item, str(item))
@@ -403,6 +406,10 @@ class ExpressionStringFormatter:
             inner = getattr(string_set, "expression", None)
             if inner is not None and inner.__class__.__name__ == "StringWildcard":
                 return self._format_string_wildcard(inner)
+            if inner is not None and inner.__class__.__name__ == "SetExpression":
+                return self._format_set_expression(inner, depth)
+            if inner is not None and hasattr(inner, "value"):
+                return str(inner.value)
             return self.format_expression(string_set, depth)
         if s_class == "SetExpression":
             return self._format_set_expression(string_set, depth)
@@ -417,10 +424,7 @@ class ExpressionStringFormatter:
 
         elements: list[str] = []
         for el in string_set.elements[:5]:
-            if hasattr(el, "name"):
-                elements.append(el.name)
-            else:
-                elements.append(self.format_expression(el, depth + 1))
+            elements.append(_string_set_item_text(el, self, depth + 1))
 
         if len(string_set.elements) > 5:
             elements.append("...")

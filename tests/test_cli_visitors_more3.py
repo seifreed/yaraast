@@ -12,6 +12,8 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     IntegerLiteral,
+    ParenthesesExpression,
+    SetExpression,
     StringCount,
     StringIdentifier,
     StringLength,
@@ -141,6 +143,19 @@ def test_condition_formatter_handles_parsed_of_literals() -> None:
             0,
         )
         == "($a, $b*)"
+    )
+    literal_set = OfExpression(
+        quantifier="any",
+        string_set=SetExpression([StringLiteral("$a"), StringLiteral("$b*")]),
+    )
+    assert ConditionStringFormatter().format_condition(literal_set) == "any of ($a, $b*)"
+    parenthesized_literal_set = OfExpression(
+        quantifier="any",
+        string_set=ParenthesesExpression(SetExpression([StringLiteral("$a")])),
+    )
+    assert (
+        ExpressionStringFormatter()._format_of_expression(parenthesized_literal_set, 0)
+        == "any of ($a)"
     )
 
     wildcard_ast = Parser().parse('rule r { strings: $a = "a" condition: any of ($a*) }')
