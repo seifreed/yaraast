@@ -199,6 +199,29 @@ def test_expr_inference_validates_builtin_reader_offset_type() -> None:
     )
 
 
+def test_expr_inference_visits_unresolved_function_arguments() -> None:
+    for function_name in ("unknown", "pe.unknown"):
+        env = TypeEnvironment()
+        env.add_module("pe")
+        inf = ExpressionTypeInference(env)
+
+        out = inf.infer(
+            FunctionCall(
+                function=function_name,
+                arguments=[
+                    BinaryExpression(
+                        left=StringLiteral("bad"),
+                        operator="+",
+                        right=IntegerLiteral(1),
+                    ),
+                ],
+            ),
+        )
+
+        assert isinstance(out, UnknownType)
+        assert any("Left operand of '+' must be numeric, got string" in e for e in inf.errors)
+
+
 def test_expr_inference_at_in_and_of_error_paths() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)

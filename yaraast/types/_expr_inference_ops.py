@@ -207,6 +207,7 @@ def infer_function_call(ctx, node: FunctionCall):
                         )
                         return func_def.return_type
                     ctx.errors.append(f"Module '{actual_module}' has no function '{func_name}'")
+                    _visit_function_arguments(ctx, node.arguments)
                     return UnknownType()
 
     if node.function in BUILTIN_INT_FUNCTIONS_1ARG:
@@ -220,6 +221,7 @@ def infer_function_call(ctx, node: FunctionCall):
         )
         return IntegerType()
 
+    _visit_function_arguments(ctx, node.arguments)
     return UnknownType()
 
 
@@ -232,6 +234,11 @@ def _validate_function_argument_types(ctx, func_name: str, parameters, arguments
             ctx.errors.append(
                 f"Argument '{param_name}' to function '{func_name}' must be {param_type}, got {arg_type}"
             )
+
+
+def _visit_function_arguments(ctx, arguments) -> None:
+    for argument in arguments:
+        ctx.visit(argument)
 
 
 def infer_member_access(ctx, node: MemberAccess):
