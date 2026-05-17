@@ -54,6 +54,19 @@ def _pool_parameter_value(transformer, value: Any) -> Any:
         return pooled_value(transformer.string_pool, value)
     if hasattr(value, "accept"):
         return transformer.visit(value)
+    if isinstance(value, list):
+        return [_pool_parameter_value(transformer, item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_pool_parameter_value(transformer, item) for item in value)
+    if isinstance(value, set):
+        return {_pool_parameter_value(transformer, item) for item in value}
+    if isinstance(value, frozenset):
+        return frozenset(_pool_parameter_value(transformer, item) for item in value)
+    if isinstance(value, dict):
+        return {
+            _pool_parameter_value(transformer, key): _pool_parameter_value(transformer, item)
+            for key, item in value.items()
+        }
     return value
 
 

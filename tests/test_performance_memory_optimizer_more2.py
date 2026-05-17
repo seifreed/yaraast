@@ -232,3 +232,36 @@ def test_memory_optimizer_copies_literal_metadata() -> None:
     assert optimized_boolean.trailing_comment is not boolean.trailing_comment
     optimized_boolean.trailing_comment.text = "changed"
     assert boolean.trailing_comment.text == "boolean tail"
+
+
+def test_memory_optimizer_copies_nested_pragma_parameters() -> None:
+    transformer = MemoryOptimizerTransformer({}, aggressive=False)
+    pragma = CustomPragma(
+        "vendor",
+        parameters={
+            "nested": ["same", StringLiteral("same")],
+            "options": {"mode": "same"},
+        },
+    )
+
+    optimized = transformer.visit_pragma(pragma)
+    assert isinstance(optimized, CustomPragma)
+
+    optimized_nested = optimized.parameters["nested"]
+    original_nested = pragma.parameters["nested"]
+    assert isinstance(optimized_nested, list)
+    assert isinstance(original_nested, list)
+    assert optimized_nested is not original_nested
+    assert optimized_nested[1] is not original_nested[1]
+    assert isinstance(optimized_nested[1], StringLiteral)
+    optimized_nested[1].value = "changed"
+    assert isinstance(original_nested[1], StringLiteral)
+    assert original_nested[1].value == "same"
+
+    optimized_options = optimized.parameters["options"]
+    original_options = pragma.parameters["options"]
+    assert isinstance(optimized_options, dict)
+    assert isinstance(original_options, dict)
+    assert optimized_options is not original_options
+    optimized_options["mode"] = "changed"
+    assert original_options["mode"] == "same"
