@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-from lsprotocol.types import Location, TextEdit
+from lsprotocol.types import Location, Position, Range, TextEdit
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.expressions import (
@@ -50,9 +50,7 @@ def collect_string_reference_locations_from_ast(
             node_location = getattr(node, "location", None)
             if node_location is None:
                 return None
-            locations.append(
-                Location(uri=ctx.uri, range=location_to_range(node_location, ctx.text))
-            )
+            locations.append(Location(uri=ctx.uri, range=string_reference_range(node, ctx.text)))
     if not saw_supported_node and definition is not None:
         return locations
     if not saw_supported_node:
@@ -127,7 +125,7 @@ def build_string_rename_edits_from_ast(
                 return None
             edits.append(
                 TextEdit(
-                    range=location_to_range(node_location, ctx.text),
+                    range=string_reference_range(node, ctx.text),
                     new_text=string_reference_replacement(node, replacement),
                 )
             )
@@ -167,3 +165,41 @@ def string_reference_replacement(node: ASTNode, replacement: str) -> str:
     if isinstance(node, StringLength):
         return f"!{suffix}"
     return replacement
+
+
+def string_reference_range(node: ASTNode, source_text: str) -> Range:
+    location = getattr(node, "location", None)
+    if location is None:
+        msg = "String reference node has no source location"
+        raise ValueError(msg)
+    full_range = location_to_range(location, source_text)
+    if isinstance(node, StringIdentifier):
+        return full_range
+    if isinstance(node, StringCount | StringOffset | StringLength):
+        suffix = node.string_id[1:] if node.string_id.startswith("$") else node.string_id
+        start_character = _prefixed_reference_start_character(
+            source_text,
+            full_range.start.line,
+            full_range.start.character,
+        )
+        return Range(
+            start=Position(line=full_range.start.line, character=start_character),
+            end=Position(
+                line=full_range.start.line,
+                character=start_character + 1 + len(suffix),
+            ),
+        )
+    return full_range
+
+
+def _prefixed_reference_start_character(
+    source_text: str,
+    line_index: int,
+    character: int,
+) -> int:
+    lines = source_text.split("\n")
+    if 0 <= line_index < len(lines):
+        line = lines[line_index]
+        if 0 < character <= len(line) and line[character - 1] in "#@!":
+            return character - 1
+    return character

@@ -167,6 +167,27 @@ rule a {
     assert any(change.new_text == "!renamed" for change in changes)
 
 
+def test_rename_string_offset_and_length_preserves_index() -> None:
+    text = """
+rule a {
+  strings:
+    $a = "x"
+  condition:
+    @a[1] > 0 and !a[1] > 0
+}
+""".lstrip()
+    provider = RenameProvider()
+    edit = provider.rename(text, _pos(4, 5), "b", "file://test.yar")
+
+    assert edit is not None
+    edited = _apply_text_edits(text, _first_change_set(edit))
+
+    assert "@b[1] > 0" in edited
+    assert "!b[1] > 0" in edited
+    assert "@b > 0" not in edited
+    assert "!b > 0" not in edited
+
+
 def test_rename_rule_cross_file_with_runtime(tmp_path: Path) -> None:
     from yaraast.lsp.runtime import LspRuntime, path_to_uri
 
@@ -195,3 +216,17 @@ rule local_rule {
     assert all(
         change.new_text == "renamed_rule" for edits in edit.changes.values() for change in edits
     )
+
+
+def _apply_text_edits(text: str, edits: list[TextEdit]) -> str:
+    lines = text.splitlines(keepends=True)
+
+    def offset(position: Position) -> int:
+        return sum(len(line) for line in lines[: position.line]) + position.character
+
+    updated = text
+    for edit in sorted(edits, key=lambda item: offset(item.range.start), reverse=True):
+        start = offset(edit.range.start)
+        end = offset(edit.range.end)
+        updated = f"{updated[:start]}{edit.new_text}{updated[end:]}"
+    return updated
