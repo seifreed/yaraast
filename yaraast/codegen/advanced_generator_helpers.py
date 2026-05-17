@@ -60,6 +60,8 @@ def format_hex_string(node: HexString, config) -> str:
     for token in node.tokens:
         if isinstance(token, HexByte):
             parts.append(_format_hex_byte_value(token.value, config))
+        elif isinstance(token, HexNegatedByte):
+            parts.append(format_hex_token(token, config))
         elif isinstance(token, HexWildcard):
             parts.append("??")
         elif isinstance(token, HexJump):
