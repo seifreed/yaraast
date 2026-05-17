@@ -31,6 +31,10 @@ if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
 
 
+def _is_evaluation_int(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
 @dataclass
 class EvaluationContext:
     """Context for evaluating YARA conditions."""
@@ -222,7 +226,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if index_node is None:
             return 0
         index = self.visit(index_node)
-        return index - 1 if isinstance(index, int) else -1
+        return index - 1 if _is_evaluation_int(index) else -1
 
     def visit_binary_expression(self, node: BinaryExpression) -> Any:
         """Evaluate binary expression."""
@@ -271,15 +275,17 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if node.operator == "-":
             if is_yara_undefined(operand):
                 return operand
-            if isinstance(operand, int):
+            if _is_evaluation_int(operand):
                 return normalize_int64(-operand)
-            return -operand
+            if isinstance(operand, float):
+                return -operand
+            return YARA_UNDEFINED
         if node.operator == "~":
             if is_yara_undefined(operand):
                 return operand
-            if isinstance(operand, int):
+            if _is_evaluation_int(operand):
                 return normalize_int64(~operand)
-            return ~operand
+            return YARA_UNDEFINED
         msg = f"Unknown unary operator: {node.operator}"
         raise EvaluationError(msg)
 
@@ -297,7 +303,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         high = self.visit(node.high)
         if is_yara_undefined(low) or is_yara_undefined(high):
             return YARA_UNDEFINED
-        if not isinstance(low, int) or not isinstance(high, int):
+        if not _is_evaluation_int(low) or not _is_evaluation_int(high):
             return YARA_UNDEFINED
         if high < low:
             return YARA_UNDEFINED
@@ -315,7 +321,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 msg = f"{node.function}() expects exactly 1 argument"
                 raise EvaluationError(msg)
             offset = args[0]
-            if not isinstance(offset, int):
+            if not _is_evaluation_int(offset):
                 msg = f"{node.function}() offset must be an integer"
                 raise EvaluationError(msg)
             return reader(self.data, offset)
@@ -540,6 +546,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
     def visit_at_expression(self, node: AtExpression) -> bool:
         """Evaluate 'at' expression."""
         offset = self.visit(node.offset)
+        if not _is_evaluation_int(offset):
+            return False
         return self.string_matcher.string_at(self._normalize_string_id(node.string_id), offset)
 
     def visit_in_expression(self, node: InExpression) -> bool:
@@ -597,7 +605,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return matched > 0
             if quantifier == "none":
                 return matched == 0
-        elif isinstance(quantifier, int):
+        elif _is_evaluation_int(quantifier):
             if quantifier < 0:
                 return False
             if quantifier == 0:
@@ -642,7 +650,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return true_count > 0
             if quantifier == "none":
                 return true_count == 0
-        elif isinstance(quantifier, int):
+        elif _is_evaluation_int(quantifier):
             if quantifier < 0:
                 return False
             if quantifier == 0:
@@ -851,7 +859,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return matches > 0
             if quantifier == "none":
                 return matches == 0
-        elif isinstance(quantifier, int):
+        elif _is_evaluation_int(quantifier):
             if quantifier < 0:
                 return False
             if quantifier == 0:

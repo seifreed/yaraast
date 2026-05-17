@@ -333,6 +333,33 @@ def test_binary_unary_function_member_array_and_errors() -> None:
         ev.visit_unary_expression(UnaryExpression("!", IntegerLiteral(1)))
 
 
+def test_evaluator_does_not_treat_boolean_results_as_integers() -> None:
+    ev = YaraEvaluator(data=b"\x01\x02\x03\x04")
+
+    assert ev.visit_unary_expression(UnaryExpression("-", BooleanLiteral(True))) is YARA_UNDEFINED
+    assert ev.visit_unary_expression(UnaryExpression("~", BooleanLiteral(False))) is YARA_UNDEFINED
+    assert (
+        ev.visit_range_expression(RangeExpression(BooleanLiteral(False), IntegerLiteral(2)))
+        is YARA_UNDEFINED
+    )
+
+    with pytest.raises(EvaluationError, match=r"uint8\(\) offset must be an integer"):
+        ev.visit_function_call(FunctionCall("uint8", [BooleanLiteral(True)]))
+
+    string_eval = YaraEvaluator(data=b"xab")
+    string_eval.evaluate_rule(
+        Rule(
+            name="boolean_index",
+            strings=[PlainString("$a", value="ab")],
+            condition=BooleanLiteral(True),
+        )
+    )
+    assert (
+        string_eval.visit_string_offset(StringOffset("$a", BooleanLiteral(True))) is YARA_UNDEFINED
+    )
+    assert string_eval.visit_at_expression(AtExpression("$a", BooleanLiteral(True))) is False
+
+
 def test_evaluator_uint8be_and_int8be_match_registered_builtin_functions() -> None:
     ast = Parser().parse("""
         rule byte_endian_aliases {
@@ -732,6 +759,20 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
         body=BooleanLiteral(value=False),
     )
     assert ev.visit_for_expression(for_zero_no_matches) is True
+
+    bool_for = ForExpression(
+        quantifier=BooleanLiteral(True),
+        variable="i",
+        iterable=SetExpression([IntegerLiteral(1)]),
+        body=BooleanLiteral(True),
+    )
+    assert ev.visit_for_expression(bool_for) is False
+
+    bool_of = OfExpression(
+        quantifier=BooleanLiteral(True),
+        string_set=SetExpression([StringLiteral("$a")]),
+    )
+    assert ev.visit_of_expression(bool_of) is False
 
     ev._current_rule = rule
     assert (
