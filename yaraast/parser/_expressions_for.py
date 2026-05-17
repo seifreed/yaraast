@@ -90,10 +90,13 @@ class ExpressionForMixin:
     ) -> ForOfExpression:
         """Parse for...of expression."""
         start_token = start_token or self._peek()
-        string_set = self._parse_expression()
+        string_set = self._parse_of_string_set()
 
         condition = None
-        if self._match(TokenType.COLON) and self._match(TokenType.LPAREN):
+        if self._match(TokenType.COLON):
+            if not self._match(TokenType.LPAREN):
+                msg = "Expected '(' after ':'"
+                raise ParserError(msg, self._peek())
             condition = self._parse_expression()
             if not self._match(TokenType.RPAREN):
                 msg = "Expected ')' after condition"

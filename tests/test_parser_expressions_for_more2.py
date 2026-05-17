@@ -5,7 +5,14 @@ from __future__ import annotations
 import pytest
 
 from yaraast.ast.conditions import ForExpression, ForOfExpression
-from yaraast.ast.expressions import ArrayAccess, FunctionCall, MemberAccess, StringLiteral
+from yaraast.ast.expressions import (
+    ArrayAccess,
+    BinaryExpression,
+    BooleanLiteral,
+    FunctionCall,
+    MemberAccess,
+    StringLiteral,
+)
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.lexer import Lexer
 from yaraast.parser._shared import ParserError
@@ -54,6 +61,21 @@ def test_parse_for_expression_success_and_error_paths() -> None:
         _expr_parser("any i in 1 : ( true")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected '\\)' after condition"):
         _expr_parser("any of them : ( true")._parse_for_expression()
+    with pytest.raises(ParserError, match="Expected '\\(' after ':'"):
+        _expr_parser("any of them : true")._parse_for_expression()
+    with pytest.raises(ParserError, match="Expected '\\(' after ':'"):
+        _expr_parser("any of them :")._parse_for_expression()
+
+
+def test_parse_for_of_does_not_consume_outer_boolean_expression() -> None:
+    ast = Parser().parse('rule r { strings: $a = "a" condition: for any of them and true }')
+    condition = ast.rules[0].condition
+
+    assert isinstance(condition, BinaryExpression)
+    assert condition.operator == "and"
+    assert isinstance(condition.left, ForOfExpression)
+    assert isinstance(condition.right, BooleanLiteral)
+    assert condition.right.value is True
 
 
 def test_parse_of_string_set_and_function_name_resolution_paths() -> None:
