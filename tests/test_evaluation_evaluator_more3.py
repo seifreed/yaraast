@@ -40,6 +40,21 @@ from yaraast.ast.strings import PlainString
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.parser import Parser
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    DictExpression,
+    DictItem,
+    ListExpression,
+    MatchCase,
+    PatternMatch,
+    SliceExpression,
+    SpreadOperator,
+    TupleExpression,
+    TupleIndexing,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 def test_identifier_and_literal_paths() -> None:
@@ -676,3 +691,117 @@ def test_parser_numeric_for_quantifier_evaluates_as_integer() -> None:
     ast = Parser().parse("rule r { condition: for 2 i in (1,2,3) : (i > 1) }")
 
     assert YaraEvaluator().evaluate_file(ast) == {"r": True}
+
+
+def test_evaluator_evaluates_yarax_collection_literals_and_indexing() -> None:
+    ev = YaraEvaluator()
+    ev.context.variables["tail"] = [2, 3]
+    ev.context.variables["rest"] = {"b": 2}
+
+    assert ev.visit(ListExpression([IntegerLiteral(1), SpreadOperator(Identifier("tail"))])) == [
+        1,
+        2,
+        3,
+    ]
+    assert ev.visit(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)])) == (1, 2)
+    assert ev.visit(
+        DictExpression(
+            [
+                DictItem(StringLiteral("a"), IntegerLiteral(1)),
+                DictItem(
+                    StringLiteral("__spread__"),
+                    SpreadOperator(Identifier("rest"), is_dict=True),
+                ),
+            ]
+        )
+    ) == {"a": 1, "b": 2}
+    assert (
+        ev.visit(
+            TupleIndexing(
+                TupleExpression([StringLiteral("a"), StringLiteral("b")]),
+                IntegerLiteral(1),
+            )
+        )
+        == "b"
+    )
+    assert ev.visit(
+        SliceExpression(
+            target=ListExpression([IntegerLiteral(1), IntegerLiteral(2), IntegerLiteral(3)]),
+            start=IntegerLiteral(1),
+        )
+    ) == [2, 3]
+
+
+def test_evaluator_evaluates_yarax_comprehensions() -> None:
+    ev = YaraEvaluator()
+    ev.context.variables["items"] = [1, 2, 3]
+    ev.context.variables["pairs"] = {"a": 1, "b": 2}
+
+    assert ev.visit(
+        ArrayComprehension(
+            expression=BinaryExpression(Identifier("x"), "*", IntegerLiteral(2)),
+            variable="x",
+            iterable=Identifier("items"),
+            condition=BinaryExpression(Identifier("x"), ">", IntegerLiteral(1)),
+        )
+    ) == [4, 6]
+    assert "x" not in ev.context.variables
+
+    assert ev.visit(
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=BinaryExpression(Identifier("v"), "+", IntegerLiteral(1)),
+            key_variable="k",
+            value_variable="v",
+            iterable=Identifier("pairs"),
+            condition=BinaryExpression(Identifier("v"), ">", IntegerLiteral(1)),
+        )
+    ) == {"b": 3}
+    assert "k" not in ev.context.variables
+    assert "v" not in ev.context.variables
+
+
+def test_evaluator_evaluates_yarax_with_statement_and_pattern_match() -> None:
+    ev = YaraEvaluator()
+
+    condition = WithStatement(
+        declarations=[WithDeclaration("$x", IntegerLiteral(2))],
+        body=BinaryExpression(
+            PatternMatch(
+                value=Identifier("x"),
+                cases=[MatchCase(pattern=IntegerLiteral(2), result=BooleanLiteral(True))],
+                default=BooleanLiteral(False),
+            ),
+            "and",
+            BinaryExpression(
+                TupleIndexing(
+                    TupleExpression([IntegerLiteral(1), Identifier("x")]),
+                    IntegerLiteral(1),
+                ),
+                "==",
+                IntegerLiteral(2),
+            ),
+        ),
+    )
+
+    assert ev.visit(condition) is True
+    assert "$x" not in ev.context.variables
+    assert "x" not in ev.context.variables
+
+
+def test_evaluator_restores_yarax_with_declarations_when_later_declaration_fails() -> None:
+    ev = YaraEvaluator()
+
+    condition = WithStatement(
+        declarations=[
+            WithDeclaration("$x", IntegerLiteral(2)),
+            WithDeclaration("$bad", FunctionCall("missing_function", [])),
+        ],
+        body=BooleanLiteral(True),
+    )
+
+    with pytest.raises(EvaluationError):
+        ev.visit(condition)
+
+    assert "$x" not in ev.context.variables
+    assert "x" not in ev.context.variables

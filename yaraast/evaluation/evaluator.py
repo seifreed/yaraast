@@ -338,6 +338,163 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         except (IndexError, KeyError, ValueError, TypeError, AttributeError):
             return None
 
+    def visit_list_expression(self, node) -> list[Any]:
+        """Evaluate YARA-X list expression."""
+        from yaraast.yarax.ast_nodes import SpreadOperator
+
+        values = []
+        for element in node.elements:
+            if isinstance(element, SpreadOperator) and not element.is_dict:
+                spread_value = self.visit(element.expression)
+                try:
+                    values.extend(spread_value)
+                except TypeError:
+                    values.append(spread_value)
+            else:
+                values.append(self.visit(element))
+        return values
+
+    def visit_tuple_expression(self, node) -> tuple[Any, ...]:
+        """Evaluate YARA-X tuple expression."""
+        return tuple(self.visit(element) for element in node.elements)
+
+    def visit_dict_expression(self, node) -> dict[Any, Any]:
+        """Evaluate YARA-X dictionary expression."""
+        from yaraast.yarax.ast_nodes import SpreadOperator
+
+        values = {}
+        for item in node.items:
+            if isinstance(item.value, SpreadOperator) and item.value.is_dict:
+                spread_value = self.visit(item.value.expression)
+                if isinstance(spread_value, dict):
+                    values.update(spread_value)
+                else:
+                    values.update(dict(spread_value))
+                continue
+
+            key, value = self.visit_dict_item(item)
+            values[key] = value
+        return values
+
+    def visit_dict_item(self, node) -> tuple[Any, Any]:
+        """Evaluate one YARA-X dictionary item."""
+        return self.visit(node.key), self.visit(node.value)
+
+    def visit_tuple_indexing(self, node) -> Any:
+        """Evaluate YARA-X tuple indexing."""
+        tuple_value = self.visit(node.tuple_expr)
+        index = self.visit(node.index)
+        try:
+            return tuple_value[index]
+        except (IndexError, KeyError, ValueError, TypeError, AttributeError):
+            return None
+
+    def visit_slice_expression(self, node) -> Any:
+        """Evaluate YARA-X slice expression."""
+        target = self.visit(node.target)
+        start = self.visit(node.start) if node.start is not None else None
+        stop = self.visit(node.stop) if node.stop is not None else None
+        step = self.visit(node.step) if node.step is not None else None
+        try:
+            return target[slice(start, stop, step)]
+        except (IndexError, KeyError, ValueError, TypeError, AttributeError):
+            return None
+
+    def visit_array_comprehension(self, node) -> list[Any]:
+        """Evaluate YARA-X array comprehension."""
+        iterable = self._evaluate_for_iterable(node.iterable)
+        values = []
+        for item in iterable:
+            previous_values = self._bind_loop_variables([node.variable], item)
+            if previous_values is None:
+                continue
+
+            try:
+                if node.condition is None or self.visit(node.condition):
+                    values.append(self.visit(node.expression))
+            finally:
+                self._restore_loop_variables(previous_values)
+        return values
+
+    def visit_dict_comprehension(self, node) -> dict[Any, Any]:
+        """Evaluate YARA-X dictionary comprehension."""
+        variable_names = [node.key_variable]
+        if node.value_variable:
+            variable_names.append(node.value_variable)
+
+        iterable = self._evaluate_for_iterable(node.iterable)
+        loop_items = (
+            iterable.items() if len(variable_names) > 1 and isinstance(iterable, dict) else iterable
+        )
+
+        values = {}
+        for item in loop_items:
+            previous_values = self._bind_loop_variables(variable_names, item)
+            if previous_values is None:
+                continue
+
+            try:
+                if node.condition is None or self.visit(node.condition):
+                    values[self.visit(node.key_expression)] = self.visit(node.value_expression)
+            finally:
+                self._restore_loop_variables(previous_values)
+        return values
+
+    def visit_with_statement(self, node) -> Any:
+        """Evaluate YARA-X with statement with scoped declarations."""
+        previous_values = {}
+        try:
+            for declaration in node.declarations:
+                value = self.visit(declaration.value)
+                names = self._with_declaration_names(declaration.identifier)
+                for name in names:
+                    previous_values[name] = self.context.variables.get(
+                        name, self._missing_loop_value
+                    )
+                    self.context.variables[name] = value
+
+            return self.visit(node.body)
+        finally:
+            self._restore_loop_variables(previous_values)
+
+    def visit_with_declaration(self, node) -> Any:
+        """Evaluate a standalone YARA-X with declaration."""
+        return self.visit(node.value)
+
+    def visit_pattern_match(self, node) -> Any:
+        """Evaluate YARA-X pattern match expression."""
+        value = self.visit(node.value)
+        for case in node.cases:
+            if value == self.visit(case.pattern):
+                return self.visit(case.result)
+        if node.default is not None:
+            return self.visit(node.default)
+        return None
+
+    def visit_match_case(self, node) -> Any:
+        """Evaluate a standalone YARA-X match case result."""
+        return self.visit(node.result)
+
+    def visit_spread_operator(self, node) -> Any:
+        """Evaluate YARA-X spread operator."""
+        return self.visit(node.expression)
+
+    def visit_lambda_expression(self, node):
+        """Evaluate YARA-X lambda expression as a Python callable."""
+
+        def lambda_callable(*args):
+            previous_values = {}
+            for name, value in zip(node.parameters, args, strict=False):
+                previous_values[name] = self.context.variables.get(name, self._missing_loop_value)
+                self.context.variables[name] = value
+
+            try:
+                return self.visit(node.body)
+            finally:
+                self._restore_loop_variables(previous_values)
+
+        return lambda_callable
+
     # Condition evaluation
 
     def visit_at_expression(self, node: AtExpression) -> bool:
@@ -482,6 +639,13 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 self.context.variables.pop(name, None)
             else:
                 self.context.variables[name] = previous_value
+
+    def _with_declaration_names(self, identifier: str) -> list[str]:
+        names = [identifier]
+        stripped = identifier.lstrip("$")
+        if stripped != identifier:
+            names.append(stripped)
+        return names
 
     # Helper methods for reading data
 
