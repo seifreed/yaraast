@@ -57,7 +57,7 @@ def format_hex_string(node: HexString, config) -> str:
 
     for token in node.tokens:
         if isinstance(token, HexByte):
-            hex_val = f"{token.value:02x}"
+            hex_val = token.value.lower() if isinstance(token.value, str) else f"{token.value:02x}"
             if config.hex_style == HexStyle.UPPERCASE:
                 hex_val = hex_val.upper()
             parts.append(hex_val)
@@ -68,7 +68,8 @@ def format_hex_string(node: HexString, config) -> str:
         elif isinstance(token, HexAlternative):
             alt_parts = []
             for alt in token.alternatives:
-                alt_str = " ".join(format_hex_token(t, config) for t in alt)
+                tokens = alt if isinstance(alt, list) else [alt]
+                alt_str = " ".join(format_hex_token(_coerce_hex_token(t), config) for t in tokens)
                 alt_parts.append(alt_str)
             parts.append(f"({' | '.join(alt_parts)})")
         elif hasattr(token, "high") and hasattr(token, "value"):  # HexNibble
@@ -89,13 +90,19 @@ def format_hex_string(node: HexString, config) -> str:
 
 def format_hex_token(token: HexToken, config) -> str:
     if isinstance(token, HexByte):
-        hex_val = f"{token.value:02x}"
+        hex_val = token.value.lower() if isinstance(token.value, str) else f"{token.value:02x}"
         if config.hex_style == HexStyle.UPPERCASE:
             hex_val = hex_val.upper()
         return hex_val
     if isinstance(token, HexWildcard):
         return "??"
     return ""
+
+
+def _coerce_hex_token(token) -> HexToken:
+    if isinstance(token, int | str):
+        return HexByte(token)
+    return token
 
 
 def get_tag_string(tags, config) -> str:

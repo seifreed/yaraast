@@ -248,6 +248,7 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     assert (
         gen.visit_hex_alternative(HexAlternative([[HexByte(1)], [HexWildcard()]])) == "( 01 | ?? )"
     )
+    assert gen.visit_hex_alternative(HexAlternative([0x90, "91"])) == "( 90 | 91 )"
     assert gen.visit_comment(Comment("note")) == "// note"
     assert (
         gen.visit_comment_group(CommentGroup(comments=[Comment("a"), Comment("b")])) == "// a\n// b"

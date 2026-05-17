@@ -375,9 +375,19 @@ class StringMatcher:
     ) -> list[int]:
         positions: list[int] = []
         for alternative in token.alternatives:
-            alt_tokens = alternative if isinstance(alternative, list) else [alternative]
+            alt_tokens = self._hex_alternative_tokens(alternative)
             positions.extend(self._match_hex_tokens_from(data, alt_tokens, pos))
         return positions
+
+    def _hex_alternative_tokens(self, alternative: Any) -> list[Any]:
+        if isinstance(alternative, list):
+            return [self._coerce_hex_token(token) for token in alternative]
+        return [self._coerce_hex_token(alternative)]
+
+    def _coerce_hex_token(self, token: Any) -> Any:
+        if isinstance(token, int | str):
+            return HexByte(token)
+        return token
 
     def _hex_value(self, value: int | str) -> int:
         if isinstance(value, str):

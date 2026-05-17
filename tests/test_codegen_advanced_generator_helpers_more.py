@@ -92,11 +92,15 @@ def test_format_hex_string_no_grouping_and_single_token_formatting() -> None:
 
     assert format_hex_token(HexByte(0xAF), lower) == "af"
     assert format_hex_token(HexByte(0xAF), upper) == "AF"
+    assert format_hex_token(HexByte("af"), upper) == "AF"
     assert format_hex_token(HexWildcard(), lower) == "??"
     assert format_hex_token(HexJump(1, 2), lower) == ""
 
-    hs = HexString(identifier="$h", tokens=[HexByte(0x01), HexWildcard()])
-    assert format_hex_string(hs, lower) == "{ 01 ?? }"
+    hs = HexString(identifier="$h", tokens=[HexByte(0x01), HexWildcard(), HexByte("af")])
+    assert format_hex_string(hs, lower) == "{ 01 ?? af }"
+
+    scalar_alt = HexString(identifier="$s", tokens=[HexAlternative([0x90, "91"])])
+    assert format_hex_string(scalar_alt, upper) == "{ (90 | 91) }"
 
 
 def test_get_tag_string_and_hex_jump_ranges() -> None:

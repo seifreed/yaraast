@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from yaraast.ast.strings import HexByte
 from yaraast.codegen.generator_formatting import (
     escape_string_literal,
     format_boolean_literal,
@@ -28,9 +29,16 @@ def visit_hex_jump(node) -> str:
 def visit_hex_alternative(generator, node) -> str:
     alts = []
     for alt in node.alternatives:
-        alt_str = " ".join(generator.visit(token) for token in alt)
+        tokens = alt if isinstance(alt, list) else [alt]
+        alt_str = " ".join(generator.visit(_coerce_hex_token(token)) for token in tokens)
         alts.append(alt_str)
     return f"( {' | '.join(alts)} )"
+
+
+def _coerce_hex_token(token):
+    if isinstance(token, int | str):
+        return HexByte(token)
+    return token
 
 
 def visit_hex_nibble(node) -> str:

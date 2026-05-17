@@ -183,6 +183,14 @@ def test_string_matcher_hex_tokens_match_yara_token_semantics() -> None:
 
     assert [(match.offset, match.length) for match in negated_matches] == [(0, 2)]
 
+    scalar_alt = HexString("$scalar", tokens=[HexAlternative([0x90, "91"])])
+    scalar_matches = matcher.match_string(scalar_alt, b"\x90\x91\x92")
+
+    assert [(match.offset, match.length, match.matched_data) for match in scalar_matches] == [
+        (0, 1, b"\x90"),
+        (1, 1, b"\x91"),
+    ]
+
 
 def test_string_matcher_plain_string_xor_modifier_matches_encoded_bytes() -> None:
     matcher = StringMatcher()
