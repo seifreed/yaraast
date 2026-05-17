@@ -244,16 +244,26 @@ def infer_collection_access(ctx, node):
 
     dict_type = ctx.visit(node.object)
     if isinstance(dict_type, DictionaryType):
-        if (
-            hasattr(node, "key")
-            and hasattr(node.key, "__class__")
-            and hasattr(node.key, "__dict__")
-        ):
-            key_type = ctx.visit(node.key)
+        if hasattr(node, "key"):
+            key_type = _infer_dictionary_key_type(ctx, node.key)
             if not isinstance(key_type, dict_type.key_type.__class__):
                 ctx.errors.append(f"Dictionary key must be {dict_type.key_type}, got {key_type}")
         return dict_type.value_type
     ctx.errors.append(f"Cannot access dictionary on non-dict type: {dict_type}")
+    return UnknownType()
+
+
+def _infer_dictionary_key_type(ctx, key):
+    if hasattr(key, "accept"):
+        return ctx.visit(key)
+    if isinstance(key, bool):
+        return BooleanType()
+    if isinstance(key, int):
+        return IntegerType()
+    if isinstance(key, float):
+        return DoubleType()
+    if isinstance(key, str):
+        return StringType()
     return UnknownType()
 
 

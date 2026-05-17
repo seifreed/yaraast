@@ -32,6 +32,7 @@ from yaraast.parser.source import parse_yara_source
 from yaraast.types._expr_inference import ExpressionTypeInference, _TypeBaseVisitor
 from yaraast.types._registry import (
     BooleanType,
+    DictionaryType,
     IntegerType,
     StringType,
     TypeEnvironment,
@@ -133,6 +134,17 @@ def test_expr_inference_string_length_invalid_index_reports_error() -> None:
     out = inf.infer(StringLength(string_id="a", index=StringLiteral(value="bad")))
     assert isinstance(out, IntegerType)
     assert "String length index must be integer" in inf.errors[0]
+
+
+def test_expr_inference_validates_plain_dictionary_key_type() -> None:
+    env = TypeEnvironment()
+    env.define("by_number", DictionaryType(IntegerType(), StringType()))
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(DictionaryAccess(object=Identifier("by_number"), key="name"))
+
+    assert isinstance(out, StringType)
+    assert any("Dictionary key must be integer, got string" in error for error in inf.errors)
 
 
 def test_expr_inference_comparison_and_builtin_function_paths() -> None:
