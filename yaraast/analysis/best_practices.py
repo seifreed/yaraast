@@ -219,6 +219,8 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     def _analyze_plain_string(self, rule: Rule, string: PlainString) -> None:
         """Analyze plain string patterns."""
+        pattern_chars = b"*?[]" if isinstance(string.value, bytes) else "*?[]"
+
         # Check for very short strings without modifiers
         if len(string.value) < 4 and not string.modifiers:
             self.report.add_suggestion(
@@ -230,7 +232,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
             )
 
         # Check for strings that might benefit from regex
-        if any(pattern in string.value for pattern in ["*", "?", "[", "]"]):
+        if any(pattern in string.value for pattern in pattern_chars):
             self.report.add_suggestion(
                 rule.name,
                 "optimization",

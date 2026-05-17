@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
-from yaraast.ast.strings import HexByte, HexString, HexWildcard
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString
 from yaraast.parser import Parser
 
 
@@ -56,6 +59,24 @@ rule pe_only {
     assert any("defined but never used" in m for m in messages)
     assert any("Rule has no strings defined" in m for m in messages)
     assert result.statistics == {"total_rules": 3, "total_imports": 0}
+
+
+def test_best_practices_analyzer_handles_byte_plain_strings() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="byte_rule",
+                strings=[PlainString(identifier="$b", value=b"a*b")],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    report = BestPracticesAnalyzer().analyze(ast)
+    messages = [suggestion.message for suggestion in report.suggestions]
+
+    assert any("Short string" in message for message in messages)
+    assert any("consider regex?" in message for message in messages)
 
 
 def test_best_practices_global_hex_patterns_and_helper_paths() -> None:

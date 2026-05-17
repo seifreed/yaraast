@@ -31,6 +31,8 @@ from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, Re
 def test_should_be_hex_and_hex_helpers() -> None:
     assert should_be_hex(PlainString(identifier="$a", value="\x01\x02A\x03")) is True
     assert should_be_hex(PlainString(identifier="$b", value="abcdef")) is False
+    assert should_be_hex(PlainString(identifier="$bytes", value=b"\x01\x02A\x03")) is True
+    assert should_be_hex(PlainString(identifier="$text_bytes", value=b"abcdef")) is False
 
     short_prefix = HexString(identifier="$h1", tokens=[HexByte(0xAA), HexByte(0xBB), HexByte(0xCC)])
     assert get_hex_prefix(short_prefix, 3) is None

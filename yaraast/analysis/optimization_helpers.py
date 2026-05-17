@@ -10,8 +10,9 @@ from yaraast.ast.strings import HexByte, HexString, PlainString
 
 
 def should_be_hex(plain: PlainString) -> bool:
-    non_printable = sum(1 for c in plain.value if ord(c) < 32 or ord(c) > 126)
-    return non_printable > len(plain.value) * 0.3
+    values = plain.value if isinstance(plain.value, bytes) else plain.value.encode()
+    non_printable = sum(1 for value in values if value < 32 or value > 126)
+    return non_printable > len(values) * 0.3
 
 
 def get_hex_prefix(hex_str: HexString, length: int) -> tuple | None:

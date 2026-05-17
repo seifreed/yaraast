@@ -58,6 +58,29 @@ def test_optimization_analyzer_adds_string_hex_and_overlap_suggestions() -> None
     assert any("contained in" in d for d in descriptions)
 
 
+def test_optimization_analyzer_handles_byte_plain_strings() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="byte_strings",
+                strings=[
+                    PlainString(identifier="$np", value=b"\x01\x02A\x03"),
+                    PlainString(identifier="$short", value="A"),
+                    PlainString(identifier="$long", value=b"xxAxx"),
+                ],
+                condition=Identifier("true"),
+            )
+        ]
+    )
+
+    report = OptimizationAnalyzer().analyze(ast)
+    suggestions = report.suggestions
+
+    assert any("hex pattern may be clearer" in s.description for s in suggestions)
+    assert any(s.code_after == "$str = { 01 02 41 03 }" for s in suggestions)
+    assert any("contained in" in s.description for s in suggestions)
+
+
 def test_optimization_analyzer_hex_paths_condition_refs_and_specificity() -> None:
     hex_rule = Rule(
         name="hex_rule",

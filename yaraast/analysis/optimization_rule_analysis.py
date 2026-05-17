@@ -20,6 +20,20 @@ LOWER_BOUND_OPERATORS = frozenset({">", ">="})
 UPPER_BOUND_OPERATORS = frozenset({"<", "<="})
 
 
+def _plain_value_bytes(value: str | bytes) -> bytes:
+    return value if isinstance(value, bytes) else value.encode()
+
+
+def _plain_value_display(value: str | bytes) -> str:
+    if isinstance(value, bytes):
+        return "".join(f"\\x{byte:02x}" for byte in value)
+    return value
+
+
+def _plain_value_hex(value: str | bytes) -> str:
+    return " ".join(f"{byte:02X}" for byte in _plain_value_bytes(value))
+
+
 def analyze_string_definitions(analyzer, rule) -> None:
     hex_strings = []
     plain_strings = []
@@ -39,8 +53,8 @@ def analyze_string_definitions(analyzer, rule) -> None:
                 "string_optimization",
                 f"String '{plain.identifier}' contains mostly non-printable chars; a hex pattern may be clearer",
                 "medium",
-                f'$str = "{plain.value}"',
-                f"$str = {{ {' '.join(f'{ord(c):02X}' for c in plain.value)} }}",
+                f'$str = "{_plain_value_display(plain.value)}"',
+                f"$str = {{ {_plain_value_hex(plain.value)} }}",
             )
 
     check_overlapping_patterns(analyzer, rule, rule.strings)
@@ -67,14 +81,16 @@ def check_overlapping_patterns(analyzer, rule, strings: list[object]) -> None:
     plain_strings = [(s.identifier, s.value) for s in strings if isinstance(s, PlainString)]
     for i, (id1, val1) in enumerate(plain_strings):
         for id2, val2 in plain_strings[i + 1 :]:
-            if val1 in val2:
+            val1_bytes = _plain_value_bytes(val1)
+            val2_bytes = _plain_value_bytes(val2)
+            if val1_bytes in val2_bytes:
                 analyzer.report.add_suggestion(
                     rule.name,
                     "redundant_pattern",
                     f"String '{id1}' is contained in '{id2}'; it may be redundant",
                     "low",
                 )
-            elif val2 in val1:
+            elif val2_bytes in val1_bytes:
                 analyzer.report.add_suggestion(
                     rule.name,
                     "redundant_pattern",
