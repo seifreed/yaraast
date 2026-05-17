@@ -78,6 +78,81 @@ def test_string_matcher_regex_reports_overlapping_matches() -> None:
     assert [match.length for match in regex_matches] == [2, 2]
 
 
+def test_string_matcher_regex_reports_zero_length_matches_inside_data() -> None:
+    matcher = StringMatcher()
+    regex = RegexString("$re", regex="z*", modifiers=[])
+
+    regex_matches = matcher.match_string(regex, b"AB")
+
+    assert [(match.offset, match.length) for match in regex_matches] == [(0, 0), (1, 0)]
+
+
+def test_string_matcher_regex_wide_and_ascii_modifiers() -> None:
+    matcher = StringMatcher()
+    wide_regex = RegexString(
+        "$re",
+        regex="AB",
+        modifiers=[StringModifier.from_name_value("wide")],
+    )
+    ascii_wide_regex = RegexString(
+        "$re",
+        regex="AB",
+        modifiers=[
+            StringModifier.from_name_value("ascii"),
+            StringModifier.from_name_value("wide"),
+        ],
+    )
+
+    assert matcher.match_string(wide_regex, b"AB") == []
+    assert [
+        (match.offset, match.length) for match in matcher.match_string(wide_regex, b"A\x00B\x00")
+    ] == [(0, 4)]
+    assert [
+        (match.offset, match.length)
+        for match in matcher.match_string(ascii_wide_regex, b"AB A\x00B\x00")
+    ] == [(0, 2), (3, 4)]
+
+
+def test_string_matcher_wide_regex_reports_zero_length_byte_offsets() -> None:
+    matcher = StringMatcher()
+    regex = RegexString(
+        "$re",
+        regex="A*",
+        modifiers=[StringModifier.from_name_value("wide")],
+    )
+
+    regex_matches = matcher.match_string(regex, b"A\x00B\x00")
+
+    assert [(match.offset, match.length) for match in regex_matches] == [
+        (0, 2),
+        (1, 0),
+        (2, 0),
+        (3, 0),
+    ]
+
+
+def test_string_matcher_wide_regex_builds_contiguous_segments_once() -> None:
+    matcher = StringMatcher()
+    data = b"A\x00" * 128
+
+    segments = matcher._wide_regex_segments(data)
+
+    assert segments == [(b"A" * 128, list(range(0, 256, 2)))]
+
+
+def test_string_matcher_regex_fullword_filters_boundaries() -> None:
+    matcher = StringMatcher()
+    regex = RegexString(
+        "$re",
+        regex="abc",
+        modifiers=[StringModifier.from_name_value("fullword")],
+    )
+
+    regex_matches = matcher.match_string(regex, b"xabc abc! abc_")
+
+    assert [(match.offset, match.length) for match in regex_matches] == [(5, 3), (10, 3)]
+
+
 def test_string_matcher_fullword_and_boundary_helpers() -> None:
     matcher = StringMatcher()
     string_def = PlainString(
@@ -88,12 +163,12 @@ def test_string_matcher_fullword_and_boundary_helpers() -> None:
     matcher.match_all(b"xabc abc! abc_ abc", [string_def])
 
     offsets = [m.offset for m in matcher.matches["$fw"]]
-    assert offsets == [5, 15]
+    assert offsets == [5, 10, 15]
 
     assert matcher._is_fullword(b" abc ", 1, 3) is True
     assert matcher._is_fullword(b"abc ", 0, 3) is True
     assert matcher._is_fullword(b"xabc ", 1, 3) is False
-    assert matcher._is_fullword(b" abc_", 1, 3) is False
+    assert matcher._is_fullword(b" abc_", 1, 3) is True
 
 
 def test_string_matcher_regex_invalid_nocase_and_range_queries() -> None:

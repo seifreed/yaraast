@@ -439,6 +439,11 @@ class StringMatcher:
             elif modifier_name in {"multiline", "m"}:
                 flags |= re.MULTILINE
 
+        modifier_names = {self._modifier_name(modifier) for modifier in string_def.modifiers}
+        wide = "wide" in modifier_names
+        ascii_mod = "ascii" in modifier_names
+        fullword = "fullword" in modifier_names
+
         # Compile regex
         try:
             regex = re.compile(pattern.encode("utf-8"), flags)
@@ -448,18 +453,33 @@ class StringMatcher:
             return
 
         # YARA reports overlapping regex matches, unlike Python's finditer().
-        matches: list[MatchResult] = []
-        for match in self._find_overlapping_regex_matches(regex, data):
-            matches.append(
-                MatchResult(
-                    string_def.identifier,
-                    match.start(),
-                    match.end() - match.start(),
-                    match.group(0),
-                ),
+        raw_matches: list[tuple[int, int, bool]] = []
+        if not wide or ascii_mod:
+            raw_matches.extend(
+                (match.start(), match.end() - match.start(), False)
+                for match in self._find_overlapping_regex_matches(regex, data)
             )
+        if wide:
+            raw_matches.extend(self._find_overlapping_wide_regex_matches(regex, data))
+            raw_matches.extend(self._find_wide_zero_length_regex_matches(regex, data))
 
-        self.matches[string_def.identifier] = matches
+        if fullword:
+            raw_matches = [
+                match
+                for match in raw_matches
+                if self._is_fullword(data, match[0], match[1], wide=match[2])
+            ]
+        raw_matches = self._deduplicate_regex_matches(raw_matches)
+
+        self.matches[string_def.identifier] = [
+            MatchResult(
+                string_def.identifier,
+                offset,
+                length,
+                data[offset : offset + length],
+            )
+            for offset, length, _is_wide in raw_matches
+        ]
 
     def _find_overlapping_regex_matches(
         self,
@@ -467,12 +487,75 @@ class StringMatcher:
         data: bytes,
     ) -> list[re.Match[bytes]]:
         matches = []
-        for offset in range(len(data) + 1):
+        for offset in range(len(data)):
             match = regex.match(data, offset)
-            if match is None or match.end() == match.start():
+            if match is None:
                 continue
             matches.append(match)
         return matches
+
+    def _find_overlapping_wide_regex_matches(
+        self,
+        regex: re.Pattern[bytes],
+        data: bytes,
+    ) -> list[tuple[int, int, bool]]:
+        matches: list[tuple[int, int, bool]] = []
+        for segment, offsets in self._wide_regex_segments(data):
+            for match in self._find_overlapping_regex_matches(regex, segment):
+                start = match.start()
+                length = match.end() - start
+                matches.append((offsets[start], length * 2, True))
+        return matches
+
+    def _find_wide_zero_length_regex_matches(
+        self,
+        regex: re.Pattern[bytes],
+        data: bytes,
+    ) -> list[tuple[int, int, bool]]:
+        empty_match = regex.match(b"")
+        if empty_match is None or empty_match.end() != empty_match.start():
+            return []
+
+        matches: list[tuple[int, int, bool]] = []
+        for offset in range(len(data)):
+            match = regex.match(data, offset)
+            if match is not None:
+                matches.append((offset, 0, False))
+        return matches
+
+    def _deduplicate_regex_matches(
+        self,
+        matches: list[tuple[int, int, bool]],
+    ) -> list[tuple[int, int, bool]]:
+        by_offset: dict[int, tuple[int, int, bool]] = {}
+        for match in matches:
+            offset, length, _is_wide = match
+            existing = by_offset.get(offset)
+            if (
+                existing is None
+                or existing[1] == 0 < length
+                or (length != 0 and length < existing[1])
+            ):
+                by_offset[offset] = match
+        return [by_offset[offset] for offset in sorted(by_offset)]
+
+    def _wide_regex_segments(self, data: bytes) -> list[tuple[bytes, list[int]]]:
+        segments: list[tuple[bytes, list[int]]] = []
+        for parity in (0, 1):
+            segment = bytearray()
+            offsets: list[int] = []
+            for pos in range(parity, max(len(data) - 1, 0), 2):
+                if data[pos + 1] == 0:
+                    segment.append(data[pos])
+                    offsets.append(pos)
+                    continue
+                if segment:
+                    segments.append((bytes(segment), offsets))
+                    segment = bytearray()
+                    offsets = []
+            if segment:
+                segments.append((bytes(segment), offsets))
+        return segments
 
     def _find_all(self, data: bytes, pattern: bytes) -> list[tuple[int, int]]:
         """Find all occurrences of pattern in data."""
@@ -535,12 +618,7 @@ class StringMatcher:
         """Check if match is a full word."""
 
         def _is_word_byte(value: int) -> bool:
-            return (
-                value == ord("_")
-                or (48 <= value <= 57)
-                or (65 <= value <= 90)
-                or (97 <= value <= 122)
-            )
+            return (48 <= value <= 57) or (65 <= value <= 90) or (97 <= value <= 122)
 
         if wide:
             return self._is_fullword_wide(data, offset, length, _is_word_byte)
