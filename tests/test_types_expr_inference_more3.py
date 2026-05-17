@@ -14,6 +14,7 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
     RangeExpression,
@@ -170,6 +171,19 @@ def test_expr_inference_comparison_and_builtin_function_paths() -> None:
     )
     assert isinstance(right_bad, BooleanType)
     assert any("Right operand of 'and' must be boolean" in e for e in inf.errors)
+
+
+def test_expr_inference_validates_module_function_argument_types() -> None:
+    env = TypeEnvironment()
+    env.add_module("math")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(FunctionCall(function="math.abs", arguments=[StringLiteral("bad")]))
+
+    assert isinstance(out, IntegerType)
+    assert any(
+        "Argument 'x' to function 'abs' must be integer, got string" in e for e in inf.errors
+    )
 
 
 def test_expr_inference_at_in_and_of_error_paths() -> None:
