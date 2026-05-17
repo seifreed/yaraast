@@ -261,6 +261,16 @@ def test_runtime_config_document_cache_and_watched_files(tmp_path: Path) -> None
     assert runtime.get_document(uri, load_workspace=False) is None
 
 
+def test_runtime_config_parses_string_cache_workspace_setting() -> None:
+    runtime = LspRuntime()
+
+    runtime.update_config({"YARA": {"cacheWorkspace": "false"}})
+    assert runtime.config.cache_workspace is False
+
+    runtime.update_config({"YARA": {"cacheWorkspace": "true"}})
+    assert runtime.config.cache_workspace is True
+
+
 def test_runtime_watched_file_does_not_replace_open_document(tmp_path: Path) -> None:
     sample = tmp_path / "sample.yar"
     sample.write_text("rule disk_version { condition: true }\n", encoding="utf-8")

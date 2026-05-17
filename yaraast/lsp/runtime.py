@@ -43,6 +43,21 @@ from yaraast.lsp.workspace_index import WorkspaceIndex
 
 logger = logging.getLogger(__name__)
 
+
+def _parse_bool_setting(value: Any, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value != 0
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+    return default
+
+
 __all__ = [
     "CacheManager",
     "DocumentContext",
@@ -237,7 +252,9 @@ class LspRuntime:
             settings = settings["YARA"]
         previous_mode = self.config.language_mode
         if "cacheWorkspace" in settings:
-            self.config.cache_workspace = bool(settings["cacheWorkspace"])
+            self.config.cache_workspace = _parse_bool_setting(
+                settings["cacheWorkspace"], self.config.cache_workspace
+            )
         if "ruleNameValidation" in settings:
             self.config.rule_name_validation = settings["ruleNameValidation"] or None
         if "metadataValidation" in settings and isinstance(settings["metadataValidation"], list):
