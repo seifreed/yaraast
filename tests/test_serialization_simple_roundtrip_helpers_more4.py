@@ -152,6 +152,26 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
         deserialize_rule({"name": "r1", "tags": [{"name": 7}], "condition": None})
 
 
+def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
+    with pytest.raises(SerializationError, match="YaraFile imports must be a list"):
+        deserialize_node({"type": "YaraFile", "imports": "pe"})
+
+    with pytest.raises(SerializationError, match="YaraFile extern_rules must be a list"):
+        deserialize_node({"type": "YaraFile", "extern_rules": "RemoteRule"})
+
+    with pytest.raises(SerializationError, match="Rule meta must be a list"):
+        deserialize_rule({"name": "r1", "meta": "author", "condition": None})
+
+    with pytest.raises(SerializationError, match="Rule strings must be a list"):
+        deserialize_rule({"name": "r1", "strings": "$a", "condition": None})
+
+    with pytest.raises(SerializationError, match="Rule tags must be a list"):
+        deserialize_rule({"name": "r1", "tags": "tag", "condition": None})
+
+    with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
+        deserialize_rule({"name": "r1", "pragmas": "pragma", "condition": None})
+
+
 def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ExternImport module_path must be a string"):
         deserialize_node({"type": "ExternImport", "module_path": ["external"]})

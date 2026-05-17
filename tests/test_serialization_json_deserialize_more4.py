@@ -119,6 +119,28 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
         )
 
 
+def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
+    s = JsonSerializer()
+
+    with pytest.raises(SerializationError, match="YaraFile imports must be a list"):
+        s._deserialize_ast({"type": "YaraFile", "imports": "pe"})
+
+    with pytest.raises(SerializationError, match="YaraFile extern_rules must be a list"):
+        s._deserialize_ast({"type": "YaraFile", "extern_rules": "RemoteRule"})
+
+    with pytest.raises(SerializationError, match="Rule meta must be a list or dictionary"):
+        s._deserialize_rule({"name": "r1", "meta": "author", "condition": None})
+
+    with pytest.raises(SerializationError, match="Rule strings must be a list"):
+        s._deserialize_rule({"name": "r1", "strings": "$a", "condition": None})
+
+    with pytest.raises(SerializationError, match="Rule tags must be a list"):
+        s._deserialize_rule({"name": "r1", "tags": "tag", "condition": None})
+
+    with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
+        s._deserialize_rule({"name": "r1", "pragmas": "pragma", "condition": None})
+
+
 def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
 

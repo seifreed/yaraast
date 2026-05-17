@@ -813,16 +813,24 @@ class JsonSerializerDeserializeMixin:
             ]
         elif isinstance(meta_data, list):
             meta = [self._deserialize_meta(m) for m in meta_data]
+        elif "meta" in data:
+            msg = "Rule meta must be a list or dictionary"
+            raise SerializationError(msg)
         else:
             meta = []
 
-        strings = [self._deserialize_string(s) for s in data.get("strings", [])]
+        strings = [
+            self._deserialize_string(s) for s in _deserialize_list_field(data, "strings", "Rule")
+        ]
         condition = (
             self._deserialize_expression(data["condition"]) if data.get("condition") else None
         )
 
-        tags = [self._deserialize_tag(t) for t in data.get("tags", [])]
-        pragmas = [self._deserialize_in_rule_pragma(p) for p in data.get("pragmas", [])]
+        tags = [self._deserialize_tag(t) for t in _deserialize_list_field(data, "tags", "Rule")]
+        pragmas = [
+            self._deserialize_in_rule_pragma(p)
+            for p in _deserialize_list_field(data, "pragmas", "Rule")
+        ]
 
         return self._apply_node_metadata(
             Rule(

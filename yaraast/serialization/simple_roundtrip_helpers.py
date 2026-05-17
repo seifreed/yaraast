@@ -1242,13 +1242,30 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
 def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
     """Deserialize a YaraFile."""
     yf = YaraFile()
-    yf.imports = [deserialize_node(imp) for imp in data.get("imports", [])]
-    yf.includes = [deserialize_node(inc) for inc in data.get("includes", [])]
-    yf.rules = [deserialize_node(rule) for rule in data.get("rules", [])]
-    yf.extern_rules = [deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])]
-    yf.extern_imports = [deserialize_node(imp) for imp in data.get("extern_imports", [])]
-    yf.pragmas = [deserialize_pragma(pragma) for pragma in data.get("pragmas", [])]
-    yf.namespaces = [deserialize_node(namespace) for namespace in data.get("namespaces", [])]
+    yf.imports = [
+        deserialize_node(imp) for imp in _deserialize_list_field(data, "imports", "YaraFile")
+    ]
+    yf.includes = [
+        deserialize_node(inc) for inc in _deserialize_list_field(data, "includes", "YaraFile")
+    ]
+    yf.rules = [
+        deserialize_node(rule) for rule in _deserialize_list_field(data, "rules", "YaraFile")
+    ]
+    yf.extern_rules = [
+        deserialize_extern_rule(rule)
+        for rule in _deserialize_list_field(data, "extern_rules", "YaraFile")
+    ]
+    yf.extern_imports = [
+        deserialize_node(imp) for imp in _deserialize_list_field(data, "extern_imports", "YaraFile")
+    ]
+    yf.pragmas = [
+        deserialize_pragma(pragma)
+        for pragma in _deserialize_list_field(data, "pragmas", "YaraFile")
+    ]
+    yf.namespaces = [
+        deserialize_node(namespace)
+        for namespace in _deserialize_list_field(data, "namespaces", "YaraFile")
+    ]
     return yf
 
 
@@ -1263,16 +1280,23 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     )
 
     if "tags" in data:
-        rule.tags = [_deserialize_rule_tag(tag) for tag in data["tags"]]
+        rule.tags = [
+            _deserialize_rule_tag(tag) for tag in _deserialize_list_field(data, "tags", "Rule")
+        ]
 
     if "meta" in data:
-        rule.meta = [deserialize_meta(m) for m in data["meta"]]
+        rule.meta = [deserialize_meta(m) for m in _deserialize_list_field(data, "meta", "Rule")]
 
     if "strings" in data:
-        rule.strings = [deserialize_string(s) for s in data["strings"]]
+        rule.strings = [
+            deserialize_string(s) for s in _deserialize_list_field(data, "strings", "Rule")
+        ]
 
     if "pragmas" in data:
-        rule.pragmas = [cast_in_rule_pragma(deserialize_node(pragma)) for pragma in data["pragmas"]]
+        rule.pragmas = [
+            cast_in_rule_pragma(deserialize_node(pragma))
+            for pragma in _deserialize_list_field(data, "pragmas", "Rule")
+        ]
 
     return rule
 
