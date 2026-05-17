@@ -10,6 +10,7 @@ from yaraast.codegen.generator_formatting import (
     format_regex_literal,
 )
 from yaraast.codegen.generator_helpers import (
+    format_double_literal,
     format_hex_byte_value,
     format_hex_nibble_value,
     format_integer_literal,
@@ -89,7 +90,7 @@ def visit_integer_literal(node) -> str:
 
 
 def visit_double_literal(node) -> str:
-    return str(node.value)
+    return format_double_literal(node.value)
 
 
 def visit_string_literal(node) -> str:

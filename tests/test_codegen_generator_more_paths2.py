@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -266,6 +268,11 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
     assert gen.visit_string_literal(StringLiteral("a\nb\t\x00")) == '"a\\nb\\t\\x00"'
     assert gen.visit_regex_literal(RegexLiteral("ab.*", "i")) == "/ab.*/i"
     assert gen.visit_double_literal(DoubleLiteral(1.5)) == "1.5"
+    with pytest.raises(TypeError, match="Double literal value must be numeric"):
+        gen.visit_double_literal(DoubleLiteral(True))
+    string_double_value: Any = "1.5"
+    with pytest.raises(TypeError, match="Double literal value must be numeric"):
+        gen.visit_double_literal(DoubleLiteral(string_double_value))
     assert (
         gen.visit_binary_expression(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)))
         == "1 + 2"

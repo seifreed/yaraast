@@ -97,6 +97,14 @@ def format_integer_literal(value) -> str:
     return str(int_value)
 
 
+def format_double_literal(value: int | float) -> str:
+    """Format a validated numeric double literal."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        msg = "Double literal value must be numeric"
+        raise TypeError(msg)
+    return str(value)
+
+
 def format_hex_byte_value(value: int | str, *, uppercase: bool, context: str = "HexByte") -> str:
     """Format a validated hex byte value."""
     value = _validate_hex_byte_value(value, context)
