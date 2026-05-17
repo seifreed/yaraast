@@ -9,6 +9,28 @@ from yaraast.errors import ValidationError
 from yaraast.string_escaping import escape_string_source_value
 
 
+def _is_xor_modifier_text(value: str) -> bool:
+    parts = value.split("-", maxsplit=1)
+    keys: list[int] = []
+    for part in parts:
+        key = _parse_xor_key_text(part)
+        if key is None:
+            return False
+        keys.append(key)
+    return len(keys) == 1 or keys[0] <= keys[1]
+
+
+def _parse_xor_key_text(value: str) -> int | None:
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        key = int(text, 16) if text.lower().startswith("0x") else int(text, 10)
+    except ValueError:
+        return None
+    return key if 0 <= key <= 0xFF else None
+
+
 class StringModifierType(Enum):
     """Enumeration of all YARA string modifiers."""
 
@@ -119,6 +141,10 @@ class StringModifier(ASTNode):
             if isinstance(self.value, tuple):
                 return f"{self.modifier_type.value}({self.value[0]}-{self.value[1]})"
             if isinstance(self.value, str):
+                if self.modifier_type == StringModifierType.XOR and _is_xor_modifier_text(
+                    self.value
+                ):
+                    return f"{self.modifier_type.value}({self.value})"
                 return f'{self.modifier_type.value}("{escape_string_source_value(self.value)}")'
             return f"{self.modifier_type.value}({self.value})"
         return self.modifier_type.value
@@ -179,6 +205,9 @@ class MetaEntry:
         scope_prefix = f"{self.scope.value}:" if self.scope != MetaScope.PUBLIC else ""
         if isinstance(self.value, str):
             return f'{scope_prefix}{self.key} = "{escape_string_source_value(self.value)}"'
+        if isinstance(self.value, bool):
+            value = "true" if self.value else "false"
+            return f"{scope_prefix}{self.key} = {value}"
         return f"{scope_prefix}{self.key} = {self.value}"
 
 

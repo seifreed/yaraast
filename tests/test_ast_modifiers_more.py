@@ -42,11 +42,15 @@ def test_meta_scope_fallback_and_meta_entry_str() -> None:
     private_entry = MetaEntry.from_key_value("k", "v", "private")
     escaped_entry = MetaEntry.from_key_value("description", 'a"\\b\n')
     public_entry = MetaEntry.from_key_value("n", 1)
+    boolean_entry = MetaEntry.from_key_value("enabled", True)
+    private_boolean_entry = MetaEntry.from_key_value("disabled", False, "private")
     assert private_entry.is_private is True
     assert public_entry.is_public is True
     assert str(private_entry).startswith("private:")
     assert str(escaped_entry) == 'description = "a\\"\\\\b\\n"'
     assert str(public_entry) == "n = 1"
+    assert str(boolean_entry) == "enabled = true"
+    assert str(private_boolean_entry) == "private:disabled = false"
 
 
 def test_string_and_rule_modifier_helpers() -> None:
@@ -59,6 +63,12 @@ def test_string_and_rule_modifier_helpers() -> None:
 
     modifier_with_range = StringModifier.from_name_value("xor", (1, 3))
     assert str(modifier_with_range) == "xor(1-3)"
+
+    modifier_with_hex_string = StringModifier.from_name_value("xor", "0x10")
+    assert str(modifier_with_hex_string) == "xor(0x10)"
+
+    modifier_with_hex_range_string = StringModifier.from_name_value("xor", "0x01-0xff")
+    assert str(modifier_with_hex_range_string) == "xor(0x01-0xff)"
 
     alphabet = "A" * 64
     modifier_with_string = StringModifier.from_name_value("base64", alphabet)
