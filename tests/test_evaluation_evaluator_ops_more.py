@@ -37,6 +37,11 @@ def test_evaluate_arithmetic_zero_divisor_returns_undefined() -> None:
     assert evaluate_arithmetic(7, 0, "%") is YARA_UNDEFINED
 
 
+def test_evaluate_arithmetic_negative_shift_returns_undefined() -> None:
+    assert evaluate_arithmetic(1, -1, "<<") is YARA_UNDEFINED
+    assert evaluate_arithmetic(1, -1, ">>") is YARA_UNDEFINED
+
+
 def test_evaluate_integer_division_and_modulo_do_not_use_float_conversion() -> None:
     large = 10**400 + 1
 

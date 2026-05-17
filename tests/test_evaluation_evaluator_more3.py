@@ -334,6 +334,25 @@ def test_bitwise_operator_precedence_matches_yara() -> None:
     assert YaraEvaluator().evaluate_file(ast) == {"precedence": True}
 
 
+def test_negative_shift_count_evaluates_as_undefined() -> None:
+    ast = Parser().parse("""
+        rule negative_shift_comparison {
+            condition:
+                0 << (0 - filesize) == 0
+        }
+
+        rule negative_shift_defined {
+            condition:
+                defined (0 << (0 - filesize))
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abcd").evaluate_file(ast) == {
+        "negative_shift_comparison": False,
+        "negative_shift_defined": False,
+    }
+
+
 def test_zero_divisor_arithmetic_evaluates_as_undefined() -> None:
     ast = Parser().parse("""
         rule zero_modulo_comparison {

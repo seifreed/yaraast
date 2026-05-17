@@ -34,8 +34,12 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
             return integer_remainder(left, right)
         return left % right
     if operator == "<<":
+        if right < 0:
+            return YARA_UNDEFINED
         return left << right
     if operator == ">>":
+        if right < 0:
+            return YARA_UNDEFINED
         return left >> right
     if operator == "&":
         return left & right
