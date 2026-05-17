@@ -150,13 +150,21 @@ def visit_extern_import(node) -> str:
 
 
 def visit_extern_namespace(node) -> str:
-    return f"namespace {node.name}"
+    lines = [f"namespace {node.name}"]
+    for rule in node.extern_rules:
+        lines.append(_render_extern_rule(rule, default_namespace=node.name))
+    return "\n".join(lines)
 
 
 def visit_extern_rule(node) -> str:
+    return _render_extern_rule(node)
+
+
+def _render_extern_rule(node, default_namespace: str | None = None) -> str:
     modifiers = " ".join(str(m) for m in node.modifiers) if hasattr(node, "modifiers") else ""
     prefix = f"{modifiers} " if modifiers else ""
-    namespace = f"{node.namespace}." if getattr(node, "namespace", None) else ""
+    namespace_name = getattr(node, "namespace", None) or default_namespace
+    namespace = f"{namespace_name}." if namespace_name else ""
     return f"extern rule {prefix}{namespace}{node.name}"
 
 

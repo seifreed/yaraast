@@ -108,6 +108,26 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     assert 'include "dir\\"\\\\common.yar"' in advanced_escaped
 
 
+def test_codegen_generator_preserves_namespaced_extern_rules() -> None:
+    out = CodeGenerator().generate(
+        YaraFile(
+            namespaces=[
+                ExternNamespace(
+                    "corp",
+                    extern_rules=[
+                        ExternRule("Nested"),
+                        ExternRule("AlreadyQualified", namespace="legacy"),
+                    ],
+                )
+            ]
+        )
+    )
+
+    assert "namespace corp" in out
+    assert "extern rule corp.Nested" in out
+    assert "extern rule legacy.AlreadyQualified" in out
+
+
 def test_codegen_generators_emit_anonymous_string_identifier() -> None:
     ast = Parser().parse("""
         rule anonymous_strings {
