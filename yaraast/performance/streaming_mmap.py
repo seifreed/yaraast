@@ -9,8 +9,8 @@ from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.tokens import TokenType
 
 
-def iter_rule_texts_from_text(content: str) -> Iterator[str]:
-    """Yield complete rule texts from YARA source text."""
+def iter_rule_text_spans_from_text(content: str) -> Iterator[tuple[str, int, int]]:
+    """Yield complete rule texts and their character spans from YARA source text."""
     line_starts = [0]
     for index, char in enumerate(content):
         if char == "\n":
@@ -72,11 +72,32 @@ def iter_rule_texts_from_text(content: str) -> Iterator[str]:
         brace_end_token = tokens[index - 1]
         start_pos = get_char_pos(rule_start_token.line, rule_start_token.column)
         end_pos = get_char_pos(brace_end_token.line, brace_end_token.column) + 1
-        yield content[start_pos:end_pos]
+        yield content[start_pos:end_pos], start_pos, end_pos
+
+
+def iter_rule_texts_from_text(content: str) -> Iterator[str]:
+    """Yield complete rule texts from YARA source text."""
+    for rule_text, _, _ in iter_rule_text_spans_from_text(content):
+        yield rule_text
 
 
 def iter_rule_texts_from_mmap(mmapped_file: mmap.mmap) -> Iterator[str]:
     """Yield complete rule texts from a memory-mapped YARA file."""
+    for rule_text, _, _ in iter_rule_text_byte_spans_from_mmap(mmapped_file):
+        yield rule_text
+
+
+def iter_rule_text_byte_spans_from_mmap(
+    mmapped_file: mmap.mmap,
+) -> Iterator[tuple[str, int, int]]:
+    """Yield complete rule texts and their byte spans from a memory-mapped YARA file."""
     content = mmapped_file.read().decode("utf-8", errors="replace")
     mmapped_file.seek(0)
-    yield from iter_rule_texts_from_text(content)
+    current_char_pos = 0
+    current_byte_pos = 0
+    for rule_text, start_pos, end_pos in iter_rule_text_spans_from_text(content):
+        current_byte_pos += len(content[current_char_pos:start_pos].encode("utf-8"))
+        start_byte_pos = current_byte_pos
+        current_byte_pos += len(content[start_pos:end_pos].encode("utf-8"))
+        yield rule_text, start_byte_pos, current_byte_pos
+        current_char_pos = end_pos

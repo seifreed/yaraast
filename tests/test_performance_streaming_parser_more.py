@@ -88,9 +88,13 @@ def test_streaming_parse_with_progress_and_stats(tmp_path: Path) -> None:
     rules = parser.parse_with_progress(path, cb)
     assert len(rules) == 2
     assert progress
+    assert all(processed > 0 for processed, _ in progress)
+    assert progress == sorted(progress)
+    assert progress[-1] == (path.stat().st_size, path.stat().st_size)
 
     stats = parser.get_statistics()
     assert stats["rules_parsed"] >= 2
+    assert stats["bytes_processed"] == path.stat().st_size
 
     estimate = parser.estimate_memory_usage(path)
     assert estimate["file_size_mb"] >= 0

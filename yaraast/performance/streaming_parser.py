@@ -9,7 +9,10 @@ from typing import TYPE_CHECKING, Any
 from yaraast.dialects import YaraDialect
 from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
-from yaraast.performance.streaming_mmap import iter_rule_texts_from_mmap, iter_rule_texts_from_text
+from yaraast.performance.streaming_mmap import (
+    iter_rule_text_byte_spans_from_mmap,
+    iter_rule_texts_from_text,
+)
 from yaraast.performance.streaming_result_builders import (
     build_error_parse_result,
     build_file_parse_result,
@@ -96,6 +99,7 @@ class StreamingParser:
         ):
             # Use memory mapping for large files
             yield from self._parse_mmap(mmapped_file, callback)
+            self._stats["bytes_processed"] = file_path.stat().st_size
 
     def parse_stream(
         self,
@@ -290,13 +294,37 @@ class StreamingParser:
         This method uses the Lexer to properly identify rule boundaries,
         avoiding issues with braces in strings, regexes, or comments.
         """
-        for rule_text in iter_rule_texts_from_mmap(mmapped_file):
-            rule = self._parse_rule_text(rule_text)
-            if rule:
-                self._stats["rules_parsed"] += 1
-                if callback:
-                    callback(rule)
-                yield rule
+        file_size = mmapped_file.size()
+        rule_iter = iter(iter_rule_text_byte_spans_from_mmap(mmapped_file))
+        try:
+            current = next(rule_iter)
+        except StopIteration:
+            self._stats["bytes_processed"] = file_size
+            return
+
+        for next_rule in rule_iter:
+            rule_text, _, byte_end = current
+            yield from self._parse_mmap_rule(rule_text, byte_end, callback)
+            current = next_rule
+
+        rule_text, _, _ = current
+        yield from self._parse_mmap_rule(rule_text, file_size, callback)
+        self._stats["bytes_processed"] = file_size
+
+    def _parse_mmap_rule(
+        self,
+        rule_text: str,
+        bytes_processed: int,
+        callback: Callable[[Rule], None] | None,
+    ) -> Iterator[Rule]:
+        """Parse one mmap-extracted rule and update progress statistics."""
+        self._stats["bytes_processed"] = bytes_processed
+        rule = self._parse_rule_text(rule_text)
+        if rule:
+            self._stats["rules_parsed"] += 1
+            if callback:
+                callback(rule)
+            yield rule
 
     def _parse_rule_text(self, rule_text: str) -> Rule | None:
         """Parse a single rule text using the appropriate dialect parser."""
