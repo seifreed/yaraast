@@ -141,7 +141,12 @@ def visit_comment_group(node) -> str:
 
 
 def visit_extern_import(node) -> str:
-    return f'import "{escape_string_literal(node.module_path)}"'
+    value = f'import "{escape_string_literal(node.module_path)}"'
+    if node.rules:
+        value += f" ({', '.join(node.rules)})"
+    if node.alias:
+        value += f" as {node.alias}"
+    return value
 
 
 def visit_extern_namespace(node) -> str:

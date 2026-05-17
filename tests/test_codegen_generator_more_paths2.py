@@ -398,6 +398,9 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     assert gen.visit_extern_import(ExternImport('mods"\\file.yar')) == (
         'import "mods\\"\\\\file.yar"'
     )
+    assert gen.visit_extern_import(ExternImport("mods.yar", alias="mods", rules=["R1", "R2"])) == (
+        'import "mods.yar" (R1, R2) as mods'
+    )
     assert gen.visit_extern_namespace(ExternNamespace("ns")) == "namespace ns"
     assert gen.visit_extern_rule(ExternRule("R")) == "rule R"
     assert (
