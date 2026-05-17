@@ -369,6 +369,10 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         )
         == 'pe["Company"]'
     )
+    assert (
+        gen.visit_dictionary_access(DictionaryAccess(ModuleReference("pe"), 'Company"\\Path'))
+        == 'pe["Company\\"\\\\Path"]'
+    )
     assert gen.visit_condition(Condition()) == ""
     assert gen.visit_tag(Tag("x")) == "x"
     assert gen.visit_string_modifier(StringModifier.from_name_value("xor", (1, 3))) == "xor(1-3)"

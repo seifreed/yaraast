@@ -117,7 +117,7 @@ def visit_module_reference(node) -> str:
 def visit_dictionary_access(generator, node) -> str:
     obj = generator.visit(node.object)
     if isinstance(node.key, str):
-        return f'{obj}["{node.key}"]'
+        return f'{obj}["{escape_string_literal(node.key)}"]'
     return f"{obj}[{generator.visit(node.key)}]"
 
 
