@@ -213,6 +213,15 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
     assert (
         ev.visit_in_expression(InExpression(subject="$a", range=IntegerLiteral(value=5))) is False
     )
+    assert (
+        ev.visit_in_expression(
+            InExpression(
+                subject=BooleanLiteral(value=True),
+                range=RangeExpression(IntegerLiteral(0), IntegerLiteral(0)),
+            )
+        )
+        is False
+    )
 
     ev.context.string_matches = {"$a": [1], "$b": []}
     ev.string_matcher.matches = ev.context.string_matches
