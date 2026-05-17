@@ -170,7 +170,8 @@ class ASTTreeBuilder:
             string_type = string.__class__.__name__
             value_preview = self._get_string_preview(string, escape)
             modifiers = self._get_string_modifiers_preview(string, escape)
-            strings_tree.add(f"{string.identifier}{value_preview} [{string_type}]{modifiers}")
+            identifier = output_string_identifier(string)
+            strings_tree.add(f"{identifier}{value_preview} [{string_type}]{modifiers}")
 
     def _get_string_modifiers_preview(self, string, escape) -> str:
         if not (hasattr(string, "modifiers") and string.modifiers):

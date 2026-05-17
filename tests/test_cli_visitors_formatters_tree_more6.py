@@ -147,6 +147,14 @@ def test_tree_builder_rule_and_fallback_paths() -> None:
     assert "xor(1-2)" in txt
     assert "xor(1-2)" in _render_tree(builder.visit_plain_string(rule.strings[0]))
 
+    anonymous_rule = Rule(
+        name="anon",
+        strings=[PlainString(identifier="$anon_1", value="x", is_anonymous=True)],
+    )
+    anonymous_txt = _render_tree(builder.visit_rule(anonymous_rule))
+    assert '$ = "x" [PlainString]' in anonymous_txt
+    assert "$anon_1" not in anonymous_txt
+
     ast = YaraFile(rules=[rule])
     full = builder.visit_yara_file(ast)
     full_txt = _render_tree(full)
