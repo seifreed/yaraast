@@ -440,6 +440,41 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
         deserialize_node({"type": "RegexLiteral", "pattern": "abc", "modifiers": ["i"]})
 
 
+def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types() -> None:
+    true_expr = {"type": "BooleanLiteral", "value": True}
+
+    with pytest.raises(SerializationError, match="FunctionCall arguments must be a list"):
+        deserialize_node({"type": "FunctionCall", "function": "fn", "arguments": "abc"})
+
+    with pytest.raises(SerializationError, match="WithDeclaration identifier must be a string"):
+        deserialize_node({"type": "WithDeclaration", "identifier": ["x"], "value": true_expr})
+
+    with pytest.raises(SerializationError, match="WithStatement declarations must be a list"):
+        deserialize_node({"type": "WithStatement", "declarations": "x", "body": true_expr})
+
+    with pytest.raises(SerializationError, match="ArrayComprehension variable must be a string"):
+        deserialize_node({"type": "ArrayComprehension", "variable": ["x"]})
+
+    with pytest.raises(
+        SerializationError, match="DictComprehension value_variable must be a string"
+    ):
+        deserialize_node({"type": "DictComprehension", "key_variable": "k", "value_variable": True})
+
+    with pytest.raises(SerializationError, match="TupleExpression elements must be a list"):
+        deserialize_node({"type": "TupleExpression", "elements": "abc"})
+
+    with pytest.raises(
+        SerializationError, match="LambdaExpression parameters must be a list of strings"
+    ):
+        deserialize_node({"type": "LambdaExpression", "parameters": "xy", "body": true_expr})
+
+    with pytest.raises(SerializationError, match="PatternMatch cases must be a list"):
+        deserialize_node({"type": "PatternMatch", "value": true_expr, "cases": "case"})
+
+    with pytest.raises(SerializationError, match="SpreadOperator is_dict must be a boolean"):
+        deserialize_node({"type": "SpreadOperator", "expression": true_expr, "is_dict": "yes"})
+
+
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
     ast = YaraFile(
         rules=[

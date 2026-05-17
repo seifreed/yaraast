@@ -304,6 +304,24 @@ def _deserialize_string_list_field(data: dict[str, Any], field: str, context: st
     raise SerializationError(msg)
 
 
+def _deserialize_list_field(data: dict[str, Any], field: str, context: str) -> list[Any]:
+    value = data.get(field, [])
+    if isinstance(value, list):
+        return value
+    msg = f"{context} {field} must be a list"
+    raise SerializationError(msg)
+
+
+def _deserialize_bool_field(
+    data: dict[str, Any], field: str, context: str, default: bool = False
+) -> bool:
+    value = data.get(field, default)
+    if isinstance(value, bool):
+        return value
+    msg = f"{context} {field} must be a boolean"
+    raise SerializationError(msg)
+
+
 def _deserialize_dict_field(data: dict[str, Any], field: str, context: str) -> dict[str, Any]:
     value = data.get(field, {})
     if isinstance(value, dict):
@@ -1050,7 +1068,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "FunctionCall":
         return FunctionCall(
             _deserialize_string_field(data, "function", "FunctionCall"),
-            [deserialize_node(argument) for argument in data.get("arguments", [])],
+            [
+                deserialize_node(argument)
+                for argument in _deserialize_list_field(data, "arguments", "FunctionCall")
+            ],
         )
     if node_type == "ArrayAccess":
         return ArrayAccess(deserialize_node(data["array"]), deserialize_node(data["index"]))
@@ -1113,25 +1134,26 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             right = {"type": "Identifier", "name": "true"}
         return StringOperatorExpression(
             deserialize_node(left),
-            data["operator"],
+            _deserialize_string_field(data, "operator", "StringOperatorExpression"),
             deserialize_node(right),
         )
     if node_type == "WithStatement":
         return WithStatement(
             declarations=[
-                deserialize_node(declaration) for declaration in data.get("declarations", [])
+                deserialize_node(declaration)
+                for declaration in _deserialize_list_field(data, "declarations", "WithStatement")
             ],
             body=deserialize_node(data["body"]),
         )
     if node_type == "WithDeclaration":
         return WithDeclaration(
-            identifier=data["identifier"],
+            identifier=_deserialize_string_field(data, "identifier", "WithDeclaration"),
             value=deserialize_node(data["value"]),
         )
     if node_type == "ArrayComprehension":
         return ArrayComprehension(
             expression=deserialize_node(data["expression"]) if data.get("expression") else None,
-            variable=data.get("variable", ""),
+            variable=_deserialize_optional_string_field(data, "variable", "ArrayComprehension"),
             iterable=deserialize_node(data["iterable"]) if data.get("iterable") else None,
             condition=deserialize_node(data["condition"]) if data.get("condition") else None,
         )
@@ -1143,14 +1165,21 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             value_expression=(
                 deserialize_node(data["value_expression"]) if data.get("value_expression") else None
             ),
-            key_variable=data.get("key_variable", ""),
-            value_variable=data.get("value_variable"),
+            key_variable=_deserialize_optional_string_field(
+                data, "key_variable", "DictComprehension"
+            ),
+            value_variable=_deserialize_nullable_string_field(
+                data, "value_variable", "DictComprehension"
+            ),
             iterable=deserialize_node(data["iterable"]) if data.get("iterable") else None,
             condition=deserialize_node(data["condition"]) if data.get("condition") else None,
         )
     if node_type == "TupleExpression":
         return TupleExpression(
-            elements=[deserialize_node(element) for element in data.get("elements", [])],
+            elements=[
+                deserialize_node(element)
+                for element in _deserialize_list_field(data, "elements", "TupleExpression")
+            ],
         )
     if node_type == "TupleIndexing":
         return TupleIndexing(
@@ -1159,11 +1188,17 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ListExpression":
         return ListExpression(
-            elements=[deserialize_node(element) for element in data.get("elements", [])],
+            elements=[
+                deserialize_node(element)
+                for element in _deserialize_list_field(data, "elements", "ListExpression")
+            ],
         )
     if node_type == "DictExpression":
         return DictExpression(
-            items=[deserialize_node(item) for item in data.get("items", [])],
+            items=[
+                deserialize_node(item)
+                for item in _deserialize_list_field(data, "items", "DictExpression")
+            ],
         )
     if node_type == "DictItem":
         return DictItem(
@@ -1179,13 +1214,16 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "LambdaExpression":
         return LambdaExpression(
-            parameters=list(data.get("parameters", [])),
+            parameters=_deserialize_string_list_field(data, "parameters", "LambdaExpression"),
             body=deserialize_node(data["body"]),
         )
     if node_type == "PatternMatch":
         return PatternMatch(
             value=deserialize_node(data["value"]),
-            cases=[deserialize_node(case) for case in data.get("cases", [])],
+            cases=[
+                deserialize_node(case)
+                for case in _deserialize_list_field(data, "cases", "PatternMatch")
+            ],
             default=deserialize_node(data["default"]) if data.get("default") else None,
         )
     if node_type == "MatchCase":
@@ -1196,7 +1234,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "SpreadOperator":
         return SpreadOperator(
             expression=deserialize_node(data["expression"]),
-            is_dict=data.get("is_dict", False),
+            is_dict=_deserialize_bool_field(data, "is_dict", "SpreadOperator"),
         )
     return Identifier(data.get("data", "unknown"))
 

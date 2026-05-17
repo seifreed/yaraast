@@ -172,6 +172,24 @@ def _deserialize_string_list_field(data: dict[str, Any], field: str, context: st
     raise SerializationError(msg)
 
 
+def _deserialize_list_field(data: dict[str, Any], field: str, context: str) -> list[Any]:
+    value = data.get(field, [])
+    if isinstance(value, list):
+        return value
+    msg = f"{context} {field} must be a list"
+    raise SerializationError(msg)
+
+
+def _deserialize_bool_field(
+    data: dict[str, Any], field: str, context: str, default: bool = False
+) -> bool:
+    value = data.get(field, default)
+    if isinstance(value, bool):
+        return value
+    msg = f"{context} {field} must be a boolean"
+    raise SerializationError(msg)
+
+
 def _deserialize_dict_field(data: dict[str, Any], field: str, context: str) -> dict[str, Any]:
     value = data.get(field, {})
     if isinstance(value, dict):
@@ -344,7 +362,10 @@ def _deser_range_expression(self, data: dict[str, Any]):
 def _deser_function_call(self, data: dict[str, Any]):
     from yaraast.ast.expressions import FunctionCall
 
-    args = [self._deserialize_expression(a) for a in data.get("arguments", [])]
+    args = [
+        self._deserialize_expression(a)
+        for a in _deserialize_list_field(data, "arguments", "FunctionCall")
+    ]
     return FunctionCall(
         function=_deserialize_string_field(data, "function", "FunctionCall"),
         arguments=args,
@@ -540,7 +561,7 @@ def _deser_string_operator_expression(self, data: dict[str, Any]):
         right = {"type": "Identifier", "name": "true"}
     return StringOperatorExpression(
         left=self._deserialize_expression(left),
-        operator=data["operator"],
+        operator=_deserialize_string_field(data, "operator", "StringOperatorExpression"),
         right=self._deserialize_expression(right),
     )
 
@@ -567,7 +588,7 @@ def _deser_with_statement(self, data: dict[str, Any]):
     return WithStatement(
         declarations=[
             self._deserialize_expression(declaration)
-            for declaration in data.get("declarations", [])
+            for declaration in _deserialize_list_field(data, "declarations", "WithStatement")
         ],
         body=self._deserialize_expression(data["body"]),
     )
@@ -577,7 +598,7 @@ def _deser_with_declaration(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import WithDeclaration
 
     return WithDeclaration(
-        identifier=data["identifier"],
+        identifier=_deserialize_string_field(data, "identifier", "WithDeclaration"),
         value=self._deserialize_expression(data["value"]),
     )
 
@@ -587,7 +608,7 @@ def _deser_array_comprehension(self, data: dict[str, Any]):
 
     return ArrayComprehension(
         expression=_deserialize_optional_expression(self, data.get("expression")),
-        variable=data.get("variable", ""),
+        variable=_deserialize_optional_string_field(data, "variable", "ArrayComprehension"),
         iterable=_deserialize_optional_expression(self, data.get("iterable")),
         condition=_deserialize_optional_expression(self, data.get("condition")),
     )
@@ -599,8 +620,10 @@ def _deser_dict_comprehension(self, data: dict[str, Any]):
     return DictComprehension(
         key_expression=_deserialize_optional_expression(self, data.get("key_expression")),
         value_expression=_deserialize_optional_expression(self, data.get("value_expression")),
-        key_variable=data.get("key_variable", ""),
-        value_variable=data.get("value_variable"),
+        key_variable=_deserialize_optional_string_field(data, "key_variable", "DictComprehension"),
+        value_variable=_deserialize_nullable_string_field(
+            data, "value_variable", "DictComprehension"
+        ),
         iterable=_deserialize_optional_expression(self, data.get("iterable")),
         condition=_deserialize_optional_expression(self, data.get("condition")),
     )
@@ -610,7 +633,10 @@ def _deser_tuple_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import TupleExpression
 
     return TupleExpression(
-        elements=[self._deserialize_expression(element) for element in data.get("elements", [])]
+        elements=[
+            self._deserialize_expression(element)
+            for element in _deserialize_list_field(data, "elements", "TupleExpression")
+        ]
     )
 
 
@@ -627,7 +653,10 @@ def _deser_list_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import ListExpression
 
     return ListExpression(
-        elements=[self._deserialize_expression(element) for element in data.get("elements", [])]
+        elements=[
+            self._deserialize_expression(element)
+            for element in _deserialize_list_field(data, "elements", "ListExpression")
+        ]
     )
 
 
@@ -635,7 +664,10 @@ def _deser_dict_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import DictExpression
 
     return DictExpression(
-        items=[self._deserialize_expression(item) for item in data.get("items", [])]
+        items=[
+            self._deserialize_expression(item)
+            for item in _deserialize_list_field(data, "items", "DictExpression")
+        ]
     )
 
 
@@ -663,7 +695,7 @@ def _deser_lambda_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import LambdaExpression
 
     return LambdaExpression(
-        parameters=list(data.get("parameters", [])),
+        parameters=_deserialize_string_list_field(data, "parameters", "LambdaExpression"),
         body=self._deserialize_expression(data["body"]),
     )
 
@@ -673,7 +705,10 @@ def _deser_pattern_match(self, data: dict[str, Any]):
 
     return PatternMatch(
         value=self._deserialize_expression(data["value"]),
-        cases=[self._deserialize_expression(case) for case in data.get("cases", [])],
+        cases=[
+            self._deserialize_expression(case)
+            for case in _deserialize_list_field(data, "cases", "PatternMatch")
+        ],
         default=_deserialize_optional_expression(self, data.get("default")),
     )
 
@@ -692,7 +727,7 @@ def _deser_spread_operator(self, data: dict[str, Any]):
 
     return SpreadOperator(
         expression=self._deserialize_expression(data["expression"]),
-        is_dict=data.get("is_dict", False),
+        is_dict=_deserialize_bool_field(data, "is_dict", "SpreadOperator"),
     )
 
 

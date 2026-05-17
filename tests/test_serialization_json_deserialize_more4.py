@@ -379,6 +379,50 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
         s._deserialize_expression({"type": "RegexLiteral", "pattern": "abc", "modifiers": ["i"]})
 
 
+def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types() -> None:
+    s = JsonSerializer()
+    true_expr = {"type": "BooleanLiteral", "value": True}
+
+    with pytest.raises(SerializationError, match="FunctionCall arguments must be a list"):
+        s._deserialize_expression({"type": "FunctionCall", "function": "fn", "arguments": "abc"})
+
+    with pytest.raises(SerializationError, match="WithDeclaration identifier must be a string"):
+        s._deserialize_expression(
+            {"type": "WithDeclaration", "identifier": ["x"], "value": true_expr}
+        )
+
+    with pytest.raises(SerializationError, match="WithStatement declarations must be a list"):
+        s._deserialize_expression({"type": "WithStatement", "declarations": "x", "body": true_expr})
+
+    with pytest.raises(SerializationError, match="ArrayComprehension variable must be a string"):
+        s._deserialize_expression({"type": "ArrayComprehension", "variable": ["x"]})
+
+    with pytest.raises(
+        SerializationError, match="DictComprehension value_variable must be a string"
+    ):
+        s._deserialize_expression(
+            {"type": "DictComprehension", "key_variable": "k", "value_variable": True}
+        )
+
+    with pytest.raises(SerializationError, match="TupleExpression elements must be a list"):
+        s._deserialize_expression({"type": "TupleExpression", "elements": "abc"})
+
+    with pytest.raises(
+        SerializationError, match="LambdaExpression parameters must be a list of strings"
+    ):
+        s._deserialize_expression(
+            {"type": "LambdaExpression", "parameters": "xy", "body": true_expr}
+        )
+
+    with pytest.raises(SerializationError, match="PatternMatch cases must be a list"):
+        s._deserialize_expression({"type": "PatternMatch", "value": true_expr, "cases": "case"})
+
+    with pytest.raises(SerializationError, match="SpreadOperator is_dict must be a boolean"):
+        s._deserialize_expression(
+            {"type": "SpreadOperator", "expression": true_expr, "is_dict": "yes"}
+        )
+
+
 def test_deserialize_expression_comprehensive_branches() -> None:
     s = JsonSerializer()
 
