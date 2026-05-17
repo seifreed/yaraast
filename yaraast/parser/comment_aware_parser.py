@@ -316,8 +316,9 @@ class CommentAwareParser(Parser):
         """Parse string modifiers (nocase, wide, etc.)."""
         from yaraast.ast.modifiers import StringModifier
         from yaraast.lexer.tokens import TokenType
+        from yaraast.parser._shared import ParserError
 
-        modifiers = []
+        modifiers: list[StringModifier] = []
         while self._peek() and self._peek().type in (
             TokenType.NOCASE,
             TokenType.WIDE,
@@ -326,25 +327,72 @@ class CommentAwareParser(Parser):
             TokenType.BASE64,
             TokenType.BASE64WIDE,
             TokenType.XOR_MOD,
+            TokenType.PRIVATE,
         ):
             mod_name = self._peek().value
             self._advance()
+            mod_name_lower = str(mod_name).lower()
 
-            # Handle XOR with optional parameters
-            if mod_name.lower() == "xor" and self._peek() and self._peek().type == TokenType.LPAREN:
-                self._advance()  # consume '('
-                depth = 1
-                while depth > 0 and self._peek():
-                    if self._peek().type == TokenType.LPAREN:
-                        depth += 1
-                    elif self._peek().type == TokenType.RPAREN:
-                        depth -= 1
-                    self._advance()
-                modifiers.append(StringModifier.from_name_value("xor"))
+            if mod_name_lower in {"xor", "base64", "base64wide"} and self._match(TokenType.LPAREN):
+                parameter_start = self.current
+                try:
+                    value = self._parse_string_modifier_parameter(mod_name_lower)
+                except ParserError:
+                    if mod_name_lower != "xor":
+                        raise
+                    self.current = parameter_start
+                    self._skip_string_modifier_parameter()
+                    modifiers.append(StringModifier.from_name_value(mod_name_lower))
+                    continue
+
+                if not self._match(TokenType.RPAREN):
+                    if mod_name_lower == "xor":
+                        self.current = parameter_start
+                        self._skip_string_modifier_parameter()
+                        modifiers.append(StringModifier.from_name_value(mod_name_lower))
+                        continue
+                    msg = f"Expected ')' after {mod_name_lower} parameter"
+                    raise ParserError(msg, self._peek())
+                modifiers.append(StringModifier.from_name_value(mod_name_lower, value))
             else:
                 modifiers.append(StringModifier.from_name_value(mod_name))
 
         return modifiers
+
+    def _parse_string_modifier_parameter(self, mod_name: str) -> object:
+        from yaraast.lexer.tokens import TokenType
+        from yaraast.parser._shared import ParserError
+
+        if mod_name != "xor":
+            if self._match(TokenType.STRING):
+                return self._previous().value
+            return None
+
+        if not self._match(TokenType.INTEGER):
+            msg = "Expected integer or range in xor"
+            raise ParserError(msg, self._peek())
+
+        min_val = self._previous().value
+        if not self._match(TokenType.MINUS):
+            return min_val
+
+        if not self._match(TokenType.INTEGER):
+            msg = "Expected integer after '-'"
+            raise ParserError(msg, self._peek())
+
+        max_val = self._previous().value
+        return (min_val, max_val)
+
+    def _skip_string_modifier_parameter(self) -> None:
+        from yaraast.lexer.tokens import TokenType
+
+        depth = 1
+        while depth > 0 and self._peek():
+            if self._peek().type == TokenType.LPAREN:
+                depth += 1
+            elif self._peek().type == TokenType.RPAREN:
+                depth -= 1
+            self._advance()
 
     def _parse_hex_tokens(self, hex_content: str):
         """Parse hex string tokens."""

@@ -6,6 +6,7 @@ import pytest
 
 from yaraast.ast.comments import CommentGroup
 from yaraast.ast.expressions import BooleanLiteral
+from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
@@ -100,7 +101,7 @@ def test_parse_strings_section_branches_and_modifier_parsing() -> None:
         _t(TokenType.XOR_MOD, "xor", 4),
         _t(TokenType.LPAREN, "(", 4),
         _t(TokenType.INTEGER, 1, 4),
-        _t(TokenType.COMMA, ",", 4),
+        _t(TokenType.MINUS, "-", 4),
         _t(TokenType.INTEGER, 2, 4),
         _t(TokenType.RPAREN, ")", 4),
         _t(TokenType.EOF, "", 5),
@@ -129,6 +130,37 @@ def test_parse_strings_section_branches_and_modifier_parsing() -> None:
     p.current = 0
     with pytest.raises(Exception, match="Expected string value"):
         p._parse_strings_section()
+
+
+def test_comment_aware_parser_preserves_parameterized_string_modifiers() -> None:
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    ast = CommentAwareParser().parse(f"""
+        rule modifiers {{
+            strings:
+                $xor = "abc" xor(1-2) private
+                $b64 = "abc" base64("{alphabet}")
+                $b64w = "abc" base64wide("{alphabet}")
+            condition:
+                any of them
+        }}
+        """)
+
+    string_modifiers = {
+        string_def.identifier: [
+            (modifier.name, modifier.value) for modifier in string_def.modifiers
+        ]
+        for string_def in ast.rules[0].strings
+    }
+
+    assert string_modifiers["$xor"] == [("xor", (1, 2)), ("private", None)]
+    assert string_modifiers["$b64"] == [("base64", alphabet)]
+    assert string_modifiers["$b64w"] == [("base64wide", alphabet)]
+
+    generated = CommentAwareCodeGenerator().generate(ast)
+
+    assert "xor(1-2) private" in generated
+    assert f'base64("{alphabet}")' in generated
+    assert f'base64wide("{alphabet}")' in generated
 
 
 def test_parse_meta_section_boolean_and_error_paths_and_trailing_comments() -> None:
