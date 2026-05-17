@@ -178,6 +178,29 @@ rule caller {
     assert "caller" not in results["dependencies"]
 
 
+def test_dependency_analyzer_ignores_multi_variable_for_locals() -> None:
+    ast = Parser().parse("""
+rule k {
+    condition:
+        true
+}
+
+rule v {
+    condition:
+        true
+}
+
+rule caller {
+    condition:
+        for all k, v in (1, 2, 3) : (k > 0 and v > 0)
+}
+""")
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert "caller" not in results["dependencies"]
+
+
 def test_dependency_analyzer_ignores_yarax_local_variable_shadowing_rules() -> None:
     shadowed_rules = [
         Rule(name="x", condition=BooleanLiteral(True)),

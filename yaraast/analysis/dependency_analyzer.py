@@ -316,4 +316,10 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
-        return {name, name.lstrip("$")}
+        names = [part.strip() for part in name.split(",")]
+        return {
+            variant
+            for local_name in names
+            if local_name
+            for variant in (local_name, local_name.lstrip("$"))
+        }
