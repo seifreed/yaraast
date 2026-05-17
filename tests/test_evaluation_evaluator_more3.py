@@ -81,6 +81,34 @@ def test_evaluator_matches_operator_honors_regex_modifiers() -> None:
     assert YaraEvaluator().evaluate_file(ast) == {"r": True}
 
 
+def test_hash_module_invalid_regions_evaluate_as_undefined() -> None:
+    ast = Parser().parse("""
+        import "hash"
+        rule invalid_hash_regions {
+            condition:
+                hash.md5(-1, 1) == "d41d8cd98f00b204e9800998ecf8427e" or
+                hash.md5(filesize, 0) == "d41d8cd98f00b204e9800998ecf8427e" or
+                hash.checksum32(-1, 1) == 0 or
+                hash.crc32(-1, 1) != 0 or
+                not hash.crc32(-1, 1)
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"invalid_hash_regions": False}
+
+
+def test_hash_module_valid_region_can_extend_to_file_end() -> None:
+    ast = Parser().parse("""
+        import "hash"
+        rule trailing_hash_region {
+            condition:
+                hash.md5(1, 100) == "5360af35bde9ebd8f01f492dc059593c"
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"trailing_hash_region": True}
+
+
 def test_string_count_offset_length_and_wildcard() -> None:
     ev = YaraEvaluator(data=b"xxabxxab")
     rule = Rule(

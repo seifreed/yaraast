@@ -5,10 +5,14 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED, is_yara_undefined
 from yaraast.shared.integer_semantics import integer_remainder, truncate_integer_division
 
 
 def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
+    if is_yara_undefined(left) or is_yara_undefined(right):
+        return YARA_UNDEFINED
+
     if operator == "+":
         return left + right
     if operator == "-":
@@ -43,6 +47,9 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
 
 
 def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
+    if is_yara_undefined(left) or is_yara_undefined(right):
+        return False
+
     if operator == "==":
         return left == right
     if operator == "!=":
@@ -59,6 +66,9 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
 
 
 def evaluate_string_operator(left: Any, right: Any, operator: str) -> bool | None:
+    if is_yara_undefined(left) or is_yara_undefined(right):
+        return False
+
     string_operators = {
         "contains",
         "icontains",

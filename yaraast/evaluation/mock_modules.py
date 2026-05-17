@@ -13,6 +13,8 @@ import struct
 import time as time_mod
 from typing import Any
 
+from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED, YaraUndefinedValue
+
 
 @dataclass
 class Section:
@@ -302,33 +304,49 @@ class HashModule:
     def __init__(self, data: bytes) -> None:
         self.data = data
 
-    def md5(self, offset: int | None = None, size: int | None = None) -> str:
+    def md5(self, offset: int | None = None, size: int | None = None) -> str | YaraUndefinedValue:
         region = self._get_region(offset, size)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
         return hashlib.md5(region, usedforsecurity=False).hexdigest()
 
-    def sha1(self, offset: int | None = None, size: int | None = None) -> str:
+    def sha1(self, offset: int | None = None, size: int | None = None) -> str | YaraUndefinedValue:
         region = self._get_region(offset, size)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
         return hashlib.sha1(region, usedforsecurity=False).hexdigest()
 
-    def sha256(self, offset: int | None = None, size: int | None = None) -> str:
+    def sha256(
+        self, offset: int | None = None, size: int | None = None
+    ) -> str | YaraUndefinedValue:
         region = self._get_region(offset, size)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
         return hashlib.sha256(region).hexdigest()
 
-    def checksum32(self, offset: int | None = None, size: int | None = None) -> int:
+    def checksum32(
+        self, offset: int | None = None, size: int | None = None
+    ) -> int | YaraUndefinedValue:
         region = self._get_region(offset, size)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
         return sum(region) & 0xFFFFFFFF
 
-    def crc32(self, offset: int | None = None, size: int | None = None) -> int:
+    def crc32(self, offset: int | None = None, size: int | None = None) -> int | YaraUndefinedValue:
         import binascii
 
         region = self._get_region(offset, size)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
         return binascii.crc32(region) & 0xFFFFFFFF
 
-    def _get_region(self, offset: int | None, size: int | None) -> bytes:
+    def _get_region(self, offset: int | None, size: int | None) -> bytes | YaraUndefinedValue:
         if offset is None and size is None:
             return self.data
         off = 0 if offset is None else offset
         sz = len(self.data) - off if size is None else size
+        if off < 0 or off >= len(self.data) or sz < 0:
+            return YARA_UNDEFINED
         return self.data[off : off + sz]
 
 

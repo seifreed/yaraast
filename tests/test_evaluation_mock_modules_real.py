@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import struct
 
+from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.mock_modules import (
     HashModule,
     MockDotNet,
@@ -117,3 +118,13 @@ def test_hash_module_respects_zero_length_regions() -> None:
     )
     assert hash_module.checksum32(0, 0) == 0
     assert hash_module.crc32(0, 0) == 0
+
+
+def test_hash_module_returns_undefined_for_invalid_regions() -> None:
+    hash_module = HashModule(b"abc")
+
+    assert hash_module.md5(-1, 1) is YARA_UNDEFINED
+    assert hash_module.sha1(3, 0) is YARA_UNDEFINED
+    assert hash_module.sha256(4, 1) is YARA_UNDEFINED
+    assert hash_module.checksum32(1, -1) is YARA_UNDEFINED
+    assert hash_module.crc32(-2, 100) is YARA_UNDEFINED

@@ -9,7 +9,11 @@ from typing import TYPE_CHECKING, Any
 from yaraast.ast.conditions import *
 from yaraast.ast.expressions import *
 from yaraast.errors import EvaluationError
-from yaraast.evaluation.evaluation_helpers import BUILTIN_READERS, LITTLE_ENDIAN_ALIASES
+from yaraast.evaluation.evaluation_helpers import (
+    BUILTIN_READERS,
+    LITTLE_ENDIAN_ALIASES,
+    is_yara_undefined,
+)
 from yaraast.evaluation.evaluator_ops import (
     evaluate_arithmetic,
     evaluate_comparison,
@@ -129,7 +133,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         # Evaluate condition
         if rule.condition:
-            return self.visit(rule.condition)
+            result = self.visit(rule.condition)
+            return False if is_yara_undefined(result) else bool(result)
 
         return True  # No condition means always match
 
@@ -256,10 +261,16 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         operand = self.visit(node.operand)
 
         if node.operator == "not":
+            if is_yara_undefined(operand):
+                return False
             return not operand
         if node.operator == "-":
+            if is_yara_undefined(operand):
+                return operand
             return -operand
         if node.operator == "~":
+            if is_yara_undefined(operand):
+                return operand
             return ~operand
         msg = f"Unknown unary operator: {node.operator}"
         raise EvaluationError(msg)

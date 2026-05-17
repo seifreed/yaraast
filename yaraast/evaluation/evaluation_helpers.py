@@ -6,6 +6,31 @@ from collections.abc import Callable
 import struct
 
 
+class YaraUndefinedValue:
+    """Value returned for YARA expressions whose runtime value is undefined."""
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __eq__(self, other: object) -> bool:
+        return False
+
+    def __ne__(self, other: object) -> bool:
+        return False
+
+    def __repr__(self) -> str:
+        return "YARA_UNDEFINED"
+
+    __hash__ = object.__hash__
+
+
+YARA_UNDEFINED = YaraUndefinedValue()
+
+
+def is_yara_undefined(value: object) -> bool:
+    return value is YARA_UNDEFINED
+
+
 def read_struct(data: bytes, fmt: str, offset: int, size: int) -> int:
     if offset < 0 or offset + size > len(data):
         return 0
