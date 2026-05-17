@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, IntegerLiteral, StringCount
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString
 from yaraast.parser import Parser
@@ -77,6 +77,25 @@ def test_best_practices_analyzer_handles_byte_plain_strings() -> None:
 
     assert any("Short string" in message for message in messages)
     assert any("consider regex?" in message for message in messages)
+
+
+def test_best_practices_treats_string_count_as_string_usage() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="count_rule",
+                strings=[PlainString(identifier="$a", value="value")],
+                condition=BinaryExpression(StringCount("$a"), ">", IntegerLiteral(0)),
+            )
+        ]
+    )
+
+    report = BestPracticesAnalyzer().analyze(ast)
+
+    assert not any(
+        "String '$a' is defined but never used" in suggestion.message
+        for suggestion in report.suggestions
+    )
 
 
 def test_best_practices_global_hex_patterns_and_helper_paths() -> None:

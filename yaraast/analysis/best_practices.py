@@ -320,9 +320,24 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
                 f"string {string_id}",
             )
 
+    def _mark_string_usage(self, string_id: str) -> None:
+        normalized = string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
+        self._string_usage[normalized] = self._string_usage.get(normalized, 0) + 1
+
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         """Track string usage."""
-        self._string_usage[node.name] = self._string_usage.get(node.name, 0) + 1
+        self._mark_string_usage(node.name)
+
+    def visit_string_count(self, node) -> None:
+        self._mark_string_usage(node.string_id)
+
+    def visit_string_offset(self, node) -> None:
+        self._mark_string_usage(node.string_id)
+        super().visit_string_offset(node)
+
+    def visit_string_length(self, node) -> None:
+        self._mark_string_usage(node.string_id)
+        super().visit_string_length(node)
 
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""
