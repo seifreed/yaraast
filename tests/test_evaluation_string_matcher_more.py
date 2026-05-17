@@ -158,6 +158,20 @@ def test_string_matcher_wide_ascii_and_hex_helper_edge_cases() -> None:
     matcher.match_all([wide_ascii], data)
     assert [m.offset for m in matcher.matches["$mix"]] == [0, 3]
 
+    overlap = PlainString(
+        "$overlap",
+        modifiers=[
+            StringModifier.from_name_value("ascii"),
+            StringModifier.from_name_value("wide"),
+        ],
+        value="A",
+    )
+    overlap_matches = matcher.match_string(overlap, b"A\x00A")
+    assert [(match.offset, match.length, match.matched_data) for match in overlap_matches] == [
+        (0, 1, b"A"),
+        (2, 1, b"A"),
+    ]
+
     assert matcher._find_hex_pattern(b"abc", [], []) == []
     assert matcher._find_hex_pattern(b"ab", [0x61, 0x62, 0x63], [False, False, False]) == []
 

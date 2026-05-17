@@ -201,6 +201,7 @@ class StringMatcher:
                 for match in matches
                 if self._is_fullword(data, match[0], match[1], wide=match[2])
             ]
+        matches = self._deduplicate_plain_matches(matches)
 
         # Store results
         self.matches[string_def.identifier] = [
@@ -212,6 +213,18 @@ class StringMatcher:
             )
             for offset, length, _is_wide in matches
         ]
+
+    def _deduplicate_plain_matches(
+        self,
+        matches: list[tuple[int, int, bool]],
+    ) -> list[tuple[int, int, bool]]:
+        by_offset: dict[int, tuple[int, int, bool]] = {}
+        for match in matches:
+            offset, length, _is_wide = match
+            existing = by_offset.get(offset)
+            if existing is None or length < existing[1]:
+                by_offset[offset] = match
+        return [by_offset[offset] for offset in sorted(by_offset)]
 
     def _modifier_name(self, modifier: Any) -> str:
         return str(getattr(modifier, "name", modifier))
