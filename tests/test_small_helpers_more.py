@@ -34,6 +34,49 @@ from yaraast.lexer.lexer_helpers import (
     _skip_line_continuation,
     skip_whitespace_and_comments,
 )
+from yaraast.lsp.provider_call_helpers import call_range_with_optional_uri, call_with_optional_uri
+
+
+def test_provider_call_helpers_do_not_mask_internal_type_errors() -> None:
+    def accepts_uri(text: str, uri: str) -> str:
+        raise TypeError(f"internal failure for {text} at {uri}")
+
+    def accepts_range_uri(text: str, range_: object, uri: str) -> str:
+        raise TypeError(f"internal range failure for {text} at {uri} in {range_}")
+
+    try:
+        call_with_optional_uri(accepts_uri, "rule a { condition: true }", "file:///a.yar")
+    except TypeError as exc:
+        assert "internal failure" in str(exc)
+    else:
+        raise AssertionError("provider TypeError should propagate")
+
+    try:
+        call_range_with_optional_uri(
+            accepts_range_uri,
+            "rule a { condition: true }",
+            object(),
+            "file:///a.yar",
+        )
+    except TypeError as exc:
+        assert "internal range failure" in str(exc)
+    else:
+        raise AssertionError("range provider TypeError should propagate")
+
+
+def test_provider_call_helpers_fall_back_for_legacy_signatures() -> None:
+    def legacy(text: str) -> str:
+        return text
+
+    def legacy_range(text: str, range_: object) -> tuple[str, object]:
+        return text, range_
+
+    range_marker = object()
+    assert call_with_optional_uri(legacy, "source", "file:///a.yar") == "source"
+    assert call_range_with_optional_uri(legacy_range, "source", range_marker, "file:///a.yar") == (
+        "source",
+        range_marker,
+    )
 
 
 def test_lexer_helpers_skip_whitespace_comments_and_line_continuation() -> None:
