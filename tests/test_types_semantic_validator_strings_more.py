@@ -39,6 +39,29 @@ def test_string_identifier_validator_covers_plain_hex_regex_and_empty_id() -> No
     assert validator.current_rule_strings == {"$a", "$b"}
 
 
+def test_string_identifier_validator_ignores_anonymous_internal_identifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="anonymous_collision",
+                strings=[
+                    PlainString(identifier="$anon_1", value="named"),
+                    PlainString(identifier="$anon_1", value="anonymous", is_anonymous=True),
+                    PlainString(identifier="$anon_1", value="anonymous2", is_anonymous=True),
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+    result = ValidationResult()
+    validator = StringIdentifierValidator(result)
+
+    validator.visit_rule(ast.rules[0])
+
+    assert result.errors == []
+    assert validator.current_rule_strings == {"$anon_1"}
+
+
 def test_string_modifier_applicability_validator_rejects_regex_only_on_non_regex() -> None:
     result = ValidationResult()
     validator = StringModifierApplicabilityValidator(result)

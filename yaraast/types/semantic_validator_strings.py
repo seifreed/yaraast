@@ -32,6 +32,9 @@ class StringIdentifierValidator(DefaultASTVisitor[None]):
             self.visit(string_def)
 
     def visit_string_definition(self, node: StringDefinition) -> None:
+        if getattr(node, "is_anonymous", False):
+            return
+
         # Normalize: always use $ prefix for consistency with type environment
         identifier = node.identifier if node.identifier.startswith("$") else f"${node.identifier}"
 
