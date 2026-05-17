@@ -345,6 +345,34 @@ def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
     assert escaped_plain.modifiers == ['vendor_modifier("a\\"\\\\b\\n")']
 
 
+def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> None:
+    with pytest.raises(SerializationError, match="Rule modifiers must be a list"):
+        deserialize_rule({"name": "r1", "modifiers": "private", "condition": None})
+
+    with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
+        deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private"})
+
+    with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
+        deserialize_node(
+            {"type": "ExternNamespace", "name": "remote", "extern_rules": "RemoteRule"}
+        )
+
+    with pytest.raises(SerializationError, match="PlainString modifiers must be a list"):
+        deserialize_string(
+            {"type": "PlainString", "identifier": "$a", "value": "abc", "modifiers": "ascii"}
+        )
+
+    with pytest.raises(SerializationError, match="HexAlternative alternatives must be a list"):
+        deserialize_string(
+            {
+                "type": "HexString",
+                "identifier": "$h",
+                "tokens": [{"type": "HexAlternative", "alternatives": "AA"}],
+                "modifiers": [],
+            }
+        )
+
+
 def test_simple_roundtrip_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:
     plain = deserialize_string(
         {

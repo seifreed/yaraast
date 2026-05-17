@@ -136,7 +136,7 @@ def _deserialize_hex_token(data: dict[str, Any]):
     if hex_kind == "HexAlternative":
         alternatives = [
             [_deserialize_hex_token(t) for t in _coerce_serialized_hex_alternative_branch(alt)]
-            for alt in data["alternatives"]
+            for alt in _deserialize_list_field(data, "alternatives", "HexAlternative")
         ]
         return HexAlternative(alternatives=alternatives)
     msg = f"Unknown hex token type: {hex_kind}"
@@ -999,7 +999,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "ExternNamespace":
         return ExternNamespace(
             name=_deserialize_string_field(data, "name", "ExternNamespace"),
-            extern_rules=[deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])],
+            extern_rules=[
+                deserialize_extern_rule(rule)
+                for rule in _deserialize_list_field(data, "extern_rules", "ExternNamespace")
+            ],
         )
     if node_type == "InRulePragma":
         return InRulePragma(
@@ -1273,7 +1276,7 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     """Deserialize a Rule."""
     rule = Rule(
         name=_deserialize_string_field(data, "name", "Rule"),
-        modifiers=data.get("modifiers", []),
+        modifiers=_deserialize_rule_modifiers(_deserialize_list_field(data, "modifiers", "Rule")),
         condition=(
             deserialize_node(data["condition"]) if data.get("condition") else BooleanLiteral(True)
         ),
@@ -1317,7 +1320,9 @@ def _deserialize_rule_modifiers(modifiers: list[Any]) -> list[Any]:
 def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
     return ExternRule(
         name=_deserialize_string_field(data, "name", "ExternRule"),
-        modifiers=_deserialize_rule_modifiers(data.get("modifiers", [])),
+        modifiers=_deserialize_rule_modifiers(
+            _deserialize_list_field(data, "modifiers", "ExternRule")
+        ),
         namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRule"),
     )
 
@@ -1409,13 +1414,15 @@ def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
 def deserialize_string(data: dict[str, Any]) -> Any:
     """Deserialize a string definition."""
     string_type = data.get("type")
+    context = string_type if isinstance(string_type, str) else "String"
+    modifiers = _deserialize_modifiers(_deserialize_list_field(data, "modifiers", context))
 
     if string_type == "PlainString":
         return _apply_node_metadata(
             PlainString(
                 identifier=_deserialize_string_field(data, "identifier", "PlainString"),
                 value=_deserialize_plain_string_value(data),
-                modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),
             ),
             data,
@@ -1428,7 +1435,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                 HexString(
                     identifier=_deserialize_string_field(data, "identifier", "HexString"),
                     tokens=tokens,
-                    modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                    modifiers=modifiers,
                     is_anonymous=_deserialize_is_anonymous(data),
                 ),
                 data,
@@ -1439,7 +1446,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                     HexString(
                         identifier=_deserialize_string_field(data, "identifier", "HexString"),
                         tokens=_deserialize_legacy_hex_tokens(raw_tokens),
-                        modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                        modifiers=modifiers,
                         is_anonymous=_deserialize_is_anonymous(data),
                     ),
                     data,
@@ -1459,7 +1466,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             HexString(
                 identifier=_deserialize_string_field(data, "identifier", "HexString"),
                 tokens=[],
-                modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),
             ),
             data,
@@ -1469,7 +1476,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             RegexString(
                 identifier=_deserialize_string_field(data, "identifier", "RegexString"),
                 regex=_deserialize_string_field(data, "regex", "RegexString"),
-                modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),
             ),
             data,

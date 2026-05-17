@@ -277,6 +277,32 @@ def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
     assert isinstance(regex, RegexString)
 
 
+def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> None:
+    s = JsonSerializer()
+
+    with pytest.raises(SerializationError, match="Rule modifiers must be a list"):
+        s._deserialize_rule({"name": "r1", "modifiers": "private", "condition": None})
+
+    with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
+        s._deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private"})
+
+    with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
+        s._deserialize_extern_namespace({"name": "remote", "extern_rules": "RemoteRule"})
+
+    with pytest.raises(SerializationError, match="PlainString modifiers must be a list"):
+        s._deserialize_string(
+            {"type": "PlainString", "identifier": "$a", "value": "abc", "modifiers": "ascii"}
+        )
+
+    with pytest.raises(SerializationError, match="HexString tokens must be a list"):
+        s._deserialize_string(
+            {"type": "HexString", "identifier": "$h", "tokens": "AA", "modifiers": []}
+        )
+
+    with pytest.raises(SerializationError, match="HexAlternative alternatives must be a list"):
+        s._deserialize_hex_token({"type": "HexAlternative", "alternatives": "AA"})
+
+
 def test_json_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:
     s = JsonSerializer()
 

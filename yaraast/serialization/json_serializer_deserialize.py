@@ -835,7 +835,7 @@ class JsonSerializerDeserializeMixin:
         return self._apply_node_metadata(
             Rule(
                 name=_deserialize_string_field(data, "name", "Rule"),
-                modifiers=data.get("modifiers", []),
+                modifiers=_deserialize_list_field(data, "modifiers", "Rule"),
                 tags=tags,
                 meta=meta,
                 strings=strings,
@@ -873,7 +873,11 @@ class JsonSerializerDeserializeMixin:
 
     def _deserialize_string(self, data: dict[str, Any]):
         string_type = data.get("type")
-        modifiers = [self._deserialize_modifier(m) for m in data.get("modifiers", [])]
+        context = string_type if isinstance(string_type, str) else "String"
+        modifiers = [
+            self._deserialize_modifier(m)
+            for m in _deserialize_list_field(data, "modifiers", context)
+        ]
 
         if string_type == "PlainString":
             from yaraast.ast.strings import PlainString
@@ -890,7 +894,10 @@ class JsonSerializerDeserializeMixin:
         if string_type == "HexString":
             from yaraast.ast.strings import HexString
 
-            tokens = [self._deserialize_hex_token(t) for t in data.get("tokens", [])]
+            tokens = [
+                self._deserialize_hex_token(t)
+                for t in _deserialize_list_field(data, "tokens", "HexString")
+            ]
             return self._apply_node_metadata(
                 HexString(
                     identifier=_deserialize_string_field(data, "identifier", "HexString"),
@@ -993,7 +1000,7 @@ class JsonSerializerDeserializeMixin:
 
             alternatives = [
                 [self._deserialize_hex_token(t) for t in self._coerce_hex_alternative_branch(alt)]
-                for alt in data.get("alternatives", [])
+                for alt in _deserialize_list_field(data, "alternatives", "HexAlternative")
             ]
             return self._apply_node_metadata(HexAlternative(alternatives=alternatives), data)
         msg = f"Unknown hex token type: {hex_kind}"
@@ -1030,7 +1037,9 @@ class JsonSerializerDeserializeMixin:
         return self._apply_node_metadata(
             ExternRule(
                 name=_deserialize_string_field(data, "name", "ExternRule"),
-                modifiers=Rule._normalize_modifiers(data.get("modifiers", [])),
+                modifiers=Rule._normalize_modifiers(
+                    _deserialize_list_field(data, "modifiers", "ExternRule")
+                ),
                 namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRule"),
             ),
             data,
@@ -1043,7 +1052,8 @@ class JsonSerializerDeserializeMixin:
             ExternNamespace(
                 name=_deserialize_string_field(data, "name", "ExternNamespace"),
                 extern_rules=[
-                    self._deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])
+                    self._deserialize_extern_rule(rule)
+                    for rule in _deserialize_list_field(data, "extern_rules", "ExternNamespace")
                 ],
             ),
             data,
