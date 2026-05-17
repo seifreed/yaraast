@@ -60,6 +60,9 @@ def output_string_identifier(string_def: Any) -> str:
 
 def format_integer_literal(value) -> str:
     """Format integer literals with common hex values preserved."""
+    if isinstance(value, bool):
+        msg = "Integer literal value must be an integer"
+        raise TypeError(msg)
     if isinstance(value, str):
         try:
             int_value = int(value)

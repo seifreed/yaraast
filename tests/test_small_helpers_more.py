@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import struct
 
+import pytest
+
 from yaraast.ast.modifiers import StringModifier
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
@@ -148,6 +150,8 @@ def test_generator_helpers_escape_integer_and_modifiers() -> None:
     assert format_integer_literal(0x30) == "48"
     assert format_integer_literal(0x200) == "0x200"
     assert format_integer_literal(255) == "255"
+    with pytest.raises(TypeError, match="Integer literal value must be an integer"):
+        format_integer_literal(True)
 
     mod = StringModifier.from_name_value("ascii")
     assert format_modifiers(["wide", mod, 7], lambda node: f"<{node.name}>") == " wide <ascii> 7"

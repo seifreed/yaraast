@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
@@ -103,6 +105,8 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
 
 def test_codegen_generate_returns_direct_expression_output() -> None:
     assert CodeGenerator().generate(BooleanLiteral(True)) == "true"
+    with pytest.raises(TypeError, match="Integer literal value must be an integer"):
+        CodeGenerator().generate(IntegerLiteral(True))
 
 
 def test_codegen_in_expression_parentheses_paths() -> None:
