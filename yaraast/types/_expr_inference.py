@@ -279,9 +279,11 @@ class ExpressionTypeInference(_TypeBaseVisitor):
 
     def visit_dict_comprehension(self, node) -> YaraType:
         self.env.push_scope()
-        self._define_iteration_variable(node.key_variable, node.iterable)
-        if node.value_variable:
-            self.env.define(node.value_variable, UnknownType())
+        self._define_dict_comprehension_variables(
+            node.key_variable,
+            node.value_variable,
+            node.iterable,
+        )
         if node.condition is not None:
             condition_type = self.visit(node.condition)
             if not isinstance(condition_type, BooleanType):
@@ -344,12 +346,34 @@ class ExpressionTypeInference(_TypeBaseVisitor):
     def visit_spread_operator(self, node) -> YaraType:
         return self.visit(node.expression)
 
+    def _define_dict_comprehension_variables(
+        self,
+        key_variable: str,
+        value_variable: str | None,
+        iterable,
+    ) -> None:
+        iter_type = self.visit(iterable) if iterable is not None else UnknownType()
+        if isinstance(iter_type, DictionaryType):
+            self.env.define(key_variable, iter_type.key_type)
+            if value_variable:
+                self.env.define(value_variable, iter_type.value_type)
+            return
+
+        self._define_iteration_variable_from_type(key_variable, iter_type)
+        if value_variable:
+            self.env.define(value_variable, UnknownType())
+
     def _define_iteration_variable(self, variable: str, iterable) -> None:
         iter_type = self.visit(iterable) if iterable is not None else UnknownType()
+        self._define_iteration_variable_from_type(variable, iter_type)
+
+    def _define_iteration_variable_from_type(self, variable: str, iter_type: YaraType) -> None:
         if isinstance(iter_type, ArrayType):
             self.env.define(variable, iter_type.element_type)
         elif isinstance(iter_type, RangeType):
             self.env.define(variable, IntegerType())
+        elif isinstance(iter_type, DictionaryType):
+            self.env.define(variable, iter_type.key_type)
         else:
             self.errors.append(f"Cannot iterate over type: {iter_type}")
             self.env.define(variable, UnknownType())

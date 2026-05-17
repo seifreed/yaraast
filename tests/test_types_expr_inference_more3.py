@@ -334,6 +334,27 @@ def test_expr_inference_binds_multi_variable_for_dictionary_items() -> None:
     assert inf.errors == []
 
 
+def test_expr_inference_binds_dict_comprehension_value_variable_type() -> None:
+    env = TypeEnvironment()
+    env.define("pairs", DictionaryType(StringType(), IntegerType()))
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=BinaryExpression(Identifier("v"), "+", IntegerLiteral(1)),
+            key_variable="k",
+            value_variable="v",
+            iterable=Identifier("pairs"),
+        ),
+    )
+
+    assert isinstance(out, DictionaryType)
+    assert isinstance(out.key_type, StringType)
+    assert isinstance(out.value_type, IntegerType)
+    assert inf.errors == []
+
+
 def test_expr_inference_visits_pattern_match_case_patterns() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)
