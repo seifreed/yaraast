@@ -670,6 +670,14 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
     )
     assert ev.visit_for_expression(for_zero) is False
 
+    for_zero_no_matches = ForExpression(
+        quantifier=0,
+        variable="i",
+        iterable=SetExpression([IntegerLiteral(1)]),
+        body=BooleanLiteral(value=False),
+    )
+    assert ev.visit_for_expression(for_zero_no_matches) is True
+
     ev._current_rule = rule
     assert (
         ev.visit_defined_expression(DefinedExpression(expression=StringIdentifier(name="$a")))
@@ -689,6 +697,25 @@ def test_zero_of_matches_libyara_none_semantics() -> None:
 
     assert YaraEvaluator(data=b"").evaluate_file(ast) == {"r": True}
     assert YaraEvaluator(data=b"A").evaluate_file(ast) == {"r": False}
+
+
+def test_zero_for_quantifier_matches_libyara_none_semantics() -> None:
+    ast = Parser().parse("""
+        rule none_satisfied {
+            condition:
+                for 0 i in (1, 2) : (i == 3)
+        }
+
+        rule one_satisfied {
+            condition:
+                for 0 i in (1, 2) : (i == 1)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {
+        "none_satisfied": True,
+        "one_satisfied": False,
+    }
 
 
 def test_for_of_and_module_reference_paths() -> None:

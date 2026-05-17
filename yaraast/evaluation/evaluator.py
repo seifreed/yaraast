@@ -633,8 +633,10 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             if quantifier == "none":
                 return true_count == 0
         elif isinstance(quantifier, int):
-            if quantifier <= 0:
+            if quantifier < 0:
                 return False
+            if quantifier == 0:
+                return true_count == 0
             return true_count >= quantifier
 
         return False
