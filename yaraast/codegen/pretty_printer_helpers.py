@@ -18,6 +18,7 @@ from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_modifier,
     format_regex_modifiers,
+    output_string_identifier,
 )
 
 
@@ -80,16 +81,18 @@ def _coerce_hex_alternative_branch(alternative) -> list:
 
 def format_plain_string(node: PlainString, quote: str, padding: int) -> str:
     escaped_value = escape_plain_string_value(node.value)
+    identifier = output_string_identifier(node)
     if padding > 0:
-        return f"{node.identifier}{' ' * padding} = {quote}{escaped_value}{quote}"
-    return f"{node.identifier} = {quote}{escaped_value}{quote}"
+        return f"{identifier}{' ' * padding} = {quote}{escaped_value}{quote}"
+    return f"{identifier} = {quote}{escaped_value}{quote}"
 
 
 def format_regex_string(node: RegexString, padding: int) -> str:
     escaped = escape_regex_delimiter(node.regex)
+    identifier = output_string_identifier(node)
     if padding > 0:
-        return f"{node.identifier}{' ' * padding} = /{escaped}/"
-    return f"{node.identifier} = /{escaped}/"
+        return f"{identifier}{' ' * padding} = /{escaped}/"
+    return f"{identifier} = /{escaped}/"
 
 
 def modifiers_to_string(modifiers) -> str:
@@ -109,7 +112,7 @@ def calculate_string_alignment_column(ast) -> int:
     max_length = 0
     for rule in ast.rules:
         for string_def in rule.strings:
-            max_length = max(max_length, len(string_def.identifier))
+            max_length = max(max_length, len(output_string_identifier(string_def)))
     return max_length + 1
 
 

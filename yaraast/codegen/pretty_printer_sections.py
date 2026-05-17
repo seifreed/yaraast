@@ -11,6 +11,7 @@ from yaraast.codegen.pretty_printer_helpers import (
     format_plain_string,
     format_regex_string,
     modifiers_to_string,
+    output_string_identifier,
     regex_modifiers_to_string,
 )
 
@@ -53,7 +54,7 @@ def write_strings_section(printer, strings: list[StringDefinition]) -> None:
 def write_plain_string_aligned(printer, node: PlainString) -> None:
     """Write a plain string honoring alignment options."""
     if printer.options.align_string_definitions and printer._string_alignment_column > 0:
-        padding = max(0, printer._string_alignment_column - len(node.identifier))
+        padding = max(0, printer._string_alignment_column - len(output_string_identifier(node)))
         printer._write(format_plain_string(node, '"', padding))
     else:
         printer._write(format_plain_string(node, '"', 0))
@@ -69,10 +70,11 @@ def write_hex_string_aligned(printer, node: HexString) -> None:
         hex_spacing=printer.options.hex_spacing,
     )
     if printer.options.align_string_definitions and printer._string_alignment_column > 0:
-        padding = max(0, printer._string_alignment_column - len(node.identifier))
-        printer._write(f"{node.identifier}{' ' * padding} = {{ {hex_pattern} }}")
+        identifier = output_string_identifier(node)
+        padding = max(0, printer._string_alignment_column - len(identifier))
+        printer._write(f"{identifier}{' ' * padding} = {{ {hex_pattern} }}")
     else:
-        printer._write(f"{node.identifier} = {{ {hex_pattern} }}")
+        printer._write(f"{output_string_identifier(node)} = {{ {hex_pattern} }}")
     printer._write(modifiers_to_string(node.modifiers))
     printer._writeline()
 
@@ -80,7 +82,7 @@ def write_hex_string_aligned(printer, node: HexString) -> None:
 def write_regex_string_aligned(printer, node: RegexString) -> None:
     """Write a regex string honoring alignment options."""
     if printer.options.align_string_definitions and printer._string_alignment_column > 0:
-        padding = max(0, printer._string_alignment_column - len(node.identifier))
+        padding = max(0, printer._string_alignment_column - len(output_string_identifier(node)))
         printer._write(format_regex_string(node, padding))
     else:
         printer._write(format_regex_string(node, 0))

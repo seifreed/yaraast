@@ -7,6 +7,7 @@ from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_modifiers,
     format_regex_modifiers,
+    output_string_identifier,
 )
 
 
@@ -69,10 +70,11 @@ def render_advanced_plain_string(gen, node) -> str:
     from yaraast.codegen.generator_helpers import escape_plain_string_value
 
     escaped = escape_plain_string_value(node.value)
+    identifier = output_string_identifier(node)
     if gen.config.string_style == StringStyle.COMPACT:
-        gen._write(f'{node.identifier}="{escaped}"')
+        gen._write(f'{identifier}="{escaped}"')
     else:
-        gen._write(f'{node.identifier} = "{escaped}"')
+        gen._write(f'{identifier} = "{escaped}"')
     gen._write(format_modifiers(node.modifiers))
     return ""
 
@@ -80,10 +82,11 @@ def render_advanced_plain_string(gen, node) -> str:
 def render_advanced_hex_string(gen, node) -> str:
     """Render a hex string in advanced generator styles."""
     hex_str = gen._format_hex_string(node)
+    identifier = output_string_identifier(node)
     if gen.config.string_style == StringStyle.COMPACT:
-        gen._write(f"{node.identifier}={hex_str}")
+        gen._write(f"{identifier}={hex_str}")
     else:
-        gen._write(f"{node.identifier} = {hex_str}")
+        gen._write(f"{identifier} = {hex_str}")
     gen._write(format_modifiers(node.modifiers))
     return ""
 
@@ -91,9 +94,10 @@ def render_advanced_hex_string(gen, node) -> str:
 def render_advanced_regex_string(gen, node) -> str:
     """Render a regex string in advanced generator styles."""
     regex = escape_regex_delimiter(node.regex)
+    identifier = output_string_identifier(node)
     if gen.config.string_style == StringStyle.COMPACT:
-        gen._write(f"{node.identifier}=/{regex}/")
+        gen._write(f"{identifier}=/{regex}/")
     else:
-        gen._write(f"{node.identifier} = /{regex}/")
+        gen._write(f"{identifier} = /{regex}/")
     gen._write(format_regex_modifiers(node.modifiers))
     return ""

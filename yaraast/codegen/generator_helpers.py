@@ -51,6 +51,13 @@ def escape_regex_delimiter(pattern: str) -> str:
     return _escape_regex_delimiter(pattern)
 
 
+def output_string_identifier(string_def: Any) -> str:
+    """Return the YARA source identifier for a string definition."""
+    if getattr(string_def, "is_anonymous", False):
+        return "$"
+    return str(getattr(string_def, "identifier", ""))
+
+
 def format_integer_literal(value) -> str:
     """Format integer literals with common hex values preserved."""
     if isinstance(value, str):

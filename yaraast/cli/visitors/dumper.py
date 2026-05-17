@@ -46,7 +46,7 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
-from yaraast.codegen.generator_helpers import escape_plain_string_value
+from yaraast.codegen.generator_helpers import escape_plain_string_value, output_string_identifier
 from yaraast.visitor import ASTVisitor
 
 
@@ -128,13 +128,13 @@ class ASTDumper(ASTVisitor[dict]):
         return {"type": "Tag", "name": node.name}
 
     def visit_string_definition(self, node: StringDefinition) -> dict:
-        return {"type": "StringDefinition", "identifier": node.identifier}
+        return {"type": "StringDefinition", "identifier": output_string_identifier(node)}
 
     def visit_plain_string(self, node: PlainString) -> dict:
         modifiers = self._extract_modifiers(node)
         return {
             "type": "PlainString",
-            "identifier": node.identifier,
+            "identifier": output_string_identifier(node),
             "value": escape_plain_string_value(node.value),
             "modifiers": modifiers,
         }
@@ -143,7 +143,7 @@ class ASTDumper(ASTVisitor[dict]):
         modifiers = self._extract_modifiers(node)
         return {
             "type": "HexString",
-            "identifier": node.identifier,
+            "identifier": output_string_identifier(node),
             "tokens": [self.visit(token) for token in node.tokens],
             "modifiers": modifiers,
         }
@@ -152,7 +152,7 @@ class ASTDumper(ASTVisitor[dict]):
         modifiers = self._extract_modifiers(node)
         return {
             "type": "RegexString",
-            "identifier": node.identifier,
+            "identifier": output_string_identifier(node),
             "regex": node.regex,
             "modifiers": modifiers,
         }

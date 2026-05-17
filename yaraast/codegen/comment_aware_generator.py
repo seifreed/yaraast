@@ -6,7 +6,11 @@ from typing import TYPE_CHECKING
 
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
-from yaraast.codegen.generator_helpers import escape_regex_delimiter, format_regex_modifiers
+from yaraast.codegen.generator_helpers import (
+    escape_regex_delimiter,
+    format_regex_modifiers,
+    output_string_identifier,
+)
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -273,7 +277,8 @@ class CommentAwareCodeGenerator(CodeGenerator):
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
-        self._write(f'{node.identifier} = "{escape_plain_string_value(node.value)}"')
+        identifier = output_string_identifier(node)
+        self._write(f'{identifier} = "{escape_plain_string_value(node.value)}"')
 
         # Write modifiers
         for modifier in node.modifiers:
@@ -288,7 +293,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
-        self._write(f"{node.identifier} = {{ ")
+        self._write(f"{output_string_identifier(node)} = {{ ")
 
         # Generate hex tokens
         for i, token in enumerate(node.tokens):
@@ -313,7 +318,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
         regex = escape_regex_delimiter(node.regex)
-        self._write(f"{node.identifier} = /{regex}/")
+        self._write(f"{output_string_identifier(node)} = /{regex}/")
 
         # Write regex modifiers
         if node.modifiers:

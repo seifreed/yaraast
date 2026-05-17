@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.generator_helpers import escape_regex_delimiter, format_regex_modifiers
+from yaraast.codegen.generator_helpers import (
+    escape_regex_delimiter,
+    format_regex_modifiers,
+    output_string_identifier,
+)
 
 
 def _emit_comments(gen, node) -> None:
@@ -57,7 +61,7 @@ def write_plain_string(gen, node) -> str:
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
     escaped_value = gen._escape_plain_string_value(node.value)
-    gen._write(f'{node.identifier} = "{escaped_value}"')
+    gen._write(f'{output_string_identifier(node)} = "{escaped_value}"')
     if hasattr(node, "modifiers") and node.modifiers:
         gen._write_modifiers(node.modifiers)
     return ""
@@ -67,7 +71,7 @@ def write_hex_string(gen, node) -> str:
     """Render a hex string definition."""
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
-    gen._write(f"{node.identifier} = {{ ")
+    gen._write(f"{output_string_identifier(node)} = {{ ")
     for token in node.tokens:
         gen._write(gen.visit(token))
         gen._write(" ")
@@ -82,7 +86,7 @@ def write_regex_string(gen, node) -> str:
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
     escaped_regex = escape_regex_delimiter(node.regex)
-    gen._write(f"{node.identifier} = /{escaped_regex}/")
+    gen._write(f"{output_string_identifier(node)} = /{escaped_regex}/")
     if hasattr(node, "modifiers") and node.modifiers:
         gen._write(format_regex_modifiers(node.modifiers, gen.visit))
     return ""

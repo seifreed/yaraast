@@ -47,7 +47,11 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
+from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
+from yaraast.codegen.formatting import FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.pretty_printer import PrettyPrinter
+from yaraast.parser import Parser
 
 
 def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules() -> None:
@@ -68,6 +72,40 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     assert "rule one : tag1 {" in out
     assert "\n\nrule two {" in out
     assert CodeGenerator().visit_import(Import(module="elf")) == ""
+
+
+def test_codegen_generators_emit_anonymous_string_identifier() -> None:
+    ast = Parser().parse("""
+        rule anonymous_strings {
+            strings:
+                $ = "abc"
+                $ = { 41 }
+                $ = /def/
+            condition:
+                any of them
+        }
+        """)
+
+    generated = CodeGenerator().generate(ast)
+    pretty = PrettyPrinter().pretty_print(ast)
+    advanced = AdvancedCodeGenerator().generate(ast)
+    compact = AdvancedCodeGenerator(FormattingConfig(string_style=StringStyle.COMPACT)).generate(
+        ast
+    )
+
+    for output in (generated, advanced):
+        assert '$ = "abc"' in output
+        assert "$ = { 41 }" in output
+        assert "$ = /def/" in output
+        assert "$anon_" not in output
+    assert '$  = "abc"' in pretty
+    assert "$  = { 41 }" in pretty
+    assert "$  = /def/" in pretty
+    assert "$anon_" not in pretty
+    assert '$="abc"' in compact
+    assert "$={ 41 }" in compact
+    assert "$=/def/" in compact
+    assert "$anon_" not in compact
 
 
 def test_codegen_generator_meta_and_string_section_variants() -> None:

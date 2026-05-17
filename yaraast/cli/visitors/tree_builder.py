@@ -8,7 +8,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import StringWildcard
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString, RegexString
-from yaraast.codegen.generator_helpers import escape_plain_string_value
+from yaraast.codegen.generator_helpers import escape_plain_string_value, output_string_identifier
 
 from .formatters import ConditionStringFormatter
 
@@ -261,20 +261,20 @@ class ASTTreeBuilder:
             else escape(str(node.value))
         )
         mods = self._get_string_modifiers_preview(node, escape)
-        return Tree(f'{node.identifier} = "{value}"{mods}')
+        return Tree(f'{output_string_identifier(node)} = "{value}"{mods}')
 
     def visit_hex_string(self, node: Any) -> Tree:
         from rich.markup import escape
 
         mods = self._get_string_modifiers_preview(node, escape)
-        return Tree(f"{node.identifier} [HexString]{mods}")
+        return Tree(f"{output_string_identifier(node)} [HexString]{mods}")
 
     def visit_regex_string(self, node: Any) -> Tree:
         from rich.markup import escape
 
         regex = escape(node.regex) if hasattr(node, "regex") and isinstance(node.regex, str) else ""
         mods = self._get_string_modifiers_preview(node, escape)
-        return Tree(f"{node.identifier} = /{regex}/{mods}")
+        return Tree(f"{output_string_identifier(node)} = /{regex}/{mods}")
 
     def visit_comment(self, node: Any) -> Tree:
         return Tree(f"Comment: {node.text if hasattr(node, 'text') else ''}")

@@ -20,6 +20,7 @@ from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
     format_modifier,
+    output_string_identifier,
     split_regex_modifiers,
 )
 
@@ -31,7 +32,7 @@ def collect_string_definitions(
     collected: list[tuple[str, str, list[str]]] = []
 
     for string_def in strings:
-        identifier = string_def.identifier
+        identifier = output_string_identifier(string_def)
         if isinstance(string_def, PlainString):
             value = f'"{escape_plain_string_value(string_def.value)}"'
         elif isinstance(string_def, HexString):
