@@ -82,10 +82,23 @@ def test_evaluator_matches_operator_honors_regex_modifiers() -> None:
     assert YaraEvaluator().evaluate_file(ast) == {"r": True}
 
 
-def test_evaluator_matches_operator_checks_end_of_string_regex_positions() -> None:
-    ast = Parser().parse('rule r { condition: "abc" matches /$/ }')
+def test_evaluator_matches_operator_uses_libyara_search_offsets() -> None:
+    ast = Parser().parse("""
+        rule end_anchor_only {
+            condition:
+                "abc" matches /$/
+        }
 
-    assert YaraEvaluator().evaluate_file(ast) == {"r": True}
+        rule consuming_end_anchor {
+            condition:
+                "abc" matches /abc$/
+        }
+    """)
+
+    assert YaraEvaluator().evaluate_file(ast) == {
+        "end_anchor_only": False,
+        "consuming_end_anchor": True,
+    }
 
 
 def test_hash_module_invalid_regions_evaluate_as_undefined() -> None:

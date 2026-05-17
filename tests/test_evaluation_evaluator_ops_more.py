@@ -84,7 +84,8 @@ def test_evaluate_string_operator_all_paths() -> None:
     assert evaluate_string_operator("Hello", "LO", "iendswith") is True
     assert evaluate_string_operator("Hello", "hello", "iequals") is True
     assert evaluate_string_operator("abc123", r"\d+", "matches") is True
-    assert evaluate_string_operator("abc", r"$", "matches") is True
+    assert evaluate_string_operator("abc", r"$", "matches") is False
+    assert evaluate_string_operator("abc", r"abc$", "matches") is True
     assert evaluate_string_operator("", r"$", "matches") is True
     assert evaluate_string_operator("ABC", RegexLiteral(pattern="abc", modifiers="i"), "matches")
     assert evaluate_string_operator(None, "a", "matches") is False

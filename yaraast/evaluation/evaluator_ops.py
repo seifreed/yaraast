@@ -147,6 +147,8 @@ def evaluate_regex_match(left: Any, pattern: Any, modifiers: str = "") -> bool:
     regex = re.compile(pattern, flags)
 
     try:
-        return any(regex.match(left, offset) for offset in range(len(left) + 1))
+        if not left:
+            return bool(regex.match(left))
+        return any(regex.match(left, offset) for offset in range(len(left)))
     except (ValueError, TypeError, AttributeError):
         return False
