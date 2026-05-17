@@ -225,7 +225,7 @@ class OptimizedMatcher:
         if isinstance(data, str | Path):
             scan_args["filepath"] = str(data)
             return scan_args, Path(data).stat().st_size if Path(data).exists() else 0
-        if isinstance(data, int):
+        if isinstance(data, int) and not isinstance(data, bool):
             scan_args["pid"] = data
             return scan_args, 0
 

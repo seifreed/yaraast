@@ -219,6 +219,10 @@ def test_direct_compiler_and_matcher_additional_paths(tmp_path: Path) -> None:
     assert bad_type["success"] is False
     assert "Unsupported data type" in bad_type["error"]
 
+    bool_data = matcher.scan(cast(Any, True))
+    assert bool_data["success"] is False
+    assert "Unsupported data type" in bool_data["error"]
+
     pid_scan = matcher.scan(os.getpid(), timeout=5)
     assert pid_scan["scan_time"] >= 0
 
