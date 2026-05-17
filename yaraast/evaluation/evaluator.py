@@ -723,49 +723,40 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 ]
             return [self._normalize_string_id(text)]
 
-        if isinstance(string_set_node, str):
-            return expand_text(string_set_node)
+        def resolve_visited_value(value: Any) -> list[str]:
+            if isinstance(value, str):
+                return expand_text(value)
+            if isinstance(value, list | tuple | set | frozenset):
+                result = []
+                for item in value:
+                    result.extend(resolve_visited_value(item))
+                return result
+            return expand_text(str(value))
 
-        if isinstance(string_set_node, list):
+        def resolve_value(value: Any) -> list[str]:
+            if isinstance(value, str):
+                return expand_text(value)
+            if isinstance(value, StringWildcard):
+                return expand_text(value.pattern)
+            if isinstance(value, StringIdentifier):
+                return [self._normalize_string_id(value.name)]
+            if hasattr(value, "name") and value.name == "them":
+                return list(self.context.string_matches.keys())
+            if isinstance(value, SetExpression):
+                return resolve_values(value.elements)
+            if isinstance(value, list | tuple | set | frozenset):
+                return resolve_values(value)
+            if hasattr(value, "accept"):
+                return resolve_visited_value(self.visit(value))
+            return expand_text(str(value))
+
+        def resolve_values(values: Any) -> list[str]:
             result = []
-            for elem in string_set_node:
-                if isinstance(elem, str):
-                    result.extend(expand_text(elem))
-                elif isinstance(elem, StringWildcard):
-                    result.extend(expand_text(elem.pattern))
-                elif isinstance(elem, StringIdentifier):
-                    result.append(elem.name)
-                elif hasattr(elem, "accept"):
-                    result.extend(expand_text(str(self.visit(elem))))
-                else:
-                    result.append(str(elem))
+            for elem in values:
+                result.extend(resolve_value(elem))
             return result
 
-        # "them" keyword → all matched strings
-        if hasattr(string_set_node, "name") and string_set_node.name == "them":
-            return list(self.context.string_matches.keys())
-
-        # SetExpression → expand wildcards and collect identifiers
-        if isinstance(string_set_node, SetExpression):
-            result = []
-            for elem in string_set_node.elements:
-                if isinstance(elem, StringWildcard):
-                    result.extend(expand_text(elem.pattern))
-                elif isinstance(elem, StringIdentifier):
-                    result.append(self._normalize_string_id(elem.name))
-                else:
-                    result.extend(expand_text(str(self.visit(elem))))
-            return result
-
-        # Try visiting the node and handling the result
-        visited = self.visit(string_set_node)
-        if isinstance(visited, str) and visited == "them":
-            return list(self.context.string_matches.keys())
-        if isinstance(visited, list | set | tuple):
-            return list(visited)
-
-        # Fallback: all defined strings
-        return list(self.context.string_matches.keys())
+        return resolve_value(string_set_node)
 
     def _normalize_string_id(self, string_id: Any) -> str:
         text = str(string_id)

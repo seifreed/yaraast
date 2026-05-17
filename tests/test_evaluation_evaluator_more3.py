@@ -890,6 +890,36 @@ def test_for_of_and_module_reference_paths() -> None:
     assert ev.visit_expression(BooleanLiteral(value=True)) is True
 
 
+def test_of_and_for_of_resolve_nested_string_set_expression_results() -> None:
+    ev = YaraEvaluator(data=b"xxabyy")
+    rule = Rule(
+        name="r",
+        strings=[PlainString(identifier="$a", value="ab")],
+        condition=BooleanLiteral(value=True),
+    )
+    assert ev.evaluate_rule(rule) is True
+
+    assert (
+        ev.visit_of_expression(
+            OfExpression(
+                quantifier="any",
+                string_set=[Identifier("them")],
+            )
+        )
+        is True
+    )
+    assert (
+        ev.visit_for_of_expression(
+            ForOfExpression(
+                quantifier="all",
+                string_set=[Identifier("them")],
+                condition=BooleanLiteral(value=True),
+            )
+        )
+        is True
+    )
+
+
 def test_string_wildcard_condition_respects_pattern() -> None:
     evaluator = YaraEvaluator(data=b"abc")
     rule = Rule(
