@@ -232,11 +232,13 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if node.operator == "and":
             if not left:
                 return False
-            return self.visit(node.right)
+            right = self.visit(node.right)
+            return False if is_yara_undefined(right) else right
         if node.operator == "or":
             if left:
                 return True
-            return self.visit(node.right)
+            right = self.visit(node.right)
+            return False if is_yara_undefined(right) else right
 
         right = self.visit(node.right)
 

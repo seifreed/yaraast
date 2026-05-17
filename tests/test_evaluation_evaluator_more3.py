@@ -333,6 +333,43 @@ def test_defined_not_undefined_reader_matches_libyara() -> None:
     }
 
 
+def test_boolean_operators_coerce_undefined_to_defined_false() -> None:
+    ast = Parser().parse("""
+        rule false_or_undefined {
+            condition:
+                false or uint8(filesize)
+        }
+
+        rule true_and_undefined {
+            condition:
+                true and uint8(filesize)
+        }
+
+        rule defined_false_or_undefined {
+            condition:
+                defined (false or uint8(filesize))
+        }
+
+        rule defined_true_and_undefined {
+            condition:
+                defined (true and uint8(filesize))
+        }
+
+        rule defined_undefined_or_undefined {
+            condition:
+                defined (uint8(filesize) or uint8(filesize))
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {
+        "false_or_undefined": False,
+        "true_and_undefined": False,
+        "defined_false_or_undefined": True,
+        "defined_true_and_undefined": True,
+        "defined_undefined_or_undefined": True,
+    }
+
+
 def test_division_operator_parses_and_evaluates() -> None:
     ast = Parser().parse("""
         rule integer_division {

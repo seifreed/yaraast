@@ -15,6 +15,7 @@ from yaraast.ast.expressions import (
     RangeExpression,
     UnaryExpression,
 )
+from yaraast.ast.operators import DefinedExpression
 from yaraast.ast.rules import Rule
 from yaraast.shared.integer_semantics import (
     INT64_MIN,
@@ -341,6 +342,9 @@ class ExpressionOptimizer(ASTTransformer):
         if hasattr(node, "elements"):
             node.elements = [self.visit(elem) for elem in node.elements]
 
+        return node
+
+    def visit_defined_expression(self, node: DefinedExpression) -> DefinedExpression:
         return node
 
     def visit_for_expression(self, node: Any) -> Any:
