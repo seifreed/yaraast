@@ -211,7 +211,7 @@ class StringMatcher:
             has_xor = True
             value = self._modifier_value(modifier)
             if value is None:
-                keys.extend(range(1, 256))
+                keys.extend(range(0, 256))
             elif isinstance(value, tuple | list) and len(value) == 2:
                 low = self._parse_xor_key(value[0])
                 high = self._parse_xor_key(value[1])

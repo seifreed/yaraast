@@ -63,11 +63,33 @@ class StringIdentifierValidator(DefaultASTVisitor[None]):
 
 
 class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
-    """Validator for string modifiers that only make sense on regex strings."""
+    """Validator for string modifier applicability and compatibility."""
 
     _REGEX_ONLY_MODIFIERS = {
         StringModifierType.DOTALL.value,
         StringModifierType.MULTILINE.value,
+    }
+    _HEX_ALLOWED_MODIFIERS = {
+        StringModifierType.PRIVATE.value,
+    }
+    _REGEX_DISALLOWED_MODIFIERS = {
+        StringModifierType.XOR.value,
+        StringModifierType.BASE64.value,
+        StringModifierType.BASE64WIDE.value,
+    }
+    _BASE64_MODIFIERS = {
+        StringModifierType.BASE64.value,
+        StringModifierType.BASE64WIDE.value,
+    }
+    _BASE64_INCOMPATIBLE_MODIFIERS = {
+        StringModifierType.NOCASE.value,
+        StringModifierType.XOR.value,
+        StringModifierType.FULLWORD.value,
+    }
+    _XOR_INCOMPATIBLE_MODIFIERS = {
+        StringModifierType.NOCASE.value,
+        StringModifierType.BASE64.value,
+        StringModifierType.BASE64WIDE.value,
     }
 
     def __init__(self, result: ValidationResult) -> None:
@@ -82,16 +104,34 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
 
     def visit_plain_string(self, node: PlainString) -> None:
         self._check_non_regex_string(node, "plain")
+        self._check_text_string_combinations(node)
+        self._check_text_string_modifier_values(node)
 
     def visit_hex_string(self, node: HexString) -> None:
-        self._check_non_regex_string(node, "hex")
+        for modifier in node.modifiers:
+            name = self._modifier_name(modifier)
+            if name in self._HEX_ALLOWED_MODIFIERS:
+                continue
+            self.result.add_error(
+                f"String modifier '{name}' used on hex string '{node.identifier}' in rule '{self.current_rule_name}'",
+                node.location,
+                "Hex strings only support the private string modifier.",
+            )
 
     def visit_regex_string(self, node: RegexString) -> None:
-        return None
+        for modifier in node.modifiers:
+            name = self._modifier_name(modifier)
+            if name not in self._REGEX_DISALLOWED_MODIFIERS:
+                continue
+            self.result.add_error(
+                f"String modifier '{name}' used on regex string '{node.identifier}' in rule '{self.current_rule_name}'",
+                node.location,
+                "Use base64, base64wide, and xor only on text strings.",
+            )
 
     def _check_non_regex_string(self, node: StringDefinition, string_type: str) -> None:
         for modifier in node.modifiers:
-            name = getattr(modifier, "name", str(modifier))
+            name = self._modifier_name(modifier)
             if name not in self._REGEX_ONLY_MODIFIERS:
                 continue
 
@@ -100,6 +140,117 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
                 node.location,
                 "Use the modifier on a regex string or remove it from this string definition.",
             )
+
+    def _check_text_string_combinations(self, node: PlainString) -> None:
+        modifier_names = {self._modifier_name(modifier) for modifier in node.modifiers}
+        for base64_name in sorted(modifier_names & self._BASE64_MODIFIERS):
+            for incompatible_name in sorted(modifier_names & self._BASE64_INCOMPATIBLE_MODIFIERS):
+                self.result.add_error(
+                    f"String modifier '{incompatible_name}' cannot be combined with '{base64_name}' on string '{node.identifier}' in rule '{self.current_rule_name}'",
+                    node.location,
+                    "Remove one of the incompatible string modifiers.",
+                )
+
+        if StringModifierType.XOR.value not in modifier_names:
+            return
+
+        for incompatible_name in sorted(modifier_names & self._XOR_INCOMPATIBLE_MODIFIERS):
+            self.result.add_error(
+                f"String modifier '{incompatible_name}' cannot be combined with 'xor' on string '{node.identifier}' in rule '{self.current_rule_name}'",
+                node.location,
+                "Remove one of the incompatible string modifiers.",
+            )
+
+    def _check_text_string_modifier_values(self, node: PlainString) -> None:
+        for modifier in node.modifiers:
+            name = self._modifier_name(modifier)
+            value = getattr(modifier, "value", None)
+            if name == StringModifierType.XOR.value:
+                self._check_xor_value(node, value)
+            elif name in self._BASE64_MODIFIERS:
+                self._check_base64_value(node, value)
+
+    def _check_xor_value(self, node: PlainString, value: object) -> None:
+        if value is None:
+            return
+
+        if isinstance(value, tuple | list) and len(value) == 2:
+            self._check_xor_range(node, value[0], value[1])
+            return
+
+        if isinstance(value, str) and "-" in value:
+            low_text, high_text = value.split("-", maxsplit=1)
+            self._check_xor_range(node, low_text, high_text)
+            return
+
+        self._check_xor_key(node, value)
+
+    def _check_xor_range(self, node: PlainString, low_value: object, high_value: object) -> None:
+        low = self._parse_xor_key(low_value)
+        high = self._parse_xor_key(high_value)
+        if low is None or high is None:
+            self.result.add_error(
+                f"xor range for string '{node.identifier}' must contain integer bounds in rule '{self.current_rule_name}'",
+                node.location,
+                "Use integer byte values such as xor(0x01-0xff).",
+            )
+            return
+
+        self._check_xor_key(node, low)
+        self._check_xor_key(node, high)
+        if low > high:
+            self.result.add_error(
+                f"xor range for string '{node.identifier}' must have a lower bound no greater than the upper bound in rule '{self.current_rule_name}'",
+                node.location,
+                "Use an ascending range such as xor(0x01-0xff).",
+            )
+
+    def _check_xor_key(self, node: PlainString, value: object) -> None:
+        key = self._parse_xor_key(value)
+        if key is not None and 0 <= key <= 255:
+            return
+
+        self.result.add_error(
+            f"xor key for string '{node.identifier}' must be between 0 and 255 in rule '{self.current_rule_name}'",
+            node.location,
+            "Use a single-byte XOR key.",
+        )
+
+    def _parse_xor_key(self, value: object) -> int | None:
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str):
+            text = value.strip()
+            try:
+                if text.lower().startswith("0x"):
+                    return int(text, 16)
+                if any(char in "abcdefABCDEF" for char in text):
+                    return int(text, 16)
+                return int(text, 10)
+            except ValueError:
+                return None
+        return None
+
+    def _check_base64_value(self, node: PlainString, value: object) -> None:
+        if value is None:
+            return
+
+        if isinstance(value, str):
+            try:
+                encoded_value = value.encode("ascii")
+            except UnicodeEncodeError:
+                encoded_value = b""
+            if len(encoded_value) == 64:
+                return
+
+        self.result.add_error(
+            f"base64 alphabet for string '{node.identifier}' must be 64 bytes in rule '{self.current_rule_name}'",
+            node.location,
+            "Use a 64-byte ASCII alphabet or remove the custom alphabet.",
+        )
+
+    def _modifier_name(self, modifier: object) -> str:
+        return str(getattr(modifier, "name", modifier))
 
 
 class UndefinedStringDetector:
