@@ -56,6 +56,7 @@ from yaraast.ast.strings import (
 from yaraast.errors import SerializationError
 from yaraast.serialization.simple_roundtrip_helpers import (
     _compare_normalized,
+    deserialize_extern_rule,
     deserialize_from_file,
     deserialize_meta,
     deserialize_node,
@@ -149,6 +150,32 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
 
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         deserialize_rule({"name": "r1", "tags": [{"name": 7}], "condition": None})
+
+
+def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
+    with pytest.raises(SerializationError, match="ExternImport module_path must be a string"):
+        deserialize_node({"type": "ExternImport", "module_path": ["external"]})
+
+    with pytest.raises(SerializationError, match="ExternImport alias must be a string"):
+        deserialize_node({"type": "ExternImport", "module_path": "external", "alias": True})
+
+    with pytest.raises(SerializationError, match="ExternImport rules must be a list of strings"):
+        deserialize_node({"type": "ExternImport", "module_path": "external", "rules": "RuleA"})
+
+    with pytest.raises(SerializationError, match="ExternRule name must be a string"):
+        deserialize_extern_rule({"name": ["RuleA"]})
+
+    with pytest.raises(SerializationError, match="ExternRule namespace must be a string"):
+        deserialize_extern_rule({"name": "RuleA", "namespace": True})
+
+    with pytest.raises(SerializationError, match="ExternNamespace name must be a string"):
+        deserialize_node({"type": "ExternNamespace", "name": ["ns"]})
+
+    with pytest.raises(SerializationError, match="ExternRuleReference rule_name must be a string"):
+        deserialize_node({"type": "ExternRuleReference", "rule_name": ["RuleA"]})
+
+    with pytest.raises(SerializationError, match="ExternRuleReference namespace must be a string"):
+        deserialize_node({"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": True})
 
 
 def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:

@@ -296,6 +296,14 @@ def _deserialize_nullable_string_field(
     raise SerializationError(msg)
 
 
+def _deserialize_string_list_field(data: dict[str, Any], field: str, context: str) -> list[str]:
+    value = data.get(field, [])
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    msg = f"{context} {field} must be a list of strings"
+    raise SerializationError(msg)
+
+
 def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
     value = data["value"]
     if isinstance(value, str | bool):
@@ -897,18 +905,18 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return deserialize_extern_rule(data)
     if node_type == "ExternRuleReference":
         return ExternRuleReference(
-            rule_name=data["rule_name"],
-            namespace=data.get("namespace"),
+            rule_name=_deserialize_string_field(data, "rule_name", "ExternRuleReference"),
+            namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRuleReference"),
         )
     if node_type == "ExternImport":
         return ExternImport(
-            module_path=data["module_path"],
-            alias=data.get("alias"),
-            rules=list(data.get("rules", [])),
+            module_path=_deserialize_string_field(data, "module_path", "ExternImport"),
+            alias=_deserialize_nullable_string_field(data, "alias", "ExternImport"),
+            rules=_deserialize_string_list_field(data, "rules", "ExternImport"),
         )
     if node_type == "ExternNamespace":
         return ExternNamespace(
-            name=data["name"],
+            name=_deserialize_string_field(data, "name", "ExternNamespace"),
             extern_rules=[deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])],
         )
     if node_type == "InRulePragma":
@@ -1171,9 +1179,9 @@ def _deserialize_rule_modifiers(modifiers: list[Any]) -> list[Any]:
 
 def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
     return ExternRule(
-        name=data["name"],
+        name=_deserialize_string_field(data, "name", "ExternRule"),
         modifiers=_deserialize_rule_modifiers(data.get("modifiers", [])),
-        namespace=data.get("namespace"),
+        namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRule"),
     )
 
 

@@ -128,6 +128,14 @@ def _deserialize_nullable_string_field(
     raise SerializationError(msg)
 
 
+def _deserialize_string_list_field(data: dict[str, Any], field: str, context: str) -> list[str]:
+    value = data.get(field, [])
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    msg = f"{context} {field} must be a list of strings"
+    raise SerializationError(msg)
+
+
 def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
     value = data["value"]
     if isinstance(value, str | bool):
@@ -448,7 +456,13 @@ def _deser_extern_rule_reference(self, data: dict[str, Any]):
     if rule_name is None:
         msg = "ExternRuleReference missing rule_name"
         raise SerializationError(msg)
-    return ExternRuleReference(rule_name=rule_name, namespace=data.get("namespace"))
+    if not isinstance(rule_name, str):
+        msg = "ExternRuleReference rule_name must be a string"
+        raise SerializationError(msg)
+    return ExternRuleReference(
+        rule_name=rule_name,
+        namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRuleReference"),
+    )
 
 
 def _deser_with_statement(self, data: dict[str, Any]):
@@ -858,11 +872,14 @@ class JsonSerializerDeserializeMixin:
         if module_path is None:
             msg = "ExternImport missing module_path"
             raise SerializationError(msg)
+        if not isinstance(module_path, str):
+            msg = "ExternImport module_path must be a string"
+            raise SerializationError(msg)
         return self._apply_node_metadata(
             ExternImport(
                 module_path=module_path,
-                alias=data.get("alias"),
-                rules=list(data.get("rules", [])),
+                alias=_deserialize_nullable_string_field(data, "alias", "ExternImport"),
+                rules=_deserialize_string_list_field(data, "rules", "ExternImport"),
             ),
             data,
         )
@@ -873,9 +890,9 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             ExternRule(
-                name=data["name"],
+                name=_deserialize_string_field(data, "name", "ExternRule"),
                 modifiers=Rule._normalize_modifiers(data.get("modifiers", [])),
-                namespace=data.get("namespace"),
+                namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRule"),
             ),
             data,
         )
@@ -885,7 +902,7 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             ExternNamespace(
-                name=data["name"],
+                name=_deserialize_string_field(data, "name", "ExternNamespace"),
                 extern_rules=[
                     self._deserialize_extern_rule(rule) for rule in data.get("extern_rules", [])
                 ],

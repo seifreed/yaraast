@@ -119,6 +119,36 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
         )
 
 
+def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
+    s = JsonSerializer()
+
+    with pytest.raises(SerializationError, match="ExternImport module_path must be a string"):
+        s._deserialize_extern_import({"module_path": ["external"]})
+
+    with pytest.raises(SerializationError, match="ExternImport alias must be a string"):
+        s._deserialize_extern_import({"module_path": "external", "alias": True})
+
+    with pytest.raises(SerializationError, match="ExternImport rules must be a list of strings"):
+        s._deserialize_extern_import({"module_path": "external", "rules": "RuleA"})
+
+    with pytest.raises(SerializationError, match="ExternRule name must be a string"):
+        s._deserialize_extern_rule({"name": ["RuleA"]})
+
+    with pytest.raises(SerializationError, match="ExternRule namespace must be a string"):
+        s._deserialize_extern_rule({"name": "RuleA", "namespace": True})
+
+    with pytest.raises(SerializationError, match="ExternNamespace name must be a string"):
+        s._deserialize_extern_namespace({"name": ["ns"]})
+
+    with pytest.raises(SerializationError, match="ExternRuleReference rule_name must be a string"):
+        s._deserialize_expression({"type": "ExternRuleReference", "rule_name": ["RuleA"]})
+
+    with pytest.raises(SerializationError, match="ExternRuleReference namespace must be a string"):
+        s._deserialize_expression(
+            {"type": "ExternRuleReference", "rule_name": "RuleA", "namespace": True}
+        )
+
+
 def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
     s = JsonSerializer()
 
