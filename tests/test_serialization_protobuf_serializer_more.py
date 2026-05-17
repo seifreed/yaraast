@@ -309,6 +309,14 @@ def test_protobuf_serializer_preserves_module_dictionary_and_wildcard_expression
             quantifier=2,
             string_set=["$a", "$b"],
         ),
+        OfExpression(
+            quantifier=2,
+            string_set=("$a", "$b"),
+        ),
+        OfExpression(
+            quantifier=2,
+            string_set=frozenset(("$a", "$b")),
+        ),
     ],
 )
 def test_protobuf_serializer_preserves_condition_string_set_value_shapes(
@@ -326,7 +334,13 @@ def test_protobuf_serializer_preserves_condition_string_set_value_shapes(
 
     restored = serializer.deserialize(binary_data=serializer.serialize(ast))
 
-    assert restored.rules[0].condition == condition
+    expected = condition
+    if isinstance(condition, OfExpression) and isinstance(
+        condition.string_set, tuple | set | frozenset
+    ):
+        expected = OfExpression(condition.quantifier, sorted(condition.string_set, key=str))
+
+    assert restored.rules[0].condition == expected
 
 
 def test_protobuf_serializer_canonicalizes_ast_string_set_list_items() -> None:

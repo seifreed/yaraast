@@ -9,6 +9,10 @@ from typing import Any
 def _serialize_ast_value(serializer, value):
     if hasattr(value, "accept"):
         return serializer.visit(value)
+    if isinstance(value, list | tuple):
+        return [_serialize_ast_value(serializer, item) for item in value]
+    if isinstance(value, set | frozenset):
+        return [_serialize_ast_value(serializer, item) for item in sorted(value, key=str)]
     return value
 
 

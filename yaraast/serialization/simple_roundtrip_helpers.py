@@ -235,8 +235,10 @@ def _deserialize_modifiers(modifiers: list[Any]) -> list[Any]:
 def _serialize_ast_value(value: Any) -> Any:
     if isinstance(value, ASTNode):
         return serialize_node(value)
-    if isinstance(value, list):
+    if isinstance(value, list | tuple):
         return [_serialize_ast_value(item) for item in value]
+    if isinstance(value, set | frozenset):
+        return [_serialize_ast_value(item) for item in sorted(value, key=str)]
     return value
 
 

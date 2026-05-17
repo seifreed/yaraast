@@ -507,8 +507,14 @@ def _copy_string_set_to_protobuf(value, pb_owner) -> None:
         pb_owner.string_set_text = value
         return
 
-    if isinstance(value, list):
+    if isinstance(value, list | tuple):
         pb_owner.string_set_items.extend(_string_set_item_text(item) for item in value)
+        return
+
+    if isinstance(value, set | frozenset):
+        pb_owner.string_set_items.extend(
+            _string_set_item_text(item) for item in sorted(value, key=str)
+        )
         return
 
     string_set = _coerce_expression(value)
