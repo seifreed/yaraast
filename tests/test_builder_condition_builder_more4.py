@@ -7,7 +7,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.conditions import ForExpression, InExpression
-from yaraast.ast.expressions import BinaryExpression, ParenthesesExpression
+from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, ParenthesesExpression
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.errors import ValidationError
 
@@ -28,6 +28,17 @@ def test_condition_builder_group_and_for() -> None:
     body = ConditionBuilder().identifier("i").lt(2)
     loop = ConditionBuilder().for_any("i", iterable, body).build()
     assert isinstance(loop, ForExpression)
+
+
+def test_condition_builder_keeps_boolean_values_distinct_from_integers() -> None:
+    comparison = ConditionBuilder().identifier("enabled").eq(True).build()
+
+    assert isinstance(comparison, BinaryExpression)
+    assert isinstance(comparison.right, BooleanLiteral)
+    assert comparison.right.value is True
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ConditionBuilder().integer(cast(Any, True))
 
 
 def test_condition_builder_errors_on_empty() -> None:

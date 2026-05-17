@@ -27,6 +27,13 @@ class ExpressionBuilder:
     """Static helper methods for building expressions."""
 
     @staticmethod
+    def _integer_literal(value: int) -> IntegerLiteral:
+        if isinstance(value, bool):
+            msg = f"Invalid integer literal value: {value}"
+            raise TypeError(msg)
+        return IntegerLiteral(value=value)
+
+    @staticmethod
     def string(identifier: str) -> StringIdentifier:
         """Create string identifier."""
         return StringIdentifier(name=identifier)
@@ -34,7 +41,7 @@ class ExpressionBuilder:
     @staticmethod
     def integer(value: int) -> IntegerLiteral:
         """Create integer literal."""
-        return IntegerLiteral(value=value)
+        return ExpressionBuilder._integer_literal(value)
 
     @staticmethod
     def double(value: float) -> DoubleLiteral:
@@ -79,8 +86,8 @@ class ExpressionBuilder:
     @staticmethod
     def range(low: int | Expression, high: int | Expression) -> RangeExpression:
         """Create range expression."""
-        low_expr = IntegerLiteral(value=low) if isinstance(low, int) else low
-        high_expr = IntegerLiteral(value=high) if isinstance(high, int) else high
+        low_expr = ExpressionBuilder._integer_literal(low) if isinstance(low, int) else low
+        high_expr = ExpressionBuilder._integer_literal(high) if isinstance(high, int) else high
         return RangeExpression(low=low_expr, high=high_expr)
 
     @staticmethod
@@ -132,7 +139,7 @@ class ExpressionBuilder:
     def n_of(n: int, *strings: str) -> OfExpression:
         """Create 'n of (...)' expression."""
         string_set = ExpressionBuilder.string_set(*strings)
-        return OfExpression(quantifier=IntegerLiteral(value=n), string_set=string_set)
+        return OfExpression(quantifier=ExpressionBuilder._integer_literal(n), string_set=string_set)
 
     @staticmethod
     def and_(*expressions: Expression) -> Expression:
@@ -173,7 +180,9 @@ class ExpressionBuilder:
     @staticmethod
     def at(string_id: str, offset: int | Expression) -> AtExpression:
         """Create 'at' expression."""
-        offset_expr = IntegerLiteral(value=offset) if isinstance(offset, int) else offset
+        offset_expr = (
+            ExpressionBuilder._integer_literal(offset) if isinstance(offset, int) else offset
+        )
         return AtExpression(string_id=string_id, offset=offset_expr)
 
     @staticmethod
@@ -219,5 +228,5 @@ class ExpressionBuilder:
     @staticmethod
     def array_access(array: Expression, index: int | Expression) -> ArrayAccess:
         """Create array access."""
-        index_expr = IntegerLiteral(value=index) if isinstance(index, int) else index
+        index_expr = ExpressionBuilder._integer_literal(index) if isinstance(index, int) else index
         return ArrayAccess(array=array, index=index_expr)

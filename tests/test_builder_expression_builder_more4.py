@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.conditions import ForExpression, OfExpression
@@ -36,6 +38,14 @@ def test_expression_builder_quantifiers_and_loops() -> None:
 
     loop = ExpressionBuilder.for_any("i", ExpressionBuilder.range(0, 2), ExpressionBuilder.true())
     assert isinstance(loop, ForExpression)
+
+
+def test_expression_builder_rejects_booleans_as_integer_values() -> None:
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ExpressionBuilder.integer(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ExpressionBuilder.range(cast(Any, True), 2)
 
 
 def test_expression_builder_accessors_and_errors() -> None:

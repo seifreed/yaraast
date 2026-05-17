@@ -32,6 +32,13 @@ class ConditionBuilder:
     def __init__(self, expr: Expression | None = None) -> None:
         self._expression = expr
 
+    @staticmethod
+    def _integer_literal(value: int) -> IntegerLiteral:
+        if isinstance(value, bool):
+            msg = f"Invalid integer literal value: {value}"
+            raise TypeError(msg)
+        return IntegerLiteral(value=value)
+
     # String references
     def string(self, identifier: str) -> Self:
         """Reference a string identifier."""
@@ -43,14 +50,14 @@ class ConditionBuilder:
 
     def string_offset(self, identifier: str, index: int | None = None) -> Self:
         """Reference string offset (@string or @string[i])."""
-        index_expr = IntegerLiteral(value=index) if index is not None else None
+        index_expr = self._integer_literal(index) if index is not None else None
         return ConditionBuilder(
             StringOffset(string_id=identifier.lstrip("@"), index=index_expr),
         )
 
     def string_length(self, identifier: str, index: int | None = None) -> Self:
         """Reference string length (!string or !string[i])."""
-        index_expr = IntegerLiteral(value=index) if index is not None else None
+        index_expr = self._integer_literal(index) if index is not None else None
         return ConditionBuilder(
             StringLength(string_id=identifier.lstrip("!"), index=index_expr),
         )
@@ -66,7 +73,7 @@ class ConditionBuilder:
 
     def integer(self, value: int) -> Self:
         """Integer literal."""
-        return ConditionBuilder(IntegerLiteral(value=value))
+        return ConditionBuilder(self._integer_literal(value))
 
     def filesize(self) -> Self:
         """Filesize keyword."""
@@ -377,6 +384,8 @@ class ConditionBuilder:
             return value._expression
         if isinstance(value, Expression):
             return value
+        if isinstance(value, bool):
+            return BooleanLiteral(value=value)
         if isinstance(value, int):
             return IntegerLiteral(value=value)
         if isinstance(value, str):
