@@ -591,6 +591,7 @@ class JsonSerializerDeserializeMixin:
                     identifier=data["identifier"],
                     value=_deserialize_plain_string_value(data),
                     modifiers=modifiers,
+                    is_anonymous=bool(data.get("is_anonymous", False)),
                 ),
                 data,
             )
@@ -603,6 +604,7 @@ class JsonSerializerDeserializeMixin:
                     identifier=data["identifier"],
                     tokens=tokens,
                     modifiers=modifiers,
+                    is_anonymous=bool(data.get("is_anonymous", False)),
                 ),
                 data,
             )
@@ -614,6 +616,7 @@ class JsonSerializerDeserializeMixin:
                     identifier=data["identifier"],
                     regex=data["regex"],
                     modifiers=modifiers,
+                    is_anonymous=bool(data.get("is_anonymous", False)),
                 ),
                 data,
             )

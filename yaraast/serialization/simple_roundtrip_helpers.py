@@ -685,28 +685,30 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
             "identifier": string_def.identifier,
             "modifiers": _serialize_modifiers(string_def.modifiers),
         }
+        if string_def.is_anonymous:
+            data["is_anonymous"] = True
         _serialize_plain_string_value(data, string_def.value)
         return _with_node_metadata(string_def, data)
     if isinstance(string_def, HexString):
-        return _with_node_metadata(
-            string_def,
-            {
-                "type": "HexString",
-                "identifier": string_def.identifier,
-                "tokens": [_serialize_hex_token(t) for t in string_def.tokens],
-                "modifiers": _serialize_modifiers(string_def.modifiers),
-            },
-        )
+        data = {
+            "type": "HexString",
+            "identifier": string_def.identifier,
+            "tokens": [_serialize_hex_token(t) for t in string_def.tokens],
+            "modifiers": _serialize_modifiers(string_def.modifiers),
+        }
+        if string_def.is_anonymous:
+            data["is_anonymous"] = True
+        return _with_node_metadata(string_def, data)
     if isinstance(string_def, RegexString):
-        return _with_node_metadata(
-            string_def,
-            {
-                "type": "RegexString",
-                "identifier": string_def.identifier,
-                "regex": string_def.regex,
-                "modifiers": _serialize_modifiers(string_def.modifiers),
-            },
-        )
+        data = {
+            "type": "RegexString",
+            "identifier": string_def.identifier,
+            "regex": string_def.regex,
+            "modifiers": _serialize_modifiers(string_def.modifiers),
+        }
+        if string_def.is_anonymous:
+            data["is_anonymous"] = True
+        return _with_node_metadata(string_def, data)
     data = {"type": "StringDefinition", "data": str(string_def)}
     if isinstance(string_def, ASTNode):
         return _with_node_metadata(string_def, data)
@@ -1107,6 +1109,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                 identifier=data["identifier"],
                 value=_deserialize_plain_string_value(data),
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                is_anonymous=bool(data.get("is_anonymous", False)),
             ),
             data,
         )
@@ -1119,6 +1122,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                     identifier=data["identifier"],
                     tokens=tokens,
                     modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                    is_anonymous=bool(data.get("is_anonymous", False)),
                 ),
                 data,
             )
@@ -1129,6 +1133,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                         identifier=data["identifier"],
                         tokens=_deserialize_legacy_hex_tokens(raw_tokens),
                         modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                        is_anonymous=bool(data.get("is_anonymous", False)),
                     ),
                     data,
                 )
@@ -1148,6 +1153,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                 identifier=data["identifier"],
                 tokens=[],
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                is_anonymous=bool(data.get("is_anonymous", False)),
             ),
             data,
         )
@@ -1157,6 +1163,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                 identifier=data["identifier"],
                 regex=data["regex"],
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
+                is_anonymous=bool(data.get("is_anonymous", False)),
             ),
             data,
         )

@@ -87,26 +87,34 @@ def visit_plain_string(serializer, node) -> dict[str, Any]:
         "identifier": node.identifier,
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
+    if getattr(node, "is_anonymous", False):
+        data["is_anonymous"] = True
     _serialize_plain_string_value(data, node.value)
     return data
 
 
 def visit_hex_string(serializer, node) -> dict[str, Any]:
-    return {
+    data = {
         "type": "HexString",
         "identifier": node.identifier,
         "tokens": [serializer.visit(token) for token in node.tokens],
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
+    if getattr(node, "is_anonymous", False):
+        data["is_anonymous"] = True
+    return data
 
 
 def visit_regex_string(serializer, node) -> dict[str, Any]:
-    return {
+    data = {
         "type": "RegexString",
         "identifier": node.identifier,
         "regex": node.regex,
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
+    if getattr(node, "is_anonymous", False):
+        data["is_anonymous"] = True
+    return data
 
 
 def visit_hex_alternative(serializer, node) -> dict[str, Any]:

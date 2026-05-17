@@ -10,6 +10,8 @@ from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.parser import Parser
 from yaraast.serialization.simple_roundtrip import SimpleRoundTrip, SimpleRoundtripSerializer
 
 
@@ -77,6 +79,24 @@ def test_simple_roundtrip_file_io_preserves_plain_string_bytes(tmp_path: Path) -
 
     assert isinstance(restored_string, PlainString)
     assert restored_string.value == b'A"\x00\xff\\\n'
+
+
+def test_simple_roundtrip_preserves_anonymous_strings_for_codegen() -> None:
+    serializer = SimpleRoundtripSerializer()
+    ast = Parser(
+        'rule r { strings: $ = "abc" $ = { 41 } $ = /def/ condition: any of them }'
+    ).parse()
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    assert isinstance(restored, YaraFile)
+    restored_strings = restored.rules[0].strings
+
+    assert [string.is_anonymous for string in restored_strings] == [True, True, True]
+    output = CodeGenerator().generate(restored)
+    assert '$ = "abc"' in output
+    assert "$ = { 41 }" in output
+    assert "$ = /def/" in output
+    assert "$anon_" not in output
 
 
 def test_simple_roundtrip_preserves_alias_and_modifiers() -> None:

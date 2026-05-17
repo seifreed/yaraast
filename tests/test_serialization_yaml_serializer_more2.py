@@ -7,6 +7,8 @@ from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
+from yaraast.codegen.generator import CodeGenerator
+from yaraast.parser import Parser
 from yaraast.serialization.yaml_serializer import YamlSerializer
 
 
@@ -71,3 +73,20 @@ def test_yaml_roundtrip_preserves_xor_range_modifier() -> None:
     restored = serializer.deserialize(serializer.serialize(ast))
 
     assert restored.rules[0].strings[0].modifiers[0].value == (1, 3)
+
+
+def test_yaml_roundtrip_preserves_anonymous_strings_for_codegen() -> None:
+    serializer = YamlSerializer(include_metadata=False)
+    ast = Parser(
+        'rule r { strings: $ = "abc" $ = { 41 } $ = /def/ condition: any of them }'
+    ).parse()
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    restored_strings = restored.rules[0].strings
+
+    assert [string.is_anonymous for string in restored_strings] == [True, True, True]
+    output = CodeGenerator().generate(restored)
+    assert '$ = "abc"' in output
+    assert "$ = { 41 }" in output
+    assert "$ = /def/" in output
+    assert "$anon_" not in output

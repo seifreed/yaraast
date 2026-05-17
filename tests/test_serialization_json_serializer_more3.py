@@ -29,6 +29,7 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
+from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -94,6 +95,23 @@ def test_json_roundtrip_preserves_plain_string_bytes() -> None:
 
     assert isinstance(restored_string, PlainString)
     assert restored_string.value == b'A"\x00\xff\\\n'
+
+
+def test_json_roundtrip_preserves_anonymous_strings_for_codegen() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = Parser(
+        'rule r { strings: $ = "abc" $ = { 41 } $ = /def/ condition: any of them }'
+    ).parse()
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    restored_strings = restored.rules[0].strings
+
+    assert [string.is_anonymous for string in restored_strings] == [True, True, True]
+    output = CodeGenerator().generate(restored)
+    assert '$ = "abc"' in output
+    assert "$ = { 41 }" in output
+    assert "$ = /def/" in output
+    assert "$anon_" not in output
 
 
 def test_json_serializer_normalizes_scalar_hex_alternatives() -> None:
