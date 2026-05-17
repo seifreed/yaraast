@@ -117,6 +117,34 @@ def test_rule_dependency_getter_does_not_expose_internal_set() -> None:
     assert graph.nodes["rule:test"].dependencies == {"dep"}
 
 
+def test_dependency_graph_readding_file_removes_stale_nodes_and_edges() -> None:
+    graph = DependencyGraph()
+    file_path = Path("rules.yar")
+
+    graph.add_file(
+        file_path,
+        YaraFile(
+            imports=[Import(module="pe")],
+            includes=[Include(path="old.yar")],
+            rules=[Rule(name="old_rule")],
+        ),
+    )
+    graph.add_file(
+        file_path,
+        YaraFile(
+            includes=[Include(path="new.yar")],
+            rules=[Rule(name="new_rule")],
+        ),
+    )
+
+    dependencies = graph.get_file_dependencies(str(file_path))
+    assert "old.yar" not in dependencies
+    assert "pe" not in dependencies
+    assert "rule:old_rule" not in graph.nodes
+    assert graph.get_statistics()["rule_count"] == 1
+    assert {"new.yar", "rule:new_rule"}.issubset(dependencies)
+
+
 def test_resolution_dependency_graph_public_outputs_are_stably_sorted() -> None:
     graph = DependencyGraph()
     graph.nodes["z_rule"] = DependencyNode("z_rule", "rule", dependencies={"z_dep", "a_dep"})

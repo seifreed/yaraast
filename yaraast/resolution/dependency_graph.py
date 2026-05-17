@@ -42,6 +42,8 @@ class DependencyGraph:
         file_key = str(file_path)
         include_resolutions = include_resolutions or {}
 
+        self._remove_existing_file_state(file_key)
+
         # Add file node
         if file_key not in self.nodes:
             self.nodes[file_key] = DependencyNode(
@@ -69,6 +71,50 @@ class DependencyGraph:
         # Add rules and analyze their dependencies
         for rule in ast.rules:
             self._add_rule(file_key, rule)
+
+    def _remove_existing_file_state(self, file_key: str) -> None:
+        """Remove stale graph state before re-adding a file."""
+        file_node = self.nodes.get(file_key)
+        if file_node:
+            for dependency in list(file_node.dependencies):
+                dependency_node = self.nodes.get(dependency)
+                if dependency_node:
+                    dependency_node.dependents.discard(file_key)
+                    self._remove_orphan_external_node(dependency)
+            file_node.dependencies.clear()
+
+        for rule_name in self.file_rules.get(file_key, set()).copy():
+            rule_key = f"rule:{rule_name}"
+            rule_node = self.nodes.get(rule_key)
+            if rule_node and str(rule_node.file_path) == file_key:
+                self._remove_rule_node(rule_key)
+            if self.rule_files.get(rule_name) == file_key:
+                del self.rule_files[rule_name]
+
+        self.file_rules.pop(file_key, None)
+
+    def _remove_rule_node(self, rule_key: str) -> None:
+        """Remove a rule node and references to it."""
+        rule_node = self.nodes.pop(rule_key, None)
+        if not rule_node:
+            return
+
+        for dependency in list(rule_node.dependencies):
+            dependency_node = self.nodes.get(dependency)
+            if dependency_node:
+                dependency_node.dependents.discard(rule_key)
+                self._remove_orphan_external_node(dependency)
+
+        for dependent in list(rule_node.dependents):
+            dependent_node = self.nodes.get(dependent)
+            if dependent_node:
+                dependent_node.dependencies.discard(rule_key)
+
+    def _remove_orphan_external_node(self, node_key: str) -> None:
+        """Remove include/module placeholders that no node references anymore."""
+        node = self.nodes.get(node_key)
+        if node and node.type in {"include", "module"} and not node.dependents:
+            self.nodes.pop(node_key, None)
 
     def _add_module_dependency(self, file_key: str, module_name: str) -> None:
         """Add module dependency."""
