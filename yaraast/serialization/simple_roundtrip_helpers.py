@@ -103,7 +103,10 @@ def _serialize_hex_token(token) -> dict[str, Any]:
     if isinstance(token, HexAlternative):
         return {
             "type": "HexAlternative",
-            "alternatives": [[_serialize_hex_token(t) for t in alt] for alt in token.alternatives],
+            "alternatives": [
+                [_serialize_hex_token(t) for t in _coerce_hex_alternative_branch(alt)]
+                for alt in token.alternatives
+            ],
         }
     return {"type": "Unknown", "data": str(token)}
 
@@ -122,10 +125,25 @@ def _deserialize_hex_token(data: dict[str, Any]):
     if hex_kind == "HexNegatedByte":
         return HexNegatedByte(value=data["value"])
     if hex_kind == "HexAlternative":
-        alternatives = [[_deserialize_hex_token(t) for t in alt] for alt in data["alternatives"]]
+        alternatives = [
+            [_deserialize_hex_token(t) for t in _coerce_serialized_hex_alternative_branch(alt)]
+            for alt in data["alternatives"]
+        ]
         return HexAlternative(alternatives=alternatives)
     msg = f"Unknown hex token type: {hex_kind}"
     raise SerializationError(msg)
+
+
+def _coerce_hex_alternative_branch(alternative) -> list:
+    if isinstance(alternative, list):
+        return alternative
+    return [HexByte(alternative)]
+
+
+def _coerce_serialized_hex_alternative_branch(alternative) -> list:
+    if isinstance(alternative, list):
+        return alternative
+    return [alternative]
 
 
 def _deserialize_legacy_hex_tokens(raw_tokens: str) -> list[HexToken]:

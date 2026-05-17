@@ -98,8 +98,19 @@ def visit_regex_string(serializer, node) -> dict[str, Any]:
 def visit_hex_alternative(serializer, node) -> dict[str, Any]:
     return {
         "type": "HexAlternative",
-        "alternatives": [[serializer.visit(token) for token in alt] for alt in node.alternatives],
+        "alternatives": [
+            [serializer.visit(token) for token in _coerce_hex_alternative_branch(alt)]
+            for alt in node.alternatives
+        ],
     }
+
+
+def _coerce_hex_alternative_branch(alternative) -> list:
+    from yaraast.ast.strings import HexByte
+
+    if isinstance(alternative, list):
+        return alternative
+    return [HexByte(alternative)]
 
 
 def visit_string_offset(serializer, node) -> dict[str, Any]:

@@ -675,12 +675,17 @@ class JsonSerializerDeserializeMixin:
             from yaraast.ast.strings import HexAlternative
 
             alternatives = [
-                [self._deserialize_hex_token(t) for t in alt]
+                [self._deserialize_hex_token(t) for t in self._coerce_hex_alternative_branch(alt)]
                 for alt in data.get("alternatives", [])
             ]
             return self._apply_node_metadata(HexAlternative(alternatives=alternatives), data)
         msg = f"Unknown hex token type: {hex_kind}"
         raise SerializationError(msg)
+
+    def _coerce_hex_alternative_branch(self, alternative):
+        if isinstance(alternative, list):
+            return alternative
+        return [alternative]
 
     def _deserialize_extern_import(self, data: dict[str, Any]):
         from yaraast.ast.extern import ExternImport

@@ -403,7 +403,7 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
     elif isinstance(token, HexAlternative):
         for alternative in token.alternatives:
             pb_alternative = pb_token.alternative.alternatives.add()
-            for alternative_token in alternative:
+            for alternative_token in _coerce_hex_alternative_branch(alternative):
                 convert_hex_token_to_protobuf(alternative_token, pb_alternative.tokens.add())
     elif isinstance(token, HexNibble):
         pb_token.nibble.high = token.high
@@ -438,6 +438,14 @@ def _hex_nibble_value_to_protobuf(value: int | str) -> int:
     if isinstance(value, int):
         return value
     return int(value, 16)
+
+
+def _coerce_hex_alternative_branch(alternative) -> list:
+    from yaraast.ast.strings import HexByte
+
+    if isinstance(alternative, list):
+        return alternative
+    return [HexByte(alternative)]
 
 
 def _coerce_expression(value):

@@ -21,7 +21,14 @@ from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModi
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, PragmaScope
 from yaraast.ast.rules import Import, Rule
-from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexString,
+    PlainString,
+    RegexString,
+)
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -61,6 +68,25 @@ def test_json_serialize_deserialize_roundtrip() -> None:
     restored = serializer.deserialize(json_str)
     assert restored.rules[0].name == "r1"
     assert restored.rules[0].strings
+
+
+def test_json_serializer_normalizes_scalar_hex_alternatives() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="scalar_hex_alternative",
+                strings=[HexString(identifier="$h", tokens=[HexAlternative([0x90, "91"])])],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+    string_def = restored.rules[0].strings[0]
+
+    assert isinstance(string_def, HexString)
+    assert string_def.tokens == [HexAlternative([[HexByte(0x90)], [HexByte("91")]])]
 
 
 def test_json_roundtrip_preserves_string_count_conditions() -> None:

@@ -80,6 +80,11 @@ def test_json_serializer_visit_methods_cover_remaining_nodes() -> None:
         s.visit_hex_alternative(HexAlternative([[HexByte(1)], [HexByte(2)]]))["type"]
         == "HexAlternative"
     )
+    scalar_alternative = s.visit_hex_alternative(HexAlternative([0x90, "91"]))
+    assert scalar_alternative["alternatives"] == [
+        [{"type": "HexByte", "value": 0x90}],
+        [{"type": "HexByte", "value": "91"}],
+    ]
     assert s.visit_hex_nibble(HexNibble(high=True, value=0xA))["type"] == "HexNibble"
 
     assert s.visit_identifier(Identifier("id"))["type"] == "Identifier"
