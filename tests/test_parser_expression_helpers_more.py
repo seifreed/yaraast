@@ -416,7 +416,12 @@ def test_hex_string_parser_covers_remaining_branches_and_errors() -> None:
     tok = parser._parse_wildcard()
     assert isinstance(tok, HexWildcard)
 
-    assert parser._parse_jump_range("-5") == HexJump(min_jump=None, max_jump=5)
+    with pytest.raises(HexParseError, match="Invalid jump range"):
+        parser._parse_jump_range("-5")
+    with pytest.raises(HexParseError, match="Invalid jump length"):
+        parser._parse_jump_range("0")
+    assert parser._parse_jump_range("-") == HexJump(min_jump=None, max_jump=None)
+    assert parser._parse_jump_range("0-0") == HexJump(min_jump=0, max_jump=0)
     assert parser._parse_jump_range("3-") == HexJump(min_jump=3, max_jump=None)
     assert parser._parse_jump_range("4") == HexJump(min_jump=4, max_jump=4)
 

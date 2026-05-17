@@ -60,9 +60,13 @@ def test_hex_parser_errors() -> None:
     with pytest.raises(HexParseError):
         parser.parse("GG")  # invalid hex
 
-    for pattern in ("[a]", "[5-2]", "[1-2-3]"):
+    for pattern in ("[a]", "[5-2]", "[1-2-3]", "[0]", "[-5]"):
         with pytest.raises(HexParseError):
             parser.parse(pattern)
+
+    assert parser.parse("41 [0-0] 42")
+    assert parser.parse("41 [0-2] 42")
+    assert parser.parse("41 [-] 42")
 
     for pattern in (
         "( GG | AA )",

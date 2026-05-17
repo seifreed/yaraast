@@ -205,12 +205,18 @@ class HexStringParser:
                 if len(parts) != 2:
                     msg = "Invalid jump range"
                     raise HexParseError(msg, self.pos)
+                if not parts[0].strip() and parts[1].strip():
+                    msg = "Invalid jump range"
+                    raise HexParseError(msg, self.pos)
                 min_jump = int(parts[0]) if parts[0].strip() else None
                 max_jump = int(parts[1]) if parts[1].strip() else None
                 self._validate_jump_bounds(min_jump, max_jump)
                 return HexJump(min_jump=min_jump, max_jump=max_jump)
 
             val = int(jump_str)
+            if val == 0:
+                msg = "Invalid jump length"
+                raise HexParseError(msg, self.pos)
             self._validate_jump_bounds(val, val)
             return HexJump(min_jump=val, max_jump=val)
         except ValueError:
