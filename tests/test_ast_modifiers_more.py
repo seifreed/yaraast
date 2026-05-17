@@ -40,10 +40,12 @@ def test_meta_scope_fallback_and_meta_entry_str() -> None:
     assert str(MetaScope.PROTECTED) == "protected"
 
     private_entry = MetaEntry.from_key_value("k", "v", "private")
+    escaped_entry = MetaEntry.from_key_value("description", 'a"\\b\n')
     public_entry = MetaEntry.from_key_value("n", 1)
     assert private_entry.is_private is True
     assert public_entry.is_public is True
     assert str(private_entry).startswith("private:")
+    assert str(escaped_entry) == 'description = "a\\"\\\\b\\n"'
     assert str(public_entry) == "n = 1"
 
 
@@ -61,6 +63,8 @@ def test_string_and_rule_modifier_helpers() -> None:
     alphabet = "A" * 64
     modifier_with_string = StringModifier.from_name_value("base64", alphabet)
     assert str(modifier_with_string) == f'base64("{alphabet}")'
+    modifier_with_escaped_string = StringModifier.from_name_value("base64", 'a"\\b\n')
+    assert str(modifier_with_escaped_string) == 'base64("a\\"\\\\b\\n")'
 
     assert modifier_with_value.name == "xor"
 
