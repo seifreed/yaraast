@@ -10,7 +10,7 @@ import pytest
 from rich.console import Console
 
 from yaraast.ast.expressions import BinaryExpression, Identifier, IntegerLiteral
-from yaraast.ast.strings import HexString
+from yaraast.ast.strings import HexString, PlainString
 from yaraast.cli.visitors.formatters import (
     ConditionStringFormatter,
     DetailedNodeStringFormatter,
@@ -102,6 +102,11 @@ def test_tree_builder_additional_branches() -> None:
 
     preview_none = builder._get_string_preview(HexString(identifier="$h"), lambda x: x)
     assert preview_none == ""
+
+    byte_plain = PlainString(identifier="$b", value=b'ab"\x00' + (b"x" * 35), modifiers=[])
+    preview = builder._get_string_preview(byte_plain, lambda x: x)
+    assert preview == ' = "ab\\"\\x00xxxxxxxxxxxxxxxxxxxxxxxxxx..."'
+    assert 'ab\\"\\x00' in _render(builder.visit_plain_string(byte_plain))
 
     assert builder._truncate_at_boundary("abcdef", 3) == "abc..."
 

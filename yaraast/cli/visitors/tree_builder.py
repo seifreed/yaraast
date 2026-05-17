@@ -8,6 +8,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import StringWildcard
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString, RegexString
+from yaraast.codegen.generator_helpers import escape_plain_string_value
 
 from .formatters import ConditionStringFormatter
 
@@ -180,7 +181,8 @@ class ASTTreeBuilder:
     def _get_string_preview(self, string, escape) -> str:
         """Get string value preview for display."""
         if isinstance(string, PlainString):
-            escaped_val = escape(string.value[:30]) if string.value else ""
+            value = escape_plain_string_value(string.value[:30]) if string.value else ""
+            escaped_val = escape(value)
             ellipsis = "..." if len(string.value) > 30 else ""
             return f' = "{escaped_val}{ellipsis}"'
 
@@ -254,9 +256,9 @@ class ASTTreeBuilder:
         from rich.markup import escape
 
         value = (
-            escape(node.value)
-            if hasattr(node, "value") and isinstance(node.value, str)
-            else str(node.value)
+            escape(escape_plain_string_value(node.value))
+            if hasattr(node, "value") and isinstance(node.value, str | bytes)
+            else escape(str(node.value))
         )
         mods = self._get_string_modifiers_preview(node, escape)
         return Tree(f'{node.identifier} = "{value}"{mods}')
