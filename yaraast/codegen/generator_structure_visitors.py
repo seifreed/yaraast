@@ -18,19 +18,30 @@ def _emit_trailing(generator, node) -> None:
         generator._write(f"  {node.trailing_comment.text}")
 
 
+def _emit_top_level_line(generator, node) -> None:
+    _emit_comments(generator, node)
+    rendered = generator.visit(node)
+    if rendered:
+        generator._write(rendered)
+    generator._writeline()
+
+
+def _emit_top_level_section(generator, nodes) -> bool:
+    if not nodes:
+        return False
+    for node in nodes:
+        _emit_top_level_line(generator, node)
+    generator._writeline()
+    return True
+
+
 def visit_yara_file(generator, node) -> str:
-    for imp in node.imports:
-        _emit_comments(generator, imp)
-        generator.visit(imp)
-        generator._writeline()
-    if node.imports:
-        generator._writeline()
-    for inc in node.includes:
-        _emit_comments(generator, inc)
-        generator.visit(inc)
-        generator._writeline()
-    if node.includes:
-        generator._writeline()
+    _emit_top_level_section(generator, node.pragmas)
+    _emit_top_level_section(generator, node.imports)
+    _emit_top_level_section(generator, node.extern_imports)
+    _emit_top_level_section(generator, node.includes)
+    _emit_top_level_section(generator, node.namespaces)
+    _emit_top_level_section(generator, node.extern_rules)
     for index, rule in enumerate(node.rules):
         if index > 0:
             generator._writeline()

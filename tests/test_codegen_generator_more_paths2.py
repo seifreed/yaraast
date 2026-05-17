@@ -72,7 +72,11 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     gen = CodeGenerator()
     ast = YaraFile(
         imports=[Import(module="pe", alias="p")],
+        extern_imports=[ExternImport("external.yar", alias="ext", rules=["ExternalRule"])],
         includes=[Include(path="common.yar")],
+        pragmas=[IncludeOncePragma()],
+        namespaces=[ExternNamespace("corp")],
+        extern_rules=[ExternRule("ExternalRule")],
         rules=[
             Rule(name="one", tags=[Tag("tag1")], condition=BooleanLiteral(True)),
             Rule(name="two", condition=BooleanLiteral(False)),
@@ -81,8 +85,12 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
 
     out = gen.generate(ast)
 
+    assert "#include_once" in out
     assert 'import "pe" as p' in out
+    assert 'import "external.yar" (ExternalRule) as ext' in out
     assert 'include "common.yar"' in out
+    assert "namespace corp" in out
+    assert "extern rule ExternalRule" in out
     assert "rule one : tag1 {" in out
     assert "\n\nrule two {" in out
     assert CodeGenerator().visit_import(Import(module="elf")) == ""
