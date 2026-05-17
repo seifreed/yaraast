@@ -26,6 +26,25 @@ def test_fluent_string_builder_invalid_hex_inputs_and_trailing_nibble() -> None:
     assert consumed == 1
 
 
+def test_fluent_string_builder_rejects_invalid_integer_hex_bytes() -> None:
+    with pytest.raises(TypeError, match="Invalid type for hex value"):
+        FluentStringBuilder("$bool").hex_bytes(True)
+
+    with pytest.raises(ValidationError, match="Byte value must be 0-255"):
+        FluentStringBuilder("$large").hex_bytes(256)
+
+    with pytest.raises(ValidationError, match="Byte value must be 0-255"):
+        FluentStringBuilder("$negative").hex_bytes(-1)
+
+
+def test_fluent_string_builder_rejects_boolean_xor_keys() -> None:
+    with pytest.raises(TypeError, match="Invalid XOR key value"):
+        FluentStringBuilder("$xor").literal("abc").xor(True)
+
+    with pytest.raises(TypeError, match="Invalid XOR key value"):
+        FluentStringBuilder("$xor").literal("abc").xor_range(False, 255)
+
+
 def test_fluent_string_builder_regex_specific_modifiers() -> None:
     string_def = FluentStringBuilder("$re").regex("abc.*").dotall().multiline().build()
 

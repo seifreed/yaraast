@@ -49,7 +49,13 @@ class FluentStringBuilder:
         """Set as hex string from byte values."""
         tokens = []
         for byte_val in bytes_values:
+            if isinstance(byte_val, bool):
+                msg = f"Invalid type for hex value: {type(byte_val)}"
+                raise TypeError(msg)
             if isinstance(byte_val, int):
+                if not 0 <= byte_val <= 255:
+                    msg = f"Byte value must be 0-255, got {byte_val}"
+                    raise ValidationError(msg)
                 tokens.append(HexByte(value=byte_val))
             elif isinstance(byte_val, str):
                 if byte_val in {"?", "??"}:
@@ -126,6 +132,9 @@ class FluentStringBuilder:
     def xor(self, key: int | str | None = None) -> FluentStringBuilder:
         """Add XOR modifier with optional key."""
         if key is not None:
+            if isinstance(key, bool):
+                msg = f"Invalid XOR key value: {key}"
+                raise TypeError(msg)
             if isinstance(key, str):
                 # Convert hex string to int
                 try:
@@ -145,6 +154,9 @@ class FluentStringBuilder:
 
     def xor_range(self, min_key: int, max_key: int) -> FluentStringBuilder:
         """Add XOR modifier with key range."""
+        if isinstance(min_key, bool) or isinstance(max_key, bool):
+            msg = f"Invalid XOR key value: {(min_key, max_key)}"
+            raise TypeError(msg)
         modifier = StringModifier(
             modifier_type=StringModifierType.XOR,
             value=(min_key, max_key),
