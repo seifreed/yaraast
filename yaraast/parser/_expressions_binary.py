@@ -83,21 +83,51 @@ class ExpressionBinaryMixin:
 
     def _parse_range_expression(self) -> Expression:
         """Parse range expression (a..b)."""
-        expr = self._parse_bitwise_expression()
+        expr = self._parse_bitwise_or_expression()
 
         if self._match(TokenType.DOUBLE_DOT):
-            high = self._parse_bitwise_expression()
+            high = self._parse_bitwise_or_expression()
             expr = self._set_node_location_from_nodes(
                 RangeExpression(low=expr, high=high), expr, high
             )
 
         return expr
 
-    def _parse_bitwise_expression(self) -> Expression:
-        """Parse bitwise expression."""
+    def _parse_bitwise_or_expression(self) -> Expression:
+        """Parse bitwise OR expression."""
+        expr = self._parse_bitwise_xor_expression()
+
+        while self._match(TokenType.BITWISE_OR):
+            operator = self._previous().value
+            right = self._parse_bitwise_xor_expression()
+            expr = self._set_node_location_from_nodes(
+                BinaryExpression(left=expr, operator=operator, right=right),
+                expr,
+                right,
+            )
+
+        return expr
+
+    def _parse_bitwise_xor_expression(self) -> Expression:
+        """Parse bitwise XOR expression."""
+        expr = self._parse_bitwise_and_expression()
+
+        while self._match(TokenType.XOR):
+            operator = self._previous().value
+            right = self._parse_bitwise_and_expression()
+            expr = self._set_node_location_from_nodes(
+                BinaryExpression(left=expr, operator=operator, right=right),
+                expr,
+                right,
+            )
+
+        return expr
+
+    def _parse_bitwise_and_expression(self) -> Expression:
+        """Parse bitwise AND expression."""
         expr = self._parse_shift_expression()
 
-        while self._match(TokenType.BITWISE_AND, TokenType.BITWISE_OR, TokenType.XOR):
+        while self._match(TokenType.BITWISE_AND):
             operator = self._previous().value
             right = self._parse_shift_expression()
             expr = self._set_node_location_from_nodes(

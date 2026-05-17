@@ -320,6 +320,20 @@ def test_division_operator_parses_and_evaluates() -> None:
     }
 
 
+def test_bitwise_operator_precedence_matches_yara() -> None:
+    ast = Parser().parse("""
+        rule precedence {
+            condition:
+                1 | 2 & 0 == 1 and
+                1 ^ 1 & 0 == 1 and
+                1 | 2 ^ 3 == 1 and
+                1 & 3 ^ 3 == 2
+        }
+    """)
+
+    assert YaraEvaluator().evaluate_file(ast) == {"precedence": True}
+
+
 def test_zero_divisor_arithmetic_evaluates_as_undefined() -> None:
     ast = Parser().parse("""
         rule zero_modulo_comparison {

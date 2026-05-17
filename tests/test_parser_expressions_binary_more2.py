@@ -14,11 +14,11 @@ def test_parse_bitwise_expression_chain() -> None:
     expr = parser._parse_or_expression()
 
     assert isinstance(expr, BinaryExpression)
-    assert expr.operator == "^"
+    assert expr.operator == "|"
     assert isinstance(expr.left, BinaryExpression)
-    assert expr.left.operator == "|"
-    assert isinstance(expr.left.left, BinaryExpression)
-    assert expr.left.left.operator == "&"
+    assert expr.left.operator == "&"
+    assert isinstance(expr.right, BinaryExpression)
+    assert expr.right.operator == "^"
 
 
 def test_parse_shift_expression_chain() -> None:
