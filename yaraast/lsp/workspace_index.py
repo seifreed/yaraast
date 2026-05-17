@@ -43,6 +43,8 @@ class WorkspaceIndex:
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
             return
+        if not isinstance(payload, dict):
+            return
         raw_symbols = payload.get("symbols", {})
         if not isinstance(raw_symbols, dict):
             return

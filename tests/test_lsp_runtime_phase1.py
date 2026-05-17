@@ -157,6 +157,18 @@ def test_workspace_index_skips_malformed_cached_symbols(tmp_path: Path) -> None:
     assert [symbol.name for symbol in index.search_records("")] == ["good"]
 
 
+def test_workspace_index_ignores_non_object_cache_payload(tmp_path: Path) -> None:
+    cache_dir = tmp_path / ".yaraast"
+    cache_dir.mkdir()
+    cache_file = cache_dir / "lsp-workspace-index.json"
+    cache_file.write_text('["not", "an", "index"]', encoding="utf-8")
+
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
+
+    assert index.search_records("") == []
+
+
 def test_selection_range_provider_returns_progressive_ranges() -> None:
     text = """
 rule sample {
