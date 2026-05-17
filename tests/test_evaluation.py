@@ -420,7 +420,9 @@ class TestMockModules:
 
         # Test entropy
         # All zeros should have entropy of 0
-        assert abs(math.entropy(0, 50) - 0.0) < 1e-9
+        entropy = math.entropy(0, 50)
+        assert isinstance(entropy, float)
+        assert abs(entropy - 0.0) < 1e-9
 
     def test_module_registry(self) -> None:
         """Test module registry."""

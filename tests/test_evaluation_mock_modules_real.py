@@ -84,9 +84,14 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert m.log2(0) == float("-inf")
     assert m.log10(0) == float("-inf")
     assert str(m.sqrt(-1)) == "nan"
-    assert m.entropy(-1, 1) == 0.0
+    assert m.entropy(-1, 1) is YARA_UNDEFINED
     assert m.entropy(0, 0) == 0.0
-    assert m.entropy(1000, 5) == 0.0
+    assert m.entropy(1000, 5) is YARA_UNDEFINED
+    assert m.mean(-1, 1) is YARA_UNDEFINED
+    assert m.mean(10, 100) == 255.0
+    assert m.deviation(-1, 1, 0.0) is YARA_UNDEFINED
+    assert m.serial_correlation(0, 1) is YARA_UNDEFINED
+    assert m.monte_carlo_pi(0, 5) is YARA_UNDEFINED
 
     dotnet = MockDotNet(b"")
     assert dotnet.number_of_streams == 0

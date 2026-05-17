@@ -208,56 +208,57 @@ class MockMath:
     def sqrt(self, x: float) -> float:
         return math.sqrt(x) if x >= 0 else float("nan")
 
-    def entropy(self, offset: int, size: int) -> float:
-        if offset < 0 or size <= 0 or offset + size > len(self.data):
+    def entropy(self, offset: int, size: int) -> float | YaraUndefinedValue:
+        region = self._get_region(offset, size, min_size=0)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
+        if not region:
             return 0.0
 
         freq = [0] * 256
-        for i in range(offset, min(offset + size, len(self.data))):
-            freq[self.data[i]] += 1
+        for byte in region:
+            freq[byte] += 1
 
         entropy = 0.0
         for count in freq:
             if count > 0:
-                p = count / size
+                p = count / len(region)
                 entropy -= p * math.log2(p)
 
         return entropy
 
-    def mean(self, offset: int, size: int) -> float:
+    def mean(self, offset: int, size: int) -> float | YaraUndefinedValue:
         """Calculate mean byte value of data region."""
-        if offset < 0 or size <= 0 or offset + size > len(self.data):
-            return 0.0
-        region = self.data[offset : offset + size]
+        region = self._get_region(offset, size, min_size=1)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
         return sum(region) / len(region)
 
-    def deviation(self, offset: int, size: int, mean_val: float) -> float:
+    def deviation(self, offset: int, size: int, mean_val: float) -> float | YaraUndefinedValue:
         """Calculate standard deviation from mean."""
-        if offset < 0 or size <= 0 or offset + size > len(self.data):
-            return 0.0
-        region = self.data[offset : offset + size]
+        region = self._get_region(offset, size, min_size=1)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
         variance = sum((b - mean_val) ** 2 for b in region) / len(region)
         return math.sqrt(variance)
 
-    def serial_correlation(self, offset: int, size: int) -> float:
+    def serial_correlation(self, offset: int, size: int) -> float | YaraUndefinedValue:
         """Calculate serial correlation of data region."""
-        if offset < 0 or size <= 1 or offset + size > len(self.data):
-            return 0.0
-        region = self.data[offset : offset + size]
+        region = self._get_region(offset, size, min_size=2)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
         n = len(region)
         mean_val = sum(region) / n
         num = sum((region[i] - mean_val) * (region[i + 1] - mean_val) for i in range(n - 1))
         den = sum((b - mean_val) ** 2 for b in region)
         return num / den if den != 0 else 0.0
 
-    def monte_carlo_pi(self, offset: int, size: int) -> float:
+    def monte_carlo_pi(self, offset: int, size: int) -> float | YaraUndefinedValue:
         """Estimate deviation from pi using Monte Carlo method."""
-        if offset < 0 or size < 6 or offset + size > len(self.data):
-            return 0.0
-        region = self.data[offset : offset + size]
+        region = self._get_region(offset, size, min_size=6)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
         n_points = len(region) // 6
-        if n_points == 0:
-            return 0.0
         inside = 0
         for i in range(n_points):
             base = i * 6
@@ -267,6 +268,14 @@ class MockMath:
                 inside += 1
         pi_estimate = 4.0 * inside / n_points
         return abs(pi_estimate - math.pi) / math.pi
+
+    def _get_region(self, offset: int, size: int, *, min_size: int) -> bytes | YaraUndefinedValue:
+        if offset < 0 or offset >= len(self.data) or size < min_size:
+            return YARA_UNDEFINED
+        region = self.data[offset : min(offset + size, len(self.data))]
+        if len(region) < min_size:
+            return YARA_UNDEFINED
+        return region
 
 
 # ---------------------------------------------------------------------------

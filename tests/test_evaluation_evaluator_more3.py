@@ -109,6 +109,36 @@ def test_hash_module_valid_region_can_extend_to_file_end() -> None:
     assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"trailing_hash_region": True}
 
 
+def test_math_module_invalid_regions_evaluate_as_undefined() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule invalid_math_regions {
+            condition:
+                math.entropy(-1, 1) == 0.0 or
+                math.mean(filesize, 0) == 0.0 or
+                math.deviation(-1, 1, 0.0) == 0.0 or
+                math.serial_correlation(0, 1) == 0.0 or
+                math.monte_carlo_pi(0, 5) == 0.0 or
+                not math.entropy(-1, 1)
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abcdef").evaluate_file(ast) == {"invalid_math_regions": False}
+
+
+def test_math_module_valid_regions_can_extend_to_file_end() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule trailing_math_region {
+            condition:
+                math.mean(1, 100) == 100.0 and
+                math.entropy(0, 0) == 0.0
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abcdef").evaluate_file(ast) == {"trailing_math_region": True}
+
+
 def test_string_count_offset_length_and_wildcard() -> None:
     ev = YaraEvaluator(data=b"xxabxxab")
     rule = Rule(
