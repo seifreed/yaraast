@@ -151,12 +151,23 @@ def extract_successful_asts(parse_jobs, file_paths: list[Path], chunk_size: int)
     file_names = []
 
     for job_index, job in enumerate(parse_jobs):
-        if job.status.value == "completed" and job.result:
+        if _has_successful_parse_results(job):
             asts, names = _process_job_results(job, job_index, file_paths, chunk_size)
             successful_asts.extend(asts)
             file_names.extend(names)
 
     return successful_asts, file_names
+
+
+def _has_successful_parse_results(job) -> bool:
+    """Return whether a parse job can contribute successful ASTs."""
+    if not job.result:
+        return False
+    if job.status.value == "completed":
+        return True
+    return getattr(job, "job_type", None) == "parse_files" and any(
+        hasattr(ast, "_parse_error") for ast in job.result
+    )
 
 
 def _process_job_results(job, job_index: int, file_paths: list[Path], chunk_size: int):

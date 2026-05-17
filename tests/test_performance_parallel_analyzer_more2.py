@@ -10,6 +10,7 @@ import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
+from yaraast.cli.performance_services import extract_successful_asts
 from yaraast.parser import Parser
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 
@@ -240,6 +241,32 @@ def test_parallel_analyzer_files_custom_and_graphs(tmp_path: Path) -> None:
     assert graph_jobs[0].status.value == "completed"
     for output in graph_jobs[0].result:
         assert Path(output).exists()
+
+
+def test_parallel_parse_mixed_chunk_preserves_successful_files(tmp_path: Path) -> None:
+    good_a = tmp_path / "a.yar"
+    bad = tmp_path / "broken.yar"
+    good_b = tmp_path / "b.yar"
+    good_a.write_text(_rule_code("a"), encoding="utf-8")
+    bad.write_text("rule broken { condition: ", encoding="utf-8")
+    good_b.write_text(_rule_code("b"), encoding="utf-8")
+    file_paths = [good_a, bad, good_b]
+
+    analyzer = ParallelAnalyzer(max_workers=1)
+    jobs = analyzer.parse_files_parallel([str(path) for path in file_paths], chunk_size=3)
+
+    assert len(jobs) == 1
+    assert jobs[0].status.value == "failed"
+    assert jobs[0].result is not None
+    assert [getattr(ast, "_parse_error", False) for ast in jobs[0].result] == [
+        False,
+        True,
+        False,
+    ]
+
+    asts, file_names = extract_successful_asts(jobs, file_paths, chunk_size=3)
+    assert [ast.rules[0].name for ast in asts] == ["a", "b"]
+    assert file_names == [str(good_a), str(good_b)]
 
 
 def test_parallel_analyzer_error_paths_without_mocks(tmp_path: Path) -> None:

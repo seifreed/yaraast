@@ -6,7 +6,7 @@ from pathlib import Path
 import time
 import uuid
 
-from yaraast.performance.parallel_models import Job, JobStatus
+from yaraast.performance.parallel_models import Job, JobStatus, ParseErrorMarker
 
 
 def default_parallel_stats() -> dict[str, float | int]:
@@ -105,14 +105,24 @@ def parse_file_chunks(file_paths: list, chunk_size: int = 10) -> list[Job]:
     for chunk in chunks:
         job = start_job("parse_files")
         jobs.append(job)
+        results = []
+        errors = []
         try:
-            results = []
             for file_path in chunk:
-                content = Path(file_path).read_text(encoding="utf-8")
-                ast = parse_yara_source(content)
-                results.append(ast)
-            complete_job(job, results)
+                try:
+                    content = Path(file_path).read_text(encoding="utf-8")
+                    ast = parse_yara_source(content)
+                    results.append(ast)
+                except Exception as e:
+                    results.append(ParseErrorMarker(str(file_path), str(e)))
+                    errors.append(f"{file_path}: {e}")
+            if errors:
+                job.result = results
+                fail_job(job, "; ".join(errors))
+            else:
+                complete_job(job, results)
         except Exception as e:
+            job.result = results
             fail_job(job, e)
     return jobs
 

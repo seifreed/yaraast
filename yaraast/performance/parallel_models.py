@@ -40,3 +40,12 @@ class Job:
         if self.end_time:
             return self.end_time - self.start_time
         return time.time() - self.start_time
+
+
+@dataclass(frozen=True)
+class ParseErrorMarker:
+    """Placeholder for a file that failed while parsing a mixed chunk."""
+
+    file_path: str
+    error: str
+    _parse_error: bool = True
