@@ -21,6 +21,8 @@ from yaraast.performance.memory_runtime import (
 )
 from yaraast.performance.memory_transformer_visitors import (
     visit_binary_expression as transformer_visit_binary_expression,
+    visit_boolean_literal as transformer_visit_boolean_literal,
+    visit_double_literal as transformer_visit_double_literal,
     visit_extern_import as transformer_visit_extern_import,
     visit_extern_namespace as transformer_visit_extern_namespace,
     visit_extern_rule as transformer_visit_extern_rule,
@@ -30,6 +32,7 @@ from yaraast.performance.memory_transformer_visitors import (
     visit_import as transformer_visit_import,
     visit_in_rule_pragma as transformer_visit_in_rule_pragma,
     visit_include as transformer_visit_include,
+    visit_integer_literal as transformer_visit_integer_literal,
     visit_meta as transformer_visit_meta,
     visit_plain_string as transformer_visit_plain_string,
     visit_pragma as transformer_visit_pragma,
@@ -266,13 +269,13 @@ class MemoryOptimizerTransformer(ASTTransformer):
         return transformer_visit_pragma_block(self, node)
 
     def visit_boolean_literal(self, node: BooleanLiteral) -> BooleanLiteral:
-        return node
+        return transformer_visit_boolean_literal(self, node)
 
     def visit_integer_literal(self, node: IntegerLiteral) -> IntegerLiteral:
-        return node
+        return transformer_visit_integer_literal(self, node)
 
     def visit_double_literal(self, node: DoubleLiteral) -> DoubleLiteral:
-        return node
+        return transformer_visit_double_literal(self, node)
 
     def visit_string_identifier(self, node: StringIdentifier) -> StringIdentifier:
         return transformer_visit_string_identifier(self, node)

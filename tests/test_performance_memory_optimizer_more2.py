@@ -198,3 +198,37 @@ def test_memory_optimizer_transformer_leaf_visitors_are_passthrough_or_pool() ->
     assert result_regex.regex == "hello"
     assert plain.identifier == "$p"
     assert hexs.identifier == "$h"
+
+
+def test_memory_optimizer_copies_literal_metadata() -> None:
+    transformer = MemoryOptimizerTransformer({}, aggressive=False)
+
+    integer = IntegerLiteral(7)
+    integer.leading_comments = [Comment("integer lead")]
+
+    double = DoubleLiteral(1.5)
+    double.leading_comments = [Comment("double lead")]
+
+    boolean = BooleanLiteral(True)
+    boolean.trailing_comment = Comment("boolean tail")
+
+    optimized_integer = transformer.visit_integer_literal(integer)
+    optimized_double = transformer.visit_double_literal(double)
+    optimized_boolean = transformer.visit_boolean_literal(boolean)
+
+    assert optimized_integer is not integer
+    assert optimized_integer.leading_comments is not integer.leading_comments
+    optimized_integer.leading_comments[0].text = "changed"
+    assert integer.leading_comments[0].text == "integer lead"
+
+    assert optimized_double is not double
+    assert optimized_double.leading_comments is not double.leading_comments
+    optimized_double.leading_comments[0].text = "changed"
+    assert double.leading_comments[0].text == "double lead"
+
+    assert optimized_boolean is not boolean
+    assert optimized_boolean.trailing_comment is not None
+    assert boolean.trailing_comment is not None
+    assert optimized_boolean.trailing_comment is not boolean.trailing_comment
+    optimized_boolean.trailing_comment.text = "changed"
+    assert boolean.trailing_comment.text == "boolean tail"

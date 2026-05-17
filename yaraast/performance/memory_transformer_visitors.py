@@ -12,7 +12,10 @@ if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.expressions import (
         BinaryExpression,
+        BooleanLiteral,
+        DoubleLiteral,
         Identifier,
+        IntegerLiteral,
         StringIdentifier,
         StringLiteral,
         StringWildcard,
@@ -63,6 +66,18 @@ def visit_string_literal(transformer, node: StringLiteral) -> StringLiteral:
     if hasattr(node, "value") and isinstance(node.value, str):
         node.value = pooled_value(transformer.string_pool, node.value)
     return node
+
+
+def visit_boolean_literal(transformer, node: BooleanLiteral) -> BooleanLiteral:
+    return _shallow(node)
+
+
+def visit_integer_literal(transformer, node: IntegerLiteral) -> IntegerLiteral:
+    return _shallow(node)
+
+
+def visit_double_literal(transformer, node: DoubleLiteral) -> DoubleLiteral:
+    return _shallow(node)
 
 
 def visit_identifier(transformer, node: Identifier) -> Identifier:
