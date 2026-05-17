@@ -73,7 +73,7 @@ class ConditionStringFormatter:
         quantifier = _quantifier_text(
             getattr(condition, "quantifier", "any"), "any", allow_percentage=True
         )
-        string_set = _node_text(getattr(condition, "string_set", "them"), "them")
+        string_set = ExpressionStringFormatter()._format_string_set(condition, _depth)
         return f"{quantifier} of {string_set}"
 
     def _format_binary_expression(self, condition: Any, depth: int) -> str:
@@ -367,6 +367,11 @@ class ExpressionStringFormatter:
             return "them"
 
         s_class = string_set.__class__.__name__
+        if s_class == "ParenthesesExpression":
+            inner = getattr(string_set, "expression", None)
+            if inner is not None and inner.__class__.__name__ == "StringWildcard":
+                return self._format_string_wildcard(inner)
+            return self.format_expression(string_set, depth)
         if s_class == "SetExpression":
             return self._format_set_expression(string_set, depth)
         if s_class == "StringWildcard":

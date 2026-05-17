@@ -115,6 +115,13 @@ def test_condition_formatter_handles_parsed_of_literals() -> None:
         == "($a, $b)"
     )
 
+    wildcard_ast = Parser().parse('rule r { strings: $a = "a" condition: any of ($a*) }')
+    wildcard_condition = wildcard_ast.rules[0].condition
+    assert ConditionStringFormatter().format_condition(wildcard_condition) == "any of ($a*)"
+    assert ExpressionStringFormatter()._format_of_expression(wildcard_condition, 0) == (
+        "any of ($a*)"
+    )
+
 
 def test_condition_formatter_handles_parsed_for_expression() -> None:
     ast = Parser().parse("rule r { condition: for any i in (1..3) : (i > 1) }")
