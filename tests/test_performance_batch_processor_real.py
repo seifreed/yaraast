@@ -130,6 +130,25 @@ def test_process_files_uses_real_invalid_path_and_collects_error(tmp_path: Path)
     assert any("Error processing" in err for err in result.errors)
 
 
+def test_output_file_operations_require_output_directory(tmp_path: Path) -> None:
+    rule_file = tmp_path / "rule.yar"
+    rule_file.write_text("rule ok { condition: true }", encoding="utf-8")
+
+    processor = BatchProcessor()
+
+    for operation in (
+        BatchOperation.SERIALIZE,
+        BatchOperation.HTML_TREE,
+        BatchOperation.DEPENDENCY_GRAPH,
+    ):
+        result = processor.process_files([rule_file], operation)
+
+        assert result.successful_count == 0
+        assert result.failed_count == 1
+        assert result.output_files == []
+        assert result.errors == [f"{operation.value} requires output_dir"]
+
+
 def test_process_large_file_missing_file_fails_all_operations(tmp_path: Path) -> None:
     missing = tmp_path / "missing.yar"
     processor = BatchProcessor()

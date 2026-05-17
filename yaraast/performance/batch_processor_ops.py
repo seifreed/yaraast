@@ -149,6 +149,16 @@ def _process_dependency_graph(
     result.summary[file_path.name] = analyze_dependencies(parsed)["stats"]
 
 
+def _requires_output_dir(operation: BatchOperation) -> bool:
+    from yaraast.performance.batch_processor import BatchOperation
+
+    return operation in {
+        BatchOperation.DEPENDENCY_GRAPH,
+        BatchOperation.HTML_TREE,
+        BatchOperation.SERIALIZE,
+    }
+
+
 def process_files_single(
     processor: BatchProcessor,
     file_paths: list[Path],
@@ -161,6 +171,11 @@ def process_files_single(
     result = BatchResult(operation=operation, input_count=len(file_paths))
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
+    elif file_paths and _requires_output_dir(operation):
+        result.failed_count = len(file_paths)
+        result.errors.append(f"{operation.value} requires output_dir")
+        result.total_time = time.time() - start_time
+        return result
 
     for index, file_path in enumerate(file_paths):
         try:
