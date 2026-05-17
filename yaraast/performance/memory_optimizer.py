@@ -21,12 +21,19 @@ from yaraast.performance.memory_runtime import (
 )
 from yaraast.performance.memory_transformer_visitors import (
     visit_binary_expression as transformer_visit_binary_expression,
+    visit_extern_import as transformer_visit_extern_import,
+    visit_extern_namespace as transformer_visit_extern_namespace,
+    visit_extern_rule as transformer_visit_extern_rule,
+    visit_extern_rule_reference as transformer_visit_extern_rule_reference,
     visit_hex_string as transformer_visit_hex_string,
     visit_identifier as transformer_visit_identifier,
     visit_import as transformer_visit_import,
+    visit_in_rule_pragma as transformer_visit_in_rule_pragma,
     visit_include as transformer_visit_include,
     visit_meta as transformer_visit_meta,
     visit_plain_string as transformer_visit_plain_string,
+    visit_pragma as transformer_visit_pragma,
+    visit_pragma_block as transformer_visit_pragma_block,
     visit_regex_string as transformer_visit_regex_string,
     visit_rule as transformer_visit_rule,
     visit_string_identifier as transformer_visit_string_identifier,
@@ -55,7 +62,9 @@ if TYPE_CHECKING:
         StringWildcard,
         UnaryExpression,
     )
+    from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
     from yaraast.ast.meta import Meta
+    from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
     from yaraast.ast.rules import Import, Include, Rule, Tag
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
@@ -232,6 +241,27 @@ class MemoryOptimizerTransformer(ASTTransformer):
 
     def visit_include(self, node: Include) -> Include:
         return transformer_visit_include(self, node)
+
+    def visit_extern_rule(self, node: ExternRule) -> ExternRule:
+        return transformer_visit_extern_rule(self, node)
+
+    def visit_extern_rule_reference(self, node: ExternRuleReference) -> ExternRuleReference:
+        return transformer_visit_extern_rule_reference(self, node)
+
+    def visit_extern_import(self, node: ExternImport) -> ExternImport:
+        return transformer_visit_extern_import(self, node)
+
+    def visit_extern_namespace(self, node: ExternNamespace) -> ExternNamespace:
+        return transformer_visit_extern_namespace(self, node)
+
+    def visit_pragma(self, node: Pragma) -> Pragma:
+        return transformer_visit_pragma(self, node)
+
+    def visit_in_rule_pragma(self, node: InRulePragma) -> InRulePragma:
+        return transformer_visit_in_rule_pragma(self, node)
+
+    def visit_pragma_block(self, node: PragmaBlock) -> PragmaBlock:
+        return transformer_visit_pragma_block(self, node)
 
     def visit_boolean_literal(self, node: BooleanLiteral) -> BooleanLiteral:
         return node

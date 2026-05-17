@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
+from yaraast.ast.base import ASTNode
 from yaraast.performance.memory_helpers import pooled_value
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import ASTNode, YaraFile
+    from yaraast.ast.base import YaraFile
     from yaraast.ast.expressions import (
         BinaryExpression,
         Identifier,
@@ -17,14 +18,34 @@ if TYPE_CHECKING:
         StringWildcard,
         UnaryExpression,
     )
+    from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
     from yaraast.ast.meta import Meta
+    from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
     from yaraast.ast.rules import Import, Include, Rule, Tag
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
 
-def _shallow(node: ASTNode) -> ASTNode:
+def _shallow[Node: ASTNode](node: Node) -> Node:
     """Create a shallow copy of a dataclass node to avoid mutating the original."""
     return copy.copy(node)
+
+
+def _pool_text(transformer, value: str | None) -> str | None:
+    if value is None:
+        return None
+    return pooled_value(transformer.string_pool, value)
+
+
+def _pool_text_list(transformer, values: list[str]) -> list[str]:
+    return [pooled_value(transformer.string_pool, value) for value in values]
+
+
+def _pool_parameter_value(transformer, value: Any) -> Any:
+    if isinstance(value, str):
+        return pooled_value(transformer.string_pool, value)
+    if hasattr(value, "accept"):
+        return transformer.visit(value)
+    return value
 
 
 def visit_string_literal(transformer, node: StringLiteral) -> StringLiteral:
@@ -54,6 +75,8 @@ def visit_rule(transformer, node: Rule) -> Rule:
             transformer.visit(m) if hasattr(m, "accept") else transformer.visit_meta(m)
             for m in node.meta
         ]
+    if node.pragmas:
+        node.pragmas = [transformer.visit(pragma) for pragma in node.pragmas]
     if node.tags:
         node.tags = [transformer.visit(t) for t in node.tags]
     if transformer.aggressive and hasattr(node, "location"):
@@ -92,6 +115,14 @@ def visit_yara_file(transformer, node: YaraFile) -> YaraFile:
         node.imports = [transformer.visit(imp) for imp in node.imports]
     if node.includes:
         node.includes = [transformer.visit(inc) for inc in node.includes]
+    if node.extern_rules:
+        node.extern_rules = [transformer.visit(rule) for rule in node.extern_rules]
+    if node.extern_imports:
+        node.extern_imports = [transformer.visit(imp) for imp in node.extern_imports]
+    if node.pragmas:
+        node.pragmas = [transformer.visit(pragma) for pragma in node.pragmas]
+    if node.namespaces:
+        node.namespaces = [transformer.visit(namespace) for namespace in node.namespaces]
     if node.rules:
         node.rules = [transformer.visit(rule) for rule in node.rules]
     return node
@@ -158,4 +189,79 @@ def visit_regex_string(transformer, node: RegexString) -> RegexString:
         node.identifier = pooled_value(transformer.string_pool, node.identifier)
     if hasattr(node, "regex") and isinstance(node.regex, str):
         node.regex = pooled_value(transformer.string_pool, node.regex)
+    return node
+
+
+def visit_extern_rule(transformer, node: ExternRule) -> ExternRule:
+    node = _shallow(node)
+    node.name = pooled_value(transformer.string_pool, node.name)
+    node.namespace = _pool_text(transformer, node.namespace)
+    return node
+
+
+def visit_extern_rule_reference(
+    transformer,
+    node: ExternRuleReference,
+) -> ExternRuleReference:
+    node = _shallow(node)
+    node.rule_name = pooled_value(transformer.string_pool, node.rule_name)
+    node.namespace = _pool_text(transformer, node.namespace)
+    return node
+
+
+def visit_extern_import(transformer, node: ExternImport) -> ExternImport:
+    node = _shallow(node)
+    node.module_path = pooled_value(transformer.string_pool, node.module_path)
+    node.alias = _pool_text(transformer, node.alias)
+    node.rules = _pool_text_list(transformer, node.rules)
+    return node
+
+
+def visit_extern_namespace(transformer, node: ExternNamespace) -> ExternNamespace:
+    node = _shallow(node)
+    node.name = pooled_value(transformer.string_pool, node.name)
+    node.extern_rules = [transformer.visit(rule) for rule in node.extern_rules]
+    return node
+
+
+def visit_pragma(transformer, node: Pragma) -> Pragma:
+    node = _shallow(node)
+    node.name = pooled_value(transformer.string_pool, node.name)
+    node.arguments = _pool_text_list(transformer, node.arguments)
+
+    macro_name = getattr(node, "macro_name", None)
+    if isinstance(macro_name, str):
+        node.macro_name = pooled_value(transformer.string_pool, macro_name)
+
+    macro_value = getattr(node, "macro_value", None)
+    if isinstance(macro_value, str):
+        node.macro_value = pooled_value(transformer.string_pool, macro_value)
+
+    condition = getattr(node, "condition", None)
+    if isinstance(condition, str):
+        node.condition = pooled_value(transformer.string_pool, condition)
+
+    parameters = getattr(node, "parameters", None)
+    if isinstance(parameters, dict):
+        node.parameters = {
+            pooled_value(transformer.string_pool, key): _pool_parameter_value(
+                transformer,
+                value,
+            )
+            for key, value in cast(dict[str, Any], parameters).items()
+        }
+
+    return node
+
+
+def visit_in_rule_pragma(transformer, node: InRulePragma) -> InRulePragma:
+    node = _shallow(node)
+    node.pragma = transformer.visit(node.pragma)
+    node.position = pooled_value(transformer.string_pool, node.position)
+    return node
+
+
+def visit_pragma_block(transformer, node: PragmaBlock) -> PragmaBlock:
+    node = _shallow(node)
+    node.pragmas = [transformer.visit(pragma) for pragma in node.pragmas]
     return node

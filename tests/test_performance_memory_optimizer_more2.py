@@ -16,7 +16,9 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry
+from yaraast.ast.pragmas import CustomPragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.performance.memory_optimizer import MemoryOptimizer, MemoryOptimizerTransformer
@@ -70,6 +72,10 @@ def test_memory_optimizer_transformer_visits_real_nodes() -> None:
     yara_file = YaraFile(
         imports=[Import(module="pe")],
         includes=[Include(path="common.yar")],
+        extern_rules=[ExternRule("external_rule")],
+        extern_imports=[ExternImport("external_rules", alias="ext", rules=["external_rule"])],
+        pragmas=[CustomPragma("vendor", arguments=["enabled"])],
+        namespaces=[ExternNamespace("corp", [ExternRule("nested_rule")])],
         rules=[
             Rule(
                 name="dup",
@@ -98,6 +104,13 @@ def test_memory_optimizer_transformer_visits_real_nodes() -> None:
     assert isinstance(first_string, PlainString)
     assert first_string.value == "dup"
     assert optimized.imports[0].module == "pe"
+    assert optimized.extern_rules is not yara_file.extern_rules
+    assert optimized.extern_rules[0] is not yara_file.extern_rules[0]
+    assert optimized.extern_imports is not yara_file.extern_imports
+    assert optimized.pragmas is not yara_file.pragmas
+    assert optimized.namespaces is not yara_file.namespaces
+    optimized.extern_rules.append(ExternRule("new_external"))
+    assert len(yara_file.extern_rules) == 1
     assert yara_file.includes[0].path == "common.yar"
 
 
