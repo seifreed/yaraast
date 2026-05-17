@@ -157,13 +157,11 @@ def visit_extern_rule_reference(node) -> str:
 
 
 def visit_in_rule_pragma(node) -> str:
-    args_str = " " + " ".join(node.pragma.arguments) if node.pragma.arguments else ""
-    return f"#pragma {node.pragma.name}{args_str}"
+    return str(node.pragma)
 
 
 def visit_pragma(node) -> str:
-    args_str = " " + " ".join(node.arguments) if node.arguments else ""
-    return f"#pragma {node.name}{args_str}"
+    return str(node)
 
 
 def visit_pragma_block(generator, node) -> str:

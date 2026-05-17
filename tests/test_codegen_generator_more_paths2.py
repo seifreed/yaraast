@@ -35,7 +35,15 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
-from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock, PragmaType
+from yaraast.ast.pragmas import (
+    DefineDirective,
+    IncludeOncePragma,
+    InRulePragma,
+    Pragma,
+    PragmaBlock,
+    PragmaType,
+    UndefDirective,
+)
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
@@ -330,6 +338,11 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         == "#pragma demo"
     )
     assert gen.visit_pragma(Pragma(PragmaType.PRAGMA, "demo")) == "#pragma demo"
+    assert gen.visit_pragma(IncludeOncePragma()) == "#include_once"
+    assert gen.visit_pragma(DefineDirective("FEATURE", "1")) == "#define FEATURE 1"
+    assert gen.visit_in_rule_pragma(InRulePragma(pragma=UndefDirective("FEATURE"))) == (
+        "#undef FEATURE"
+    )
     assert "#pragma pragma" in gen.visit_pragma_block(
         PragmaBlock(pragmas=[Pragma(PragmaType.PRAGMA, "pragma")])
     )
