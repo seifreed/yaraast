@@ -138,7 +138,7 @@ def visit_comment_group(node) -> str:
 
 
 def visit_extern_import(node) -> str:
-    return f'import "{node.module_path}"'
+    return f'import "{escape_string_literal(node.module_path)}"'
 
 
 def visit_extern_namespace(node) -> str:

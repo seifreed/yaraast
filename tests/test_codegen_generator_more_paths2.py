@@ -82,6 +82,18 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     assert "\n\nrule two {" in out
     assert CodeGenerator().visit_import(Import(module="elf")) == ""
 
+    escaped_ast = YaraFile(
+        imports=[Import(module='mod"\\path', alias="m")],
+        includes=[Include(path='dir"\\common.yar')],
+    )
+    escaped = CodeGenerator().generate(escaped_ast)
+    advanced_escaped = AdvancedCodeGenerator().generate(escaped_ast)
+
+    assert 'import "mod\\"\\\\path" as m' in escaped
+    assert 'include "dir\\"\\\\common.yar"' in escaped
+    assert 'import "mod\\"\\\\path" as m' in advanced_escaped
+    assert 'include "dir\\"\\\\common.yar"' in advanced_escaped
+
 
 def test_codegen_generators_emit_anonymous_string_identifier() -> None:
     ast = Parser().parse("""
@@ -345,6 +357,9 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         gen.visit_comment_group(CommentGroup(comments=[Comment("a"), Comment("b")])) == "// a\n// b"
     )
     assert gen.visit_extern_import(ExternImport("mods.yar")) == 'import "mods.yar"'
+    assert gen.visit_extern_import(ExternImport('mods"\\file.yar')) == (
+        'import "mods\\"\\\\file.yar"'
+    )
     assert gen.visit_extern_namespace(ExternNamespace("ns")) == "namespace ns"
     assert gen.visit_extern_rule(ExternRule("R")) == "rule R"
     assert (

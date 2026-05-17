@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yaraast.codegen.generator_formatting import escape_string_literal
+
 
 def _emit_comments(generator, node) -> None:
     """Emit leading comments for an AST node."""
@@ -38,14 +40,14 @@ def visit_yara_file(generator, node) -> str:
 
 
 def visit_import(node) -> str:
-    value = f'import "{node.module}"'
+    value = f'import "{escape_string_literal(node.module)}"'
     if node.alias:
         value += f" as {node.alias}"
     return value
 
 
 def visit_include(node) -> str:
-    return f'include "{node.path}"'
+    return f'include "{escape_string_literal(node.path)}"'
 
 
 def visit_rule(generator, node) -> str:

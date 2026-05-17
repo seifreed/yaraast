@@ -32,6 +32,7 @@ from yaraast.codegen.advanced_generator_layout import (
 from yaraast.codegen.formatting import FormattingConfig, IndentStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import _render_binary_operator
+from yaraast.codegen.generator_formatting import escape_string_literal
 
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
@@ -189,14 +190,14 @@ class AdvancedCodeGenerator(CodeGenerator):
 
     # Default visit methods (delegate to parent)
     def visit_import(self, node: Import) -> str:
-        import_line = f'import "{node.module}"'
+        import_line = f'import "{escape_string_literal(node.module)}"'
         if node.alias:
             import_line += f" as {node.alias}"
         self._writeline(import_line)
         return ""
 
     def visit_include(self, node: Include) -> str:
-        self._writeline(f'include "{node.path}"')
+        self._writeline(f'include "{escape_string_literal(node.path)}"')
         return ""
 
     def visit_plain_string(self, node: PlainString) -> str:
