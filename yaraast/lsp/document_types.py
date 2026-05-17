@@ -16,6 +16,14 @@ from yaraast.dialects import YaraDialect, detect_dialect
 YARA_FILE_SUFFIXES = frozenset({".yar", ".yara", ".yaral", ".yarax"})
 
 
+def _required_symbol_string(data: dict[str, Any], key: str) -> str:
+    value = data.get(key)
+    if not isinstance(value, str) or not value:
+        msg = f"SymbolRecord {key} must be a non-empty string"
+        raise ValueError(msg)
+    return value
+
+
 def uri_to_path(uri: str) -> Path | None:
     if uri.startswith("file://"):
         parsed = urlparse(uri)
@@ -82,12 +90,19 @@ class SymbolRecord:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SymbolRecord:
         range_data = data.get("range", {})
+        if not isinstance(range_data, dict):
+            msg = "SymbolRecord range must be an object"
+            raise ValueError(msg)
         start = range_data.get("start", {})
         end = range_data.get("end", {})
+        if not isinstance(start, dict) or not isinstance(end, dict):
+            msg = "SymbolRecord range endpoints must be objects"
+            raise ValueError(msg)
+        container_name = data.get("container_name")
         return cls(
-            name=str(data.get("name", "")),
-            kind=str(data.get("kind", "variable")),
-            uri=str(data.get("uri", "")),
+            name=_required_symbol_string(data, "name"),
+            kind=_required_symbol_string(data, "kind"),
+            uri=_required_symbol_string(data, "uri"),
             range=Range(
                 start=Position(
                     line=int(start.get("line", 0)),
@@ -98,7 +113,7 @@ class SymbolRecord:
                     character=int(end.get("character", 0)),
                 ),
             ),
-            container_name=data.get("container_name"),
+            container_name=container_name if isinstance(container_name, str) else None,
         )
 
     def to_symbol_information(self) -> SymbolInformation:

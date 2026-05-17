@@ -123,6 +123,17 @@ def test_workspace_index_skips_malformed_cached_symbols(tmp_path: Path) -> None:
         """
 {
   "symbols": {
+    "file:///bad-name.yar": [
+      {
+        "name": ["bad"],
+        "kind": "rule",
+        "uri": "file:///bad-name.yar",
+        "range": {
+          "start": {"line": 0, "character": 0},
+          "end": {"line": 0, "character": 3}
+        }
+      }
+    ],
     "file:///bad.yar": [
       {
         "name": "bad",
