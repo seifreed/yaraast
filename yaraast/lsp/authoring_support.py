@@ -11,7 +11,7 @@ from yaraast.codegen.formatting import FormattingConfig, PredefinedStyles
 from yaraast.lsp.structure import get_rule_text_range
 
 STRING_DEF_RE = re.compile(r"^(?P<indent>\s*)(?P<identifier>\$\w+)\s*=\s*(?P<body>.+?)\s*$")
-PLAIN_STRING_RE = re.compile(r'^"(?P<value>[^"\n]*)"(?P<tail>.*)$')
+PLAIN_STRING_RE = re.compile(r'^"(?P<value>(?:\\.|[^"\\\n])*)"(?P<tail>.*)$')
 
 PREFERRED_MODIFIER_ORDER = [
     "ascii",
