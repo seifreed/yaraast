@@ -333,7 +333,7 @@ def _infer_quantifier_value(ctx, value):
 def _infer_string_set_value(ctx, value):
     if hasattr(value, "accept"):
         return ctx.visit(value)
-    if isinstance(value, str | list):
+    if isinstance(value, str | list | tuple | set | frozenset):
         return StringSetType()
     return UnknownType()
 

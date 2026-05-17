@@ -155,6 +155,32 @@ def test_expr_inference_reports_undefined_raw_string_references() -> None:
     assert "Undefined string: $missing" in nested_expr_inf.errors
 
 
+def test_expr_inference_accepts_non_list_string_set_containers() -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+    env.add_string("$b")
+
+    of_inf = ExpressionTypeInference(env)
+    assert isinstance(
+        of_inf.infer(OfExpression(quantifier="any", string_set=("$a", "$b"))),
+        BooleanType,
+    )
+    assert not any("'of' requires string set" in error for error in of_inf.errors)
+
+    for_of_inf = ExpressionTypeInference(env)
+    assert isinstance(
+        for_of_inf.infer(
+            ForOfExpression(
+                quantifier="any",
+                string_set=frozenset(("$a", "$b")),
+                condition=BooleanLiteral(value=True),
+            )
+        ),
+        BooleanType,
+    )
+    assert not any("'for...of' requires string set" in error for error in for_of_inf.errors)
+
+
 def test_expr_inference_string_length_invalid_index_reports_error() -> None:
     env = TypeEnvironment()
     env.add_string("$a")
