@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from yaraast.analysis.best_practices import AnalysisReport, BestPracticesAnalyzer
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, IntegerLiteral, StringCount
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    IntegerLiteral,
+    StringCount,
+    StringWildcard,
+)
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString
 from yaraast.parser import Parser
@@ -127,6 +133,52 @@ rule them_usage {
         if "defined but never used" in suggestion.message
     ]
     assert unused_messages == []
+
+
+def test_best_practices_named_wildcard_ignores_anonymous_internal_ids() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="anonymous_usage",
+                strings=[
+                    PlainString(identifier="$alpha", value="value"),
+                    PlainString(identifier="$anon_1", value="anonymous", is_anonymous=True),
+                ],
+                condition=StringWildcard("$a*"),
+            )
+        ]
+    )
+
+    report = BestPracticesAnalyzer().analyze(ast)
+    unused_messages = [
+        suggestion.message
+        for suggestion in report.suggestions
+        if "defined but never used" in suggestion.message
+    ]
+
+    assert "String '$anon_1' is defined but never used in condition" in unused_messages
+    assert "String '$alpha' is defined but never used in condition" not in unused_messages
+
+
+def test_best_practices_global_wildcard_counts_anonymous_strings_as_used() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="anonymous_global_usage",
+                strings=[
+                    PlainString(identifier="$alpha", value="value"),
+                    PlainString(identifier="$anon_1", value="anonymous", is_anonymous=True),
+                ],
+                condition=StringWildcard("$*"),
+            )
+        ]
+    )
+
+    report = BestPracticesAnalyzer().analyze(ast)
+
+    assert not any(
+        "defined but never used" in suggestion.message for suggestion in report.suggestions
+    )
 
 
 def test_best_practices_global_hex_patterns_and_helper_paths() -> None:

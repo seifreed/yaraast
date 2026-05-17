@@ -318,7 +318,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     def _check_unused_strings(self, rule: Rule) -> None:
         """Check for defined but unused strings."""
-        defined_strings = {s.identifier for s in rule.strings}
+        defined_strings = {self._normalize_string_id(s.identifier) for s in rule.strings}
         used_strings = set(self._string_usage.keys())
 
         unused = defined_strings - used_strings
@@ -332,15 +332,18 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
             )
 
     def _mark_string_usage(self, string_id: str) -> None:
-        normalized = string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
+        normalized = self._normalize_string_id(string_id)
         self._string_usage[normalized] = self._string_usage.get(normalized, 0) + 1
+
+    def _normalize_string_id(self, string_id: str) -> str:
+        return string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
 
     def _mark_string_set_text(self, text: str) -> None:
         if text == "them":
             self._mark_all_current_rule_strings()
             return
 
-        normalized = text if text.startswith("$") else f"${text.lstrip('#@!')}"
+        normalized = self._normalize_string_id(text)
         if "*" in normalized:
             self._mark_wildcard_usage(normalized)
             return
@@ -352,9 +355,15 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
             self._mark_string_usage(pattern)
             return
 
+        if pattern == "$*":
+            self._mark_all_current_rule_strings()
+            return
+
         matched = False
         for string_def in self._current_rule.strings:
-            if fnmatchcase(string_def.identifier, pattern):
+            if getattr(string_def, "is_anonymous", False):
+                continue
+            if fnmatchcase(self._normalize_string_id(string_def.identifier), pattern):
                 self._mark_string_usage(string_def.identifier)
                 matched = True
 
