@@ -29,6 +29,15 @@ def test_evaluate_arithmetic_all_operators() -> None:
     assert evaluate_arithmetic(1, 2, "??") is None
 
 
+def test_evaluate_integer_division_and_modulo_do_not_use_float_conversion() -> None:
+    large = 10**400 + 1
+
+    assert evaluate_arithmetic(large, 3, "/") == large // 3
+    assert evaluate_arithmetic(-large, 3, "/") == -(large // 3)
+    assert evaluate_arithmetic(large, 3, "%") == large % 3
+    assert evaluate_arithmetic(-large, 3, "%") == -(large % 3)
+
+
 def test_evaluate_comparison_all_operators() -> None:
     assert evaluate_comparison(1, 1, "==") is True
     assert evaluate_comparison(1, 2, "!=") is True

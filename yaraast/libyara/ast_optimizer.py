@@ -8,6 +8,7 @@ from yaraast.ast.expressions import BinaryExpression, IntegerLiteral, UnaryExpre
 from yaraast.ast.rules import Rule
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
+from yaraast.shared.integer_semantics import integer_remainder, truncate_integer_division
 
 
 @dataclass
@@ -130,18 +131,10 @@ class ASTOptimizer:
             if op == "*":
                 return IntegerLiteral(value=left_val * right_val)
             if op == "/" and right_val != 0:
-                return IntegerLiteral(value=_truncate_division(left_val, right_val))
+                return IntegerLiteral(value=truncate_integer_division(left_val, right_val))
             if op == "%" and right_val != 0:
-                quotient = _truncate_division(left_val, right_val)
-                return IntegerLiteral(value=left_val - quotient * right_val)
+                return IntegerLiteral(value=integer_remainder(left_val, right_val))
         except (ValueError, ZeroDivisionError):
             pass
 
         return None
-
-
-def _truncate_division(left: int, right: int) -> int:
-    quotient = abs(left) // abs(right)
-    if (left < 0) != (right < 0):
-        return -quotient
-    return quotient

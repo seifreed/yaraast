@@ -79,6 +79,24 @@ def test_integer_division_and_modulo_by_zero_do_not_fold() -> None:
     assert opt.visit(mod) is mod
 
 
+def test_large_integer_division_and_modulo_fold_without_float_conversion() -> None:
+    opt = ExpressionOptimizer()
+    large = 10**400 + 1
+
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(large), "/", IntegerLiteral(3))
+    ) == IntegerLiteral(large // 3)
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(-large), "/", IntegerLiteral(3))
+    ) == IntegerLiteral(-(large // 3))
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(large), "%", IntegerLiteral(3))
+    ) == IntegerLiteral(large % 3)
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(-large), "%", IntegerLiteral(3))
+    ) == IntegerLiteral(-(large % 3))
+
+
 def test_negative_shift_counts_do_not_crash_or_fold() -> None:
     opt = ExpressionOptimizer()
     expr = BinaryExpression(IntegerLiteral(1), "<<", UnaryExpression("-", IntegerLiteral(1)))

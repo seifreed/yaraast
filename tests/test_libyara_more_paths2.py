@@ -85,6 +85,14 @@ def test_ast_optimizer_rule_and_constant_paths() -> None:
     assert folded_neg_div.value == -2
     assert folded_neg_mod.value == -1
 
+    large = 10**400 + 1
+    folded_large_div = optimizer._fold_constants(IntegerLiteral(-large), "/", IntegerLiteral(3))
+    folded_large_mod = optimizer._fold_constants(IntegerLiteral(-large), "%", IntegerLiteral(3))
+    assert folded_large_div is not None
+    assert folded_large_mod is not None
+    assert folded_large_div.value == -(large // 3)
+    assert folded_large_mod.value == -(large % 3)
+
     assert optimizer._fold_constants(IntegerLiteral(7), "/", IntegerLiteral(0)) is None
     assert (
         optimizer._fold_constants(IntegerLiteral(cast(Any, "bad")), "+", IntegerLiteral(1)) is None

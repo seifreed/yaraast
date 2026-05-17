@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from yaraast.shared.integer_semantics import integer_remainder, truncate_integer_division
+
 
 def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
     if operator == "+":
@@ -16,6 +18,8 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
     if operator == "/":
         if right == 0:
             return 0
+        if isinstance(left, int) and isinstance(right, int):
+            return truncate_integer_division(left, right)
         if isinstance(left, int):
             return int(left / right)  # truncate toward zero (C/YARA semantics)
         return left / right
@@ -23,7 +27,7 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
         if right == 0:
             return 0
         if isinstance(left, int) and isinstance(right, int):
-            return int(left - int(left / right) * right)  # C/YARA: sign of dividend
+            return integer_remainder(left, right)
         return left % right
     if operator == "<<":
         return left << right

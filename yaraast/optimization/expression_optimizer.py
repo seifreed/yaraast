@@ -16,6 +16,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.rules import Rule
+from yaraast.shared.integer_semantics import integer_remainder, truncate_integer_division
 from yaraast.visitor.base import ASTTransformer
 
 _SENTINEL = object()
@@ -58,9 +59,9 @@ def _fold_arithmetic(left_val: int, right_val: int, operator: str):
     if operator in _ARITHMETIC_OPS:
         return IntegerLiteral(value=_ARITHMETIC_OPS[operator](left_val, right_val))
     if operator == "/" and right_val != 0:
-        return IntegerLiteral(value=int(left_val / right_val))
+        return IntegerLiteral(value=truncate_integer_division(left_val, right_val))
     if operator == "%" and right_val != 0:
-        return IntegerLiteral(value=int(left_val - int(left_val / right_val) * right_val))
+        return IntegerLiteral(value=integer_remainder(left_val, right_val))
     return _SENTINEL
 
 
