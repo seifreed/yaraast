@@ -69,6 +69,24 @@ rule a {
     assert len(locations) >= 4
 
 
+def test_references_ignore_comment_positions() -> None:
+    text = """
+rule a {
+  strings:
+    $a = "x"
+  condition:
+    $a and true
+    // $a should not resolve
+    /* $a should not resolve */
+}
+""".lstrip()
+
+    provider = ReferencesProvider()
+
+    assert provider.get_references(text, _pos(5, 8), "file://test.yar") == []
+    assert provider.get_references(text, _pos(6, 8), "file://test.yar") == []
+
+
 def test_references_provider_exposes_typed_records_cross_file(tmp_path: Path) -> None:
     common = tmp_path / "common.yar"
     user = tmp_path / "user.yar"

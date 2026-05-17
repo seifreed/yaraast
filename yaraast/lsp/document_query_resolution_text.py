@@ -13,6 +13,8 @@ def resolve_symbol_from_text_fallback(
     *,
     allow_generic_identifier: bool = True,
 ) -> ResolvedSymbol | None:
+    if position_is_in_non_code_segment(ctx, position):
+        return None
     module_member = find_module_member_at_position(ctx, position)
     if module_member is not None:
         return module_member
@@ -31,6 +33,67 @@ def resolve_symbol_from_text_fallback(
     if not allow_generic_identifier:
         return None
     return ResolvedSymbol(ctx.uri, word, word, "identifier", word_range)
+
+
+def position_is_in_non_code_segment(ctx, position) -> bool:
+    if position.line < 0 or position.line >= len(ctx.lines):
+        return False
+
+    in_block_comment = False
+    for line_num in range(position.line + 1):
+        line = ctx.lines[line_num]
+        in_string = False
+        escape = False
+        idx = 0
+        while idx < len(line):
+            if line_num == position.line and idx >= position.character:
+                return in_block_comment or in_string
+
+            char = line[idx]
+            nxt = line[idx + 1] if idx + 1 < len(line) else ""
+
+            if in_block_comment:
+                if char == "*" and nxt == "/":
+                    if line_num == position.line and position.character < idx + 2:
+                        return True
+                    in_block_comment = False
+                    idx += 2
+                    continue
+                idx += 1
+                continue
+
+            if escape:
+                escape = False
+                idx += 1
+                continue
+
+            if char == "\\" and in_string:
+                escape = True
+                idx += 1
+                continue
+
+            if not in_string:
+                if char == "/" and nxt == "/":
+                    if line_num == position.line:
+                        return position.character >= idx
+                    break
+                if char == "/" and nxt == "*":
+                    if line_num == position.line and position.character >= idx:
+                        return True
+                    in_block_comment = True
+                    idx += 2
+                    continue
+
+            if char == '"':
+                if line_num == position.line and position.character == idx:
+                    return True
+                in_string = not in_string
+            idx += 1
+
+        if line_num == position.line:
+            return in_block_comment or in_string
+
+    return False
 
 
 def find_module_member_at_position(ctx, position) -> ResolvedSymbol | None:

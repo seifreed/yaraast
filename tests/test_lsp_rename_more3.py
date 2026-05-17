@@ -84,6 +84,23 @@ def test_rename_non_renameable_and_empty_cases() -> None:
     assert provider._is_rule_name(text, _pos(10, 0)) is False
 
 
+def test_prepare_rename_ignores_comment_positions() -> None:
+    provider = RenameProvider()
+    text = """
+rule a {
+  strings:
+    $a = "x"
+  condition:
+    $a and true
+    // $a should not resolve
+    /* $a should not resolve */
+}
+""".lstrip()
+
+    assert provider.prepare_rename(text, _pos(5, 8)) is None
+    assert provider.prepare_rename(text, _pos(6, 8)) is None
+
+
 def test_rename_string_identifier_with_prefixed_new_name() -> None:
     text = """
 rule a {
