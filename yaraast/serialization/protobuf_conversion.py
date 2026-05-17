@@ -389,7 +389,7 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
 
     _copy_node_metadata_to_protobuf(token, pb_token)
     if isinstance(token, HexByte):
-        pb_token.byte.value = str(token.value)
+        pb_token.byte.value = _hex_byte_value_to_protobuf(token.value)
     elif isinstance(token, HexNegatedByte):
         pb_token.negated_byte.value = str(token.value)
     elif isinstance(token, HexWildcard):
@@ -407,7 +407,37 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
                 convert_hex_token_to_protobuf(alternative_token, pb_alternative.tokens.add())
     elif isinstance(token, HexNibble):
         pb_token.nibble.high = token.high
-        pb_token.nibble.value = token.value
+        pb_token.nibble.value = _hex_nibble_value_to_protobuf(token.value)
+
+
+def _hex_byte_value_to_protobuf(value: int | str) -> str:
+    if isinstance(value, int):
+        return str(value)
+    return f"hex:{value}"
+
+
+def _hex_byte_value_from_protobuf(value: str) -> int | str:
+    if value.startswith("hex:"):
+        return value.removeprefix("hex:")
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
+def _hex_int_value_from_protobuf(value: str) -> int:
+    if value.startswith("hex:"):
+        return int(value.removeprefix("hex:"), 16)
+    try:
+        return int(value)
+    except ValueError:
+        return int(value, 16)
+
+
+def _hex_nibble_value_to_protobuf(value: int | str) -> int:
+    if isinstance(value, int):
+        return value
+    return int(value, 16)
 
 
 def _coerce_expression(value):
@@ -992,12 +1022,12 @@ def _protobuf_to_hex_token(pb_token):
     if pb_token.HasField("byte"):
         return _apply_node_metadata_from_protobuf(
             pb_token,
-            HexByte(value=int(pb_token.byte.value)),
+            HexByte(value=_hex_byte_value_from_protobuf(pb_token.byte.value)),
         )
     if pb_token.HasField("negated_byte"):
         return _apply_node_metadata_from_protobuf(
             pb_token,
-            HexNegatedByte(value=int(pb_token.negated_byte.value)),
+            HexNegatedByte(value=_hex_int_value_from_protobuf(pb_token.negated_byte.value)),
         )
     if pb_token.HasField("wildcard"):
         return _apply_node_metadata_from_protobuf(pb_token, HexWildcard())

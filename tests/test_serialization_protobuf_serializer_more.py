@@ -193,6 +193,54 @@ def test_protobuf_serializer_preserves_hex_negated_bytes() -> None:
     assert string_def.tokens == [negated]
 
 
+def test_protobuf_serializer_preserves_string_hex_byte_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="string_hex_byte",
+                strings=[
+                    HexString(
+                        identifier="$h",
+                        tokens=[HexByte(value="af"), HexByte(value="41")],
+                    )
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    string_def = restored.rules[0].strings[0]
+
+    assert isinstance(string_def, HexString)
+    assert string_def.tokens == [HexByte(value="af"), HexByte(value="41")]
+
+
+def test_protobuf_serializer_accepts_string_hex_nibble_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="string_hex_nibble",
+                strings=[
+                    HexString(
+                        identifier="$h",
+                        tokens=[HexNibble(high=False, value="B")],
+                    )
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    string_def = restored.rules[0].strings[0]
+
+    assert isinstance(string_def, HexString)
+    assert string_def.tokens == [HexNibble(high=False, value=0xB)]
+
+
 def test_protobuf_serializer_preserves_module_dictionary_and_wildcard_expressions() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     condition = BinaryExpression(
