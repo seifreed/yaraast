@@ -192,12 +192,14 @@ class LibyaraCompiler:
         self,
         filepath: str | Path,
         error_on_warning: bool = False,
+        includes: dict[str, str] | None = None,
     ) -> CompilationResult:
         """Compile YARA file using libyara.
 
         Args:
             filepath: Path to YARA file
             error_on_warning: Treat warnings as errors
+            includes: Dictionary mapping include names to their content
 
         Returns:
             CompilationResult with compiled rules or errors
@@ -220,10 +222,15 @@ class LibyaraCompiler:
             )
 
         try:
+            compile_kwargs: dict[str, Any] = {
+                "externals": self.externals,
+                "error_on_warning": error_on_warning,
+            }
+            if includes is not None:
+                compile_kwargs["include_callback"] = self._include_callback(includes)
             compiled = yara.compile(
                 filepath=str(filepath),
-                externals=self.externals,
-                error_on_warning=error_on_warning,
+                **compile_kwargs,
             )
             return CompilationResult(
                 success=True,

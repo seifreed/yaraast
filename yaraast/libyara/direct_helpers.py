@@ -41,6 +41,7 @@ def compile_source_with_file_context(
     externals: dict[str, Any],
     source_path: str | Path,
     error_on_warning: bool,
+    includes: dict[str, str] | None = None,
 ) -> DirectCompilationResult:
     """Compile generated source from the original file directory.
 
@@ -61,7 +62,11 @@ def compile_source_with_file_context(
 
     try:
         compiler = LibyaraCompiler(externals=externals)
-        result = compiler.compile_file(temp_path, error_on_warning=error_on_warning)
+        result = compiler.compile_file(
+            temp_path,
+            error_on_warning=error_on_warning,
+            includes=includes,
+        )
     finally:
         if temp_path is not None:
             os.unlink(temp_path)

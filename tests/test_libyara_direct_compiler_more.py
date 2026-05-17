@@ -61,3 +61,31 @@ rule main_rule {
         "shared_rule",
         "main_rule",
     ]
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_direct_compiler_compile_ast_uses_include_mapping_with_source_path(
+    tmp_path: Path,
+) -> None:
+    ast = Parser().parse("""
+include "virtual.yar"
+
+rule main_rule {
+    condition:
+        virtual_rule
+}
+""")
+
+    compiler = DirectASTCompiler(enable_optimization=False)
+    result = compiler.compile_ast(
+        ast,
+        includes={"virtual.yar": "rule virtual_rule { condition: true }\n"},
+        source_path=tmp_path / "main.yar",
+    )
+
+    assert result.success is True
+    assert result.compiled_rules is not None
+    assert [match.rule for match in result.compiled_rules.match(data=b"")] == [
+        "virtual_rule",
+        "main_rule",
+    ]

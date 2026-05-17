@@ -106,6 +106,7 @@ class DirectASTCompiler:
                     self.externals,
                     source_path,
                     error_on_warning,
+                    includes,
                 )
             else:
                 compile_result = compile_source(

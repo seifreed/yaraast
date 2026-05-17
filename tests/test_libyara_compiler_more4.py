@@ -93,6 +93,35 @@ rule main_rule {
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_libyara_compiler_compile_file_uses_include_mapping(tmp_path: Path) -> None:
+    compiler = LibyaraCompiler()
+    rule_file = tmp_path / "main.yar"
+    rule_file.write_text(
+        """
+include "virtual.yar"
+
+rule main_rule {
+    condition:
+        virtual_rule
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    result = compiler.compile_file(
+        rule_file,
+        includes={"virtual.yar": "rule virtual_rule { condition: true }\n"},
+    )
+
+    assert result.success is True
+    assert result.compiled_rules is not None
+    assert [match.rule for match in result.compiled_rules.match(data=b"")] == [
+        "virtual_rule",
+        "main_rule",
+    ]
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 def test_libyara_compiler_compile_ast_codegen_failure_and_syntax_error() -> None:
     compiler = LibyaraCompiler()
 
