@@ -22,6 +22,8 @@ def workspace_symbols(runtime: LspRuntime, query: str) -> list[SymbolInformation
 
 
 def workspace_symbol_records(runtime: LspRuntime, query: str = "") -> list[SymbolRecord]:
+    if not runtime.config.cache_workspace:
+        return _uncached_workspace_symbol_records(runtime, query)
     cache_key = (runtime.cache.generation, query)
     cached = runtime.cache.workspace_symbol_cache.get(cache_key)
     if cached is not None:
@@ -42,4 +44,18 @@ def workspace_symbol_records(runtime: LspRuntime, query: str = "") -> list[Symbo
     persisted = runtime.index.search_records(query, exclude_uris=open_uris)
     records.extend(record for record in persisted if record.kind not in hidden_kinds)
     runtime.cache.workspace_symbol_cache[cache_key] = list(records)
+    return records
+
+
+def _uncached_workspace_symbol_records(runtime: LspRuntime, query: str) -> list[SymbolRecord]:
+    query_lower = query.lower()
+    hidden_kinds = {"rule_block", "section_header"}
+    records: list[SymbolRecord] = []
+    for doc in runtime.iter_workspace_documents():
+        for record in doc.symbols():
+            if record.kind in hidden_kinds:
+                continue
+            if query and query_lower not in record.name.lower():
+                continue
+            records.append(record)
     return records

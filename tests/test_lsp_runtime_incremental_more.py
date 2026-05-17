@@ -73,6 +73,27 @@ rule sample {
     assert {"sample", "$a"} <= names
 
 
+def test_runtime_workspace_symbols_ignore_persisted_index_when_cache_disabled(
+    tmp_path: Path,
+) -> None:
+    rule_file = tmp_path / "sample.yar"
+    rule_file.write_text("rule cached_old { condition: true }\n", encoding="utf-8")
+
+    cached_runtime = LspRuntime()
+    cached_runtime.set_workspace_folders([str(tmp_path)])
+    cached_runtime.get_document(path_to_uri(rule_file))
+
+    rule_file.write_text("rule current_disk { condition: true }\n", encoding="utf-8")
+
+    runtime = LspRuntime()
+    runtime.update_config({"YARA": {"cacheWorkspace": False}})
+    runtime.set_workspace_folders([str(tmp_path)])
+
+    names = {symbol.name for symbol in runtime.workspace_symbols("")}
+    assert "current_disk" in names
+    assert "cached_old" not in names
+
+
 def test_runtime_get_document_invalidates_workspace_symbol_cache(tmp_path: Path) -> None:
     rule_file = tmp_path / "sample.yar"
     rule_file.write_text("rule loaded_later { condition: true }\n", encoding="utf-8")
