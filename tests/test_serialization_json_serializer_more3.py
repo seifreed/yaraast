@@ -70,6 +70,32 @@ def test_json_serialize_deserialize_roundtrip() -> None:
     assert restored.rules[0].strings
 
 
+def test_json_roundtrip_preserves_plain_string_bytes() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bytes_rule",
+                strings=[PlainString(identifier="$b", value=b'A"\x00\xff\\\n')],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    json_str = serializer.serialize(ast)
+    data = json.loads(json_str)
+
+    serialized_string = data["ast"]["rules"][0]["strings"][0]
+    assert serialized_string["value_encoding"] == "base64"
+    assert isinstance(serialized_string["value"], str)
+
+    restored = serializer.deserialize(json_str)
+    restored_string = restored.rules[0].strings[0]
+
+    assert isinstance(restored_string, PlainString)
+    assert restored_string.value == b'A"\x00\xff\\\n'
+
+
 def test_json_serializer_normalizes_scalar_hex_alternatives() -> None:
     serializer = JsonSerializer(include_metadata=False)
     ast = YaraFile(

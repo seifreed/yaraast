@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from typing import Any
 
 
@@ -25,6 +26,14 @@ def _serialize_string_modifier(serializer, modifier) -> dict[str, Any]:
         "name": getattr(modifier, "name", str(modifier)),
         "value": _serialize_modifier_value(getattr(modifier, "value", None)),
     }
+
+
+def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> None:
+    if isinstance(value, bytes):
+        data["value"] = base64.b64encode(value).decode("ascii")
+        data["value_encoding"] = "base64"
+        return
+    data["value"] = value
 
 
 def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
@@ -69,12 +78,13 @@ def visit_rule(serializer, node) -> dict[str, Any]:
 
 
 def visit_plain_string(serializer, node) -> dict[str, Any]:
-    return {
+    data = {
         "type": "PlainString",
         "identifier": node.identifier,
-        "value": node.value,
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
+    _serialize_plain_string_value(data, node.value)
+    return data
 
 
 def visit_hex_string(serializer, node) -> dict[str, Any]:

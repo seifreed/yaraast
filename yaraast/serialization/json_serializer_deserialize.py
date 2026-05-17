@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 from typing import Any
 
 from yaraast.ast.base import ASTNode, Location
@@ -49,6 +51,17 @@ def _deserialize_comment_node(self, data: dict[str, Any]) -> Any:
             data,
         )
     return Comment(str(data))
+
+
+def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
+    value = data["value"]
+    if data.get("value_encoding") != "base64":
+        return value
+    try:
+        return base64.b64decode(str(value).encode("ascii"), validate=True)
+    except (binascii.Error, UnicodeEncodeError) as exc:
+        msg = "Invalid base64-encoded plain string value"
+        raise SerializationError(msg) from exc
 
 
 def _cast_comment(node: Any) -> Comment:
@@ -576,7 +589,7 @@ class JsonSerializerDeserializeMixin:
             return self._apply_node_metadata(
                 PlainString(
                     identifier=data["identifier"],
-                    value=data["value"],
+                    value=_deserialize_plain_string_value(data),
                     modifiers=modifiers,
                 ),
                 data,
