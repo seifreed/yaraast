@@ -80,6 +80,28 @@ def test_workspace_rule_lookup_includes_resolved_include_trees(tmp_path: Path) -
     assert child_rule[1].name == "child_rule"
 
 
+def test_workspace_analysis_detects_conflicts_in_resolved_include_trees(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path
+    parent = _write(
+        root / "parent.yar",
+        'include "child.yar"\nrule dup_rule { condition: true }',
+    )
+    child = _write(root / "child.yar", "rule dup_rule { condition: true }")
+
+    workspace = Workspace(str(root))
+    workspace.add_file(str(parent))
+    report = workspace.analyze(parallel=False)
+
+    assert report.statistics["rule_name_conflicts"] == 1
+    assert report.statistics["conflicting_rules"]["dup_rule"] == [
+        str(parent),
+        str(child.resolve()),
+    ]
+    assert any("Rule 'dup_rule' defined in multiple files" in err for err in report.global_errors)
+
+
 def test_workspace_add_directory_relative_parallel_analysis_and_global_issues(
     tmp_path: Path,
 ) -> None:

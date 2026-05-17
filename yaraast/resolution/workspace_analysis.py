@@ -157,12 +157,10 @@ class WorkspaceAnalyzer:
                 report.statistics[key] = value
 
         rule_names = {}
-        for file_path, result in report.file_results.items():
-            if result.resolved:
-                for rule in result.resolved.ast.rules:
-                    if rule.name not in rule_names:
-                        rule_names[rule.name] = []
-                    rule_names[rule.name].append(file_path)
+        for rule_name, file_path in self.workspace.get_all_rules():
+            if rule_name not in rule_names:
+                rule_names[rule_name] = []
+            rule_names[rule_name].append(file_path)
 
         conflicts = {name: files for name, files in rule_names.items() if len(files) > 1}
         report.statistics["rule_name_conflicts"] = len(conflicts)
