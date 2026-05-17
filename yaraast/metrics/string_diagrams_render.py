@@ -7,7 +7,7 @@ import re
 from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.metrics.string_diagrams_common import modifier_names
+from yaraast.metrics.string_diagrams_common import format_hex_token_for_diagram, modifier_names
 
 
 class StringDiagramRenderMixin:
@@ -37,26 +37,9 @@ class StringDiagramRenderMixin:
 
     def _generate_hex_diagram(self, string_def: HexString) -> str:
         """Generate diagram for hex string."""
-        from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexWildcard
-
         diagram = f"HexString: {string_def.identifier}\n"
         diagram += "Pattern: { "
-
-        pattern_parts = []
-        for token in string_def.tokens:
-            if isinstance(token, HexByte):
-                pattern_parts.append(f"{token.value:02X}")
-            elif isinstance(token, HexWildcard):
-                pattern_parts.append("??")
-            elif isinstance(token, HexJump):
-                if token.min_jump == token.max_jump:
-                    pattern_parts.append(f"[{token.min_jump}]")
-                else:
-                    pattern_parts.append(f"[{token.min_jump}-{token.max_jump}]")
-            elif isinstance(token, HexAlternative):
-                alt_str = "|".join(f"{b:02X}" for b in token.alternatives)
-                pattern_parts.append(f"({alt_str})")
-
+        pattern_parts = [format_hex_token_for_diagram(token) for token in string_def.tokens]
         diagram += " ".join(pattern_parts) + " }\n"
 
         if string_def.modifiers:
@@ -97,24 +80,7 @@ def generate_string_diagram(string_def) -> str:
 
 def create_hex_diagram(tokens: list) -> str:
     """Create hex pattern diagram from tokens."""
-    from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexWildcard
-
-    pattern_parts = []
-    for token in tokens:
-        if isinstance(token, HexByte):
-            pattern_parts.append(f"{token.value:02X}")
-        elif isinstance(token, HexWildcard):
-            pattern_parts.append("??")
-        elif isinstance(token, HexJump):
-            if token.min_jump == token.max_jump:
-                pattern_parts.append(f"[{token.min_jump}]")
-            else:
-                pattern_parts.append(f"[{token.min_jump}-{token.max_jump}]")
-        elif isinstance(token, HexAlternative):
-            alt_str = "|".join(f"{b:02X}" for b in token.alternatives)
-            pattern_parts.append(f"({alt_str})")
-
-    return " ".join(pattern_parts)
+    return " ".join(format_hex_token_for_diagram(token) for token in tokens)
 
 
 def create_regex_diagram(pattern: str) -> str:

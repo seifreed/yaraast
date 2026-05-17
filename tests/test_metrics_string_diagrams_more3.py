@@ -9,7 +9,10 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
+    HexNibble,
     HexString,
+    HexWildcard,
     PlainString,
     RegexString,
 )
@@ -68,6 +71,26 @@ def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None
     ]
     assert render.create_hex_diagram(jump_tokens) == "AA [2-5] (01|02)"
     assert helpers.create_hex_diagram(jump_tokens) == "AA [2-5] (01|02)"
+
+    complex_tokens = [
+        HexByte(value="af"),
+        HexNegatedByte(value=0x4D),
+        HexNibble(high=False, value="B"),
+        HexAlternative(
+            alternatives=[
+                [HexByte(value=0x41)],
+                [HexWildcard()],
+                [HexNibble(high=True, value=0xC)],
+                [HexJump(min_jump=None, max_jump=5)],
+            ]
+        ),
+    ]
+    expected_complex = "AF ~4D ?B (41|??|C?|[-5])"
+    assert render.create_hex_diagram(complex_tokens) == expected_complex
+    assert helpers.create_hex_diagram(complex_tokens) == expected_complex
+    assert expected_complex in _Renderer()._generate_hex_diagram(
+        HexString(identifier="$complex", tokens=complex_tokens)
+    )
 
     groups_only = helpers.create_regex_diagram("(ab)")
     assert "Capture groups:" in groups_only
