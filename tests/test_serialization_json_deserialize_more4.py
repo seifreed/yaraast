@@ -140,6 +140,9 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
         s._deserialize_rule({"name": "r1", "pragmas": "pragma", "condition": None})
 
+    with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
+        s._deserialize_pragma_block({"type": "PragmaBlock", "pragmas": "pragma"})
+
 
 def test_json_deserialize_extern_nodes_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
@@ -214,8 +217,25 @@ def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Location file must be a string"):
         s._deserialize_import({"module": "pe", "location": {"line": 1, "column": 1, "file": []}})
 
+    with pytest.raises(SerializationError, match="location must be an object"):
+        s._deserialize_import({"module": "pe", "location": "1:1"})
+
+    with pytest.raises(SerializationError, match="leading_comments must be a list"):
+        s._deserialize_import({"module": "pe", "leading_comments": {}})
+
     with pytest.raises(SerializationError, match="leading_comments must be a list"):
         s._deserialize_import({"module": "pe", "leading_comments": {"type": "Comment"}})
+
+    with pytest.raises(SerializationError, match="trailing_comment must be an object"):
+        s._deserialize_import({"module": "pe", "trailing_comment": "bad"})
+
+    with pytest.raises(SerializationError, match="CommentGroup comments must be a list"):
+        s._deserialize_import(
+            {
+                "module": "pe",
+                "trailing_comment": {"type": "CommentGroup", "comments": "bad"},
+            }
+        )
 
     with pytest.raises(SerializationError, match="Comment text must be a string"):
         s._deserialize_import(
@@ -402,6 +422,9 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="FunctionCall function must be a string"):
         s._deserialize_expression({"type": "FunctionCall", "function": ["fn"], "arguments": []})
+
+    with pytest.raises(SerializationError, match="SetExpression elements must be a list"):
+        s._deserialize_expression({"type": "SetExpression", "elements": "x"})
 
     with pytest.raises(SerializationError, match="MemberAccess member must be a string"):
         s._deserialize_expression(

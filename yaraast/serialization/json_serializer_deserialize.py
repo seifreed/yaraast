@@ -84,7 +84,7 @@ def _deserialize_comment_node(self, data: dict[str, Any]) -> Any:
             CommentGroup(
                 [
                     _cast_comment(_deserialize_comment_node(self, c))
-                    for c in data.get("comments", [])
+                    for c in _deserialize_list_field(data, "comments", "CommentGroup")
                 ]
             ),
             data,
@@ -301,8 +301,11 @@ def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
     location = data.get("location")
     if isinstance(location, dict):
         node.location = _deserialize_location(location)
-    leading_comments = data.get("leading_comments")
-    if leading_comments:
+    elif location is not None:
+        msg = "location must be an object"
+        raise SerializationError(msg)
+    if "leading_comments" in data:
+        leading_comments = data["leading_comments"]
         if not isinstance(leading_comments, list):
             msg = "leading_comments must be a list"
             raise SerializationError(msg)
@@ -312,6 +315,9 @@ def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
     trailing_comment = data.get("trailing_comment")
     if isinstance(trailing_comment, dict):
         node.trailing_comment = _deserialize_comment_node(self, trailing_comment)
+    elif trailing_comment is not None:
+        msg = "trailing_comment must be an object"
+        raise SerializationError(msg)
     return node
 
 
@@ -347,7 +353,10 @@ def _deser_parentheses_expression(self, data: dict[str, Any]):
 def _deser_set_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import SetExpression
 
-    elements = [self._deserialize_expression(e) for e in data.get("elements", [])]
+    elements = [
+        self._deserialize_expression(e)
+        for e in _deserialize_list_field(data, "elements", "SetExpression")
+    ]
     return SetExpression(elements=elements)
 
 
@@ -1126,7 +1135,10 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             PragmaBlock(
-                pragmas=[self._deserialize_pragma(pragma) for pragma in data.get("pragmas", [])],
+                pragmas=[
+                    self._deserialize_pragma(pragma)
+                    for pragma in _deserialize_list_field(data, "pragmas", "PragmaBlock")
+                ],
                 scope=_deserialize_pragma_scope(data.get("scope"), "PragmaBlock"),
             ),
             data,

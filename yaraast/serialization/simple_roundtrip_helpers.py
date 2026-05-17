@@ -504,8 +504,11 @@ def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
     location = data.get("location")
     if isinstance(location, dict):
         node.location = _deserialize_location(location)
-    leading_comments = data.get("leading_comments")
-    if leading_comments:
+    elif location is not None:
+        msg = "location must be an object"
+        raise SerializationError(msg)
+    if "leading_comments" in data:
+        leading_comments = data["leading_comments"]
         if not isinstance(leading_comments, list):
             msg = "leading_comments must be a list"
             raise SerializationError(msg)
@@ -515,6 +518,9 @@ def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
     trailing_comment = data.get("trailing_comment")
     if isinstance(trailing_comment, dict):
         node.trailing_comment = cast_trailing_comment(deserialize_node(trailing_comment))
+    elif trailing_comment is not None:
+        msg = "trailing_comment must be an object"
+        raise SerializationError(msg)
     return node
 
 
@@ -968,7 +974,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "CommentGroup":
         return CommentGroup(
-            [cast_comment(deserialize_node(comment)) for comment in data.get("comments", [])]
+            [
+                cast_comment(deserialize_node(comment))
+                for comment in _deserialize_list_field(data, "comments", "CommentGroup")
+            ]
         )
     if node_type in {"PlainString", "HexString", "RegexString"}:
         return deserialize_string(data)
@@ -1013,7 +1022,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "PragmaBlock":
         return PragmaBlock(
-            pragmas=[deserialize_pragma(pragma) for pragma in data.get("pragmas", [])],
+            pragmas=[
+                deserialize_pragma(pragma)
+                for pragma in _deserialize_list_field(data, "pragmas", "PragmaBlock")
+            ],
             scope=_deserialize_pragma_scope(data.get("scope"), "PragmaBlock"),
         )
     if node_type == "Pragma":
@@ -1065,7 +1077,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "ParenthesesExpression":
         return ParenthesesExpression(deserialize_node(data["expression"]))
     if node_type == "SetExpression":
-        return SetExpression([deserialize_node(element) for element in data.get("elements", [])])
+        return SetExpression(
+            [
+                deserialize_node(element)
+                for element in _deserialize_list_field(data, "elements", "SetExpression")
+            ]
+        )
     if node_type == "RangeExpression":
         return RangeExpression(deserialize_node(data["low"]), deserialize_node(data["high"]))
     if node_type == "FunctionCall":
