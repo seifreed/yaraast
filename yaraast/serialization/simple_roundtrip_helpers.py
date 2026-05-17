@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 from pathlib import Path
 from typing import Any
@@ -158,6 +160,25 @@ def _serialize_modifier_value(value: Any) -> Any:
     if isinstance(value, tuple):
         return list(value)
     return value
+
+
+def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> None:
+    if isinstance(value, bytes):
+        data["value"] = base64.b64encode(value).decode("ascii")
+        data["value_encoding"] = "base64"
+        return
+    data["value"] = value
+
+
+def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
+    value = data["value"]
+    if data.get("value_encoding") != "base64":
+        return value
+    try:
+        return base64.b64decode(str(value).encode("ascii"), validate=True)
+    except (binascii.Error, UnicodeEncodeError) as exc:
+        msg = "Invalid base64-encoded plain string value"
+        raise SerializationError(msg) from exc
 
 
 def _deserialize_modifier_value(name: str, value: Any) -> Any:
@@ -657,15 +678,13 @@ def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
 def serialize_string(string_def: Any) -> dict[str, Any]:
     """Serialize a string definition."""
     if isinstance(string_def, PlainString):
-        return _with_node_metadata(
-            string_def,
-            {
-                "type": "PlainString",
-                "identifier": string_def.identifier,
-                "value": string_def.value,
-                "modifiers": _serialize_modifiers(string_def.modifiers),
-            },
-        )
+        data = {
+            "type": "PlainString",
+            "identifier": string_def.identifier,
+            "modifiers": _serialize_modifiers(string_def.modifiers),
+        }
+        _serialize_plain_string_value(data, string_def.value)
+        return _with_node_metadata(string_def, data)
     if isinstance(string_def, HexString):
         return _with_node_metadata(
             string_def,
@@ -1084,7 +1103,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         return _apply_node_metadata(
             PlainString(
                 identifier=data["identifier"],
-                value=data["value"],
+                value=_deserialize_plain_string_value(data),
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
             ),
             data,

@@ -162,6 +162,7 @@ message StringDefinition {
 message PlainString {
     string value = 1;
     repeated StringModifier modifiers = 2;
+    optional bytes raw_value = 3;
 }
 
 message HexString {

@@ -445,13 +445,18 @@ class StringDefinition(_message.Message):
     ) -> None: ...
 
 class PlainString(_message.Message):
-    __slots__ = ("modifiers", "value")
+    __slots__ = ("modifiers", "raw_value", "value")
     VALUE_FIELD_NUMBER: _ClassVar[int]
     MODIFIERS_FIELD_NUMBER: _ClassVar[int]
+    RAW_VALUE_FIELD_NUMBER: _ClassVar[int]
     value: str
     modifiers: _containers.RepeatedCompositeFieldContainer[StringModifier]
+    raw_value: bytes
     def __init__(
-        self, value: str | None = ..., modifiers: _Iterable[StringModifier | _Mapping] | None = ...
+        self,
+        value: str | None = ...,
+        modifiers: _Iterable[StringModifier | _Mapping] | None = ...,
+        raw_value: bytes | None = ...,
     ) -> None: ...
 
 class HexString(_message.Message):

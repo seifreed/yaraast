@@ -99,6 +99,25 @@ def test_protobuf_serializer_deserialize_binary_data_directly() -> None:
     assert restored.rules[0].name == "x"
 
 
+def test_protobuf_serializer_preserves_plain_string_bytes() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bytes_rule",
+                strings=[PlainString(identifier="$b", value=b'A"\x00\xff\\\n')],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    restored_string = restored.rules[0].strings[0]
+
+    assert isinstance(restored_string, PlainString)
+    assert restored_string.value == b'A"\x00\xff\\\n'
+
+
 def test_protobuf_serializer_roundtrips_empty_file() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     data = serializer.serialize(YaraFile())

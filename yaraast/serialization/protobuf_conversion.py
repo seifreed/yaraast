@@ -355,7 +355,10 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
 
     _copy_node_metadata_to_protobuf(string_def, pb_string)
     if isinstance(string_def, PlainString):
-        pb_string.plain.value = string_def.value
+        if isinstance(string_def.value, bytes):
+            pb_string.plain.raw_value = string_def.value
+        else:
+            pb_string.plain.value = string_def.value
         for mod in string_def.modifiers:
             pb_mod = pb_string.plain.modifiers.add()
             _copy_modifier_to_protobuf(mod, pb_mod)
@@ -1129,7 +1132,12 @@ def protobuf_to_string(pb_string):
 
     if pb_string.HasField("plain"):
         modifiers = _protobuf_modifiers_to_ast(pb_string.plain.modifiers)
-        s = PlainString(identifier=pb_string.identifier, value=pb_string.plain.value)
+        value = (
+            pb_string.plain.raw_value
+            if _protobuf_has_field(pb_string.plain, "raw_value")
+            else pb_string.plain.value
+        )
+        s = PlainString(identifier=pb_string.identifier, value=value)
         s.modifiers = modifiers
         return _apply_node_metadata_from_protobuf(pb_string, s)
     if pb_string.HasField("hex"):

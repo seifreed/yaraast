@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from yaraast.ast.base import YaraFile
@@ -48,6 +49,34 @@ def test_simple_roundtrip_file_io(tmp_path: Path) -> None:
 
     assert isinstance(restored, YaraFile)
     assert restored.rules[0].strings
+
+
+def test_simple_roundtrip_file_io_preserves_plain_string_bytes(tmp_path: Path) -> None:
+    serializer = SimpleRoundtripSerializer()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bytes_rule",
+                strings=[PlainString(identifier="$b", value=b'A"\x00\xff\\\n')],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+
+    file_path = tmp_path / "ast.json"
+    serializer.serialize_to_file(ast, file_path)
+
+    data = json.loads(file_path.read_text(encoding="utf-8"))
+    serialized_string = data["rules"][0]["strings"][0]
+    assert serialized_string["value_encoding"] == "base64"
+    assert isinstance(serialized_string["value"], str)
+
+    restored = serializer.deserialize_from_file(file_path)
+    assert isinstance(restored, YaraFile)
+    restored_string = restored.rules[0].strings[0]
+
+    assert isinstance(restored_string, PlainString)
+    assert restored_string.value == b'A"\x00\xff\\\n'
 
 
 def test_simple_roundtrip_preserves_alias_and_modifiers() -> None:
