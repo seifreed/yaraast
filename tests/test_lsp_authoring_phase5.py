@@ -65,6 +65,42 @@ rule demo {
     assert edit.new_text.strip().endswith('"abc" ascii wide nocase')
 
 
+def test_normalize_string_modifiers_handles_escaped_quotes() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule demo {
+    strings:
+        $a = "a\\"b" wide nocase wide ascii
+    condition:
+        $a
+}
+""".lstrip()
+
+    actions = provider.get_code_actions(text, _range(2, 8, 39), [], "file://test.yar")
+    action = next(action for action in actions if action.title == "Normalize string modifiers")
+    edit = _first_edit(action)
+
+    assert edit.new_text.strip().endswith('"a\\"b" ascii wide nocase')
+
+
+def test_normalize_regex_modifiers_handles_escaped_slashes() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule demo {
+    strings:
+        $a = /a\\/b/ wide nocase wide ascii
+    condition:
+        $a
+}
+""".lstrip()
+
+    actions = provider.get_code_actions(text, _range(2, 8, 38), [], "file://test.yar")
+    action = next(action for action in actions if action.title == "Normalize string modifiers")
+    edit = _first_edit(action)
+
+    assert edit.new_text.strip().endswith("/a\\/b/ ascii wide nocase")
+
+
 def test_convert_plain_string_to_hex_refactor_action() -> None:
     provider = CodeActionsProvider()
     text = """
@@ -412,6 +448,8 @@ rule demo {
     assert actions._modifier_start('"abc" wide nocase') is not None
     assert actions._modifier_start("{ 41 42 } ascii") is not None
     assert actions._modifier_start("/abc/i nocase") is not None
+    assert actions._modifier_start(r'"a\"b" wide ascii') is not None
+    assert actions._modifier_start(r"/a\/b/ wide ascii") is not None
     assert actions._modifier_start('"abc"') is None
     assert actions._normalize_modifiers(["wide", "ascii", "wide", "nocase"]) == [
         "ascii",

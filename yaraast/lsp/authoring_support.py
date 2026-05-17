@@ -65,7 +65,12 @@ def modifier_start(body: str) -> int | None:
     in_quote = False
     in_regex = False
     brace_depth = 0
-    for idx, char in enumerate(body):
+    idx = 0
+    while idx < len(body):
+        char = body[idx]
+        if char == "\\" and (in_quote or in_regex):
+            idx += 2
+            continue
         if char == '"' and not in_regex and brace_depth == 0:
             in_quote = not in_quote
         elif char == "/" and not in_quote and brace_depth == 0:
@@ -76,6 +81,7 @@ def modifier_start(body: str) -> int | None:
             brace_depth -= 1
         elif char.isspace() and not in_quote and not in_regex and brace_depth == 0:
             return idx + 1
+        idx += 1
     return None
 
 
