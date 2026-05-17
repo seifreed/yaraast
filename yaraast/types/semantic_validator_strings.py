@@ -103,11 +103,19 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
             self.visit(string_def)
 
     def visit_plain_string(self, node: PlainString) -> None:
+        self._check_plain_string_content(node)
         self._check_non_regex_string(node, "plain")
         self._check_text_string_combinations(node)
         self._check_text_string_modifier_values(node)
 
     def visit_hex_string(self, node: HexString) -> None:
+        if not node.tokens:
+            self.result.add_error(
+                f"Empty hex string '{node.identifier}' in rule '{self.current_rule_name}'",
+                node.location,
+                "Hex strings must contain at least one token.",
+            )
+
         for modifier in node.modifiers:
             name = self._modifier_name(modifier)
             if name in self._HEX_ALLOWED_MODIFIERS:
@@ -128,6 +136,16 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
                 node.location,
                 "Use base64, base64wide, and xor only on text strings.",
             )
+
+    def _check_plain_string_content(self, node: PlainString) -> None:
+        if len(node.value) > 0:
+            return
+
+        self.result.add_error(
+            f"Empty text string '{node.identifier}' in rule '{self.current_rule_name}'",
+            node.location,
+            "Text strings must contain at least one byte.",
+        )
 
     def _check_non_regex_string(self, node: StringDefinition, string_type: str) -> None:
         for modifier in node.modifiers:

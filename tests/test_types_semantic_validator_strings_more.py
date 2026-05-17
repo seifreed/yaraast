@@ -97,6 +97,25 @@ def test_semantic_validator_reports_regex_only_modifiers_on_plain_strings() -> N
     assert any("Regex-only modifier 'dotall'" in error.message for error in result.errors)
 
 
+def test_semantic_validator_rejects_empty_text_and_hex_strings() -> None:
+    ast = Parser().parse("""
+        rule empty_strings {
+            strings:
+                $text = ""
+                $hex = { }
+            condition:
+                any of them
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any("Empty text string '$text'" in message for message in messages)
+    assert any("Empty hex string '$hex'" in message for message in messages)
+
+
 def test_semantic_validator_rejects_invalid_string_modifier_compatibility() -> None:
     ast = Parser().parse("""
         rule invalid_modifiers {
