@@ -25,6 +25,15 @@ if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
 
 
+def _validate_positive_int_setting(value: Any, name: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool):
+        msg = f"{name} must be an integer"
+        raise TypeError(msg)
+    if value < 1:
+        msg = f"{name} must be at least 1"
+        raise ValueError(msg)
+
+
 class BatchOperation(Enum):
     """Types of batch operations."""
 
@@ -77,17 +86,12 @@ class BatchProcessor:
         progress_callback: Callable[[str, int, int], None] | None = None,
     ) -> None:
         """Initialize batch processor."""
-        if max_workers is not None and max_workers < 1:
-            msg = "max_workers must be at least 1"
-            raise ValueError(msg)
+        if max_workers is not None:
+            _validate_positive_int_setting(max_workers, "max_workers")
 
-        if max_memory_mb < 1:
-            msg = "max_memory_mb must be at least 1"
-            raise ValueError(msg)
+        _validate_positive_int_setting(max_memory_mb, "max_memory_mb")
 
-        if batch_size < 1:
-            msg = "batch_size must be at least 1"
-            raise ValueError(msg)
+        _validate_positive_int_setting(batch_size, "batch_size")
 
         self.max_workers = max_workers if max_workers is not None else 4
         self.max_memory_mb = max_memory_mb
@@ -108,9 +112,7 @@ class BatchProcessor:
     ) -> list[Any]:
         """Process a batch of items."""
         batch_size = self.batch_size if batch_size is None else batch_size
-        if batch_size < 1:
-            msg = "batch_size must be at least 1"
-            raise ValueError(msg)
+        _validate_positive_int_setting(batch_size, "batch_size")
 
         results = []
 

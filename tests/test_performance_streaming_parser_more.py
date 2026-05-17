@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 from pathlib import Path
 from textwrap import dedent
+from typing import Any, cast
 
 import pytest
 
@@ -60,6 +61,14 @@ def test_streaming_parse_stream_preserves_split_utf8_bytes() -> None:
 def test_streaming_parser_rejects_invalid_buffer_size() -> None:
     with pytest.raises(ValueError, match="buffer_size must be at least 1"):
         StreamingParser(buffer_size=0)
+
+
+def test_streaming_parser_rejects_boolean_numeric_settings() -> None:
+    with pytest.raises(TypeError, match="buffer_size must be an integer"):
+        StreamingParser(buffer_size=cast(Any, True))
+
+    with pytest.raises(TypeError, match="max_memory_mb must be an integer"):
+        StreamingParser(max_memory_mb=cast(Any, False))
 
 
 def test_streaming_parser_rejects_invalid_memory_limit() -> None:

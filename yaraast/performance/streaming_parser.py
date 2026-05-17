@@ -30,6 +30,15 @@ if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
 
 
+def _validate_positive_int_setting(value: Any, name: str) -> None:
+    if not isinstance(value, int) or isinstance(value, bool):
+        msg = f"{name} must be an integer"
+        raise TypeError(msg)
+    if value < 1:
+        msg = f"{name} must be at least 1"
+        raise ValueError(msg)
+
+
 class StreamingParser:
     """Parse large YARA files efficiently using streaming."""
 
@@ -54,16 +63,10 @@ class StreamingParser:
                 for parsing non-standard dialects without circular imports
 
         """
-        if buffer_size < 1:
-            msg = "buffer_size must be at least 1"
-            raise ValueError(msg)
+        _validate_positive_int_setting(buffer_size, "buffer_size")
 
-        if max_memory_mb is not None and not isinstance(max_memory_mb, int):
-            msg = "max_memory_mb must be an integer"
-            raise TypeError(msg)
-        if max_memory_mb is not None and max_memory_mb < 1:
-            msg = "max_memory_mb must be at least 1"
-            raise ValueError(msg)
+        if max_memory_mb is not None:
+            _validate_positive_int_setting(max_memory_mb, "max_memory_mb")
 
         self.buffer_size = buffer_size
         self.max_memory_mb = max_memory_mb

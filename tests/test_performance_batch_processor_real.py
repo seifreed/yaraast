@@ -48,6 +48,21 @@ def test_batch_processor_rejects_invalid_memory_limit() -> None:
         BatchProcessor(max_memory_mb=0)
 
 
+def test_batch_processor_rejects_boolean_numeric_settings() -> None:
+    with pytest.raises(TypeError, match="max_workers must be an integer"):
+        BatchProcessor(max_workers=cast(Any, True))
+
+    with pytest.raises(TypeError, match="max_memory_mb must be an integer"):
+        BatchProcessor(max_memory_mb=cast(Any, True))
+
+    with pytest.raises(TypeError, match="batch_size must be an integer"):
+        BatchProcessor(batch_size=cast(Any, True))
+
+    processor = BatchProcessor()
+    with pytest.raises(TypeError, match="batch_size must be an integer"):
+        processor.process_batch([1], None, batch_size=cast(Any, True))
+
+
 def test_process_batch_parse_handles_invalid_item_without_exceptions() -> None:
     processor = BatchProcessor(batch_size=1)
 
