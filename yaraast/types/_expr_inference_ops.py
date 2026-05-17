@@ -380,6 +380,10 @@ def _validate_string_set_refs(ctx, value) -> None:
     if isinstance(value, SetExpression):
         for element in value.elements:
             _validate_string_set_refs(ctx, element)
+        return
+
+    if hasattr(value, "accept"):
+        ctx.visit(value)
 
 
 def _percentage_quantifier_value(value):

@@ -136,6 +136,24 @@ def test_expr_inference_reports_undefined_raw_string_references() -> None:
     )
     assert "Undefined string: $missing" in for_of_inf.errors
 
+    nested_expr_inf = ExpressionTypeInference(env)
+    assert isinstance(
+        nested_expr_inf.infer(
+            OfExpression(
+                quantifier="any",
+                string_set=[
+                    BinaryExpression(
+                        StringIdentifier("$missing"),
+                        "and",
+                        BooleanLiteral(value=True),
+                    )
+                ],
+            )
+        ),
+        BooleanType,
+    )
+    assert "Undefined string: $missing" in nested_expr_inf.errors
+
 
 def test_expr_inference_string_length_invalid_index_reports_error() -> None:
     env = TypeEnvironment()
