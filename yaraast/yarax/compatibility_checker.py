@@ -152,10 +152,17 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
             return (
                 bool(value) and self._is_ascii_alnum(value[0]) and self._is_ascii_alnum(value[-1])
             )
-        return re.match(r"^[a-zA-Z0-9].*[a-zA-Z0-9]$", value) is not None
+        return (
+            bool(value)
+            and self._is_ascii_alnum_text(value[0])
+            and self._is_ascii_alnum_text(value[-1])
+        )
 
     def _is_ascii_alnum(self, value: int) -> bool:
         return 48 <= value <= 57 or 65 <= value <= 90 or 97 <= value <= 122
+
+    def _is_ascii_alnum_text(self, value: str) -> bool:
+        return value.isascii() and value.isalnum()
 
     def visit_regex_string(self, node: RegexString) -> None:
         """Check regex string compatibility."""
