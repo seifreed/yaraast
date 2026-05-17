@@ -706,7 +706,12 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def _resolve_string_set(self, string_set_node: Any) -> list[str]:
         """Resolve a string set to a list of string identifiers for 'of'/'for...of' evaluation."""
-        from yaraast.ast.expressions import SetExpression, StringIdentifier, StringWildcard
+        from yaraast.ast.expressions import (
+            ParenthesesExpression,
+            SetExpression,
+            StringIdentifier,
+            StringWildcard,
+        )
 
         def expand_text(text: str) -> list[str]:
             if text == "them":
@@ -740,6 +745,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return expand_text(value.pattern)
             if isinstance(value, StringIdentifier):
                 return [self._normalize_string_id(value.name)]
+            if isinstance(value, ParenthesesExpression):
+                return resolve_value(value.expression)
             if hasattr(value, "name") and value.name == "them":
                 return list(self.context.string_matches.keys())
             if isinstance(value, SetExpression):

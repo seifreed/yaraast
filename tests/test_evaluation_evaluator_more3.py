@@ -868,6 +868,14 @@ def test_for_of_and_module_reference_paths() -> None:
     parsed = Parser().parse('rule r { strings: $a = "ab" condition: for any of them : ($) }')
     assert YaraEvaluator(data=b"xxabyy").evaluate_file(parsed) == {"r": True}
 
+    parsed_single_of = Parser().parse('rule r { strings: $a = "ab" condition: any of ($a) }')
+    assert YaraEvaluator(data=b"xxabyy").evaluate_file(parsed_single_of) == {"r": True}
+
+    parsed_single_for_of = Parser().parse(
+        'rule r { strings: $a = "ab" condition: for any of ($a) : ($) }'
+    )
+    assert YaraEvaluator(data=b"xxabyy").evaluate_file(parsed_single_for_of) == {"r": True}
+
     implicit_ops = Parser().parse("""
         rule r {
             strings:
