@@ -183,6 +183,32 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
         )
 
 
+def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
+    s = JsonSerializer()
+
+    with pytest.raises(SerializationError, match="Location line must be an integer"):
+        s._deserialize_import({"module": "pe", "location": {"line": True, "column": 1}})
+
+    with pytest.raises(SerializationError, match="Location file must be a string"):
+        s._deserialize_import({"module": "pe", "location": {"line": 1, "column": 1, "file": []}})
+
+    with pytest.raises(SerializationError, match="leading_comments must be a list"):
+        s._deserialize_import({"module": "pe", "leading_comments": {"type": "Comment"}})
+
+    with pytest.raises(SerializationError, match="Comment text must be a string"):
+        s._deserialize_import(
+            {"module": "pe", "leading_comments": [{"type": "Comment", "text": ["bad"]}]}
+        )
+
+    with pytest.raises(SerializationError, match="Comment is_multiline must be a boolean"):
+        s._deserialize_import(
+            {
+                "module": "pe",
+                "leading_comments": [{"type": "Comment", "text": "bad", "is_multiline": "yes"}],
+            }
+        )
+
+
 def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
     s = JsonSerializer()
 

@@ -223,6 +223,41 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
         )
 
 
+def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
+    with pytest.raises(SerializationError, match="Location line must be an integer"):
+        deserialize_node(
+            {"type": "Import", "module": "pe", "location": {"line": True, "column": 1}}
+        )
+
+    with pytest.raises(SerializationError, match="Location file must be a string"):
+        deserialize_node(
+            {"type": "Import", "module": "pe", "location": {"line": 1, "column": 1, "file": []}}
+        )
+
+    with pytest.raises(SerializationError, match="leading_comments must be a list"):
+        deserialize_node(
+            {"type": "Import", "module": "pe", "leading_comments": {"type": "Comment"}}
+        )
+
+    with pytest.raises(SerializationError, match="Comment text must be a string"):
+        deserialize_node(
+            {
+                "type": "Import",
+                "module": "pe",
+                "leading_comments": [{"type": "Comment", "text": ["bad"]}],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="Comment is_multiline must be a boolean"):
+        deserialize_node(
+            {
+                "type": "Import",
+                "module": "pe",
+                "leading_comments": [{"type": "Comment", "text": "bad", "is_multiline": "yes"}],
+            }
+        )
+
+
 def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     private_meta = MetaEntry.from_key_value("classification", "restricted", "private")
 

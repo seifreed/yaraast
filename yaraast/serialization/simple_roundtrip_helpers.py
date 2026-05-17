@@ -432,13 +432,43 @@ def _serialize_location(location: Location) -> dict[str, Any]:
     return data
 
 
+def _deserialize_location_int_field(data: dict[str, Any], field: str) -> int:
+    value = data[field]
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    msg = f"Location {field} must be an integer"
+    raise SerializationError(msg)
+
+
+def _deserialize_location_optional_int_field(data: dict[str, Any], field: str) -> int | None:
+    value = data.get(field)
+    if value is None:
+        return None
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    msg = f"Location {field} must be an integer"
+    raise SerializationError(msg)
+
+
+def _deserialize_comment_multiline(data: dict[str, Any]) -> bool:
+    value = data.get("is_multiline", False)
+    if isinstance(value, bool):
+        return value
+    msg = "Comment is_multiline must be a boolean"
+    raise SerializationError(msg)
+
+
+def _deserialize_comment_text(data: dict[str, Any]) -> str:
+    return _deserialize_string_field(data, "text", "Comment")
+
+
 def _deserialize_location(data: dict[str, Any]) -> Location:
     return Location(
-        line=data["line"],
-        column=data["column"],
-        file=data.get("file"),
-        end_line=data.get("end_line"),
-        end_column=data.get("end_column"),
+        line=_deserialize_location_int_field(data, "line"),
+        column=_deserialize_location_int_field(data, "column"),
+        file=_deserialize_nullable_string_field(data, "file", "Location"),
+        end_line=_deserialize_location_optional_int_field(data, "end_line"),
+        end_column=_deserialize_location_optional_int_field(data, "end_column"),
     )
 
 
@@ -456,9 +486,13 @@ def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
     location = data.get("location")
     if isinstance(location, dict):
         node.location = _deserialize_location(location)
-    if data.get("leading_comments"):
+    leading_comments = data.get("leading_comments")
+    if leading_comments:
+        if not isinstance(leading_comments, list):
+            msg = "leading_comments must be a list"
+            raise SerializationError(msg)
         node.leading_comments = [
-            cast_comment(deserialize_node(comment)) for comment in data["leading_comments"]
+            cast_comment(deserialize_node(comment)) for comment in leading_comments
         ]
     trailing_comment = data.get("trailing_comment")
     if isinstance(trailing_comment, dict):
@@ -910,7 +944,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "Meta":
         return Meta(_deserialize_string_field(data, "key", "Meta"), _deserialize_meta_value(data))
     if node_type == "Comment":
-        return Comment(data["text"], is_multiline=data.get("is_multiline", False))
+        return Comment(
+            _deserialize_comment_text(data),
+            is_multiline=_deserialize_comment_multiline(data),
+        )
     if node_type == "CommentGroup":
         return CommentGroup(
             [cast_comment(deserialize_node(comment)) for comment in data.get("comments", [])]
