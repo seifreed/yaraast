@@ -33,6 +33,11 @@ def lsp_safe_handler[F: Callable[..., Any]](
         @lsp_safe_handler(default=[])  # returns [] on error
     """
 
+    def fresh_default() -> Any:
+        if isinstance(default, (dict, list, set)):
+            return default.copy()
+        return default
+
     def decorator(fn: F) -> F:
         @functools.wraps(fn)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -45,7 +50,7 @@ def lsp_safe_handler[F: Callable[..., Any]](
                     fn.__qualname__,
                     exc_info=True,
                 )
-                return default
+                return fresh_default()
 
         return cast(F, wrapper)
 
