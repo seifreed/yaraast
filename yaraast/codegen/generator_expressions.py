@@ -15,6 +15,12 @@ def _render_string_set(gen, string_set) -> str:
             gen.visit(item) if hasattr(item, "accept") else str(item) for item in string_set
         ]
         return f"({', '.join(rendered_items)})"
+    if isinstance(string_set, set | frozenset):
+        rendered_items = [
+            gen.visit(item) if hasattr(item, "accept") else str(item)
+            for item in sorted(string_set, key=str)
+        ]
+        return f"({', '.join(rendered_items)})"
     return str(string_set)
 
 

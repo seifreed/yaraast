@@ -381,6 +381,15 @@ class ExpressionStringFormatter:
                 + ", ".join(_string_set_item_text(item, self, depth + 1) for item in string_set)
                 + ")"
             )
+        if isinstance(string_set, set | frozenset):
+            return (
+                "("
+                + ", ".join(
+                    _string_set_item_text(item, self, depth + 1)
+                    for item in sorted(string_set, key=str)
+                )
+                + ")"
+            )
         if hasattr(string_set, "name"):
             return string_set.name
         if hasattr(string_set, "value"):

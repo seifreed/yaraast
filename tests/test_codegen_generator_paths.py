@@ -75,6 +75,9 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
     of_tuple = OfExpression(quantifier=2, string_set=("$a", "$b"))
     assert gen.visit(of_tuple) == "2 of ($a, $b)"
 
+    of_frozenset = OfExpression(quantifier=2, string_set=frozenset(("$a", "$b")))
+    assert gen.visit(of_frozenset) == "2 of ($a, $b)"
+
     of_node_list = OfExpression(
         quantifier="any",
         string_set=[StringIdentifier("$a"), StringIdentifier("$b")],
