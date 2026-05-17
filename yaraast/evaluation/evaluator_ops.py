@@ -85,14 +85,17 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
         return left == right
     if operator == "!=":
         return left != right
-    if operator == "<":
-        return left < right
-    if operator == "<=":
-        return left <= right
-    if operator == ">":
-        return left > right
-    if operator == ">=":
-        return left >= right
+    try:
+        if operator == "<":
+            return left < right
+        if operator == "<=":
+            return left <= right
+        if operator == ">":
+            return left > right
+        if operator == ">=":
+            return left >= right
+    except TypeError:
+        return False
     return None
 
 

@@ -71,6 +71,14 @@ def test_evaluate_comparison_all_operators() -> None:
     assert evaluate_comparison(1, 2, "??") is None
 
 
+@pytest.mark.parametrize("operator", ["<", "<=", ">", ">="])
+def test_evaluate_comparison_incompatible_ordered_operands_are_false(
+    operator: str,
+) -> None:
+    assert evaluate_comparison("a", 1, operator) is False
+    assert evaluate_comparison(1, "a", operator) is False
+
+
 def test_evaluate_string_operator_all_paths() -> None:
     assert evaluate_string_operator("hello", "ell", "contains") is True
     assert evaluate_string_operator("hello", "", "contains") is False
