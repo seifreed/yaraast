@@ -163,6 +163,16 @@ def test_visit_collection_and_access_nodes_and_set_dedup() -> None:
     assert len(untouched.elements) == 3
 
 
+def test_string_offset_and_length_indexes_are_optimized() -> None:
+    opt = ExpressionOptimizer()
+
+    offset = StringOffset("$a", BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)))
+    length = StringLength("$a", BinaryExpression(IntegerLiteral(5), "-", IntegerLiteral(3)))
+
+    assert opt.visit_string_offset(offset).index == IntegerLiteral(3)
+    assert opt.visit_string_length(length).index == IntegerLiteral(2)
+
+
 def test_visit_for_of_at_in_and_passthrough_methods() -> None:
     opt = ExpressionOptimizer()
 

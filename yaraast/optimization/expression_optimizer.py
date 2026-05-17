@@ -272,9 +272,13 @@ class ExpressionOptimizer(ASTTransformer):
         return node
 
     def visit_string_offset(self, node: Any) -> Any:
+        if getattr(node, "index", None) is not None:
+            node.index = self.visit(node.index)
         return node
 
     def visit_string_length(self, node: Any) -> Any:
+        if getattr(node, "index", None) is not None:
+            node.index = self.visit(node.index)
         return node
 
     def visit_double_literal(self, node: Any) -> Any:
