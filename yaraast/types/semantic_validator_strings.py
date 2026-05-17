@@ -340,7 +340,12 @@ class UndefinedStringDetector:
             self._collect_string_refs(child, refs)
 
     def _collect_string_set_refs(self, string_set: object, refs: set[str]) -> None:
-        from yaraast.ast.expressions import StringIdentifier, StringWildcard
+        from yaraast.ast.expressions import (
+            SetExpression,
+            StringIdentifier,
+            StringLiteral,
+            StringWildcard,
+        )
 
         if isinstance(string_set, str):
             if string_set != "them":
@@ -356,3 +361,8 @@ class UndefinedStringDetector:
             refs.add(string_set.name)
         elif isinstance(string_set, StringWildcard):
             refs.add(string_set.pattern)
+        elif isinstance(string_set, StringLiteral):
+            self._collect_string_set_refs(string_set.value, refs)
+        elif isinstance(string_set, SetExpression):
+            for element in string_set.elements:
+                self._collect_string_set_refs(element, refs)

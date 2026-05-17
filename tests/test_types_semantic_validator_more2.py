@@ -8,6 +8,7 @@ from yaraast.ast.expressions import (
     BooleanLiteral,
     FunctionCall,
     Identifier,
+    SetExpression,
     StringIdentifier,
     StringLiteral,
 )
@@ -66,6 +67,14 @@ def test_validate_rule_detects_undefined_strings_in_raw_string_sets() -> None:
             strings=[PlainString(identifier="$a", value="x")],
             condition=ForOfExpression("any", ["$a", "$missing"], BooleanLiteral(True)),
         ),
+        Rule(
+            name="missing_set_expression",
+            strings=[PlainString(identifier="$a", value="x")],
+            condition=OfExpression(
+                "any",
+                SetExpression([StringLiteral("$a"), StringLiteral("$missing")]),
+            ),
+        ),
     ]
 
     result = SemanticValidator().validate(YaraFile(rules=rules))
@@ -77,6 +86,10 @@ def test_validate_rule_detects_undefined_strings_in_raw_string_sets() -> None:
     )
     assert any(
         "Undefined string '$missing' in rule 'missing_for_of'" in message for message in messages
+    )
+    assert any(
+        "Undefined string '$missing' in rule 'missing_set_expression'" in message
+        for message in messages
     )
 
 
