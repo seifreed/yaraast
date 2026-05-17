@@ -66,6 +66,26 @@ def test_lexer_number_suffix_and_regex_context_and_hex_context_helpers() -> None
     assert lex9._is_line_continuation() is False
 
 
+def test_lexer_rejects_integer_literals_above_int64_maximum() -> None:
+    valid_values = [
+        "9223372036854775807",
+        "0x7fffffffffffffff",
+        "0o777777777777777777777",
+    ]
+    for value in valid_values:
+        tokens = Lexer(value).tokenize()
+        assert tokens[0].type == TokenType.INTEGER
+
+    invalid_values = [
+        "9223372036854775808",
+        "0x8000000000000000",
+        "9100000000000000KB",
+    ]
+    for value in invalid_values:
+        with pytest.raises(LexerError, match="Integer literal exceeds int64 maximum"):
+            Lexer(value).tokenize()
+
+
 def test_lexer_string_and_hex_error_paths() -> None:
     with pytest.raises(LexerError, match="Unterminated string"):
         Lexer('"unterminated').tokenize()

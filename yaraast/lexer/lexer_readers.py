@@ -6,6 +6,8 @@ from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lexer.tokens import Token, TokenType
 
+INT64_MAX = (1 << 63) - 1
+
 
 def read_string(lexer) -> Token:
     start_line = lexer.line
@@ -90,6 +92,13 @@ def read_regex(lexer) -> Token:
     return Token(TokenType.REGEX, value, start_line, start_column)
 
 
+def _integer_token(value: int, line: int, column: int) -> Token:
+    if value > INT64_MAX:
+        msg = f"Integer literal exceeds int64 maximum: {value}"
+        raise LexerError(msg, line, column)
+    return Token(TokenType.INTEGER, value, line, column)
+
+
 def read_number(lexer) -> Token:
     start_line = lexer.line
     start_column = lexer.column
@@ -104,7 +113,7 @@ def read_number(lexer) -> Token:
             if lexer._current_char() != "_":
                 value += lexer._current_char()
             lexer._advance()
-        return Token(TokenType.INTEGER, int(value, 16), start_line, start_column)
+        return _integer_token(int(value, 16), start_line, start_column)
     # Octal: 0o77, 0o123
     if lexer._current_char() == "0" and lexer._peek_char() in "oO":
         value += lexer._current_char()
@@ -115,7 +124,7 @@ def read_number(lexer) -> Token:
             if lexer._current_char() != "_":
                 value += lexer._current_char()
             lexer._advance()
-        return Token(TokenType.INTEGER, int(value, 8), start_line, start_column)
+        return _integer_token(int(value, 8), start_line, start_column)
     # Decimal (with underscore separators): 1_000_000
     while lexer._current_char() and (
         lexer._current_char().isdigit() or lexer._current_char() == "_"
@@ -141,8 +150,8 @@ def read_number(lexer) -> Token:
         if lexer._current_char() and lexer._current_char().upper() == "B":
             lexer._advance()
             multiplier = 1024 if suffix == "K" else 1024 * 1024
-            return Token(TokenType.INTEGER, int(value) * multiplier, start_line, start_column)
-    return Token(TokenType.INTEGER, int(value), start_line, start_column)
+            return _integer_token(int(value) * multiplier, start_line, start_column)
+    return _integer_token(int(value), start_line, start_column)
 
 
 def read_identifier(lexer) -> Token:
