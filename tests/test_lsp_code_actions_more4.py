@@ -147,6 +147,27 @@ def test_code_action_structured_patches_accept_serialized_ranges_and_skip_heuris
     assert _change_set(quickfixes[0].edit, "file://test.yar")[0].new_text == 'import "pe"\n'
 
 
+def test_code_action_structured_patches_reject_negative_serialized_ranges() -> None:
+    provider = CodeActionsProvider()
+    diag = Diagnostic(
+        range=_range(0, 0, 1),
+        message="Module 'pe' not imported",
+        data={
+            "patches": [
+                {
+                    "range": {
+                        "start": {"line": -1, "character": 0},
+                        "end": {"line": 0, "character": 0},
+                    },
+                    "replacement": 'import "pe"\n',
+                }
+            ],
+        },
+    )
+
+    assert provider._create_structured_actions(diag, "file://test.yar") == []
+
+
 def test_code_action_uses_structured_metadata_for_import_without_message_regex() -> None:
     provider = CodeActionsProvider()
     diag = Diagnostic(
