@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from lsprotocol.types import DocumentLink, Position, Range
@@ -10,6 +11,9 @@ from lsprotocol.types import DocumentLink, Position, Range
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, SymbolRecord
 
 logger = logging.getLogger(__name__)
+
+IMPORT_DIRECTIVE_RE = re.compile(r'^\s*import\s+"(?P<value>(?:\\.|[^"\\])*)"')
+INCLUDE_DIRECTIVE_RE = re.compile(r'^\s*include\s+"(?P<value>(?:\\.|[^"\\])*)"')
 
 
 class DocumentLinksProvider:
@@ -119,42 +123,41 @@ class DocumentLinksProvider:
         doc = DocumentContext(document_uri, text)
 
         for line_num, line in enumerate(lines):
-            # Look for import statements
-            if "import" in line and '"' in line:
-                start = line.find('"')
-                end = line.find('"', start + 1)
-                if start != -1 and end != -1:
-                    module_name = line[start + 1 : end]
-                    url = self.module_docs.get(module_name)
-                    if url:
-                        links.append(
-                            DocumentLink(
-                                range=Range(
-                                    start=Position(line=line_num, character=start + 1),
-                                    end=Position(line=line_num, character=end),
+            import_match = IMPORT_DIRECTIVE_RE.match(line)
+            if import_match:
+                module_name = import_match.group("value")
+                url = self.module_docs.get(module_name)
+                if url:
+                    links.append(
+                        DocumentLink(
+                            range=Range(
+                                start=Position(
+                                    line=line_num, character=import_match.start("value")
                                 ),
-                                target=url,
-                                tooltip=f"Open documentation for {module_name} module",
-                            )
+                                end=Position(line=line_num, character=import_match.end("value")),
+                            ),
+                            target=url,
+                            tooltip=f"Open documentation for {module_name} module",
                         )
+                    )
+                continue
 
-            # Look for include statements
-            elif "include" in line and '"' in line:
-                start = line.find('"')
-                end = line.find('"', start + 1)
-                if start != -1 and end != -1:
-                    include_path = line[start + 1 : end]
-                    target_uri = doc.get_include_target_uri(include_path)
-                    if target_uri:
-                        links.append(
-                            DocumentLink(
-                                range=Range(
-                                    start=Position(line=line_num, character=start + 1),
-                                    end=Position(line=line_num, character=end),
+            include_match = INCLUDE_DIRECTIVE_RE.match(line)
+            if include_match:
+                include_path = include_match.group("value")
+                target_uri = doc.get_include_target_uri(include_path)
+                if target_uri:
+                    links.append(
+                        DocumentLink(
+                            range=Range(
+                                start=Position(
+                                    line=line_num, character=include_match.start("value")
                                 ),
-                                target=target_uri,
-                                tooltip=f"Open {include_path}",
-                            )
+                                end=Position(line=line_num, character=include_match.end("value")),
+                            ),
+                            target=target_uri,
+                            tooltip=f"Open {include_path}",
                         )
+                    )
 
         return links

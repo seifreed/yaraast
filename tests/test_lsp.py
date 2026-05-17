@@ -405,6 +405,27 @@ def test_document_links_provider() -> None:
     assert any("pe" in str(target) for target in link_targets), "Should have link for pe module"
 
 
+def test_document_links_fallback_ignores_commented_imports() -> None:
+    """Fallback document links should not link imports inside comments."""
+    from yaraast.lsp.document_links import DocumentLinksProvider
+
+    provider = DocumentLinksProvider()
+    text = """
+    // import "pe"
+    import "hash"
+    rule broken {
+        condition:
+    }
+    """.lstrip()
+
+    links = provider.get_document_links(text, "file:///test.yar")
+    link_targets = [str(link.target) for link in links]
+
+    assert len(links) == 1
+    assert any("hash" in target for target in link_targets)
+    assert not any("modules/pe.html" in target for target in link_targets)
+
+
 def test_workspace_symbols_provider() -> None:
     """Test workspace symbols provider."""
     from pathlib import Path
