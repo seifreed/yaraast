@@ -718,6 +718,37 @@ def test_zero_for_quantifier_matches_libyara_none_semantics() -> None:
     }
 
 
+def test_for_expression_with_undefined_range_is_false() -> None:
+    ast = Parser().parse("""
+        rule any_undefined_range {
+            condition:
+                for any i in (0..uint8(filesize)) : (true)
+        }
+
+        rule all_undefined_range {
+            condition:
+                for all i in (0..uint8(filesize)) : (true)
+        }
+
+        rule none_undefined_range {
+            condition:
+                for none i in (0..uint8(filesize)) : (true)
+        }
+
+        rule zero_undefined_range {
+            condition:
+                for 0 i in (0..uint8(filesize)) : (true)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {
+        "any_undefined_range": False,
+        "all_undefined_range": False,
+        "none_undefined_range": False,
+        "zero_undefined_range": False,
+    }
+
+
 def test_for_of_and_module_reference_paths() -> None:
     ev = YaraEvaluator(data=b"xxabyy")
     rule = Rule(

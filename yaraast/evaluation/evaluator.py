@@ -291,10 +291,14 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Evaluate set expression."""
         return {self.visit(elem) for elem in node.elements}
 
-    def visit_range_expression(self, node: RangeExpression) -> range:
+    def visit_range_expression(self, node: RangeExpression) -> Any:
         """Evaluate range expression."""
         low = self.visit(node.low)
         high = self.visit(node.high)
+        if is_yara_undefined(low) or is_yara_undefined(high):
+            return YARA_UNDEFINED
+        if not isinstance(low, int) or not isinstance(high, int):
+            return YARA_UNDEFINED
         return range(low, high + 1)  # Inclusive range
 
     def visit_function_call(self, node: FunctionCall) -> Any:
@@ -607,6 +611,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         variable_names = self._loop_variable_names(node.variable)
         iterable = self._evaluate_for_iterable(node.iterable)
+        if is_yara_undefined(iterable):
+            return False
         loop_items = (
             iterable.items() if len(variable_names) > 1 and isinstance(iterable, dict) else iterable
         )
