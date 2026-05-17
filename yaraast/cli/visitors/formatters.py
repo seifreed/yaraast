@@ -375,7 +375,7 @@ class ExpressionStringFormatter:
         string_set = expr.string_set
         if isinstance(string_set, str):
             return string_set
-        if isinstance(string_set, list):
+        if isinstance(string_set, list | tuple):
             return (
                 "("
                 + ", ".join(_string_set_item_text(item, self, depth + 1) for item in string_set)

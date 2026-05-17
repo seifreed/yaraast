@@ -10,7 +10,7 @@ def _render_string_set(gen, string_set) -> str:
         return f"({gen.visit(string_set)})"
     if hasattr(string_set, "accept"):
         return gen.visit(string_set)
-    if isinstance(string_set, list):
+    if isinstance(string_set, list | tuple):
         rendered_items = [
             gen.visit(item) if hasattr(item, "accept") else str(item) for item in string_set
         ]

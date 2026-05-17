@@ -120,6 +120,13 @@ def test_condition_formatter_handles_parsed_of_literals() -> None:
     )
     assert (
         ExpressionStringFormatter()._format_string_set(
+            OfExpression(quantifier="any", string_set=("$a", "$b")),
+            0,
+        )
+        == "($a, $b)"
+    )
+    assert (
+        ExpressionStringFormatter()._format_string_set(
             OfExpression(
                 quantifier="any",
                 string_set=[StringIdentifier("$a"), StringWildcard("$b*")],
