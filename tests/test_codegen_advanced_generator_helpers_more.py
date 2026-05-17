@@ -7,6 +7,7 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
     HexNibble,
     HexString,
     HexWildcard,
@@ -94,13 +95,31 @@ def test_format_hex_string_no_grouping_and_single_token_formatting() -> None:
     assert format_hex_token(HexByte(0xAF), upper) == "AF"
     assert format_hex_token(HexByte("af"), upper) == "AF"
     assert format_hex_token(HexWildcard(), lower) == "??"
-    assert format_hex_token(HexJump(1, 2), lower) == ""
+    assert format_hex_token(HexJump(1, 2), lower) == "[1-2]"
+    assert format_hex_token(HexNibble(high=True, value=0xA), lower) == "a?"
+    assert format_hex_token(HexNibble(high=False, value="B"), lower) == "?b"
+    assert format_hex_token(HexNegatedByte(0xAF), lower) == "~af"
 
     hs = HexString(identifier="$h", tokens=[HexByte(0x01), HexWildcard(), HexByte("af")])
     assert format_hex_string(hs, lower) == "{ 01 ?? af }"
 
     scalar_alt = HexString(identifier="$s", tokens=[HexAlternative([0x90, "91"])])
     assert format_hex_string(scalar_alt, upper) == "{ (90 | 91) }"
+
+    complex_alt = HexString(
+        identifier="$complex",
+        tokens=[
+            HexAlternative(
+                [
+                    [HexNibble(high=True, value=0x4)],
+                    [HexNegatedByte(0x41)],
+                    [HexJump(1, 2), HexByte(0x42)],
+                    [HexWildcard()],
+                ]
+            )
+        ],
+    )
+    assert format_hex_string(complex_alt, upper) == "{ (4? | ~41 | [1-2] 42 | ??) }"
 
 
 def test_get_tag_string_and_hex_jump_ranges() -> None:

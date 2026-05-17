@@ -6,6 +6,8 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
+    HexNibble,
     HexString,
     HexToken,
     HexWildcard,
@@ -57,10 +59,7 @@ def format_hex_string(node: HexString, config) -> str:
 
     for token in node.tokens:
         if isinstance(token, HexByte):
-            hex_val = token.value.lower() if isinstance(token.value, str) else f"{token.value:02x}"
-            if config.hex_style == HexStyle.UPPERCASE:
-                hex_val = hex_val.upper()
-            parts.append(hex_val)
+            parts.append(_format_hex_byte_value(token.value, config))
         elif isinstance(token, HexWildcard):
             parts.append("??")
         elif isinstance(token, HexJump):
@@ -73,8 +72,7 @@ def format_hex_string(node: HexString, config) -> str:
                 alt_parts.append(alt_str)
             parts.append(f"({' | '.join(alt_parts)})")
         elif hasattr(token, "high") and hasattr(token, "value"):  # HexNibble
-            nibble_str = f"{token.value:X}"
-            parts.append(f"{nibble_str}?" if token.high else f"?{nibble_str}")
+            parts.append(_format_hex_nibble(token, config))
 
     if config.hex_group_size > 0:
         grouped_parts = []
@@ -90,12 +88,15 @@ def format_hex_string(node: HexString, config) -> str:
 
 def format_hex_token(token: HexToken, config) -> str:
     if isinstance(token, HexByte):
-        hex_val = token.value.lower() if isinstance(token.value, str) else f"{token.value:02x}"
-        if config.hex_style == HexStyle.UPPERCASE:
-            hex_val = hex_val.upper()
-        return hex_val
+        return _format_hex_byte_value(token.value, config)
+    if isinstance(token, HexNegatedByte):
+        return f"~{_format_hex_byte_value(token.value, config)}"
     if isinstance(token, HexWildcard):
         return "??"
+    if isinstance(token, HexJump):
+        return _format_hex_jump(token)
+    if isinstance(token, HexNibble):
+        return _format_hex_nibble(token, config)
     return ""
 
 
@@ -103,6 +104,18 @@ def _coerce_hex_token(token) -> HexToken:
     if isinstance(token, int | str):
         return HexByte(token)
     return token
+
+
+def _format_hex_byte_value(value: int | str, config) -> str:
+    hex_val = value.lower() if isinstance(value, str) else f"{value:02x}"
+    if config.hex_style == HexStyle.UPPERCASE:
+        return hex_val.upper()
+    return hex_val
+
+
+def _format_hex_nibble(token: HexNibble, config) -> str:
+    nibble_str = _format_hex_byte_value(token.value, config)[-1]
+    return f"{nibble_str}?" if token.high else f"?{nibble_str}"
 
 
 def get_tag_string(tags, config) -> str:
