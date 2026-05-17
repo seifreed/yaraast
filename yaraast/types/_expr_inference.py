@@ -153,6 +153,9 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         return ops.infer_identifier(self, node)
 
     def visit_string_identifier(self, node: StringIdentifier) -> YaraType:
+        scoped_type = self.env.lookup(node.name)
+        if scoped_type:
+            return scoped_type
         if self.env.has_string(node.name) or self.env.has_string_pattern(node.name):
             return StringIdentifierType()
         self.errors.append(f"Undefined string: {node.name}")

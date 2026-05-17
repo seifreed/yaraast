@@ -311,7 +311,9 @@ class UndefinedStringDetector:
                     suggestion="Add a string definition in the strings section.",
                 )
 
-    def _collect_string_refs(self, node: ASTNode, refs: set[str]) -> None:
+    def _collect_string_refs(
+        self, node: ASTNode, refs: set[str], implicit_string_allowed: bool = False
+    ) -> None:
         """Recursively collect string identifier references from an expression."""
         from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
         from yaraast.ast.expressions import (
@@ -323,24 +325,40 @@ class UndefinedStringDetector:
         )
 
         if isinstance(node, StringIdentifier):
+            if implicit_string_allowed and node.name == "$":
+                return
             refs.add(node.name)
         elif isinstance(node, StringWildcard):
             refs.add(node.pattern)
         elif isinstance(node, StringCount | StringOffset | StringLength):
-            refs.add(f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id)
+            ref = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
+            if implicit_string_allowed and ref == "$":
+                return
+            refs.add(ref)
         elif isinstance(node, AtExpression):
             refs.add(node.string_id if node.string_id.startswith("$") else f"${node.string_id}")
         elif isinstance(node, InExpression) and isinstance(node.subject, str):
             refs.add(node.subject if node.subject.startswith("$") else f"${node.subject}")
-        elif isinstance(node, OfExpression | ForOfExpression):
+        elif isinstance(node, ForOfExpression):
+            if hasattr(node.quantifier, "accept"):
+                self._collect_string_refs(node.quantifier, refs)
             self._collect_string_set_refs(node.string_set, refs)
+            if node.condition:
+                self._collect_string_refs(node.condition, refs, implicit_string_allowed=True)
+            return
+        elif isinstance(node, OfExpression):
+            if hasattr(node.quantifier, "accept"):
+                self._collect_string_refs(node.quantifier, refs)
+            self._collect_string_set_refs(node.string_set, refs)
+            return
 
         # Recurse into children
         for child in node.children():
-            self._collect_string_refs(child, refs)
+            self._collect_string_refs(child, refs, implicit_string_allowed)
 
     def _collect_string_set_refs(self, string_set: object, refs: set[str]) -> None:
         from yaraast.ast.expressions import (
+            ParenthesesExpression,
             SetExpression,
             StringIdentifier,
             StringLiteral,
@@ -355,6 +373,10 @@ class UndefinedStringDetector:
         if isinstance(string_set, list | tuple | set | frozenset):
             for item in string_set:
                 self._collect_string_set_refs(item, refs)
+            return
+
+        if isinstance(string_set, ParenthesesExpression):
+            self._collect_string_set_refs(string_set.expression, refs)
             return
 
         if isinstance(string_set, StringIdentifier):

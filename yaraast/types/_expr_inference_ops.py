@@ -10,6 +10,7 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     MemberAccess,
+    ParenthesesExpression,
     SetExpression,
     StringIdentifier,
     StringLiteral,
@@ -56,6 +57,8 @@ def infer_identifier(ctx, node: Identifier):
 
 def infer_string_count_like(ctx, string_id: str, label: str, index=None):
     normalized = ctx._normalize_string_id(string_id)
+    if normalized == "$" and ctx.env.lookup("$"):
+        return IntegerType()
     if ctx.env.has_string(normalized) or ctx.env.has_string_pattern(normalized):
         if index is not None:
             index_type = ctx.visit(index)
@@ -331,6 +334,10 @@ def _infer_quantifier_value(ctx, value):
 
 
 def _infer_string_set_value(ctx, value):
+    if isinstance(value, ParenthesesExpression):
+        return _infer_string_set_value(ctx, value.expression)
+    if isinstance(value, StringIdentifier | StringLiteral | StringWildcard):
+        return StringSetType()
     if hasattr(value, "accept"):
         return ctx.visit(value)
     if isinstance(value, str | list | tuple | set | frozenset):
@@ -363,6 +370,10 @@ def _validate_string_set_refs(ctx, value) -> None:
     if isinstance(value, list | tuple | set | frozenset):
         for item in value:
             _validate_string_set_refs(ctx, item)
+        return
+
+    if isinstance(value, ParenthesesExpression):
+        _validate_string_set_refs(ctx, value.expression)
         return
 
     if isinstance(value, StringLiteral):
@@ -516,7 +527,12 @@ def infer_module_or_condition(ctx, node):
     if not isinstance(set_type, StringSetType):
         ctx.errors.append(f"'for...of' requires string set, got {set_type}")
     if node.condition:
-        cond_type = ctx.visit(node.condition)
-        if not isinstance(cond_type, BooleanType):
+        ctx.env.push_scope()
+        ctx.env.define("$", StringIdentifierType())
+        try:
+            cond_type = ctx.visit(node.condition)
+        finally:
+            ctx.env.pop_scope()
+        if not isinstance(cond_type, BooleanType | StringIdentifierType):
             ctx.errors.append(f"'for...of' condition must be boolean, got {cond_type}")
     return BooleanType()

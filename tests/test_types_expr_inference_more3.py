@@ -17,6 +17,7 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     IntegerLiteral,
+    ParenthesesExpression,
     RangeExpression,
     SetExpression,
     StringCount,
@@ -179,6 +180,36 @@ def test_expr_inference_accepts_non_list_string_set_containers() -> None:
         BooleanType,
     )
     assert not any("'for...of' requires string set" in error for error in for_of_inf.errors)
+
+
+def test_expr_inference_accepts_parenthesized_string_set_items() -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+
+    of_inf = ExpressionTypeInference(env)
+    assert isinstance(
+        of_inf.infer(
+            OfExpression(
+                quantifier="any",
+                string_set=ParenthesesExpression(StringIdentifier("$a")),
+            )
+        ),
+        BooleanType,
+    )
+    assert of_inf.errors == []
+
+    for_of_inf = ExpressionTypeInference(env)
+    assert isinstance(
+        for_of_inf.infer(
+            ForOfExpression(
+                quantifier="any",
+                string_set=ParenthesesExpression(StringIdentifier("$a")),
+                condition=StringIdentifier("$"),
+            )
+        ),
+        BooleanType,
+    )
+    assert for_of_inf.errors == []
 
 
 def test_expr_inference_string_length_invalid_index_reports_error() -> None:

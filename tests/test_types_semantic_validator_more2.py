@@ -8,6 +8,7 @@ from yaraast.ast.expressions import (
     BooleanLiteral,
     FunctionCall,
     Identifier,
+    ParenthesesExpression,
     SetExpression,
     StringIdentifier,
     StringLiteral,
@@ -91,6 +92,30 @@ def test_validate_rule_detects_undefined_strings_in_raw_string_sets() -> None:
         "Undefined string '$missing' in rule 'missing_set_expression'" in message
         for message in messages
     )
+
+
+def test_validate_rule_accepts_parenthesized_string_set_item() -> None:
+    rules = [
+        Rule(
+            name="parenthesized_of",
+            strings=[PlainString(identifier="$a", value="x")],
+            condition=OfExpression("any", ParenthesesExpression(StringIdentifier("$a"))),
+        ),
+        Rule(
+            name="parenthesized_for_of",
+            strings=[PlainString(identifier="$a", value="x")],
+            condition=ForOfExpression(
+                "any",
+                ParenthesesExpression(StringIdentifier("$a")),
+                StringIdentifier("$"),
+            ),
+        ),
+    ]
+
+    result = SemanticValidator().validate(YaraFile(rules=rules))
+
+    assert result.is_valid is True
+    assert result.errors == []
 
 
 def test_validate_rule_detects_invalid_condition_type() -> None:
