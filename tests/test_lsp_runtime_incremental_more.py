@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from lsprotocol.types import Position, Range
+import pytest
 
 from yaraast.lsp.diagnostics import DiagnosticsProvider
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
@@ -743,6 +744,23 @@ rule sample { condition: true }
     third = runtime.get_rule_link_records_for_document(uri)
     assert third is not first
     assert third == []
+
+
+def test_runtime_rule_link_records_handle_missing_loaded_document(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rule_file = tmp_path / "missing.yar"
+    rule_file.write_text("rule sample { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(rule_file)
+    runtime = LspRuntime()
+
+    def missing_document(_uri: str, *, load_workspace: bool = True) -> None:
+        return None
+
+    monkeypatch.setattr(runtime, "get_document", missing_document)
+
+    assert runtime.get_rule_link_records_for_document(uri) == []
 
 
 def test_document_context_caches_local_rule_link_records_per_revision() -> None:

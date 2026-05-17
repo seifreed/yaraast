@@ -170,6 +170,8 @@ def get_rule_link_records_for_document(
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
             return []
+    if doc is None:
+        return []
     workspace_rule_names = {
         record.name for record in runtime.workspace_symbol_records() if record.kind == "rule"
     }
