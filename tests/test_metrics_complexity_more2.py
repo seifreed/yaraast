@@ -6,7 +6,7 @@ from pathlib import Path
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForOfExpression, OfExpression
-from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.expressions import BinaryExpression, BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.metrics.complexity import ComplexityAnalyzer
 from yaraast.metrics.complexity_helpers import (
@@ -43,13 +43,21 @@ def test_complexity_analyzer_accepts_raw_string_sets() -> None:
             Rule(name="for_raw", condition=ForOfExpression("all", "them", condition=None)),
             Rule(name="of_raw", condition=OfExpression("any", ["$a", "$b"])),
             Rule(name="for_list", condition=ForOfExpression("any", ["$a"], BooleanLiteral(True))),
+            Rule(
+                name="of_nested",
+                condition=OfExpression(
+                    "any",
+                    [BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))],
+                ),
+            ),
         ],
     )
 
     metrics = ComplexityAnalyzer().analyze(ast)
 
     assert metrics.for_of_expressions == 2
-    assert metrics.of_expressions == 1
+    assert metrics.of_expressions == 2
+    assert metrics.total_binary_ops == 1
 
 
 def test_complexity_expression_helpers() -> None:

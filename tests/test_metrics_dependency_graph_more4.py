@@ -131,6 +131,13 @@ def test_dependency_graph_generator_remaining_visitors_and_stats() -> None:
             string_set=SetExpression(elements=[Identifier(name="them")]),
         )
     )
+    gen.imports.add("dotnet")
+    gen.visit_of_expression(
+        OfExpression(
+            quantifier="any",
+            string_set=[ModuleReference(module="dotnet")],
+        )
+    )
     gen.visit_for_of_expression(
         ForOfExpression(
             quantifier="any",
@@ -163,6 +170,7 @@ def test_dependency_graph_generator_remaining_visitors_and_stats() -> None:
 
     assert "pe" in gen.module_references["manual"]
     assert "math" in gen.module_references["manual"]
+    assert "dotnet" in gen.module_references["manual"]
 
 
 def test_dependency_graph_generator_complexity_graph(tmp_path: Path) -> None:

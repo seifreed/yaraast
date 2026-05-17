@@ -193,10 +193,8 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         self.visit(node.range)
 
     def visit_of_expression(self, node) -> None:
-        if hasattr(node.quantifier, "accept"):
-            self.visit(node.quantifier)
-        if hasattr(node.string_set, "accept"):
-            self.visit(node.string_set)
+        self._visit_ast_value(node.quantifier)
+        self._visit_ast_value(node.string_set)
 
     def visit_module_reference(self, node) -> None:
         if self._current_rule:
@@ -216,7 +214,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
     def _visit_ast_value(self, value) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
-        elif isinstance(value, list):
+        elif isinstance(value, list | tuple | set | frozenset):
             for item in value:
                 self._visit_ast_value(item)
 
