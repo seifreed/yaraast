@@ -60,6 +60,7 @@ from yaraast.codegen.formatting import FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter
 from yaraast.parser import Parser
+from yaraast.serialization.json_serializer import JsonSerializer
 
 
 def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules() -> None:
@@ -155,6 +156,19 @@ def test_codegen_generator_meta_and_string_section_variants() -> None:
     gen5 = CodeGenerator()
     gen5._write_condition_section(None)
     assert gen5.buffer.getvalue() == ""
+
+
+def test_codegen_generator_formats_string_backed_negated_hex_bytes() -> None:
+    token = JsonSerializer()._deserialize_hex_token({"type": "HexNegatedByte", "value": "4d"})
+    rule = Rule(
+        name="negated_hex",
+        strings=[HexString("$h", tokens=[token])],
+        condition=BooleanLiteral(True),
+    )
+
+    out = CodeGenerator().generate(YaraFile(rules=[rule]))
+
+    assert "$h = { ~4D }" in out
 
 
 def test_codegen_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:

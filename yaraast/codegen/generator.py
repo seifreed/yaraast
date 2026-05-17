@@ -288,7 +288,8 @@ class CodeGenerator(ASTVisitor[str]):
         return render_hex_byte(node)
 
     def visit_hex_negated_byte(self, node) -> str:
-        return f"~{node.value:02X}"
+        value = node.value.upper() if isinstance(node.value, str) else f"{node.value:02X}"
+        return f"~{value}"
 
     def visit_hex_wildcard(self, node: HexWildcard) -> str:
         return render_hex_wildcard(node)
