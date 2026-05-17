@@ -247,6 +247,23 @@ rule demo {
     assert "$a or $a" in edit.new_text
 
 
+def test_deduplicate_identical_strings_hidden_for_string_set_quantifiers() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule demo {
+    strings:
+        $a = "abc"
+        $b = "abc"
+    condition:
+        2 of them
+}
+""".lstrip()
+
+    actions = provider.get_code_actions(text, _range(5, 8, 17), [], "file://test.yar")
+
+    assert not any(action.title.startswith("Deduplicate identical strings") for action in actions)
+
+
 def test_sort_strings_by_identifier_refactor_action() -> None:
     provider = CodeActionsProvider()
     text = """

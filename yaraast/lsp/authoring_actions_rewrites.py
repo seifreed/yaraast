@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
+from yaraast.ast.base import ASTNode
+from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.lsp.authoring_actions_common import replace_rule_text, require_rule_context
 from yaraast.lsp.authoring_rewriters import OfThemTransformer, StringReferenceRewriter
 from yaraast.lsp.authoring_support import diff_preview, impact_title, string_signature
@@ -75,6 +79,8 @@ def deduplicate_identical_strings(authoring, text: str, selection) -> object | N
     rule = ast.rules[0]
     if len(getattr(rule, "strings", [])) < 2:
         return None
+    if _condition_uses_string_set_quantifier(rule.condition):
+        return None
     seen: dict[tuple[object, ...], str] = {}
     replacements: dict[str, str] = {}
     unique_strings = []
@@ -101,6 +107,22 @@ def deduplicate_identical_strings(authoring, text: str, selection) -> object | N
         f"Deduplicate identical strings ({len(replacements)} merged: {preview})",
         f"Merged duplicates: {preview}",
     )
+
+
+def _condition_uses_string_set_quantifier(condition: object) -> bool:
+    if condition is None:
+        return False
+    return any(
+        isinstance(node, OfExpression | ForOfExpression) for node in _iter_ast_nodes(condition)
+    )
+
+
+def _iter_ast_nodes(node: object) -> Iterator[ASTNode]:
+    if not isinstance(node, ASTNode):
+        return
+    yield node
+    for child in node.children():
+        yield from _iter_ast_nodes(child)
 
 
 def rewrite_of_them(authoring, text: str, selection, *, mode: str, title: str) -> object | None:
