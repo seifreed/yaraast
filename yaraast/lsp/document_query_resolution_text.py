@@ -43,11 +43,12 @@ def position_is_in_non_code_segment(ctx, position) -> bool:
     for line_num in range(position.line + 1):
         line = ctx.lines[line_num]
         in_string = False
+        in_regex = False
         escape = False
         idx = 0
         while idx < len(line):
             if line_num == position.line and idx >= position.character:
-                return in_block_comment or in_string
+                return in_block_comment or in_string or in_regex
 
             char = line[idx]
             nxt = line[idx + 1] if idx + 1 < len(line) else ""
@@ -67,12 +68,12 @@ def position_is_in_non_code_segment(ctx, position) -> bool:
                 idx += 1
                 continue
 
-            if char == "\\" and in_string:
+            if char == "\\" and (in_string or in_regex):
                 escape = True
                 idx += 1
                 continue
 
-            if not in_string:
+            if not in_string and not in_regex:
                 if char == "/" and nxt == "/":
                     if line_num == position.line:
                         return position.character >= idx
@@ -84,14 +85,18 @@ def position_is_in_non_code_segment(ctx, position) -> bool:
                     idx += 2
                     continue
 
-            if char == '"':
+            if char == '"' and not in_regex:
                 if line_num == position.line and position.character == idx:
                     return True
                 in_string = not in_string
+            elif char == "/" and not in_string:
+                if line_num == position.line and position.character == idx:
+                    return True
+                in_regex = not in_regex
             idx += 1
 
         if line_num == position.line:
-            return in_block_comment or in_string
+            return in_block_comment or in_string or in_regex
 
     return False
 

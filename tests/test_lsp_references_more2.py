@@ -87,6 +87,22 @@ rule a {
     assert provider.get_references(text, _pos(6, 8), "file://test.yar") == []
 
 
+def test_references_ignore_regex_literal_positions() -> None:
+    text = """
+rule helper { condition: true }
+rule a {
+  strings:
+    $r = /helper/
+  condition:
+    $r
+}
+""".lstrip()
+
+    provider = ReferencesProvider()
+
+    assert provider.get_references(text, _pos(3, 10), "file://test.yar") == []
+
+
 def test_references_provider_exposes_typed_records_cross_file(tmp_path: Path) -> None:
     common = tmp_path / "common.yar"
     user = tmp_path / "user.yar"

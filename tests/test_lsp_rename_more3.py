@@ -101,6 +101,21 @@ rule a {
     assert provider.prepare_rename(text, _pos(6, 8)) is None
 
 
+def test_prepare_rename_ignores_regex_literal_positions() -> None:
+    provider = RenameProvider()
+    text = """
+rule helper { condition: true }
+rule a {
+  strings:
+    $r = /helper/
+  condition:
+    $r
+}
+""".lstrip()
+
+    assert provider.prepare_rename(text, _pos(3, 10)) is None
+
+
 def test_rename_string_identifier_with_prefixed_new_name() -> None:
     text = """
 rule a {
