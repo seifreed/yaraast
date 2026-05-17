@@ -44,6 +44,10 @@ class Workspace:
 
     def add_file(self, file_path: str) -> FileAnalysisResult:
         """Add a single file to the workspace."""
+        return self._add_file(file_path, rebuild_graph=True)
+
+    def _add_file(self, file_path: str, *, rebuild_graph: bool) -> FileAnalysisResult:
+        """Add a file and optionally rebuild the workspace dependency graph."""
         path = Path(file_path)
         if not path.is_absolute():
             path = self.root_path / path
@@ -55,9 +59,6 @@ class Workspace:
             resolved = self.include_resolver.resolve_file(str(path))
             result.resolved = resolved
 
-            # Add to dependency graph
-            self._add_to_dependency_graph(resolved)
-
         except FileNotFoundError as e:
             result.errors.append(f"File not found: {e}")
         except RecursionError as e:
@@ -66,6 +67,8 @@ class Workspace:
             result.errors.append(f"Parse error: {e}")
 
         self.files[str(path)] = result
+        if rebuild_graph:
+            self._rebuild_dependency_graph()
         return result
 
     def add_directory(
@@ -87,7 +90,15 @@ class Workspace:
             dir_path = self.root_path / dir_path
 
         for file_path in iter_matching_files(dir_path, pattern, recursive):
-            self.add_file(str(file_path))
+            self._add_file(str(file_path), rebuild_graph=False)
+        self._rebuild_dependency_graph()
+
+    def _rebuild_dependency_graph(self) -> None:
+        """Rebuild dependency graph from the current successfully resolved files."""
+        self.dependency_graph = DependencyGraph()
+        for result in self.files.values():
+            if result.resolved:
+                self._add_to_dependency_graph(result.resolved)
 
     def _add_to_dependency_graph(self, resolved: ResolvedFile) -> None:
         """Add resolved file and its includes to dependency graph."""

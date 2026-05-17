@@ -179,6 +179,23 @@ def test_workspace_dependency_graph_links_resolved_include_paths(tmp_path: Path)
     assert workspace.dependency_graph.get_statistics()["file_count"] == 2
 
 
+def test_workspace_readding_file_removes_stale_include_graph_nodes(tmp_path: Path) -> None:
+    root = tmp_path
+    parent = _write(root / "parent.yar", 'include "child.yar"\nrule parent { condition: true }')
+    child = _write(root / "child.yar", "rule child { condition: true }")
+
+    workspace = Workspace(str(root))
+    workspace.add_file(str(parent))
+    assert str(child.resolve()) in workspace.dependency_graph.nodes
+
+    _write(parent, "rule parent { condition: true }")
+    workspace.add_file(str(parent))
+
+    assert str(child.resolve()) not in workspace.dependency_graph.nodes
+    assert "rule:child" not in workspace.dependency_graph.nodes
+    assert workspace.dependency_graph.get_statistics()["file_count"] == 1
+
+
 def test_include_resolver_rechecks_cached_files_with_missing_includes(tmp_path: Path) -> None:
     parent = _write(
         tmp_path / "parent.yar",
