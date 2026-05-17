@@ -167,6 +167,26 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         gen.visit_binary_expression(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)))
         == "1 + 2"
     )
+    assert (
+        gen.generate(
+            BinaryExpression(
+                BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)),
+                "*",
+                IntegerLiteral(3),
+            )
+        )
+        == "(1 + 2) * 3"
+    )
+    assert (
+        gen.generate(
+            BinaryExpression(
+                IntegerLiteral(1),
+                "*",
+                BinaryExpression(IntegerLiteral(2), "+", IntegerLiteral(3)),
+            )
+        )
+        == "1 * (2 + 3)"
+    )
     assert gen.visit_unary_expression(UnaryExpression("not", BooleanLiteral(False))) == "not false"
     assert gen.visit_parentheses_expression(ParenthesesExpression(IntegerLiteral(1))) == "(1)"
     assert (

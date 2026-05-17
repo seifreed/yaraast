@@ -2,9 +2,56 @@
 
 from __future__ import annotations
 
+_BINARY_PRECEDENCE = {
+    "or": 1,
+    "and": 2,
+    "==": 3,
+    "!=": 3,
+    "<": 3,
+    "<=": 3,
+    ">": 3,
+    ">=": 3,
+    "contains": 3,
+    "matches": 3,
+    "startswith": 3,
+    "endswith": 3,
+    "icontains": 3,
+    "istartswith": 3,
+    "iendswith": 3,
+    "iequals": 3,
+    "&": 4,
+    "|": 4,
+    "^": 4,
+    "<<": 5,
+    ">>": 5,
+    "+": 6,
+    "-": 6,
+    "*": 7,
+    "/": 7,
+    "%": 7,
+}
+
+
+def _precedence(operator: str) -> int:
+    return _BINARY_PRECEDENCE.get(operator, 100)
+
+
+def _visit_binary_operand(generator, parent, operand, *, is_right: bool) -> str:
+    from yaraast.ast.expressions import BinaryExpression
+
+    rendered = generator.visit(operand)
+    if isinstance(operand, BinaryExpression) and (
+        _precedence(operand.operator) < _precedence(parent.operator)
+        or (is_right and _precedence(operand.operator) == _precedence(parent.operator))
+    ):
+        return f"({rendered})"
+    return rendered
+
 
 def visit_binary_expression(generator, node) -> str:
-    return f"{generator.visit(node.left)} {node.operator} {generator.visit(node.right)}"
+    left = _visit_binary_operand(generator, node, node.left, is_right=False)
+    right = _visit_binary_operand(generator, node, node.right, is_right=True)
+    return f"{left} {node.operator} {right}"
 
 
 def visit_unary_expression(generator, node) -> str:
