@@ -17,6 +17,7 @@ from yaraast.ast.expressions import (
     StringLength,
     StringLiteral,
     StringOffset,
+    StringWildcard,
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
@@ -209,6 +210,35 @@ def test_string_usage_analyzer_counts_string_literals_in_condition_sets() -> Non
         )
     )
     assert analyzer.used_strings["manual"] == {"$a", "$missing"}
+
+
+def test_string_usage_analyzer_expands_wildcard_string_sets() -> None:
+    ast = Parser().parse("""
+rule wildcard_usage {
+    strings:
+        $a1 = "aaaa"
+        $a2 = "bbbb"
+        $b = "cccc"
+    condition:
+        any of ($a*)
+}
+""")
+
+    result = StringUsageAnalyzer().analyze(ast)["wildcard_usage"]
+
+    assert result["used"] == ["$a1", "$a2"]
+    assert result["unused"] == ["$b"]
+    assert result["undefined"] == []
+
+    analyzer = StringUsageAnalyzer()
+    analyzer.current_rule = "manual"
+    analyzer.defined_strings["manual"] = {"$api1", "$api2", "$other"}
+    analyzer.used_strings["manual"] = set()
+    analyzer.in_condition = True
+
+    analyzer.visit_of_expression(OfExpression("any", StringWildcard("$api*")))
+
+    assert analyzer.used_strings["manual"] == {"$api1", "$api2"}
 
 
 def test_string_usage_analyzer_partial_branch_paths() -> None:

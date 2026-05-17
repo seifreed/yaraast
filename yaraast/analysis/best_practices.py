@@ -9,8 +9,9 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, field
+from fnmatch import fnmatchcase
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from yaraast.analysis.best_practices_helpers import (
     analyze_global_patterns,
@@ -18,10 +19,20 @@ from yaraast.analysis.best_practices_helpers import (
     levenshtein_distance,
 )
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import StringIdentifier
+from yaraast.ast.expressions import (
+    Identifier,
+    ParenthesesExpression,
+    SetExpression,
+    StringIdentifier,
+    StringLiteral,
+    StringWildcard,
+)
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.visitor.base import BaseVisitor
+
+if TYPE_CHECKING:
+    from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
 
 
 @dataclass
@@ -324,9 +335,82 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         normalized = string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
         self._string_usage[normalized] = self._string_usage.get(normalized, 0) + 1
 
+    def _mark_string_set_text(self, text: str) -> None:
+        if text == "them":
+            self._mark_all_current_rule_strings()
+            return
+
+        normalized = text if text.startswith("$") else f"${text.lstrip('#@!')}"
+        if "*" in normalized:
+            self._mark_wildcard_usage(normalized)
+            return
+
+        self._mark_string_usage(normalized)
+
+    def _mark_wildcard_usage(self, pattern: str) -> None:
+        if not self._current_rule:
+            self._mark_string_usage(pattern)
+            return
+
+        matched = False
+        for string_def in self._current_rule.strings:
+            if fnmatchcase(string_def.identifier, pattern):
+                self._mark_string_usage(string_def.identifier)
+                matched = True
+
+        if not matched:
+            self._mark_string_usage(pattern)
+
+    def _mark_all_current_rule_strings(self) -> None:
+        if not self._current_rule:
+            return
+
+        for string_def in self._current_rule.strings:
+            self._mark_string_usage(string_def.identifier)
+
+    def _visit_ast_value(self, value) -> None:
+        if hasattr(value, "accept"):
+            self.visit(value)
+            return
+        if isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                self._visit_ast_value(item)
+
+    def _visit_string_set_value(self, string_set) -> None:
+        if isinstance(string_set, str):
+            self._mark_string_set_text(string_set)
+            return
+        if isinstance(string_set, list | tuple | set | frozenset):
+            for item in string_set:
+                self._visit_string_set_value(item)
+            return
+        if isinstance(string_set, Identifier) and string_set.name == "them":
+            self._mark_all_current_rule_strings()
+            return
+        if isinstance(string_set, StringLiteral):
+            self._mark_string_set_text(string_set.value)
+            return
+        if isinstance(string_set, StringIdentifier):
+            self._mark_string_set_text(string_set.name)
+            return
+        if isinstance(string_set, StringWildcard):
+            self._mark_string_set_text(string_set.pattern)
+            return
+        if isinstance(string_set, ParenthesesExpression):
+            self._visit_string_set_value(string_set.expression)
+            return
+        if isinstance(string_set, SetExpression):
+            for element in string_set.elements:
+                self._visit_string_set_value(element)
+            return
+        self._visit_ast_value(string_set)
+
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         """Track string usage."""
         self._mark_string_usage(node.name)
+
+    def visit_string_wildcard(self, node: StringWildcard) -> None:
+        self._mark_string_set_text(node.pattern)
 
     def visit_string_count(self, node) -> None:
         self._mark_string_usage(node.string_id)
@@ -338,6 +422,27 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def visit_string_length(self, node) -> None:
         self._mark_string_usage(node.string_id)
         super().visit_string_length(node)
+
+    def visit_at_expression(self, node: AtExpression) -> None:
+        self._mark_string_usage(node.string_id)
+        super().visit_at_expression(node)
+
+    def visit_in_expression(self, node: InExpression) -> None:
+        if isinstance(node.subject, str):
+            self._mark_string_usage(node.subject)
+        else:
+            self.visit(node.subject)
+        self.visit(node.range)
+
+    def visit_for_of_expression(self, node: ForOfExpression) -> None:
+        self._visit_ast_value(node.quantifier)
+        self._visit_string_set_value(node.string_set)
+        if node.condition:
+            self.visit(node.condition)
+
+    def visit_of_expression(self, node: OfExpression) -> None:
+        self._visit_ast_value(node.quantifier)
+        self._visit_string_set_value(node.string_set)
 
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""

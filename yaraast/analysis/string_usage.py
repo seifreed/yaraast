@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.expressions import (
@@ -63,7 +64,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     def _normalize_string_id(self, string_id: str) -> str:
         """Normalize string ids so #a/@a/!a map to $a like normal string refs."""
-        return string_id if string_id.startswith("$") else f"${string_id}"
+        return string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
 
     def get_unused_strings(self, rule_name: str | None = None) -> dict[str, list[str]]:
         """Get unused strings for a specific rule or all rules."""
@@ -141,6 +142,10 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         if self.current_rule and self.in_condition:
             self.used_strings[self.current_rule].add(self._normalize_string_id(node.name))
+
+    def visit_string_wildcard(self, node: StringWildcard) -> None:
+        if self.current_rule and self.in_condition:
+            self._mark_wildcard_string_set(node.pattern)
 
     def visit_string_count(self, node: StringCount) -> None:
         if self.current_rule and self.in_condition:
@@ -224,8 +229,26 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             return
         if text == "them":
             self._mark_all_current_rule_strings()
+        elif "*" in self._normalize_string_id(text):
+            self._mark_wildcard_string_set(text)
         else:
             self.used_strings[self.current_rule].add(self._normalize_string_id(text))
+
+    def _mark_wildcard_string_set(self, pattern: str) -> None:
+        if not self.current_rule:
+            return
+
+        normalized = self._normalize_string_id(pattern)
+        matches = {
+            string_id
+            for string_id in self.defined_strings.get(self.current_rule, set())
+            if fnmatchcase(string_id, normalized)
+        }
+        if matches:
+            self.used_strings[self.current_rule].update(matches)
+            return
+
+        self.used_strings[self.current_rule].add(normalized)
 
     def _mark_all_current_rule_strings(self) -> None:
         if self.current_rule:

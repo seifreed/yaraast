@@ -98,6 +98,37 @@ def test_best_practices_treats_string_count_as_string_usage() -> None:
     )
 
 
+def test_best_practices_treats_condition_string_set_forms_as_usage() -> None:
+    ast = Parser().parse("""
+rule set_usage {
+    strings:
+        $api1 = "aaaa"
+        $api2 = "bbbb"
+        $pos = "cccc"
+        $range = "dddd"
+    condition:
+        any of ($api*) and $pos at 0 and $range in (0..filesize)
+}
+
+rule them_usage {
+    strings:
+        $one = "eeee"
+        $two = "ffff"
+    condition:
+        all of them
+}
+""")
+
+    report = BestPracticesAnalyzer().analyze(ast)
+
+    unused_messages = [
+        suggestion.message
+        for suggestion in report.suggestions
+        if "defined but never used" in suggestion.message
+    ]
+    assert unused_messages == []
+
+
 def test_best_practices_global_hex_patterns_and_helper_paths() -> None:
     ast = Parser().parse("""
 rule hx1 {
