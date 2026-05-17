@@ -278,6 +278,10 @@ class LspRuntime:
             if path is None:
                 continue
             if path.exists() and path.is_file():
+                ctx = self.documents.get(uri)
+                if ctx is not None and ctx.is_open:
+                    self._sync_document_to_index(uri)
+                    continue
                 try:
                     text = path.read_text(encoding="utf-8")
                 except Exception:

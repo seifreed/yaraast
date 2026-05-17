@@ -249,6 +249,31 @@ def test_runtime_config_document_cache_and_watched_files(tmp_path: Path) -> None
     assert runtime.get_document(uri, load_workspace=False) is None
 
 
+def test_runtime_watched_file_does_not_replace_open_document(tmp_path: Path) -> None:
+    sample = tmp_path / "sample.yar"
+    sample.write_text("rule disk_version { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(sample)
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+    open_doc = runtime.open_document(
+        uri,
+        "rule unsaved_version { condition: false }\n",
+        version=2,
+    )
+
+    sample.write_text("rule changed_on_disk { condition: true }\n", encoding="utf-8")
+    runtime.handle_watched_files([FileEvent(uri=uri, type=FileChangeType.Changed)])
+
+    current = runtime.get_document(uri, load_workspace=False)
+    assert current is open_doc
+    assert current is not None
+    assert current.is_open is True
+    assert "unsaved_version" in current.text
+    assert "changed_on_disk" not in current.text
+    assert "unsaved_version" in {symbol.name for symbol in runtime.workspace_symbols("")}
+
+
 def test_runtime_rule_reference_records_include_roles(tmp_path: Path) -> None:
     common = tmp_path / "common.yar"
     user = tmp_path / "user.yar"
