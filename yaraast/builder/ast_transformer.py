@@ -38,27 +38,12 @@ class CloneTransformer:
     @staticmethod
     def clone_rule(rule: Rule) -> Rule:
         """Clone a rule with all its components."""
-        return Rule(
-            name=rule.name,
-            modifiers=rule.modifiers.copy(),
-            tags=[Tag(name=tag.name) for tag in rule.tags],
-            meta=[deepcopy(m) for m in rule.meta],
-            strings=[CloneTransformer.clone(s) for s in rule.strings],
-            condition=(CloneTransformer.clone(rule.condition) if rule.condition else None),
-        )
+        return deepcopy(rule)
 
     @staticmethod
     def clone_yara_file(yara_file: YaraFile) -> YaraFile:
         """Clone a YARA file with all its components."""
-        return YaraFile(
-            imports=[Import(module=imp.module, alias=imp.alias) for imp in yara_file.imports],
-            includes=[Include(path=inc.path) for inc in yara_file.includes],
-            rules=[CloneTransformer.clone_rule(rule) for rule in yara_file.rules],
-            extern_rules=[CloneTransformer.clone(rule) for rule in yara_file.extern_rules],
-            extern_imports=[CloneTransformer.clone(imp) for imp in yara_file.extern_imports],
-            pragmas=[CloneTransformer.clone(pragma) for pragma in yara_file.pragmas],
-            namespaces=[CloneTransformer.clone(ns) for ns in yara_file.namespaces],
-        )
+        return deepcopy(yara_file)
 
 
 class RuleTransformer:

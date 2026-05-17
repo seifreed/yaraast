@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import Location, YaraFile
+from yaraast.ast.comments import Comment
 from yaraast.ast.expressions import (
     BinaryExpression,
     FunctionCall,
@@ -14,6 +15,7 @@ from yaraast.ast.expressions import (
     StringOffset,
     StringWildcard,
 )
+from yaraast.ast.pragmas import CustomPragma, InRulePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.builder.ast_transformer import (
@@ -66,6 +68,33 @@ def test_clone_helpers_create_deep_independent_copies() -> None:
 
     assert original_file.imports[0].module == "pe"
     assert original_file.rules[0].name == "orig"
+
+
+def test_clone_helpers_preserve_rule_metadata_and_pragmas() -> None:
+    original_rule = _sample_rule("annotated")
+    original_rule.location = Location(line=3, column=1, file="sample.yar")
+    original_rule.leading_comments = [Comment("rule lead")]
+    original_rule.trailing_comment = Comment("rule tail")
+    original_rule.pragmas = [
+        InRulePragma(
+            pragma=CustomPragma("vendor", arguments=["enabled"]),
+            position="before_condition",
+        )
+    ]
+
+    cloned_rule = clone_rule(original_rule)
+
+    assert cloned_rule.location == original_rule.location
+    assert cloned_rule.leading_comments[0].text == "rule lead"
+    assert cloned_rule.trailing_comment is not None
+    assert cloned_rule.trailing_comment.text == "rule tail"
+    assert cloned_rule.pragmas[0].position == "before_condition"
+    assert cloned_rule.pragmas[0].pragma.name == "vendor"
+
+    cloned_rule.leading_comments[0].text = "changed"
+    cloned_rule.pragmas[0].pragma.arguments.append("mutated")
+    assert original_rule.leading_comments[0].text == "rule lead"
+    assert original_rule.pragmas[0].pragma.arguments == ["enabled"]
 
 
 def test_rule_transformer_tag_modifier_meta_and_string_helpers() -> None:
