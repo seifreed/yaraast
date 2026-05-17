@@ -38,6 +38,37 @@ rule ok {
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_libyara_compiler_compile_file_resolves_relative_includes(tmp_path: Path) -> None:
+    compiler = LibyaraCompiler()
+
+    include_file = tmp_path / "shared.yar"
+    include_file.write_text(
+        "rule shared_rule { condition: true }\n",
+        encoding="utf-8",
+    )
+    rule_file = tmp_path / "main.yar"
+    rule_file.write_text(
+        """
+include "shared.yar"
+
+rule main_rule {
+    condition:
+        shared_rule
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    result = compiler.compile_file(rule_file)
+
+    assert result.success is True
+    assert result.compiled_rules is not None
+    assert result.source_code == rule_file.read_text(encoding="utf-8")
+    matches = result.compiled_rules.match(data=b"")
+    assert [match.rule for match in matches] == ["shared_rule", "main_rule"]
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 def test_libyara_compiler_compile_ast_codegen_failure_and_syntax_error() -> None:
     compiler = LibyaraCompiler()
 

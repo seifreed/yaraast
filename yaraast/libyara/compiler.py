@@ -194,11 +194,34 @@ class LibyaraCompiler:
 
         try:
             source = filepath.read_text(encoding="utf-8")
-            return self.compile_source(source, error_on_warning=error_on_warning)
         except Exception as e:
             return CompilationResult(
                 success=False,
                 errors=[f"Error reading file: {e!s}"],
+            )
+
+        try:
+            compiled = yara.compile(
+                filepath=str(filepath),
+                externals=self.externals,
+                error_on_warning=error_on_warning,
+            )
+            return CompilationResult(
+                success=True,
+                compiled_rules=compiled,
+                source_code=source,
+            )
+        except yara.SyntaxError as e:
+            return CompilationResult(
+                success=False, errors=[f"Syntax error: {e!s}"], source_code=source
+            )
+        except yara.Error as e:
+            return CompilationResult(
+                success=False, errors=[f"Compilation error: {e!s}"], source_code=source
+            )
+        except Exception as e:
+            return CompilationResult(
+                success=False, errors=[f"Unexpected error: {e!s}"], source_code=source
             )
 
     def save_compiled_rules(self, rules: Any, filepath: str | Path) -> bool:
