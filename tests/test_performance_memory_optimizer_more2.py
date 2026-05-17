@@ -6,12 +6,15 @@ import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment
+from yaraast.ast.conditions import ForOfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
+    RegexLiteral,
     StringIdentifier,
     StringLiteral,
     StringWildcard,
@@ -29,6 +32,10 @@ from yaraast.ast.pragmas import CustomPragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.performance.memory_optimizer import MemoryOptimizer, MemoryOptimizerTransformer
+
+
+def _fresh_text(value: str) -> str:
+    return ("_" + value)[1:]
 
 
 def test_memory_optimizer_rule_list_usage_and_batch_paths() -> None:
@@ -265,3 +272,36 @@ def test_memory_optimizer_copies_nested_pragma_parameters() -> None:
     assert optimized_options is not original_options
     optimized_options["mode"] = "changed"
     assert original_options["mode"] == "same"
+
+
+def test_memory_optimizer_pools_generic_expression_strings() -> None:
+    pool: dict[str, str] = {}
+    transformer = MemoryOptimizerTransformer(pool, aggressive=False)
+
+    function_name = _fresh_text("shared_value")
+    regex_pattern = _fresh_text("shared_value")
+    assert function_name == regex_pattern
+    assert function_name is not regex_pattern
+
+    optimized_call = transformer.visit_function_call(
+        FunctionCall(function_name, [RegexLiteral(regex_pattern)])
+    )
+    optimized_regex = optimized_call.arguments[0]
+    assert isinstance(optimized_regex, RegexLiteral)
+    assert optimized_call.function is optimized_regex.pattern
+
+    set_item = _fresh_text("$shared")
+    identifier_name = _fresh_text("$shared")
+    assert set_item == identifier_name
+    assert set_item is not identifier_name
+
+    optimized_for_of = transformer.visit_for_of_expression(
+        ForOfExpression(
+            quantifier="any",
+            string_set=[set_item, StringIdentifier(identifier_name)],
+        )
+    )
+    assert isinstance(optimized_for_of.string_set, list)
+    optimized_identifier = optimized_for_of.string_set[1]
+    assert isinstance(optimized_identifier, StringIdentifier)
+    assert optimized_for_of.string_set[0] is optimized_identifier.name

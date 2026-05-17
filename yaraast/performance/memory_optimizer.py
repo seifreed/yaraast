@@ -20,28 +20,47 @@ from yaraast.performance.memory_runtime import (
     memory_managed_context as runtime_memory_managed_context,
 )
 from yaraast.performance.memory_transformer_visitors import (
+    visit_array_access as transformer_visit_array_access,
+    visit_at_expression as transformer_visit_at_expression,
     visit_binary_expression as transformer_visit_binary_expression,
     visit_boolean_literal as transformer_visit_boolean_literal,
+    visit_defined_expression as transformer_visit_defined_expression,
+    visit_dictionary_access as transformer_visit_dictionary_access,
     visit_double_literal as transformer_visit_double_literal,
     visit_extern_import as transformer_visit_extern_import,
     visit_extern_namespace as transformer_visit_extern_namespace,
     visit_extern_rule as transformer_visit_extern_rule,
     visit_extern_rule_reference as transformer_visit_extern_rule_reference,
+    visit_for_expression as transformer_visit_for_expression,
+    visit_for_of_expression as transformer_visit_for_of_expression,
+    visit_function_call as transformer_visit_function_call,
     visit_hex_string as transformer_visit_hex_string,
     visit_identifier as transformer_visit_identifier,
     visit_import as transformer_visit_import,
+    visit_in_expression as transformer_visit_in_expression,
     visit_in_rule_pragma as transformer_visit_in_rule_pragma,
     visit_include as transformer_visit_include,
     visit_integer_literal as transformer_visit_integer_literal,
+    visit_member_access as transformer_visit_member_access,
     visit_meta as transformer_visit_meta,
+    visit_module_reference as transformer_visit_module_reference,
+    visit_of_expression as transformer_visit_of_expression,
+    visit_parentheses_expression as transformer_visit_parentheses_expression,
     visit_plain_string as transformer_visit_plain_string,
     visit_pragma as transformer_visit_pragma,
     visit_pragma_block as transformer_visit_pragma_block,
+    visit_range_expression as transformer_visit_range_expression,
+    visit_regex_literal as transformer_visit_regex_literal,
     visit_regex_string as transformer_visit_regex_string,
     visit_rule as transformer_visit_rule,
+    visit_set_expression as transformer_visit_set_expression,
+    visit_string_count as transformer_visit_string_count,
     visit_string_identifier as transformer_visit_string_identifier,
+    visit_string_length as transformer_visit_string_length,
     visit_string_literal as transformer_visit_string_literal,
     visit_string_modifier as transformer_visit_string_modifier,
+    visit_string_offset as transformer_visit_string_offset,
+    visit_string_operator_expression as transformer_visit_string_operator_expression,
     visit_string_wildcard as transformer_visit_string_wildcard,
     visit_tag as transformer_visit_tag,
     visit_unary_expression as transformer_visit_unary_expression,
@@ -55,20 +74,39 @@ from yaraast.visitor.base import ASTTransformer
 
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
+    from yaraast.ast.conditions import (
+        AtExpression,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
     from yaraast.ast.expressions import (
+        ArrayAccess,
         BinaryExpression,
         BooleanLiteral,
         DoubleLiteral,
+        FunctionCall,
         Identifier,
         IntegerLiteral,
+        MemberAccess,
+        ParenthesesExpression,
+        RangeExpression,
+        RegexLiteral,
+        SetExpression,
+        StringCount,
         StringIdentifier,
+        StringLength,
         StringLiteral,
+        StringOffset,
         StringWildcard,
         UnaryExpression,
     )
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
     from yaraast.ast.meta import Meta
     from yaraast.ast.modifiers import StringModifier
+    from yaraast.ast.modules import DictionaryAccess, ModuleReference
+    from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
     from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
     from yaraast.ast.rules import Import, Include, Rule, Tag
     from yaraast.ast.strings import HexString, PlainString, RegexString
@@ -277,8 +315,20 @@ class MemoryOptimizerTransformer(ASTTransformer):
     def visit_double_literal(self, node: DoubleLiteral) -> DoubleLiteral:
         return transformer_visit_double_literal(self, node)
 
+    def visit_regex_literal(self, node: RegexLiteral) -> RegexLiteral:
+        return transformer_visit_regex_literal(self, node)
+
     def visit_string_identifier(self, node: StringIdentifier) -> StringIdentifier:
         return transformer_visit_string_identifier(self, node)
+
+    def visit_string_count(self, node: StringCount) -> StringCount:
+        return transformer_visit_string_count(self, node)
+
+    def visit_string_offset(self, node: StringOffset) -> StringOffset:
+        return transformer_visit_string_offset(self, node)
+
+    def visit_string_length(self, node: StringLength) -> StringLength:
+        return transformer_visit_string_length(self, node)
 
     def visit_string_modifier(self, node: StringModifier) -> StringModifier:
         return transformer_visit_string_modifier(self, node)
@@ -291,6 +341,54 @@ class MemoryOptimizerTransformer(ASTTransformer):
 
     def visit_unary_expression(self, node: UnaryExpression) -> UnaryExpression:
         return transformer_visit_unary_expression(self, node)
+
+    def visit_parentheses_expression(self, node: ParenthesesExpression) -> ParenthesesExpression:
+        return transformer_visit_parentheses_expression(self, node)
+
+    def visit_set_expression(self, node: SetExpression) -> SetExpression:
+        return transformer_visit_set_expression(self, node)
+
+    def visit_range_expression(self, node: RangeExpression) -> RangeExpression:
+        return transformer_visit_range_expression(self, node)
+
+    def visit_function_call(self, node: FunctionCall) -> FunctionCall:
+        return transformer_visit_function_call(self, node)
+
+    def visit_array_access(self, node: ArrayAccess) -> ArrayAccess:
+        return transformer_visit_array_access(self, node)
+
+    def visit_member_access(self, node: MemberAccess) -> MemberAccess:
+        return transformer_visit_member_access(self, node)
+
+    def visit_for_expression(self, node: ForExpression) -> ForExpression:
+        return transformer_visit_for_expression(self, node)
+
+    def visit_for_of_expression(self, node: ForOfExpression) -> ForOfExpression:
+        return transformer_visit_for_of_expression(self, node)
+
+    def visit_at_expression(self, node: AtExpression) -> AtExpression:
+        return transformer_visit_at_expression(self, node)
+
+    def visit_in_expression(self, node: InExpression) -> InExpression:
+        return transformer_visit_in_expression(self, node)
+
+    def visit_of_expression(self, node: OfExpression) -> OfExpression:
+        return transformer_visit_of_expression(self, node)
+
+    def visit_module_reference(self, node: ModuleReference) -> ModuleReference:
+        return transformer_visit_module_reference(self, node)
+
+    def visit_dictionary_access(self, node: DictionaryAccess) -> DictionaryAccess:
+        return transformer_visit_dictionary_access(self, node)
+
+    def visit_defined_expression(self, node: DefinedExpression) -> DefinedExpression:
+        return transformer_visit_defined_expression(self, node)
+
+    def visit_string_operator_expression(
+        self,
+        node: StringOperatorExpression,
+    ) -> StringOperatorExpression:
+        return transformer_visit_string_operator_expression(self, node)
 
     def visit_hex_string(self, node: HexString) -> HexString:
         return transformer_visit_hex_string(self, node)

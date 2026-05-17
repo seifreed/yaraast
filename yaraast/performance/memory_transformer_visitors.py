@@ -10,20 +10,39 @@ from yaraast.performance.memory_helpers import pooled_value
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+    from yaraast.ast.conditions import (
+        AtExpression,
+        ForExpression,
+        ForOfExpression,
+        InExpression,
+        OfExpression,
+    )
     from yaraast.ast.expressions import (
+        ArrayAccess,
         BinaryExpression,
         BooleanLiteral,
         DoubleLiteral,
+        FunctionCall,
         Identifier,
         IntegerLiteral,
+        MemberAccess,
+        ParenthesesExpression,
+        RangeExpression,
+        RegexLiteral,
+        SetExpression,
+        StringCount,
         StringIdentifier,
+        StringLength,
         StringLiteral,
+        StringOffset,
         StringWildcard,
         UnaryExpression,
     )
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
     from yaraast.ast.meta import Meta
     from yaraast.ast.modifiers import StringModifier
+    from yaraast.ast.modules import DictionaryAccess, ModuleReference
+    from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
     from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
     from yaraast.ast.rules import Import, Include, Rule, Tag
     from yaraast.ast.strings import HexString, PlainString, RegexString
@@ -91,6 +110,78 @@ def visit_integer_literal(transformer, node: IntegerLiteral) -> IntegerLiteral:
 
 def visit_double_literal(transformer, node: DoubleLiteral) -> DoubleLiteral:
     return _shallow(node)
+
+
+def visit_regex_literal(transformer, node: RegexLiteral) -> RegexLiteral:
+    node = _shallow(node)
+    node.pattern = pooled_value(transformer.string_pool, node.pattern)
+    node.modifiers = pooled_value(transformer.string_pool, node.modifiers)
+    return node
+
+
+def visit_string_count(transformer, node: StringCount) -> StringCount:
+    node = _shallow(node)
+    node.string_id = pooled_value(transformer.string_pool, node.string_id)
+    return node
+
+
+def visit_string_offset(transformer, node: StringOffset) -> StringOffset:
+    node = _shallow(node)
+    node.string_id = pooled_value(transformer.string_pool, node.string_id)
+    if node.index:
+        node.index = transformer.visit(node.index)
+    return node
+
+
+def visit_string_length(transformer, node: StringLength) -> StringLength:
+    node = _shallow(node)
+    node.string_id = pooled_value(transformer.string_pool, node.string_id)
+    if node.index:
+        node.index = transformer.visit(node.index)
+    return node
+
+
+def visit_parentheses_expression(
+    transformer,
+    node: ParenthesesExpression,
+) -> ParenthesesExpression:
+    node = _shallow(node)
+    node.expression = transformer.visit(node.expression)
+    return node
+
+
+def visit_set_expression(transformer, node: SetExpression) -> SetExpression:
+    node = _shallow(node)
+    node.elements = [transformer.visit(element) for element in node.elements]
+    return node
+
+
+def visit_range_expression(transformer, node: RangeExpression) -> RangeExpression:
+    node = _shallow(node)
+    node.low = transformer.visit(node.low)
+    node.high = transformer.visit(node.high)
+    return node
+
+
+def visit_function_call(transformer, node: FunctionCall) -> FunctionCall:
+    node = _shallow(node)
+    node.function = pooled_value(transformer.string_pool, node.function)
+    node.arguments = [transformer.visit(argument) for argument in node.arguments]
+    return node
+
+
+def visit_array_access(transformer, node: ArrayAccess) -> ArrayAccess:
+    node = _shallow(node)
+    node.array = transformer.visit(node.array)
+    node.index = transformer.visit(node.index)
+    return node
+
+
+def visit_member_access(transformer, node: MemberAccess) -> MemberAccess:
+    node = _shallow(node)
+    node.object = transformer.visit(node.object)
+    node.member = pooled_value(transformer.string_pool, node.member)
+    return node
 
 
 def visit_identifier(transformer, node: Identifier) -> Identifier:
@@ -214,6 +305,75 @@ def visit_unary_expression(transformer, node: UnaryExpression) -> UnaryExpressio
         node.operand = transformer.visit(node.operand)
     if hasattr(node, "operator") and isinstance(node.operator, str):
         node.operator = pooled_value(transformer.string_pool, node.operator)
+    return node
+
+
+def visit_for_expression(transformer, node: ForExpression) -> ForExpression:
+    node = _shallow(node)
+    node.quantifier = _pool_parameter_value(transformer, node.quantifier)
+    node.variable = pooled_value(transformer.string_pool, node.variable)
+    node.iterable = transformer.visit(node.iterable)
+    node.body = transformer.visit(node.body)
+    return node
+
+
+def visit_for_of_expression(transformer, node: ForOfExpression) -> ForOfExpression:
+    node = _shallow(node)
+    node.quantifier = _pool_parameter_value(transformer, node.quantifier)
+    node.string_set = _pool_parameter_value(transformer, node.string_set)
+    if node.condition:
+        node.condition = transformer.visit(node.condition)
+    return node
+
+
+def visit_at_expression(transformer, node: AtExpression) -> AtExpression:
+    node = _shallow(node)
+    node.string_id = pooled_value(transformer.string_pool, node.string_id)
+    node.offset = transformer.visit(node.offset)
+    return node
+
+
+def visit_in_expression(transformer, node: InExpression) -> InExpression:
+    node = _shallow(node)
+    node.subject = _pool_parameter_value(transformer, node.subject)
+    node.range = transformer.visit(node.range)
+    return node
+
+
+def visit_of_expression(transformer, node: OfExpression) -> OfExpression:
+    node = _shallow(node)
+    node.quantifier = _pool_parameter_value(transformer, node.quantifier)
+    node.string_set = _pool_parameter_value(transformer, node.string_set)
+    return node
+
+
+def visit_module_reference(transformer, node: ModuleReference) -> ModuleReference:
+    node = _shallow(node)
+    node.module = pooled_value(transformer.string_pool, node.module)
+    return node
+
+
+def visit_dictionary_access(transformer, node: DictionaryAccess) -> DictionaryAccess:
+    node = _shallow(node)
+    node.object = transformer.visit(node.object)
+    node.key = _pool_parameter_value(transformer, node.key)
+    return node
+
+
+def visit_defined_expression(transformer, node: DefinedExpression) -> DefinedExpression:
+    node = _shallow(node)
+    node.expression = transformer.visit(node.expression)
+    return node
+
+
+def visit_string_operator_expression(
+    transformer,
+    node: StringOperatorExpression,
+) -> StringOperatorExpression:
+    node = _shallow(node)
+    node.left = transformer.visit(node.left)
+    node.operator = pooled_value(transformer.string_pool, node.operator)
+    node.right = transformer.visit(node.right)
     return node
 
 
