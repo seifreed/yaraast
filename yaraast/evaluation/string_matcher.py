@@ -336,11 +336,13 @@ class StringMatcher:
         matches: list[tuple[int, int]] = []
         seen: set[tuple[int, int]] = set()
         for start in range(len(data)):
-            for end in self._match_hex_tokens_from(data, tokens, start):
-                match = (start, end - start)
-                if match not in seen:
-                    seen.add(match)
-                    matches.append(match)
+            end_positions = self._match_hex_tokens_from(data, tokens, start)
+            if not end_positions:
+                continue
+            match = (start, min(end_positions) - start)
+            if match not in seen:
+                seen.add(match)
+                matches.append(match)
         return matches
 
     def _match_hex_tokens_from(

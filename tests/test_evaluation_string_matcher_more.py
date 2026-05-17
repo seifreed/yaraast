@@ -312,6 +312,21 @@ def test_string_matcher_hex_tokens_match_yara_token_semantics() -> None:
     ]
 
 
+def test_string_matcher_hex_keeps_shortest_match_per_offset() -> None:
+    matcher = StringMatcher()
+    unbounded_jump = HexString("$h", tokens=[HexByte(0x41), HexJump(1, None), HexByte(0x42)])
+    alternatives = HexString(
+        "$alt",
+        tokens=[HexAlternative([[HexByte(0x41), HexByte(0x42)], [HexByte(0x41)]])],
+    )
+
+    jump_matches = matcher.match_string(unbounded_jump, b"AB AXB AXYZB")
+    alt_matches = matcher.match_string(alternatives, b"AB")
+
+    assert [(match.offset, match.length) for match in jump_matches] == [(0, 6), (3, 3), (7, 5)]
+    assert [(match.offset, match.length) for match in alt_matches] == [(0, 1)]
+
+
 def test_string_matcher_plain_string_xor_modifier_matches_encoded_bytes() -> None:
     matcher = StringMatcher()
     xor_string = PlainString(
