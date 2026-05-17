@@ -376,8 +376,14 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
     with pytest.raises(SerializationError, match="Rule modifiers must be a list"):
         deserialize_rule({"name": "r1", "modifiers": "private", "condition": None})
 
+    with pytest.raises(SerializationError, match="Rule modifiers must be a list of strings"):
+        deserialize_rule({"name": "r1", "modifiers": [7], "condition": None})
+
     with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
         deserialize_extern_rule({"name": "RemoteRule", "modifiers": "private"})
+
+    with pytest.raises(SerializationError, match="ExternRule modifiers must be a list of strings"):
+        deserialize_extern_rule({"name": "RemoteRule", "modifiers": [7]})
 
     with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
         deserialize_node(
@@ -387,6 +393,21 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
     with pytest.raises(SerializationError, match="PlainString modifiers must be a list"):
         deserialize_string(
             {"type": "PlainString", "identifier": "$a", "value": "abc", "modifiers": "ascii"}
+        )
+
+    with pytest.raises(SerializationError, match="StringModifier name must be a string"):
+        deserialize_string(
+            {
+                "type": "PlainString",
+                "identifier": "$a",
+                "value": "abc",
+                "modifiers": [{"name": 7}],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="StringModifier must be a string or object"):
+        deserialize_string(
+            {"type": "PlainString", "identifier": "$a", "value": "abc", "modifiers": [7]}
         )
 
     with pytest.raises(SerializationError, match="HexAlternative alternatives must be a list"):

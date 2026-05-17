@@ -858,7 +858,7 @@ class JsonSerializerDeserializeMixin:
         return self._apply_node_metadata(
             Rule(
                 name=_deserialize_string_field(data, "name", "Rule"),
-                modifiers=_deserialize_list_field(data, "modifiers", "Rule"),
+                modifiers=_deserialize_string_list_field(data, "modifiers", "Rule"),
                 tags=tags,
                 meta=meta,
                 strings=strings,
@@ -970,11 +970,14 @@ class JsonSerializerDeserializeMixin:
         from yaraast.ast.modifiers import StringModifier
 
         if isinstance(data, dict):
-            name = str(data["name"])
+            name = _deserialize_string_field(data, "name", "StringModifier")
             value = self._deserialize_modifier_value(name, data.get("value"))
-        else:
-            name = str(data)
+        elif isinstance(data, str):
+            name = data
             value = None
+        else:
+            msg = "StringModifier must be a string or object"
+            raise SerializationError(msg)
         try:
             return StringModifier.from_name_value(name, value)
         except (ValueError, ValidationError):
@@ -1062,7 +1065,7 @@ class JsonSerializerDeserializeMixin:
             ExternRule(
                 name=_deserialize_string_field(data, "name", "ExternRule"),
                 modifiers=Rule._normalize_modifiers(
-                    _deserialize_list_field(data, "modifiers", "ExternRule")
+                    _deserialize_string_list_field(data, "modifiers", "ExternRule")
                 ),
                 namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRule"),
             ),

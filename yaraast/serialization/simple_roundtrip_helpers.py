@@ -420,11 +420,14 @@ def _format_unknown_modifier(name: str, value: Any) -> str:
 
 def _deserialize_modifier(modifier: Any) -> Any:
     if isinstance(modifier, dict):
-        name = str(modifier["name"])
+        name = _deserialize_string_field(modifier, "name", "StringModifier")
         value = _deserialize_modifier_value(name, modifier.get("value"))
-    else:
-        name = str(modifier)
+    elif isinstance(modifier, str):
+        name = modifier
         value = None
+    else:
+        msg = "StringModifier must be a string or object"
+        raise SerializationError(msg)
 
     try:
         return StringModifier.from_name_value(name, value)
@@ -1309,7 +1312,9 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     """Deserialize a Rule."""
     rule = Rule(
         name=_deserialize_string_field(data, "name", "Rule"),
-        modifiers=_deserialize_rule_modifiers(_deserialize_list_field(data, "modifiers", "Rule")),
+        modifiers=_deserialize_rule_modifiers(
+            _deserialize_string_list_field(data, "modifiers", "Rule")
+        ),
         condition=(
             deserialize_node(data["condition"]) if data.get("condition") else BooleanLiteral(True)
         ),
@@ -1354,7 +1359,7 @@ def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
     return ExternRule(
         name=_deserialize_string_field(data, "name", "ExternRule"),
         modifiers=_deserialize_rule_modifiers(
-            _deserialize_list_field(data, "modifiers", "ExternRule")
+            _deserialize_string_list_field(data, "modifiers", "ExternRule")
         ),
         namespace=_deserialize_nullable_string_field(data, "namespace", "ExternRule"),
     )
