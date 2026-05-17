@@ -103,6 +103,15 @@ def test_build_dependency_graph_visits_rare_expression_paths() -> None:
                 condition=ForOfExpression(quantifier="all", string_set="not_node", condition=None),
             ),
             Rule(name="f", condition=OfExpression(quantifier="none", string_set="raw")),
+            Rule(name="g", condition=OfExpression(quantifier="any", string_set=[Identifier("b")])),
+            Rule(
+                name="h",
+                condition=ForOfExpression(
+                    quantifier="any",
+                    string_set=[Identifier("c")],
+                    condition=None,
+                ),
+            ),
         ],
     )
 
@@ -113,6 +122,8 @@ def test_build_dependency_graph_visits_rare_expression_paths() -> None:
     assert graph.get_dependencies("keyuser") == {"a", "b"}
     assert graph.get_dependencies("e") == set()
     assert graph.get_dependencies("f") == set()
+    assert graph.get_dependencies("g") == {"b"}
+    assert graph.get_dependencies("h") == {"c"}
 
 
 def test_dependency_graph_order_and_export_error(tmp_path: Path) -> None:

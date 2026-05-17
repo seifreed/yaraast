@@ -61,8 +61,7 @@ class DependencyFinder(MetricsVisitorBase):
     def visit_for_of_expression(self, node) -> None:
         if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
-        if hasattr(node.string_set, "accept"):
-            self.visit(node.string_set)
+        self._visit_ast_value(node.string_set)
         if node.condition:
             self.visit(node.condition)
 
@@ -77,8 +76,7 @@ class DependencyFinder(MetricsVisitorBase):
     def visit_of_expression(self, node) -> None:
         if hasattr(node.quantifier, "accept"):
             self.visit(node.quantifier)
-        if hasattr(node.string_set, "accept"):
-            self.visit(node.string_set)
+        self._visit_ast_value(node.string_set)
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)
@@ -94,3 +92,10 @@ class DependencyFinder(MetricsVisitorBase):
 
     def visit_string_wildcard(self, node) -> None:
         pass
+
+    def _visit_ast_value(self, value) -> None:
+        if hasattr(value, "accept"):
+            self.visit(value)
+        elif isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                self._visit_ast_value(item)
