@@ -327,6 +327,22 @@ def test_for_of_and_module_reference_paths() -> None:
     assert ev.visit_expression(BooleanLiteral(value=True)) is True
 
 
+def test_string_wildcard_condition_respects_pattern() -> None:
+    evaluator = YaraEvaluator(data=b"abc")
+    rule = Rule(
+        name="wildcard",
+        strings=[
+            PlainString(identifier="$a_one", value="ab"),
+            PlainString(identifier="$b_one", value="zz"),
+        ],
+        condition=BooleanLiteral(value=True),
+    )
+    evaluator.evaluate_rule(rule)
+
+    assert evaluator.visit_string_wildcard(StringWildcard("$a*")) is True
+    assert evaluator.visit_string_wildcard(StringWildcard("$b*")) is False
+
+
 def test_of_expression_in_range_uses_match_offsets() -> None:
     def evaluate(condition: str) -> bool:
         ast = Parser().parse(f"""

@@ -154,8 +154,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def visit_string_wildcard(self, node) -> bool:
         """String wildcard ($*) evaluates to whether any strings matched."""
-        return len(self.context.string_matches) > 0 and any(
-            len(matches) > 0 for matches in self.context.string_matches.values()
+        return any(
+            self.string_matcher.get_match_count(string_id) > 0
+            for string_id in self._resolve_string_set(node.pattern)
         )
 
     def visit_string_count(self, node: StringCount) -> int:
