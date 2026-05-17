@@ -75,13 +75,17 @@ def test_evaluate_comparison_all_operators() -> None:
 
 def test_evaluate_string_operator_all_paths() -> None:
     assert evaluate_string_operator("hello", "ell", "contains") is True
+    assert evaluate_string_operator("hello", "", "contains") is False
     assert evaluate_string_operator("Hello", "ell", "icontains") is True
+    assert evaluate_string_operator("Hello", "", "icontains") is True
     assert evaluate_string_operator("hello", "he", "startswith") is True
     assert evaluate_string_operator("Hello", "he", "istartswith") is True
     assert evaluate_string_operator("hello", "lo", "endswith") is True
     assert evaluate_string_operator("Hello", "LO", "iendswith") is True
     assert evaluate_string_operator("Hello", "hello", "iequals") is True
     assert evaluate_string_operator("abc123", r"\d+", "matches") is True
+    assert evaluate_string_operator("abc", r"$", "matches") is False
+    assert evaluate_string_operator("", r"$", "matches") is True
     assert evaluate_string_operator("ABC", RegexLiteral(pattern="abc", modifiers="i"), "matches")
     assert evaluate_string_operator(None, "a", "matches") is False
     with pytest.raises(re.error):

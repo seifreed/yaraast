@@ -113,6 +113,8 @@ def evaluate_string_operator(left: Any, right: Any, operator: str) -> bool | Non
         return False
 
     if operator == "contains":
+        if right == "":
+            return False
         return right in left
     if operator == "icontains":
         return right.lower() in left.lower()
@@ -142,7 +144,11 @@ def evaluate_regex_match(left: Any, pattern: Any, modifiers: str = "") -> bool:
     if "m" in modifiers:
         flags |= re.MULTILINE
 
+    regex = re.compile(pattern, flags)
+
     try:
-        return bool(re.search(pattern, left, flags))
+        if not left:
+            return bool(regex.match(left))
+        return any(regex.match(left, offset) for offset in range(len(left)))
     except (ValueError, TypeError, AttributeError):
         return False
