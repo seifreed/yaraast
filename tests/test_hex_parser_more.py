@@ -64,24 +64,32 @@ def test_hex_parser_errors() -> None:
         with pytest.raises(HexParseError):
             parser.parse(pattern)
 
+    for pattern in (
+        "( GG | AA )",
+        "( AA | | BB )",
+        "( AA | )",
+        "( | AA )",
+        "()",
+        "( AA | BB",
+    ):
+        with pytest.raises(HexParseError):
+            parser.parse(pattern)
+
 
 def test_hex_parser_alternative_edge_paths() -> None:
     parser = HexStringParser()
 
     parser.content = "(   "
     parser.pos = 0
-    alt = parser._parse_alternative()
-    assert isinstance(alt, HexAlternative)
-    assert alt.alternatives == []
+    with pytest.raises(HexParseError, match="Unterminated alternative"):
+        parser._parse_alternative()
 
     parser.content = "(|6A)"
     parser.pos = 0
-    alt = parser._parse_alternative()
-    assert len(alt.alternatives) == 1
-    assert isinstance(alt.alternatives[0][0], HexByte)
+    with pytest.raises(HexParseError, match="Empty alternative branch"):
+        parser._parse_alternative()
 
     parser.content = "(6A|)"
     parser.pos = 0
-    alt = parser._parse_alternative()
-    assert len(alt.alternatives) == 1
-    assert isinstance(alt.alternatives[0][0], HexByte)
+    with pytest.raises(HexParseError, match="Empty alternative branch"):
+        parser._parse_alternative()

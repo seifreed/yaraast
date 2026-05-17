@@ -428,10 +428,8 @@ def test_hex_string_parser_covers_remaining_branches_and_errors() -> None:
 
     parser.content = "( [1-2] X"
     parser.pos = 0
-    alt = parser._parse_alternative()
-    assert isinstance(alt, HexAlternative)
-    assert alt.alternatives
-    assert any(isinstance(tok, HexJump) for tok in alt.alternatives[0])
+    with pytest.raises(HexParseError, match="Invalid character in hex alternative"):
+        parser._parse_alternative()
 
     parser.content = "[1-3]"
     parser.pos = 0
@@ -441,9 +439,8 @@ def test_hex_string_parser_covers_remaining_branches_and_errors() -> None:
 
     parser.content = "("
     parser.pos = 0
-    alt = parser._parse_alternative()
-    assert isinstance(alt, HexAlternative)
-    assert alt.alternatives == []
+    with pytest.raises(HexParseError, match="Unterminated alternative"):
+        parser._parse_alternative()
 
     with pytest.raises(HexParseError, match="Invalid hex byte"):
         parser.parse("A ")

@@ -242,6 +242,7 @@ class HexStringParser:
         self.pos += 1  # Skip '('
         alternatives: list[list[HexToken]] = []
         current_alt: list[HexToken] = []
+        closed = False
         while self.pos < len(self.content):
             self._skip_whitespace()
 
@@ -256,14 +257,19 @@ class HexStringParser:
                 current_alt.append(nested_alt)
             elif char == ")":
                 # End of this alternative group
-                if current_alt:
-                    alternatives.append(current_alt)
+                if not current_alt:
+                    msg = "Empty alternative branch"
+                    raise HexParseError(msg, self.pos)
+                alternatives.append(current_alt)
                 self.pos += 1
+                closed = True
                 break
             elif char == "|":
                 # Alternative separator
-                if current_alt:
-                    alternatives.append(current_alt)
+                if not current_alt:
+                    msg = "Empty alternative branch"
+                    raise HexParseError(msg, self.pos)
+                alternatives.append(current_alt)
                 current_alt = []
                 self.pos += 1
             elif char == "[":
@@ -275,10 +281,12 @@ class HexStringParser:
             elif char in self.HEX_CHARS:
                 current_alt.append(self._parse_hex_byte())
             else:
-                self.pos += 1
+                msg = f"Invalid character in hex alternative: {char}"
+                raise HexParseError(msg, self.pos)
 
-        if not alternatives and current_alt:
-            alternatives.append(current_alt)
+        if not closed:
+            msg = "Unterminated alternative"
+            raise HexParseError(msg, self.pos)
 
         return HexAlternative(alternatives=alternatives)
 
