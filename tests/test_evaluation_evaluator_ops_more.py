@@ -7,6 +7,7 @@ import re
 import pytest
 
 from yaraast.ast.expressions import RegexLiteral
+from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator_ops import (
     evaluate_arithmetic,
     evaluate_comparison,
@@ -27,6 +28,12 @@ def test_evaluate_arithmetic_all_operators() -> None:
     assert evaluate_arithmetic(6, 3, "|") == 7
     assert evaluate_arithmetic(6, 3, "^") == 5
     assert evaluate_arithmetic(1, 2, "??") is None
+
+
+def test_evaluate_arithmetic_zero_divisor_returns_undefined() -> None:
+    assert evaluate_arithmetic(7, 0, "/") is YARA_UNDEFINED
+    assert evaluate_arithmetic(7.0, 0.0, "/") is YARA_UNDEFINED
+    assert evaluate_arithmetic(7, 0, "%") is YARA_UNDEFINED
 
 
 def test_evaluate_integer_division_and_modulo_do_not_use_float_conversion() -> None:

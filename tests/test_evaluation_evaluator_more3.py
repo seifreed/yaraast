@@ -312,6 +312,25 @@ def test_division_operator_parses_and_evaluates() -> None:
     assert YaraEvaluator(data=b"abcd").evaluate_file(ast) == {"integer_division": True}
 
 
+def test_zero_divisor_arithmetic_evaluates_as_undefined() -> None:
+    ast = Parser().parse("""
+        rule zero_modulo_comparison {
+            condition:
+                filesize % (filesize - 3) == 0
+        }
+
+        rule zero_modulo_truthiness {
+            condition:
+                filesize % (filesize - 3)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {
+        "zero_modulo_comparison": False,
+        "zero_modulo_truthiness": False,
+    }
+
+
 def test_condition_paths_for_at_in_of_for_and_defined() -> None:
     ev = YaraEvaluator(data=b"00abcd00")
     rule = Rule(

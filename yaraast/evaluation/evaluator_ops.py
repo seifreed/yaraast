@@ -21,7 +21,7 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
         return left * right
     if operator == "/":
         if right == 0:
-            return 0
+            return YARA_UNDEFINED
         if isinstance(left, int) and isinstance(right, int):
             return truncate_integer_division(left, right)
         if isinstance(left, int):
@@ -29,7 +29,7 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
         return left / right
     if operator == "%":
         if right == 0:
-            return 0
+            return YARA_UNDEFINED
         if isinstance(left, int) and isinstance(right, int):
             return integer_remainder(left, right)
         return left % right
