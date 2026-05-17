@@ -72,7 +72,11 @@ from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
 )
-from yaraast.codegen.generator_helpers import escape_plain_string_value, format_modifiers
+from yaraast.codegen.generator_helpers import (
+    escape_plain_string_value,
+    format_hex_byte_value,
+    format_modifiers,
+)
 from yaraast.codegen.generator_leaf_visitors import (
     visit_boolean_literal as render_boolean_literal,
     visit_comment as render_comment,
@@ -288,7 +292,11 @@ class CodeGenerator(ASTVisitor[str]):
         return render_hex_byte(node)
 
     def visit_hex_negated_byte(self, node) -> str:
-        value = node.value.upper() if isinstance(node.value, str) else f"{node.value:02X}"
+        value = format_hex_byte_value(
+            node.value,
+            uppercase=True,
+            context="HexNegatedByte",
+        )
         return f"~{value}"
 
     def visit_hex_wildcard(self, node: HexWildcard) -> str:

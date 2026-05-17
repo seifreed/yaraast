@@ -9,13 +9,15 @@ from yaraast.codegen.generator_formatting import (
     format_hex_jump,
     format_regex_literal,
 )
-from yaraast.codegen.generator_helpers import format_integer_literal
+from yaraast.codegen.generator_helpers import (
+    format_hex_byte_value,
+    format_hex_nibble_value,
+    format_integer_literal,
+)
 
 
 def visit_hex_byte(node) -> str:
-    if isinstance(node.value, str):
-        return node.value.upper()
-    return f"{node.value:02X}"
+    return format_hex_byte_value(node.value, uppercase=True)
 
 
 def visit_hex_wildcard(node) -> str:
@@ -42,7 +44,7 @@ def _coerce_hex_token(token):
 
 
 def visit_hex_nibble(node) -> str:
-    value_str = node.value.upper() if isinstance(node.value, str) else f"{node.value:X}"
+    value_str = format_hex_nibble_value(node.value, uppercase=True)
     return f"{value_str}?" if node.high else f"?{value_str}"
 
 

@@ -10,6 +10,7 @@ from yaraast.regex_literals import escape_regex_delimiter as _escape_regex_delim
 
 REGEX_SUFFIX_MODIFIERS = frozenset({"i", "m", "s"})
 REGEX_SUFFIX_NAMES = {"dotall": "s", "multiline": "m"}
+_HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
 
 def _escape_plain_byte(value: int) -> str:
@@ -88,6 +89,70 @@ def format_integer_literal(value) -> str:
         return hex(int_value)
 
     return str(int_value)
+
+
+def format_hex_byte_value(value: int | str, *, uppercase: bool, context: str = "HexByte") -> str:
+    """Format a validated hex byte value."""
+    value = _validate_hex_byte_value(value, context)
+    if isinstance(value, str):
+        return value.upper() if uppercase else value.lower()
+    return f"{value:02X}" if uppercase else f"{value:02x}"
+
+
+def format_hex_nibble_value(value: int | str, *, uppercase: bool) -> str:
+    """Format a validated hex nibble value."""
+    value = _validate_hex_nibble_value(value)
+    if isinstance(value, str):
+        return value.upper() if uppercase else value.lower()
+    return f"{value:X}" if uppercase else f"{value:x}"
+
+
+def format_hex_jump_bounds(min_jump: int | None, max_jump: int | None) -> str:
+    """Format validated hex jump bounds."""
+    min_jump = _validate_hex_jump_bound(min_jump, "min_jump")
+    max_jump = _validate_hex_jump_bound(max_jump, "max_jump")
+
+    if min_jump is not None and max_jump is not None and min_jump > max_jump:
+        msg = "HexJump min_jump cannot exceed max_jump"
+        raise TypeError(msg)
+    if min_jump is None and max_jump is None:
+        return "[-]"
+    if min_jump == max_jump:
+        if min_jump == 0:
+            return "[0-0]"
+        return f"[{min_jump}]"
+    if min_jump is None:
+        return f"[0-{max_jump}]"
+    if max_jump is None:
+        return f"[{min_jump}-]"
+    return f"[{min_jump}-{max_jump}]"
+
+
+def _validate_hex_byte_value(value: int | str, context: str) -> int | str:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
+        return value
+    if isinstance(value, str) and len(value) == 2 and all(char in _HEX_CHARS for char in value):
+        return value
+    msg = f"{context} value must be a byte"
+    raise TypeError(msg)
+
+
+def _validate_hex_nibble_value(value: int | str) -> int | str:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xF:
+        return value
+    if isinstance(value, str) and len(value) == 1 and value in _HEX_CHARS:
+        return value
+    msg = "HexNibble value must be a nibble"
+    raise TypeError(msg)
+
+
+def _validate_hex_jump_bound(value: int | None, field: str) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    msg = f"HexJump {field} must be a non-negative integer"
+    raise TypeError(msg)
 
 
 def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) -> str:

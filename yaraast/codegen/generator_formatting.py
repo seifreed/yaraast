@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.generator_helpers import escape_plain_string_value, escape_regex_delimiter
+from yaraast.codegen.generator_helpers import (
+    escape_plain_string_value,
+    escape_regex_delimiter,
+    format_hex_jump_bounds,
+)
 
 
 def format_rule_modifiers(modifiers) -> str:
@@ -47,14 +51,4 @@ def format_boolean_literal(value: bool) -> str:
 
 
 def format_hex_jump(min_jump, max_jump) -> str:
-    if min_jump is None and max_jump is None:
-        return "[-]"
-    if min_jump == max_jump:
-        if min_jump == 0:
-            return "[0-0]"
-        return f"[{min_jump}]"
-    if min_jump is None:
-        return f"[0-{max_jump}]"
-    if max_jump is None:
-        return f"[{min_jump}-]"
-    return f"[{min_jump}-{max_jump}]"
+    return format_hex_jump_bounds(min_jump, max_jump)

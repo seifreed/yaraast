@@ -16,6 +16,9 @@ from yaraast.ast.strings import (
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
+    format_hex_byte_value,
+    format_hex_jump_bounds,
+    format_hex_nibble_value,
     format_modifier,
     format_regex_modifiers,
     output_string_identifier,
@@ -35,7 +38,12 @@ def _format_hex_token(token, hex_uppercase: bool, hex_spacing: bool) -> str:
     if isinstance(token, HexJump):
         return _format_hex_jump(token)
     if isinstance(token, HexNegatedByte):
-        return f"~{_format_hex_byte_value(token.value, hex_uppercase)}"
+        value = format_hex_byte_value(
+            token.value,
+            uppercase=hex_uppercase,
+            context="HexNegatedByte",
+        )
+        return f"~{value}"
     if isinstance(token, HexNibble):
         value = _format_hex_nibble_value(token.value, hex_uppercase)
         return f"{value}?" if token.high else f"?{value}"
@@ -54,29 +62,15 @@ def _format_hex_token(token, hex_uppercase: bool, hex_spacing: bool) -> str:
 
 
 def _format_hex_byte_value(value: int | str, hex_uppercase: bool) -> str:
-    if isinstance(value, str):
-        return value.upper() if hex_uppercase else value.lower()
-    return f"{value:02X}" if hex_uppercase else f"{value:02x}"
+    return format_hex_byte_value(value, uppercase=hex_uppercase)
 
 
 def _format_hex_nibble_value(value: int | str, hex_uppercase: bool) -> str:
-    if isinstance(value, str):
-        return value.upper() if hex_uppercase else value.lower()
-    return f"{value:X}" if hex_uppercase else f"{value:x}"
+    return format_hex_nibble_value(value, uppercase=hex_uppercase)
 
 
 def _format_hex_jump(token: HexJump) -> str:
-    if token.min_jump is None and token.max_jump is None:
-        return "[-]"
-    if token.min_jump is None:
-        return f"[0-{token.max_jump}]"
-    if token.max_jump is None:
-        return f"[{token.min_jump}-]"
-    if token.min_jump == token.max_jump:
-        if token.min_jump == 0:
-            return "[0-0]"
-        return f"[{token.min_jump}]"
-    return f"[{token.min_jump}-{token.max_jump}]"
+    return format_hex_jump_bounds(token.min_jump, token.max_jump)
 
 
 def _coerce_hex_alternative_branch(alternative) -> list:

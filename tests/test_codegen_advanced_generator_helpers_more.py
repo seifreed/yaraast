@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.strings import (
     HexAlternative,
@@ -123,6 +125,35 @@ def test_format_hex_string_no_grouping_and_single_token_formatting() -> None:
         ],
     )
     assert format_hex_string(complex_alt, upper) == "{ (4? | ~41 | [1-2] 42 | ??) }"
+
+
+@pytest.mark.parametrize(
+    ("token", "message"),
+    [
+        (HexByte(True), "HexByte value must be a byte"),
+        (HexByte(0x100), "HexByte value must be a byte"),
+        (HexNegatedByte(True), "HexNegatedByte value must be a byte"),
+        (HexNibble(high=True, value=True), "HexNibble value must be a nibble"),
+        (HexNibble(high=False, value=0x10), "HexNibble value must be a nibble"),
+        (HexJump(True, 1), "HexJump min_jump must be a non-negative integer"),
+        (HexJump(2, 1), "HexJump min_jump cannot exceed max_jump"),
+    ],
+)
+def test_advanced_generator_helpers_reject_invalid_direct_hex_tokens(
+    token: object,
+    message: str,
+) -> None:
+    config = FormattingConfig(hex_style=HexStyle.UPPERCASE, hex_group_size=0)
+
+    with pytest.raises(TypeError, match=message):
+        format_hex_string(HexString("$h", tokens=[token]), config)
+
+
+def test_advanced_generator_helpers_reject_invalid_hex_alternative_scalar() -> None:
+    config = FormattingConfig(hex_style=HexStyle.UPPERCASE, hex_group_size=0)
+
+    with pytest.raises(TypeError, match="HexByte value must be a byte"):
+        format_hex_string(HexString("$h", tokens=[HexAlternative([True])]), config)
 
 
 def test_get_tag_string_and_hex_jump_ranges() -> None:

@@ -19,6 +19,9 @@ from yaraast.codegen.formatting import HexStyle, StringStyle
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
+    format_hex_byte_value,
+    format_hex_jump_bounds,
+    format_hex_nibble_value,
     format_modifier,
     output_string_identifier,
     split_regex_modifiers,
@@ -93,7 +96,11 @@ def format_hex_token(token: HexToken, config) -> str:
     if isinstance(token, HexByte):
         return _format_hex_byte_value(token.value, config)
     if isinstance(token, HexNegatedByte):
-        return f"~{_format_hex_byte_value(token.value, config)}"
+        return "~" + format_hex_byte_value(
+            token.value,
+            uppercase=config.hex_style == HexStyle.UPPERCASE,
+            context="HexNegatedByte",
+        )
     if isinstance(token, HexWildcard):
         return "??"
     if isinstance(token, HexJump):
@@ -110,14 +117,17 @@ def _coerce_hex_token(token) -> HexToken:
 
 
 def _format_hex_byte_value(value: int | str, config) -> str:
-    hex_val = value.lower() if isinstance(value, str) else f"{value:02x}"
-    if config.hex_style == HexStyle.UPPERCASE:
-        return hex_val.upper()
-    return hex_val
+    return format_hex_byte_value(
+        value,
+        uppercase=config.hex_style == HexStyle.UPPERCASE,
+    )
 
 
 def _format_hex_nibble(token: HexNibble, config) -> str:
-    nibble_str = _format_hex_byte_value(token.value, config)[-1]
+    nibble_str = format_hex_nibble_value(
+        token.value,
+        uppercase=config.hex_style == HexStyle.UPPERCASE,
+    )
     return f"{nibble_str}?" if token.high else f"?{nibble_str}"
 
 
@@ -130,14 +140,4 @@ def get_tag_string(tags, config) -> str:
 
 
 def _format_hex_jump(token: HexJump) -> str:
-    if token.min_jump is None and token.max_jump is None:
-        return "[-]"
-    if token.min_jump is None:
-        return f"[0-{token.max_jump}]"
-    if token.max_jump is None:
-        return f"[{token.min_jump}-]"
-    if token.min_jump == token.max_jump:
-        if token.min_jump == 0:
-            return "[0-0]"
-        return f"[{token.min_jump}]"
-    return f"[{token.min_jump}-{token.max_jump}]"
+    return format_hex_jump_bounds(token.min_jump, token.max_jump)

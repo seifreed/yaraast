@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
@@ -49,6 +51,7 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
     HexNibble,
     HexString,
     HexWildcard,
@@ -181,6 +184,34 @@ def test_codegen_generator_formats_string_backed_negated_hex_bytes() -> None:
     out = CodeGenerator().generate(YaraFile(rules=[rule]))
 
     assert "$h = { ~4D }" in out
+
+
+@pytest.mark.parametrize(
+    ("token", "message"),
+    [
+        (HexByte(True), "HexByte value must be a byte"),
+        (HexByte(0x100), "HexByte value must be a byte"),
+        (HexNegatedByte(True), "HexNegatedByte value must be a byte"),
+        (HexNibble(high=True, value=True), "HexNibble value must be a nibble"),
+        (HexNibble(high=False, value=0x10), "HexNibble value must be a nibble"),
+        (HexJump(True, 1), "HexJump min_jump must be a non-negative integer"),
+        (HexJump(2, 1), "HexJump min_jump cannot exceed max_jump"),
+    ],
+)
+def test_codegen_generator_rejects_invalid_direct_hex_tokens(token: object, message: str) -> None:
+    rule = Rule(
+        name="bad_hex",
+        strings=[HexString("$h", tokens=[token])],
+        condition=BooleanLiteral(True),
+    )
+
+    with pytest.raises(TypeError, match=message):
+        CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
+def test_codegen_generator_rejects_invalid_direct_hex_alternative_scalar() -> None:
+    with pytest.raises(TypeError, match="HexByte value must be a byte"):
+        CodeGenerator().visit_hex_alternative(HexAlternative([True]))
 
 
 def test_codegen_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:

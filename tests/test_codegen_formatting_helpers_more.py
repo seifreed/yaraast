@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral, Identifier
 from yaraast.ast.modifiers import StringModifier
@@ -168,3 +170,32 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
 
     assert expression_to_string(BooleanLiteral(True)) == "true"
     assert expression_to_string(Identifier("abc")) == "abc"
+
+
+@pytest.mark.parametrize(
+    ("token", "message"),
+    [
+        (HexByte(True), "HexByte value must be a byte"),
+        (HexByte(-1), "HexByte value must be a byte"),
+        (HexNegatedByte(True), "HexNegatedByte value must be a byte"),
+        (HexNibble(high=True, value=True), "HexNibble value must be a nibble"),
+        (HexNibble(high=False, value=0x10), "HexNibble value must be a nibble"),
+        (HexJump(True, 1), "HexJump min_jump must be a non-negative integer"),
+        (HexJump(2, 1), "HexJump min_jump cannot exceed max_jump"),
+    ],
+)
+def test_pretty_printer_helpers_reject_invalid_direct_hex_tokens(
+    token: object,
+    message: str,
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        build_hex_pattern(HexString("$h", tokens=[token]), hex_uppercase=True, hex_spacing=True)
+
+
+def test_pretty_printer_helpers_reject_invalid_hex_alternative_scalar() -> None:
+    with pytest.raises(TypeError, match="HexByte value must be a byte"):
+        build_hex_pattern(
+            HexString("$h", tokens=[HexAlternative([True])]),
+            hex_uppercase=True,
+            hex_spacing=True,
+        )
