@@ -111,6 +111,13 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     ):
         s._deserialize_meta({"key": "score", "value": 1.5})
 
+    with pytest.raises(
+        SerializationError, match="Meta value must be a string, integer, or boolean"
+    ):
+        s._deserialize_rule(
+            {"name": "r1", "meta": {"score": 1.5}, "strings": [], "condition": None}
+        )
+
 
 def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
     s = JsonSerializer()

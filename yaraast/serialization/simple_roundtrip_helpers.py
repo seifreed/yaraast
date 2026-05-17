@@ -306,6 +306,17 @@ def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
     raise SerializationError(msg)
 
 
+def _deserialize_rule_tag(value: Any) -> Tag:
+    if isinstance(value, Tag):
+        return value
+    if isinstance(value, str):
+        return Tag(name=value)
+    if isinstance(value, dict):
+        return Tag(name=_deserialize_string_field(value, "name", "Tag"))
+    msg = "Tag name must be a string"
+    raise SerializationError(msg)
+
+
 def _deserialize_modifier_value(name: str, value: Any) -> Any:
     if name == "xor":
         if isinstance(value, list) and len(value) == 2:
@@ -1131,9 +1142,7 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     )
 
     if "tags" in data:
-        from yaraast.ast.rules import Tag
-
-        rule.tags = [Tag(name=t) if isinstance(t, str) else t for t in data["tags"]]
+        rule.tags = [_deserialize_rule_tag(tag) for tag in data["tags"]]
 
     if "meta" in data:
         rule.meta = [deserialize_meta(m) for m in data["meta"]]
