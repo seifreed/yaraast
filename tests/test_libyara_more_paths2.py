@@ -23,6 +23,7 @@ from yaraast.libyara.direct_compiler import YARA_AVAILABLE, DirectASTCompiler, O
 from yaraast.libyara.scanner import YARA_AVAILABLE as SCANNER_AVAILABLE, LibyaraScanner
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
+from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 
 
 def test_ast_optimizer_rule_and_constant_paths() -> None:
@@ -102,6 +103,20 @@ def test_ast_optimizer_rule_and_constant_paths() -> None:
     assert (
         optimizer._fold_constants(IntegerLiteral(cast(Any, "bad")), "+", IntegerLiteral(1)) is None
     )
+
+
+def test_ast_optimizer_constant_folding_uses_yara_int64_semantics() -> None:
+    optimizer = ASTOptimizer()
+
+    folded_add = optimizer._fold_constants(IntegerLiteral(INT64_MAX), "+", IntegerLiteral(1))
+    folded_sub = optimizer._fold_constants(IntegerLiteral(INT64_MIN), "-", IntegerLiteral(1))
+    folded_mul = optimizer._fold_constants(IntegerLiteral(1 << 62), "*", IntegerLiteral(2))
+
+    assert folded_add == IntegerLiteral(INT64_MIN)
+    assert folded_sub == IntegerLiteral(INT64_MAX)
+    assert folded_mul == IntegerLiteral(INT64_MIN)
+    assert optimizer._fold_constants(IntegerLiteral(INT64_MIN), "\\", IntegerLiteral(-1)) is None
+    assert optimizer._fold_constants(IntegerLiteral(INT64_MIN), "%", IntegerLiteral(-1)) is None
 
 
 @pytest.mark.skipif(

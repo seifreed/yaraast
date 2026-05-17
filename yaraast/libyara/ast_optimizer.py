@@ -8,7 +8,12 @@ from yaraast.ast.expressions import BinaryExpression, IntegerLiteral, UnaryExpre
 from yaraast.ast.rules import Rule
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
-from yaraast.shared.integer_semantics import integer_remainder, truncate_integer_division
+from yaraast.shared.integer_semantics import (
+    INT64_MIN,
+    integer_remainder,
+    normalize_int64,
+    truncate_integer_division,
+)
 
 
 @dataclass
@@ -125,14 +130,18 @@ class ASTOptimizer:
             right_val = int(right.value)
 
             if op == "+":
-                return IntegerLiteral(value=left_val + right_val)
+                return IntegerLiteral(value=normalize_int64(left_val + right_val))
             if op == "-":
-                return IntegerLiteral(value=left_val - right_val)
+                return IntegerLiteral(value=normalize_int64(left_val - right_val))
             if op == "*":
-                return IntegerLiteral(value=left_val * right_val)
+                return IntegerLiteral(value=normalize_int64(left_val * right_val))
             if op in ("/", "\\") and right_val != 0:
+                if left_val == INT64_MIN and right_val == -1:
+                    return None
                 return IntegerLiteral(value=truncate_integer_division(left_val, right_val))
             if op == "%" and right_val != 0:
+                if left_val == INT64_MIN and right_val == -1:
+                    return None
                 return IntegerLiteral(value=integer_remainder(left_val, right_val))
         except (ValueError, ZeroDivisionError):
             pass
