@@ -40,7 +40,14 @@ from yaraast.types._registry import (
     TypeEnvironment,
     UnknownType,
 )
-from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension, MatchCase, PatternMatch
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    MatchCase,
+    PatternMatch,
+    SliceExpression,
+    TupleIndexing,
+)
 
 
 def test_type_base_visitor_default_methods_return_unknown() -> None:
@@ -328,6 +335,31 @@ def test_expr_inference_visits_pattern_match_case_patterns() -> None:
 
     assert isinstance(out, IntegerType)
     assert any("Left operand of '+' must be numeric, got string" in e for e in inf.errors)
+
+
+def test_expr_inference_reports_invalid_index_and_slice_targets() -> None:
+    env = TypeEnvironment()
+
+    tuple_inf = ExpressionTypeInference(env)
+    tuple_out = tuple_inf.infer(
+        TupleIndexing(
+            tuple_expr=IntegerLiteral(1),
+            index=IntegerLiteral(0),
+        ),
+    )
+    assert isinstance(tuple_out, UnknownType)
+    assert any("Cannot index non-tuple type: integer" in e for e in tuple_inf.errors)
+
+    slice_inf = ExpressionTypeInference(env)
+    slice_out = slice_inf.infer(
+        SliceExpression(
+            target=IntegerLiteral(1),
+            start=IntegerLiteral(0),
+            stop=IntegerLiteral(1),
+        ),
+    )
+    assert isinstance(slice_out, UnknownType)
+    assert any("Cannot slice non-array or string type: integer" in e for e in slice_inf.errors)
 
 
 def test_expr_inference_at_in_and_of_error_paths() -> None:

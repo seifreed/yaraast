@@ -306,6 +306,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
             self.errors.append(f"Tuple index must be integer, got {index_type}")
         if isinstance(tuple_type, ArrayType):
             return tuple_type.element_type
+        self.errors.append(f"Cannot index non-tuple type: {tuple_type}")
         return UnknownType()
 
     def visit_slice_expression(self, node) -> YaraType:
@@ -315,6 +316,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
                 self.errors.append("Slice bounds must be integer")
         if isinstance(target_type, ArrayType | StringType):
             return target_type
+        self.errors.append(f"Cannot slice non-array or string type: {target_type}")
         return UnknownType()
 
     def visit_lambda_expression(self, node) -> YaraType:
