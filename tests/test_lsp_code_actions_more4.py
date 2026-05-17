@@ -168,6 +168,27 @@ def test_code_action_structured_patches_reject_negative_serialized_ranges() -> N
     assert provider._create_structured_actions(diag, "file://test.yar") == []
 
 
+def test_code_action_structured_patches_reject_boolean_serialized_ranges() -> None:
+    provider = CodeActionsProvider()
+    diag = Diagnostic(
+        range=_range(0, 0, 1),
+        message="Module 'pe' not imported",
+        data={
+            "patches": [
+                {
+                    "range": {
+                        "start": {"line": True, "character": 0},
+                        "end": {"line": True, "character": 0},
+                    },
+                    "replacement": 'import "pe"\n',
+                }
+            ],
+        },
+    )
+
+    assert provider._create_structured_actions(diag, "file://test.yar") == []
+
+
 def test_code_action_uses_structured_metadata_for_import_without_message_regex() -> None:
     provider = CodeActionsProvider()
     diag = Diagnostic(
