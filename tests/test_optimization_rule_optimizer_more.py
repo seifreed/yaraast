@@ -10,8 +10,10 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     RangeExpression,
+    StringIdentifier,
 )
 from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.optimization import ExpressionOptimizer, RuleOptimizer
 from yaraast.parser import Parser
@@ -42,6 +44,41 @@ def test_rule_optimizer_counts_actual_identity_simplifications() -> None:
     assert optimized.rules[0].condition == Identifier("filesize")
     assert stats["expression_optimizations"] == 1
     assert stats["total_optimizations"] == 1
+
+
+def test_rule_optimizer_stats_use_original_rule_count() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="drop", condition=BooleanLiteral(False)),
+            Rule(name="keep", condition=BooleanLiteral(True)),
+        ]
+    )
+
+    optimized, stats = RuleOptimizer().optimize(ast)
+
+    assert [rule.name for rule in optimized.rules] == ["keep"]
+    assert stats["rules_before"] == 2
+    assert stats["rules_after"] == 1
+    assert stats["rules_eliminated"] == 1
+
+
+def test_rule_optimizer_report_uses_original_string_count() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="strings",
+                strings=[
+                    PlainString(identifier="$used", value="used"),
+                    PlainString(identifier="$unused", value="unused"),
+                ],
+                condition=StringIdentifier("$used"),
+            )
+        ]
+    )
+
+    report = RuleOptimizer().get_optimization_report(ast)
+
+    assert report["size_reduction"]["strings"] == "1 strings removed"
 
 
 def test_expression_optimizer_preserves_undefined_multiply_by_zero() -> None:

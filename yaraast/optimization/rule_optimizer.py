@@ -37,6 +37,7 @@ class RuleOptimizer:
         """
         total_expr_opts = 0
         total_dead_elims = 0
+        original_rule_count = len(yara_file.rules)
 
         current = yara_file
         passes_performed = 0
@@ -65,20 +66,22 @@ class RuleOptimizer:
             "expression_optimizations": total_expr_opts,
             "dead_code_eliminations": total_dead_elims,
             "total_optimizations": total_expr_opts + total_dead_elims,
-            "rules_before": len(yara_file.rules),
+            "rules_before": original_rule_count,
             "rules_after": len(current.rules),
-            "rules_eliminated": len(yara_file.rules) - len(current.rules),
+            "rules_eliminated": original_rule_count - len(current.rules),
         }
 
         return current, stats
 
     def get_optimization_report(self, yara_file: YaraFile) -> dict[str, Any]:
         """Generate a detailed optimization report."""
+        original_rule_count = len(yara_file.rules)
+        original_strings = sum(len(rule.strings) for rule in yara_file.rules)
+
         # Perform optimization
         optimized, stats = self.optimize(yara_file)
 
         # Calculate size reduction
-        original_strings = sum(len(rule.strings) for rule in yara_file.rules)
         optimized_strings = sum(len(rule.strings) for rule in optimized.rules)
 
         return {
@@ -87,8 +90,8 @@ class RuleOptimizer:
                 "rules": f"{stats['rules_eliminated']} rules removed",
                 "strings": f"{original_strings - optimized_strings} strings removed",
                 "percentage": (
-                    f"{(1 - len(optimized.rules) / len(yara_file.rules)) * 100:.1f}%"
-                    if yara_file.rules
+                    f"{(1 - len(optimized.rules) / original_rule_count) * 100:.1f}%"
+                    if original_rule_count
                     else "0%"
                 ),
             },
