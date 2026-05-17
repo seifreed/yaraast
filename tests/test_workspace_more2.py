@@ -153,6 +153,20 @@ def test_include_resolver_rechecks_cached_files_with_missing_includes(tmp_path: 
     assert [included.path for included in second.includes] == [child.resolve()]
 
 
+def test_include_resolver_allows_parent_relative_includes(tmp_path: Path) -> None:
+    shared = _write(tmp_path / "shared.yar", "rule shared { condition: true }")
+    rules_dir = tmp_path / "rules"
+    rules_dir.mkdir()
+    main = _write(
+        rules_dir / "main.yar",
+        'include "../shared.yar"\nrule main { condition: true }',
+    )
+
+    resolved = IncludeResolver().resolve_file(str(main))
+
+    assert [included.path for included in resolved.includes] == [shared.resolve()]
+
+
 def test_workspace_add_directory_default_includes_yara_extension(tmp_path: Path) -> None:
     root = tmp_path
     yar = _write(root / "classic.yar", "rule classic_yar { condition: true }")

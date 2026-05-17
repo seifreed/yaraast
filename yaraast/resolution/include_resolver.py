@@ -169,18 +169,14 @@ class IncludeResolver:
         if path.is_absolute() and path.exists():
             return path.resolve()
 
-        # Search paths to try
-        search_dirs = []
-
         # First try relative to base path
         if base_path:
-            search_dirs.append(base_path)
+            full_path = base_path / path
+            if full_path.exists():
+                return full_path.resolve()
 
         # Then try search paths
-        search_dirs.extend(self.search_paths)
-
-        # Try each search directory
-        for search_dir in search_dirs:
+        for search_dir in self.search_paths:
             full_path = search_dir / path
             if full_path.exists():
                 resolved = full_path.resolve()
@@ -192,6 +188,7 @@ class IncludeResolver:
                 return resolved
 
         # Not found
+        search_dirs = [base_path, *self.search_paths] if base_path else list(self.search_paths)
         searched = [str(d) for d in search_dirs]
         msg = f"Cannot find include file '{file_path}'. Searched in: {', '.join(searched)}"
         raise FileNotFoundError(
