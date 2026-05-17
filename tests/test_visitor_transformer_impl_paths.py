@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -70,6 +70,23 @@ def test_transformer_impl_transforms_nested_hex_alternative_tokens() -> None:
         [2],
         [3],
     ]
+
+
+def test_transformer_impl_preserves_node_metadata() -> None:
+    rule = Rule(name="annotated", condition=BooleanLiteral(True))
+    rule.location = Location(line=4, column=2, file="sample.yar")
+    rule.leading_comments = [Comment("lead")]
+    rule.trailing_comment = Comment("tail")
+
+    transformed = ASTTransformer().visit_rule(rule)
+
+    assert transformed.location == rule.location
+    assert transformed.leading_comments[0].text == "lead"
+    assert transformed.trailing_comment is not None
+    assert transformed.trailing_comment.text == "tail"
+
+    transformed.leading_comments.append(Comment("extra"))
+    assert len(rule.leading_comments) == 1
 
 
 def test_transformer_impl_visits_remaining_node_types() -> None:

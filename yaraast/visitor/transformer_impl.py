@@ -96,17 +96,25 @@ class ASTTransformer(ASTVisitor[ASTNode]):
             kwargs[f.name] = self._transform_value(value)
 
         try:
-            return replace(node, **kwargs)
+            return self._with_transformed_non_init_fields(node, replace(node, **kwargs))
         except TypeError as exc:
             if "unexpected keyword argument" not in str(exc):
                 raise
             return self._copy_with_transformed_fields(node, kwargs)
 
+    def _with_transformed_non_init_fields(self, source: T, transformed: T) -> T:
+        for f in fields(source):
+            if f.init:
+                continue
+            value = getattr(source, f.name)
+            object.__setattr__(transformed, f.name, self._transform_value(value))
+        return transformed
+
     def _copy_with_transformed_fields(self, node: T, kwargs: dict[str, Any]) -> T:
         transformed = copy(node)
         for name, value in kwargs.items():
             object.__setattr__(transformed, name, value)
-        return transformed
+        return self._with_transformed_non_init_fields(node, transformed)
 
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         return self._transform_node(node)
