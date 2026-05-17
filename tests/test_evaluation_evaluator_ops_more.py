@@ -71,6 +71,13 @@ def test_evaluate_arithmetic_incompatible_operands_return_undefined(
     assert evaluate_arithmetic(left, right, operator) is YARA_UNDEFINED
 
 
+def test_evaluate_arithmetic_rejects_boolean_operands() -> None:
+    assert evaluate_arithmetic(True, 1, "+") is YARA_UNDEFINED
+    assert evaluate_arithmetic(1, False, "-") is YARA_UNDEFINED
+    assert evaluate_arithmetic(True, True, "&") is YARA_UNDEFINED
+    assert evaluate_arithmetic(True, 1, "<<") is YARA_UNDEFINED
+
+
 def test_evaluate_integer_division_and_modulo_do_not_use_float_conversion() -> None:
     large = 10**400 + 1
 
@@ -88,6 +95,13 @@ def test_evaluate_comparison_all_operators() -> None:
     assert evaluate_comparison(2, 1, ">") is True
     assert evaluate_comparison(2, 2, ">=") is True
     assert evaluate_comparison(1, 2, "??") is None
+
+
+def test_evaluate_comparison_keeps_booleans_distinct_from_integers() -> None:
+    assert evaluate_comparison(True, 1, "==") is False
+    assert evaluate_comparison(False, 0, "==") is False
+    assert evaluate_comparison(True, 1, "!=") is True
+    assert evaluate_comparison(False, 0, "!=") is True
 
 
 @pytest.mark.parametrize("operator", ["<", "<=", ">", ">="])
