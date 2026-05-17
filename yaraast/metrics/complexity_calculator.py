@@ -29,7 +29,7 @@ class ComplexityCalculator(MetricsVisitorBase):
     def _calculate_ast_value(self, value: Any) -> int:
         if hasattr(value, "accept"):
             return self.calculate(value)
-        if isinstance(value, list):
+        if isinstance(value, list | tuple | set | frozenset):
             return sum(self._calculate_ast_value(item) for item in value)
         return 0
 
@@ -38,7 +38,7 @@ class ComplexityCalculator(MetricsVisitorBase):
             return 1
         if hasattr(value, "accept"):
             return self.calculate(value)
-        if isinstance(value, list):
+        if isinstance(value, list | tuple | set | frozenset):
             return sum(self._calculate_string_set_value(item) for item in value)
         return 1
 

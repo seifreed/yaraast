@@ -9,7 +9,15 @@ from yaraast.ast.base import _VisitorType
 from yaraast.ast.expressions import Expression
 
 type QuantifierValue = Expression | str | int | float
-type StringSetValue = Expression | str | list[str | Expression]
+type StringSetItem = str | Expression
+type StringSetValue = (
+    Expression
+    | str
+    | list[StringSetItem]
+    | tuple[StringSetItem, ...]
+    | set[StringSetItem]
+    | frozenset[StringSetItem]
+)
 
 
 @dataclass

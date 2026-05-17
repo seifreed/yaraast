@@ -16,7 +16,7 @@ class MetricsVisitorBase(DefaultASTVisitor[Any]):
     def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
-        elif isinstance(value, list | tuple):
+        elif isinstance(value, list | tuple | set | frozenset):
             for item in value:
                 self._visit_ast_value(item)
 

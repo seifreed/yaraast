@@ -104,6 +104,13 @@ def test_complexity_calculator_core_and_branches() -> None:
     )
     assert calc.calculate(for_of_list) == 7
 
+    for_of_tuple = ForOfExpression(
+        quantifier="all",
+        string_set=("$a", "$b"),
+        condition=None,
+    )
+    assert calc.calculate(for_of_tuple) == 7
+
     for_of_expression_list = ForOfExpression(
         quantifier="all",
         string_set=[
@@ -128,6 +135,12 @@ def test_complexity_calculator_core_and_branches() -> None:
 
     of_expr_list = OfExpression(quantifier=StringLiteral(value="2"), string_set=["$a", "$b", "$c"])
     assert calc.calculate(of_expr_list) == 8
+
+    of_expr_frozenset = OfExpression(
+        quantifier=StringLiteral(value="2"),
+        string_set=frozenset(("$a", "$b", "$c")),
+    )
+    assert calc.calculate(of_expr_frozenset) == 8
 
     of_expression_list = OfExpression(
         quantifier=StringLiteral(value="any"),
