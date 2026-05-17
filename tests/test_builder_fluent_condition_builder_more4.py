@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -56,3 +60,16 @@ def test_fluent_condition_helpers_return_literals() -> None:
     assert isinstance(expr, OfExpression)
     assert isinstance(expr.quantifier, IntegerLiteral)
     assert isinstance(expr.string_set, SetExpression | Identifier)
+
+
+def test_fluent_condition_builder_rejects_boolean_integer_arguments() -> None:
+    builder = FluentConditionBuilder()
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        builder.string_at_offset("$a", cast(Any, True))
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        builder.pe_section_count_eq(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        builder.at_least_n_of(cast(Any, True), "$a", "$b")

@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from yaraast.ast.expressions import FunctionCall, Identifier, StringLiteral
 from yaraast.builder.fluent_condition_helpers import (
     build_entropy_call,
     build_of_expression,
     build_string_set,
     chain_or,
+    make_filesize_compare,
 )
 from yaraast.errors import ValidationError
 from yaraast.metrics.html_tree_nodes_extra import HtmlTreeNodesExtraMixin
@@ -52,6 +55,17 @@ def test_fluent_condition_small_helpers_more() -> None:
         assert "Expected at least one condition" in str(exc)
     else:
         raise AssertionError("chain_or([]) should raise")
+
+
+def test_fluent_condition_helpers_reject_boolean_integer_arguments() -> None:
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        make_filesize_compare("==", True)
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        build_of_expression(False, Identifier(name="them"))
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        build_entropy_call(True, 1024)
 
 
 def test_html_tree_nodes_extra_missing_visitors() -> None:

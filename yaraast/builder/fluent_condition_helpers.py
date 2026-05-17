@@ -21,8 +21,15 @@ def make_binary(left: Expression, operator: str, right: Expression) -> BinaryExp
     return BinaryExpression(left=left, operator=operator, right=right)
 
 
+def make_integer_literal(value: int) -> IntegerLiteral:
+    if isinstance(value, bool):
+        msg = f"Invalid integer literal value: {value}"
+        raise TypeError(msg)
+    return IntegerLiteral(value=value)
+
+
 def make_filesize_compare(operator: str, size: int) -> BinaryExpression:
-    return make_binary(Identifier(name="filesize"), operator, IntegerLiteral(value=size))
+    return make_binary(Identifier(name="filesize"), operator, make_integer_literal(size))
 
 
 def make_string_count_compare(string_id: str, operator: str, count: int) -> BinaryExpression:
@@ -31,7 +38,7 @@ def make_string_count_compare(string_id: str, operator: str, count: int) -> Bina
     return make_binary(
         StringCount(string_id=string_id.lstrip("#")),
         operator,
-        IntegerLiteral(value=count),
+        make_integer_literal(count),
     )
 
 
@@ -44,7 +51,7 @@ def build_string_set(*strings: str) -> Expression:
 
 def build_of_expression(quantifier: int | str, string_set: Expression) -> OfExpression:
     if isinstance(quantifier, int):
-        quant_expr = IntegerLiteral(value=quantifier)
+        quant_expr = make_integer_literal(quantifier)
     else:
         quant_expr = StringLiteral(value=quantifier)
     return OfExpression(quantifier=quant_expr, string_set=string_set)
@@ -62,7 +69,7 @@ def chain_or(conditions: list[Expression]) -> Expression:
 def build_entropy_call(offset: int, size: int) -> FunctionCall:
     return FunctionCall(
         function="math.entropy",
-        arguments=[IntegerLiteral(value=offset), IntegerLiteral(value=size)],
+        arguments=[make_integer_literal(offset), make_integer_literal(size)],
     )
 
 

@@ -23,6 +23,7 @@ from yaraast.builder.fluent_condition_helpers import (
     build_string_set,
     chain_or,
     make_filesize_compare,
+    make_integer_literal,
     make_string_count_compare,
 )
 
@@ -78,11 +79,13 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def at_least_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At least N of the specified strings."""
+        make_integer_literal(n)
         conditions = [self._create_n_of(i, *strings) for i in range(n, len(strings) + 1)]
         return FluentConditionBuilder(chain_or(conditions))
 
     def at_most_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At most N of the specified strings."""
+        make_integer_literal(n)
         conditions = [self._create_n_of(i, *strings) for i in range(1, n + 1)]
         return FluentConditionBuilder(chain_or(conditions))
 
@@ -93,6 +96,8 @@ class FluentConditionBuilder(ConditionBuilder):
         *strings: str,
     ) -> FluentConditionBuilder:
         """Between N and M of the specified strings."""
+        make_integer_literal(min_n)
+        make_integer_literal(max_m)
         conditions = [self._create_n_of(i, *strings) for i in range(min_n, max_m + 1)]
         return FluentConditionBuilder(chain_or(conditions))
 
@@ -122,7 +127,7 @@ class FluentConditionBuilder(ConditionBuilder):
     def string_at_offset(self, string_id: str, offset: int) -> FluentConditionBuilder:
         """String at specific offset."""
         return FluentConditionBuilder(
-            AtExpression(string_id=string_id, offset=IntegerLiteral(value=offset)),
+            AtExpression(string_id=string_id, offset=make_integer_literal(offset)),
         )
 
     def string_in_first_kb(self, string_id: str) -> FluentConditionBuilder:
@@ -233,7 +238,7 @@ class FluentConditionBuilder(ConditionBuilder):
                     member="number_of_sections",
                 ),
                 operator="==",
-                right=IntegerLiteral(value=count),
+                right=make_integer_literal(count),
             ),
         )
 
