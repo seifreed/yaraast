@@ -508,12 +508,25 @@ def _copy_string_set_to_protobuf(value, pb_owner) -> None:
         return
 
     if isinstance(value, list):
-        pb_owner.string_set_items.extend(str(item) for item in value)
+        pb_owner.string_set_items.extend(_string_set_item_text(item) for item in value)
         return
 
     string_set = _coerce_expression(value)
     if string_set is not None:
         convert_expression_to_protobuf(string_set, pb_owner.string_set)
+
+
+def _string_set_item_text(item) -> str:
+    pattern = getattr(item, "pattern", None)
+    if pattern is not None:
+        return str(pattern)
+    name = getattr(item, "name", None)
+    if name is not None:
+        return str(name)
+    value = getattr(item, "value", None)
+    if value is not None:
+        return str(value)
+    return str(item)
 
 
 def _restore_quantifier_text(value: str):
