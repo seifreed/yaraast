@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode, _VisitorType
+from yaraast.string_escaping import escape_string_source_value
 
 if TYPE_CHECKING:
     from yaraast.ast.modifiers import RuleModifier
@@ -94,11 +95,12 @@ class ExternImport(ASTNode):
 
     def __str__(self) -> str:
         """String representation of extern import."""
+        module_path = escape_string_source_value(self.module_path)
         if self.is_selective_import:
             rules_str = ", ".join(self.rules)
-            base = f'import "{self.module_path}" ({rules_str})'
+            base = f'import "{module_path}" ({rules_str})'
         else:
-            base = f'import "{self.module_path}"'
+            base = f'import "{module_path}"'
 
         if self.alias:
             base += f" as {self.alias}"

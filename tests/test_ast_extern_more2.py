@@ -46,6 +46,9 @@ def test_extern_import_and_namespace() -> None:
     assert imp.is_selective_import is True
     assert str(imp) == 'import "ext_rules" (r1, r2) as ext'
 
+    escaped_imp = ExternImport(module_path='ext"\\rules', alias="ext")
+    assert str(escaped_imp) == 'import "ext\\"\\\\rules" as ext'
+
     helper_imp = create_extern_import("ext_rules")
     assert helper_imp.is_selective_import is False
 
