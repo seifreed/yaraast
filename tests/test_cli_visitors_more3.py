@@ -152,6 +152,11 @@ def test_condition_formatter_handles_for_of_expression_details() -> None:
     assert ConditionStringFormatter().format_condition(built) == "for 2 of ($a*) : (true)"
     assert ExpressionStringFormatter().format_expression(built) == "for 2 of ($a*) : (true)"
 
+    raw_percent = ForOfExpression(quantifier=0.5, string_set=Identifier("them"))
+    literal_percent = ForOfExpression(quantifier=DoubleLiteral(0.5), string_set=Identifier("them"))
+    assert ConditionStringFormatter().format_condition(raw_percent) == "50% of them"
+    assert ExpressionStringFormatter().format_expression(literal_percent) == "50% of them"
+
 
 def test_tree_builder_formats_yarax_condition() -> None:
     ast = parse_yara_source("rule x { condition: with xs = [1]: match xs { _ => true } }")

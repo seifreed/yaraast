@@ -4,6 +4,7 @@ from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
+    DoubleLiteral,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
@@ -41,6 +42,14 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
         condition=None,
     )
     assert gen.visit(for_of_without_condition) == "any of them"
+
+    for_of_raw_float = ForOfExpression(quantifier=0.5, string_set=Identifier("them"))
+    assert gen.visit(for_of_raw_float) == "50% of them"
+
+    for_of_literal_float = ForOfExpression(
+        quantifier=DoubleLiteral(0.5), string_set=Identifier("them")
+    )
+    assert gen.visit(for_of_literal_float) == "50% of them"
 
     of_int = OfExpression(quantifier=3, string_set=Identifier("them"))
     assert gen.visit(of_int) == "3 of them"

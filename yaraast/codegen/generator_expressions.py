@@ -27,7 +27,7 @@ def _render_quantifier(gen, quantifier, *, allow_percentage: bool = False) -> st
 
 def render_for_of_expression(gen, node) -> str:
     """Render a for-of expression."""
-    quantifier = _render_quantifier(gen, node.quantifier)
+    quantifier = _render_quantifier(gen, node.quantifier, allow_percentage=True)
     string_set = _render_string_set(gen, node.string_set)
     if node.condition:
         condition = gen.visit(node.condition)

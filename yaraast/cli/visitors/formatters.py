@@ -220,7 +220,9 @@ class ConditionStringFormatter:
         return f"for {quantifier} {variable} in {iterable} : ({body})"
 
     def _format_for_of_expression(self, condition: Any, _depth: int) -> str:
-        quantifier = _node_text(getattr(condition, "quantifier", "any"), "any")
+        quantifier = _quantifier_text(
+            getattr(condition, "quantifier", "any"), "any", allow_percentage=True
+        )
         string_set = ExpressionStringFormatter()._format_string_set(condition, 0)
         body = getattr(condition, "condition", None)
         if body is None:
@@ -416,7 +418,9 @@ class ExpressionStringFormatter:
         return f"for {quantifier} {variable} in {iterable} : ({body})"
 
     def _format_for_of_expression(self, expr: Any, depth: int) -> str:
-        quantifier = _node_text(getattr(expr, "quantifier", "any"), "any")
+        quantifier = _quantifier_text(
+            getattr(expr, "quantifier", "any"), "any", allow_percentage=True
+        )
         string_set = self._format_string_set(expr, depth)
         condition = getattr(expr, "condition", None)
         if condition is None:
