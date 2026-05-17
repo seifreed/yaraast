@@ -241,6 +241,15 @@ def test_include_resolver_rechecks_cached_files_with_missing_includes(tmp_path: 
     assert [included.path for included in second.includes] == [child.resolve()]
 
 
+def test_include_resolver_treats_directory_matches_as_unresolved(tmp_path: Path) -> None:
+    directory = tmp_path / "not_a_rule.yar"
+    directory.mkdir()
+    resolver = IncludeResolver([str(tmp_path)])
+
+    with pytest.raises(FileNotFoundError, match="Cannot find include file"):
+        resolver.resolve_file(str(directory))
+
+
 def test_include_resolver_rechecks_nested_cached_files_with_missing_includes(
     tmp_path: Path,
 ) -> None:

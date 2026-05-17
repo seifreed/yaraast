@@ -166,19 +166,19 @@ class IncludeResolver:
         path = Path(file_path)
 
         # If absolute and exists, return it
-        if path.is_absolute() and path.exists():
+        if path.is_absolute() and path.is_file():
             return path.resolve()
 
         # First try relative to base path
         if base_path:
             full_path = base_path / path
-            if full_path.exists():
+            if full_path.is_file():
                 return full_path.resolve()
 
         # Then try search paths
         for search_dir in self.search_paths:
             full_path = search_dir / path
-            if full_path.exists():
+            if full_path.is_file():
                 resolved = full_path.resolve()
                 # Prevent path traversal — resolved path must be within search directory
                 try:
