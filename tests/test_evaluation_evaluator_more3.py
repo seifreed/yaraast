@@ -159,6 +159,17 @@ def test_binary_unary_function_member_array_and_errors() -> None:
         ev.visit_unary_expression(UnaryExpression("!", IntegerLiteral(1)))
 
 
+def test_evaluator_uint8be_and_int8be_match_registered_builtin_functions() -> None:
+    ast = Parser().parse("""
+        rule byte_endian_aliases {
+            condition:
+                uint8be(0) == 255 and int8be(0) == -1
+        }
+    """)
+
+    assert YaraEvaluator(data=b"\xff").evaluate_file(ast) == {"byte_endian_aliases": True}
+
+
 def test_condition_paths_for_at_in_of_for_and_defined() -> None:
     ev = YaraEvaluator(data=b"00abcd00")
     rule = Rule(

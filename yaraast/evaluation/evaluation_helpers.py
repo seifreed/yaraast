@@ -59,8 +59,10 @@ BUILTIN_READERS: dict[str, Callable[[bytes, int], int]] = {
     "int8": _read_int8,
     "int16": _read_int16,
     "int32": _read_int32,
+    "uint8be": _read_uint8,
     "uint16be": _read_uint16_be,
     "uint32be": _read_uint32_be,
+    "int8be": _read_int8,
     "int16be": _read_int16_be,
     "int32be": _read_int32_be,
 }
