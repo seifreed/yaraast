@@ -195,9 +195,11 @@ def process_files_single(
         except Exception as exc:
             result.failed_count += 1
             result.errors.append(f"Error processing {file_path}: {exc!s}")
-
-        if processor.progress_callback:
-            processor.progress_callback(f"Processing {operation.value}", index + 1, len(file_paths))
+        finally:
+            if processor.progress_callback:
+                processor.progress_callback(
+                    f"Processing {operation.value}", index + 1, len(file_paths)
+                )
 
     result.total_time = time.time() - start_time
     return result

@@ -196,12 +196,28 @@ def test_process_files_parse_failures_and_recursive_directory(tmp_path: Path) ->
 def test_process_files_validate_records_summary(tmp_path: Path) -> None:
     rule_file = tmp_path / "valid.yar"
     rule_file.write_text("rule ok { condition: true }", encoding="utf-8")
+    invalid_rule_file = tmp_path / "invalid.yar"
+    invalid_rule_file.write_text("rule missing_condition { }", encoding="utf-8")
 
-    result = BatchProcessor().process_files([rule_file], BatchOperation.VALIDATE)
+    progress_calls: list[tuple[str, int, int]] = []
+
+    def progress(stage: str, done: int, total: int) -> None:
+        progress_calls.append((stage, done, total))
+
+    processor = BatchProcessor(progress_callback=progress)
+    result = processor.process_files(
+        [rule_file, invalid_rule_file],
+        BatchOperation.VALIDATE,
+    )
 
     assert result.successful_count == 1
-    assert result.failed_count == 0
+    assert result.failed_count == 1
     assert result.summary["valid.yar"] == {"valid": True, "rule_count": 1}
+    assert result.summary["invalid.yar"] == {"valid": False, "rule_count": 1}
+    assert progress_calls == [
+        ("Processing validate", 1, 2),
+        ("Processing validate", 2, 2),
+    ]
 
 
 def test_process_large_file_non_split_and_invalid_content(tmp_path: Path) -> None:
