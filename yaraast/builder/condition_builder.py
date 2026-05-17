@@ -255,7 +255,7 @@ class ConditionBuilder:
             string_set = SetExpression(elements=elements)
 
         return ConditionBuilder(
-            OfExpression(quantifier=IntegerLiteral(value=n), string_set=string_set),
+            OfExpression(quantifier=self._integer_literal(n), string_set=string_set),
         )
 
     # For loops

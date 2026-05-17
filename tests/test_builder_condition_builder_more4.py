@@ -41,6 +41,11 @@ def test_condition_builder_keeps_boolean_values_distinct_from_integers() -> None
         ConditionBuilder().integer(cast(Any, True))
 
 
+def test_condition_builder_n_of_rejects_boolean_quantifier() -> None:
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ConditionBuilder().n_of(cast(Any, True), "$a", "$b")
+
+
 def test_condition_builder_errors_on_empty() -> None:
     with pytest.raises(ValidationError):
         ConditionBuilder().and_(ConditionBuilder().true())
