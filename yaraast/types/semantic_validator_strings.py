@@ -362,14 +362,12 @@ class UndefinedStringDetector:
             refs.add(ref)
         elif isinstance(node, AtExpression):
             ref = node.string_id if node.string_id.startswith("$") else f"${node.string_id}"
-            if implicit_string_allowed and ref == "$":
-                return
-            refs.add(ref)
+            if not (implicit_string_allowed and ref == "$"):
+                refs.add(ref)
         elif isinstance(node, InExpression) and isinstance(node.subject, str):
             ref = node.subject if node.subject.startswith("$") else f"${node.subject}"
-            if implicit_string_allowed and ref == "$":
-                return
-            refs.add(ref)
+            if not (implicit_string_allowed and ref == "$"):
+                refs.add(ref)
         elif isinstance(node, ForOfExpression):
             if hasattr(node.quantifier, "accept"):
                 self._collect_string_refs(node.quantifier, refs)

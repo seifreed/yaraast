@@ -13,6 +13,7 @@ from yaraast.types.semantic_validator_core import ValidationResult
 from yaraast.types.semantic_validator_strings import (
     StringIdentifierValidator,
     StringModifierApplicabilityValidator,
+    UndefinedStringDetector,
 )
 
 
@@ -282,6 +283,39 @@ def test_semantic_validator_allows_implicit_current_string_position_checks() -> 
 
     assert result.is_valid is True
     assert result.errors == []
+
+
+def test_undefined_string_detector_checks_children_of_implicit_position_checks() -> None:
+    ast = Parser().parse("""
+        rule implicit_at_with_missing_offset {
+            strings:
+                $a = "abc"
+            condition:
+                for any of them : ($ at @b)
+        }
+
+        rule implicit_in_with_missing_range_bound {
+            strings:
+                $a = "abc"
+            condition:
+                for any of them : ($ in (@c..10))
+        }
+        """)
+    result = ValidationResult()
+    detector = UndefinedStringDetector(result)
+
+    for rule in ast.rules:
+        detector.check_rule(rule)
+
+    messages = [error.message for error in result.errors]
+    assert any(
+        "Undefined string '$b' in rule 'implicit_at_with_missing_offset'" in message
+        for message in messages
+    )
+    assert any(
+        "Undefined string '$c' in rule 'implicit_in_with_missing_range_bound'" in message
+        for message in messages
+    )
 
 
 def test_semantic_validator_rejects_invalid_them_string_sets() -> None:
