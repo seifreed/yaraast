@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
@@ -94,6 +94,24 @@ class CommentAwareCodeGenerator(CodeGenerator):
         for comment in comments:
             self._write_comment(comment, inline=False)
 
+    def _write_top_level_node(self, node: Any) -> None:
+        """Write a file-level node with preserved comments."""
+        self._write_leading_comments(getattr(node, "leading_comments", []))
+        rendered = self.visit(node)
+        if rendered:
+            self._write(rendered)
+        trailing_comment = getattr(node, "trailing_comment", None)
+        if trailing_comment:
+            self._write_comment(trailing_comment, inline=True)
+        self._writeline()
+
+    def _write_top_level_section(self, nodes: list[Any]) -> None:
+        if not nodes:
+            return
+        for node in nodes:
+            self._write_top_level_node(node)
+        self._writeline()
+
     def generate(self, node: YaraFile) -> str:
         """Generate code with comments."""
         self.buffer.seek(0)
@@ -113,27 +131,12 @@ class CommentAwareCodeGenerator(CodeGenerator):
         # Write leading comments
         self._write_leading_comments(node.leading_comments)
 
-        # Write imports
-        for imp in node.imports:
-            self._write_leading_comments(imp.leading_comments)
-            self.visit(imp)
-            if imp.trailing_comment:
-                self._write_comment(imp.trailing_comment, inline=True)
-            self._writeline()
-
-        if node.imports:
-            self._writeline()
-
-        # Write includes
-        for inc in node.includes:
-            self._write_leading_comments(inc.leading_comments)
-            self.visit(inc)
-            if inc.trailing_comment:
-                self._write_comment(inc.trailing_comment, inline=True)
-            self._writeline()
-
-        if node.includes:
-            self._writeline()
+        self._write_top_level_section(node.pragmas)
+        self._write_top_level_section(node.imports)
+        self._write_top_level_section(node.extern_imports)
+        self._write_top_level_section(node.includes)
+        self._write_top_level_section(node.namespaces)
+        self._write_top_level_section(node.extern_rules)
 
         # Write rules
         for i, rule in enumerate(node.rules):

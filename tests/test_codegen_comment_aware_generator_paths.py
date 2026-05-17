@@ -5,8 +5,10 @@ from typing import Any, cast
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import Condition
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
+from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
@@ -91,3 +93,33 @@ def test_comment_aware_generator_full_file_paths() -> None:
     assert "$h = { AA }" in out
     assert "$r = /abc.*/i fullword" in out
     assert "// cond lead" in out and "// cond tail" in out
+
+
+def test_comment_aware_generator_preserves_top_level_extensions() -> None:
+    pragma = IncludeOncePragma()
+    pragma.leading_comments = [Comment("pragma lead")]
+
+    extern_import = ExternImport("external.yar", alias="ext", rules=["Remote"])
+    extern_import.leading_comments = [Comment("extern import lead")]
+    extern_import.trailing_comment = Comment("extern import tail")
+
+    namespace = ExternNamespace("corp")
+    extern_rule = ExternRule("Remote")
+
+    yara_file = YaraFile(
+        pragmas=[pragma],
+        imports=[Import("pe")],
+        extern_imports=[extern_import],
+        namespaces=[namespace],
+        extern_rules=[extern_rule],
+        rules=[Rule(name="r", condition=Condition())],
+    )
+
+    out = CommentAwareCodeGenerator().generate(yara_file)
+
+    assert "// pragma lead" in out
+    assert "#include_once" in out
+    assert "// extern import lead" in out
+    assert 'import "external.yar" (Remote) as ext  // extern import tail' in out
+    assert "namespace corp" in out
+    assert "extern rule Remote" in out
