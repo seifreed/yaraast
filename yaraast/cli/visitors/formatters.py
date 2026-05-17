@@ -35,6 +35,18 @@ def _string_reference_suffix(string_id: Any) -> str:
     return text[1:] if text.startswith("$") else text
 
 
+def _string_set_item_text(item: Any, formatter: Any, depth: int) -> str:
+    pattern = getattr(item, "pattern", None)
+    if pattern is not None:
+        return str(pattern)
+    name = getattr(item, "name", None)
+    if name is not None:
+        return str(name)
+    if hasattr(item, "accept"):
+        return formatter.format_expression(item, depth)
+    return _node_text(item, str(item))
+
+
 class ConditionStringFormatter:
     """Helper class to format condition strings with reduced complexity."""
 
@@ -364,7 +376,11 @@ class ExpressionStringFormatter:
         if isinstance(string_set, str):
             return string_set
         if isinstance(string_set, list):
-            return "(" + ", ".join(_node_text(item, str(item)) for item in string_set) + ")"
+            return (
+                "("
+                + ", ".join(_string_set_item_text(item, self, depth + 1) for item in string_set)
+                + ")"
+            )
         if hasattr(string_set, "name"):
             return string_set.name
         if hasattr(string_set, "value"):

@@ -13,6 +13,7 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     StringCount,
+    StringIdentifier,
     StringLength,
     StringLiteral,
     StringOffset,
@@ -117,6 +118,16 @@ def test_condition_formatter_handles_parsed_of_literals() -> None:
         )
         == "($a, $b)"
     )
+    assert (
+        ExpressionStringFormatter()._format_string_set(
+            OfExpression(
+                quantifier="any",
+                string_set=[StringIdentifier("$a"), StringWildcard("$b*")],
+            ),
+            0,
+        )
+        == "($a, $b*)"
+    )
 
     wildcard_ast = Parser().parse('rule r { strings: $a = "a" condition: any of ($a*) }')
     wildcard_condition = wildcard_ast.rules[0].condition
@@ -153,6 +164,18 @@ def test_condition_formatter_handles_for_of_expression_details() -> None:
     raw_without_body = ForOfExpression(quantifier="all", string_set=["$a", "$b"], condition=None)
     assert ConditionStringFormatter().format_condition(raw_without_body) == "all of ($a, $b)"
     assert ExpressionStringFormatter().format_expression(raw_without_body) == "all of ($a, $b)"
+
+    raw_wildcard_body = ForOfExpression(
+        quantifier="any",
+        string_set=[StringIdentifier("$a"), StringWildcard("$b*")],
+        condition=BooleanLiteral(True),
+    )
+    assert ConditionStringFormatter().format_condition(raw_wildcard_body) == (
+        "for any of ($a, $b*) : (true)"
+    )
+    assert ExpressionStringFormatter().format_expression(raw_wildcard_body) == (
+        "for any of ($a, $b*) : (true)"
+    )
 
     built = ForOfExpression(
         quantifier=IntegerLiteral(2),
