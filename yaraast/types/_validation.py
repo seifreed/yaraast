@@ -74,26 +74,36 @@ class TypeChecker(BaseVisitor[None]):
         self.env.add_module(name, node.module)
 
     def visit_rule(self, node: Rule) -> None:
-        # Add string definitions to environment
-        for string in node.strings:
-            self.env.add_string(
-                string.identifier,
-                is_anonymous=getattr(string, "is_anonymous", False),
-            )
+        previous_strings = set(self.env.strings)
+        previous_anonymous_strings = set(self.env.anonymous_strings)
 
-        # Type check condition
-        if node.condition:
-            cond_type = self.inference.infer(node.condition)
-            # In YARA, integer conditions are valid (0 = false, non-zero = true)
-            # Also string counts and offsets return integers that can be used as conditions
-            # String identifiers ($a, $b) are also valid as boolean conditions
-            if not isinstance(
-                cond_type,
-                BooleanType | IntegerType | StringIdentifierType,
-            ):
-                self.errors.append(
-                    f"Rule condition must be boolean, integer, or string identifier, got {cond_type}",
-                )
+        rule_strings: set[str] = set()
+        rule_anonymous_strings: set[str] = set()
+        for string in node.strings:
+            rule_strings.add(string.identifier)
+            if getattr(string, "is_anonymous", False):
+                rule_anonymous_strings.add(string.identifier)
+
+        self.env.strings = set(rule_strings)
+        self.env.anonymous_strings = set(rule_anonymous_strings)
+
+        try:
+            # Type check condition
+            if node.condition:
+                cond_type = self.inference.infer(node.condition)
+                # In YARA, integer conditions are valid (0 = false, non-zero = true)
+                # Also string counts and offsets return integers that can be used as conditions
+                # String identifiers ($a, $b) are also valid as boolean conditions
+                if not isinstance(
+                    cond_type,
+                    BooleanType | IntegerType | StringIdentifierType,
+                ):
+                    self.errors.append(
+                        f"Rule condition must be boolean, integer, or string identifier, got {cond_type}",
+                    )
+        finally:
+            self.env.strings = previous_strings | rule_strings
+            self.env.anonymous_strings = previous_anonymous_strings | rule_anonymous_strings
 
     # Explicit no-ops for coverage and compatibility with tests that call visit_* directly.
     def visit_include(self, _node) -> None:

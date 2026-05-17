@@ -1471,6 +1471,28 @@ class TestTypeChecker:
 
         assert "Undefined string: $a" in errors
 
+    def test_check_string_references_are_rule_scoped(self) -> None:
+        checker = TypeChecker()
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="first",
+                    strings=[PlainString(identifier="$a", value="test")],
+                    condition=StringIdentifier("$a"),
+                ),
+                Rule(
+                    name="second",
+                    strings=[],
+                    condition=StringIdentifier("$a"),
+                ),
+            ]
+        )
+
+        errors = checker.check(ast)
+
+        assert "Undefined string: $a" in errors
+        assert checker.env.has_string("$a") is True
+
     def test_check_named_wildcard_does_not_match_anonymous_strings(self) -> None:
         checker = TypeChecker()
         ast = YaraFile(
