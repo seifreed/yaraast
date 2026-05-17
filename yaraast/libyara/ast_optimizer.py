@@ -130,10 +130,18 @@ class ASTOptimizer:
             if op == "*":
                 return IntegerLiteral(value=left_val * right_val)
             if op == "/" and right_val != 0:
-                return IntegerLiteral(value=left_val // right_val)
+                return IntegerLiteral(value=_truncate_division(left_val, right_val))
             if op == "%" and right_val != 0:
-                return IntegerLiteral(value=left_val % right_val)
+                quotient = _truncate_division(left_val, right_val)
+                return IntegerLiteral(value=left_val - quotient * right_val)
         except (ValueError, ZeroDivisionError):
             pass
 
         return None
+
+
+def _truncate_division(left: int, right: int) -> int:
+    quotient = abs(left) // abs(right)
+    if (left < 0) != (right < 0):
+        return -quotient
+    return quotient
