@@ -13,6 +13,7 @@ from yaraast.evaluation.evaluator_ops import (
     evaluate_comparison,
     evaluate_string_operator,
 )
+from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 
 
 def test_evaluate_arithmetic_all_operators() -> None:
@@ -40,6 +41,17 @@ def test_evaluate_arithmetic_zero_divisor_returns_undefined() -> None:
 def test_evaluate_arithmetic_negative_shift_returns_undefined() -> None:
     assert evaluate_arithmetic(1, -1, "<<") is YARA_UNDEFINED
     assert evaluate_arithmetic(1, -1, ">>") is YARA_UNDEFINED
+
+
+def test_evaluate_arithmetic_uses_signed_int64_runtime_semantics() -> None:
+    assert evaluate_arithmetic(INT64_MAX, 1, "+") == INT64_MIN
+    assert evaluate_arithmetic(INT64_MIN, 1, "-") == INT64_MAX
+    assert evaluate_arithmetic(1 << 62, 2, "*") == INT64_MIN
+    assert evaluate_arithmetic(1, 63, "<<") == INT64_MIN
+    assert evaluate_arithmetic(1, 64, "<<") == 0
+    assert evaluate_arithmetic(-1, 64, ">>") == 0
+    assert evaluate_arithmetic(INT64_MIN, -1, "\\") is YARA_UNDEFINED
+    assert evaluate_arithmetic(INT64_MIN, -1, "%") is YARA_UNDEFINED
 
 
 def test_evaluate_integer_division_and_modulo_do_not_use_float_conversion() -> None:

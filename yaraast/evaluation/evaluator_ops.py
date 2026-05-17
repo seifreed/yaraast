@@ -6,7 +6,14 @@ import re
 from typing import Any
 
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED, is_yara_undefined
-from yaraast.shared.integer_semantics import integer_remainder, truncate_integer_division
+from yaraast.shared.integer_semantics import (
+    INT64_MIN,
+    integer_remainder,
+    normalize_int64,
+    shift_left_int64,
+    shift_right_int64,
+    truncate_integer_division,
+)
 
 
 def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
@@ -14,15 +21,23 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
         return YARA_UNDEFINED
 
     if operator == "+":
+        if isinstance(left, int) and isinstance(right, int):
+            return normalize_int64(left + right)
         return left + right
     if operator == "-":
+        if isinstance(left, int) and isinstance(right, int):
+            return normalize_int64(left - right)
         return left - right
     if operator == "*":
+        if isinstance(left, int) and isinstance(right, int):
+            return normalize_int64(left * right)
         return left * right
     if operator in ("/", "\\"):
         if right == 0:
             return YARA_UNDEFINED
         if isinstance(left, int) and isinstance(right, int):
+            if left == INT64_MIN and right == -1:
+                return YARA_UNDEFINED
             return truncate_integer_division(left, right)
         if isinstance(left, int):
             return int(left / right)  # truncate toward zero (C/YARA semantics)
@@ -31,21 +46,33 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
         if right == 0:
             return YARA_UNDEFINED
         if isinstance(left, int) and isinstance(right, int):
+            if left == INT64_MIN and right == -1:
+                return YARA_UNDEFINED
             return integer_remainder(left, right)
         return left % right
     if operator == "<<":
         if right < 0:
             return YARA_UNDEFINED
+        if isinstance(left, int) and isinstance(right, int):
+            return shift_left_int64(left, right)
         return left << right
     if operator == ">>":
         if right < 0:
             return YARA_UNDEFINED
+        if isinstance(left, int) and isinstance(right, int):
+            return shift_right_int64(left, right)
         return left >> right
     if operator == "&":
+        if isinstance(left, int) and isinstance(right, int):
+            return normalize_int64(left & right)
         return left & right
     if operator == "|":
+        if isinstance(left, int) and isinstance(right, int):
+            return normalize_int64(left | right)
         return left | right
     if operator == "^":
+        if isinstance(left, int) and isinstance(right, int):
+            return normalize_int64(left ^ right)
         return left ^ right
     return None
 

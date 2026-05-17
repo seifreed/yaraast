@@ -353,6 +353,68 @@ def test_negative_shift_count_evaluates_as_undefined() -> None:
     }
 
 
+def test_integer_runtime_semantics_match_yara_int64_boundaries() -> None:
+    ast = Parser().parse(r"""
+        rule add_wraps_negative {
+            condition:
+                9223372036854775807 + filesize < 0
+        }
+
+        rule shift_past_width_is_zero {
+            condition:
+                1 << (filesize + 63) == 0
+        }
+
+        rule shift_into_sign_bit_is_negative {
+            condition:
+                1 << (filesize + 62) < 0
+        }
+
+        rule division_overflow_is_undefined {
+            condition:
+                defined ((0 - 9223372036854775807 - filesize) \ (0 - filesize))
+        }
+    """)
+
+    assert YaraEvaluator(data=b"a").evaluate_file(ast) == {
+        "add_wraps_negative": True,
+        "shift_past_width_is_zero": True,
+        "shift_into_sign_bit_is_negative": True,
+        "division_overflow_is_undefined": False,
+    }
+
+
+def test_defined_expression_evaluates_general_expressions() -> None:
+    ast = Parser().parse(r"""
+        rule defined_builtin {
+            condition:
+                defined filesize
+        }
+
+        rule defined_boolean_literal {
+            condition:
+                defined false
+        }
+
+        rule defined_arithmetic {
+            condition:
+                defined (1 + filesize)
+        }
+
+        rule undefined_arithmetic {
+            condition:
+                defined (1 \ (filesize - filesize))
+        }
+    """)
+
+    assert YaraEvaluator(data=b"a").evaluate_file(ast) == {
+        "defined_builtin": True,
+        "defined_boolean_literal": True,
+        "defined_arithmetic": True,
+        "undefined_arithmetic": False,
+    }
+
+
 def test_zero_divisor_arithmetic_evaluates_as_undefined() -> None:
     ast = Parser().parse("""
         rule zero_modulo_comparison {

@@ -22,6 +22,7 @@ from yaraast.evaluation.evaluator_ops import (
 )
 from yaraast.evaluation.mock_modules import MockModuleRegistry
 from yaraast.evaluation.string_matcher import StringMatcher
+from yaraast.shared.integer_semantics import normalize_int64
 from yaraast.visitor.defaults import DefaultASTVisitor
 
 if TYPE_CHECKING:
@@ -267,10 +268,14 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if node.operator == "-":
             if is_yara_undefined(operand):
                 return operand
+            if isinstance(operand, int):
+                return normalize_int64(-operand)
             return -operand
         if node.operator == "~":
             if is_yara_undefined(operand):
                 return operand
+            if isinstance(operand, int):
+                return normalize_int64(~operand)
             return ~operand
         msg = f"Unknown unary operator: {node.operator}"
         raise EvaluationError(msg)
@@ -838,20 +843,26 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             # Check if it's a variable
             if expr.name in self.context.variables:
                 return True
-        elif isinstance(expr, ModuleReference):
+            if expr.name in {"filesize", "entrypoint", "all", "any", "them"}:
+                return True
+            return hasattr(self, "_rule_map") and expr.name in self._rule_map
+        if isinstance(expr, ModuleReference):
             return expr.module in self.context.modules
-        elif isinstance(expr, DictionaryAccess | MemberAccess | ArrayAccess | FunctionCall):
+        if isinstance(expr, DictionaryAccess | MemberAccess | ArrayAccess | FunctionCall):
             value = self.visit(expr)
             return value is not None and not is_yara_undefined(value)
-        elif (
-            isinstance(expr, StringIdentifier) and self._current_rule and self._current_rule.strings
-        ):
+        if isinstance(expr, StringIdentifier) and self._current_rule and self._current_rule.strings:
             # Check if string is defined in current rule
             for string_def in self._current_rule.strings:
                 if string_def.identifier == expr.name:
                     return True
 
-        return False
+            return False
+        if isinstance(expr, StringIdentifier):
+            return False
+
+        value = self.visit(expr)
+        return value is not None and not is_yara_undefined(value)
 
     def visit_string_operator_expression(self, node) -> Any:
         """Evaluate string-specific operators like contains, startswith, etc."""
