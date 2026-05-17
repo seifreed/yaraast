@@ -13,30 +13,45 @@ from yaraast.codegen.pretty_printer_helpers import (
 )
 
 
-def visit_yara_file(printer, node) -> str:
-    if node.imports:
-        imports = (
-            sorted(node.imports, key=lambda item: item.module)
-            if printer.options.sort_imports
-            else node.imports
-        )
-        for imp in imports:
-            printer.visit_import(imp)
-            printer._writeline()
-        for _ in range(printer.options.blank_lines_after_imports - 1):
-            printer._writeline()
+def _emit_top_level_line(printer, node) -> None:
+    printer._write_comments(getattr(node, "leading_comments", None))
+    rendered = printer.visit(node)
+    if rendered:
+        printer._write(rendered)
+    trailing_comment = getattr(node, "trailing_comment", None)
+    if trailing_comment:
+        printer._write_comment(trailing_comment, inline=True)
+    printer._writeline()
 
-    if node.includes:
-        includes = (
-            sorted(node.includes, key=lambda item: item.path)
-            if printer.options.sort_includes
-            else node.includes
-        )
-        for inc in includes:
-            printer.visit_include(inc)
-            printer._writeline()
-        for _ in range(printer.options.blank_lines_after_includes):
-            printer._writeline()
+
+def _emit_top_level_section(printer, nodes, blank_lines: int = 1) -> None:
+    if not nodes:
+        return
+    for node in nodes:
+        _emit_top_level_line(printer, node)
+    for _ in range(blank_lines):
+        printer._writeline()
+
+
+def visit_yara_file(printer, node) -> str:
+    _emit_top_level_section(printer, node.pragmas)
+
+    imports = (
+        sorted(node.imports, key=lambda item: item.module)
+        if printer.options.sort_imports
+        else node.imports
+    )
+    _emit_top_level_section(printer, imports, max(0, printer.options.blank_lines_after_imports - 1))
+    _emit_top_level_section(printer, node.extern_imports)
+
+    includes = (
+        sorted(node.includes, key=lambda item: item.path)
+        if printer.options.sort_includes
+        else node.includes
+    )
+    _emit_top_level_section(printer, includes, printer.options.blank_lines_after_includes)
+    _emit_top_level_section(printer, node.namespaces)
+    _emit_top_level_section(printer, node.extern_rules)
 
     for index, rule in enumerate(node.rules):
         if index > 0:

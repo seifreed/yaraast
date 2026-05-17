@@ -9,8 +9,10 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     StringIdentifier,
 )
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString, StringDefinition
 from yaraast.codegen.pretty_printer import (
@@ -58,6 +60,28 @@ def test_pretty_printer_paths_for_includes_modifiers_wrapping_and_fallback() -> 
     assert "$h = { 4D 5A }" in out
     assert "$r = /ab.*/" in out
     assert "condition:" in out
+
+
+def test_pretty_printer_preserves_top_level_extensions() -> None:
+    yf = YaraFile(
+        pragmas=[IncludeOncePragma()],
+        imports=[Import("pe")],
+        extern_imports=[ExternImport("external.yar", alias="ext", rules=["Remote"])],
+        includes=[Include("common.yar")],
+        namespaces=[ExternNamespace("corp")],
+        extern_rules=[ExternRule("Remote")],
+        rules=[Rule(name="r", condition=BooleanLiteral(True))],
+    )
+
+    out = PrettyPrinter(PrettyPrintOptions()).pretty_print(yf)
+
+    assert "#include_once" in out
+    assert 'import "pe"' in out
+    assert 'import "external.yar" (Remote) as ext' in out
+    assert 'include "common.yar"' in out
+    assert "namespace corp" in out
+    assert "extern rule Remote" in out
+    assert "rule r {" in out
 
 
 def test_pretty_printer_regex_suffix_alias_modifiers_are_adjacent() -> None:
