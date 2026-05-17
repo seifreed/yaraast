@@ -267,6 +267,8 @@ class DiagnosticsProvider:
                     rule_line = line_val - 1
 
             for validation_rule in config.metadata_validation:
+                if not isinstance(validation_rule, dict):
+                    continue
                 identifier = validation_rule.get("identifier")
                 if not identifier:
                     continue
@@ -286,6 +288,8 @@ class DiagnosticsProvider:
                         )
                     )
                 elif identifier in meta_dict and expected_type:
+                    if not isinstance(expected_type, str):
+                        continue
                     checker = type_checkers.get(expected_type.lower())
                     if checker and not checker(meta_dict[identifier]):
                         results.append(

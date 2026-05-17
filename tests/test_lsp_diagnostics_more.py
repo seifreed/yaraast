@@ -8,6 +8,7 @@ from lsprotocol.types import Diagnostic, DiagnosticSeverity
 
 from yaraast.ast.base import Location
 from yaraast.lsp.diagnostics import DiagnosticsProvider
+from yaraast.lsp.runtime import LspRuntime
 from yaraast.types.semantic_validator_core import ValidationError
 
 
@@ -204,6 +205,25 @@ rule sample {
     metadata = _diagnostic_metadata(diag)
     assert "suggested_functions" in metadata
     assert "uint32" in metadata["suggested_functions"]
+
+
+def test_metadata_validation_ignores_malformed_config_entries() -> None:
+    runtime = LspRuntime()
+    runtime.update_config(
+        {
+            "YARA": {
+                "metadataValidation": [
+                    "invalid-entry",
+                    {"identifier": "author", "required": True},
+                ]
+            }
+        }
+    )
+    provider = DiagnosticsProvider(runtime)
+
+    diags = provider.get_diagnostics("rule missing_author { condition: true }\n", "file:///x.yar")
+
+    assert any(d.source == "yaraast-metadata" for d in diags)
 
 
 def test_compiler_include_error_is_structured() -> None:
