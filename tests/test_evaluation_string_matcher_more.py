@@ -162,6 +162,27 @@ def test_string_matcher_wide_ascii_and_hex_helper_edge_cases() -> None:
     assert matcher._find_hex_pattern(b"ab", [0x61, 0x62, 0x63], [False, False, False]) == []
 
 
+def test_string_matcher_wide_fullword_uses_utf16_boundaries() -> None:
+    matcher = StringMatcher()
+    string = PlainString(
+        "$wide",
+        modifiers=[
+            StringModifier.from_name_value("wide"),
+            StringModifier.from_name_value("fullword"),
+        ],
+        value="A",
+    )
+
+    assert matcher.match_string(string, b"x\x00A\x00") == []
+    assert [
+        (match.offset, match.length) for match in matcher.match_string(string, b"!\x00A\x00")
+    ] == [(2, 2)]
+    assert matcher.match_string(string, b"A\x00x\x00") == []
+    assert [(match.offset, match.length) for match in matcher.match_string(string, b"A\x00x")] == [
+        (0, 2)
+    ]
+
+
 def test_string_matcher_hex_tokens_match_yara_token_semantics() -> None:
     matcher = StringMatcher()
     hex_string = HexString(

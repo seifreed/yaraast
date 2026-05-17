@@ -117,7 +117,7 @@ class StringMatcher:
 
     def _match_plain_string(self, data: bytes, string_def: PlainString) -> None:
         """Match plain string against data."""
-        matches: list[tuple[int, int]] = []
+        matches: list[tuple[int, int, bool]] = []
         pattern = (
             string_def.value
             if isinstance(string_def.value, bytes)
@@ -133,29 +133,35 @@ class StringMatcher:
         base64_mod = "base64" in modifier_names
         base64wide_mod = "base64wide" in modifier_names
 
-        raw_patterns: list[bytes] = []
+        raw_patterns: list[tuple[bytes, bool]] = []
 
         # ASCII version
         if not wide or ascii_mod:
-            raw_patterns.append(pattern)
+            raw_patterns.append((pattern, False))
 
         # Wide version (UTF-16LE)
         wide_pattern = b""
         if wide:
             for byte in pattern:
                 wide_pattern += bytes([byte, 0])
-            raw_patterns.append(wide_pattern)
+            raw_patterns.append((wide_pattern, True))
 
         if base64_mod or base64wide_mod:
-            patterns_to_check: list[bytes] = []
-            for raw_pattern in raw_patterns:
+            patterns_to_check: list[tuple[bytes, bool]] = []
+            for raw_pattern, _is_wide in raw_patterns:
                 if base64_mod:
                     patterns_to_check.extend(
-                        self._base64_patterns(raw_pattern, string_def.modifiers, "base64")
+                        (base64_pattern, False)
+                        for base64_pattern in self._base64_patterns(
+                            raw_pattern,
+                            string_def.modifiers,
+                            "base64",
+                        )
                     )
                 if base64wide_mod:
                     patterns_to_check.extend(
-                        self._base64_patterns(
+                        (base64_pattern, True)
+                        for base64_pattern in self._base64_patterns(
                             raw_pattern,
                             string_def.modifiers,
                             "base64wide",
@@ -168,23 +174,33 @@ class StringMatcher:
         xor_keys = self._xor_keys(string_def.modifiers)
         if xor_keys is not None:
             patterns_to_check = [
-                bytes(byte ^ key for byte in search_pattern)
-                for search_pattern in patterns_to_check
+                (bytes(byte ^ key for byte in search_pattern), is_wide)
+                for search_pattern, is_wide in patterns_to_check
                 for key in xor_keys
             ]
 
         # Search for each pattern
-        for search_pattern in patterns_to_check:
+        for search_pattern, is_wide in patterns_to_check:
             if nocase:
                 # Case-insensitive search
-                matches.extend(self._find_all_nocase(data, search_pattern))
+                matches.extend(
+                    (offset, length, is_wide)
+                    for offset, length in self._find_all_nocase(data, search_pattern)
+                )
             else:
                 # Case-sensitive search
-                matches.extend(self._find_all(data, search_pattern))
+                matches.extend(
+                    (offset, length, is_wide)
+                    for offset, length in self._find_all(data, search_pattern)
+                )
 
         # Apply fullword modifier
         if fullword:
-            matches = [m for m in matches if self._is_fullword(data, m[0], m[1])]
+            matches = [
+                match
+                for match in matches
+                if self._is_fullword(data, match[0], match[1], wide=match[2])
+            ]
 
         # Store results
         self.matches[string_def.identifier] = [
@@ -194,7 +210,7 @@ class StringMatcher:
                 length,
                 data[offset : offset + length],
             )
-            for offset, length in matches
+            for offset, length, _is_wide in matches
         ]
 
     def _modifier_name(self, modifier: Any) -> str:
@@ -489,7 +505,7 @@ class StringMatcher:
 
         return matches
 
-    def _is_fullword(self, data: bytes, offset: int, length: int) -> bool:
+    def _is_fullword(self, data: bytes, offset: int, length: int, *, wide: bool = False) -> bool:
         """Check if match is a full word."""
 
         def _is_word_byte(value: int) -> bool:
@@ -499,6 +515,9 @@ class StringMatcher:
                 or (65 <= value <= 90)
                 or (97 <= value <= 122)
             )
+
+        if wide:
+            return self._is_fullword_wide(data, offset, length, _is_word_byte)
 
         # Check character before
         if offset > 0:
@@ -514,6 +533,13 @@ class StringMatcher:
                 return False
 
         return True
+
+    def _is_fullword_wide(self, data: bytes, offset: int, length: int, is_word_byte) -> bool:
+        if offset >= 2 and data[offset - 1] == 0 and is_word_byte(data[offset - 2]):
+            return False
+
+        end = offset + length
+        return not (end + 1 < len(data) and data[end + 1] == 0 and is_word_byte(data[end]))
 
     def get_match_count(self, identifier: str) -> int:
         """Get number of matches for a string."""
