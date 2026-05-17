@@ -41,6 +41,7 @@ def test_analysis_mixin_core_paths() -> None:
     # printable ratio
     assert gen._calculate_printable_ratio("") == 0.0
     assert 0.0 < gen._calculate_printable_ratio("abc\n") < 1.0
+    assert 0.0 < gen._calculate_printable_ratio(b"ab\x00") < 1.0
 
     # hex token analysis
     empty_hex = gen._analyze_hex_tokens([])
@@ -53,6 +54,29 @@ def test_analysis_mixin_core_paths() -> None:
     # regex analysis
     ra = gen._analyze_regex_pattern("^(ab)+[0-9]$")
     assert ra["groups"] >= 1 and ra["quantifiers"] >= 1
+
+
+def test_analysis_mixin_handles_byte_plain_strings_in_graphs() -> None:
+    gen = StringDiagramGenerator()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bytes",
+                strings=[
+                    PlainString(identifier="$a", value=b"abc-common", modifiers=[]),
+                    PlainString(identifier="$b", value=b"abc-other", modifiers=[]),
+                    PlainString(identifier="$np", value=b"ab\x00", modifiers=[]),
+                ],
+            )
+        ]
+    )
+
+    dot = gen.generate_pattern_similarity_diagram(ast, format="dot")
+
+    values = [pattern["value"] for pattern in gen.string_patterns.values()]
+    assert "abc-common" in values
+    assert "ab\\x00" in values
+    assert "$np" in dot
 
 
 def test_analysis_similarity_and_grouping_paths() -> None:

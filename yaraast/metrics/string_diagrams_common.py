@@ -3,6 +3,24 @@
 from __future__ import annotations
 
 
+def plain_value_text(value: str | bytes) -> str:
+    """Return a readable text representation for plain string values."""
+    if isinstance(value, str):
+        return value
+    return "".join(chr(byte) if 32 <= byte <= 126 else f"\\x{byte:02x}" for byte in value)
+
+
+def plain_printable_ratio(value: str | bytes) -> float:
+    """Calculate the printable, non-whitespace ratio for plain string values."""
+    if not value:
+        return 0.0
+    if isinstance(value, bytes):
+        printable_count = sum(1 for byte in value if 32 <= byte <= 126 and chr(byte).strip())
+        return printable_count / len(value)
+    printable_count = sum(1 for char in value if char.isprintable() and not char.isspace())
+    return printable_count / len(value)
+
+
 def modifier_names(modifiers) -> list[str]:
     """Return modifier names preserving compatibility with string/object inputs."""
     names: list[str] = []

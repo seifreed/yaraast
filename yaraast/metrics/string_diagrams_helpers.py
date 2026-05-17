@@ -7,7 +7,11 @@ import re
 from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.metrics.string_diagrams_common import format_hex_token_for_diagram, modifier_names
+from yaraast.metrics.string_diagrams_common import (
+    format_hex_token_for_diagram,
+    modifier_names,
+    plain_value_text,
+)
 
 from .string_diagrams import StringDiagramGenerator
 
@@ -72,7 +76,7 @@ def analyze_string_patterns(strings: list) -> dict[str, Any]:
     for string_def in strings:
         if isinstance(string_def, PlainString):
             analysis["types"]["plain"] += 1
-            plain_values.append(string_def.value)
+            plain_values.append(plain_value_text(string_def.value))
         elif isinstance(string_def, HexString):
             analysis["types"]["hex"] += 1
         elif isinstance(string_def, RegexString):
@@ -132,7 +136,7 @@ def generate_pattern_report(strings: list) -> dict[str, Any]:
         }
 
         if isinstance(string_def, PlainString):
-            detail["value"] = string_def.value
+            detail["value"] = plain_value_text(string_def.value)
             detail["length"] = len(string_def.value)
         elif isinstance(string_def, HexString):
             detail["tokens"] = len(string_def.tokens)

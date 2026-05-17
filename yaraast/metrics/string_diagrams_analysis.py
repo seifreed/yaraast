@@ -7,7 +7,11 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
-from yaraast.metrics.string_diagrams_common import modifier_names
+from yaraast.metrics.string_diagrams_common import (
+    modifier_names,
+    plain_printable_ratio,
+    plain_value_text,
+)
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -41,7 +45,7 @@ class StringDiagramAnalysisMixin:
                     pattern_info.update(
                         {
                             "type": "plain",
-                            "value": string_def.value,
+                            "value": plain_value_text(string_def.value),
                             "length": len(string_def.value),
                             "printable_ratio": self._calculate_printable_ratio(
                                 string_def.value,
@@ -126,13 +130,9 @@ class StringDiagramAnalysisMixin:
 
         return analysis
 
-    def _calculate_printable_ratio(self, text: str) -> float:
+    def _calculate_printable_ratio(self, text: str | bytes) -> float:
         """Calculate ratio of printable characters."""
-        if not text:
-            return 0.0
-
-        printable_count = sum(1 for c in text if c.isprintable() and not c.isspace())
-        return printable_count / len(text)
+        return plain_printable_ratio(text)
 
     def _calculate_pattern_complexity(self, pattern_info: dict[str, Any]) -> int:
         """Calculate overall pattern complexity score."""
