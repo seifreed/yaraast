@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 
@@ -38,3 +40,17 @@ def test_string_definition_oneof() -> None:
     string_def.identifier = "$a"
     string_def.regex.regex = "ab.*"
     assert string_def.WhichOneof("string_type") == "regex"
+
+
+def test_string_definition_anonymous_field_is_in_runtime_and_stub() -> None:
+    pb2 = pytest.importorskip("yaraast.serialization.yara_ast_pb2")
+
+    string_def = pb2.StringDefinition(identifier="$anon_1", is_anonymous=True)
+
+    assert string_def.is_anonymous is True
+    assert string_def.DESCRIPTOR.fields_by_name["is_anonymous"].number == 6
+
+    stub_text = Path(pb2.__file__).with_suffix(".pyi").read_text(encoding="utf-8")
+    assert "IS_ANONYMOUS_FIELD_NUMBER" in stub_text
+    assert "is_anonymous: bool" in stub_text
+    assert "is_anonymous: bool | None = ..." in stub_text

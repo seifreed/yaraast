@@ -424,13 +424,15 @@ class InRulePragma(_message.Message):
     ) -> None: ...
 
 class StringDefinition(_message.Message):
-    __slots__ = ("hex", "identifier", "node_metadata", "plain", "regex")
+    __slots__ = ("hex", "identifier", "is_anonymous", "node_metadata", "plain", "regex")
     IDENTIFIER_FIELD_NUMBER: _ClassVar[int]
+    IS_ANONYMOUS_FIELD_NUMBER: _ClassVar[int]
     PLAIN_FIELD_NUMBER: _ClassVar[int]
     HEX_FIELD_NUMBER: _ClassVar[int]
     REGEX_FIELD_NUMBER: _ClassVar[int]
     NODE_METADATA_FIELD_NUMBER: _ClassVar[int]
     identifier: str
+    is_anonymous: bool
     plain: PlainString
     hex: HexString
     regex: RegexString
@@ -438,6 +440,7 @@ class StringDefinition(_message.Message):
     def __init__(
         self,
         identifier: str | None = ...,
+        is_anonymous: bool | None = ...,
         plain: PlainString | _Mapping | None = ...,
         hex: HexString | _Mapping | None = ...,
         regex: RegexString | _Mapping | None = ...,
