@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.lsp.symbols import SymbolsProvider
 
 
@@ -42,3 +44,14 @@ def test_symbols_helper_and_fallback_edges() -> None:
     assert rng.start.line == 1 and rng.end.character == 4
 
     assert provider.get_symbols("rule bad { condition: ") == []
+
+
+def test_symbols_provider_handles_context_creation_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    import yaraast.lsp.symbols as symbols_module
+
+    def fail_document_context(_uri: str, _text: str) -> object:
+        raise RuntimeError("context failed")
+
+    monkeypatch.setattr(symbols_module, "DocumentContext", fail_document_context)
+
+    assert SymbolsProvider().get_symbols("rule ok { condition: true }") == []

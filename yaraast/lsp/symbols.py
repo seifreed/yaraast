@@ -35,6 +35,7 @@ class SymbolsProvider:
             List of document symbols
         """
         started = time.perf_counter()
+        doc = None
 
         try:
             if self.runtime and uri:
@@ -55,7 +56,8 @@ class SymbolsProvider:
             # If parsing fails, return empty symbols
             symbols = []
 
-        doc.set_cached("lsp:document_symbols", symbols)
+        if doc is not None:
+            doc.set_cached("lsp:document_symbols", symbols)
         if self.runtime is not None:
             self.runtime.record_latency(
                 "document_symbols", (time.perf_counter() - started) * 1000.0
