@@ -14,6 +14,13 @@ from yaraast.string_escaping import escape_string_source_value
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
 
+def _deserialize_object(data: Any, context: str) -> dict[str, Any]:
+    if isinstance(data, dict):
+        return data
+    msg = f"{context} must be an object"
+    raise SerializationError(msg)
+
+
 def _deserialize_ast_value(self, data):
     if isinstance(data, dict):
         return self._deserialize_expression(data)
@@ -137,6 +144,7 @@ def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
 
 
 def _deserialize_string_field(data: dict[str, Any], field: str, context: str) -> str:
+    data = _deserialize_object(data, context)
     value = data[field]
     if isinstance(value, str):
         return value
@@ -147,6 +155,7 @@ def _deserialize_string_field(data: dict[str, Any], field: str, context: str) ->
 def _deserialize_optional_string_field(
     data: dict[str, Any], field: str, context: str, default: str = ""
 ) -> str:
+    data = _deserialize_object(data, context)
     value = data.get(field, default)
     if isinstance(value, str):
         return value
@@ -157,6 +166,7 @@ def _deserialize_optional_string_field(
 def _deserialize_nullable_string_field(
     data: dict[str, Any], field: str, context: str
 ) -> str | None:
+    data = _deserialize_object(data, context)
     value = data.get(field)
     if value is None or isinstance(value, str):
         return value
@@ -165,6 +175,7 @@ def _deserialize_nullable_string_field(
 
 
 def _deserialize_string_list_field(data: dict[str, Any], field: str, context: str) -> list[str]:
+    data = _deserialize_object(data, context)
     value = data.get(field, [])
     if isinstance(value, list) and all(isinstance(item, str) for item in value):
         return value
@@ -173,6 +184,7 @@ def _deserialize_string_list_field(data: dict[str, Any], field: str, context: st
 
 
 def _deserialize_list_field(data: dict[str, Any], field: str, context: str) -> list[Any]:
+    data = _deserialize_object(data, context)
     value = data.get(field, [])
     if isinstance(value, list):
         return value
@@ -183,6 +195,7 @@ def _deserialize_list_field(data: dict[str, Any], field: str, context: str) -> l
 def _deserialize_bool_field(
     data: dict[str, Any], field: str, context: str, default: bool = False
 ) -> bool:
+    data = _deserialize_object(data, context)
     value = data.get(field, default)
     if isinstance(value, bool):
         return value
@@ -191,6 +204,7 @@ def _deserialize_bool_field(
 
 
 def _deserialize_dict_field(data: dict[str, Any], field: str, context: str) -> dict[str, Any]:
+    data = _deserialize_object(data, context)
     value = data.get(field, {})
     if isinstance(value, dict):
         if all(isinstance(key, str) for key in value):
@@ -967,6 +981,7 @@ class JsonSerializerDeserializeMixin:
             return self._format_unknown_modifier(name, value)
 
     def _deserialize_hex_token(self, data: dict[str, Any]):
+        data = _deserialize_object(data, "Hex token")
         hex_kind = data.get("type")
 
         if hex_kind == "HexByte":
@@ -1145,8 +1160,9 @@ class JsonSerializerDeserializeMixin:
         )
 
     def _deserialize_expression(self, data: dict[str, Any]):
-        if not data:
+        if data is None or data == {}:
             return None
+        data = _deserialize_object(data, "Expression")
 
         expr_type = data.get("type")
         factory = _EXPR_DESERIALIZERS.get(expr_type)

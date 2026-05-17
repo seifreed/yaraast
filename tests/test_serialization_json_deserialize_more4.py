@@ -125,6 +125,9 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="YaraFile imports must be a list"):
         s._deserialize_ast({"type": "YaraFile", "imports": "pe"})
 
+    with pytest.raises(SerializationError, match="Import must be an object"):
+        s._deserialize_ast({"type": "YaraFile", "imports": ["pe"]})
+
     with pytest.raises(SerializationError, match="YaraFile extern_rules must be a list"):
         s._deserialize_ast({"type": "YaraFile", "extern_rules": "RemoteRule"})
 
@@ -139,6 +142,9 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
 
     with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
         s._deserialize_rule({"name": "r1", "pragmas": "pragma", "condition": None})
+
+    with pytest.raises(SerializationError, match="Expression must be an object"):
+        s._deserialize_rule({"name": "r1", "condition": "true"})
 
     with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
         s._deserialize_pragma_block({"type": "PragmaBlock", "pragmas": "pragma"})
@@ -317,6 +323,11 @@ def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> N
     with pytest.raises(SerializationError, match="HexString tokens must be a list"):
         s._deserialize_string(
             {"type": "HexString", "identifier": "$h", "tokens": "AA", "modifiers": []}
+        )
+
+    with pytest.raises(SerializationError, match="Hex token must be an object"):
+        s._deserialize_string(
+            {"type": "HexString", "identifier": "$h", "tokens": ["AA"], "modifiers": []}
         )
 
     with pytest.raises(SerializationError, match="HexAlternative alternatives must be a list"):

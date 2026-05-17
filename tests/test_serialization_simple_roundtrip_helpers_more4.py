@@ -156,6 +156,9 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="YaraFile imports must be a list"):
         deserialize_node({"type": "YaraFile", "imports": "pe"})
 
+    with pytest.raises(SerializationError, match="Serialized node must be an object"):
+        deserialize_node({"type": "YaraFile", "imports": ["pe"]})
+
     with pytest.raises(SerializationError, match="YaraFile extern_rules must be a list"):
         deserialize_node({"type": "YaraFile", "extern_rules": "RemoteRule"})
 
@@ -170,6 +173,9 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
 
     with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
         deserialize_rule({"name": "r1", "pragmas": "pragma", "condition": None})
+
+    with pytest.raises(SerializationError, match="Serialized node must be an object"):
+        deserialize_rule({"name": "r1", "condition": "true"})
 
     with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
         deserialize_node({"type": "PragmaBlock", "pragmas": "pragma"})
@@ -391,6 +397,11 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
                 "tokens": [{"type": "HexAlternative", "alternatives": "AA"}],
                 "modifiers": [],
             }
+        )
+
+    with pytest.raises(SerializationError, match="Hex token must be an object"):
+        deserialize_string(
+            {"type": "HexString", "identifier": "$h", "tokens": ["AA"], "modifiers": []}
         )
 
 

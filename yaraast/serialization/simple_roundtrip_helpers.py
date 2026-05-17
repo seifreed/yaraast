@@ -93,6 +93,13 @@ from yaraast.yarax.generator import YaraXGenerator
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
 
+def _deserialize_object(data: Any, context: str) -> dict[str, Any]:
+    if isinstance(data, dict):
+        return data
+    msg = f"{context} must be an object"
+    raise SerializationError(msg)
+
+
 def _serialize_hex_token(token) -> dict[str, Any]:
     """Serialize a single hex token to a dictionary."""
     if isinstance(token, HexByte):
@@ -118,6 +125,7 @@ def _serialize_hex_token(token) -> dict[str, Any]:
 
 def _deserialize_hex_token(data: dict[str, Any]):
     """Deserialize a hex token from a dictionary."""
+    data = _deserialize_object(data, "Hex token")
     hex_kind = data.get("type")
     if hex_kind == "HexByte":
         return HexByte(value=_deserialize_hex_byte_value(data, "HexByte"))
@@ -269,6 +277,7 @@ def _deserialize_hex_jump_bounds(data: dict[str, Any]) -> tuple[int | None, int 
 
 
 def _deserialize_string_field(data: dict[str, Any], field: str, context: str) -> str:
+    data = _deserialize_object(data, context)
     value = data[field]
     if isinstance(value, str):
         return value
@@ -279,6 +288,7 @@ def _deserialize_string_field(data: dict[str, Any], field: str, context: str) ->
 def _deserialize_optional_string_field(
     data: dict[str, Any], field: str, context: str, default: str = ""
 ) -> str:
+    data = _deserialize_object(data, context)
     value = data.get(field, default)
     if isinstance(value, str):
         return value
@@ -289,6 +299,7 @@ def _deserialize_optional_string_field(
 def _deserialize_nullable_string_field(
     data: dict[str, Any], field: str, context: str
 ) -> str | None:
+    data = _deserialize_object(data, context)
     value = data.get(field)
     if value is None or isinstance(value, str):
         return value
@@ -297,6 +308,7 @@ def _deserialize_nullable_string_field(
 
 
 def _deserialize_string_list_field(data: dict[str, Any], field: str, context: str) -> list[str]:
+    data = _deserialize_object(data, context)
     value = data.get(field, [])
     if isinstance(value, list) and all(isinstance(item, str) for item in value):
         return value
@@ -305,6 +317,7 @@ def _deserialize_string_list_field(data: dict[str, Any], field: str, context: st
 
 
 def _deserialize_list_field(data: dict[str, Any], field: str, context: str) -> list[Any]:
+    data = _deserialize_object(data, context)
     value = data.get(field, [])
     if isinstance(value, list):
         return value
@@ -315,6 +328,7 @@ def _deserialize_list_field(data: dict[str, Any], field: str, context: str) -> l
 def _deserialize_bool_field(
     data: dict[str, Any], field: str, context: str, default: bool = False
 ) -> bool:
+    data = _deserialize_object(data, context)
     value = data.get(field, default)
     if isinstance(value, bool):
         return value
@@ -323,6 +337,7 @@ def _deserialize_bool_field(
 
 
 def _deserialize_dict_field(data: dict[str, Any], field: str, context: str) -> dict[str, Any]:
+    data = _deserialize_object(data, context)
     value = data.get(field, {})
     if isinstance(value, dict):
         if all(isinstance(key, str) for key in value):
@@ -945,6 +960,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
 
 
 def deserialize_node(data: dict[str, Any]) -> ASTNode:
+    data = _deserialize_object(data, "Serialized node")
     return _apply_node_metadata(_deserialize_node_payload(data), data)
 
 
