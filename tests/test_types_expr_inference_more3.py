@@ -40,7 +40,7 @@ from yaraast.types._registry import (
     TypeEnvironment,
     UnknownType,
 )
-from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension
+from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension, MatchCase, PatternMatch
 
 
 def test_type_base_visitor_default_methods_return_unknown() -> None:
@@ -303,6 +303,31 @@ def test_expr_inference_reports_invalid_comprehension_iterables() -> None:
     )
     assert isinstance(dict_out, DictionaryType)
     assert any("Cannot iterate over type: string" in e for e in dict_inf.errors)
+
+
+def test_expr_inference_visits_pattern_match_case_patterns() -> None:
+    env = TypeEnvironment()
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(
+        PatternMatch(
+            value=StringLiteral("value"),
+            cases=[
+                MatchCase(
+                    pattern=BinaryExpression(
+                        left=StringLiteral("bad"),
+                        operator="+",
+                        right=IntegerLiteral(1),
+                    ),
+                    result=IntegerLiteral(1),
+                ),
+            ],
+            default=IntegerLiteral(0),
+        ),
+    )
+
+    assert isinstance(out, IntegerType)
+    assert any("Left operand of '+' must be numeric, got string" in e for e in inf.errors)
 
 
 def test_expr_inference_at_in_and_of_error_paths() -> None:

@@ -327,7 +327,10 @@ class ExpressionTypeInference(_TypeBaseVisitor):
 
     def visit_pattern_match(self, node) -> YaraType:
         self.visit(node.value)
-        result_nodes = [case.result for case in node.cases]
+        result_nodes = []
+        for case in node.cases:
+            self.visit(case.pattern)
+            result_nodes.append(case.result)
         if node.default is not None:
             result_nodes.append(node.default)
         return self._infer_common_type(result_nodes)
