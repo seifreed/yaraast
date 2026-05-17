@@ -60,13 +60,18 @@ class FluentStringBuilder:
             elif isinstance(byte_val, str):
                 if byte_val in {"?", "??"}:
                     tokens.append(HexWildcard())
+                elif len(byte_val) == 2 and "?" in byte_val:
+                    tokens.append(self._parse_nibble(byte_val.upper()))
                 else:
-                    # Parse hex string
                     try:
                         val = int(byte_val, 16)
-                        tokens.append(HexByte(value=val))
                     except ValueError:
-                        tokens.append(HexWildcard())
+                        msg = f"Invalid hex byte: {byte_val}"
+                        raise ValidationError(msg) from None
+                    if len(byte_val) != 2 or not 0 <= val <= 255:
+                        msg = f"Invalid hex byte: {byte_val}"
+                        raise ValidationError(msg)
+                    tokens.append(HexByte(value=val))
 
         self._content = tokens
         self._string_type = "hex"
@@ -304,14 +309,13 @@ class FluentStringBuilder:
         i = 0
         while i < len(hex_chars):
             if i + 1 >= len(hex_chars):
-                i += 1  # Single character, skip
-                continue
+                msg = f"Invalid hex pattern at offset {i}: {hex_chars[i:]}"
+                raise ValidationError(msg)
 
             two_char = hex_chars[i : i + 2]
             token, consumed = self._parse_hex_pair(two_char)
 
-            if token:
-                tokens.append(token)
+            tokens.append(token)
             i += consumed
 
         return tokens
@@ -337,13 +341,18 @@ class FluentStringBuilder:
             byte_val = int(two_char, 16)
             return HexByte(value=byte_val), 2
         except ValueError:
-            return None, 1
+            msg = f"Invalid hex pair: {two_char}"
+            raise ValidationError(msg) from None
 
     def _parse_nibble(self, two_char: str) -> HexNibble:
         """Parse a half-wildcard pattern like ?0 or 0?."""
-        if two_char[0] == "?":
-            return HexNibble(high=False, value=int(two_char[1], 16))
-        return HexNibble(high=True, value=int(two_char[0], 16))
+        try:
+            if two_char[0] == "?":
+                return HexNibble(high=False, value=int(two_char[1], 16))
+            return HexNibble(high=True, value=int(two_char[0], 16))
+        except ValueError:
+            msg = f"Invalid nibble pattern: {two_char}"
+            raise ValidationError(msg) from None
 
     # Static factory methods
     @staticmethod

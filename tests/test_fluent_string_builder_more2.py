@@ -11,19 +11,17 @@ from yaraast.errors import ValidationError
 
 
 def test_fluent_string_builder_invalid_hex_inputs_and_trailing_nibble() -> None:
-    builder = FluentStringBuilder("$hex").hex_bytes("GG", "A?", "?")
+    with pytest.raises(ValidationError, match="Invalid hex byte: GG"):
+        FluentStringBuilder("$hex").hex_bytes("GG")
 
-    content = builder._content
-    assert isinstance(content, list)
-    assert isinstance(content[0], HexWildcard)
-    assert isinstance(content[1], HexWildcard)
+    with pytest.raises(ValidationError, match="Invalid hex byte: 100"):
+        FluentStringBuilder("$hex").hex_bytes("100")
 
-    parsed = FluentStringBuilder("$parse")._parse_hex_pattern("AA G")
-    assert len(parsed) == 1
+    with pytest.raises(ValidationError, match="Invalid hex pattern at offset 2"):
+        FluentStringBuilder("$parse")._parse_hex_pattern("AA G")
 
-    token, consumed = FluentStringBuilder("$pair")._parse_hex_pair("GZ")
-    assert token is None
-    assert consumed == 1
+    with pytest.raises(ValidationError, match="Invalid hex pair: GZ"):
+        FluentStringBuilder("$pair")._parse_hex_pair("GZ")
 
 
 def test_fluent_string_builder_rejects_invalid_integer_hex_bytes() -> None:
@@ -63,12 +61,16 @@ def test_fluent_string_builder_rejects_regex_only_modifiers_on_non_regex() -> No
 
 
 def test_fluent_string_builder_parse_nibble_low_and_non_wildcard_string_path() -> None:
-    builder = FluentStringBuilder("$mixed").hex_bytes("4D", "??", "?A")
+    builder = FluentStringBuilder("$mixed").hex_bytes("4D", "??", "?A", "A?")
     content = builder._content
     assert isinstance(content, list)
     assert isinstance(content[0], HexByte)
     assert isinstance(content[0].value, int)
     assert isinstance(content[1], HexWildcard)
+    assert isinstance(content[2], HexNibble)
+    assert content[2].high is False
+    assert isinstance(content[3], HexNibble)
+    assert content[3].high is True
 
     nibble = FluentStringBuilder("$n")._parse_nibble("?A")
     assert isinstance(nibble, HexNibble)
