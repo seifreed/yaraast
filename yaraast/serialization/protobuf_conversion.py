@@ -354,6 +354,7 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
     _copy_node_metadata_to_protobuf(string_def, pb_string)
+    pb_string.is_anonymous = getattr(string_def, "is_anonymous", False)
     if isinstance(string_def, PlainString):
         if isinstance(string_def.value, bytes):
             pb_string.plain.raw_value = string_def.value
@@ -1156,7 +1157,11 @@ def protobuf_to_string(pb_string):
             if _protobuf_has_field(pb_string.plain, "raw_value")
             else pb_string.plain.value
         )
-        s = PlainString(identifier=pb_string.identifier, value=value)
+        s = PlainString(
+            identifier=pb_string.identifier,
+            value=value,
+            is_anonymous=pb_string.is_anonymous,
+        )
         s.modifiers = modifiers
         return _apply_node_metadata_from_protobuf(pb_string, s)
     if pb_string.HasField("hex"):
@@ -1166,12 +1171,20 @@ def protobuf_to_string(pb_string):
             if token is not None:
                 tokens.append(token)
         modifiers = _protobuf_modifiers_to_ast(pb_string.hex.modifiers)
-        s = HexString(identifier=pb_string.identifier, tokens=tokens)
+        s = HexString(
+            identifier=pb_string.identifier,
+            tokens=tokens,
+            is_anonymous=pb_string.is_anonymous,
+        )
         s.modifiers = modifiers
         return _apply_node_metadata_from_protobuf(pb_string, s)
     if pb_string.HasField("regex"):
         modifiers = _protobuf_modifiers_to_ast(pb_string.regex.modifiers)
-        s = RegexString(identifier=pb_string.identifier, regex=pb_string.regex.regex)
+        s = RegexString(
+            identifier=pb_string.identifier,
+            regex=pb_string.regex.regex,
+            is_anonymous=pb_string.is_anonymous,
+        )
         s.modifiers = modifiers
         return _apply_node_metadata_from_protobuf(pb_string, s)
     return None

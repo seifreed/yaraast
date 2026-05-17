@@ -151,6 +151,7 @@ message InRulePragma {
 // String definitions
 message StringDefinition {
     string identifier = 1;
+    bool is_anonymous = 6;
     oneof string_type {
         PlainString plain = 2;
         HexString hex = 3;
