@@ -123,20 +123,34 @@ class Workspace:
     def get_all_rules(self) -> list[tuple[str, str]]:
         """Get all rules with their file paths."""
         rules = []
-        for file_path, result in self.files.items():
-            if result.resolved:
-                for rule in result.resolved.ast.rules:
-                    rules.append((rule.name, file_path))
+        for file_path, resolved in self._iter_resolved_files():
+            for rule in resolved.ast.rules:
+                rules.append((rule.name, file_path))
         return rules
 
     def find_rule(self, rule_name: str) -> tuple[str, Rule] | None:
         """Find a rule by name. Returns (file_path, rule) or None."""
+        for file_path, resolved in self._iter_resolved_files():
+            for rule in resolved.ast.rules:
+                if rule.name == rule_name:
+                    return (file_path, rule)
+        return None
+
+    def _iter_resolved_files(self):
+        """Iterate explicit workspace files and their resolved includes once."""
+        seen: set[Path] = set()
+
+        def walk(resolved: ResolvedFile, file_path: str):
+            if resolved.path in seen:
+                return
+            seen.add(resolved.path)
+            yield file_path, resolved
+            for included in resolved.includes:
+                yield from walk(included, str(included.path))
+
         for file_path, result in self.files.items():
             if result.resolved:
-                for rule in result.resolved.ast.rules:
-                    if rule.name == rule_name:
-                        return (file_path, rule)
-        return None
+                yield from walk(result.resolved, file_path)
 
     def get_file_dependencies(self, file_path: str) -> set[str]:
         """Get all files that this file depends on."""

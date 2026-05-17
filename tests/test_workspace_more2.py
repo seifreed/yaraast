@@ -59,6 +59,27 @@ def test_workspace_add_file_error_paths_and_getters(tmp_path: Path) -> None:
     assert isinstance(workspace.get_file_dependents(str(ok)), set)
 
 
+def test_workspace_rule_lookup_includes_resolved_include_trees(tmp_path: Path) -> None:
+    root = tmp_path
+    parent = _write(
+        root / "parent.yar",
+        'include "child.yar"\nrule parent_rule { condition: true }',
+    )
+    child = _write(root / "child.yar", "rule child_rule { condition: true }")
+
+    workspace = Workspace(str(root))
+    workspace.add_file(str(parent))
+
+    all_rules = workspace.get_all_rules()
+    child_rule = workspace.find_rule("child_rule")
+
+    assert ("parent_rule", str(parent)) in all_rules
+    assert ("child_rule", str(child.resolve())) in all_rules
+    assert child_rule is not None
+    assert child_rule[0] == str(child.resolve())
+    assert child_rule[1].name == "child_rule"
+
+
 def test_workspace_add_directory_relative_parallel_analysis_and_global_issues(
     tmp_path: Path,
 ) -> None:
