@@ -202,6 +202,14 @@ def _deserialize_boolean_literal_value(data: dict[str, Any]) -> bool:
     raise SerializationError(msg)
 
 
+def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
+    value = data["value"]
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return float(value)
+    msg = "DoubleLiteral value must be numeric"
+    raise SerializationError(msg)
+
+
 def _deserialize_modifier_value(name: str, value: Any) -> Any:
     if name == "xor":
         if isinstance(value, list) and len(value) == 2:
@@ -810,7 +818,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "IntegerLiteral":
         return IntegerLiteral(_deserialize_integer_literal_value(data))
     if node_type == "DoubleLiteral":
-        return DoubleLiteral(data["value"])
+        return DoubleLiteral(_deserialize_double_literal_value(data))
     if node_type == "StringLiteral":
         return StringLiteral(data["value"])
     if node_type == "RegexLiteral":

@@ -85,6 +85,14 @@ def _deserialize_boolean_literal_value(data: dict[str, Any]) -> bool:
     raise SerializationError(msg)
 
 
+def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
+    value = data["value"]
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return float(value)
+    msg = "DoubleLiteral value must be numeric"
+    raise SerializationError(msg)
+
+
 def _cast_comment(node: Any) -> Comment:
     if isinstance(node, Comment):
         return node
@@ -218,7 +226,7 @@ def _deser_integer_literal(self, data: dict[str, Any]):
 def _deser_double_literal(self, data: dict[str, Any]):
     from yaraast.ast.expressions import DoubleLiteral
 
-    return DoubleLiteral(value=data["value"])
+    return DoubleLiteral(value=_deserialize_double_literal_value(data))
 
 
 def _deser_string_literal(self, data: dict[str, Any]):

@@ -212,6 +212,12 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="BooleanLiteral value must be a boolean"):
         deserialize_node({"type": "BooleanLiteral", "value": "false"})
 
+    with pytest.raises(SerializationError, match="DoubleLiteral value must be numeric"):
+        deserialize_node({"type": "DoubleLiteral", "value": True})
+
+    with pytest.raises(SerializationError, match="DoubleLiteral value must be numeric"):
+        deserialize_node({"type": "DoubleLiteral", "value": "1.5"})
+
 
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
     ast = YaraFile(

@@ -157,6 +157,12 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="BooleanLiteral value must be a boolean"):
         s._deserialize_expression({"type": "BooleanLiteral", "value": "false"})
 
+    with pytest.raises(SerializationError, match="DoubleLiteral value must be numeric"):
+        s._deserialize_expression({"type": "DoubleLiteral", "value": True})
+
+    with pytest.raises(SerializationError, match="DoubleLiteral value must be numeric"):
+        s._deserialize_expression({"type": "DoubleLiteral", "value": "1.5"})
+
 
 def test_deserialize_expression_comprehensive_branches() -> None:
     s = JsonSerializer()
