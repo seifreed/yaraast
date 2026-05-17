@@ -20,27 +20,30 @@ class HexStringBuilder:
         """Add a single byte (alias for add)."""
         return self.add(value)
 
-    def add(self, value: int | str | HexToken) -> Self:
-        """Add a hex byte or token."""
+    def _byte_token_from_value(self, value: int | str) -> HexByte:
+        if isinstance(value, bool):
+            msg = f"Invalid type for hex value: {type(value)}"
+            raise TypeError(msg)
         if isinstance(value, int):
             if 0 <= value <= 255:
-                self._tokens.append(HexByte(value=value))
-            else:
-                msg = f"Byte value must be 0-255, got {value}"
-                raise ValidationError(msg)
-        elif isinstance(value, str):
-            # Parse hex string
-            hex_val = value.upper().replace("0X", "")
-            if len(hex_val) == 2:
-                try:
-                    byte_val = int(hex_val, 16)
-                    self._tokens.append(HexByte(value=byte_val))
-                except ValueError:
-                    msg = f"Invalid hex value: {value}"
-                    raise ValidationError(msg) from None
-            else:
-                msg = f"Hex value must be 2 characters, got {value}"
-                raise ValidationError(msg)
+                return HexByte(value=value)
+            msg = f"Byte value must be 0-255, got {value}"
+            raise ValidationError(msg)
+
+        hex_val = value.upper().replace("0X", "")
+        if len(hex_val) != 2:
+            msg = f"Hex value must be 2 characters, got {value}"
+            raise ValidationError(msg)
+        try:
+            return HexByte(value=int(hex_val, 16))
+        except ValueError:
+            msg = f"Invalid hex value: {value}"
+            raise ValidationError(msg) from None
+
+    def add(self, value: int | str | HexToken) -> Self:
+        """Add a hex byte or token."""
+        if isinstance(value, int | str):
+            self._tokens.append(self._byte_token_from_value(value))
         elif isinstance(value, HexToken):
             self._tokens.append(value)
         else:
@@ -124,11 +127,11 @@ class HexStringBuilder:
                 # List of values
                 tokens: list[HexToken] = []
                 for val in alt:
-                    if isinstance(val, int):
-                        tokens.append(HexByte(value=val))
-                    elif isinstance(val, str):
-                        byte_val = int(val, 16)
-                        tokens.append(HexByte(value=byte_val))
+                    if isinstance(val, bool):
+                        msg = f"Invalid alternative value type: {type(val)}"
+                        raise TypeError(msg)
+                    if isinstance(val, int | str):
+                        tokens.append(self._byte_token_from_value(val))
                     else:
                         msg = f"Invalid alternative value type: {type(val)}"
                         raise TypeError(msg)

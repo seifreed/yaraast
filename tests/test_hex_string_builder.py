@@ -199,6 +199,9 @@ class TestHexStringBuilderErrorHandling:
         with pytest.raises(TypeError, match="Invalid type for hex value"):
             builder.add(cast(Any, [0xFF]))
 
+        with pytest.raises(TypeError, match="Invalid type for hex value"):
+            builder.add(cast(Any, True))
+
 
 class TestHexStringBuilderWildcards:
     """Test wildcard token generation."""
@@ -503,6 +506,12 @@ class TestHexStringBuilderAlternatives:
 
         with pytest.raises(TypeError, match="Invalid alternative value type"):
             builder.alternative(cast(Any, [[0xFF, [0xAA]]]))
+
+        with pytest.raises(TypeError, match="Invalid alternative value type"):
+            builder.alternative(cast(Any, [[True]]))
+
+        with pytest.raises(ValidationError, match="Byte value must be 0-255"):
+            builder.alternative([256])
 
 
 class TestHexStringBuilderGrouping:
