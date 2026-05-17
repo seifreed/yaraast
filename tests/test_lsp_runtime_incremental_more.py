@@ -9,6 +9,9 @@ from typing import Any
 from lsprotocol.types import Position, Range
 import pytest
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
 from yaraast.lsp.diagnostics import DiagnosticsProvider
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 from yaraast.lsp.semantic_tokens import SemanticTokensProvider
@@ -24,6 +27,18 @@ def _string_info(doc: DocumentContext, identifier: str) -> dict[str, Any]:
     info = doc.get_string_definition_info(identifier)
     assert info is not None
     return info
+
+
+class _ByteStringDocument(DocumentContext):
+    def ast(self) -> YaraFile:
+        return YaraFile(
+            rules=[
+                Rule(
+                    name="sample",
+                    strings=[PlainString(identifier="$a", value=b'ab"\x00\xff')],
+                )
+            ]
+        )
 
 
 def test_runtime_persists_workspace_symbol_index(tmp_path: Path) -> None:
@@ -323,6 +338,15 @@ rule sample {
     assert doc.get_rule_meta_items("sample") == [("author", "you")]
     assert doc.get_rule_string_identifiers("sample") == ["$b"]
     assert _string_info(doc, "$b")["value"] == "y"
+
+
+def test_document_context_string_info_byte_plain_string_is_json_safe() -> None:
+    doc = _ByteStringDocument("file:///bytes.yar", "")
+
+    info = _string_info(doc, "$a")
+
+    assert info["value"] == 'ab\\"\\x00\\xff'
+    assert json.loads(json.dumps(info))["value"] == 'ab\\"\\x00\\xff'
 
 
 def test_document_context_caches_local_navigation_helpers_per_revision() -> None:

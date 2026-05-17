@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from lsprotocol.types import Position, Range
 
+from yaraast.codegen.generator_helpers import escape_plain_string_value
 from yaraast.lsp.document_types import path_to_uri
 from yaraast.types.module_loader import ModuleLoader
 
@@ -66,7 +67,7 @@ def get_string_definition_info(ctx: DocumentContext, identifier: str) -> dict[st
         return None
     string_def, _rule = string_data
     if hasattr(string_def, "value"):
-        value = string_def.value
+        value = escape_plain_string_value(string_def.value)
         string_type = "text string"
     elif hasattr(string_def, "regex"):
         value = string_def.regex
