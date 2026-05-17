@@ -551,6 +551,22 @@ def test_document_context_exposes_dotted_symbol_at_position() -> None:
     assert token == "pe.imphash"
     assert dotted_range.start.line == 1
 
+    trailing_line = "rule sample { condition: pe.imphash"
+    trailing_text = f'import "pe"\n{trailing_line}'
+    trailing_runtime = LspRuntime()
+    trailing_uri = "file://trailing.yar"
+    trailing_runtime.open_document(trailing_uri, trailing_text)
+    trailing_doc = trailing_runtime.ensure_document(trailing_uri, trailing_text)
+
+    trailing_dotted = trailing_doc.get_dotted_symbol_at_position(
+        Position(line=1, character=len(trailing_line))
+    )
+
+    assert trailing_dotted is not None
+    trailing_token, trailing_range = trailing_dotted
+    assert trailing_token == "pe.imphash"
+    assert trailing_range.end.character == len(trailing_line)
+
 
 def test_runtime_indexes_import_and_include_with_quoted_ranges(tmp_path: Path) -> None:
     include_path = tmp_path / "common.yar"

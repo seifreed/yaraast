@@ -153,7 +153,7 @@ def get_dotted_symbol_at_position(
     if position.line < 0 or position.line >= len(ctx.lines):
         return None
     line = ctx.lines[position.line]
-    if position.character < 0 or position.character >= len(line):
+    if position.character < 0 or position.character > len(line):
         return None
     allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.")
     start = position.character
