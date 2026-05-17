@@ -15,7 +15,7 @@ from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.serialization import yara_ast_pb2
-from yaraast.serialization.protobuf_conversion import protobuf_to_ast
+from yaraast.serialization.protobuf_conversion import protobuf_to_ast, protobuf_to_string
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 
 
@@ -65,6 +65,20 @@ def test_protobuf_serializer_preserves_string_modifier_aliases() -> None:
     assert modifiers[:2] == ["i", "s"]
     assert isinstance(modifiers[2], StringModifier)
     assert modifiers[2].name == "fullword"
+
+
+def test_protobuf_conversion_escapes_unknown_modifier_string_values() -> None:
+    pb_string = yara_ast_pb2.StringDefinition()
+    pb_string.identifier = "$a"
+    pb_string.plain.value = "abc"
+    pb_modifier = pb_string.plain.modifiers.add()
+    pb_modifier.name = "vendor_modifier"
+    pb_modifier.value = 'a"\\b\n'
+
+    restored = protobuf_to_string(pb_string)
+
+    assert isinstance(restored, PlainString)
+    assert restored.modifiers == ['vendor_modifier("a\\"\\\\b\\n")']
 
 
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:

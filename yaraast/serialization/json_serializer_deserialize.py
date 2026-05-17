@@ -9,6 +9,7 @@ from typing import Any
 from yaraast.ast.base import ASTNode, Location
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.errors import SerializationError, ValidationError
+from yaraast.string_escaping import escape_string_source_value
 
 
 def _deserialize_ast_value(self, data):
@@ -641,7 +642,7 @@ class JsonSerializerDeserializeMixin:
         if isinstance(value, tuple) and len(value) == 2:
             return f"{name}({value[0]}-{value[1]})"
         if isinstance(value, str):
-            return f'{name}("{value}")'
+            return f'{name}("{escape_string_source_value(value)}")'
         return f"{name}({value})"
 
     def _deserialize_modifier(self, data: Any):

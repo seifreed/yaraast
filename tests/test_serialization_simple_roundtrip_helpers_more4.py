@@ -170,6 +170,14 @@ def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
 
     restored_regex = deserialize_node(serialize_node(regex))
     restored_plain = deserialize_node(serialize_node(plain))
+    escaped_plain = deserialize_string(
+        {
+            "type": "PlainString",
+            "identifier": "$b",
+            "value": "abc",
+            "modifiers": [{"name": "vendor_modifier", "value": 'a"\\b\n'}],
+        }
+    )
 
     assert isinstance(restored_regex, RegexString)
     regex_modifiers = restored_regex.modifiers
@@ -178,6 +186,8 @@ def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
     assert regex_modifiers[2].name == "fullword"
     assert isinstance(restored_plain, PlainString)
     assert restored_plain.modifiers == ["vendor_modifier"]
+    assert isinstance(escaped_plain, PlainString)
+    assert escaped_plain.modifiers == ['vendor_modifier("a\\"\\\\b\\n")']
 
 
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:

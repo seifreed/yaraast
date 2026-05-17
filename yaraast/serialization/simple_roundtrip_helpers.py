@@ -71,6 +71,7 @@ from yaraast.ast.strings import (
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.source import parse_yara_source
+from yaraast.string_escaping import escape_string_source_value
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
@@ -210,7 +211,7 @@ def _format_unknown_modifier(name: str, value: Any) -> str:
     if isinstance(value, tuple) and len(value) == 2:
         return f"{name}({value[0]}-{value[1]})"
     if isinstance(value, str):
-        return f'{name}("{value}")'
+        return f'{name}("{escape_string_source_value(value)}")'
     return f"{name}({value})"
 
 

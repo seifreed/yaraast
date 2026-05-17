@@ -90,6 +90,8 @@ def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
 
     mod = s._deserialize_modifier({"name": "ascii", "value": None})
     assert isinstance(mod, StringModifier)
+    unknown_mod = s._deserialize_modifier({"name": "vendor_modifier", "value": 'a"\\b\n'})
+    assert unknown_mod == 'vendor_modifier("a\\"\\\\b\\n")'
 
     plain = s._deserialize_string(
         {

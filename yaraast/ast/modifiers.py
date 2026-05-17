@@ -2,25 +2,11 @@
 
 from dataclasses import dataclass
 from enum import Enum
-import re
 from typing import Any
 
 from yaraast.ast.base import ASTNode, _VisitorType
 from yaraast.errors import ValidationError
-
-
-def _escape_string_source_value(value: str) -> str:
-    escaped_value = value.replace("\\", "\\\\")
-    escaped_value = escaped_value.replace('"', '\\"')
-    escaped_value = escaped_value.replace("\n", "\\n")
-    escaped_value = escaped_value.replace("\r", "\\r")
-    escaped_value = escaped_value.replace("\t", "\\t")
-    escaped_value = escaped_value.replace("\x00", "\\x00")
-    return re.sub(
-        r"[\x01-\x1f\x7f-\x9f]",
-        lambda match: f"\\x{ord(match.group(0)):02x}",
-        escaped_value,
-    )
+from yaraast.string_escaping import escape_string_source_value
 
 
 class StringModifierType(Enum):
@@ -133,7 +119,7 @@ class StringModifier(ASTNode):
             if isinstance(self.value, tuple):
                 return f"{self.modifier_type.value}({self.value[0]}-{self.value[1]})"
             if isinstance(self.value, str):
-                return f'{self.modifier_type.value}("{_escape_string_source_value(self.value)}")'
+                return f'{self.modifier_type.value}("{escape_string_source_value(self.value)}")'
             return f"{self.modifier_type.value}({self.value})"
         return self.modifier_type.value
 
@@ -192,7 +178,7 @@ class MetaEntry:
         """String representation of meta entry."""
         scope_prefix = f"{self.scope.value}:" if self.scope != MetaScope.PUBLIC else ""
         if isinstance(self.value, str):
-            return f'{scope_prefix}{self.key} = "{_escape_string_source_value(self.value)}"'
+            return f'{scope_prefix}{self.key} = "{escape_string_source_value(self.value)}"'
         return f"{scope_prefix}{self.key} = {self.value}"
 
 

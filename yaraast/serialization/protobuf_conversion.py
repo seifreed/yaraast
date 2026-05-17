@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import time
+from typing import Any
+
+from yaraast.string_escaping import escape_string_source_value
 
 from . import yara_ast_pb2
 
@@ -325,7 +328,7 @@ def _format_unknown_modifier(name: str, value) -> str:
     if isinstance(value, tuple) and len(value) == 2:
         return f"{name}({value[0]}-{value[1]})"
     if isinstance(value, str):
-        return f'{name}("{value}")'
+        return f'{name}("{escape_string_source_value(value)}")'
     return f"{name}({value})"
 
 
@@ -1146,7 +1149,7 @@ def _protobuf_modifiers_to_ast(pb_modifiers):
     return modifiers
 
 
-def protobuf_to_string(pb_string):
+def protobuf_to_string(pb_string) -> Any:
     """Convert a protobuf string definition back to AST."""
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
