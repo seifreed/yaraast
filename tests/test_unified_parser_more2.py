@@ -72,6 +72,7 @@ import "pe" as pe_mod
 import "hash" /* inline block comment */
 include "base.yar"
 /* closed block */ include "extra.yar"
+include "nested//base.yar"
 // line comment
 rule r { condition: true }
 """.lstrip(),
@@ -83,9 +84,10 @@ rule r { condition: true }
         assert imports[0].module == "pe"
         assert imports[0].alias == "pe_mod"
         assert imports[1].module == "hash"
-        assert len(includes) == 2
+        assert len(includes) == 3
         assert includes[0].path == "base.yar"
         assert includes[1].path == "extra.yar"
+        assert includes[2].path == "nested//base.yar"
 
 
 def test_extract_preamble_fast_error_and_parse_file_not_found() -> None:

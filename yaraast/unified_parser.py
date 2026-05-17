@@ -89,6 +89,8 @@ class UnifiedParser:
         """
         result: list[str] = []
         index = 0
+        in_string = False
+        escaped = False
 
         while index < len(line):
             if in_multiline:
@@ -100,6 +102,24 @@ class UnifiedParser:
                 in_multiline = False
                 continue
 
+            char = line[index]
+            if in_string:
+                result.append(char)
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                index += 1
+                continue
+
+            if char == '"':
+                result.append(char)
+                in_string = True
+                index += 1
+                continue
+
             if line.startswith("/*", index):
                 in_multiline = True
                 index += 2
@@ -108,7 +128,7 @@ class UnifiedParser:
             if line.startswith("//", index):
                 break
 
-            result.append(line[index])
+            result.append(char)
             index += 1
 
         clean_line = "".join(result)
