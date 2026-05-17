@@ -337,6 +337,26 @@ def test_runtime_config_parses_string_cache_workspace_setting() -> None:
     assert runtime.config.cache_workspace is True
 
 
+def test_runtime_config_rejects_invalid_diagnostics_debounce_scalars() -> None:
+    runtime = LspRuntime()
+    default_debounce = runtime.config.diagnostics_debounce_ms
+
+    runtime.update_config({"YARA": {"diagnosticsDebounceMs": 150}})
+    assert runtime.config.diagnostics_debounce_ms == 150
+
+    runtime.update_config({"YARA": {"diagnosticsDebounceMs": True}})
+    assert runtime.config.diagnostics_debounce_ms == default_debounce
+
+    runtime.update_config({"YARA": {"diagnosticsDebounceMs": 1.5}})
+    assert runtime.config.diagnostics_debounce_ms == default_debounce
+
+    runtime.update_config({"YARA": {"diagnosticsDebounceMs": "250"}})
+    assert runtime.config.diagnostics_debounce_ms == 250
+
+    runtime.update_config({"YARA": {"diagnosticsDebounceMs": "-5"}})
+    assert runtime.config.diagnostics_debounce_ms == 0
+
+
 def test_runtime_watched_file_does_not_replace_open_document(tmp_path: Path) -> None:
     sample = tmp_path / "sample.yar"
     sample.write_text("rule disk_version { condition: true }\n", encoding="utf-8")

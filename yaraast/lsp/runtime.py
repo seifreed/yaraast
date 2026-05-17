@@ -58,6 +58,19 @@ def _parse_bool_setting(value: Any, default: bool) -> bool:
     return default
 
 
+def _parse_non_negative_int_setting(value: Any, default: int) -> int:
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, int):
+        return max(0, value)
+    if isinstance(value, str):
+        try:
+            return max(0, int(value.strip()))
+        except ValueError:
+            return default
+    return default
+
+
 __all__ = [
     "CacheManager",
     "DocumentContext",
@@ -281,11 +294,9 @@ class LspRuntime:
                 doc.set_language_mode(self.config.language_mode)
                 self._mark_dirty(doc.uri)
         if "diagnosticsDebounceMs" in settings:
-            try:
-                self.config.diagnostics_debounce_ms = max(0, int(settings["diagnosticsDebounceMs"]))
-            except Exception:
-                logger.debug("Operation failed in %s", __name__, exc_info=True)
-                self.config.diagnostics_debounce_ms = DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
+            self.config.diagnostics_debounce_ms = _parse_non_negative_int_setting(
+                settings["diagnosticsDebounceMs"], DEFAULT_DIAGNOSTICS_DEBOUNCE_MS
+            )
         if not self.config.cache_workspace:
             self.documents = {uri: doc for uri, doc in self.documents.items() if doc.is_open}
         self.cache.bump_generation()
