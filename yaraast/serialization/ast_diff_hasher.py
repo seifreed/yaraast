@@ -302,8 +302,10 @@ class AstHasher(ASTVisitor[str]):
         """Hash AST values while preserving scalar/list values."""
         if hasattr(value, "accept"):
             return self.visit(value)
-        if isinstance(value, list):
+        if isinstance(value, list | tuple):
             return "[" + "|".join(self._hash_value(item) for item in value) + "]"
+        if isinstance(value, set | frozenset):
+            return "[" + "|".join(self._hash_value(item) for item in sorted(value, key=str)) + "]"
         return "" if value is None else str(value)
 
     def _hash_modifiers(self, node) -> str:
@@ -312,7 +314,7 @@ class AstHasher(ASTVisitor[str]):
 
     def _hash_string_set(self, value) -> str:
         """Hash raw string-set lists as order-insensitive collections."""
-        if isinstance(value, list):
+        if isinstance(value, list | tuple | set | frozenset):
             return "[" + "|".join(sorted(self._hash_value(item) for item in value)) + "]"
         return self._hash_value(value)
 

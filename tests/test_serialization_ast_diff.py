@@ -333,6 +333,30 @@ def test_ast_diff_treats_raw_string_set_reordering_as_unchanged() -> None:
 
     assert result.old_ast_hash == result.new_ast_hash
     assert not result.has_changes
+
+
+def test_ast_diff_treats_non_list_raw_string_sets_as_equivalent() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="raw_set_container",
+                condition=OfExpression("any", ("$b", "$a")),
+            ),
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="raw_set_container",
+                condition=OfExpression("any", ["$a", "$b"]),
+            ),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.old_ast_hash == result.new_ast_hash
+    assert not result.has_changes
     assert result.differences == []
 
 
