@@ -360,8 +360,10 @@ class ASTDumper(ASTVisitor[dict]):
         """Dump AST values while leaving scalar/list values JSON-friendly."""
         if hasattr(value, "accept"):
             return self.visit(value)
-        if isinstance(value, list):
+        if isinstance(value, list | tuple):
             return [self._dump_value(item) for item in value]
+        if isinstance(value, set | frozenset):
+            return [self._dump_value(item) for item in sorted(value, key=str)]
         return value
 
     def visit_meta(self, node: Meta) -> dict:

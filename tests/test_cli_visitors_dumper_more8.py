@@ -166,6 +166,9 @@ def test_dumper_extra_node_types_and_fallback_fields() -> None:
         )["quantifier"]
         == 1
     )
+    assert d.visit_of_expression(
+        cast(Any, SimpleNamespace(quantifier=1, string_set=frozenset(("$b", "$a"))))
+    )["string_set"] == ["$a", "$b"]
     assert d.visit_meta(Meta(key="k", value="v"))["key"] == "k"
     assert d.visit_extern_namespace(SimpleNamespace(name="ns"))["name"] == "ns"
     assert d.visit_extern_rule(SimpleNamespace(name="r"))["name"] == "r"
