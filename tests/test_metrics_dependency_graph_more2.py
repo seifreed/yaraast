@@ -18,6 +18,14 @@ from yaraast.metrics.dependency_graph_utils import (
 )
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    LambdaExpression,
+    ListExpression,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 def test_dependency_graph_basic() -> None:
@@ -77,6 +85,53 @@ def test_dependency_graph_traverses_for_expression_quantifier_nodes() -> None:
     graph = build_dependency_graph(ast)
 
     assert graph.get_dependencies("caller") == {"base", "body"}
+
+
+def test_dependency_graph_ignores_for_expression_local_variable_shadowing_rule() -> None:
+    ast = Parser().parse("""
+rule i { condition: true }
+rule caller {
+    condition:
+        for all i in (1, 2, 3) : (i > 0)
+}
+""")
+
+    graph = build_dependency_graph(ast)
+
+    assert graph.get_dependencies("caller") == set()
+
+
+def test_dependency_graph_ignores_yarax_local_variable_shadowing_rules() -> None:
+    shadowed_rules = [
+        Rule(name="x", condition=IntegerLiteral(1)),
+        Rule(name="k", condition=IntegerLiteral(1)),
+        Rule(name="v", condition=IntegerLiteral(1)),
+    ]
+    cases = [
+        ArrayComprehension(
+            expression=Identifier("x"),
+            variable="x",
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=Identifier("v"),
+            key_variable="k",
+            value_variable="v",
+            iterable=ListExpression([IntegerLiteral(1)]),
+        ),
+        WithStatement(
+            declarations=[WithDeclaration("x", IntegerLiteral(1))],
+            body=Identifier("x"),
+        ),
+        LambdaExpression(parameters=["x"], body=Identifier("x")),
+    ]
+
+    for condition in cases:
+        ast = YaraFile(rules=[*shadowed_rules, Rule(name="caller", condition=condition)])
+        graph = build_dependency_graph(ast)
+
+        assert graph.get_dependencies("caller") == set()
 
 
 def test_dependency_graph_traverses_yarax_with_match_nodes() -> None:
