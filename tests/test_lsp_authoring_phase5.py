@@ -375,6 +375,25 @@ rule demo {
     assert "any of ($a, $b)" in edit.new_text
 
 
+def test_of_them_refactors_are_hidden_for_anonymous_strings() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule demo {
+    strings:
+        $a = "a"
+        $ = "anonymous"
+    condition:
+        any of them
+}
+""".lstrip()
+
+    actions = provider.get_code_actions(text, _range(5, 8, 19), [], "file://test.yar")
+    titles = [action.title for action in actions]
+
+    assert not any(title.startswith("Expand 'of them'") for title in titles)
+    assert not any(title.startswith("Compress explicit set") for title in titles)
+
+
 def test_compress_of_them_refactor_action() -> None:
     provider = CodeActionsProvider()
     text = """

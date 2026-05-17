@@ -113,6 +113,10 @@ def rewrite_of_them(authoring, text: str, selection, *, mode: str, title: str) -
     if len(ast.rules) != 1:
         return None
     rule = ast.rules[0]
+    if any(
+        getattr(string_def, "is_anonymous", False) for string_def in getattr(rule, "strings", [])
+    ):
+        return None
     string_ids = [string_def.identifier for string_def in getattr(rule, "strings", [])]
     if not string_ids or rule.condition is None:
         return None
