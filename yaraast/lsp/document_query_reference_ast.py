@@ -174,7 +174,19 @@ def string_reference_range(node: ASTNode, source_text: str) -> Range:
         raise ValueError(msg)
     full_range = location_to_range(location, source_text)
     if isinstance(node, StringIdentifier):
-        return full_range
+        suffix = node.name[1:] if node.name.startswith("$") else node.name
+        start_character = _prefixed_reference_start_character(
+            source_text,
+            full_range.start.line,
+            full_range.start.character,
+        )
+        return Range(
+            start=Position(line=full_range.start.line, character=start_character),
+            end=Position(
+                line=full_range.start.line,
+                character=start_character + 1 + len(suffix),
+            ),
+        )
     if isinstance(node, StringCount | StringOffset | StringLength):
         suffix = node.string_id[1:] if node.string_id.startswith("$") else node.string_id
         start_character = _prefixed_reference_start_character(
@@ -200,6 +212,6 @@ def _prefixed_reference_start_character(
     lines = source_text.split("\n")
     if 0 <= line_index < len(lines):
         line = lines[line_index]
-        if 0 < character <= len(line) and line[character - 1] in "#@!":
+        if 0 < character <= len(line) and line[character - 1] in "$#@!":
             return character - 1
     return character

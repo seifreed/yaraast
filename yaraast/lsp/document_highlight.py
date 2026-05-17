@@ -24,7 +24,9 @@ class DocumentHighlightProvider:
             return []
 
         # Check if it's a string identifier
-        if word.startswith("$"):
+        if word.startswith(("$", "#", "@", "!")):
+            if not word.startswith("$"):
+                word = f"${word[1:]}"
             return self._highlight_string_identifier(text, word)
 
         # Check if it's a rule name or other identifier

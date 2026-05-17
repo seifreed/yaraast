@@ -173,7 +173,7 @@ rule a {
   strings:
     $a = "x"
   condition:
-    @a[1] > 0 and !a[1] > 0
+    $a and @a[1] > 0 and !a[1] > 0
 }
 """.lstrip()
     provider = RenameProvider()
@@ -182,6 +182,8 @@ rule a {
     assert edit is not None
     edited = _apply_text_edits(text, _first_change_set(edit))
 
+    assert "$b and @b[1] > 0" in edited
+    assert "$$b" not in edited
     assert "@b[1] > 0" in edited
     assert "!b[1] > 0" in edited
     assert "@b > 0" not in edited
