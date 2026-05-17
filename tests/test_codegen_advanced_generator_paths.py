@@ -10,8 +10,10 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     StringIdentifier,
 )
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
+from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Import, Rule, Tag
 from yaraast.ast.strings import PlainString, RegexString
 from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
@@ -47,6 +49,26 @@ def test_advanced_generator_brace_styles_and_section_layout() -> None:
         yara_file
     )
     assert "rule r\n{" in kandr or "rule r\r\n{" in kandr
+
+
+def test_advanced_generator_yara_file_preserves_top_level_extensions() -> None:
+    yara_file = YaraFile(
+        pragmas=[IncludeOncePragma()],
+        imports=[Import("pe")],
+        extern_imports=[ExternImport("external.yar", alias="ext", rules=["Remote"])],
+        namespaces=[ExternNamespace("corp")],
+        extern_rules=[ExternRule("Remote")],
+        rules=[Rule(name="r", condition=BooleanLiteral(True))],
+    )
+
+    out = AdvancedCodeGenerator().generate(yara_file)
+
+    assert "#include_once" in out
+    assert 'import "pe"' in out
+    assert 'import "external.yar" (Remote) as ext' in out
+    assert "namespace corp" in out
+    assert "extern rule Remote" in out
+    assert "rule r {" in out
 
 
 def test_advanced_generator_long_condition_path_and_string_styles() -> None:

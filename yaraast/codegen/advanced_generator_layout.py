@@ -6,21 +6,34 @@ from yaraast.codegen.formatting import BraceStyle, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 
 
+def _emit_top_level_line(generator, node) -> None:
+    rendered = generator.visit(node)
+    if rendered:
+        generator._write(rendered)
+    generator._writeline()
+
+
+def _emit_top_level_section(generator, nodes) -> None:
+    if not nodes:
+        return
+    for node in nodes:
+        _emit_top_level_line(generator, node)
+    generator._write_blank_lines(generator.config.blank_lines_between_sections)
+
+
 def visit_yara_file(generator, node) -> str:
+    _emit_top_level_section(generator, node.pragmas)
+
     imports = (
         sorted(node.imports, key=lambda item: item.module)
         if generator.config.sort_imports
         else node.imports
     )
-    for imp in imports:
-        generator.visit(imp)
-    if imports:
-        generator._write_blank_lines(generator.config.blank_lines_between_sections)
-
-    for inc in node.includes:
-        generator.visit(inc)
-    if node.includes:
-        generator._write_blank_lines(generator.config.blank_lines_between_sections)
+    _emit_top_level_section(generator, imports)
+    _emit_top_level_section(generator, node.extern_imports)
+    _emit_top_level_section(generator, node.includes)
+    _emit_top_level_section(generator, node.namespaces)
+    _emit_top_level_section(generator, node.extern_rules)
 
     rules = node.rules
     if generator.config.sort_rules:
