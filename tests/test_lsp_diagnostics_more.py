@@ -226,6 +226,17 @@ def test_metadata_validation_ignores_malformed_config_entries() -> None:
     assert any(d.source == "yaraast-metadata" for d in diags)
 
 
+def test_rule_name_validation_ignores_malformed_config_value() -> None:
+    runtime = LspRuntime()
+    runtime.update_config({"YARA": {"ruleNameValidation": "^GOOD_"}})
+    runtime.update_config({"YARA": {"ruleNameValidation": ["invalid-pattern"]}})
+    provider = DiagnosticsProvider(runtime)
+
+    diags = provider.get_diagnostics("rule bad_name { condition: true }\n", "file:///x.yar")
+
+    assert any(d.source == "yaraast-naming" for d in diags)
+
+
 def test_compiler_include_error_is_structured() -> None:
     provider = DiagnosticsProvider()
     diag = provider._compiler_error_to_diagnostic('include error: cannot open "missing.yar"')

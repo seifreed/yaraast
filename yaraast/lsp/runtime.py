@@ -256,7 +256,11 @@ class LspRuntime:
                 settings["cacheWorkspace"], self.config.cache_workspace
             )
         if "ruleNameValidation" in settings:
-            self.config.rule_name_validation = settings["ruleNameValidation"] or None
+            rule_name_validation = settings["ruleNameValidation"]
+            if rule_name_validation is None:
+                self.config.rule_name_validation = None
+            elif isinstance(rule_name_validation, str):
+                self.config.rule_name_validation = rule_name_validation or None
         if "metadataValidation" in settings and isinstance(settings["metadataValidation"], list):
             self.config.metadata_validation = list(settings["metadataValidation"])
         if "codeFormatting" in settings and isinstance(settings["codeFormatting"], dict):
