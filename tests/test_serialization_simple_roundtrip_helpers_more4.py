@@ -227,6 +227,23 @@ def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> Non
         )
 
 
+def test_simple_roundtrip_hex_tokens_reject_invalid_scalar_fields() -> None:
+    for token in (
+        {"type": "HexByte", "value": True},
+        {"type": "HexByte", "value": "GG"},
+        {"type": "HexNegatedByte", "value": True},
+        {"type": "HexJump", "min_jump": True, "max_jump": 3},
+        {"type": "HexJump", "min_jump": 5, "max_jump": 3},
+        {"type": "HexNibble", "high": "true", "value": 10},
+        {"type": "HexNibble", "high": True, "value": True},
+        {"type": "HexNibble", "high": True, "value": 16},
+    ):
+        with pytest.raises(SerializationError):
+            deserialize_string(
+                {"type": "HexString", "identifier": "$h", "tokens": [token], "modifiers": []}
+            )
+
+
 def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="IntegerLiteral value must be an integer"):
         deserialize_node({"type": "IntegerLiteral", "value": True})

@@ -90,6 +90,8 @@ from yaraast.yarax.ast_nodes import (
 )
 from yaraast.yarax.generator import YaraXGenerator
 
+_HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+
 
 def _serialize_hex_token(token) -> dict[str, Any]:
     """Serialize a single hex token to a dictionary."""
@@ -118,15 +120,19 @@ def _deserialize_hex_token(data: dict[str, Any]):
     """Deserialize a hex token from a dictionary."""
     hex_kind = data.get("type")
     if hex_kind == "HexByte":
-        return HexByte(value=data["value"])
+        return HexByte(value=_deserialize_hex_byte_value(data, "HexByte"))
     if hex_kind == "HexWildcard":
         return HexWildcard()
     if hex_kind == "HexJump":
-        return HexJump(min_jump=data.get("min_jump"), max_jump=data.get("max_jump"))
+        min_jump, max_jump = _deserialize_hex_jump_bounds(data)
+        return HexJump(min_jump=min_jump, max_jump=max_jump)
     if hex_kind == "HexNibble":
-        return HexNibble(high=data["high"], value=data["value"])
+        return HexNibble(
+            high=_deserialize_hex_nibble_high(data),
+            value=_deserialize_hex_nibble_value(data),
+        )
     if hex_kind == "HexNegatedByte":
-        return HexNegatedByte(value=data["value"])
+        return HexNegatedByte(value=_deserialize_hex_byte_value(data, "HexNegatedByte"))
     if hex_kind == "HexAlternative":
         alternatives = [
             [_deserialize_hex_token(t) for t in _coerce_serialized_hex_alternative_branch(alt)]
@@ -213,6 +219,53 @@ def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
         return float(value)
     msg = "DoubleLiteral value must be numeric"
     raise SerializationError(msg)
+
+
+def _deserialize_hex_byte_value(data: dict[str, Any], context: str) -> int | str:
+    value = data["value"]
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
+        return value
+    if isinstance(value, str) and len(value) == 2 and all(char in _HEX_CHARS for char in value):
+        return value
+    msg = f"{context} value must be a byte"
+    raise SerializationError(msg)
+
+
+def _deserialize_hex_nibble_value(data: dict[str, Any]) -> int | str:
+    value = data["value"]
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xF:
+        return value
+    if isinstance(value, str) and len(value) == 1 and value in _HEX_CHARS:
+        return value
+    msg = "HexNibble value must be a nibble"
+    raise SerializationError(msg)
+
+
+def _deserialize_hex_nibble_high(data: dict[str, Any]) -> bool:
+    value = data.get("high", True)
+    if isinstance(value, bool):
+        return value
+    msg = "HexNibble high must be a boolean"
+    raise SerializationError(msg)
+
+
+def _deserialize_hex_jump_bound(data: dict[str, Any], field: str) -> int | None:
+    value = data.get(field)
+    if value is None:
+        return None
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    msg = f"HexJump {field} must be a non-negative integer"
+    raise SerializationError(msg)
+
+
+def _deserialize_hex_jump_bounds(data: dict[str, Any]) -> tuple[int | None, int | None]:
+    min_jump = _deserialize_hex_jump_bound(data, "min_jump")
+    max_jump = _deserialize_hex_jump_bound(data, "max_jump")
+    if min_jump is not None and max_jump is not None and min_jump > max_jump:
+        msg = "HexJump min_jump cannot exceed max_jump"
+        raise SerializationError(msg)
+    return min_jump, max_jump
 
 
 def _deserialize_string_field(data: dict[str, Any], field: str, context: str) -> str:

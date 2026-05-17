@@ -172,6 +172,25 @@ def test_json_deserialize_strings_reject_wrong_scalar_types() -> None:
         )
 
 
+def test_json_deserialize_hex_tokens_reject_invalid_scalar_fields() -> None:
+    s = JsonSerializer()
+
+    for token in (
+        {"type": "HexByte", "value": True},
+        {"type": "HexByte", "value": "GG"},
+        {"type": "HexNegatedByte", "value": True},
+        {"type": "HexJump", "min_jump": True, "max_jump": 3},
+        {"type": "HexJump", "min_jump": 5, "max_jump": 3},
+        {"type": "HexNibble", "high": "true", "value": 10},
+        {"type": "HexNibble", "high": True, "value": True},
+        {"type": "HexNibble", "high": True, "value": 16},
+    ):
+        with pytest.raises(SerializationError):
+            s._deserialize_string(
+                {"type": "HexString", "identifier": "$h", "tokens": [token], "modifiers": []}
+            )
+
+
 def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
 
