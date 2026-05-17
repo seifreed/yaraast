@@ -158,6 +158,17 @@ def test_parse_string_modifiers_xor_variants_and_errors() -> None:
     with pytest.raises(ParserError, match="Expected '\\)' after xor parameter"):
         p._parse_string_modifiers()
 
+    for modifier in (TokenType.BASE64, TokenType.BASE64WIDE):
+        p = _parser_with_tokens(
+            [
+                _t(modifier, modifier.name.lower()),
+                _t(TokenType.LPAREN, "("),
+                _t(TokenType.RPAREN, ")"),
+            ],
+        )
+        with pytest.raises(ParserError, match="Expected string in"):
+            p._parse_string_modifiers()
+
 
 def test_parse_hex_string_error_conversion() -> None:
     p = _parser_with_tokens([_t(TokenType.EOF, None)])

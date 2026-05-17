@@ -373,7 +373,8 @@ class CommentAwareParser(Parser):
         if mod_name != "xor":
             if self._match(TokenType.STRING):
                 return self._previous().value
-            return None
+            msg = f"Expected string in {mod_name} parameter"
+            raise ParserError(msg, self._peek())
 
         if not self._match(TokenType.INTEGER):
             msg = "Expected integer or range in xor"

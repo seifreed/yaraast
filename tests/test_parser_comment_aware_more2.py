@@ -184,6 +184,14 @@ def test_comment_aware_parser_preserves_parameterized_string_modifiers() -> None
     assert f'base64wide("{alphabet}")' in generated
 
 
+def test_comment_aware_parser_rejects_empty_base64_parameters() -> None:
+    for modifier in ("base64", "base64wide"):
+        with pytest.raises(ParserError, match=f"Expected string in {modifier} parameter"):
+            CommentAwareParser().parse(
+                f'rule modifiers {{ strings: $a = "abc" {modifier}() condition: $a }}'
+            )
+
+
 def test_parse_meta_section_boolean_and_error_paths_and_trailing_comments() -> None:
     p = CommentAwareParser()
 

@@ -138,6 +138,9 @@ class StringParsingMixin:
                     # base64/base64wide takes optional custom alphabet string
                     if self._match(TokenType.STRING):
                         value = self._previous().value
+                    else:
+                        msg = f"Expected string in {mod_name} parameter"
+                        raise ParserError(msg, self._peek())
 
                 if not self._match(TokenType.RPAREN):
                     msg = f"Expected ')' after {mod_name} parameter"
