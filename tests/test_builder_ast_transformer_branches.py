@@ -3,7 +3,17 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BinaryExpression, Identifier, StringIdentifier
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    FunctionCall,
+    Identifier,
+    IntegerLiteral,
+    SetExpression,
+    StringCount,
+    StringIdentifier,
+    StringOffset,
+    StringWildcard,
+)
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.builder.ast_transformer import (
@@ -130,6 +140,35 @@ def test_rule_transformer_prefix_suffix_and_condition_transform_paths() -> None:
         .build()
     )
     assert isinstance(replaced.condition, StringIdentifier)
+
+
+def test_rule_transformer_renames_nested_string_references() -> None:
+    rule = Rule(
+        name="nested_refs",
+        strings=[PlainString(identifier="$a", value="1")],
+        condition=SetExpression(
+            [
+                StringIdentifier("$a"),
+                StringCount("$a"),
+                FunctionCall("uint8", [StringOffset("$a", IntegerLiteral(0))]),
+                StringWildcard("$a*"),
+            ]
+        ),
+    )
+
+    transformed = RuleTransformer(rule).rename_strings({"$a": "$renamed"}).build()
+
+    assert isinstance(transformed.condition, SetExpression)
+    string_ref, count_ref, call_ref, wildcard_ref = transformed.condition.elements
+    assert isinstance(string_ref, StringIdentifier)
+    assert string_ref.name == "$renamed"
+    assert isinstance(count_ref, StringCount)
+    assert count_ref.string_id == "$renamed"
+    assert isinstance(call_ref, FunctionCall)
+    assert isinstance(call_ref.arguments[0], StringOffset)
+    assert call_ref.arguments[0].string_id == "$renamed"
+    assert isinstance(wildcard_ref, StringWildcard)
+    assert wildcard_ref.pattern == "$renamed*"
 
 
 def test_yara_file_transformer_operations_and_filters() -> None:

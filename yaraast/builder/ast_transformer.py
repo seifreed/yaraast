@@ -6,11 +6,16 @@ from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from yaraast.ast.base import ASTNode, YaraFile
+from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     Expression,
     ParenthesesExpression,
+    StringCount,
     StringIdentifier,
+    StringLength,
+    StringOffset,
+    StringWildcard,
     UnaryExpression,
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
@@ -228,8 +233,40 @@ class RuleTransformer:
     ) -> Expression:
         """Recursively rename string identifiers in expression."""
         if isinstance(expr, StringIdentifier):
-            if expr.name in mapping:
-                return StringIdentifier(name=mapping[expr.name])
+            expr.name = self._rename_string_reference(expr.name, mapping)
+            return expr
+
+        if isinstance(expr, StringCount):
+            expr.string_id = self._rename_string_reference(expr.string_id, mapping)
+            return expr
+
+        if isinstance(expr, StringOffset | StringLength):
+            expr.string_id = self._rename_string_reference(expr.string_id, mapping)
+            expr.index = self._rename_expression_value(expr.index, mapping)
+            return expr
+
+        if isinstance(expr, StringWildcard):
+            expr.pattern = self._rename_string_pattern(expr.pattern, mapping)
+            return expr
+
+        if isinstance(expr, AtExpression):
+            expr.string_id = self._rename_string_reference(expr.string_id, mapping)
+            expr.offset = self._rename_expression_value(expr.offset, mapping)
+            return expr
+
+        if isinstance(expr, InExpression):
+            if isinstance(expr.subject, str):
+                expr.subject = self._rename_string_reference(expr.subject, mapping)
+            else:
+                expr.subject = self._rename_expression_value(expr.subject, mapping)
+            expr.range = self._rename_expression_value(expr.range, mapping)
+            return expr
+
+        if isinstance(expr, OfExpression | ForOfExpression):
+            expr.quantifier = self._rename_expression_value(expr.quantifier, mapping)
+            expr.string_set = self._rename_string_set_value(expr.string_set, mapping)
+            if isinstance(expr, ForOfExpression) and expr.condition is not None:
+                expr.condition = self._rename_expression_value(expr.condition, mapping)
             return expr
 
         if isinstance(expr, BinaryExpression):
@@ -251,17 +288,74 @@ class RuleTransformer:
                 return ParenthesesExpression(expression=new_inner)
             return expr
 
-        # For node types with children, recurse via generic traversal
-        for child in expr.children():
-            if isinstance(child, Expression):
-                new_child = self._rename_strings_in_expression(child, mapping)
-                if new_child is not child:
-                    for attr_name in vars(expr):
-                        if getattr(expr, attr_name) is child:
-                            setattr(expr, attr_name, new_child)
-                            break
+        for attr_name, attr_value in vars(expr).items():
+            if attr_name in {"location", "leading_comments", "trailing_comment"}:
+                continue
+            setattr(expr, attr_name, self._rename_expression_value(attr_value, mapping))
 
         return expr
+
+    def _rename_expression_value(
+        self,
+        value: object,
+        mapping: dict[str, str],
+    ) -> object:
+        if isinstance(value, Expression):
+            return self._rename_strings_in_expression(value, mapping)
+        if isinstance(value, list):
+            return [self._rename_expression_value(item, mapping) for item in value]
+        if isinstance(value, tuple):
+            return tuple(self._rename_expression_value(item, mapping) for item in value)
+        if isinstance(value, set):
+            return {self._rename_expression_value(item, mapping) for item in value}
+        if isinstance(value, frozenset):
+            return frozenset(self._rename_expression_value(item, mapping) for item in value)
+        return value
+
+    def _rename_string_set_value(
+        self,
+        value: object,
+        mapping: dict[str, str],
+    ) -> object:
+        if isinstance(value, str):
+            return self._rename_string_pattern(value, mapping)
+        if isinstance(value, Expression):
+            return self._rename_strings_in_expression(value, mapping)
+        if isinstance(value, list):
+            return [self._rename_string_set_value(item, mapping) for item in value]
+        if isinstance(value, tuple):
+            return tuple(self._rename_string_set_value(item, mapping) for item in value)
+        if isinstance(value, set):
+            return {self._rename_string_set_value(item, mapping) for item in value}
+        if isinstance(value, frozenset):
+            return frozenset(self._rename_string_set_value(item, mapping) for item in value)
+        return value
+
+    @staticmethod
+    def _rename_string_reference(value: str, mapping: dict[str, str]) -> str:
+        if value in mapping:
+            return mapping[value]
+        if value.startswith("$"):
+            bare_name = value[1:]
+            if bare_name in mapping:
+                mapped = mapping[bare_name]
+                return mapped if mapped.startswith("$") else f"${mapped}"
+        else:
+            prefixed_name = f"${value}"
+            if prefixed_name in mapping:
+                return mapping[prefixed_name].lstrip("$")
+        return value
+
+    def _rename_string_pattern(self, value: str, mapping: dict[str, str]) -> str:
+        renamed = self._rename_string_reference(value, mapping)
+        if renamed != value:
+            return renamed
+        if value.endswith("*"):
+            prefix = value[:-1]
+            renamed_prefix = self._rename_string_reference(prefix, mapping)
+            if renamed_prefix != prefix:
+                return f"{renamed_prefix}*"
+        return value
 
 
 class YaraFileTransformer:
