@@ -54,6 +54,20 @@ def test_string_matcher_match_string_for_plain_hex_regex_and_unknown_type() -> N
     assert matcher.match_string(object(), b"abc") == []
 
 
+def test_string_matcher_match_string_replaces_previous_match_state() -> None:
+    matcher = StringMatcher()
+
+    first = PlainString("$a", value="abc", modifiers=[])
+    second = PlainString("$b", value="xyz", modifiers=[])
+
+    assert len(matcher.match_string(first, b"abc")) == 1
+    assert matcher.get_match_count("$a") == 1
+
+    assert matcher.match_string(second, b"") == []
+    assert matcher.get_match_count("$a") == 0
+    assert matcher.get_match_count("$b") == 0
+
+
 def test_string_matcher_fullword_and_boundary_helpers() -> None:
     matcher = StringMatcher()
     string_def = PlainString(

@@ -101,6 +101,7 @@ class StringMatcher:
     def match_string(self, string_def: object, data: bytes) -> list[MatchResult]:
         """Match a single string against data."""
         matches: list[MatchResult] = []
+        self.matches.clear()
 
         if isinstance(string_def, PlainString):
             self._match_plain_string(data, string_def)
