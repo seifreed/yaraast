@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import ForOfExpression, OfExpression
@@ -14,6 +16,7 @@ from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
+from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
 from yaraast.serialization.protobuf_conversion import protobuf_to_ast, protobuf_to_string
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
@@ -127,6 +130,54 @@ def test_protobuf_conversion_parses_legacy_hex_xor_modifier_values() -> None:
 
     assert isinstance(restored, PlainString)
     assert [modifier.value for modifier in restored.modifiers] == [255, (1, 255)]
+
+
+@pytest.mark.parametrize(
+    ("token_kind", "field_name", "value", "message"),
+    [
+        ("byte", "value", "-1", "HexByte value must be a byte"),
+        ("byte", "value", "999", "HexByte value must be a byte"),
+        ("byte", "value", "GG", "HexByte value must be a byte"),
+        ("negated_byte", "value", "999", "HexNegatedByte value must be a byte"),
+        ("nibble", "value", 16, "HexNibble value must be a nibble"),
+        ("nibble", "value", -1, "HexNibble value must be a nibble"),
+        ("jump", "min_jump", -1, "HexJump min_jump must be a non-negative integer"),
+    ],
+)
+def test_protobuf_deserialization_rejects_invalid_hex_token_scalars(
+    token_kind: str,
+    field_name: str,
+    value: str | int,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "bad_hex"
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$h"
+    pb_token = pb_string.hex.tokens.add()
+    setattr(getattr(pb_token, token_kind), field_name, value)
+    pb_rule.condition.boolean_literal.value = True
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserialization_rejects_descending_hex_jump_bounds() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "bad_hex_jump"
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$h"
+    pb_token = pb_string.hex.tokens.add()
+    pb_token.jump.min_jump = 5
+    pb_token.jump.max_jump = 3
+    pb_rule.condition.boolean_literal.value = True
+
+    with pytest.raises(SerializationError, match="HexJump min_jump cannot exceed max_jump"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:

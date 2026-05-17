@@ -5,10 +5,13 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from yaraast.errors import SerializationError
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
 from yaraast.string_escaping import escape_string_source_value
 
 from . import yara_ast_pb2
+
+_HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
 
 def _protobuf_has_field(message, field_name: str) -> bool:
@@ -435,26 +438,75 @@ def _hex_byte_value_to_protobuf(value: int | str) -> str:
 
 def _hex_byte_value_from_protobuf(value: str) -> int | str:
     if value.startswith("hex:"):
-        return value.removeprefix("hex:")
+        raw_value = value.removeprefix("hex:")
+        if len(raw_value) == 2 and all(char in _HEX_CHARS for char in raw_value):
+            return raw_value
+        msg = "HexByte value must be a byte"
+        raise SerializationError(msg)
     try:
-        return int(value)
+        byte_value = int(value)
     except ValueError:
-        return value
+        if len(value) == 2 and all(char in _HEX_CHARS for char in value):
+            return value
+        msg = "HexByte value must be a byte"
+        raise SerializationError(msg) from None
+    if 0 <= byte_value <= 0xFF:
+        return byte_value
+    msg = "HexByte value must be a byte"
+    raise SerializationError(msg)
 
 
 def _hex_int_value_from_protobuf(value: str) -> int:
     if value.startswith("hex:"):
-        return int(value.removeprefix("hex:"), 16)
+        raw_value = value.removeprefix("hex:")
+        if len(raw_value) == 2 and all(char in _HEX_CHARS for char in raw_value):
+            return int(raw_value, 16)
+        msg = "HexNegatedByte value must be a byte"
+        raise SerializationError(msg)
     try:
-        return int(value)
+        byte_value = int(value)
     except ValueError:
-        return int(value, 16)
+        if len(value) == 2 and all(char in _HEX_CHARS for char in value):
+            byte_value = int(value, 16)
+        else:
+            msg = "HexNegatedByte value must be a byte"
+            raise SerializationError(msg) from None
+    if 0 <= byte_value <= 0xFF:
+        return byte_value
+    msg = "HexNegatedByte value must be a byte"
+    raise SerializationError(msg)
 
 
 def _hex_nibble_value_to_protobuf(value: int | str) -> int:
     if isinstance(value, int):
         return value
     return int(value, 16)
+
+
+def _protobuf_hex_nibble_value(value: int) -> int:
+    if 0 <= value <= 0xF:
+        return value
+    msg = "HexNibble value must be a nibble"
+    raise SerializationError(msg)
+
+
+def _protobuf_hex_jump_bound(pb_jump, field: str) -> int | None:
+    if not pb_jump.HasField(field):
+        return None
+    value = getattr(pb_jump, field)
+    if value >= 0:
+        return value
+    msg = f"HexJump {field} must be a non-negative integer"
+    raise SerializationError(msg)
+
+
+def _protobuf_hex_jump_bounds(pb_jump) -> tuple[int | None, int | None]:
+    min_jump = _protobuf_hex_jump_bound(pb_jump, "min_jump")
+    max_jump = _protobuf_hex_jump_bound(pb_jump, "max_jump")
+    if min_jump is not None and max_jump is not None and min_jump > max_jump:
+        msg = "HexJump min_jump cannot exceed max_jump"
+        raise SerializationError(msg)
+    return min_jump, max_jump
 
 
 def _coerce_hex_alternative_branch(alternative) -> list:
@@ -1076,11 +1128,12 @@ def _protobuf_to_hex_token(pb_token):
     if pb_token.HasField("wildcard"):
         return _apply_node_metadata_from_protobuf(pb_token, HexWildcard())
     if pb_token.HasField("jump"):
+        min_jump, max_jump = _protobuf_hex_jump_bounds(pb_token.jump)
         return _apply_node_metadata_from_protobuf(
             pb_token,
             HexJump(
-                min_jump=pb_token.jump.min_jump if pb_token.jump.HasField("min_jump") else None,
-                max_jump=pb_token.jump.max_jump if pb_token.jump.HasField("max_jump") else None,
+                min_jump=min_jump,
+                max_jump=max_jump,
             ),
         )
     if pb_token.HasField("alternative"):
@@ -1099,7 +1152,10 @@ def _protobuf_to_hex_token(pb_token):
     if pb_token.HasField("nibble"):
         return _apply_node_metadata_from_protobuf(
             pb_token,
-            HexNibble(high=pb_token.nibble.high, value=pb_token.nibble.value),
+            HexNibble(
+                high=pb_token.nibble.high,
+                value=_protobuf_hex_nibble_value(pb_token.nibble.value),
+            ),
         )
     return None
 
