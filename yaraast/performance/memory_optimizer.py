@@ -36,6 +36,7 @@ from yaraast.performance.memory_transformer_visitors import (
     visit_unary_expression as transformer_visit_unary_expression,
     visit_yara_file as transformer_visit_yara_file,
 )
+from yaraast.performance.validation import validate_positive_int_setting
 from yaraast.visitor.base import ASTTransformer
 
 if TYPE_CHECKING:
@@ -77,12 +78,10 @@ class MemoryOptimizer:
             enable_tracking: Enable object tracking
 
         """
-        if memory_limit_mb is not None and memory_limit_mb < 1:
-            msg = "memory_limit_mb must be at least 1"
-            raise ValueError(msg)
-        if gc_threshold is not None and gc_threshold < 1:
-            msg = "gc_threshold must be at least 1"
-            raise ValueError(msg)
+        if memory_limit_mb is not None:
+            validate_positive_int_setting(memory_limit_mb, "memory_limit_mb")
+        if gc_threshold is not None:
+            validate_positive_int_setting(gc_threshold, "gc_threshold")
 
         self.aggressive = aggressive
         self.memory_limit_mb = memory_limit_mb

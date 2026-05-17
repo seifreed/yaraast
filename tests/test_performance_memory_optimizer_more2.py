@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -54,6 +56,11 @@ def test_memory_optimizer_rule_list_usage_and_batch_paths() -> None:
 
     with pytest.raises(ValueError, match="batch_size must be at least 1"):
         list(optimizer.batch_process_with_memory_limit([1], lambda x: x, batch_size=0))
+
+    with pytest.raises(TypeError, match="batch_size must be an integer"):
+        list(
+            optimizer.batch_process_with_memory_limit([1], lambda x: x, batch_size=cast(Any, True))
+        )
 
 
 def test_memory_optimizer_transformer_visits_real_nodes() -> None:

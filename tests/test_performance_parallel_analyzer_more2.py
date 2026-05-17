@@ -142,10 +142,22 @@ def test_parallel_analyzer_rejects_invalid_worker_counts(tmp_path: Path) -> None
     file_path = tmp_path / "workers.yar"
     file_path.write_text(_rule_code("workers"), encoding="utf-8")
 
+    with pytest.raises(TypeError, match="max_workers must be an integer"):
+        ParallelAnalyzer(max_workers=cast(Any, True))
+
     with pytest.raises(ValueError, match="max_workers must be at least 1"):
         ParallelAnalyzer(max_workers=0)
 
     analyzer = ParallelAnalyzer(max_workers=1)
+    with pytest.raises(TypeError, match="max_workers must be an integer"):
+        analyzer.analyze_rules(rules, max_workers=cast(Any, True))
+    with pytest.raises(TypeError, match="max_workers must be an integer"):
+        analyzer.batch_analyze_files([str(file_path)], max_workers=cast(Any, True))
+    with pytest.raises(TypeError, match="max_workers must be an integer"):
+        analyzer.analyze_with_custom_function(rules, _custom_rule_name, max_workers=cast(Any, True))
+    with pytest.raises(TypeError, match="worker_counts must contain integers"):
+        analyzer.profile_performance(rules, worker_counts=cast(Any, [True]))
+
     with pytest.raises(ValueError, match="max_workers must be at least 1"):
         analyzer.analyze_rules(rules, max_workers=0)
     with pytest.raises(ValueError, match="max_workers must be at least 1"):

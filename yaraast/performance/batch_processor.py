@@ -16,6 +16,7 @@ from yaraast.performance.batch_processor_ops import (
     serialize_item,
     validate_item,
 )
+from yaraast.performance.validation import validate_positive_int_setting
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
 if TYPE_CHECKING:
@@ -23,15 +24,6 @@ if TYPE_CHECKING:
 
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
-
-
-def _validate_positive_int_setting(value: Any, name: str) -> None:
-    if not isinstance(value, int) or isinstance(value, bool):
-        msg = f"{name} must be an integer"
-        raise TypeError(msg)
-    if value < 1:
-        msg = f"{name} must be at least 1"
-        raise ValueError(msg)
 
 
 class BatchOperation(Enum):
@@ -87,11 +79,11 @@ class BatchProcessor:
     ) -> None:
         """Initialize batch processor."""
         if max_workers is not None:
-            _validate_positive_int_setting(max_workers, "max_workers")
+            validate_positive_int_setting(max_workers, "max_workers")
 
-        _validate_positive_int_setting(max_memory_mb, "max_memory_mb")
+        validate_positive_int_setting(max_memory_mb, "max_memory_mb")
 
-        _validate_positive_int_setting(batch_size, "batch_size")
+        validate_positive_int_setting(batch_size, "batch_size")
 
         self.max_workers = max_workers if max_workers is not None else 4
         self.max_memory_mb = max_memory_mb
@@ -112,7 +104,7 @@ class BatchProcessor:
     ) -> list[Any]:
         """Process a batch of items."""
         batch_size = self.batch_size if batch_size is None else batch_size
-        _validate_positive_int_setting(batch_size, "batch_size")
+        validate_positive_int_setting(batch_size, "batch_size")
 
         results = []
 

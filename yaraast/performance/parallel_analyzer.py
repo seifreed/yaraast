@@ -26,6 +26,7 @@ from yaraast.performance.parallel_job_helpers import (
     resettable_parallel_stats,
 )
 from yaraast.performance.parallel_models import Job
+from yaraast.performance.validation import validate_positive_int_setting
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -45,9 +46,8 @@ class ParallelAnalyzer:
                         Defaults to CPU count.
 
         """
-        if max_workers is not None and max_workers < 1:
-            msg = "max_workers must be at least 1"
-            raise ValueError(msg)
+        if max_workers is not None:
+            validate_positive_int_setting(max_workers, "max_workers")
 
         self.max_workers = max_workers if max_workers is not None else mp.cpu_count()
         self.rule_analyzer = RuleAnalyzer()

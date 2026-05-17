@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from textwrap import dedent
+from typing import Any, cast
 
 import pytest
 
@@ -78,6 +79,12 @@ def test_memory_optimizer_recommendations_and_pool() -> None:
 
 
 def test_memory_optimizer_rejects_invalid_numeric_configuration() -> None:
+    with pytest.raises(TypeError, match="memory_limit_mb must be an integer"):
+        MemoryOptimizer(memory_limit_mb=cast(Any, True))
+
+    with pytest.raises(TypeError, match="gc_threshold must be an integer"):
+        MemoryOptimizer(gc_threshold=cast(Any, True))
+
     with pytest.raises(ValueError, match="memory_limit_mb must be at least 1"):
         MemoryOptimizer(memory_limit_mb=0)
 

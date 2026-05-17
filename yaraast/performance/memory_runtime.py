@@ -10,6 +10,7 @@ import weakref
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.performance.memory_helpers import MemoryStats, clear_tracking, maybe_collect
+from yaraast.performance.validation import validate_positive_int_setting
 
 
 def init_optimizer_state(optimizer: Any) -> None:
@@ -94,9 +95,7 @@ def batch_process_with_memory_limit[Item, Result](
     processor: Callable[[Item], Result],
     batch_size: int = 10,
 ) -> Iterator[list[Result]]:
-    if batch_size < 1:
-        msg = "batch_size must be at least 1"
-        raise ValueError(msg)
+    validate_positive_int_setting(batch_size, "batch_size")
 
     for index in range(0, len(items), batch_size):
         batch = items[index : index + batch_size]

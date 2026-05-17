@@ -21,6 +21,7 @@ from yaraast.performance.streaming_result_builders import (
     default_streaming_stats,
     timed_now,
 )
+from yaraast.performance.validation import validate_positive_int_setting
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
 if TYPE_CHECKING:
@@ -28,15 +29,6 @@ if TYPE_CHECKING:
     import io
 
     from yaraast.ast.rules import Rule
-
-
-def _validate_positive_int_setting(value: Any, name: str) -> None:
-    if not isinstance(value, int) or isinstance(value, bool):
-        msg = f"{name} must be an integer"
-        raise TypeError(msg)
-    if value < 1:
-        msg = f"{name} must be at least 1"
-        raise ValueError(msg)
 
 
 class StreamingParser:
@@ -63,10 +55,10 @@ class StreamingParser:
                 for parsing non-standard dialects without circular imports
 
         """
-        _validate_positive_int_setting(buffer_size, "buffer_size")
+        validate_positive_int_setting(buffer_size, "buffer_size")
 
         if max_memory_mb is not None:
-            _validate_positive_int_setting(max_memory_mb, "max_memory_mb")
+            validate_positive_int_setting(max_memory_mb, "max_memory_mb")
 
         self.buffer_size = buffer_size
         self.max_memory_mb = max_memory_mb

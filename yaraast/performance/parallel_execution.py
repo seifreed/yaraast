@@ -7,6 +7,8 @@ import multiprocessing as mp
 import time
 from typing import TYPE_CHECKING, Any
 
+from yaraast.performance.validation import validate_positive_int_setting
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -16,9 +18,7 @@ if TYPE_CHECKING:
 
 def _resolve_worker_count(analyzer: ParallelAnalyzer, max_workers: int | None) -> int:
     worker_count = analyzer.max_workers if max_workers is None else max_workers
-    if worker_count < 1:
-        msg = "max_workers must be at least 1"
-        raise ValueError(msg)
+    validate_positive_int_setting(worker_count, "max_workers")
     return worker_count
 
 
@@ -112,6 +112,9 @@ def profile_performance(
 
     results = {}
     for workers in worker_counts:
+        if not isinstance(workers, int) or isinstance(workers, bool):
+            msg = "worker_counts must contain integers"
+            raise TypeError(msg)
         if workers < 1:
             msg = "worker_counts must contain values at least 1"
             raise ValueError(msg)
