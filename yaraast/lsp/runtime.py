@@ -202,6 +202,7 @@ class LspRuntime:
         if self.config.cache_workspace:
             self.documents[uri] = ctx
             self.index.update_document(ctx)
+            self.cache.bump_generation()
         return ctx
 
     def ensure_document(self, uri: str, text: str) -> DocumentContext:

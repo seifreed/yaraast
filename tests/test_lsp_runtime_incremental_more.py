@@ -58,6 +58,20 @@ rule sample {
     assert {"sample", "$a"} <= names
 
 
+def test_runtime_get_document_invalidates_workspace_symbol_cache(tmp_path: Path) -> None:
+    rule_file = tmp_path / "sample.yar"
+    rule_file.write_text("rule loaded_later { condition: true }\n", encoding="utf-8")
+    uri = path_to_uri(rule_file)
+
+    runtime = LspRuntime()
+    assert runtime.workspace_symbols("") == []
+
+    runtime.get_document(uri)
+
+    names = {symbol.name for symbol in runtime.workspace_symbols("")}
+    assert "loaded_later" in names
+
+
 def test_runtime_latency_metrics_and_debounce() -> None:
     runtime = LspRuntime()
     runtime.record_latency("diagnostics", 10.0)
