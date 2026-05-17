@@ -15,6 +15,95 @@ from lsprotocol.types import (
 )
 
 
+def _previous_significant_char(text: str, index: int) -> str | None:
+    for char in reversed(text[:index]):
+        if not char.isspace():
+            return char
+    return None
+
+
+def _starts_regex_literal(text: str, index: int) -> bool:
+    if text[index] != "/":
+        return False
+    if index + 1 < len(text) and text[index + 1] in {"/", "*"}:
+        return False
+    previous = _previous_significant_char(text, index)
+    return previous is None or previous in "([{,=!:<>~&|?+-*"
+
+
+def _scan_quoted_end(text: str, start: int, delimiter: str) -> int:
+    escaped = False
+    index = start + 1
+    while index < len(text):
+        char = text[index]
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == delimiter:
+            return index
+        index += 1
+    return len(text) - 1
+
+
+def _find_matching_call_close(line: str, open_paren: int) -> int | None:
+    depth = 0
+    index = open_paren
+    while index < len(line):
+        char = line[index]
+        if char == '"':
+            index = _scan_quoted_end(line, index, '"') + 1
+            continue
+        if char == "/" and _starts_regex_literal(line, index):
+            index = _scan_quoted_end(line, index, "/") + 1
+            continue
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return index
+        index += 1
+    return None
+
+
+def _split_top_level_arguments(args_text: str) -> list[str]:
+    parts: list[str] = []
+    start = 0
+    paren_depth = 0
+    bracket_depth = 0
+    brace_depth = 0
+    index = 0
+    while index < len(args_text):
+        char = args_text[index]
+        if char == '"':
+            index = _scan_quoted_end(args_text, index, '"') + 1
+            continue
+        if char == "/" and _starts_regex_literal(args_text, index):
+            index = _scan_quoted_end(args_text, index, "/") + 1
+            continue
+        if char == "(":
+            paren_depth += 1
+        elif char == ")":
+            paren_depth = max(0, paren_depth - 1)
+        elif char == "[":
+            bracket_depth += 1
+        elif char == "]":
+            bracket_depth = max(0, bracket_depth - 1)
+        elif char == "{":
+            brace_depth += 1
+        elif char == "}":
+            brace_depth = max(0, brace_depth - 1)
+        elif char == "," and paren_depth == 0 and bracket_depth == 0 and brace_depth == 0:
+            parts.append(args_text[start:index].strip())
+            start = index + 1
+        index += 1
+    tail = args_text[start:].strip()
+    if tail or parts:
+        parts.append(tail)
+    return parts
+
+
 def create_replace_module_function_actions(
     text: str,
     diagnostic: Diagnostic,
@@ -161,8 +250,8 @@ def create_add_missing_arguments_action(
     if start_col < 0:
         return []
     open_paren = start_col + len(function_name)
-    close_paren = line.find(")", open_paren)
-    if close_paren < 0:
+    close_paren = _find_matching_call_close(line, open_paren)
+    if close_paren is None:
         return []
     insertion = ("0, " * missing_count).rstrip(", ")
     if close_paren > open_paren + 1:
@@ -205,12 +294,12 @@ def create_trim_arguments_action(
     if start_col < 0:
         return []
     open_paren = start_col + len(function_name)
-    close_paren = line.find(")", open_paren)
-    if close_paren < 0:
+    close_paren = _find_matching_call_close(line, open_paren)
+    if close_paren is None:
         return []
 
     args_text = line[open_paren + 1 : close_paren]
-    parts = [part.strip() for part in args_text.split(",")]
+    parts = _split_top_level_arguments(args_text)
     if len(parts) <= keep_args:
         return []
     replacement = ", ".join(parts[:keep_args])

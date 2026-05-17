@@ -297,6 +297,40 @@ rule sample {
     assert "Add 1 missing argument(s) to uint8()" in titles
 
 
+def test_code_action_add_missing_argument_uses_outer_call_close() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        custom(inner(1, 2))
+}
+""".lstrip()
+    diag = Diagnostic(
+        range=_range(2, 8, 28),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "custom",
+                "arity_kind": "exact",
+                "actual_args": 1,
+                "expected_args": 2,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(text, _range(2, 8, 28), [diag], "file://test.yar")
+    action = next(
+        action for action in actions if action.title == "Add 1 missing argument(s) to custom()"
+    )
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.new_text == ", 0"
+    assert change.range.start.character == text.splitlines()[2].rfind(")")
+
+
 def test_code_action_uses_structured_metadata_to_trim_extra_arguments() -> None:
     provider = CodeActionsProvider()
     text = """
@@ -327,6 +361,38 @@ rule sample {
     )
     assert action.edit is not None
     assert _change_set(action.edit, "file://test.yar")[0].new_text == "1"
+
+
+def test_code_action_trim_arguments_preserves_commas_inside_strings() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        custom("a,b", 1)
+}
+""".lstrip()
+    diag = Diagnostic(
+        range=_range(2, 8, 24),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "custom",
+                "arity_kind": "max",
+                "actual_args": 2,
+                "expected_max": 1,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(text, _range(2, 8, 24), [diag], "file://test.yar")
+    action = next(
+        action for action in actions if action.title == "Remove extra argument(s) from custom()"
+    )
+    assert action.edit is not None
+    assert _change_set(action.edit, "file://test.yar")[0].new_text == '"a,b"'
 
 
 def test_code_action_uses_compiler_undefined_identifier_metadata_for_missing_string() -> None:
