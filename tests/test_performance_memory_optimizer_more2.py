@@ -17,7 +17,13 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
-from yaraast.ast.modifiers import MetaEntry
+from yaraast.ast.modifiers import (
+    MetaEntry,
+    RuleModifier,
+    RuleModifierType,
+    StringModifier,
+    StringModifierType,
+)
 from yaraast.ast.pragmas import CustomPragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
@@ -79,10 +85,15 @@ def test_memory_optimizer_transformer_visits_real_nodes() -> None:
         rules=[
             Rule(
                 name="dup",
+                modifiers=[RuleModifier(RuleModifierType.PRIVATE)],
                 tags=[Tag("dup")],
                 meta=[MetaEntry("k", "dup")],
                 strings=[
-                    PlainString(identifier="$a", value="dup"),
+                    PlainString(
+                        identifier="$a",
+                        value="dup",
+                        modifiers=[StringModifier(StringModifierType.NOCASE)],
+                    ),
                     HexString(identifier="$h", tokens=[HexByte(0x41)]),
                     RegexString(identifier="$r", regex="dup"),
                 ],
@@ -111,6 +122,30 @@ def test_memory_optimizer_transformer_visits_real_nodes() -> None:
     assert optimized.namespaces is not yara_file.namespaces
     optimized.extern_rules.append(ExternRule("new_external"))
     assert len(yara_file.extern_rules) == 1
+
+    optimized_rule = optimized.rules[0]
+    original_rule = yara_file.rules[0]
+    assert optimized_rule.modifiers is not original_rule.modifiers
+    optimized_rule.modifiers.append(RuleModifier(RuleModifierType.GLOBAL))
+    assert len(original_rule.modifiers) == 1
+
+    optimized_plain = optimized_rule.strings[0]
+    original_plain = original_rule.strings[0]
+    assert isinstance(optimized_plain, PlainString)
+    assert isinstance(original_plain, PlainString)
+    assert optimized_plain.modifiers is not original_plain.modifiers
+    assert optimized_plain.modifiers[0] is not original_plain.modifiers[0]
+    optimized_plain.modifiers.append(StringModifier(StringModifierType.WIDE))
+    assert len(original_plain.modifiers) == 1
+
+    optimized_hex = optimized_rule.strings[1]
+    original_hex = original_rule.strings[1]
+    assert isinstance(optimized_hex, HexString)
+    assert isinstance(original_hex, HexString)
+    assert optimized_hex.tokens is not original_hex.tokens
+    assert optimized_hex.tokens[0] is not original_hex.tokens[0]
+    optimized_hex.tokens.append(HexByte(0x42))
+    assert len(original_hex.tokens) == 1
     assert yara_file.includes[0].path == "common.yar"
 
 

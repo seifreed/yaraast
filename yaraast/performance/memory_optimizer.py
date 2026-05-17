@@ -38,6 +38,7 @@ from yaraast.performance.memory_transformer_visitors import (
     visit_rule as transformer_visit_rule,
     visit_string_identifier as transformer_visit_string_identifier,
     visit_string_literal as transformer_visit_string_literal,
+    visit_string_modifier as transformer_visit_string_modifier,
     visit_string_wildcard as transformer_visit_string_wildcard,
     visit_tag as transformer_visit_tag,
     visit_unary_expression as transformer_visit_unary_expression,
@@ -64,6 +65,7 @@ if TYPE_CHECKING:
     )
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
     from yaraast.ast.meta import Meta
+    from yaraast.ast.modifiers import StringModifier
     from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
     from yaraast.ast.rules import Import, Include, Rule, Tag
     from yaraast.ast.strings import HexString, PlainString, RegexString
@@ -274,6 +276,9 @@ class MemoryOptimizerTransformer(ASTTransformer):
 
     def visit_string_identifier(self, node: StringIdentifier) -> StringIdentifier:
         return transformer_visit_string_identifier(self, node)
+
+    def visit_string_modifier(self, node: StringModifier) -> StringModifier:
+        return transformer_visit_string_modifier(self, node)
 
     def visit_string_wildcard(self, node: StringWildcard) -> StringWildcard:
         return transformer_visit_string_wildcard(self, node)

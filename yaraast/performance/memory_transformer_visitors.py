@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     )
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
     from yaraast.ast.meta import Meta
+    from yaraast.ast.modifiers import StringModifier
     from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
     from yaraast.ast.rules import Import, Include, Rule, Tag
     from yaraast.ast.strings import HexString, PlainString, RegexString
@@ -48,6 +49,10 @@ def _pool_parameter_value(transformer, value: Any) -> Any:
     return value
 
 
+def _visit_items(transformer, values: list[Any]) -> list[Any]:
+    return [transformer.visit(value) if hasattr(value, "accept") else value for value in values]
+
+
 def visit_string_literal(transformer, node: StringLiteral) -> StringLiteral:
     node = _shallow(node)
     if hasattr(node, "value") and isinstance(node.value, str):
@@ -66,6 +71,8 @@ def visit_rule(transformer, node: Rule) -> Rule:
     node = _shallow(node)
     if node.name:
         node.name = pooled_value(transformer.string_pool, node.name)
+    if isinstance(node.modifiers, list):
+        node.modifiers = _visit_items(transformer, node.modifiers)
     if node.condition:
         node.condition = transformer.visit(node.condition)
     if node.strings:
@@ -86,6 +93,7 @@ def visit_rule(transformer, node: Rule) -> Rule:
 
 def visit_plain_string(transformer, node: PlainString) -> PlainString:
     node = _shallow(node)
+    node.modifiers = _visit_items(transformer, node.modifiers)
     if hasattr(node, "value") and isinstance(node.value, str):
         node.value = pooled_value(transformer.string_pool, node.value)
     if hasattr(node, "identifier") and isinstance(node.identifier, str):
@@ -178,6 +186,8 @@ def visit_unary_expression(transformer, node: UnaryExpression) -> UnaryExpressio
 
 def visit_hex_string(transformer, node: HexString) -> HexString:
     node = _shallow(node)
+    node.modifiers = _visit_items(transformer, node.modifiers)
+    node.tokens = _visit_items(transformer, node.tokens)
     if hasattr(node, "identifier") and isinstance(node.identifier, str):
         node.identifier = pooled_value(transformer.string_pool, node.identifier)
     return node
@@ -185,6 +195,7 @@ def visit_hex_string(transformer, node: HexString) -> HexString:
 
 def visit_regex_string(transformer, node: RegexString) -> RegexString:
     node = _shallow(node)
+    node.modifiers = _visit_items(transformer, node.modifiers)
     if hasattr(node, "identifier") and isinstance(node.identifier, str):
         node.identifier = pooled_value(transformer.string_pool, node.identifier)
     if hasattr(node, "regex") and isinstance(node.regex, str):
@@ -195,6 +206,7 @@ def visit_regex_string(transformer, node: RegexString) -> RegexString:
 def visit_extern_rule(transformer, node: ExternRule) -> ExternRule:
     node = _shallow(node)
     node.name = pooled_value(transformer.string_pool, node.name)
+    node.modifiers = _visit_items(transformer, node.modifiers)
     node.namespace = _pool_text(transformer, node.namespace)
     return node
 
@@ -264,4 +276,11 @@ def visit_in_rule_pragma(transformer, node: InRulePragma) -> InRulePragma:
 def visit_pragma_block(transformer, node: PragmaBlock) -> PragmaBlock:
     node = _shallow(node)
     node.pragmas = [transformer.visit(pragma) for pragma in node.pragmas]
+    return node
+
+
+def visit_string_modifier(transformer, node: StringModifier) -> StringModifier:
+    node = _shallow(node)
+    if isinstance(node.value, str):
+        node.value = pooled_value(transformer.string_pool, node.value)
     return node
