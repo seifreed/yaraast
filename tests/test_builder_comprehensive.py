@@ -651,14 +651,14 @@ class TestConditionBuilderArithmeticOperators:
         assert expr.operator == "*"
 
     def test_div_creates_division(self) -> None:
-        """Div should create / operation."""
+        """Div should create YARA division operation."""
         left = ConditionBuilder().integer(100)
 
         result = left.div(10)
         expr = result.build()
 
         assert isinstance(expr, BinaryExpression)
-        assert expr.operator == "/"
+        assert expr.operator == "\\"
 
     def test_mod_creates_modulo(self) -> None:
         """Mod should create % operation."""

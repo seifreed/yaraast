@@ -37,6 +37,12 @@ def _precedence(operator: str) -> int:
     return _BINARY_PRECEDENCE.get(operator, 100)
 
 
+def _render_binary_operator(operator: str) -> str:
+    if operator == "/":
+        return "\\"
+    return operator
+
+
 def _visit_binary_operand(generator, parent, operand, *, is_right: bool) -> str:
     from yaraast.ast.expressions import BinaryExpression
 
@@ -52,7 +58,8 @@ def _visit_binary_operand(generator, parent, operand, *, is_right: bool) -> str:
 def visit_binary_expression(generator, node) -> str:
     left = _visit_binary_operand(generator, node, node.left, is_right=False)
     right = _visit_binary_operand(generator, node, node.right, is_right=True)
-    return f"{left} {node.operator} {right}"
+    operator = _render_binary_operator(node.operator)
+    return f"{left} {operator} {right}"
 
 
 def visit_unary_expression(generator, node) -> str:

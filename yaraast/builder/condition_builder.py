@@ -305,7 +305,7 @@ class ConditionBuilder:
 
     def div(self, other: ConditionBuilder | int) -> Self:
         """Division."""
-        return self._binary_op("/", other)
+        return self._binary_op("\\", other)
 
     def mod(self, other: ConditionBuilder | int) -> Self:
         """Modulo."""
