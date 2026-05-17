@@ -53,6 +53,7 @@ class MockPE:
         self.characteristics = 0
         self.entry_point = 0
         self.image_base = 0x400000
+        self.size_of_headers = 0
         self.sections: list[Section] = []
         self.version_info: dict[str, str] = {}
         self.number_of_resources = 0
@@ -90,6 +91,9 @@ class MockPE:
                         "<H", self.data[coff_offset + 18 : coff_offset + 20]
                     )[0]
                     self.is_dll = bool(self.characteristics & 0x2000)
+                    size_of_optional_header = struct.unpack(
+                        "<H", self.data[coff_offset + 16 : coff_offset + 18]
+                    )[0]
 
                     opt_offset = coff_offset + 20
                     if len(self.data) >= opt_offset + 2:
@@ -104,6 +108,33 @@ class MockPE:
                             self.image_base = struct.unpack(
                                 "<I", self.data[opt_offset + 28 : opt_offset + 32]
                             )[0]
+                        if len(self.data) >= opt_offset + 64:
+                            self.size_of_headers = struct.unpack(
+                                "<I", self.data[opt_offset + 60 : opt_offset + 64]
+                            )[0]
+                    self._parse_sections(opt_offset + size_of_optional_header)
+
+    def _parse_sections(self, section_table_offset: int) -> None:
+        """Parse PE section headers."""
+        section_header_size = 40
+        for index in range(self.number_of_sections):
+            section_offset = section_table_offset + (index * section_header_size)
+            section_end = section_offset + section_header_size
+            if section_end > len(self.data):
+                break
+
+            section_data = self.data[section_offset:section_end]
+            name = section_data[:8].split(b"\x00", 1)[0].decode("latin1")
+            self.sections.append(
+                Section(
+                    name=name,
+                    virtual_size=struct.unpack("<I", section_data[8:12])[0],
+                    virtual_address=struct.unpack("<I", section_data[12:16])[0],
+                    raw_data_size=struct.unpack("<I", section_data[16:20])[0],
+                    raw_data_offset=struct.unpack("<I", section_data[20:24])[0],
+                    characteristics=struct.unpack("<I", section_data[36:40])[0],
+                )
+            )
 
     def imphash(self) -> str:
         """Compute MD5 of import table (simplified)."""
@@ -119,6 +150,25 @@ class MockPE:
             if section.name == name:
                 return i
         return -1
+
+    def rva_to_offset(self, rva: int) -> int | YaraUndefinedValue:
+        if not isinstance(rva, int) or not self.is_pe or rva < 0:
+            return YARA_UNDEFINED
+
+        if self.size_of_headers and rva < self.size_of_headers and rva < len(self.data):
+            return rva
+
+        for section in self.sections:
+            span = max(section.virtual_size, section.raw_data_size)
+            if span <= 0:
+                continue
+
+            section_start = section.virtual_address
+            section_end = section_start + span
+            if section_start <= rva < section_end:
+                return section.raw_data_offset + (rva - section_start)
+
+        return YARA_UNDEFINED
 
     def exports(self, name: str) -> bool:
         return name in self._export_list

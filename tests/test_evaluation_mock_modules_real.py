@@ -5,6 +5,7 @@ from __future__ import annotations
 import struct
 
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
+from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.evaluation.mock_modules import (
     HashModule,
     MockDotNet,
@@ -14,25 +15,39 @@ from yaraast.evaluation.mock_modules import (
     MockPE,
     Section,
 )
+from yaraast.parser import Parser
 
 
-def _build_pe_data(*, dll: bool, magic: int) -> bytes:
+def _build_pe_data(*, dll: bool, magic: int, sections: list[Section] | None = None) -> bytes:
+    sections = sections or []
     data = bytearray(b"MZ" + b"\x00" * 0x3A + b"\x80\x00\x00\x00")
     if len(data) < 0x80:
         data.extend(b"\x00" * (0x80 - len(data)))
     data.extend(b"PE\x00\x00")
     data.extend(struct.pack("<H", 0x14C))  # machine
-    data.extend(struct.pack("<H", 2))  # number_of_sections
+    data.extend(struct.pack("<H", len(sections)))  # number_of_sections
     data.extend(struct.pack("<I", 1))  # timestamp
     data.extend(b"\x00" * 8)
     data.extend(struct.pack("<H", 0xE0))
     data.extend(struct.pack("<H", 0x2000 if dll else 0x0002))
-    data.extend(struct.pack("<H", magic))
-    data.extend(b"\x00" * 14)
-    data.extend(struct.pack("<I", 0x1000))  # entry_point
-    data.extend(b"\x00" * 8)
+    optional_header = bytearray(0xE0)
+    struct.pack_into("<H", optional_header, 0, magic)
+    struct.pack_into("<I", optional_header, 16, 0x1000)  # entry_point
+    struct.pack_into("<I", optional_header, 60, 0x200)  # size_of_headers
     if magic == 0x10B:
-        data.extend(struct.pack("<I", 0x400000))
+        struct.pack_into("<I", optional_header, 28, 0x400000)
+    data.extend(optional_header)
+    for section in sections:
+        name = section.name.encode("ascii")[:8].ljust(8, b"\x00")
+        data.extend(name)
+        data.extend(struct.pack("<I", section.virtual_size))
+        data.extend(struct.pack("<I", section.virtual_address))
+        data.extend(struct.pack("<I", section.raw_data_size))
+        data.extend(struct.pack("<I", section.raw_data_offset))
+        data.extend(b"\x00" * 8)
+        data.extend(struct.pack("<H", 0))
+        data.extend(struct.pack("<H", 0))
+        data.extend(struct.pack("<I", section.characteristics))
     return bytes(data)
 
 
@@ -67,6 +82,53 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     assert pe64.locale(0x409) is False
     assert pe64.language(0x09) is False
     assert pe64.imphash()
+
+
+def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
+    data = _build_pe_data(
+        dll=False,
+        magic=0x10B,
+        sections=[
+            Section(".text", 0x1000, 0x180, 0x200, 0x200, 0x60000020),
+            Section(".rdata", 0x2000, 0x100, 0x400, 0x100, 0x40000040),
+        ],
+    )
+
+    pe = MockPE(data)
+
+    assert pe.number_of_sections == 2
+    assert pe.section_index(".text") == 0
+    assert pe.sections[0] == Section(".text", 0x1000, 0x180, 0x200, 0x200, 0x60000020)
+    assert pe.rva_to_offset(0x100) == 0x100
+    assert pe.rva_to_offset(0x1000) == 0x200
+    assert pe.rva_to_offset(0x11FF) == 0x3FF
+    assert pe.rva_to_offset(0x1200) is YARA_UNDEFINED
+    assert pe.rva_to_offset(-1) is YARA_UNDEFINED
+
+
+def test_evaluator_supports_pe_rva_to_offset_function() -> None:
+    data = _build_pe_data(
+        dll=False,
+        magic=0x10B,
+        sections=[Section(".text", 0x1000, 0x180, 0x200, 0x200, 0x60000020)],
+    )
+    ast = Parser().parse("""
+        import "pe"
+        rule valid_pe_rva_to_offset {
+            condition:
+                pe.rva_to_offset(0x1000) == 0x200
+        }
+
+        rule invalid_pe_rva_to_offset {
+            condition:
+                pe.rva_to_offset(0x1200) == 0
+        }
+        """)
+
+    assert YaraEvaluator(data=data).evaluate_file(ast) == {
+        "valid_pe_rva_to_offset": True,
+        "invalid_pe_rva_to_offset": False,
+    }
 
 
 def test_mock_elf_math_dotnet_and_registry_branches() -> None:
