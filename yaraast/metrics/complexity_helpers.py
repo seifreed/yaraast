@@ -101,7 +101,7 @@ def _iter_cyclomatic_children(expr: ASTNode) -> Iterator[ASTNode]:
         value = getattr(expr, attr, None)
         if hasattr(value, "accept"):
             yield value
-        elif isinstance(value, list):
+        elif isinstance(value, list | tuple | set | frozenset):
             for item in value:
                 if hasattr(item, "accept"):
                     yield item

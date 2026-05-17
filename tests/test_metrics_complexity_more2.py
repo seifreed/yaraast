@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForOfExpression, OfExpression
@@ -16,6 +17,16 @@ from yaraast.metrics.complexity_helpers import (
 )
 from yaraast.metrics.complexity_reporting import analyze_file_complexity
 from yaraast.parser import Parser
+
+
+class _HashableDecision:
+    operator = "and"
+
+    def accept(self, visitor: object) -> object:
+        return visitor
+
+    def __hash__(self) -> int:
+        return id(self)
 
 
 def test_complexity_analyzer_basic_counts() -> None:
@@ -69,6 +80,16 @@ def test_complexity_expression_helpers() -> None:
     assert calculate_expression_complexity(expr) >= 1
     assert calculate_cyclomatic_complexity(expr) >= 1
     assert calculate_cognitive_complexity(expr) >= 1
+
+
+def test_cyclomatic_complexity_traverses_non_list_child_containers() -> None:
+    decision = BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))
+    hashable_decision = _HashableDecision()
+    hashable_container = cast(Any, frozenset((hashable_decision,)))
+
+    assert calculate_cyclomatic_complexity(OfExpression("any", [decision])) == 2
+    assert calculate_cyclomatic_complexity(OfExpression("any", (decision,))) == 2
+    assert calculate_cyclomatic_complexity(OfExpression("any", hashable_container)) == 2
 
 
 def test_analyze_file_complexity(tmp_path: Path) -> None:
