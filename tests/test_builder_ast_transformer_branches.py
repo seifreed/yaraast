@@ -200,6 +200,34 @@ def test_rule_transformer_renames_nested_string_references() -> None:
     assert wildcard_ref.pattern == "$renamed*"
 
 
+def test_rule_transformer_normalizes_bare_string_rename_mappings() -> None:
+    bare_key_rule = Rule(
+        name="bare_key",
+        strings=[PlainString(identifier="$a", value="1")],
+        condition=StringIdentifier("$a"),
+    )
+    bare_key = RuleTransformer(bare_key_rule).rename_strings({"a": "renamed"}).build()
+
+    assert bare_key.strings[0].identifier == "$renamed"
+    assert isinstance(bare_key.condition, StringIdentifier)
+    assert bare_key.condition.name == "$renamed"
+
+    bare_value_rule = Rule(
+        name="bare_value",
+        strings=[PlainString(identifier="$a", value="1")],
+        condition=SetExpression([StringIdentifier("$a"), StringCount("a")]),
+    )
+    bare_value = RuleTransformer(bare_value_rule).rename_strings({"$a": "renamed"}).build()
+
+    assert bare_value.strings[0].identifier == "$renamed"
+    assert isinstance(bare_value.condition, SetExpression)
+    string_ref, count_ref = bare_value.condition.elements
+    assert isinstance(string_ref, StringIdentifier)
+    assert string_ref.name == "$renamed"
+    assert isinstance(count_ref, StringCount)
+    assert count_ref.string_id == "renamed"
+
+
 def test_yara_file_transformer_operations_and_filters() -> None:
     original = YaraFile(
         imports=[Import(module="pe")],

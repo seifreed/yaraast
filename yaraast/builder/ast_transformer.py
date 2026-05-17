@@ -148,8 +148,7 @@ class RuleTransformer:
         """Rename string identifiers based on mapping."""
         # Update string definitions
         for string_def in self.rule.strings:
-            if string_def.identifier in mapping:
-                string_def.identifier = mapping[string_def.identifier]
+            string_def.identifier = self._rename_string_reference(string_def.identifier, mapping)
 
         # Update string references in condition
         if self.rule.condition:
@@ -319,17 +318,22 @@ class RuleTransformer:
     @staticmethod
     def _rename_string_reference(value: str, mapping: dict[str, str]) -> str:
         if value in mapping:
-            return mapping[value]
+            return RuleTransformer._format_string_reference(value, mapping[value])
         if value.startswith("$"):
             bare_name = value[1:]
             if bare_name in mapping:
-                mapped = mapping[bare_name]
-                return mapped if mapped.startswith("$") else f"${mapped}"
+                return RuleTransformer._format_string_reference(value, mapping[bare_name])
         else:
             prefixed_name = f"${value}"
             if prefixed_name in mapping:
                 return mapping[prefixed_name].lstrip("$")
         return value
+
+    @staticmethod
+    def _format_string_reference(original: str, replacement: str) -> str:
+        if original.startswith("$"):
+            return replacement if replacement.startswith("$") else f"${replacement}"
+        return replacement.lstrip("$")
 
     def _rename_string_pattern(self, value: str, mapping: dict[str, str]) -> str:
         renamed = self._rename_string_reference(value, mapping)
