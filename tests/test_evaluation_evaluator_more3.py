@@ -749,6 +749,37 @@ def test_for_expression_with_undefined_range_is_false() -> None:
     }
 
 
+def test_for_expression_with_dynamic_empty_range_is_false() -> None:
+    ast = Parser().parse("""
+        rule any_empty_range {
+            condition:
+                for any i in (filesize..0) : (true)
+        }
+
+        rule all_empty_range {
+            condition:
+                for all i in (filesize..0) : (true)
+        }
+
+        rule none_empty_range {
+            condition:
+                for none i in (filesize..0) : (true)
+        }
+
+        rule zero_empty_range {
+            condition:
+                for 0 i in (filesize..0) : (true)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {
+        "any_empty_range": False,
+        "all_empty_range": False,
+        "none_empty_range": False,
+        "zero_empty_range": False,
+    }
+
+
 def test_for_of_and_module_reference_paths() -> None:
     ev = YaraEvaluator(data=b"xxabyy")
     rule = Rule(

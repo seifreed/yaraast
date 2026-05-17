@@ -299,6 +299,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return YARA_UNDEFINED
         if not isinstance(low, int) or not isinstance(high, int):
             return YARA_UNDEFINED
+        if high < low:
+            return YARA_UNDEFINED
         return range(low, high + 1)  # Inclusive range
 
     def visit_function_call(self, node: FunctionCall) -> Any:
