@@ -10,6 +10,7 @@ from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
+from yaraast.types.semantic_validator import SemanticValidator
 
 
 def _t(tt: TokenType, value: str | int | float | None, line: int, col: int = 1) -> Token:
@@ -130,6 +131,26 @@ def test_parse_strings_section_branches_and_modifier_parsing() -> None:
     p.current = 0
     with pytest.raises(Exception, match="Expected string value"):
         p._parse_strings_section()
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        'rule r { strings: $anon_1 = "a" $ = "b" condition: any of them }',
+        'rule r { strings: $ = "b" $anon_1 = "a" condition: any of them }',
+    ],
+)
+def test_comment_aware_anonymous_internal_names_avoid_explicit_collisions(
+    source: str,
+) -> None:
+    ast = CommentAwareParser().parse(source)
+    strings = ast.rules[0].strings
+    anonymous = [string for string in strings if string.is_anonymous]
+
+    assert len(anonymous) == 1
+    assert anonymous[0].identifier == "$anon_2"
+    assert [string.identifier for string in strings].count("$anon_1") == 1
+    assert SemanticValidator().validate(ast).is_valid
 
 
 def test_comment_aware_parser_preserves_parameterized_string_modifiers() -> None:

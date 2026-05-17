@@ -9,6 +9,7 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.parser import Parser
+from yaraast.types.semantic_validator import SemanticValidator
 
 
 def _t(tt: TokenType, value: str | int | float | None) -> Token:
@@ -56,6 +57,27 @@ def test_parse_strings_section_success_and_main_errors() -> None:
     )
     with pytest.raises(ParserError, match="Invalid string value"):
         p._parse_strings_section()
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        'rule r { strings: $anon_1 = "a" $ = "b" condition: any of them }',
+        'rule r { strings: $ = "b" $anon_1 = "a" condition: any of them }',
+    ],
+)
+def test_anonymous_string_internal_names_do_not_collide_with_explicit_names(
+    source: str,
+) -> None:
+    ast = Parser(source).parse()
+    strings = ast.rules[0].strings
+    anonymous = [string for string in strings if string.is_anonymous]
+
+    assert len(anonymous) == 1
+    assert anonymous[0].identifier == "$anon_2"
+    assert [string.identifier for string in strings].count("$anon_1") == 1
+    assert SemanticValidator().validate(ast).is_valid
+    assert "$anon_2" not in CodeGenerator().generate(ast)
 
 
 def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:

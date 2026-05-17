@@ -255,6 +255,7 @@ class CommentAwareParser(Parser):
 
         strings = []
         anonymous_counter = 0
+        used_identifiers = self._reserved_string_identifiers()
 
         while self._peek() and self._peek().type == TokenType.STRING_IDENTIFIER:
             start_token = self._peek()
@@ -269,8 +270,10 @@ class CommentAwareParser(Parser):
             # Generate unique identifier for anonymous strings
             is_anonymous = identifier == "$"
             if is_anonymous:
-                anonymous_counter += 1
-                identifier = f"$anon_{anonymous_counter}"
+                identifier, anonymous_counter = self._next_anonymous_identifier(
+                    anonymous_counter,
+                    used_identifiers,
+                )
 
             if not self._match(TokenType.ASSIGN):
                 msg = "Expected '='"

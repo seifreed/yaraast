@@ -13,10 +13,29 @@ from ._shared import ParserError, parse_regex_value
 class StringParsingMixin:
     """Mixin with string parsing helpers."""
 
+    def _reserved_string_identifiers(self) -> set[str]:
+        reserved = set()
+        for token in self.tokens[self.current :]:
+            if token.type in (TokenType.CONDITION, TokenType.RBRACE, TokenType.EOF):
+                break
+            if token.type == TokenType.STRING_IDENTIFIER and token.value != "$":
+                reserved.add(str(token.value))
+        return reserved
+
+    @staticmethod
+    def _next_anonymous_identifier(counter: int, used_identifiers: set[str]) -> tuple[str, int]:
+        while True:
+            counter += 1
+            identifier = f"$anon_{counter}"
+            if identifier not in used_identifiers:
+                used_identifiers.add(identifier)
+                return identifier, counter
+
     def _parse_strings_section(self) -> list[StringDefinition]:
         """Parse strings section."""
         strings: list[StringDefinition] = []
         anonymous_counter = 0
+        used_identifiers = self._reserved_string_identifiers()
 
         while not self._check_any(TokenType.CONDITION, TokenType.RBRACE):
             if not self._check(TokenType.STRING_IDENTIFIER):
@@ -28,8 +47,10 @@ class StringParsingMixin:
             # Handle anonymous strings (just "$")
             is_anonymous = identifier == "$"
             if is_anonymous:
-                anonymous_counter += 1
-                identifier = f"$anon_{anonymous_counter}"
+                identifier, anonymous_counter = self._next_anonymous_identifier(
+                    anonymous_counter,
+                    used_identifiers,
+                )
 
             if not self._match(TokenType.ASSIGN):
                 msg = "Expected '=' after string identifier"
