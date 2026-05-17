@@ -402,7 +402,7 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         'import "mods.yar" (R1, R2) as mods'
     )
     assert gen.visit_extern_namespace(ExternNamespace("ns")) == "namespace ns"
-    assert gen.visit_extern_rule(ExternRule("R")) == "rule R"
+    assert gen.visit_extern_rule(ExternRule("R")) == "extern rule R"
     assert (
         gen.visit_in_rule_pragma(InRulePragma(pragma=Pragma(PragmaType.PRAGMA, "demo")))
         == "#pragma demo"

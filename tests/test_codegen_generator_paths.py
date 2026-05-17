@@ -161,10 +161,10 @@ def test_codegen_comment_extern_and_pragma_visit_methods() -> None:
     assert gen.visit(namespace) == "namespace ext"
 
     extern_rule_with_mod = ExternRule(name="R1", modifiers=[RuleModifier.from_string("private")])
-    assert gen.visit(extern_rule_with_mod) == "private rule R1"
+    assert gen.visit(extern_rule_with_mod) == "extern rule private R1"
 
-    extern_rule_no_mod = ExternRule(name="R2", modifiers=[])
-    assert gen.visit(extern_rule_no_mod) == "rule R2"
+    extern_rule_no_mod = ExternRule(name="R2", modifiers=[], namespace="corp")
+    assert gen.visit(extern_rule_no_mod) == "extern rule corp.R2"
 
     extern_ref = ExternRuleReference(rule_name="RemoteRule")
     assert gen.visit(extern_ref) == "RemoteRule"
