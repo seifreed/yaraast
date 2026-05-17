@@ -49,9 +49,18 @@ class WorkspaceIndex:
         for uri, symbols in raw_symbols.items():
             if not isinstance(uri, str) or not isinstance(symbols, list):
                 continue
-            self.persisted_symbols[uri] = [
-                SymbolRecord.from_dict(symbol) for symbol in symbols if isinstance(symbol, dict)
-            ]
+            self.persisted_symbols[uri] = self._load_symbol_records(symbols)
+
+    def _load_symbol_records(self, symbols: list[object]) -> list[SymbolRecord]:
+        records: list[SymbolRecord] = []
+        for symbol in symbols:
+            if not isinstance(symbol, dict):
+                continue
+            try:
+                records.append(SymbolRecord.from_dict(symbol))
+            except Exception:
+                logger.debug("Operation failed in %s", __name__, exc_info=True)
+        return records
 
     def save(self) -> None:
         cache_path = self._cache_path()
