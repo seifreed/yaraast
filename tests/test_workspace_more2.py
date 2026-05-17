@@ -12,7 +12,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Include, Rule
 from yaraast.ast.strings import StringDefinition
-from yaraast.resolution.include_resolver import ResolvedFile
+from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace import (
     FileAnalysisResult,
     Workspace,
@@ -134,6 +134,23 @@ def test_workspace_dependency_graph_links_resolved_include_paths(tmp_path: Path)
     assert parent_key in dependents
     assert workspace.dependency_graph.nodes[child_key].type == "file"
     assert workspace.dependency_graph.get_statistics()["file_count"] == 2
+
+
+def test_include_resolver_rechecks_cached_files_with_missing_includes(tmp_path: Path) -> None:
+    parent = _write(
+        tmp_path / "parent.yar",
+        'include "child.yar"\nrule parent { condition: true }',
+    )
+    resolver = IncludeResolver([str(tmp_path)])
+
+    first = resolver.resolve_file(str(parent))
+    assert first.includes == []
+
+    child = _write(tmp_path / "child.yar", "rule child { condition: true }")
+
+    second = resolver.resolve_file(str(parent))
+
+    assert [included.path for included in second.includes] == [child.resolve()]
 
 
 def test_workspace_add_directory_default_includes_yara_extension(tmp_path: Path) -> None:
