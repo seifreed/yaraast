@@ -12,6 +12,7 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
+    RangeExpression,
     UnaryExpression,
 )
 from yaraast.ast.rules import Rule
@@ -71,29 +72,29 @@ def _fold_comparison(left_val: int, right_val: int, operator: str):
     return _SENTINEL
 
 
-def _simplify_identity(node: BinaryExpression) -> Expression | None:
-    """Simplify identity/annihilation patterns. Returns simplified or None."""
+def _simplify_identity(node: BinaryExpression) -> tuple[Expression | None, int]:
+    """Simplify identity/annihilation patterns. Returns (result, opt_count)."""
     left, right, op = node.left, node.right, node.operator
 
     # x + 0 = x, 0 + x = x
     if op == "+" and isinstance(right, IntegerLiteral) and right.value == 0:
-        return left
+        return left, 1
     if op == "+" and isinstance(left, IntegerLiteral) and left.value == 0:
-        return right
+        return right, 1
 
     # x * 1 = x, 1 * x = x
     if op == "*" and isinstance(right, IntegerLiteral) and right.value == 1:
-        return left
+        return left, 1
     if op == "*" and isinstance(left, IntegerLiteral) and left.value == 1:
-        return right
+        return right, 1
 
     # x * 0 = 0, 0 * x = 0
     if op == "*" and isinstance(right, IntegerLiteral) and right.value == 0:
-        return IntegerLiteral(value=0)
+        return IntegerLiteral(value=0), 1
     if op == "*" and isinstance(left, IntegerLiteral) and left.value == 0:
-        return IntegerLiteral(value=0)
+        return IntegerLiteral(value=0), 1
 
-    return None
+    return None, 0
 
 
 def _simplify_boolean_short_circuit(node: BinaryExpression) -> tuple[Expression | None, int]:
@@ -125,6 +126,17 @@ def _simplify_boolean_short_circuit(node: BinaryExpression) -> tuple[Expression 
             return node.left, count
 
     return None, 0
+
+
+def _is_empty_integer_range(node: Any) -> bool:
+    if isinstance(node, ParenthesesExpression):
+        node = node.expression
+    return (
+        isinstance(node, RangeExpression)
+        and isinstance(node.low, IntegerLiteral)
+        and isinstance(node.high, IntegerLiteral)
+        and node.high.value < node.low.value
+    )
 
 
 class ExpressionOptimizer(ASTTransformer):
@@ -204,8 +216,9 @@ class ExpressionOptimizer(ASTTransformer):
                 return result
 
         # Identity operations
-        identity = _simplify_identity(node)
+        identity, count = _simplify_identity(node)
         if identity is not None:
+            self.optimization_count += count
             return identity
 
         # Boolean simplifications
@@ -390,6 +403,9 @@ class ExpressionOptimizer(ASTTransformer):
             node.subject = self._optimize_ast_value(node.subject)
         if hasattr(node, "range"):
             node.range = self.visit(node.range)
+            if _is_empty_integer_range(node.range):
+                self.optimization_count += 1
+                return BooleanLiteral(value=False)
         return node
 
     # Rule-level methods (not used for expression optimization)
