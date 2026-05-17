@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from yaraast.types.module_contracts import FunctionDefinition
@@ -141,6 +142,23 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         self.visit(node.array)
         self.visit(node.index)
 
+    def visit_dictionary_access(self, node) -> None:
+        self.visit(node.object)
+        self._visit_ast_value(node.key)
+
+    def visit_string_offset(self, node) -> None:
+        self._visit_ast_value(node.index)
+
+    def visit_string_length(self, node) -> None:
+        self._visit_ast_value(node.index)
+
+    def visit_defined_expression(self, node) -> None:
+        self.visit(node.expression)
+
+    def visit_string_operator_expression(self, node) -> None:
+        self.visit(node.left)
+        self.visit(node.right)
+
     def visit_for_expression(self, node) -> None:
         self._visit_ast_value(node.quantifier)
         self.visit(node.iterable)
@@ -228,6 +246,9 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
     def _visit_ast_value(self, value) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
-        elif isinstance(value, list):
+        elif isinstance(value, Mapping):
+            for item in value.values():
+                self._visit_ast_value(item)
+        elif isinstance(value, list | tuple | set | frozenset):
             for item in value:
                 self._visit_ast_value(item)

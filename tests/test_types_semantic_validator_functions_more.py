@@ -20,8 +20,12 @@ from yaraast.ast.expressions import (
     ParenthesesExpression,
     RangeExpression,
     SetExpression,
+    StringLength,
+    StringOffset,
     UnaryExpression,
 )
+from yaraast.ast.modules import DictionaryAccess
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.types.semantic_validator_core import ValidationResult
 from yaraast.types.semantic_validator_functions import FunctionCallValidator
 from yaraast.types.type_system import AnyType, FunctionDefinition, ModuleDefinition, TypeEnvironment
@@ -213,3 +217,34 @@ def test_function_validator_visits_for_quantifier_expressions() -> None:
     warnings = [warning.message for warning in result.warnings]
     assert any("missing_for_quantifier" in warning for warning in warnings)
     assert any("missing_for_of_quantifier" in warning for warning in warnings)
+
+
+def test_function_validator_visits_operator_and_dictionary_wrappers() -> None:
+    result = ValidationResult()
+    validator = FunctionCallValidator(result, TypeEnvironment())
+
+    validator.visit(DefinedExpression(FunctionCall("missing_defined", [])))
+    validator.visit(
+        StringOperatorExpression(
+            left=FunctionCall("missing_string_left", []),
+            operator="icontains",
+            right=FunctionCall("missing_string_right", []),
+        )
+    )
+    validator.visit(
+        DictionaryAccess(
+            object=FunctionCall("missing_dictionary_object", []),
+            key=FunctionCall("missing_dictionary_key", []),
+        )
+    )
+    validator.visit(StringOffset("a", FunctionCall("missing_offset_index", [])))
+    validator.visit(StringLength("a", FunctionCall("missing_length_index", [])))
+
+    warnings = [warning.message for warning in result.warnings]
+    assert any("missing_defined" in warning for warning in warnings)
+    assert any("missing_string_left" in warning for warning in warnings)
+    assert any("missing_string_right" in warning for warning in warnings)
+    assert any("missing_dictionary_object" in warning for warning in warnings)
+    assert any("missing_dictionary_key" in warning for warning in warnings)
+    assert any("missing_offset_index" in warning for warning in warnings)
+    assert any("missing_length_index" in warning for warning in warnings)
