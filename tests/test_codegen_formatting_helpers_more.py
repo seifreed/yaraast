@@ -130,6 +130,10 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
         )
         == f' xor(1-3) base64("{alphabet}")'
     )
+    assert (
+        modifiers_to_string([StringModifier.from_name_value("base64", 'custom"\\alphabet')])
+        == ' base64("custom\\"\\\\alphabet")'
+    )
 
     ast = YaraFile(
         rules=[

@@ -276,7 +276,7 @@ class CodeGenerator(ASTVisitor[str]):
                 return f"{node.name}({node.value[0]}-{node.value[1]})"
             # String values (e.g., base64 custom alphabet) need quotes
             if isinstance(node.value, str):
-                return f'{node.name}("{node.value}")'
+                return f'{node.name}("{escape_plain_string_value(node.value)}")'
             return f"{node.name}({node.value})"
         return node.name
 

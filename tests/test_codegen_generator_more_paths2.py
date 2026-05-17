@@ -395,6 +395,10 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         gen.visit_string_modifier(StringModifier.from_name_value("base64", "custom"))
         == 'base64("custom")'
     )
+    assert (
+        gen.visit_string_modifier(StringModifier.from_name_value("base64", 'custom"\\alphabet'))
+        == 'base64("custom\\"\\\\alphabet")'
+    )
 
     real_rule = Rule(name="r", condition=BooleanLiteral(True))
     gen2 = CodeGenerator()

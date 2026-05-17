@@ -103,7 +103,7 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
             if isinstance(value, tuple):
                 return f"{name}({value[0]}-{value[1]})"
             if isinstance(value, str):
-                return f'{name}("{value}")'
+                return f'{name}("{escape_plain_string_value(value)}")'
             return f"{name}({value})"
         return str(name)
 
