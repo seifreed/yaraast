@@ -35,6 +35,7 @@ from yaraast.types._registry import (
     ArrayType,
     BooleanType,
     DictionaryType,
+    DoubleType,
     IntegerType,
     StringType,
     TypeEnvironment,
@@ -206,6 +207,34 @@ def test_expr_inference_accepts_hash_checksum32_function() -> None:
 
     assert isinstance(out, IntegerType)
     assert inf.errors == []
+
+
+def test_expr_inference_accepts_extended_math_module_functions() -> None:
+    env = TypeEnvironment()
+    env.add_module("math")
+
+    calls = [
+        FunctionCall(function="math.mean", arguments=[IntegerLiteral(0), IntegerLiteral(1)]),
+        FunctionCall(
+            function="math.deviation",
+            arguments=[IntegerLiteral(0), IntegerLiteral(1), DoubleLiteral(97.0)],
+        ),
+        FunctionCall(
+            function="math.serial_correlation",
+            arguments=[IntegerLiteral(0), IntegerLiteral(2)],
+        ),
+        FunctionCall(
+            function="math.monte_carlo_pi",
+            arguments=[IntegerLiteral(0), IntegerLiteral(6)],
+        ),
+    ]
+
+    for call in calls:
+        inf = ExpressionTypeInference(env)
+        out = inf.infer(call)
+
+        assert isinstance(out, DoubleType)
+        assert inf.errors == []
 
 
 def test_expr_inference_validates_builtin_reader_offset_type() -> None:

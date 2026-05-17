@@ -95,6 +95,33 @@ def test_function_validator_accepts_hash_checksum32_function() -> None:
     assert result.errors == []
 
 
+def test_function_validator_accepts_extended_math_module_functions() -> None:
+    result = ValidationResult()
+    env = TypeEnvironment()
+    env.add_module("math")
+    validator = FunctionCallValidator(result, env)
+
+    for call in [
+        FunctionCall(function="math.mean", arguments=[IntegerLiteral(0), IntegerLiteral(1)]),
+        FunctionCall(
+            function="math.deviation",
+            arguments=[IntegerLiteral(0), IntegerLiteral(1), IntegerLiteral(97)],
+        ),
+        FunctionCall(
+            function="math.serial_correlation",
+            arguments=[IntegerLiteral(0), IntegerLiteral(2)],
+        ),
+        FunctionCall(
+            function="math.monte_carlo_pi",
+            arguments=[IntegerLiteral(0), IntegerLiteral(6)],
+        ),
+    ]:
+        validator.visit(call)
+
+    assert result.is_valid is True
+    assert result.errors == []
+
+
 def test_function_validator_branches_for_arity_and_missing_actual_module_name() -> None:
     result = ValidationResult()
     validator = FunctionCallValidator(result, BrokenEnv())

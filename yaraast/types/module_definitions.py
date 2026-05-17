@@ -68,6 +68,10 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "log10": ("d", [("x", "d")]),
             "sqrt": ("d", [("x", "d")]),
             "entropy": ("d", [("offset", "i"), ("size", "i")]),
+            "mean": ("d", [("offset", "i"), ("size", "i")]),
+            "deviation": ("d", [("offset", "i"), ("size", "i"), ("mean", "d")]),
+            "serial_correlation": ("d", [("offset", "i"), ("size", "i")]),
+            "monte_carlo_pi": ("d", [("offset", "i"), ("size", "i")]),
         },
     },
     "elf": {
