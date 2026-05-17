@@ -114,6 +114,45 @@ def test_json_roundtrip_preserves_anonymous_strings_for_codegen() -> None:
     assert "$anon_" not in output
 
 
+def test_json_deserializer_parses_legacy_hex_xor_modifier_values() -> None:
+    payload = {
+        "type": "YaraFile",
+        "imports": [],
+        "includes": [],
+        "rules": [
+            {
+                "type": "Rule",
+                "name": "hex_xor",
+                "modifiers": [],
+                "tags": [],
+                "meta": [],
+                "strings": [
+                    {
+                        "type": "PlainString",
+                        "identifier": "$key",
+                        "value": "abc",
+                        "modifiers": [{"name": "xor", "value": "0xff"}],
+                    },
+                    {
+                        "type": "PlainString",
+                        "identifier": "$range",
+                        "value": "abc",
+                        "modifiers": [{"name": "xor", "value": "0x01-0xff"}],
+                    },
+                ],
+                "condition": {"type": "BooleanLiteral", "value": True},
+            }
+        ],
+    }
+
+    restored = JsonSerializer(include_metadata=False).deserialize(json.dumps(payload))
+
+    assert [string.modifiers[0].value for string in restored.rules[0].strings] == [
+        255,
+        (1, 255),
+    ]
+
+
 def test_json_serializer_normalizes_scalar_hex_alternatives() -> None:
     serializer = JsonSerializer(include_metadata=False)
     ast = YaraFile(

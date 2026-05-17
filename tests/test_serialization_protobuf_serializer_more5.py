@@ -112,6 +112,23 @@ def test_protobuf_serializer_does_not_coerce_invalid_xor_range_values_to_ints() 
     ]
 
 
+def test_protobuf_conversion_parses_legacy_hex_xor_modifier_values() -> None:
+    pb_string = yara_ast_pb2.StringDefinition()
+    pb_string.identifier = "$a"
+    pb_string.plain.value = "abc"
+    key_modifier = pb_string.plain.modifiers.add()
+    key_modifier.name = "xor"
+    key_modifier.value = "0xff"
+    range_modifier = pb_string.plain.modifiers.add()
+    range_modifier.name = "xor"
+    range_modifier.value = "0x01-0xff"
+
+    restored = protobuf_to_string(pb_string)
+
+    assert isinstance(restored, PlainString)
+    assert [modifier.value for modifier in restored.modifiers] == [255, (1, 255)]
+
+
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

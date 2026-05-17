@@ -124,6 +124,30 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
     assert restored_file.rules[0].name == "helper_rule"
 
 
+def test_simple_roundtrip_deserializes_legacy_hex_xor_modifier_values() -> None:
+    key = deserialize_node(
+        {
+            "type": "PlainString",
+            "identifier": "$key",
+            "value": "abc",
+            "modifiers": [{"name": "xor", "value": "0xff"}],
+        }
+    )
+    range_string = deserialize_node(
+        {
+            "type": "PlainString",
+            "identifier": "$range",
+            "value": "abc",
+            "modifiers": [{"name": "xor", "value": "0x01-0xff"}],
+        }
+    )
+
+    assert isinstance(key, PlainString)
+    assert isinstance(range_string, PlainString)
+    assert key.modifiers[0].value == 255
+    assert range_string.modifiers[0].value == (1, 255)
+
+
 def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Import module must be a string"):
         deserialize_node({"type": "Import", "module": ["pe"]})

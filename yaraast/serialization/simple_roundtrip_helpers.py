@@ -71,6 +71,7 @@ from yaraast.ast.strings import (
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.source import parse_yara_source
+from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
 from yaraast.string_escaping import escape_string_source_value
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -386,16 +387,7 @@ def _deserialize_rule_tag(value: Any) -> Tag:
 
 
 def _deserialize_modifier_value(name: str, value: Any) -> Any:
-    if name == "xor":
-        if isinstance(value, list) and len(value) == 2:
-            return (value[0], value[1])
-        if isinstance(value, str) and "-" in value:
-            low, high = value.split("-", maxsplit=1)
-            if low.isdigit() and high.isdigit():
-                return (int(low), int(high))
-        if isinstance(value, str) and value.isdigit():
-            return int(value)
-    return value
+    return deserialize_legacy_modifier_value(name, value)
 
 
 def _serialize_modifiers(modifiers: list[Any]) -> list[dict[str, Any]]:

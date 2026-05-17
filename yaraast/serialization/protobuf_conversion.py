@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
 from yaraast.string_escaping import escape_string_source_value
 
 from . import yara_ast_pb2
@@ -1118,14 +1119,7 @@ def _typed_modifier_value(pb_modifier):
 
 
 def _legacy_modifier_value(name: str, value: str):
-    if name == "xor":
-        if "-" in value:
-            low, high = value.split("-", maxsplit=1)
-            if low.isdigit() and high.isdigit():
-                return (int(low), int(high))
-        if value.isdigit():
-            return int(value)
-    return value
+    return deserialize_legacy_modifier_value(name, value)
 
 
 def _protobuf_modifier_value(pb_modifier):
