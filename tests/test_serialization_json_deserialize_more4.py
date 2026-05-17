@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.conditions import (
@@ -121,6 +123,9 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
 
 def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     s = JsonSerializer()
+
+    with pytest.raises(SerializationError, match="YaraFile must be an object"):
+        s._deserialize_ast(cast(Any, "rule r"))
 
     with pytest.raises(SerializationError, match="YaraFile imports must be a list"):
         s._deserialize_ast({"type": "YaraFile", "imports": "pe"})

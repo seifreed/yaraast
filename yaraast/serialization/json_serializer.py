@@ -53,6 +53,7 @@ from yaraast.serialization.json_serialize_visitors import (
 from yaraast.serialization.json_serializer_deserialize import (
     JsonSerializerDeserializeMixin,
     _deserialize_list_field,
+    _deserialize_object,
 )
 from yaraast.serialization.serializer_helpers import build_base_metadata, read_text, write_text
 from yaraast.visitor.visitor import ASTVisitor
@@ -135,8 +136,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         """Deserialize JSON data to AST."""
         from yaraast.ast.base import YaraFile
 
+        data = _deserialize_object(data, "YaraFile")
         # Handle both wrapped (with metadata) and direct AST data
         ast_data = data.get("ast", data)
+        ast_data = _deserialize_object(ast_data, "YaraFile")
         if ast_data.get("type") != "YaraFile":
             msg = f"Expected YaraFile, got {ast_data.get('type')}"
             raise SerializationError(msg)
