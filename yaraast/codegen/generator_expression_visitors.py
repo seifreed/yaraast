@@ -56,6 +56,10 @@ def visit_binary_expression(generator, node) -> str:
 
 def visit_unary_expression(generator, node) -> str:
     operand = generator.visit(node.operand)
+    from yaraast.ast.expressions import BinaryExpression
+
+    if isinstance(node.operand, BinaryExpression):
+        operand = f"({operand})"
     if node.operator == "not":
         return f"not {operand}"
     return f"{node.operator}{operand}"
