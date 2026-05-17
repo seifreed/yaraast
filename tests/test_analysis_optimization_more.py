@@ -114,6 +114,35 @@ def test_optimization_analyzer_hex_paths_condition_refs_and_specificity() -> Non
     assert not any("common prefix" in d for d in descriptions)
 
 
+def test_optimization_analyzer_tracks_string_refs_inside_of_expressions() -> None:
+    repeated = BinaryExpression(
+        BinaryExpression(
+            OfExpression(1, [StringIdentifier("$s")]),
+            "and",
+            OfExpression(1, [StringIdentifier("$s")]),
+        ),
+        "and",
+        BinaryExpression(
+            OfExpression(1, [StringIdentifier("$s")]),
+            "and",
+            OfExpression(1, [StringIdentifier("$s")]),
+        ),
+    )
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="of_refs",
+                strings=[PlainString(identifier="$s", value="value")],
+                condition=repeated,
+            )
+        ],
+    )
+
+    report = OptimizationAnalyzer().analyze(ast)
+
+    assert any("String '$s' is referenced 4 times" in s.description for s in report.suggestions)
+
+
 def test_optimization_analyzer_detects_parsed_any_of_them_specificity() -> None:
     strings = "\n".join(f'        $s{i} = "v{i}"' for i in range(11))
     ast = _parse(f"""

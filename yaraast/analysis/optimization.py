@@ -182,6 +182,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
                 "or being more specific",
                 "low",
             )
+        super().visit_of_expression(node)
 
     def _analyze_cross_rule_patterns(self, rules: list[Rule]) -> None:
         """Analyze patterns across multiple rules."""
