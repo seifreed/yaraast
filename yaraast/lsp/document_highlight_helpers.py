@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from lsprotocol.types import DocumentHighlight, DocumentHighlightKind, Position, Range
 
+from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.structure import find_section_range, get_rule_text_range
 
 
@@ -13,15 +16,23 @@ def _is_identifier_boundary(line: str, start: int, end: int) -> bool:
     return not (end < len(line) and (line[end].isalnum() or line[end] == "_"))
 
 
+def _is_code_occurrence(ctx: SimpleNamespace, line_num: int, character: int) -> bool:
+    return not position_is_in_non_code_segment(ctx, Position(line=line_num, character=character))
+
+
 def simple_highlight(text: str, word: str) -> list[DocumentHighlight]:
     highlights = []
     lines = text.split("\n")
+    ctx = SimpleNamespace(lines=lines)
     for line_num, line in enumerate(lines):
         col = 0
         while True:
             idx = line.find(word, col)
             if idx == -1:
                 break
+            if not _is_code_occurrence(ctx, line_num, idx):
+                col = idx + len(word)
+                continue
             highlights.append(
                 DocumentHighlight(
                     range=Range(
@@ -38,6 +49,7 @@ def simple_highlight(text: str, word: str) -> list[DocumentHighlight]:
 def highlight_identifier(text: str, identifier: str) -> list[DocumentHighlight]:
     highlights = []
     lines = text.split("\n")
+    ctx = SimpleNamespace(lines=lines)
     for line_num, line in enumerate(lines):
         col = 0
         while True:
@@ -47,6 +59,9 @@ def highlight_identifier(text: str, identifier: str) -> list[DocumentHighlight]:
             end_idx = idx + len(identifier)
             if not _is_identifier_boundary(line, idx, end_idx):
                 col = idx + 1
+                continue
+            if not _is_code_occurrence(ctx, line_num, idx):
+                col = end_idx
                 continue
             highlights.append(
                 DocumentHighlight(
@@ -64,6 +79,7 @@ def highlight_identifier(text: str, identifier: str) -> list[DocumentHighlight]:
 def highlight_string_identifier(text: str, identifier: str) -> list[DocumentHighlight]:
     highlights = []
     lines = text.split("\n")
+    ctx = SimpleNamespace(lines=lines)
     base_id = identifier[1:] if identifier.startswith("$") else identifier
     patterns = [f"${base_id}", f"#{base_id}", f"@{base_id}", f"!{base_id}"]
 
@@ -76,6 +92,9 @@ def highlight_string_identifier(text: str, identifier: str) -> list[DocumentHigh
                     break
                 end_idx = idx + len(pattern)
                 if not _is_identifier_boundary(line, idx, end_idx):
+                    col = end_idx
+                    continue
+                if not _is_code_occurrence(ctx, line_num, idx):
                     col = end_idx
                     continue
                 kind = DocumentHighlightKind.Read

@@ -25,6 +25,40 @@ def test_document_highlight_fallback_on_parse_error() -> None:
     assert len(highlights) >= 2
 
 
+def test_document_highlight_fallback_ignores_string_identifier_in_non_code() -> None:
+    text = """
+rule r {
+    condition:
+        $a
+        // $a
+        "$a"
+        /$a/
+    """.lstrip()
+    provider = DocumentHighlightProvider()
+    highlights = provider.get_highlights(text, _pos(2, 9))
+    positions = {
+        (highlight.range.start.line, highlight.range.start.character) for highlight in highlights
+    }
+    assert positions == {(2, 8)}
+
+
+def test_document_highlight_fallback_ignores_rule_identifier_in_non_code() -> None:
+    text = """
+rule alpha {
+    condition:
+        alpha
+        // alpha
+        "alpha"
+        /alpha/
+    """.lstrip()
+    provider = DocumentHighlightProvider()
+    highlights = provider.get_highlights(text, _pos(2, 9))
+    positions = {
+        (highlight.range.start.line, highlight.range.start.character) for highlight in highlights
+    }
+    assert positions == {(0, 5), (2, 8)}
+
+
 def test_document_highlight_skips_embedded_string_identifiers() -> None:
     text = """
 rule r {
