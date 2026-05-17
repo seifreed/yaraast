@@ -944,6 +944,35 @@ def test_string_wildcard_condition_respects_pattern() -> None:
     assert evaluator.visit_string_wildcard(StringWildcard("$b*")) is False
 
 
+def test_named_wildcard_string_sets_ignore_anonymous_internal_ids() -> None:
+    ast = Parser().parse("""
+        rule named_wildcard {
+            strings:
+                $a = "hit"
+                $ = "miss"
+            condition:
+                all of ($a*)
+        }
+
+        rule global_wildcard {
+            strings:
+                $a = "hit"
+                $ = "miss"
+            condition:
+                any of ($*)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"hit").evaluate_file(ast) == {
+        "named_wildcard": True,
+        "global_wildcard": True,
+    }
+    assert YaraEvaluator(data=b"miss").evaluate_file(ast) == {
+        "named_wildcard": False,
+        "global_wildcard": True,
+    }
+
+
 def test_of_expression_in_range_uses_match_offsets() -> None:
     def evaluate(condition: str) -> bool:
         ast = Parser().parse(f"""

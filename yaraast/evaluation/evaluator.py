@@ -713,18 +713,23 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             StringWildcard,
         )
 
+        anonymous_string_ids = self._anonymous_string_ids()
+
         def expand_text(text: str) -> list[str]:
             if text == "them":
                 return list(self.context.string_matches.keys())
             if text.endswith("*"):
                 raw_prefix = text[:-1].lstrip("#@!")
+                if raw_prefix in {"", "$"}:
+                    return list(self.context.string_matches.keys())
                 prefixes = (
                     [raw_prefix] if raw_prefix.startswith("$") else [f"${raw_prefix}", raw_prefix]
                 )
                 return [
                     sid
                     for sid in self.context.string_matches
-                    if any(sid.startswith(prefix) for prefix in prefixes)
+                    if sid not in anonymous_string_ids
+                    and any(sid.startswith(prefix) for prefix in prefixes)
                 ]
             return [self._normalize_string_id(text)]
 
@@ -764,6 +769,15 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return result
 
         return resolve_value(string_set_node)
+
+    def _anonymous_string_ids(self) -> set[str]:
+        if self._current_rule is None:
+            return set()
+        return {
+            string_def.identifier
+            for string_def in self._current_rule.strings
+            if getattr(string_def, "is_anonymous", False)
+        }
 
     def _normalize_string_id(self, string_id: Any) -> str:
         text = str(string_id)
