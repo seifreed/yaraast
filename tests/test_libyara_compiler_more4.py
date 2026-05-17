@@ -69,6 +69,30 @@ rule main_rule {
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_libyara_compiler_compile_source_uses_include_mapping() -> None:
+    compiler = LibyaraCompiler()
+
+    result = compiler.compile_source(
+        """
+include "shared.yar"
+
+rule main_rule {
+    condition:
+        shared_rule
+}
+""".lstrip(),
+        includes={"shared.yar": "rule shared_rule { condition: true }\n"},
+    )
+
+    assert result.success is True
+    assert result.compiled_rules is not None
+    assert [match.rule for match in result.compiled_rules.match(data=b"")] == [
+        "shared_rule",
+        "main_rule",
+    ]
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
 def test_libyara_compiler_compile_ast_codegen_failure_and_syntax_error() -> None:
     compiler = LibyaraCompiler()
 

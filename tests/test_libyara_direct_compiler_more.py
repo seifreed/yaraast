@@ -36,3 +36,28 @@ def test_direct_compiler_and_matcher(tmp_path: Path) -> None:
     assert scan["matches"]
     stats = matcher.get_scan_stats()
     assert stats["total_scans"] >= 1
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_direct_compiler_compile_ast_uses_include_mapping() -> None:
+    ast = Parser().parse("""
+include "shared.yar"
+
+rule main_rule {
+    condition:
+        shared_rule
+}
+""")
+
+    compiler = DirectASTCompiler(enable_optimization=False)
+    result = compiler.compile_ast(
+        ast,
+        includes={"shared.yar": "rule shared_rule { condition: true }\n"},
+    )
+
+    assert result.success is True
+    assert result.compiled_rules is not None
+    assert [match.rule for match in result.compiled_rules.match(data=b"")] == [
+        "shared_rule",
+        "main_rule",
+    ]

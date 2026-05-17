@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -112,14 +113,13 @@ class LibyaraCompiler:
 
         """
         try:
+            compile_kwargs = self._compile_kwargs(includes, error_on_warning)
             if "\x00" in source:
                 compiled = self._compile_via_tempfile(source, includes, error_on_warning)
             else:
                 compiled = yara.compile(
                     source=source,
-                    externals=self.externals,
-                    includes=includes or False,
-                    error_on_warning=error_on_warning,
+                    **compile_kwargs,
                 )
 
             return CompilationResult(
@@ -162,12 +162,31 @@ class LibyaraCompiler:
         try:
             return yara.compile(
                 filepath=temp_path,
-                externals=self.externals,
-                includes=includes or False,
-                error_on_warning=error_on_warning,
+                **self._compile_kwargs(includes, error_on_warning),
             )
         finally:
             os.unlink(temp_path)
+
+    def _compile_kwargs(
+        self,
+        includes: dict[str, str] | None,
+        error_on_warning: bool,
+    ) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {
+            "externals": self.externals,
+            "error_on_warning": error_on_warning,
+        }
+        if includes is None:
+            kwargs["includes"] = False
+            return kwargs
+        kwargs["include_callback"] = self._include_callback(includes)
+        return kwargs
+
+    def _include_callback(self, includes: dict[str, str]) -> Callable[..., str | None]:
+        def callback(requested_filename: str, *_args: Any) -> str | None:
+            return includes.get(requested_filename)
+
+        return callback
 
     def compile_file(
         self,
