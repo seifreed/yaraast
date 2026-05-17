@@ -212,6 +212,12 @@ def infer_function_call(ctx, node: FunctionCall):
     if node.function in BUILTIN_INT_FUNCTIONS_1ARG:
         if len(node.arguments) != 1:
             ctx.errors.append(f"{node.function}() expects 1 argument")
+        _validate_function_argument_types(
+            ctx,
+            node.function,
+            [("offset", IntegerType())],
+            node.arguments,
+        )
         return IntegerType()
 
     return UnknownType()

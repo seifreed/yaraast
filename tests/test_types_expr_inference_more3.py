@@ -186,6 +186,19 @@ def test_expr_inference_validates_module_function_argument_types() -> None:
     )
 
 
+def test_expr_inference_validates_builtin_reader_offset_type() -> None:
+    env = TypeEnvironment()
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(FunctionCall(function="uint32", arguments=[StringLiteral("bad")]))
+
+    assert isinstance(out, IntegerType)
+    assert any(
+        "Argument 'offset' to function 'uint32' must be integer, got string" in e
+        for e in inf.errors
+    )
+
+
 def test_expr_inference_at_in_and_of_error_paths() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)
