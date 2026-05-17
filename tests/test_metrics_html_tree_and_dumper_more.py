@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -20,6 +21,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.operators import DefinedExpression
 from yaraast.ast.rules import Import, Include
 from yaraast.ast.strings import HexByte, HexJump, HexNibble, HexString, PlainString, RegexString
+from yaraast.cli.utils import format_json
 from yaraast.cli.visitors import ASTDumper
 from yaraast.metrics.html_tree import HtmlTreeGenerator
 
@@ -127,3 +129,12 @@ def test_ast_dumper_plain_and_regex_string_accept_modifiers() -> None:
 
     assert dumper.visit_plain_string(plain)["modifiers"][0]["name"] == "ascii"
     assert dumper.visit_regex_string(regex)["modifiers"][0]["name"] == "ascii"
+
+
+def test_ast_dumper_byte_plain_string_is_json_safe() -> None:
+    dumped = ASTDumper().visit_plain_string(
+        PlainString(identifier="$bytes", value=b'ab"\x00\xff', modifiers=[])
+    )
+
+    assert dumped["value"] == 'ab\\"\\x00\\xff'
+    assert json.loads(format_json(dumped))["value"] == 'ab\\"\\x00\\xff'

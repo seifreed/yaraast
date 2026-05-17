@@ -46,6 +46,7 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
+from yaraast.codegen.generator_helpers import escape_plain_string_value
 from yaraast.visitor import ASTVisitor
 
 
@@ -134,7 +135,7 @@ class ASTDumper(ASTVisitor[dict]):
         return {
             "type": "PlainString",
             "identifier": node.identifier,
-            "value": node.value,
+            "value": escape_plain_string_value(node.value),
             "modifiers": modifiers,
         }
 
