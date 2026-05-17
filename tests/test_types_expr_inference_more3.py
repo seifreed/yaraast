@@ -32,6 +32,7 @@ from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock, PragmaType
 from yaraast.parser.source import parse_yara_source
 from yaraast.types._expr_inference import ExpressionTypeInference, _TypeBaseVisitor
 from yaraast.types._registry import (
+    ArrayType,
     BooleanType,
     DictionaryType,
     IntegerType,
@@ -39,6 +40,7 @@ from yaraast.types._registry import (
     TypeEnvironment,
     UnknownType,
 )
+from yaraast.yarax.ast_nodes import ArrayComprehension, DictComprehension
 
 
 def test_type_base_visitor_default_methods_return_unknown() -> None:
@@ -257,6 +259,50 @@ def test_expr_inference_validates_string_operator_expression_operands() -> None:
         "Left operand of 'icontains' must be string-like or array, got integer" in e
         for e in inf.errors
     )
+
+
+def test_expr_inference_reports_invalid_comprehension_iterables() -> None:
+    env = TypeEnvironment()
+
+    range_inf = ExpressionTypeInference(env)
+    range_out = range_inf.infer(
+        ArrayComprehension(
+            expression=BinaryExpression(
+                left=Identifier("i"),
+                operator="+",
+                right=IntegerLiteral(1),
+            ),
+            variable="i",
+            iterable=RangeExpression(IntegerLiteral(0), IntegerLiteral(5)),
+        ),
+    )
+    assert isinstance(range_out, ArrayType)
+    assert isinstance(range_out.element_type, IntegerType)
+    assert range_inf.errors == []
+
+    array_inf = ExpressionTypeInference(env)
+    array_out = array_inf.infer(
+        ArrayComprehension(
+            expression=Identifier("x"),
+            variable="x",
+            iterable=StringLiteral("bad"),
+        ),
+    )
+    assert isinstance(array_out, ArrayType)
+    assert any("Cannot iterate over type: string" in e for e in array_inf.errors)
+
+    dict_inf = ExpressionTypeInference(env)
+    dict_out = dict_inf.infer(
+        DictComprehension(
+            key_expression=Identifier("k"),
+            value_expression=Identifier("v"),
+            key_variable="k",
+            value_variable="v",
+            iterable=StringLiteral("bad"),
+        ),
+    )
+    assert isinstance(dict_out, DictionaryType)
+    assert any("Cannot iterate over type: string" in e for e in dict_inf.errors)
 
 
 def test_expr_inference_at_in_and_of_error_paths() -> None:

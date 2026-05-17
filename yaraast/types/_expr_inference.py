@@ -46,6 +46,7 @@ from ._registry import (
     DoubleType,
     IntegerType,
     ModuleType,
+    RangeType,
     RegexType,
     StringIdentifierType,
     StringSetType,
@@ -342,7 +343,10 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         iter_type = self.visit(iterable) if iterable is not None else UnknownType()
         if isinstance(iter_type, ArrayType):
             self.env.define(variable, iter_type.element_type)
+        elif isinstance(iter_type, RangeType):
+            self.env.define(variable, IntegerType())
         else:
+            self.errors.append(f"Cannot iterate over type: {iter_type}")
             self.env.define(variable, UnknownType())
 
     def _infer_common_type(self, nodes: list) -> YaraType:
