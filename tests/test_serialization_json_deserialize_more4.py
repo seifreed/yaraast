@@ -148,6 +148,16 @@ def test_json_deserialize_string_requires_literal_true_for_anonymous_flag() -> N
     assert plain.is_anonymous is False
 
 
+def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
+    s = JsonSerializer()
+
+    with pytest.raises(SerializationError, match="IntegerLiteral value must be an integer"):
+        s._deserialize_expression({"type": "IntegerLiteral", "value": True})
+
+    with pytest.raises(SerializationError, match="BooleanLiteral value must be a boolean"):
+        s._deserialize_expression({"type": "BooleanLiteral", "value": "false"})
+
+
 def test_deserialize_expression_comprehensive_branches() -> None:
     s = JsonSerializer()
 

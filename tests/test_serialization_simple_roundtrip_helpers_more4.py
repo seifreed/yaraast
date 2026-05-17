@@ -205,6 +205,14 @@ def test_simple_roundtrip_deserialize_string_requires_literal_true_for_anonymous
     assert plain.is_anonymous is False
 
 
+def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
+    with pytest.raises(SerializationError, match="IntegerLiteral value must be an integer"):
+        deserialize_node({"type": "IntegerLiteral", "value": True})
+
+    with pytest.raises(SerializationError, match="BooleanLiteral value must be a boolean"):
+        deserialize_node({"type": "BooleanLiteral", "value": "false"})
+
+
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
     ast = YaraFile(
         rules=[

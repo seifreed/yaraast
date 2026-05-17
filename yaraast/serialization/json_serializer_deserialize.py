@@ -69,6 +69,22 @@ def _deserialize_is_anonymous(data: dict[str, Any]) -> bool:
     return data.get("is_anonymous") is True
 
 
+def _deserialize_integer_literal_value(data: dict[str, Any]) -> int:
+    value = data["value"]
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    msg = "IntegerLiteral value must be an integer"
+    raise SerializationError(msg)
+
+
+def _deserialize_boolean_literal_value(data: dict[str, Any]) -> bool:
+    value = data["value"]
+    if isinstance(value, bool):
+        return value
+    msg = "BooleanLiteral value must be a boolean"
+    raise SerializationError(msg)
+
+
 def _cast_comment(node: Any) -> Comment:
     if isinstance(node, Comment):
         return node
@@ -196,7 +212,7 @@ def _deser_string_length(self, data: dict[str, Any]):
 def _deser_integer_literal(self, data: dict[str, Any]):
     from yaraast.ast.expressions import IntegerLiteral
 
-    return IntegerLiteral(value=data["value"])
+    return IntegerLiteral(value=_deserialize_integer_literal_value(data))
 
 
 def _deser_double_literal(self, data: dict[str, Any]):
@@ -220,7 +236,7 @@ def _deser_regex_literal(self, data: dict[str, Any]):
 def _deser_boolean_literal(self, data: dict[str, Any]):
     from yaraast.ast.expressions import BooleanLiteral
 
-    return BooleanLiteral(value=data["value"])
+    return BooleanLiteral(value=_deserialize_boolean_literal_value(data))
 
 
 def _deser_for_expression(self, data: dict[str, Any]):
