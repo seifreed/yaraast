@@ -52,6 +52,25 @@ def test_evaluate_arithmetic_uses_signed_int64_runtime_semantics() -> None:
     assert evaluate_arithmetic(INT64_MIN, -1, "%") is YARA_UNDEFINED
 
 
+@pytest.mark.parametrize(
+    ("left", "right", "operator"),
+    [
+        ("a", 1, "+"),
+        ("a", "b", "+"),
+        (1, "a", "-"),
+        ("a", 1, "<<"),
+        (1, "a", "<<"),
+        (1, "a", "&"),
+    ],
+)
+def test_evaluate_arithmetic_incompatible_operands_return_undefined(
+    left: object,
+    right: object,
+    operator: str,
+) -> None:
+    assert evaluate_arithmetic(left, right, operator) is YARA_UNDEFINED
+
+
 def test_evaluate_integer_division_and_modulo_do_not_use_float_conversion() -> None:
     large = 10**400 + 1
 
