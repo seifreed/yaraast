@@ -99,14 +99,15 @@ def append_string_symbols(
         string_id = getattr(string_def, "identifier", None)
         if not string_id:
             continue
-        string_range = node_value_range(string_def, source_text, string_id)
+        display_id = "$" if getattr(string_def, "is_anonymous", False) else string_id
+        string_range = node_value_range(string_def, source_text, display_id)
         if string_range is None:
-            line_num = find_string_line(lines, string_id, rule_block_range.start.line)
+            line_num = find_string_line(lines, display_id, rule_block_range.start.line)
             if line_num >= 0:
-                start = lines[line_num].find(string_id)
-                string_range = make_range(line_num, start, start + len(string_id))
+                start = lines[line_num].find(display_id)
+                string_range = make_range(line_num, start, start + len(display_id))
         if string_range is not None:
-            symbols.append(SymbolRecord(string_id, "string", ctx.uri, string_range, rule_name))
+            symbols.append(SymbolRecord(display_id, "string", ctx.uri, string_range, rule_name))
 
 
 def append_condition_symbols(

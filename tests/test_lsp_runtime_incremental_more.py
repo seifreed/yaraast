@@ -297,6 +297,34 @@ rule sample {
     assert doc.get_rule_sections("sample") == ["meta", "strings", "condition"]
 
 
+def test_document_context_hides_anonymous_string_internal_ids() -> None:
+    text = """
+rule sample {
+  strings:
+    $a = "x"
+    $ = "one"
+    $ = "two"
+  condition:
+    true
+}
+""".lstrip()
+    doc = DocumentContext("file://sample.yar", text)
+
+    string_symbols = [
+        symbol
+        for symbol in doc.symbols()
+        if symbol.kind == "string" and symbol.container_name == "sample"
+    ]
+
+    assert [symbol.name for symbol in string_symbols] == ["$a", "$", "$"]
+    assert doc.get_rule_string_identifiers("sample") == ["$a", "$", "$"]
+    assert doc.find_string_definition("$anon_1") is None
+    assert doc.get_string_definition_info("$anon_1") is None
+    assert string_symbols[1].range.start.line == 3
+    assert string_symbols[1].range.start.character == 4
+    assert string_symbols[1].range.end.character == 5
+
+
 def test_document_context_caches_structural_helpers_per_revision(tmp_path: Path) -> None:
     doc_path = tmp_path / "doc.yar"
     text_v1 = """

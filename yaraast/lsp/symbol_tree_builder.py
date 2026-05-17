@@ -221,27 +221,43 @@ def _append_strings_section(
     if strings_line < 0:
         return
     string_children: list[DocumentSymbol] = []
-    for string_id in doc.get_rule_string_identifiers(rule_name):
-        string_record = doc.find_symbol_record("string", string_id, rule_name)
-        if string_record is not None:
-            string_line = string_record.range.start.line
-            string_range = string_record.range
-        else:
-            string_line = find_line_containing(lines, string_id, strings_line)
-            string_range = (
-                make_range(string_line, 0, string_line, len(lines[string_line]))
-                if string_line >= 0
-                else None
-            )
-        if string_line >= 0 and string_range is not None:
+    string_records = [
+        symbol
+        for symbol in doc.symbols()
+        if symbol.kind == "string" and symbol.container_name == rule_name
+    ]
+    if string_records:
+        for string_record in string_records:
             string_children.append(
                 DocumentSymbol(
-                    name=string_id,
+                    name=string_record.name,
                     kind=SymbolKind.String,
-                    range=string_range,
-                    selection_range=string_range,
+                    range=string_record.range,
+                    selection_range=string_record.range,
                 )
             )
+    else:
+        for string_id in doc.get_rule_string_identifiers(rule_name):
+            string_record = doc.find_symbol_record("string", string_id, rule_name)
+            if string_record is not None:
+                string_line = string_record.range.start.line
+                string_range = string_record.range
+            else:
+                string_line = find_line_containing(lines, string_id, strings_line)
+                string_range = (
+                    make_range(string_line, 0, string_line, len(lines[string_line]))
+                    if string_line >= 0
+                    else None
+                )
+            if string_line >= 0 and string_range is not None:
+                string_children.append(
+                    DocumentSymbol(
+                        name=string_id,
+                        kind=SymbolKind.String,
+                        range=string_range,
+                        selection_range=string_range,
+                    )
+                )
     if string_children:
         rule_symbol.children.append(
             DocumentSymbol(

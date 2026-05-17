@@ -68,7 +68,7 @@ def get_rule_string_identifiers(ctx: DocumentContext, rule_name: str) -> list[st
     if rule is None:
         return []
     result = [
-        string_def.identifier
+        "$" if getattr(string_def, "is_anonymous", False) else string_def.identifier
         for string_def in getattr(rule, "strings", []) or []
         if getattr(string_def, "identifier", None)
     ]

@@ -111,6 +111,37 @@ rule local_rule {
     assert string_child.range.start.line == 6
 
 
+def test_symbols_provider_hides_anonymous_string_internal_ids(tmp_path: Path) -> None:
+    doc = tmp_path / "doc.yar"
+    text = """
+rule local_rule {
+  strings:
+    $a = "x"
+    $ = "one"
+    $ = "two"
+  condition:
+    true
+}
+""".lstrip()
+    doc.write_text(text, encoding="utf-8")
+
+    runtime = LspRuntime()
+    uri = path_to_uri(doc)
+    runtime.open_document(uri, text)
+    provider = SymbolsProvider(runtime)
+
+    symbols = provider.get_symbols(text, uri)
+    rule_symbol = next(symbol for symbol in symbols if symbol.name == "local_rule")
+    strings_symbol = next(child for child in _children(rule_symbol) if child.name == "strings")
+    string_children = _children(strings_symbol)
+
+    assert [child.name for child in string_children] == ["$a", "$", "$"]
+    assert all("$anon" not in child.name for child in string_children)
+    assert string_children[1].selection_range.start.line == 3
+    assert string_children[1].selection_range.start.character == 4
+    assert string_children[1].selection_range.end.character == 5
+
+
 def test_symbols_provider_uses_runtime_records_for_yaral_sections(tmp_path: Path) -> None:
     doc = tmp_path / "login.yar"
     text = """

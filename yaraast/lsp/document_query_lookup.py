@@ -50,6 +50,8 @@ def get_string_definition_node(ctx: DocumentContext, identifier: str) -> tuple[A
         return None
     for rule in ctx._iter_rules(ast):
         for string_def in getattr(rule, "strings", []):
+            if getattr(string_def, "is_anonymous", False):
+                continue
             if getattr(string_def, "identifier", None) == identifier:
                 result = (string_def, rule)
                 ctx.set_cached(cache_key, result)
