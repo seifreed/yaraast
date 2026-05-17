@@ -5,13 +5,16 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     Identifier,
+    SetExpression,
     StringCount,
     StringIdentifier,
     StringLength,
+    StringLiteral,
     StringOffset,
     StringWildcard,
     UnaryExpression,
@@ -137,6 +140,73 @@ def test_string_wildcard_keeps_matching_strings() -> None:
     out_rule = dce.eliminate_dead_code(rule)
 
     assert [string.identifier for string in out_rule.strings] == ["$api_one", "$api_two"]
+
+
+def test_dead_code_eliminator_keeps_raw_string_set_references() -> None:
+    dce = DeadCodeEliminator()
+    rule = Rule(
+        name="raw_sets",
+        strings=[
+            PlainString(identifier="$a", value="a"),
+            PlainString(identifier="$b", value="b"),
+            PlainString(identifier="$c", value="c"),
+            PlainString(identifier="$unused", value="unused"),
+        ],
+        condition=OfExpression(
+            "any",
+            ["$a"],
+        ),
+    )
+
+    out_rule = dce.eliminate_dead_code(rule)
+    assert [string.identifier for string in out_rule.strings] == ["$a"]
+
+    dce = DeadCodeEliminator()
+    rule = Rule(
+        name="literal_sets",
+        strings=[
+            PlainString(identifier="$a", value="a"),
+            PlainString(identifier="$b", value="b"),
+            PlainString(identifier="$c", value="c"),
+        ],
+        condition=ForOfExpression(
+            "any",
+            SetExpression([StringLiteral("$b"), StringLiteral("$c")]),
+            condition=None,
+        ),
+    )
+    out_rule = dce.eliminate_dead_code(rule)
+    assert [string.identifier for string in out_rule.strings] == ["$b", "$c"]
+
+
+def test_dead_code_eliminator_tracks_string_usage_per_rule() -> None:
+    dce = DeadCodeEliminator()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="one",
+                strings=[
+                    PlainString(identifier="$a", value="a"),
+                    PlainString(identifier="$b", value="b"),
+                ],
+                condition=StringIdentifier("$a"),
+            ),
+            Rule(
+                name="two",
+                strings=[
+                    PlainString(identifier="$a", value="a"),
+                    PlainString(identifier="$b", value="b"),
+                ],
+                condition=StringIdentifier("$b"),
+            ),
+        ]
+    )
+
+    optimized, count = dce.eliminate(ast)
+
+    assert count == 2
+    assert [string.identifier for string in optimized.rules[0].strings] == ["$a"]
+    assert [string.identifier for string in optimized.rules[1].strings] == ["$b"]
 
 
 def test_eliminate_dead_code_single_rule_and_convenience_wrapper() -> None:

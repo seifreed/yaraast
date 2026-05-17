@@ -5,7 +5,18 @@ from __future__ import annotations
 from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.expressions import BooleanLiteral, Identifier, StringIdentifier, StringWildcard
+from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
+from yaraast.ast.expressions import (
+    BooleanLiteral,
+    Identifier,
+    SetExpression,
+    StringCount,
+    StringIdentifier,
+    StringLength,
+    StringLiteral,
+    StringOffset,
+    StringWildcard,
+)
 from yaraast.visitor.base import ASTTransformer
 
 if TYPE_CHECKING:
@@ -19,9 +30,11 @@ class DeadCodeEliminator(ASTTransformer):
     def __init__(self) -> None:
         super().__init__()
         self.used_strings: set[str] = set()
+        self.used_strings_by_rule: dict[str, set[str]] = {}
         self.used_rules: set[str] = set()
         self.in_condition = False
         self.current_rule: str | None = None
+        self.current_rule_strings: set[str] = set()
         self.elimination_count = 0
 
     def eliminate(self, ast: YaraFile) -> tuple[YaraFile, int]:
@@ -32,9 +45,11 @@ class DeadCodeEliminator(ASTTransformer):
         """
         # Reset state
         self.used_strings.clear()
+        self.used_strings_by_rule.clear()
         self.used_rules.clear()
         self.in_condition = False
         self.current_rule = None
+        self.current_rule_strings = set()
         self.elimination_count = 0
 
         # First pass: collect used strings and rules
@@ -43,8 +58,12 @@ class DeadCodeEliminator(ASTTransformer):
         # Count strings to be removed
         for rule in ast.rules:
             if rule.strings:
+                used_strings = self.used_strings_by_rule.get(rule.name, set())
                 for string_def in rule.strings:
-                    if not self._is_string_identifier_used(string_def.identifier):
+                    if not self._is_string_identifier_used(
+                        string_def.identifier,
+                        used_strings,
+                    ):
                         self.elimination_count += 1
 
         # Count rules with always-false conditions
@@ -65,18 +84,27 @@ class DeadCodeEliminator(ASTTransformer):
         """Collect usage information."""
         for rule in ast.rules:
             self.current_rule = rule.name
+            self.current_rule_strings = {string_def.identifier for string_def in rule.strings}
+            self.used_strings_by_rule.setdefault(rule.name, set())
             self.in_condition = True
             if rule.condition:
                 self._collect_from_expression(rule.condition)
             self.in_condition = False
+            self.current_rule_strings = set()
 
     def _collect_from_expression(self, expr: ASTNode) -> None:
         """Collect usage from expression."""
         if isinstance(expr, StringIdentifier):
-            self.used_strings.add(expr.name)
+            self._mark_used_string(expr.name)
         elif isinstance(expr, StringWildcard):
-            self.used_strings.add(expr.pattern)
-        elif isinstance(expr, Identifier):
+            self._mark_used_string(expr.pattern)
+        elif isinstance(expr, StringCount | StringOffset | StringLength | AtExpression):
+            self._mark_used_string(expr.string_id)
+        elif isinstance(expr, InExpression) and isinstance(expr.subject, str):
+            self._mark_used_string(expr.subject)
+        elif isinstance(expr, OfExpression | ForOfExpression):
+            self._collect_string_set_value(expr.string_set)
+        elif isinstance(expr, Identifier) and expr.name not in _RESERVED_IDENTIFIERS:
             # Could be a rule reference
             self.used_rules.add(expr.name)
 
@@ -143,9 +171,54 @@ class DeadCodeEliminator(ASTTransformer):
 
         return any(self._contains_rule_reference(child) for child in expr.children())
 
-    def _is_string_identifier_used(self, identifier: str) -> bool:
+    def _normalize_string_id(self, identifier: str) -> str:
+        return identifier if identifier.startswith("$") else f"${identifier}"
+
+    def _mark_used_string(self, identifier: str) -> None:
+        normalized = self._normalize_string_id(identifier)
+        self.used_strings.add(normalized)
+        if self.current_rule:
+            self.used_strings_by_rule.setdefault(self.current_rule, set()).add(normalized)
+
+    def _mark_all_current_rule_strings(self) -> None:
+        for identifier in self.current_rule_strings:
+            self._mark_used_string(identifier)
+
+    def _collect_string_set_value(self, value: Any) -> None:
+        if isinstance(value, str):
+            if value == "them":
+                self._mark_all_current_rule_strings()
+            else:
+                self._mark_used_string(value)
+            return
+        if isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                self._collect_string_set_value(item)
+            return
+        if isinstance(value, Identifier) and value.name == "them":
+            self._mark_all_current_rule_strings()
+            return
+        if isinstance(value, StringLiteral):
+            self._mark_used_string(value.value)
+            return
+        if isinstance(value, StringIdentifier):
+            self._mark_used_string(value.name)
+            return
+        if isinstance(value, StringWildcard):
+            self._mark_used_string(value.pattern)
+            return
+        if isinstance(value, SetExpression):
+            for element in value.elements:
+                self._collect_string_set_value(element)
+
+    def _is_string_identifier_used(
+        self,
+        identifier: str,
+        used_strings: set[str] | None = None,
+    ) -> bool:
         """Return True when an exact or wildcard string reference keeps an identifier live."""
-        return any(fnmatchcase(identifier, pattern) for pattern in self.used_strings)
+        patterns = self.used_strings if used_strings is None else used_strings
+        return any(fnmatchcase(identifier, pattern) for pattern in patterns)
 
     def visit_rule(self, node: Rule) -> Rule:
         """Visit Rule and remove unused strings."""
@@ -153,9 +226,10 @@ class DeadCodeEliminator(ASTTransformer):
 
         # Remove unused strings
         if node.strings and self.used_strings:
+            used_strings = self.used_strings_by_rule.get(node.name, set())
             kept_strings = []
             for string_def in node.strings:
-                if self._is_string_identifier_used(string_def.identifier):
+                if self._is_string_identifier_used(string_def.identifier, used_strings):
                     kept_strings.append(string_def)
             node.strings = kept_strings
 
@@ -175,24 +249,18 @@ class DeadCodeEliminator(ASTTransformer):
     def visit_string_identifier(self, node: StringIdentifier) -> StringIdentifier:
         """Visit StringIdentifier - track usage."""
         if self.in_condition:
-            self.used_strings.add(node.name)
+            self._mark_used_string(node.name)
         return node
 
     def visit_string_wildcard(self, node: StringWildcard) -> StringWildcard:
         """Visit StringWildcard node."""
         if self.in_condition:
-            self.used_strings.add(node.pattern)
+            self._mark_used_string(node.pattern)
         return node
 
     def visit_identifier(self, node: Identifier) -> Identifier:
         """Visit Identifier - track potential rule usage."""
-        if self.in_condition and node.name not in [
-            "true",
-            "false",
-            "any",
-            "all",
-            "them",
-        ]:
+        if self.in_condition and node.name not in _RESERVED_IDENTIFIERS:
             self.used_rules.add(node.name)
         return node
 
@@ -220,17 +288,17 @@ class DeadCodeEliminator(ASTTransformer):
 
     def visit_string_count(self, node: Any) -> Any:
         if self.in_condition and hasattr(node, "string_id"):
-            self.used_strings.add(node.string_id)
+            self._mark_used_string(node.string_id)
         return node
 
     def visit_string_offset(self, node: Any) -> Any:
         if self.in_condition and hasattr(node, "string_id"):
-            self.used_strings.add(node.string_id)
+            self._mark_used_string(node.string_id)
         return node
 
     def visit_string_length(self, node: Any) -> Any:
         if self.in_condition and hasattr(node, "string_id"):
-            self.used_strings.add(node.string_id)
+            self._mark_used_string(node.string_id)
         return node
 
     def visit_binary_expression(self, node: Any) -> Any:
@@ -281,7 +349,10 @@ class DeadCodeEliminator(ASTTransformer):
         """
         # First collect used strings from this rule
         self.used_strings.clear()
+        self.used_strings_by_rule.clear()
         self.current_rule = rule.name
+        self.current_rule_strings = {string_def.identifier for string_def in rule.strings}
+        self.used_strings_by_rule[rule.name] = set()
         self.in_condition = True
 
         if rule.condition:
@@ -289,9 +360,10 @@ class DeadCodeEliminator(ASTTransformer):
 
         # Remove unused strings
         if rule.strings and self.used_strings:
+            used_strings = self.used_strings_by_rule.get(rule.name, set())
             kept_strings = []
             for string_def in rule.strings:
-                if self._is_string_identifier_used(string_def.identifier):
+                if self._is_string_identifier_used(string_def.identifier, used_strings):
                     kept_strings.append(string_def)
             rule.strings = kept_strings
 
@@ -302,3 +374,6 @@ def eliminate_dead_code(ast: YaraFile) -> tuple[YaraFile, int]:
     """Convenience function to eliminate dead code."""
     eliminator = DeadCodeEliminator()
     return eliminator.eliminate(ast)
+
+
+_RESERVED_IDENTIFIERS = frozenset({"true", "false", "any", "all", "them"})
