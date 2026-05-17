@@ -82,6 +82,8 @@ class DependencyFinder(MetricsVisitorBase):
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)
+        if hasattr(node.key, "accept"):
+            self.visit(node.key)
 
     def visit_defined_expression(self, node) -> None:
         self.visit(node.expression)

@@ -119,6 +119,18 @@ def test_complexity_analyzer_remaining_visitors_and_complex_rule() -> None:
     analyzer.visit_dictionary_access(
         DictionaryAccess(object=Identifier(name="pe"), key="CompanyName")
     )
+    binary_ops = analyzer.metrics.total_binary_ops
+    analyzer.visit_dictionary_access(
+        DictionaryAccess(
+            object=Identifier(name="pe"),
+            key=BinaryExpression(
+                left=IntegerLiteral(value=1),
+                operator="+",
+                right=IntegerLiteral(value=2),
+            ),
+        )
+    )
+    assert analyzer.metrics.total_binary_ops == binary_ops + 1
     analyzer.visit_defined_expression(DefinedExpression(expression=Identifier(name="x")))
     analyzer.visit_string_operator_expression(
         StringOperatorExpression(

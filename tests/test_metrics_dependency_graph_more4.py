@@ -148,6 +148,10 @@ def test_dependency_graph_generator_remaining_visitors_and_stats() -> None:
     gen.visit_dictionary_access(
         DictionaryAccess(object=ModuleReference(module="pe"), key=StringLiteral(value="k"))
     )
+    gen.imports.add("math")
+    gen.visit_dictionary_access(
+        DictionaryAccess(object=Identifier(name="container"), key=ModuleReference(module="math"))
+    )
     gen.visit_defined_expression(DefinedExpression(expression=Identifier(name="x")))
     gen.visit_string_operator_expression(
         StringOperatorExpression(
@@ -158,6 +162,7 @@ def test_dependency_graph_generator_remaining_visitors_and_stats() -> None:
     )
 
     assert "pe" in gen.module_references["manual"]
+    assert "math" in gen.module_references["manual"]
 
 
 def test_dependency_graph_generator_complexity_graph(tmp_path: Path) -> None:

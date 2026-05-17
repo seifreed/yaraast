@@ -95,6 +95,10 @@ def test_build_dependency_graph_visits_rare_expression_paths() -> None:
             Rule(name="c", condition=StringLiteral("x")),
             Rule(name="d", condition=StringLiteral("x")),
             Rule(
+                name="keyuser",
+                condition=DictionaryAccess(object=Identifier("a"), key=Identifier("b")),
+            ),
+            Rule(
                 name="e",
                 condition=ForOfExpression(quantifier="all", string_set="not_node", condition=None),
             ),
@@ -106,6 +110,7 @@ def test_build_dependency_graph_visits_rare_expression_paths() -> None:
 
     assert graph.has_node("a")
     assert graph.get_dependencies("a") == {"b", "c", "d"}
+    assert graph.get_dependencies("keyuser") == {"a", "b"}
     assert graph.get_dependencies("e") == set()
     assert graph.get_dependencies("f") == set()
 

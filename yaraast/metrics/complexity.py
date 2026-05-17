@@ -144,6 +144,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)
+        self._visit_ast_value(node.key)
 
     def visit_defined_expression(self, node) -> None:
         self.visit(node.expression)
