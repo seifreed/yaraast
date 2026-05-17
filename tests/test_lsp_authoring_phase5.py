@@ -264,6 +264,23 @@ rule demo {
     assert not any(action.title.startswith("Deduplicate identical strings") for action in actions)
 
 
+def test_deduplicate_identical_strings_hidden_for_anonymous_strings() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule demo {
+    strings:
+        $ = "abc"
+        $a = "abc"
+    condition:
+        $a
+}
+""".lstrip()
+
+    actions = provider.get_code_actions(text, _range(2, 8, 17), [], "file://test.yar")
+
+    assert not any(action.title.startswith("Deduplicate identical strings") for action in actions)
+
+
 def test_sort_strings_by_identifier_refactor_action() -> None:
     provider = CodeActionsProvider()
     text = """

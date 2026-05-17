@@ -79,6 +79,10 @@ def deduplicate_identical_strings(authoring, text: str, selection) -> object | N
     rule = ast.rules[0]
     if len(getattr(rule, "strings", [])) < 2:
         return None
+    if any(
+        getattr(string_def, "is_anonymous", False) for string_def in getattr(rule, "strings", [])
+    ):
+        return None
     if _condition_uses_string_set_quantifier(rule.condition):
         return None
     seen: dict[tuple[object, ...], str] = {}
