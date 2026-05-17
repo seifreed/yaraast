@@ -216,6 +216,8 @@ class HexStringBuilder:
 
     def _validate_jump_bounds(self, min_jump: int | None, max_jump: int | None) -> None:
         """Validate jump bounds."""
+        self._validate_jump_bound_type("minimum", min_jump)
+        self._validate_jump_bound_type("maximum", max_jump)
         if min_jump is not None and min_jump < 0:
             msg = f"Jump minimum must be non-negative, got {min_jump}"
             raise ValidationError(msg)
@@ -225,6 +227,11 @@ class HexStringBuilder:
         if min_jump is not None and max_jump is not None and min_jump > max_jump:
             msg = f"Jump minimum {min_jump} cannot exceed maximum {max_jump}"
             raise ValidationError(msg)
+
+    def _validate_jump_bound_type(self, name: str, value: int | None) -> None:
+        if value is not None and (not isinstance(value, int) or isinstance(value, bool)):
+            msg = f"Invalid jump bound type for {name}: {type(value)}"
+            raise TypeError(msg)
 
     def _add_hex_byte_safely(self, part: str) -> None:
         """Add a hex byte token."""

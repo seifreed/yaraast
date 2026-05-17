@@ -404,6 +404,23 @@ class TestHexStringBuilderJumps:
         with pytest.raises(ValidationError, match="cannot exceed maximum"):
             HexStringBuilder().jump_varying(5, 2)
 
+    @pytest.mark.parametrize(
+        ("method_name", "args"),
+        [
+            ("jump_exact", (True,)),
+            ("jump_up_to", (False,)),
+            ("jump_at_least", (True,)),
+            ("jump_varying", (False, True)),
+            ("jump", (False, True)),
+        ],
+    )
+    def test_jump_rejects_boolean_bounds(self, method_name: str, args: tuple[object, ...]) -> None:
+        """Jump methods should reject booleans instead of treating them as 0/1."""
+        builder = HexStringBuilder()
+
+        with pytest.raises(TypeError, match="Invalid jump bound type"):
+            getattr(builder, method_name)(*args)
+
     def test_jumps_in_pattern(self) -> None:
         """Jumps should work within byte patterns."""
         builder = HexStringBuilder()
