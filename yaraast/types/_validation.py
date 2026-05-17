@@ -17,6 +17,7 @@ def _copy_type_environment(env: TypeEnvironment) -> TypeEnvironment:
     copied.modules = set(env.modules)
     copied.module_aliases = dict(env.module_aliases)
     copied.strings = set(env.strings)
+    copied.anonymous_strings = set(env.anonymous_strings)
     copied.rules = set(env.rules)
     return copied
 
@@ -75,7 +76,10 @@ class TypeChecker(BaseVisitor[None]):
     def visit_rule(self, node: Rule) -> None:
         # Add string definitions to environment
         for string in node.strings:
-            self.env.add_string(string.identifier)
+            self.env.add_string(
+                string.identifier,
+                is_anonymous=getattr(string, "is_anonymous", False),
+            )
 
         # Type check condition
         if node.condition:

@@ -830,6 +830,18 @@ class TestTypeEnvironment:
         assert env.has_string_pattern("$other*") is True
         assert env.has_string_pattern("$nonexistent*") is False
 
+    def test_type_environment_named_patterns_ignore_anonymous_strings(self) -> None:
+        """Test named wildcard patterns do not match anonymous internal ids."""
+        env = TypeEnvironment()
+        env.add_string("$anon_1", is_anonymous=True)
+
+        assert env.has_string("$anon_1") is True
+        assert env.has_string_pattern("$a*") is False
+        assert env.has_string_pattern("$*") is True
+
+        env.add_string("$alpha")
+        assert env.has_string_pattern("$a*") is True
+
     def test_type_environment_add_and_has_rule(self) -> None:
         """Test adding and checking rules."""
         env = TypeEnvironment()
@@ -1458,6 +1470,40 @@ class TestTypeChecker:
         errors = checker.check(second_ast)
 
         assert "Undefined string: $a" in errors
+
+    def test_check_named_wildcard_does_not_match_anonymous_strings(self) -> None:
+        checker = TypeChecker()
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="anonymous_named_wildcard",
+                    strings=[
+                        PlainString(
+                            identifier="$anon_1",
+                            value="anonymous",
+                            is_anonymous=True,
+                        )
+                    ],
+                    condition=OfExpression("any", StringWildcard("$a*")),
+                ),
+                Rule(
+                    name="anonymous_global_wildcard",
+                    strings=[
+                        PlainString(
+                            identifier="$anon_1",
+                            value="anonymous",
+                            is_anonymous=True,
+                        )
+                    ],
+                    condition=OfExpression("any", StringWildcard("$*")),
+                ),
+            ]
+        )
+
+        errors = checker.check(ast)
+
+        assert "Undefined string: $a*" in errors
+        assert "Undefined string: $*" not in errors
 
     def test_infer_type_delegates_to_inference(self) -> None:
         """Test infer_type delegates to TypeInference."""

@@ -38,5 +38,8 @@ class RulesetTypeInference(BaseVisitor[TypeEnvironment]):
 
     def visit_rule(self, node: Rule) -> TypeEnvironment:
         for string in node.strings:
-            self.env.add_string(string.identifier)
+            self.env.add_string(
+                string.identifier,
+                is_anonymous=getattr(string, "is_anonymous", False),
+            )
         return self.env

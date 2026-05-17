@@ -13,6 +13,7 @@ class TypeEnvironment:
         self.modules: set[str] = set()
         self.module_aliases: dict[str, str] = {}
         self.strings: set[str] = set()
+        self.anonymous_strings: set[str] = set()
         self.rules: set[str] = set()
 
     def push_scope(self) -> None:
@@ -39,8 +40,10 @@ class TypeEnvironment:
             self.modules.add(module)
             self.module_aliases[alias] = module
 
-    def add_string(self, string_id: str) -> None:
+    def add_string(self, string_id: str, *, is_anonymous: bool = False) -> None:
         self.strings.add(string_id)
+        if is_anonymous:
+            self.anonymous_strings.add(string_id)
 
     def has_module(self, name: str) -> bool:
         return name in self.modules or name in self.module_aliases
@@ -58,8 +61,12 @@ class TypeEnvironment:
     def has_string_pattern(self, pattern: str) -> bool:
         if not pattern.endswith("*"):
             return self.has_string(pattern)
+        if pattern == "$*":
+            return bool(self.strings)
         prefix = pattern[:-1]
-        return any(string_id.startswith(prefix) for string_id in self.strings)
+        return any(
+            string_id.startswith(prefix) for string_id in self.strings - self.anonymous_strings
+        )
 
     def add_rule(self, rule_name: str) -> None:
         self.rules.add(rule_name)

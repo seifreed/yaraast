@@ -62,4 +62,7 @@ def populate_env_for_file(ast: YaraFile, env: TypeEnvironment) -> None:
 def populate_env_for_rule(rule: Rule, env: TypeEnvironment) -> None:
     """Populate a type environment with strings from a rule."""
     for string_def in rule.strings:
-        env.add_string(string_def.identifier)
+        env.add_string(
+            string_def.identifier,
+            is_anonymous=getattr(string_def, "is_anonymous", False),
+        )
