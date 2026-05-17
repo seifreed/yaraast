@@ -11,9 +11,11 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     Expression,
     ParenthesesExpression,
+    SetExpression,
     StringCount,
     StringIdentifier,
     StringLength,
+    StringLiteral,
     StringOffset,
     StringWildcard,
     UnaryExpression,
@@ -303,6 +305,21 @@ class RuleTransformer:
     ) -> object:
         if isinstance(value, str):
             return self._rename_string_pattern(value, mapping)
+        if isinstance(value, StringLiteral):
+            value.value = self._rename_string_pattern(value.value, mapping)
+            return value
+        if isinstance(value, ParenthesesExpression):
+            renamed = self._rename_string_set_value(value.expression, mapping)
+            if isinstance(renamed, Expression):
+                value.expression = renamed
+            return value
+        if isinstance(value, SetExpression):
+            renamed_elements = []
+            for element in value.elements:
+                renamed = self._rename_string_set_value(element, mapping)
+                renamed_elements.append(renamed if isinstance(renamed, Expression) else element)
+            value.elements = renamed_elements
+            return value
         if isinstance(value, Expression):
             return self._rename_strings_in_expression(value, mapping)
         if isinstance(value, list):

@@ -4,14 +4,17 @@ from __future__ import annotations
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment
+from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     FunctionCall,
     Identifier,
     IntegerLiteral,
+    ParenthesesExpression,
     SetExpression,
     StringCount,
     StringIdentifier,
+    StringLiteral,
     StringOffset,
     StringWildcard,
 )
@@ -226,6 +229,44 @@ def test_rule_transformer_normalizes_bare_string_rename_mappings() -> None:
     assert string_ref.name == "$renamed"
     assert isinstance(count_ref, StringCount)
     assert count_ref.string_id == "renamed"
+
+
+def test_rule_transformer_renames_string_literals_inside_string_sets() -> None:
+    rule = Rule(
+        name="literal_string_sets",
+        strings=[
+            PlainString(identifier="$a", value="1"),
+            PlainString(identifier="$b", value="2"),
+        ],
+        condition=SetExpression(
+            [
+                OfExpression("any", SetExpression([StringLiteral("$a"), StringLiteral("$b*")])),
+                ForOfExpression(
+                    "any",
+                    ParenthesesExpression(SetExpression([StringLiteral("$a")])),
+                    condition=None,
+                ),
+            ]
+        ),
+    )
+
+    transformed = RuleTransformer(rule).rename_strings({"$a": "$renamed", "$b": "$other"}).build()
+
+    assert isinstance(transformed.condition, SetExpression)
+    of_expr, for_of_expr = transformed.condition.elements
+    assert isinstance(of_expr, OfExpression)
+    assert isinstance(of_expr.string_set, SetExpression)
+    renamed_values = []
+    for item in of_expr.string_set.elements:
+        assert isinstance(item, StringLiteral)
+        renamed_values.append(item.value)
+    assert renamed_values == ["$renamed", "$other*"]
+    assert isinstance(for_of_expr, ForOfExpression)
+    assert isinstance(for_of_expr.string_set, ParenthesesExpression)
+    assert isinstance(for_of_expr.string_set.expression, SetExpression)
+    nested_item = for_of_expr.string_set.expression.elements[0]
+    assert isinstance(nested_item, StringLiteral)
+    assert nested_item.value == "$renamed"
 
 
 def test_yara_file_transformer_operations_and_filters() -> None:
