@@ -8,6 +8,7 @@ from textwrap import dedent
 
 import pytest
 
+from yaraast.ast.strings import PlainString
 from yaraast.performance.streaming_parser import StreamingParser
 
 
@@ -42,6 +43,18 @@ def test_streaming_parse_stream_and_chunk(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="chunk_size must be at least 1"):
         list(parser.parse_file_chunked(path, chunk_size=0))
+
+
+def test_streaming_parse_stream_preserves_split_utf8_bytes() -> None:
+    raw = 'rule unicode { strings: $a = "é" condition: $a }'.encode()
+    parser = StreamingParser(buffer_size=1)
+
+    rules = list(parser.parse_stream(io.BytesIO(raw)))
+
+    assert len(rules) == 1
+    assert isinstance(rules[0].strings[0], PlainString)
+    assert rules[0].strings[0].value == "é"
+    assert parser.get_statistics()["bytes_processed"] == len(raw)
 
 
 def test_streaming_parser_rejects_invalid_buffer_size() -> None:

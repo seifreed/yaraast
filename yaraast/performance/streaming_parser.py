@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import codecs
 import mmap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -117,16 +118,26 @@ class StreamingParser:
 
         """
         chunks: list[str] = []
+        decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        read_bytes = False
         while True:
             chunk = stream.read(self.buffer_size)
             if not chunk:
                 break
 
             if isinstance(chunk, bytes):
-                chunk = chunk.decode("utf-8", errors="replace")
+                read_bytes = True
+                self._stats["bytes_processed"] += len(chunk)
+                chunk = decoder.decode(chunk, final=False)
+            else:
+                self._stats["bytes_processed"] += len(chunk)
 
             chunks.append(chunk)
-            self._stats["bytes_processed"] += len(chunk)
+
+        if read_bytes:
+            tail = decoder.decode(b"", final=True)
+            if tail:
+                chunks.append(tail)
 
         content = "".join(chunks)
         emitted_rule = False
