@@ -196,21 +196,25 @@ class RuleBuilder:
         # Parse hex pattern - simplified version
         tokens = []
         i = 0
-        hex_chars = hex_pattern.replace(" ", "").upper()
+        hex_chars = "".join(hex_pattern.split()).upper()
 
         while i < len(hex_chars):
-            if i + 1 < len(hex_chars) and hex_chars[i : i + 2] == "??":
+            if i + 1 >= len(hex_chars):
+                msg = f"Invalid trailing hex byte at offset {i}: {hex_chars[i:]}"
+                raise ValidationError(msg)
+
+            hex_pair = hex_chars[i : i + 2]
+            if hex_pair == "??":
                 tokens.append(HexWildcard())
                 i += 2
-            elif i + 1 < len(hex_chars):
-                try:
-                    byte_val = int(hex_chars[i : i + 2], 16)
-                    tokens.append(HexByte(value=byte_val))
-                    i += 2
-                except ValueError:
-                    i += 1
             else:
-                i += 1
+                try:
+                    byte_val = int(hex_pair, 16)
+                except ValueError:
+                    msg = f"Invalid hex byte at offset {i}: {hex_pair}"
+                    raise ValidationError(msg) from None
+                tokens.append(HexByte(value=byte_val))
+                i += 2
 
         self._strings.append(
             HexString(identifier=identifier, tokens=tokens, modifiers=[]),

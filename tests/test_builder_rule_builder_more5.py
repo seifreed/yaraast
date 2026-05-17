@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.expressions import BooleanLiteral, Identifier, StringIdentifier
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.rule_builder import RuleBuilder
+from yaraast.errors import ValidationError
 
 
 def test_rule_builder_aliases_and_modifier_paths() -> None:
@@ -28,7 +31,7 @@ def test_rule_builder_aliases_and_modifier_paths() -> None:
 def test_rule_builder_hex_regex_and_condition_variants() -> None:
     rule = (
         RuleBuilder("variants")
-        .with_hex_string_raw("$hex", "4D ZZ ?? F")
+        .with_hex_string_raw("$hex", "4D ??")
         .with_regex("$re", "ab.*", dotall=True, multiline=True)
         .set_condition("$a")
         .build()
@@ -43,6 +46,14 @@ def test_rule_builder_hex_regex_and_condition_variants() -> None:
     assert len(rule.strings[1].modifiers) == 2  # dotall + multiline
     assert isinstance(rule.condition, StringIdentifier)
     assert rule.condition.name == "$a"
+
+
+def test_rule_builder_raw_hex_rejects_invalid_input() -> None:
+    with pytest.raises(ValidationError, match="Invalid hex byte at offset 2: ZZ"):
+        RuleBuilder("invalid").with_hex_string_raw("$hex", "4D ZZ ??")
+
+    with pytest.raises(ValidationError, match="Invalid trailing hex byte at offset 2: F"):
+        RuleBuilder("invalid").with_hex_string_raw("$hex", "4D F")
 
 
 def test_rule_builder_complex_conditions_and_lambda() -> None:
