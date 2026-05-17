@@ -117,3 +117,25 @@ def test_lsp_condition_completions_parse_yarax_sources() -> None:
     labels = {item.label for item in items}
     assert ast.rules[0].condition.__class__.__name__ == "WithStatement"
     assert "$a" in labels
+
+
+def test_condition_completions_hide_anonymous_internal_string_ids() -> None:
+    text = """
+rule x {
+  strings:
+    $a = "x"
+    $ = "anonymous"
+  condition:
+    true
+}
+""".lstrip()
+
+    items = build_condition_completions(text, [])
+    labels = {item.label for item in items}
+
+    assert "$a" in labels
+    assert "#a" in labels
+    assert "$anon_1" not in labels
+    assert "#anon_1" not in labels
+    assert "@anon_1" not in labels
+    assert "!anon_1" not in labels

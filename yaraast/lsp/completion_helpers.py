@@ -331,6 +331,8 @@ def _string_identifier_completions(ast: Any) -> list[CompletionItem]:
     items: list[CompletionItem] = []
     for rule in ast.rules:
         for string_def in rule.strings:
+            if getattr(string_def, "is_anonymous", False):
+                continue
             identifier = string_def.identifier
             items.append(
                 CompletionItem(
