@@ -307,9 +307,17 @@ def test_division_operator_parses_and_evaluates() -> None:
             condition:
                 5 / 2 == 2 and filesize / 2 == 2
         }
+
+        rule yara_integer_division {
+            condition:
+                5 \\ 2 == 2 and filesize \\ 2 == 2
+        }
     """)
 
-    assert YaraEvaluator(data=b"abcd").evaluate_file(ast) == {"integer_division": True}
+    assert YaraEvaluator(data=b"abcd").evaluate_file(ast) == {
+        "integer_division": True,
+        "yara_integer_division": True,
+    }
 
 
 def test_zero_divisor_arithmetic_evaluates_as_undefined() -> None:

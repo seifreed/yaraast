@@ -20,6 +20,7 @@ def test_evaluate_arithmetic_all_operators() -> None:
     assert evaluate_arithmetic(5, 3, "-") == 2
     assert evaluate_arithmetic(2, 3, "*") == 6
     assert evaluate_arithmetic(7, 2, "/") == 3
+    assert evaluate_arithmetic(7, 2, "\\") == 3
     assert evaluate_arithmetic(7.0, 2.0, "/") == 3.5
     assert evaluate_arithmetic(7, 4, "%") == 3
     assert evaluate_arithmetic(1, 3, "<<") == 8

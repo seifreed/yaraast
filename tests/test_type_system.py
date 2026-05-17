@@ -1142,6 +1142,14 @@ class TestTypeInference:
         result = inference.infer(node)
         assert isinstance(result, DoubleType)
 
+        backslash_node = BinaryExpression(
+            left=IntegerLiteral(value=10),
+            operator="\\",
+            right=IntegerLiteral(value=2),
+        )
+        backslash_result = inference.infer(backslash_node)
+        assert isinstance(backslash_result, DoubleType)
+
     def test_infer_binary_expression_bitwise_and(self) -> None:
         """Test inferring type of bitwise AND."""
         env = TypeEnvironment()

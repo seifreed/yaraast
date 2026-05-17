@@ -130,7 +130,7 @@ class ASTOptimizer:
                 return IntegerLiteral(value=left_val - right_val)
             if op == "*":
                 return IntegerLiteral(value=left_val * right_val)
-            if op == "/" and right_val != 0:
+            if op in ("/", "\\") and right_val != 0:
                 return IntegerLiteral(value=truncate_integer_division(left_val, right_val))
             if op == "%" and right_val != 0:
                 return IntegerLiteral(value=integer_remainder(left_val, right_val))

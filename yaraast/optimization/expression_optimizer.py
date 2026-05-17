@@ -58,7 +58,7 @@ def _fold_arithmetic(left_val: int, right_val: int, operator: str):
         return _SENTINEL
     if operator in _ARITHMETIC_OPS:
         return IntegerLiteral(value=_ARITHMETIC_OPS[operator](left_val, right_val))
-    if operator == "/" and right_val != 0:
+    if operator in ("/", "\\") and right_val != 0:
         return IntegerLiteral(value=truncate_integer_division(left_val, right_val))
     if operator == "%" and right_val != 0:
         return IntegerLiteral(value=integer_remainder(left_val, right_val))

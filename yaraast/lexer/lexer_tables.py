@@ -63,6 +63,7 @@ SINGLE_CHAR_TOKENS = {
     "-": TokenType.MINUS,
     "*": TokenType.MULTIPLY,
     "/": TokenType.DIVIDE,
+    "\\": TokenType.DIVIDE,
     "%": TokenType.MODULO,
     "^": TokenType.XOR,
     "&": TokenType.BITWISE_AND,

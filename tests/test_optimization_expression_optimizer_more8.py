@@ -34,6 +34,9 @@ def test_integer_folding_all_remaining_operators() -> None:
     assert opt.visit(BinaryExpression(IntegerLiteral(9), "/", IntegerLiteral(3))) == IntegerLiteral(
         3
     )
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(9), "\\", IntegerLiteral(3))
+    ) == IntegerLiteral(3)
     assert opt.visit(BinaryExpression(IntegerLiteral(9), "%", IntegerLiteral(4))) == IntegerLiteral(
         1
     )

@@ -50,7 +50,7 @@ def read_next_token(lexer) -> Token | None:
         lexer._advance()
         return Token(token_type, char, start_line, start_column, 1)
 
-    if char == "\\" and lexer._peek_char() in (" ", "\t"):
+    if char == "\\" and lexer._is_line_continuation():
         _skip_line_continuation(lexer)
         return None
 

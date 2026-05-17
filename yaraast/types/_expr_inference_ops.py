@@ -79,7 +79,7 @@ def infer_binary_expression(ctx, node: BinaryExpression):
     if node.operator in _STRING_OPS:
         return _infer_string_op(ctx, node.operator, left_type, right_type)
 
-    if node.operator in ["+", "-", "*", "/", "%"]:
+    if node.operator in ["+", "-", "*", "/", "\\", "%"]:
         return _infer_arithmetic_op(ctx, node.operator, left_type, right_type)
 
     if node.operator in ["&", "|", "^", "<<", ">>"]:
@@ -147,7 +147,11 @@ def _infer_arithmetic_op(ctx, operator, left_type, right_type):
         ctx.errors.append(f"Left operand of '{operator}' must be numeric, got {left_type}")
     if not right_type.is_numeric():
         ctx.errors.append(f"Right operand of '{operator}' must be numeric, got {right_type}")
-    if operator == "/" or isinstance(left_type, DoubleType) or isinstance(right_type, DoubleType):
+    if (
+        operator in ("/", "\\")
+        or isinstance(left_type, DoubleType)
+        or isinstance(right_type, DoubleType)
+    ):
         return DoubleType()
     return IntegerType()
 

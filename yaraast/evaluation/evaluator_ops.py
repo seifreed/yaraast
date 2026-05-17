@@ -19,7 +19,7 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
         return left - right
     if operator == "*":
         return left * right
-    if operator == "/":
+    if operator in ("/", "\\"):
         if right == 0:
             return YARA_UNDEFINED
         if isinstance(left, int) and isinstance(right, int):

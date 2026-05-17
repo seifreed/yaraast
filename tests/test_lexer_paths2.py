@@ -87,9 +87,12 @@ def test_lexer_regex_and_backslash_division_paths() -> None:
     assert isinstance(regex_value, str)
     assert "\x00i" in regex_value
 
-    # Backslash followed by space is a line continuation, not division
+    # Backslash followed by a non-newline expression is YARA integer division.
     tokens2 = Lexer("10 \\ 2").tokenize()
-    assert not any(t.type == TokenType.DIVIDE for t in tokens2)
+    assert any(t.type == TokenType.DIVIDE and t.value == "\\" for t in tokens2)
+
+    tokens3 = Lexer("rule r { condition: true \\ \n and false }").tokenize()
+    assert not any(t.type == TokenType.DIVIDE for t in tokens3)
 
 
 def test_lexer_slash_after_expression_operand_is_division() -> None:

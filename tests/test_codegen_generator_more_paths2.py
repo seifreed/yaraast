@@ -168,6 +168,10 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
         == "1 + 2"
     )
     assert (
+        gen.visit_binary_expression(BinaryExpression(IntegerLiteral(5), "\\", IntegerLiteral(2)))
+        == "5 \\ 2"
+    )
+    assert (
         gen.generate(
             BinaryExpression(
                 BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)),
