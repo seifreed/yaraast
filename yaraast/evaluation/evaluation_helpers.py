@@ -31,53 +31,53 @@ def is_yara_undefined(value: object) -> bool:
     return value is YARA_UNDEFINED
 
 
-def read_struct(data: bytes, fmt: str, offset: int, size: int) -> int:
+def read_struct(data: bytes, fmt: str, offset: int, size: int) -> int | YaraUndefinedValue:
     if offset < 0 or offset + size > len(data):
-        return 0
+        return YARA_UNDEFINED
     return struct.unpack(fmt, data[offset : offset + size])[0]
 
 
-def _read_uint8(data: bytes, offset: int) -> int:
+def _read_uint8(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, "B", offset, 1)
 
 
-def _read_uint16(data: bytes, offset: int) -> int:
+def _read_uint16(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, "<H", offset, 2)
 
 
-def _read_uint32(data: bytes, offset: int) -> int:
+def _read_uint32(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, "<I", offset, 4)
 
 
-def _read_int8(data: bytes, offset: int) -> int:
+def _read_int8(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, "b", offset, 1)
 
 
-def _read_int16(data: bytes, offset: int) -> int:
+def _read_int16(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, "<h", offset, 2)
 
 
-def _read_int32(data: bytes, offset: int) -> int:
+def _read_int32(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, "<i", offset, 4)
 
 
-def _read_uint16_be(data: bytes, offset: int) -> int:
+def _read_uint16_be(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, ">H", offset, 2)
 
 
-def _read_uint32_be(data: bytes, offset: int) -> int:
+def _read_uint32_be(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, ">I", offset, 4)
 
 
-def _read_int16_be(data: bytes, offset: int) -> int:
+def _read_int16_be(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, ">h", offset, 2)
 
 
-def _read_int32_be(data: bytes, offset: int) -> int:
+def _read_int32_be(data: bytes, offset: int) -> int | YaraUndefinedValue:
     return read_struct(data, ">i", offset, 4)
 
 
-BUILTIN_READERS: dict[str, Callable[[bytes, int], int]] = {
+BUILTIN_READERS: dict[str, Callable[[bytes, int], int | YaraUndefinedValue]] = {
     "uint8": _read_uint8,
     "uint16": _read_uint16,
     "uint32": _read_uint32,

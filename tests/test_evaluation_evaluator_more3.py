@@ -276,6 +276,31 @@ def test_evaluator_uint8be_and_int8be_match_registered_builtin_functions() -> No
     assert YaraEvaluator(data=b"\xff").evaluate_file(ast) == {"byte_endian_aliases": True}
 
 
+def test_builtin_integer_readers_return_undefined_outside_file() -> None:
+    ast = Parser().parse("""
+        rule invalid_integer_reader_comparison {
+            condition:
+                uint8(filesize) == 0 or uint16(2) == 0
+        }
+
+        rule invalid_integer_reader_defined {
+            condition:
+                defined uint8(filesize) or defined uint16(2)
+        }
+
+        rule invalid_integer_reader_not_defined {
+            condition:
+                not defined uint8(filesize) and not defined uint16(2)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {
+        "invalid_integer_reader_comparison": False,
+        "invalid_integer_reader_defined": False,
+        "invalid_integer_reader_not_defined": True,
+    }
+
+
 def test_condition_paths_for_at_in_of_for_and_defined() -> None:
     ev = YaraEvaluator(data=b"00abcd00")
     rule = Rule(

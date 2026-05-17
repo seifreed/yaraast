@@ -14,6 +14,7 @@ from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.evaluation.evaluation_helpers import (
     BUILTIN_READERS,
     LITTLE_ENDIAN_ALIASES,
+    YARA_UNDEFINED,
     _read_int8,
     _read_int16,
     _read_int16_be,
@@ -75,8 +76,8 @@ def test_evaluation_helpers_read_struct_and_builtin_readers() -> None:
     data += struct.pack(">H", 0xBEEF) + struct.pack(">I", 0xA1B2C3D4)
     data += struct.pack(">h", -2222) + struct.pack(">i", -333333)
 
-    assert read_struct(data, "B", -1, 1) == 0
-    assert read_struct(data, "I", len(data), 4) == 0
+    assert read_struct(data, "B", -1, 1) is YARA_UNDEFINED
+    assert read_struct(data, "I", len(data), 4) is YARA_UNDEFINED
 
     assert _read_uint8(data, 0) == 0x7F
     assert _read_uint16(data, 1) == 0x1234
