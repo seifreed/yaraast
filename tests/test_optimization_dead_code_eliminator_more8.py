@@ -167,6 +167,38 @@ def test_string_wildcard_keeps_matching_strings() -> None:
     assert [string.identifier for string in out_rule.strings] == ["$api_one", "$api_two"]
 
 
+def test_dead_code_eliminator_named_wildcard_ignores_anonymous_internal_ids() -> None:
+    dce = DeadCodeEliminator()
+    rule = Rule(
+        name="anonymous_wildcard",
+        strings=[
+            PlainString(identifier="$alpha", value="a"),
+            PlainString(identifier="$anon_1", value="anonymous", is_anonymous=True),
+        ],
+        condition=StringWildcard("$a*"),
+    )
+
+    out_rule = dce.eliminate_dead_code(rule)
+
+    assert [string.identifier for string in out_rule.strings] == ["$alpha"]
+
+
+def test_dead_code_eliminator_global_wildcard_keeps_anonymous_strings() -> None:
+    dce = DeadCodeEliminator()
+    rule = Rule(
+        name="anonymous_global_wildcard",
+        strings=[
+            PlainString(identifier="$alpha", value="a"),
+            PlainString(identifier="$anon_1", value="anonymous", is_anonymous=True),
+        ],
+        condition=StringWildcard("$*"),
+    )
+
+    out_rule = dce.eliminate_dead_code(rule)
+
+    assert [string.identifier for string in out_rule.strings] == ["$alpha", "$anon_1"]
+
+
 def test_dead_code_eliminator_removes_strings_when_no_strings_are_used() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(

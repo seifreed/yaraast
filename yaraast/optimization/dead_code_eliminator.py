@@ -35,6 +35,8 @@ class DeadCodeEliminator(ASTTransformer):
         self.in_condition = False
         self.current_rule: str | None = None
         self.current_rule_strings: set[str] = set()
+        self.current_rule_anonymous_strings: set[str] = set()
+        self.anonymous_strings_by_rule: dict[str, set[str]] = {}
         self.elimination_count = 0
 
     def eliminate(self, ast: YaraFile) -> tuple[YaraFile, int]:
@@ -50,6 +52,8 @@ class DeadCodeEliminator(ASTTransformer):
         self.in_condition = False
         self.current_rule = None
         self.current_rule_strings = set()
+        self.current_rule_anonymous_strings = set()
+        self.anonymous_strings_by_rule.clear()
         self.elimination_count = 0
 
         # First pass: collect used strings and rules
@@ -59,10 +63,12 @@ class DeadCodeEliminator(ASTTransformer):
         for rule in ast.rules:
             if rule.strings:
                 used_strings = self.used_strings_by_rule.get(rule.name, set())
+                anonymous_strings = self.anonymous_strings_by_rule.get(rule.name, set())
                 for string_def in rule.strings:
                     if not self._is_string_identifier_used(
                         string_def.identifier,
                         used_strings,
+                        anonymous_strings,
                     ):
                         self.elimination_count += 1
 
@@ -81,12 +87,19 @@ class DeadCodeEliminator(ASTTransformer):
         for rule in ast.rules:
             self.current_rule = rule.name
             self.current_rule_strings = {string_def.identifier for string_def in rule.strings}
+            self.current_rule_anonymous_strings = {
+                self._normalize_string_id(string_def.identifier)
+                for string_def in rule.strings
+                if getattr(string_def, "is_anonymous", False)
+            }
             self.used_strings_by_rule.setdefault(rule.name, set())
+            self.anonymous_strings_by_rule[rule.name] = set(self.current_rule_anonymous_strings)
             self.in_condition = True
             if rule.condition:
                 self._collect_from_expression(rule.condition)
             self.in_condition = False
             self.current_rule_strings = set()
+            self.current_rule_anonymous_strings = set()
 
     def _collect_from_expression(self, expr: ASTNode) -> None:
         """Collect usage from expression."""
@@ -215,10 +228,22 @@ class DeadCodeEliminator(ASTTransformer):
         self,
         identifier: str,
         used_strings: set[str] | None = None,
+        anonymous_strings: set[str] | None = None,
     ) -> bool:
         """Return True when an exact or wildcard string reference keeps an identifier live."""
         patterns = self.used_strings if used_strings is None else used_strings
-        return any(fnmatchcase(identifier, pattern) for pattern in patterns)
+        normalized = self._normalize_string_id(identifier)
+        anonymous = (
+            self.current_rule_anonymous_strings if anonymous_strings is None else anonymous_strings
+        )
+        for pattern in patterns:
+            if pattern == "$*":
+                return True
+            if pattern.endswith("*") and normalized in anonymous:
+                continue
+            if fnmatchcase(normalized, pattern):
+                return True
+        return False
 
     def visit_rule(self, node: Rule) -> Rule:
         """Visit Rule and remove unused strings."""
@@ -227,9 +252,14 @@ class DeadCodeEliminator(ASTTransformer):
         # Remove unused strings
         if node.strings:
             used_strings = self.used_strings_by_rule.get(node.name, set())
+            anonymous_strings = self.anonymous_strings_by_rule.get(node.name, set())
             kept_strings = []
             for string_def in node.strings:
-                if self._is_string_identifier_used(string_def.identifier, used_strings):
+                if self._is_string_identifier_used(
+                    string_def.identifier,
+                    used_strings,
+                    anonymous_strings,
+                ):
                     kept_strings.append(string_def)
             node.strings = kept_strings
 
@@ -352,7 +382,13 @@ class DeadCodeEliminator(ASTTransformer):
         self.used_strings_by_rule.clear()
         self.current_rule = rule.name
         self.current_rule_strings = {string_def.identifier for string_def in rule.strings}
+        self.current_rule_anonymous_strings = {
+            self._normalize_string_id(string_def.identifier)
+            for string_def in rule.strings
+            if getattr(string_def, "is_anonymous", False)
+        }
         self.used_strings_by_rule[rule.name] = set()
+        self.anonymous_strings_by_rule[rule.name] = set(self.current_rule_anonymous_strings)
         self.in_condition = True
 
         if rule.condition:
@@ -361,12 +397,18 @@ class DeadCodeEliminator(ASTTransformer):
         # Remove unused strings
         if rule.strings:
             used_strings = self.used_strings_by_rule.get(rule.name, set())
+            anonymous_strings = self.anonymous_strings_by_rule.get(rule.name, set())
             kept_strings = []
             for string_def in rule.strings:
-                if self._is_string_identifier_used(string_def.identifier, used_strings):
+                if self._is_string_identifier_used(
+                    string_def.identifier,
+                    used_strings,
+                    anonymous_strings,
+                ):
                     kept_strings.append(string_def)
             rule.strings = kept_strings
 
+        self.current_rule_anonymous_strings = set()
         return rule
 
 
