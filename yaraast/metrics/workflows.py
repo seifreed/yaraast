@@ -44,10 +44,11 @@ def is_graphviz_error(error: Exception) -> bool:
         return True
     error_str = str(error)
     graphviz_indicators = [
-        "dot",
-        "graphviz",
         "ExecutableNotFound",
+        "failed to execute",
         "No such file or directory",
+        "requires the 'graphviz' Python package",
+        "graphviz executables",
     ]
     return any(indicator.lower() in error_str.lower() for indicator in graphviz_indicators)
 

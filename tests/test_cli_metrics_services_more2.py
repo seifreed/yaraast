@@ -135,6 +135,7 @@ def test_metrics_services_path_helpers_and_error_detection() -> None:
     assert ms.is_graphviz_error(Exception("ExecutableNotFound")) is True
     assert ms.is_graphviz_error(Exception("failed to execute PosixPath('dot')")) is True
     assert ms.is_graphviz_error(Exception("No such file or directory: PosixPath('dot')")) is True
+    assert ms.is_graphviz_error(Exception("dot product calculation failed")) is False
     assert ms.is_graphviz_error(Exception("another error")) is False
 
 
