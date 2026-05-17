@@ -222,6 +222,43 @@ def test_expr_inference_visits_unresolved_function_arguments() -> None:
         assert any("Left operand of '+' must be numeric, got string" in e for e in inf.errors)
 
 
+def test_expr_inference_visits_defined_expression_operand() -> None:
+    env = TypeEnvironment()
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(
+        DefinedExpression(
+            BinaryExpression(
+                left=StringLiteral("bad"),
+                operator="+",
+                right=IntegerLiteral(1),
+            ),
+        ),
+    )
+
+    assert isinstance(out, BooleanType)
+    assert any("Left operand of '+' must be numeric, got string" in e for e in inf.errors)
+
+
+def test_expr_inference_validates_string_operator_expression_operands() -> None:
+    env = TypeEnvironment()
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(
+        StringOperatorExpression(
+            left=IntegerLiteral(1),
+            operator="icontains",
+            right=StringLiteral("x"),
+        ),
+    )
+
+    assert isinstance(out, BooleanType)
+    assert any(
+        "Left operand of 'icontains' must be string-like or array, got integer" in e
+        for e in inf.errors
+    )
+
+
 def test_expr_inference_at_in_and_of_error_paths() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)

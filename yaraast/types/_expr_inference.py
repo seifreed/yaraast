@@ -179,6 +179,20 @@ class ExpressionTypeInference(_TypeBaseVisitor):
     def visit_unary_expression(self, node: UnaryExpression) -> YaraType:
         return ops.infer_unary_expression(self, node)
 
+    def visit_defined_expression(self, node: DefinedExpression) -> YaraType:
+        self.visit(node.expression)
+        return BooleanType()
+
+    def visit_string_operator_expression(self, node: StringOperatorExpression) -> YaraType:
+        return ops.infer_binary_expression(
+            self,
+            BinaryExpression(
+                left=node.left,
+                operator=node.operator,
+                right=node.right,
+            ),
+        )
+
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> YaraType:
         return self.visit(node.expression)
 
