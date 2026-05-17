@@ -139,6 +139,26 @@ def test_math_module_valid_regions_can_extend_to_file_end() -> None:
     assert YaraEvaluator(data=b"abcdef").evaluate_file(ast) == {"trailing_math_region": True}
 
 
+def test_defined_expression_evaluates_module_function_results() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule valid_module_function_result {
+            condition:
+                defined math.entropy(0, 1)
+        }
+
+        rule invalid_module_function_result {
+            condition:
+                defined math.entropy(-1, 1)
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abcdef").evaluate_file(ast) == {
+        "valid_module_function_result": True,
+        "invalid_module_function_result": False,
+    }
+
+
 def test_string_count_offset_length_and_wildcard() -> None:
     ev = YaraEvaluator(data=b"xxabxxab")
     rule = Rule(

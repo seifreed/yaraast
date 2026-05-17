@@ -840,8 +840,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return True
         elif isinstance(expr, ModuleReference):
             return expr.module in self.context.modules
-        elif isinstance(expr, DictionaryAccess | MemberAccess | ArrayAccess):
-            return self.visit(expr) is not None
+        elif isinstance(expr, DictionaryAccess | MemberAccess | ArrayAccess | FunctionCall):
+            value = self.visit(expr)
+            return value is not None and not is_yara_undefined(value)
         elif (
             isinstance(expr, StringIdentifier) and self._current_rule and self._current_rule.strings
         ):
