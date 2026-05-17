@@ -53,3 +53,20 @@ def test_evaluate_string_operator_all_paths() -> None:
     with pytest.raises(re.error):
         evaluate_string_operator("abc", r"(", "matches")
     assert evaluate_string_operator("abc", "x", "unknown") is None
+
+
+@pytest.mark.parametrize(
+    "operator",
+    [
+        "contains",
+        "icontains",
+        "startswith",
+        "istartswith",
+        "endswith",
+        "iendswith",
+        "iequals",
+    ],
+)
+def test_evaluate_string_operator_invalid_operands_are_false(operator: str) -> None:
+    assert evaluate_string_operator(None, "x", operator) is False
+    assert evaluate_string_operator("hello", None, operator) is False

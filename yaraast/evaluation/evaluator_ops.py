@@ -55,6 +55,18 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
 
 
 def evaluate_string_operator(left: Any, right: Any, operator: str) -> bool | None:
+    string_operators = {
+        "contains",
+        "icontains",
+        "startswith",
+        "istartswith",
+        "endswith",
+        "iendswith",
+        "iequals",
+    }
+    if operator in string_operators and not (isinstance(left, str) and isinstance(right, str)):
+        return False
+
     if operator == "contains":
         return right in left
     if operator == "icontains":
