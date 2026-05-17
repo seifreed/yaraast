@@ -140,15 +140,25 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
         modifiers_to_string(
             [
                 StringModifier.from_name_value("xor", (1, 3)),
+                StringModifier.from_name_value("xor", "0x10"),
+                StringModifier.from_name_value("xor", "0x01-0xff"),
                 StringModifier.from_name_value("base64", alphabet),
             ]
         )
-        == f' xor(1-3) base64("{alphabet}")'
+        == f' xor(1-3) xor(0x10) xor(0x01-0xff) base64("{alphabet}")'
     )
     assert (
         modifiers_to_string([StringModifier.from_name_value("base64", 'custom"\\alphabet')])
         == ' base64("custom\\"\\\\alphabet")'
     )
+    with pytest.raises(TypeError, match="xor value must be a byte"):
+        modifiers_to_string([StringModifier.from_name_value("xor", True)])
+    with pytest.raises(TypeError, match="xor range value must contain byte bounds"):
+        modifiers_to_string([StringModifier.from_name_value("xor", (True, 3))])
+    with pytest.raises(TypeError, match="xor range value must be ascending"):
+        modifiers_to_string([StringModifier.from_name_value("xor", (4, 3))])
+    with pytest.raises(TypeError, match="base64wide value must be a string"):
+        modifiers_to_string([StringModifier.from_name_value("base64wide", True)])
 
     ast = YaraFile(
         rules=[

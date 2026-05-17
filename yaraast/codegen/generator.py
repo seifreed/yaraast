@@ -75,6 +75,7 @@ from yaraast.codegen.generator_formatting import (
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     format_hex_byte_value,
+    format_modifier,
     format_modifiers,
 )
 from yaraast.codegen.generator_leaf_visitors import (
@@ -275,14 +276,7 @@ class CodeGenerator(ASTVisitor[str]):
 
     def visit_string_modifier(self, node: StringModifier) -> str:
         """Generate code for StringModifier."""
-        if node.value is not None:
-            if isinstance(node.value, tuple):
-                return f"{node.name}({node.value[0]}-{node.value[1]})"
-            # String values (e.g., base64 custom alphabet) need quotes
-            if isinstance(node.value, str):
-                return f'{node.name}("{escape_plain_string_value(node.value)}")'
-            return f"{node.name}({node.value})"
-        return node.name
+        return format_modifier(node)
 
     def visit_hex_token(self, node: HexToken) -> str:
         """Generate code for HexToken."""

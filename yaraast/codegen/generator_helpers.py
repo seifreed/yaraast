@@ -4,13 +4,19 @@ from __future__ import annotations
 
 from collections.abc import Callable
 import re
-from typing import Any
+from typing import Any, NamedTuple
 
 from yaraast.regex_literals import escape_regex_delimiter as _escape_regex_delimiter
 
 REGEX_SUFFIX_MODIFIERS = frozenset({"i", "m", "s"})
 REGEX_SUFFIX_NAMES = {"dotall": "s", "multiline": "m"}
+BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+
+
+class _XorKey(NamedTuple):
+    key: int
+    text: str
 
 
 def _escape_plain_byte(value: int) -> str:
@@ -168,6 +174,13 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
         name = modifier.name
         value = modifier.value
         if value is not None:
+            if name == "xor":
+                return f"{name}({_format_xor_modifier_value(value)})"
+            if name in BASE64_MODIFIERS:
+                if not isinstance(value, str):
+                    msg = f"{name} value must be a string"
+                    raise TypeError(msg)
+                return f'{name}("{escape_plain_string_value(value)}")'
             if isinstance(value, tuple):
                 return f"{name}({value[0]}-{value[1]})"
             if isinstance(value, str):
@@ -176,6 +189,58 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
         return str(name)
 
     return str(modifier)
+
+
+def _format_xor_modifier_value(value: object) -> str:
+    if isinstance(value, tuple | list) and len(value) == 2:
+        low = _parse_xor_key(value[0])
+        high = _parse_xor_key(value[1])
+        if low is None or high is None:
+            msg = "xor range value must contain byte bounds"
+            raise TypeError(msg)
+        if low.key > high.key:
+            msg = "xor range value must be ascending"
+            raise TypeError(msg)
+        return f"{low.text}-{high.text}"
+
+    if isinstance(value, str) and "-" in value:
+        low_text, high_text = value.split("-", maxsplit=1)
+        low = _parse_xor_key(low_text)
+        high = _parse_xor_key(high_text)
+        if low is None or high is None:
+            msg = "xor range value must contain byte bounds"
+            raise TypeError(msg)
+        if low.key > high.key:
+            msg = "xor range value must be ascending"
+            raise TypeError(msg)
+        return f"{low.text}-{high.text}"
+
+    key = _parse_xor_key(value)
+    if key is None:
+        msg = "xor value must be a byte"
+        raise TypeError(msg)
+    return key.text
+
+
+def _parse_xor_key(value: object) -> _XorKey | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        if 0 <= value <= 0xFF:
+            return _XorKey(value, str(value))
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        try:
+            if text.lower().startswith("0x") or any(char in "abcdefABCDEF" for char in text):
+                key = int(text, 16)
+            else:
+                key = int(text, 10)
+        except ValueError:
+            return None
+        if 0 <= key <= 0xFF:
+            return _XorKey(key, text)
+    return None
 
 
 def format_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> str:

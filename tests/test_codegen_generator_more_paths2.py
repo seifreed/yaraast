@@ -422,6 +422,11 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     assert gen.visit_condition(Condition()) == ""
     assert gen.visit_tag(Tag("x")) == "x"
     assert gen.visit_string_modifier(StringModifier.from_name_value("xor", (1, 3))) == "xor(1-3)"
+    assert gen.visit_string_modifier(StringModifier.from_name_value("xor", "0x10")) == "xor(0x10)"
+    assert (
+        gen.visit_string_modifier(StringModifier.from_name_value("xor", "0x01-0xff"))
+        == "xor(0x01-0xff)"
+    )
     assert (
         gen.visit_string_modifier(StringModifier.from_name_value("base64", "custom"))
         == 'base64("custom")'
@@ -430,6 +435,16 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         gen.visit_string_modifier(StringModifier.from_name_value("base64", 'custom"\\alphabet'))
         == 'base64("custom\\"\\\\alphabet")'
     )
+    with pytest.raises(TypeError, match="xor value must be a byte"):
+        gen.visit_string_modifier(StringModifier.from_name_value("xor", True))
+    with pytest.raises(TypeError, match="xor range value must contain byte bounds"):
+        gen.visit_string_modifier(StringModifier.from_name_value("xor", (True, 3)))
+    with pytest.raises(TypeError, match="xor range value must be ascending"):
+        gen.visit_string_modifier(StringModifier.from_name_value("xor", (4, 3)))
+    with pytest.raises(TypeError, match="xor value must be a byte"):
+        gen.visit_string_modifier(StringModifier.from_name_value("xor", 256))
+    with pytest.raises(TypeError, match="base64 value must be a string"):
+        gen.visit_string_modifier(StringModifier.from_name_value("base64", True))
 
     real_rule = Rule(name="r", condition=BooleanLiteral(True))
     gen2 = CodeGenerator()
