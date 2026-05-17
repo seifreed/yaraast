@@ -8,7 +8,17 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral, Identifier
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Rule, Tag
-from yaraast.ast.strings import HexByte, HexJump, HexString, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    HexWildcard,
+    PlainString,
+    RegexString,
+)
 from yaraast.codegen.generator_formatting import (
     escape_string_literal,
     format_boolean_literal,
@@ -66,6 +76,31 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
     )
     assert build_hex_pattern(hex_node, hex_uppercase=True, hex_spacing=True) == "4D 5A [2] [1-3] ??"
     assert build_hex_pattern(hex_node, hex_uppercase=False, hex_spacing=False) == "4d5a[2][1-3]??"
+
+    complex_hex_node = HexString(
+        "$complex",
+        tokens=[
+            HexByte("af"),
+            HexNegatedByte(0x4D),
+            HexNibble(high=False, value="B"),
+            HexAlternative(
+                [
+                    [HexByte(0x41), HexByte("42")],
+                    [HexWildcard()],
+                    [HexJump(None, 5)],
+                    [HexNibble(high=True, value=0xC)],
+                ]
+            ),
+        ],
+    )
+    assert (
+        build_hex_pattern(complex_hex_node, hex_uppercase=True, hex_spacing=True)
+        == "AF ~4D ?B (41 42 | ?? | [-5] | C?)"
+    )
+    assert (
+        build_hex_pattern(complex_hex_node, hex_uppercase=False, hex_spacing=False)
+        == "af~4d?b(4142|??|[-5]|c?)"
+    )
 
     plain = PlainString("$a", value="hello")
     bytes_plain = PlainString("$b", value=b'A"\x00\xff\\\n')

@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
-from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    HexWildcard,
+    PlainString,
+    RegexString,
+)
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
@@ -12,25 +22,60 @@ from yaraast.codegen.generator_helpers import (
 
 
 def build_hex_pattern(node: HexString, *, hex_uppercase: bool, hex_spacing: bool) -> str:
-    hex_parts: list[str] = []
-    for token in node.tokens:
-        if hasattr(token, "value"):  # HexByte
-            if isinstance(token.value, str):
-                hex_val = token.value.upper() if hex_uppercase else token.value.lower()
-            else:
-                hex_val = f"{token.value:02X}" if hex_uppercase else f"{token.value:02x}"
-            hex_parts.append(hex_val)
-        elif hasattr(token, "min_jump"):  # HexJump
-            lo = token.min_jump if token.min_jump is not None else ""
-            hi = token.max_jump if token.max_jump is not None else ""
-            if lo == hi and lo != "":
-                hex_parts.append(f"[{lo}]")
-            else:
-                hex_parts.append(f"[{lo}-{hi}]")
-        else:
-            hex_parts.append("??")
-
+    hex_parts = [_format_hex_token(token, hex_uppercase, hex_spacing) for token in node.tokens]
     return " ".join(hex_parts) if hex_spacing else "".join(hex_parts)
+
+
+def _format_hex_token(token, hex_uppercase: bool, hex_spacing: bool) -> str:
+    if isinstance(token, HexByte):
+        return _format_hex_byte_value(token.value, hex_uppercase)
+    if isinstance(token, HexWildcard):
+        return "??"
+    if isinstance(token, HexJump):
+        return _format_hex_jump(token)
+    if isinstance(token, HexNegatedByte):
+        return f"~{_format_hex_byte_value(token.value, hex_uppercase)}"
+    if isinstance(token, HexNibble):
+        value = _format_hex_nibble_value(token.value, hex_uppercase)
+        return f"{value}?" if token.high else f"?{value}"
+    if isinstance(token, HexAlternative):
+        separator = " " if hex_spacing else ""
+        alt_separator = " | " if hex_spacing else "|"
+        alternatives = [
+            separator.join(
+                _format_hex_token(nested_token, hex_uppercase, hex_spacing)
+                for nested_token in _coerce_hex_alternative_branch(alternative)
+            )
+            for alternative in token.alternatives
+        ]
+        return f"({alt_separator.join(alternatives)})"
+    return "??"
+
+
+def _format_hex_byte_value(value: int | str, hex_uppercase: bool) -> str:
+    if isinstance(value, str):
+        return value.upper() if hex_uppercase else value.lower()
+    return f"{value:02X}" if hex_uppercase else f"{value:02x}"
+
+
+def _format_hex_nibble_value(value: int | str, hex_uppercase: bool) -> str:
+    if isinstance(value, str):
+        return value.upper() if hex_uppercase else value.lower()
+    return f"{value:X}" if hex_uppercase else f"{value:x}"
+
+
+def _format_hex_jump(token: HexJump) -> str:
+    lo = token.min_jump if token.min_jump is not None else ""
+    hi = token.max_jump if token.max_jump is not None else ""
+    if lo == hi and lo != "":
+        return f"[{lo}]"
+    return f"[{lo}-{hi}]"
+
+
+def _coerce_hex_alternative_branch(alternative) -> list:
+    if isinstance(alternative, list):
+        return alternative
+    return [HexByte(alternative)]
 
 
 def format_plain_string(node: PlainString, quote: str, padding: int) -> str:
