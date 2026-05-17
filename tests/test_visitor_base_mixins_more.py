@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.conditions import Condition, ForExpression, ForOfExpression, InExpression
+from yaraast.ast.conditions import (
+    Condition,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     BooleanLiteral,
     Expression,
@@ -11,6 +17,8 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     RangeExpression,
     SetExpression,
+    StringIdentifier,
+    StringWildcard,
 )
 from yaraast.ast.extern import ExternNamespace, ExternRule
 from yaraast.ast.meta import Meta
@@ -29,6 +37,12 @@ class _RecordingVisitor(BaseVisitor[None]):
 
     def visit_identifier(self, node: Identifier) -> None:
         self.identifiers.append(node.name)
+
+    def visit_string_identifier(self, node: StringIdentifier) -> None:
+        self.identifiers.append(node.name)
+
+    def visit_string_wildcard(self, node: StringWildcard) -> None:
+        self.identifiers.append(node.pattern)
 
 
 class _StructuralRecordingVisitor(BaseVisitor[None]):
@@ -127,6 +141,34 @@ def test_base_visitor_traverses_condition_quantifier_nodes() -> None:
     )
 
     assert visitor.identifiers == ["limit", "body", "count", "strings", "condition"]
+
+
+def test_base_visitor_traverses_raw_string_set_expression_items() -> None:
+    visitor = _RecordingVisitor()
+
+    visitor.visit(
+        OfExpression(
+            quantifier=Identifier("of_count"),
+            string_set=[Identifier("of_string"), StringIdentifier("$a")],
+        )
+    )
+    visitor.visit(
+        ForOfExpression(
+            quantifier=Identifier("for_count"),
+            string_set=[Identifier("for_string"), StringWildcard("$api*")],
+            condition=Identifier("for_condition"),
+        )
+    )
+
+    assert visitor.identifiers == [
+        "of_count",
+        "of_string",
+        "$a",
+        "for_count",
+        "for_string",
+        "$api*",
+        "for_condition",
+    ]
 
 
 def test_base_visitor_traverses_nested_structural_nodes() -> None:

@@ -18,6 +18,8 @@ class VisitorHelperProtocol(Protocol[T]):
 
     def _visit_if(self, node: ASTNode | None) -> None: ...
 
+    def _visit_value(self, value: object) -> None: ...
+
 
 class BaseVisitorHelpersMixin[T]:
     """Helper methods for BaseVisitor traversal."""
@@ -37,3 +39,14 @@ class BaseVisitorHelpersMixin[T]:
         if node:
             visitor = cast(ASTVisitor[T], self)
             visitor.visit(node)
+
+    def _visit_value(self, value: object) -> None:
+        visitor = cast(ASTVisitor[T], self)
+        if isinstance(value, ASTNode):
+            visitor.visit(value)
+        elif isinstance(value, dict):
+            for item in value.values():
+                self._visit_value(item)
+        elif isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                self._visit_value(item)
