@@ -114,16 +114,29 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     hex_string = p._parse_string_line("$a = { 41 }")
     regex_string = p._parse_string_line("$a = /abc/")
     regex_with_flags = p._parse_string_line("$a = /abc/im")
+    xor_string = p._parse_string_line('$x = "abc" xor(1-2) private')
+    base64_string = p._parse_string_line(
+        '$b = "abc" base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")'
+    )
     assert isinstance(plain_string, PlainString)
     assert isinstance(hex_string, HexString)
     assert isinstance(regex_string, RegexString)
     assert isinstance(regex_with_flags, RegexString)
+    assert isinstance(xor_string, PlainString)
+    assert isinstance(base64_string, PlainString)
     assert plain_string.identifier == "$a"
     assert hex_string.identifier == "$a"
     assert regex_string.identifier == "$a"
     assert len(hex_string.tokens) == 1
     assert regex_string.regex == "abc"
     assert [modifier.name for modifier in regex_with_flags.modifiers] == ["nocase", "multiline"]
+    assert [(modifier.name, modifier.value) for modifier in xor_string.modifiers] == [
+        ("xor", (1, 2)),
+        ("private", None),
+    ]
+    assert [(modifier.name, modifier.value) for modifier in base64_string.modifiers] == [
+        ("base64", "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"),
+    ]
     assert p._parse_string_line("broken") is None
 
     assert p._parse_condition("true") == BooleanLiteral(True)

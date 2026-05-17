@@ -2147,8 +2147,7 @@ class TestTypeInferenceEdgeCases:
         checker.visit_pragma(None)
         checker.visit_pragma_block(None)
 
-        # All visit methods should complete without error
-        assert True
+        assert checker.errors == []
 
     def test_infer_binary_expression_contains_incompatible_array_element(self) -> None:
         """Test contains on array with incompatible element type."""

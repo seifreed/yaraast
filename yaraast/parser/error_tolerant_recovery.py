@@ -11,6 +11,7 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.errors import YaraASTError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 
@@ -131,6 +132,11 @@ def parse_meta_line(
 def parse_string_line(
     parser, line: str, line_num: int | None = None, raw_line: str | None = None
 ) -> PlainString | HexString | RegexString | None:
+    standard_node = parse_string_line_with_standard_parser(line)
+    if standard_node is not None:
+        set_recovered_location(parser, standard_node, line_num, raw_line, 0, len(line))
+        return standard_node
+
     plain_match = re.match(r'(\$\w+)\s*=\s*"([^"]*)"', line)
     if plain_match:
         node = PlainString(identifier=plain_match.group(1), value=plain_match.group(2))
@@ -173,6 +179,26 @@ def parse_string_line(
             parser, node, line_num, raw_line, regex_match.start(1), regex_match.end(2) + 1
         )
         return node
+    return None
+
+
+def parse_string_line_with_standard_parser(
+    line: str,
+) -> PlainString | HexString | RegexString | None:
+    from yaraast.parser.parser import Parser
+
+    snippet = f"rule recovered {{ strings:\n    {line}\n condition:\n    true\n}}"
+    try:
+        ast = Parser(snippet).parse()
+    except YaraASTError:
+        return None
+
+    if not ast.rules or not ast.rules[0].strings:
+        return None
+
+    string_def = ast.rules[0].strings[0]
+    if isinstance(string_def, PlainString | HexString | RegexString):
+        return string_def
     return None
 
 

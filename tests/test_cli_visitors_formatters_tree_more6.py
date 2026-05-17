@@ -9,6 +9,7 @@ from typing import Any, cast
 from rich.console import Console
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import ForExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     FunctionCall,
@@ -56,7 +57,18 @@ def test_condition_and_expression_formatters_cover_branches() -> None:
 
     assert cond.format_condition(None) == "<NoneType>"
     assert cond.format_condition(StringLiteral("x"), depth=10) == "..."
-    assert "for" in cond.format_condition(SimpleNamespace(identifier="i"), depth=0) or True
+    assert (
+        cond.format_condition(
+            ForExpression(
+                quantifier="all",
+                variable="i",
+                iterable=RangeExpression(IntegerLiteral(1), IntegerLiteral(2)),
+                body=Identifier("i"),
+            ),
+            depth=0,
+        )
+        == "for all i in (1..2) : (i)"
+    )
 
     fn = FunctionCall(
         function="math.abs", arguments=[IntegerLiteral(1), IntegerLiteral(2), IntegerLiteral(3)]
