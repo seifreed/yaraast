@@ -979,6 +979,45 @@ def test_named_wildcard_string_sets_ignore_anonymous_internal_ids() -> None:
     }
 
 
+def test_empty_wildcard_string_sets_evaluate_false() -> None:
+    ast = Parser().parse("""
+        rule all_missing {
+            strings:
+                $a = "a"
+            condition:
+                all of ($missing*)
+        }
+
+        rule none_missing {
+            strings:
+                $a = "a"
+            condition:
+                none of ($missing*)
+        }
+
+        rule zero_missing {
+            strings:
+                $a = "a"
+            condition:
+                0 of ($missing*)
+        }
+
+        rule for_all_missing {
+            strings:
+                $a = "a"
+            condition:
+                for all of ($missing*) : (true)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"a").evaluate_file(ast) == {
+        "all_missing": False,
+        "none_missing": False,
+        "zero_missing": False,
+        "for_all_missing": False,
+    }
+
+
 def test_of_expression_in_range_uses_match_offsets() -> None:
     def evaluate(condition: str) -> bool:
         ast = Parser().parse(f"""

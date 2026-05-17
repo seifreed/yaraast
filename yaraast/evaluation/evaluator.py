@@ -571,6 +571,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         quantifier = self._resolve_quantifier(node.quantifier)
 
         string_set = self._resolve_string_set(node.string_set)
+        if not string_set:
+            return False
 
         # Count matches
         matched = 0
@@ -818,6 +820,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Evaluate 'for ... of' expression (ForOfExpression: quantifier, string_set, condition)."""
         quantifier = self._resolve_quantifier(node.quantifier)
         string_set = self._resolve_string_set(node.string_set)
+        if not string_set:
+            return False
 
         # Count how many strings match
         matches = 0
