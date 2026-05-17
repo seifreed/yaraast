@@ -26,6 +26,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Rule
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer, optimize_expression
+from yaraast.shared.integer_semantics import INT64_MAX, INT64_MIN
 
 
 def test_integer_folding_all_remaining_operators() -> None:
@@ -71,6 +72,31 @@ def test_integer_folding_all_remaining_operators() -> None:
     assert opt.visit(
         BinaryExpression(IntegerLiteral(5), ">=", IntegerLiteral(3))
     ) == BooleanLiteral(True)
+
+
+def test_integer_constant_folding_uses_yara_int64_semantics() -> None:
+    opt = ExpressionOptimizer()
+
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(INT64_MAX), "+", IntegerLiteral(1))
+    ) == IntegerLiteral(INT64_MIN)
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(INT64_MIN), "-", IntegerLiteral(1))
+    ) == IntegerLiteral(INT64_MAX)
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(1), "<<", IntegerLiteral(63))
+    ) == IntegerLiteral(INT64_MIN)
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(1), "<<", IntegerLiteral(64))
+    ) == IntegerLiteral(0)
+    assert opt.visit(
+        BinaryExpression(IntegerLiteral(-1), ">>", IntegerLiteral(64))
+    ) == IntegerLiteral(0)
+    assert opt.visit(UnaryExpression("-", IntegerLiteral(INT64_MIN))) == IntegerLiteral(INT64_MIN)
+    assert opt.visit(UnaryExpression("~", IntegerLiteral(INT64_MIN))) == IntegerLiteral(INT64_MAX)
+
+    overflow_div = BinaryExpression(IntegerLiteral(INT64_MIN), "\\", IntegerLiteral(-1))
+    assert opt.visit(overflow_div) is overflow_div
 
 
 def test_integer_division_and_modulo_by_zero_do_not_fold() -> None:

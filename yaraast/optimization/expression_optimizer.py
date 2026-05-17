@@ -16,7 +16,14 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.rules import Rule
-from yaraast.shared.integer_semantics import integer_remainder, truncate_integer_division
+from yaraast.shared.integer_semantics import (
+    INT64_MIN,
+    integer_remainder,
+    normalize_int64,
+    shift_left_int64,
+    shift_right_int64,
+    truncate_integer_division,
+)
 from yaraast.visitor.base import ASTTransformer
 
 _SENTINEL = object()
@@ -31,17 +38,6 @@ def _fold_boolean(left: BooleanLiteral, right: BooleanLiteral, operator: str):
     return _SENTINEL
 
 
-_ARITHMETIC_OPS: dict[str, Any] = {
-    "+": lambda a, b: a + b,
-    "-": lambda a, b: a - b,
-    "*": lambda a, b: a * b,
-    "&": lambda a, b: a & b,
-    "|": lambda a, b: a | b,
-    "^": lambda a, b: a ^ b,
-    "<<": lambda a, b: a << b,
-    ">>": lambda a, b: a >> b,
-}
-
 _COMPARISON_OPS: dict[str, Any] = {
     "==": lambda a, b: a == b,
     "!=": lambda a, b: a != b,
@@ -54,14 +50,34 @@ _COMPARISON_OPS: dict[str, Any] = {
 
 def _fold_arithmetic(left_val: int, right_val: int, operator: str):
     """Fold constant integer arithmetic. Returns result or _SENTINEL."""
-    if operator in ("<<", ">>") and right_val < 0:
-        return _SENTINEL
-    if operator in _ARITHMETIC_OPS:
-        return IntegerLiteral(value=_ARITHMETIC_OPS[operator](left_val, right_val))
+    if operator == "+":
+        return IntegerLiteral(value=normalize_int64(left_val + right_val))
+    if operator == "-":
+        return IntegerLiteral(value=normalize_int64(left_val - right_val))
+    if operator == "*":
+        return IntegerLiteral(value=normalize_int64(left_val * right_val))
     if operator in ("/", "\\") and right_val != 0:
+        if left_val == INT64_MIN and right_val == -1:
+            return _SENTINEL
         return IntegerLiteral(value=truncate_integer_division(left_val, right_val))
     if operator == "%" and right_val != 0:
+        if left_val == INT64_MIN and right_val == -1:
+            return _SENTINEL
         return IntegerLiteral(value=integer_remainder(left_val, right_val))
+    if operator == "<<":
+        if right_val < 0:
+            return _SENTINEL
+        return IntegerLiteral(value=shift_left_int64(left_val, right_val))
+    if operator == ">>":
+        if right_val < 0:
+            return _SENTINEL
+        return IntegerLiteral(value=shift_right_int64(left_val, right_val))
+    if operator == "&":
+        return IntegerLiteral(value=normalize_int64(left_val & right_val))
+    if operator == "|":
+        return IntegerLiteral(value=normalize_int64(left_val | right_val))
+    if operator == "^":
+        return IntegerLiteral(value=normalize_int64(left_val ^ right_val))
     return _SENTINEL
 
 
@@ -236,11 +252,11 @@ class ExpressionOptimizer(ASTTransformer):
 
         if node.operator == "-" and isinstance(node.operand, IntegerLiteral):
             self.optimization_count += 1
-            return IntegerLiteral(value=-node.operand.value)
+            return IntegerLiteral(value=normalize_int64(-node.operand.value))
 
         if node.operator == "~" and isinstance(node.operand, IntegerLiteral):
             self.optimization_count += 1
-            return IntegerLiteral(value=~node.operand.value)
+            return IntegerLiteral(value=normalize_int64(~node.operand.value))
 
         # Double negation elimination
         if (
