@@ -390,6 +390,55 @@ def _percentage_quantifier_value(value):
     return None
 
 
+def _loop_variable_names(variable: str) -> list[str]:
+    names = [name.strip() for name in variable.split(",") if name.strip()]
+    return names or [variable]
+
+
+def _define_unknown_loop_variables(ctx, variable_names: list[str]) -> None:
+    for name in variable_names:
+        ctx.env.define(name, UnknownType())
+
+
+def _define_for_iteration_variables(ctx, variable_names: list[str], iter_type) -> None:
+    if isinstance(iter_type, RangeType):
+        if len(variable_names) == 1:
+            ctx.env.define(variable_names[0], IntegerType())
+            return
+        ctx.errors.append(
+            f"Cannot unpack {len(variable_names)} loop variables from type: {iter_type}"
+        )
+        _define_unknown_loop_variables(ctx, variable_names)
+        return
+
+    if isinstance(iter_type, ArrayType):
+        if len(variable_names) == 1:
+            ctx.env.define(variable_names[0], iter_type.element_type)
+            return
+        ctx.errors.append(
+            f"Cannot unpack {len(variable_names)} loop variables from type: {iter_type}"
+        )
+        _define_unknown_loop_variables(ctx, variable_names)
+        return
+
+    if isinstance(iter_type, DictionaryType):
+        if len(variable_names) == 1:
+            ctx.env.define(variable_names[0], iter_type.key_type)
+            return
+        if len(variable_names) == 2:
+            ctx.env.define(variable_names[0], iter_type.key_type)
+            ctx.env.define(variable_names[1], iter_type.value_type)
+            return
+        ctx.errors.append(
+            f"Cannot unpack {len(variable_names)} loop variables from type: {iter_type}"
+        )
+        _define_unknown_loop_variables(ctx, variable_names)
+        return
+
+    ctx.errors.append(f"Cannot iterate over type: {iter_type}")
+    _define_unknown_loop_variables(ctx, variable_names)
+
+
 def infer_module_or_condition(ctx, node):
     if isinstance(node, ModuleReference) or hasattr(node, "module"):
         module_type = ctx._resolve_module_type(node.module)
@@ -440,20 +489,15 @@ def infer_module_or_condition(ctx, node):
         if not isinstance(quant_type, StringType | IntegerType):
             ctx.errors.append(f"'for' quantifier must be string or integer, got {quant_type}")
 
-        # Warn if loop variable shadows a defined string
-        if ctx.env.has_string(node.variable) or ctx.env.has_string(f"${node.variable}"):
-            ctx.errors.append(
-                f"For-expression variable '{node.variable}' shadows a defined string identifier"
-            )
+        variable_names = _loop_variable_names(node.variable)
+        for variable_name in variable_names:
+            if ctx.env.has_string(variable_name) or ctx.env.has_string(f"${variable_name}"):
+                ctx.errors.append(
+                    f"For-expression variable '{variable_name}' shadows a defined string identifier"
+                )
         ctx.env.push_scope()
         iter_type = ctx.visit(node.iterable)
-        if isinstance(iter_type, RangeType):
-            ctx.env.define(node.variable, IntegerType())
-        elif isinstance(iter_type, ArrayType):
-            ctx.env.define(node.variable, iter_type.element_type)
-        else:
-            ctx.errors.append(f"Cannot iterate over type: {iter_type}")
-            ctx.env.define(node.variable, UnknownType())
+        _define_for_iteration_variables(ctx, variable_names, iter_type)
         body_type = ctx.visit(node.body)
         if not isinstance(body_type, BooleanType):
             ctx.errors.append(f"For loop body must return boolean, got {body_type}")

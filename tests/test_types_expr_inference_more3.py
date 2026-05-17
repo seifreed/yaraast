@@ -312,6 +312,28 @@ def test_expr_inference_reports_invalid_comprehension_iterables() -> None:
     assert any("Cannot iterate over type: string" in e for e in dict_inf.errors)
 
 
+def test_expr_inference_binds_multi_variable_for_dictionary_items() -> None:
+    env = TypeEnvironment()
+    env.define("pairs", DictionaryType(StringType(), IntegerType()))
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(
+        ForExpression(
+            quantifier="all",
+            variable="k,v",
+            iterable=Identifier("pairs"),
+            body=BinaryExpression(
+                left=BinaryExpression(Identifier("k"), "==", StringLiteral("name")),
+                operator="or",
+                right=BinaryExpression(Identifier("v"), ">", IntegerLiteral(0)),
+            ),
+        ),
+    )
+
+    assert isinstance(out, BooleanType)
+    assert inf.errors == []
+
+
 def test_expr_inference_visits_pattern_match_case_patterns() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)
