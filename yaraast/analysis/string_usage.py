@@ -35,6 +35,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.used_strings: dict[str, set[str]] = {}  # rule_name -> set of string ids
         self.current_rule: str | None = None
         self.in_condition: bool = False
+        self.implicit_current_string_allowed: bool = False
 
     def analyze(self, yara_file: YaraFile) -> dict[str, dict[str, Any]]:
         """Analyze string usage in YARA file."""
@@ -146,42 +147,36 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.visit_string_definition(node)
 
     def visit_string_identifier(self, node: StringIdentifier) -> None:
-        if self.current_rule and self.in_condition:
-            self.used_strings[self.current_rule].add(self._normalize_string_id(node.name))
+        self._mark_condition_string_ref(node.name)
 
     def visit_string_wildcard(self, node: StringWildcard) -> None:
         if self.current_rule and self.in_condition:
             self._mark_wildcard_string_set(node.pattern)
 
     def visit_string_count(self, node: StringCount) -> None:
-        if self.current_rule and self.in_condition:
-            self.used_strings[self.current_rule].add(self._normalize_string_id(node.string_id))
+        self._mark_condition_string_ref(node.string_id)
 
     def visit_string_offset(self, node: StringOffset) -> None:
         """Visit string offset expression - marks string as used."""
-        if self.current_rule and self.in_condition:
-            self.used_strings[self.current_rule].add(self._normalize_string_id(node.string_id))
+        self._mark_condition_string_ref(node.string_id)
         # Additionally visit index if present for offset expressions
         if hasattr(node, "index") and node.index:
             self.visit(node.index)
 
     def visit_string_length(self, node: StringLength) -> None:
         """Visit string length expression - marks string as used."""
-        if self.current_rule and self.in_condition:
-            self.used_strings[self.current_rule].add(self._normalize_string_id(node.string_id))
+        self._mark_condition_string_ref(node.string_id)
         # Additionally visit index if present for length expressions
         if hasattr(node, "index") and node.index:
             self.visit(node.index)
 
     def visit_at_expression(self, node: AtExpression) -> None:
-        if self.current_rule and self.in_condition:
-            self.used_strings[self.current_rule].add(self._normalize_string_id(node.string_id))
+        self._mark_condition_string_ref(node.string_id)
         self.visit(node.offset)
 
     def visit_in_expression(self, node: InExpression) -> None:
         if isinstance(node.subject, str):
-            if self.current_rule and self.in_condition:
-                self.used_strings[self.current_rule].add(self._normalize_string_id(node.subject))
+            self._mark_condition_string_ref(node.subject)
         else:
             self.visit(node.subject)
         self.visit(node.range)
@@ -191,7 +186,12 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self._visit_string_set_value(node.string_set)
 
         if node.condition:
-            self.visit(node.condition)
+            previous = self.implicit_current_string_allowed
+            self.implicit_current_string_allowed = True
+            try:
+                self.visit(node.condition)
+            finally:
+                self.implicit_current_string_allowed = previous
 
     def visit_of_expression(self, node: OfExpression) -> None:
         self._visit_ast_value(node.quantifier)
@@ -239,6 +239,14 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             self._mark_wildcard_string_set(text)
         else:
             self.used_strings[self.current_rule].add(self._normalize_string_id(text))
+
+    def _mark_condition_string_ref(self, string_id: str) -> None:
+        if not (self.current_rule and self.in_condition):
+            return
+        normalized = self._normalize_string_id(string_id)
+        if self.implicit_current_string_allowed and normalized == "$":
+            return
+        self.used_strings[self.current_rule].add(normalized)
 
     def _mark_wildcard_string_set(self, pattern: str) -> None:
         if not self.current_rule:

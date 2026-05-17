@@ -46,6 +46,37 @@ rule advanced {
     assert analyzer.get_undefined_strings() == {}
 
 
+def test_string_usage_analyzer_ignores_implicit_current_string_refs() -> None:
+    ast = Parser().parse("""
+rule implicit_current_string_usage {
+    strings:
+        $a = "abc"
+        $b = "def"
+    condition:
+        for any of them : (
+            $ at @missing_offset or
+            $ in (@missing_range..filesize) or
+            (# == 1 and @ == 0 and ! == 3)
+        )
+}
+""")
+
+    analyzer = StringUsageAnalyzer()
+    results = analyzer.analyze(ast)
+
+    assert results["implicit_current_string_usage"]["used"] == [
+        "$a",
+        "$b",
+        "$missing_offset",
+        "$missing_range",
+    ]
+    assert results["implicit_current_string_usage"]["unused"] == []
+    assert results["implicit_current_string_usage"]["undefined"] == [
+        "$missing_offset",
+        "$missing_range",
+    ]
+
+
 def test_string_usage_analyzer_getters_and_direct_visitor_paths() -> None:
     analyzer = StringUsageAnalyzer()
     ast = Parser().parse("""
