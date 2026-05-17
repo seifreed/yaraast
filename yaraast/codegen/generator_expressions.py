@@ -11,7 +11,10 @@ def _render_string_set(gen, string_set) -> str:
     if hasattr(string_set, "accept"):
         return gen.visit(string_set)
     if isinstance(string_set, list):
-        return f"({', '.join(str(item) for item in string_set)})"
+        rendered_items = [
+            gen.visit(item) if hasattr(item, "accept") else str(item) for item in string_set
+        ]
+        return f"({', '.join(rendered_items)})"
     return str(string_set)
 
 

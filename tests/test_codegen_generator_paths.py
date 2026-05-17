@@ -10,6 +10,7 @@ from yaraast.ast.expressions import (
     ParenthesesExpression,
     RangeExpression,
     StringCount,
+    StringIdentifier,
     StringLiteral,
     StringWildcard,
 )
@@ -71,6 +72,12 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
     of_list = OfExpression(quantifier=2, string_set=["$a", "$b"])
     assert gen.visit(of_list) == "2 of ($a, $b)"
 
+    of_node_list = OfExpression(
+        quantifier="any",
+        string_set=[StringIdentifier("$a"), StringIdentifier("$b")],
+    )
+    assert gen.visit(of_node_list) == "any of ($a, $b)"
+
     of_wildcard = OfExpression(quantifier="any", string_set=StringWildcard("$a*"))
     assert gen.visit(of_wildcard) == "any of ($a*)"
 
@@ -79,6 +86,13 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
 
     for_of_raw = ForOfExpression(quantifier="all", string_set="them", condition=None)
     assert gen.visit(for_of_raw) == "all of them"
+
+    for_of_node_list = ForOfExpression(
+        quantifier="any",
+        string_set=[StringIdentifier("$a"), StringIdentifier("$b")],
+        condition=BooleanLiteral(True),
+    )
+    assert gen.visit(for_of_node_list) == "for any of ($a, $b) : (true)"
 
 
 def test_codegen_generate_returns_direct_expression_output() -> None:
