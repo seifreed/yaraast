@@ -100,6 +100,20 @@ def test_signature_help_edge_cases_and_parameter_counting() -> None:
     assert sig.active_parameter == 2
     assert "deviation" in sig.signatures[0].label
 
+    nested_text = "math.deviation(uint32(0), 10, "
+    nested_sig = provider.get_signature_help(nested_text, _pos(0, len(nested_text)))
+    assert nested_sig is not None
+    assert nested_sig.active_parameter == 2
+    assert "deviation" in nested_sig.signatures[0].label
+
+    string_comma_text = 'pe.imports("kernel,32", '
+    string_comma_sig = provider.get_signature_help(
+        string_comma_text, _pos(0, len(string_comma_text))
+    )
+    assert string_comma_sig is not None
+    assert string_comma_sig.active_parameter == 1
+    assert "imports" in string_comma_sig.signatures[0].label
+
     assert provider._calculate_active_parameter("uint32(1,", _pos(1, 0)) == 0
     assert provider._calculate_active_parameter("uint32(1", _pos(0, 99)) == 0
     assert provider._calculate_active_parameter("uint32(1)", _pos(0, len("uint32(1)"))) == 0

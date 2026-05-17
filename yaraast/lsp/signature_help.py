@@ -4,6 +4,35 @@ from __future__ import annotations
 
 from lsprotocol.types import ParameterInformation, Position, SignatureHelp, SignatureInformation
 
+
+def _previous_significant_char(text: str, index: int) -> str | None:
+    for char in reversed(text[:index]):
+        if not char.isspace():
+            return char
+    return None
+
+
+def _starts_regex_literal(text: str, index: int) -> bool:
+    if text[index] != "/":
+        return False
+    if index + 1 < len(text) and text[index + 1] in {"/", "*"}:
+        return False
+    previous = _previous_significant_char(text, index)
+    return previous is None or previous in "([{,=!:<>~&|?+-*"
+
+
+def _function_name_before_open_paren(line: str, paren_index: int) -> str | None:
+    end = paren_index
+    while end > 0 and line[end - 1].isspace():
+        end -= 1
+    start = end
+    while start > 0 and (line[start - 1].isalnum() or line[start - 1] in {"_", "."}):
+        start -= 1
+    if start == end:
+        return None
+    return line[start:end]
+
+
 # Specification data: (label, documentation, [(param_label, param_doc), ...])
 _SIGNATURE_SPECS: dict[str, tuple[str, str, list[tuple[str, str]]]] = {
     # PE module
@@ -152,18 +181,15 @@ class SignatureHelpProvider:
 
     def get_signature_help(self, text: str, position: Position) -> SignatureHelp | None:
         """Get signature help at position."""
-        # Find the function call we're inside
-        function_name = self._find_function_at_position(text, position)
-        if not function_name:
+        call_context = self._find_call_context_at_position(text, position)
+        if call_context is None:
             return None
+        function_name, active_parameter = call_context
 
         # Get signature for this function
         signature = self.function_signatures.get(function_name)
         if not signature:
             return None
-
-        # Calculate which parameter we're on
-        active_parameter = self._calculate_active_parameter(text, position)
 
         return SignatureHelp(
             signatures=[signature], active_signature=0, active_parameter=active_parameter
@@ -171,63 +197,82 @@ class SignatureHelpProvider:
 
     def _find_function_at_position(self, text: str, position: Position) -> str | None:
         """Find the function call at the cursor position."""
+        call_context = self._find_call_context_at_position(text, position)
+        if call_context is None:
+            return None
+        return call_context[0]
+
+    def _find_call_context_at_position(
+        self, text: str, position: Position
+    ) -> tuple[str, int] | None:
+        """Find the innermost open function call and active parameter at position."""
         lines = text.split("\n")
         if position.line >= len(lines):
             return None
 
         line = lines[position.line]
-        char_pos = position.character
+        char_pos = min(position.character, len(line))
+        stack: list[list[object]] = []
+        in_string = False
+        in_regex = False
+        escaped = False
+        index = 0
+        while index < char_pos:
+            char = line[index]
+            nxt = line[index + 1] if index + 1 < len(line) else ""
 
-        # Look backwards for opening parenthesis
-        paren_pos: int | None = None
-        for i in range(char_pos - 1, -1, -1):
-            if line[i] == "(":
-                paren_pos = i
-                break
-            if line[i] in [";", "}", "{"]:
-                # Hit a statement boundary
+            if escaped:
+                escaped = False
+                index += 1
+                continue
+            if char == "\\" and (in_string or in_regex):
+                escaped = True
+                index += 1
+                continue
+            if in_string:
+                if char == '"':
+                    in_string = False
+                index += 1
+                continue
+            if in_regex:
+                if char == "/":
+                    in_regex = False
+                index += 1
+                continue
+            if char == "/" and nxt == "/":
                 return None
+            if char == "/" and nxt == "*":
+                end = line.find("*/", index + 2)
+                if end < 0 or end >= char_pos:
+                    return None
+                index = end + 2
+                continue
+            if char == '"':
+                in_string = True
+            elif char == "/" and _starts_regex_literal(line, index):
+                in_regex = True
+            elif char in {";", "{", "}"}:
+                stack = []
+            elif char == "(":
+                function_name = _function_name_before_open_paren(line, index)
+                stack.append([function_name or "", 0])
+            elif char == ")":
+                if stack:
+                    stack.pop()
+            elif char == "," and stack:
+                stack[-1][1] = int(stack[-1][1]) + 1
+            index += 1
 
-        if paren_pos is None:
+        if not stack:
             return None
-
-        # Extract function name before parenthesis
-        func_name_end = paren_pos
-        func_name_start = func_name_end
-        for i in range(func_name_end - 1, -1, -1):
-            if line[i].isalnum() or line[i] in ["_", "."]:
-                func_name_start = i
-            else:
-                break
-
-        if func_name_start == func_name_end:
+        function_name, active_parameter = stack[-1]
+        if not isinstance(function_name, str) or not function_name:
             return None
-
-        function_name: str = line[func_name_start:func_name_end]
-        return function_name
+        return function_name, int(active_parameter)
 
     def _calculate_active_parameter(self, text: str, position: Position) -> int:
         """Calculate which parameter the cursor is on."""
-        lines = text.split("\n")
-        if position.line >= len(lines):
+        call_context = self._find_call_context_at_position(text, position)
+        if call_context is None:
             return 0
-
-        line = lines[position.line]
-        char_pos = position.character
-
-        # Count commas before cursor position (within current parentheses level)
-        paren_depth = 0
-        comma_count = 0
-
-        for i in range(char_pos):
-            if i >= len(line):
-                break
-
-            if line[i] == "(":
-                paren_depth += 1
-            elif line[i] == ")":
-                paren_depth -= 1
-            elif line[i] == "," and paren_depth == 1:
-                comma_count += 1
-
-        return comma_count
+        return call_context[1]
