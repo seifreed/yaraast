@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from textwrap import dedent
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
+from yaraast.cli.utils import format_json
 from yaraast.parser import Parser
 from yaraast.performance.string_analyzer import StringPatternAnalyzer, analyze_rule_performance
 
@@ -38,6 +42,36 @@ def test_string_pattern_analyzer_patterns_and_stats() -> None:
     assert stats["total_strings"] == len(patterns)
     analyzer.reset_statistics()
     assert analyzer.get_statistics()["total_strings"] == 0
+
+
+def test_string_pattern_analyzer_byte_plain_strings_are_json_safe() -> None:
+    analyzer = StringPatternAnalyzer()
+    strings = [
+        PlainString(identifier="$a", value=b"abc\x00same", modifiers=[]),
+        PlainString(identifier="$b", value=b"abc\x00same", modifiers=[]),
+        PlainString(identifier="$c", value=b"abc\x00other", modifiers=[]),
+    ]
+
+    result = analyzer.analyze_patterns(strings)
+
+    assert result["duplicates"]["abc\\x00same"] == 2
+    assert "abc\\x00" in result["common_prefixes"]
+    assert result["length_statistics"]["min"] == len(b"abc\x00same")
+    assert json.loads(format_json(result))["duplicates"]["abc\\x00same"] == 2
+
+    file_result = analyzer.analyze_file(
+        YaraFile(
+            rules=[
+                Rule(name="one", strings=[strings[0]]),
+                Rule(name="two", strings=[strings[1]]),
+            ]
+        )
+    )
+    assert file_result["cross_rule"]["shared_strings"]["abc\\x00same"] == ["one", "two"]
+    assert json.loads(format_json(file_result))["cross_rule"]["shared_strings"]["abc\\x00same"] == [
+        "one",
+        "two",
+    ]
 
 
 def test_string_pattern_analyzer_rule_and_file() -> None:

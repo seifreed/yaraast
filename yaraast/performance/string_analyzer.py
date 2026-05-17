@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.strings import StringDefinition
 from yaraast.performance.string_analysis_helpers import (
+    StringValue,
     analyze_cross_rule_patterns,
     analyze_lengths,
     categorize_patterns,
@@ -51,7 +52,7 @@ class StringPatternAnalyzer:
 
     def analyze_patterns(
         self,
-        patterns: Sequence[str | StringDefinition],
+        patterns: Sequence[StringValue | StringDefinition],
     ) -> dict[str, Any]:
         """Analyze a list of string patterns.
 
@@ -65,7 +66,7 @@ class StringPatternAnalyzer:
         # Extract string values
         string_values = []
         for pattern in patterns:
-            if isinstance(pattern, str):
+            if isinstance(pattern, str | bytes):
                 string_values.append(pattern)
             elif hasattr(pattern, "value"):
                 string_values.append(pattern.value)
@@ -142,35 +143,35 @@ class StringPatternAnalyzer:
             "statistics": self.get_statistics(),
         }
 
-    def _find_duplicates(self, strings: list[str]) -> dict[str, int]:
+    def _find_duplicates(self, strings: Sequence[StringValue]) -> dict[str, int]:
         return find_duplicates(self, strings)
 
     def _find_common_prefixes(
         self,
-        strings: list[str],
+        strings: Sequence[StringValue],
         min_length: int = 3,
     ) -> dict[str, list[str]]:
         return find_common_prefixes(self, strings, min_length)
 
     def _find_common_suffixes(
         self,
-        strings: list[str],
+        strings: Sequence[StringValue],
         min_length: int = 3,
     ) -> dict[str, list[str]]:
         return find_common_suffixes(self, strings, min_length)
 
-    def _analyze_lengths(self, strings: list[str]) -> dict[str, Any]:
+    def _analyze_lengths(self, strings: Sequence[StringValue]) -> dict[str, Any]:
         return analyze_lengths(strings)
 
     def _categorize_patterns(
         self,
-        patterns: list[str | StringDefinition],
+        patterns: list[StringValue | StringDefinition],
     ) -> dict[str, int]:
         return categorize_patterns(self, patterns)
 
     def _find_optimizations(
         self,
-        strings: list[str],
+        strings: Sequence[StringValue],
         duplicates: dict[str, int],
         prefixes: dict[str, list[str]],
         suffixes: dict[str, list[str]],

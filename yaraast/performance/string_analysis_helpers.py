@@ -3,41 +3,63 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.codegen.generator_helpers import escape_plain_string_value
+
+StringValue = str | bytes
 
 
-def find_duplicates(analyzer, strings: list[str]) -> dict[str, int]:
+def _string_report_value(value: StringValue) -> str:
+    if isinstance(value, bytes):
+        return escape_plain_string_value(value)
+    return value
+
+
+def find_duplicates(analyzer, strings: Sequence[StringValue]) -> dict[str, int]:
     counter = Counter(strings)
-    duplicates = {s: count for s, count in counter.items() if count > 1}
+    duplicates = {_string_report_value(s): count for s, count in counter.items() if count > 1}
     analyzer._stats["duplicate_values"] = len(duplicates)
     return duplicates
 
 
-def find_common_prefixes(analyzer, strings: list[str], min_length: int = 3) -> dict[str, list[str]]:
+def find_common_prefixes(
+    analyzer, strings: Sequence[StringValue], min_length: int = 3
+) -> dict[str, list[str]]:
     prefixes = defaultdict(list)
     for string in strings:
         if len(string) >= min_length:
             for i in range(min_length, min(len(string), 20)):
                 prefixes[string[:i]].append(string)
-    common = {prefix: values for prefix, values in prefixes.items() if len(values) > 1}
+    common = {
+        _string_report_value(prefix): [_string_report_value(value) for value in values]
+        for prefix, values in prefixes.items()
+        if len(values) > 1
+    }
     analyzer._stats["common_prefixes"] = len(common)
     return common
 
 
-def find_common_suffixes(analyzer, strings: list[str], min_length: int = 3) -> dict[str, list[str]]:
+def find_common_suffixes(
+    analyzer, strings: Sequence[StringValue], min_length: int = 3
+) -> dict[str, list[str]]:
     suffixes = defaultdict(list)
     for string in strings:
         if len(string) >= min_length:
             for i in range(min_length, min(len(string), 20)):
                 suffixes[string[-i:]].append(string)
-    common = {suffix: values for suffix, values in suffixes.items() if len(values) > 1}
+    common = {
+        _string_report_value(suffix): [_string_report_value(value) for value in values]
+        for suffix, values in suffixes.items()
+        if len(values) > 1
+    }
     analyzer._stats["common_suffixes"] = len(common)
     return common
 
 
-def analyze_lengths(strings: list[str]) -> dict[str, Any]:
+def analyze_lengths(strings: Sequence[StringValue]) -> dict[str, Any]:
     if not strings:
         return {"min": 0, "max": 0, "average": 0, "distribution": {}}
     lengths = [len(s) for s in strings]
@@ -67,7 +89,7 @@ def categorize_patterns(analyzer, patterns) -> dict[str, int]:
 
 
 def find_optimizations(
-    strings: list[str],
+    strings: Sequence[StringValue],
     duplicates: dict[str, int],
     prefixes: dict[str, list[str]],
     suffixes: dict[str, list[str]],
@@ -120,7 +142,7 @@ def analyze_cross_rule_patterns(rules) -> dict[str, Any]:
         if rule.strings:
             for string_def in rule.strings:
                 if hasattr(string_def, "value"):
-                    string_to_rules[string_def.value].append(rule.name)
+                    string_to_rules[_string_report_value(string_def.value)].append(rule.name)
     shared = {string: rules for string, rules in string_to_rules.items() if len(rules) > 1}
     return {
         "shared_strings": shared,
