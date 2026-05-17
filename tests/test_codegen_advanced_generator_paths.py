@@ -4,7 +4,12 @@ from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import Condition
-from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, StringIdentifier
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    IntegerLiteral,
+    StringIdentifier,
+)
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.rules import Import, Rule, Tag
@@ -147,11 +152,14 @@ def test_advanced_generator_meta_and_tags_branches() -> None:
 
 def test_advanced_generator_binary_and_set_spacing() -> None:
     expr = BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))
+    division = BinaryExpression(IntegerLiteral(5), "/", IntegerLiteral(2))
 
     spaced = AdvancedCodeGenerator(FormattingConfig(space_around_operators=True))
     spaced.generate(YaraFile(rules=[]))
     assert "(true and false)" in spaced.visit_binary_expression(expr)
+    assert "(5 \\ 2)" in spaced.visit_binary_expression(division)
 
     compact = AdvancedCodeGenerator(FormattingConfig(space_around_operators=False))
     compact.generate(YaraFile(rules=[]))
     assert "(trueandfalse)" in compact.visit_binary_expression(expr)
+    assert "(5\\2)" in compact.visit_binary_expression(division)

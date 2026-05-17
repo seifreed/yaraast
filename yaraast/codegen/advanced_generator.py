@@ -31,6 +31,7 @@ from yaraast.codegen.advanced_generator_layout import (
 )
 from yaraast.codegen.formatting import FormattingConfig, IndentStyle
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.generator_expression_visitors import _render_binary_operator
 
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
@@ -161,11 +162,12 @@ class AdvancedCodeGenerator(CodeGenerator):
         """Generate binary expression with spacing."""
         left = self.visit(node.left)
         right = self.visit(node.right)
+        operator = _render_binary_operator(node.operator)
 
         if self.config.space_around_operators:
-            result = f"({left} {node.operator} {right})"
+            result = f"({left} {operator} {right})"
         else:
-            result = f"({left}{node.operator}{right})"
+            result = f"({left}{operator}{right})"
 
         self._write(result)
         return result
