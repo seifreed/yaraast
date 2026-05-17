@@ -113,6 +113,44 @@ def test_string_matcher_regex_wide_and_ascii_modifiers() -> None:
     ] == [(0, 2), (3, 4)]
 
 
+def test_string_matcher_regex_ascii_wide_prefers_greedy_wide_match() -> None:
+    matcher = StringMatcher()
+    greedy = RegexString(
+        "$re",
+        regex="A+",
+        modifiers=[
+            StringModifier.from_name_value("ascii"),
+            StringModifier.from_name_value("wide"),
+        ],
+    )
+    lazy = RegexString(
+        "$re",
+        regex="A+?",
+        modifiers=[
+            StringModifier.from_name_value("ascii"),
+            StringModifier.from_name_value("wide"),
+        ],
+    )
+    optional = RegexString(
+        "$re",
+        regex="A?",
+        modifiers=[
+            StringModifier.from_name_value("ascii"),
+            StringModifier.from_name_value("wide"),
+        ],
+    )
+
+    assert [
+        (match.offset, match.length) for match in matcher.match_string(greedy, b"A\x00B\x00")
+    ] == [(0, 2)]
+    assert [
+        (match.offset, match.length) for match in matcher.match_string(lazy, b"A\x00B\x00")
+    ] == [(0, 1)]
+    assert [(match.offset, match.length) for match in matcher.match_string(optional, b"A")] == [
+        (0, 0)
+    ]
+
+
 def test_string_matcher_wide_regex_reports_zero_length_byte_offsets() -> None:
     matcher = StringMatcher()
     regex = RegexString(
@@ -151,6 +189,58 @@ def test_string_matcher_regex_fullword_filters_boundaries() -> None:
     regex_matches = matcher.match_string(regex, b"xabc abc! abc_")
 
     assert [(match.offset, match.length) for match in regex_matches] == [(5, 3), (10, 3)]
+
+    alternation = RegexString(
+        "$alt",
+        regex="A|AB",
+        modifiers=[StringModifier.from_name_value("fullword")],
+    )
+    shortest_alternation = RegexString("$short", regex="AB|A", modifiers=[])
+
+    assert [(match.offset, match.length) for match in matcher.match_string(alternation, b"AB")] == [
+        (0, 2)
+    ]
+    assert [
+        (match.offset, match.length) for match in matcher.match_string(shortest_alternation, b"AB")
+    ] == [(0, 1)]
+
+
+def test_string_matcher_wide_regex_fullword_keeps_suffixes_of_full_match() -> None:
+    matcher = StringMatcher()
+    regex = RegexString(
+        "$re",
+        regex="[A-Z]+",
+        modifiers=[
+            StringModifier.from_name_value("wide"),
+            StringModifier.from_name_value("fullword"),
+        ],
+    )
+
+    regex_matches = matcher.match_string(regex, b"A\x00B\x00C\x00")
+
+    assert [(match.offset, match.length) for match in regex_matches] == [
+        (0, 6),
+        (2, 4),
+        (4, 2),
+    ]
+
+    prefixed_matches = matcher.match_string(regex, b"x\x00A\x00B\x00")
+    suffixed_matches = matcher.match_string(regex, b"A\x00B\x00x\x00")
+
+    assert [(match.offset, match.length) for match in prefixed_matches] == [(2, 4), (4, 2)]
+    assert suffixed_matches == []
+
+    single_class = RegexString(
+        "$class",
+        regex="[AB]",
+        modifiers=[
+            StringModifier.from_name_value("wide"),
+            StringModifier.from_name_value("fullword"),
+        ],
+    )
+    assert [
+        (match.offset, match.length) for match in matcher.match_string(single_class, b"A\x00B\x00")
+    ] == [(2, 2)]
 
 
 def test_string_matcher_fullword_and_boundary_helpers() -> None:

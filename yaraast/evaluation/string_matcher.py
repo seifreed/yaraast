@@ -446,32 +446,49 @@ class StringMatcher:
         ascii_mod = "ascii" in modifier_names
         fullword = "fullword" in modifier_names
 
+        regex_pattern = self._shortest_first_literal_alternation(str(pattern)) or str(pattern)
+
         # Compile regex
         try:
-            regex = re.compile(pattern.encode("utf-8"), flags)
+            regex = re.compile(regex_pattern.encode("utf-8"), flags)
         except (re.error, ValueError, TypeError, AttributeError):
             # Invalid regex, no matches
             self.matches[string_def.identifier] = []
             return
+        regexes = [regex]
+        longest_first_pattern = self._longest_first_literal_alternation(str(pattern))
+        if (
+            fullword
+            and longest_first_pattern is not None
+            and longest_first_pattern != regex_pattern
+        ):
+            regexes.append(re.compile(longest_first_pattern.encode("utf-8"), flags))
 
         # YARA reports overlapping regex matches, unlike Python's finditer().
         raw_matches: list[tuple[int, int, bool]] = []
-        if not wide or ascii_mod:
-            raw_matches.extend(
-                (match.start(), match.end() - match.start(), False)
-                for match in self._find_overlapping_regex_matches(regex, data)
-            )
-        if wide:
-            raw_matches.extend(self._find_overlapping_wide_regex_matches(regex, data))
-            raw_matches.extend(self._find_wide_zero_length_regex_matches(regex, data))
+        for candidate_regex in regexes:
+            if not wide or ascii_mod:
+                raw_matches.extend(
+                    (match.start(), match.end() - match.start(), False)
+                    for match in self._find_overlapping_regex_matches(candidate_regex, data)
+                )
+            if wide:
+                raw_matches.extend(self._find_overlapping_wide_regex_matches(candidate_regex, data))
+                raw_matches.extend(self._find_wide_zero_length_regex_matches(candidate_regex, data))
 
         if fullword:
-            raw_matches = [
-                match
-                for match in raw_matches
-                if self._is_fullword(data, match[0], match[1], wide=match[2])
-            ]
-        raw_matches = self._deduplicate_regex_matches(raw_matches)
+            raw_matches = self._filter_fullword_regex_matches(
+                raw_matches,
+                data,
+                pattern=str(pattern),
+                wide=wide,
+            )
+        can_match_empty = any(self._regex_can_match_empty(candidate) for candidate in regexes)
+        raw_matches = self._deduplicate_regex_matches(
+            raw_matches,
+            prefer_wide=wide and ascii_mod and self._regex_has_greedy_quantifier(str(pattern)),
+            prefer_zero_over_ascii=wide and ascii_mod and can_match_empty,
+        )
 
         self.matches[string_def.identifier] = [
             MatchResult(
@@ -496,6 +513,65 @@ class StringMatcher:
             matches.append(match)
         return matches
 
+    def _filter_fullword_regex_matches(
+        self,
+        matches: list[tuple[int, int, bool]],
+        data: bytes,
+        *,
+        pattern: str,
+        wide: bool,
+    ) -> list[tuple[int, int, bool]]:
+        filtered: list[tuple[int, int, bool]] = []
+        accepted_wide: list[tuple[int, int]] = []
+        wide_class_quantifier = wide and self._regex_starts_with_character_class(pattern)
+        for match in matches:
+            offset, length, is_wide = match
+            if self._is_fullword(data, offset, length, wide=is_wide) or (
+                wide_class_quantifier
+                and is_wide
+                and self._has_fullword_right_boundary(data, offset, length, wide=True)
+            ):
+                filtered.append(match)
+                if is_wide:
+                    accepted_wide.append((offset, offset + length))
+
+        if not wide or not accepted_wide:
+            return filtered
+
+        for match in matches:
+            offset, length, is_wide = match
+            if match in filtered or not is_wide:
+                continue
+            end = offset + length
+            if any(start < offset and end == accepted_end for start, accepted_end in accepted_wide):
+                filtered.append(match)
+        return filtered
+
+    def _regex_starts_with_character_class(self, pattern: str) -> bool:
+        if pattern.startswith("["):
+            return True
+        return (
+            pattern.startswith("\\")
+            and len(pattern) > 1
+            and pattern[1] in {"d", "D", "s", "S", "w", "W"}
+        )
+
+    def _longest_first_literal_alternation(self, pattern: str) -> str | None:
+        alternatives = pattern.split("|")
+        if len(alternatives) < 2:
+            return None
+        if not all(alternative.isalnum() for alternative in alternatives):
+            return None
+        return "|".join(sorted(alternatives, key=len, reverse=True))
+
+    def _shortest_first_literal_alternation(self, pattern: str) -> str | None:
+        alternatives = pattern.split("|")
+        if len(alternatives) < 2:
+            return None
+        if not all(alternative.isalnum() for alternative in alternatives):
+            return None
+        return "|".join(sorted(alternatives, key=len))
+
     def _find_overlapping_wide_regex_matches(
         self,
         regex: re.Pattern[bytes],
@@ -514,8 +590,7 @@ class StringMatcher:
         regex: re.Pattern[bytes],
         data: bytes,
     ) -> list[tuple[int, int, bool]]:
-        empty_match = regex.match(b"")
-        if empty_match is None or empty_match.end() != empty_match.start():
+        if not self._regex_can_match_empty(regex):
             return []
 
         matches: list[tuple[int, int, bool]] = []
@@ -525,14 +600,45 @@ class StringMatcher:
                 matches.append((offset, 0, False))
         return matches
 
+    def _regex_can_match_empty(self, regex: re.Pattern[bytes]) -> bool:
+        empty_match = regex.match(b"")
+        return empty_match is not None and empty_match.end() == empty_match.start()
+
     def _deduplicate_regex_matches(
         self,
         matches: list[tuple[int, int, bool]],
+        *,
+        prefer_wide: bool = False,
+        prefer_zero_over_ascii: bool = False,
     ) -> list[tuple[int, int, bool]]:
         by_offset: dict[int, tuple[int, int, bool]] = {}
         for match in matches:
             offset, length, _is_wide = match
             existing = by_offset.get(offset)
+            if prefer_wide and existing is not None and match[2] and not existing[2] and length > 0:
+                by_offset[offset] = match
+                continue
+            if prefer_wide and existing is not None and existing[2] and not match[2]:
+                continue
+            if (
+                prefer_zero_over_ascii
+                and existing is not None
+                and not existing[2]
+                and not match[2]
+                and existing[1] > 0
+                and length == 0
+            ):
+                by_offset[offset] = match
+                continue
+            if (
+                prefer_zero_over_ascii
+                and existing is not None
+                and not existing[2]
+                and not match[2]
+                and existing[1] == 0
+                and length > 0
+            ):
+                continue
             if (
                 existing is None
                 or existing[1] == 0 < length
@@ -540,6 +646,32 @@ class StringMatcher:
             ):
                 by_offset[offset] = match
         return [by_offset[offset] for offset in sorted(by_offset)]
+
+    def _regex_has_greedy_quantifier(self, pattern: str) -> bool:
+        in_class = False
+        escaped = False
+        for index, char in enumerate(pattern):
+            if escaped:
+                escaped = False
+                continue
+            if char == "\\":
+                escaped = True
+                continue
+            if char == "[":
+                in_class = True
+                continue
+            if char == "]":
+                in_class = False
+                continue
+            if in_class:
+                continue
+            if char in {"*", "+", "?"}:
+                return index + 1 >= len(pattern) or pattern[index + 1] != "?"
+            if char == "}" and index + 1 < len(pattern) and pattern[index + 1] == "?":
+                continue
+            if char == "{":
+                return True
+        return False
 
     def _wide_regex_segments(self, data: bytes) -> list[tuple[bytes, list[int]]]:
         segments: list[tuple[bytes, list[int]]] = []
@@ -638,6 +770,24 @@ class StringMatcher:
             if _is_word_byte(next_char):
                 return False
 
+        return True
+
+    def _has_fullword_right_boundary(
+        self,
+        data: bytes,
+        offset: int,
+        length: int,
+        *,
+        wide: bool = False,
+    ) -> bool:
+        def _is_word_byte(value: int) -> bool:
+            return (48 <= value <= 57) or (65 <= value <= 90) or (97 <= value <= 122)
+
+        end = offset + length
+        if wide:
+            return not (end + 1 < len(data) and data[end + 1] == 0 and _is_word_byte(data[end]))
+        if end < len(data):
+            return not _is_word_byte(data[end])
         return True
 
     def _is_fullword_wide(self, data: bytes, offset: int, length: int, is_word_byte) -> bool:
