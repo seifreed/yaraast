@@ -199,6 +199,8 @@ class IncludeResolver:
         """Check if all included files still have the same checksum."""
         for included in resolved.includes:
             try:
+                if not self._all_declared_includes_resolved(included):
+                    return False
                 current = self._calculate_checksum(included.path)
                 if current != included.checksum:
                     return False

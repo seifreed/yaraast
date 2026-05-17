@@ -153,6 +153,30 @@ def test_include_resolver_rechecks_cached_files_with_missing_includes(tmp_path: 
     assert [included.path for included in second.includes] == [child.resolve()]
 
 
+def test_include_resolver_rechecks_nested_cached_files_with_missing_includes(
+    tmp_path: Path,
+) -> None:
+    parent = _write(
+        tmp_path / "parent.yar",
+        'include "child.yar"\nrule parent { condition: true }',
+    )
+    _write(
+        tmp_path / "child.yar",
+        'include "grandchild.yar"\nrule child { condition: true }',
+    )
+    resolver = IncludeResolver([str(tmp_path)])
+
+    first = resolver.resolve_file(str(parent))
+    assert first.includes[0].includes == []
+
+    grandchild = _write(tmp_path / "grandchild.yar", "rule grandchild { condition: true }")
+
+    second = resolver.resolve_file(str(parent))
+
+    assert second is not first
+    assert [included.path for included in second.includes[0].includes] == [grandchild.resolve()]
+
+
 def test_include_resolver_allows_parent_relative_includes(tmp_path: Path) -> None:
     shared = _write(tmp_path / "shared.yar", "rule shared { condition: true }")
     rules_dir = tmp_path / "rules"
