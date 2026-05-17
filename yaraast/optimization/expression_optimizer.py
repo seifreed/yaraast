@@ -74,7 +74,7 @@ def _fold_comparison(left_val: int, right_val: int, operator: str):
 
 
 def _simplify_identity(node: BinaryExpression) -> tuple[Expression | None, int]:
-    """Simplify identity/annihilation patterns. Returns (result, opt_count)."""
+    """Simplify identity patterns. Returns (result, opt_count)."""
     left, right, op = node.left, node.right, node.operator
 
     # x + 0 = x, 0 + x = x
@@ -88,12 +88,6 @@ def _simplify_identity(node: BinaryExpression) -> tuple[Expression | None, int]:
         return left, 1
     if op == "*" and isinstance(left, IntegerLiteral) and left.value == 1:
         return right, 1
-
-    # x * 0 = 0, 0 * x = 0
-    if op == "*" and isinstance(right, IntegerLiteral) and right.value == 0:
-        return IntegerLiteral(value=0), 1
-    if op == "*" and isinstance(left, IntegerLiteral) and left.value == 0:
-        return IntegerLiteral(value=0), 1
 
     return None, 0
 

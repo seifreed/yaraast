@@ -12,7 +12,9 @@ from yaraast.ast.expressions import (
     RangeExpression,
 )
 from yaraast.ast.rules import Rule
+from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.optimization import ExpressionOptimizer, RuleOptimizer
+from yaraast.parser import Parser
 
 
 def test_rule_optimizer_does_not_count_unchanged_conditions() -> None:
@@ -40,6 +42,22 @@ def test_rule_optimizer_counts_actual_identity_simplifications() -> None:
     assert optimized.rules[0].condition == Identifier("filesize")
     assert stats["expression_optimizations"] == 1
     assert stats["total_optimizations"] == 1
+
+
+def test_expression_optimizer_preserves_undefined_multiply_by_zero() -> None:
+    ast = Parser().parse("""
+        rule undefined_multiply_by_zero {
+            condition:
+                defined (uint8(filesize) * 0)
+        }
+    """)
+
+    optimized, count = ExpressionOptimizer().optimize(ast)
+
+    assert count == 0
+    assert YaraEvaluator(data=b"a").evaluate_file(optimized) == {
+        "undefined_multiply_by_zero": False
+    }
 
 
 def test_empty_in_range_optimizes_to_false_and_is_counted() -> None:

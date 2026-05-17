@@ -118,8 +118,12 @@ def test_identity_and_boolean_shortcuts_remaining_paths() -> None:
     assert opt.visit(BinaryExpression(IntegerLiteral(0), "+", x)) == x
     assert opt.visit(BinaryExpression(x, "*", IntegerLiteral(1))) == x
     assert opt.visit(BinaryExpression(IntegerLiteral(1), "*", x)) == x
-    assert opt.visit(BinaryExpression(x, "*", IntegerLiteral(0))) == IntegerLiteral(0)
-    assert opt.visit(BinaryExpression(IntegerLiteral(0), "*", x)) == IntegerLiteral(0)
+    assert opt.visit(BinaryExpression(x, "*", IntegerLiteral(0))) == BinaryExpression(
+        x, "*", IntegerLiteral(0)
+    )
+    assert opt.visit(BinaryExpression(IntegerLiteral(0), "*", x)) == BinaryExpression(
+        IntegerLiteral(0), "*", x
+    )
 
     assert opt.visit(BinaryExpression(BooleanLiteral(True), "or", x)) == BooleanLiteral(True)
     assert opt.visit(BinaryExpression(BooleanLiteral(False), "or", x)) == x
