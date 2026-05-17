@@ -120,6 +120,13 @@ class YaraFile(ASTNode):
         for rule in self.extern_rules:
             if rule.name == name and rule.namespace == namespace:
                 return rule
+        for extern_namespace in self.namespaces:
+            if namespace is not None and extern_namespace.name != namespace:
+                continue
+            for rule in extern_namespace.extern_rules:
+                rule_namespace = rule.namespace or extern_namespace.name
+                if rule.name == name and rule_namespace == namespace:
+                    return rule
         return None
 
     def get_all_rules(self) -> list[Rule]:

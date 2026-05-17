@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.extern import ExternRule
+from yaraast.ast.extern import ExternNamespace, ExternRule
 from yaraast.ast.pragmas import IncludeOncePragma, Pragma, PragmaType
 
 
@@ -41,3 +41,13 @@ def test_get_extern_rule_by_name_none_path() -> None:
 
     assert file_node.get_extern_rule_by_name("r1", "wrong") is None
     assert file_node.get_extern_rule_by_name("missing", "ns1") is None
+
+
+def test_get_extern_rule_by_name_finds_namespaced_rules() -> None:
+    nested_rule = ExternRule(name="nested")
+    namespace = ExternNamespace(name="corp")
+    namespace.add_extern_rule(nested_rule)
+    file_node = YaraFile(namespaces=[namespace])
+
+    assert file_node.get_extern_rule_by_name("nested", "corp") is nested_rule
+    assert file_node.get_extern_rule_by_name("nested") is None
