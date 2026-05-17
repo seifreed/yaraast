@@ -5,6 +5,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.comments import Comment
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
@@ -105,6 +106,8 @@ def test_memory_optimizer_transformer_visits_real_nodes() -> None:
             ),
         ],
     )
+    yara_file.leading_comments = [Comment("file lead")]
+    yara_file.trailing_comment = Comment("file tail")
 
     optimized = transformer.visit(yara_file)
     assert optimized is not yara_file  # returns a new copy
@@ -122,6 +125,15 @@ def test_memory_optimizer_transformer_visits_real_nodes() -> None:
     assert optimized.namespaces is not yara_file.namespaces
     optimized.extern_rules.append(ExternRule("new_external"))
     assert len(yara_file.extern_rules) == 1
+    assert optimized.leading_comments is not yara_file.leading_comments
+    assert optimized.leading_comments[0] is not yara_file.leading_comments[0]
+    optimized.leading_comments[0].text = "changed"
+    assert yara_file.leading_comments[0].text == "file lead"
+    assert optimized.trailing_comment is not None
+    assert yara_file.trailing_comment is not None
+    assert optimized.trailing_comment is not yara_file.trailing_comment
+    optimized.trailing_comment.text = "changed"
+    assert yara_file.trailing_comment.text == "file tail"
 
     optimized_rule = optimized.rules[0]
     original_rule = yara_file.rules[0]

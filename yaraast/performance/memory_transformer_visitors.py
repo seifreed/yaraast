@@ -28,7 +28,12 @@ if TYPE_CHECKING:
 
 def _shallow[Node: ASTNode](node: Node) -> Node:
     """Create a shallow copy of a dataclass node to avoid mutating the original."""
-    return copy.copy(node)
+    copied = copy.copy(node)
+    if hasattr(node, "leading_comments"):
+        copied.leading_comments = copy.deepcopy(node.leading_comments)
+    if hasattr(node, "trailing_comment"):
+        copied.trailing_comment = copy.deepcopy(node.trailing_comment)
+    return copied
 
 
 def _pool_text(transformer, value: str | None) -> str | None:
