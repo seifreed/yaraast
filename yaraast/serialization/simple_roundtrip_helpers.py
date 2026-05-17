@@ -182,6 +182,10 @@ def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
         raise SerializationError(msg) from exc
 
 
+def _deserialize_is_anonymous(data: dict[str, Any]) -> bool:
+    return data.get("is_anonymous") is True
+
+
 def _deserialize_modifier_value(name: str, value: Any) -> Any:
     if name == "xor":
         if isinstance(value, list) and len(value) == 2:
@@ -1110,7 +1114,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                 identifier=data["identifier"],
                 value=_deserialize_plain_string_value(data),
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
-                is_anonymous=bool(data.get("is_anonymous", False)),
+                is_anonymous=_deserialize_is_anonymous(data),
             ),
             data,
         )
@@ -1123,7 +1127,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                     identifier=data["identifier"],
                     tokens=tokens,
                     modifiers=_deserialize_modifiers(data.get("modifiers", [])),
-                    is_anonymous=bool(data.get("is_anonymous", False)),
+                    is_anonymous=_deserialize_is_anonymous(data),
                 ),
                 data,
             )
@@ -1134,7 +1138,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                         identifier=data["identifier"],
                         tokens=_deserialize_legacy_hex_tokens(raw_tokens),
                         modifiers=_deserialize_modifiers(data.get("modifiers", [])),
-                        is_anonymous=bool(data.get("is_anonymous", False)),
+                        is_anonymous=_deserialize_is_anonymous(data),
                     ),
                     data,
                 )
@@ -1154,7 +1158,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                 identifier=data["identifier"],
                 tokens=[],
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
-                is_anonymous=bool(data.get("is_anonymous", False)),
+                is_anonymous=_deserialize_is_anonymous(data),
             ),
             data,
         )
@@ -1164,7 +1168,7 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                 identifier=data["identifier"],
                 regex=data["regex"],
                 modifiers=_deserialize_modifiers(data.get("modifiers", [])),
-                is_anonymous=bool(data.get("is_anonymous", False)),
+                is_anonymous=_deserialize_is_anonymous(data),
             ),
             data,
         )

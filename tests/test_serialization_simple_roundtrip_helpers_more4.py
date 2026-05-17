@@ -190,6 +190,21 @@ def test_simple_roundtrip_helpers_preserve_string_modifier_aliases() -> None:
     assert escaped_plain.modifiers == ['vendor_modifier("a\\"\\\\b\\n")']
 
 
+def test_simple_roundtrip_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:
+    plain = deserialize_string(
+        {
+            "type": "PlainString",
+            "identifier": "$a",
+            "value": "abc",
+            "modifiers": [],
+            "is_anonymous": "false",
+        }
+    )
+
+    assert isinstance(plain, PlainString)
+    assert plain.is_anonymous is False
+
+
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
     ast = YaraFile(
         rules=[

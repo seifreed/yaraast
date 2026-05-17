@@ -65,6 +65,10 @@ def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
         raise SerializationError(msg) from exc
 
 
+def _deserialize_is_anonymous(data: dict[str, Any]) -> bool:
+    return data.get("is_anonymous") is True
+
+
 def _cast_comment(node: Any) -> Comment:
     if isinstance(node, Comment):
         return node
@@ -592,7 +596,7 @@ class JsonSerializerDeserializeMixin:
                     identifier=data["identifier"],
                     value=_deserialize_plain_string_value(data),
                     modifiers=modifiers,
-                    is_anonymous=bool(data.get("is_anonymous", False)),
+                    is_anonymous=_deserialize_is_anonymous(data),
                 ),
                 data,
             )
@@ -605,7 +609,7 @@ class JsonSerializerDeserializeMixin:
                     identifier=data["identifier"],
                     tokens=tokens,
                     modifiers=modifiers,
-                    is_anonymous=bool(data.get("is_anonymous", False)),
+                    is_anonymous=_deserialize_is_anonymous(data),
                 ),
                 data,
             )
@@ -617,7 +621,7 @@ class JsonSerializerDeserializeMixin:
                     identifier=data["identifier"],
                     regex=data["regex"],
                     modifiers=modifiers,
-                    is_anonymous=bool(data.get("is_anonymous", False)),
+                    is_anonymous=_deserialize_is_anonymous(data),
                 ),
                 data,
             )

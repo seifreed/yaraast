@@ -131,6 +131,23 @@ def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
     assert isinstance(regex, RegexString)
 
 
+def test_json_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:
+    s = JsonSerializer()
+
+    plain = s._deserialize_string(
+        {
+            "type": "PlainString",
+            "identifier": "$a",
+            "value": "abc",
+            "modifiers": [],
+            "is_anonymous": "false",
+        }
+    )
+
+    assert isinstance(plain, PlainString)
+    assert plain.is_anonymous is False
+
+
 def test_deserialize_expression_comprehensive_branches() -> None:
     s = JsonSerializer()
 
