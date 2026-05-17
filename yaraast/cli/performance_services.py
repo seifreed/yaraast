@@ -12,6 +12,11 @@ from yaraast.performance.memory_optimizer import MemoryOptimizer
 from yaraast.performance.parallel_analyzer import ParallelAnalyzer
 from yaraast.performance.streaming_parser import StreamingParser
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
+from yaraast.shared.numeric_validation import (
+    validate_non_negative_int_setting,
+    validate_positive_int_setting,
+    validate_positive_number_setting,
+)
 
 BATCH_OPERATION_MAP = {
     "parse": BatchOperation.PARSE,
@@ -247,9 +252,8 @@ def run_parallel_analysis(
 
 
 def _validate_timeout(timeout: float | None) -> None:
-    if timeout is not None and timeout <= 0:
-        msg = "timeout must be greater than 0"
-        raise ValueError(msg)
+    if timeout is not None:
+        validate_positive_number_setting(timeout, "timeout")
 
 
 def _raise_if_analysis_timed_out(
@@ -302,15 +306,11 @@ def build_optimization_plan(
     memory_mb: int | None,
     target_time: int | None,
 ) -> dict[str, Any]:
-    if collection_size < 0:
-        msg = "collection_size must be at least 0"
-        raise ValueError(msg)
-    if memory_mb is not None and memory_mb < 1:
-        msg = "memory_mb must be at least 1"
-        raise ValueError(msg)
-    if target_time is not None and target_time < 1:
-        msg = "target_time must be at least 1"
-        raise ValueError(msg)
+    validate_non_negative_int_setting(collection_size, "collection_size")
+    if memory_mb is not None:
+        validate_positive_int_setting(memory_mb, "memory_mb")
+    if target_time is not None:
+        validate_positive_int_setting(target_time, "target_time")
 
     recommendations = build_optimize_recommendations(collection_size)
     strategy = _build_strategy_messages(collection_size)

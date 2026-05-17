@@ -11,6 +11,7 @@ from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.source import parse_yara_source
 from yaraast.performance.string_analyzer import StringPerformanceIssue, analyze_rule_performance
+from yaraast.shared.numeric_validation import validate_positive_int_setting
 
 
 class Severity(StrEnum):
@@ -51,9 +52,8 @@ def filter_issues(
     elif severity == Severity.CRITICAL:
         issues = [i for i in issues if i.severity == Severity.CRITICAL]
 
-    if limit is not None and limit < 1:
-        msg = "limit must be at least 1"
-        raise ValueError(msg)
+    if limit is not None:
+        validate_positive_int_setting(limit, "limit")
 
     if limit is not None:
         issues = issues[:limit]

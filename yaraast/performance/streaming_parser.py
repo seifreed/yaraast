@@ -162,9 +162,7 @@ class StreamingParser:
             Lists of parsed rules
 
         """
-        if chunk_size < 1:
-            msg = "chunk_size must be at least 1"
-            raise ValueError(msg)
+        validate_positive_int_setting(chunk_size, "chunk_size")
 
         chunk = []
 

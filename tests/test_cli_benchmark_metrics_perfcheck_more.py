@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
-from typing import Any
+from typing import Any, cast
 
 from click.testing import CliRunner
 import pytest
@@ -167,6 +167,18 @@ def test_ast_benchmarker_supports_yarax_roundtrip(tmp_path: Path) -> None:
 def test_ast_benchmarker_rejects_invalid_iterations(tmp_path: Path) -> None:
     benchmarker = ASTBenchmarker()
     missing = tmp_path / "missing.yar"
+
+    with pytest.raises(TypeError, match="iterations must be an integer"):
+        benchmarker.benchmark_parsing(missing, iterations=cast(Any, True))
+
+    with pytest.raises(TypeError, match="iterations must be an integer"):
+        benchmarker.benchmark_codegen(missing, iterations=cast(Any, True))
+
+    with pytest.raises(TypeError, match="iterations must be an integer"):
+        benchmarker.benchmark_roundtrip(missing, iterations=cast(Any, True))
+
+    with pytest.raises(TypeError, match="iterations must be an integer"):
+        ASTBenchmarker._time_roundtrip("rule r { condition: true }", iterations=cast(Any, True))
 
     with pytest.raises(ValueError, match="iterations must be at least 1"):
         benchmarker.benchmark_parsing(missing, iterations=0)

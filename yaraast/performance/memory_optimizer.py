@@ -36,7 +36,10 @@ from yaraast.performance.memory_transformer_visitors import (
     visit_unary_expression as transformer_visit_unary_expression,
     visit_yara_file as transformer_visit_yara_file,
 )
-from yaraast.performance.validation import validate_positive_int_setting
+from yaraast.performance.validation import (
+    validate_non_negative_int_setting,
+    validate_positive_int_setting,
+)
 from yaraast.visitor.base import ASTTransformer
 
 if TYPE_CHECKING:
@@ -165,9 +168,7 @@ class MemoryOptimizer:
 
     def optimize_for_large_collection(self, size: int) -> dict[str, Any]:
         """Get optimization recommendations for a collection size."""
-        if size < 0:
-            msg = "size must be at least 0"
-            raise ValueError(msg)
+        validate_non_negative_int_setting(size, "size")
 
         recommendations = {
             "batch_size": 10,

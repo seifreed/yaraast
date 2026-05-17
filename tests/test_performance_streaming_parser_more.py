@@ -45,6 +45,9 @@ def test_streaming_parse_stream_and_chunk(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="chunk_size must be at least 1"):
         list(parser.parse_file_chunked(path, chunk_size=0))
 
+    with pytest.raises(TypeError, match="chunk_size must be an integer"):
+        list(parser.parse_file_chunked(path, chunk_size=cast(Any, True)))
+
 
 def test_streaming_parse_stream_preserves_split_utf8_bytes() -> None:
     raw = 'rule unicode { strings: $a = "é" condition: $a }'.encode()

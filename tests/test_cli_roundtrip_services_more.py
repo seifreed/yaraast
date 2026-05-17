@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -64,6 +65,12 @@ def test_pretty_print_file_falls_back_to_readable_style(tmp_path: Path) -> None:
 def test_pretty_print_file_rejects_invalid_numeric_options(tmp_path: Path) -> None:
     yara_path = tmp_path / "invalid_options.yar"
     _write_rule(yara_path)
+
+    with pytest.raises(TypeError, match="indent_size must be an integer"):
+        pretty_print_file(yara_path, "readable", cast(Any, True), 120, True, True, True, True)
+
+    with pytest.raises(TypeError, match="max_line_length must be an integer"):
+        pretty_print_file(yara_path, "readable", 4, cast(Any, True), True, True, True, True)
 
     with pytest.raises(ValueError, match="indent_size must be at least 1"):
         pretty_print_file(yara_path, "readable", 0, 120, True, True, True, True)

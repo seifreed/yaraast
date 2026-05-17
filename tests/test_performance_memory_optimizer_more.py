@@ -85,6 +85,9 @@ def test_memory_optimizer_rejects_invalid_numeric_configuration() -> None:
     with pytest.raises(TypeError, match="gc_threshold must be an integer"):
         MemoryOptimizer(gc_threshold=cast(Any, True))
 
+    with pytest.raises(TypeError, match="size must be an integer"):
+        MemoryOptimizer().optimize_for_large_collection(cast(Any, True))
+
     with pytest.raises(ValueError, match="memory_limit_mb must be at least 1"):
         MemoryOptimizer(memory_limit_mb=0)
 

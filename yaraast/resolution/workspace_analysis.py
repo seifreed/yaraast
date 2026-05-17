@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from yaraast.analysis.rule_analyzer import RuleAnalyzer
 from yaraast.resolution.workspace_models import FileAnalysisResult, WorkspaceReport
+from yaraast.shared.numeric_validation import validate_positive_int_setting
 
 if TYPE_CHECKING:
     from yaraast.resolution.workspace import Workspace
@@ -22,9 +23,8 @@ class WorkspaceAnalyzer:
 
     @staticmethod
     def _validate_max_workers(max_workers: int | None) -> None:
-        if max_workers is not None and max_workers < 1:
-            msg = "max_workers must be at least 1"
-            raise ValueError(msg)
+        if max_workers is not None:
+            validate_positive_int_setting(max_workers, "max_workers")
 
     def analyze(
         self,

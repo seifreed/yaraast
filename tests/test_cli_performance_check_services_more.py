@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.cli.performance_check_services import filter_issues, summarize_issues
@@ -34,6 +36,13 @@ def test_filter_issues_applies_warning_filter_and_limit() -> None:
 
 
 def test_filter_issues_rejects_invalid_limit() -> None:
+    with pytest.raises(TypeError, match="limit must be an integer"):
+        filter_issues(
+            [_issue("r1", "short_string", "warning")],
+            "all",
+            cast(Any, True),
+        )
+
     with pytest.raises(ValueError, match="limit must be at least 1"):
         filter_issues([_issue("r1", "short_string", "warning")], "all", 0)
 

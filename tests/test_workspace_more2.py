@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from threading import Event
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -450,6 +450,9 @@ def test_workspace_parallel_analysis_preserves_file_order(
 def test_workspace_analysis_rejects_invalid_worker_count(tmp_path: Path) -> None:
     workspace = Workspace(str(tmp_path))
 
+    with pytest.raises(TypeError, match="max_workers must be an integer"):
+        workspace.analyze(parallel=True, max_workers=cast(Any, True))
+
     with pytest.raises(ValueError, match="max_workers must be at least 1"):
         workspace.analyze(parallel=True, max_workers=0)
 
@@ -462,5 +465,8 @@ def test_workspace_analysis_rejects_invalid_worker_count(tmp_path: Path) -> None
         dependency_graph=workspace.dependency_graph,
         file_results={},
     )
+    with pytest.raises(TypeError, match="max_workers must be an integer"):
+        analyzer._analyze_parallel(report, max_workers=cast(Any, True))
+
     with pytest.raises(ValueError, match="max_workers must be at least 1"):
         analyzer._analyze_parallel(report, max_workers=0)

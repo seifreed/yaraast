@@ -10,6 +10,7 @@ from typing import Any
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.parser.source import parse_yara_source
+from yaraast.shared.numeric_validation import validate_positive_int_setting
 from yaraast.yarax.generator import YaraXGenerator
 
 
@@ -36,9 +37,7 @@ class ASTBenchmarker:
 
     @staticmethod
     def _validate_iterations(iterations: int) -> None:
-        if iterations < 1:
-            msg = "iterations must be at least 1"
-            raise ValueError(msg)
+        validate_positive_int_setting(iterations, "iterations")
 
     def benchmark_parsing(
         self,

@@ -16,6 +16,7 @@ from yaraast.serialization.roundtrip_serializer import (
     roundtrip_yara,
     serialize_for_pipeline,
 )
+from yaraast.shared.numeric_validation import validate_positive_int_setting
 
 
 def serialize_roundtrip_file(
@@ -62,12 +63,8 @@ def pretty_print_file(
     sort_imports: bool,
     sort_tags: bool,
 ) -> tuple[Any, str]:
-    if indent_size < 1:
-        msg = "indent_size must be at least 1"
-        raise ValueError(msg)
-    if max_line_length < 1:
-        msg = "max_line_length must be at least 1"
-        raise ValueError(msg)
+    validate_positive_int_setting(indent_size, "indent_size")
+    validate_positive_int_setting(max_line_length, "max_line_length")
 
     yara_source = read_text(input_file)
     ast = parse_yara_source(yara_source)
