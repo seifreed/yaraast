@@ -311,6 +311,14 @@ class UndefinedStringDetector:
                     suggestion="Add a string definition in the strings section.",
                 )
 
+        used = set()
+        self._collect_used_string_defs(rule.condition, defined, used)
+        for sid in sorted(defined - used):
+            self.result.add_error(
+                f"Unreferenced string '{sid}' in rule '{rule.name}'",
+                suggestion="Reference the string in the condition or remove the definition.",
+            )
+
     def _collect_string_refs(
         self, node: ASTNode, refs: set[str], implicit_string_allowed: bool = False
     ) -> None:
@@ -388,3 +396,96 @@ class UndefinedStringDetector:
         elif isinstance(string_set, SetExpression):
             for element in string_set.elements:
                 self._collect_string_set_refs(element, refs)
+
+    def _collect_used_string_defs(
+        self,
+        node: ASTNode,
+        defined: set[str],
+        used: set[str],
+        implicit_string_allowed: bool = False,
+    ) -> None:
+        from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
+        from yaraast.ast.expressions import (
+            StringCount,
+            StringIdentifier,
+            StringLength,
+            StringOffset,
+            StringWildcard,
+        )
+
+        if isinstance(node, StringIdentifier):
+            if not (implicit_string_allowed and node.name == "$"):
+                self._mark_used_string_ref(node.name, defined, used)
+        elif isinstance(node, StringWildcard):
+            self._mark_used_string_ref(node.pattern, defined, used)
+        elif isinstance(node, StringCount | StringOffset | StringLength):
+            ref = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
+            if not (implicit_string_allowed and ref == "$"):
+                self._mark_used_string_ref(ref, defined, used)
+        elif isinstance(node, AtExpression):
+            self._mark_used_string_ref(node.string_id, defined, used)
+        elif isinstance(node, InExpression) and isinstance(node.subject, str):
+            self._mark_used_string_ref(node.subject, defined, used)
+        elif isinstance(node, ForOfExpression):
+            if hasattr(node.quantifier, "accept"):
+                self._collect_used_string_defs(node.quantifier, defined, used)
+            self._mark_used_string_set(node.string_set, defined, used)
+            if node.condition:
+                self._collect_used_string_defs(node.condition, defined, used, True)
+            return
+        elif isinstance(node, OfExpression):
+            if hasattr(node.quantifier, "accept"):
+                self._collect_used_string_defs(node.quantifier, defined, used)
+            self._mark_used_string_set(node.string_set, defined, used)
+            return
+
+        for child in node.children():
+            self._collect_used_string_defs(child, defined, used, implicit_string_allowed)
+
+    def _mark_used_string_set(self, string_set: object, defined: set[str], used: set[str]) -> None:
+        from yaraast.ast.expressions import (
+            Identifier,
+            ParenthesesExpression,
+            SetExpression,
+            StringIdentifier,
+            StringLiteral,
+            StringWildcard,
+        )
+
+        if isinstance(string_set, str):
+            if string_set == "them":
+                used.update(defined)
+            else:
+                self._mark_used_string_ref(string_set, defined, used)
+            return
+
+        if isinstance(string_set, list | tuple | set | frozenset):
+            for item in string_set:
+                self._mark_used_string_set(item, defined, used)
+            return
+
+        if isinstance(string_set, ParenthesesExpression):
+            self._mark_used_string_set(string_set.expression, defined, used)
+        elif isinstance(string_set, StringIdentifier):
+            self._mark_used_string_ref(string_set.name, defined, used)
+        elif isinstance(string_set, StringWildcard):
+            self._mark_used_string_ref(string_set.pattern, defined, used)
+        elif isinstance(string_set, StringLiteral):
+            self._mark_used_string_set(string_set.value, defined, used)
+        elif isinstance(string_set, Identifier) and string_set.name == "them":
+            used.update(defined)
+        elif isinstance(string_set, SetExpression):
+            for element in string_set.elements:
+                self._mark_used_string_set(element, defined, used)
+
+    def _mark_used_string_ref(self, ref: str, defined: set[str], used: set[str]) -> None:
+        normalized = ref if ref.startswith("$") else f"${ref}"
+        if normalized == "$*":
+            used.update(defined)
+            return
+        if normalized.endswith("*"):
+            prefix = normalized[:-1]
+            used.update(sid for sid in defined if sid.startswith(prefix))
+            return
+        if normalized in defined:
+            used.add(normalized)

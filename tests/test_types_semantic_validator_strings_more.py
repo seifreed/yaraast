@@ -157,3 +157,56 @@ def test_semantic_validator_rejects_invalid_string_modifier_compatibility() -> N
         in message
         for message in messages
     )
+
+
+def test_semantic_validator_reports_unreferenced_string_definitions() -> None:
+    ast = Parser().parse("""
+        rule unreferenced_string {
+            strings:
+                $a = "abc"
+                $b = "def"
+            condition:
+                $a
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any(
+        "Unreferenced string '$b' in rule 'unreferenced_string'" in message for message in messages
+    )
+
+
+def test_semantic_validator_counts_string_sets_as_string_references() -> None:
+    ast = Parser().parse("""
+        rule them_reference {
+            strings:
+                $a = "abc"
+                $b = "def"
+            condition:
+                any of them
+        }
+
+        rule wildcard_reference {
+            strings:
+                $a = "abc"
+                $ab = "def"
+            condition:
+                any of ($a*)
+        }
+
+        rule for_of_reference {
+            strings:
+                $a = "abc"
+                $b = "def"
+            condition:
+                for any of ($a, $b) : ( # > 0 )
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is True
+    assert result.errors == []
