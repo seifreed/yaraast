@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from lsprotocol.types import Position, Range, TextEdit
 
+from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lsp.authoring_support import (
     PLAIN_STRING_RE,
     STRING_DEF_RE,
@@ -15,6 +16,24 @@ from yaraast.lsp.authoring_support import (
 
 if TYPE_CHECKING:
     from yaraast.lsp.authoring_actions import StructuralEdit
+
+
+def _plain_string_source_bytes(value: str) -> bytes:
+    chars: list[str] = []
+    position = 0
+    while position < len(value):
+        char = value[position]
+        if char != "\\":
+            chars.append(char)
+            position += 1
+            continue
+
+        next_position = position + 1
+        next_char = value[next_position] if next_position < len(value) else None
+        result = StringEscapeHandler(value, next_position).handle_backslash(next_char)
+        chars.extend(result.chars)
+        position += 2 + result.advance_count
+    return "".join(chars).encode("utf-8")
 
 
 def create_missing_string(
@@ -109,7 +128,7 @@ def convert_plain_string_to_hex(text: str, selection: Range) -> StructuralEdit |
     if tail:
         return None
     value = plain_match.group("value")
-    hex_bytes = " ".join(f"{byte:02X}" for byte in value.encode("utf-8"))
+    hex_bytes = " ".join(f"{byte:02X}" for byte in _plain_string_source_bytes(value))
     new_line = f"{match.group('indent')}{match.group('identifier')} = {{ {hex_bytes} }}"
     return StructuralEdit(
         title="Convert string to hex",
