@@ -16,6 +16,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.modules import ModuleReference
 from yaraast.ast.rules import Rule as RuleNode
+from yaraast.lsp.document_query_reference_ast import string_reference_range
 from yaraast.lsp.document_query_resolution_ranges import narrow_range_to_name, resolved_if_contains
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.utils import find_node_at_position, get_word_at_position, location_to_range
@@ -51,15 +52,18 @@ def _resolve_typed_node(
     node_range,
 ) -> ResolvedSymbol | None:
     if isinstance(node, StringIdentifier):
+        reference_range = string_reference_range(node, ctx.text)
         return resolved_if_contains(
-            position, ResolvedSymbol(ctx.uri, node.name, node.name, "string", node_range)
+            position, ResolvedSymbol(ctx.uri, node.name, node.name, "string", reference_range)
         )
     if isinstance(node, StringCount | StringOffset | StringLength):
-        normalized = f"${node.string_id}"
+        suffix = node.string_id[1:] if node.string_id.startswith("$") else node.string_id
+        normalized = f"${suffix}"
         word, _word_range = get_word_at_position(ctx.text, position)
         name = word or normalized
+        reference_range = string_reference_range(node, ctx.text)
         return resolved_if_contains(
-            position, ResolvedSymbol(ctx.uri, name, normalized, "string", node_range)
+            position, ResolvedSymbol(ctx.uri, name, normalized, "string", reference_range)
         )
     if isinstance(node, ModuleReference):
         return resolved_if_contains(

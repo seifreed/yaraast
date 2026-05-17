@@ -24,6 +24,32 @@ def test_prepare_rename_string_identifier() -> None:
     provider = RenameProvider()
     rng = provider.prepare_rename(text, _pos(0, 20))
     assert rng is not None
+    assert (rng.start.character, rng.end.character) == (20, 22)
+
+
+def test_prepare_rename_prefixed_string_ranges_include_operator_not_index() -> None:
+    text = """
+rule a {
+  strings:
+    $a = "x"
+  condition:
+    $a and #a > 0 and @a[1] > 0 and !a[1] > 0
+}
+""".lstrip()
+    provider = RenameProvider()
+
+    expected_ranges = {
+        5: (4, 6, "$a"),
+        12: (11, 13, "#a"),
+        23: (22, 24, "@a"),
+        37: (36, 38, "!a"),
+    }
+    line = text.split("\n")[4]
+    for character, (start, end, selected_text) in expected_ranges.items():
+        rng = provider.prepare_rename(text, _pos(4, character))
+        assert rng is not None
+        assert (rng.start.character, rng.end.character) == (start, end)
+        assert line[start:end] == selected_text
 
 
 def test_rename_string_identifier_variants() -> None:
