@@ -285,7 +285,14 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         function = self._little_endian_aliases.get(node.function, node.function)
         reader = self._builtin_readers.get(function)
         if reader:
-            return reader(self.data, args[0]) if args else 0
+            if len(args) != 1:
+                msg = f"{node.function}() expects exactly 1 argument"
+                raise EvaluationError(msg)
+            offset = args[0]
+            if not isinstance(offset, int):
+                msg = f"{node.function}() offset must be an integer"
+                raise EvaluationError(msg)
+            return reader(self.data, offset)
 
         # Module functions
         if "." in node.function:

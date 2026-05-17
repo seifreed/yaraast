@@ -123,6 +123,19 @@ def test_binary_unary_function_member_array_and_errors() -> None:
         ev.visit_function_call(FunctionCall(function="uint16", arguments=[IntegerLiteral(value=0)]))
         == 513
     )
+    with pytest.raises(EvaluationError, match=r"uint16\(\) expects exactly 1 argument"):
+        ev.visit_function_call(FunctionCall(function="uint16", arguments=[]))
+    with pytest.raises(EvaluationError, match=r"uint16\(\) expects exactly 1 argument"):
+        ev.visit_function_call(
+            FunctionCall(
+                function="uint16",
+                arguments=[IntegerLiteral(value=0), IntegerLiteral(value=1)],
+            )
+        )
+    with pytest.raises(EvaluationError, match=r"uint16\(\) offset must be an integer"):
+        ev.visit_function_call(
+            FunctionCall(function="uint16", arguments=[StringLiteral(value="0")])
+        )
     with pytest.raises(EvaluationError, match="Unknown function"):
         ev.visit_function_call(FunctionCall(function="nope.fn", arguments=[]))
 
