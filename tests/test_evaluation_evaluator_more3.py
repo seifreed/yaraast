@@ -33,7 +33,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
-from yaraast.ast.modules import ModuleReference
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import PlainString
@@ -805,3 +805,25 @@ def test_evaluator_restores_yarax_with_declarations_when_later_declaration_fails
 
     assert "$x" not in ev.context.variables
     assert "x" not in ev.context.variables
+
+
+def test_evaluator_evaluates_dictionary_access_and_defined_dictionary_access() -> None:
+    ev = YaraEvaluator()
+    ev.context.variables["d"] = {"name": "alpha", 1: "one"}
+    ev.context.variables["key"] = "name"
+    ev.context.modules["pe"] = SimpleNamespace(version_info={"CompanyName": "Microsoft"})
+
+    assert ev.visit(DictionaryAccess(Identifier("d"), "name")) == "alpha"
+    assert ev.visit(DictionaryAccess(Identifier("d"), IntegerLiteral(1))) == "one"
+    assert ev.visit(DictionaryAccess(Identifier("d"), Identifier("key"))) == "alpha"
+    assert (
+        ev.visit(
+            DictionaryAccess(
+                MemberAccess(Identifier("pe"), "version_info"),
+                StringLiteral("CompanyName"),
+            )
+        )
+        == "Microsoft"
+    )
+    assert ev.visit(DefinedExpression(DictionaryAccess(Identifier("d"), "name"))) is True
+    assert ev.visit(DefinedExpression(DictionaryAccess(Identifier("d"), "missing"))) is False

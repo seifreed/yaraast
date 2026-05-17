@@ -338,6 +338,21 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         except (IndexError, KeyError, ValueError, TypeError, AttributeError):
             return None
 
+    def visit_dictionary_access(self, node) -> Any:
+        """Evaluate dictionary-style access."""
+        obj = self.visit(node.object)
+        key = self.visit(node.key) if hasattr(node.key, "accept") else node.key
+
+        if obj is None:
+            return None
+
+        try:
+            return obj[key]
+        except (IndexError, KeyError, ValueError, TypeError, AttributeError):
+            if isinstance(key, str) and hasattr(obj, key):
+                return getattr(obj, key)
+            return None
+
     def visit_list_expression(self, node) -> list[Any]:
         """Evaluate YARA-X list expression."""
         from yaraast.yarax.ast_nodes import SpreadOperator
@@ -800,7 +815,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def visit_defined_expression(self, node) -> bool:
         """Evaluate 'defined' expression."""
-        from yaraast.ast.modules import ModuleReference
+        from yaraast.ast.modules import DictionaryAccess, ModuleReference
 
         # Get the expression being checked
         expr = node.expression
@@ -814,6 +829,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return True
         elif isinstance(expr, ModuleReference):
             return expr.module in self.context.modules
+        elif isinstance(expr, DictionaryAccess | MemberAccess | ArrayAccess):
+            return self.visit(expr) is not None
         elif (
             isinstance(expr, StringIdentifier) and self._current_rule and self._current_rule.strings
         ):
