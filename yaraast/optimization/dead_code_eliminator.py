@@ -68,11 +68,7 @@ class DeadCodeEliminator(ASTTransformer):
 
         # Count rules with always-false conditions
         for rule in ast.rules:
-            if (
-                rule.condition
-                and isinstance(rule.condition, BooleanLiteral)
-                and not rule.condition.value
-            ):  # false condition
+            if self._is_removable_false_rule(rule):
                 self.elimination_count += 1
 
         # Second pass: eliminate unused code
@@ -118,11 +114,7 @@ class DeadCodeEliminator(ASTTransformer):
 
         for rule in node.rules:
             # Skip rules with always-false conditions
-            if (
-                rule.condition
-                and isinstance(rule.condition, BooleanLiteral)
-                and not rule.condition.value
-            ):  # false condition
+            if self._is_removable_false_rule(rule):
                 continue  # Remove this rule
 
             # Keep only used rules (or all if we can't determine)
@@ -146,6 +138,14 @@ class DeadCodeEliminator(ASTTransformer):
 
         node.rules = kept_rules
         return node
+
+    def _is_removable_false_rule(self, rule: Rule) -> bool:
+        return (
+            rule.condition is not None
+            and isinstance(rule.condition, BooleanLiteral)
+            and not rule.condition.value
+            and rule.name not in self.used_rules
+        )
 
     def _is_referenced_by_other_rules(self, rule_name: str) -> bool:
         """Check if this rule is referenced by any other rule."""

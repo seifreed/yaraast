@@ -21,7 +21,10 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.codegen import CodeGenerator
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator, eliminate_dead_code
+from yaraast.optimization.rule_optimizer import RuleOptimizer
+from yaraast.parser import Parser
 
 
 def test_contains_rule_reference_and_external_references() -> None:
@@ -123,6 +126,28 @@ def test_visit_rule_and_file_filtering_paths() -> None:
     assert all(r.name != "drop_false" for r in optimized.rules)
     kept_used = next(r for r in optimized.rules if r.name == "used")
     assert [s.identifier for s in kept_used.strings] == ["$a"]
+
+
+def test_referenced_false_rule_is_not_removed() -> None:
+    ast = Parser().parse("""
+        private rule helper {
+            condition:
+                false
+        }
+
+        rule main {
+            condition:
+                not helper
+        }
+    """)
+
+    optimized, stats = RuleOptimizer().optimize(ast)
+    output = CodeGenerator().generate(optimized)
+
+    assert stats["dead_code_eliminations"] == 0
+    assert [rule.name for rule in optimized.rules] == ["helper", "main"]
+    assert "private rule helper" in output
+    Parser().parse(output)
 
 
 def test_string_wildcard_keeps_matching_strings() -> None:
