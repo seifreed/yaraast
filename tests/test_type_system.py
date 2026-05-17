@@ -1130,8 +1130,8 @@ class TestTypeInference:
         result = inference.infer(node)
         assert isinstance(result, IntegerType)
 
-    def test_infer_binary_expression_arithmetic_division_returns_double(self) -> None:
-        """Test inferring type of division returns double."""
+    def test_infer_binary_expression_arithmetic_integer_division_returns_integer(self) -> None:
+        """Test inferring type of integer division."""
         env = TypeEnvironment()
         inference = TypeInference(env)
         node = BinaryExpression(
@@ -1140,7 +1140,7 @@ class TestTypeInference:
             right=IntegerLiteral(value=2),
         )
         result = inference.infer(node)
-        assert isinstance(result, DoubleType)
+        assert isinstance(result, IntegerType)
 
         backslash_node = BinaryExpression(
             left=IntegerLiteral(value=10),
@@ -1148,7 +1148,7 @@ class TestTypeInference:
             right=IntegerLiteral(value=2),
         )
         backslash_result = inference.infer(backslash_node)
-        assert isinstance(backslash_result, DoubleType)
+        assert isinstance(backslash_result, IntegerType)
 
     def test_infer_binary_expression_bitwise_and(self) -> None:
         """Test inferring type of bitwise AND."""
@@ -1671,6 +1671,14 @@ class TestTypeInferenceEdgeCases:
         )
         result = inference.infer(node)
         assert isinstance(result, DoubleType)
+
+        division = BinaryExpression(
+            left=DoubleLiteral(value=7.0),
+            operator="\\",
+            right=IntegerLiteral(value=2),
+        )
+        division_result = inference.infer(division)
+        assert isinstance(division_result, DoubleType)
 
     def test_infer_binary_expression_bitwise_shift(self) -> None:
         """Test inferring bitwise shift operations."""
@@ -2344,7 +2352,7 @@ class TestTypeInferenceEdgeCases:
         env = TypeEnvironment()
         inference = TypeInference(env)
 
-        for op in ["-", "*", "%"]:
+        for op in ["+", "-", "*", "/", "\\", "%"]:
             inference = TypeInference(env)
             node = BinaryExpression(
                 left=IntegerLiteral(value=10),
