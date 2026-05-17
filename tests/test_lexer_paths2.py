@@ -27,10 +27,10 @@ def test_lexer_properties_reset_and_basic_helpers() -> None:
 
 
 def test_lexer_number_suffix_and_regex_context_and_hex_context_helpers() -> None:
-    lex = Lexer("10K")
+    lex = Lexer("10KB")
     toks = lex.tokenize()
     nums = [t for t in toks if t.type == TokenType.INTEGER]
-    assert nums[0].value == 10
+    assert nums[0].value == 10 * 1024
 
     lex2 = Lexer("\\ \n")
     assert lex2._is_line_continuation() is True
@@ -107,6 +107,19 @@ def test_lexer_reports_malformed_decimal_separators_as_lexer_errors() -> None:
     malformed_decimal_values = ["1_", "1__2", "1_.5", "1.5_", "1.5__2"]
     for value in malformed_decimal_values:
         with pytest.raises(LexerError, match="Invalid decimal"):
+            Lexer(value).tokenize()
+
+
+def test_lexer_reports_invalid_size_suffixes_as_lexer_errors() -> None:
+    valid_values = {"10KB": 10 * 1024, "10MB": 10 * 1024 * 1024}
+    for value, expected in valid_values.items():
+        tokens = Lexer(value).tokenize()
+        assert tokens[0].type == TokenType.INTEGER
+        assert tokens[0].value == expected
+
+    invalid_values = ["10K", "10M", "10kb", "10Kb", "10kB", "10mb", "10MBps"]
+    for value in invalid_values:
+        with pytest.raises(LexerError, match="Invalid size suffix"):
             Lexer(value).tokenize()
 
 

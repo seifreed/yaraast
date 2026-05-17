@@ -110,6 +110,20 @@ def _validate_digit_separators(raw_digits: str, literal_kind: str, line: int, co
         raise LexerError(msg, line, column)
 
 
+def _read_size_suffix(lexer, value: str, line: int, column: int) -> Token | None:
+    suffix = lexer._current_char()
+    if suffix is None or suffix not in "KkMm":
+        return None
+    if suffix not in "KM" or lexer._peek_char() != "B":
+        raise LexerError("Invalid size suffix", line, column)
+    lexer._advance()
+    lexer._advance()
+    if lexer._current_char() and (lexer._current_char().isalnum() or lexer._current_char() == "_"):
+        raise LexerError("Invalid size suffix", line, column)
+    multiplier = 1024 if suffix == "K" else 1024 * 1024
+    return _integer_token(int(value) * multiplier, line, column)
+
+
 def read_number(lexer) -> Token:
     start_line = lexer.line
     start_column = lexer.column
@@ -175,13 +189,9 @@ def read_number(lexer) -> Token:
             raise LexerError(msg, start_line, start_column)
         return Token(TokenType.DOUBLE, float(value), start_line, start_column)
     # KB/MB suffixes
-    if lexer._current_char() and lexer._current_char().upper() in "KM":
-        suffix = lexer._current_char().upper()
-        lexer._advance()
-        if lexer._current_char() and lexer._current_char().upper() == "B":
-            lexer._advance()
-            multiplier = 1024 if suffix == "K" else 1024 * 1024
-            return _integer_token(int(value) * multiplier, start_line, start_column)
+    suffix_token = _read_size_suffix(lexer, value, start_line, start_column)
+    if suffix_token is not None:
+        return suffix_token
     return _integer_token(int(value), start_line, start_column)
 
 
