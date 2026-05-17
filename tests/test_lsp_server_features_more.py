@@ -97,7 +97,7 @@ class FakeServer:
         self.published: list[tuple[str, Any]] = []
 
         self.workspace = _Workspace()
-        self.runtime = SimpleNamespace(
+        self.runtime: Any = SimpleNamespace(
             open_document=lambda *args, **kwargs: None,
             update_document=lambda *args, **kwargs: None,
             save_document=lambda *args, **kwargs: None,
@@ -146,6 +146,17 @@ class FakeServer:
 
     def publish_diagnostics(self, uri: str, diagnostics: Any) -> None:
         self.published.append((uri, diagnostics))
+
+
+class _RecordingRuntime:
+    def __init__(self) -> None:
+        self.updated: list[tuple[str, str, int | None]] = []
+
+    def update_document(self, uri: str, text: str, version: int | None = None) -> None:
+        self.updated.append((uri, text, version))
+
+    def should_debounce(self, *_args: Any, **_kwargs: Any) -> bool:
+        return False
 
 
 async def _call(server: FakeServer, name: str, params: Any) -> Any:
@@ -337,6 +348,38 @@ def test_register_server_features_and_initialize_handlers() -> None:
     assert "YARAAST Language Server initialized" in server.logs
     assert "/tmp/ws3" in server.workspace_symbols_provider.roots
     assert "/tmp/ws2" in server.workspace_symbols_provider.roots
+
+
+def test_did_change_uses_workspace_source_for_incremental_updates() -> None:
+    server = FakeServer()
+    sf.register_server_features(server)
+    runtime = _RecordingRuntime()
+    server.runtime = runtime
+    uri = "file:///a.yar"
+    full_text = "rule a { condition: false }"
+    server.workspace._docs[uri] = SimpleNamespace(uri=uri, source=full_text)
+
+    asyncio.run(
+        _call(
+            server,
+            sf.TEXT_DOCUMENT_DID_CHANGE,
+            SimpleNamespace(
+                text_document=SimpleNamespace(uri=uri, version=2),
+                content_changes=[
+                    SimpleNamespace(
+                        range=SimpleNamespace(
+                            start=SimpleNamespace(line=0, character=20),
+                            end=SimpleNamespace(line=0, character=24),
+                        ),
+                        text="false",
+                    )
+                ],
+            ),
+        )
+    )
+
+    assert runtime.updated == [(uri, full_text, 2)]
+    assert server.published == [(uri, [f"diag:{len(full_text)}"])]
 
 
 def test_initialize_decodes_workspace_folder_file_uris(tmp_path: Path) -> None:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from yaraast.lsp.lsp_types import (
     TEXT_DOCUMENT_DID_CHANGE,
@@ -25,6 +26,16 @@ from yaraast.lsp.server_protocol import FeatureRegistrationServer
 logger = logging.getLogger(__name__)
 
 
+def _changed_document_text(ls: Any, uri: str, changes: Any) -> str:
+    try:
+        return ls.workspace.get_text_document(uri).source
+    except Exception:
+        logger.debug("Operation failed in %s", __name__, exc_info=True)
+    if changes:
+        return changes[-1].text
+    return ""
+
+
 def register_document_handlers(server: FeatureRegistrationServer) -> None:
     # Length is due to 7 short handler registrations; splitting would reduce locality.
     @server.feature(TEXT_DOCUMENT_DID_OPEN)
@@ -44,14 +55,7 @@ def register_document_handlers(server: FeatureRegistrationServer) -> None:
     async def did_change(ls, params: DidChangeTextDocumentParams) -> None:
         uri = params.text_document.uri
         changes = getattr(params, "content_changes", None)
-        if changes:
-            text = changes[-1].text
-        else:
-            try:
-                text = ls.workspace.get_text_document(uri).source
-            except Exception:
-                logger.debug("Operation failed in %s", __name__, exc_info=True)
-                text = ""
+        text = _changed_document_text(ls, uri, changes)
         runtime = getattr(ls, "runtime", None)
         if runtime is not None:
             runtime.update_document(uri, text, getattr(params.text_document, "version", None))
