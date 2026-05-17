@@ -21,6 +21,7 @@ from yaraast.ast.expressions import (
     SetExpression,
     StringCount,
     StringIdentifier,
+    StringLength,
     StringLiteral,
     StringOffset,
     StringWildcard,
@@ -94,8 +95,9 @@ def test_condition_and_expression_formatters_cover_branches() -> None:
     assert expr.format_expression(BinaryExpression(Identifier("a"), "==", IntegerLiteral(1)))
     assert expr.format_expression(None) == "..."
     assert "(" in expr.format_expression(ParenthesesExpression(expression=Identifier("x")))
-    assert "#" in expr.format_expression(StringCount(string_id="$a"))
-    assert "@" in expr.format_expression(StringOffset(string_id="$a", index=IntegerLiteral(0)))
+    assert expr.format_expression(StringCount(string_id="$a")) == "#a"
+    assert expr.format_expression(StringOffset(string_id="$a", index=IntegerLiteral(0))) == "@a[0]"
+    assert expr.format_expression(StringLength(string_id="$a", index=IntegerLiteral(0))) == "!a[0]"
     assert "for" in expr._format_for_expression(
         SimpleNamespace(
             quantifier="any",

@@ -29,6 +29,12 @@ def _quantifier_text(value: Any, default: str, *, allow_percentage: bool = False
     return _node_text(value, default)
 
 
+def _string_reference_suffix(string_id: Any) -> str:
+    text = str(string_id)
+    text = text.lstrip("#@!")
+    return text[1:] if text.startswith("$") else text
+
+
 class ConditionStringFormatter:
     """Helper class to format condition strings with reduced complexity."""
 
@@ -147,15 +153,15 @@ class ConditionStringFormatter:
 
     def _format_string_count(self, condition: Any, _depth: int) -> str:
         name = getattr(condition, "string_id", getattr(condition, "name", "string"))
-        return f"#{name}"
+        return f"#{_string_reference_suffix(name)}"
 
     def _format_string_offset(self, condition: Any, _depth: int) -> str:
         name = getattr(condition, "string_id", getattr(condition, "name", "string"))
-        return f"@{name}"
+        return f"@{_string_reference_suffix(name)}"
 
     def _format_string_length(self, condition: Any, _depth: int) -> str:
         name = getattr(condition, "string_id", getattr(condition, "name", "string"))
-        return f"!{name}"
+        return f"!{_string_reference_suffix(name)}"
 
     def _format_function_call(self, condition: Any, depth: int) -> str:
         func = getattr(condition, "function", "func")
@@ -288,6 +294,7 @@ class ExpressionStringFormatter:
             "OfExpression": self._format_of_expression,
             "StringCount": self._format_string_count,
             "StringOffset": self._format_string_offset,
+            "StringLength": self._format_string_length,
             "ForExpression": self._format_for_expression,
             "ForOfExpression": self._format_for_of_expression,
             "MemberAccess": self._format_member_access,
@@ -404,14 +411,21 @@ class ExpressionStringFormatter:
         return "($*)"
 
     def _format_string_count(self, expr: Any, _depth: int) -> str:
-        return f"#{getattr(expr, 'string_id', '?')}"
+        return f"#{_string_reference_suffix(getattr(expr, 'string_id', '?'))}"
 
     def _format_string_offset(self, expr: Any, depth: int) -> str:
-        sid = getattr(expr, "string_id", "?")
+        sid = _string_reference_suffix(getattr(expr, "string_id", "?"))
         if hasattr(expr, "index") and expr.index is not None:
             idx = self.format_expression(expr.index, depth + 1)
             return f"@{sid}[{idx}]"
         return f"@{sid}"
+
+    def _format_string_length(self, expr: Any, depth: int) -> str:
+        sid = _string_reference_suffix(getattr(expr, "string_id", "?"))
+        if hasattr(expr, "index") and expr.index is not None:
+            idx = self.format_expression(expr.index, depth + 1)
+            return f"!{sid}[{idx}]"
+        return f"!{sid}"
 
     def _format_for_expression(self, expr: Any, depth: int) -> str:
         quantifier = _node_text(getattr(expr, "quantifier", "any"), "any")

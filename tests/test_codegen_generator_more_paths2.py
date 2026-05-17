@@ -272,6 +272,9 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     assert gen.visit_string_count(StringCount("a")) == "#a"
     assert gen.visit_string_offset(StringOffset("a", IntegerLiteral(1))) == "@a[1]"
     assert gen.visit_string_length(StringLength("a", IntegerLiteral(2))) == "!a[2]"
+    assert gen.visit_string_count(StringCount("$a")) == "#a"
+    assert gen.visit_string_offset(StringOffset("$a", IntegerLiteral(1))) == "@a[1]"
+    assert gen.visit_string_length(StringLength("$a", IntegerLiteral(2))) == "!a[2]"
     assert gen.visit_hex_jump(HexJump(1, 3)) == "[1-3]"
     assert (
         gen.visit_hex_alternative(HexAlternative([[HexByte(1)], [HexWildcard()]])) == "( 01 | ?? )"

@@ -58,20 +58,28 @@ def visit_string_wildcard(node) -> str:
     return node.pattern
 
 
+def _string_reference_suffix(string_id) -> str:
+    text = str(string_id)
+    text = text.lstrip("#@!")
+    return text[1:] if text.startswith("$") else text
+
+
 def visit_string_count(node) -> str:
-    return f"#{node.string_id}"
+    return f"#{_string_reference_suffix(node.string_id)}"
 
 
 def visit_string_offset(generator, node) -> str:
+    suffix = _string_reference_suffix(node.string_id)
     if node.index:
-        return f"@{node.string_id}[{generator.visit(node.index)}]"
-    return f"@{node.string_id}"
+        return f"@{suffix}[{generator.visit(node.index)}]"
+    return f"@{suffix}"
 
 
 def visit_string_length(generator, node) -> str:
+    suffix = _string_reference_suffix(node.string_id)
     if node.index:
-        return f"!{node.string_id}[{generator.visit(node.index)}]"
-    return f"!{node.string_id}"
+        return f"!{suffix}[{generator.visit(node.index)}]"
+    return f"!{suffix}"
 
 
 def visit_integer_literal(node) -> str:

@@ -66,7 +66,7 @@ def test_expression_and_detailed_formatter_additional_branches() -> None:
     assert expr._format_string_wildcard(SimpleNamespace()) == "($*)"
 
     assert expr._format_set_expression(SimpleNamespace(), 0) == "(...)"
-    assert expr._format_string_offset(SimpleNamespace(string_id="$a"), 0) == "@$a"
+    assert expr._format_string_offset(SimpleNamespace(string_id="$a"), 0) == "@a"
     assert expr._format_for_expression(SimpleNamespace(), 0) == "for any i in ... : (...)"
     assert expr._format_member_access(SimpleNamespace(), 0) == "?.?"
     assert expr._format_range_expression(SimpleNamespace(), 0) == "(0.....)"

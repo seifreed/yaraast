@@ -69,6 +69,9 @@ def test_condition_formatter_literals_and_calls() -> None:
     assert formatter.format_condition(StringCount("a")) == "#a"
     assert formatter.format_condition(StringOffset("b")) == "@b"
     assert formatter.format_condition(StringLength("c")) == "!c"
+    assert formatter.format_condition(StringCount("$a")) == "#a"
+    assert formatter.format_condition(StringOffset("$b")) == "@b"
+    assert formatter.format_condition(StringLength("$c")) == "!c"
 
 
 def test_condition_formatter_of_expression_and_binary() -> None:
