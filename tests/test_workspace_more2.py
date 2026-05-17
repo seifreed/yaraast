@@ -102,6 +102,34 @@ def test_workspace_analysis_detects_conflicts_in_resolved_include_trees(
     assert any("Rule 'dup_rule' defined in multiple files" in err for err in report.global_errors)
 
 
+def test_workspace_analysis_does_not_accumulate_warnings_between_runs(
+    tmp_path: Path,
+) -> None:
+    rule_file = _write(
+        tmp_path / "unused.yar",
+        """
+        rule unused {
+            strings:
+                $used = "used"
+                $unused = "unused"
+            condition:
+                $used
+        }
+        """,
+    )
+    workspace = Workspace(str(tmp_path))
+    workspace.add_file(str(rule_file))
+
+    first = workspace.analyze(parallel=False)
+    second = workspace.analyze(parallel=False)
+
+    assert first.statistics["total_warnings"] == 1
+    assert second.statistics["total_warnings"] == 1
+    assert second.file_results[str(rule_file)].warnings == [
+        "Rule 'unused': Unused string '$unused'"
+    ]
+
+
 def test_workspace_add_directory_relative_parallel_analysis_and_global_issues(
     tmp_path: Path,
 ) -> None:

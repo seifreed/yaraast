@@ -87,6 +87,12 @@ class WorkspaceAnalyzer:
         """Analyze a single file."""
         if not result.resolved:
             return
+        result.warnings.clear()
+        result.type_errors.clear()
+        result.errors = [
+            error for error in result.errors if not error.startswith("Analysis error:")
+        ]
+        result.analysis_results = {}
         ast = result.resolved.ast
 
         with self._report_lock:
