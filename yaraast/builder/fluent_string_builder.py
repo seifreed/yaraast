@@ -137,16 +137,7 @@ class FluentStringBuilder:
     def xor(self, key: int | str | None = None) -> FluentStringBuilder:
         """Add XOR modifier with optional key."""
         if key is not None:
-            if isinstance(key, bool):
-                msg = f"Invalid XOR key value: {key}"
-                raise TypeError(msg)
-            if isinstance(key, str):
-                # Convert hex string to int
-                try:
-                    key = int(key, 16)
-                except ValueError:
-                    key = None
-
+            key = self._coerce_xor_key(key)
             modifier = StringModifier(
                 modifier_type=StringModifierType.XOR,
                 value=key,
@@ -157,11 +148,40 @@ class FluentStringBuilder:
         self._modifiers.append(modifier)
         return self
 
+    def _coerce_xor_key(self, key: int | str) -> int:
+        if isinstance(key, bool):
+            msg = f"Invalid XOR key value: {key}"
+            raise TypeError(msg)
+        if isinstance(key, str):
+            try:
+                key = int(key, 16)
+            except ValueError:
+                msg = f"Invalid XOR key value: {key}"
+                raise ValidationError(msg) from None
+        if not isinstance(key, int):
+            msg = f"Invalid XOR key value: {key}"
+            raise TypeError(msg)
+        if not 0 <= key <= 255:
+            msg = "XOR key must be 0-255"
+            raise ValidationError(msg)
+        return key
+
     def xor_range(self, min_key: int, max_key: int) -> FluentStringBuilder:
         """Add XOR modifier with key range."""
-        if isinstance(min_key, bool) or isinstance(max_key, bool):
+        if (
+            isinstance(min_key, bool)
+            or isinstance(max_key, bool)
+            or not isinstance(min_key, int)
+            or not isinstance(max_key, int)
+        ):
             msg = f"Invalid XOR key value: {(min_key, max_key)}"
             raise TypeError(msg)
+        if not 0 <= min_key <= 255 or not 0 <= max_key <= 255:
+            msg = "XOR key range must be 0-255"
+            raise ValidationError(msg)
+        if min_key > max_key:
+            msg = "XOR range must be ascending"
+            raise ValidationError(msg)
         modifier = StringModifier(
             modifier_type=StringModifierType.XOR,
             value=(min_key, max_key),

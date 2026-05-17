@@ -39,8 +39,23 @@ def test_fluent_string_builder_rejects_boolean_xor_keys() -> None:
     with pytest.raises(TypeError, match="Invalid XOR key value"):
         FluentStringBuilder("$xor").literal("abc").xor(True)
 
+    with pytest.raises(ValidationError, match="XOR key must be 0-255"):
+        FluentStringBuilder("$xor").literal("abc").xor(256)
+
+    with pytest.raises(ValidationError, match="XOR key must be 0-255"):
+        FluentStringBuilder("$xor").literal("abc").xor(-1)
+
     with pytest.raises(TypeError, match="Invalid XOR key value"):
         FluentStringBuilder("$xor").literal("abc").xor_range(False, 255)
+
+    with pytest.raises(ValidationError, match="XOR key range must be 0-255"):
+        FluentStringBuilder("$xor").literal("abc").xor_range(-1, 255)
+
+    with pytest.raises(ValidationError, match="XOR key range must be 0-255"):
+        FluentStringBuilder("$xor").literal("abc").xor_range(0, 256)
+
+    with pytest.raises(ValidationError, match="XOR range must be ascending"):
+        FluentStringBuilder("$xor").literal("abc").xor_range(5, 1)
 
 
 def test_fluent_string_builder_regex_specific_modifiers() -> None:

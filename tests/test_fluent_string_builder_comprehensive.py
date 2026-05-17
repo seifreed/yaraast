@@ -333,13 +333,11 @@ class TestFluentStringBuilderModifiers:
         assert builder._modifiers[0].value == 0xFF
 
     def test_xor_with_invalid_hex_string(self) -> None:
-        """Xor with invalid hex string should default to None."""
+        """Xor with invalid hex string should be rejected."""
         builder = FluentStringBuilder("$s").literal("data")
 
-        result = builder.xor("XYZ")
-
-        assert result is builder
-        assert len(builder._modifiers) == 1
+        with pytest.raises(ValidationError, match="Invalid XOR key value: XYZ"):
+            builder.xor("XYZ")
 
     def test_xor_range_sets_range_value(self) -> None:
         """Xor_range should set min and max key values."""
