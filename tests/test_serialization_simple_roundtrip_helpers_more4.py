@@ -398,6 +398,41 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="Identifier name must be a string"):
         deserialize_node({"type": "Identifier", "name": ["id"]})
 
+    true_expr = {"type": "BooleanLiteral", "value": True}
+
+    with pytest.raises(SerializationError, match="BinaryExpression operator must be a string"):
+        deserialize_node(
+            {
+                "type": "BinaryExpression",
+                "left": true_expr,
+                "operator": ["and"],
+                "right": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="UnaryExpression operator must be a string"):
+        deserialize_node({"type": "UnaryExpression", "operator": ["not"], "operand": true_expr})
+
+    with pytest.raises(SerializationError, match="FunctionCall function must be a string"):
+        deserialize_node({"type": "FunctionCall", "function": ["fn"], "arguments": []})
+
+    with pytest.raises(SerializationError, match="MemberAccess member must be a string"):
+        deserialize_node(
+            {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": []}
+        )
+
+    with pytest.raises(SerializationError, match="AtExpression string_id must be a string"):
+        deserialize_node(
+            {
+                "type": "AtExpression",
+                "string_id": ["$a"],
+                "offset": {"type": "IntegerLiteral", "value": 0},
+            }
+        )
+
+    with pytest.raises(SerializationError, match="ModuleReference module must be a string"):
+        deserialize_node({"type": "ModuleReference", "module": ["pe"]})
+
     with pytest.raises(SerializationError, match="RegexLiteral pattern must be a string"):
         deserialize_node({"type": "RegexLiteral", "pattern": 123})
 

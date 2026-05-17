@@ -1033,11 +1033,14 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "BinaryExpression":
         return BinaryExpression(
             deserialize_node(data["left"]),
-            data["operator"],
+            _deserialize_string_field(data, "operator", "BinaryExpression"),
             deserialize_node(data["right"]),
         )
     if node_type == "UnaryExpression":
-        return UnaryExpression(data["operator"], deserialize_node(data["operand"]))
+        return UnaryExpression(
+            _deserialize_string_field(data, "operator", "UnaryExpression"),
+            deserialize_node(data["operand"]),
+        )
     if node_type == "ParenthesesExpression":
         return ParenthesesExpression(deserialize_node(data["expression"]))
     if node_type == "SetExpression":
@@ -1046,13 +1049,16 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return RangeExpression(deserialize_node(data["low"]), deserialize_node(data["high"]))
     if node_type == "FunctionCall":
         return FunctionCall(
-            data["function"],
+            _deserialize_string_field(data, "function", "FunctionCall"),
             [deserialize_node(argument) for argument in data.get("arguments", [])],
         )
     if node_type == "ArrayAccess":
         return ArrayAccess(deserialize_node(data["array"]), deserialize_node(data["index"]))
     if node_type == "MemberAccess":
-        return MemberAccess(deserialize_node(data["object"]), data["member"])
+        return MemberAccess(
+            deserialize_node(data["object"]),
+            _deserialize_string_field(data, "member", "MemberAccess"),
+        )
     if node_type == "ForExpression":
         return ForExpression(
             _deserialize_ast_value(data["quantifier"]),
@@ -1068,7 +1074,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             deserialize_node(condition) if condition else None,
         )
     if node_type == "AtExpression":
-        return AtExpression(data["string_id"], deserialize_node(data["offset"]))
+        return AtExpression(
+            _deserialize_string_field(data, "string_id", "AtExpression"),
+            deserialize_node(data["offset"]),
+        )
     if node_type == "InExpression":
         subject = data.get("subject")
         if subject is None and "string_id" in data:
@@ -1080,7 +1089,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_ast_value(data["string_set"]),
         )
     if node_type == "ModuleReference":
-        return ModuleReference(data["module"])
+        return ModuleReference(_deserialize_string_field(data, "module", "ModuleReference"))
     if node_type == "DictionaryAccess":
         return DictionaryAccess(
             deserialize_node(data["object"]),

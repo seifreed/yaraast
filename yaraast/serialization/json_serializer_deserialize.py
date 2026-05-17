@@ -302,14 +302,21 @@ def _deser_binary_expression(self, data: dict[str, Any]):
 
     left = self._deserialize_expression(data["left"])
     right = self._deserialize_expression(data["right"])
-    return BinaryExpression(left=left, operator=data["operator"], right=right)
+    return BinaryExpression(
+        left=left,
+        operator=_deserialize_string_field(data, "operator", "BinaryExpression"),
+        right=right,
+    )
 
 
 def _deser_unary_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import UnaryExpression
 
     operand = self._deserialize_expression(data["operand"])
-    return UnaryExpression(operator=data["operator"], operand=operand)
+    return UnaryExpression(
+        operator=_deserialize_string_field(data, "operator", "UnaryExpression"),
+        operand=operand,
+    )
 
 
 def _deser_parentheses_expression(self, data: dict[str, Any]):
@@ -338,7 +345,10 @@ def _deser_function_call(self, data: dict[str, Any]):
     from yaraast.ast.expressions import FunctionCall
 
     args = [self._deserialize_expression(a) for a in data.get("arguments", [])]
-    return FunctionCall(function=data["function"], arguments=args)
+    return FunctionCall(
+        function=_deserialize_string_field(data, "function", "FunctionCall"),
+        arguments=args,
+    )
 
 
 def _deser_array_access(self, data: dict[str, Any]):
@@ -353,7 +363,10 @@ def _deser_member_access(self, data: dict[str, Any]):
     from yaraast.ast.expressions import MemberAccess
 
     obj = self._deserialize_expression(data["object"])
-    return MemberAccess(object=obj, member=data["member"])
+    return MemberAccess(
+        object=obj,
+        member=_deserialize_string_field(data, "member", "MemberAccess"),
+    )
 
 
 def _deser_identifier(self, data: dict[str, Any]):
@@ -459,7 +472,7 @@ def _deser_at_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import AtExpression
 
     return AtExpression(
-        string_id=data["string_id"],
+        string_id=_deserialize_string_field(data, "string_id", "AtExpression"),
         offset=self._deserialize_expression(data["offset"]),
     )
 
@@ -490,7 +503,7 @@ def _deser_of_expression(self, data: dict[str, Any]):
 def _deser_module_reference(self, data: dict[str, Any]):
     from yaraast.ast.modules import ModuleReference
 
-    return ModuleReference(module=data["module"])
+    return ModuleReference(module=_deserialize_string_field(data, "module", "ModuleReference"))
 
 
 def _deser_dictionary_access(self, data: dict[str, Any]):

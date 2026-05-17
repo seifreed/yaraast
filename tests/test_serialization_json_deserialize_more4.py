@@ -317,6 +317,7 @@ def test_json_deserialize_hex_tokens_reject_invalid_scalar_fields() -> None:
 
 def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
+    true_expr = {"type": "BooleanLiteral", "value": True}
 
     with pytest.raises(SerializationError, match="IntegerLiteral value must be an integer"):
         s._deserialize_expression({"type": "IntegerLiteral", "value": True})
@@ -335,6 +336,41 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="Identifier name must be a string"):
         s._deserialize_expression({"type": "Identifier", "name": ["id"]})
+
+    with pytest.raises(SerializationError, match="BinaryExpression operator must be a string"):
+        s._deserialize_expression(
+            {
+                "type": "BinaryExpression",
+                "left": true_expr,
+                "operator": ["and"],
+                "right": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="UnaryExpression operator must be a string"):
+        s._deserialize_expression(
+            {"type": "UnaryExpression", "operator": ["not"], "operand": true_expr}
+        )
+
+    with pytest.raises(SerializationError, match="FunctionCall function must be a string"):
+        s._deserialize_expression({"type": "FunctionCall", "function": ["fn"], "arguments": []})
+
+    with pytest.raises(SerializationError, match="MemberAccess member must be a string"):
+        s._deserialize_expression(
+            {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": []}
+        )
+
+    with pytest.raises(SerializationError, match="AtExpression string_id must be a string"):
+        s._deserialize_expression(
+            {
+                "type": "AtExpression",
+                "string_id": ["$a"],
+                "offset": {"type": "IntegerLiteral", "value": 0},
+            }
+        )
+
+    with pytest.raises(SerializationError, match="ModuleReference module must be a string"):
+        s._deserialize_expression({"type": "ModuleReference", "module": ["pe"]})
 
     with pytest.raises(SerializationError, match="RegexLiteral pattern must be a string"):
         s._deserialize_expression({"type": "RegexLiteral", "pattern": 123})
