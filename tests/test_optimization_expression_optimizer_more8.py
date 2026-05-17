@@ -265,6 +265,10 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
         string_set=["$a", "$b"],
         condition=BooleanLiteral(True),
     )
+    tuple_of_node = OfExpression(
+        quantifier="any",
+        string_set=(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)), "$a"),
+    )
     at_node = SimpleNamespace(offset=IntegerLiteral(4))
     in_node = SimpleNamespace(range=Identifier("r"))
     in_node_with_subject = SimpleNamespace(
@@ -277,6 +281,7 @@ def test_visit_for_of_at_in_and_passthrough_methods() -> None:
     assert opt.visit_of_expression(of_node).string_set == Identifier("s")
     assert opt.visit_of_expression(raw_of_node).string_set == ["$a", "$b"]
     assert opt.visit_for_of_expression(raw_for_of_node).string_set == ["$a", "$b"]
+    assert opt.visit_of_expression(tuple_of_node).string_set == (IntegerLiteral(3), "$a")
     assert opt.visit_at_expression(at_node).offset == IntegerLiteral(4)
     assert opt.visit_in_expression(in_node).range == Identifier("r")
     assert opt.visit_in_expression(in_node_with_subject).subject == IntegerLiteral(3)

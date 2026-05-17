@@ -377,6 +377,12 @@ class ExpressionOptimizer(ASTTransformer):
             return self.visit(value)
         if isinstance(value, list):
             return [self._optimize_ast_value(item) for item in value]
+        if isinstance(value, tuple):
+            return tuple(self._optimize_ast_value(item) for item in value)
+        if isinstance(value, set):
+            return {self._optimize_ast_value(item) for item in value}
+        if isinstance(value, frozenset):
+            return frozenset(self._optimize_ast_value(item) for item in value)
         return value
 
     def visit_at_expression(self, node: Any) -> Any:
