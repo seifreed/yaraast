@@ -173,6 +173,9 @@ class HexStringBuilder:
             self.nibble(part)
         elif self._is_hex_byte(part):
             self._add_hex_byte_safely(part)
+        else:
+            msg = f"Invalid pattern part: {part}"
+            raise ValidationError(msg)
 
     def _is_jump_pattern(self, part: str) -> bool:
         """Check if part is a jump pattern like [2-4]."""

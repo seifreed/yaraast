@@ -31,9 +31,11 @@ def test_hex_string_builder_invalid_low_nibble_and_unknown_pattern_part() -> Non
     with pytest.raises(ValidationError, match="Invalid hex value: GG"):
         HexStringBuilder().pattern("GG")
 
-    builder = HexStringBuilder()
-    builder.pattern("XYZ")
-    assert builder.build() == []
+    with pytest.raises(ValidationError, match="Invalid pattern part: XYZ"):
+        HexStringBuilder().pattern("XYZ")
+
+    with pytest.raises(ValidationError, match="Invalid pattern part: XYZ"):
+        HexStringBuilder().pattern("AA XYZ BB")
 
 
 def test_html_tree_nodes_condition_section_none() -> None:
