@@ -11,6 +11,7 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     ParenthesesExpression,
     RangeExpression,
+    SetExpression,
     StringCount,
     StringIdentifier,
     StringLiteral,
@@ -101,6 +102,23 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
         condition=BooleanLiteral(True),
     )
     assert gen.visit(for_of_node_list) == "for any of ($a, $b) : (true)"
+
+
+def test_codegen_renders_string_literals_as_references_inside_string_sets() -> None:
+    gen = CodeGenerator()
+
+    of_literals = OfExpression(
+        quantifier="any",
+        string_set=SetExpression([StringLiteral("$a"), StringLiteral("$b*")]),
+    )
+    assert gen.visit(of_literals) == "any of ($a, $b*)"
+
+    for_of_parenthesized = ForOfExpression(
+        quantifier="all",
+        string_set=ParenthesesExpression(SetExpression([StringLiteral("$a")])),
+        condition=StringIdentifier("$a"),
+    )
+    assert gen.visit(for_of_parenthesized) == "for all of ($a) : ($a)"
 
 
 def test_codegen_generate_returns_direct_expression_output() -> None:

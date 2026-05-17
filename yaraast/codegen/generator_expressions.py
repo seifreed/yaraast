@@ -4,24 +4,43 @@ from __future__ import annotations
 
 
 def _render_string_set(gen, string_set) -> str:
-    from yaraast.ast.expressions import StringWildcard
+    from yaraast.ast.expressions import (
+        ParenthesesExpression,
+        SetExpression,
+        StringLiteral,
+        StringWildcard,
+    )
 
+    if isinstance(string_set, StringLiteral):
+        return string_set.value
     if isinstance(string_set, StringWildcard):
         return f"({gen.visit(string_set)})"
+    if isinstance(string_set, ParenthesesExpression):
+        return _render_string_set(gen, string_set.expression)
+    if isinstance(string_set, SetExpression):
+        rendered_items = [_render_string_set_item(gen, item) for item in string_set.elements]
+        return f"({', '.join(rendered_items)})"
     if hasattr(string_set, "accept"):
         return gen.visit(string_set)
     if isinstance(string_set, list | tuple):
-        rendered_items = [
-            gen.visit(item) if hasattr(item, "accept") else str(item) for item in string_set
-        ]
+        rendered_items = [_render_string_set_item(gen, item) for item in string_set]
         return f"({', '.join(rendered_items)})"
     if isinstance(string_set, set | frozenset):
         rendered_items = [
-            gen.visit(item) if hasattr(item, "accept") else str(item)
-            for item in sorted(string_set, key=str)
+            _render_string_set_item(gen, item) for item in sorted(string_set, key=str)
         ]
         return f"({', '.join(rendered_items)})"
     return str(string_set)
+
+
+def _render_string_set_item(gen, item) -> str:
+    from yaraast.ast.expressions import StringLiteral
+
+    if isinstance(item, StringLiteral):
+        return item.value
+    if hasattr(item, "accept"):
+        return gen.visit(item)
+    return str(item)
 
 
 def _render_quantifier(gen, quantifier, *, allow_percentage: bool = False) -> str:
