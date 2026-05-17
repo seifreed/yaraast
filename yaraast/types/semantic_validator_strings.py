@@ -313,7 +313,7 @@ class UndefinedStringDetector:
 
     def _collect_string_refs(self, node: ASTNode, refs: set[str]) -> None:
         """Recursively collect string identifier references from an expression."""
-        from yaraast.ast.conditions import AtExpression, InExpression
+        from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
         from yaraast.ast.expressions import (
             StringCount,
             StringIdentifier,
@@ -332,7 +332,27 @@ class UndefinedStringDetector:
             refs.add(node.string_id if node.string_id.startswith("$") else f"${node.string_id}")
         elif isinstance(node, InExpression) and isinstance(node.subject, str):
             refs.add(node.subject if node.subject.startswith("$") else f"${node.subject}")
+        elif isinstance(node, OfExpression | ForOfExpression):
+            self._collect_string_set_refs(node.string_set, refs)
 
         # Recurse into children
         for child in node.children():
             self._collect_string_refs(child, refs)
+
+    def _collect_string_set_refs(self, string_set: object, refs: set[str]) -> None:
+        from yaraast.ast.expressions import StringIdentifier, StringWildcard
+
+        if isinstance(string_set, str):
+            if string_set != "them":
+                refs.add(string_set)
+            return
+
+        if isinstance(string_set, list | tuple | set | frozenset):
+            for item in string_set:
+                self._collect_string_set_refs(item, refs)
+            return
+
+        if isinstance(string_set, StringIdentifier):
+            refs.add(string_set.name)
+        elif isinstance(string_set, StringWildcard):
+            refs.add(string_set.pattern)

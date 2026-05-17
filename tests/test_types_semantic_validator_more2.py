@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import FunctionCall, Identifier, StringIdentifier, StringLiteral
+from yaraast.ast.conditions import ForOfExpression, OfExpression
+from yaraast.ast.expressions import (
+    BooleanLiteral,
+    FunctionCall,
+    Identifier,
+    StringIdentifier,
+    StringLiteral,
+)
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.types.semantic_validator import (
@@ -45,6 +52,32 @@ def test_validate_rule_detects_undefined_string_references() -> None:
 
     assert result.is_valid is False
     assert any("Undefined string '$missing'" in error.message for error in result.errors)
+
+
+def test_validate_rule_detects_undefined_strings_in_raw_string_sets() -> None:
+    rules = [
+        Rule(
+            name="missing_of",
+            strings=[PlainString(identifier="$a", value="x")],
+            condition=OfExpression("any", ["$a", "$missing"]),
+        ),
+        Rule(
+            name="missing_for_of",
+            strings=[PlainString(identifier="$a", value="x")],
+            condition=ForOfExpression("any", ["$a", "$missing"], BooleanLiteral(True)),
+        ),
+    ]
+
+    result = SemanticValidator().validate(YaraFile(rules=rules))
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any(
+        "Undefined string '$missing' in rule 'missing_of'" in message for message in messages
+    )
+    assert any(
+        "Undefined string '$missing' in rule 'missing_for_of'" in message for message in messages
+    )
 
 
 def test_validate_rule_detects_invalid_condition_type() -> None:
