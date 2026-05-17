@@ -86,6 +86,18 @@ def test_lexer_rejects_integer_literals_above_int64_maximum() -> None:
             Lexer(value).tokenize()
 
 
+def test_lexer_reports_malformed_prefixed_integer_literals_as_lexer_errors() -> None:
+    malformed_hex_values = ["0x", "0x_", "0xg"]
+    for value in malformed_hex_values:
+        with pytest.raises(LexerError, match="Invalid hexadecimal integer literal"):
+            Lexer(value).tokenize()
+
+    malformed_octal_values = ["0o", "0o_", "0o8"]
+    for value in malformed_octal_values:
+        with pytest.raises(LexerError, match="Invalid octal integer literal"):
+            Lexer(value).tokenize()
+
+
 def test_lexer_string_and_hex_error_paths() -> None:
     with pytest.raises(LexerError, match="Unterminated string"):
         Lexer('"unterminated').tokenize()

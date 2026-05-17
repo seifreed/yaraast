@@ -109,10 +109,15 @@ def read_number(lexer) -> Token:
         lexer._advance()
         value += lexer._current_char()
         lexer._advance()
+        has_digits = False
         while lexer._current_char() and lexer._current_char() in "0123456789abcdefABCDEF_":
             if lexer._current_char() != "_":
                 value += lexer._current_char()
+                has_digits = True
             lexer._advance()
+        if not has_digits:
+            msg = "Invalid hexadecimal integer literal"
+            raise LexerError(msg, start_line, start_column)
         return _integer_token(int(value, 16), start_line, start_column)
     # Octal: 0o77, 0o123
     if lexer._current_char() == "0" and lexer._peek_char() in "oO":
@@ -120,10 +125,15 @@ def read_number(lexer) -> Token:
         lexer._advance()
         value += lexer._current_char()
         lexer._advance()
+        has_digits = False
         while lexer._current_char() and lexer._current_char() in "01234567_":
             if lexer._current_char() != "_":
                 value += lexer._current_char()
+                has_digits = True
             lexer._advance()
+        if not has_digits:
+            msg = "Invalid octal integer literal"
+            raise LexerError(msg, start_line, start_column)
         return _integer_token(int(value, 8), start_line, start_column)
     # Decimal (with underscore separators): 1_000_000
     while lexer._current_char() and (
