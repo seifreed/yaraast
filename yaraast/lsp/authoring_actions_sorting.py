@@ -25,6 +25,8 @@ def sort_strings_by_identifier(authoring, text: str, selection) -> object | None
     rule = ast.rules[0]
     if len(getattr(rule, "strings", [])) < 2:
         return None
+    if any(getattr(string_def, "is_anonymous", False) for string_def in rule.strings):
+        return None
     current_ids = [string_def.identifier for string_def in rule.strings]
     sorted_strings = sorted(rule.strings, key=lambda string_def: string_def.identifier)
     sorted_ids = [string_def.identifier for string_def in sorted_strings]

@@ -286,6 +286,24 @@ rule demo {
     assert edit.new_text.index('$a = "a"') < edit.new_text.index('$z = "z"')
 
 
+def test_sort_strings_by_identifier_hidden_for_anonymous_strings() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule demo {
+    strings:
+        $ = "anonymous"
+        $z = "z"
+        $a = "a"
+    condition:
+        true
+}
+""".lstrip()
+
+    actions = provider.get_code_actions(text, _range(2, 8, 23), [], "file://test.yar")
+
+    assert not any(action.title.startswith("Sort strings by identifier") for action in actions)
+
+
 def test_sort_meta_by_key_refactor_action() -> None:
     provider = CodeActionsProvider()
     text = """
