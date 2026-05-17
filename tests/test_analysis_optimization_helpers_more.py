@@ -66,6 +66,8 @@ def test_extract_comparison_and_variable_name_paths() -> None:
 
     assert get_variable_name(Identifier("x")) == "x"
     assert get_variable_name(StringCount("abc")) == "#abc"
+    assert get_variable_name(StringCount("$abc")) == "#abc"
+    assert get_variable_name(StringCount("#abc")) == "#abc"
     assert get_variable_name(IntegerLiteral(1)) is None
 
 

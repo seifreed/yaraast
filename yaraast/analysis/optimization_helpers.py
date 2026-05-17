@@ -37,7 +37,12 @@ def get_variable_name(expr: Expression) -> str | None:
     if hasattr(expr, "name"):
         return expr.name
     if isinstance(expr, StringCount):
-        return f"#{expr.string_id}"
+        string_id = expr.string_id
+        if string_id.startswith("#"):
+            string_id = string_id[1:]
+        if string_id.startswith("$"):
+            string_id = string_id[1:]
+        return f"#{string_id}"
     return None
 
 
