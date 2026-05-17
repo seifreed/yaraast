@@ -45,6 +45,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     _builtin_readers = BUILTIN_READERS
     _little_endian_aliases = LITTLE_ENDIAN_ALIASES
+    _missing_loop_value = object()
 
     def __init__(
         self,
@@ -409,24 +410,24 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         # Get quantifier value - could be int, string ("all", "any"), or expression
         quantifier = self._resolve_quantifier(node.quantifier)
 
-        iterable = self.visit(node.iterable)
+        variable_names = self._loop_variable_names(node.variable)
+        iterable = self._evaluate_for_iterable(node.iterable)
+        loop_items = (
+            iterable.items() if len(variable_names) > 1 and isinstance(iterable, dict) else iterable
+        )
 
         # Count true evaluations
         true_count = 0
-        for item in iterable:
-            # Set loop variable
-            old_value = self.context.variables.get(node.variable)
-            self.context.variables[node.variable] = item
+        for item in loop_items:
+            previous_values = self._bind_loop_variables(variable_names, item)
+            if previous_values is None:
+                continue
 
             try:
                 if self.visit(node.body):
                     true_count += 1
             finally:
-                # Restore variable
-                if old_value is not None:
-                    self.context.variables[node.variable] = old_value
-                else:
-                    self.context.variables.pop(node.variable, None)
+                self._restore_loop_variables(previous_values)
 
         # Evaluate quantifier
         if isinstance(quantifier, str):
@@ -440,6 +441,47 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return true_count >= quantifier
 
         return False
+
+    def _loop_variable_names(self, variable: str) -> list[str]:
+        return [name.strip() for name in variable.split(",") if name.strip()]
+
+    def _evaluate_for_iterable(self, node: Expression) -> Any:
+        if isinstance(node, SetExpression):
+            return [self._evaluate_for_iterable(element) for element in node.elements]
+        return self.visit(node)
+
+    def _bind_loop_variables(
+        self,
+        variable_names: list[str],
+        item: Any,
+    ) -> dict[str, object] | None:
+        if len(variable_names) == 1:
+            values = [item]
+        else:
+            values = self._loop_item_values(item)
+            if len(values) != len(variable_names):
+                return None
+
+        previous_values: dict[str, object] = {}
+        for name, value in zip(variable_names, values, strict=True):
+            previous_values[name] = self.context.variables.get(name, self._missing_loop_value)
+            self.context.variables[name] = value
+        return previous_values
+
+    def _loop_item_values(self, item: Any) -> list[Any]:
+        if isinstance(item, str | bytes):
+            return [item]
+        try:
+            return list(item)
+        except TypeError:
+            return [item]
+
+    def _restore_loop_variables(self, previous_values: dict[str, object]) -> None:
+        for name, previous_value in previous_values.items():
+            if previous_value is self._missing_loop_value:
+                self.context.variables.pop(name, None)
+            else:
+                self.context.variables[name] = previous_value
 
     # Helper methods for reading data
 

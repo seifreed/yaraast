@@ -637,6 +637,11 @@ def test_evaluator_module_function_for_and_for_of_remaining_paths() -> None:
     )
     assert ev.visit_for_expression(for_weird) is False
 
+    parsed = Parser().parse("rule r { condition: for all k, v in ((1, 2), (3, 4)) : (k < v) }")
+    parsed_condition = parsed.rules[0].condition
+    assert parsed_condition is not None
+    assert YaraEvaluator().visit(parsed_condition) is True
+
     from yaraast.ast.conditions import ForOfExpression as ForOf
 
     node_all = ForOf(
