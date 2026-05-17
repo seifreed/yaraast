@@ -379,7 +379,7 @@ class ASTDumper(ASTVisitor[dict]):
         return {
             "type": "DictionaryAccess",
             "object": self.visit(node.object),
-            "key": node.key,
+            "key": self._dump_value(node.key),
         }
 
     def visit_extern_import(self, node) -> dict:

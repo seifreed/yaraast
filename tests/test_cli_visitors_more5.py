@@ -23,6 +23,10 @@ def test_ast_dumper_additional_nodes() -> None:
     dict_dump = dumper.visit_dictionary_access(dict_access)
     assert dict_dump["key"] == "CompanyName"
 
+    dict_access_expr = DictionaryAccess(object=mod_ref, key=StringLiteral(value="CompanyName"))
+    dict_expr_dump = dumper.visit_dictionary_access(dict_access_expr)
+    assert dict_expr_dump["key"] == {"type": "StringLiteral", "value": "CompanyName"}
+
     string_op = StringOperatorExpression(
         left=StringLiteral(value="hello"),
         operator="icontains",
