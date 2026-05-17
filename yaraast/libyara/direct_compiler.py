@@ -7,7 +7,12 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.errors import EvaluationError
 from yaraast.libyara.ast_optimizer import ASTOptimizer
-from yaraast.libyara.direct_helpers import compile_source, count_ast_nodes, generate_source
+from yaraast.libyara.direct_helpers import (
+    compile_source,
+    compile_source_with_file_context,
+    count_ast_nodes,
+    generate_source,
+)
 from yaraast.libyara.direct_models import DirectCompilationResult
 
 try:
@@ -66,6 +71,7 @@ class DirectASTCompiler:
         ast: YaraFile,
         includes: dict[str, str] | None = None,
         error_on_warning: bool = False,
+        source_path: str | Path | None = None,
     ) -> DirectCompilationResult:
         """Compile AST directly to libyara rules.
 
@@ -73,6 +79,7 @@ class DirectASTCompiler:
             ast: The YARA AST to compile
             includes: Dictionary mapping include names to their content
             error_on_warning: Treat warnings as errors
+            source_path: Original YARA file path for relative include resolution
 
         Returns:
             DirectCompilationResult with compiled rules or errors
@@ -93,12 +100,20 @@ class DirectASTCompiler:
 
             # Step 4: Compile using libyara with generated source
             # (For now, still uses text compilation but with optimized AST)
-            compile_result = compile_source(
-                source_code,
-                self.externals,
-                includes,
-                error_on_warning,
-            )
+            if source_path is not None:
+                compile_result = compile_source_with_file_context(
+                    source_code,
+                    self.externals,
+                    source_path,
+                    error_on_warning,
+                )
+            else:
+                compile_result = compile_source(
+                    source_code,
+                    self.externals,
+                    includes,
+                    error_on_warning,
+                )
 
             compilation_time = time.time() - start_time
             self.compilation_stats["total_compilation_time"] += compilation_time

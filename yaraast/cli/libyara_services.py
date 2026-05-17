@@ -34,7 +34,7 @@ def compile_yara(
     ast = parse_yara_file(input_file)
     ensure_yara_compatible_ast(ast)
     compiler = DirectASTCompiler(enable_optimization=optimize, debug_mode=debug)
-    result = compiler.compile_ast(ast)
+    result = compiler.compile_ast(ast, source_path=input_file)
     return result, compiler, ast
 
 
@@ -51,7 +51,7 @@ def scan_yara(
     ast = parse_yara_file(rules_file)
     ensure_yara_compatible_ast(ast)
     compiler = DirectASTCompiler(enable_optimization=optimize)
-    compile_result = compiler.compile_ast(ast)
+    compile_result = compiler.compile_ast(ast, source_path=rules_file)
     if not compile_result.success:
         return None, None, compile_result
 

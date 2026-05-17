@@ -61,3 +61,47 @@ def test_scan_yara_compile_failure_branch_real(tmp_path: Path) -> None:
     assert scan_result is None
     assert matcher is None
     assert compile_result.success is False
+
+
+def test_libyara_services_resolve_relative_includes_from_rules_file(tmp_path: Path) -> None:
+    if not lib.YARA_AVAILABLE:
+        pytest.skip("yara-python is not installed")
+
+    include_file = tmp_path / "shared.yar"
+    include_file.write_text("rule shared_rule { condition: true }\n", encoding="utf-8")
+    rule_file = tmp_path / "main.yar"
+    rule_file.write_text(
+        """
+include "shared.yar"
+
+rule main_rule {
+    condition:
+        shared_rule
+}
+""".lstrip(),
+        encoding="utf-8",
+    )
+    target_file = tmp_path / "sample.bin"
+    target_file.write_bytes(b"")
+
+    compile_result, _compiler, _ast = ls.compile_yara(
+        str(rule_file),
+        optimize=False,
+        debug=False,
+    )
+    scan_result, _matcher, scan_compile_result = ls.scan_yara(
+        str(rule_file),
+        str(target_file),
+        optimize=False,
+        timeout=1,
+        fast=False,
+    )
+
+    assert compile_result.success is True
+    assert scan_compile_result.success is True
+    assert scan_result is not None
+    assert scan_result["success"] is True
+    assert [match["rule"] for match in scan_result["matches"]] == [
+        "shared_rule",
+        "main_rule",
+    ]

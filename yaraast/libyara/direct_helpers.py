@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+import tempfile
 from typing import Any
 
 from yaraast.codegen.generator import CodeGenerator
@@ -24,6 +27,44 @@ def compile_source(
 ) -> DirectCompilationResult:
     compiler = LibyaraCompiler(externals=externals)
     result = compiler.compile_source(source, includes, error_on_warning)
+
+    return DirectCompilationResult(
+        success=result.success,
+        compiled_rules=result.compiled_rules,
+        errors=result.errors,
+        warnings=result.warnings,
+    )
+
+
+def compile_source_with_file_context(
+    source: str,
+    externals: dict[str, Any],
+    source_path: str | Path,
+    error_on_warning: bool,
+) -> DirectCompilationResult:
+    """Compile generated source from the original file directory.
+
+    libyara resolves relative includes from the compiled file's directory. Generated
+    source compiled as an in-memory string has no directory context, so CLI/direct
+    compilation must use a temporary file beside the original rules file.
+    """
+    source_dir = Path(source_path).resolve().parent
+    temp_path = None
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        suffix=".yar",
+        dir=source_dir,
+        delete=False,
+    ) as handle:
+        handle.write(source)
+        temp_path = Path(handle.name)
+
+    try:
+        compiler = LibyaraCompiler(externals=externals)
+        result = compiler.compile_file(temp_path, error_on_warning=error_on_warning)
+    finally:
+        if temp_path is not None:
+            os.unlink(temp_path)
 
     return DirectCompilationResult(
         success=result.success,
