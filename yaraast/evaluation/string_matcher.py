@@ -301,6 +301,8 @@ class StringMatcher:
             for prefix_len in range(3):
                 encoded = base64.b64encode((b"\x00" * prefix_len) + pattern)
                 encoded = self._translate_base64_alphabet(encoded, alphabet)
+                if encoded is None:
+                    continue
                 encoded = self._trim_base64_alignment(encoded, prefix_len, len(pattern))
                 if wide_output:
                     encoded = b"".join(bytes([byte, 0]) for byte in encoded)
@@ -310,11 +312,19 @@ class StringMatcher:
                 patterns.append(encoded)
         return patterns
 
-    def _translate_base64_alphabet(self, encoded: bytes, alphabet: Any) -> bytes:
-        if not isinstance(alphabet, str) or len(alphabet) != 64:
+    def _translate_base64_alphabet(self, encoded: bytes, alphabet: Any) -> bytes | None:
+        if alphabet is None:
             return encoded
+        if not isinstance(alphabet, str):
+            return None
+        try:
+            alphabet_bytes = alphabet.encode("ascii")
+        except UnicodeEncodeError:
+            return None
+        if len(alphabet_bytes) != 64:
+            return None
         standard = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-        return encoded.translate(bytes.maketrans(standard, alphabet.encode("ascii")))
+        return encoded.translate(bytes.maketrans(standard, alphabet_bytes))
 
     def _trim_base64_alignment(self, encoded: bytes, prefix_len: int, pattern_len: int) -> bytes:
         start_trim_by_prefix = (0, 2, 3)

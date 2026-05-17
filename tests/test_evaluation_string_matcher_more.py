@@ -503,3 +503,22 @@ def test_string_matcher_plain_string_base64_modifier_matches_encoded_text() -> N
     assert [(match.offset, match.matched_data) for match in matcher.matches["$b64custom"]] == [
         (3, b"-_"),
     ]
+
+
+def test_string_matcher_invalid_base64_alphabet_does_not_match_or_crash() -> None:
+    matcher = StringMatcher()
+    invalid_length = PlainString(
+        "$short",
+        value="ABC",
+        modifiers=[StringModifier.from_name_value("base64", "abc")],
+    )
+    non_ascii = PlainString(
+        "$unicode",
+        value="ABC",
+        modifiers=[StringModifier.from_name_value("base64", ("A" * 63) + "é")],
+    )
+
+    matcher.match_all(b"QUJD", [invalid_length, non_ascii])
+
+    assert matcher.matches["$short"] == []
+    assert matcher.matches["$unicode"] == []
