@@ -85,6 +85,33 @@ def test_deserialize_import_include_meta_and_rule_meta_variants() -> None:
     assert rule_list_meta.condition is None
 
 
+def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> None:
+    s = JsonSerializer()
+
+    with pytest.raises(SerializationError, match="Import module must be a string"):
+        s._deserialize_import({"module": ["pe"]})
+
+    with pytest.raises(SerializationError, match="Import alias must be a string"):
+        s._deserialize_import({"module": "pe", "alias": True})
+
+    with pytest.raises(SerializationError, match="Include path must be a string"):
+        s._deserialize_include({"path": ["x.yar"]})
+
+    with pytest.raises(SerializationError, match="Rule name must be a string"):
+        s._deserialize_rule({"name": ["r1"], "condition": None})
+
+    with pytest.raises(SerializationError, match="Tag name must be a string"):
+        s._deserialize_tag({"name": 7})
+
+    with pytest.raises(SerializationError, match="Meta key must be a string"):
+        s._deserialize_meta({"key": ["author"], "value": "me"})
+
+    with pytest.raises(
+        SerializationError, match="Meta value must be a string, integer, or boolean"
+    ):
+        s._deserialize_meta({"key": "score", "value": 1.5})
+
+
 def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
     s = JsonSerializer()
 

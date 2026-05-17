@@ -123,6 +123,31 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
     assert restored_file.rules[0].name == "helper_rule"
 
 
+def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> None:
+    with pytest.raises(SerializationError, match="Import module must be a string"):
+        deserialize_node({"type": "Import", "module": ["pe"]})
+
+    with pytest.raises(SerializationError, match="Import alias must be a string"):
+        deserialize_node({"type": "Import", "module": "pe", "alias": True})
+
+    with pytest.raises(SerializationError, match="Include path must be a string"):
+        deserialize_node({"type": "Include", "path": ["x.yar"]})
+
+    with pytest.raises(SerializationError, match="Rule name must be a string"):
+        deserialize_rule({"name": ["r1"], "condition": None})
+
+    with pytest.raises(SerializationError, match="Tag name must be a string"):
+        deserialize_node({"type": "Tag", "name": 7})
+
+    with pytest.raises(SerializationError, match="Meta key must be a string"):
+        deserialize_meta({"key": ["author"], "value": "me"})
+
+    with pytest.raises(
+        SerializationError, match="Meta value must be a string, integer, or boolean"
+    ):
+        deserialize_meta({"key": "score", "value": 1.5})
+
+
 def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     private_meta = MetaEntry.from_key_value("classification", "restricted", "private")
 

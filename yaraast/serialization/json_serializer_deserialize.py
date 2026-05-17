@@ -118,6 +118,26 @@ def _deserialize_optional_string_field(
     raise SerializationError(msg)
 
 
+def _deserialize_nullable_string_field(
+    data: dict[str, Any], field: str, context: str
+) -> str | None:
+    value = data.get(field)
+    if value is None or isinstance(value, str):
+        return value
+    msg = f"{context} {field} must be a string"
+    raise SerializationError(msg)
+
+
+def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
+    value = data["value"]
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    msg = "Meta value must be a string, integer, or boolean"
+    raise SerializationError(msg)
+
+
 def _deserialize_hex_byte_value(data: dict[str, Any], context: str) -> int | str:
     value = data["value"]
     if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
@@ -623,13 +643,19 @@ class JsonSerializerDeserializeMixin:
         from yaraast.ast.rules import Import
 
         return self._apply_node_metadata(
-            Import(module=data["module"], alias=data.get("alias")), data
+            Import(
+                module=_deserialize_string_field(data, "module", "Import"),
+                alias=_deserialize_nullable_string_field(data, "alias", "Import"),
+            ),
+            data,
         )
 
     def _deserialize_include(self, data: dict[str, Any]):
         from yaraast.ast.rules import Include
 
-        return self._apply_node_metadata(Include(path=data["path"]), data)
+        return self._apply_node_metadata(
+            Include(path=_deserialize_string_field(data, "path", "Include")), data
+        )
 
     def _deserialize_rule(self, data: dict[str, Any]):
         from yaraast.ast.rules import Rule
@@ -654,7 +680,7 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             Rule(
-                name=data["name"],
+                name=_deserialize_string_field(data, "name", "Rule"),
                 modifiers=data.get("modifiers", []),
                 tags=tags,
                 meta=meta,
@@ -668,7 +694,9 @@ class JsonSerializerDeserializeMixin:
     def _deserialize_tag(self, data: dict[str, Any]):
         from yaraast.ast.rules import Tag
 
-        return self._apply_node_metadata(Tag(name=data["name"]), data)
+        return self._apply_node_metadata(
+            Tag(name=_deserialize_string_field(data, "name", "Tag")), data
+        )
 
     def _deserialize_meta(self, data: dict[str, Any]):
         from yaraast.ast.modifiers import MetaEntry
@@ -676,11 +704,17 @@ class JsonSerializerDeserializeMixin:
         if data.get("leading_comments") or data.get("trailing_comment") or data.get("location"):
             from yaraast.ast.meta import Meta
 
-            return self._apply_node_metadata(Meta(data["key"], data["value"]), data)
+            return self._apply_node_metadata(
+                Meta(
+                    _deserialize_string_field(data, "key", "Meta"),
+                    _deserialize_meta_value(data),
+                ),
+                data,
+            )
         return MetaEntry.from_key_value(
-            data["key"],
-            data["value"],
-            data.get("scope"),
+            _deserialize_string_field(data, "key", "Meta"),
+            _deserialize_meta_value(data),
+            _deserialize_nullable_string_field(data, "scope", "Meta"),
         )
 
     def _deserialize_string(self, data: dict[str, Any]):

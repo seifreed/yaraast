@@ -286,6 +286,26 @@ def _deserialize_optional_string_field(
     raise SerializationError(msg)
 
 
+def _deserialize_nullable_string_field(
+    data: dict[str, Any], field: str, context: str
+) -> str | None:
+    value = data.get(field)
+    if value is None or isinstance(value, str):
+        return value
+    msg = f"{context} {field} must be a string"
+    raise SerializationError(msg)
+
+
+def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
+    value = data["value"]
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    msg = "Meta value must be a string, integer, or boolean"
+    raise SerializationError(msg)
+
+
 def _deserialize_modifier_value(name: str, value: Any) -> Any:
     if name == "xor":
         if isinstance(value, list) and len(value) == 2:
@@ -833,13 +853,16 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "Rule":
         return deserialize_rule(data)
     if node_type == "Import":
-        return Import(data["module"], alias=data.get("alias"))
+        return Import(
+            _deserialize_string_field(data, "module", "Import"),
+            alias=_deserialize_nullable_string_field(data, "alias", "Import"),
+        )
     if node_type == "Include":
-        return Include(data["path"])
+        return Include(_deserialize_string_field(data, "path", "Include"))
     if node_type == "Tag":
-        return Tag(data["name"])
+        return Tag(_deserialize_string_field(data, "name", "Tag"))
     if node_type == "Meta":
-        return Meta(data["key"], data["value"])
+        return Meta(_deserialize_string_field(data, "key", "Meta"), _deserialize_meta_value(data))
     if node_type == "Comment":
         return Comment(data["text"], is_multiline=data.get("is_multiline", False))
     if node_type == "CommentGroup":
@@ -1100,7 +1123,7 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
 def deserialize_rule(data: dict[str, Any]) -> Rule:
     """Deserialize a Rule."""
     rule = Rule(
-        name=data["name"],
+        name=_deserialize_string_field(data, "name", "Rule"),
         modifiers=data.get("modifiers", []),
         condition=(
             deserialize_node(data["condition"]) if data.get("condition") else BooleanLiteral(True)
@@ -1209,8 +1232,15 @@ def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
     """Deserialize a Meta item."""
     scope = data.get("scope")
     if data.get("type") == "MetaEntry" or scope is not None:
-        return MetaEntry.from_key_value(data["key"], data["value"], scope)
-    return _apply_node_metadata(Meta(data["key"], data["value"]), data)
+        return MetaEntry.from_key_value(
+            _deserialize_string_field(data, "key", "Meta"),
+            _deserialize_meta_value(data),
+            _deserialize_nullable_string_field(data, "scope", "Meta"),
+        )
+    return _apply_node_metadata(
+        Meta(_deserialize_string_field(data, "key", "Meta"), _deserialize_meta_value(data)),
+        data,
+    )
 
 
 def deserialize_string(data: dict[str, Any]) -> Any:
