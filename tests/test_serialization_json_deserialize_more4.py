@@ -531,6 +531,31 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
         )
 
 
+def test_json_deserialize_condition_fields_reject_wrong_scalar_types() -> None:
+    s = JsonSerializer()
+    true_expr = {"type": "BooleanLiteral", "value": True}
+
+    with pytest.raises(SerializationError, match="ForExpression variable must be a string"):
+        s._deserialize_expression(
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": ["i"],
+                "iterable": true_expr,
+                "body": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="InExpression subject must be a string"):
+        s._deserialize_expression(
+            {
+                "type": "InExpression",
+                "subject": ["$a"],
+                "range": true_expr,
+            }
+        )
+
+
 def test_deserialize_expression_comprehensive_branches() -> None:
     s = JsonSerializer()
 

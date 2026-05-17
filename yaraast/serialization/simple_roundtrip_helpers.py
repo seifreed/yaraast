@@ -1114,7 +1114,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "ForExpression":
         return ForExpression(
             _deserialize_ast_value(data["quantifier"]),
-            data.get("variable", "i"),
+            _deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
             deserialize_node(data["iterable"]),
             deserialize_node(data["body"]),
         )
@@ -1131,10 +1131,17 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             deserialize_node(data["offset"]),
         )
     if node_type == "InExpression":
-        subject = data.get("subject")
-        if subject is None and "string_id" in data:
-            subject = data["string_id"]
-        return InExpression(_deserialize_ast_value(subject), deserialize_node(data["range"]))
+        raw_subject = data.get("subject")
+        if raw_subject is None and "string_id" in data:
+            raw_subject = data["string_id"]
+        if isinstance(raw_subject, dict):
+            subject = deserialize_node(raw_subject)
+        elif isinstance(raw_subject, str):
+            subject = raw_subject
+        else:
+            msg = "InExpression subject must be a string or expression"
+            raise SerializationError(msg)
+        return InExpression(subject, deserialize_node(data["range"]))
     if node_type == "OfExpression":
         return OfExpression(
             _deserialize_ast_value(data["quantifier"]),

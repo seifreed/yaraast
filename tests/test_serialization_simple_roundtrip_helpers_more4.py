@@ -603,6 +603,30 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
         deserialize_node({"type": "SpreadOperator", "expression": true_expr, "is_dict": "yes"})
 
 
+def test_simple_roundtrip_condition_fields_reject_wrong_scalar_types() -> None:
+    true_expr = {"type": "BooleanLiteral", "value": True}
+
+    with pytest.raises(SerializationError, match="ForExpression variable must be a string"):
+        deserialize_node(
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": ["i"],
+                "iterable": true_expr,
+                "body": true_expr,
+            }
+        )
+
+    with pytest.raises(SerializationError, match="InExpression subject must be a string"):
+        deserialize_node(
+            {
+                "type": "InExpression",
+                "subject": ["$a"],
+                "range": true_expr,
+            }
+        )
+
+
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
     ast = YaraFile(
         rules=[

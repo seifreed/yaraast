@@ -496,7 +496,7 @@ def _deser_for_expression(self, data: dict[str, Any]):
 
     return ForExpression(
         quantifier=_deserialize_ast_value(self, data["quantifier"]),
-        variable=data.get("variable", "i"),
+        variable=_deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
         iterable=self._deserialize_expression(data["iterable"]),
         body=self._deserialize_expression(data["body"]),
     )
@@ -525,11 +525,16 @@ def _deser_at_expression(self, data: dict[str, Any]):
 def _deser_in_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import InExpression
 
-    subject = data.get("subject")
-    if subject is None and "string_id" in data:
-        subject = data["string_id"]
-    if isinstance(subject, dict):
-        subject = self._deserialize_expression(subject)
+    raw_subject = data.get("subject")
+    if raw_subject is None and "string_id" in data:
+        raw_subject = data["string_id"]
+    if isinstance(raw_subject, dict):
+        subject = self._deserialize_expression(raw_subject)
+    elif isinstance(raw_subject, str):
+        subject = raw_subject
+    else:
+        msg = "InExpression subject must be a string or expression"
+        raise SerializationError(msg)
     return InExpression(
         subject=subject,
         range=self._deserialize_expression(data["range"]),
