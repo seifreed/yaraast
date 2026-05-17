@@ -238,6 +238,8 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
         )
 
     def _parse_xor_key(self, value: object) -> int | None:
+        if isinstance(value, bool):
+            return None
         if isinstance(value, int):
             return value
         if isinstance(value, str):

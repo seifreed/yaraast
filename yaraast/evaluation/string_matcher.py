@@ -245,30 +245,44 @@ class StringMatcher:
             elif isinstance(value, tuple | list) and len(value) == 2:
                 low = self._parse_xor_key(value[0])
                 high = self._parse_xor_key(value[1])
+                if low is None or high is None:
+                    continue
                 keys.extend(range(low, high + 1))
             elif isinstance(value, str) and "-" in value:
                 low_text, high_text = value.split("-", maxsplit=1)
                 low = self._parse_xor_key(low_text)
                 high = self._parse_xor_key(high_text)
+                if low is None or high is None:
+                    continue
                 keys.extend(range(low, high + 1))
             else:
-                keys.append(self._parse_xor_key(value))
+                key = self._parse_xor_key(value)
+                if key is not None:
+                    keys.append(key)
 
         if not has_xor:
             return None
         return sorted({key for key in keys if 0 <= key <= 255})
 
-    def _parse_xor_key(self, value: Any) -> int:
+    def _parse_xor_key(self, value: Any) -> int | None:
+        if isinstance(value, bool):
+            return None
         if isinstance(value, int):
             return value
         if isinstance(value, str):
             text = value.strip()
-            if text.lower().startswith("0x"):
-                return int(text, 16)
-            if any(char in "abcdefABCDEF" for char in text):
-                return int(text, 16)
-            return int(text, 10)
-        return int(value)
+            try:
+                if text.lower().startswith("0x"):
+                    return int(text, 16)
+                if any(char in "abcdefABCDEF" for char in text):
+                    return int(text, 16)
+                return int(text, 10)
+            except ValueError:
+                return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
 
     def _base64_patterns(
         self,

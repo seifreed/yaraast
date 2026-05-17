@@ -432,6 +432,19 @@ def test_string_matcher_plain_string_xor_modifier_matches_encoded_bytes() -> Non
     ]
 
 
+def test_string_matcher_does_not_treat_boolean_xor_key_as_integer() -> None:
+    matcher = StringMatcher()
+    xor_string = PlainString(
+        "$xor",
+        value="ABC",
+        modifiers=[StringModifier.from_name_value("xor", True)],
+    )
+
+    matcher.match_all(b"ABC \x40\x43\x42", [xor_string])
+
+    assert matcher.matches["$xor"] == []
+
+
 def test_string_matcher_bare_xor_modifier_includes_plaintext_key() -> None:
     matcher = StringMatcher()
     xor_string = PlainString(

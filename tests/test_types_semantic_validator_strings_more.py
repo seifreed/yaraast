@@ -182,6 +182,32 @@ def test_semantic_validator_rejects_invalid_string_modifier_compatibility() -> N
     )
 
 
+def test_semantic_validator_rejects_boolean_xor_modifier_values() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_boolean_xor",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("xor", True)],
+                    )
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any(
+        "xor key for string '$a' must be between 0 and 255" in error.message
+        for error in result.errors
+    )
+
+
 def test_semantic_validator_reports_unreferenced_string_definitions() -> None:
     ast = Parser().parse("""
         rule unreferenced_string {
