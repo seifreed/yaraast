@@ -322,6 +322,10 @@ def _modifier_value_text(value) -> str:
     return str(value)
 
 
+def _is_protobuf_int(value) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
 def _format_unknown_modifier(name: str, value) -> str:
     if value is None:
         return name
@@ -340,7 +344,12 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
         return
 
     pb_mod.value = _modifier_value_text(value)
-    if isinstance(value, tuple) and len(value) == 2:
+    if (
+        isinstance(value, tuple)
+        and len(value) == 2
+        and _is_protobuf_int(value[0])
+        and _is_protobuf_int(value[1])
+    ):
         pb_mod.tuple_value.extend([int(value[0]), int(value[1])])
     elif isinstance(value, bool):
         pb_mod.typed_value.bool_value = value

@@ -81,6 +81,37 @@ def test_protobuf_conversion_escapes_unknown_modifier_string_values() -> None:
     assert restored.modifiers == ['vendor_modifier("a\\"\\\\b\\n")']
 
 
+def test_protobuf_serializer_does_not_coerce_invalid_xor_range_values_to_ints() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_xor_ranges",
+                strings=[
+                    PlainString(
+                        "$bool_range",
+                        value="a",
+                        modifiers=[StringModifier.from_name_value("xor", cast(Any, (True, 3)))],
+                    ),
+                    PlainString(
+                        "$float_range",
+                        value="b",
+                        modifiers=[StringModifier.from_name_value("xor", cast(Any, (1.5, 3)))],
+                    ),
+                ],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert [string.modifiers[0].value for string in restored.rules[0].strings] == [
+        "True-3",
+        "1.5-3",
+    ]
+
+
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(
