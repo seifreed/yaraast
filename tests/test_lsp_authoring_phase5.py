@@ -101,6 +101,24 @@ rule demo {
     assert edit.new_text.strip().endswith("{ 41 0A 09 }")
 
 
+def test_convert_plain_string_to_hex_preserves_hex_escape_bytes() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule demo {
+    strings:
+        $a = "\\x00\\xFF"
+    condition:
+        $a
+}
+""".lstrip()
+
+    actions = provider.get_code_actions(text, _range(2, 8, 26), [], "file://test.yar")
+    action = next(action for action in actions if action.title == "Convert string to hex")
+    edit = _first_edit(action)
+
+    assert edit.new_text.strip().endswith("{ 00 FF }")
+
+
 def test_convert_plain_string_to_hex_accepts_escaped_quotes() -> None:
     provider = CodeActionsProvider()
     text = """

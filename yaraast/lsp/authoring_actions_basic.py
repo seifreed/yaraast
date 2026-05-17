@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from lsprotocol.types import Position, Range, TextEdit
 
-from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lsp.authoring_support import (
     PLAIN_STRING_RE,
     STRING_DEF_RE,
@@ -18,22 +17,49 @@ if TYPE_CHECKING:
     from yaraast.lsp.authoring_actions import StructuralEdit
 
 
+def _hex_escape_byte(value: str, position: int) -> int | None:
+    hex_start = position + 2
+    hex_digits = value[hex_start : hex_start + 2]
+    if len(hex_digits) == 2 and all(char in "0123456789abcdefABCDEF" for char in hex_digits):
+        return int(hex_digits, 16)
+    return None
+
+
 def _plain_string_source_bytes(value: str) -> bytes:
-    chars: list[str] = []
+    decoded = bytearray()
     position = 0
     while position < len(value):
         char = value[position]
         if char != "\\":
-            chars.append(char)
+            decoded.extend(char.encode("utf-8"))
             position += 1
             continue
 
-        next_position = position + 1
-        next_char = value[next_position] if next_position < len(value) else None
-        result = StringEscapeHandler(value, next_position).handle_backslash(next_char)
-        chars.extend(result.chars)
-        position += 2 + result.advance_count
-    return "".join(chars).encode("utf-8")
+        if position + 1 >= len(value):
+            decoded.append(ord("\\"))
+            position += 1
+            continue
+
+        next_char = value[position + 1]
+        if next_char == "x":
+            byte_value = _hex_escape_byte(value, position)
+            if byte_value is not None:
+                decoded.append(byte_value)
+                position += 4
+                continue
+            decoded.extend(b"\\x")
+        elif next_char == "n":
+            decoded.append(0x0A)
+        elif next_char == "r":
+            decoded.append(0x0D)
+        elif next_char == "t":
+            decoded.append(0x09)
+        elif next_char in {'"', "\\"}:
+            decoded.append(ord(next_char))
+        else:
+            decoded.extend(f"\\{next_char}".encode())
+        position += 2
+    return bytes(decoded)
 
 
 def create_missing_string(
