@@ -144,11 +144,10 @@ def evaluate_regex_match(left: Any, pattern: Any, modifiers: str = "") -> bool:
     if "m" in modifiers:
         flags |= re.MULTILINE
 
-    regex = re.compile(pattern, flags)
-
     try:
+        regex = re.compile(pattern, flags)
         if not left:
             return bool(regex.match(left))
         return any(regex.match(left, offset) for offset in range(len(left)))
-    except (ValueError, TypeError, AttributeError):
+    except (re.error, ValueError, TypeError, AttributeError):
         return False

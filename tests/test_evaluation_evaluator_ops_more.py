@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import re
-
 import pytest
 
 from yaraast.ast.expressions import RegexLiteral
@@ -89,8 +87,7 @@ def test_evaluate_string_operator_all_paths() -> None:
     assert evaluate_string_operator("", r"$", "matches") is True
     assert evaluate_string_operator("ABC", RegexLiteral(pattern="abc", modifiers="i"), "matches")
     assert evaluate_string_operator(None, "a", "matches") is False
-    with pytest.raises(re.error):
-        evaluate_string_operator("abc", r"(", "matches")
+    assert evaluate_string_operator("abc", r"(", "matches") is False
     assert evaluate_string_operator("abc", "x", "unknown") is None
 
 
