@@ -33,6 +33,15 @@ class ComplexityCalculator(MetricsVisitorBase):
             return sum(self._calculate_ast_value(item) for item in value)
         return 0
 
+    def _calculate_string_set_value(self, value: Any) -> int:
+        if isinstance(value, str):
+            return 1
+        if hasattr(value, "accept"):
+            return self.calculate(value)
+        if isinstance(value, list):
+            return sum(self._calculate_string_set_value(item) for item in value)
+        return 1
+
     # Simple expressions - base complexity 1
     def visit_boolean_literal(self, node) -> int:
         return 1
@@ -114,10 +123,7 @@ class ComplexityCalculator(MetricsVisitorBase):
         self._cognitive_depth += 1
         complexity = 5  # High base for loops
         complexity += self._calculate_ast_value(node.quantifier)
-        if hasattr(node.string_set, "accept"):
-            complexity += self.calculate(node.string_set)
-        else:
-            complexity += len(node.string_set) if isinstance(node.string_set, list) else 1
+        complexity += self._calculate_string_set_value(node.string_set)
         if node.condition:
             complexity += self.calculate(node.condition)
         self._cognitive_depth -= 1
@@ -126,10 +132,7 @@ class ComplexityCalculator(MetricsVisitorBase):
     def visit_of_expression(self, node: OfExpression) -> int:
         complexity = 4  # Base for of expressions
         complexity += self._calculate_ast_value(node.quantifier)
-        if hasattr(node.string_set, "accept"):
-            complexity += self.calculate(node.string_set)
-        elif isinstance(node.string_set, list):
-            complexity += len(node.string_set)
+        complexity += self._calculate_string_set_value(node.string_set)
         return complexity
 
     # Container expressions

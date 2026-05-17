@@ -104,6 +104,19 @@ def test_complexity_calculator_core_and_branches() -> None:
     )
     assert calc.calculate(for_of_list) == 7
 
+    for_of_expression_list = ForOfExpression(
+        quantifier="all",
+        string_set=[
+            BinaryExpression(
+                left=BooleanLiteral(value=True),
+                operator="and",
+                right=BooleanLiteral(value=False),
+            )
+        ],
+        condition=None,
+    )
+    assert calc.calculate(for_of_expression_list) == 10
+
     for_of_raw = ForOfExpression(quantifier="all", string_set="them", condition=None)
     assert calc.calculate(for_of_raw) == 6
 
@@ -115,6 +128,18 @@ def test_complexity_calculator_core_and_branches() -> None:
 
     of_expr_list = OfExpression(quantifier=StringLiteral(value="2"), string_set=["$a", "$b", "$c"])
     assert calc.calculate(of_expr_list) == 8
+
+    of_expression_list = OfExpression(
+        quantifier=StringLiteral(value="any"),
+        string_set=[
+            BinaryExpression(
+                left=BooleanLiteral(value=True),
+                operator="and",
+                right=BooleanLiteral(value=False),
+            )
+        ],
+    )
+    assert calc.calculate(of_expression_list) == 10
 
     set_expr = SetExpression(elements=[IntegerLiteral(value=1), IntegerLiteral(value=2)])
     assert calc.calculate(set_expr) == 3
