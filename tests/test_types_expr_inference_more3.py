@@ -81,6 +81,50 @@ def test_expr_inference_reports_undefined_string_variants() -> None:
     assert "Undefined string: $missing" in inf.errors[2]
 
 
+def test_expr_inference_reports_undefined_raw_string_references() -> None:
+    env = TypeEnvironment()
+    env.add_string("$a")
+
+    at_inf = ExpressionTypeInference(env)
+    assert isinstance(
+        at_inf.infer(AtExpression(string_id="$missing", offset=IntegerLiteral(value=0))),
+        BooleanType,
+    )
+    assert "Undefined string: $missing" in at_inf.errors
+
+    in_inf = ExpressionTypeInference(env)
+    assert isinstance(
+        in_inf.infer(
+            InExpression(
+                subject="$missing",
+                range=RangeExpression(IntegerLiteral(value=0), IntegerLiteral(value=1)),
+            )
+        ),
+        BooleanType,
+    )
+    assert "Undefined string: $missing" in in_inf.errors
+
+    of_inf = ExpressionTypeInference(env)
+    assert isinstance(
+        of_inf.infer(OfExpression(quantifier="any", string_set=["$a", "$missing"])),
+        BooleanType,
+    )
+    assert "Undefined string: $missing" in of_inf.errors
+
+    for_of_inf = ExpressionTypeInference(env)
+    assert isinstance(
+        for_of_inf.infer(
+            ForOfExpression(
+                quantifier="any",
+                string_set=SetExpression([StringLiteral("$a"), StringLiteral("$missing")]),
+                condition=BooleanLiteral(value=True),
+            )
+        ),
+        BooleanType,
+    )
+    assert "Undefined string: $missing" in for_of_inf.errors
+
+
 def test_expr_inference_string_length_invalid_index_reports_error() -> None:
     env = TypeEnvironment()
     env.add_string("$a")

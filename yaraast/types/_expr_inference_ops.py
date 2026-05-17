@@ -11,6 +11,9 @@ from yaraast.ast.expressions import (
     Identifier,
     MemberAccess,
     SetExpression,
+    StringIdentifier,
+    StringLiteral,
+    StringWildcard,
     UnaryExpression,
 )
 from yaraast.ast.modules import ModuleReference
@@ -295,6 +298,50 @@ def _infer_string_set_value(ctx, value):
     return UnknownType()
 
 
+def _should_validate_raw_string_refs(ctx) -> bool:
+    return bool(ctx.env.strings)
+
+
+def _validate_raw_string_ref(ctx, value: str) -> None:
+    if not _should_validate_raw_string_refs(ctx):
+        return
+
+    normalized = ctx._normalize_string_id(value)
+    if normalized.endswith("*"):
+        if not ctx.env.has_string_pattern(normalized):
+            ctx.errors.append(f"Undefined string: {normalized}")
+    elif not ctx.env.has_string(normalized):
+        ctx.errors.append(f"Undefined string: {normalized}")
+
+
+def _validate_string_set_refs(ctx, value) -> None:
+    if isinstance(value, str):
+        if value != "them":
+            _validate_raw_string_ref(ctx, value)
+        return
+
+    if isinstance(value, list | tuple | set | frozenset):
+        for item in value:
+            _validate_string_set_refs(ctx, item)
+        return
+
+    if isinstance(value, StringLiteral):
+        _validate_string_set_refs(ctx, value.value)
+        return
+
+    if isinstance(value, StringIdentifier):
+        _validate_raw_string_ref(ctx, value.name)
+        return
+
+    if isinstance(value, StringWildcard):
+        _validate_raw_string_ref(ctx, value.pattern)
+        return
+
+    if isinstance(value, SetExpression):
+        for element in value.elements:
+            _validate_string_set_refs(ctx, element)
+
+
 def _percentage_quantifier_value(value):
     if isinstance(value, DoubleLiteral):
         return value.value
@@ -312,13 +359,16 @@ def infer_module_or_condition(ctx, node):
         return UnknownType()
 
     if isinstance(node, AtExpression):
+        _validate_raw_string_ref(ctx, node.string_id)
         offset_type = ctx.visit(node.offset)
         if not isinstance(offset_type, IntegerType):
             ctx.errors.append(f"Offset in 'at' expression must be integer, got {offset_type}")
         return BooleanType()
 
     if isinstance(node, InExpression):
-        if not isinstance(node.subject, str):
+        if isinstance(node.subject, str):
+            _validate_raw_string_ref(ctx, node.subject)
+        else:
             subject_type = ctx.visit(node.subject)
             if not isinstance(subject_type, BooleanType):
                 ctx.errors.append(
@@ -339,6 +389,7 @@ def infer_module_or_condition(ctx, node):
         percentage = _percentage_quantifier_value(node.quantifier)
         if percentage is not None and not 0 < percentage <= 1:
             ctx.errors.append("'of' percentage quantifier must be between 1 and 100")
+        _validate_string_set_refs(ctx, node.string_set)
         set_type = _infer_string_set_value(ctx, node.string_set)
         if not isinstance(set_type, StringSetType):
             ctx.errors.append(f"'of' requires string set, got {set_type}")
@@ -372,6 +423,7 @@ def infer_module_or_condition(ctx, node):
     quant_type = _infer_quantifier_value(ctx, node.quantifier)
     if not isinstance(quant_type, StringType | IntegerType):
         ctx.errors.append(f"'for...of' quantifier must be string or integer, got {quant_type}")
+    _validate_string_set_refs(ctx, node.string_set)
     set_type = _infer_string_set_value(ctx, node.string_set)
     if not isinstance(set_type, StringSetType):
         ctx.errors.append(f"'for...of' requires string set, got {set_type}")
