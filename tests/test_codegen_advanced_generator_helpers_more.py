@@ -136,5 +136,6 @@ def test_get_tag_string_and_hex_jump_ranges() -> None:
     assert _format_hex_jump(HexJump(None, None)) == "[-]"
     assert _format_hex_jump(HexJump(None, 4)) == "[-4]"
     assert _format_hex_jump(HexJump(3, None)) == "[3-]"
+    assert _format_hex_jump(HexJump(0, 0)) == "[0-0]"
     assert _format_hex_jump(HexJump(6, 6)) == "[6]"
     assert _format_hex_jump(HexJump(2, 9)) == "[2-9]"

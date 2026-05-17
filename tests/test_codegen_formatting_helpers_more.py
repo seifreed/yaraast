@@ -63,6 +63,7 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     assert format_boolean_literal(False) == "false"
 
     assert format_hex_jump(None, None) == "[-]"
+    assert format_hex_jump(0, 0) == "[0-0]"
     assert format_hex_jump(3, 3) == "[3]"
     assert format_hex_jump(None, 5) == "[-5]"
     assert format_hex_jump(2, None) == "[2-]"
