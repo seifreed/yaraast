@@ -407,6 +407,26 @@ def test_evaluate_file_defined_module_reference_after_import() -> None:
     assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"imported_module": True}
 
 
+def test_evaluate_file_resets_imported_modules_between_files() -> None:
+    evaluator = YaraEvaluator(data=b"abc")
+    with_import = Parser().parse("""
+        import "math"
+        rule imported_module {
+            condition:
+                defined math
+        }
+    """)
+    without_import = Parser().parse("""
+        rule no_import {
+            condition:
+                defined math
+        }
+    """)
+
+    assert evaluator.evaluate_file(with_import) == {"imported_module": True}
+    assert evaluator.evaluate_file(without_import) == {"no_import": False}
+
+
 def test_evaluate_file_skips_unknown_imports_and_continues() -> None:
     ev = YaraEvaluator(data=b"abc")
     file_ast = __import__("yaraast.ast.base", fromlist=["YaraFile"]).YaraFile(

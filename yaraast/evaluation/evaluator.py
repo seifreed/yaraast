@@ -63,6 +63,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Evaluate all rules in a YARA file."""
         results = {}
         self._rule_results = {}  # Track evaluated rule results for cross-references
+        self.context.modules = {}
 
         # Process imports
         for import_stmt in yara_file.imports:
