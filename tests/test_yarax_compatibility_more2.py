@@ -120,6 +120,24 @@ def test_checker_reports_yarax_features_with_identifier_and_of_expression() -> N
     assert report["migration_difficulty"] == "moderate"
 
 
+def test_checker_reports_yarax_boolean_of_expressions_in_raw_lists() -> None:
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+    checker.features.allow_tuple_of_expressions = True
+
+    checker.visit_of_expression(
+        OfExpression(
+            quantifier=IntegerLiteral(1),
+            string_set=[BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))],
+        )
+    )
+
+    assert any(
+        issue.issue_type == "yarax_feature"
+        and "boolean expressions in 'of' statement" in issue.message
+        for issue in checker.issues
+    )
+
+
 def test_checker_reports_parsed_yarax_nodes_for_yara_compatibility() -> None:
     ast = YaraXParser(
         """

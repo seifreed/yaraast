@@ -262,28 +262,33 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
     def visit_of_expression(self, node: OfExpression) -> None:
         """Check 'of' expression compatibility."""
         # YARA-X allows tuples of boolean expressions
-        if self.features.allow_tuple_of_expressions and isinstance(
-            node.string_set,
-            SetExpression,
+        if self.features.allow_tuple_of_expressions and self._contains_binary_expression(
+            node.string_set
         ):
-            for elem in node.string_set.elements:
-                if isinstance(elem, BinaryExpression):
-                    self._add_issue(
-                        "info",
-                        "yarax_feature",
-                        "Using YARA-X feature: boolean expressions in 'of' statement",
-                        "This feature is not available in original YARA",
-                        node.location,
-                    )
-                    break
+            self._add_issue(
+                "info",
+                "yarax_feature",
+                "Using YARA-X feature: boolean expressions in 'of' statement",
+                "This feature is not available in original YARA",
+                node.location,
+            )
 
         self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
 
+    def _contains_binary_expression(self, value: Any) -> bool:
+        if isinstance(value, BinaryExpression):
+            return True
+        if isinstance(value, SetExpression):
+            return any(self._contains_binary_expression(element) for element in value.elements)
+        if isinstance(value, list | tuple | set | frozenset):
+            return any(self._contains_binary_expression(item) for item in value)
+        return False
+
     def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
-        elif isinstance(value, list | tuple):
+        elif isinstance(value, list | tuple | set | frozenset):
             for item in value:
                 self._visit_ast_value(item)
 
