@@ -19,6 +19,7 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, Pragma, PragmaType
 from yaraast.ast.rules import Rule
+from yaraast.ast.strings import HexAlternative, HexByte
 from yaraast.serialization.ast_diff_hasher import AstHasher
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -95,6 +96,10 @@ def test_ast_hasher_string_and_expression_helpers() -> None:
     assert hasher.visit_hex_token(SimpleNamespace()) == "Token()"
     assert hasher.visit_hex_negated_byte(SimpleNamespace(value="4D")) == "NegatedByte(4D)"
     assert hasher.visit_hex_alternative(SimpleNamespace()) == "Alt()"
+    assert hasher.visit_hex_alternative(HexAlternative([0x90, "91"])) == "Alt(Byte(144)|Byte(91))"
+    assert hasher.visit_hex_alternative(HexAlternative([[0x90], [HexByte("91")]])) == (
+        "Alt(Byte(144)|Byte(91))"
+    )
     assert hasher.visit_hex_nibble(SimpleNamespace(high="A", value="F")) == "Nibble(A,F)"
     assert hasher.visit_expression(SimpleNamespace()) == "Expr()"
     assert hasher.visit_string_count(SimpleNamespace(string_id="a")) == "Count(a)"

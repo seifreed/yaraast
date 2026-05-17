@@ -15,7 +15,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.extern import ExternNamespace, ExternRule
 from yaraast.ast.meta import Meta
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexNegatedByte, HexToken, StringDefinition
+from yaraast.ast.strings import HexAlternative, HexByte, HexNegatedByte, HexToken, StringDefinition
 from yaraast.visitor.base import BaseVisitor
 
 
@@ -50,6 +50,11 @@ class _StructuralRecordingVisitor(BaseVisitor[None]):
 class _HexRecordingVisitor(BaseVisitor[None]):
     def __init__(self) -> None:
         self.negated_values: list[int] = []
+        self.byte_values: list[int | str] = []
+
+    def visit_hex_byte(self, node: HexByte) -> None:
+        self.byte_values.append(node.value)
+        return super().visit_hex_byte(node)
 
     def visit_hex_negated_byte(self, node: HexNegatedByte) -> None:
         self.negated_values.append(node.value)
@@ -79,6 +84,14 @@ def test_base_visitor_supports_hex_negated_byte_super_path() -> None:
     visitor.visit(HexNegatedByte(value=0x4D))
 
     assert visitor.negated_values == [0x4D]
+
+
+def test_base_visitor_traverses_scalar_hex_alternatives_as_bytes() -> None:
+    visitor = _HexRecordingVisitor()
+
+    visitor.visit(HexAlternative(alternatives=[0x90, "91"]))
+
+    assert visitor.byte_values == [0x90, "91"]
 
 
 def test_base_visitor_traverses_in_expression_subject_nodes() -> None:

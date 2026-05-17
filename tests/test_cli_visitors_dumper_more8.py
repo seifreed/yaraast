@@ -87,6 +87,11 @@ def test_dumper_branches_for_modifiers_meta_and_generic_nodes() -> None:
     assert d.visit_hex_wildcard(HexWildcard())["type"] == "HexWildcard"
     alt = HexAlternative(alternatives=[[HexByte(value=0x41)], [HexByte(value=0x42)]])
     assert d.visit_hex_alternative(alt)["alternatives"]
+    scalar_alt = d.visit_hex_alternative(HexAlternative(alternatives=[0x90, "91"]))
+    assert scalar_alt["alternatives"] == [
+        [{"type": "HexByte", "value": 0x90}],
+        [{"type": "HexByte", "value": "91"}],
+    ]
     assert d.visit_expression(IntegerLiteral(value=1))["type"] == "Expression"
     assert d.visit_string_count(StringCount(string_id="$a"))["string_id"] == "$a"
     assert d.visit_string_offset(StringOffset(string_id="$a"))["index"] is None

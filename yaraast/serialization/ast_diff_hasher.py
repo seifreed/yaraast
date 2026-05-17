@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 from typing import TYPE_CHECKING
 
+from yaraast.ast.strings import HexByte, HexToken
 from yaraast.visitor import ASTVisitor
 
 if TYPE_CHECKING:
@@ -144,13 +145,20 @@ class AstHasher(ASTVisitor[str]):
     def visit_hex_alternative(self, node) -> str:
         alternatives = []
         for alternative in getattr(node, "alternatives", []):
-            if isinstance(alternative, list):
-                alternatives.append(" ".join(self._hash_value(token) for token in alternative))
-            else:
-                alternatives.append(self._hash_value(alternative))
+            alternatives.append(self._hash_hex_alternative_branch(alternative))
         if not alternatives:
             return "Alt()"
         return f"Alt({'|'.join(sorted(alternatives))})"
+
+    def _hash_hex_alternative_branch(self, alternative) -> str:
+        if isinstance(alternative, list):
+            return " ".join(self._hash_hex_alternative_token(token) for token in alternative)
+        return self._hash_hex_alternative_token(alternative)
+
+    def _hash_hex_alternative_token(self, token) -> str:
+        if isinstance(token, HexToken):
+            return self._hash_value(token)
+        return self._hash_value(HexByte(token))
 
     def visit_hex_nibble(self, node) -> str:
         return f"Nibble({node.high},{node.value})"

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import (
@@ -62,8 +62,20 @@ class BaseVisitorStringsMixin:
 
     def visit_hex_alternative(self: VisitorHelperProtocol[T], node: HexAlternative) -> T:
         for alternative in node.alternatives:
-            self._visit_all(alternative)
+            self._visit_all(_coerce_hex_alternative_branch(alternative))
         return self._noop()
 
     def visit_hex_nibble(self: VisitorHelperProtocol[T], node: HexNibble) -> T:
         return self._noop()
+
+
+def _coerce_hex_alternative_branch(alternative: Any) -> list[HexToken]:
+    if isinstance(alternative, list):
+        return [_coerce_hex_alternative_token(token) for token in alternative]
+    return [_coerce_hex_alternative_token(alternative)]
+
+
+def _coerce_hex_alternative_token(token: Any) -> HexToken:
+    if isinstance(token, HexToken):
+        return token
+    return HexByte(token)

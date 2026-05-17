@@ -1,5 +1,7 @@
 """AST dump visitor for CLI."""
 
+from typing import Any
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
@@ -186,8 +188,21 @@ class ASTDumper(ASTVisitor[dict]):
     def visit_hex_alternative(self, node: HexAlternative) -> dict:
         return {
             "type": "HexAlternative",
-            "alternatives": [[self.visit(token) for token in alt] for alt in node.alternatives],
+            "alternatives": [
+                self._dump_hex_alternative_branch(alternative) for alternative in node.alternatives
+            ],
         }
+
+    def _dump_hex_alternative_branch(self, alternative: Any) -> list[dict]:
+        if isinstance(alternative, list):
+            return [self.visit(self._coerce_hex_alternative_token(token)) for token in alternative]
+        return [self.visit(self._coerce_hex_alternative_token(alternative))]
+
+    @staticmethod
+    def _coerce_hex_alternative_token(token: Any) -> HexToken:
+        if isinstance(token, HexToken):
+            return token
+        return HexByte(token)
 
     def visit_expression(self, node: Expression) -> dict:
         return {"type": "Expression"}
