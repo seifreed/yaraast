@@ -197,6 +197,42 @@ def test_string_count_offset_length_and_wildcard() -> None:
     assert YaraEvaluator(data=b"xxabxxab").evaluate_file(ast) == {"indexed": True}
 
 
+def test_for_of_zero_quantifier_matches_libyara_zero_satisfied_strings() -> None:
+    ast = Parser().parse("""
+        rule zero_current_string_truth {
+            strings:
+                $a = "x"
+            condition:
+                for 0 of them : ( $ )
+        }
+
+        rule zero_body_true {
+            strings:
+                $a = "x"
+            condition:
+                for 0 of them : ( true )
+        }
+
+        rule zero_string_count {
+            strings:
+                $a = "x"
+            condition:
+                for 0 of them : ( # == 0 )
+        }
+        """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {
+        "zero_current_string_truth": True,
+        "zero_body_true": False,
+        "zero_string_count": False,
+    }
+    assert YaraEvaluator(data=b"x").evaluate_file(ast) == {
+        "zero_current_string_truth": False,
+        "zero_body_true": False,
+        "zero_string_count": True,
+    }
+
+
 def test_binary_unary_function_member_array_and_errors() -> None:
     ev = YaraEvaluator(data=b"\x01\x02\x03\x04")
 
