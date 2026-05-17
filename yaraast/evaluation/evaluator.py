@@ -588,6 +588,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             if quantifier == "none":
                 return matched == 0
         elif isinstance(quantifier, int):
+            if quantifier <= 0:
+                return False
             return matched >= quantifier
         elif isinstance(quantifier, float):
             return len(string_set) > 0 and (matched / len(string_set)) >= quantifier
@@ -627,6 +629,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             if quantifier == "none":
                 return true_count == 0
         elif isinstance(quantifier, int):
+            if quantifier <= 0:
+                return False
             return true_count >= quantifier
 
         return False
@@ -751,7 +755,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def _normalize_string_id(self, string_id: Any) -> str:
         text = str(string_id)
-        if text == "$":
+        if text in {"", "$"}:
             implicit = self.context.variables.get("$")
             if isinstance(implicit, str):
                 text = implicit
@@ -818,6 +822,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             if quantifier == "none":
                 return matches == 0
         elif isinstance(quantifier, int):
+            if quantifier <= 0:
+                return False
             return matches >= quantifier
         elif isinstance(quantifier, float):
             return len(string_set) > 0 and (matches / len(string_set)) >= quantifier

@@ -557,6 +557,15 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
         )
         is True
     )
+    assert (
+        ev.visit_of_expression(
+            OfExpression(
+                quantifier=IntegerLiteral(value=0),
+                string_set=SetExpression([StringLiteral("$a")]),
+            )
+        )
+        is False
+    )
 
     for_any = ForExpression(
         quantifier="any",
@@ -581,6 +590,14 @@ def test_condition_paths_for_at_in_of_for_and_defined() -> None:
         body=BooleanLiteral(value=False),
     )
     assert ev.visit_for_expression(for_none) is True
+
+    for_zero = ForExpression(
+        quantifier=0,
+        variable="i",
+        iterable=SetExpression([IntegerLiteral(1)]),
+        body=BooleanLiteral(value=True),
+    )
+    assert ev.visit_for_expression(for_zero) is False
 
     ev._current_rule = rule
     assert (
@@ -628,6 +645,12 @@ def test_for_of_and_module_reference_paths() -> None:
     )
     assert (
         ev.visit_for_of_expression(
+            ForOfExpression(quantifier=0, string_set=Identifier(name="them"), condition=None)
+        )
+        is False
+    )
+    assert (
+        ev.visit_for_of_expression(
             ForOfExpression(quantifier="all", string_set="$a*", condition=BooleanLiteral(True))
         )
         is True
@@ -641,6 +664,16 @@ def test_for_of_and_module_reference_paths() -> None:
 
     parsed = Parser().parse('rule r { strings: $a = "ab" condition: for any of them : ($) }')
     assert YaraEvaluator(data=b"xxabyy").evaluate_file(parsed) == {"r": True}
+
+    implicit_ops = Parser().parse("""
+        rule r {
+            strings:
+                $a = "ab"
+            condition:
+                for any of them : (# == 1 and @ == 2 and ! == 2)
+        }
+        """)
+    assert YaraEvaluator(data=b"xxabyy").evaluate_file(implicit_ops) == {"r": True}
 
     ev.context.modules["pe"] = {"machine": 0x14C}
     assert ev.visit_module_reference(ModuleReference(module="pe")) == {"machine": 0x14C}
