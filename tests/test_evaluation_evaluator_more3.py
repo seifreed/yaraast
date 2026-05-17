@@ -395,6 +395,18 @@ def test_evaluate_file_with_alias_import_and_string_operator_expression() -> Non
     assert out["ok"] is True
 
 
+def test_evaluate_file_defined_module_reference_after_import() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule imported_module {
+            condition:
+                defined math
+        }
+    """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"imported_module": True}
+
+
 def test_evaluate_file_skips_unknown_imports_and_continues() -> None:
     ev = YaraEvaluator(data=b"abc")
     file_ast = __import__("yaraast.ast.base", fromlist=["YaraFile"]).YaraFile(

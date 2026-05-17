@@ -553,6 +553,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def visit_defined_expression(self, node) -> bool:
         """Evaluate 'defined' expression."""
+        from yaraast.ast.modules import ModuleReference
+
         # Get the expression being checked
         expr = node.expression
 
@@ -563,6 +565,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             # Check if it's a variable
             if expr.name in self.context.variables:
                 return True
+        elif isinstance(expr, ModuleReference):
+            return expr.module in self.context.modules
         elif (
             isinstance(expr, StringIdentifier) and self._current_rule and self._current_rule.strings
         ):
