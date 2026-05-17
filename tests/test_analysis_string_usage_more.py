@@ -12,6 +12,7 @@ from yaraast.ast.conditions import (
 from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
+    ParenthesesExpression,
     SetExpression,
     StringCount,
     StringIdentifier,
@@ -238,6 +239,32 @@ def test_string_usage_analyzer_counts_string_literals_in_condition_sets() -> Non
         ForOfExpression(
             "any",
             SetExpression([StringLiteral("$a"), StringLiteral("$missing")]),
+            condition=None,
+        )
+    )
+    assert analyzer.used_strings["manual"] == {"$a", "$missing"}
+
+
+def test_string_usage_analyzer_counts_parenthesized_string_literal_sets() -> None:
+    analyzer = StringUsageAnalyzer()
+    analyzer.current_rule = "manual"
+    analyzer.defined_strings["manual"] = {"$a", "$missing"}
+    analyzer.used_strings["manual"] = set()
+    analyzer.in_condition = True
+
+    analyzer.visit_of_expression(
+        OfExpression(
+            "any",
+            ParenthesesExpression(SetExpression([StringLiteral("$a"), StringLiteral("$missing")])),
+        )
+    )
+    assert analyzer.used_strings["manual"] == {"$a", "$missing"}
+
+    analyzer.used_strings["manual"] = set()
+    analyzer.visit_for_of_expression(
+        ForOfExpression(
+            "any",
+            ParenthesesExpression(SetExpression([StringLiteral("$a"), StringLiteral("$missing")])),
             condition=None,
         )
     )

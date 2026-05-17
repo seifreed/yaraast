@@ -9,6 +9,7 @@ from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, 
 from yaraast.ast.expressions import (
     BooleanLiteral,
     Identifier,
+    ParenthesesExpression,
     SetExpression,
     StringCount,
     StringIdentifier,
@@ -219,6 +220,9 @@ class DeadCodeEliminator(ASTTransformer):
             return
         if isinstance(value, StringWildcard):
             self._mark_used_string(value.pattern)
+            return
+        if isinstance(value, ParenthesesExpression):
+            self._collect_string_set_value(value.expression)
             return
         if isinstance(value, SetExpression):
             for element in value.elements:

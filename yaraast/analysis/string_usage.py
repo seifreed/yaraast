@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.expressions import (
     Identifier,
+    ParenthesesExpression,
     SetExpression,
     StringIdentifier,
     StringLiteral,
@@ -223,6 +224,9 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             return
         if isinstance(string_set, StringWildcard):
             self._mark_string_set_text(string_set.pattern)
+            return
+        if isinstance(string_set, ParenthesesExpression):
+            self._visit_string_set_value(string_set.expression)
             return
         if isinstance(string_set, SetExpression):
             for element in string_set.elements:

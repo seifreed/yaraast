@@ -10,6 +10,7 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     Identifier,
+    ParenthesesExpression,
     SetExpression,
     StringCount,
     StringIdentifier,
@@ -248,6 +249,27 @@ def test_dead_code_eliminator_keeps_raw_string_set_references() -> None:
     )
     out_rule = dce.eliminate_dead_code(rule)
     assert [string.identifier for string in out_rule.strings] == ["$b", "$c"]
+
+
+def test_dead_code_eliminator_keeps_parenthesized_string_literal_sets() -> None:
+    dce = DeadCodeEliminator()
+    rule = Rule(
+        name="literal_sets",
+        strings=[
+            PlainString(identifier="$a", value="a"),
+            PlainString(identifier="$b", value="b"),
+            PlainString(identifier="$unused", value="unused"),
+        ],
+        condition=ForOfExpression(
+            "any",
+            ParenthesesExpression(SetExpression([StringLiteral("$a"), StringLiteral("$b")])),
+            condition=None,
+        ),
+    )
+
+    out_rule = dce.eliminate_dead_code(rule)
+
+    assert [string.identifier for string in out_rule.strings] == ["$a", "$b"]
 
 
 def test_dead_code_eliminator_tracks_string_usage_per_rule() -> None:
