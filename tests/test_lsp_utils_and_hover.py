@@ -74,6 +74,11 @@ def test_get_word_at_position_and_find_node() -> None:
     assert hasattr(word_range, "start")
     assert hasattr(word_range, "end")
 
+    trailing_word, trailing_range = get_word_at_position("condition: alpha", Position(0, 16))
+    assert trailing_word == "alpha"
+    assert trailing_range.start.character == 11
+    assert trailing_range.end.character == 16
+
     rule = Rule(name="test")
     rule.location = Location(line=1, column=1)
     ast = YaraFile(rules=[rule])

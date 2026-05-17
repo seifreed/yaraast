@@ -33,7 +33,7 @@ def get_word_at_position(text: str, position: Position) -> tuple[str, Range]:
         return "", Range(start=position, end=position)
 
     line = lines[position.line]
-    if position.character >= len(line):
+    if position.character > len(line):
         return "", Range(start=position, end=position)
 
     start = position.character

@@ -43,3 +43,23 @@ rule beta {
     assert rule_def is not None
     rule_def = _single_location(rule_def)
     assert rule_def.range.start.line == 0
+
+
+def test_definition_rule_reference_at_end_of_line() -> None:
+    text = """
+rule alpha { condition: true }
+rule beta {
+    condition:
+        alpha
+}
+""".lstrip()
+
+    rule_line = text.splitlines()[3]
+    rule_def = DefinitionProvider().get_definition(
+        text,
+        _pos(3, len(rule_line)),
+        "file://test.yar",
+    )
+
+    assert rule_def is not None
+    assert _single_location(rule_def).range.start.line == 0
