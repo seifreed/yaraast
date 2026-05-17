@@ -185,6 +185,32 @@ def test_string_usage_analyzer_traverses_condition_quantifier_nodes() -> None:
     assert analyzer.used_strings["manual"] == {"$a", "$b"}
 
 
+def test_string_usage_analyzer_counts_string_literals_in_condition_sets() -> None:
+    analyzer = StringUsageAnalyzer()
+    analyzer.current_rule = "manual"
+    analyzer.defined_strings["manual"] = {"$a"}
+    analyzer.used_strings["manual"] = set()
+    analyzer.in_condition = True
+
+    analyzer.visit_of_expression(
+        OfExpression(
+            "any",
+            SetExpression([StringLiteral("$a"), StringLiteral("$missing")]),
+        )
+    )
+    assert analyzer.used_strings["manual"] == {"$a", "$missing"}
+
+    analyzer.used_strings["manual"] = set()
+    analyzer.visit_for_of_expression(
+        ForOfExpression(
+            "any",
+            SetExpression([StringLiteral("$a"), StringLiteral("$missing")]),
+            condition=None,
+        )
+    )
+    assert analyzer.used_strings["manual"] == {"$a", "$missing"}
+
+
 def test_string_usage_analyzer_partial_branch_paths() -> None:
     analyzer = StringUsageAnalyzer()
 

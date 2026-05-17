@@ -4,16 +4,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from yaraast.ast.expressions import Identifier
+from yaraast.ast.expressions import (
+    Identifier,
+    SetExpression,
+    StringIdentifier,
+    StringLiteral,
+    StringWildcard,
+)
 from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
     from yaraast.ast.expressions import (
-        SetExpression,
         StringCount,
-        StringIdentifier,
         StringLength,
         StringOffset,
     )
@@ -193,15 +197,25 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         if isinstance(string_set, str):
             self._mark_string_set_text(string_set)
             return
-        if isinstance(string_set, list):
+        if isinstance(string_set, list | tuple | set | frozenset):
             for item in string_set:
-                if isinstance(item, str):
-                    self._mark_string_set_text(item)
-                else:
-                    self._visit_ast_value(item)
+                self._visit_string_set_value(item)
             return
         if isinstance(string_set, Identifier) and string_set.name == "them":
             self._mark_all_current_rule_strings()
+            return
+        if isinstance(string_set, StringLiteral):
+            self._mark_string_set_text(string_set.value)
+            return
+        if isinstance(string_set, StringIdentifier):
+            self._mark_string_set_text(string_set.name)
+            return
+        if isinstance(string_set, StringWildcard):
+            self._mark_string_set_text(string_set.pattern)
+            return
+        if isinstance(string_set, SetExpression):
+            for element in string_set.elements:
+                self._visit_string_set_value(element)
             return
         self._visit_ast_value(string_set)
 
