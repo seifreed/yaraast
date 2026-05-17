@@ -7,6 +7,7 @@ import re
 from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.metrics.string_diagrams_common import modifier_names
 
 from .string_diagrams import StringDiagramGenerator
 
@@ -96,8 +97,7 @@ def analyze_string_patterns(strings: list) -> dict[str, Any]:
 
         # Count modifiers
         for mod in string_def.modifiers:
-            # Handle both string and object modifiers
-            mod_name = mod.name if hasattr(mod, "name") else str(mod)
+            mod_name = modifier_names([mod])[0]
             analysis["modifiers"][mod_name] = analysis["modifiers"].get(mod_name, 0) + 1
 
     # Find common prefixes in plain strings
@@ -145,9 +145,7 @@ def generate_pattern_report(strings: list) -> dict[str, Any]:
         detail = {
             "identifier": string_def.identifier,
             "type": type(string_def).__name__,
-            "modifiers": [
-                mod.name if hasattr(mod, "name") else str(mod) for mod in string_def.modifiers
-            ],
+            "modifiers": modifier_names(string_def.modifiers),
         }
 
         if isinstance(string_def, PlainString):

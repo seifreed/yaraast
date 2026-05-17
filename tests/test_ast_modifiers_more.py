@@ -55,6 +55,13 @@ def test_string_and_rule_modifier_helpers() -> None:
     modifier_with_value = StringModifier.from_name_value("xor", 10)
     assert str(modifier_with_value) == "xor(10)"
 
+    modifier_with_range = StringModifier.from_name_value("xor", (1, 3))
+    assert str(modifier_with_range) == "xor(1-3)"
+
+    alphabet = "A" * 64
+    modifier_with_string = StringModifier.from_name_value("base64", alphabet)
+    assert str(modifier_with_string) == f'base64("{alphabet}")'
+
     assert modifier_with_value.name == "xor"
 
     rule_mod = RuleModifier.from_string("global")

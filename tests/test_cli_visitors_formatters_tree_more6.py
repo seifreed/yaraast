@@ -25,7 +25,7 @@ from yaraast.ast.expressions import (
     StringOffset,
     StringWildcard,
 )
-from yaraast.ast.modifiers import RuleModifier
+from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import PlainString, RegexString
 from yaraast.cli.visitors.formatters import (
@@ -126,7 +126,11 @@ def test_tree_builder_rule_and_fallback_paths() -> None:
         tags=cast(Any, [Tag(name="tag"), "extra"]),
         meta={"author": "me", "n": 1},
         strings=[
-            PlainString(identifier="$a", value="x" * 40),
+            PlainString(
+                identifier="$a",
+                value="x" * 40,
+                modifiers=[StringModifier.from_name_value("xor", (1, 2))],
+            ),
             RegexString(identifier="$r", regex="ab+"),
         ],
         condition=BinaryExpression(StringIdentifier("$a"), "and", IntegerLiteral(1)),
@@ -138,6 +142,8 @@ def test_tree_builder_rule_and_fallback_paths() -> None:
     assert "Meta" in txt
     assert "Strings" in txt
     assert "Condition" in txt
+    assert "xor(1-2)" in txt
+    assert "xor(1-2)" in _render_tree(builder.visit_plain_string(rule.strings[0]))
 
     ast = YaraFile(rules=[rule])
     full = builder.visit_yara_file(ast)

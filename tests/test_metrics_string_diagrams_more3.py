@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 
+from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
@@ -32,6 +33,11 @@ def test_render_mixin_object_modifiers_and_short_prefix_paths() -> None:
     r = _Renderer()
 
     plain = PlainString(identifier="$a", value="abx", modifiers=[_NamedModifier("ascii")])
+    parameterized_plain = PlainString(
+        identifier="$x",
+        value="abc",
+        modifiers=[StringModifier.from_name_value("xor", (1, 3))],
+    )
     hexs = HexString(
         identifier="$h",
         tokens=[HexByte(value=0x41), HexJump(min_jump=1, max_jump=3)],
@@ -40,6 +46,7 @@ def test_render_mixin_object_modifiers_and_short_prefix_paths() -> None:
     regex = RegexString(identifier="$r", regex="abc", modifiers=[_NamedModifier("nocase")])
 
     assert "Modifiers: ascii" in r._generate_plain_diagram(plain)
+    assert "Modifiers: xor(1-3)" in r._generate_plain_diagram(parameterized_plain)
     assert "Modifiers: wide" in r._generate_hex_diagram(hexs)
     assert "Modifiers: nocase" in r._generate_regex_diagram(regex)
 
@@ -77,8 +84,13 @@ def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None
     classes_only = helpers.create_regex_diagram("[0-9]")
     assert "Character classes:" in classes_only
 
+    alphabet = "A" * 64
     strings = [
-        PlainString(identifier="$a", value="one", modifiers=[_NamedModifier("ascii")]),
+        PlainString(
+            identifier="$a",
+            value="one",
+            modifiers=[StringModifier.from_name_value("base64", alphabet)],
+        ),
         RegexString(identifier="$r", regex="ab+", modifiers=[_NamedModifier("nocase")]),
         HexString(
             identifier="$h", tokens=[HexByte(value=0x41)], modifiers=[_NamedModifier("wide")]
@@ -89,6 +101,8 @@ def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None
     helper_report = helpers.generate_pattern_report(strings)
     assert render_report["details"][1]["pattern"] == "ab+"
     assert helper_report["details"][1]["pattern"] == "ab+"
+    assert render_report["details"][0]["modifiers"] == [f'base64("{alphabet}")']
+    assert helper_report["details"][0]["modifiers"] == [f'base64("{alphabet}")']
     assert render_report["details"][2]["tokens"] == 1
     assert helper_report["details"][2]["tokens"] == 1
 

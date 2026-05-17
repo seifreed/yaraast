@@ -12,6 +12,12 @@ from yaraast.ast.strings import PlainString, RegexString
 from .formatters import ConditionStringFormatter
 
 
+def _modifier_label(modifier: Any) -> str:
+    if isinstance(modifier, str):
+        return modifier
+    return str(modifier)
+
+
 class ASTTreeBuilder:
     """Build Rich tree visualization of AST."""
 
@@ -114,12 +120,7 @@ class ASTTreeBuilder:
             else:
                 iterable = [node.modifiers]
             for mod in iterable:
-                if isinstance(mod, str):
-                    modifier_strs.append(mod)
-                elif hasattr(mod, "name"):
-                    modifier_strs.append(mod.name)
-                else:
-                    modifier_strs.append(str(mod))
+                modifier_strs.append(_modifier_label(mod))
             if modifier_strs:
                 name_with_modifiers = f"[{'|'.join(modifier_strs)}] {name_with_modifiers}"
 
@@ -167,7 +168,14 @@ class ASTTreeBuilder:
         for string in strings:
             string_type = string.__class__.__name__
             value_preview = self._get_string_preview(string, escape)
-            strings_tree.add(f"{string.identifier}{value_preview} [{string_type}]")
+            modifiers = self._get_string_modifiers_preview(string, escape)
+            strings_tree.add(f"{string.identifier}{value_preview} [{string_type}]{modifiers}")
+
+    def _get_string_modifiers_preview(self, string, escape) -> str:
+        if not (hasattr(string, "modifiers") and string.modifiers):
+            return ""
+        modifiers = ", ".join(_modifier_label(mod) for mod in string.modifiers)
+        return escape(f" [{modifiers}]")
 
     def _get_string_preview(self, string, escape) -> str:
         """Get string value preview for display."""
@@ -250,30 +258,20 @@ class ASTTreeBuilder:
             if hasattr(node, "value") and isinstance(node.value, str)
             else str(node.value)
         )
-        mods = (
-            f" [{', '.join(m.name if hasattr(m, 'name') else str(m) for m in node.modifiers)}]"
-            if hasattr(node, "modifiers") and node.modifiers
-            else ""
-        )
+        mods = self._get_string_modifiers_preview(node, escape)
         return Tree(f'{node.identifier} = "{value}"{mods}')
 
     def visit_hex_string(self, node: Any) -> Tree:
-        mods = (
-            f" [{', '.join(m.name if hasattr(m, 'name') else str(m) for m in node.modifiers)}]"
-            if hasattr(node, "modifiers") and node.modifiers
-            else ""
-        )
+        from rich.markup import escape
+
+        mods = self._get_string_modifiers_preview(node, escape)
         return Tree(f"{node.identifier} [HexString]{mods}")
 
     def visit_regex_string(self, node: Any) -> Tree:
         from rich.markup import escape
 
         regex = escape(node.regex) if hasattr(node, "regex") and isinstance(node.regex, str) else ""
-        mods = (
-            f" [{', '.join(m.name if hasattr(m, 'name') else str(m) for m in node.modifiers)}]"
-            if hasattr(node, "modifiers") and node.modifiers
-            else ""
-        )
+        mods = self._get_string_modifiers_preview(node, escape)
         return Tree(f"{node.identifier} = /{regex}/{mods}")
 
     def visit_comment(self, node: Any) -> Tree:

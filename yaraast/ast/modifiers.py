@@ -115,6 +115,10 @@ class StringModifier(ASTNode):
     def __str__(self) -> str:
         """String representation of the modifier."""
         if self.value is not None:
+            if isinstance(self.value, tuple):
+                return f"{self.modifier_type.value}({self.value[0]}-{self.value[1]})"
+            if isinstance(self.value, str):
+                return f'{self.modifier_type.value}("{self.value}")'
             return f"{self.modifier_type.value}({self.value})"
         return self.modifier_type.value
 
