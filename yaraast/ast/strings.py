@@ -14,6 +14,7 @@ class StringDefinition(ASTNode):
 
     identifier: str
     modifiers: list[Any] = field(default_factory=list)
+    is_anonymous: bool = field(default=False, kw_only=True)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_string_definition(self)

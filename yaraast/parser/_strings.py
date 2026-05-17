@@ -26,7 +26,8 @@ class StringParsingMixin:
             identifier = start_token.value
 
             # Handle anonymous strings (just "$")
-            if identifier == "$":
+            is_anonymous = identifier == "$"
+            if is_anonymous:
                 anonymous_counter += 1
                 identifier = f"$anon_{anonymous_counter}"
 
@@ -38,34 +39,37 @@ class StringParsingMixin:
             if self._match(TokenType.STRING):
                 value = self._previous().value
                 modifiers = self._parse_string_modifiers()
-                strings.append(
-                    self._set_node_location_from_tokens(
-                        PlainString(identifier=identifier, value=value, modifiers=modifiers),
-                        start_token,
-                        self._previous(),
-                    )
+                string_def = self._set_node_location_from_tokens(
+                    PlainString(identifier=identifier, value=value, modifiers=modifiers),
+                    start_token,
+                    self._previous(),
                 )
+                if is_anonymous:
+                    string_def.is_anonymous = True
+                strings.append(string_def)
             elif self._match(TokenType.HEX_STRING):
                 hex_value = self._previous().value
                 tokens = self._parse_hex_string(hex_value)
                 modifiers = self._parse_string_modifiers()
-                strings.append(
-                    self._set_node_location_from_tokens(
-                        HexString(identifier=identifier, tokens=tokens, modifiers=modifiers),
-                        start_token,
-                        self._previous(),
-                    )
+                string_def = self._set_node_location_from_tokens(
+                    HexString(identifier=identifier, tokens=tokens, modifiers=modifiers),
+                    start_token,
+                    self._previous(),
                 )
+                if is_anonymous:
+                    string_def.is_anonymous = True
+                strings.append(string_def)
             elif self._match(TokenType.REGEX):
                 regex, regex_modifiers = parse_regex_value(self._previous().value)
                 modifiers = [*regex_modifiers, *self._parse_string_modifiers()]
-                strings.append(
-                    self._set_node_location_from_tokens(
-                        RegexString(identifier=identifier, regex=regex, modifiers=modifiers),
-                        start_token,
-                        self._previous(),
-                    )
+                string_def = self._set_node_location_from_tokens(
+                    RegexString(identifier=identifier, regex=regex, modifiers=modifiers),
+                    start_token,
+                    self._previous(),
                 )
+                if is_anonymous:
+                    string_def.is_anonymous = True
+                strings.append(string_def)
             else:
                 msg = "Invalid string value"
                 raise ParserError(msg, self._peek())

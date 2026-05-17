@@ -267,7 +267,8 @@ class CommentAwareParser(Parser):
             self._advance()
 
             # Generate unique identifier for anonymous strings
-            if identifier == "$":
+            is_anonymous = identifier == "$"
+            if is_anonymous:
                 anonymous_counter += 1
                 identifier = f"$anon_{anonymous_counter}"
 
@@ -302,6 +303,9 @@ class CommentAwareParser(Parser):
             # Attach comments to string definition
             if leading_comments:
                 string_def.leading_comments = leading_comments
+
+            if is_anonymous:
+                string_def.is_anonymous = True
 
             # Check for trailing comment on same line
             trailing = self._collect_trailing_comment(start_line)

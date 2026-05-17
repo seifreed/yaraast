@@ -284,11 +284,14 @@ class UndefinedStringDetector:
 
         # Collect defined string identifiers (normalized to $name format)
         defined = set()
+        anonymous = set()
         for string_def in rule.strings:
             sid = string_def.identifier
             if not sid.startswith("$"):
                 sid = f"${sid}"
             defined.add(sid)
+            if getattr(string_def, "is_anonymous", False):
+                anonymous.add(sid)
 
         # Walk condition to find string references
         referenced = set()
@@ -299,8 +302,7 @@ class UndefinedStringDetector:
             normalized = ref if ref.startswith("$") else f"${ref}"
             # Check exact match and wildcard patterns
             if normalized.endswith("*"):
-                prefix = normalized[:-1]
-                if not any(d.startswith(prefix) for d in defined):
+                if not self._matches_defined_pattern(normalized, defined, anonymous):
                     self.result.add_error(
                         f"Undefined string pattern '{normalized}' in rule '{rule.name}'",
                         suggestion="Define matching strings in the strings section.",
@@ -311,13 +313,23 @@ class UndefinedStringDetector:
                     suggestion="Add a string definition in the strings section.",
                 )
 
+        self._check_invalid_string_sets(rule.condition, defined, rule.name)
+
         used = set()
-        self._collect_used_string_defs(rule.condition, defined, used)
+        self._collect_used_string_defs(rule.condition, defined, anonymous, used)
         for sid in sorted(defined - used):
             self.result.add_error(
                 f"Unreferenced string '{sid}' in rule '{rule.name}'",
                 suggestion="Reference the string in the condition or remove the definition.",
             )
+
+    def _matches_defined_pattern(
+        self, pattern: str, defined: set[str], anonymous: set[str]
+    ) -> bool:
+        if pattern == "$*":
+            return bool(defined)
+        prefix = pattern[:-1]
+        return any(sid.startswith(prefix) for sid in defined - anonymous)
 
     def _collect_string_refs(
         self, node: ASTNode, refs: set[str], implicit_string_allowed: bool = False
@@ -366,6 +378,7 @@ class UndefinedStringDetector:
 
     def _collect_string_set_refs(self, string_set: object, refs: set[str]) -> None:
         from yaraast.ast.expressions import (
+            Identifier,
             ParenthesesExpression,
             SetExpression,
             StringIdentifier,
@@ -393,14 +406,51 @@ class UndefinedStringDetector:
             refs.add(string_set.pattern)
         elif isinstance(string_set, StringLiteral):
             self._collect_string_set_refs(string_set.value, refs)
+        elif isinstance(string_set, Identifier) and string_set.name == "them":
+            refs.add("$*")
         elif isinstance(string_set, SetExpression):
             for element in string_set.elements:
                 self._collect_string_set_refs(element, refs)
+
+    def _check_invalid_string_sets(self, node: ASTNode, defined: set[str], rule_name: str) -> None:
+        from yaraast.ast.conditions import ForOfExpression, OfExpression
+
+        if isinstance(node, ForOfExpression | OfExpression):
+            if self._is_parenthesized_them(node.string_set):
+                self.result.add_error(
+                    f"Invalid parenthesized 'them' string set in rule '{rule_name}'",
+                    suggestion="Use 'of them' without parentheses.",
+                )
+            elif self._is_them_string_set(node.string_set) and not defined:
+                self.result.add_error(
+                    f"Undefined string pattern '$*' in rule '{rule_name}'",
+                    suggestion="Define at least one string or remove the 'of them' condition.",
+                )
+
+        for child in node.children():
+            self._check_invalid_string_sets(child, defined, rule_name)
+
+    def _is_parenthesized_them(self, string_set: object) -> bool:
+        from yaraast.ast.expressions import Identifier, ParenthesesExpression
+
+        return (
+            isinstance(string_set, ParenthesesExpression)
+            and isinstance(string_set.expression, Identifier)
+            and string_set.expression.name == "them"
+        )
+
+    def _is_them_string_set(self, string_set: object) -> bool:
+        from yaraast.ast.expressions import Identifier
+
+        return (isinstance(string_set, str) and string_set == "them") or (
+            isinstance(string_set, Identifier) and string_set.name == "them"
+        )
 
     def _collect_used_string_defs(
         self,
         node: ASTNode,
         defined: set[str],
+        anonymous: set[str],
         used: set[str],
         implicit_string_allowed: bool = False,
     ) -> None:
@@ -415,34 +465,36 @@ class UndefinedStringDetector:
 
         if isinstance(node, StringIdentifier):
             if not (implicit_string_allowed and node.name == "$"):
-                self._mark_used_string_ref(node.name, defined, used)
+                self._mark_used_string_ref(node.name, defined, anonymous, used)
         elif isinstance(node, StringWildcard):
-            self._mark_used_string_ref(node.pattern, defined, used)
+            self._mark_used_string_ref(node.pattern, defined, anonymous, used)
         elif isinstance(node, StringCount | StringOffset | StringLength):
             ref = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
             if not (implicit_string_allowed and ref == "$"):
-                self._mark_used_string_ref(ref, defined, used)
+                self._mark_used_string_ref(ref, defined, anonymous, used)
         elif isinstance(node, AtExpression):
-            self._mark_used_string_ref(node.string_id, defined, used)
+            self._mark_used_string_ref(node.string_id, defined, anonymous, used)
         elif isinstance(node, InExpression) and isinstance(node.subject, str):
-            self._mark_used_string_ref(node.subject, defined, used)
+            self._mark_used_string_ref(node.subject, defined, anonymous, used)
         elif isinstance(node, ForOfExpression):
             if hasattr(node.quantifier, "accept"):
-                self._collect_used_string_defs(node.quantifier, defined, used)
-            self._mark_used_string_set(node.string_set, defined, used)
+                self._collect_used_string_defs(node.quantifier, defined, anonymous, used)
+            self._mark_used_string_set(node.string_set, defined, anonymous, used)
             if node.condition:
-                self._collect_used_string_defs(node.condition, defined, used, True)
+                self._collect_used_string_defs(node.condition, defined, anonymous, used, True)
             return
         elif isinstance(node, OfExpression):
             if hasattr(node.quantifier, "accept"):
-                self._collect_used_string_defs(node.quantifier, defined, used)
-            self._mark_used_string_set(node.string_set, defined, used)
+                self._collect_used_string_defs(node.quantifier, defined, anonymous, used)
+            self._mark_used_string_set(node.string_set, defined, anonymous, used)
             return
 
         for child in node.children():
-            self._collect_used_string_defs(child, defined, used, implicit_string_allowed)
+            self._collect_used_string_defs(child, defined, anonymous, used, implicit_string_allowed)
 
-    def _mark_used_string_set(self, string_set: object, defined: set[str], used: set[str]) -> None:
+    def _mark_used_string_set(
+        self, string_set: object, defined: set[str], anonymous: set[str], used: set[str]
+    ) -> None:
         from yaraast.ast.expressions import (
             Identifier,
             ParenthesesExpression,
@@ -456,36 +508,38 @@ class UndefinedStringDetector:
             if string_set == "them":
                 used.update(defined)
             else:
-                self._mark_used_string_ref(string_set, defined, used)
+                self._mark_used_string_ref(string_set, defined, anonymous, used)
             return
 
         if isinstance(string_set, list | tuple | set | frozenset):
             for item in string_set:
-                self._mark_used_string_set(item, defined, used)
+                self._mark_used_string_set(item, defined, anonymous, used)
             return
 
         if isinstance(string_set, ParenthesesExpression):
-            self._mark_used_string_set(string_set.expression, defined, used)
+            self._mark_used_string_set(string_set.expression, defined, anonymous, used)
         elif isinstance(string_set, StringIdentifier):
-            self._mark_used_string_ref(string_set.name, defined, used)
+            self._mark_used_string_ref(string_set.name, defined, anonymous, used)
         elif isinstance(string_set, StringWildcard):
-            self._mark_used_string_ref(string_set.pattern, defined, used)
+            self._mark_used_string_ref(string_set.pattern, defined, anonymous, used)
         elif isinstance(string_set, StringLiteral):
-            self._mark_used_string_set(string_set.value, defined, used)
+            self._mark_used_string_set(string_set.value, defined, anonymous, used)
         elif isinstance(string_set, Identifier) and string_set.name == "them":
             used.update(defined)
         elif isinstance(string_set, SetExpression):
             for element in string_set.elements:
-                self._mark_used_string_set(element, defined, used)
+                self._mark_used_string_set(element, defined, anonymous, used)
 
-    def _mark_used_string_ref(self, ref: str, defined: set[str], used: set[str]) -> None:
+    def _mark_used_string_ref(
+        self, ref: str, defined: set[str], anonymous: set[str], used: set[str]
+    ) -> None:
         normalized = ref if ref.startswith("$") else f"${ref}"
         if normalized == "$*":
             used.update(defined)
             return
         if normalized.endswith("*"):
             prefix = normalized[:-1]
-            used.update(sid for sid in defined if sid.startswith(prefix))
+            used.update(sid for sid in defined - anonymous if sid.startswith(prefix))
             return
         if normalized in defined:
             used.add(normalized)

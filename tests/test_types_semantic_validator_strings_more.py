@@ -210,3 +210,64 @@ def test_semantic_validator_counts_string_sets_as_string_references() -> None:
 
     assert result.is_valid is True
     assert result.errors == []
+
+
+def test_semantic_validator_rejects_invalid_them_string_sets() -> None:
+    ast = Parser().parse("""
+        rule no_strings {
+            condition:
+                any of them
+        }
+
+        rule parenthesized_them {
+            strings:
+                $a = "abc"
+            condition:
+                any of (them)
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any(
+        "Undefined string pattern '$*' in rule 'no_strings'" in message for message in messages
+    )
+    assert any(
+        "Invalid parenthesized 'them' string set in rule 'parenthesized_them'" in message
+        for message in messages
+    )
+
+
+def test_semantic_validator_does_not_match_anonymous_strings_with_named_wildcards() -> None:
+    ast = Parser().parse("""
+        rule anonymous_named_wildcard {
+            strings:
+                $ = "abc"
+                $ = "def"
+            condition:
+                any of ($a*)
+        }
+
+        rule anonymous_global_wildcard {
+            strings:
+                $ = "abc"
+                $ = "def"
+            condition:
+                any of ($*)
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any(
+        "Undefined string pattern '$a*' in rule 'anonymous_named_wildcard'" in message
+        for message in messages
+    )
+    assert not any(
+        "anonymous_global_wildcard" in message and "Undefined string pattern" in message
+        for message in messages
+    )
