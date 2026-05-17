@@ -68,6 +68,16 @@ def test_string_matcher_match_string_replaces_previous_match_state() -> None:
     assert matcher.get_match_count("$b") == 0
 
 
+def test_string_matcher_regex_reports_overlapping_matches() -> None:
+    matcher = StringMatcher()
+    regex = RegexString("$re", regex="aa", modifiers=[])
+
+    regex_matches = matcher.match_string(regex, b"aaa")
+
+    assert [match.offset for match in regex_matches] == [0, 1]
+    assert [match.length for match in regex_matches] == [2, 2]
+
+
 def test_string_matcher_fullword_and_boundary_helpers() -> None:
     matcher = StringMatcher()
     string_def = PlainString(

@@ -447,9 +447,9 @@ class StringMatcher:
             self.matches[string_def.identifier] = []
             return
 
-        # Find all matches
-        matches: list[tuple[int, int]] = []
-        for match in regex.finditer(data):
+        # YARA reports overlapping regex matches, unlike Python's finditer().
+        matches: list[MatchResult] = []
+        for match in self._find_overlapping_regex_matches(regex, data):
             matches.append(
                 MatchResult(
                     string_def.identifier,
@@ -460,6 +460,19 @@ class StringMatcher:
             )
 
         self.matches[string_def.identifier] = matches
+
+    def _find_overlapping_regex_matches(
+        self,
+        regex: re.Pattern[bytes],
+        data: bytes,
+    ) -> list[re.Match[bytes]]:
+        matches = []
+        for offset in range(len(data) + 1):
+            match = regex.match(data, offset)
+            if match is None or match.end() == match.start():
+                continue
+            matches.append(match)
+        return matches
 
     def _find_all(self, data: bytes, pattern: bytes) -> list[tuple[int, int]]:
         """Find all occurrences of pattern in data."""
