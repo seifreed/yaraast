@@ -225,7 +225,7 @@ class DeadCodeEliminator(ASTTransformer):
         self.current_rule = node.name
 
         # Remove unused strings
-        if node.strings and self.used_strings:
+        if node.strings:
             used_strings = self.used_strings_by_rule.get(node.name, set())
             kept_strings = []
             for string_def in node.strings:
@@ -359,7 +359,7 @@ class DeadCodeEliminator(ASTTransformer):
             self._collect_from_expression(rule.condition)
 
         # Remove unused strings
-        if rule.strings and self.used_strings:
+        if rule.strings:
             used_strings = self.used_strings_by_rule.get(rule.name, set())
             kept_strings = []
             for string_def in rule.strings:

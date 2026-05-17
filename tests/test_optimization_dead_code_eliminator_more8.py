@@ -142,6 +142,20 @@ def test_string_wildcard_keeps_matching_strings() -> None:
     assert [string.identifier for string in out_rule.strings] == ["$api_one", "$api_two"]
 
 
+def test_dead_code_eliminator_removes_strings_when_no_strings_are_used() -> None:
+    dce = DeadCodeEliminator()
+    rule = Rule(
+        name="no_string_refs",
+        strings=[PlainString(identifier="$unused", value="unused")],
+        condition=BooleanLiteral(True),
+    )
+
+    optimized, count = dce.eliminate(YaraFile(rules=[rule]))
+
+    assert count == 1
+    assert optimized.rules[0].strings == []
+
+
 def test_dead_code_eliminator_keeps_raw_string_set_references() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(
