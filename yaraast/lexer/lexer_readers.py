@@ -99,6 +99,17 @@ def _integer_token(value: int, line: int, column: int) -> Token:
     return Token(TokenType.INTEGER, value, line, column)
 
 
+def _validate_digit_separators(raw_digits: str, literal_kind: str, line: int, column: int) -> None:
+    if (
+        not raw_digits
+        or raw_digits.startswith("_")
+        or raw_digits.endswith("_")
+        or "__" in raw_digits
+    ):
+        msg = f"Invalid {literal_kind} integer literal"
+        raise LexerError(msg, line, column)
+
+
 def read_number(lexer) -> Token:
     start_line = lexer.line
     start_column = lexer.column
@@ -109,13 +120,14 @@ def read_number(lexer) -> Token:
         lexer._advance()
         value += lexer._current_char()
         lexer._advance()
-        has_digits = False
+        raw_digits = ""
         while lexer._current_char() and lexer._current_char() in "0123456789abcdefABCDEF_":
+            raw_digits += lexer._current_char()
             if lexer._current_char() != "_":
                 value += lexer._current_char()
-                has_digits = True
             lexer._advance()
-        if not has_digits:
+        _validate_digit_separators(raw_digits, "hexadecimal", start_line, start_column)
+        if lexer._current_char() and lexer._current_char().isalnum():
             msg = "Invalid hexadecimal integer literal"
             raise LexerError(msg, start_line, start_column)
         return _integer_token(int(value, 16), start_line, start_column)
@@ -125,33 +137,42 @@ def read_number(lexer) -> Token:
         lexer._advance()
         value += lexer._current_char()
         lexer._advance()
-        has_digits = False
+        raw_digits = ""
         while lexer._current_char() and lexer._current_char() in "01234567_":
+            raw_digits += lexer._current_char()
             if lexer._current_char() != "_":
                 value += lexer._current_char()
-                has_digits = True
             lexer._advance()
-        if not has_digits:
+        _validate_digit_separators(raw_digits, "octal", start_line, start_column)
+        if lexer._current_char() and lexer._current_char().isalnum():
             msg = "Invalid octal integer literal"
             raise LexerError(msg, start_line, start_column)
         return _integer_token(int(value, 8), start_line, start_column)
     # Decimal (with underscore separators): 1_000_000
+    raw_digits = ""
     while lexer._current_char() and (
         lexer._current_char().isdigit() or lexer._current_char() == "_"
     ):
+        raw_digits += lexer._current_char()
         if lexer._current_char() != "_":
             value += lexer._current_char()
         lexer._advance()
+    _validate_digit_separators(raw_digits, "decimal", start_line, start_column)
     # Float: 3.14, 1_000.5
     if lexer._current_char() == "." and lexer._peek_char() and lexer._peek_char().isdigit():
         value += lexer._current_char()
         lexer._advance()
+        raw_fraction = ""
         while lexer._current_char() and (
             lexer._current_char().isdigit() or lexer._current_char() == "_"
         ):
+            raw_fraction += lexer._current_char()
             if lexer._current_char() != "_":
                 value += lexer._current_char()
             lexer._advance()
+        if raw_fraction.endswith("_") or "__" in raw_fraction:
+            msg = "Invalid decimal floating-point literal"
+            raise LexerError(msg, start_line, start_column)
         return Token(TokenType.DOUBLE, float(value), start_line, start_column)
     # KB/MB suffixes
     if lexer._current_char() and lexer._current_char().upper() in "KM":

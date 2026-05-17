@@ -87,14 +87,26 @@ def test_lexer_rejects_integer_literals_above_int64_maximum() -> None:
 
 
 def test_lexer_reports_malformed_prefixed_integer_literals_as_lexer_errors() -> None:
-    malformed_hex_values = ["0x", "0x_", "0xg"]
+    malformed_hex_values = ["0x", "0x_", "0x1_", "0x1__2", "0xg", "0x1g"]
     for value in malformed_hex_values:
         with pytest.raises(LexerError, match="Invalid hexadecimal integer literal"):
             Lexer(value).tokenize()
 
-    malformed_octal_values = ["0o", "0o_", "0o8"]
+    malformed_octal_values = ["0o", "0o_", "0o7_", "0o7__1", "0o8", "0o78"]
     for value in malformed_octal_values:
         with pytest.raises(LexerError, match="Invalid octal integer literal"):
+            Lexer(value).tokenize()
+
+
+def test_lexer_reports_malformed_decimal_separators_as_lexer_errors() -> None:
+    valid_values = ["1_000", "1_000.5"]
+    for value in valid_values:
+        tokens = Lexer(value).tokenize()
+        assert tokens[0].type in {TokenType.INTEGER, TokenType.DOUBLE}
+
+    malformed_decimal_values = ["1_", "1__2", "1_.5", "1.5_", "1.5__2"]
+    for value in malformed_decimal_values:
+        with pytest.raises(LexerError, match="Invalid decimal"):
             Lexer(value).tokenize()
 
 
