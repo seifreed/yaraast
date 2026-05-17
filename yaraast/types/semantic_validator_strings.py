@@ -361,9 +361,15 @@ class UndefinedStringDetector:
                 return
             refs.add(ref)
         elif isinstance(node, AtExpression):
-            refs.add(node.string_id if node.string_id.startswith("$") else f"${node.string_id}")
+            ref = node.string_id if node.string_id.startswith("$") else f"${node.string_id}"
+            if implicit_string_allowed and ref == "$":
+                return
+            refs.add(ref)
         elif isinstance(node, InExpression) and isinstance(node.subject, str):
-            refs.add(node.subject if node.subject.startswith("$") else f"${node.subject}")
+            ref = node.subject if node.subject.startswith("$") else f"${node.subject}"
+            if implicit_string_allowed and ref == "$":
+                return
+            refs.add(ref)
         elif isinstance(node, ForOfExpression):
             if hasattr(node.quantifier, "accept"):
                 self._collect_string_refs(node.quantifier, refs)
@@ -478,9 +484,13 @@ class UndefinedStringDetector:
             if not (implicit_string_allowed and ref == "$"):
                 self._mark_used_string_ref(ref, defined, anonymous, used)
         elif isinstance(node, AtExpression):
-            self._mark_used_string_ref(node.string_id, defined, anonymous, used)
+            ref = node.string_id if node.string_id.startswith("$") else f"${node.string_id}"
+            if not (implicit_string_allowed and ref == "$"):
+                self._mark_used_string_ref(ref, defined, anonymous, used)
         elif isinstance(node, InExpression) and isinstance(node.subject, str):
-            self._mark_used_string_ref(node.subject, defined, anonymous, used)
+            ref = node.subject if node.subject.startswith("$") else f"${node.subject}"
+            if not (implicit_string_allowed and ref == "$"):
+                self._mark_used_string_ref(ref, defined, anonymous, used)
         elif isinstance(node, ForOfExpression):
             if hasattr(node.quantifier, "accept"):
                 self._collect_used_string_defs(node.quantifier, defined, anonymous, used)

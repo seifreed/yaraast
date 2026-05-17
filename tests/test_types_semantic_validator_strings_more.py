@@ -261,6 +261,29 @@ def test_semantic_validator_counts_string_sets_as_string_references() -> None:
     assert result.errors == []
 
 
+def test_semantic_validator_allows_implicit_current_string_position_checks() -> None:
+    ast = Parser().parse("""
+        rule implicit_current_string_at {
+            strings:
+                $a = "abc"
+            condition:
+                for any of them : ($ at 0)
+        }
+
+        rule implicit_current_string_in {
+            strings:
+                $a = "abc"
+            condition:
+                for any of them : ($ in (0..10))
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is True
+    assert result.errors == []
+
+
 def test_semantic_validator_rejects_invalid_them_string_sets() -> None:
     ast = Parser().parse("""
         rule no_strings {

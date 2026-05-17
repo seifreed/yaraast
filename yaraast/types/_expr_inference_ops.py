@@ -354,6 +354,8 @@ def _validate_raw_string_ref(ctx, value: str) -> None:
         return
 
     normalized = ctx._normalize_string_id(value)
+    if normalized == "$" and ctx.env.lookup("$"):
+        return
     if normalized.endswith("*"):
         if not ctx.env.has_string_pattern(normalized):
             ctx.errors.append(f"Undefined string: {normalized}")
