@@ -133,7 +133,7 @@ def _format_hex_jump(token: HexJump) -> str:
     if token.min_jump is None and token.max_jump is None:
         return "[-]"
     if token.min_jump is None:
-        return f"[-{token.max_jump}]"
+        return f"[0-{token.max_jump}]"
     if token.max_jump is None:
         return f"[{token.min_jump}-]"
     if token.min_jump == token.max_jump:

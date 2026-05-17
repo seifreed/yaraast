@@ -82,7 +82,7 @@ def test_format_hex_string_grouping_and_token_rendering() -> None:
 
     assert out.startswith("{ ") and out.endswith(" }")
     assert "AB??[-]" in out
-    assert "[-5][2-][7]" in out
+    assert "[0-5][2-][7]" in out
     assert "(0F | ??)" in out
     assert "?E" in out and "D?" in out
 
@@ -134,7 +134,7 @@ def test_get_tag_string_and_hex_jump_ranges() -> None:
     assert get_tag_string([_TagObj("x"), "y"], aligned_cfg) == "x y"
 
     assert _format_hex_jump(HexJump(None, None)) == "[-]"
-    assert _format_hex_jump(HexJump(None, 4)) == "[-4]"
+    assert _format_hex_jump(HexJump(None, 4)) == "[0-4]"
     assert _format_hex_jump(HexJump(3, None)) == "[3-]"
     assert _format_hex_jump(HexJump(0, 0)) == "[0-0]"
     assert _format_hex_jump(HexJump(6, 6)) == "[6]"

@@ -66,11 +66,12 @@ def test_render_mixin_object_modifiers_and_short_prefix_paths() -> None:
 def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None:
     jump_tokens = [
         HexByte(value=0xAA),
+        HexJump(min_jump=0, max_jump=0),
         HexJump(min_jump=2, max_jump=5),
         HexAlternative(alternatives=[0x01, 0x02]),
     ]
-    assert render.create_hex_diagram(jump_tokens) == "AA [2-5] (01|02)"
-    assert helpers.create_hex_diagram(jump_tokens) == "AA [2-5] (01|02)"
+    assert render.create_hex_diagram(jump_tokens) == "AA [0-0] [2-5] (01|02)"
+    assert helpers.create_hex_diagram(jump_tokens) == "AA [0-0] [2-5] (01|02)"
 
     complex_tokens = [
         HexByte(value="af"),
@@ -85,7 +86,7 @@ def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None
             ]
         ),
     ]
-    expected_complex = "AF ~4D ?B (41|??|C?|[-5])"
+    expected_complex = "AF ~4D ?B (41|??|C?|[0-5])"
     assert render.create_hex_diagram(complex_tokens) == expected_complex
     assert helpers.create_hex_diagram(complex_tokens) == expected_complex
     assert expected_complex in _Renderer()._generate_hex_diagram(

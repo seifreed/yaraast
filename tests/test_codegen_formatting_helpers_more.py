@@ -65,7 +65,7 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     assert format_hex_jump(None, None) == "[-]"
     assert format_hex_jump(0, 0) == "[0-0]"
     assert format_hex_jump(3, 3) == "[3]"
-    assert format_hex_jump(None, 5) == "[-5]"
+    assert format_hex_jump(None, 5) == "[0-5]"
     assert format_hex_jump(2, None) == "[2-]"
     assert format_hex_jump(2, 5) == "[2-5]"
 
@@ -73,10 +73,22 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
 def test_pretty_printer_helpers_cover_all_branches() -> None:
     hex_node = HexString(
         "$h",
-        tokens=[HexByte(0x4D), HexByte("5a"), HexJump(2, 2), HexJump(1, 3), SimpleNamespace()],
+        tokens=[
+            HexByte(0x4D),
+            HexByte("5a"),
+            HexJump(0, 0),
+            HexJump(2, 2),
+            HexJump(1, 3),
+            SimpleNamespace(),
+        ],
     )
-    assert build_hex_pattern(hex_node, hex_uppercase=True, hex_spacing=True) == "4D 5A [2] [1-3] ??"
-    assert build_hex_pattern(hex_node, hex_uppercase=False, hex_spacing=False) == "4d5a[2][1-3]??"
+    assert (
+        build_hex_pattern(hex_node, hex_uppercase=True, hex_spacing=True)
+        == "4D 5A [0-0] [2] [1-3] ??"
+    )
+    assert (
+        build_hex_pattern(hex_node, hex_uppercase=False, hex_spacing=False) == "4d5a[0-0][2][1-3]??"
+    )
 
     complex_hex_node = HexString(
         "$complex",
@@ -96,11 +108,11 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
     )
     assert (
         build_hex_pattern(complex_hex_node, hex_uppercase=True, hex_spacing=True)
-        == "AF ~4D ?B (41 42 | ?? | [-5] | C?)"
+        == "AF ~4D ?B (41 42 | ?? | [0-5] | C?)"
     )
     assert (
         build_hex_pattern(complex_hex_node, hex_uppercase=False, hex_spacing=False)
-        == "af~4d?b(4142|??|[-5]|c?)"
+        == "af~4d?b(4142|??|[0-5]|c?)"
     )
 
     plain = PlainString("$a", value="hello")

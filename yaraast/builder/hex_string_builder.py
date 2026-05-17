@@ -107,7 +107,7 @@ class HexStringBuilder:
         return self.jump(min_val, max_val)
 
     def jump_up_to(self, max_val: int) -> Self:
-        """Add a jump up to max [-max]."""
+        """Add a jump up to max [0-max]."""
         return self.jump(None, max_val)
 
     def jump_at_least(self, min_val: int) -> Self:
@@ -195,11 +195,18 @@ class HexStringBuilder:
                 if len(parts) != 2:
                     msg = f"Invalid jump pattern: {part}"
                     raise ValidationError(msg)
+                if parts[0] == "" and parts[1] != "":
+                    msg = f"Invalid jump pattern: {part}"
+                    raise ValidationError(msg)
                 min_j = int(parts[0]) if parts[0] else None
                 max_j = int(parts[1]) if parts[1] else None
                 self.jump(min_j, max_j)
             else:
-                self.jump_exact(int(jump_str))
+                exact_jump = int(jump_str)
+                if exact_jump == 0:
+                    msg = f"Invalid jump pattern: {part}"
+                    raise ValidationError(msg)
+                self.jump_exact(exact_jump)
         except ValueError:
             msg = f"Invalid jump pattern: {part}"
             raise ValidationError(msg) from None

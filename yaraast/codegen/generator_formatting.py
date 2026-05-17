@@ -54,7 +54,7 @@ def format_hex_jump(min_jump, max_jump) -> str:
             return "[0-0]"
         return f"[{min_jump}]"
     if min_jump is None:
-        return f"[-{max_jump}]"
+        return f"[0-{max_jump}]"
     if max_jump is None:
         return f"[{min_jump}-]"
     return f"[{min_jump}-{max_jump}]"

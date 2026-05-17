@@ -630,18 +630,26 @@ class TestHexStringBuilderPattern:
         """Pattern should parse open-ended jump ranges."""
         builder = HexStringBuilder()
 
-        builder.pattern("[4-] [-8]")
+        builder.pattern("[4-] [-] [0-8] [0-0]")
         tokens = builder.build()
 
-        assert len(tokens) == 2
+        assert len(tokens) == 4
         # [4-]
         assert isinstance(tokens[0], HexJump)
         assert tokens[0].min_jump == 4
         assert tokens[0].max_jump is None
-        # [-8]
+        # [-]
         assert isinstance(tokens[1], HexJump)
         assert tokens[1].min_jump is None
-        assert tokens[1].max_jump == 8
+        assert tokens[1].max_jump is None
+        # [0-8]
+        assert isinstance(tokens[2], HexJump)
+        assert tokens[2].min_jump == 0
+        assert tokens[2].max_jump == 8
+        # [0-0]
+        assert isinstance(tokens[3], HexJump)
+        assert tokens[3].min_jump == 0
+        assert tokens[3].max_jump == 0
 
     def test_pattern_complex_mixed(self) -> None:
         """Pattern should handle complex mixed tokens."""
@@ -667,7 +675,7 @@ class TestHexStringBuilderPattern:
 
     def test_pattern_rejects_invalid_jump_ranges(self) -> None:
         """Pattern parsing should reject invalid jumps."""
-        for pattern in ("[a]", "[5-2]", "[1-2-3]"):
+        for pattern in ("[a]", "[5-2]", "[1-2-3]", "[0]", "[-8]"):
             with pytest.raises(ValidationError):
                 HexStringBuilder().pattern(pattern)
 

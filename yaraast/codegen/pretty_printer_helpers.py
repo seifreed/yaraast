@@ -66,11 +66,17 @@ def _format_hex_nibble_value(value: int | str, hex_uppercase: bool) -> str:
 
 
 def _format_hex_jump(token: HexJump) -> str:
-    lo = token.min_jump if token.min_jump is not None else ""
-    hi = token.max_jump if token.max_jump is not None else ""
-    if lo == hi and lo != "":
-        return f"[{lo}]"
-    return f"[{lo}-{hi}]"
+    if token.min_jump is None and token.max_jump is None:
+        return "[-]"
+    if token.min_jump is None:
+        return f"[0-{token.max_jump}]"
+    if token.max_jump is None:
+        return f"[{token.min_jump}-]"
+    if token.min_jump == token.max_jump:
+        if token.min_jump == 0:
+            return "[0-0]"
+        return f"[{token.min_jump}]"
+    return f"[{token.min_jump}-{token.max_jump}]"
 
 
 def _coerce_hex_alternative_branch(alternative) -> list:
