@@ -66,6 +66,7 @@ def test_ast_hasher_string_and_expression_helpers() -> None:
         ),
     )
     assert "HexString($h" in hex_repr
+    assert ",False,Mod(ascii,None)" in hex_repr
     assert "Byte(AA)" in hex_repr
     assert "Wildcard()" in hex_repr
     assert "Jump(2,4)" in hex_repr
@@ -80,6 +81,15 @@ def test_ast_hasher_string_and_expression_helpers() -> None:
         ),
     )
     assert "RegexString($r,abc.*" in regex_repr
+    assert ",False,Mod(nocase,None)" in regex_repr
+
+    anonymous_plain = hasher.visit_plain_string(
+        SimpleNamespace(identifier="$anon_1", value="x", modifiers=[], is_anonymous=True)
+    )
+    named_plain = hasher.visit_plain_string(
+        SimpleNamespace(identifier="$anon_1", value="x", modifiers=[], is_anonymous=False)
+    )
+    assert anonymous_plain != named_plain
 
     binary_repr = hasher.visit_binary_expression(
         _AcceptNode(
@@ -92,7 +102,13 @@ def test_ast_hasher_string_and_expression_helpers() -> None:
     assert binary_repr == "Binary(Int(1),+,Int(2))"
 
     assert hasher.visit_string_wildcard(SimpleNamespace(pattern="$a*")) == "$a*"
-    assert hasher.visit_string_definition(SimpleNamespace(identifier="$a")) == "StringDef($a)"
+    assert hasher.visit_string_definition(SimpleNamespace(identifier="$a")) == (
+        "StringDef($a,False)"
+    )
+    assert (
+        hasher.visit_string_definition(SimpleNamespace(identifier="$anon_1", is_anonymous=True))
+        == "StringDef($anon_1,True)"
+    )
     assert hasher.visit_hex_token(SimpleNamespace()) == "Token()"
     assert hasher.visit_hex_negated_byte(SimpleNamespace(value="4D")) == "NegatedByte(4D)"
     assert hasher.visit_hex_alternative(SimpleNamespace()) == "Alt()"

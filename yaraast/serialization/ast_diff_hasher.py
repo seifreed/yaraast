@@ -77,18 +77,27 @@ class AstHasher(ASTVisitor[str]):
     def visit_plain_string(self, node) -> str:
         """Hash PlainString node."""
         modifiers = self._hash_modifiers(node)
-        return f"PlainString({node.identifier},{node.value},{modifiers})"
+        return (
+            f"PlainString({node.identifier},{node.value},"
+            f"{getattr(node, 'is_anonymous', False)},{modifiers})"
+        )
 
     def visit_hex_string(self, node) -> str:
         """Hash HexString node."""
         tokens = "|".join(self.visit(token) for token in node.tokens)
         modifiers = self._hash_modifiers(node)
-        return f"HexString({node.identifier},{tokens},{modifiers})"
+        return (
+            f"HexString({node.identifier},{tokens},"
+            f"{getattr(node, 'is_anonymous', False)},{modifiers})"
+        )
 
     def visit_regex_string(self, node) -> str:
         """Hash RegexString node."""
         modifiers = self._hash_modifiers(node)
-        return f"RegexString({node.identifier},{node.regex},{modifiers})"
+        return (
+            f"RegexString({node.identifier},{node.regex},"
+            f"{getattr(node, 'is_anonymous', False)},{modifiers})"
+        )
 
     def visit_string_modifier(self, node) -> str:
         """Hash StringModifier node."""
@@ -137,7 +146,7 @@ class AstHasher(ASTVisitor[str]):
         return f"Bool({node.value})"
 
     def visit_string_definition(self, node) -> str:
-        return f"StringDef({node.identifier})"
+        return f"StringDef({node.identifier},{getattr(node, 'is_anonymous', False)})"
 
     def visit_hex_token(self, node) -> str:
         return "Token()"

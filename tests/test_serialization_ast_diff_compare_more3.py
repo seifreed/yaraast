@@ -110,6 +110,32 @@ def test_compare_rules_removed_modifier_and_string_diffs() -> None:
     assert by_path["/rules/shared/strings/$a"].diff_type == DiffType.MODIFIED
 
 
+def test_compare_rules_detects_anonymous_string_flag_change() -> None:
+    hasher = AstHasher()
+    result = DiffResult(old_ast_hash="old", new_ast_hash="new")
+    old_rules = [
+        Rule(
+            name="shared",
+            strings=[PlainString(identifier="$anon_1", value="x", is_anonymous=False)],
+            condition=BooleanLiteral(value=True),
+        )
+    ]
+    new_rules = [
+        Rule(
+            name="shared",
+            strings=[PlainString(identifier="$anon_1", value="x", is_anonymous=True)],
+            condition=BooleanLiteral(value=True),
+        )
+    ]
+
+    compare_rules(old_rules, new_rules, result, hasher, DiffNode, DiffType)
+
+    assert len(result.differences) == 1
+    diff = result.differences[0]
+    assert diff.path == "/rules/shared/strings/$anon_1"
+    assert diff.diff_type == DiffType.MODIFIED
+
+
 def test_compare_rules_meta_tags_and_added_string_diffs() -> None:
     hasher = AstHasher()
     result = DiffResult(old_ast_hash="old", new_ast_hash="new")
