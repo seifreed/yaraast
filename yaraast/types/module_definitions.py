@@ -76,6 +76,8 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "type": "i",
             "machine": "i",
             "entry_point": "i",
+            "number_of_sections": "i",
+            "number_of_segments": "i",
             "sections": (
                 "array",
                 (

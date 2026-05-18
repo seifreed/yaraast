@@ -348,6 +348,28 @@ def test_pe_invalid_files_leave_pe_fields_undefined(data: bytes) -> None:
     assert YaraEvaluator(data=data).evaluate_file(ast) == {"invalid_pe_fields": False}
 
 
+@pytest.mark.parametrize("data", [b"", b"\x7fELF"])
+def test_elf_invalid_files_leave_elf_fields_undefined(data: bytes) -> None:
+    ast = Parser().parse("""
+        import "elf"
+        rule invalid_elf_fields {
+            condition:
+                defined elf.type or
+                elf.type == 2 or
+                defined elf.machine or
+                elf.machine == 3 or
+                defined elf.entry_point or
+                elf.entry_point == 0x8048000 or
+                defined elf.number_of_sections or
+                elf.number_of_sections == 0 or
+                defined elf.number_of_segments or
+                elf.number_of_segments == 0
+        }
+        """)
+
+    assert YaraEvaluator(data=data).evaluate_file(ast) == {"invalid_elf_fields": False}
+
+
 def test_console_log_matches_libyara_scalar_arguments() -> None:
     ast = Parser().parse("""
         import "console"

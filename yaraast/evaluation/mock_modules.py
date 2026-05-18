@@ -296,13 +296,13 @@ class MockELF:
         self._parse_headers()
 
     def _parse_headers(self) -> None:
-        self.type = 2  # ET_EXEC
-        self.machine = 3  # EM_386
-        self.entry_point = 0x8048000
+        self.type = YARA_UNDEFINED
+        self.machine = YARA_UNDEFINED
+        self.entry_point = YARA_UNDEFINED
         self.sections: list[Section] = []
         self.segments: list[dict] = []
-        self.number_of_sections = 0
-        self.number_of_segments = 0
+        self.number_of_sections = YARA_UNDEFINED
+        self.number_of_segments = YARA_UNDEFINED
 
         if len(self.data) >= 20 and self.data[:4] == b"\x7fELF":
             self.type = struct.unpack("<H", self.data[16:18])[0]
