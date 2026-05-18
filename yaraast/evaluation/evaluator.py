@@ -83,11 +83,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             module_name = import_stmt.module
             module = self.module_registry.create_module(module_name, self.data)
             if module:
-                # Handle aliases
+                self.context.modules[module_name] = module
                 if import_stmt.alias:
                     self.context.modules[import_stmt.alias] = module
-                else:
-                    self.context.modules[module_name] = module
 
         # Evaluate each rule
         for rule in yara_file.rules:

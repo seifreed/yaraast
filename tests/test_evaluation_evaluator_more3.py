@@ -1453,6 +1453,25 @@ def test_evaluate_file_with_alias_import_and_string_operator_expression() -> Non
     assert out["ok"] is True
 
 
+def test_evaluate_file_with_aliased_import_keeps_original_module_name() -> None:
+    ev = YaraEvaluator(data=b"abc")
+    file_ast = __import__("yaraast.ast.base", fromlist=["YaraFile"]).YaraFile(
+        imports=[Import(module="math", alias="m")],
+        rules=[
+            Rule(
+                name="ok",
+                condition=BinaryExpression(
+                    left=FunctionCall(function="math.abs", arguments=[IntegerLiteral(value=-1)]),
+                    operator="==",
+                    right=IntegerLiteral(value=1),
+                ),
+            )
+        ],
+    )
+    out = ev.evaluate_file(file_ast)
+    assert out["ok"] is True
+
+
 def test_evaluate_file_defined_module_reference_after_import() -> None:
     ast = Parser().parse("""
         import "math"
