@@ -16,6 +16,8 @@ from typing import Any
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED, YaraUndefinedValue
 
+SERIAL_CORRELATION_DEGENERATE = -100000.0
+
 
 @dataclass
 class Section:
@@ -295,14 +297,16 @@ class MockMath:
 
     def serial_correlation(self, offset: int, size: int) -> float | YaraUndefinedValue:
         """Calculate serial correlation of data region."""
-        region = self._get_region(offset, size, min_size=2)
+        region = self._get_region(offset, size, min_size=0)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         n = len(region)
+        if n < 2:
+            return SERIAL_CORRELATION_DEGENERATE
         mean_val = sum(region) / n
         num = sum((region[i] - mean_val) * (region[i + 1] - mean_val) for i in range(n - 1))
         den = sum((b - mean_val) ** 2 for b in region)
-        return num / den if den != 0 else 0.0
+        return num / den if den != 0 else SERIAL_CORRELATION_DEGENERATE
 
     def monte_carlo_pi(self, offset: int, size: int) -> float | YaraUndefinedValue:
         """Estimate deviation from pi using Monte Carlo method."""

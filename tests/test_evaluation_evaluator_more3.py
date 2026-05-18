@@ -163,6 +163,22 @@ def test_math_module_invalid_regions_evaluate_as_undefined() -> None:
     assert YaraEvaluator(data=b"abcdef").evaluate_file(ast) == {"invalid_math_regions": False}
 
 
+def test_math_serial_correlation_returns_libyara_sentinel_for_degenerate_regions() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule degenerate_serial_correlation {
+            condition:
+                defined math.serial_correlation(0, 0) and
+                math.serial_correlation(0, 0) == -100000.0 and
+                defined math.serial_correlation(0, 1) and
+                math.serial_correlation(0, 1) == -100000.0 and
+                math.serial_correlation(0, 2) == -100000.0
+        }
+        """)
+
+    assert YaraEvaluator(data=b"aa").evaluate_file(ast) == {"degenerate_serial_correlation": True}
+
+
 def test_math_module_valid_regions_can_extend_to_file_end() -> None:
     ast = Parser().parse("""
         import "math"

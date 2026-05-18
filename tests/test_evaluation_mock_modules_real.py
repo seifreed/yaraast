@@ -152,7 +152,9 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert m.mean(-1, 1) is YARA_UNDEFINED
     assert m.mean(10, 100) == 255.0
     assert m.deviation(-1, 1, 0.0) is YARA_UNDEFINED
-    assert m.serial_correlation(0, 1) is YARA_UNDEFINED
+    assert m.serial_correlation(0, 0) == -100000.0
+    assert m.serial_correlation(0, 1) == -100000.0
+    assert m.serial_correlation(0, 10) == -100000.0
     assert m.monte_carlo_pi(0, 5) is YARA_UNDEFINED
 
     dotnet = MockDotNet(b"")
