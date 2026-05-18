@@ -364,6 +364,29 @@ def test_protobuf_serializer_canonicalizes_ast_string_set_list_items() -> None:
     assert restored.rules[0].condition == OfExpression("any", ["$a", "$b*"])
 
 
+def test_protobuf_serializer_canonicalizes_ast_string_set_expression_items() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="ast_string_set_expression_items",
+                condition=OfExpression(
+                    quantifier="any",
+                    string_set=ParenthesesExpression(
+                        SetExpression([StringLiteral("$a"), StringLiteral("$b*")])
+                    ),
+                ),
+            )
+        ]
+    )
+
+    protobuf_file = serializer._ast_to_protobuf(ast)
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert list(protobuf_file.rules[0].condition.of_expression.string_set_items) == ["$a", "$b*"]
+    assert restored.rules[0].condition == OfExpression("any", ["$a", "$b*"])
+
+
 def test_protobuf_serializer_preserves_typed_string_modifier_values() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

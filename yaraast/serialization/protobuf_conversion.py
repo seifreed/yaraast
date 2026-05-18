@@ -583,9 +583,43 @@ def _copy_string_set_to_protobuf(value, pb_owner) -> None:
         )
         return
 
+    string_set_items = _expression_string_set_items(value)
+    if string_set_items is not None:
+        pb_owner.string_set_items.extend(string_set_items)
+        return
+
     string_set = _coerce_expression(value)
     if string_set is not None:
         convert_expression_to_protobuf(string_set, pb_owner.string_set)
+
+
+def _expression_string_set_items(value) -> list[str] | None:
+    from yaraast.ast.expressions import ParenthesesExpression, SetExpression
+
+    if isinstance(value, ParenthesesExpression):
+        return _expression_string_set_items(value.expression)
+    if not isinstance(value, SetExpression):
+        return None
+
+    items = []
+    for element in value.elements:
+        item_text = _expression_string_set_item_text(element)
+        if item_text is None:
+            return None
+        items.append(item_text)
+    return items
+
+
+def _expression_string_set_item_text(item) -> str | None:
+    from yaraast.ast.expressions import StringIdentifier, StringLiteral, StringWildcard
+
+    if isinstance(item, StringIdentifier):
+        return item.name
+    if isinstance(item, StringWildcard):
+        return item.pattern
+    if isinstance(item, StringLiteral) and item.value.startswith("$"):
+        return item.value
+    return None
 
 
 def _string_set_item_text(item) -> str:
