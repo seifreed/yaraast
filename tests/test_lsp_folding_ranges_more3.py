@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.lsp.folding_ranges import FoldingRangesProvider
-from yaraast.lsp.structure import find_rule_line
+from yaraast.lsp.structure import find_rule_end, find_rule_line, find_section_header_position
 from yaraast.parser.parser import Parser
 
 
@@ -41,6 +41,19 @@ rule a {
 
     assert any(range_.start_line == 3 for range_ in ranges)
     assert all(range_.start_line != 2 for range_ in ranges)
+
+
+def test_structure_scanners_ignore_section_names_inside_matches_regex() -> None:
+    text = """
+rule sample {
+  condition:
+    "abc" matches /strings:/
+}
+""".lstrip()
+    lines = text.split("\n")
+
+    assert find_section_header_position(lines, "strings", 0, 3) is None
+    assert find_rule_end(lines, 0) == 3
 
 
 def test_folding_ranges_match_exact_rule_names() -> None:

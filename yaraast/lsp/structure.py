@@ -9,6 +9,8 @@ from lsprotocol.types import Position, Range
 
 SECTION_NAMES = ("meta", "strings", "condition", "events", "match", "outcome", "options")
 RULE_DECLARATION_RE = re.compile(r"\s*(?:(?:global|private)\s+)*rule\s+")
+REGEX_CONTEXT_CHARS = frozenset("([{,=!:<>~&|?+-*")
+REGEX_CONTEXT_WORDS = frozenset({"matches", "contains", "and", "or", "not", "condition"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,9 +61,28 @@ def _previous_significant_char(line: str, index: int) -> str | None:
     return None
 
 
+def _previous_significant_word(line: str, index: int) -> str | None:
+    end = index
+    while end > 0 and line[end - 1].isspace():
+        end -= 1
+    start = end
+    while start > 0 and (line[start - 1].isalnum() or line[start - 1] == "_"):
+        start -= 1
+    if start == end:
+        return None
+    return line[start:end].lower()
+
+
 def _starts_regex_literal(line: str, index: int) -> bool:
+    if line[index] != "/":
+        return False
+    if index + 1 < len(line) and line[index + 1] in {"/", "*"}:
+        return False
     previous = _previous_significant_char(line, index)
-    return previous is None or previous in "([{,=!:<>~&|?+-*"
+    if previous is None or previous in REGEX_CONTEXT_CHARS:
+        return True
+    word = _previous_significant_word(line, index)
+    return word in REGEX_CONTEXT_WORDS
 
 
 def _is_identifier_char(char: str) -> bool:

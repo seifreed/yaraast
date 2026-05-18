@@ -114,6 +114,14 @@ def test_signature_help_edge_cases_and_parameter_counting() -> None:
     assert string_comma_sig.active_parameter == 1
     assert "imports" in string_comma_sig.signatures[0].label
 
+    regex_after_matches_text = 'pe.imports("abc" matches /a,b/'
+    regex_after_matches_sig = provider.get_signature_help(
+        regex_after_matches_text, _pos(0, len(regex_after_matches_text))
+    )
+    assert regex_after_matches_sig is not None
+    assert regex_after_matches_sig.active_parameter == 0
+    assert "imports" in regex_after_matches_sig.signatures[0].label
+
     assert provider._calculate_active_parameter("uint32(1,", _pos(1, 0)) == 0
     assert provider._calculate_active_parameter("uint32(1", _pos(0, 99)) == 0
     assert provider._calculate_active_parameter("uint32(1)", _pos(0, len("uint32(1)"))) == 0

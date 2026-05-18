@@ -14,21 +14,7 @@ from lsprotocol.types import (
     WorkspaceEdit,
 )
 
-
-def _previous_significant_char(text: str, index: int) -> str | None:
-    for char in reversed(text[:index]):
-        if not char.isspace():
-            return char
-    return None
-
-
-def _starts_regex_literal(text: str, index: int) -> bool:
-    if text[index] != "/":
-        return False
-    if index + 1 < len(text) and text[index + 1] in {"/", "*"}:
-        return False
-    previous = _previous_significant_char(text, index)
-    return previous is None or previous in "([{,=!:<>~&|?+-*"
+from yaraast.lsp.structure import _starts_regex_literal
 
 
 def _scan_quoted_end(text: str, start: int, delimiter: str) -> int:

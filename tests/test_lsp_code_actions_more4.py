@@ -437,6 +437,38 @@ rule sample {
     assert _change_set(action.edit, "file://test.yar")[0].new_text == '"a,b"'
 
 
+def test_code_action_trim_arguments_preserves_commas_inside_matches_regex() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        custom("abc" matches /a,b/, 1)
+}
+""".lstrip()
+    diag = Diagnostic(
+        range=_range(2, 8, 37),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "custom",
+                "arity_kind": "max",
+                "actual_args": 2,
+                "expected_max": 1,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(text, _range(2, 8, 37), [diag], "file://test.yar")
+    action = next(
+        action for action in actions if action.title == "Remove extra argument(s) from custom()"
+    )
+    assert action.edit is not None
+    assert _change_set(action.edit, "file://test.yar")[0].new_text == '"abc" matches /a,b/'
+
+
 def test_code_action_uses_compiler_undefined_identifier_metadata_for_missing_string() -> None:
     provider = CodeActionsProvider()
     text = """
