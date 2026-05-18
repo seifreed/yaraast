@@ -44,7 +44,7 @@ class SymbolsProvider:
                 doc = DocumentContext(uri or "", text)
             cached = doc.get_cached("lsp:document_symbols")
             if cached is not None:
-                return cached
+                return list(cached)
             ast = doc.ast()
             if ast is None:
                 return []
@@ -57,12 +57,12 @@ class SymbolsProvider:
             symbols = []
 
         if doc is not None:
-            doc.set_cached("lsp:document_symbols", symbols)
+            doc.set_cached("lsp:document_symbols", list(symbols))
         if self.runtime is not None:
             self.runtime.record_latency(
                 "document_symbols", (time.perf_counter() - started) * 1000.0
             )
-        return symbols
+        return list(symbols)
 
     def _find_line_containing(
         self,

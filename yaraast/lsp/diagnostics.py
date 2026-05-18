@@ -93,7 +93,7 @@ class DiagnosticsProvider:
         if ctx is not None:
             cached = ctx.get_cached("diagnostics")
             if cached is not None:
-                return cached
+                return list(cached)
 
         diagnostics: list[Diagnostic] = []
         started = time.perf_counter()
@@ -102,10 +102,10 @@ class DiagnosticsProvider:
         self._run_configurable_checks(ast, diagnostics)
 
         if ctx is not None:
-            ctx.set_cached("diagnostics", diagnostics)
+            ctx.set_cached("diagnostics", list(diagnostics))
         if self.runtime is not None:
             self.runtime.record_latency("diagnostics", (time.perf_counter() - started) * 1000.0)
-        return diagnostics
+        return list(diagnostics)
 
     def _parse_and_validate(self, text: str, ctx, diagnostics: list[Diagnostic]):
         """Parse text, run semantic validation and optional compilation."""

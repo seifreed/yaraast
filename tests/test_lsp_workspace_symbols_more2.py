@@ -63,6 +63,8 @@ rule sample {
         first = provider._get_symbols_from_file(f)
         second = provider._get_symbols_from_file(f)
         assert first == second
+        first.clear()
+        assert provider._get_symbols_from_file(f) == second
 
         # Parse failure path inside _get_symbols_from_file should be swallowed.
         assert provider._get_symbols_from_file(bad) == []

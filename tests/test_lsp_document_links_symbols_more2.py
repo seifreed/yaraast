@@ -237,10 +237,11 @@ def test_symbols_provider_caches_results_per_document_revision(tmp_path: Path) -
 
     first = provider.get_symbols(text_v1, uri)
     second = provider.get_symbols(text_v1, uri)
-    assert first is second
+    assert first == second
+    first.clear()
+    assert provider.get_symbols(text_v1, uri) == second
 
     runtime.update_document(uri, text_v2, version=2)
     third = provider.get_symbols(text_v2, uri)
-    assert third is not first
     rule_symbol = next(symbol for symbol in third if symbol.name == "sample")
     assert any(child.name == "strings" for child in (rule_symbol.children or []))

@@ -70,7 +70,7 @@ class WorkspaceSymbolsProvider:
         if cache_key in self.symbol_cache:
             cached_mtime, cached_symbols = self.symbol_cache[cache_key]
             if cached_mtime == mtime:
-                return cached_symbols
+                return list(cached_symbols)
 
         # Parse file and extract symbols
         symbols = []
@@ -102,14 +102,14 @@ class WorkspaceSymbolsProvider:
                 symbols.append(info)
 
             # Cache results
-            self.symbol_cache[cache_key] = (mtime, symbols)
+            self.symbol_cache[cache_key] = (mtime, list(symbols))
 
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
             # Return empty list if parsing fails
             pass
 
-        return symbols
+        return list(symbols)
 
     def clear_cache(self) -> None:
         """Clear the symbol cache."""

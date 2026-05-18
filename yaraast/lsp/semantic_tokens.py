@@ -59,6 +59,10 @@ TOKEN_MODIFIERS = [
 ]
 
 
+def _copy_semantic_tokens(tokens: SemanticTokens) -> SemanticTokens:
+    return SemanticTokens(data=list(tokens.data), result_id=tokens.result_id)
+
+
 class SemanticTokensProvider:
     """Provides semantic tokens for advanced syntax highlighting."""
 
@@ -87,7 +91,7 @@ class SemanticTokensProvider:
         if ctx is not None:
             cached = ctx.get_cached("semantic_tokens:full")
             if cached is not None:
-                return cached
+                return _copy_semantic_tokens(cached)
 
         tokens_data = []
         started = time.perf_counter()
@@ -109,7 +113,7 @@ class SemanticTokensProvider:
             self.runtime.record_latency(
                 "semantic_tokens_full", (time.perf_counter() - started) * 1000.0
             )
-        return result
+        return _copy_semantic_tokens(result)
 
     def get_semantic_tokens_range(
         self, text: str, range_: Range, uri: str | None = None
@@ -124,7 +128,7 @@ class SemanticTokensProvider:
             )
             cached = ctx.get_cached(cache_key)
             if cached is not None:
-                return cached
+                return _copy_semantic_tokens(cached)
 
         tokens_data = []
         started = time.perf_counter()
@@ -144,7 +148,7 @@ class SemanticTokensProvider:
             self.runtime.record_latency(
                 "semantic_tokens_range", (time.perf_counter() - started) * 1000.0
             )
-        return result
+        return _copy_semantic_tokens(result)
 
     def _map_token_type(self, token_type: TokenType) -> str | None:
         return map_token_type(token_type)

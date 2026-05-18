@@ -797,7 +797,15 @@ rule login_event {
     diagnostics_again = provider.get_diagnostics(text, uri)
 
     assert diagnostics == []
-    assert diagnostics_again is diagnostics
+    assert diagnostics_again == diagnostics
+
+    broken_uri = "file:///broken.yar"
+    broken_first = provider.get_diagnostics("rule {", broken_uri)
+    broken_second = provider.get_diagnostics("rule {", broken_uri)
+    assert broken_first == broken_second
+    assert broken_first
+    broken_first.clear()
+    assert provider.get_diagnostics("rule {", broken_uri) == broken_second
 
 
 def test_semantic_tokens_provider_caches_full_and_range_results() -> None:
@@ -816,12 +824,16 @@ rule sample {
 
     full_a = provider.get_semantic_tokens(text, uri)
     full_b = provider.get_semantic_tokens(text, uri)
-    assert full_a is full_b
+    assert full_a == full_b
+    full_a.data = []
+    assert provider.get_semantic_tokens(text, uri) == full_b
 
     range_ = Range(start=Position(line=2, character=0), end=Position(line=3, character=20))
     range_a = provider.get_semantic_tokens_range(text, range_, uri)
     range_b = provider.get_semantic_tokens_range(text, range_, uri)
-    assert range_a is range_b
+    assert range_a == range_b
+    range_a.data = []
+    assert provider.get_semantic_tokens_range(text, range_, uri) == range_b
 
     metrics = runtime.get_latency_metrics()
     assert "semantic_tokens_full" in metrics
