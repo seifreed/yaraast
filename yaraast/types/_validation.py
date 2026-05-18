@@ -69,12 +69,15 @@ class TypeChecker(BaseVisitor[None]):
         for imp in node.imports:
             self.visit(imp)
 
-        # Add all rule names first to support forward references
+        # Process rules in source order. YARA rule references can point at the
+        # current rule or previously declared rules, but not forward.
+        seen_rules: set[str] = set()
         for rule in node.rules:
+            if rule.name in seen_rules:
+                self.errors.append(f"Duplicate rule identifier: {rule.name}")
+                continue
+            seen_rules.add(rule.name)
             self.env.add_rule(rule.name)
-
-        # Process rules
-        for rule in node.rules:
             self.visit(rule)
 
     def visit_import(self, node: Import) -> None:
@@ -83,6 +86,13 @@ class TypeChecker(BaseVisitor[None]):
         self.env.add_module(name, node.module)
 
     def visit_rule(self, node: Rule) -> None:
+        seen_tags: set[str] = set()
+        for tag in node.tags:
+            if tag.name in seen_tags:
+                self.errors.append(f"Duplicate tag identifier '{tag.name}' in rule '{node.name}'")
+            else:
+                seen_tags.add(tag.name)
+
         previous_strings = set(self.env.strings)
         previous_anonymous_strings = set(self.env.anonymous_strings)
 

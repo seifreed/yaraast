@@ -17,6 +17,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
+from yaraast.parser import Parser
 from yaraast.types.semantic_validator import (
     SemanticValidator,
     check_function_calls,
@@ -131,6 +132,73 @@ def test_validate_rule_detects_invalid_condition_type() -> None:
 
     assert result.is_valid is False
     assert any("Rule condition must be boolean" in error.message for error in result.errors)
+
+
+def test_validate_file_rejects_duplicate_rule_names() -> None:
+    ast = Parser().parse("""
+        rule dup { condition: true }
+        rule dup { condition: true }
+        """)
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any("Duplicate rule identifier: dup" in error.message for error in result.errors)
+
+
+def test_validate_file_rejects_duplicate_rule_tags() -> None:
+    ast = Parser().parse("""
+        rule tagged : alpha alpha {
+            condition:
+                true
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any(
+        "Duplicate tag identifier 'alpha' in rule 'tagged'" in error.message
+        for error in result.errors
+    )
+
+
+def test_validate_file_rejects_forward_rule_reference() -> None:
+    ast = Parser().parse("""
+        rule first {
+            condition:
+                second
+        }
+
+        rule second {
+            condition:
+                true
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is False
+    assert any("Rule condition must be boolean" in error.message for error in result.errors)
+
+
+def test_validate_file_accepts_self_and_previous_rule_references() -> None:
+    ast = Parser().parse("""
+        rule first {
+            condition:
+                first
+        }
+
+        rule second {
+            condition:
+                first
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is True
+    assert result.errors == []
 
 
 def test_validate_expression_and_convenience_functions() -> None:
