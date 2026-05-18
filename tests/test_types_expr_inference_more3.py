@@ -308,6 +308,25 @@ def test_expr_inference_validates_module_function_argument_types() -> None:
         for e in invalid_to_string.errors
     )
 
+    float_to_abs = ExpressionTypeInference(env)
+    float_to_abs.infer(FunctionCall(function="math.abs", arguments=[DoubleLiteral(1.5)]))
+    assert any(
+        "Argument 'x' to function 'abs' must be integer, got double" in e
+        for e in float_to_abs.errors
+    )
+
+    int_to_deviation_mean = ExpressionTypeInference(env)
+    int_to_deviation_mean.infer(
+        FunctionCall(
+            function="math.deviation",
+            arguments=[IntegerLiteral(0), IntegerLiteral(1), IntegerLiteral(97)],
+        )
+    )
+    assert any(
+        "Argument 'mean' to function 'deviation' must be double, got integer" in e
+        for e in int_to_deviation_mean.errors
+    )
+
 
 def test_expr_inference_accepts_hash_checksum32_function() -> None:
     env = TypeEnvironment()

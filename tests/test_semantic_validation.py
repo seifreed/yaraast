@@ -267,6 +267,37 @@ class TestFunctionCallValidator:
         assert result.is_valid is False
         assert "must be integer" in result.errors[0].message
 
+    def test_integer_function_parameters_reject_float_arguments(self) -> None:
+        ast = Parser().parse("""
+            import "math"
+            import "string"
+            rule invalid_integer_arguments {
+                condition:
+                    math.abs(1.5) == 1 or
+                    string.to_int("10", 1.5) == 10 or
+                    uint8(1.5) == 0
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        assert sum("must be integer, got double" in error.message for error in result.errors) == 3
+
+    def test_double_function_parameters_reject_integer_arguments(self) -> None:
+        ast = Parser().parse("""
+            import "math"
+            rule invalid_double_argument {
+                condition:
+                    math.deviation(0, 1, 97) >= 0.0
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        assert "must be double, got integer" in result.errors[0].message
+
     def test_cuckoo_nested_module_functions_validate(self) -> None:
         ast = Parser().parse(r"""
             import "cuckoo"

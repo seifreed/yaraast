@@ -26,15 +26,18 @@ from ._registry import (
     BooleanType,
     DictionaryType,
     DoubleType,
+    FloatType,
     IntegerType,
     ModuleType,
     RangeType,
     RegexType,
+    ScalarType,
     StringIdentifierType,
     StringSetType,
     StringType,
     StructType,
     UnknownType,
+    YaraType,
 )
 
 
@@ -253,7 +256,7 @@ def _validate_function_argument_types(ctx, func_name: str, parameters, arguments
     for (param_name, param_type), arg_type in zip(parameter_list, arg_types, strict=False):
         if isinstance(arg_type, UnknownType):
             continue
-        if not param_type.is_compatible_with(arg_type):
+        if not _is_function_argument_compatible(param_type, arg_type):
             ctx.errors.append(
                 f"Argument '{param_name}' to function '{func_name}' must be {param_type}, got {arg_type}"
             )
@@ -262,10 +265,24 @@ def _validate_function_argument_types(ctx, func_name: str, parameters, arguments
         for arg_type in arg_types[len(parameter_list) :]:
             if isinstance(arg_type, UnknownType):
                 continue
-            if not variadic_type.is_compatible_with(arg_type):
+            if not _is_function_argument_compatible(variadic_type, arg_type):
                 ctx.errors.append(
                     f"Argument '{variadic_name}' to function '{func_name}' must be {variadic_type}, got {arg_type}"
                 )
+
+
+def _is_function_argument_compatible(param_type: YaraType, arg_type: YaraType) -> bool:
+    if isinstance(param_type, IntegerType):
+        return isinstance(arg_type, IntegerType)
+    if isinstance(param_type, DoubleType | FloatType):
+        return isinstance(arg_type, DoubleType | FloatType)
+    if isinstance(param_type, BooleanType):
+        return isinstance(arg_type, BooleanType)
+    if isinstance(param_type, StringType):
+        return isinstance(arg_type, StringType)
+    if isinstance(param_type, ScalarType):
+        return isinstance(arg_type, IntegerType | DoubleType | FloatType | StringType)
+    return param_type.is_compatible_with(arg_type)
 
 
 def _visit_function_arguments(ctx, arguments) -> None:
