@@ -53,6 +53,32 @@ def _find_matching_call_close(line: str, open_paren: int) -> int | None:
     return None
 
 
+def _find_diagnostic_call(
+    line: str,
+    function_name: str,
+    diagnostic: Diagnostic,
+) -> tuple[int, int, int] | None:
+    needle = f"{function_name}("
+    range_start = diagnostic.range.start.character
+    range_end = diagnostic.range.end.character
+    fallback: tuple[int, int, int] | None = None
+    search_start = 0
+    while True:
+        start_col = line.find(needle, search_start)
+        if start_col < 0:
+            break
+        open_paren = start_col + len(function_name)
+        close_paren = _find_matching_call_close(line, open_paren)
+        if close_paren is not None:
+            call_span = (start_col, open_paren, close_paren)
+            if fallback is None:
+                fallback = call_span
+            if start_col < range_end and close_paren + 1 > range_start:
+                return call_span
+        search_start = start_col + len(needle)
+    return fallback
+
+
 def _split_top_level_arguments(args_text: str) -> list[str]:
     parts: list[str] = []
     start = 0
@@ -196,15 +222,17 @@ def create_add_placeholder_argument_action(
     if line_num >= len(lines):
         return []
     line = lines[line_num]
-    needle = f"{function_name}()"
-    start_col = line.find(needle)
-    if start_col < 0:
+    call_span = _find_diagnostic_call(line, function_name, diagnostic)
+    if call_span is None:
+        return []
+    _start_col, open_paren, close_paren = call_span
+    if close_paren != open_paren + 1:
         return []
 
     edit = TextEdit(
         range=Range(
-            start=Position(line=line_num, character=start_col + len(function_name) + 1),
-            end=Position(line=line_num, character=start_col + len(function_name) + 1),
+            start=Position(line=line_num, character=open_paren + 1),
+            end=Position(line=line_num, character=open_paren + 1),
         ),
         new_text="0",
     )
@@ -232,13 +260,10 @@ def create_add_missing_arguments_action(
     if line_num >= len(lines):
         return []
     line = lines[line_num]
-    start_col = line.find(f"{function_name}(")
-    if start_col < 0:
+    call_span = _find_diagnostic_call(line, function_name, diagnostic)
+    if call_span is None:
         return []
-    open_paren = start_col + len(function_name)
-    close_paren = _find_matching_call_close(line, open_paren)
-    if close_paren is None:
-        return []
+    _start_col, open_paren, close_paren = call_span
     insertion = ("0, " * missing_count).rstrip(", ")
     if close_paren > open_paren + 1:
         insertion = ", " + insertion
@@ -276,13 +301,10 @@ def create_trim_arguments_action(
     if line_num >= len(lines) or keep_args < 0:
         return []
     line = lines[line_num]
-    start_col = line.find(f"{function_name}(")
-    if start_col < 0:
+    call_span = _find_diagnostic_call(line, function_name, diagnostic)
+    if call_span is None:
         return []
-    open_paren = start_col + len(function_name)
-    close_paren = _find_matching_call_close(line, open_paren)
-    if close_paren is None:
-        return []
+    _start_col, open_paren, close_paren = call_span
 
     args_text = line[open_paren + 1 : close_paren]
     parts = _split_top_level_arguments(args_text)

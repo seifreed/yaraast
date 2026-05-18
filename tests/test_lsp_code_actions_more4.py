@@ -373,6 +373,84 @@ rule sample {
     assert change.range.start.character == text.splitlines()[2].rfind(")")
 
 
+def test_code_action_add_missing_argument_targets_diagnostic_call() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        custom(1) and custom(2)
+}
+""".lstrip()
+    call_line = text.splitlines()[2]
+    call_start = call_line.rindex("custom(")
+    call_end = call_line.index(")", call_start) + 1
+    diag = Diagnostic(
+        range=_range(2, call_start, call_end),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "custom",
+                "arity_kind": "exact",
+                "actual_args": 1,
+                "expected_args": 2,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(
+        text, _range(2, call_start, call_end), [diag], "file://test.yar"
+    )
+    action = next(
+        action for action in actions if action.title == "Add 1 missing argument(s) to custom()"
+    )
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.range.start.character == call_end - 1
+    assert change.new_text == ", 0"
+
+
+def test_code_action_add_placeholder_targets_diagnostic_call() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        uint8() and uint8()
+}
+""".lstrip()
+    call_line = text.splitlines()[2]
+    call_start = call_line.rindex("uint8(")
+    call_end = call_line.index(")", call_start) + 1
+    diag = Diagnostic(
+        range=_range(2, call_start, call_end),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "uint8",
+                "arity_kind": "min",
+                "actual_args": 0,
+                "expected_min": 1,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(
+        text, _range(2, call_start, call_end), [diag], "file://test.yar"
+    )
+    action = next(
+        action for action in actions if action.title == "Add placeholder argument to uint8()"
+    )
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.range.start.character == call_end - 1
+    assert change.new_text == "0"
+
+
 def test_code_action_uses_structured_metadata_to_trim_extra_arguments() -> None:
     provider = CodeActionsProvider()
     text = """
@@ -403,6 +481,45 @@ rule sample {
     )
     assert action.edit is not None
     assert _change_set(action.edit, "file://test.yar")[0].new_text == "1"
+
+
+def test_code_action_trim_arguments_targets_diagnostic_call() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        uint8(1, 2) and uint8(3, 4)
+}
+""".lstrip()
+    call_line = text.splitlines()[2]
+    call_start = call_line.rindex("uint8(")
+    call_end = call_line.index(")", call_start) + 1
+    diag = Diagnostic(
+        range=_range(2, call_start, call_end),
+        message="arity",
+        data=DiagnosticData(
+            code="semantic.invalid_arity",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "function": "uint8",
+                "arity_kind": "max",
+                "actual_args": 2,
+                "expected_max": 1,
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(
+        text, _range(2, call_start, call_end), [diag], "file://test.yar"
+    )
+    action = next(
+        action for action in actions if action.title == "Remove extra argument(s) from uint8()"
+    )
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.range.start.character == call_start + len("uint8(")
+    assert change.new_text == "3"
 
 
 def test_code_action_trim_arguments_preserves_commas_inside_strings() -> None:
