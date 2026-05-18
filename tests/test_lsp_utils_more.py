@@ -5,6 +5,7 @@ from __future__ import annotations
 from lsprotocol.types import Position
 
 from yaraast.ast.base import Location, YaraFile
+from yaraast.ast.expressions import BinaryExpression
 from yaraast.ast.rules import Rule
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.lsp.utils import (
@@ -74,6 +75,19 @@ rule alpha {
     assert rule_range.start.line == 0
     assert rule_range.end.line >= rule_range.start.line
     assert rule_range.end.character > rule_range.start.character
+
+
+def test_parser_span_uses_source_width_for_size_suffix_literals() -> None:
+    text = "rule sample { condition: filesize < 1KB }\n"
+    ast = Parser().parse(text)
+    condition = ast.rules[0].condition
+    assert isinstance(condition, BinaryExpression)
+    size_literal = condition.right
+    assert size_literal.location is not None
+
+    size_range = location_to_range(size_literal.location, source_text=text)
+
+    assert size_range.end.character - size_range.start.character == len("1KB")
 
 
 def test_find_node_at_position_prefers_smallest_span_containing_position() -> None:

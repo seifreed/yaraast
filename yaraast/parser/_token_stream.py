@@ -55,6 +55,21 @@ class TokenStreamMixin:
 
     def _token_span(self, token: IToken) -> int:
         length = getattr(token, "length", 0) or 0
+        if length > 1:
+            return length
+        if getattr(token, "type", None) not in {
+            TokenType.IDENTIFIER,
+            TokenType.STRING_IDENTIFIER,
+            TokenType.STRING_COUNT,
+            TokenType.STRING_OFFSET,
+            TokenType.STRING_LENGTH,
+            TokenType.FILESIZE,
+            TokenType.ENTRYPOINT,
+            TokenType.THEM,
+            TokenType.BOOLEAN_TRUE,
+            TokenType.BOOLEAN_FALSE,
+        }:
+            return max(1, length)
         value = getattr(token, "value", None)
         value_length = len(str(value)) if value is not None else 0
         return max(1, length, value_length)

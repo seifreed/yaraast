@@ -92,11 +92,11 @@ def read_regex(lexer) -> Token:
     return Token(TokenType.REGEX, value, start_line, start_column)
 
 
-def _integer_token(value: int, line: int, column: int) -> Token:
+def _integer_token(value: int, line: int, column: int, length: int = 1) -> Token:
     if value > INT64_MAX:
         msg = f"Integer literal exceeds int64 maximum: {value}"
         raise LexerError(msg, line, column)
-    return Token(TokenType.INTEGER, value, line, column)
+    return Token(TokenType.INTEGER, value, line, column, length)
 
 
 def _validate_digit_separators(raw_digits: str, literal_kind: str, line: int, column: int) -> None:
@@ -121,7 +121,7 @@ def _read_size_suffix(lexer, value: str, line: int, column: int) -> Token | None
     if lexer._current_char() and (lexer._current_char().isalnum() or lexer._current_char() == "_"):
         raise LexerError("Invalid size suffix", line, column)
     multiplier = 1024 if suffix == "K" else 1024 * 1024
-    return _integer_token(int(value) * multiplier, line, column)
+    return _integer_token(int(value) * multiplier, line, column, lexer.column - column)
 
 
 def read_number(lexer) -> Token:
@@ -144,7 +144,7 @@ def read_number(lexer) -> Token:
         if lexer._current_char() and lexer._current_char().isalnum():
             msg = "Invalid hexadecimal integer literal"
             raise LexerError(msg, start_line, start_column)
-        return _integer_token(int(value, 16), start_line, start_column)
+        return _integer_token(int(value, 16), start_line, start_column, lexer.column - start_column)
     # Octal: 0o77, 0o123
     if lexer._current_char() == "0" and lexer._peek_char() in "oO":
         value += lexer._current_char()
@@ -161,7 +161,7 @@ def read_number(lexer) -> Token:
         if lexer._current_char() and lexer._current_char().isalnum():
             msg = "Invalid octal integer literal"
             raise LexerError(msg, start_line, start_column)
-        return _integer_token(int(value, 8), start_line, start_column)
+        return _integer_token(int(value, 8), start_line, start_column, lexer.column - start_column)
     # Decimal (with underscore separators): 1_000_000
     raw_digits = ""
     while lexer._current_char() and (
@@ -187,12 +187,18 @@ def read_number(lexer) -> Token:
         if raw_fraction.endswith("_") or "__" in raw_fraction:
             msg = "Invalid decimal floating-point literal"
             raise LexerError(msg, start_line, start_column)
-        return Token(TokenType.DOUBLE, float(value), start_line, start_column)
+        return Token(
+            TokenType.DOUBLE,
+            float(value),
+            start_line,
+            start_column,
+            lexer.column - start_column,
+        )
     # KB/MB suffixes
     suffix_token = _read_size_suffix(lexer, value, start_line, start_column)
     if suffix_token is not None:
         return suffix_token
-    return _integer_token(int(value), start_line, start_column)
+    return _integer_token(int(value), start_line, start_column, lexer.column - start_column)
 
 
 def read_identifier(lexer) -> Token:
