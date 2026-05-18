@@ -239,7 +239,7 @@ class HexStringBuilder:
 
     def build(self) -> list[HexToken]:
         """Build the list of hex tokens."""
-        return self._tokens
+        return list(self._tokens)
 
     @staticmethod
     def from_bytes(data: bytes) -> HexStringBuilder:

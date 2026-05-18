@@ -74,6 +74,31 @@ class TestHexStringBuilderBasicOperations:
         assert _byte_value(tokens[1]) == 0x5A
         assert _byte_value(tokens[2]) == 0x90
 
+    def test_build_returns_snapshot_of_token_list(self) -> None:
+        """Mutating built token lists should not mutate builder state."""
+        builder = HexStringBuilder()
+        builder.add(0x41)
+
+        tokens = builder.build()
+        tokens.append(HexByte(0x42))
+
+        rebuilt = builder.build()
+        assert len(rebuilt) == 1
+        assert _byte_value(rebuilt[0]) == 0x41
+
+    def test_nested_alternative_uses_snapshot_of_child_builder(self) -> None:
+        """Alternatives should not change when a child builder is reused later."""
+        child = HexStringBuilder().add(0x41)
+        parent = HexStringBuilder().alternative(child)
+
+        child.add(0x42)
+
+        tokens = parent.build()
+        assert len(tokens) == 1
+        assert isinstance(tokens[0], HexAlternative)
+        assert len(tokens[0].alternatives[0]) == 1
+        assert _byte_value(tokens[0].alternatives[0][0]) == 0x41
+
     def test_byte_alias_method(self) -> None:
         """Byte method should work as alias for add."""
         builder = HexStringBuilder()
@@ -828,15 +853,16 @@ class TestHexStringBuilderComplexScenarios:
         assert isinstance(tokens[0], HexByte)
         assert _byte_value(tokens[0]) == 0x4D
 
-    def test_build_multiple_times_returns_same_tokens(self) -> None:
-        """Build should return same token list on multiple calls."""
+    def test_build_multiple_times_returns_equivalent_snapshots(self) -> None:
+        """Build should return equivalent independent token lists on multiple calls."""
         builder = HexStringBuilder()
         builder.add_bytes(0x48, 0x65, 0x6C, 0x6C, 0x6F)
 
         tokens1 = builder.build()
         tokens2 = builder.build()
 
-        assert tokens1 is tokens2  # Same object reference
+        assert tokens1 is not tokens2
+        assert tokens1 == tokens2
         assert len(tokens1) == len(tokens2)
 
     def test_builder_reuse_after_build(self) -> None:
@@ -850,6 +876,7 @@ class TestHexStringBuilderComplexScenarios:
         builder.add(0xAA)
         tokens2 = builder.build()
 
+        assert len(tokens1) == 1
         assert len(tokens2) == 2
         assert _byte_value(tokens2[0]) == 0xFF
         assert _byte_value(tokens2[1]) == 0xAA
