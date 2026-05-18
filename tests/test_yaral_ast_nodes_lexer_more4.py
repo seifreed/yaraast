@@ -213,14 +213,14 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
     assert yf.accept(visitor) == 1
 
 
-def test_yaral_lexer_hits_iteration_cap_and_multiline_backtick_regex() -> None:
+def test_yaral_lexer_handles_large_inputs_and_multiline_backtick_regex() -> None:
     regex_tokens = YaraLLexer("`first\nsecond`").tokenize()
     regex_token = next(tok for tok in regex_tokens if tok.type == T.REGEX)
     assert regex_token.value == "first\nsecond"
 
     many_tokens = YaraLLexer(" ".join(["("] * 10002)).tokenize()
     assert many_tokens[-1].type == T.EOF
-    assert len(many_tokens) == 10001
+    assert len(many_tokens) == 10003
 
 
 def test_yaral_lexer_tokenize_reuse_resets_previous_tokens() -> None:

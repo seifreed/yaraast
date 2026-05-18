@@ -43,28 +43,18 @@ class YaraLLexer:
         self.column = 1
         self.tokens = []
 
-        max_iterations = 10000  # Safety limit to prevent infinite loops
-        iteration = 0
-
-        while self.position < len(self.text) and iteration < max_iterations:
+        while self.position < len(self.text):
             self._skip_whitespace_and_comments()
 
             if self.position >= len(self.text):
                 break
 
+            previous_position = self.position
             token = self._next_token()
             if token:
                 self.tokens.append(token)
-            else:
-                # Skip unrecognized character
-                self.position += 1
-
-            iteration += 1
-
-        if iteration >= max_iterations:
-            # Safety limit reached - lexer may have encountered an infinite loop
-            # Skip adding error token as BaseTokenType.ERROR doesn't exist
-            pass
+            if self.position == previous_position or not token:
+                self._advance_one_character()
 
         # Create basic EOF token
         eof_token = YaraLToken(
@@ -77,6 +67,15 @@ class YaraLLexer:
         )
         self.tokens.append(eof_token)
         return list(self.tokens)
+
+    def _advance_one_character(self) -> None:
+        """Advance over one unrecognized character while preserving position state."""
+        if self.text[self.position] == "\n":
+            self.line += 1
+            self.column = 1
+        else:
+            self.column += 1
+        self.position += 1
 
     def _skip_whitespace_and_comments(self) -> None:
         """Skip whitespace and comments."""
