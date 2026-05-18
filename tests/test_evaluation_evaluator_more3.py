@@ -934,6 +934,55 @@ def test_zero_divisor_arithmetic_evaluates_as_undefined() -> None:
     }
 
 
+def test_float_zero_divisor_arithmetic_matches_libyara_double_opcode() -> None:
+    ast = Parser().parse("""
+        rule positive_infinity_truthiness {
+            condition:
+                1.0 \\ 0.0
+        }
+
+        rule positive_infinity_comparison {
+            condition:
+                1.0 \\ 0.0 > 0
+        }
+
+        rule negative_infinity_comparison {
+            condition:
+                -1.0 \\ 0.0 < 0
+        }
+
+        rule nan_truthiness {
+            condition:
+                0.0 \\ 0.0
+        }
+
+        rule nan_defined {
+            condition:
+                defined (0.0 \\ 0.0)
+        }
+
+        rule nan_equality {
+            condition:
+                0.0 \\ 0.0 == 0.0 \\ 0.0
+        }
+
+        rule nan_inequality {
+            condition:
+                0.0 \\ 0.0 != 0.0 \\ 0.0
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {
+        "positive_infinity_truthiness": True,
+        "positive_infinity_comparison": True,
+        "negative_infinity_comparison": True,
+        "nan_truthiness": True,
+        "nan_defined": True,
+        "nan_equality": False,
+        "nan_inequality": False,
+    }
+
+
 def test_condition_paths_for_at_in_of_for_and_defined() -> None:
     ev = YaraEvaluator(data=b"00abcd00")
     rule = Rule(

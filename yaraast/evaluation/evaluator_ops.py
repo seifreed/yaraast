@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import math
 import re
+import sys
 from typing import Any
 
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED, is_yara_undefined
@@ -28,6 +30,20 @@ def _types_match_for_equality(left: Any, right: Any) -> bool:
     if isinstance(left, bool) or isinstance(right, bool):
         return isinstance(left, bool) and isinstance(right, bool)
     return True
+
+
+def _divide_by_double_zero(left: int | float, right: int | float) -> float:
+    if left == 0:
+        return math.nan
+    sign = math.copysign(1.0, left) * math.copysign(1.0, right)
+    return math.copysign(math.inf, sign)
+
+
+def _compare_double_equality(left: int | float, right: int | float, operator: str) -> bool:
+    difference = math.fabs(float(left) - float(right))
+    if operator == "==":
+        return difference < sys.float_info.epsilon
+    return difference >= sys.float_info.epsilon
 
 
 def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
@@ -56,12 +72,14 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
         if operator in ("/", "\\"):
             if not (_is_runtime_number(left) and _is_runtime_number(right)):
                 return YARA_UNDEFINED
-            if right == 0:
-                return YARA_UNDEFINED
             if _is_runtime_int(left) and _is_runtime_int(right):
+                if right == 0:
+                    return YARA_UNDEFINED
                 if left == INT64_MIN and right == -1:
                     return YARA_UNDEFINED
                 return truncate_integer_division(left, right)
+            if right == 0:
+                return _divide_by_double_zero(left, right)
             return left / right
         if operator == "%":
             if not (_is_runtime_int(left) and _is_runtime_int(right)):
@@ -107,10 +125,22 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
     if operator == "==":
         if not _types_match_for_equality(left, right):
             return False
+        if (
+            _is_runtime_number(left)
+            and _is_runtime_number(right)
+            and (isinstance(left, float) or isinstance(right, float))
+        ):
+            return _compare_double_equality(left, right, operator)
         return left == right
     if operator == "!=":
         if not _types_match_for_equality(left, right):
             return True
+        if (
+            _is_runtime_number(left)
+            and _is_runtime_number(right)
+            and (isinstance(left, float) or isinstance(right, float))
+        ):
+            return _compare_double_equality(left, right, operator)
         return left != right
     try:
         if operator == "<":

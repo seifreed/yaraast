@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from yaraast.ast.expressions import RegexLiteral
@@ -35,8 +37,16 @@ def test_evaluate_arithmetic_all_operators() -> None:
 
 def test_evaluate_arithmetic_zero_divisor_returns_undefined() -> None:
     assert evaluate_arithmetic(7, 0, "/") is YARA_UNDEFINED
-    assert evaluate_arithmetic(7.0, 0.0, "/") is YARA_UNDEFINED
     assert evaluate_arithmetic(7, 0, "%") is YARA_UNDEFINED
+
+
+def test_evaluate_float_division_by_zero_matches_libyara_double_opcode() -> None:
+    assert evaluate_arithmetic(7.0, 0.0, "\\") == math.inf
+    assert evaluate_arithmetic(-7.0, 0.0, "\\") == -math.inf
+    assert evaluate_arithmetic(7.0, -0.0, "\\") == -math.inf
+    nan_result = evaluate_arithmetic(0.0, 0.0, "\\")
+    assert isinstance(nan_result, float)
+    assert math.isnan(nan_result)
 
 
 def test_evaluate_arithmetic_negative_shift_returns_undefined() -> None:
@@ -105,6 +115,15 @@ def test_evaluate_comparison_keeps_booleans_distinct_from_integers() -> None:
     assert evaluate_comparison(False, 0, "==") is False
     assert evaluate_comparison(True, 1, "!=") is True
     assert evaluate_comparison(False, 0, "!=") is True
+
+
+def test_evaluate_float_equality_uses_libyara_epsilon() -> None:
+    assert evaluate_comparison(1.0, 1.0 + (1e-17), "==") is True
+    assert evaluate_comparison(1.0, 1.0 + (1e-15), "==") is False
+    assert evaluate_comparison(1.0, 1.0 + (1e-15), "!=") is True
+    assert evaluate_comparison(math.inf, math.inf, "==") is False
+    assert evaluate_comparison(math.inf, math.inf, "!=") is False
+    assert evaluate_comparison(math.nan, 0.0, "!=") is False
 
 
 @pytest.mark.parametrize("operator", ["<", "<=", ">", ">="])
