@@ -44,10 +44,9 @@ class EnhancedYaraLParser(
         self.current = 0
         self.errors.clear()
         rules = []
-        max_iterations = 10000
 
-        iteration = 0
-        while not self._is_at_end() and iteration < max_iterations:
+        while not self._is_at_end():
+            previous_current = self.current
             try:
                 if self._check_keyword("rule"):
                     rules.append(self._parse_rule())
@@ -56,10 +55,9 @@ class EnhancedYaraLParser(
             except Exception as e:
                 self.errors.append(str(e))
                 self._recover_to_next_rule()
-            iteration += 1
 
-        if iteration >= max_iterations:
-            self.errors.append(f"Parser exceeded maximum iterations ({max_iterations})")
+            if self.current == previous_current:
+                self._advance()
 
         return YaraLFile(rules=rules)
 

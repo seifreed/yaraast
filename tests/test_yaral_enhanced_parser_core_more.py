@@ -119,3 +119,14 @@ def test_enhanced_parser_advance_at_end_returns_last_token() -> None:
     _set_tokens(p, [_tok(T.EOF, None, YaraLTokenType.EOF)])
     tok = p._advance()
     assert tok.type == T.EOF
+
+
+def test_enhanced_parser_handles_more_than_iteration_cap_rules() -> None:
+    source = "\n".join(f'rule r{i} {{ meta: key = "value" }}' for i in range(10001))
+    parser = EnhancedYaraLParser(source)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 10001
+    assert ast.rules[-1].name == "r10000"

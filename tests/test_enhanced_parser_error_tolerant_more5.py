@@ -11,14 +11,15 @@ def _tok(tt: T, value: str | int | float | None, yt: YaraLTokenType | None = Non
     return YaraLToken(type=tt, value=value, line=1, column=1, length=1, yaral_type=yt)
 
 
-def test_enhanced_parser_iteration_cap_and_index_end_path() -> None:
+def test_enhanced_parser_consumes_long_non_rule_prefix_and_index_end_path() -> None:
     p = EnhancedYaraLParser("")
     p.tokens = [_tok(T.PLUS, "+")] * 10001 + [_tok(T.EOF, None, YaraLTokenType.EOF)]
     p.current = 0
 
     ast = p.parse()
     assert ast.rules == []
-    assert any("maximum iterations" in err for err in p.errors)
+    assert p.errors == []
+    assert p._is_at_end() is True
 
     p2 = EnhancedYaraLParser("")
     p2.tokens = [_tok(T.EOF, None, YaraLTokenType.EOF)]
