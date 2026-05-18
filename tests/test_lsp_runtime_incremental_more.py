@@ -434,8 +434,10 @@ rule d { condition: c }
 
     rule_refs_first = doc.rule_reference_records("a")
     rule_refs_second = doc.rule_reference_records("a")
-    assert rule_refs_first is rule_refs_second
+    assert rule_refs_first == rule_refs_second
     assert {record.role for record in rule_refs_first} == {"declaration", "use"}
+    rule_refs_first.clear()
+    assert doc.rule_reference_records("a") == rule_refs_second
 
     doc.update(text_v2, version=2)
 
@@ -470,8 +472,10 @@ rule a {
 
     refs_first = doc.find_string_reference_records("$a")
     refs_second = doc.find_string_reference_records("$a")
-    assert refs_first is refs_second
+    assert refs_first == refs_second
     assert {record.role for record in refs_first} == {"declaration", "read"}
+    refs_first.clear()
+    assert doc.find_string_reference_records("$a") == refs_second
 
     doc.update(text_v2, version=2)
 
@@ -899,9 +903,11 @@ rule main {
 
     first = doc.get_local_rule_link_records()
     second = doc.get_local_rule_link_records()
-    assert first is second
+    assert first == second
     assert len(first) == 1
     assert first[0].rule_name == "shared_rule"
+    first.clear()
+    assert doc.get_local_rule_link_records() == second
 
     doc.update(text.replace("shared_rule", "renamed_rule", 1), version=2)
     refreshed = doc.get_local_rule_link_records()
