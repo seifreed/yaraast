@@ -236,6 +236,21 @@ def test_math_to_string_rejects_non_integer_arguments() -> None:
         YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 
+def test_math_integer_helpers_reject_boolean_arguments() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule invalid_integer_helpers {
+            condition:
+                defined math.abs(true) or
+                defined math.min(true, 2) or
+                defined math.max(false, 2)
+        }
+        """)
+
+    with pytest.raises(EvaluationError, match=r"math\.(abs|min|max)\(\) expects integer arguments"):
+        YaraEvaluator(data=b"abc").evaluate_file(ast)
+
+
 def test_math_rejects_non_libyara_functions() -> None:
     ast = Parser().parse("""
         import "math"

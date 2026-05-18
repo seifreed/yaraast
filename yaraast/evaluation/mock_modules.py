@@ -28,6 +28,12 @@ def _unsigned_for_non_decimal_base(value: int) -> int:
     return value & UINT64_MASK if value < 0 else value
 
 
+def _require_strict_ints(function_name: str, *values: object) -> None:
+    if not all(_is_strict_int(value) for value in values):
+        msg = f"{function_name}() expects integer arguments"
+        raise EvaluationError(msg)
+
+
 @dataclass
 class Section:
     """PE/ELF section descriptor."""
@@ -235,18 +241,19 @@ class MockMath:
         self.data = data
 
     def abs(self, x: int) -> int:
+        _require_strict_ints("math.abs", x)
         return abs(x)
 
     def min(self, a: int, b: int) -> int:
+        _require_strict_ints("math.min", a, b)
         return min(a, b)
 
     def max(self, a: int, b: int) -> int:
+        _require_strict_ints("math.max", a, b)
         return max(a, b)
 
     def to_string(self, n: int, base: int = 10) -> str | YaraUndefinedValue:
-        if not _is_strict_int(n) or not _is_strict_int(base):
-            msg = "math.to_string() expects integer arguments"
-            raise EvaluationError(msg)
+        _require_strict_ints("math.to_string", n, base)
         if base not in {8, 10, 16}:
             return YARA_UNDEFINED
         if base == 16:
