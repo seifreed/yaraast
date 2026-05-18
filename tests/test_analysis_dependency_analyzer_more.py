@@ -255,3 +255,22 @@ def test_dependency_analyzer_ignores_yarax_local_variable_shadowing_rules() -> N
         results = DependencyAnalyzer().analyze(ast)
 
         assert "caller" not in results["dependencies"]
+
+
+def test_dependency_analyzer_keeps_bare_rule_dependency_distinct_from_dollar_local() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="x", condition=BooleanLiteral(True)),
+            Rule(
+                name="caller",
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", IntegerLiteral(1))],
+                    body=Identifier("x"),
+                ),
+            ),
+        ]
+    )
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert results["dependencies"]["caller"] == ["x"]
