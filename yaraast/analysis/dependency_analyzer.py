@@ -235,15 +235,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
             self.dependencies[self.current_rule].add(node.name)
 
     def visit_function_call(self, node: FunctionCall) -> None:
-        # Some functions might reference rules
-        if (
-            node.function in self.rule_names
-            and self.current_rule
-            and not self._is_local(node.function)
-        ):
-            self.dependencies[self.current_rule].add(node.function)
-
-        # Visit arguments (BaseVisitor.visit_function_call does this, but we call super)
+        # Function callees are not rule references; only their arguments can contain them.
         super().visit_function_call(node)
 
     def visit_for_expression(self, node: ForExpression) -> None:

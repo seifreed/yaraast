@@ -37,7 +37,6 @@ def test_dependency_analyzer_import_include_and_direct_visitors() -> None:
 
     analyzer.current_rule = "caller"
     analyzer.visit_identifier(Identifier("callee"))
-    analyzer.visit_function_call(FunctionCall("callee", [IntegerLiteral(1)]))
     analyzer.visit_function_call(FunctionCall("other", [Identifier("callee")]))
     assert analyzer.dependencies["caller"] == {"callee"}
 
@@ -97,6 +96,29 @@ rule caller {
     rule = Rule(name="empty", condition=None)
     analyzer.visit_rule(rule)
     assert analyzer.current_rule is None
+
+
+def test_dependency_analyzer_does_not_treat_function_name_as_rule_dependency() -> None:
+    ast = Parser().parse("""
+rule helper {
+    condition:
+        true
+}
+
+rule base {
+    condition:
+        true
+}
+
+rule caller {
+    condition:
+        helper(base)
+}
+""")
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert results["dependencies"]["caller"] == ["base"]
 
 
 def test_dependency_analyzer_public_lists_are_stably_sorted() -> None:
