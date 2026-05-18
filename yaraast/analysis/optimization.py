@@ -98,10 +98,12 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         self._string_refs: dict[str, list[Any]] = {}
         self._condition_depth = 0
         self._max_condition_depth = 0
+        self._local_scopes: list[set[str]] = []
 
     def analyze(self, ast: YaraFile) -> OptimizationReport:
         """Analyze AST for optimizations."""
         self.report = OptimizationReport()
+        self._local_scopes.clear()
 
         # Analyze all rules
         for rule in ast.rules:
@@ -126,6 +128,7 @@ class OptimizationAnalyzer(BaseVisitor[None]):
         """Analyze single rule for optimizations."""
         self._current_rule = rule
         self._string_refs.clear()
+        self._local_scopes.clear()
 
         # Analyze strings
         if rule.strings:
@@ -164,6 +167,8 @@ class OptimizationAnalyzer(BaseVisitor[None]):
 
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         """Track string references."""
+        if self._is_local(node.name):
+            return
         self._string_refs.setdefault(node.name, []).append(node)
 
     def visit_of_expression(self, node: OfExpression) -> None:
@@ -183,6 +188,91 @@ class OptimizationAnalyzer(BaseVisitor[None]):
                 "low",
             )
         super().visit_of_expression(node)
+
+    def visit_for_expression(self, node: Any) -> None:
+        """Visit YARA-X for expression with scoped loop variable."""
+        self._visit_ast_value(node.quantifier)
+        self.visit(node.iterable)
+        self._push_local_scope(node.variable)
+        try:
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def visit_with_statement(self, node: Any) -> None:
+        """Visit YARA-X with statement with scoped declarations."""
+        self._push_local_scope()
+        try:
+            for declaration in node.declarations:
+                self.visit(declaration)
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def visit_with_declaration(self, node: Any) -> None:
+        """Visit YARA-X with declaration after evaluating its value."""
+        self._visit_ast_value(node.value)
+        self._define_local(node.identifier)
+
+    def visit_array_comprehension(self, node: Any) -> None:
+        """Visit YARA-X array comprehension with scoped loop variable."""
+        self._visit_ast_value(node.iterable)
+        self._push_local_scope(node.variable)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_dict_comprehension(self, node: Any) -> None:
+        """Visit YARA-X dict comprehension with scoped loop variables."""
+        self._visit_ast_value(node.iterable)
+        names = [node.key_variable]
+        if node.value_variable:
+            names.append(node.value_variable)
+        self._push_local_scope(*names)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.key_expression)
+            self._visit_ast_value(node.value_expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_lambda_expression(self, node: Any) -> None:
+        """Visit YARA-X lambda expression with scoped parameters."""
+        self._push_local_scope(*node.parameters)
+        try:
+            self._visit_ast_value(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def _is_local(self, name: str) -> bool:
+        return any(name in scope for scope in reversed(self._local_scopes))
+
+    def _push_local_scope(self, *names: str) -> None:
+        scope: set[str] = set()
+        for name in names:
+            scope.update(self._local_name_variants(name))
+        self._local_scopes.append(scope)
+
+    def _pop_local_scope(self) -> None:
+        self._local_scopes.pop()
+
+    def _define_local(self, name: str) -> None:
+        if self._local_scopes:
+            self._local_scopes[-1].update(self._local_name_variants(name))
+
+    @staticmethod
+    def _local_name_variants(name: str) -> set[str]:
+        names = [part.strip() for part in name.split(",")]
+        return {local_name for local_name in names if local_name}
+
+    def _visit_ast_value(self, value: Any) -> None:
+        if hasattr(value, "accept"):
+            self.visit(value)
+        elif isinstance(value, list | tuple | set | frozenset):
+            for item in value:
+                self._visit_ast_value(item)
 
     def _analyze_cross_rule_patterns(self, rules: list[Rule]) -> None:
         """Analyze patterns across multiple rules."""

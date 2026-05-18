@@ -9,6 +9,7 @@ from yaraast.ast.expressions import BinaryExpression, Identifier, IntegerLiteral
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def _parse(source: str) -> YaraFile:
@@ -141,6 +142,22 @@ def test_optimization_analyzer_tracks_string_refs_inside_of_expressions() -> Non
     report = OptimizationAnalyzer().analyze(ast)
 
     assert any("String '$s' is referenced 4 times" in s.description for s in report.suggestions)
+
+
+def test_optimization_analyzer_respects_yarax_with_local_string_shadowing() -> None:
+    ast = parse_yara_source("""
+        rule shadowed_repeated {
+            strings:
+                $a = "value"
+            condition:
+                with $a = 1:
+                    $a > 0 and $a < 10 and $a != 5 and $a >= 1
+        }
+        """)
+
+    report = OptimizationAnalyzer().analyze(ast)
+
+    assert not any("String '$a' is referenced" in s.description for s in report.suggestions)
 
 
 def test_optimization_analyzer_detects_parsed_any_of_them_specificity() -> None:
