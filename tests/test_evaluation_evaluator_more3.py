@@ -370,6 +370,29 @@ def test_elf_invalid_files_leave_elf_fields_undefined(data: bytes) -> None:
     assert YaraEvaluator(data=data).evaluate_file(ast) == {"invalid_elf_fields": False}
 
 
+def test_dotnet_invalid_files_leave_dotnet_scalar_fields_undefined() -> None:
+    ast = Parser().parse("""
+        import "dotnet"
+        rule invalid_dotnet_fields {
+            condition:
+                defined dotnet.version or
+                dotnet.version == "" or
+                defined dotnet.module_name or
+                dotnet.module_name == "" or
+                defined dotnet.number_of_streams or
+                dotnet.number_of_streams == 0 or
+                defined dotnet.number_of_guids or
+                dotnet.number_of_guids == 0 or
+                defined dotnet.number_of_resources or
+                dotnet.number_of_resources == 0 or
+                defined dotnet.number_of_user_strings or
+                dotnet.number_of_user_strings == 0
+        }
+        """)
+
+    assert YaraEvaluator(data=b"not dotnet").evaluate_file(ast) == {"invalid_dotnet_fields": False}
+
+
 def test_console_log_matches_libyara_scalar_arguments() -> None:
     ast = Parser().parse("""
         import "console"

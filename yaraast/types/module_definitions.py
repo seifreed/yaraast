@@ -120,6 +120,10 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
         "attrs": {
             "version": "s",
             "module_name": "s",
+            "number_of_streams": "i",
+            "number_of_guids": "i",
+            "number_of_resources": "i",
+            "number_of_user_strings": "i",
             "assembly": ("dict", "s", "s"),
             "resources": ("array", ("dict", "s", "i")),
             "streams": ("array", ("dict", "s", "i")),

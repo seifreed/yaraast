@@ -208,8 +208,10 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert m.monte_carlo_pi(0, 5) is YARA_UNDEFINED
 
     dotnet = MockDotNet(b"")
-    assert dotnet.number_of_streams == 0
-    assert dotnet.number_of_guids == 0
+    assert dotnet.version is YARA_UNDEFINED
+    assert dotnet.module_name is YARA_UNDEFINED
+    assert dotnet.number_of_streams is YARA_UNDEFINED
+    assert dotnet.number_of_guids is YARA_UNDEFINED
 
     registry = MockModuleRegistry()
     assert registry.create_module("missing", b"x") is None

@@ -445,18 +445,18 @@ class MockDotNet:
 
     def __init__(self, data: bytes) -> None:
         self.data = data
-        self.version = ""
-        self.module_name = ""
-        self.streams: dict[str, Any] = {}
-        self.guids: list[str] = []
-        self.number_of_streams = 0
-        self.number_of_guids = 0
-        self.number_of_resources = 0
-        self.number_of_user_strings = 0
-        self.assembly: dict[str, Any] = {}
-        self.assembly_refs: list[dict[str, Any]] = []
-        self.resources: list[dict[str, Any]] = []
-        self.user_strings: list[str] = []
+        self.version = YARA_UNDEFINED
+        self.module_name = YARA_UNDEFINED
+        self.streams = YARA_UNDEFINED
+        self.guids = YARA_UNDEFINED
+        self.number_of_streams = YARA_UNDEFINED
+        self.number_of_guids = YARA_UNDEFINED
+        self.number_of_resources = YARA_UNDEFINED
+        self.number_of_user_strings = YARA_UNDEFINED
+        self.assembly = YARA_UNDEFINED
+        self.assembly_refs = YARA_UNDEFINED
+        self.resources = YARA_UNDEFINED
+        self.user_strings = YARA_UNDEFINED
 
 
 # ---------------------------------------------------------------------------
