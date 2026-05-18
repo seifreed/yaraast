@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.lsp.document_types import ResolvedSymbol
-from yaraast.lsp.structure import make_range
+from yaraast.lsp.structure import _starts_regex_literal, make_range
 from yaraast.lsp.utils import get_word_at_position
 
 
@@ -90,9 +90,17 @@ def position_is_in_non_code_segment(ctx, position) -> bool:
                     return True
                 in_string = not in_string
             elif char == "/" and not in_string:
-                if line_num == position.line and position.character == idx:
+                starts_regex = _starts_regex_literal(line, idx)
+                if (
+                    line_num == position.line
+                    and position.character == idx
+                    and (in_regex or starts_regex)
+                ):
                     return True
-                in_regex = not in_regex
+                if in_regex:
+                    in_regex = False
+                elif starts_regex:
+                    in_regex = True
             idx += 1
 
         if line_num == position.line:

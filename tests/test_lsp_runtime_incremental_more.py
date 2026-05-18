@@ -13,6 +13,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.lsp.diagnostics import DiagnosticsProvider
+from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 from yaraast.lsp.semantic_tokens import SemanticTokensProvider
 
@@ -798,6 +799,30 @@ rule sample {
     assert resolved.range.start.line == 4
     assert resolved.range.start.character == 4
     assert resolved.range.end.character == 12
+
+
+def test_text_resolution_does_not_treat_division_as_regex(tmp_path: Path) -> None:
+    doc_path = tmp_path / "doc.yar"
+    text = """
+rule sample {
+  condition:
+    filesize / 2 > 0 and other_rule
+}
+rule other_rule { condition: true }
+""".lstrip()
+    uri = path_to_uri(doc_path)
+
+    runtime = LspRuntime()
+    runtime.open_document(uri, text)
+    doc = runtime.ensure_document(uri, text)
+
+    resolved = doc.resolve_symbol(Position(line=2, character=29))
+
+    assert resolved is not None
+    assert resolved.kind == "rule"
+    assert resolved.normalized_name == "other_rule"
+
+    assert position_is_in_non_code_segment(doc, Position(line=2, character=29)) is False
 
 
 def test_runtime_indexes_meta_keys_with_exact_ranges(tmp_path: Path) -> None:
