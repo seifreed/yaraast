@@ -43,6 +43,10 @@ class StringMatcher:
         self.matches: dict[str, list[MatchResult]] = {}
         self._cache: dict[str, Any] = {}
 
+    def _string_identifier(self, string_def: object) -> str:
+        identifier = str(getattr(string_def, "identifier", ""))
+        return identifier if identifier.startswith("$") else f"${identifier}"
+
     @overload
     def match_all(
         self,
@@ -105,13 +109,13 @@ class StringMatcher:
 
         if isinstance(string_def, PlainString):
             self._match_plain_string(data, string_def)
-            matches = self.matches.get(string_def.identifier, [])
+            matches = self.matches.get(self._string_identifier(string_def), [])
         elif isinstance(string_def, HexString):
             self._match_hex_string(data, string_def)
-            matches = self.matches.get(string_def.identifier, [])
+            matches = self.matches.get(self._string_identifier(string_def), [])
         elif isinstance(string_def, RegexString):
             self._match_regex_string(data, string_def)
-            matches = self.matches.get(string_def.identifier, [])
+            matches = self.matches.get(self._string_identifier(string_def), [])
 
         return matches
 
@@ -204,9 +208,10 @@ class StringMatcher:
         matches = self._deduplicate_plain_matches(matches)
 
         # Store results
-        self.matches[string_def.identifier] = [
+        identifier = self._string_identifier(string_def)
+        self.matches[identifier] = [
             MatchResult(
-                string_def.identifier,
+                identifier,
                 offset,
                 length,
                 data[offset : offset + length],
@@ -338,9 +343,10 @@ class StringMatcher:
     def _match_hex_string(self, data: bytes, string_def: HexString) -> None:
         """Match hex string against data."""
         matches = self._find_hex_token_pattern(data, string_def.tokens)
-        self.matches[string_def.identifier] = [
+        identifier = self._string_identifier(string_def)
+        self.matches[identifier] = [
             MatchResult(
-                string_def.identifier,
+                identifier,
                 offset,
                 length,
                 data[offset : offset + length],
@@ -477,7 +483,7 @@ class StringMatcher:
             regex = re.compile(regex_pattern.encode("utf-8"), flags)
         except (re.error, ValueError, TypeError, AttributeError):
             # Invalid regex, no matches
-            self.matches[string_def.identifier] = []
+            self.matches[self._string_identifier(string_def)] = []
             return
         regexes = [regex]
         longest_first_pattern = self._longest_first_literal_alternation(str(pattern))
@@ -514,9 +520,10 @@ class StringMatcher:
             prefer_zero_over_ascii=wide and ascii_mod and can_match_empty,
         )
 
-        self.matches[string_def.identifier] = [
+        identifier = self._string_identifier(string_def)
+        self.matches[identifier] = [
             MatchResult(
-                string_def.identifier,
+                identifier,
                 offset,
                 length,
                 data[offset : offset + length],
@@ -823,10 +830,12 @@ class StringMatcher:
 
     def get_match_count(self, identifier: str) -> int:
         """Get number of matches for a string."""
+        identifier = identifier if identifier.startswith("$") else f"${identifier}"
         return len(self.matches.get(identifier, []))
 
     def get_match_offset(self, identifier: str, index: int = 0) -> int | None:
         """Get offset of a specific match."""
+        identifier = identifier if identifier.startswith("$") else f"${identifier}"
         matches = self.matches.get(identifier, [])
         if 0 <= index < len(matches):
             return matches[index].offset
@@ -834,6 +843,7 @@ class StringMatcher:
 
     def get_match_length(self, identifier: str, index: int = 0) -> int | None:
         """Get length of a specific match."""
+        identifier = identifier if identifier.startswith("$") else f"${identifier}"
         matches = self.matches.get(identifier, [])
         if 0 <= index < len(matches):
             return matches[index].length
@@ -841,10 +851,12 @@ class StringMatcher:
 
     def string_at(self, identifier: str, offset: int) -> bool:
         """Check if string matches at specific offset."""
+        identifier = identifier if identifier.startswith("$") else f"${identifier}"
         matches = self.matches.get(identifier, [])
         return any(m.offset == offset for m in matches)
 
     def string_in(self, identifier: str, start: int, end: int) -> bool:
         """Check if string matches within range."""
+        identifier = identifier if identifier.startswith("$") else f"${identifier}"
         matches = self.matches.get(identifier, [])
         return any(start <= m.offset < end for m in matches)

@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -75,6 +76,22 @@ def test_identifier_and_literal_paths() -> None:
 
     # Unknown identifiers return False (could be unresolved rule references)
     assert ev.visit_identifier(Identifier(name="zzz")) is False
+
+
+def test_evaluator_normalizes_direct_ast_string_identifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="direct_string",
+                strings=[PlainString(identifier="a", value="x")],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+
+    result = YaraEvaluator(data=b"x").evaluate_file(ast)
+
+    assert result == {"direct_string": True}
 
 
 def test_evaluator_matches_operator_honors_regex_modifiers() -> None:

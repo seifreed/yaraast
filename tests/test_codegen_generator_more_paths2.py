@@ -162,6 +162,29 @@ def test_codegen_generators_emit_anonymous_string_identifier() -> None:
     assert "$anon_" not in compact
 
 
+def test_codegen_generators_normalize_direct_ast_string_identifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="direct_string",
+                strings=[PlainString(identifier="a", value="x")],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+
+    generated = CodeGenerator().generate(ast)
+    pretty = PrettyPrinter().pretty_print(ast)
+    advanced = AdvancedCodeGenerator().generate(ast)
+    compact = AdvancedCodeGenerator(FormattingConfig(string_style=StringStyle.COMPACT)).generate(
+        ast
+    )
+
+    for output in (generated, pretty, advanced, compact):
+        assert any(line.strip().startswith("$a") for line in output.splitlines())
+        assert not any(line.strip().startswith('a = "x"') for line in output.splitlines())
+
+
 def test_codegen_generator_meta_and_string_section_variants() -> None:
     gen = CodeGenerator()
     rule = Rule(

@@ -62,7 +62,8 @@ def output_string_identifier(string_def: Any) -> str:
     """Return the YARA source identifier for a string definition."""
     if getattr(string_def, "is_anonymous", False):
         return "$"
-    return str(getattr(string_def, "identifier", ""))
+    identifier = str(getattr(string_def, "identifier", ""))
+    return identifier if identifier.startswith("$") else f"${identifier}"
 
 
 def format_integer_literal(value) -> str:
