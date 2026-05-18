@@ -564,13 +564,18 @@ class StringModule:
     def __init__(self, data: bytes) -> None:
         self.data = data
 
-    def to_int(self, s: str, base: int = 10) -> int:
+    def to_int(self, s: str, base: int = 10) -> int | YaraUndefinedValue:
+        _require_string_arg("string.to_int", s)
+        if not _is_strict_int(base):
+            msg = "string.to_int() base must be an integer"
+            raise EvaluationError(msg)
         try:
             return int(s, base)
-        except (ValueError, TypeError):
-            return 0
+        except ValueError:
+            return YARA_UNDEFINED
 
     def length(self, s: str) -> int:
+        _require_string_arg("string.length", s)
         return len(s)
 
 

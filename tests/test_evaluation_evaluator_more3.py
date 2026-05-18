@@ -327,6 +327,46 @@ def test_console_log_rejects_boolean_arguments() -> None:
         YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 
+def test_string_to_int_matches_libyara_optional_base_and_undefined() -> None:
+    ast = Parser().parse("""
+        import "string"
+        rule string_to_int_values {
+            condition:
+                string.to_int("123") == 123 and
+                string.to_int("10", 16) == 16 and
+                string.to_int("0x10", 0) == 16 and
+                not defined string.to_int("x") and
+                not defined string.to_int("10", 1)
+        }
+
+        rule invalid_string_to_int_comparison {
+            condition:
+                string.to_int("x") == 0
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {
+        "string_to_int_values": True,
+        "invalid_string_to_int_comparison": False,
+    }
+
+
+def test_string_module_rejects_wrong_argument_types() -> None:
+    for expression in (
+        "string.to_int(true)",
+        "string.to_int(1)",
+        'string.to_int("10", true)',
+        "string.length(true)",
+        "string.length(1)",
+    ):
+        ast = Parser().parse(
+            f'import "string" rule invalid_string {{ condition: defined {expression} }}'
+        )
+
+        with pytest.raises(EvaluationError, match=r"string\..*(expects|base must)"):
+            YaraEvaluator(data=b"abc").evaluate_file(ast)
+
+
 def test_math_rejects_non_libyara_functions() -> None:
     ast = Parser().parse("""
         import "math"

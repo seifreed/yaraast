@@ -239,6 +239,34 @@ class TestFunctionCallValidator:
         assert bool_result.is_valid is False
         assert "must be scalar" in bool_result.errors[0].message
 
+    def test_string_to_int_accepts_optional_integer_base(self) -> None:
+        ast = Parser().parse("""
+            import "string"
+            rule string_to_int {
+                condition:
+                    string.to_int("10", 16) == 16
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+        assert result.errors == []
+
+    def test_string_to_int_rejects_boolean_base(self) -> None:
+        ast = Parser().parse("""
+            import "string"
+            rule invalid_string_to_int {
+                condition:
+                    string.to_int("10", true) == 10
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        assert "must be integer" in result.errors[0].message
+
     def test_unknown_module_function(self) -> None:
         """Test unknown function in known module."""
         func_call = FunctionCall(function="pe.unknown_func", arguments=[])

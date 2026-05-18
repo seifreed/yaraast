@@ -126,7 +126,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
     "console": {"funcs": {"log": ("b", [("message", "scalar")], 1, True)}},
     "string": {
         "funcs": {
-            "to_int": ("i", [("s", "s")]),
+            "to_int": ("i", [("s", "s"), ("base", "i")], 1),
             "length": ("i", [("s", "s")]),
         },
     },

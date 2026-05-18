@@ -19,6 +19,7 @@ from yaraast.evaluation.mock_modules import (
     MockModuleRegistry,
     MockPE,
     Section,
+    StringModule,
 )
 from yaraast.parser import Parser
 
@@ -209,6 +210,19 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert console.log("x", 1, 1.5) is True
     with pytest.raises(EvaluationError, match=r"console\.log\(\) expects scalar arguments"):
         console.log(cast(Any, True))
+
+    string = StringModule(b"abc")
+    assert string.to_int("10") == 10
+    assert string.to_int("10", 16) == 16
+    assert string.to_int("0x10", 0) == 16
+    assert string.to_int("x") is YARA_UNDEFINED
+    assert string.to_int("10", 1) is YARA_UNDEFINED
+    with pytest.raises(EvaluationError, match=r"string\.to_int\(\) expects a string argument"):
+        string.to_int(cast(Any, True))
+    with pytest.raises(EvaluationError, match=r"string\.to_int\(\) base must be an integer"):
+        string.to_int("10", cast(Any, True))
+    with pytest.raises(EvaluationError, match=r"string\.length\(\) expects a string argument"):
+        string.length(cast(Any, 1))
 
     class _Custom:
         def __init__(self, data: bytes) -> None:
