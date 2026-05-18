@@ -205,7 +205,7 @@ class FluentConditionBuilder(ConditionBuilder):
     def pe_is_dll(self) -> FluentConditionBuilder:
         """PE is DLL."""
         return FluentConditionBuilder(
-            MemberAccess(object=Identifier(name="pe"), member="is_dll"),
+            FunctionCall(function="pe.is_dll", arguments=[]),
         )
 
     def pe_is_exe(self) -> FluentConditionBuilder:
@@ -213,20 +213,20 @@ class FluentConditionBuilder(ConditionBuilder):
         return FluentConditionBuilder(
             UnaryExpression(
                 operator="not",
-                operand=MemberAccess(object=Identifier(name="pe"), member="is_dll"),
+                operand=FunctionCall(function="pe.is_dll", arguments=[]),
             ),
         )
 
     def pe_is_32bit(self) -> FluentConditionBuilder:
         """PE is 32-bit."""
         return FluentConditionBuilder(
-            MemberAccess(object=Identifier(name="pe"), member="is_32bit"),
+            FunctionCall(function="pe.is_32bit", arguments=[]),
         )
 
     def pe_is_64bit(self) -> FluentConditionBuilder:
         """PE is 64-bit."""
         return FluentConditionBuilder(
-            MemberAccess(object=Identifier(name="pe"), member="is_64bit"),
+            FunctionCall(function="pe.is_64bit", arguments=[]),
         )
 
     def pe_section_count_eq(self, count: int) -> FluentConditionBuilder:

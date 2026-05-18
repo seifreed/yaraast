@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     FunctionCall,
-    MemberAccess,
     UnaryExpression,
 )
+from yaraast.ast.rules import Import, Rule
 from yaraast.builder.fluent_condition_builder import (
     FluentConditionBuilder,
     all_of,
@@ -27,6 +28,7 @@ from yaraast.builder.fluent_condition_builder import (
     small_file,
 )
 from yaraast.errors import ValidationError
+from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
 
 
 def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
@@ -49,10 +51,19 @@ def test_fluent_condition_builder_remaining_helpers_and_factories() -> None:
     assert isinstance(b.huge_file().build(), BinaryExpression)
 
     assert isinstance(b.pe_module().build(), type(b.pe_module().build()))
-    assert isinstance(b.pe_is_dll().build(), MemberAccess)
+    pe_dll = b.pe_is_dll().build()
+    assert isinstance(pe_dll, FunctionCall)
+    assert pe_dll.function == "pe.is_dll"
+    assert pe_dll.arguments == []
     assert isinstance(b.pe_is_exe().build(), UnaryExpression)
-    assert isinstance(b.pe_is_32bit().build(), MemberAccess)
-    assert isinstance(b.pe_is_64bit().build(), MemberAccess)
+    pe_32bit = b.pe_is_32bit().build()
+    assert isinstance(pe_32bit, FunctionCall)
+    assert pe_32bit.function == "pe.is_32bit"
+    assert pe_32bit.arguments == []
+    pe_64bit = b.pe_is_64bit().build()
+    assert isinstance(pe_64bit, FunctionCall)
+    assert pe_64bit.function == "pe.is_64bit"
+    assert pe_64bit.arguments == []
     assert isinstance(b.pe_section_count_eq(3).build(), BinaryExpression)
     assert isinstance(b.pe_imphash_eq("abc").build(), BinaryExpression)
     assert isinstance(b.pe_exports("fn").build(), FunctionCall)
@@ -91,3 +102,22 @@ def test_fluent_condition_string_in_last_kb_expression_shape() -> None:
     expr = FluentConditionBuilder().string_in_last_kb("$a").build()
     assert isinstance(expr, InExpression)
     assert isinstance(expr.range, type(expr.range))
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python is not installed")
+def test_pe_predicate_helpers_generate_libyara_compatible_calls() -> None:
+    condition_expr = (
+        FluentConditionBuilder()
+        .pe_is_dll()
+        .or_(FluentConditionBuilder().pe_is_32bit())
+        .or_(FluentConditionBuilder().pe_is_64bit())
+        .build()
+    )
+    yara_file = YaraFile(
+        imports=[Import("pe")],
+        rules=[Rule(name="pe_predicates", condition=condition_expr)],
+    )
+
+    result = LibyaraCompiler().compile_ast(yara_file)
+
+    assert result.success, result.source_code
