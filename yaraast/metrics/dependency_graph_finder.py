@@ -163,12 +163,7 @@ class DependencyFinder(MetricsVisitorBase):
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
         names = [part.strip() for part in name.split(",")]
-        return {
-            variant
-            for part in names
-            if part
-            for variant in (part, part[1:] if part.startswith("$") else f"${part}")
-        }
+        return {local_name for local_name in names if local_name}
 
     def _visit_ast_value(self, value) -> None:
         if hasattr(value, "accept"):

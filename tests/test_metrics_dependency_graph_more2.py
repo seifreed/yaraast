@@ -134,6 +134,25 @@ def test_dependency_graph_ignores_yarax_local_variable_shadowing_rules() -> None
         assert graph.get_dependencies("caller") == set()
 
 
+def test_dependency_graph_keeps_bare_rule_dependency_distinct_from_dollar_local() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="x", condition=IntegerLiteral(1)),
+            Rule(
+                name="caller",
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", IntegerLiteral(1))],
+                    body=Identifier("x"),
+                ),
+            ),
+        ]
+    )
+
+    graph = build_dependency_graph(ast)
+
+    assert graph.get_dependencies("caller") == {"x"}
+
+
 def test_dependency_graph_traverses_yarax_with_match_nodes() -> None:
     ast = parse_yara_source("""
         rule base { condition: true }
