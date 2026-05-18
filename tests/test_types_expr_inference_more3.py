@@ -17,6 +17,7 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     IntegerLiteral,
+    MemberAccess,
     ParenthesesExpression,
     RangeExpression,
     SetExpression,
@@ -389,6 +390,19 @@ def test_expr_inference_accepts_known_optional_module_arguments() -> None:
 
     assert isinstance(out, BooleanType)
     assert inf.errors == []
+
+
+def test_expr_inference_treats_time_now_as_function_not_attribute() -> None:
+    env = TypeEnvironment()
+    env.add_module("time")
+    inf = ExpressionTypeInference(env)
+
+    call_out = inf.infer(FunctionCall(function="time.now", arguments=[]))
+    attr_out = inf.infer(MemberAccess(object=Identifier("time"), member="now"))
+
+    assert isinstance(call_out, IntegerType)
+    assert isinstance(attr_out, UnknownType)
+    assert "Module 'time' has no attribute 'now'" in inf.errors
 
 
 def test_expr_inference_validates_builtin_reader_offset_type() -> None:

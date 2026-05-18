@@ -583,7 +583,10 @@ class TimeModule:
 
     def __init__(self, data: bytes) -> None:
         self.data = data
-        self.now = int(time_mod.time())
+        self._now = int(time_mod.time())
+
+    def now(self) -> int:
+        return self._now
 
 
 # ---------------------------------------------------------------------------

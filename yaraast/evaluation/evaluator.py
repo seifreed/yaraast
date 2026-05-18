@@ -375,7 +375,10 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return None
 
         if hasattr(obj, node.member):
-            return getattr(obj, node.member)
+            value = getattr(obj, node.member)
+            if callable(value):
+                return YARA_UNDEFINED
+            return value
         if hasattr(obj, "__getitem__"):
             with contextlib.suppress(Exception):
                 return obj[node.member]

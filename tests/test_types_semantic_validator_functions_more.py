@@ -156,10 +156,12 @@ def test_function_validator_accepts_known_optional_module_arguments() -> None:
     env = TypeEnvironment()
     env.add_module("math")
     env.add_module("pe")
+    env.add_module("time")
     validator = FunctionCallValidator(result, env)
 
     validator.visit(FunctionCall(function="math.to_string", arguments=[IntegerLiteral(10)]))
     validator.visit(FunctionCall(function="pe.imports", arguments=[Identifier("dll_name")]))
+    validator.visit(FunctionCall(function="time.now", arguments=[]))
 
     assert result.is_valid is True
     assert result.errors == []

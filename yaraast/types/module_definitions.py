@@ -129,7 +129,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "streams": ("array", ("dict", "s", "i")),
         },
     },
-    "time": {"attrs": {"now": "i"}},
+    "time": {"funcs": {"now": ("i", [])}},
     "console": {"funcs": {"log": ("b", [("message", "scalar")], 1, True)}},
     "string": {
         "funcs": {

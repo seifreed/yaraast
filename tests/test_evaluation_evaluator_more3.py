@@ -459,6 +459,24 @@ def test_string_module_rejects_wrong_argument_types() -> None:
             YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 
+def test_time_now_is_callable_and_member_access_is_not_defined() -> None:
+    ast = Parser().parse("""
+        import "time"
+        rule valid_time_now {
+            condition:
+                defined time.now() and time.now() >= 0
+        }
+        """)
+
+    evaluator = YaraEvaluator(data=b"")
+
+    assert evaluator.evaluate_file(ast) == {"valid_time_now": True}
+    assert (
+        evaluator.visit_member_access(MemberAccess(object=Identifier("time"), member="now"))
+        is YARA_UNDEFINED
+    )
+
+
 def test_cuckoo_nested_module_functions_evaluate_behavior_data() -> None:
     class _CuckooWithData:
         def __init__(self, data: bytes) -> None:
