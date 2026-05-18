@@ -983,6 +983,55 @@ def test_float_zero_divisor_arithmetic_matches_libyara_double_opcode() -> None:
     }
 
 
+def test_negative_zero_double_truthiness_matches_libyara() -> None:
+    ast = Parser().parse("""
+        rule positive_zero_literal {
+            condition:
+                0.0
+        }
+
+        rule negative_zero_literal {
+            condition:
+                -0.0
+        }
+
+        rule negative_zero_not {
+            condition:
+                not -0.0
+        }
+
+        rule negative_zero_and {
+            condition:
+                -0.0 and true
+        }
+
+        rule negative_zero_or {
+            condition:
+                -0.0 or false
+        }
+
+        rule multiplication_produces_negative_zero {
+            condition:
+                -1 * 0.0
+        }
+
+        rule division_produces_negative_zero {
+            condition:
+                0.0 \\ -1
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {
+        "positive_zero_literal": False,
+        "negative_zero_literal": True,
+        "negative_zero_not": False,
+        "negative_zero_and": True,
+        "negative_zero_or": True,
+        "multiplication_produces_negative_zero": True,
+        "division_produces_negative_zero": True,
+    }
+
+
 def test_condition_paths_for_at_in_of_for_and_defined() -> None:
     ev = YaraEvaluator(data=b"00abcd00")
     rule = Rule(

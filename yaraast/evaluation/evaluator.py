@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import dataclass, field
+import math
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.conditions import *
@@ -33,6 +34,14 @@ if TYPE_CHECKING:
 
 def _is_evaluation_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _is_evaluation_truthy(value: Any) -> bool:
+    if is_yara_undefined(value):
+        return False
+    if isinstance(value, float):
+        return value != 0.0 or math.copysign(1.0, value) < 0.0
+    return bool(value)
 
 
 @dataclass
@@ -139,7 +148,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         # Evaluate condition
         if rule.condition:
             result = self.visit(rule.condition)
-            return False if is_yara_undefined(result) else bool(result)
+            return _is_evaluation_truthy(result)
 
         return True  # No condition means always match
 
@@ -233,12 +242,12 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         # Short-circuit evaluation for boolean operators
         if node.operator == "and":
-            if not left:
+            if not _is_evaluation_truthy(left):
                 return False
             right = self.visit(node.right)
             return False if is_yara_undefined(right) else right
         if node.operator == "or":
-            if left:
+            if _is_evaluation_truthy(left):
                 return True
             right = self.visit(node.right)
             return False if is_yara_undefined(right) else right
@@ -270,7 +279,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if node.operator == "not":
             if is_yara_undefined(operand):
                 return operand
-            return not operand
+            return not _is_evaluation_truthy(operand)
         if node.operator == "-":
             if is_yara_undefined(operand):
                 return operand
@@ -468,7 +477,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 continue
 
             try:
-                if node.condition is None or self.visit(node.condition):
+                if node.condition is None or _is_evaluation_truthy(self.visit(node.condition)):
                     values.append(self.visit(node.expression))
             finally:
                 self._restore_loop_variables(previous_values)
@@ -492,7 +501,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 continue
 
             try:
-                if node.condition is None or self.visit(node.condition):
+                if node.condition is None or _is_evaluation_truthy(self.visit(node.condition)):
                     values[self.visit(node.key_expression)] = self.visit(node.value_expression)
             finally:
                 self._restore_loop_variables(previous_values)
@@ -649,7 +658,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 continue
 
             try:
-                if self.visit(node.body):
+                if _is_evaluation_truthy(self.visit(node.body)):
                     true_count += 1
             finally:
                 self._restore_loop_variables(previous_values)
@@ -851,7 +860,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 old_value = self.context.variables.get("$")
                 self.context.variables["$"] = string_id
                 try:
-                    if self.visit(node.condition):
+                    if _is_evaluation_truthy(self.visit(node.condition)):
                         matches += 1
                 finally:
                     if old_value is not None:
