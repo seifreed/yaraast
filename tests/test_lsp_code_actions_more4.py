@@ -79,6 +79,26 @@ rule a {
     )
 
 
+def test_code_action_rename_duplicate_targets_diagnostic_occurrence_on_same_line() -> None:
+    provider = CodeActionsProvider()
+    uri = "file://test.yar"
+    text = 'rule a { strings: $a = "x" $a_2 = "y" $a = "z" condition: true }'
+    duplicate_start = text.rindex("$a")
+    diag = Diagnostic(
+        range=_range(0, duplicate_start, duplicate_start + len("$a")),
+        message="Duplicate string identifier '$a'",
+    )
+
+    actions = provider._create_rename_duplicate_actions(text, diag, uri)
+
+    assert actions
+    assert actions[0].title == "Rename to $a_3"
+    assert actions[0].edit is not None
+    change = _change_set(actions[0].edit, uri)[0]
+    assert change.range.start.character == duplicate_start
+    assert change.new_text == "$a_3"
+
+
 def test_code_action_refactoring_bounds_checks() -> None:
     provider = CodeActionsProvider()
 

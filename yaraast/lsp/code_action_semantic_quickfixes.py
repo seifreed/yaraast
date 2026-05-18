@@ -381,8 +381,7 @@ def create_rename_duplicate_action(
     lines = text.split("\n")
     existing_ids = set()
     for line in lines:
-        id_match = re.search(r"\$(\w+)\s*=", line)
-        if id_match:
+        for id_match in re.finditer(r"\$(\w+)\s*=", line):
             existing_ids.add(id_match.group(1))
 
     counter = 2
@@ -393,7 +392,7 @@ def create_rename_duplicate_action(
     line_num = diagnostic.range.start.line
     if line_num < len(lines):
         line = lines[line_num]
-        col = line.find(f"${base_name}")
+        col = _find_diagnostic_occurrence(line, f"${base_name}", diagnostic)
         if col >= 0:
             edit = TextEdit(
                 range=Range(
