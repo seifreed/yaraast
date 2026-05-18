@@ -60,7 +60,7 @@ class YaraFileBuilder:
         return YaraFile(
             imports=[Import(module=module) for module in self._imports],
             includes=[Include(path=path) for path in self._includes],
-            rules=self._rules,
+            rules=list(self._rules),
         )
 
     # Convenience static methods

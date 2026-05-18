@@ -37,6 +37,16 @@ def test_with_string_rejects_invalid_argument_shapes() -> None:
         builder.with_string(cast(Any, 123))
 
 
+def test_fluent_rule_build_does_not_accumulate_strings_between_builds() -> None:
+    builder = FluentRuleBuilder("stable").text_string("$a", "alpha").matches_any()
+
+    first = builder.build()
+    second = builder.build()
+
+    assert [string.identifier for string in first.strings] == ["$a"]
+    assert [string.identifier for string in second.strings] == ["$a"]
+
+
 def test_string_context_chaining_and_and_string_path() -> None:
     built_rule = (
         FluentRuleBuilder("ctx")

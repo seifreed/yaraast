@@ -587,7 +587,21 @@ class TestRuleBuilderFluentAPI:
         builder.with_string("$s", "test")
         rule2 = builder.build()
 
+        assert len(rule1.strings) == 0
         assert len(rule2.strings) == 1
+
+    def test_build_returns_snapshot_of_mutable_collections(self) -> None:
+        """Mutating built rule collections should not mutate builder state."""
+        builder = RuleBuilder(name="SnapshotRule").private().with_string("$a", "a")
+
+        rule1 = builder.build()
+        rule1.modifiers.clear()
+        rule1.strings.append(PlainString(identifier="$external", value="external"))
+
+        rule2 = builder.build()
+
+        assert [modifier.name for modifier in rule2.modifiers] == ["private"]
+        assert [string.identifier for string in rule2.strings] == ["$a"]
 
     def test_complete_fluent_chain(self) -> None:
         """Complete fluent chain should work seamlessly."""

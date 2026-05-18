@@ -179,7 +179,7 @@ class RuleBuilder:
 
     def with_hex_string(self, identifier: str, builder: HexStringBuilder | list) -> Self:
         """Add a hex string using a builder or token list."""
-        tokens = builder if isinstance(builder, list) else builder.build()
+        tokens = list(builder) if isinstance(builder, list) else builder.build()
         self._strings.append(HexString(identifier=identifier, tokens=tokens, modifiers=[]))
         return self
 
@@ -322,9 +322,9 @@ class RuleBuilder:
 
         return Rule(
             name=self._name,
-            modifiers=self._modifiers,
+            modifiers=list(self._modifiers),
             tags=[Tag(name=tag) for tag in self._tags],
             meta=dict(self._meta),  # Use dict for consistency with parser output
-            strings=self._strings,
+            strings=list(self._strings),
             condition=self._condition,
         )

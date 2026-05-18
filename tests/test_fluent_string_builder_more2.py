@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from yaraast.ast.modifiers import StringModifierType
-from yaraast.ast.strings import HexByte, HexNibble, HexWildcard, RegexString
+from yaraast.ast.strings import HexByte, HexNibble, HexString, HexWildcard, RegexString
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.errors import ValidationError
 
@@ -22,6 +22,20 @@ def test_fluent_string_builder_invalid_hex_inputs_and_trailing_nibble() -> None:
 
     with pytest.raises(ValidationError, match="Invalid hex pair: GZ"):
         FluentStringBuilder("$pair")._parse_hex_pair("GZ")
+
+
+def test_fluent_string_builder_hex_build_returns_token_snapshot() -> None:
+    builder = FluentStringBuilder("$hex").hex("41")
+
+    first = builder.build()
+    assert isinstance(first, HexString)
+    first.tokens.append(HexByte(0x42))
+    second = builder.build()
+
+    assert isinstance(second, HexString)
+    assert len(second.tokens) == 1
+    assert isinstance(second.tokens[0], HexByte)
+    assert second.tokens[0].value == 0x41
 
 
 def test_fluent_string_builder_rejects_invalid_integer_hex_bytes() -> None:

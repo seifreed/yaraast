@@ -276,12 +276,13 @@ class FluentRuleBuilder:
     # Build method
     def build(self) -> Rule:
         """Build the rule."""
-        self._rule_builder.add_string_definitions(
-            [string_builder.build() for string_builder in self._string_builders],
-        )
-
-        rule = self._rule_builder.build()
-        return rule
+        original_strings = list(self._rule_builder._strings)
+        built_strings = [string_builder.build() for string_builder in self._string_builders]
+        self._rule_builder._strings = [*original_strings, *built_strings]
+        try:
+            return self._rule_builder.build()
+        finally:
+            self._rule_builder._strings = original_strings
 
 
 class FluentStringContext:

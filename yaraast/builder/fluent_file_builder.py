@@ -44,7 +44,11 @@ class FluentYaraFileBuilder:
 
     def build(self) -> YaraFile:
         """Build the YARA file."""
-        return YaraFile(imports=self.imports, includes=self.includes, rules=self.rules)
+        return YaraFile(
+            imports=list(self.imports),
+            includes=list(self.includes),
+            rules=list(self.rules),
+        )
 
 
 def yara_file() -> FluentYaraFileBuilder:

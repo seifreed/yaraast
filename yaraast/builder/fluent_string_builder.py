@@ -291,7 +291,7 @@ class FluentStringBuilder:
         if self._string_type == "hex":
             return HexString(
                 identifier=self.identifier,
-                tokens=self._content if isinstance(self._content, list) else [],
+                tokens=list(self._content) if isinstance(self._content, list) else [],
                 modifiers=list(self._modifiers),
             )
         if self._string_type == "regex":

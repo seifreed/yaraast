@@ -12,6 +12,7 @@ from yaraast.ast.expressions import Identifier
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.ast.strings import PlainString
 from yaraast.builder.file_builder import YaraFileBuilder
+from yaraast.builder.fluent_file_builder import yara_file
 from yaraast.builder.rule_builder import RuleBuilder
 
 
@@ -432,9 +433,33 @@ class TestYaraFileBuilderFluentAPI:
         builder.with_import("elf")
         file2 = builder.build()
 
+        assert len(file1.imports) == 1
         assert len(file2.imports) == 2
         assert file2.imports[0].module == "pe"
         assert file2.imports[1].module == "elf"
+
+    def test_build_returns_snapshot_of_rule_list(self) -> None:
+        builder = YaraFileBuilder().with_rule(Rule(name="r1"))
+
+        file1 = builder.build()
+        file1.rules.append(Rule(name="external"))
+        builder.with_rule(Rule(name="r2"))
+        file2 = builder.build()
+
+        assert [rule.name for rule in file1.rules] == ["r1", "external"]
+        assert [rule.name for rule in file2.rules] == ["r1", "r2"]
+
+    def test_fluent_file_build_returns_snapshots(self) -> None:
+        builder = yara_file().import_module("pe").with_rule(Rule(name="r1"))
+
+        file1 = builder.build()
+        builder.import_module("elf").with_rule(Rule(name="r2"))
+        file2 = builder.build()
+
+        assert [imp.module for imp in file1.imports] == ["pe"]
+        assert [rule.name for rule in file1.rules] == ["r1"]
+        assert [imp.module for imp in file2.imports] == ["pe", "elf"]
+        assert [rule.name for rule in file2.rules] == ["r1", "r2"]
 
 
 class TestYaraFileBuilderRealWorldScenarios:
