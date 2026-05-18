@@ -74,17 +74,29 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     pe64.sections = [Section(".text", 0x1000, 0x200, 0x400, 0x200)]
     assert pe64.section_index(".text") == 0
     assert pe64.section_index(".rdata") == -1
+    with pytest.raises(EvaluationError, match=r"pe\.section_index\(\) expects a string argument"):
+        pe64.section_index(cast(Any, True))
 
     pe64._import_list = ["kernel32.dll:CreateFileW", "user32.dll:MessageBoxW"]
     assert pe64.imports("kernel32.dll", "CreateFileW") is True
     assert pe64.imports("kernel32.dll", "CloseHandle") is False
     assert pe64.imports("user32.dll") is True
+    with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects string arguments"):
+        pe64.imports(cast(Any, True))
+    with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects string arguments"):
+        pe64.imports("kernel32.dll", cast(Any, True))
 
     pe64._export_list = ["ExportedFn"]
     assert pe64.exports("ExportedFn") is True
     assert pe64.exports("Missing") is False
+    with pytest.raises(EvaluationError, match=r"pe\.exports\(\) expects a string argument"):
+        pe64.exports(cast(Any, True))
     assert pe64.locale(0x409) is False
     assert pe64.language(0x09) is False
+    with pytest.raises(EvaluationError, match=r"pe\.locale\(\) expects an integer argument"):
+        pe64.locale(cast(Any, True))
+    with pytest.raises(EvaluationError, match=r"pe\.language\(\) expects an integer argument"):
+        pe64.language(cast(Any, True))
     assert pe64.imphash()
 
 
@@ -108,6 +120,8 @@ def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
     assert pe.rva_to_offset(0x11FF) == 0x3FF
     assert pe.rva_to_offset(0x1200) is YARA_UNDEFINED
     assert pe.rva_to_offset(-1) is YARA_UNDEFINED
+    with pytest.raises(EvaluationError, match=r"pe\.rva_to_offset\(\) expects an integer argument"):
+        pe.rva_to_offset(cast(Any, True))
 
 
 def test_evaluator_supports_pe_rva_to_offset_function() -> None:

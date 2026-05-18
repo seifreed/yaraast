@@ -285,6 +285,22 @@ def test_math_deviation_rejects_non_float_mean_argument() -> None:
             YaraEvaluator(data=bytes(range(16))).evaluate_file(ast)
 
 
+def test_pe_functions_reject_wrong_argument_types() -> None:
+    for expression in (
+        "pe.section_index(true)",
+        "pe.exports(true)",
+        "pe.imports(true)",
+        'pe.imports("KERNEL32.dll", true)',
+        "pe.locale(true)",
+        "pe.language(true)",
+        "pe.rva_to_offset(true)",
+    ):
+        ast = Parser().parse(f'import "pe" rule invalid_pe {{ condition: defined {expression} }}')
+
+        with pytest.raises(EvaluationError, match=r"pe\..* expects"):
+            YaraEvaluator(data=b"MZ" + b"\x00" * 100).evaluate_file(ast)
+
+
 def test_math_rejects_non_libyara_functions() -> None:
     ast = Parser().parse("""
         import "math"

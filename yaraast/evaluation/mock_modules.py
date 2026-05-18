@@ -40,6 +40,18 @@ def _require_region_bounds(function_name: str, offset: object, size: object) -> 
         raise EvaluationError(msg)
 
 
+def _require_string_arg(function_name: str, value: object) -> None:
+    if not isinstance(value, str):
+        msg = f"{function_name}() expects a string argument"
+        raise EvaluationError(msg)
+
+
+def _require_integer_arg(function_name: str, value: object) -> None:
+    if not _is_strict_int(value):
+        msg = f"{function_name}() expects an integer argument"
+        raise EvaluationError(msg)
+
+
 @dataclass
 class Section:
     """PE/ELF section descriptor."""
@@ -170,13 +182,15 @@ class MockPE:
         )
 
     def section_index(self, name: str) -> int:
+        _require_string_arg("pe.section_index", name)
         for i, section in enumerate(self.sections):
             if section.name == name:
                 return i
         return -1
 
     def rva_to_offset(self, rva: int) -> int | YaraUndefinedValue:
-        if not isinstance(rva, int) or not self.is_pe or rva < 0:
+        _require_integer_arg("pe.rva_to_offset", rva)
+        if not self.is_pe or rva < 0:
             return YARA_UNDEFINED
 
         if self.size_of_headers and rva < self.size_of_headers and rva < len(self.data):
@@ -195,17 +209,23 @@ class MockPE:
         return YARA_UNDEFINED
 
     def exports(self, name: str) -> bool:
+        _require_string_arg("pe.exports", name)
         return name in self._export_list
 
     def imports(self, dll: str, function: str | None = None) -> bool:
+        if not isinstance(dll, str) or (function is not None and not isinstance(function, str)):
+            msg = "pe.imports() expects string arguments"
+            raise EvaluationError(msg)
         if function:
             return f"{dll}:{function}" in self._import_list
         return any(imp.startswith(f"{dll}:") for imp in self._import_list)
 
     def locale(self, locale_id: int) -> bool:
+        _require_integer_arg("pe.locale", locale_id)
         return False
 
     def language(self, lang_id: int) -> bool:
+        _require_integer_arg("pe.language", lang_id)
         return False
 
 
