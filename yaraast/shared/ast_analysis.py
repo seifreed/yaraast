@@ -53,10 +53,10 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
         self.condition_signatures.clear()
         self.visit(ast)
         return {
-            "structural_hash": self.structural_hash,
-            "rule_signatures": self.rule_signatures,
-            "string_signatures": self.string_signatures,
-            "condition_signatures": self.condition_signatures,
+            "structural_hash": dict(self.structural_hash),
+            "rule_signatures": dict(self.rule_signatures),
+            "string_signatures": dict(self.string_signatures),
+            "condition_signatures": dict(self.condition_signatures),
             "total_rules": len(ast.rules),
             "total_imports": len(ast.imports),
             "total_includes": len(ast.includes),

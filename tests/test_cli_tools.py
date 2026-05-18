@@ -341,6 +341,19 @@ class TestASTStructuralAnalyzer:
         assert analysis1["rule_signatures"] == analysis2["rule_signatures"]
         assert analysis1["structural_hash"] == analysis2["structural_hash"]
 
+    def test_analysis_returns_stable_signature_snapshots(self) -> None:
+        """Test prior analysis results stay stable when the analyzer is reused."""
+        parser = Parser()
+        ast1 = parser.parse("rule first { condition: true }")
+        ast2 = parser.parse("rule second { condition: true }")
+
+        analyzer = ASTStructuralAnalyzer()
+        analysis1 = analyzer.analyze(ast1)
+        analysis2 = analyzer.analyze(ast2)
+
+        assert list(analysis1["rule_signatures"]) == ["first"]
+        assert list(analysis2["rule_signatures"]) == ["second"]
+
 
 class TestASTBenchmarker:
     """Tests for AST benchmarker."""
