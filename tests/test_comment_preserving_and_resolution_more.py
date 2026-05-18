@@ -119,6 +119,15 @@ def test_rule_dependency_getter_does_not_expose_internal_set() -> None:
     assert graph.nodes["rule:test"].dependencies == {"dep"}
 
 
+def test_transitive_graph_queries_do_not_return_start_node_in_cycles() -> None:
+    graph = DependencyGraph()
+    graph.nodes["A"] = DependencyNode("A", "file", dependencies={"B"}, dependents={"B"})
+    graph.nodes["B"] = DependencyNode("B", "file", dependencies={"A"}, dependents={"A"})
+
+    assert graph.get_file_dependencies("A") == {"B"}
+    assert graph.get_file_dependents("A") == {"B"}
+
+
 def test_dependency_graph_readding_file_removes_stale_nodes_and_edges() -> None:
     graph = DependencyGraph()
     file_path = Path("rules.yar")

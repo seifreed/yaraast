@@ -212,6 +212,7 @@ class DependencyGraph:
                 dependencies.update(node.dependencies)
                 to_visit.extend(node.dependencies)
 
+        dependencies.discard(node_key)
         return dependencies
 
     def _get_transitive_dependents(self, node_key: str) -> set[str]:
@@ -234,6 +235,7 @@ class DependencyGraph:
                 dependents.update(node.dependents)
                 to_visit.extend(node.dependents)
 
+        dependents.discard(node_key)
         return dependents
 
     def find_cycles(self) -> list[list[str]]:
