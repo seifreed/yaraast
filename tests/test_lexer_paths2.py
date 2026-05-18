@@ -30,9 +30,13 @@ def test_lexer_tokenize_reuse_resets_previous_tokens() -> None:
     lex = Lexer("rule a { condition: true }")
 
     first = lex.tokenize()
+    first_types = [token.type for token in first]
+    first.clear()
+    assert lex.tokens
+
     second = lex.tokenize()
 
-    assert [token.type for token in second] == [token.type for token in first]
+    assert [token.type for token in second] == first_types
     assert len([token for token in second if token.type == TokenType.EOF]) == 1
 
 

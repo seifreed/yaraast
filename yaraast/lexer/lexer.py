@@ -109,7 +109,7 @@ class Lexer:
                 self.tokens.append(token)
 
         self.tokens.append(Token(TokenType.EOF, None, self.line, self.column))
-        return self.tokens
+        return list(self.tokens)
 
     def _current_char(self) -> str | None:
         """Get current character."""

@@ -76,7 +76,7 @@ class YaraLLexer:
             yaral_type=YaraLTokenType.EOF,
         )
         self.tokens.append(eof_token)
-        return self.tokens
+        return list(self.tokens)
 
     def _skip_whitespace_and_comments(self) -> None:
         """Skip whitespace and comments."""

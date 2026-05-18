@@ -227,9 +227,13 @@ def test_yaral_lexer_tokenize_reuse_resets_previous_tokens() -> None:
     lexer = YaraLLexer("rule test { condition: $e }")
 
     first = lexer.tokenize()
+    first_types = [token.type for token in first]
+    first.clear()
+    assert lexer.tokens
+
     second = lexer.tokenize()
 
-    assert [token.type for token in second] == [token.type for token in first]
+    assert [token.type for token in second] == first_types
     assert len([token for token in second if token.type == T.EOF]) == 1
 
 
