@@ -55,6 +55,12 @@ def analyze_context(text: str, position: Position) -> str:
     current_line = lines[position.line]
     before_cursor = current_line[: position.character]
 
+    if "$" in before_cursor and "=" in before_cursor:
+        if any(mod in before_cursor for mod in ["nocase", "wide", "ascii", "xor"]):
+            return "string_modifier"
+        if '"' in before_cursor or "}}" in before_cursor or "/" in before_cursor:
+            return "string_modifier"
+
     if "import" in before_cursor and '"' in before_cursor:
         return "import"
 
@@ -62,12 +68,6 @@ def analyze_context(text: str, position: Position) -> str:
         parts = before_cursor.rsplit(".", 1)
         if len(parts) == 2:
             return "module_member"
-
-    if "$" in before_cursor and "=" in before_cursor:
-        if any(mod in before_cursor for mod in ["nocase", "wide", "ascii", "xor"]):
-            return "string_modifier"
-        if '"' in before_cursor or "}}" in before_cursor or "/" in before_cursor:
-            return "string_modifier"
 
     for i in range(position.line, -1, -1):
         if i < len(lines):

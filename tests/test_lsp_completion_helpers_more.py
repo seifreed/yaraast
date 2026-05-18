@@ -65,6 +65,14 @@ rule a {
 """.lstrip()
     assert analyze_context(in_strings, _pos(2, 3)) == "strings"
 
+    dotted_string = """
+rule a {
+  strings:
+    $a = "a.b"
+}
+""".lstrip()
+    assert analyze_context(dotted_string, _pos(2, 14)) == "string_modifier"
+
     assert get_current_module("rule a { condition: pe. }", _pos(0, 24)) == "pe"
     assert get_current_module("rule a { condition: no_dot }", _pos(0, 28)) is None
     assert get_current_module("x", _pos(4, 0)) is None
