@@ -87,6 +87,8 @@ class Parser(
                 self.lexer = Lexer(text)
                 self.tokens = self.lexer.tokenize()
             self.current = 0
+        else:
+            self.current = 0
 
         # Ensure we have tokens to parse
         if not self.tokens:

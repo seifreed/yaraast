@@ -21,6 +21,7 @@ class YaraLParser(TokenStreamMixin, YaraLParsingMixin):
 
     def parse(self) -> YaraLFile:
         """Parse YARA-L file."""
+        self.current = 0
         rules = []
 
         while not self._is_at_end():

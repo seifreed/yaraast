@@ -19,6 +19,7 @@ from yaraast.yaral.ast_nodes import (
     UDMFieldAccess,
     UDMFieldPath,
 )
+from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 from yaraast.yaral.lexer import YaraLLexer
 from yaraast.yaral.parser import YaraLParser, YaraLParserError
 from yaraast.yaral.tokens import YaraLTokenType
@@ -80,6 +81,24 @@ class TestYaraLLexerComprehensive:
         assert isinstance(second_pattern, str)
         assert r".*malicious\.com" in first_pattern
         assert r"^test-[0-9]+$" in second_pattern
+
+    def test_yaral_parsers_reuse_tokens_from_start(self) -> None:
+        """Test parser instances can parse their token stream more than once."""
+        code = 'rule test { events: $e.metadata.event_type = "x" condition: $e }'
+
+        parser = YaraLParser(code)
+        first = parser.parse()
+        second = parser.parse()
+
+        assert [rule.name for rule in first.rules] == ["test"]
+        assert [rule.name for rule in second.rules] == ["test"]
+
+        enhanced = EnhancedYaraLParser(code)
+        enhanced_first = enhanced.parse()
+        enhanced_second = enhanced.parse()
+
+        assert [rule.name for rule in enhanced_first.rules] == ["test"]
+        assert [rule.name for rule in enhanced_second.rules] == ["test"]
 
     def test_lexer_two_char_operators(self) -> None:
         """Test lexing two-character operators."""

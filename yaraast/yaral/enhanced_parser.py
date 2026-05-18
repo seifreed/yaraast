@@ -41,6 +41,8 @@ class EnhancedYaraLParser(
         Returns:
             Parsed YARA-L AST
         """
+        self.current = 0
+        self.errors.clear()
         rules = []
         max_iterations = 10000
 

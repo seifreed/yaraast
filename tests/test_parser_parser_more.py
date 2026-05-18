@@ -38,6 +38,16 @@ def test_parser_init_text_with_injected_lexer() -> None:
     assert len(lex.calls) == 1
 
 
+def test_parser_reuses_constructor_tokens_from_start() -> None:
+    parser = Parser("rule r { condition: true }")
+
+    first = parser.parse()
+    second = parser.parse()
+
+    assert [rule.name for rule in first.rules] == ["r"]
+    assert [rule.name for rule in second.rules] == ["r"]
+
+
 def test_parser_requires_text() -> None:
     parser = Parser()
     with pytest.raises(ParseError, match="No text provided to parse"):
