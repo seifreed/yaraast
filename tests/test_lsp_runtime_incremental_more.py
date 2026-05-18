@@ -932,8 +932,11 @@ rule local_rule {
 
     refs_first = runtime.find_rule_references("shared_rule", current_uri=current_uri)
     refs_second = runtime.find_rule_references("shared_rule", current_uri=current_uri)
-    assert refs_first is refs_second
+    assert refs_first == refs_second  # Compare by value, not identity (cache returns copies)
     assert len(refs_first) == 2
+    refs_first.clear()
+    refs_after_mutation = runtime.find_rule_references("shared_rule", current_uri=current_uri)
+    assert refs_after_mutation == refs_second
 
     records_first = runtime.find_rule_reference_records("shared_rule", current_uri=current_uri)
     records_second = runtime.find_rule_reference_records("shared_rule", current_uri=current_uri)

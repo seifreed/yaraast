@@ -64,7 +64,7 @@ def find_rule_references(
     cache_key = (runtime.cache.generation, rule_name, include_declaration, current_uri)
     cached = runtime.cache.rule_references_cache.get(cache_key)
     if cached is not None:
-        return cached
+        return list(cached)
     refs: list[Location] = []
     definition = find_rule_definition(runtime, rule_name, current_uri)
     for doc in runtime.iter_workspace_documents():
@@ -73,7 +73,7 @@ def find_rule_references(
         refs = [
             ref for ref in refs if not (ref.uri == definition.uri and ref.range == definition.range)
         ]
-    runtime.cache.rule_references_cache[cache_key] = refs
+    runtime.cache.rule_references_cache[cache_key] = list(refs)
     return refs
 
 
