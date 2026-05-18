@@ -205,6 +205,29 @@ def test_string_count_offset_length_and_wildcard() -> None:
         is YARA_UNDEFINED
     )
 
+
+def test_direct_evaluate_rule_clears_matcher_state_for_rules_without_strings() -> None:
+    ev = YaraEvaluator(data=b"xxabxxab")
+    matching_rule = Rule(
+        name="matching",
+        strings=[PlainString(identifier="$a", value="ab")],
+        condition=BooleanLiteral(value=True),
+    )
+    no_strings_rule = Rule(
+        name="no_strings",
+        strings=[],
+        condition=BinaryExpression(
+            left=StringCount("$a"),
+            operator="==",
+            right=IntegerLiteral(0),
+        ),
+    )
+
+    assert ev.evaluate_rule(matching_rule) is True
+    assert ev.evaluate_rule(no_strings_rule) is True
+
+
+def test_string_offset_length_indexed_parser_forms() -> None:
     ast = Parser().parse("""
         rule indexed {
             strings:

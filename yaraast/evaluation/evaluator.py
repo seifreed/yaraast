@@ -131,6 +131,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         # Reset per-rule state to prevent cross-rule contamination
         self.context.string_matches = {}
+        self.string_matcher.matches.clear()
 
         # Match strings
         if rule.strings:
