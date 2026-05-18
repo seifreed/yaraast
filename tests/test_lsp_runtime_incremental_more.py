@@ -451,12 +451,17 @@ rule d { condition: c }
 
     rule_def_first = doc.find_rule_definition("a")
     rule_def_second = doc.find_rule_definition("a")
-    assert rule_def_first is rule_def_second
+    assert rule_def_first == rule_def_second
+    assert rule_def_first is not None
+    rule_def_first.uri = "file:///corrupted.yar"
+    assert doc.find_rule_definition("a") == rule_def_second
 
     rule_refs_first = doc.rule_reference_records("a")
     rule_refs_second = doc.rule_reference_records("a")
     assert rule_refs_first == rule_refs_second
     assert {record.role for record in rule_refs_first} == {"declaration", "use"}
+    rule_refs_first[0].role = "corrupted"
+    assert doc.rule_reference_records("a") == rule_refs_second
     rule_refs_first.clear()
     assert doc.rule_reference_records("a") == rule_refs_second
 
@@ -495,6 +500,8 @@ rule a {
     refs_second = doc.find_string_reference_records("$a")
     assert refs_first == refs_second
     assert {record.role for record in refs_first} == {"declaration", "read"}
+    refs_first[0].role = "corrupted"
+    assert doc.find_string_reference_records("$a") == refs_second
     refs_first.clear()
     assert doc.find_string_reference_records("$a") == refs_second
 
@@ -864,9 +871,11 @@ rule sample {
 
     first = doc.resolve_symbol(Position(line=2, character=5))
     second = doc.resolve_symbol(Position(line=2, character=5))
-    assert first is second
+    assert first == second
     assert first is not None
     assert first.normalized_name == "$a"
+    first.normalized_name = "$corrupted"
+    assert doc.resolve_symbol(Position(line=2, character=5)) == second
 
     doc.update(text_v2, version=2)
 
@@ -900,6 +909,8 @@ rule sample { condition: true }
     assert first == second
     assert len(first) == 1
     assert first[0].rule_name == "target"
+    first[0].rule_name = "corrupted"
+    assert runtime.get_rule_link_records_for_document(uri) == second
     first.clear()
     assert runtime.get_rule_link_records_for_document(uri) == second
 
@@ -946,6 +957,8 @@ rule main {
     assert first == second
     assert len(first) == 1
     assert first[0].rule_name == "shared_rule"
+    first[0].rule_name = "corrupted"
+    assert doc.get_local_rule_link_records() == second
     first.clear()
     assert doc.get_local_rule_link_records() == second
 
@@ -974,12 +987,17 @@ rule local_rule {
 
     definition_first = runtime.find_rule_definition("shared_rule", current_uri)
     definition_second = runtime.find_rule_definition("shared_rule", current_uri)
-    assert definition_first is definition_second
+    assert definition_first == definition_second
+    assert definition_first is not None
+    definition_first.uri = "file:///corrupted.yar"
+    assert runtime.find_rule_definition("shared_rule", current_uri) == definition_second
 
     refs_first = runtime.find_rule_references("shared_rule", current_uri=current_uri)
     refs_second = runtime.find_rule_references("shared_rule", current_uri=current_uri)
     assert refs_first == refs_second  # Compare by value, not identity (cache returns copies)
     assert len(refs_first) == 2
+    refs_first[0].uri = "file:///corrupted.yar"
+    assert runtime.find_rule_references("shared_rule", current_uri=current_uri) == refs_second
     refs_first.clear()
     refs_after_mutation = runtime.find_rule_references("shared_rule", current_uri=current_uri)
     assert refs_after_mutation == refs_second
@@ -988,6 +1006,11 @@ rule local_rule {
     records_second = runtime.find_rule_reference_records("shared_rule", current_uri=current_uri)
     assert records_first == records_second  # Compare by value, not identity (cache returns copies)
     assert {record.role for record in records_first} == {"declaration", "use"}
+    records_first[0].role = "corrupted"
+    assert (
+        runtime.find_rule_reference_records("shared_rule", current_uri=current_uri)
+        == records_second
+    )
 
     status = runtime.get_status()
     cache_stats = _cache_stats(status)
