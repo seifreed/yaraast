@@ -329,6 +329,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 msg = f"{node.function}() expects exactly 1 argument"
                 raise EvaluationError(msg)
             offset = args[0]
+            if is_yara_undefined(offset):
+                return YARA_UNDEFINED
             if not _is_evaluation_int(offset):
                 msg = f"{node.function}() offset must be an integer"
                 raise EvaluationError(msg)

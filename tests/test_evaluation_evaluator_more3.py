@@ -102,6 +102,20 @@ def test_evaluator_matches_operator_uses_libyara_search_offsets() -> None:
     }
 
 
+def test_builtin_integer_readers_propagate_undefined_offsets() -> None:
+    ast = Parser().parse("""
+        rule undefined_reader_offsets {
+            condition:
+                uint8(uint8(100)) == 0 or
+                defined uint8(uint8(100)) or
+                uint16be(uint8(100)) == 0 or
+                defined uint16be(uint8(100))
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"undefined_reader_offsets": False}
+
+
 def test_hash_module_invalid_regions_evaluate_as_undefined() -> None:
     ast = Parser().parse("""
         import "hash"
