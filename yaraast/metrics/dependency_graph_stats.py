@@ -20,6 +20,8 @@ def get_dependency_stats(generator: DependencyGraphGenerator) -> dict[str, Any]:
         "rules_using_modules": len(
             [rule for rule in generator.module_references if generator.module_references[rule]],
         ),
+        "rules_with_deps": sum(1 for deps in generator.dependencies.values() if deps),
+        "total_dependencies": sum(len(deps) for deps in generator.dependencies.values()),
         "most_used_modules": sorted(
             [
                 (

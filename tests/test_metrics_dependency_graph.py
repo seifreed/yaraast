@@ -80,9 +80,12 @@ def test_dependency_graph_generator_renders_rule_dependency_edges() -> None:
 
     generator = DependencyGraphGenerator()
     dot_source = generator.generate_rule_graph(ast)
+    stats = generator.get_dependency_stats()
 
     assert generator.dependencies["caller"] == {"base_rule"}
     assert "caller -> base_rule" in dot_source
+    assert stats["rules_with_deps"] == 1
+    assert stats["total_dependencies"] == 1
 
 
 def test_dependency_graph_variant_generators_reset_between_inputs() -> None:
