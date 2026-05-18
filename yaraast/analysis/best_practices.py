@@ -107,6 +107,9 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def analyze(self, ast: YaraFile) -> AnalysisReport:
         """Analyze AST and return report."""
         self.report = AnalysisReport()
+        self._current_rule = None
+        self._string_usage.clear()
+        self._hex_patterns.clear()
         self.visit(ast)
         self._analyze_global_patterns()
         return self.report
@@ -137,7 +140,6 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         """Analyze individual rule."""
         self._current_rule = node
         self._string_usage.clear()
-        self._hex_patterns.clear()
 
         # Check rule name conventions - must start with letter, no leading numbers
         # Also check for numbers immediately after letters (bad123name pattern)

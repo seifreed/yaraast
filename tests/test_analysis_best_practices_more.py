@@ -254,3 +254,28 @@ rule ab {
     assert analyzer._levenshtein_distance("abc", "abc") == 0
     assert analyzer._levenshtein_distance("abc", "ab") == 1
     assert analyzer._levenshtein_distance("abc", "") == 3
+
+
+def test_best_practices_global_hex_patterns_include_all_rules() -> None:
+    ast = Parser().parse("""
+rule hx1 {
+    strings:
+        $a = { 4D 5A 90 00 AA }
+    condition:
+        $a
+}
+
+rule hx2 {
+    strings:
+        $b = { 4D 5A 90 00 BB }
+    condition:
+        $b
+}
+""")
+
+    report = BestPracticesAnalyzer().analyze(ast)
+
+    assert any(
+        suggestion.rule_name == "global" and "Similar hex patterns: $a, $b" in suggestion.message
+        for suggestion in report.suggestions
+    )
