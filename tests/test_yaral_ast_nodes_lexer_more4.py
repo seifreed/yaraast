@@ -223,6 +223,21 @@ def test_yaral_lexer_handles_large_inputs_and_multiline_backtick_regex() -> None
     assert len(many_tokens) == 10003
 
 
+def test_yaral_lexer_tracks_columns_after_block_comments() -> None:
+    inline = "rule test /* comment */ { }"
+    inline_tokens = YaraLLexer(inline).tokenize()
+    inline_lbrace = next(token for token in inline_tokens if token.type == T.LBRACE)
+    assert inline_lbrace.line == 1
+    assert inline_lbrace.column == inline.index("{") + 1
+
+    multiline = "rule test /* line\n comment */ { }"
+    multiline_tokens = YaraLLexer(multiline).tokenize()
+    multiline_lbrace = next(token for token in multiline_tokens if token.type == T.LBRACE)
+    last_line = multiline.splitlines()[-1]
+    assert multiline_lbrace.line == 2
+    assert multiline_lbrace.column == last_line.index("{") + 1
+
+
 def test_yaral_lexer_tokenize_reuse_resets_previous_tokens() -> None:
     lexer = YaraLLexer("rule test { condition: $e }")
 

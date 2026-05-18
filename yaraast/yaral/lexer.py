@@ -106,7 +106,7 @@ class YaraLLexer:
             and self.text[self.position : self.position + 2] == "//"
         ):
             while self.position < len(self.text) and self.text[self.position] != "\n":
-                self.position += 1
+                self._advance_one_character()
             return True
         return False
 
@@ -116,17 +116,14 @@ class YaraLLexer:
             self.position + 1 < len(self.text)
             and self.text[self.position : self.position + 2] == "/*"
         ):
-            self.position += 2
-            while self.position + 1 < len(self.text):
+            self._advance_one_character()
+            self._advance_one_character()
+            while self.position < len(self.text):
                 if self.text[self.position : self.position + 2] == "*/":
-                    self.position += 2
+                    self._advance_one_character()
+                    self._advance_one_character()
                     break
-                if self.text[self.position] == "\n":
-                    self.line += 1
-                    self.column = 1
-                else:
-                    self.column += 1
-                self.position += 1
+                self._advance_one_character()
             return True
         return False
 
