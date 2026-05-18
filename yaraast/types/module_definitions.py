@@ -137,6 +137,19 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "registry": ("struct", {}),
             "sync": ("struct", {}),
         },
+        "funcs": {
+            "network.http_request": ("b", [("regexp", "r")]),
+            "network.http_get": ("b", [("regexp", "r")]),
+            "network.http_post": ("b", [("regexp", "r")]),
+            "network.http_user_agent": ("b", [("regexp", "r")]),
+            "network.dns_lookup": ("b", [("regexp", "r")]),
+            "network.host": ("b", [("regexp", "r")]),
+            "network.tcp": ("b", [("regexp", "r"), ("port", "i")]),
+            "network.udp": ("b", [("regexp", "r"), ("port", "i")]),
+            "registry.key_access": ("b", [("regexp", "r")]),
+            "filesystem.file_access": ("b", [("regexp", "r")]),
+            "sync.mutex": ("b", [("regexp", "r")]),
+        },
     },
     "magic": {"attrs": {"mime_type": "s", "type": "s"}},
     "vt": {"attrs": {"metadata": ("struct", {})}},
@@ -150,6 +163,7 @@ def _resolve_type(spec):
         BooleanType,
         DoubleType,
         IntegerType,
+        RegexType,
         ScalarType,
         StringType,
     )
@@ -159,6 +173,7 @@ def _resolve_type(spec):
         "s": StringType,
         "b": BooleanType,
         "d": DoubleType,
+        "r": RegexType,
         "scalar": ScalarType,
     }
     if isinstance(spec, str):

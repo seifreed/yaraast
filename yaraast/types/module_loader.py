@@ -123,6 +123,7 @@ class ModuleLoader:
             BooleanType,
             FloatType,
             IntegerType,
+            RegexType,
             ScalarType,
             StringType,
         )
@@ -138,6 +139,9 @@ class ModuleLoader:
                 "boolean": BooleanType(),
                 "float": FloatType(),
                 "double": FloatType(),
+                "regex": RegexType(),
+                "regexp": RegexType(),
+                "r": RegexType(),
                 "scalar": ScalarType(),
                 "any": AnyType(),
             }

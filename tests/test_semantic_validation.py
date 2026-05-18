@@ -267,6 +267,38 @@ class TestFunctionCallValidator:
         assert result.is_valid is False
         assert "must be integer" in result.errors[0].message
 
+    def test_cuckoo_nested_module_functions_validate(self) -> None:
+        ast = Parser().parse(r"""
+            import "cuckoo"
+            rule cuckoo_behavior {
+                condition:
+                    cuckoo.network.http_request(/evil/) and
+                    cuckoo.network.tcp(/127\.0\.0\.1/, 443) and
+                    cuckoo.registry.key_access(/Run/) and
+                    cuckoo.filesystem.file_access(/autoexec/) and
+                    cuckoo.sync.mutex(/Mutex/)
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+        assert result.errors == []
+
+    def test_cuckoo_network_port_functions_reject_boolean_port(self) -> None:
+        ast = Parser().parse(r"""
+            import "cuckoo"
+            rule invalid_cuckoo {
+                condition:
+                    cuckoo.network.tcp(/127\.0\.0\.1/, true)
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        assert "must be integer" in result.errors[0].message
+
     def test_unknown_module_function(self) -> None:
         """Test unknown function in known module."""
         func_call = FunctionCall(function="pe.unknown_func", arguments=[])

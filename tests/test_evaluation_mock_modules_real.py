@@ -12,6 +12,7 @@ from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.evaluation.mock_modules import (
     ConsoleModule,
+    CuckooModule,
     HashModule,
     MockDotNet,
     MockELF,
@@ -223,6 +224,32 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
         string.to_int("10", cast(Any, True))
     with pytest.raises(EvaluationError, match=r"string\.length\(\) expects a string argument"):
         string.length(cast(Any, 1))
+
+    cuckoo = CuckooModule(b"abc")
+    cuckoo.network.http_requests = ["http://evil.example/path"]
+    cuckoo.network.http_get_requests = ["http://evil.example/path"]
+    cuckoo.network.http_post_requests = ["http://post.example/path"]
+    cuckoo.network.http_user_agents = ["BadAgent/1.0"]
+    cuckoo.network.dns_lookups = ["evil.example"]
+    cuckoo.network.hosts = ["192.168.1.1"]
+    cuckoo.network.tcp_connections = [("192.168.1.1", 443)]
+    cuckoo.network.udp_connections = [("8.8.8.8", 53)]
+    cuckoo.registry.key_accesses = [r"\\Software\\Bad"]
+    cuckoo.filesystem.file_accesses = [r"C:\\autoexec.bat"]
+    cuckoo.sync.mutexes = ["EvilMutexName"]
+    assert cuckoo.network.http_request(r"evil\.example") is True
+    assert cuckoo.network.http_get(r"evil\.example") is True
+    assert cuckoo.network.http_post(r"post\.example") is True
+    assert cuckoo.network.http_user_agent("BadAgent") is True
+    assert cuckoo.network.dns_lookup(r"evil\.example") is True
+    assert cuckoo.network.host(r"192\.168\.1\.1") is True
+    assert cuckoo.network.tcp(r"192\.168\.1\.1", 443) is True
+    assert cuckoo.network.udp(r"8\.8\.8\.8", 53) is True
+    assert cuckoo.registry.key_access("Bad") is True
+    assert cuckoo.filesystem.file_access(r"autoexec\.bat") is True
+    assert cuckoo.sync.mutex("EvilMutex") is True
+    with pytest.raises(EvaluationError, match=r"cuckoo\.network\.tcp\(\) port"):
+        cuckoo.network.tcp("host", cast(Any, True))
 
     class _Custom:
         def __init__(self, data: bytes) -> None:

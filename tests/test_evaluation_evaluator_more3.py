@@ -40,6 +40,7 @@ from yaraast.ast.strings import PlainString
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator import YaraEvaluator
+from yaraast.evaluation.mock_modules import MockModuleRegistry
 from yaraast.parser import Parser
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -365,6 +366,50 @@ def test_string_module_rejects_wrong_argument_types() -> None:
 
         with pytest.raises(EvaluationError, match=r"string\..*(expects|base must)"):
             YaraEvaluator(data=b"abc").evaluate_file(ast)
+
+
+def test_cuckoo_nested_module_functions_evaluate_behavior_data() -> None:
+    class _CuckooWithData:
+        def __init__(self, data: bytes) -> None:
+            from yaraast.evaluation.mock_modules import CuckooModule
+
+            delegate = CuckooModule(data)
+            delegate.network.http_requests = ["http://evil.example/path"]
+            delegate.network.http_get_requests = ["http://evil.example/path"]
+            delegate.network.http_post_requests = ["http://post.example/path"]
+            delegate.network.http_user_agents = ["BadAgent/1.0"]
+            delegate.network.dns_lookups = ["evil.example"]
+            delegate.network.hosts = ["192.168.1.1"]
+            delegate.network.tcp_connections = [("192.168.1.1", 443)]
+            delegate.network.udp_connections = [("8.8.8.8", 53)]
+            delegate.registry.key_accesses = [r"\\Software\\Bad"]
+            delegate.filesystem.file_accesses = [r"C:\\autoexec.bat"]
+            delegate.sync.mutexes = ["EvilMutexName"]
+            self.__dict__.update(delegate.__dict__)
+
+    registry = MockModuleRegistry()
+    registry.register_module("cuckoo", _CuckooWithData)
+    ast = Parser().parse(r"""
+        import "cuckoo"
+        rule cuckoo_behavior {
+            condition:
+                cuckoo.network.http_request(/evil\.example/) and
+                cuckoo.network.http_get(/evil\.example/) and
+                cuckoo.network.http_post(/post\.example/) and
+                cuckoo.network.http_user_agent(/BadAgent/) and
+                cuckoo.network.dns_lookup(/evil\.example/) and
+                cuckoo.network.host(/192\.168\.1\.1/) and
+                cuckoo.network.tcp(/192\.168\.1\.1/, 443) and
+                cuckoo.network.udp(/8\.8\.8\.8/, 53) and
+                cuckoo.registry.key_access(/Bad/) and
+                cuckoo.filesystem.file_access(/autoexec\.bat/) and
+                cuckoo.sync.mutex(/EvilMutex/)
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc", modules=registry).evaluate_file(ast) == {
+        "cuckoo_behavior": True
+    }
 
 
 def test_math_rejects_non_libyara_functions() -> None:

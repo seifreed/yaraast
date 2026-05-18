@@ -332,18 +332,31 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             module_name, func_name = node.function.split(".", 1)
             if module_name in self.context.modules:
                 module = self.context.modules[module_name]
-                # Use class method to avoid attribute shadowing (e.g., pe.imports list vs imports() method)
-                class_method = getattr(type(module), func_name, None)
-                if class_method is not None and callable(class_method):
-                    return class_method(module, *args)
-                if hasattr(module, func_name):
-                    func = getattr(module, func_name)
-                    if callable(func):
-                        return func(*args)
-                    return func  # Attribute access, not function call
+                resolved = self._resolve_module_function(module, func_name)
+                if resolved is not None:
+                    target, member_name = resolved
+                    class_method = getattr(type(target), member_name, None)
+                    if class_method is not None and callable(class_method):
+                        return class_method(target, *args)
+                    if hasattr(target, member_name):
+                        func = getattr(target, member_name)
+                        if callable(func):
+                            return func(*args)
+                        return func
 
         msg = f"Unknown function: {node.function}"
         raise EvaluationError(msg)
+
+    def _resolve_module_function(
+        self, module: object, dotted_name: str
+    ) -> tuple[object, str] | None:
+        target = module
+        parts = dotted_name.split(".")
+        for part in parts[:-1]:
+            if not hasattr(target, part):
+                return None
+            target = getattr(target, part)
+        return target, parts[-1]
 
     def visit_member_access(self, node: MemberAccess) -> Any:
         """Evaluate member access."""

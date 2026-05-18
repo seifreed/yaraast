@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import math
+import re
 import struct
 import time as time_mod
 from typing import Any
@@ -58,6 +59,20 @@ def _require_scalar_args(function_name: str, values: tuple[object, ...]) -> None
     ):
         msg = f"{function_name}() expects scalar arguments"
         raise EvaluationError(msg)
+
+
+def _require_pattern_arg(function_name: str, value: object) -> str:
+    if not isinstance(value, str):
+        msg = f"{function_name}() expects a regex pattern argument"
+        raise EvaluationError(msg)
+    return value
+
+
+def _regex_matches(pattern: str, values: list[str]) -> bool:
+    try:
+        return any(re.search(pattern, value) is not None for value in values)
+    except re.error:
+        return False
 
 
 @dataclass
@@ -519,38 +534,119 @@ class CuckooNetwork:
 
     def __init__(self) -> None:
         self.hosts: list[str] = []
-        self.dns_lookup: list[str] = []
-        self.http_request: list[str] = []
+        self.dns_lookups: list[str] = []
+        self.http_requests: list[str] = []
+        self.http_get_requests: list[str] = []
+        self.http_post_requests: list[str] = []
+        self.http_user_agents: list[str] = []
+        self.tcp_connections: list[tuple[str, int]] = []
+        self.udp_connections: list[tuple[str, int]] = []
 
-    def dns_lookup_match(self, pattern: str) -> bool:
-        return any(pattern in d for d in self.dns_lookup)
+    def http_request(self, pattern: object) -> bool:
+        return _regex_matches(
+            _require_pattern_arg("cuckoo.network.http_request", pattern),
+            self.http_requests,
+        )
 
-    def http_get(self, url: str) -> bool:
-        return url in self.http_request
+    def http_get(self, pattern: object) -> bool:
+        return _regex_matches(
+            _require_pattern_arg("cuckoo.network.http_get", pattern),
+            self.http_get_requests,
+        )
+
+    def http_post(self, pattern: object) -> bool:
+        return _regex_matches(
+            _require_pattern_arg("cuckoo.network.http_post", pattern),
+            self.http_post_requests,
+        )
+
+    def http_user_agent(self, pattern: object) -> bool:
+        return _regex_matches(
+            _require_pattern_arg("cuckoo.network.http_user_agent", pattern),
+            self.http_user_agents,
+        )
+
+    def dns_lookup(self, pattern: object) -> bool:
+        return _regex_matches(
+            _require_pattern_arg("cuckoo.network.dns_lookup", pattern),
+            self.dns_lookups,
+        )
+
+    def host(self, pattern: object) -> bool:
+        return _regex_matches(_require_pattern_arg("cuckoo.network.host", pattern), self.hosts)
+
+    def tcp(self, pattern: object, port: object) -> bool:
+        if not _is_strict_int(port):
+            msg = "cuckoo.network.tcp() port must be an integer"
+            raise EvaluationError(msg)
+        return self._endpoint_matches(
+            _require_pattern_arg("cuckoo.network.tcp", pattern),
+            port,
+            self.tcp_connections,
+        )
+
+    def udp(self, pattern: object, port: object) -> bool:
+        if not _is_strict_int(port):
+            msg = "cuckoo.network.udp() port must be an integer"
+            raise EvaluationError(msg)
+        return self._endpoint_matches(
+            _require_pattern_arg("cuckoo.network.udp", pattern),
+            port,
+            self.udp_connections,
+        )
+
+    def _endpoint_matches(
+        self,
+        pattern: str,
+        port: int,
+        connections: list[tuple[str, int]],
+    ) -> bool:
+        try:
+            return any(
+                connection_port == port and re.search(pattern, host)
+                for host, connection_port in connections
+            )
+        except re.error:
+            return False
 
 
 class CuckooFilesystem:
     """Cuckoo filesystem results."""
 
     def __init__(self) -> None:
-        self.file_access: list[str] = []
+        self.file_accesses: list[str] = []
+
+    def file_access(self, pattern: object) -> bool:
+        return _regex_matches(
+            _require_pattern_arg("cuckoo.filesystem.file_access", pattern),
+            self.file_accesses,
+        )
 
 
 class CuckooRegistry:
     """Cuckoo registry results."""
 
     def __init__(self) -> None:
-        self.key_access: list[str] = []
+        self.key_accesses: list[str] = []
+
+    def key_access(self, pattern: object) -> bool:
+        return _regex_matches(
+            _require_pattern_arg("cuckoo.registry.key_access", pattern),
+            self.key_accesses,
+        )
 
 
 class CuckooSync:
     """Cuckoo synchronization results."""
 
     def __init__(self) -> None:
-        self.mutex: list[str] = []
+        self.mutexes: list[str] = []
 
-    def mutex_match(self, pattern: str) -> bool:
-        return any(pattern in m for m in self.mutex)
+    def mutex(self, pattern: object) -> bool:
+        return _regex_matches(
+            _require_pattern_arg("cuckoo.sync.mutex", pattern),
+            self.mutexes,
+        )
 
 
 # ---------------------------------------------------------------------------
