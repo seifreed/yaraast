@@ -65,18 +65,42 @@ def _require_scalar_args(function_name: str, values: tuple[object, ...]) -> None
         raise EvaluationError(msg)
 
 
-def _require_pattern_arg(function_name: str, value: object) -> str:
-    if not isinstance(value, str):
+def _is_regex_pattern(value: object) -> bool:
+    return isinstance(getattr(value, "pattern", None), str)
+
+
+def _require_pattern_arg(function_name: str, value: object) -> object:
+    if not isinstance(value, str) and not _is_regex_pattern(value):
         msg = f"{function_name}() expects a regex pattern argument"
         raise EvaluationError(msg)
     return value
 
 
-def _regex_matches(pattern: str, values: list[str]) -> bool:
+def _regex_flags(modifiers: str) -> int:
+    flags = 0
+    if "i" in modifiers:
+        flags |= re.IGNORECASE
+    if "s" in modifiers:
+        flags |= re.DOTALL
+    if "m" in modifiers:
+        flags |= re.MULTILINE
+    return flags
+
+
+def _regex_matches(pattern: object, values: list[str]) -> bool:
+    pattern_text = getattr(pattern, "pattern", pattern)
+    modifiers = getattr(pattern, "modifiers", "")
     try:
-        return any(re.search(pattern, value) is not None for value in values)
+        regex = re.compile(pattern_text, _regex_flags(modifiers))
+        return any(regex.search(value) is not None for value in values)
     except re.error:
         return False
+
+
+def _pattern_matches(pattern: object, value: str) -> bool:
+    if isinstance(pattern, str):
+        return pattern == value
+    return _regex_matches(pattern, [value])
 
 
 @dataclass
@@ -283,14 +307,16 @@ class MockPE:
 
         return YARA_UNDEFINED
 
-    def exports(self, name: str | int) -> bool | YaraUndefinedValue:
-        if not isinstance(name, str) and not _is_strict_int(name):
+    def exports(self, name: object) -> bool | YaraUndefinedValue:
+        if not isinstance(name, str) and not _is_regex_pattern(name) and not _is_strict_int(name):
             msg = "pe.exports() expects a string or integer argument"
             raise EvaluationError(msg)
         if not self.is_pe:
             return YARA_UNDEFINED
         if _is_strict_int(name):
             return False
+        if _is_regex_pattern(name):
+            return any(_pattern_matches(name, export) for export in self._export_list)
         return name in self._export_list
 
     def imports(self, *args: object) -> bool | YaraUndefinedValue:
@@ -306,6 +332,12 @@ class MockPE:
 
         if len(args) == 2:
             dll, function = args
+            if _is_regex_pattern(dll) and _is_regex_pattern(function):
+                return any(
+                    _pattern_matches(dll, imported_dll)
+                    and _pattern_matches(function, imported_function)
+                    for imported_dll, imported_function in _split_imports(self._import_list)
+                )
             if _is_strict_int(dll):
                 return any(imp.endswith(f":{function}") for imp in self._import_list)
             if _is_strict_int(function):
@@ -313,6 +345,12 @@ class MockPE:
             return f"{dll}:{function}" in self._import_list
 
         _, dll, function = args
+        if _is_regex_pattern(dll) and _is_regex_pattern(function):
+            return any(
+                _pattern_matches(dll, imported_dll)
+                and _pattern_matches(function, imported_function)
+                for imported_dll, imported_function in _split_imports(self._import_list)
+            )
         if _is_strict_int(function):
             return False
         return f"{dll}:{function}" in self._import_list
@@ -335,8 +373,10 @@ def _is_valid_pe_import_signature(args: tuple[object, ...]) -> bool:
         return isinstance(args[0], str)
     if len(args) == 2:
         first, second = args
-        return (isinstance(first, str) and (isinstance(second, str) or _is_strict_int(second))) or (
-            _is_strict_int(first) and isinstance(second, str)
+        return (
+            (isinstance(first, str) and (isinstance(second, str) or _is_strict_int(second)))
+            or (_is_strict_int(first) and isinstance(second, str))
+            or (_is_regex_pattern(first) and _is_regex_pattern(second))
         )
     if len(args) == 3:
         first, second, third = args
@@ -344,8 +384,17 @@ def _is_valid_pe_import_signature(args: tuple[object, ...]) -> bool:
             _is_strict_int(first)
             and isinstance(second, str)
             and (isinstance(third, str) or _is_strict_int(third))
-        )
+        ) or (_is_strict_int(first) and _is_regex_pattern(second) and _is_regex_pattern(third))
     return False
+
+
+def _split_imports(imports: list[str]) -> list[tuple[str, str]]:
+    split_imports = []
+    for item in imports:
+        dll, separator, function = item.partition(":")
+        if separator:
+            split_imports.append((dll, function))
+    return split_imports
 
 
 # ---------------------------------------------------------------------------
@@ -859,17 +908,14 @@ class CuckooNetwork:
 
     def _endpoint_matches(
         self,
-        pattern: str,
+        pattern: object,
         port: int,
         connections: list[tuple[str, int]],
     ) -> bool:
-        try:
-            return any(
-                connection_port == port and re.search(pattern, host)
-                for host, connection_port in connections
-            )
-        except re.error:
-            return False
+        return any(
+            connection_port == port and _regex_matches(pattern, [host])
+            for host, connection_port in connections
+        )
 
 
 class CuckooFilesystem:

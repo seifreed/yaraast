@@ -7,6 +7,7 @@ from typing import Any, cast
 
 import pytest
 
+from yaraast.ast.expressions import FunctionCall, RegexLiteral
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator import YaraEvaluator
@@ -90,9 +91,11 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     pe64._import_list = ["kernel32.dll:CreateFileW", "user32.dll:MessageBoxW"]
     assert pe64.imports("kernel32.dll", "CreateFileW") is True
     assert pe64.imports("kernel32.dll", "CloseHandle") is False
+    assert pe64.imports(RegexLiteral("KERNEL32", "i"), RegexLiteral("createfilew", "i")) is True
     assert pe64.imports("kernel32.dll", 1) is False
     assert pe64.imports(1, "CreateFileW") is True
     assert pe64.imports(1, "kernel32.dll", "CreateFileW") is True
+    assert pe64.imports(1, RegexLiteral("KERNEL32", "i"), RegexLiteral("createfilew", "i")) is True
     assert pe64.imports(1, "kernel32.dll", 1) is False
     assert pe64.imports("user32.dll") is True
     with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects libyara-compatible"):
@@ -104,6 +107,7 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
 
     pe64._export_list = ["ExportedFn"]
     assert pe64.exports("ExportedFn") is True
+    assert pe64.exports(RegexLiteral("exportedfn", "i")) is True
     assert pe64.exports("Missing") is False
     assert pe64.exports(1) is False
     with pytest.raises(EvaluationError, match=r"pe\.exports\(\) expects a string or integer"):
@@ -115,6 +119,18 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     with pytest.raises(EvaluationError, match=r"pe\.language\(\) expects an integer argument"):
         pe64.language(cast(Any, True))
     assert pe64.imphash()
+
+    evaluator = YaraEvaluator()
+    evaluator.context.modules["pe"] = pe64
+    assert evaluator.visit_function_call(
+        FunctionCall("pe.exports", [RegexLiteral("exportedfn", "i")])
+    )
+    assert evaluator.visit_function_call(
+        FunctionCall(
+            "pe.imports",
+            [RegexLiteral("KERNEL32", "i"), RegexLiteral("createfilew", "i")],
+        )
+    )
 
 
 def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
@@ -313,12 +329,14 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     cuckoo.filesystem.file_accesses = [r"C:\\autoexec.bat"]
     cuckoo.sync.mutexes = ["EvilMutexName"]
     assert cuckoo.network.http_request(r"evil\.example") is True
+    assert cuckoo.network.http_request(RegexLiteral("EVIL\\.EXAMPLE", "i")) is True
     assert cuckoo.network.http_get(r"evil\.example") is True
     assert cuckoo.network.http_post(r"post\.example") is True
     assert cuckoo.network.http_user_agent("BadAgent") is True
     assert cuckoo.network.dns_lookup(r"evil\.example") is True
     assert cuckoo.network.host(r"192\.168\.1\.1") is True
     assert cuckoo.network.tcp(r"192\.168\.1\.1", 443) is True
+    assert cuckoo.network.tcp(RegexLiteral("192\\.168\\.1\\.1"), 443) is True
     assert cuckoo.network.udp(r"8\.8\.8\.8", 53) is True
     assert cuckoo.registry.key_access("Bad") is True
     assert cuckoo.filesystem.file_access(r"autoexec\.bat") is True

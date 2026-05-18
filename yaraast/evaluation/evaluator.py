@@ -344,13 +344,17 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 resolved = self._resolve_module_function(module, func_name)
                 if resolved is not None:
                     target, member_name = resolved
+                    module_args = [
+                        arg if isinstance(arg, RegexLiteral) else self.visit(arg)
+                        for arg in node.arguments
+                    ]
                     class_method = getattr(type(target), member_name, None)
                     if class_method is not None and callable(class_method):
-                        return class_method(target, *args)
+                        return class_method(target, *module_args)
                     if hasattr(target, member_name):
                         func = getattr(target, member_name)
                         if callable(func):
-                            return func(*args)
+                            return func(*module_args)
                         return func
 
         msg = f"Unknown function: {node.function}"
