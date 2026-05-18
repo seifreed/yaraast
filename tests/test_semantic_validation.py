@@ -387,6 +387,46 @@ class TestFunctionCallValidator:
 class TestSemanticValidator:
     """Tests for comprehensive semantic validation."""
 
+    def test_validate_rejects_defined_on_module_collection_values(self) -> None:
+        ast = Parser().parse("""
+            import "pe"
+            import "dotnet"
+
+            rule invalid_defined_collections {
+                condition:
+                    defined pe.sections or
+                    defined pe.version_info or
+                    defined dotnet.resources or
+                    defined dotnet.assembly
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any(
+            "'defined' cannot be applied to non-scalar expression" in msg for msg in messages
+        )
+
+    def test_validate_allows_defined_on_module_collection_subfields(self) -> None:
+        ast = Parser().parse("""
+            import "pe"
+            import "dotnet"
+
+            rule valid_defined_collection_subfields {
+                condition:
+                    defined pe.sections[0].name or
+                    defined pe.version_info["CompanyName"] or
+                    defined dotnet.resources[0].name or
+                    defined dotnet.assembly.name
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
     def test_validate_libyara_truthy_scalar_conditions(self) -> None:
         ast = Parser().parse("""
             rule string_literal_condition {

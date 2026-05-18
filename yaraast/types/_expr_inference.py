@@ -51,6 +51,7 @@ from ._registry import (
     StringIdentifierType,
     StringSetType,
     StringType,
+    StructType,
     TypeEnvironment,
     UnknownType,
     YaraType,
@@ -184,7 +185,11 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         return ops.infer_unary_expression(self, node)
 
     def visit_defined_expression(self, node: DefinedExpression) -> YaraType:
-        self.visit(node.expression)
+        expression_type = self.visit(node.expression)
+        if isinstance(expression_type, ArrayType | DictionaryType | StructType | ModuleType):
+            self.errors.append(
+                f"'defined' cannot be applied to non-scalar expression of type {expression_type}"
+            )
         return BooleanType()
 
     def visit_string_operator_expression(self, node: StringOperatorExpression) -> YaraType:
