@@ -139,6 +139,39 @@ def test_complexity_unused_strings_are_stably_sorted() -> None:
     ]
 
 
+def test_complexity_string_usage_tracks_condition_string_forms() -> None:
+    code = """
+    rule indirect_string_usage {
+        strings:
+            $counted = "counted"
+            $positioned = "positioned"
+            $ranged = "ranged"
+            $grouped = "grouped"
+            $wild_one = "wild one"
+            $wild_two = "wild two"
+        condition:
+            #counted > 0 and
+            $positioned at 0 and
+            $ranged in (0..filesize) and
+            any of ($grouped) and
+            all of ($wild*)
+    }
+    """
+    ast = Parser().parse(dedent(code))
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.unused_strings == []
+    assert metrics.string_dependencies["indirect_string_usage"] == {
+        "$counted",
+        "$positioned",
+        "$ranged",
+        "$grouped",
+        "$wild_one",
+        "$wild_two",
+    }
+
+
 def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
     code = """
     rule yarax_complexity {
