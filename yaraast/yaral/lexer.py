@@ -38,6 +38,11 @@ class YaraLLexer:
 
     def tokenize(self) -> list[YaraLToken]:
         """Tokenize YARA-L input."""
+        self.position = 0
+        self.line = 1
+        self.column = 1
+        self.tokens = []
+
         max_iterations = 10000  # Safety limit to prevent infinite loops
         iteration = 0
 

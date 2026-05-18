@@ -95,9 +95,8 @@ class Lexer:
             A list of Token objects representing the tokenized input.
             The list always ends with an EOF token.
         """
-        if text is not None:
-            self.state.reset(text)
-            self.tokens = []
+        self.state.reset(self.text if text is None else text)
+        self.tokens = []
 
         while self.position < len(self.text):
             self._skip_whitespace_and_comments()

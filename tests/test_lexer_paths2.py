@@ -26,6 +26,16 @@ def test_lexer_properties_reset_and_basic_helpers() -> None:
     assert lex2._peek_char() is None
 
 
+def test_lexer_tokenize_reuse_resets_previous_tokens() -> None:
+    lex = Lexer("rule a { condition: true }")
+
+    first = lex.tokenize()
+    second = lex.tokenize()
+
+    assert [token.type for token in second] == [token.type for token in first]
+    assert len([token for token in second if token.type == TokenType.EOF]) == 1
+
+
 def test_lexer_number_suffix_and_regex_context_and_hex_context_helpers() -> None:
     lex = Lexer("10KB")
     toks = lex.tokenize()

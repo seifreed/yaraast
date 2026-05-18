@@ -223,6 +223,16 @@ def test_yaral_lexer_hits_iteration_cap_and_multiline_backtick_regex() -> None:
     assert len(many_tokens) == 10001
 
 
+def test_yaral_lexer_tokenize_reuse_resets_previous_tokens() -> None:
+    lexer = YaraLLexer("rule test { condition: $e }")
+
+    first = lexer.tokenize()
+    second = lexer.tokenize()
+
+    assert [token.type for token in second] == [token.type for token in first]
+    assert len([token for token in second if token.type == T.EOF]) == 1
+
+
 def test_yaral_lexer_handles_unterminated_comment_string_and_regex_edges() -> None:
     unterminated_comment = YaraLLexer("/* no end")
     comment_tokens = unterminated_comment.tokenize()
