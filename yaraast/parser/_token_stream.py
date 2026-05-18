@@ -55,7 +55,9 @@ class TokenStreamMixin:
 
     def _token_span(self, token: IToken) -> int:
         length = getattr(token, "length", 0) or 0
-        return length if length > 0 else max(1, len(str(token.value)))
+        value = getattr(token, "value", None)
+        value_length = len(str(value)) if value is not None else 0
+        return max(1, length, value_length)
 
     def _location_from_token(self, token: IToken) -> Location:
         return Location(

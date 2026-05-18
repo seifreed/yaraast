@@ -592,6 +592,30 @@ rule alpha {
     assert {record.role for record in records} == {"declaration", "use"}
 
 
+def test_document_context_rule_reference_ranges_cover_full_identifier() -> None:
+    runtime = LspRuntime()
+    text = """
+rule alpha {
+  condition:
+    true
+}
+
+rule beta {
+  condition:
+    filesize / 2 > alpha
+}
+""".lstrip()
+    doc = runtime.ensure_document("file:///rule-reference-range.yar", text)
+
+    uses = [
+        record.location.range
+        for record in doc.rule_reference_records("alpha", include_declaration=False)
+    ]
+
+    assert len(uses) == 1
+    assert uses[0].end.character - uses[0].start.character == len("alpha")
+
+
 def test_document_context_reference_records_use_ast_spans_for_string_count_and_length() -> None:
     runtime = LspRuntime()
     text = """

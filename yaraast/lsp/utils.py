@@ -141,7 +141,7 @@ def _location_contains_position(location: Location, line: int, column: int) -> b
         return False
     if line == location.line and column < location.column:
         return False
-    return not (line == end_line and column > end_column)
+    return not (line == end_line and column >= end_column)
 
 
 def _location_span_size(location: Location) -> int:
