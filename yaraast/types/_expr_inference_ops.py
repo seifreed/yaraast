@@ -9,6 +9,7 @@ from yaraast.ast.expressions import (
     DoubleLiteral,
     FunctionCall,
     Identifier,
+    IntegerLiteral,
     MemberAccess,
     ParenthesesExpression,
     SetExpression,
@@ -87,7 +88,7 @@ def infer_binary_expression(ctx, node: BinaryExpression):
         return _infer_string_op(ctx, node.operator, left_type, right_type)
 
     if node.operator in ["+", "-", "*", "/", "\\", "%"]:
-        return _infer_arithmetic_op(ctx, node.operator, left_type, right_type)
+        return _infer_arithmetic_op(ctx, node.operator, left_type, right_type, node.right)
 
     if node.operator in ["&", "|", "^", "<<", ">>"]:
         return _infer_bitwise_op(ctx, node.operator, left_type, right_type)
@@ -160,7 +161,63 @@ def _infer_string_op(ctx, operator, left_type, right_type):
     return BooleanType()
 
 
-def _infer_arithmetic_op(ctx, operator, left_type, right_type):
+def _constant_integer_value(node) -> int | None:
+    if isinstance(node, IntegerLiteral) and not isinstance(node.value, bool):
+        return node.value
+    if isinstance(node, ParenthesesExpression):
+        return _constant_integer_value(node.expression)
+    if isinstance(node, UnaryExpression):
+        value = _constant_integer_value(node.operand)
+        if value is None:
+            return None
+        if node.operator == "-":
+            return -value
+        if node.operator == "~":
+            return ~value
+        return None
+    if not isinstance(node, BinaryExpression):
+        return None
+
+    left = _constant_integer_value(node.left)
+    right = _constant_integer_value(node.right)
+    if left is None or right is None:
+        return None
+
+    if node.operator == "+":
+        return left + right
+    if node.operator == "-":
+        return left - right
+    if node.operator == "*":
+        return left * right
+    if node.operator in {"/", "\\"}:
+        return None if right == 0 else int(left / right)
+    if node.operator == "%":
+        return None if right == 0 else left % right
+    if node.operator == "&":
+        return left & right
+    if node.operator == "|":
+        return left | right
+    if node.operator == "^":
+        return left ^ right
+    if node.operator == "<<":
+        return None if right < 0 else left << right
+    if node.operator == ">>":
+        return None if right < 0 else left >> right
+    return None
+
+
+def _is_zero_integer_divisor(operator, left_type, right_type, right_node) -> bool:
+    if operator not in {"/", "\\", "%"}:
+        return False
+    if not isinstance(left_type, IntegerType) or not isinstance(right_type, IntegerType):
+        return False
+    return _constant_integer_value(right_node) == 0
+
+
+def _infer_arithmetic_op(ctx, operator, left_type, right_type, right_node):
+    if _is_zero_integer_divisor(operator, left_type, right_type, right_node):
+        ctx.errors.append(f"Right operand of '{operator}' cannot be zero")
+
     if operator == "%":
         if not isinstance(left_type, IntegerType):
             ctx.errors.append(f"Left operand of '{operator}' must be integer, got {left_type}")

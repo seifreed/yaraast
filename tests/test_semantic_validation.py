@@ -441,6 +441,30 @@ class TestSemanticValidator:
             for message in messages
         )
 
+    def test_validate_rejects_integer_division_and_modulo_by_zero(self) -> None:
+        ast = Parser().parse(r"""
+            rule string_count_division_by_zero {
+                strings:
+                    $a = "abc"
+                condition:
+                    #a \ 0
+            }
+
+            rule string_offset_modulo_by_zero {
+                strings:
+                    $a = "abc"
+                condition:
+                    @a % 0
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any("Right operand of '\\' cannot be zero" in message for message in messages)
+        assert any("Right operand of '%' cannot be zero" in message for message in messages)
+
     def test_valid_yara_file(self) -> None:
         """Test validation of valid YARA file."""
         yara_code = """
