@@ -416,7 +416,8 @@ class TestMockModules:
         assert math.min(3, 7) == 3
         assert math.max(3, 7) == 7
         assert math.to_string(255, 16) == "ff"
-        assert math.to_number("0xff") == 255
+        assert math.to_number(True) == 1
+        assert math.to_number(False) == 0
 
         # Test entropy
         # All zeros should have entropy of 0

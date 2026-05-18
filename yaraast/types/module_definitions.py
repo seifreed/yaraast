@@ -62,7 +62,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "min": ("i", [("a", "i"), ("b", "i")]),
             "max": ("i", [("a", "i"), ("b", "i")]),
             "to_string": ("s", [("n", "i"), ("base", "i")]),
-            "to_number": ("i", [("s", "s")]),
+            "to_number": ("i", [("b", "b")]),
             "log": ("d", [("x", "d")]),
             "log2": ("d", [("x", "d")]),
             "log10": ("d", [("x", "d")]),

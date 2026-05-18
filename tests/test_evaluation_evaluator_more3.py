@@ -179,6 +179,32 @@ def test_math_serial_correlation_returns_libyara_sentinel_for_degenerate_regions
     assert YaraEvaluator(data=b"aa").evaluate_file(ast) == {"degenerate_serial_correlation": True}
 
 
+def test_math_to_number_matches_libyara_boolean_conversion() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule to_number_booleans {
+            condition:
+                math.to_number(true) == 1 and
+                math.to_number(false) == 0
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"to_number_booleans": True}
+
+
+def test_math_to_number_rejects_non_boolean_arguments() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule invalid_to_number {
+            condition:
+                defined math.to_number("1")
+        }
+        """)
+
+    with pytest.raises(EvaluationError, match=r"math\.to_number\(\) expects a boolean argument"):
+        YaraEvaluator(data=b"abc").evaluate_file(ast)
+
+
 def test_math_module_valid_regions_can_extend_to_file_end() -> None:
     ast = Parser().parse("""
         import "math"

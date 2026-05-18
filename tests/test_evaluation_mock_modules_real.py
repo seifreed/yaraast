@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import struct
+from typing import Any, cast
 
+import pytest
+
+from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.evaluation.mock_modules import (
@@ -141,7 +145,10 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert m.to_string(10) == "10"
     assert m.to_string(10, 2) == "1010"
     assert m.to_string(10, 8) == "12"
-    assert m.to_number("bad") == 0
+    assert m.to_number(True) == 1
+    assert m.to_number(False) == 0
+    with pytest.raises(EvaluationError, match=r"math\.to_number\(\) expects a boolean argument"):
+        m.to_number(cast(Any, "bad"))
     assert m.log(0) == float("-inf")
     assert m.log2(0) == float("-inf")
     assert m.log10(0) == float("-inf")

@@ -243,11 +243,11 @@ class MockMath:
             return bin(n)[2:]
         return str(n)
 
-    def to_number(self, s: str) -> int:
-        try:
-            return int(s, 0)
-        except (ValueError, TypeError, AttributeError):
-            return 0
+    def to_number(self, value: bool) -> int:
+        if not isinstance(value, bool):
+            msg = "math.to_number() expects a boolean argument"
+            raise EvaluationError(msg)
+        return int(value)
 
     def log(self, x: float) -> float:
         return math.log(x) if x > 0 else float("-inf")

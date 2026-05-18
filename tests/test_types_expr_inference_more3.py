@@ -270,6 +270,20 @@ def test_expr_inference_validates_module_function_argument_types() -> None:
         "Argument 'x' to function 'abs' must be integer, got string" in e for e in inf.errors
     )
 
+    valid_to_number = ExpressionTypeInference(env)
+    to_number_out = valid_to_number.infer(
+        FunctionCall(function="math.to_number", arguments=[BooleanLiteral(True)])
+    )
+    assert isinstance(to_number_out, IntegerType)
+    assert valid_to_number.errors == []
+
+    invalid_to_number = ExpressionTypeInference(env)
+    invalid_to_number.infer(FunctionCall(function="math.to_number", arguments=[StringLiteral("1")]))
+    assert any(
+        "Argument 'b' to function 'to_number' must be boolean, got string" in e
+        for e in invalid_to_number.errors
+    )
+
 
 def test_expr_inference_accepts_hash_checksum32_function() -> None:
     env = TypeEnvironment()
