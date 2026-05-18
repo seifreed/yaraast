@@ -231,7 +231,12 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def visit_identifier(self, node: Identifier) -> None:
         # Check if identifier is a rule reference
-        if self.current_rule and node.name in self.rule_names and not self._is_local(node.name):
+        if (
+            self.current_rule
+            and node.name in self.rule_names
+            and node.name != self.current_rule
+            and not self._is_local(node.name)
+        ):
             self.dependencies[self.current_rule].add(node.name)
 
     def visit_function_call(self, node: FunctionCall) -> None:

@@ -121,6 +121,20 @@ rule caller {
     assert results["dependencies"]["caller"] == ["base"]
 
 
+def test_dependency_analyzer_does_not_treat_self_reference_as_dependency() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="self_ref", condition=Identifier("self_ref")),
+            Rule(name="other", condition=BooleanLiteral(True)),
+        ]
+    )
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert "self_ref" not in results["dependencies"]
+    assert results["dependency_graph"]["self_ref"]["is_independent"] is True
+
+
 def test_dependency_analyzer_public_lists_are_stably_sorted() -> None:
     ast = YaraFile(
         imports=[Import("pe"), Import("math")],
