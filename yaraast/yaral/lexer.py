@@ -393,7 +393,12 @@ class YaraLLexer:
             self.text[self.position].isdigit() or self.text[self.position] == "."
         ):
             if self.text[self.position] == ".":
-                if has_decimal_point:
+                next_position = self.position + 1
+                if (
+                    has_decimal_point
+                    or next_position >= len(self.text)
+                    or not self.text[next_position].isdigit()
+                ):
                     break
                 has_decimal_point = True
             value += self.text[self.position]

@@ -190,6 +190,18 @@ class TestYaraLLexerComprehensive:
         assert number_tokens[3].type == BaseTokenType.DOUBLE
         assert number_tokens[3].value == 3.14
 
+        dotted_tokens = YaraLLexer("1.foo 1. 1.5").tokenize()
+        dotted_values = [(token.type, token.value) for token in dotted_tokens]
+        assert dotted_values[:7] == [
+            (BaseTokenType.INTEGER, "1"),
+            (BaseTokenType.DOT, "."),
+            (BaseTokenType.IDENTIFIER, "foo"),
+            (BaseTokenType.INTEGER, "1"),
+            (BaseTokenType.DOT, "."),
+            (BaseTokenType.DOUBLE, 1.5),
+            (BaseTokenType.EOF, None),
+        ]
+
     def test_lexer_keywords(self) -> None:
         """Test lexing YARA-L keywords."""
         lexer = YaraLLexer("rule meta events match outcome condition options over")
