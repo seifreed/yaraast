@@ -117,7 +117,7 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
             )
             return
 
-        if actual_args > max_args:
+        if not func_def.variadic and actual_args > max_args:
             param_names = [p[0] for p in func_def.parameters]
             self.result.add_error(
                 f"Function '{func_def.name}' expects at most {max_args} argument(s) ({', '.join(param_names)}), got {actual_args}",

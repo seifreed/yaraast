@@ -2,6 +2,7 @@
 
 from .evaluator import EvaluationContext, YaraEvaluator
 from .mock_modules import (
+    ConsoleModule,
     CuckooModule,
     HashModule,
     MockDotNet,
@@ -15,6 +16,7 @@ from .mock_modules import (
 from .string_matcher import MatchResult, StringMatcher
 
 __all__ = [
+    "ConsoleModule",
     "CuckooModule",
     "EvaluationContext",
     "HashModule",

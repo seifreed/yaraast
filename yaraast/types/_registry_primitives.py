@@ -50,6 +50,17 @@ class StringType(YaraType):
 
 
 @dataclass
+class ScalarType(YaraType):
+    """Scalar value accepted by variadic logging helpers."""
+
+    def __str__(self) -> str:
+        return "scalar"
+
+    def is_compatible_with(self, other: YaraType) -> bool:
+        return isinstance(other, IntegerType | DoubleType | FloatType | StringType)
+
+
+@dataclass
 class BooleanType(YaraType):
     """Boolean type."""
 

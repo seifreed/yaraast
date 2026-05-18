@@ -18,6 +18,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.modules import ModuleReference
+from yaraast.types.module_contracts import FunctionDefinition
 
 from ._registry import (
     BUILTIN_INT_FUNCTIONS_1ARG,
@@ -202,11 +203,17 @@ def infer_function_call(ctx, node: FunctionCall):
                             else len(func_def.parameters)
                         )
                         max_args = len(func_def.parameters)
-                        if len(node.arguments) < min_args or len(node.arguments) > max_args:
+                        if len(node.arguments) < min_args or (
+                            not func_def.variadic and len(node.arguments) > max_args
+                        ):
                             expected = (
-                                f"{min_args} to {max_args}"
-                                if min_args != max_args
-                                else str(max_args)
+                                f"at least {min_args}"
+                                if func_def.variadic
+                                else (
+                                    f"{min_args} to {max_args}"
+                                    if min_args != max_args
+                                    else str(max_args)
+                                )
                             )
                             ctx.errors.append(
                                 f"Function '{func_name}' expects {expected} arguments, got {len(node.arguments)}",
@@ -214,7 +221,7 @@ def infer_function_call(ctx, node: FunctionCall):
                         _validate_function_argument_types(
                             ctx,
                             func_name,
-                            func_def.parameters,
+                            func_def,
                             node.arguments,
                         )
                         return func_def.return_type
@@ -239,13 +246,26 @@ def infer_function_call(ctx, node: FunctionCall):
 
 def _validate_function_argument_types(ctx, func_name: str, parameters, arguments) -> None:
     arg_types = [ctx.visit(argument) for argument in arguments]
-    for (param_name, param_type), arg_type in zip(parameters, arg_types, strict=False):
+    variadic = isinstance(parameters, FunctionDefinition) and parameters.variadic
+    parameter_list = (
+        parameters.parameters if isinstance(parameters, FunctionDefinition) else parameters
+    )
+    for (param_name, param_type), arg_type in zip(parameter_list, arg_types, strict=False):
         if isinstance(arg_type, UnknownType):
             continue
         if not param_type.is_compatible_with(arg_type):
             ctx.errors.append(
                 f"Argument '{param_name}' to function '{func_name}' must be {param_type}, got {arg_type}"
             )
+    if variadic and parameter_list:
+        variadic_name, variadic_type = parameter_list[-1]
+        for arg_type in arg_types[len(parameter_list) :]:
+            if isinstance(arg_type, UnknownType):
+                continue
+            if not variadic_type.is_compatible_with(arg_type):
+                ctx.errors.append(
+                    f"Argument '{variadic_name}' to function '{func_name}' must be {variadic_type}, got {arg_type}"
+                )
 
 
 def _visit_function_arguments(ctx, arguments) -> None:

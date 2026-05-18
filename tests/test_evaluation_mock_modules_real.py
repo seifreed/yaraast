@@ -11,6 +11,7 @@ from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.evaluation.mock_modules import (
+    ConsoleModule,
     HashModule,
     MockDotNet,
     MockELF,
@@ -203,6 +204,11 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
 
     registry = MockModuleRegistry()
     assert registry.create_module("missing", b"x") is None
+    console = registry.create_module("console", b"abc")
+    assert isinstance(console, ConsoleModule)
+    assert console.log("x", 1, 1.5) is True
+    with pytest.raises(EvaluationError, match=r"console\.log\(\) expects scalar arguments"):
+        console.log(cast(Any, True))
 
     class _Custom:
         def __init__(self, data: bytes) -> None:

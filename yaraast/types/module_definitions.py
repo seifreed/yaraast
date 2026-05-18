@@ -9,7 +9,7 @@ from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
 # Declarative module specs: type strings -> actual types resolved at load time.
 # "i"=int, "s"=str, "b"=bool, "d"=double
 # Compound: ("array", elem), ("dict", k, v), ("struct", {fields})
-# Functions: (return_type, [(param_name, param_type), ...])
+# Functions: (return_type, [(param_name, param_type), ...], min_parameters?, variadic?)
 
 _MODULE_SPECS: dict[str, dict[str, Any]] = {
     "pe": {
@@ -123,7 +123,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
         },
     },
     "time": {"attrs": {"now": "i"}},
-    "console": {"funcs": {"log": ("b", [("message", "s")])}},
+    "console": {"funcs": {"log": ("b", [("message", "scalar")], 1, True)}},
     "string": {
         "funcs": {
             "to_int": ("i", [("s", "s")]),
@@ -146,9 +146,21 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
 def _resolve_type(spec):
     """Map a type spec to an actual YaraType instance."""
     from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
-    from yaraast.types._registry_primitives import BooleanType, DoubleType, IntegerType, StringType
+    from yaraast.types._registry_primitives import (
+        BooleanType,
+        DoubleType,
+        IntegerType,
+        ScalarType,
+        StringType,
+    )
 
-    primitives = {"i": IntegerType, "s": StringType, "b": BooleanType, "d": DoubleType}
+    primitives = {
+        "i": IntegerType,
+        "s": StringType,
+        "b": BooleanType,
+        "d": DoubleType,
+        "scalar": ScalarType,
+    }
     if isinstance(spec, str):
         return primitives[spec]()
     tag = spec[0]
@@ -175,6 +187,7 @@ def load_builtin_modules() -> dict[str, ModuleDefinition]:
                     _resolve_type(fspec[0]),
                     [(p[0], _resolve_type(p[1])) for p in fspec[1]],
                     fspec[2] if len(fspec) > 2 else None,
+                    fspec[3] if len(fspec) > 3 else False,
                 )
                 for fname, fspec in spec["funcs"].items()
             }

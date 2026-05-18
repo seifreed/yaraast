@@ -52,6 +52,14 @@ def _require_integer_arg(function_name: str, value: object) -> None:
         raise EvaluationError(msg)
 
 
+def _require_scalar_args(function_name: str, values: tuple[object, ...]) -> None:
+    if not values or not all(
+        isinstance(value, str | int | float) and not isinstance(value, bool) for value in values
+    ):
+        msg = f"{function_name}() expects scalar arguments"
+        raise EvaluationError(msg)
+
+
 @dataclass
 class Section:
     """PE/ELF section descriptor."""
@@ -567,6 +575,24 @@ class StringModule:
 
 
 # ---------------------------------------------------------------------------
+# Console module
+# ---------------------------------------------------------------------------
+
+
+class ConsoleModule:
+    """Console module for YARA debug logging."""
+
+    def __init__(self, data: bytes) -> None:
+        self.data = data
+        self.messages: list[str] = []
+
+    def log(self, *messages: object) -> bool:
+        _require_scalar_args("console.log", messages)
+        self.messages.append("".join(str(message) for message in messages))
+        return True
+
+
+# ---------------------------------------------------------------------------
 # Module registry
 # ---------------------------------------------------------------------------
 
@@ -584,6 +610,7 @@ class MockModuleRegistry:
             "time": TimeModule,
             "cuckoo": CuckooModule,
             "string": StringModule,
+            "console": ConsoleModule,
         }
         self.instances: dict[str, Any] = {}
 

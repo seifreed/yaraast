@@ -100,6 +100,8 @@ class ModuleLoader:
                             parameters=self._parse_parameters(
                                 func_data.get("parameters", []),
                             ),
+                            min_parameters=func_data.get("min_parameters"),
+                            variadic=func_data.get("variadic", False),
                         )
                         module.functions[func_name] = func_def
 
@@ -121,6 +123,7 @@ class ModuleLoader:
             BooleanType,
             FloatType,
             IntegerType,
+            ScalarType,
             StringType,
         )
 
@@ -135,6 +138,7 @@ class ModuleLoader:
                 "boolean": BooleanType(),
                 "float": FloatType(),
                 "double": FloatType(),
+                "scalar": ScalarType(),
                 "any": AnyType(),
             }
 

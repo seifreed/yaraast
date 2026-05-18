@@ -213,6 +213,32 @@ class TestFunctionCallValidator:
         assert result.is_valid is True
         assert len(result.errors) == 0
 
+    def test_console_log_accepts_variadic_scalar_arguments(self) -> None:
+        ast = Parser().parse("""
+            import "console"
+            rule console_log {
+                condition:
+                    console.log("x", 1, 1.5, filesize)
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+        assert result.errors == []
+
+    def test_console_log_rejects_no_arguments_and_booleans(self) -> None:
+        no_args_ast = Parser().parse('import "console" rule r { condition: console.log() }')
+        bool_ast = Parser().parse('import "console" rule r { condition: console.log(true) }')
+
+        no_args_result = SemanticValidator().validate(no_args_ast)
+        bool_result = SemanticValidator().validate(bool_ast)
+
+        assert no_args_result.is_valid is False
+        assert "expects at least 1 argument" in no_args_result.errors[0].message
+        assert bool_result.is_valid is False
+        assert "must be scalar" in bool_result.errors[0].message
+
     def test_unknown_module_function(self) -> None:
         """Test unknown function in known module."""
         func_call = FunctionCall(function="pe.unknown_func", arguments=[])

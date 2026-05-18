@@ -301,6 +301,32 @@ def test_pe_functions_reject_wrong_argument_types() -> None:
             YaraEvaluator(data=b"MZ" + b"\x00" * 100).evaluate_file(ast)
 
 
+def test_console_log_matches_libyara_scalar_arguments() -> None:
+    ast = Parser().parse("""
+        import "console"
+        rule console_log_scalars {
+            condition:
+                console.log("x") and
+                console.log(1, 1.5, filesize)
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"console_log_scalars": True}
+
+
+def test_console_log_rejects_boolean_arguments() -> None:
+    ast = Parser().parse("""
+        import "console"
+        rule invalid_console_log {
+            condition:
+                defined console.log(true)
+        }
+        """)
+
+    with pytest.raises(EvaluationError, match=r"console\.log\(\) expects scalar arguments"):
+        YaraEvaluator(data=b"abc").evaluate_file(ast)
+
+
 def test_math_rejects_non_libyara_functions() -> None:
     ast = Parser().parse("""
         import "math"

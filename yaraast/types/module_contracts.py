@@ -15,6 +15,7 @@ class FunctionDefinition:
     return_type: YaraType
     parameters: list[tuple[str, YaraType]] = field(default_factory=list)
     min_parameters: int | None = None
+    variadic: bool = False
 
 
 @dataclass
