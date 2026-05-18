@@ -774,6 +774,12 @@ class ConsoleModule:
 
     def log(self, *messages: object) -> bool:
         _require_scalar_args("console.log", messages)
+        if len(messages) > 2:
+            msg = "console.log() expects at most two arguments"
+            raise EvaluationError(msg)
+        if len(messages) == 2 and not isinstance(messages[0], str):
+            msg = "console.log() expects a string first argument when two arguments are used"
+            raise EvaluationError(msg)
         self.messages.append("".join(str(message) for message in messages))
         return True
 

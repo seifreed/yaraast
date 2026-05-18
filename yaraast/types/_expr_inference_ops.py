@@ -306,6 +306,9 @@ def infer_function_call(ctx, node: FunctionCall):
                         if actual_module == "pe" and func_name == "exports":
                             _validate_pe_exports_arguments(ctx, node.arguments)
                             return func_def.return_type
+                        if actual_module == "console" and func_name == "log":
+                            _validate_console_log_arguments(ctx, node.arguments)
+                            return func_def.return_type
                         min_args = (
                             func_def.min_parameters
                             if func_def.min_parameters is not None
@@ -422,6 +425,28 @@ def _matches_signature(
 
 def _format_argument_types(arg_types: list[YaraType]) -> str:
     return ", ".join(str(arg_type) for arg_type in arg_types)
+
+
+def _is_console_log_scalar(arg_type: YaraType) -> bool:
+    return isinstance(arg_type, StringType | IntegerType | DoubleType | FloatType)
+
+
+def _validate_console_log_arguments(ctx, arguments) -> None:
+    arg_types = _argument_types(ctx, arguments)
+    if not 1 <= len(arg_types) <= 2:
+        ctx.errors.append(f"Function 'log' expects 1 to 2 arguments, got {len(arg_types)}")
+        return
+    if not _all_known(arg_types):
+        return
+    if not all(_is_console_log_scalar(arg_type) for arg_type in arg_types):
+        ctx.errors.append(
+            "Function 'log' arguments must be scalar, got " f"({_format_argument_types(arg_types)})"
+        )
+    if len(arg_types) == 2 and not isinstance(arg_types[0], StringType):
+        ctx.errors.append(
+            "Function 'log' with two arguments requires a string first argument, got "
+            f"{arg_types[0]}"
+        )
 
 
 def _validate_pe_exports_arguments(ctx, arguments) -> None:

@@ -27,9 +27,11 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                     "struct",
                     {
                         "name": "s",
+                        "full_name": "s",
                         "virtual_address": "i",
                         "virtual_size": "i",
-                        "raw_size": "i",
+                        "raw_data_offset": "i",
+                        "raw_data_size": "i",
                         "characteristics": "i",
                     },
                 ),
@@ -211,7 +213,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
         },
     },
     "time": {"funcs": {"now": ("i", [])}},
-    "console": {"funcs": {"log": ("b", [("message", "scalar")], 1, True)}},
+    "console": {"funcs": {"log": ("b", [("message", "scalar"), ("value", "scalar")], 1)}},
     "string": {
         "funcs": {
             "to_int": ("i", [("s", "s"), ("base", "i")], 1),

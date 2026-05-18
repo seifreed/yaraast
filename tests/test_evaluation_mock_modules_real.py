@@ -236,9 +236,14 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert registry.create_module("missing", b"x") is None
     console = registry.create_module("console", b"abc")
     assert isinstance(console, ConsoleModule)
-    assert console.log("x", 1, 1.5) is True
+    assert console.log("x", 1) is True
+    assert console.log(1.5) is True
     with pytest.raises(EvaluationError, match=r"console\.log\(\) expects scalar arguments"):
         console.log(cast(Any, True))
+    with pytest.raises(EvaluationError, match="expects at most two arguments"):
+        console.log("x", 1, 1.5)
+    with pytest.raises(EvaluationError, match="expects a string first argument"):
+        console.log(1, "x")
 
     string = StringModule(b"abc")
     assert string.to_int("10") == 10

@@ -411,7 +411,10 @@ def test_console_log_matches_libyara_scalar_arguments() -> None:
         rule console_log_scalars {
             condition:
                 console.log("x") and
-                console.log(1, 1.5, filesize)
+                console.log(1) and
+                console.log(1.5) and
+                console.log("x", 1) and
+                console.log("x", 1.5)
         }
         """)
 

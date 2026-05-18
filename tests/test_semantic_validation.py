@@ -213,12 +213,16 @@ class TestFunctionCallValidator:
         assert result.is_valid is True
         assert len(result.errors) == 0
 
-    def test_console_log_accepts_variadic_scalar_arguments(self) -> None:
+    def test_console_log_accepts_libyara_scalar_signatures(self) -> None:
         ast = Parser().parse("""
             import "console"
             rule console_log {
                 condition:
-                    console.log("x", 1, 1.5, filesize)
+                    console.log("x") and
+                    console.log(1) and
+                    console.log(1.5) and
+                    console.log("x", 1) and
+                    console.log("x", 1.5)
             }
             """)
 
@@ -227,17 +231,31 @@ class TestFunctionCallValidator:
         assert result.is_valid is True
         assert result.errors == []
 
-    def test_console_log_rejects_no_arguments_and_booleans(self) -> None:
+    def test_console_log_rejects_non_libyara_signatures(self) -> None:
         no_args_ast = Parser().parse('import "console" rule r { condition: console.log() }')
         bool_ast = Parser().parse('import "console" rule r { condition: console.log(true) }')
+        first_arg_ast = Parser().parse('import "console" rule r { condition: console.log(1, "x") }')
+        too_many_ast = Parser().parse(
+            'import "console" rule r { condition: console.log("x", 1, 1.5) }'
+        )
 
         no_args_result = SemanticValidator().validate(no_args_ast)
         bool_result = SemanticValidator().validate(bool_ast)
+        first_arg_result = SemanticValidator().validate(first_arg_ast)
+        too_many_result = SemanticValidator().validate(too_many_ast)
 
         assert no_args_result.is_valid is False
         assert "expects at least 1 argument" in no_args_result.errors[0].message
         assert bool_result.is_valid is False
         assert "must be scalar" in bool_result.errors[0].message
+        assert first_arg_result.is_valid is False
+        assert any(
+            "requires a string first argument" in error.message for error in first_arg_result.errors
+        )
+        assert too_many_result.is_valid is False
+        assert any(
+            "expects at most 2 argument" in error.message for error in too_many_result.errors
+        )
 
     def test_string_to_int_accepts_optional_integer_base(self) -> None:
         ast = Parser().parse("""
@@ -471,6 +489,37 @@ class TestSemanticValidator:
         messages = [error.message for error in result.errors]
         assert any("Function 'imports' does not accept argument types" in msg for msg in messages)
         assert any("Function 'exports' does not accept argument type" in msg for msg in messages)
+
+    def test_validate_accepts_libyara_pe_section_fields(self) -> None:
+        ast = Parser().parse("""
+            import "pe"
+
+            rule valid_pe_section_fields {
+                condition:
+                    pe.sections[0].full_name or
+                    pe.sections[0].raw_data_offset or
+                    pe.sections[0].raw_data_size
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
+    def test_validate_rejects_invalid_pe_section_fields(self) -> None:
+        ast = Parser().parse("""
+            import "pe"
+
+            rule invalid_pe_section_fields {
+                condition:
+                    pe.sections[0].raw_size
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        assert any("Struct has no field 'raw_size'" in error.message for error in result.errors)
 
     def test_validate_accepts_libyara_elf_module_fields(self) -> None:
         ast = Parser().parse("""
