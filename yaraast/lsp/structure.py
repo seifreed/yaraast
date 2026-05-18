@@ -236,7 +236,7 @@ def get_rule_text_range(text: str, current_line: int) -> RuleTextRange | None:
 def find_section_line(lines: list[str], section_header: str, start_line: int) -> int:
     for idx in range(max(0, start_line), len(lines)):
         stripped = lines[idx].strip()
-        if stripped.startswith("rule ") and idx > start_line:
+        if RULE_DECLARATION_RE.match(stripped) and idx > start_line:
             return -1
         if stripped == section_header:
             return idx

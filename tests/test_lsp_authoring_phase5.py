@@ -527,6 +527,14 @@ rule demo {
     )
     assert actions._find_section_line(text.split("\n"), "strings:", 0) == 1
     assert actions._find_section_line(text.split("\n"), "meta:", 0) == -1
+    assert (
+        actions._find_section_line(
+            ["private rule a {", "}", "private rule b {", "  condition:"],
+            "condition:",
+            0,
+        )
+        == -1
+    )
     assert actions._modifier_start('"abc" wide nocase') is not None
     assert actions._modifier_start("{ 41 42 } ascii") is not None
     assert actions._modifier_start("/abc/i nocase") is not None
