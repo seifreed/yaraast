@@ -12,6 +12,7 @@ INT64_MAX = (1 << 63) - 1
 def read_string(lexer) -> Token:
     start_line = lexer.line
     start_column = lexer.column
+    start_position = lexer.position
     value_chars: list[str] = []
     lexer._advance()
     while lexer._current_char() and lexer._current_char() != '"':
@@ -30,12 +31,19 @@ def read_string(lexer) -> Token:
     if not lexer._current_char():
         raise LexerError("Unterminated string", start_line, start_column)
     lexer._advance()
-    return Token(TokenType.STRING, "".join(value_chars), start_line, start_column)
+    return Token(
+        TokenType.STRING,
+        "".join(value_chars),
+        start_line,
+        start_column,
+        lexer.position - start_position,
+    )
 
 
 def read_hex_string(lexer) -> Token:
     start_line = lexer.line
     start_column = lexer.column
+    start_position = lexer.position
     value_chars = []
     lexer._advance()
     while lexer._current_char():
@@ -62,12 +70,19 @@ def read_hex_string(lexer) -> Token:
     if not lexer._current_char() or lexer._current_char() != "}":
         raise LexerError("Unterminated hex string", start_line, start_column)
     lexer._advance()
-    return Token(TokenType.HEX_STRING, "".join(value_chars), start_line, start_column)
+    return Token(
+        TokenType.HEX_STRING,
+        "".join(value_chars),
+        start_line,
+        start_column,
+        lexer.position - start_position,
+    )
 
 
 def read_regex(lexer) -> Token:
     start_line = lexer.line
     start_column = lexer.column
+    start_position = lexer.position
     value_chars = []
     lexer._advance()
     while lexer._current_char() and lexer._current_char() != "/":
@@ -88,8 +103,20 @@ def read_regex(lexer) -> Token:
         lexer._advance()
     value = "".join(value_chars)
     if modifiers:
-        return Token(TokenType.REGEX, value + "\x00" + modifiers, start_line, start_column)
-    return Token(TokenType.REGEX, value, start_line, start_column)
+        return Token(
+            TokenType.REGEX,
+            value + "\x00" + modifiers,
+            start_line,
+            start_column,
+            lexer.position - start_position,
+        )
+    return Token(
+        TokenType.REGEX,
+        value,
+        start_line,
+        start_column,
+        lexer.position - start_position,
+    )
 
 
 def _integer_token(value: int, line: int, column: int, length: int = 1) -> Token:

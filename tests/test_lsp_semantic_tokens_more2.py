@@ -53,3 +53,34 @@ def test_semantic_tokens_use_source_width_for_size_suffix_literals() -> None:
     ]
 
     assert number_lengths == [len("1KB")]
+
+
+def test_semantic_tokens_use_source_width_for_literal_tokens() -> None:
+    provider = SemanticTokensProvider()
+    text = """
+rule literals {
+  strings:
+    $plain = "abc"
+    $regex = /abc/i
+    $hex = { 01 ?? }
+  condition:
+    any of them
+}
+""".lstrip()
+
+    tokens = provider.get_semantic_tokens(text)
+    string_index = TOKEN_TYPES.index("string")
+    regex_index = TOKEN_TYPES.index("regexp")
+    string_lengths = [
+        tokens.data[index + 2]
+        for index in range(0, len(tokens.data), 5)
+        if tokens.data[index + 3] == string_index
+    ]
+    regex_lengths = [
+        tokens.data[index + 2]
+        for index in range(0, len(tokens.data), 5)
+        if tokens.data[index + 3] == regex_index
+    ]
+
+    assert string_lengths == [len('"abc"'), len("{ 01 ?? }")]
+    assert regex_lengths == [len("/abc/i")]
