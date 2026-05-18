@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from types import SimpleNamespace
 
 from lsprotocol.types import Position
 
 from yaraast.lsp.document_query_common import whole_word_positions
+from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.structure import SECTION_NAMES, get_rule_text_range
 
 
@@ -44,22 +46,22 @@ def section_for_occurrence(
     lines: list[str], rule_start: int, line_num: int, col: int
 ) -> str | None:
     current: str | None = None
-    for idx in range(rule_start, line_num):
-        stripped = lines[idx].strip()
+    ctx = SimpleNamespace(lines=lines)
+    for idx in range(rule_start, line_num + 1):
+        stop_col = col if idx == line_num else len(lines[idx])
+        inline_sections: list[tuple[int, str]] = []
         for section_name in SECTION_NAMES:
-            if stripped == f"{section_name}:":
-                current = section_name
-                break
-    line = lines[line_num]
-    inline_sections: list[tuple[int, str]] = []
-    for section_name in SECTION_NAMES:
-        marker = f"{section_name}:"
-        marker_idx = line.find(marker)
-        if marker_idx >= 0 and marker_idx <= col:
-            inline_sections.append((marker_idx, section_name))
-    if inline_sections:
-        inline_sections.sort(key=lambda item: item[0])
-        current = inline_sections[-1][1]
+            marker = f"{section_name}:"
+            marker_idx = lines[idx].find(marker)
+            while 0 <= marker_idx <= stop_col:
+                if not position_is_in_non_code_segment(
+                    ctx, Position(line=idx, character=marker_idx)
+                ):
+                    inline_sections.append((marker_idx, section_name))
+                marker_idx = lines[idx].find(marker, marker_idx + len(marker))
+        if inline_sections:
+            inline_sections.sort(key=lambda item: item[0])
+            current = inline_sections[-1][1]
     return current
 
 

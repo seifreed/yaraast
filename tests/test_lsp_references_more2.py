@@ -6,6 +6,7 @@ from pathlib import Path
 
 from lsprotocol.types import Position
 
+from yaraast.lsp.document_query_reference_text import section_for_occurrence
 from yaraast.lsp.references import ReferencesProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
 
@@ -101,6 +102,13 @@ rule a {
     provider = ReferencesProvider()
 
     assert provider.get_references(text, _pos(3, 10), "file://test.yar") == []
+
+
+def test_reference_section_lookup_ignores_inline_markers_inside_literals() -> None:
+    line = 'rule r { condition: "strings:" and $a }'
+    col = line.index("$a")
+
+    assert section_for_occurrence([line], 0, 0, col) == "condition"
 
 
 def test_references_provider_exposes_typed_records_cross_file(tmp_path: Path) -> None:
