@@ -229,6 +229,22 @@ rule problematic_rule {
     assert len(undefined_recs) > 0
 
 
+def test_rule_analyzer_average_dependencies_counts_independent_rules() -> None:
+    yara_code = """
+rule dep_a { condition: true }
+rule dep_b { condition: true }
+rule dep_c { condition: true }
+rule caller { condition: dep_a and dep_b and dep_c }
+"""
+
+    ast = Parser().parse(yara_code)
+
+    metrics = RuleAnalyzer().analyze(ast)["quality_metrics"]
+
+    assert metrics["average_dependencies"] == 0.75
+    assert metrics["max_dependencies"] == 3
+
+
 def test_them_keyword_handling() -> None:
     """Test handling of 'them' keyword in string usage."""
     yara_code = """

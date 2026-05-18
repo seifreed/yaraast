@@ -124,14 +124,14 @@ class RuleAnalyzer:
 
         # Dependency complexity
         dep_counts = [len(deps) for deps in dependency_analysis["dependencies"].values()]
-        metrics["average_dependencies"] = sum(dep_counts) / len(dep_counts) if dep_counts else 0
+        total_rules = len(dependency_analysis["rules"])
+        metrics["average_dependencies"] = sum(dep_counts) / total_rules if total_rules else 0
         metrics["max_dependencies"] = max(dep_counts) if dep_counts else 0
 
         # Rule independence
         independent_rules = sum(
             1 for info in dependency_analysis["dependency_graph"].values() if info["is_independent"]
         )
-        total_rules = len(dependency_analysis["rules"])
         metrics["independence_ratio"] = independent_rules / total_rules if total_rules > 0 else 0
 
         # Circular dependency score (lower is better)
