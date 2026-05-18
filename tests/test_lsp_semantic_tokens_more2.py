@@ -40,6 +40,19 @@ def test_semantic_tokens_range_returns_empty_on_lexer_failure() -> None:
     assert tokens.data == []
 
 
+def test_semantic_tokens_range_excludes_tokens_outside_nonempty_range() -> None:
+    provider = SemanticTokensProvider()
+    text = "rule sample { condition: true }\n"
+
+    tokens = provider.get_semantic_tokens_range(
+        text,
+        Range(start=Position(line=0, character=5), end=Position(line=0, character=7)),
+    )
+    variable_index = TOKEN_TYPES.index("variable")
+
+    assert tokens.data == [0, 6, len("sample"), variable_index, 0]
+
+
 def test_semantic_tokens_use_source_width_for_size_suffix_literals() -> None:
     provider = SemanticTokensProvider()
     text = "rule r { condition: filesize < 1KB }\n"

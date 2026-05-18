@@ -79,6 +79,25 @@ def token_source_length(token) -> int:
     return len(str(token.value))
 
 
+def _is_empty_range(range_: Range) -> bool:
+    return range_.start.line == range_.end.line and range_.start.character == range_.end.character
+
+
+def _token_overlaps_range(token_line: int, token_start: int, token_end: int, range_: Range) -> bool:
+    if _is_empty_range(range_):
+        return (
+            token_line == range_.start.line
+            and token_start <= range_.start.character
+            and token_end > range_.start.character
+        )
+
+    if token_line < range_.start.line or token_line > range_.end.line:
+        return False
+    if token_line == range_.start.line and token_end <= range_.start.character:
+        return False
+    return not (token_line == range_.end.line and token_start >= range_.end.character)
+
+
 def encode_tokens(tokens, map_type, token_types: list[str]) -> list[int]:
     """Encode lexer tokens into LSP semantic token delta format."""
     tokens_data: list[int] = []
@@ -104,31 +123,28 @@ def encode_tokens(tokens, map_type, token_types: list[str]) -> list[int]:
 def encode_tokens_in_range(tokens, range_: Range, map_type, token_types: list[str]) -> list[int]:
     """Encode tokens within a requested range."""
     tokens_data: list[int] = []
-    prev_line = range_.start.line
-    prev_char = range_.start.character
+    prev_line = 0
+    prev_char = 0
 
     for token in tokens:
         if token.type == TokenType.EOF:
             break
 
         token_line = token.line - 1
-        token_end = token.column + token_source_length(token)
-        if token_line < range_.start.line or token_line > range_.end.line:
-            continue
-        if token_line == range_.start.line and token_end < range_.start.character:
-            continue
-        if token_line == range_.end.line and token.column > range_.end.character:
+        token_start = token.column
+        length = token_source_length(token)
+        token_end = token_start + length
+        if not _token_overlaps_range(token_line, token_start, token_end, range_):
             continue
 
         semantic_type = map_type(token.type)
         if semantic_type is None:
             continue
         delta_line = token_line - prev_line
-        delta_char = token.column if delta_line > 0 else token.column - prev_char
-        length = token_source_length(token)
+        delta_char = token_start if delta_line > 0 else token_start - prev_char
         token_type_idx = token_types.index(semantic_type)
         tokens_data.extend([delta_line, delta_char, length, token_type_idx, 0])
         prev_line = token_line
-        prev_char = token.column + length
+        prev_char = token_start + length
 
     return tokens_data
