@@ -1445,6 +1445,18 @@ class TestTypeChecker:
         assert len(errors) == 1
         assert "must be boolean, integer, double, string, or string identifier" in errors[0]
 
+    def test_check_returns_error_snapshot(self) -> None:
+        """Test returned errors cannot mutate checker state."""
+        checker = TypeChecker()
+        rule = Rule(name="test_rule")
+        rule.condition = SetExpression(elements=[IntegerLiteral(value=1)])
+
+        errors = checker.check(YaraFile(rules=[rule]))
+
+        assert errors
+        errors.clear()
+        assert checker.errors
+
     def test_check_resets_environment_between_files(self) -> None:
         checker = TypeChecker()
         first_ast = YaraFile(

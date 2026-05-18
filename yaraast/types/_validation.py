@@ -64,7 +64,7 @@ class TypeChecker(BaseVisitor[None]):
         self.inference = TypeInference(self.env)
         self.visit(ast)
         self.errors.extend(self.inference.errors)
-        return self.errors
+        return list(self.errors)
 
     def visit_yara_file(self, node: YaraFile) -> None:
         # Process imports first
