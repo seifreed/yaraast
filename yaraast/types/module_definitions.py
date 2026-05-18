@@ -40,9 +40,6 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "imports": ("array", "s"),
             "exports": ("array", "s"),
             "is_pe": "b",
-            "is_dll": "b",
-            "is_32bit": "b",
-            "is_64bit": "b",
         },
         "funcs": {
             "imphash": ("s", []),

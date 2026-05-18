@@ -392,6 +392,19 @@ def test_expr_inference_accepts_known_optional_module_arguments() -> None:
     assert inf.errors == []
 
 
+def test_expr_inference_treats_pe_predicates_as_functions_not_attributes() -> None:
+    env = TypeEnvironment()
+    env.add_module("pe")
+    inf = ExpressionTypeInference(env)
+
+    predicate_out = inf.infer(FunctionCall(function="pe.is_dll", arguments=[]))
+    attribute_out = inf.infer(MemberAccess(object=Identifier("pe"), member="is_dll"))
+
+    assert isinstance(predicate_out, BooleanType)
+    assert isinstance(attribute_out, UnknownType)
+    assert "Module 'pe' has no attribute 'is_dll'" in inf.errors
+
+
 def test_expr_inference_treats_time_now_as_function_not_attribute() -> None:
     env = TypeEnvironment()
     env.add_module("time")

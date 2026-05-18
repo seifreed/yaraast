@@ -871,7 +871,7 @@ class TestTypeSystem:
         assert pe_module is not None
         assert pe_module.name == "pe"
         assert "machine" in pe_module.attributes
-        assert "is_dll" in pe_module.attributes
+        assert "is_dll" in pe_module.functions
 
     def test_type_system_has_math_module(self) -> None:
         """Test TypeSystem has math module."""
@@ -902,11 +902,6 @@ class TestTypeSystem:
         assert isinstance(pe_module.attributes["number_of_sections"], IntegerType)
         assert isinstance(pe_module.attributes["timestamp"], IntegerType)
 
-        # Check boolean attributes
-        assert isinstance(pe_module.attributes["is_dll"], BooleanType)
-        assert isinstance(pe_module.attributes["is_32bit"], BooleanType)
-        assert isinstance(pe_module.attributes["is_64bit"], BooleanType)
-
         # Check complex types
         assert isinstance(pe_module.attributes["sections"], ArrayType)
         assert isinstance(pe_module.attributes["version_info"], DictionaryType)
@@ -921,6 +916,12 @@ class TestTypeSystem:
         assert "section_index" in pe_module.functions
         assert "exports" in pe_module.functions
         assert "imports" in pe_module.functions
+        assert "is_dll" in pe_module.functions
+        assert "is_32bit" in pe_module.functions
+        assert "is_64bit" in pe_module.functions
+        assert isinstance(pe_module.functions["is_dll"].return_type, BooleanType)
+        assert isinstance(pe_module.functions["is_32bit"].return_type, BooleanType)
+        assert isinstance(pe_module.functions["is_64bit"].return_type, BooleanType)
 
         # Check imphash function
         imphash_func = pe_module.functions["imphash"]

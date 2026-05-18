@@ -68,16 +68,16 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
 
     pe32 = MockPE(_build_pe_data(dll=True, magic=0x10B))
     assert pe32.is_pe is True
-    assert pe32.is_32bit is True
-    assert pe32.is_64bit is False
-    assert pe32.is_dll is True
+    assert pe32.is_32bit() is True
+    assert pe32.is_64bit() is False
+    assert pe32.is_dll() is True
     assert pe32.entry_point == -1
     assert pe32.entry_point_raw == 0x1000
     assert pe32.image_base == 0x400000
 
     pe64 = MockPE(_build_pe_data(dll=False, magic=0x20B))
-    assert pe64.is_32bit is False
-    assert pe64.is_64bit is True
+    assert pe64.is_32bit() is False
+    assert pe64.is_64bit() is True
 
     pe64.sections = [Section(".text", 0x1000, 0x200, 0x400, 0x200)]
     assert pe64.section_index(".text") == 0

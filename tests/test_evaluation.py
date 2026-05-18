@@ -406,7 +406,7 @@ class TestMockModules:
         assert pe.is_pe is True
         assert pe.machine == 0x14C
         assert pe.number_of_sections == 3
-        assert pe.is_dll is True  # 0x2000 bit is set
+        assert pe.is_dll() is True  # 0x2000 bit is set
 
     def test_mock_math(self) -> None:
         """Test MockMath functionality."""

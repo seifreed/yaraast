@@ -125,9 +125,9 @@ class MockPE:
         self._import_list = []
         self._export_list = []
         self.is_pe = False
-        self.is_dll = YARA_UNDEFINED
-        self.is_32bit = YARA_UNDEFINED
-        self.is_64bit = YARA_UNDEFINED
+        self._is_dll: bool | YaraUndefinedValue = YARA_UNDEFINED
+        self._is_32bit: bool | YaraUndefinedValue = YARA_UNDEFINED
+        self._is_64bit: bool | YaraUndefinedValue = YARA_UNDEFINED
         self.overlay_offset = YARA_UNDEFINED
         self.overlay_size = YARA_UNDEFINED
         self.rich_signature_offset = YARA_UNDEFINED
@@ -157,7 +157,7 @@ class MockPE:
                 self.characteristics = struct.unpack(
                     "<H", self.data[coff_offset + 18 : coff_offset + 20]
                 )[0]
-                self.is_dll = bool(self.characteristics & 0x2000)
+                self._is_dll = bool(self.characteristics & 0x2000)
                 size_of_optional_header = struct.unpack(
                     "<H", self.data[coff_offset + 16 : coff_offset + 18]
                 )[0]
@@ -165,17 +165,17 @@ class MockPE:
                 opt_offset = coff_offset + 20
                 if len(self.data) >= opt_offset + 2:
                     magic = struct.unpack("<H", self.data[opt_offset : opt_offset + 2])[0]
-                    self.is_32bit = magic == 0x10B
-                    self.is_64bit = magic == 0x20B
+                    self._is_32bit = magic == 0x10B
+                    self._is_64bit = magic == 0x20B
 
-                    if self.is_32bit and len(self.data) >= opt_offset + 32:
+                    if self._is_32bit and len(self.data) >= opt_offset + 32:
                         self.entry_point_raw = struct.unpack(
                             "<I", self.data[opt_offset + 16 : opt_offset + 20]
                         )[0]
                         self.image_base = struct.unpack(
                             "<I", self.data[opt_offset + 28 : opt_offset + 32]
                         )[0]
-                    elif self.is_64bit and len(self.data) >= opt_offset + 32:
+                    elif self._is_64bit and len(self.data) >= opt_offset + 32:
                         self.entry_point_raw = struct.unpack(
                             "<I", self.data[opt_offset + 16 : opt_offset + 20]
                         )[0]
@@ -221,6 +221,15 @@ class MockPE:
             if import_str
             else ""
         )
+
+    def is_dll(self) -> bool | YaraUndefinedValue:
+        return self._is_dll
+
+    def is_32bit(self) -> bool | YaraUndefinedValue:
+        return self._is_32bit
+
+    def is_64bit(self) -> bool | YaraUndefinedValue:
+        return self._is_64bit
 
     def section_index(self, name: str) -> int | YaraUndefinedValue:
         _require_string_arg("pe.section_index", name)
