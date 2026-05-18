@@ -209,7 +209,7 @@ class RuleTransformer:
 
     def build(self) -> Rule:
         """Build the transformed rule."""
-        return self.rule
+        return CloneTransformer.clone_rule(self.rule)
 
     # Helper methods
     def _rename_strings_in_expression(
@@ -469,7 +469,7 @@ class YaraFileTransformer:
 
     def build(self) -> YaraFile:
         """Build the transformed YARA file."""
-        return self.yara_file
+        return CloneTransformer.clone_yara_file(self.yara_file)
 
 
 # Convenience functions

@@ -42,6 +42,34 @@ def test_rule_transformer_renames_and_meta() -> None:
     assert transformed.condition.name == "$b"
 
 
+def test_transformers_build_independent_ast_nodes() -> None:
+    rule = Rule(
+        name="r1",
+        strings=[PlainString(identifier="$a", value="x")],
+        condition=StringIdentifier(name="$a"),
+    )
+
+    rule_transformer = RuleTransformer(rule).rename("r2")
+    first_rule = rule_transformer.build()
+    second_rule = rule_transformer.build()
+    first_rule.name = "corrupted"
+    first_rule.strings[0].identifier = "$corrupted"
+
+    assert second_rule.name == "r2"
+    assert second_rule.strings[0].identifier == "$a"
+    assert rule_transformer.build().name == "r2"
+
+    file_transformer = transform_yara_file(YaraFile(rules=[rule])).add_import("pe")
+    first_file = file_transformer.build()
+    second_file = file_transformer.build()
+    first_file.imports[0].module = "corrupted"
+    first_file.rules[0].name = "corrupted"
+
+    assert second_file.imports[0].module == "pe"
+    assert second_file.rules[0].name == "r1"
+    assert file_transformer.build().rules[0].name == "r1"
+
+
 def test_yara_file_transformer_and_merge() -> None:
     rule1 = Rule(name="r1", tags=[Tag(name="a")])
     rule2 = Rule(name="r2", tags=[Tag(name="b")])
