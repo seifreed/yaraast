@@ -47,7 +47,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "imphash": ("s", []),
             "section_index": ("i", [("name", "s")]),
             "exports": ("b", [("name", "s")]),
-            "imports": ("b", [("dll", "s"), ("function", "s")]),
+            "imports": ("b", [("dll", "s"), ("function", "s")], 1),
             "locale": ("b", [("locale", "i")]),
             "language": ("b", [("lang", "i")]),
             "is_dll": ("b", []),
@@ -61,7 +61,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "abs": ("i", [("x", "i")]),
             "min": ("i", [("a", "i"), ("b", "i")]),
             "max": ("i", [("a", "i"), ("b", "i")]),
-            "to_string": ("s", [("n", "i"), ("base", "i")]),
+            "to_string": ("s", [("n", "i"), ("base", "i")], 1),
             "to_number": ("i", [("b", "b")]),
             "entropy": ("d", [("offset", "i"), ("size", "i")]),
             "mean": ("d", [("offset", "i"), ("size", "i")]),
@@ -174,6 +174,7 @@ def load_builtin_modules() -> dict[str, ModuleDefinition]:
                     fname,
                     _resolve_type(fspec[0]),
                     [(p[0], _resolve_type(p[1])) for p in fspec[1]],
+                    fspec[2] if len(fspec) > 2 else None,
                 )
                 for fname, fspec in spec["funcs"].items()
             }

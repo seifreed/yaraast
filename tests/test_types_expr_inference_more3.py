@@ -361,6 +361,17 @@ def test_expr_inference_rejects_non_libyara_math_functions() -> None:
     assert "Module 'math' has no function 'log'" in inf.errors
 
 
+def test_expr_inference_accepts_known_optional_module_arguments() -> None:
+    env = TypeEnvironment()
+    env.add_module("pe")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(FunctionCall(function="pe.imports", arguments=[StringLiteral("kernel32.dll")]))
+
+    assert isinstance(out, BooleanType)
+    assert inf.errors == []
+
+
 def test_expr_inference_validates_builtin_reader_offset_type() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)

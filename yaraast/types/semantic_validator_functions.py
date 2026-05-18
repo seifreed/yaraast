@@ -106,13 +106,21 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
         node: FunctionCall,
         func_def: FunctionDefinition,
     ) -> None:
-        expected_args = len(func_def.parameters)
+        max_args = len(func_def.parameters)
+        min_args = func_def.min_parameters if func_def.min_parameters is not None else max_args
         actual_args = len(node.arguments)
 
-        if actual_args > expected_args:
+        if actual_args < min_args:
+            self.result.add_error(
+                f"Function '{func_def.name}' expects at least {min_args} argument(s), got {actual_args}",
+                node.location,
+            )
+            return
+
+        if actual_args > max_args:
             param_names = [p[0] for p in func_def.parameters]
             self.result.add_error(
-                f"Function '{func_def.name}' expects at most {expected_args} argument(s) ({', '.join(param_names)}), got {actual_args}",
+                f"Function '{func_def.name}' expects at most {max_args} argument(s) ({', '.join(param_names)}), got {actual_args}",
                 node.location,
             )
             return

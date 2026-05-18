@@ -196,23 +196,20 @@ def infer_function_call(ctx, node: FunctionCall):
                     module_def = loader.get_module(actual_module)
                     if module_def and func_name in module_def.functions:
                         func_def = module_def.functions[func_name]
-                        if actual_module == "math" and func_name == "to_string":
-                            if not 1 <= len(node.arguments) <= len(func_def.parameters):
-                                ctx.errors.append(
-                                    f"Function '{func_name}' expects 1 to 2 arguments, got {len(node.arguments)}",
-                                )
-                            _validate_function_argument_types(
-                                ctx,
-                                func_name,
-                                func_def.parameters,
-                                node.arguments,
+                        min_args = (
+                            func_def.min_parameters
+                            if func_def.min_parameters is not None
+                            else len(func_def.parameters)
+                        )
+                        max_args = len(func_def.parameters)
+                        if len(node.arguments) < min_args or len(node.arguments) > max_args:
+                            expected = (
+                                f"{min_args} to {max_args}"
+                                if min_args != max_args
+                                else str(max_args)
                             )
-                            return func_def.return_type
-                        if func_def.parameters is not None and len(node.arguments) != len(
-                            func_def.parameters
-                        ):
                             ctx.errors.append(
-                                f"Function '{func_name}' expects {len(func_def.parameters)} arguments, got {len(node.arguments)}",
+                                f"Function '{func_name}' expects {expected} arguments, got {len(node.arguments)}",
                             )
                         _validate_function_argument_types(
                             ctx,

@@ -135,6 +135,36 @@ def test_function_validator_rejects_non_libyara_math_functions() -> None:
     assert "Function 'log' not found in module 'math'" in result.errors[0].message
 
 
+def test_function_validator_rejects_too_few_module_function_arguments() -> None:
+    result = ValidationResult()
+    env = TypeEnvironment()
+    env.add_module("math")
+
+    FunctionCallValidator(result, env).visit(
+        FunctionCall(function="math.entropy", arguments=[IntegerLiteral(0)])
+    )
+
+    assert result.is_valid is False
+    assert any(
+        "Function 'entropy' expects at least 2 argument(s), got 1" in err.message
+        for err in result.errors
+    )
+
+
+def test_function_validator_accepts_known_optional_module_arguments() -> None:
+    result = ValidationResult()
+    env = TypeEnvironment()
+    env.add_module("math")
+    env.add_module("pe")
+    validator = FunctionCallValidator(result, env)
+
+    validator.visit(FunctionCall(function="math.to_string", arguments=[IntegerLiteral(10)]))
+    validator.visit(FunctionCall(function="pe.imports", arguments=[Identifier("dll_name")]))
+
+    assert result.is_valid is True
+    assert result.errors == []
+
+
 def test_function_validator_branches_for_arity_and_missing_actual_module_name() -> None:
     result = ValidationResult()
     validator = FunctionCallValidator(result, BrokenEnv())
@@ -166,9 +196,12 @@ def test_function_validator_branches_for_arity_and_missing_actual_module_name() 
             ),
         },
     )
-    # Fewer args than defined is allowed (optional params)
+    # Fewer args than defined is invalid unless the contract marks them optional.
     validator3.visit(FunctionCall(function="calc.sum", arguments=[IntegerLiteral(1)]))
-    assert not any("expects" in err.message for err in result3.errors)
+    assert any(
+        "Function 'sum' expects at least 2 argument(s), got 1" in err.message
+        for err in result3.errors
+    )
 
     # More args than defined is an error
     result4 = ValidationResult()
