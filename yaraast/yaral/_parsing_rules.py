@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
+from ._shared import parse_numeric_token_value
 from .ast_nodes import MetaEntry, MetaSection, OptionsSection, YaraLRule
 
 
@@ -77,8 +78,8 @@ class YaraLRuleParsingMixin:
             value = None
             if self._check(BaseTokenType.STRING):
                 value = self._advance().value
-            elif self._check(BaseTokenType.INTEGER):
-                value = int(self._advance().value)
+            elif self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+                value = parse_numeric_token_value(self._advance().value)
             elif self._check(BaseTokenType.BOOLEAN_TRUE):
                 self._advance()
                 value = True
@@ -111,8 +112,8 @@ class YaraLRuleParsingMixin:
                 value = None
                 if self._check(BaseTokenType.STRING):
                     value = self._advance().value
-                elif self._check(BaseTokenType.INTEGER):
-                    value = int(self._advance().value)
+                elif self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+                    value = parse_numeric_token_value(self._advance().value)
                 elif self._check(BaseTokenType.BOOLEAN_TRUE):
                     self._advance()
                     value = True

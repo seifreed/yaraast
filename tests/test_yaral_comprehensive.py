@@ -181,11 +181,14 @@ class TestYaraLLexerComprehensive:
         lexer = YaraLLexer("42 123 999 3.14")
         tokens = lexer.tokenize()
 
-        number_tokens = [t for t in tokens if t.type == BaseTokenType.INTEGER]
+        number_tokens = [
+            t for t in tokens if t.type in {BaseTokenType.INTEGER, BaseTokenType.DOUBLE}
+        ]
 
         assert len(number_tokens) == 4
         assert number_tokens[0].value == "42"
-        assert number_tokens[3].value == "3.14"
+        assert number_tokens[3].type == BaseTokenType.DOUBLE
+        assert number_tokens[3].value == 3.14
 
     def test_lexer_keywords(self) -> None:
         """Test lexing YARA-L keywords."""

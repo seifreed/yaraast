@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.yaral._shared import parse_numeric_token_value
 from yaraast.yaral.ast_nodes import (
     EventVariable,
     ReferenceList,
@@ -99,8 +100,8 @@ class EnhancedYaraLParserHelpersMixin:
             return False
         if self._check(BaseTokenType.STRING):
             return self._advance().value
-        if self._check(BaseTokenType.INTEGER):
-            return int(self._advance().value)
+        if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+            return parse_numeric_token_value(self._advance().value)
         if self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):
             name = self._advance().value.strip("%")
             return ReferenceList(name=name)

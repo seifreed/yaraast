@@ -387,13 +387,26 @@ class YaraLLexer:
         """Read a number."""
         start_column = self.column
         value = ""
+        has_decimal_point = False
 
         while self.position < len(self.text) and (
             self.text[self.position].isdigit() or self.text[self.position] == "."
         ):
+            if self.text[self.position] == ".":
+                if has_decimal_point:
+                    break
+                has_decimal_point = True
             value += self.text[self.position]
             self.position += 1
             self.column += 1
+
+        if has_decimal_point:
+            return YaraLToken(
+                type=BaseTokenType.DOUBLE,
+                value=float(value),
+                line=self.line,
+                column=start_column,
+            )
 
         return YaraLToken(
             type=BaseTokenType.INTEGER,

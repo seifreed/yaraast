@@ -6,7 +6,12 @@ from typing import Any
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
-from ._shared import EXPECTED_FIELD_NAME_ERROR, YaraLParserError, split_regex_token_value
+from ._shared import (
+    EXPECTED_FIELD_NAME_ERROR,
+    YaraLParserError,
+    parse_numeric_token_value,
+    split_regex_token_value,
+)
 from .ast_nodes import (
     EventAssignment,
     EventsSection,
@@ -55,7 +60,7 @@ class YaraLEventsParsingMixin:
                 return result
 
         # Check for integer literal starting a comparison statement
-        if self._check(BaseTokenType.INTEGER):
+        if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return self._parse_integer_comparison_statement()
 
         # Look for event variable ($e, $e1, etc.) or placeholder variable ($var)
@@ -178,6 +183,7 @@ class YaraLEventsParsingMixin:
                     self._check_yaral_type(YaraLTokenType.EVENT_VAR)
                     or self._check(BaseTokenType.STRING_IDENTIFIER)
                     or self._check(BaseTokenType.INTEGER)
+                    or self._check(BaseTokenType.DOUBLE)
                     or self._check(BaseTokenType.LPAREN)
                 )
                 and self._looks_like_new_statement()
@@ -319,8 +325,8 @@ class YaraLEventsParsingMixin:
         """Parse event value."""
         if self._check(BaseTokenType.STRING):
             return self._advance().value
-        if self._check(BaseTokenType.INTEGER):
-            return int(self._advance().value)
+        if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+            return parse_numeric_token_value(self._advance().value)
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
             event = EventVariable(name=self._advance().value)
             if self._check(BaseTokenType.DOT):

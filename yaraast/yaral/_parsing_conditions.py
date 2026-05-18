@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
-from ._shared import YaraLParserError
+from ._shared import YaraLParserError, parse_numeric_token_value
 from .ast_nodes import (
     BinaryCondition,
     ConditionExpression,
@@ -135,8 +135,8 @@ class YaraLConditionParsingMixin:
 
     def _parse_comparison_value(self):
         """Parse the value on the right side of a comparison."""
-        if self._check(BaseTokenType.INTEGER):
-            return int(self._advance().value)
+        if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+            return parse_numeric_token_value(self._advance().value)
         if (
             self._check(BaseTokenType.STRING)
             or self._check_yaral_type(YaraLTokenType.EVENT_VAR)

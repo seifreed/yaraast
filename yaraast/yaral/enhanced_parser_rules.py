@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.yaral._shared import parse_numeric_token_value
 from yaraast.yaral.ast_nodes import MetaEntry, MetaSection, OptionsSection, YaraLRule
 
 
@@ -113,8 +114,8 @@ class EnhancedYaraLParserRulesMixin:
             value: Any
             if self._check(BaseTokenType.STRING):
                 value = self._advance().value
-            elif self._check(BaseTokenType.INTEGER):
-                value = int(self._advance().value)
+            elif self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+                value = parse_numeric_token_value(self._advance().value)
             elif self._check(BaseTokenType.BOOLEAN_TRUE):
                 self._advance()
                 value = True
@@ -146,7 +147,7 @@ class EnhancedYaraLParserRulesMixin:
 
         return OptionsSection(options=options)
 
-    def _parse_option_value(self) -> str | int | bool:
+    def _parse_option_value(self) -> str | int | float | bool:
         """Parse an option value (string, number, or boolean)."""
         if self._check(BaseTokenType.BOOLEAN_TRUE):
             self._advance()
@@ -156,8 +157,8 @@ class EnhancedYaraLParserRulesMixin:
             return False
         if self._check(BaseTokenType.STRING):
             return self._advance().value
-        if self._check(BaseTokenType.INTEGER):
-            return int(self._advance().value)
+        if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+            return parse_numeric_token_value(self._advance().value)
         if self._check(BaseTokenType.IDENTIFIER):
             token = self._advance()
             if token.value in ["true", "false"]:

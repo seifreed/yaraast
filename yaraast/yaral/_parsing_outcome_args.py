@@ -6,7 +6,12 @@ from typing import Any
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
-from ._shared import EXPECTED_FIELD_NAME_ERROR, YaraLParserError, split_regex_token_value
+from ._shared import (
+    EXPECTED_FIELD_NAME_ERROR,
+    YaraLParserError,
+    parse_numeric_token_value,
+    split_regex_token_value,
+)
 from .ast_nodes import EventVariable, RegexPattern, UDMFieldAccess, UDMFieldPath
 from .tokens import YaraLTokenType
 
@@ -40,8 +45,8 @@ class OutcomeArgumentParsingMixin:
         if self._check(BaseTokenType.STRING):
             return self._advance().value
 
-        if self._check(BaseTokenType.INTEGER):
-            return int(self._advance().value)
+        if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+            return parse_numeric_token_value(self._advance().value)
 
         if self._check(BaseTokenType.IDENTIFIER):
             ident = self._advance().value
@@ -74,7 +79,7 @@ class OutcomeArgumentParsingMixin:
         if self._check(BaseTokenType.STRING):
             return self._advance().value
 
-        if self._check(BaseTokenType.INTEGER):
+        if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return self._parse_outcome_integer()
 
         if self._check(BaseTokenType.IDENTIFIER):
@@ -117,7 +122,7 @@ class OutcomeArgumentParsingMixin:
 
     def _parse_outcome_integer(self) -> Any:
         """Parse an integer literal with optional arithmetic operator."""
-        num_value = int(self._advance().value)
+        num_value = parse_numeric_token_value(self._advance().value)
         if self._check_any_operator(arithmetic_only=True):
             op_token = self._advance()
             right_value = self._parse_outcome_argument()

@@ -11,6 +11,16 @@ from .lexer import YaraLToken
 EXPECTED_FIELD_NAME_ERROR = "Expected field name"
 
 
+def parse_numeric_token_value(value: object) -> int | float:
+    """Parse a YARA-L numeric token value as int or float."""
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return value
+    text = str(value)
+    if "." in text:
+        return float(text)
+    return int(text)
+
+
 def split_regex_token_value(value: object) -> tuple[str, list[str]]:
     """Return regex pattern and inline flags from a lexer token value."""
     raw_value = "" if value is None else str(value)
