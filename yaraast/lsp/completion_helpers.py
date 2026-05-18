@@ -46,6 +46,30 @@ STRING_MODIFIERS: dict[str, str] = {
 MODULE_COMPLETIONS: list[tuple[str, str]] = list(MODULE_DOCS.items())
 
 
+def _active_module_name(before_cursor: str) -> str | None:
+    stripped_cursor = before_cursor.rstrip(" \t)}]")
+    suffix = before_cursor[len(stripped_cursor) :]
+    if suffix and all(char in " \t)}]" for char in suffix):
+        before_cursor = stripped_cursor
+    elif before_cursor != before_cursor.rstrip():
+        return None
+
+    start = len(before_cursor)
+    while start > 0 and (before_cursor[start - 1].isalnum() or before_cursor[start - 1] in "_."):
+        start -= 1
+
+    token = before_cursor[start:]
+    if "." not in token:
+        return None
+
+    parts = token.split(".")
+    if not parts[0].isidentifier():
+        return None
+    if any(part and not part.isidentifier() for part in parts[1:]):
+        return None
+    return parts[0]
+
+
 def analyze_context(text: str, position: Position) -> str:
     """Analyze the context at the current position."""
     lines = text.split("\n")
@@ -64,10 +88,8 @@ def analyze_context(text: str, position: Position) -> str:
     if "import" in before_cursor and '"' in before_cursor:
         return "import"
 
-    if "." in before_cursor:
-        parts = before_cursor.rsplit(".", 1)
-        if len(parts) == 2:
-            return "module_member"
+    if _active_module_name(before_cursor) is not None:
+        return "module_member"
 
     for i in range(position.line, -1, -1):
         if i < len(lines):
@@ -93,15 +115,7 @@ def get_current_module(text: str, position: Position) -> str | None:
     current_line = lines[position.line]
     before_cursor = current_line[: position.character]
 
-    if "." in before_cursor:
-        parts = before_cursor.rsplit(".", 1)
-        if len(parts) == 2:
-            tokens = parts[0].split()
-            if tokens:
-                module_name = tokens[-1]
-                return "".join(c for c in module_name if c.isalnum() or c == "_")
-
-    return None
+    return _active_module_name(before_cursor)
 
 
 _SNIPPET_TEMPLATES: dict[str, tuple[str, str]] = {

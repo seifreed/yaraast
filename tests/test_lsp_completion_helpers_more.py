@@ -73,7 +73,13 @@ rule a {
 """.lstrip()
     assert analyze_context(dotted_string, _pos(2, 14)) == "string_modifier"
 
+    condition_after_module = "rule r {\n  condition:\n    pe.is_pe and "
+    condition_after_decimal = "rule r {\n  condition:\n    filesize > 1.0 and "
+    assert analyze_context(condition_after_module, _pos(2, 17)) == "condition"
+    assert analyze_context(condition_after_decimal, _pos(2, 23)) == "condition"
+
     assert get_current_module("rule a { condition: pe. }", _pos(0, 24)) == "pe"
+    assert get_current_module(condition_after_module, _pos(2, 17)) is None
     assert get_current_module("rule a { condition: no_dot }", _pos(0, 28)) is None
     assert get_current_module("x", _pos(4, 0)) is None
 
