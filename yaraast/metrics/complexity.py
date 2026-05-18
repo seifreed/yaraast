@@ -35,6 +35,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._current_depth = 0
         self._string_usage: dict[str, set[str]] = {}
         self._rule_strings: dict[str, set[str]] = {}
+        self._local_scopes: list[set[str]] = []
 
     def analyze(self, ast: YaraFile) -> ComplexityMetrics:
         """Analyze AST and return complexity metrics."""
@@ -44,6 +45,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._current_depth = 0
         self._string_usage = {}
         self._rule_strings = {}
+        self._local_scopes.clear()
 
         # File-level metrics
         self.metrics.total_rules = len(ast.rules)
@@ -87,8 +89,12 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
         self._visit_ast_value(node.quantifier)
         self.visit(node.iterable)
-        self.visit(node.body)
-        self._current_depth -= 1
+        self._push_local_scope(node.variable)
+        try:
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+            self._current_depth -= 1
 
     def visit_for_of_expression(self, node: ForOfExpression) -> None:
         """Visit for-of expression."""
@@ -123,6 +129,11 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         if self._current_rule:
             normalized = self._normalize_string_id(string_id)
             self._string_usage.setdefault(self._current_rule.name, set()).add(normalized)
+
+    def _mark_string_identifier_usage(self, string_id: str) -> None:
+        if self._is_local(string_id):
+            return
+        self._mark_string_usage(string_id)
 
     def _mark_all_current_rule_strings(self) -> None:
         if not self._current_rule:
@@ -194,7 +205,7 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     def visit_string_identifier(self, node) -> None:
         """Track string usage."""
-        self._mark_string_usage(node.name)
+        self._mark_string_identifier_usage(node.name)
 
     def visit_string_wildcard(self, node) -> None:
         self._mark_string_set_text(node.pattern)
@@ -255,30 +266,46 @@ class ComplexityAnalyzer(MetricsVisitorBase):
     def visit_with_statement(self, node) -> None:
         self._current_depth += 1
         self._condition_depths.append(self._current_depth)
-        for declaration in node.declarations:
-            self.visit(declaration)
-        self.visit(node.body)
-        self._current_depth -= 1
+        self._push_local_scope()
+        try:
+            for declaration in node.declarations:
+                self.visit(declaration)
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+            self._current_depth -= 1
 
     def visit_with_declaration(self, node) -> None:
         self._visit_ast_value(node.value)
+        self._define_local(node.identifier)
 
     def visit_array_comprehension(self, node) -> None:
         self._current_depth += 1
         self._condition_depths.append(self._current_depth)
-        self._visit_ast_value(node.expression)
         self._visit_ast_value(node.iterable)
-        self._visit_ast_value(node.condition)
-        self._current_depth -= 1
+        self._push_local_scope(node.variable)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.expression)
+        finally:
+            self._pop_local_scope()
+            self._current_depth -= 1
 
     def visit_dict_comprehension(self, node) -> None:
         self._current_depth += 1
         self._condition_depths.append(self._current_depth)
-        self._visit_ast_value(node.key_expression)
-        self._visit_ast_value(node.value_expression)
         self._visit_ast_value(node.iterable)
-        self._visit_ast_value(node.condition)
-        self._current_depth -= 1
+        names = [node.key_variable]
+        if node.value_variable:
+            names.append(node.value_variable)
+        self._push_local_scope(*names)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.key_expression)
+            self._visit_ast_value(node.value_expression)
+        finally:
+            self._pop_local_scope()
+            self._current_depth -= 1
 
     def visit_tuple_expression(self, node) -> None:
         self._visit_ast_value(node.elements)
@@ -304,7 +331,11 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         self._visit_ast_value(node.step)
 
     def visit_lambda_expression(self, node) -> None:
-        self._visit_ast_value(node.body)
+        self._push_local_scope(*node.parameters)
+        try:
+            self._visit_ast_value(node.body)
+        finally:
+            self._pop_local_scope()
 
     def visit_pattern_match(self, node) -> None:
         self._current_depth += 1
@@ -320,3 +351,24 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     def visit_spread_operator(self, node) -> None:
         self._visit_ast_value(node.expression)
+
+    def _is_local(self, name: str) -> bool:
+        return any(name in scope for scope in reversed(self._local_scopes))
+
+    def _push_local_scope(self, *names: str) -> None:
+        scope: set[str] = set()
+        for name in names:
+            scope.update(self._local_name_variants(name))
+        self._local_scopes.append(scope)
+
+    def _pop_local_scope(self) -> None:
+        self._local_scopes.pop()
+
+    def _define_local(self, name: str) -> None:
+        if self._local_scopes:
+            self._local_scopes[-1].update(self._local_name_variants(name))
+
+    @staticmethod
+    def _local_name_variants(name: str) -> set[str]:
+        names = [part.strip() for part in name.split(",")]
+        return {local_name for local_name in names if local_name}

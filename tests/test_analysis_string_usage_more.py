@@ -24,6 +24,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def test_string_usage_analyzer_covers_offset_length_at_in_forof_and_of() -> None:
@@ -243,6 +244,31 @@ def test_string_usage_analyzer_counts_string_literals_in_condition_sets() -> Non
         )
     )
     assert analyzer.used_strings["manual"] == {"$a", "$missing"}
+
+
+def test_string_usage_analyzer_respects_yarax_with_local_shadowing() -> None:
+    ast = parse_yara_source("""
+rule shadowed_string {
+    strings:
+        $a = "value"
+    condition:
+        with $a = 1: $a > 0
+}
+
+rule declaration_value_uses_string {
+    strings:
+        $a = "value"
+    condition:
+        with local = $a: local
+}
+""")
+
+    results = StringUsageAnalyzer().analyze(ast)
+
+    assert results["shadowed_string"]["used"] == []
+    assert results["shadowed_string"]["unused"] == ["$a"]
+    assert results["declaration_value_uses_string"]["used"] == ["$a"]
+    assert results["declaration_value_uses_string"]["unused"] == []
 
 
 def test_string_usage_analyzer_counts_parenthesized_string_literal_sets() -> None:

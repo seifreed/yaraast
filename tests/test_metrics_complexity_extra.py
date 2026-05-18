@@ -172,6 +172,32 @@ def test_complexity_string_usage_tracks_condition_string_forms() -> None:
     }
 
 
+def test_complexity_string_usage_respects_yarax_with_local_shadowing() -> None:
+    code = """
+    rule shadowed_string {
+        strings:
+            $a = "value"
+        condition:
+            with $a = 1: $a > 0
+    }
+
+    rule declaration_value_uses_string {
+        strings:
+            $a = "value"
+        condition:
+            with local = $a: local
+    }
+    """
+    ast = parse_yara_source(dedent(code))
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert "shadowed_string:$a" in metrics.unused_strings
+    assert "shadowed_string" not in metrics.string_dependencies
+    assert "declaration_value_uses_string:$a" not in metrics.unused_strings
+    assert metrics.string_dependencies["declaration_value_uses_string"] == {"$a"}
+
+
 def test_complexity_analyzer_counts_yarax_condition_nodes() -> None:
     code = """
     rule yarax_complexity {

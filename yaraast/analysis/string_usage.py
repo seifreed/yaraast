@@ -37,12 +37,14 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.current_rule: str | None = None
         self.in_condition: bool = False
         self.implicit_current_string_allowed: bool = False
+        self.local_scopes: list[set[str]] = []
 
     def analyze(self, yara_file: YaraFile) -> dict[str, dict[str, Any]]:
         """Analyze string usage in YARA file."""
         self.defined_strings.clear()
         self.anonymous_strings.clear()
         self.used_strings.clear()
+        self.local_scopes.clear()
 
         self.visit(yara_file)
 
@@ -118,18 +120,21 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.anonymous_strings[node.name] = set()
         self.used_strings[node.name] = set()
         self.in_condition = False
+        self.local_scopes.clear()
 
         # Visit strings section
         for string in node.strings:
             self.visit(string)
 
         # Visit condition section
-        self.in_condition = True
-        if node.condition:
-            self.visit(node.condition)
-        self.in_condition = False
-
-        self.current_rule = None
+        try:
+            self.in_condition = True
+            if node.condition:
+                self.visit(node.condition)
+        finally:
+            self.in_condition = False
+            self.current_rule = None
+            self.local_scopes.clear()
 
     def visit_string_definition(self, node: StringDefinition) -> None:
         if self.current_rule:
@@ -148,7 +153,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.visit_string_definition(node)
 
     def visit_string_identifier(self, node: StringIdentifier) -> None:
-        self._mark_condition_string_ref(node.name)
+        self._mark_condition_string_identifier(node.name)
 
     def visit_string_wildcard(self, node: StringWildcard) -> None:
         if self.current_rule and self.in_condition:
@@ -197,6 +202,78 @@ class StringUsageAnalyzer(BaseVisitor[None]):
     def visit_of_expression(self, node: OfExpression) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_string_set_value(node.string_set)
+
+    def visit_for_expression(self, node) -> None:
+        self._visit_ast_value(node.quantifier)
+        self.visit(node.iterable)
+        self._push_local_scope(node.variable)
+        try:
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def visit_with_statement(self, node) -> None:
+        self._push_local_scope()
+        try:
+            for declaration in node.declarations:
+                self.visit(declaration)
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def visit_with_declaration(self, node) -> None:
+        self._visit_ast_value(node.value)
+        self._define_local(node.identifier)
+
+    def visit_array_comprehension(self, node) -> None:
+        self._visit_ast_value(node.iterable)
+        self._push_local_scope(node.variable)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_dict_comprehension(self, node) -> None:
+        self._visit_ast_value(node.iterable)
+        names = [node.key_variable]
+        if node.value_variable:
+            names.append(node.value_variable)
+        self._push_local_scope(*names)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.key_expression)
+            self._visit_ast_value(node.value_expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_lambda_expression(self, node) -> None:
+        self._push_local_scope(*node.parameters)
+        try:
+            self._visit_ast_value(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def _is_local(self, name: str) -> bool:
+        return any(name in scope for scope in reversed(self.local_scopes))
+
+    def _push_local_scope(self, *names: str) -> None:
+        scope: set[str] = set()
+        for name in names:
+            scope.update(self._local_name_variants(name))
+        self.local_scopes.append(scope)
+
+    def _pop_local_scope(self) -> None:
+        self.local_scopes.pop()
+
+    def _define_local(self, name: str) -> None:
+        if self.local_scopes:
+            self.local_scopes[-1].update(self._local_name_variants(name))
+
+    @staticmethod
+    def _local_name_variants(name: str) -> set[str]:
+        names = [part.strip() for part in name.split(",")]
+        return {local_name for local_name in names if local_name}
 
     def _visit_ast_value(self, value) -> None:
         if hasattr(value, "accept"):
@@ -251,6 +328,11 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         if self.implicit_current_string_allowed and normalized == "$":
             return
         self.used_strings[self.current_rule].add(normalized)
+
+    def _mark_condition_string_identifier(self, string_id: str) -> None:
+        if self._is_local(string_id):
+            return
+        self._mark_condition_string_ref(string_id)
 
     def _mark_wildcard_string_set(self, pattern: str) -> None:
         if not self.current_rule:

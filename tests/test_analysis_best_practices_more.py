@@ -12,6 +12,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString
 from yaraast.parser import Parser
+from yaraast.parser.source import parse_yara_source
 
 
 def test_best_practices_report_helpers_and_integration_paths() -> None:
@@ -133,6 +134,34 @@ rule them_usage {
         if "defined but never used" in suggestion.message
     ]
     assert unused_messages == []
+
+
+def test_best_practices_respects_yarax_with_local_string_shadowing() -> None:
+    ast = parse_yara_source("""
+rule shadowed_string {
+    strings:
+        $a = "value"
+    condition:
+        with $a = 1: $a > 0
+}
+
+rule declaration_value_uses_string {
+    strings:
+        $a = "value"
+    condition:
+        with local = $a: local
+}
+""")
+
+    report = BestPracticesAnalyzer().analyze(ast)
+    unused_messages = [
+        suggestion.message
+        for suggestion in report.suggestions
+        if "defined but never used" in suggestion.message
+    ]
+
+    assert "String '$a' is defined but never used in condition" in unused_messages
+    assert len(unused_messages) == 1
 
 
 def test_best_practices_named_wildcard_ignores_anonymous_internal_ids() -> None:

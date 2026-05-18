@@ -103,6 +103,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         self._current_rule: Rule | None = None
         self._string_usage: dict[str, int] = {}
         self._hex_patterns: list[tuple[str, HexString]] = []
+        self._local_scopes: list[set[str]] = []
 
     def analyze(self, ast: YaraFile) -> AnalysisReport:
         """Analyze AST and return report."""
@@ -110,6 +111,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         self._current_rule = None
         self._string_usage.clear()
         self._hex_patterns.clear()
+        self._local_scopes.clear()
         self.visit(ast)
         self._analyze_global_patterns()
         return self.report
@@ -140,6 +142,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         """Analyze individual rule."""
         self._current_rule = node
         self._string_usage.clear()
+        self._local_scopes.clear()
 
         # Check rule name conventions - must start with letter, no leading numbers
         # Also check for numbers immediately after letters (bad123name pattern)
@@ -186,9 +189,12 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
                 )
 
         # Visit condition to track string usage
-        if node.condition:
-            self.visit(node.condition)
-            self._check_unused_strings(node)
+        try:
+            if node.condition:
+                self.visit(node.condition)
+                self._check_unused_strings(node)
+        finally:
+            self._local_scopes.clear()
 
     def _analyze_strings(self, rule: Rule) -> None:
         """Analyze string definitions for patterns."""
@@ -337,6 +343,11 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         normalized = self._normalize_string_id(string_id)
         self._string_usage[normalized] = self._string_usage.get(normalized, 0) + 1
 
+    def _mark_string_identifier_usage(self, string_id: str) -> None:
+        if self._is_local(string_id):
+            return
+        self._mark_string_usage(string_id)
+
     def _normalize_string_id(self, string_id: str) -> str:
         return string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
 
@@ -418,7 +429,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
 
     def visit_string_identifier(self, node: StringIdentifier) -> None:
         """Track string usage."""
-        self._mark_string_usage(node.name)
+        self._mark_string_identifier_usage(node.name)
 
     def visit_string_wildcard(self, node: StringWildcard) -> None:
         self._mark_string_set_text(node.pattern)
@@ -454,6 +465,78 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def visit_of_expression(self, node: OfExpression) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_string_set_value(node.string_set)
+
+    def visit_for_expression(self, node) -> None:
+        self._visit_ast_value(node.quantifier)
+        self.visit(node.iterable)
+        self._push_local_scope(node.variable)
+        try:
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def visit_with_statement(self, node) -> None:
+        self._push_local_scope()
+        try:
+            for declaration in node.declarations:
+                self.visit(declaration)
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def visit_with_declaration(self, node) -> None:
+        self._visit_ast_value(node.value)
+        self._define_local(node.identifier)
+
+    def visit_array_comprehension(self, node) -> None:
+        self._visit_ast_value(node.iterable)
+        self._push_local_scope(node.variable)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_dict_comprehension(self, node) -> None:
+        self._visit_ast_value(node.iterable)
+        names = [node.key_variable]
+        if node.value_variable:
+            names.append(node.value_variable)
+        self._push_local_scope(*names)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.key_expression)
+            self._visit_ast_value(node.value_expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_lambda_expression(self, node) -> None:
+        self._push_local_scope(*node.parameters)
+        try:
+            self._visit_ast_value(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def _is_local(self, name: str) -> bool:
+        return any(name in scope for scope in reversed(self._local_scopes))
+
+    def _push_local_scope(self, *names: str) -> None:
+        scope: set[str] = set()
+        for name in names:
+            scope.update(self._local_name_variants(name))
+        self._local_scopes.append(scope)
+
+    def _pop_local_scope(self) -> None:
+        self._local_scopes.pop()
+
+    def _define_local(self, name: str) -> None:
+        if self._local_scopes:
+            self._local_scopes[-1].update(self._local_name_variants(name))
+
+    @staticmethod
+    def _local_name_variants(name: str) -> set[str]:
+        names = [part.strip() for part in name.split(",")]
+        return {local_name for local_name in names if local_name}
 
     def _analyze_global_patterns(self) -> None:
         """Analyze patterns across all rules."""
