@@ -179,6 +179,27 @@ rule sample {
     assert ("rule_block", "sample", None) in sections
 
 
+def test_document_context_ignores_section_names_inside_literals() -> None:
+    text = """
+rule sample {
+  strings:
+    $a = "condition: decoy"
+  condition:
+    $a
+}
+""".lstrip()
+    doc = DocumentContext("file://sample.yar", text)
+
+    condition_header = doc.find_symbol_record("section_header", "condition", "sample")
+    condition_section = doc.find_symbol_record("section", "condition", "sample")
+
+    assert condition_header is not None
+    assert condition_header.range.start.line == 3
+    assert condition_header.range.start.character == 2
+    assert condition_section is not None
+    assert condition_section.range.start.line == 3
+
+
 def test_runtime_workspace_symbol_cache_invalidates_on_document_change(tmp_path: Path) -> None:
     rule_file = tmp_path / "sample.yar"
     rule_file.write_text("rule sample { condition: true }\n", encoding="utf-8")

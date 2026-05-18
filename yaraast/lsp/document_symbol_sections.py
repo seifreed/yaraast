@@ -12,6 +12,7 @@ from yaraast.lsp.document_symbol_ranges import node_range, node_value_range
 from yaraast.lsp.document_types import SymbolRecord
 from yaraast.lsp.structure import (
     find_line_containing,
+    find_section_header_position,
     find_section_header_range,
     find_section_range,
     find_string_line,
@@ -173,13 +174,15 @@ def append_extra_section_symbols(
 def find_section_header_in_rule(
     lines: list[str], section_name: str, rule_block_range: Range
 ) -> Range | None:
-    for line_num in range(
-        rule_block_range.start.line, min(rule_block_range.end.line, len(lines) - 1) + 1
-    ):
-        line = lines[line_num]
-        start = line.find(section_name)
-        if start >= 0 and line[start:].startswith(f"{section_name}:"):
-            return find_section_header_range(lines, section_name, line_num)
+    position = find_section_header_position(
+        lines,
+        section_name,
+        rule_block_range.start.line,
+        rule_block_range.end.line,
+    )
+    if position is not None:
+        line_num, column = position
+        return find_section_header_range(lines, section_name, line_num, column)
     return None
 
 

@@ -59,6 +59,94 @@ def _starts_regex_literal(line: str, index: int) -> bool:
     return previous is None or previous in "([{,=!:<>~&|?+-*"
 
 
+def _is_identifier_char(char: str) -> bool:
+    return char.isalnum() or char == "_"
+
+
+def _scan_visible_section_header(
+    line: str,
+    section_name: str,
+    in_block_comment: bool,
+) -> tuple[int | None, bool]:
+    in_string = False
+    in_regex = False
+    escape = False
+    char_idx = 0
+    section_header = f"{section_name}:"
+
+    while char_idx < len(line):
+        char = line[char_idx]
+        nxt = line[char_idx + 1] if char_idx + 1 < len(line) else ""
+
+        if in_block_comment:
+            if char == "*" and nxt == "/":
+                in_block_comment = False
+                char_idx += 2
+                continue
+            char_idx += 1
+            continue
+
+        if not in_string and not in_regex:
+            if char == "/" and nxt == "/":
+                break
+            if char == "/" and nxt == "*":
+                in_block_comment = True
+                char_idx += 2
+                continue
+
+        if escape:
+            escape = False
+            char_idx += 1
+            continue
+
+        if char == "\\" and (in_string or in_regex):
+            escape = True
+            char_idx += 1
+            continue
+
+        if not in_regex and char == '"':
+            in_string = not in_string
+            char_idx += 1
+            continue
+
+        if not in_string and char == "/":
+            if in_regex:
+                in_regex = False
+            elif _starts_regex_literal(line, char_idx):
+                in_regex = True
+            char_idx += 1
+            continue
+
+        if (
+            not in_string
+            and not in_regex
+            and line.startswith(section_header, char_idx)
+            and (char_idx == 0 or not _is_identifier_char(line[char_idx - 1]))
+        ):
+            return char_idx, in_block_comment
+
+        char_idx += 1
+
+    return None, in_block_comment
+
+
+def find_section_header_position(
+    lines: list[str],
+    section_name: str,
+    start_line: int,
+    end_line: int | None = None,
+) -> tuple[int, int] | None:
+    in_block_comment = False
+    stop_line = len(lines) - 1 if end_line is None else min(end_line, len(lines) - 1)
+    for line_num in range(max(0, start_line), stop_line + 1):
+        column, in_block_comment = _scan_visible_section_header(
+            lines[line_num], section_name, in_block_comment
+        )
+        if column is not None:
+            return (line_num, column)
+    return None
+
+
 def find_rule_end(lines: list[str], start_line: int) -> int:
     brace_depth = 0
     found_open = False
@@ -164,15 +252,19 @@ def find_section_range(
     rule_line: int,
     rule_end: int,
 ) -> Range | None:
-    section_line = find_line_containing(lines, f"{section_name}:", rule_line)
-    if section_line < 0:
+    section_position = find_section_header_position(lines, section_name, rule_line, rule_end)
+    if section_position is None:
         return None
+    section_line = section_position[0]
     next_line = rule_end
     for candidate in SECTION_NAMES:
         if candidate == section_name:
             continue
-        candidate_line = find_line_containing(lines, f"{candidate}:", section_line + 1)
-        if candidate_line >= 0 and candidate_line <= rule_end:
+        candidate_position = find_section_header_position(
+            lines, candidate, section_line + 1, rule_end
+        )
+        if candidate_position is not None:
+            candidate_line = candidate_position[0]
             next_line = min(next_line, candidate_line - 1)
     end_line = max(section_line, next_line)
     if end_line == rule_end and lines[rule_end].strip() == "}":
@@ -185,9 +277,14 @@ def find_section_range(
     )
 
 
-def find_section_header_range(lines: list[str], section_name: str, line_num: int) -> Range:
+def find_section_header_range(
+    lines: list[str],
+    section_name: str,
+    line_num: int,
+    column: int | None = None,
+) -> Range:
     line = lines[line_num]
-    start = line.find(section_name)
+    start = column if column is not None else line.find(section_name)
     if start < 0:
         return make_range(line_num, 0, len(line))
     return make_range(line_num, start, start + len(section_name))

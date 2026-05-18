@@ -26,6 +26,22 @@ rule a {
     assert any(r.start_line == 0 for r in ranges)
 
 
+def test_folding_ranges_ignore_section_names_inside_literals() -> None:
+    text = """
+rule a {
+  strings:
+    $a = "condition: decoy"
+  condition:
+    $a
+}
+""".lstrip()
+    provider = FoldingRangesProvider()
+    ranges = provider.get_folding_ranges(text)
+
+    assert any(range_.start_line == 3 for range_ in ranges)
+    assert all(range_.start_line != 2 for range_ in ranges)
+
+
 def test_folding_ranges_fallback_on_invalid() -> None:
     text = "rule a { \n  condition: true \n  "
     provider = FoldingRangesProvider()
