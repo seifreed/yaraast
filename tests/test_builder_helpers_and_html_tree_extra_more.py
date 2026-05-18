@@ -7,7 +7,8 @@ from typing import Any
 import pytest
 
 from yaraast.ast.expressions import FunctionCall, Identifier, StringIdentifier, StringLiteral
-from yaraast.ast.strings import PlainString
+from yaraast.ast.strings import HexByte, HexString, PlainString
+from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.file_builder import YaraFileBuilder
 from yaraast.builder.fluent_condition_helpers import (
     build_entropy_call,
@@ -17,6 +18,8 @@ from yaraast.builder.fluent_condition_helpers import (
     make_filesize_compare,
 )
 from yaraast.builder.fluent_file_builder import yara_file
+from yaraast.builder.fluent_string_builder import FluentStringBuilder
+from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 from yaraast.errors import ValidationError
 from yaraast.metrics.html_tree_nodes_extra import HtmlTreeNodesExtraMixin
@@ -88,6 +91,42 @@ def test_rule_builder_builds_independent_ast_nodes() -> None:
     assert second.strings[0].identifier == "$a"
     assert second.condition.name == "$a"
     assert builder.build().strings[0].identifier == "$a"
+
+
+def test_condition_and_string_builders_build_independent_ast_nodes() -> None:
+    condition_builder = ConditionBuilder().string("$a")
+    condition_first = condition_builder.build()
+    condition_second = condition_builder.build()
+    assert isinstance(condition_first, StringIdentifier)
+    assert isinstance(condition_second, StringIdentifier)
+    condition_first.name = "$corrupted"
+    condition_third = condition_builder.build()
+    assert isinstance(condition_third, StringIdentifier)
+    assert condition_second.name == "$a"
+    assert condition_third.name == "$a"
+
+    hex_builder = HexStringBuilder().add(0x41)
+    hex_first = hex_builder.build()
+    hex_second = hex_builder.build()
+    assert isinstance(hex_first[0], HexByte)
+    assert isinstance(hex_second[0], HexByte)
+    hex_first[0].value = 0
+    hex_third = hex_builder.build()
+    assert isinstance(hex_third[0], HexByte)
+    assert hex_second[0].value == 0x41
+    assert hex_third[0].value == 0x41
+
+    string_builder = FluentStringBuilder("$h").hex_bytes("41").xor(7)
+    string_first = string_builder.build()
+    string_second = string_builder.build()
+    assert isinstance(string_first, HexString)
+    assert isinstance(string_second, HexString)
+    assert isinstance(string_first.tokens[0], HexByte)
+    assert isinstance(string_second.tokens[0], HexByte)
+    string_first.tokens[0].value = 0
+    string_first.modifiers[0].value = 9
+    assert string_second.tokens[0].value == 0x41
+    assert string_second.modifiers[0].value == 7
 
 
 def test_file_builders_build_independent_rule_nodes() -> None:

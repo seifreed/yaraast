@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from copy import deepcopy
 from typing import Self
 
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexToken, HexWildcard
@@ -239,7 +240,7 @@ class HexStringBuilder:
 
     def build(self) -> list[HexToken]:
         """Build the list of hex tokens."""
-        return list(self._tokens)
+        return deepcopy(self._tokens)
 
     @staticmethod
     def from_bytes(data: bytes) -> HexStringBuilder:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
+
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.strings import (
     HexByte,
@@ -286,19 +288,19 @@ class FluentStringBuilder:
             return PlainString(
                 identifier=self.identifier,
                 value=str(self._content),
-                modifiers=list(self._modifiers),
+                modifiers=deepcopy(self._modifiers),
             )
         if self._string_type == "hex":
             return HexString(
                 identifier=self.identifier,
-                tokens=list(self._content) if isinstance(self._content, list) else [],
-                modifiers=list(self._modifiers),
+                tokens=deepcopy(self._content) if isinstance(self._content, list) else [],
+                modifiers=deepcopy(self._modifiers),
             )
         if self._string_type == "regex":
             return RegexString(
                 identifier=self.identifier,
                 regex=str(self._content),
-                modifiers=list(self._modifiers),
+                modifiers=deepcopy(self._modifiers),
             )
         msg = f"Unknown string type: {self._string_type}"
         raise ValidationError(msg)

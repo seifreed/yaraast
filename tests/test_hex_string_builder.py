@@ -893,9 +893,17 @@ class TestHexStringBuilderComplexScenarios:
         tokens = builder.build()
 
         assert len(tokens) == 3
-        assert tokens[0] is byte_token
-        assert tokens[1] is wildcard_token
-        assert tokens[2] is jump_token
+        assert tokens[0] == byte_token
+        assert tokens[1] == wildcard_token
+        assert tokens[2] == jump_token
+        assert tokens[0] is not byte_token
+        assert tokens[1] is not wildcard_token
+        assert tokens[2] is not jump_token
+        assert isinstance(tokens[0], HexByte)
+        tokens[0].value = 0
+        rebuilt = builder.build()
+        assert isinstance(rebuilt[0], HexByte)
+        assert rebuilt[0].value == 0xFF
 
     def test_comprehensive_hex_pattern_from_real_malware_analysis(self) -> None:
         """Build comprehensive pattern from realistic malware analysis."""

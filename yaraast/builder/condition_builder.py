@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import Self
 
 from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
@@ -400,7 +401,7 @@ class ConditionBuilder:
         if not self._expression:
             msg = "Cannot build empty expression"
             raise ValidationError(msg)
-        return self._expression
+        return deepcopy(self._expression)
 
     # Static factory methods
     @staticmethod
