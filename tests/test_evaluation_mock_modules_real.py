@@ -65,6 +65,8 @@ def _build_pe_data(*, dll: bool, magic: int, sections: list[Section] | None = No
 def test_section_getitem_and_mock_pe_extended_branches() -> None:
     sec = Section(".text", 0x1000, 0x200, 0x400, 0x200)
     assert sec["name"] == ".text"
+    assert sec.full_name == ".text"
+    assert sec["full_name"] == ".text"
 
     pe32 = MockPE(_build_pe_data(dll=True, magic=0x10B))
     assert pe32.is_pe is True
@@ -88,16 +90,23 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     pe64._import_list = ["kernel32.dll:CreateFileW", "user32.dll:MessageBoxW"]
     assert pe64.imports("kernel32.dll", "CreateFileW") is True
     assert pe64.imports("kernel32.dll", "CloseHandle") is False
+    assert pe64.imports("kernel32.dll", 1) is False
+    assert pe64.imports(1, "CreateFileW") is True
+    assert pe64.imports(1, "kernel32.dll", "CreateFileW") is True
+    assert pe64.imports(1, "kernel32.dll", 1) is False
     assert pe64.imports("user32.dll") is True
-    with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects string arguments"):
+    with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects libyara-compatible"):
         pe64.imports(cast(Any, True))
-    with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects string arguments"):
+    with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects libyara-compatible"):
         pe64.imports("kernel32.dll", cast(Any, True))
+    with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects libyara-compatible"):
+        pe64.imports(1, 2)
 
     pe64._export_list = ["ExportedFn"]
     assert pe64.exports("ExportedFn") is True
     assert pe64.exports("Missing") is False
-    with pytest.raises(EvaluationError, match=r"pe\.exports\(\) expects a string argument"):
+    assert pe64.exports(1) is False
+    with pytest.raises(EvaluationError, match=r"pe\.exports\(\) expects a string or integer"):
         pe64.exports(cast(Any, True))
     assert pe64.locale(0x409) is False
     assert pe64.language(0x09) is False

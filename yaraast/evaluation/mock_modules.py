@@ -95,6 +95,10 @@ class Section:
         """Allow dictionary-style access."""
         return getattr(self, key)
 
+    @property
+    def full_name(self) -> str:
+        return self.name
+
 
 # ---------------------------------------------------------------------------
 # PE module — parses real MZ/PE headers
@@ -263,21 +267,39 @@ class MockPE:
 
         return YARA_UNDEFINED
 
-    def exports(self, name: str) -> bool | YaraUndefinedValue:
-        _require_string_arg("pe.exports", name)
-        if not self.is_pe:
-            return YARA_UNDEFINED
-        return name in self._export_list
-
-    def imports(self, dll: str, function: str | None = None) -> bool | YaraUndefinedValue:
-        if not isinstance(dll, str) or (function is not None and not isinstance(function, str)):
-            msg = "pe.imports() expects string arguments"
+    def exports(self, name: str | int) -> bool | YaraUndefinedValue:
+        if not isinstance(name, str) and not _is_strict_int(name):
+            msg = "pe.exports() expects a string or integer argument"
             raise EvaluationError(msg)
         if not self.is_pe:
             return YARA_UNDEFINED
-        if function:
+        if _is_strict_int(name):
+            return False
+        return name in self._export_list
+
+    def imports(self, *args: object) -> bool | YaraUndefinedValue:
+        if not _is_valid_pe_import_signature(args):
+            msg = "pe.imports() expects libyara-compatible arguments"
+            raise EvaluationError(msg)
+        if not self.is_pe:
+            return YARA_UNDEFINED
+
+        if len(args) == 1:
+            dll = args[0]
+            return any(imp.startswith(f"{dll}:") for imp in self._import_list)
+
+        if len(args) == 2:
+            dll, function = args
+            if _is_strict_int(dll):
+                return any(imp.endswith(f":{function}") for imp in self._import_list)
+            if _is_strict_int(function):
+                return False
             return f"{dll}:{function}" in self._import_list
-        return any(imp.startswith(f"{dll}:") for imp in self._import_list)
+
+        _, dll, function = args
+        if _is_strict_int(function):
+            return False
+        return f"{dll}:{function}" in self._import_list
 
     def locale(self, locale_id: int) -> bool | YaraUndefinedValue:
         _require_integer_arg("pe.locale", locale_id)
@@ -290,6 +312,24 @@ class MockPE:
         if not self.is_pe:
             return YARA_UNDEFINED
         return False
+
+
+def _is_valid_pe_import_signature(args: tuple[object, ...]) -> bool:
+    if len(args) == 1:
+        return isinstance(args[0], str)
+    if len(args) == 2:
+        first, second = args
+        return (isinstance(first, str) and (isinstance(second, str) or _is_strict_int(second))) or (
+            _is_strict_int(first) and isinstance(second, str)
+        )
+    if len(args) == 3:
+        first, second, third = args
+        return (
+            _is_strict_int(first)
+            and isinstance(second, str)
+            and (isinstance(third, str) or _is_strict_int(third))
+        )
+    return False
 
 
 # ---------------------------------------------------------------------------
