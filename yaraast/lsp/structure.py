@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from lsprotocol.types import Position, Range
 
@@ -41,8 +42,11 @@ def find_rule_start(lines: list[str], current_line: int) -> int:
 
 
 def find_rule_line(lines: list[str], rule_name: str) -> int:
+    pattern = re.compile(
+        rf"\s*(?:(?:global|private)\s+)*rule\s+{re.escape(rule_name)}(?![A-Za-z0-9_])"
+    )
     for idx, line in enumerate(lines):
-        if f"rule {rule_name}" in line or f"rule {rule_name}:" in line:
+        if pattern.match(line):
             return idx
     return -1
 

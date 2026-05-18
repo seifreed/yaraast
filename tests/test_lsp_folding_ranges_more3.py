@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yaraast.lsp.folding_ranges import FoldingRangesProvider
+from yaraast.lsp.structure import find_rule_line
 from yaraast.parser.parser import Parser
 
 
@@ -40,6 +41,25 @@ rule a {
 
     assert any(range_.start_line == 3 for range_ in ranges)
     assert all(range_.start_line != 2 for range_ in ranges)
+
+
+def test_folding_ranges_match_exact_rule_names() -> None:
+    text = """
+rule foobar {
+  condition:
+    true
+}
+rule foo {
+  condition:
+    true
+}
+""".lstrip()
+    lines = text.split("\n")
+    provider = FoldingRangesProvider()
+    ranges = provider.get_folding_ranges(text)
+
+    assert find_rule_line(lines, "foo") == 4
+    assert any(range_.start_line == 4 and range_.end_line == 7 for range_ in ranges)
 
 
 def test_folding_ranges_fallback_on_invalid() -> None:
