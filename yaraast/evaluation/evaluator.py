@@ -814,7 +814,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if self._current_rule is None:
             return set()
         return {
-            string_def.identifier
+            self._normalize_string_id(string_def.identifier)
             for string_def in self._current_rule.strings
             if getattr(string_def, "is_anonymous", False)
         }
@@ -930,8 +930,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return value is not None and not is_yara_undefined(value)
         if isinstance(expr, StringIdentifier) and self._current_rule and self._current_rule.strings:
             # Check if string is defined in current rule
+            target = self._normalize_string_id(expr.name)
             for string_def in self._current_rule.strings:
-                if string_def.identifier == expr.name:
+                if self._normalize_string_id(string_def.identifier) == target:
                     return True
 
             return False

@@ -94,6 +94,22 @@ def test_evaluator_normalizes_direct_ast_string_identifiers() -> None:
     assert result == {"direct_string": True}
 
 
+def test_evaluator_normalizes_direct_ast_string_identifiers_in_defined() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="direct_defined",
+                strings=[PlainString(identifier="a", value="x")],
+                condition=DefinedExpression(StringIdentifier("$a")),
+            )
+        ]
+    )
+
+    result = YaraEvaluator(data=b"").evaluate_file(ast)
+
+    assert result == {"direct_defined": True}
+
+
 def test_evaluator_matches_operator_honors_regex_modifiers() -> None:
     ast = Parser().parse('rule r { condition: "FOO" matches /foo/i }')
 
