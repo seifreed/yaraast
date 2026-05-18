@@ -35,6 +35,21 @@ def test_compatibility_issue_string_and_rule_meta_paths() -> None:
     assert checker.check(yara_file) == []
 
 
+def test_check_returns_stable_issue_snapshot() -> None:
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yarax_strict())
+    with_issue = YaraFile(
+        rules=[Rule(name="dup", modifiers=["private", "private"], condition=BooleanLiteral(True))]
+    )
+    clean = YaraFile(rules=[Rule(name="clean", condition=BooleanLiteral(True))])
+
+    first_issues = checker.check(with_issue)
+    second_issues = checker.check(clean)
+
+    assert any(issue.issue_type == "duplicate_modifier" for issue in first_issues)
+    assert second_issues == []
+    assert any(issue.issue_type == "duplicate_modifier" for issue in first_issues)
+
+
 def test_checker_covers_plain_regex_hex_and_quantifier_helpers() -> None:
     checker = YaraXCompatibilityChecker(YaraXFeatures.yarax_strict())
 

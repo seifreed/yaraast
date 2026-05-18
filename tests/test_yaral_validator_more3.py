@@ -28,6 +28,35 @@ def test_validator_rule_name_and_required_sections() -> None:
     assert not warnings
 
 
+def test_validate_returns_stable_error_and_warning_snapshots() -> None:
+    validator = YaraLValidator()
+    bad_rule = YaraLRule(name="1bad")
+    valid_rule = YaraLRule(
+        name="valid_rule",
+        events=EventsSection(
+            statements=[
+                EventAssignment(
+                    event_var=EventVariable(name="$e"),
+                    field_path=UDMFieldPath(parts=["metadata", "event_type"]),
+                    operator="=",
+                    value="LOGIN",
+                )
+            ]
+        ),
+        condition=ConditionSection(expression=EventExistsCondition(event="e")),
+    )
+
+    first_errors, first_warnings = validator.validate(YaraLFile(rules=[bad_rule]))
+    second_errors, second_warnings = validator.validate(YaraLFile(rules=[valid_rule]))
+
+    assert first_errors
+    assert any("Rule must have an events section" in err.message for err in first_errors)
+    assert first_warnings == []
+    assert second_errors == []
+    assert second_warnings == []
+    assert any("Rule must have a condition section" in err.message for err in first_errors)
+
+
 def test_validator_event_assignment_checks() -> None:
     events = EventsSection(
         statements=[

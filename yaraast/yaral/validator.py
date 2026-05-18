@@ -158,7 +158,7 @@ class YaraLValidator(
         self.errors.clear()
         self.warnings.clear()
         self.visit(ast)
-        return self.errors, self.warnings
+        return list(self.errors), list(self.warnings)
 
     def _add_error(self, section: str, message: str, suggestion: str = "") -> None:
         """Add validation error."""

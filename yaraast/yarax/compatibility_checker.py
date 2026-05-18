@@ -53,7 +53,7 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
         self.issues.clear()
         self._reported_yarax_features.clear()
         self.visit(yara_file)
-        return self.issues
+        return list(self.issues)
 
     def _add_issue(
         self,
