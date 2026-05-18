@@ -19,6 +19,13 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.modules import ModuleReference
+from yaraast.shared.integer_semantics import (
+    integer_remainder,
+    normalize_int64,
+    shift_left_int64,
+    shift_right_int64,
+    truncate_integer_division,
+)
 from yaraast.types.module_contracts import FunctionDefinition
 
 from ._registry import (
@@ -184,25 +191,25 @@ def _constant_integer_value(node) -> int | None:
         return None
 
     if node.operator == "+":
-        return left + right
+        return normalize_int64(left + right)
     if node.operator == "-":
-        return left - right
+        return normalize_int64(left - right)
     if node.operator == "*":
-        return left * right
+        return normalize_int64(left * right)
     if node.operator in {"/", "\\"}:
-        return None if right == 0 else int(left / right)
+        return None if right == 0 else truncate_integer_division(left, right)
     if node.operator == "%":
-        return None if right == 0 else left % right
+        return None if right == 0 else integer_remainder(left, right)
     if node.operator == "&":
-        return left & right
+        return normalize_int64(left & right)
     if node.operator == "|":
-        return left | right
+        return normalize_int64(left | right)
     if node.operator == "^":
-        return left ^ right
+        return normalize_int64(left ^ right)
     if node.operator == "<<":
-        return None if right < 0 else left << right
+        return None if right < 0 else shift_left_int64(left, right)
     if node.operator == ">>":
-        return None if right < 0 else left >> right
+        return None if right < 0 else shift_right_int64(left, right)
     return None
 
 

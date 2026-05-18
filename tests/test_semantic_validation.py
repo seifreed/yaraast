@@ -456,14 +456,28 @@ class TestSemanticValidator:
                 condition:
                     @a % 0
             }
+
+            rule folded_shift_division_by_zero {
+                strings:
+                    $a = "abc"
+                condition:
+                    #a \ (1 << 64)
+            }
+
+            rule folded_bitwise_modulo_by_zero {
+                strings:
+                    $a = "abc"
+                condition:
+                    @a % (1 & 2)
+            }
         """)
 
         result = SemanticValidator().validate(ast)
 
         assert result.is_valid is False
         messages = [error.message for error in result.errors]
-        assert any("Right operand of '\\' cannot be zero" in message for message in messages)
-        assert any("Right operand of '%' cannot be zero" in message for message in messages)
+        assert sum("Right operand of '\\' cannot be zero" in message for message in messages) == 2
+        assert sum("Right operand of '%' cannot be zero" in message for message in messages) == 2
 
     def test_valid_yara_file(self) -> None:
         """Test validation of valid YARA file."""
