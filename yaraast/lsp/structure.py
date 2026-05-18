@@ -8,6 +8,7 @@ import re
 from lsprotocol.types import Position, Range
 
 SECTION_NAMES = ("meta", "strings", "condition", "events", "match", "outcome", "options")
+RULE_DECLARATION_RE = re.compile(r"\s*(?:(?:global|private)\s+)*rule\s+")
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,7 +37,7 @@ def find_line_containing(lines: list[str], text: str, start: int = 0) -> int:
 
 def find_rule_start(lines: list[str], current_line: int) -> int:
     for idx in range(min(current_line, len(lines) - 1), -1, -1):
-        if lines[idx].lstrip().startswith("rule "):
+        if RULE_DECLARATION_RE.match(lines[idx]):
             return idx
     return -1
 

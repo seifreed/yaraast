@@ -509,6 +509,10 @@ rule demo {
 
     assert actions._find_rule_start(text.split("\n"), 0) == 0
     assert actions._find_rule_start(text.split("\n"), 4) == 0
+    assert (
+        actions._find_rule_start(["private rule demo {", "  condition:", "    true", "}"], 2) == 0
+    )
+    assert actions._find_rule_start(["global rule demo {", "  condition:", "    true", "}"], 2) == 0
     assert actions._find_rule_start(["meta:", "a = 1"], 1) == -1
     assert actions._get_rule_context("meta:\n a = 1", 0) is None
     assert actions._find_rule_end(["rule demo {", '  $a = "{"', "}"], 0) == 2
