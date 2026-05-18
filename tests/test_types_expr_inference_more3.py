@@ -350,6 +350,17 @@ def test_expr_inference_accepts_extended_math_module_functions() -> None:
         assert inf.errors == []
 
 
+def test_expr_inference_rejects_non_libyara_math_functions() -> None:
+    env = TypeEnvironment()
+    env.add_module("math")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(FunctionCall(function="math.log", arguments=[DoubleLiteral(1.0)]))
+
+    assert isinstance(out, UnknownType)
+    assert "Module 'math' has no function 'log'" in inf.errors
+
+
 def test_expr_inference_validates_builtin_reader_offset_type() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)

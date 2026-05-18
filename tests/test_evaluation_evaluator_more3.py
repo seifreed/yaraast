@@ -236,6 +236,19 @@ def test_math_to_string_rejects_non_integer_arguments() -> None:
         YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 
+def test_math_rejects_non_libyara_functions() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule invalid_math_function {
+            condition:
+                defined math.log(1.0)
+        }
+        """)
+
+    with pytest.raises(EvaluationError, match=r"Unknown function: math\.log"):
+        YaraEvaluator(data=b"abc").evaluate_file(ast)
+
+
 def test_math_module_valid_regions_can_extend_to_file_end() -> None:
     ast = Parser().parse("""
         import "math"

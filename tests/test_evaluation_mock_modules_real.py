@@ -155,10 +155,6 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert m.to_number(False) == 0
     with pytest.raises(EvaluationError, match=r"math\.to_number\(\) expects a boolean argument"):
         m.to_number(cast(Any, "bad"))
-    assert m.log(0) == float("-inf")
-    assert m.log2(0) == float("-inf")
-    assert m.log10(0) == float("-inf")
-    assert str(m.sqrt(-1)) == "nan"
     assert m.entropy(-1, 1) is YARA_UNDEFINED
     assert m.entropy(0, 0) == 0.0
     assert m.entropy(1000, 5) is YARA_UNDEFINED

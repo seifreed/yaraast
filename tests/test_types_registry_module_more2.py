@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
 from yaraast.types._registry_module import FunctionType, ModuleType, TypeSystem
-from yaraast.types._registry_primitives import BooleanType, DoubleType, IntegerType, StringType
+from yaraast.types._registry_primitives import BooleanType, IntegerType, StringType
 from yaraast.types.type_environment import TypeEnvironment
 
 
@@ -41,8 +41,8 @@ def test_type_system_builtin_module_fallback_initializes_pe_and_math() -> None:
     assert math is not None
     assert isinstance(math.functions["abs"].return_type, IntegerType)
     assert isinstance(math.functions["to_string"].return_type, StringType)
-    assert isinstance(math.functions["log"].return_type, DoubleType)
-    assert isinstance(math.functions["sqrt"].return_type, DoubleType)
+    assert "log" not in math.functions
+    assert "sqrt" not in math.functions
 
 
 def test_module_and_function_types_and_environment_aliases() -> None:

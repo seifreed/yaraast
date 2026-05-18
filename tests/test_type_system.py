@@ -944,9 +944,9 @@ class TestTypeSystem:
         assert isinstance(min_func.return_type, IntegerType)
         assert len(min_func.parameters) == 2
 
-        # Check log function
-        log_func = math_module.functions["log"]
-        assert isinstance(log_func.return_type, DoubleType)
+        # Non-libyara helpers should not be exposed by the classic math module.
+        assert "log" not in math_module.functions
+        assert "sqrt" not in math_module.functions
 
 
 class TestYaraTypeStaticInstances:

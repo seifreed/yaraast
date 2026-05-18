@@ -122,6 +122,19 @@ def test_function_validator_accepts_extended_math_module_functions() -> None:
     assert result.errors == []
 
 
+def test_function_validator_rejects_non_libyara_math_functions() -> None:
+    result = ValidationResult()
+    env = TypeEnvironment()
+    env.add_module("math")
+
+    FunctionCallValidator(result, env).visit(
+        FunctionCall(function="math.log", arguments=[IntegerLiteral(1)])
+    )
+
+    assert result.is_valid is False
+    assert "Function 'log' not found in module 'math'" in result.errors[0].message
+
+
 def test_function_validator_branches_for_arity_and_missing_actual_module_name() -> None:
     result = ValidationResult()
     validator = FunctionCallValidator(result, BrokenEnv())

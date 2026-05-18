@@ -261,18 +261,6 @@ class MockMath:
             raise EvaluationError(msg)
         return int(value)
 
-    def log(self, x: float) -> float:
-        return math.log(x) if x > 0 else float("-inf")
-
-    def log2(self, x: float) -> float:
-        return math.log2(x) if x > 0 else float("-inf")
-
-    def log10(self, x: float) -> float:
-        return math.log10(x) if x > 0 else float("-inf")
-
-    def sqrt(self, x: float) -> float:
-        return math.sqrt(x) if x >= 0 else float("nan")
-
     def entropy(self, offset: int, size: int) -> float | YaraUndefinedValue:
         region = self._get_region(offset, size, min_size=0)
         if region is YARA_UNDEFINED:
