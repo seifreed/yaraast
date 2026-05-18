@@ -22,7 +22,6 @@ def test_type_system_builtin_module_fallback_initializes_pe_and_math() -> None:
     assert isinstance(pe.attributes["number_of_sections"], IntegerType)
     assert isinstance(pe.attributes["is_pe"], BooleanType)
     assert isinstance(pe.attributes["version_info"], DictionaryType)
-    assert isinstance(pe.attributes["imports"], ArrayType)
     assert isinstance(pe.attributes["sections"], ArrayType)
 
     section_struct = pe.attributes["sections"].element_type
@@ -34,6 +33,7 @@ def test_type_system_builtin_module_fallback_initializes_pe_and_math() -> None:
     assert isinstance(pe.functions["imphash"].return_type, StringType)
     assert len(pe.functions["section_index"].parameters) == 1
     assert len(pe.functions["imports"].parameters) == 2
+    assert isinstance(pe.functions["exports"].return_type, BooleanType)
     assert isinstance(pe.functions["locale"].return_type, BooleanType)
     assert isinstance(pe.functions["rva_to_offset"].return_type, IntegerType)
 

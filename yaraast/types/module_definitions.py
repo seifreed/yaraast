@@ -37,8 +37,6 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "version_info": ("dict", "s", "s"),
             "number_of_resources": "i",
             "resource_timestamp": "i",
-            "imports": ("array", "s"),
-            "exports": ("array", "s"),
             "is_pe": "b",
         },
         "funcs": {

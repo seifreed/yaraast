@@ -398,11 +398,17 @@ def test_expr_inference_treats_pe_predicates_as_functions_not_attributes() -> No
     inf = ExpressionTypeInference(env)
 
     predicate_out = inf.infer(FunctionCall(function="pe.is_dll", arguments=[]))
-    attribute_out = inf.infer(MemberAccess(object=Identifier("pe"), member="is_dll"))
+    predicate_attribute_out = inf.infer(MemberAccess(object=Identifier("pe"), member="is_dll"))
+    imports_attribute_out = inf.infer(MemberAccess(object=Identifier("pe"), member="imports"))
+    exports_attribute_out = inf.infer(MemberAccess(object=Identifier("pe"), member="exports"))
 
     assert isinstance(predicate_out, BooleanType)
-    assert isinstance(attribute_out, UnknownType)
+    assert isinstance(predicate_attribute_out, UnknownType)
+    assert isinstance(imports_attribute_out, UnknownType)
+    assert isinstance(exports_attribute_out, UnknownType)
     assert "Module 'pe' has no attribute 'is_dll'" in inf.errors
+    assert "Module 'pe' has no attribute 'imports'" in inf.errors
+    assert "Module 'pe' has no attribute 'exports'" in inf.errors
 
 
 def test_expr_inference_treats_time_now_as_function_not_attribute() -> None:

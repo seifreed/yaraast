@@ -351,13 +351,13 @@ def test_pe_invalid_files_leave_pe_fields_undefined(data: bytes) -> None:
 def test_pe_predicates_are_callable_not_member_values() -> None:
     ast = Parser().parse("""
         import "pe"
-        rule invalid_pe_predicate_member {
+        rule invalid_pe_function_members {
             condition:
-                defined pe.is_dll
+                defined pe.is_dll or defined pe.imports or defined pe.exports
         }
         """)
 
-    assert YaraEvaluator(data=b"MZ").evaluate_file(ast) == {"invalid_pe_predicate_member": False}
+    assert YaraEvaluator(data=b"MZ").evaluate_file(ast) == {"invalid_pe_function_members": False}
 
 
 @pytest.mark.parametrize("data", [b"", b"\x7fELF", b"\x7fELF" + b"\x00" * 16])
