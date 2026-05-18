@@ -125,6 +125,14 @@ class SemanticValidator:
         function_validator = FunctionCallValidator(result, env)
         function_validator.visit(expr)
 
+        type_checker = TypeChecker(env)
+        type_checker.infer_type(expr)
+        for error_msg in type_checker.inference.errors:
+            result.add_error(
+                error_msg,
+                suggestion="Check variable types and function signatures",
+            )
+
         return result
 
 

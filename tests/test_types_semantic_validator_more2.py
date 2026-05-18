@@ -5,6 +5,7 @@ from __future__ import annotations
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
+    BinaryExpression,
     BooleanLiteral,
     FunctionCall,
     Identifier,
@@ -154,3 +155,16 @@ def test_validate_expression_and_convenience_functions() -> None:
 
     fn_errors = check_function_calls(expr, TypeEnvironment())
     assert fn_errors
+
+
+def test_validate_expression_detects_type_errors() -> None:
+    expr = BinaryExpression(
+        left=IntegerLiteral(value=1),
+        operator="+",
+        right=StringLiteral(value="x"),
+    )
+
+    result = SemanticValidator().validate_expression(expr)
+
+    assert result.is_valid is False
+    assert any("Right operand of '+' must be numeric" in error.message for error in result.errors)
