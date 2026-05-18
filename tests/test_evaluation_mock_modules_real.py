@@ -143,8 +143,12 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
 
     m = MockMath(b"\x00" * 10 + b"\xff" * 10)
     assert m.to_string(10) == "10"
-    assert m.to_string(10, 2) == "1010"
+    assert m.to_string(10, 2) is YARA_UNDEFINED
     assert m.to_string(10, 8) == "12"
+    with pytest.raises(EvaluationError, match=r"math\.to_string\(\) expects integer arguments"):
+        m.to_string(cast(Any, True))
+    with pytest.raises(EvaluationError, match=r"math\.to_string\(\) expects integer arguments"):
+        m.to_string(10, cast(Any, "16"))
     assert m.to_number(True) == 1
     assert m.to_number(False) == 0
     with pytest.raises(EvaluationError, match=r"math\.to_number\(\) expects a boolean argument"):

@@ -19,6 +19,10 @@ from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED, YaraUndefinedV
 SERIAL_CORRELATION_DEGENERATE = -100000.0
 
 
+def _is_strict_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
 @dataclass
 class Section:
     """PE/ELF section descriptor."""
@@ -234,13 +238,16 @@ class MockMath:
     def max(self, a: int, b: int) -> int:
         return max(a, b)
 
-    def to_string(self, n: int, base: int = 10) -> str:
+    def to_string(self, n: int, base: int = 10) -> str | YaraUndefinedValue:
+        if not _is_strict_int(n) or not _is_strict_int(base):
+            msg = "math.to_string() expects integer arguments"
+            raise EvaluationError(msg)
+        if base not in {8, 10, 16}:
+            return YARA_UNDEFINED
         if base == 16:
             return hex(n)[2:]
         if base == 8:
             return oct(n)[2:]
-        if base == 2:
-            return bin(n)[2:]
         return str(n)
 
     def to_number(self, value: bool) -> int:

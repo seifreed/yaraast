@@ -284,6 +284,30 @@ def test_expr_inference_validates_module_function_argument_types() -> None:
         for e in invalid_to_number.errors
     )
 
+    one_arg_to_string = ExpressionTypeInference(env)
+    one_arg_to_string_out = one_arg_to_string.infer(
+        FunctionCall(function="math.to_string", arguments=[IntegerLiteral(10)])
+    )
+    assert isinstance(one_arg_to_string_out, StringType)
+    assert one_arg_to_string.errors == []
+
+    two_arg_to_string = ExpressionTypeInference(env)
+    two_arg_to_string_out = two_arg_to_string.infer(
+        FunctionCall(
+            function="math.to_string",
+            arguments=[IntegerLiteral(10), IntegerLiteral(16)],
+        )
+    )
+    assert isinstance(two_arg_to_string_out, StringType)
+    assert two_arg_to_string.errors == []
+
+    invalid_to_string = ExpressionTypeInference(env)
+    invalid_to_string.infer(FunctionCall(function="math.to_string", arguments=[]))
+    assert any(
+        "Function 'to_string' expects 1 to 2 arguments, got 0" in e
+        for e in invalid_to_string.errors
+    )
+
 
 def test_expr_inference_accepts_hash_checksum32_function() -> None:
     env = TypeEnvironment()

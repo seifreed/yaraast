@@ -205,6 +205,35 @@ def test_math_to_number_rejects_non_boolean_arguments() -> None:
         YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 
+def test_math_to_string_matches_libyara_supported_bases() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule to_string_bases {
+            condition:
+                math.to_string(10) == "10" and
+                math.to_string(10, 10) == "10" and
+                math.to_string(10, 16) == "a" and
+                math.to_string(10, 8) == "12" and
+                not defined math.to_string(10, 2)
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"to_string_bases": True}
+
+
+def test_math_to_string_rejects_non_integer_arguments() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule invalid_to_string {
+            condition:
+                defined math.to_string(true)
+        }
+        """)
+
+    with pytest.raises(EvaluationError, match=r"math\.to_string\(\) expects integer arguments"):
+        YaraEvaluator(data=b"abc").evaluate_file(ast)
+
+
 def test_math_module_valid_regions_can_extend_to_file_end() -> None:
     ast = Parser().parse("""
         import "math"
