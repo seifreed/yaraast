@@ -472,6 +472,60 @@ class TestSemanticValidator:
         assert any("Function 'imports' does not accept argument types" in msg for msg in messages)
         assert any("Function 'exports' does not accept argument type" in msg for msg in messages)
 
+    def test_validate_accepts_libyara_elf_module_fields(self) -> None:
+        ast = Parser().parse("""
+            import "elf"
+
+            rule valid_elf_fields {
+                condition:
+                    elf.sh_offset or
+                    elf.sh_entry_size or
+                    elf.ph_offset or
+                    elf.ph_entry_size or
+                    elf.sections[0].flags or
+                    elf.segments[0].flags or
+                    elf.segments[0].alignment or
+                    elf.symtab[0].name or
+                    elf.symtab[0].value or
+                    elf.symtab[0].size or
+                    elf.symtab[0].type or
+                    elf.symtab[0].bind or
+                    elf.symtab[0].shndx or
+                    elf.dynsym[0].name or
+                    elf.dynsym[0].value or
+                    elf.dynsym[0].size or
+                    elf.dynsym[0].type or
+                    elf.dynsym[0].bind or
+                    elf.dynsym[0].shndx or
+                    elf.dynamic[0].type or
+                    elf.dynamic[0].val
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
+    def test_validate_rejects_invalid_elf_module_fields(self) -> None:
+        ast = Parser().parse("""
+            import "elf"
+
+            rule invalid_elf_fields {
+                condition:
+                    elf.sh_number or
+                    elf.sections[0].link or
+                    elf.symtab[0].visibility
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any("Module 'elf' has no attribute 'sh_number'" in msg for msg in messages)
+        assert any("Struct has no field 'link'" in msg for msg in messages)
+        assert any("Struct has no field 'visibility'" in msg for msg in messages)
+
     def test_validate_libyara_truthy_scalar_conditions(self) -> None:
         ast = Parser().parse("""
             rule string_literal_condition {

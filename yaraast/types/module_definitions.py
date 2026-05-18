@@ -79,6 +79,10 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "type": "i",
             "machine": "i",
             "entry_point": "i",
+            "sh_offset": "i",
+            "sh_entry_size": "i",
+            "ph_offset": "i",
+            "ph_entry_size": "i",
             "number_of_sections": "i",
             "number_of_segments": "i",
             "sections": (
@@ -88,6 +92,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                     {
                         "name": "s",
                         "type": "i",
+                        "flags": "i",
                         "address": "i",
                         "size": "i",
                         "offset": "i",
@@ -100,11 +105,51 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                     "struct",
                     {
                         "type": "i",
+                        "flags": "i",
                         "offset": "i",
                         "virtual_address": "i",
                         "physical_address": "i",
                         "file_size": "i",
                         "memory_size": "i",
+                        "alignment": "i",
+                    },
+                ),
+            ),
+            "symtab": (
+                "array",
+                (
+                    "struct",
+                    {
+                        "name": "s",
+                        "value": "i",
+                        "size": "i",
+                        "type": "i",
+                        "bind": "i",
+                        "shndx": "i",
+                    },
+                ),
+            ),
+            "dynsym": (
+                "array",
+                (
+                    "struct",
+                    {
+                        "name": "s",
+                        "value": "i",
+                        "size": "i",
+                        "type": "i",
+                        "bind": "i",
+                        "shndx": "i",
+                    },
+                ),
+            ),
+            "dynamic": (
+                "array",
+                (
+                    "struct",
+                    {
+                        "type": "i",
+                        "val": "i",
                     },
                 ),
             ),
