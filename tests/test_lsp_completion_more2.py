@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from lsprotocol.types import Position
 
+from yaraast.lexer.lexer_tables import KEYWORDS as LEXER_KEYWORDS
 from yaraast.lsp.completion import CompletionProvider
+from yaraast.lsp.completion_helpers import KEYWORDS, STRING_MODIFIERS
 
 
 def _pos(line: int, char: int) -> Position:
@@ -19,6 +21,12 @@ def test_completion_keywords_and_builtins() -> None:
     labels = {item.label for item in completions.items}
     assert "rule" in labels
     assert "uint32" in labels
+
+
+def test_completion_keywords_cover_non_modifier_lexer_keywords() -> None:
+    missing = set(LEXER_KEYWORDS) - set(KEYWORDS) - set(STRING_MODIFIERS)
+
+    assert missing == set()
 
 
 def test_completion_condition_string_ids() -> None:
