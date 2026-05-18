@@ -1435,15 +1435,14 @@ class TestTypeChecker:
         checker = TypeChecker()
         rule = Rule(name="test_rule")
         rule.strings = []
-        rule.condition = StringLiteral(value="invalid")
+        rule.condition = SetExpression(elements=[IntegerLiteral(value=1)])
 
         ast = YaraFile()
         ast.rules = [rule]
 
         errors = checker.check(ast)
-        # String conditions are not valid
         assert len(errors) == 1
-        assert "must be boolean, integer, or string identifier" in errors[0]
+        assert "must be boolean, integer, double, string, or string identifier" in errors[0]
 
     def test_check_resets_environment_between_files(self) -> None:
         checker = TypeChecker()
@@ -1555,7 +1554,7 @@ class TestTypeValidator:
         ast = YaraFile()
         rule = Rule(name="test_rule")
         rule.strings = []
-        rule.condition = StringLiteral(value="invalid")
+        rule.condition = SetExpression(elements=[IntegerLiteral(value=1)])
         ast.rules = [rule]
 
         is_valid, errors = TypeValidator.validate(ast)
@@ -1691,7 +1690,7 @@ class TestTypeInferenceEdgeCases:
         env = TypeEnvironment()
         inference = TypeInference(env)
         node = BinaryExpression(
-            left=StringLiteral(value="not truthy"),
+            left=SetExpression(elements=[IntegerLiteral(value=1)]),
             operator="and",
             right=BooleanLiteral(value=True),
         )
@@ -2369,7 +2368,7 @@ class TestTypeInferenceEdgeCases:
 
         node = UnaryExpression(
             operator="not",
-            operand=StringLiteral(value="test"),
+            operand=SetExpression(elements=[IntegerLiteral(value=1)]),
         )
         result = inference.infer(node)
         assert isinstance(result, BooleanType)

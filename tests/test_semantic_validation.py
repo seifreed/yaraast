@@ -387,6 +387,33 @@ class TestFunctionCallValidator:
 class TestSemanticValidator:
     """Tests for comprehensive semantic validation."""
 
+    def test_validate_libyara_truthy_string_and_double_conditions(self) -> None:
+        ast = Parser().parse("""
+            rule string_literal_condition {
+                condition:
+                    "abc"
+            }
+
+            rule double_literal_condition {
+                condition:
+                    1.0
+            }
+
+            rule string_logical_operand {
+                condition:
+                    "abc" and true
+            }
+
+            rule double_logical_operand {
+                condition:
+                    not -0.0
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
     def test_valid_yara_file(self) -> None:
         """Test validation of valid YARA file."""
         yara_code = """

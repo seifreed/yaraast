@@ -251,7 +251,7 @@ def test_expr_inference_comparison_and_builtin_function_paths() -> None:
         BinaryExpression(
             left=BooleanLiteral(value=True),
             operator="and",
-            right=StringLiteral(value="x"),
+            right=SetExpression(elements=[IntegerLiteral(value=1)]),
         ),
     )
     assert isinstance(right_bad, BooleanType)

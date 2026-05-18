@@ -8,7 +8,16 @@ from yaraast.ast.rules import Import, Rule
 from yaraast.visitor import BaseVisitor
 
 from ._inference import TypeInference
-from ._registry import BooleanType, IntegerType, StringIdentifierType, TypeEnvironment, YaraType
+from ._registry import (
+    BooleanType,
+    DoubleType,
+    FloatType,
+    IntegerType,
+    StringIdentifierType,
+    StringType,
+    TypeEnvironment,
+    YaraType,
+)
 
 
 def _copy_type_environment(env: TypeEnvironment) -> TypeEnvironment:
@@ -96,10 +105,15 @@ class TypeChecker(BaseVisitor[None]):
                 # String identifiers ($a, $b) are also valid as boolean conditions
                 if not isinstance(
                     cond_type,
-                    BooleanType | IntegerType | StringIdentifierType,
+                    BooleanType
+                    | IntegerType
+                    | DoubleType
+                    | FloatType
+                    | StringType
+                    | StringIdentifierType,
                 ):
                     self.errors.append(
-                        f"Rule condition must be boolean, integer, or string identifier, got {cond_type}",
+                        f"Rule condition must be boolean, integer, double, string, or string identifier, got {cond_type}",
                     )
         finally:
             self.env.strings = previous_strings | rule_strings

@@ -8,6 +8,7 @@ from yaraast.ast.expressions import (
     BooleanLiteral,
     FunctionCall,
     Identifier,
+    IntegerLiteral,
     ParenthesesExpression,
     SetExpression,
     StringIdentifier,
@@ -119,7 +120,11 @@ def test_validate_rule_accepts_parenthesized_string_set_item() -> None:
 
 
 def test_validate_rule_detects_invalid_condition_type() -> None:
-    rule = Rule(name="bad_type", strings=[], condition=StringLiteral("invalid"))
+    rule = Rule(
+        name="bad_type",
+        strings=[],
+        condition=SetExpression(elements=[IntegerLiteral(value=1)]),
+    )
 
     result = SemanticValidator().validate_rule(rule)
 
