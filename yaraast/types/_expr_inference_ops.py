@@ -120,7 +120,13 @@ _STRING_OPS = frozenset(
 
 def _infer_logical_op(ctx, operator, left_type, right_type):
     truthy_types = (
-        BooleanType | StringIdentifierType | IntegerType | DoubleType | FloatType | StringType
+        BooleanType
+        | StringIdentifierType
+        | IntegerType
+        | DoubleType
+        | FloatType
+        | StringType
+        | RegexType
     )
     if not isinstance(left_type, truthy_types):
         ctx.errors.append(f"Left operand of '{operator}' must be truthy, got {left_type}")
@@ -258,7 +264,13 @@ def infer_unary_expression(ctx, node: UnaryExpression):
     if node.operator == "not":
         if not isinstance(
             operand_type,
-            BooleanType | StringIdentifierType | IntegerType | DoubleType | FloatType | StringType,
+            BooleanType
+            | StringIdentifierType
+            | IntegerType
+            | DoubleType
+            | FloatType
+            | StringType
+            | RegexType,
         ):
             ctx.errors.append(f"Operand of 'not' must be truthy, got {operand_type}")
         return BooleanType()

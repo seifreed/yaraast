@@ -387,7 +387,7 @@ class TestFunctionCallValidator:
 class TestSemanticValidator:
     """Tests for comprehensive semantic validation."""
 
-    def test_validate_libyara_truthy_string_and_double_conditions(self) -> None:
+    def test_validate_libyara_truthy_scalar_conditions(self) -> None:
         ast = Parser().parse("""
             rule string_literal_condition {
                 condition:
@@ -407,6 +407,13 @@ class TestSemanticValidator:
             rule double_logical_operand {
                 condition:
                     not -0.0
+            }
+
+            rule regex_logical_operand {
+                strings:
+                    $a = "abc"
+                condition:
+                    /a/ and $a
             }
         """)
 
