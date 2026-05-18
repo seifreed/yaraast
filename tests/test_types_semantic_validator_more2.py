@@ -201,6 +201,23 @@ def test_validate_file_accepts_self_and_previous_rule_references() -> None:
     assert result.errors == []
 
 
+def test_validate_rule_normalizes_direct_ast_string_identifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="direct_string",
+                strings=[PlainString(identifier="a", value="x")],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is True
+    assert result.errors == []
+
+
 def test_validate_file_rejects_unknown_imported_module() -> None:
     ast = Parser().parse("""
         import "nosuch"

@@ -19,6 +19,7 @@ from ._registry import (
     TypeEnvironment,
     YaraType,
 )
+from .type_environment import _normalize_string_id
 
 
 def _copy_type_environment(env: TypeEnvironment) -> TypeEnvironment:
@@ -104,9 +105,10 @@ class TypeChecker(BaseVisitor[None]):
         rule_strings: set[str] = set()
         rule_anonymous_strings: set[str] = set()
         for string in node.strings:
-            rule_strings.add(string.identifier)
+            string_id = _normalize_string_id(string.identifier)
+            rule_strings.add(string_id)
             if getattr(string, "is_anonymous", False):
-                rule_anonymous_strings.add(string.identifier)
+                rule_anonymous_strings.add(string_id)
 
         self.env.strings = set(rule_strings)
         self.env.anonymous_strings = set(rule_anonymous_strings)

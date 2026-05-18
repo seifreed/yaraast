@@ -5,6 +5,10 @@ from __future__ import annotations
 from ._registry_base import YaraType
 
 
+def _normalize_string_id(string_id: str) -> str:
+    return string_id if string_id.startswith("$") else f"${string_id}"
+
+
 class TypeEnvironment:
     """Type environment for tracking variable types."""
 
@@ -41,6 +45,7 @@ class TypeEnvironment:
             self.module_aliases[alias] = module
 
     def add_string(self, string_id: str, *, is_anonymous: bool = False) -> None:
+        string_id = _normalize_string_id(string_id)
         self.strings.add(string_id)
         if is_anonymous:
             self.anonymous_strings.add(string_id)
@@ -56,9 +61,11 @@ class TypeEnvironment:
         return None
 
     def has_string(self, string_id: str) -> bool:
+        string_id = _normalize_string_id(string_id)
         return string_id in self.strings
 
     def has_string_pattern(self, pattern: str) -> bool:
+        pattern = _normalize_string_id(pattern)
         if not pattern.endswith("*"):
             return self.has_string(pattern)
         if pattern == "$*":
