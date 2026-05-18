@@ -66,6 +66,7 @@ class YaraLGenerator(YaraLVisitor[str]):
         Returns:
             Generated YARA-L code
         """
+        self.indent_level = 0
         return self.visit(ast)
 
     def _indent(self) -> str:

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
     BinaryCondition,
@@ -33,6 +35,11 @@ from yaraast.yaral.ast_nodes import (
     YaraLRule,
 )
 from yaraast.yaral.generator import YaraLGenerator
+
+
+class _BrokenYaraLCondition(ConditionExpression):
+    def accept(self, visitor: Any) -> Any:
+        raise RuntimeError("broken YARA-L condition")
 
 
 def test_generator_handles_empty_sections_and_sparse_rule() -> None:
@@ -67,6 +74,39 @@ def test_generator_handles_empty_sections_and_sparse_rule() -> None:
 
     minimal_code = generator.generate(YaraLFile(rules=[YaraLRule(name="minimal")]))
     assert minimal_code == "rule minimal {\n}"
+
+
+def test_generator_generate_resets_indent_after_failed_generation() -> None:
+    generator = YaraLGenerator()
+
+    try:
+        generator.generate(
+            YaraLFile(
+                rules=[
+                    YaraLRule(
+                        name="bad",
+                        condition=ConditionSection(expression=_BrokenYaraLCondition()),
+                    )
+                ]
+            )
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "broken YARA-L condition"
+    else:
+        raise AssertionError("expected broken YARA-L condition")
+
+    code = generator.generate(
+        YaraLFile(
+            rules=[
+                YaraLRule(
+                    name="ok",
+                    condition=ConditionSection(expression=EventExistsCondition(event="evt")),
+                )
+            ]
+        )
+    )
+
+    assert code == "rule ok {\n  condition:\n    $evt\n}"
 
 
 def test_generator_covers_base_conditions_outcomes_and_wrappers() -> None:
