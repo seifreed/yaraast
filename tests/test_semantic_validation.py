@@ -427,6 +427,51 @@ class TestSemanticValidator:
 
         assert result.is_valid is True
 
+    def test_validate_accepts_libyara_pe_import_export_signatures(self) -> None:
+        ast = Parser().parse("""
+            import "pe"
+
+            rule valid_pe_signatures {
+                condition:
+                    pe.imports("kernel32.dll") or
+                    pe.imports("kernel32.dll", "CreateFileA") or
+                    pe.imports("kernel32.dll", 1) or
+                    pe.imports(/kernel32/i, /CreateFile/i) or
+                    pe.imports(1, "CreateFileA") or
+                    pe.imports(1, "kernel32.dll", "CreateFileA") or
+                    pe.imports(1, "kernel32.dll", 1) or
+                    pe.imports(1, /kernel32/i, /CreateFile/i) or
+                    pe.exports("ExportedFunc") or
+                    pe.exports(/Exported/i) or
+                    pe.exports(1)
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
+    def test_validate_rejects_invalid_pe_import_export_signatures(self) -> None:
+        ast = Parser().parse("""
+            import "pe"
+
+            rule invalid_pe_signatures {
+                condition:
+                    pe.imports(/kernel32/i) or
+                    pe.imports("kernel32.dll", /CreateFile/i) or
+                    pe.imports(1, 2) or
+                    pe.imports("kernel32.dll", "CreateFileA", "extra") or
+                    pe.exports(true)
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any("Function 'imports' does not accept argument types" in msg for msg in messages)
+        assert any("Function 'exports' does not accept argument type" in msg for msg in messages)
+
     def test_validate_libyara_truthy_scalar_conditions(self) -> None:
         ast = Parser().parse("""
             rule string_literal_condition {

@@ -42,8 +42,16 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
         "funcs": {
             "imphash": ("s", []),
             "section_index": ("i", [("name", "s")]),
-            "exports": ("b", [("name", "s")]),
-            "imports": ("b", [("dll", "s"), ("function", "s")], 1),
+            "exports": ("b", [("name_or_ordinal", "scalar")]),
+            "imports": (
+                "b",
+                [
+                    ("dll_or_descriptor", "scalar"),
+                    ("function_or_ordinal", "scalar"),
+                    ("function_or_ordinal", "scalar"),
+                ],
+                1,
+            ),
             "locale": ("b", [("locale", "i")]),
             "language": ("b", [("lang", "i")]),
             "is_dll": ("b", []),

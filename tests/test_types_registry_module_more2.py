@@ -32,7 +32,8 @@ def test_type_system_builtin_module_fallback_initializes_pe_and_math() -> None:
     assert pe.functions["imphash"].parameters == []
     assert isinstance(pe.functions["imphash"].return_type, StringType)
     assert len(pe.functions["section_index"].parameters) == 1
-    assert len(pe.functions["imports"].parameters) == 2
+    assert len(pe.functions["imports"].parameters) == 3
+    assert pe.functions["imports"].min_parameters == 1
     assert isinstance(pe.functions["exports"].return_type, BooleanType)
     assert isinstance(pe.functions["locale"].return_type, BooleanType)
     assert isinstance(pe.functions["rva_to_offset"].return_type, IntegerType)

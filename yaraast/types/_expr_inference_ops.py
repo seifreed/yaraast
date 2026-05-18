@@ -300,6 +300,12 @@ def infer_function_call(ctx, node: FunctionCall):
                     module_def = loader.get_module(actual_module)
                     if module_def and func_name in module_def.functions:
                         func_def = module_def.functions[func_name]
+                        if actual_module == "pe" and func_name == "imports":
+                            _validate_pe_imports_arguments(ctx, node.arguments)
+                            return func_def.return_type
+                        if actual_module == "pe" and func_name == "exports":
+                            _validate_pe_exports_arguments(ctx, node.arguments)
+                            return func_def.return_type
                         min_args = (
                             func_def.min_parameters
                             if func_def.min_parameters is not None
@@ -388,6 +394,73 @@ def _is_function_argument_compatible(param_type: YaraType, arg_type: YaraType) -
 def _visit_function_arguments(ctx, arguments) -> None:
     for argument in arguments:
         ctx.visit(argument)
+
+
+def _argument_types(ctx, arguments) -> list[YaraType]:
+    return [ctx.visit(argument) for argument in arguments]
+
+
+def _all_known(arg_types: list[YaraType]) -> bool:
+    return not any(isinstance(arg_type, UnknownType) for arg_type in arg_types)
+
+
+def _matches_type(arg_type: YaraType, allowed_types: tuple[type[YaraType], ...]) -> bool:
+    return isinstance(arg_type, allowed_types)
+
+
+def _matches_signature(
+    arg_types: list[YaraType],
+    signature: tuple[tuple[type[YaraType], ...], ...],
+) -> bool:
+    if len(arg_types) != len(signature):
+        return False
+    return all(
+        _matches_type(arg_type, allowed_types)
+        for arg_type, allowed_types in zip(arg_types, signature, strict=True)
+    )
+
+
+def _format_argument_types(arg_types: list[YaraType]) -> str:
+    return ", ".join(str(arg_type) for arg_type in arg_types)
+
+
+def _validate_pe_exports_arguments(ctx, arguments) -> None:
+    arg_types = _argument_types(ctx, arguments)
+    if len(arg_types) != 1:
+        ctx.errors.append(f"Function 'exports' expects 1 arguments, got {len(arg_types)}")
+        return
+    if _all_known(arg_types) and not isinstance(arg_types[0], StringType | RegexType | IntegerType):
+        ctx.errors.append(
+            "Function 'exports' does not accept argument type "
+            f"({_format_argument_types(arg_types)})"
+        )
+
+
+def _validate_pe_imports_arguments(ctx, arguments) -> None:
+    arg_types = _argument_types(ctx, arguments)
+    if not 1 <= len(arg_types) <= 3:
+        ctx.errors.append(f"Function 'imports' expects 1 to 3 arguments, got {len(arg_types)}")
+        return
+    if not _all_known(arg_types):
+        return
+
+    string = (StringType,)
+    regex = (RegexType,)
+    integer = (IntegerType,)
+    string_or_integer = (StringType, IntegerType)
+    valid_signatures = (
+        (string,),
+        (string, string_or_integer),
+        (regex, regex),
+        (integer, string),
+        (integer, string, string_or_integer),
+        (integer, regex, regex),
+    )
+    if not any(_matches_signature(arg_types, signature) for signature in valid_signatures):
+        ctx.errors.append(
+            "Function 'imports' does not accept argument types "
+            f"({_format_argument_types(arg_types)})"
+        )
 
 
 def infer_member_access(ctx, node: MemberAccess):
