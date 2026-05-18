@@ -150,6 +150,7 @@ class CodeGenerator(ASTVisitor[str]):
     def generate(self, node: ASTNode) -> str:
         """Generate code for the given AST node."""
         self.buffer = StringIO()
+        self.indent_level = 0
         result = self.visit(node)
         if result:
             return result

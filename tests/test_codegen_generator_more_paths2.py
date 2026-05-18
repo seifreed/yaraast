@@ -68,6 +68,11 @@ from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 
 
+class _BrokenCondition(Condition):
+    def accept(self, visitor: Any) -> Any:
+        raise RuntimeError("broken condition")
+
+
 def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules() -> None:
     gen = CodeGenerator()
     ast = YaraFile(
@@ -106,6 +111,16 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     assert 'include "dir\\"\\\\common.yar"' in escaped
     assert 'import "mod\\"\\\\path" as m' in advanced_escaped
     assert 'include "dir\\"\\\\common.yar"' in advanced_escaped
+
+
+def test_codegen_generate_resets_indent_after_failed_generation() -> None:
+    gen = CodeGenerator()
+    with pytest.raises(RuntimeError, match="broken condition"):
+        gen.generate(YaraFile(rules=[Rule(name="bad", condition=_BrokenCondition())]))
+
+    out = gen.generate(YaraFile(rules=[Rule(name="ok", condition=BooleanLiteral(True))]))
+
+    assert out == "rule ok {\n    condition:\n        true\n}\n"
 
 
 def test_codegen_generator_preserves_namespaced_extern_rules() -> None:
