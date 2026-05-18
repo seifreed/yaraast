@@ -1,5 +1,6 @@
 """Fluent builder for YARA files."""
 
+from copy import deepcopy
 from typing import Self
 
 from yaraast.ast.base import YaraFile
@@ -60,7 +61,7 @@ class YaraFileBuilder:
         return YaraFile(
             imports=[Import(module=module) for module in self._imports],
             includes=[Include(path=path) for path in self._includes],
-            rules=list(self._rules),
+            rules=deepcopy(self._rules),
         )
 
     # Convenience static methods

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Self, cast
 
 from yaraast.ast.conditions import Condition, OfExpression
@@ -322,9 +323,9 @@ class RuleBuilder:
 
         return Rule(
             name=self._name,
-            modifiers=list(self._modifiers),
+            modifiers=deepcopy(self._modifiers),
             tags=[Tag(name=tag) for tag in self._tags],
             meta=dict(self._meta),  # Use dict for consistency with parser output
-            strings=list(self._strings),
-            condition=self._condition,
+            strings=deepcopy(self._strings),
+            condition=deepcopy(self._condition),
         )

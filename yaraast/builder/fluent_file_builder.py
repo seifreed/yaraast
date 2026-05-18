@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING, Self
 
 from yaraast.ast.base import YaraFile
@@ -45,9 +46,9 @@ class FluentYaraFileBuilder:
     def build(self) -> YaraFile:
         """Build the YARA file."""
         return YaraFile(
-            imports=list(self.imports),
-            includes=list(self.includes),
-            rules=list(self.rules),
+            imports=deepcopy(self.imports),
+            includes=deepcopy(self.includes),
+            rules=deepcopy(self.rules),
         )
 
 
