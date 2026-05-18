@@ -15,6 +15,10 @@ from yaraast.cli.commands.bench_cmd import bench
 from yaraast.performance.optimizer import PerformanceOptimizer
 
 
+def _fresh_text(value: str) -> str:
+    return ("_" + value)[1:]
+
+
 def test_performance_optimizer_dispatch_and_complexity_paths() -> None:
     optimizer = PerformanceOptimizer()
 
@@ -26,7 +30,9 @@ def test_performance_optimizer_dispatch_and_complexity_paths() -> None:
         rules=[Rule(name="a"), Rule(name="b", condition=Identifier(name="for loop and or"))]
     )
     optimized_file = optimizer.optimize(yara_file, strategy="memory")
-    assert optimized_file is yara_file
+    assert optimized_file is not yara_file
+    assert [rule.name for rule in optimized_file.rules] == ["a", "b"]
+    assert optimizer.get_statistics()["rules_optimized"] == 3
 
     other = object()
     assert optimizer.optimize(other, strategy="balanced") is other
@@ -57,9 +63,22 @@ def test_performance_optimizer_handles_unexpected_string_values() -> None:
     assert optimized is rule
     assert optimizer.get_statistics()["strings_optimized"] == 0
 
-    memory_only_rule = Rule(name="mem_only", strings=[PlainString(identifier="$b", value="abc")])
+    first_value = _fresh_text("abc")
+    second_value = _fresh_text("abc")
+    memory_only_rule = Rule(
+        name="mem_only",
+        strings=[
+            PlainString(identifier="$a", value=first_value),
+            PlainString(identifier="$b", value=second_value),
+        ],
+    )
     optimized_memory = optimizer.optimize_rule(memory_only_rule, strategy="memory")
-    assert optimized_memory is memory_only_rule
+    assert optimized_memory is not memory_only_rule
+    first_string = optimized_memory.strings[0]
+    second_string = optimized_memory.strings[1]
+    assert isinstance(first_string, PlainString)
+    assert isinstance(second_string, PlainString)
+    assert first_string.value is second_string.value
 
 
 def test_bench_command_skips_failed_operation_results(tmp_path: Path) -> None:

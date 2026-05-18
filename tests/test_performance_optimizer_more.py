@@ -38,10 +38,10 @@ def test_performance_optimizer_rule_and_file() -> None:
 
     rule = ast.rules[0]
     optimized_rule = optimizer.optimize_rule(rule, strategy="balanced")
-    assert optimized_rule is rule
-    assert isinstance(rule.strings[0], PlainString)
-    assert rule.strings[0].identifier == "$a"
-    assert isinstance(rule.strings[-1], RegexString)
+    assert optimized_rule is not rule
+    assert isinstance(optimized_rule.strings[0], PlainString)
+    assert optimized_rule.strings[0].identifier == "$a"
+    assert isinstance(optimized_rule.strings[-1], RegexString)
 
     optimized_file = optimizer.optimize(ast, strategy="speed")
     assert optimized_file is ast
@@ -68,4 +68,4 @@ def test_optimize_yara_file(tmp_path: Path) -> None:
     ast, stats = optimize_yara_file(str(path), output_path=str(out), strategy="memory")
     assert ast.rules
     assert out.exists()
-    assert "rules_optimized" in stats
+    assert stats["rules_optimized"] == 1

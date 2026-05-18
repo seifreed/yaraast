@@ -70,15 +70,15 @@ class PerformanceOptimizer:
     def optimize_rule(self, rule: Rule, strategy: str = "balanced") -> Rule:
         """Optimize a single rule."""
         # Apply rule optimizations
-        _ = self.rule_optimizer.optimize_rule(rule)
+        rule = self.rule_optimizer.optimize_rule(rule)
 
         # Apply memory optimizations if needed
         if strategy in ("memory", "balanced"):
-            _ = self.memory_optimizer.optimize_rule(rule)
+            rule = self.memory_optimizer.optimize_rule(rule)
 
         # Apply performance-specific optimizations
         if strategy in ("speed", "balanced"):
-            _ = self._optimize_for_speed(rule)
+            rule = self._optimize_for_speed(rule)
 
         self._stats["rules_optimized"] += 1
         return rule
@@ -95,12 +95,13 @@ class PerformanceOptimizer:
 
         # Apply memory optimizations if needed
         if strategy in ("memory", "balanced"):
-            _ = self.memory_optimizer.optimize(yara_file)
+            yara_file = self.memory_optimizer.optimize(yara_file)
 
         # Apply performance-specific optimizations
         if strategy in ("speed", "balanced"):
-            _ = self._optimize_file_for_speed(yara_file)
+            yara_file = self._optimize_file_for_speed(yara_file)
 
+        self._stats["rules_optimized"] += len(yara_file.rules)
         return yara_file
 
     def _optimize_for_speed(self, rule: Rule) -> Rule:
@@ -213,7 +214,7 @@ def optimize_yara_file(
 
     # Optimize
     optimizer = PerformanceOptimizer()
-    _ = optimizer.optimize(ast, strategy)
+    optimized_ast = optimizer.optimize(ast, strategy)
     stats = optimizer.get_statistics()
 
     # Write output if requested
@@ -221,8 +222,8 @@ def optimize_yara_file(
         from yaraast.yarax.generator import YaraXGenerator
 
         gen = YaraXGenerator()
-        output = gen.generate(ast)
+        output = gen.generate(optimized_ast)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(output)
 
-    return ast, stats
+    return optimized_ast, stats
