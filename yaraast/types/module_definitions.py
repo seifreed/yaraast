@@ -119,9 +119,42 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "number_of_guids": "i",
             "number_of_resources": "i",
             "number_of_user_strings": "i",
-            "assembly": ("dict", "s", "s"),
-            "resources": ("array", ("dict", "s", "i")),
-            "streams": ("array", ("dict", "s", "i")),
+            "assembly": (
+                "struct",
+                {
+                    "name": "s",
+                    "culture": "s",
+                    "version": (
+                        "struct",
+                        {
+                            "major": "i",
+                            "minor": "i",
+                        },
+                    ),
+                },
+            ),
+            "resources": (
+                "array",
+                (
+                    "struct",
+                    {
+                        "name": "s",
+                        "offset": "i",
+                        "length": "i",
+                    },
+                ),
+            ),
+            "streams": (
+                "array",
+                (
+                    "struct",
+                    {
+                        "name": "s",
+                        "offset": "i",
+                        "size": "i",
+                    },
+                ),
+            ),
         },
     },
     "time": {"funcs": {"now": ("i", [])}},

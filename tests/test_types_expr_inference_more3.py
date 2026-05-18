@@ -11,6 +11,7 @@ from yaraast.ast.conditions import (
     OfExpression,
 )
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
@@ -422,6 +423,58 @@ def test_expr_inference_treats_time_now_as_function_not_attribute() -> None:
     assert isinstance(call_out, IntegerType)
     assert isinstance(attr_out, UnknownType)
     assert "Module 'time' has no attribute 'now'" in inf.errors
+
+
+def test_expr_inference_treats_dotnet_assembly_as_struct_not_dictionary() -> None:
+    env = TypeEnvironment()
+    env.add_module("dotnet")
+    inf = ExpressionTypeInference(env)
+    assembly = MemberAccess(object=Identifier("dotnet"), member="assembly")
+    version = MemberAccess(object=assembly, member="version")
+
+    name_out = inf.infer(MemberAccess(object=assembly, member="name"))
+    culture_out = inf.infer(MemberAccess(object=assembly, member="culture"))
+    major_out = inf.infer(MemberAccess(object=version, member="major"))
+    minor_out = inf.infer(MemberAccess(object=version, member="minor"))
+    dictionary_out = inf.infer(DictionaryAccess(object=assembly, key="name"))
+
+    assert isinstance(name_out, StringType)
+    assert isinstance(culture_out, StringType)
+    assert isinstance(major_out, IntegerType)
+    assert isinstance(minor_out, IntegerType)
+    assert isinstance(dictionary_out, UnknownType)
+    assert any("Cannot access dictionary on non-dict type" in error for error in inf.errors)
+
+
+def test_expr_inference_treats_dotnet_collections_as_arrays_of_structs() -> None:
+    env = TypeEnvironment()
+    env.add_module("dotnet")
+    inf = ExpressionTypeInference(env)
+    first_resource = ArrayAccess(
+        array=MemberAccess(object=Identifier("dotnet"), member="resources"),
+        index=IntegerLiteral(0),
+    )
+    first_stream = ArrayAccess(
+        array=MemberAccess(object=Identifier("dotnet"), member="streams"),
+        index=IntegerLiteral(0),
+    )
+
+    resource_name = inf.infer(MemberAccess(object=first_resource, member="name"))
+    resource_offset = inf.infer(MemberAccess(object=first_resource, member="offset"))
+    resource_length = inf.infer(MemberAccess(object=first_resource, member="length"))
+    stream_name = inf.infer(MemberAccess(object=first_stream, member="name"))
+    stream_offset = inf.infer(MemberAccess(object=first_stream, member="offset"))
+    stream_size = inf.infer(MemberAccess(object=first_stream, member="size"))
+    resource_dictionary = inf.infer(DictionaryAccess(object=first_resource, key="name"))
+
+    assert isinstance(resource_name, StringType)
+    assert isinstance(resource_offset, IntegerType)
+    assert isinstance(resource_length, IntegerType)
+    assert isinstance(stream_name, StringType)
+    assert isinstance(stream_offset, IntegerType)
+    assert isinstance(stream_size, IntegerType)
+    assert isinstance(resource_dictionary, UnknownType)
+    assert any("Cannot access dictionary on non-dict type" in error for error in inf.errors)
 
 
 def test_expr_inference_validates_builtin_reader_offset_type() -> None:
