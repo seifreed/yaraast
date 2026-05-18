@@ -323,9 +323,46 @@ class AstHasher(ASTVisitor[str]):
 
     def _hash_string_set(self, value) -> str:
         """Hash raw string-set lists as order-insensitive collections."""
+        string_set_items = self._string_set_items(value)
+        if string_set_items is not None:
+            return "[" + "|".join(sorted(string_set_items)) + "]"
         if isinstance(value, list | tuple | set | frozenset):
             return "[" + "|".join(sorted(self._hash_value(item) for item in value)) + "]"
         return self._hash_value(value)
+
+    def _string_set_items(self, value) -> list[str] | None:
+        from yaraast.ast.expressions import ParenthesesExpression, SetExpression
+
+        if isinstance(value, ParenthesesExpression):
+            return self._string_set_items(value.expression)
+        if isinstance(value, SetExpression):
+            return self._string_set_container_items(value.elements)
+        if isinstance(value, list | tuple | set | frozenset):
+            return self._string_set_container_items(value)
+        return None
+
+    def _string_set_container_items(self, values) -> list[str] | None:
+        items = []
+        for value in values:
+            item = self._string_set_item(value)
+            if item is None:
+                return None
+            items.append(item)
+        return items
+
+    @staticmethod
+    def _string_set_item(value) -> str | None:
+        from yaraast.ast.expressions import StringIdentifier, StringLiteral, StringWildcard
+
+        if isinstance(value, str):
+            return value
+        if isinstance(value, StringIdentifier):
+            return value.name
+        if isinstance(value, StringWildcard):
+            return value.pattern
+        if isinstance(value, StringLiteral) and value.value.startswith("$"):
+            return value.value
+        return None
 
     def _hash_in_rule_pragmas(self, pragmas) -> str:
         """Hash rule pragmas by position while preserving sequential directives."""

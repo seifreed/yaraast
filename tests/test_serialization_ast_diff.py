@@ -7,7 +7,13 @@ from textwrap import dedent
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.conditions import OfExpression
-from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral
+from yaraast.ast.expressions import (
+    BooleanLiteral,
+    IntegerLiteral,
+    ParenthesesExpression,
+    SetExpression,
+    StringLiteral,
+)
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
@@ -348,6 +354,36 @@ def test_ast_diff_treats_non_list_raw_string_sets_as_equivalent() -> None:
         rules=[
             Rule(
                 name="raw_set_container",
+                condition=OfExpression("any", ["$a", "$b"]),
+            ),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    assert result.old_ast_hash == result.new_ast_hash
+    assert not result.has_changes
+    assert result.differences == []
+
+
+def test_ast_diff_treats_ast_string_set_as_equivalent_to_raw_string_set() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="ast_set_container",
+                condition=OfExpression(
+                    "any",
+                    ParenthesesExpression(
+                        SetExpression([StringLiteral("$b"), StringLiteral("$a")])
+                    ),
+                ),
+            ),
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="ast_set_container",
                 condition=OfExpression("any", ["$a", "$b"]),
             ),
         ],
