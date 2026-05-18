@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from lsprotocol.types import Position, Range
 
+from yaraast.lexer.lexer_tables import KEYWORDS
 from yaraast.lsp.semantic_tokens import TOKEN_TYPES, SemanticTokensProvider
+from yaraast.lsp.semantic_tokens_helpers import map_token_type
 
 
 def test_semantic_tokens_range_returns_tokens_within_requested_window() -> None:
@@ -51,6 +53,14 @@ def test_semantic_tokens_range_excludes_tokens_outside_nonempty_range() -> None:
     variable_index = TOKEN_TYPES.index("variable")
 
     assert tokens.data == [0, 6, len("sample"), variable_index, 0]
+
+
+def test_semantic_token_mapping_covers_all_lexer_keywords() -> None:
+    missing = {
+        keyword for keyword, token_type in KEYWORDS.items() if map_token_type(token_type) is None
+    }
+
+    assert missing == set()
 
 
 def test_semantic_tokens_use_source_width_for_size_suffix_literals() -> None:
