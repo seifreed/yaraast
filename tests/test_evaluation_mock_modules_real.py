@@ -167,6 +167,17 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert m.mean(-1, 1) is YARA_UNDEFINED
     assert m.mean(10, 100) == 255.0
     assert m.deviation(-1, 1, 0.0) is YARA_UNDEFINED
+    with pytest.raises(EvaluationError, match=r"math\.mean\(\) offset and size must be integers"):
+        m.mean(cast(Any, True), 1)
+    with pytest.raises(
+        EvaluationError, match=r"math\.entropy\(\) offset and size must be integers"
+    ):
+        m.entropy(0, cast(Any, False))
+    with pytest.raises(
+        EvaluationError,
+        match=r"math\.deviation\(\) expects a floating-point mean argument",
+    ):
+        m.deviation(0, 1, cast(Any, 0))
     assert m.serial_correlation(0, 0) == -100000.0
     assert m.serial_correlation(0, 1) == -100000.0
     assert m.serial_correlation(0, 10) == -100000.0

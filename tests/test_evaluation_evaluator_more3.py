@@ -251,6 +251,40 @@ def test_math_integer_helpers_reject_boolean_arguments() -> None:
         YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 
+def test_math_region_helpers_reject_boolean_offsets_and_sizes() -> None:
+    for expression in (
+        "math.entropy(true, 1)",
+        "math.entropy(0, true)",
+        "math.mean(true, 1)",
+        "math.mean(0, true)",
+        "math.serial_correlation(true, 1)",
+        "math.serial_correlation(0, true)",
+        "math.monte_carlo_pi(true, 6)",
+        "math.monte_carlo_pi(0, true)",
+        "math.deviation(true, 1, 0.0)",
+        "math.deviation(0, true, 0.0)",
+    ):
+        ast = Parser().parse(
+            f'import "math" rule invalid_region {{ condition: defined {expression} }}'
+        )
+
+        with pytest.raises(EvaluationError, match=r"offset and size must be integers"):
+            YaraEvaluator(data=bytes(range(16))).evaluate_file(ast)
+
+
+def test_math_deviation_rejects_non_float_mean_argument() -> None:
+    for expression in ("math.deviation(0, 1, 0)", 'math.deviation(0, 1, "0")'):
+        ast = Parser().parse(
+            f'import "math" rule invalid_deviation {{ condition: defined {expression} }}'
+        )
+
+        with pytest.raises(
+            EvaluationError,
+            match=r"math\.deviation\(\) expects a floating-point mean argument",
+        ):
+            YaraEvaluator(data=bytes(range(16))).evaluate_file(ast)
+
+
 def test_math_rejects_non_libyara_functions() -> None:
     ast = Parser().parse("""
         import "math"

@@ -34,6 +34,12 @@ def _require_strict_ints(function_name: str, *values: object) -> None:
         raise EvaluationError(msg)
 
 
+def _require_region_bounds(function_name: str, offset: object, size: object) -> None:
+    if not _is_strict_int(offset) or not _is_strict_int(size):
+        msg = f"{function_name}() offset and size must be integers"
+        raise EvaluationError(msg)
+
+
 @dataclass
 class Section:
     """PE/ELF section descriptor."""
@@ -269,7 +275,7 @@ class MockMath:
         return int(value)
 
     def entropy(self, offset: int, size: int) -> float | YaraUndefinedValue:
-        region = self._get_region(offset, size, min_size=0)
+        region = self._get_region("math.entropy", offset, size, min_size=0)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         if not region:
@@ -289,14 +295,17 @@ class MockMath:
 
     def mean(self, offset: int, size: int) -> float | YaraUndefinedValue:
         """Calculate mean byte value of data region."""
-        region = self._get_region(offset, size, min_size=1)
+        region = self._get_region("math.mean", offset, size, min_size=1)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         return sum(region) / len(region)
 
     def deviation(self, offset: int, size: int, mean_val: float) -> float | YaraUndefinedValue:
         """Calculate standard deviation from mean."""
-        region = self._get_region(offset, size, min_size=1)
+        if not isinstance(mean_val, float):
+            msg = "math.deviation() expects a floating-point mean argument"
+            raise EvaluationError(msg)
+        region = self._get_region("math.deviation", offset, size, min_size=1)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         variance = sum((b - mean_val) ** 2 for b in region) / len(region)
@@ -304,7 +313,7 @@ class MockMath:
 
     def serial_correlation(self, offset: int, size: int) -> float | YaraUndefinedValue:
         """Calculate serial correlation of data region."""
-        region = self._get_region(offset, size, min_size=0)
+        region = self._get_region("math.serial_correlation", offset, size, min_size=0)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         n = len(region)
@@ -317,7 +326,7 @@ class MockMath:
 
     def monte_carlo_pi(self, offset: int, size: int) -> float | YaraUndefinedValue:
         """Estimate deviation from pi using Monte Carlo method."""
-        region = self._get_region(offset, size, min_size=6)
+        region = self._get_region("math.monte_carlo_pi", offset, size, min_size=6)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         n_points = len(region) // 6
@@ -331,7 +340,15 @@ class MockMath:
         pi_estimate = 4.0 * inside / n_points
         return abs(pi_estimate - math.pi) / math.pi
 
-    def _get_region(self, offset: int, size: int, *, min_size: int) -> bytes | YaraUndefinedValue:
+    def _get_region(
+        self,
+        function_name: str,
+        offset: int,
+        size: int,
+        *,
+        min_size: int,
+    ) -> bytes | YaraUndefinedValue:
+        _require_region_bounds(function_name, offset, size)
         if offset < 0 or offset >= len(self.data) or size < min_size:
             return YARA_UNDEFINED
         region = self.data[offset : min(offset + size, len(self.data))]
