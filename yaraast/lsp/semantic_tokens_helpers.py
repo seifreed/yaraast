@@ -72,6 +72,13 @@ def map_token_type(token_type: TokenType) -> str | None:
     return TOKEN_TYPE_MAPPING.get(token_type)
 
 
+def token_source_length(token) -> int:
+    length = getattr(token, "length", 0) or 0
+    if length > 1:
+        return length
+    return len(str(token.value))
+
+
 def encode_tokens(tokens, map_type, token_types: list[str]) -> list[int]:
     """Encode lexer tokens into LSP semantic token delta format."""
     tokens_data: list[int] = []
@@ -86,7 +93,7 @@ def encode_tokens(tokens, map_type, token_types: list[str]) -> list[int]:
             continue
         delta_line = token.line - 1 - prev_line
         delta_char = token.column if delta_line > 0 else token.column - prev_char
-        length = len(str(token.value))
+        length = token_source_length(token)
         token_type_idx = token_types.index(semantic_type)
         tokens_data.extend([delta_line, delta_char, length, token_type_idx, 0])
         prev_line = token.line - 1
@@ -105,7 +112,7 @@ def encode_tokens_in_range(tokens, range_: Range, map_type, token_types: list[st
             break
 
         token_line = token.line - 1
-        token_end = token.column + len(str(token.value))
+        token_end = token.column + token_source_length(token)
         if token_line < range_.start.line or token_line > range_.end.line:
             continue
         if token_line == range_.start.line and token_end < range_.start.character:
@@ -118,7 +125,7 @@ def encode_tokens_in_range(tokens, range_: Range, map_type, token_types: list[st
             continue
         delta_line = token_line - prev_line
         delta_char = token.column if delta_line > 0 else token.column - prev_char
-        length = len(str(token.value))
+        length = token_source_length(token)
         token_type_idx = token_types.index(semantic_type)
         tokens_data.extend([delta_line, delta_char, length, token_type_idx, 0])
         prev_line = token_line
