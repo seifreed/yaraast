@@ -99,6 +99,22 @@ class Section:
     def full_name(self) -> str:
         return self.name
 
+    @property
+    def address(self) -> int:
+        return self.virtual_address
+
+    @property
+    def size(self) -> int:
+        return self.virtual_size
+
+    @property
+    def offset(self) -> int:
+        return self.raw_data_offset
+
+    @property
+    def flags(self) -> int:
+        return self.characteristics
+
 
 # ---------------------------------------------------------------------------
 # PE module — parses real MZ/PE headers
@@ -348,8 +364,15 @@ class MockELF:
         self.type = YARA_UNDEFINED
         self.machine = YARA_UNDEFINED
         self.entry_point = YARA_UNDEFINED
+        self.sh_offset = YARA_UNDEFINED
+        self.sh_entry_size = YARA_UNDEFINED
+        self.ph_offset = YARA_UNDEFINED
+        self.ph_entry_size = YARA_UNDEFINED
         self.sections: list[Section] = []
-        self.segments: list[dict] = []
+        self.segments: list[dict[str, int]] = []
+        self.symtab: list[dict[str, int | str]] = []
+        self.dynsym: list[dict[str, int | str]] = []
+        self.dynamic: list[dict[str, int]] = []
         self.number_of_sections = YARA_UNDEFINED
         self.number_of_segments = YARA_UNDEFINED
 
@@ -370,12 +393,18 @@ class MockELF:
         self.type = struct.unpack(f"{endian}H", self.data[16:18])[0]
         self.machine = struct.unpack(f"{endian}H", self.data[18:20])[0]
         if elf_class == 1:
+            self.entry_point = struct.unpack(f"{endian}I", self.data[24:28])[0]
+            program_header_offset = struct.unpack(f"{endian}I", self.data[28:32])[0]
             section_header_offset = struct.unpack(f"{endian}I", self.data[32:36])[0]
+            program_header_size = struct.unpack(f"{endian}H", self.data[42:44])[0]
             program_header_count = struct.unpack(f"{endian}H", self.data[44:46])[0]
             section_header_size = struct.unpack(f"{endian}H", self.data[46:48])[0]
             section_header_count = struct.unpack(f"{endian}H", self.data[48:50])[0]
         else:
+            self.entry_point = struct.unpack(f"{endian}Q", self.data[24:32])[0]
+            program_header_offset = struct.unpack(f"{endian}Q", self.data[32:40])[0]
             section_header_offset = struct.unpack(f"{endian}Q", self.data[40:48])[0]
+            program_header_size = struct.unpack(f"{endian}H", self.data[54:56])[0]
             program_header_count = struct.unpack(f"{endian}H", self.data[56:58])[0]
             section_header_size = struct.unpack(f"{endian}H", self.data[58:60])[0]
             section_header_count = struct.unpack(f"{endian}H", self.data[60:62])[0]
@@ -388,10 +417,118 @@ class MockELF:
         ):
             self.type = YARA_UNDEFINED
             self.machine = YARA_UNDEFINED
+            self.entry_point = YARA_UNDEFINED
             return
 
+        self.sh_offset = section_header_offset
+        self.sh_entry_size = section_header_size
+        self.ph_offset = program_header_offset
+        self.ph_entry_size = program_header_size
         self.number_of_sections = section_header_count
         self.number_of_segments = program_header_count
+        self._parse_section_headers(
+            endian,
+            elf_class,
+            section_header_offset,
+            section_header_size,
+            section_header_count,
+        )
+        self._parse_program_headers(
+            endian,
+            elf_class,
+            program_header_offset,
+            program_header_size,
+            program_header_count,
+        )
+
+    def _parse_section_headers(
+        self,
+        endian: str,
+        elf_class: int,
+        table_offset: int,
+        entry_size: int,
+        count: int,
+    ) -> None:
+        minimum_entry_size = 40 if elf_class == 1 else 64
+        if entry_size < minimum_entry_size:
+            return
+
+        for index in range(count):
+            offset = table_offset + (index * entry_size)
+            entry = self.data[offset : offset + entry_size]
+            if len(entry) < minimum_entry_size:
+                break
+            section_type = struct.unpack(f"{endian}I", entry[4:8])[0]
+            if elf_class == 1:
+                flags = struct.unpack(f"{endian}I", entry[8:12])[0]
+                address = struct.unpack(f"{endian}I", entry[12:16])[0]
+                raw_offset = struct.unpack(f"{endian}I", entry[16:20])[0]
+                size = struct.unpack(f"{endian}I", entry[20:24])[0]
+            else:
+                flags = struct.unpack(f"{endian}Q", entry[8:16])[0]
+                address = struct.unpack(f"{endian}Q", entry[16:24])[0]
+                raw_offset = struct.unpack(f"{endian}Q", entry[24:32])[0]
+                size = struct.unpack(f"{endian}Q", entry[32:40])[0]
+            self.sections.append(
+                Section(
+                    name="",
+                    virtual_address=address,
+                    virtual_size=size,
+                    raw_data_offset=raw_offset,
+                    raw_data_size=size,
+                    characteristics=flags,
+                    type=section_type,
+                )
+            )
+
+    def _parse_program_headers(
+        self,
+        endian: str,
+        elf_class: int,
+        table_offset: int,
+        entry_size: int,
+        count: int,
+    ) -> None:
+        if table_offset == 0 or count == 0:
+            return
+        minimum_entry_size = 32 if elf_class == 1 else 56
+        if entry_size < minimum_entry_size:
+            return
+        if table_offset + (entry_size * count) > len(self.data):
+            return
+
+        for index in range(count):
+            offset = table_offset + (index * entry_size)
+            entry = self.data[offset : offset + entry_size]
+            segment_type = struct.unpack(f"{endian}I", entry[0:4])[0]
+            if elf_class == 1:
+                segment_offset = struct.unpack(f"{endian}I", entry[4:8])[0]
+                virtual_address = struct.unpack(f"{endian}I", entry[8:12])[0]
+                physical_address = struct.unpack(f"{endian}I", entry[12:16])[0]
+                file_size = struct.unpack(f"{endian}I", entry[16:20])[0]
+                memory_size = struct.unpack(f"{endian}I", entry[20:24])[0]
+                flags = struct.unpack(f"{endian}I", entry[24:28])[0]
+                alignment = struct.unpack(f"{endian}I", entry[28:32])[0]
+            else:
+                flags = struct.unpack(f"{endian}I", entry[4:8])[0]
+                segment_offset = struct.unpack(f"{endian}Q", entry[8:16])[0]
+                virtual_address = struct.unpack(f"{endian}Q", entry[16:24])[0]
+                physical_address = struct.unpack(f"{endian}Q", entry[24:32])[0]
+                file_size = struct.unpack(f"{endian}Q", entry[32:40])[0]
+                memory_size = struct.unpack(f"{endian}Q", entry[40:48])[0]
+                alignment = struct.unpack(f"{endian}Q", entry[48:56])[0]
+            self.segments.append(
+                {
+                    "type": segment_type,
+                    "flags": flags,
+                    "offset": segment_offset,
+                    "virtual_address": virtual_address,
+                    "physical_address": physical_address,
+                    "file_size": file_size,
+                    "memory_size": memory_size,
+                    "alignment": alignment,
+                }
+            )
 
 
 # ---------------------------------------------------------------------------

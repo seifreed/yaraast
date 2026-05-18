@@ -190,8 +190,41 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     elf = MockELF(elf_data)
     assert elf.type == 3
     assert elf.machine == 0x3E
+    assert elf.entry_point == 0
+    assert elf.sh_offset == 52
+    assert elf.sh_entry_size == 40
+    assert elf.ph_offset == 0
+    assert elf.ph_entry_size == 32
     assert elf.number_of_sections == 1
     assert elf.number_of_segments == 0
+    assert len(elf.sections) == 1
+    assert elf.sections[0].type == 0
+    assert elf.sections[0].flags == 0
+    assert elf.sections[0].address == 0
+    assert elf.sections[0].size == 0
+    assert elf.sections[0].offset == 0
+    assert elf.segments == []
+    assert elf.symtab == []
+    assert elf.dynsym == []
+    assert elf.dynamic == []
+
+    ast = Parser().parse("""
+        import "elf"
+        rule elf_header_fields {
+            condition:
+                elf.sh_offset == 52 and
+                elf.sh_entry_size == 40 and
+                elf.ph_offset == 0 and
+                elf.ph_entry_size == 32 and
+                elf.sections[0].type == 0 and
+                elf.sections[0].flags == 0 and
+                elf.sections[0].address == 0 and
+                elf.sections[0].size == 0 and
+                elf.sections[0].offset == 0
+        }
+        """)
+
+    assert YaraEvaluator(data=elf_data).evaluate_file(ast) == {"elf_header_fields": True}
 
     m = MockMath(b"\x00" * 10 + b"\xff" * 10)
     assert m.to_string(10) == "10"
