@@ -129,6 +129,23 @@ def test_hash_module_valid_region_can_extend_to_file_end() -> None:
     assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"trailing_hash_region": True}
 
 
+@pytest.mark.parametrize(
+    "call",
+    [
+        "hash.md5()",
+        "hash.sha1(0)",
+        "hash.sha256()",
+        "hash.checksum32(0)",
+        "hash.crc32()",
+    ],
+)
+def test_hash_module_requires_explicit_region_arguments(call: str) -> None:
+    ast = Parser().parse(f'import "hash" rule invalid_hash_call {{ condition: defined {call} }}')
+
+    with pytest.raises(EvaluationError, match=r"hash\.[a-z0-9]+\(\) expects exactly 2 arguments"):
+        YaraEvaluator(data=b"abc").evaluate_file(ast)
+
+
 def test_math_module_invalid_regions_evaluate_as_undefined() -> None:
     ast = Parser().parse("""
         import "math"
