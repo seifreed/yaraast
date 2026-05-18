@@ -15,9 +15,10 @@ def test_comment_preserving_lexer_helpers_and_preserve_toggle() -> None:
     lexer = CommentPreservingLexer("// first\nrule a { /* block */ condition: true }")
     tokens = lexer.tokenize()
 
-    comments = [t for t in tokens if t.type == TokenType.COMMENT]
-    assert len(comments) == 2
-    assert lexer.get_comments() == comments
+    original_comments = [t for t in tokens if t.type == TokenType.COMMENT]
+    assert len(original_comments) == 2
+    assert lexer.get_comments() == original_comments
+    comments_snapshot = lexer.get_comments()
 
     line_comment = CommentPreservingLexer("// line")
     token = line_comment._read_line_comment()
@@ -53,6 +54,7 @@ def test_comment_preserving_lexer_helpers_and_preserve_toggle() -> None:
 
     lexer.clear_comments()
     assert lexer.get_comments() == []
+    assert comments_snapshot == original_comments
 
 
 def test_dependency_graph_transitive_queries_cycles_and_export() -> None:

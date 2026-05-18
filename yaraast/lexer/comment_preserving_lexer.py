@@ -192,7 +192,7 @@ class CommentPreservingLexer(Lexer):
 
     def get_comments(self) -> list[Token]:
         """Get all collected comments."""
-        return self.comments
+        return list(self.comments)
 
     def set_preserve_comments(self, preserve: bool) -> None:
         """Set whether to preserve comments."""
