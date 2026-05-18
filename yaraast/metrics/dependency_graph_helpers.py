@@ -13,6 +13,8 @@ def reset_graph_state(generator) -> None:
     generator.rules.clear()
     generator.string_references.clear()
     generator.module_references.clear()
+    generator._current_rule = None
+    generator._local_scopes.clear()
 
 
 def render_graph(dot, output_path: str | None, format: str) -> str:

@@ -140,6 +140,34 @@ def test_dependency_graph_generator_traverses_yarax_conditions() -> None:
     assert "pe" in generator.module_references["yarax_modules"]
 
 
+def test_dependency_graph_generator_respects_yarax_module_name_shadowing() -> None:
+    ast = parse_yara_source("""
+        import "pe"
+
+        rule shadowed_module {
+            condition:
+                with pe = {"number_of_sections": 1}: pe.number_of_sections > 0
+        }
+
+        rule shadowed_module_function {
+            condition:
+                with pe = 1: pe.is_pe()
+        }
+
+        rule declaration_value_uses_module {
+            condition:
+                with local = pe.number_of_sections: local > 0
+        }
+        """)
+
+    generator = DependencyGraphGenerator()
+    generator.visit(ast)
+
+    assert "pe" not in generator.module_references["shadowed_module"]
+    assert "pe" not in generator.module_references["shadowed_module_function"]
+    assert "pe" in generator.module_references["declaration_value_uses_module"]
+
+
 def test_dependency_graph_cycles_and_order(tmp_path: Path) -> None:
     graph = DependencyGraph()
     graph.add_edge("a", "b")

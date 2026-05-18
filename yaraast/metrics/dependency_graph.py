@@ -48,6 +48,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
             set,
         )  # rule -> modules
         self._current_rule: str | None = None
+        self._local_scopes: list[set[str]] = []
 
     def generate_graph(
         self,
@@ -127,27 +128,105 @@ class DependencyGraphGenerator(MetricsVisitorBase):
             self.string_references[node.name].add(string_def.identifier)
 
         # Visit condition to find module usage
-        if node.condition:
-            self.visit(node.condition)
+        try:
+            if node.condition:
+                self.visit(node.condition)
+        finally:
+            self._current_rule = None
+
+    def _module_name_for_object(self, value) -> str | None:
+        if hasattr(value, "module"):
+            return value.module
+        if hasattr(value, "name"):
+            return value.name
+        return None
+
+    def _add_module_reference(self, module_name: str) -> None:
+        if self._current_rule and not self._is_local(module_name):
+            self.module_references[self._current_rule].add(module_name)
+
+    def _is_local(self, name: str) -> bool:
+        return any(name in scope for scope in reversed(self._local_scopes))
+
+    def _push_local_scope(self, *names: str) -> None:
+        scope: set[str] = set()
+        for name in names:
+            scope.update(self._local_name_variants(name))
+        self._local_scopes.append(scope)
+
+    def _pop_local_scope(self) -> None:
+        self._local_scopes.pop()
+
+    def _define_local(self, name: str) -> None:
+        if self._local_scopes:
+            self._local_scopes[-1].update(self._local_name_variants(name))
+
+    @staticmethod
+    def _local_name_variants(name: str) -> set[str]:
+        names = [part.strip() for part in name.split(",")]
+        return {
+            variant
+            for local_name in names
+            if local_name
+            for variant in (local_name, local_name.lstrip("$"))
+        }
+
+    def visit_with_statement(self, node) -> None:
+        self._push_local_scope()
+        try:
+            for declaration in node.declarations:
+                self.visit(declaration)
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
+
+    def visit_with_declaration(self, node) -> None:
+        self._visit_ast_value(node.value)
+        self._define_local(node.identifier)
+
+    def visit_array_comprehension(self, node) -> None:
+        self._visit_ast_value(node.iterable)
+        self._push_local_scope(node.variable)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_dict_comprehension(self, node) -> None:
+        self._visit_ast_value(node.iterable)
+        names = [node.key_variable]
+        if node.value_variable:
+            names.append(node.value_variable)
+        self._push_local_scope(*names)
+        try:
+            self._visit_ast_value(node.condition)
+            self._visit_ast_value(node.key_expression)
+            self._visit_ast_value(node.value_expression)
+        finally:
+            self._pop_local_scope()
+
+    def visit_lambda_expression(self, node) -> None:
+        self._push_local_scope(*node.parameters)
+        try:
+            self._visit_ast_value(node.body)
+        finally:
+            self._pop_local_scope()
 
     def visit_member_access(self, node) -> None:
         """Track module usage in member access."""
-        if self._current_rule and hasattr(node.object, "name"):
-            module_name = node.object.name
-            if module_name in self.imports:
-                self.module_references[self._current_rule].add(module_name)
+        module_name = self._module_name_for_object(node.object)
+        if self._current_rule and module_name in self.imports and not self._is_local(module_name):
+            self.module_references[self._current_rule].add(module_name)
 
         self.visit(node.object)
 
     def visit_function_call(self, node) -> None:
         """Track module function calls."""
-        if self._current_rule:
-            # Check if function call is from a module
-            function_name = node.function
-            for module in self.imports:
-                if function_name.startswith(f"{module}."):
-                    self.module_references[self._current_rule].add(module)
-                    break
+        function_name = node.function
+        module_name = function_name.split(".", 1)[0] if "." in function_name else None
+        if module_name in self.imports and not self._is_local(module_name):
+            self._add_module_reference(module_name)
 
         for arg in node.arguments:
             self.visit(arg)
@@ -177,7 +256,11 @@ class DependencyGraphGenerator(MetricsVisitorBase):
     def visit_for_expression(self, node) -> None:
         self._visit_ast_value(node.quantifier)
         self.visit(node.iterable)
-        self.visit(node.body)
+        self._push_local_scope(node.variable)
+        try:
+            self.visit(node.body)
+        finally:
+            self._pop_local_scope()
 
     def visit_for_of_expression(self, node) -> None:
         self._visit_ast_value(node.quantifier)
@@ -197,8 +280,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         self._visit_ast_value(node.string_set)
 
     def visit_module_reference(self, node) -> None:
-        if self._current_rule:
-            self.module_references[self._current_rule].add(node.module)
+        self._add_module_reference(node.module)
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)
