@@ -47,6 +47,18 @@ def find_rule_line(lines: list[str], rule_name: str) -> int:
     return -1
 
 
+def _previous_significant_char(line: str, index: int) -> str | None:
+    for char in reversed(line[:index]):
+        if not char.isspace():
+            return char
+    return None
+
+
+def _starts_regex_literal(line: str, index: int) -> bool:
+    previous = _previous_significant_char(line, index)
+    return previous is None or previous in "([{,=!:<>~&|?+-*"
+
+
 def find_rule_end(lines: list[str], start_line: int) -> int:
     brace_depth = 0
     found_open = False
@@ -94,7 +106,10 @@ def find_rule_end(lines: list[str], start_line: int) -> int:
                 continue
 
             if not in_string and char == "/":
-                in_regex = not in_regex
+                if in_regex:
+                    in_regex = False
+                elif _starts_regex_literal(line, char_idx):
+                    in_regex = True
                 char_idx += 1
                 continue
 

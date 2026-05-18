@@ -514,6 +514,13 @@ rule demo {
     assert actions._find_rule_end(["rule demo {", '  $a = "{"', "}"], 0) == 2
     assert actions._find_rule_end(["rule demo {", "  /* x } */", "}"], 0) == 2
     assert actions._find_rule_end(["rule demo {", "  /a\\/b/", "}"], 0) == 2
+    assert (
+        actions._find_rule_end(
+            ["rule demo {", "  condition:", "    (4 / 2) == 2", "}", "rule next { }"],
+            0,
+        )
+        == 3
+    )
     assert actions._find_section_line(text.split("\n"), "strings:", 0) == 1
     assert actions._find_section_line(text.split("\n"), "meta:", 0) == -1
     assert actions._modifier_start('"abc" wide nocase') is not None
