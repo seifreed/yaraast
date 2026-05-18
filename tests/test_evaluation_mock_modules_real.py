@@ -145,6 +145,8 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert m.to_string(10) == "10"
     assert m.to_string(10, 2) is YARA_UNDEFINED
     assert m.to_string(10, 8) == "12"
+    assert m.to_string(-10, 16) == "fffffffffffffff6"
+    assert m.to_string(-10, 8) == "1777777777777777777766"
     with pytest.raises(EvaluationError, match=r"math\.to_string\(\) expects integer arguments"):
         m.to_string(cast(Any, True))
     with pytest.raises(EvaluationError, match=r"math\.to_string\(\) expects integer arguments"):

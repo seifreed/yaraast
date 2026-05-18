@@ -214,6 +214,8 @@ def test_math_to_string_matches_libyara_supported_bases() -> None:
                 math.to_string(10, 10) == "10" and
                 math.to_string(10, 16) == "a" and
                 math.to_string(10, 8) == "12" and
+                math.to_string(-10, 16) == "fffffffffffffff6" and
+                math.to_string(-10, 8) == "1777777777777777777766" and
                 not defined math.to_string(10, 2)
         }
         """)

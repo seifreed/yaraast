@@ -17,10 +17,15 @@ from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED, YaraUndefinedValue
 
 SERIAL_CORRELATION_DEGENERATE = -100000.0
+UINT64_MASK = (1 << 64) - 1
 
 
 def _is_strict_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _unsigned_for_non_decimal_base(value: int) -> int:
+    return value & UINT64_MASK if value < 0 else value
 
 
 @dataclass
@@ -245,9 +250,9 @@ class MockMath:
         if base not in {8, 10, 16}:
             return YARA_UNDEFINED
         if base == 16:
-            return hex(n)[2:]
+            return f"{_unsigned_for_non_decimal_base(n):x}"
         if base == 8:
-            return oct(n)[2:]
+            return f"{_unsigned_for_non_decimal_base(n):o}"
         return str(n)
 
     def to_number(self, value: bool) -> int:
