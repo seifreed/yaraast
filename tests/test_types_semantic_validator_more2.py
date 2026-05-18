@@ -25,7 +25,7 @@ from yaraast.types.semantic_validator import (
     validate_yara_file,
     validate_yara_rule,
 )
-from yaraast.types.type_system import TypeEnvironment
+from yaraast.types.type_system import TypeEnvironment, TypeValidator
 
 
 def _rule(name: str = "r", with_condition: bool = True) -> Rule:
@@ -199,6 +199,25 @@ def test_validate_file_accepts_self_and_previous_rule_references() -> None:
 
     assert result.is_valid is True
     assert result.errors == []
+
+
+def test_validate_file_rejects_unknown_imported_module() -> None:
+    ast = Parser().parse("""
+        import "nosuch"
+
+        rule imports_unknown {
+            condition:
+                true
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+    is_valid, type_errors = TypeValidator.validate(ast)
+
+    assert result.is_valid is False
+    assert any("Unknown module: nosuch" in error.message for error in result.errors)
+    assert is_valid is False
+    assert "Unknown module: nosuch" in type_errors
 
 
 def test_validate_expression_and_convenience_functions() -> None:

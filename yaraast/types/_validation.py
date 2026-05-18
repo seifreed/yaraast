@@ -5,6 +5,7 @@ from __future__ import annotations
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Import, Rule
+from yaraast.types.module_loader import ModuleLoader
 from yaraast.visitor import BaseVisitor
 
 from ._inference import TypeInference
@@ -81,6 +82,10 @@ class TypeChecker(BaseVisitor[None]):
             self.visit(rule)
 
     def visit_import(self, node: Import) -> None:
+        if ModuleLoader().get_module(node.module) is None:
+            self.errors.append(f"Unknown module: {node.module}")
+            return
+
         # Use alias if provided, otherwise use module name
         name = node.alias if node.alias else node.module
         self.env.add_module(name, node.module)
