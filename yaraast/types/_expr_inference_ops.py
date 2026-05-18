@@ -134,6 +134,10 @@ def _infer_comparison_op(ctx, operator, left_type, right_type):
         ctx.errors.append(f"String identifiers cannot be used with '{operator}' comparisons")
         return BooleanType()
 
+    if isinstance(left_type, BooleanType) or isinstance(right_type, BooleanType):
+        ctx.errors.append(f"Boolean operands cannot be used with '{operator}' comparisons")
+        return BooleanType()
+
     if (left_type.is_numeric() and right_type.is_numeric()) or left_type.is_compatible_with(
         right_type
     ):

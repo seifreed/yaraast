@@ -441,6 +441,30 @@ class TestSemanticValidator:
             for message in messages
         )
 
+    def test_validate_rejects_boolean_comparison_operands(self) -> None:
+        ast = Parser().parse("""
+            rule boolean_equality {
+                condition:
+                    true == true
+            }
+
+            rule relational_result_equality {
+                condition:
+                    (1 < 2) == true
+            }
+
+            rule boolean_inequality {
+                condition:
+                    false != true
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert sum("Boolean operands cannot be used with" in message for message in messages) == 3
+
     def test_validate_rejects_integer_division_and_modulo_by_zero(self) -> None:
         ast = Parser().parse(r"""
             rule string_count_division_by_zero {
