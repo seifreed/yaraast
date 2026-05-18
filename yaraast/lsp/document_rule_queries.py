@@ -8,11 +8,20 @@ if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
 
 
+def _copy_rule_info(info: dict[str, Any]) -> dict[str, Any]:
+    copied = dict(info)
+    for key in ("modifiers", "tags", "meta"):
+        value = copied.get(key)
+        if isinstance(value, list):
+            copied[key] = list(value)
+    return copied
+
+
 def get_rule_info(ctx: DocumentContext, rule_name: str) -> dict[str, Any] | None:
     cache_key = f"rule_info:{rule_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return cached
+        return _copy_rule_info(cached)
     rule = ctx.get_rule(rule_name)
     if rule is None:
         return None
@@ -37,14 +46,14 @@ def get_rule_info(ctx: DocumentContext, rule_name: str) -> dict[str, Any] | None
         "has_options": getattr(rule, "options", None) is not None,
     }
     ctx.set_cached(cache_key, result)
-    return result
+    return _copy_rule_info(result)
 
 
 def get_rule_meta_items(ctx: DocumentContext, rule_name: str) -> list[tuple[str, Any]]:
     cache_key = f"rule_meta_items:{rule_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return cached
+        return list(cached)
     rule = ctx.get_rule(rule_name)
     if rule is None:
         return []
@@ -56,14 +65,14 @@ def get_rule_meta_items(ctx: DocumentContext, rule_name: str) -> list[tuple[str,
     else:
         result = []
     ctx.set_cached(cache_key, result)
-    return result
+    return list(result)
 
 
 def get_rule_string_identifiers(ctx: DocumentContext, rule_name: str) -> list[str]:
     cache_key = f"rule_string_identifiers:{rule_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return cached
+        return list(cached)
     rule = ctx.get_rule(rule_name)
     if rule is None:
         return []
@@ -73,14 +82,14 @@ def get_rule_string_identifiers(ctx: DocumentContext, rule_name: str) -> list[st
         if getattr(string_def, "identifier", None)
     ]
     ctx.set_cached(cache_key, result)
-    return result
+    return list(result)
 
 
 def get_rule_sections(ctx: DocumentContext, rule_name: str) -> list[str]:
     cache_key = f"rule_sections:{rule_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return cached
+        return list(cached)
     sections: list[str] = []
     seen: set[str] = set()
     for symbol in ctx._symbols_of_kind("section"):
@@ -95,4 +104,4 @@ def get_rule_sections(ctx: DocumentContext, rule_name: str) -> list[str]:
     }
     sections.sort(key=lambda name: (order.get(name, 99), name))
     ctx.set_cached(cache_key, sections)
-    return sections
+    return list(sections)

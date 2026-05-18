@@ -15,6 +15,14 @@ if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
 
 
+def _copy_info_dict(info: dict[str, Any]) -> dict[str, Any]:
+    copied = dict(info)
+    for key, value in copied.items():
+        if isinstance(value, list):
+            copied[key] = list(value)
+    return copied
+
+
 def get_meta_value(ctx: DocumentContext, key: str) -> Any | None:
     cache_key = f"meta_value:{key}"
     cached = ctx.get_cached(cache_key)
@@ -63,7 +71,7 @@ def get_string_definition_info(ctx: DocumentContext, identifier: str) -> dict[st
     cache_key = f"string_definition_info:{identifier}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return cached
+        return _copy_info_dict(cached)
     string_data = ctx.get_string_definition_node(identifier)
     if string_data is None:
         return None
@@ -85,14 +93,14 @@ def get_string_definition_info(ctx: DocumentContext, identifier: str) -> dict[st
         modifiers = [m if isinstance(m, str) else str(m.name) for m in string_def.modifiers]
     result = {"identifier": identifier, "type": string_type, "value": value, "modifiers": modifiers}
     ctx.set_cached(cache_key, result)
-    return result
+    return _copy_info_dict(result)
 
 
 def get_module_member_info(ctx: DocumentContext, qualified_name: str) -> dict[str, Any] | None:
     cache_key = f"module_member_info:{qualified_name}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return cached
+        return _copy_info_dict(cached)
     parts = qualified_name.split(".")
     if len(parts) != 2:
         return None
@@ -111,7 +119,7 @@ def get_module_member_info(ctx: DocumentContext, qualified_name: str) -> dict[st
             "description": getattr(func_def, "description", None),
         }
         ctx.set_cached(cache_key, result)
-        return result
+        return _copy_info_dict(result)
     fields = getattr(module_def, "fields", None) or {}
     if member_name in fields:
         field_def = fields[member_name]
@@ -123,7 +131,7 @@ def get_module_member_info(ctx: DocumentContext, qualified_name: str) -> dict[st
             "description": getattr(field_def, "description", None),
         }
         ctx.set_cached(cache_key, result)
-        return result
+        return _copy_info_dict(result)
     return None
 
 
@@ -131,7 +139,7 @@ def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
     cache_key = f"include_info:{include_path}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return cached
+        return dict(cached)
     resolved_path: Path | None = None
     doc_path = ctx.path
     if doc_path is not None:
@@ -140,7 +148,7 @@ def get_include_info(ctx: DocumentContext, include_path: str) -> dict[str, Any]:
             resolved_path = candidate.resolve()
     result = {"path": include_path, "resolved_path": str(resolved_path) if resolved_path else None}
     ctx.set_cached(cache_key, result)
-    return result
+    return dict(result)
 
 
 def get_include_target_uri(ctx: DocumentContext, include_path: str) -> str | None:

@@ -178,7 +178,7 @@ def get_rule_link_records_for_document(
     cache_key = f"rule_link_records:{runtime.cache.generation}:{document_uri}"
     cached = doc.get_cached(cache_key)
     if cached is not None:
-        return cached
+        return list(cached)
     links: list[RuleLinkRecord] = []
     for rule_name in workspace_rule_names:
         if not rule_name:
@@ -202,7 +202,7 @@ def get_rule_link_records_for_document(
                 )
             )
     doc.set_cached(cache_key, links)
-    return links
+    return list(links)
 
 
 def rename_rule(runtime: LspRuntime, rule_name: str, new_name: str) -> dict[str, list[TextEdit]]:

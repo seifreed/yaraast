@@ -392,8 +392,29 @@ rule sample {
 
     info_first = doc.get_rule_info("sample")
     info_second = doc.get_rule_info("sample")
-    assert info_first is info_second
+    assert info_first == info_second
+    assert info_first is not None
+    info_first["name"] = "corrupted"
+    assert doc.get_rule_info("sample") == info_second
+
+    meta_items = doc.get_rule_meta_items("sample")
+    assert meta_items == [("author", "me")]
+    meta_items.clear()
     assert doc.get_rule_meta_items("sample") == [("author", "me")]
+
+    string_ids = doc.get_rule_string_identifiers("sample")
+    assert string_ids == ["$a"]
+    string_ids.clear()
+    assert doc.get_rule_string_identifiers("sample") == ["$a"]
+
+    sections = doc.get_rule_sections("sample")
+    assert sections == ["meta", "strings", "condition"]
+    sections.clear()
+    assert doc.get_rule_sections("sample") == ["meta", "strings", "condition"]
+
+    string_info = _string_info(doc, "$a")
+    assert string_info["value"] == "x"
+    string_info["value"] = "corrupted"
     assert _string_info(doc, "$a")["value"] == "x"
 
     doc.update(text_v2, version=2)
@@ -587,6 +608,10 @@ def test_document_context_exposes_module_member_info_for_imported_modules() -> N
     assert info["module"] == "pe"
     assert info["member"] == "imphash"
     assert info["kind"] == "function"
+    info["member"] = "corrupted"
+    cached_info = doc.get_module_member_info("pe.imphash")
+    assert cached_info is not None
+    assert cached_info["member"] == "imphash"
 
 
 def test_document_context_exposes_include_info(tmp_path: Path) -> None:
@@ -604,6 +629,8 @@ def test_document_context_exposes_include_info(tmp_path: Path) -> None:
 
     assert info["path"] == "common.yar"
     assert info["resolved_path"] == str(include_file.resolve())
+    info["path"] = "corrupted.yar"
+    assert doc.get_include_info("common.yar")["path"] == "common.yar"
 
 
 def test_document_context_exposes_dotted_symbol_at_position() -> None:
@@ -858,14 +885,15 @@ rule sample { condition: true }
 
     first = runtime.get_rule_link_records_for_document(uri)
     second = runtime.get_rule_link_records_for_document(uri)
-    assert first is second
+    assert first == second
     assert len(first) == 1
     assert first[0].rule_name == "target"
+    first.clear()
+    assert runtime.get_rule_link_records_for_document(uri) == second
 
     runtime.update_document(uri, text_v2, version=2)
 
     third = runtime.get_rule_link_records_for_document(uri)
-    assert third is not first
     assert third == []
 
 
