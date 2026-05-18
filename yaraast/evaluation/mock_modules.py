@@ -15,7 +15,11 @@ import time as time_mod
 from typing import Any
 
 from yaraast.errors import EvaluationError
-from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED, YaraUndefinedValue
+from yaraast.evaluation.evaluation_helpers import (
+    YARA_UNDEFINED,
+    YaraUndefinedValue,
+    is_yara_undefined,
+)
 
 SERIAL_CORRELATION_DEGENERATE = -100000.0
 UINT64_MASK = (1 << 64) - 1
@@ -345,6 +349,8 @@ class MockMath:
 
     def deviation(self, offset: int, size: int, mean_val: float) -> float | YaraUndefinedValue:
         """Calculate standard deviation from mean."""
+        if is_yara_undefined(mean_val):
+            return YARA_UNDEFINED
         if not isinstance(mean_val, float):
             msg = "math.deviation() expects a floating-point mean argument"
             raise EvaluationError(msg)
@@ -391,6 +397,8 @@ class MockMath:
         *,
         min_size: int,
     ) -> bytes | YaraUndefinedValue:
+        if is_yara_undefined(offset) or is_yara_undefined(size):
+            return YARA_UNDEFINED
         _require_region_bounds(function_name, offset, size)
         if offset < 0 or offset >= len(self.data) or size < min_size:
             return YARA_UNDEFINED
@@ -485,6 +493,8 @@ class HashModule:
         if offset is self._missing_arg or size is self._missing_arg:
             msg = f"hash.{function_name}() expects exactly 2 arguments"
             raise EvaluationError(msg)
+        if is_yara_undefined(offset) or is_yara_undefined(size):
+            return YARA_UNDEFINED
         if (
             isinstance(offset, bool)
             or isinstance(size, bool)

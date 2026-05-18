@@ -109,6 +109,8 @@ def test_hash_module_invalid_regions_evaluate_as_undefined() -> None:
             condition:
                 hash.md5(-1, 1) == "d41d8cd98f00b204e9800998ecf8427e" or
                 hash.md5(filesize, 0) == "d41d8cd98f00b204e9800998ecf8427e" or
+                hash.md5(uint8(100), 1) == "d41d8cd98f00b204e9800998ecf8427e" or
+                defined hash.md5(uint8(100), 1) or
                 hash.checksum32(-1, 1) == 0 or
                 hash.crc32(-1, 1) != 0 or
                 not hash.crc32(-1, 1)
@@ -155,13 +157,16 @@ def test_math_module_invalid_regions_evaluate_as_undefined() -> None:
                 math.entropy(-1, 1) == 0.0 or
                 math.mean(filesize, 0) == 0.0 or
                 math.deviation(-1, 1, 0.0) == 0.0 or
+                math.deviation(0, filesize, math.mean(0, filesize)) == 0.0 or
+                math.entropy(uint8(100), 1) == 0.0 or
+                defined math.entropy(uint8(100), 1) or
                 math.serial_correlation(0, 1) == 0.0 or
                 math.monte_carlo_pi(0, 5) == 0.0 or
                 not math.entropy(-1, 1)
         }
         """)
 
-    assert YaraEvaluator(data=b"abcdef").evaluate_file(ast) == {"invalid_math_regions": False}
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"invalid_math_regions": False}
 
 
 def test_math_serial_correlation_returns_libyara_sentinel_for_degenerate_regions() -> None:
