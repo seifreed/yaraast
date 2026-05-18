@@ -251,11 +251,11 @@ def test_expr_inference_comparison_and_builtin_function_paths() -> None:
         BinaryExpression(
             left=BooleanLiteral(value=True),
             operator="and",
-            right=IntegerLiteral(value=1),
+            right=StringLiteral(value="x"),
         ),
     )
     assert isinstance(right_bad, BooleanType)
-    assert any("Right operand of 'and' must be boolean" in e for e in inf.errors)
+    assert any("Right operand of 'and' must be truthy" in e for e in inf.errors)
 
 
 def test_expr_inference_validates_module_function_argument_types() -> None:

@@ -311,6 +311,19 @@ class TestFunctionCallValidator:
         assert result.is_valid is False
         assert any("operand of '%' must be integer" in error.message for error in result.errors)
 
+    def test_logical_operators_accept_numeric_truthiness(self) -> None:
+        ast = Parser().parse("""
+            rule numeric_truthiness {
+                condition:
+                    not 0 and 1 and 1.0 and (0.0 or true)
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+        assert result.errors == []
+
     def test_cuckoo_nested_module_functions_validate(self) -> None:
         ast = Parser().parse(r"""
             import "cuckoo"

@@ -1691,7 +1691,7 @@ class TestTypeInferenceEdgeCases:
         env = TypeEnvironment()
         inference = TypeInference(env)
         node = BinaryExpression(
-            left=IntegerLiteral(value=5),
+            left=StringLiteral(value="not truthy"),
             operator="and",
             right=BooleanLiteral(value=True),
         )
@@ -2363,13 +2363,13 @@ class TestTypeInferenceEdgeCases:
         assert "Unknown binary operator" in inference.errors[0]
 
     def test_infer_unary_expression_not_invalid_operand(self) -> None:
-        """Test NOT operator with non-boolean operand."""
+        """Test NOT operator with non-truthy operand."""
         env = TypeEnvironment()
         inference = TypeInference(env)
 
         node = UnaryExpression(
             operator="not",
-            operand=IntegerLiteral(value=5),
+            operand=StringLiteral(value="test"),
         )
         result = inference.infer(node)
         assert isinstance(result, BooleanType)
