@@ -346,6 +346,22 @@ rule sample {
     assert string_symbols[1].range.end.character == 5
 
 
+def test_document_context_returns_line_and_symbol_snapshots() -> None:
+    text = "rule sample { condition: true }\n"
+    doc = DocumentContext("file://sample.yar", text)
+
+    lines = doc.lines
+    symbols = doc.symbols()
+    assert lines
+    assert symbols
+
+    lines.clear()
+    symbols.clear()
+
+    assert doc.lines
+    assert doc.symbols()
+
+
 def test_document_context_caches_structural_helpers_per_revision(tmp_path: Path) -> None:
     doc_path = tmp_path / "doc.yar"
     text_v1 = """

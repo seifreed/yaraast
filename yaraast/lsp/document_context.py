@@ -128,7 +128,7 @@ class DocumentContext:
     def lines(self) -> list[str]:
         if self._lines is None:
             self._lines = self.text.split("\n")
-        return self._lines
+        return list(self._lines)
 
     @property
     def path(self) -> Path | None:
@@ -180,7 +180,7 @@ class DocumentContext:
         return self._parse_error
 
     def symbols(self) -> list[SymbolRecord]:
-        return self._symbol_index.get_symbols(self)
+        return list(self._symbol_index.get_symbols(self))
 
     def _symbols_of_kind(self, kind: str) -> list[SymbolRecord]:
         return self._symbol_index.symbols_of_kind(self, kind)
