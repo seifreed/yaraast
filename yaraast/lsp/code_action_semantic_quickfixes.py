@@ -79,6 +79,24 @@ def _find_diagnostic_call(
     return fallback
 
 
+def _find_diagnostic_occurrence(line: str, needle: str, diagnostic: Diagnostic) -> int:
+    range_start = diagnostic.range.start.character
+    range_end = diagnostic.range.end.character
+    fallback = line.find(needle)
+    if fallback < 0:
+        return -1
+    search_start = fallback
+    while search_start >= 0:
+        start_col = line.find(needle, search_start)
+        if start_col < 0:
+            break
+        end_col = start_col + len(needle)
+        if start_col < range_end and end_col > range_start:
+            return start_col
+        search_start = start_col + len(needle)
+    return fallback
+
+
 def _split_top_level_arguments(args_text: str) -> list[str]:
     parts: list[str] = []
     start = 0
@@ -134,7 +152,7 @@ def create_replace_module_function_actions(
         return actions
     line = lines[line_num]
     needle = f"{module_name}.{function_name}"
-    start_col = line.find(needle)
+    start_col = _find_diagnostic_occurrence(line, needle, diagnostic)
     if start_col < 0:
         return actions
 
@@ -180,7 +198,7 @@ def create_replace_builtin_function_actions(
         return actions
 
     line = lines[line_num]
-    start_col = line.find(function_name)
+    start_col = _find_diagnostic_occurrence(line, function_name, diagnostic)
     if start_col < 0:
         return actions
 

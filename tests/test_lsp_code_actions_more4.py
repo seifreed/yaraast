@@ -310,6 +310,73 @@ rule sample {
     assert "Replace with uint32()" in titles
 
 
+def test_code_action_replace_builtin_targets_diagnostic_occurrence() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        uint33(0) and uint33(1)
+}
+""".lstrip()
+    call_line = text.splitlines()[2]
+    call_start = call_line.rindex("uint33")
+    diag = Diagnostic(
+        range=_range(2, call_start, call_start + len("uint33")),
+        message="Unknown function uint33",
+        data=DiagnosticData(
+            code="semantic.unknown_function",
+            severity="error",
+            error_type="semantic",
+            metadata={"function": "uint33", "suggested_functions": ["uint32"]},
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(
+        text, _range(2, call_start, call_start + len("uint33")), [diag], "file://test.yar"
+    )
+    action = next(action for action in actions if action.title == "Replace with uint32()")
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.range.start.character == call_start
+    assert change.new_text == "uint32"
+
+
+def test_code_action_replace_module_function_targets_diagnostic_occurrence() -> None:
+    provider = CodeActionsProvider()
+    text = """
+import "pe"
+rule sample {
+    condition:
+        pe.unknown(0) and pe.unknown(1)
+}
+""".lstrip()
+    call_line = text.splitlines()[3]
+    call_start = call_line.rindex("pe.unknown")
+    diag = Diagnostic(
+        range=_range(3, call_start, call_start + len("pe.unknown")),
+        message="Unknown module function pe.unknown",
+        data=DiagnosticData(
+            code="semantic.module_function_not_found",
+            severity="error",
+            error_type="semantic",
+            metadata={
+                "module": "pe",
+                "function": "unknown",
+                "available_functions": ["is_pe"],
+            },
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(
+        text, _range(3, call_start, call_start + len("pe.unknown")), [diag], "file://test.yar"
+    )
+    action = next(action for action in actions if action.title == "Replace with pe.is_pe")
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.range.start.character == call_start
+    assert change.new_text == "pe.is_pe"
+
+
 def test_code_action_uses_structured_metadata_for_exact_arity_without_message_regex() -> None:
     provider = CodeActionsProvider()
     text = """
