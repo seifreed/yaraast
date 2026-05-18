@@ -65,6 +65,26 @@ def test_dependency_graph_generator_outputs_dot_source(tmp_path: Path) -> None:
     assert rendered.endswith(".svg")
 
 
+def test_dependency_graph_generator_renders_rule_dependency_edges() -> None:
+    ast = _parse_yara("""
+    rule base_rule {
+        condition:
+            true
+    }
+
+    rule caller {
+        condition:
+            base_rule
+    }
+    """)
+
+    generator = DependencyGraphGenerator()
+    dot_source = generator.generate_rule_graph(ast)
+
+    assert generator.dependencies["caller"] == {"base_rule"}
+    assert "caller -> base_rule" in dot_source
+
+
 def test_dependency_graph_variant_generators_reset_between_inputs() -> None:
     first_ast = _parse_yara("""
     import "pe"

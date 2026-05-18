@@ -10,6 +10,7 @@ from yaraast.metrics.dependency_graph_graphviz import (
     add_module_edges,
     add_module_nodes,
     add_module_rule_nodes,
+    add_rule_dependency_edges,
     add_rule_graph_nodes,
     add_rule_string_edges,
     create_graph,
@@ -55,6 +56,7 @@ def generate_rule_graph(
 
     apply_rule_graph_style(dot)
     add_rule_graph_nodes(dot, generator.rules, rule_graph_label, rule_node_color)
+    add_rule_dependency_edges(dot, generator.dependencies)
     add_rule_string_edges(dot, generator.string_references)
     return render_graph(dot, output_path, format)
 

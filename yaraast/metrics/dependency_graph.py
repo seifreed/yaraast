@@ -18,6 +18,7 @@ from yaraast.metrics.dependency_graph_graphviz import (
     add_import_cluster,
     add_include_cluster,
     add_module_edges,
+    add_rule_dependency_edges,
     add_rules_cluster,
     add_string_reference_edges,
 )
@@ -49,6 +50,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         )  # rule -> modules
         self._current_rule: str | None = None
         self._local_scopes: list[set[str]] = []
+        self._rule_names: set[str] = set()
 
     def generate_graph(
         self,
@@ -98,6 +100,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
     def _add_edges(self, dot: graphviz.Digraph) -> None:
         """Add edges to the graph."""
+        add_rule_dependency_edges(dot, self.dependencies)
         add_module_edges(dot, self.module_references, self.imports)
         add_string_reference_edges(dot, self.string_references)
 
@@ -108,6 +111,8 @@ class DependencyGraphGenerator(MetricsVisitorBase):
     # Visitor methods
     def visit_yara_file(self, node: YaraFile) -> None:
         """Visit YARA file and collect imports/includes."""
+        self._rule_names = {rule.name for rule in node.rules}
+
         for imp in node.imports:
             self.imports.add(imp.module)
 
@@ -276,6 +281,15 @@ class DependencyGraphGenerator(MetricsVisitorBase):
 
     def visit_module_reference(self, node) -> None:
         self._add_module_reference(node.module)
+
+    def visit_identifier(self, node) -> None:
+        if (
+            self._current_rule
+            and node.name in self._rule_names
+            and node.name != self._current_rule
+            and not self._is_local(node.name)
+        ):
+            self.dependencies[self._current_rule].add(node.name)
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)

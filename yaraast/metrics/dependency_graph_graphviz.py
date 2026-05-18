@@ -100,6 +100,16 @@ def add_rule_string_edges(
             add_edge(dot, rule_name, string_id, label="uses")
 
 
+def add_rule_dependency_edges(
+    dot: graphviz.Digraph,
+    dependencies: dict[str, set[str]],
+) -> None:
+    """Add rule-to-rule dependency edges."""
+    for rule_name, rule_dependencies in sorted(dependencies.items()):
+        for dependency in sorted(rule_dependencies):
+            add_edge(dot, rule_name, dependency, label="depends on", color="blue")
+
+
 def add_string_reference_edges(
     dot: graphviz.Digraph,
     string_references: dict[str, set[str]],
