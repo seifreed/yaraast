@@ -154,8 +154,7 @@ class MemoryOptimizer:
         optimized = optimizer.visit(yara_file)
 
         # Update stats
-        self._stats["nodes_processed"] += optimizer.nodes_processed
-        self._stats["strings_pooled"] += len(self._string_pool)
+        self._record_optimization_stats(optimizer)
 
         # Force garbage collection if aggressive
         maybe_post_optimize_collect(self)
@@ -164,12 +163,31 @@ class MemoryOptimizer:
 
     def optimize_rule(self, rule: Rule) -> Rule:
         """Optimize memory usage for a single rule."""
+        self._string_pool.clear()
         optimizer = MemoryOptimizerTransformer(self._string_pool, self.aggressive)
-        return optimizer.visit(rule)
+        optimized = optimizer.visit(rule)
+        self._record_optimization_stats(optimizer)
+        maybe_post_optimize_collect(self)
+        return optimized
 
     def optimize_rules(self, rules: list[Rule]) -> list[Rule]:
         """Optimize memory usage for a list of rules."""
-        return [self.optimize_rule(rule) for rule in rules]
+        self._string_pool.clear()
+        optimized_rules = []
+        nodes_processed = 0
+        for rule in rules:
+            optimizer = MemoryOptimizerTransformer(self._string_pool, self.aggressive)
+            optimized_rules.append(optimizer.visit(rule))
+            nodes_processed += optimizer.nodes_processed
+
+        self._stats["nodes_processed"] += nodes_processed
+        self._stats["strings_pooled"] += len(self._string_pool)
+        maybe_post_optimize_collect(self)
+        return optimized_rules
+
+    def _record_optimization_stats(self, optimizer: MemoryOptimizerTransformer) -> None:
+        self._stats["nodes_processed"] += optimizer.nodes_processed
+        self._stats["strings_pooled"] += len(self._string_pool)
 
     def get_memory_usage(self) -> dict[str, Any]:
         """Get current memory usage statistics."""

@@ -79,6 +79,38 @@ def test_memory_optimizer_rule_list_usage_and_batch_paths() -> None:
         )
 
 
+def test_memory_optimizer_optimize_rule_records_stats_and_resets_pool() -> None:
+    optimizer = MemoryOptimizer()
+    first_rule = Rule(
+        name="first",
+        tags=[Tag("large")],
+        meta=[MetaEntry("owner", "alice")],
+        strings=[
+            PlainString(identifier="$first_a", value="alpha"),
+            PlainString(identifier="$first_b", value="beta"),
+            RegexString(identifier="$first_r", regex="gamma"),
+        ],
+        condition=StringIdentifier("$first_a"),
+    )
+    second_rule = Rule(
+        name="second",
+        strings=[PlainString(identifier="$second", value="delta")],
+        condition=StringIdentifier("$second"),
+    )
+
+    optimizer.optimize_rule(first_rule)
+    first_stats = optimizer.get_statistics()
+    assert first_stats["nodes_processed"] > 0
+    assert first_stats["strings_pooled"] > 0
+    assert first_stats["string_pool_size"] > 0
+
+    optimizer.optimize_rule(second_rule)
+    second_stats = optimizer.get_statistics()
+    assert second_stats["nodes_processed"] > first_stats["nodes_processed"]
+    assert second_stats["strings_pooled"] > first_stats["strings_pooled"]
+    assert second_stats["string_pool_size"] < first_stats["string_pool_size"]
+
+
 def test_memory_optimizer_transformer_visits_real_nodes() -> None:
     pool: dict[str, str] = {}
     transformer = MemoryOptimizerTransformer(pool, aggressive=True)
