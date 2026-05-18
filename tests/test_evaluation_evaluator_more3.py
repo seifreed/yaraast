@@ -1861,6 +1861,30 @@ def test_evaluator_module_function_for_and_for_of_remaining_paths() -> None:
     with pytest.raises(EvaluationError, match="Unknown function: missing"):
         ev.visit_function_call(FunctionCall(function="missing", arguments=[]))
 
+    class Inner:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def value(self) -> str:
+            self.calls += 1
+            return "payload"
+
+    class Outer:
+        def use(self, value: str) -> bool:
+            return value == "payload"
+
+    inner = Inner()
+    ev.context.modules["inner"] = inner
+    ev.context.modules["outer"] = Outer()
+
+    assert ev.visit_function_call(
+        FunctionCall(
+            function="outer.use",
+            arguments=[FunctionCall(function="inner.value", arguments=[])],
+        )
+    )
+    assert inner.calls == 1
+
     ev.context.variables["i"] = 99
     for_two = ForExpression(
         quantifier=IntegerLiteral(value=2),

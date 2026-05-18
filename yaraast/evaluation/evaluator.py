@@ -345,8 +345,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 if resolved is not None:
                     target, member_name = resolved
                     module_args = [
-                        arg if isinstance(arg, RegexLiteral) else self.visit(arg)
-                        for arg in node.arguments
+                        arg if isinstance(arg, RegexLiteral) else evaluated_arg
+                        for arg, evaluated_arg in zip(node.arguments, args, strict=True)
                     ]
                     class_method = getattr(type(target), member_name, None)
                     if class_method is not None and callable(class_method):
