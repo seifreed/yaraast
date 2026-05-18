@@ -31,6 +31,21 @@ def test_string_matcher_repr_and_match_all_argument_validation() -> None:
     assert matcher.match_all([object()], b"abc") == {}
 
 
+def test_match_all_returns_stable_match_snapshot() -> None:
+    matcher = StringMatcher()
+    first = PlainString(identifier="$first", value="abc")
+    second = PlainString(identifier="$second", value="zzz")
+
+    first_matches = matcher.match_all([first], b"abc")
+    second_matches = matcher.match_all([second], b"")
+
+    assert "$first" in first_matches
+    assert len(first_matches["$first"]) == 1
+    assert second_matches == {"$second": []}
+    assert "$first" in first_matches
+    assert len(first_matches["$first"]) == 1
+
+
 def test_string_matcher_match_string_for_plain_hex_regex_and_unknown_type() -> None:
     matcher = StringMatcher()
 

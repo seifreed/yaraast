@@ -100,7 +100,7 @@ class StringMatcher:
             elif isinstance(string_def, RegexString):
                 self._match_regex_string(data, string_def)
 
-        return self.matches
+        return {string_id: list(matches) for string_id, matches in self.matches.items()}
 
     def match_string(self, string_def: object, data: bytes) -> list[MatchResult]:
         """Match a single string against data."""
