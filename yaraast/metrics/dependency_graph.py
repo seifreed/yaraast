@@ -164,12 +164,7 @@ class DependencyGraphGenerator(MetricsVisitorBase):
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
         names = [part.strip() for part in name.split(",")]
-        return {
-            variant
-            for local_name in names
-            if local_name
-            for variant in (local_name, local_name.lstrip("$"))
-        }
+        return {local_name for local_name in names if local_name}
 
     def visit_with_statement(self, node) -> None:
         self._push_local_scope()

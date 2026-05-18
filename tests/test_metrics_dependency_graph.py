@@ -158,6 +158,13 @@ def test_dependency_graph_generator_respects_yarax_module_name_shadowing() -> No
             condition:
                 with local = pe.number_of_sections: local > 0
         }
+
+        rule dollar_local_does_not_shadow_module {
+            strings:
+                $pe = "x"
+            condition:
+                with $pe = 1: pe.number_of_sections > 0
+        }
         """)
 
     generator = DependencyGraphGenerator()
@@ -166,6 +173,7 @@ def test_dependency_graph_generator_respects_yarax_module_name_shadowing() -> No
     assert "pe" not in generator.module_references["shadowed_module"]
     assert "pe" not in generator.module_references["shadowed_module_function"]
     assert "pe" in generator.module_references["declaration_value_uses_module"]
+    assert "pe" in generator.module_references["dollar_local_does_not_shadow_module"]
 
 
 def test_dependency_graph_cycles_and_order(tmp_path: Path) -> None:
