@@ -12,6 +12,7 @@ from yaraast.errors import ParseError
 from yaraast.lsp.language_services import parse_source
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import LanguageMode
+from yaraast.lsp.structure import RULE_DECLARATION_RE
 from yaraast.yarax.ast_nodes import WithStatement
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ def analyze_context(text: str, position: Position) -> str:
                 return "meta"
             if line.startswith("strings:"):
                 return "strings"
-            if line.startswith("rule "):
+            if RULE_DECLARATION_RE.match(line):
                 break
 
     return "general"

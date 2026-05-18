@@ -70,6 +70,20 @@ rule a {
     assert get_current_module("x", _pos(4, 0)) is None
 
 
+def test_analyze_context_stops_at_modified_rule_declarations() -> None:
+    text = """
+private rule a {
+  condition:
+    true
+}
+private rule b {
+
+}
+""".lstrip()
+
+    assert analyze_context(text, _pos(5, 2)) == "general"
+
+
 def test_build_module_member_completions_uses_fields_and_attributes_fallback() -> None:
     module_with_fields = _FakeModule(
         functions={"f": _FakeFunction(parameters=[("x", "int")], description="fn")},
