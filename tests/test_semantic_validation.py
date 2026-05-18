@@ -414,6 +414,33 @@ class TestSemanticValidator:
 
         assert result.is_valid is True
 
+    def test_validate_rejects_raw_string_identifier_binary_operands(self) -> None:
+        ast = Parser().parse("""
+            rule raw_string_identifier_comparison {
+                strings:
+                    $a = "abc"
+                condition:
+                    $a == true
+            }
+
+            rule raw_string_identifier_string_operator {
+                strings:
+                    $a = "abc"
+                condition:
+                    $a contains "a"
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any("String identifiers cannot be used with '=='" in message for message in messages)
+        assert any(
+            "Left operand of 'contains' must be string, got string_identifier" in message
+            for message in messages
+        )
+
     def test_valid_yara_file(self) -> None:
         """Test validation of valid YARA file."""
         yara_code = """

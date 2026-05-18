@@ -157,7 +157,7 @@ def test_complex_regex_in_expressions() -> None:
 
 
 def test_string_matches_dynamic_regex() -> None:
-    """Test string identifier matching dynamic regex."""
+    """Test literal string matching dynamic regex."""
     yara_code = r"""
     rule string_matches_regex {
         strings:
@@ -165,9 +165,9 @@ def test_string_matches_dynamic_regex() -> None:
             $pattern = "malware"
 
         condition:
-            $pattern matches /mal[a-z]+/ and
+            "malware" matches /mal[a-z]+/ and
             "static_string" matches /static.*/ and
-            $email matches /.*@evil\.com/
+            "user@evil.com" matches /.*@evil\.com/
     }
     """
 
@@ -181,9 +181,9 @@ def test_string_matches_dynamic_regex() -> None:
     # Generate and verify
     generator = CodeGenerator()
     output = generator.generate(ast)
-    assert "$pattern matches /mal[a-z]+/" in output
+    assert '"malware" matches /mal[a-z]+/' in output
     assert '"static_string" matches /static.*/' in output
-    assert r"$email matches /.*@evil\.com/" in output
+    assert r'"user@evil.com" matches /.*@evil\.com/' in output
 
 
 def test_mixed_features() -> None:
@@ -207,8 +207,8 @@ def test_mixed_features() -> None:
             uint32le(uint32(0x3c)) == 0x00004550 and
             peformat.machine == 0x14c and
             m.entropy(0, 1024) > 6.5 and
-            $str matches /mal[a-z]+/ and
-            $url matches /.*\/download\//i and
+            "malicious" matches /mal[a-z]+/ and
+            "https://example.test/download/file" matches /.*\/download\//i and
             /[A-Z]{5,}/ matches /[A-Z]+/
     }
     """
@@ -236,7 +236,7 @@ def test_mixed_features() -> None:
     assert "uint32le(uint32(0x3c))" in output
     assert "peformat.machine" in output
     assert "m.entropy" in output
-    assert "$str matches /mal[a-z]+/" in output
+    assert '"malicious" matches /mal[a-z]+/' in output
     assert "/[A-Z]{5,}/ matches /[A-Z]+/" in output
 
 

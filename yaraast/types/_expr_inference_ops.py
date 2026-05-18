@@ -122,6 +122,10 @@ def _infer_logical_op(ctx, operator, left_type, right_type):
 
 
 def _infer_comparison_op(ctx, operator, left_type, right_type):
+    if isinstance(left_type, StringIdentifierType) or isinstance(right_type, StringIdentifierType):
+        ctx.errors.append(f"String identifiers cannot be used with '{operator}' comparisons")
+        return BooleanType()
+
     if (left_type.is_numeric() and right_type.is_numeric()) or left_type.is_compatible_with(
         right_type
     ):
@@ -131,6 +135,10 @@ def _infer_comparison_op(ctx, operator, left_type, right_type):
 
 
 def _infer_string_op(ctx, operator, left_type, right_type):
+    if isinstance(left_type, StringIdentifierType):
+        ctx.errors.append(f"Left operand of '{operator}' must be string, got {left_type}")
+        return BooleanType()
+
     if operator == "contains" and isinstance(left_type, ArrayType):
         if not left_type.element_type.is_compatible_with(right_type):
             ctx.errors.append(
