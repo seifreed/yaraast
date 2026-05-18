@@ -200,8 +200,12 @@ rule library_rule { condition: true }
             # Second resolution should use cache
             resolved2 = resolver.resolve_file(str(test_file))
 
-            # Should be the same object
-            assert resolved1 is resolved2
+            # Cached resolutions should be stable snapshots, not the cache object.
+            assert resolved1 is not resolved2
+            assert resolved1.ast.rules[0].name == resolved2.ast.rules[0].name == "test"
+            resolved1.ast.rules[0].name = "corrupted"
+            resolved_cached = resolver.resolve_file(str(test_file))
+            assert resolved_cached.ast.rules[0].name == "test"
 
             # Modify file
             test_file.write_text("rule modified { condition: false }", encoding="utf-8")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 import hashlib
 import os
@@ -106,7 +107,7 @@ class IncludeResolver:
                 and self._all_declared_includes_resolved(cached)
                 and self._includes_unchanged(cached)
             ):
-                return cached
+                return deepcopy(cached)
 
         if resolved_path in self.resolution_stack:
             cycle = " -> ".join(str(p) for p in self.resolution_stack)
@@ -116,7 +117,7 @@ class IncludeResolver:
 
         self.resolution_stack.append(resolved_path)
         try:
-            return self._parse_and_resolve(resolved_path, cache_key)
+            return deepcopy(self._parse_and_resolve(resolved_path, cache_key))
         finally:
             self.resolution_stack.pop()
 
@@ -230,7 +231,7 @@ class IncludeResolver:
 
     def get_all_resolved_files(self) -> list[ResolvedFile]:
         """Get all resolved files from cache."""
-        return list(self.cache.values())
+        return [deepcopy(resolved) for resolved in self.cache.values()]
 
     def get_include_tree(self, file_path: str) -> dict:
         """Get include tree structure for a file.
