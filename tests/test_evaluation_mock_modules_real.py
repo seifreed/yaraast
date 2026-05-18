@@ -160,10 +160,29 @@ def test_evaluator_supports_pe_rva_to_offset_function() -> None:
 
 
 def test_mock_elf_math_dotnet_and_registry_branches() -> None:
-    elf_data = b"\x7fELF" + b"\x00" * 12 + struct.pack("<H", 3) + struct.pack("<H", 0x3E)
+    elf_header = b"\x7fELF" + bytes([1, 1, 1, 0]) + b"\x00" * 8
+    elf_header += struct.pack(
+        "<HHIIIIIHHHHHH",
+        3,
+        0x3E,
+        1,
+        0,
+        0,
+        52,
+        0,
+        52,
+        32,
+        0,
+        40,
+        1,
+        0,
+    )
+    elf_data = elf_header + (b"\x00" * 40)
     elf = MockELF(elf_data)
     assert elf.type == 3
     assert elf.machine == 0x3E
+    assert elf.number_of_sections == 1
+    assert elf.number_of_segments == 0
 
     m = MockMath(b"\x00" * 10 + b"\xff" * 10)
     assert m.to_string(10) == "10"

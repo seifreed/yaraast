@@ -304,9 +304,45 @@ class MockELF:
         self.number_of_sections = YARA_UNDEFINED
         self.number_of_segments = YARA_UNDEFINED
 
-        if len(self.data) >= 20 and self.data[:4] == b"\x7fELF":
-            self.type = struct.unpack("<H", self.data[16:18])[0]
-            self.machine = struct.unpack("<H", self.data[18:20])[0]
+        if len(self.data) < 16 or self.data[:4] != b"\x7fELF":
+            return
+
+        elf_class = self.data[4]
+        data_encoding = self.data[5]
+        elf_version = self.data[6]
+        if elf_class not in {1, 2} or data_encoding not in {1, 2} or elf_version != 1:
+            return
+
+        endian = "<" if data_encoding == 1 else ">"
+        header_size = 52 if elf_class == 1 else 64
+        if len(self.data) < header_size:
+            return
+
+        self.type = struct.unpack(f"{endian}H", self.data[16:18])[0]
+        self.machine = struct.unpack(f"{endian}H", self.data[18:20])[0]
+        if elf_class == 1:
+            section_header_offset = struct.unpack(f"{endian}I", self.data[32:36])[0]
+            program_header_count = struct.unpack(f"{endian}H", self.data[44:46])[0]
+            section_header_size = struct.unpack(f"{endian}H", self.data[46:48])[0]
+            section_header_count = struct.unpack(f"{endian}H", self.data[48:50])[0]
+        else:
+            section_header_offset = struct.unpack(f"{endian}Q", self.data[40:48])[0]
+            program_header_count = struct.unpack(f"{endian}H", self.data[56:58])[0]
+            section_header_size = struct.unpack(f"{endian}H", self.data[58:60])[0]
+            section_header_count = struct.unpack(f"{endian}H", self.data[60:62])[0]
+
+        if (
+            section_header_offset == 0
+            or section_header_size == 0
+            or section_header_count == 0
+            or section_header_offset + (section_header_size * section_header_count) > len(self.data)
+        ):
+            self.type = YARA_UNDEFINED
+            self.machine = YARA_UNDEFINED
+            return
+
+        self.number_of_sections = section_header_count
+        self.number_of_segments = program_header_count
 
 
 # ---------------------------------------------------------------------------

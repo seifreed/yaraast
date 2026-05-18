@@ -348,7 +348,7 @@ def test_pe_invalid_files_leave_pe_fields_undefined(data: bytes) -> None:
     assert YaraEvaluator(data=data).evaluate_file(ast) == {"invalid_pe_fields": False}
 
 
-@pytest.mark.parametrize("data", [b"", b"\x7fELF"])
+@pytest.mark.parametrize("data", [b"", b"\x7fELF", b"\x7fELF" + b"\x00" * 16])
 def test_elf_invalid_files_leave_elf_fields_undefined(data: bytes) -> None:
     ast = Parser().parse("""
         import "elf"
