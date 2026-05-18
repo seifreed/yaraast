@@ -351,8 +351,10 @@ class TestYaraEvaluator:
         """
         ast = parser.parse(rule_text)
 
-        # PE file
-        data = b"MZ" + b"\x00" * 100
+        data = b"MZ" + b"\x00" * 58 + b"\x40\x00\x00\x00"
+        data += b"PE\x00\x00"
+        data += b"\x4c\x01"
+        data += b"\x00" * 100
         evaluator = YaraEvaluator(data)
         results = evaluator.evaluate_file(ast)
 

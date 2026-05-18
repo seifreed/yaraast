@@ -110,72 +110,86 @@ class MockPE:
 
     def _parse_headers(self) -> None:
         """Parse PE headers from data."""
-        self.machine = 0x14C
-        self.number_of_sections = 0
-        self.timestamp = 0
-        self.characteristics = 0
-        self.entry_point = 0
-        self.image_base = 0x400000
-        self.size_of_headers = 0
+        self.machine = YARA_UNDEFINED
+        self.number_of_sections = YARA_UNDEFINED
+        self.timestamp = YARA_UNDEFINED
+        self.characteristics = YARA_UNDEFINED
+        self.entry_point = YARA_UNDEFINED
+        self.entry_point_raw = YARA_UNDEFINED
+        self.image_base = YARA_UNDEFINED
+        self.size_of_headers = YARA_UNDEFINED
         self.sections: list[Section] = []
         self.version_info: dict[str, str] = {}
-        self.number_of_resources = 0
-        self.resource_timestamp = 0
+        self.number_of_resources = YARA_UNDEFINED
+        self.resource_timestamp = YARA_UNDEFINED
         self._import_list = []
         self._export_list = []
         self.is_pe = False
-        self.is_dll = False
-        self.is_32bit = True
-        self.is_64bit = False
-        self.overlay_offset = 0
-        self.overlay_size = 0
-        self.rich_signature_offset = 0
+        self.is_dll = YARA_UNDEFINED
+        self.is_32bit = YARA_UNDEFINED
+        self.is_64bit = YARA_UNDEFINED
+        self.overlay_offset = YARA_UNDEFINED
+        self.overlay_size = YARA_UNDEFINED
+        self.rich_signature_offset = YARA_UNDEFINED
 
-        if len(self.data) >= 2 and self.data[:2] == b"MZ":
-            self.is_pe = True
+        if len(self.data) >= 2 and self.data[:2] == b"MZ" and len(self.data) >= 0x40:
+            pe_offset = struct.unpack("<I", self.data[0x3C:0x40])[0]
 
-            if len(self.data) >= 0x40:
-                pe_offset = struct.unpack("<I", self.data[0x3C:0x40])[0]
+            if (
+                len(self.data) >= pe_offset + 4
+                and self.data[pe_offset : pe_offset + 4] == b"PE\x00\x00"
+                and len(self.data) >= pe_offset + 24
+            ):
+                self.is_pe = True
+                self.number_of_resources = 0
+                self.resource_timestamp = 0
+                self.overlay_offset = 0
+                self.overlay_size = 0
+                self.rich_signature_offset = 0
+                coff_offset = pe_offset + 4
+                self.machine = struct.unpack("<H", self.data[coff_offset : coff_offset + 2])[0]
+                self.number_of_sections = struct.unpack(
+                    "<H", self.data[coff_offset + 2 : coff_offset + 4]
+                )[0]
+                self.timestamp = struct.unpack("<I", self.data[coff_offset + 4 : coff_offset + 8])[
+                    0
+                ]
+                self.characteristics = struct.unpack(
+                    "<H", self.data[coff_offset + 18 : coff_offset + 20]
+                )[0]
+                self.is_dll = bool(self.characteristics & 0x2000)
+                size_of_optional_header = struct.unpack(
+                    "<H", self.data[coff_offset + 16 : coff_offset + 18]
+                )[0]
 
-                if (
-                    len(self.data) >= pe_offset + 4
-                    and self.data[pe_offset : pe_offset + 4] == b"PE\x00\x00"
-                    and len(self.data) >= pe_offset + 24
-                ):
-                    coff_offset = pe_offset + 4
-                    self.machine = struct.unpack("<H", self.data[coff_offset : coff_offset + 2])[0]
-                    self.number_of_sections = struct.unpack(
-                        "<H", self.data[coff_offset + 2 : coff_offset + 4]
-                    )[0]
-                    self.timestamp = struct.unpack(
-                        "<I", self.data[coff_offset + 4 : coff_offset + 8]
-                    )[0]
-                    self.characteristics = struct.unpack(
-                        "<H", self.data[coff_offset + 18 : coff_offset + 20]
-                    )[0]
-                    self.is_dll = bool(self.characteristics & 0x2000)
-                    size_of_optional_header = struct.unpack(
-                        "<H", self.data[coff_offset + 16 : coff_offset + 18]
-                    )[0]
+                opt_offset = coff_offset + 20
+                if len(self.data) >= opt_offset + 2:
+                    magic = struct.unpack("<H", self.data[opt_offset : opt_offset + 2])[0]
+                    self.is_32bit = magic == 0x10B
+                    self.is_64bit = magic == 0x20B
 
-                    opt_offset = coff_offset + 20
-                    if len(self.data) >= opt_offset + 2:
-                        magic = struct.unpack("<H", self.data[opt_offset : opt_offset + 2])[0]
-                        self.is_32bit = magic == 0x10B
-                        self.is_64bit = magic == 0x20B
-
-                        if self.is_32bit and len(self.data) >= opt_offset + 32:
-                            self.entry_point = struct.unpack(
-                                "<I", self.data[opt_offset + 16 : opt_offset + 20]
-                            )[0]
-                            self.image_base = struct.unpack(
-                                "<I", self.data[opt_offset + 28 : opt_offset + 32]
-                            )[0]
-                        if len(self.data) >= opt_offset + 64:
-                            self.size_of_headers = struct.unpack(
-                                "<I", self.data[opt_offset + 60 : opt_offset + 64]
-                            )[0]
-                    self._parse_sections(opt_offset + size_of_optional_header)
+                    if self.is_32bit and len(self.data) >= opt_offset + 32:
+                        self.entry_point_raw = struct.unpack(
+                            "<I", self.data[opt_offset + 16 : opt_offset + 20]
+                        )[0]
+                        self.image_base = struct.unpack(
+                            "<I", self.data[opt_offset + 28 : opt_offset + 32]
+                        )[0]
+                    elif self.is_64bit and len(self.data) >= opt_offset + 32:
+                        self.entry_point_raw = struct.unpack(
+                            "<I", self.data[opt_offset + 16 : opt_offset + 20]
+                        )[0]
+                        self.image_base = struct.unpack(
+                            "<Q", self.data[opt_offset + 24 : opt_offset + 32]
+                        )[0]
+                    if len(self.data) >= opt_offset + 64:
+                        self.size_of_headers = struct.unpack(
+                            "<I", self.data[opt_offset + 60 : opt_offset + 64]
+                        )[0]
+                self._parse_sections(opt_offset + size_of_optional_header)
+                if _is_strict_int(self.entry_point_raw):
+                    entry_point = self.rva_to_offset(self.entry_point_raw)
+                    self.entry_point = -1 if entry_point is YARA_UNDEFINED else entry_point
 
     def _parse_sections(self, section_table_offset: int) -> None:
         """Parse PE section headers."""
@@ -208,12 +222,14 @@ class MockPE:
             else ""
         )
 
-    def section_index(self, name: str) -> int:
+    def section_index(self, name: str) -> int | YaraUndefinedValue:
         _require_string_arg("pe.section_index", name)
+        if not self.is_pe:
+            return YARA_UNDEFINED
         for i, section in enumerate(self.sections):
             if section.name == name:
                 return i
-        return -1
+        return YARA_UNDEFINED
 
     def rva_to_offset(self, rva: int) -> int | YaraUndefinedValue:
         _require_integer_arg("pe.rva_to_offset", rva)
@@ -231,28 +247,39 @@ class MockPE:
             section_start = section.virtual_address
             section_end = section_start + span
             if section_start <= rva < section_end:
-                return section.raw_data_offset + (rva - section_start)
+                raw_offset = section.raw_data_offset + (rva - section_start)
+                if raw_offset >= len(self.data):
+                    return YARA_UNDEFINED
+                return raw_offset
 
         return YARA_UNDEFINED
 
-    def exports(self, name: str) -> bool:
+    def exports(self, name: str) -> bool | YaraUndefinedValue:
         _require_string_arg("pe.exports", name)
+        if not self.is_pe:
+            return YARA_UNDEFINED
         return name in self._export_list
 
-    def imports(self, dll: str, function: str | None = None) -> bool:
+    def imports(self, dll: str, function: str | None = None) -> bool | YaraUndefinedValue:
         if not isinstance(dll, str) or (function is not None and not isinstance(function, str)):
             msg = "pe.imports() expects string arguments"
             raise EvaluationError(msg)
+        if not self.is_pe:
+            return YARA_UNDEFINED
         if function:
             return f"{dll}:{function}" in self._import_list
         return any(imp.startswith(f"{dll}:") for imp in self._import_list)
 
-    def locale(self, locale_id: int) -> bool:
+    def locale(self, locale_id: int) -> bool | YaraUndefinedValue:
         _require_integer_arg("pe.locale", locale_id)
+        if not self.is_pe:
+            return YARA_UNDEFINED
         return False
 
-    def language(self, lang_id: int) -> bool:
+    def language(self, lang_id: int) -> bool | YaraUndefinedValue:
         _require_integer_arg("pe.language", lang_id)
+        if not self.is_pe:
+            return YARA_UNDEFINED
         return False
 
 

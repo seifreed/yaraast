@@ -19,6 +19,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "timestamp": "i",
             "characteristics": "i",
             "entry_point": "i",
+            "entry_point_raw": "i",
             "image_base": "i",
             "sections": (
                 "array",

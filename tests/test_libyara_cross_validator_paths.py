@@ -63,11 +63,12 @@ def test_cross_validator_error_and_mismatch_paths() -> None:
     assert mismatch.valid is False
     assert mismatch.rules_differ
 
-    # validate() mismatch path with real evaluation/scan disagreement.
+    # Invalid MZ-only data should agree with libyara and not be treated as PE.
     pe_ast = Parser().parse('import "pe" rule pe_rule { condition: pe.is_pe }')
-    validate_mismatch = validator.validate(pe_ast, b"MZ" + (b"0" * 100))
-    assert validate_mismatch.valid is False
-    assert validate_mismatch.rules_differ == ["pe_rule: yaraast=True, libyara=False"]
+    invalid_pe = validator.validate(pe_ast, b"MZ" + (b"0" * 100))
+    assert invalid_pe.valid is True
+    assert invalid_pe.yaraast_results == {"pe_rule": False}
+    assert invalid_pe.libyara_results == {"pe_rule": False}
 
     # _validate_single scan exception path with invalid compiled_rules object.
     scan_error = validator._validate_single(ast_true, b"payload", None)

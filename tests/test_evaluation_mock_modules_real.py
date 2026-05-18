@@ -55,6 +55,10 @@ def _build_pe_data(*, dll: bool, magic: int, sections: list[Section] | None = No
         data.extend(struct.pack("<H", 0))
         data.extend(struct.pack("<H", 0))
         data.extend(struct.pack("<I", section.characteristics))
+    if sections:
+        raw_end = max(section.raw_data_offset + section.raw_data_size for section in sections)
+        if len(data) < raw_end:
+            data.extend(b"\x00" * (raw_end - len(data)))
     return bytes(data)
 
 
@@ -67,7 +71,8 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     assert pe32.is_32bit is True
     assert pe32.is_64bit is False
     assert pe32.is_dll is True
-    assert pe32.entry_point == 0x1000
+    assert pe32.entry_point == -1
+    assert pe32.entry_point_raw == 0x1000
     assert pe32.image_base == 0x400000
 
     pe64 = MockPE(_build_pe_data(dll=False, magic=0x20B))
@@ -76,7 +81,7 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
 
     pe64.sections = [Section(".text", 0x1000, 0x200, 0x400, 0x200)]
     assert pe64.section_index(".text") == 0
-    assert pe64.section_index(".rdata") == -1
+    assert pe64.section_index(".rdata") is YARA_UNDEFINED
     with pytest.raises(EvaluationError, match=r"pe\.section_index\(\) expects a string argument"):
         pe64.section_index(cast(Any, True))
 
@@ -137,7 +142,9 @@ def test_evaluator_supports_pe_rva_to_offset_function() -> None:
         import "pe"
         rule valid_pe_rva_to_offset {
             condition:
-                pe.rva_to_offset(0x1000) == 0x200
+                pe.rva_to_offset(0x1000) == 0x200 and
+                pe.entry_point == 0x200 and
+                pe.entry_point_raw == 0x1000
         }
 
         rule invalid_pe_rva_to_offset {

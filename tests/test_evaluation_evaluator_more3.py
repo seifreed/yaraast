@@ -321,6 +321,33 @@ def test_pe_functions_reject_wrong_argument_types() -> None:
             YaraEvaluator(data=b"MZ" + b"\x00" * 100).evaluate_file(ast)
 
 
+@pytest.mark.parametrize("data", [b"", b"MZ"])
+def test_pe_invalid_files_leave_pe_fields_undefined(data: bytes) -> None:
+    ast = Parser().parse("""
+        import "pe"
+        rule invalid_pe_fields {
+            condition:
+                pe.is_pe or
+                defined pe.machine or
+                pe.machine == 0x14c or
+                defined pe.number_of_sections or
+                pe.number_of_sections == 0 or
+                defined pe.is_32bit() or
+                pe.is_32bit() or
+                defined pe.is_dll() or
+                pe.is_dll() or
+                defined pe.section_index(".text") or
+                pe.section_index(".text") == -1 or
+                defined pe.imports("KERNEL32.dll") or
+                defined pe.exports("ExportedFn") or
+                defined pe.locale(0x409) or
+                defined pe.language(0x09)
+        }
+        """)
+
+    assert YaraEvaluator(data=data).evaluate_file(ast) == {"invalid_pe_fields": False}
+
+
 def test_console_log_matches_libyara_scalar_arguments() -> None:
     ast = Parser().parse("""
         import "console"
