@@ -106,12 +106,14 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
             self.visit(string_def)
 
     def visit_plain_string(self, node: PlainString) -> None:
+        self._check_duplicate_modifiers(node)
         self._check_plain_string_content(node)
         self._check_non_regex_string(node, "plain")
         self._check_text_string_combinations(node)
         self._check_text_string_modifier_values(node)
 
     def visit_hex_string(self, node: HexString) -> None:
+        self._check_duplicate_modifiers(node)
         if not node.tokens:
             self.result.add_error(
                 f"Empty hex string '{node.identifier}' in rule '{self.current_rule_name}'",
@@ -130,6 +132,7 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
             )
 
     def visit_regex_string(self, node: RegexString) -> None:
+        self._check_duplicate_modifiers(node)
         for modifier in node.modifiers:
             name = self._modifier_name(modifier)
             if name not in self._REGEX_DISALLOWED_MODIFIERS:
@@ -149,6 +152,19 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
             node.location,
             "Text strings must contain at least one byte.",
         )
+
+    def _check_duplicate_modifiers(self, node: StringDefinition) -> None:
+        seen: set[str] = set()
+        for modifier in node.modifiers:
+            name = self._modifier_name(modifier)
+            if name in seen:
+                self.result.add_error(
+                    f"Duplicate string modifier '{name}' on string '{node.identifier}' in rule '{self.current_rule_name}'",
+                    node.location,
+                    "Remove the repeated string modifier.",
+                )
+            else:
+                seen.add(name)
 
     def _check_non_regex_string(self, node: StringDefinition, string_type: str) -> None:
         for modifier in node.modifiers:

@@ -183,6 +183,37 @@ def test_semantic_validator_rejects_invalid_string_modifier_compatibility() -> N
     )
 
 
+def test_semantic_validator_rejects_duplicate_string_modifiers() -> None:
+    ast = Parser().parse("""
+        rule duplicate_modifiers {
+            strings:
+                $plain = "abc" ascii ascii
+                $xor = "abc" xor xor(1-3)
+                $hex = { 41 } private private
+                $regex = /abc/ nocase nocase
+            condition:
+                any of them
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any(
+        "Duplicate string modifier 'ascii' on string '$plain'" in message for message in messages
+    )
+    assert any(
+        "Duplicate string modifier 'xor' on string '$xor'" in message for message in messages
+    )
+    assert any(
+        "Duplicate string modifier 'private' on string '$hex'" in message for message in messages
+    )
+    assert any(
+        "Duplicate string modifier 'nocase' on string '$regex'" in message for message in messages
+    )
+
+
 def test_semantic_validator_rejects_boolean_xor_modifier_values() -> None:
     ast = YaraFile(
         rules=[
