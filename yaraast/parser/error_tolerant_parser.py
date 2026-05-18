@@ -49,7 +49,7 @@ class ErrorTolerantParser(Parser):
         except (ValueError, TypeError, AttributeError, BaseParserError, LexerError):
             # If normal parsing fails, try error-tolerant parsing
             ast = self._parse_with_recovery(text)
-            return ParseResult(ast=ast, errors=self.errors, warnings=[])
+            return ParseResult(ast=ast, errors=list(self.errors), warnings=[])
         return ParseResult(ast=ast, errors=[], warnings=[])
 
     def parse_with_errors(self, text: str) -> tuple[YaraFile, list, list]:
@@ -177,11 +177,11 @@ class ErrorTolerantParser(Parser):
 
     def get_errors(self) -> list[ParserError]:
         """Get all parsing errors."""
-        return self.errors
+        return list(self.errors)
 
     def get_recovered_rules(self) -> list[Rule]:
         """Get rules that were successfully recovered."""
-        return self.recovered_rules
+        return list(self.recovered_rules)
 
     def has_errors(self) -> bool:
         """Check if any errors occurred."""

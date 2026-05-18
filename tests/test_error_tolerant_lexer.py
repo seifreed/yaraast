@@ -144,6 +144,19 @@ class TestErrorTolerantLexer:
         assert len(errors) == 0
         assert tokens[-1].type == TokenType.EOF
 
+    def test_tokenize_returns_token_and_error_snapshots(self) -> None:
+        """Test returned token and error lists do not mutate lexer state."""
+        lexer = ErrorTolerantLexer("@", max_errors=0)
+        tokens, errors = lexer.tokenize()
+
+        assert tokens
+        assert errors
+        tokens.clear()
+        errors.clear()
+
+        assert lexer.tokens
+        assert lexer.errors
+
     def test_tokenize_with_lexer_error(self) -> None:
         """Test tokenizing text with lexer errors."""
         # Invalid character that will cause a lexer error

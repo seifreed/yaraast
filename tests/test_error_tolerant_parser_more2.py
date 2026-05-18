@@ -49,6 +49,30 @@ def test_recovery_paths_for_invalid_import_include_rule_and_unknown_lines() -> N
     assert parser.get_errors() == result.errors
 
 
+def test_error_tolerant_parser_returns_error_and_rule_snapshots() -> None:
+    parser = ErrorTolerantParser()
+    result = parser.parse(dedent("""
+        import ???
+
+        rule recovered {
+            condition:
+                true
+        }
+        """))
+
+    assert result.errors
+    assert parser.get_errors() == result.errors
+    result.errors.clear()
+    errors = parser.get_errors()
+    errors.clear()
+    assert parser.has_errors() is True
+
+    recovered_rules = parser.get_recovered_rules()
+    assert recovered_rules
+    recovered_rules.clear()
+    assert parser.get_recovered_rules()
+
+
 def test_error_tolerant_parser_preserves_rule_modifiers() -> None:
     parser = ErrorTolerantParser()
     result = parser.parse(

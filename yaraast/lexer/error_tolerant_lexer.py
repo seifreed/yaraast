@@ -96,7 +96,7 @@ class ErrorTolerantLexer(Lexer):
 
         # Add EOF token
         self.tokens.append(Token(TokenType.EOF, None, self.line, self.column))
-        return self.tokens, self.errors
+        return list(self.tokens), list(self.errors)
 
     def _add_error(
         self,
