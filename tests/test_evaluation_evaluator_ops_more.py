@@ -21,7 +21,10 @@ def test_evaluate_arithmetic_all_operators() -> None:
     assert evaluate_arithmetic(7, 2, "/") == 3
     assert evaluate_arithmetic(7, 2, "\\") == 3
     assert evaluate_arithmetic(7.0, 2.0, "/") == 3.5
+    assert evaluate_arithmetic(7, 2.0, "\\") == 3.5
+    assert evaluate_arithmetic(7.0, 2, "\\") == 3.5
     assert evaluate_arithmetic(7, 4, "%") == 3
+    assert evaluate_arithmetic(7.0, 4.0, "%") is YARA_UNDEFINED
     assert evaluate_arithmetic(1, 3, "<<") == 8
     assert evaluate_arithmetic(8, 2, ">>") == 2
     assert evaluate_arithmetic(6, 3, "&") == 2

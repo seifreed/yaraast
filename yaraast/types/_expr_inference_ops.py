@@ -150,6 +150,12 @@ def _infer_string_op(ctx, operator, left_type, right_type):
 
 
 def _infer_arithmetic_op(ctx, operator, left_type, right_type):
+    if operator == "%":
+        if not isinstance(left_type, IntegerType):
+            ctx.errors.append(f"Left operand of '{operator}' must be integer, got {left_type}")
+        if not isinstance(right_type, IntegerType):
+            ctx.errors.append(f"Right operand of '{operator}' must be integer, got {right_type}")
+        return IntegerType()
     if not left_type.is_numeric():
         ctx.errors.append(f"Left operand of '{operator}' must be numeric, got {left_type}")
     if not right_type.is_numeric():

@@ -298,6 +298,19 @@ class TestFunctionCallValidator:
         assert result.is_valid is False
         assert "must be double, got integer" in result.errors[0].message
 
+    def test_modulo_rejects_float_operands(self) -> None:
+        ast = Parser().parse("""
+            rule invalid_float_modulo {
+                condition:
+                    7.0 % 2.0 == 1.0
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        assert any("operand of '%' must be integer" in error.message for error in result.errors)
+
     def test_cuckoo_nested_module_functions_validate(self) -> None:
         ast = Parser().parse(r"""
             import "cuckoo"

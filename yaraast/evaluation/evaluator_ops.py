@@ -62,19 +62,15 @@ def evaluate_arithmetic(left: Any, right: Any, operator: str) -> Any | None:
                 if left == INT64_MIN and right == -1:
                     return YARA_UNDEFINED
                 return truncate_integer_division(left, right)
-            if _is_runtime_int(left):
-                return int(left / right)  # truncate toward zero (C/YARA semantics)
             return left / right
         if operator == "%":
-            if not (_is_runtime_number(left) and _is_runtime_number(right)):
+            if not (_is_runtime_int(left) and _is_runtime_int(right)):
                 return YARA_UNDEFINED
             if right == 0:
                 return YARA_UNDEFINED
-            if _is_runtime_int(left) and _is_runtime_int(right):
-                if left == INT64_MIN and right == -1:
-                    return YARA_UNDEFINED
-                return integer_remainder(left, right)
-            return left % right
+            if left == INT64_MIN and right == -1:
+                return YARA_UNDEFINED
+            return integer_remainder(left, right)
         if operator == "<<":
             if not (_is_runtime_int(left) and _is_runtime_int(right)):
                 return YARA_UNDEFINED
