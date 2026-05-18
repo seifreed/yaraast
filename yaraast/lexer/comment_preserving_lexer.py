@@ -41,6 +41,13 @@ class CommentPreservingLexer(Lexer):
         i = 0
 
         while i < len(self.text):
+            if self.text[i] == '"':
+                literal_text, i, line_num, col_num = self._read_quoted_string_text(
+                    i, line_num, col_num
+                )
+                text_without_comments.extend(literal_text)
+                continue
+
             if i < len(self.text) - 1 and self.text[i : i + 2] == "//":
                 comment_text, i, col_num = self._read_line_comment_text(i, col_num)
                 if self.preserve_comments:
@@ -84,6 +91,38 @@ class CommentPreservingLexer(Lexer):
                 col_num += 1
 
         return comment_tokens, text_without_comments
+
+    def _read_quoted_string_text(self, i: int, line: int, col: int) -> tuple[str, int, int, int]:
+        """Copy a quoted string so comment markers inside it stay literal."""
+        string_text = ""
+        is_opening_quote = True
+
+        while i < len(self.text):
+            char = self.text[i]
+            string_text += char
+            i += 1
+            if char == "\n":
+                line += 1
+                col = 1
+            else:
+                col += 1
+
+            if char == "\\" and i < len(self.text):
+                escaped = self.text[i]
+                string_text += escaped
+                i += 1
+                if escaped == "\n":
+                    line += 1
+                    col = 1
+                else:
+                    col += 1
+                continue
+
+            if char == '"' and not is_opening_quote:
+                break
+            is_opening_quote = False
+
+        return string_text, i, line, col
 
     def _read_line_comment_text(self, i: int, col: int) -> tuple[str, int, int]:
         """Read a // comment. Returns (text, new_i, new_col)."""

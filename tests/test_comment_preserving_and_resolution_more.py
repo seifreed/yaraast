@@ -57,6 +57,19 @@ def test_comment_preserving_lexer_helpers_and_preserve_toggle() -> None:
     assert comments_snapshot == original_comments
 
 
+def test_comment_preserving_lexer_ignores_comment_markers_inside_strings() -> None:
+    lexer = CommentPreservingLexer(
+        'rule urls { strings: $url = "http://example.test/*literal*/" condition: $url }'
+    )
+
+    tokens = lexer.tokenize()
+
+    assert lexer.get_comments() == []
+    assert [token.value for token in tokens if token.type == TokenType.STRING] == [
+        "http://example.test/*literal*/"
+    ]
+
+
 def test_dependency_graph_transitive_queries_cycles_and_export() -> None:
     graph = DependencyGraph()
     file_path = Path("file.yar")
