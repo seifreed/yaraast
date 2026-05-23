@@ -10,6 +10,7 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     Identifier,
+    MemberAccess,
     ParenthesesExpression,
     SetExpression,
     StringCount,
@@ -149,6 +150,28 @@ def test_referenced_false_rule_is_not_removed() -> None:
     assert [rule.name for rule in optimized.rules] == ["helper", "main"]
     assert "private rule helper" in output
     Parser().parse(output)
+
+
+def test_dead_code_eliminator_ignores_member_roots_when_tracking_rule_references() -> None:
+    dce = DeadCodeEliminator()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="main",
+                condition=MemberAccess(Identifier("pe"), "number_of_sections"),
+            ),
+            Rule(
+                name="pe",
+                modifiers=["private"],
+                condition=BooleanLiteral(False),
+            ),
+        ],
+    )
+
+    optimized, count = dce.eliminate(ast)
+
+    assert count == 1
+    assert [rule.name for rule in optimized.rules] == ["main"]
 
 
 def test_string_wildcard_keeps_matching_strings() -> None:

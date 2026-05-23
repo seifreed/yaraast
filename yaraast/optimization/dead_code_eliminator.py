@@ -9,6 +9,7 @@ from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, 
 from yaraast.ast.expressions import (
     BooleanLiteral,
     Identifier,
+    MemberAccess,
     ParenthesesExpression,
     SetExpression,
     StringCount,
@@ -114,6 +115,10 @@ class DeadCodeEliminator(ASTTransformer):
             self._mark_used_string(expr.subject)
         elif isinstance(expr, OfExpression | ForOfExpression):
             self._collect_string_set_value(expr.string_set)
+        elif isinstance(expr, MemberAccess):
+            if not isinstance(expr.object, Identifier):
+                self._collect_from_expression(expr.object)
+            return
         elif isinstance(expr, Identifier) and expr.name not in _RESERVED_IDENTIFIERS:
             # Could be a rule reference
             self.used_rules.add(expr.name)
@@ -173,6 +178,11 @@ class DeadCodeEliminator(ASTTransformer):
 
     def _contains_rule_reference(self, expr: ASTNode) -> bool:
         """Check if expression contains rule reference."""
+        if isinstance(expr, MemberAccess):
+            return not isinstance(expr.object, Identifier) and self._contains_rule_reference(
+                expr.object
+            )
+
         if isinstance(expr, Identifier) and expr.name not in [
             "true",
             "false",
@@ -296,6 +306,12 @@ class DeadCodeEliminator(ASTTransformer):
         """Visit Identifier - track potential rule usage."""
         if self.in_condition and node.name not in _RESERVED_IDENTIFIERS:
             self.used_rules.add(node.name)
+        return node
+
+    def visit_member_access(self, node: MemberAccess) -> MemberAccess:
+        """Visit member access without treating a bare object root as a rule reference."""
+        if not isinstance(node.object, Identifier):
+            node.object = self.visit(node.object)
         return node
 
     # Pass-through methods for other node types
