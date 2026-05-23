@@ -451,10 +451,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         for element in node.elements:
             if isinstance(element, SpreadOperator) and not element.is_dict:
                 spread_value = self.visit(element.expression)
-                try:
+                with contextlib.suppress(TypeError):
                     values.extend(spread_value)
-                except TypeError:
-                    values.append(spread_value)
             else:
                 values.append(self.visit(element))
         return values

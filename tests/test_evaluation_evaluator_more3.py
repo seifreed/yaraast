@@ -1990,11 +1990,15 @@ def test_evaluator_evaluates_yarax_collection_literals_and_indexing() -> None:
     ev = YaraEvaluator()
     ev.context.variables["tail"] = [2, 3]
     ev.context.variables["rest"] = {"b": 2}
+    ev.context.variables["scalar"] = 4
 
     assert ev.visit(ListExpression([IntegerLiteral(1), SpreadOperator(Identifier("tail"))])) == [
         1,
         2,
         3,
+    ]
+    assert ev.visit(ListExpression([IntegerLiteral(1), SpreadOperator(Identifier("scalar"))])) == [
+        1
     ]
     assert ev.visit(TupleExpression([IntegerLiteral(1), IntegerLiteral(2)])) == (1, 2)
     assert ev.visit(
