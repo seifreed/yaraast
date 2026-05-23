@@ -792,6 +792,31 @@ def test_expr_inference_validates_for_expression_quantifier_type() -> None:
     assert any("'for' quantifier must be string or integer" in e for e in inf.errors)
 
 
+def test_expr_inference_for_variable_shadows_same_named_rule() -> None:
+    env = TypeEnvironment()
+    env.add_rule("item")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(
+        ForExpression(
+            quantifier="any",
+            variable="item",
+            iterable=RangeExpression(
+                low=IntegerLiteral(value=1),
+                high=IntegerLiteral(value=2),
+            ),
+            body=BinaryExpression(
+                left=Identifier(name="item"),
+                operator="==",
+                right=IntegerLiteral(value=1),
+            ),
+        )
+    )
+
+    assert isinstance(out, BooleanType)
+    assert inf.errors == []
+
+
 def test_expr_inference_helper_and_branch_edges() -> None:
     env = TypeEnvironment()
     inf = ExpressionTypeInference(env)

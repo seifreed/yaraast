@@ -56,14 +56,14 @@ def infer_identifier(ctx, node: Identifier):
         return StringSetType()
     if node.name in ("any", "all", "none"):
         return StringType()
+    var_type = ctx.env.lookup(node.name)
+    if var_type:
+        return var_type
     if ctx.env.has_rule(node.name):
         return BooleanType()
     module_type = ctx._resolve_module_type(node.name)
     if module_type:
         return module_type
-    var_type = ctx.env.lookup(node.name)
-    if var_type:
-        return var_type
     return UnknownType()
 
 
