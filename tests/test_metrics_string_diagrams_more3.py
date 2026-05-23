@@ -63,6 +63,20 @@ def test_render_mixin_object_modifiers_and_short_prefix_paths() -> None:
     assert analysis["patterns"]["duplicates"] == []
 
 
+def test_render_and_helper_pattern_analysis_reports_common_suffixes() -> None:
+    strings = [
+        PlainString(identifier="$a", value="red_tail", modifiers=[]),
+        PlainString(identifier="$b", value="blue_tail", modifiers=[]),
+        PlainString(identifier="$c", value="green_tail", modifiers=[]),
+    ]
+
+    render_analysis = render.analyze_string_patterns(strings)
+    helper_analysis = helpers.analyze_string_patterns(strings)
+
+    assert "_tail" in render_analysis["patterns"]["common_suffixes"]
+    assert "_tail" in helper_analysis["patterns"]["common_suffixes"]
+
+
 def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None:
     jump_tokens = [
         HexByte(value=0xAA),

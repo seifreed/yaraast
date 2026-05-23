@@ -107,6 +107,22 @@ def analyze_string_patterns(strings: list) -> dict[str, Any]:
             p for p, count in prefixes.most_common(5) if count >= 2
         ]
 
+        suffixes = Counter()
+        for i, s1 in enumerate(plain_values):
+            for _j, s2 in enumerate(plain_values[i + 1 :], i + 1):
+                suffix = ""
+                for k in range(1, min(len(s1), len(s2)) + 1):
+                    if s1[-k] == s2[-k]:
+                        suffix = s1[-k] + suffix
+                    else:
+                        break
+                if len(suffix) >= 3:
+                    suffixes[suffix] += 1
+
+        analysis["patterns"]["common_suffixes"] = [
+            s for s, count in suffixes.most_common(5) if count >= 2
+        ]
+
         # Find duplicates
         value_counts = Counter(plain_values)
         analysis["patterns"]["duplicates"] = [v for v, count in value_counts.items() if count > 1]
