@@ -2322,5 +2322,6 @@ def test_evaluator_evaluates_dictionary_access_and_defined_dictionary_access() -
         )
         == "Microsoft"
     )
+    assert ev.visit(DictionaryAccess(StringLiteral("x"), "upper")) is YARA_UNDEFINED
     assert ev.visit(DefinedExpression(DictionaryAccess(Identifier("d"), "name"))) is True
     assert ev.visit(DefinedExpression(DictionaryAccess(Identifier("d"), "missing"))) is False

@@ -437,7 +437,10 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return obj[key]
         except (IndexError, KeyError, ValueError, TypeError, AttributeError):
             if isinstance(key, str) and hasattr(obj, key):
-                return getattr(obj, key)
+                value = getattr(obj, key)
+                if callable(value):
+                    return YARA_UNDEFINED
+                return value
             return None
 
     def visit_list_expression(self, node) -> list[Any]:
