@@ -2150,6 +2150,13 @@ def test_evaluator_resolves_yarax_with_declarations_for_string_helpers() -> None
     assert "l" not in ev.context.variables
 
 
+def test_evaluator_member_access_prefers_mapping_keys_over_methods() -> None:
+    ev = YaraEvaluator()
+    ev.context.variables["obj"] = {"keys": 7}
+
+    assert ev.visit_member_access(MemberAccess(Identifier("obj"), "keys")) == 7
+
+
 def test_evaluator_restores_yarax_with_declarations_when_later_declaration_fails() -> None:
     ev = YaraEvaluator()
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import contextlib
 from dataclasses import dataclass, field
 import math
@@ -399,6 +400,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         if obj is None:
             return None
+
+        if isinstance(obj, Mapping) and node.member in obj:
+            return obj[node.member]
 
         if hasattr(obj, node.member):
             value = getattr(obj, node.member)
