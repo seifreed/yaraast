@@ -819,6 +819,26 @@ def test_evaluator_does_not_treat_boolean_results_as_integers() -> None:
     )
     assert string_eval.visit_at_expression(AtExpression("$a", BooleanLiteral(True))) is False
 
+    ev.context.variables["arr"] = [10, 20]
+    assert ev.visit_array_access(ArrayAccess(Identifier("arr"), BooleanLiteral(True))) is None
+    assert (
+        ev.visit_tuple_indexing(
+            TupleIndexing(
+                TupleExpression([IntegerLiteral(10), IntegerLiteral(20)]), BooleanLiteral(True)
+            )
+        )
+        is None
+    )
+    assert (
+        ev.visit_slice_expression(
+            SliceExpression(
+                target=ListExpression([IntegerLiteral(10), IntegerLiteral(20)]),
+                start=BooleanLiteral(True),
+            )
+        )
+        is None
+    )
+
 
 def test_evaluator_uint8be_and_int8be_match_registered_builtin_functions() -> None:
     ast = Parser().parse("""

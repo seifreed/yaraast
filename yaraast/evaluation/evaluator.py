@@ -419,6 +419,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Evaluate array access."""
         array = self.visit(node.array)
         index = self.visit(node.index)
+        if isinstance(index, bool):
+            return None
 
         try:
             return array[index]
@@ -488,6 +490,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Evaluate YARA-X tuple indexing."""
         tuple_value = self.visit(node.tuple_expr)
         index = self.visit(node.index)
+        if isinstance(index, bool):
+            return None
         try:
             return tuple_value[index]
         except (IndexError, KeyError, ValueError, TypeError, AttributeError):
@@ -499,6 +503,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         start = self.visit(node.start) if node.start is not None else None
         stop = self.visit(node.stop) if node.stop is not None else None
         step = self.visit(node.step) if node.step is not None else None
+        if any(isinstance(value, bool) for value in (start, stop, step)):
+            return None
         try:
             return target[slice(start, stop, step)]
         except (IndexError, KeyError, ValueError, TypeError, AttributeError):
