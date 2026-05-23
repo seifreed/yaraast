@@ -533,9 +533,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 value = self.visit(declaration.value)
                 names = self._with_declaration_names(declaration.identifier)
                 for name in names:
-                    previous_values[name] = self.context.variables.get(
-                        name, self._missing_loop_value
-                    )
+                    if name not in previous_values:
+                        previous_values[name] = self.context.variables.get(
+                            name,
+                            self._missing_loop_value,
+                        )
                     self.context.variables[name] = value
 
             return self.visit(node.body)

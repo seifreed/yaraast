@@ -2120,6 +2120,22 @@ def test_evaluator_restores_yarax_with_declarations_when_later_declaration_fails
     assert "x" not in ev.context.variables
 
 
+def test_evaluator_restores_original_with_value_for_redeclared_name() -> None:
+    ev = YaraEvaluator()
+    ev.context.variables["x"] = 99
+
+    condition = WithStatement(
+        declarations=[
+            WithDeclaration("x", IntegerLiteral(1)),
+            WithDeclaration("x", IntegerLiteral(2)),
+        ],
+        body=Identifier("x"),
+    )
+
+    assert ev.visit(condition) == 2
+    assert ev.context.variables["x"] == 99
+
+
 def test_evaluator_evaluates_dictionary_access_and_defined_dictionary_access() -> None:
     ev = YaraEvaluator()
     ev.context.variables["d"] = {"name": "alpha", 1: "one"}
