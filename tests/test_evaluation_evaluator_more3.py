@@ -2114,6 +2114,42 @@ def test_evaluator_resolves_yarax_dollar_with_declaration_as_value() -> None:
     assert "x" not in ev.context.variables
 
 
+def test_evaluator_resolves_yarax_with_declarations_for_string_helpers() -> None:
+    ev = YaraEvaluator()
+
+    assert (
+        ev.visit(
+            WithStatement(
+                declarations=[WithDeclaration("$a", IntegerLiteral(2))],
+                body=StringCount("a"),
+            )
+        )
+        == 2
+    )
+    assert (
+        ev.visit(
+            WithStatement(
+                declarations=[WithDeclaration("$o", IntegerLiteral(7))],
+                body=StringOffset("o"),
+            )
+        )
+        == 7
+    )
+    assert (
+        ev.visit(
+            WithStatement(
+                declarations=[WithDeclaration("$l", IntegerLiteral(4))],
+                body=StringLength("l"),
+            )
+        )
+        == 4
+    )
+
+    assert "a" not in ev.context.variables
+    assert "o" not in ev.context.variables
+    assert "l" not in ev.context.variables
+
+
 def test_evaluator_restores_yarax_with_declarations_when_later_declaration_fails() -> None:
     ev = YaraEvaluator()
 

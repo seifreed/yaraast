@@ -220,13 +220,19 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             for string_id in self._resolve_string_set(node.pattern)
         )
 
-    def visit_string_count(self, node: StringCount) -> int:
+    def visit_string_count(self, node: StringCount) -> Any:
         """Get count of string matches."""
+        local_value = self._lookup_explicit_string_variable(node.string_id)
+        if local_value is not self._missing_loop_value:
+            return local_value
         string_id = self._normalize_string_id(node.string_id)
         return self.string_matcher.get_match_count(string_id)
 
     def visit_string_offset(self, node: StringOffset) -> Any:
         """Get offset of string match."""
+        local_value = self._lookup_explicit_string_variable(node.string_id)
+        if local_value is not self._missing_loop_value:
+            return local_value
         string_id = self._normalize_string_id(node.string_id)
         index = self._resolve_match_index(node.index)
         offset = self.string_matcher.get_match_offset(string_id, index)
@@ -234,6 +240,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def visit_string_length(self, node: StringLength) -> Any:
         """Get length of string match."""
+        local_value = self._lookup_explicit_string_variable(node.string_id)
+        if local_value is not self._missing_loop_value:
+            return local_value
         string_id = self._normalize_string_id(node.string_id)
         index = self._resolve_match_index(node.index)
         length = self.string_matcher.get_match_length(string_id, index)
