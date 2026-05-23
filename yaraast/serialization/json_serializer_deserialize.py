@@ -34,6 +34,19 @@ def _deserialize_optional_expression(self, data):
     return self._deserialize_expression(data)
 
 
+def _deserialize_dictionary_key(self, data: dict[str, Any]) -> str | ASTNode:
+    if "key" not in data:
+        msg = "DictionaryAccess key must be a string or expression"
+        raise SerializationError(msg)
+    key = data["key"]
+    if isinstance(key, str):
+        return key
+    if isinstance(key, dict):
+        return self._deserialize_expression(key)
+    msg = "DictionaryAccess key must be a string or expression"
+    raise SerializationError(msg)
+
+
 def _deserialize_location_int_field(data: dict[str, Any], field: str) -> int:
     value = data[field]
     if isinstance(value, int) and not isinstance(value, bool):
@@ -562,9 +575,7 @@ def _deser_dictionary_access(self, data: dict[str, Any]):
     from yaraast.ast.modules import DictionaryAccess
 
     obj = self._deserialize_expression(data["object"])
-    key = data.get("key")
-    if isinstance(key, dict):
-        key = self._deserialize_expression(key)
+    key = _deserialize_dictionary_key(self, data)
     return DictionaryAccess(object=obj, key=key)
 
 

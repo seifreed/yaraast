@@ -315,6 +315,19 @@ def _deserialize_optional_node_field(data: dict[str, Any], field: str) -> ASTNod
     return deserialize_node(value)
 
 
+def _deserialize_dictionary_key(data: dict[str, Any]) -> str | ASTNode:
+    if "key" not in data:
+        msg = "DictionaryAccess key must be a string or expression"
+        raise SerializationError(msg)
+    value = data["key"]
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return deserialize_node(value)
+    msg = "DictionaryAccess key must be a string or expression"
+    raise SerializationError(msg)
+
+
 def _deserialize_string_list_field(data: dict[str, Any], field: str, context: str) -> list[str]:
     data = _deserialize_object(data, context)
     value = data.get(field, [])
@@ -1156,7 +1169,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "DictionaryAccess":
         return DictionaryAccess(
             deserialize_node(data["object"]),
-            _deserialize_ast_value(data.get("key")),
+            _deserialize_dictionary_key(data),
         )
     if node_type == "DefinedExpression":
         expression = data.get("expression")

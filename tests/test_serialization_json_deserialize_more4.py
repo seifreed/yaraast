@@ -480,6 +480,20 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="ModuleReference module must be a string"):
         s._deserialize_expression({"type": "ModuleReference", "module": ["pe"]})
 
+    with pytest.raises(SerializationError, match="DictionaryAccess key must be a string"):
+        s._deserialize_expression(
+            {"type": "DictionaryAccess", "object": {"type": "ModuleReference", "module": "pe"}}
+        )
+
+    with pytest.raises(SerializationError, match="DictionaryAccess key must be a string"):
+        s._deserialize_expression(
+            {
+                "type": "DictionaryAccess",
+                "object": {"type": "ModuleReference", "module": "pe"},
+                "key": ["CompanyName"],
+            }
+        )
+
     with pytest.raises(SerializationError, match="RegexLiteral pattern must be a string"):
         s._deserialize_expression({"type": "RegexLiteral", "pattern": 123})
 

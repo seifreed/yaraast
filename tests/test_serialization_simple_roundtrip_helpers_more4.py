@@ -561,6 +561,20 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="ModuleReference module must be a string"):
         deserialize_node({"type": "ModuleReference", "module": ["pe"]})
 
+    with pytest.raises(SerializationError, match="DictionaryAccess key must be a string"):
+        deserialize_node(
+            {"type": "DictionaryAccess", "object": {"type": "ModuleReference", "module": "pe"}}
+        )
+
+    with pytest.raises(SerializationError, match="DictionaryAccess key must be a string"):
+        deserialize_node(
+            {
+                "type": "DictionaryAccess",
+                "object": {"type": "ModuleReference", "module": "pe"},
+                "key": ["CompanyName"],
+            }
+        )
+
     with pytest.raises(SerializationError, match="RegexLiteral pattern must be a string"):
         deserialize_node({"type": "RegexLiteral", "pattern": 123})
 
