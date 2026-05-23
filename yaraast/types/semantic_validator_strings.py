@@ -297,11 +297,13 @@ class UndefinedStringDetector:
 
     def __init__(self, result: ValidationResult) -> None:
         self.result = result
+        self._local_string_scopes: list[set[str]] = []
 
     def check_rule(self, rule: Rule) -> None:
         """Check a rule for undefined string references in its condition."""
         if not rule.condition:
             return
+        self._local_string_scopes.clear()
 
         # Collect defined string identifiers (normalized to $name format)
         defined = set()
@@ -337,12 +339,69 @@ class UndefinedStringDetector:
         self._check_invalid_string_sets(rule.condition, defined, rule.name)
 
         used = set()
+        self._local_string_scopes.clear()
         self._collect_used_string_defs(rule.condition, defined, anonymous, used)
         for sid in sorted(defined - used):
             self.result.add_error(
                 f"Unreferenced string '{sid}' in rule '{rule.name}'",
                 suggestion="Reference the string in the condition or remove the definition.",
             )
+
+    def _normalize_ref(self, ref: str) -> str:
+        return ref if ref.startswith("$") else f"${ref}"
+
+    def _is_local_string_ref(self, ref: str) -> bool:
+        normalized = self._normalize_ref(ref)
+        return any(normalized in scope for scope in reversed(self._local_string_scopes))
+
+    def _add_local_string_declaration(self, identifier: str) -> None:
+        if not identifier.startswith("$") or not self._local_string_scopes:
+            return
+        self._local_string_scopes[-1].add(identifier)
+
+    def _collect_with_statement_refs(
+        self,
+        node: ASTNode,
+        refs: set[str],
+        implicit_string_allowed: bool,
+    ) -> None:
+        self._local_string_scopes.append(set())
+        try:
+            for declaration in node.declarations:
+                self._collect_string_refs(declaration.value, refs, implicit_string_allowed)
+                self._add_local_string_declaration(declaration.identifier)
+            self._collect_string_refs(node.body, refs, implicit_string_allowed)
+        finally:
+            self._local_string_scopes.pop()
+
+    def _collect_with_statement_used(
+        self,
+        node: ASTNode,
+        defined: set[str],
+        anonymous: set[str],
+        used: set[str],
+        implicit_string_allowed: bool,
+    ) -> None:
+        self._local_string_scopes.append(set())
+        try:
+            for declaration in node.declarations:
+                self._collect_used_string_defs(
+                    declaration.value,
+                    defined,
+                    anonymous,
+                    used,
+                    implicit_string_allowed,
+                )
+                self._add_local_string_declaration(declaration.identifier)
+            self._collect_used_string_defs(
+                node.body,
+                defined,
+                anonymous,
+                used,
+                implicit_string_allowed,
+            )
+        finally:
+            self._local_string_scopes.pop()
 
     def _matches_defined_pattern(
         self, pattern: str, defined: set[str], anonymous: set[str]
@@ -364,25 +423,29 @@ class UndefinedStringDetector:
             StringOffset,
             StringWildcard,
         )
+        from yaraast.yarax.ast_nodes import WithStatement
 
         if isinstance(node, StringIdentifier):
-            if implicit_string_allowed and node.name == "$":
+            if (implicit_string_allowed and node.name == "$") or self._is_local_string_ref(
+                node.name
+            ):
                 return
             refs.add(node.name)
         elif isinstance(node, StringWildcard):
-            refs.add(node.pattern)
+            if not self._is_local_string_ref(node.pattern):
+                refs.add(node.pattern)
         elif isinstance(node, StringCount | StringOffset | StringLength):
             ref = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
-            if implicit_string_allowed and ref == "$":
+            if (implicit_string_allowed and ref == "$") or self._is_local_string_ref(ref):
                 return
             refs.add(ref)
         elif isinstance(node, AtExpression):
             ref = node.string_id if node.string_id.startswith("$") else f"${node.string_id}"
-            if not (implicit_string_allowed and ref == "$"):
+            if not ((implicit_string_allowed and ref == "$") or self._is_local_string_ref(ref)):
                 refs.add(ref)
         elif isinstance(node, InExpression) and isinstance(node.subject, str):
             ref = node.subject if node.subject.startswith("$") else f"${node.subject}"
-            if not (implicit_string_allowed and ref == "$"):
+            if not ((implicit_string_allowed and ref == "$") or self._is_local_string_ref(ref)):
                 refs.add(ref)
         elif isinstance(node, ForOfExpression):
             if hasattr(node.quantifier, "accept"):
@@ -395,6 +458,9 @@ class UndefinedStringDetector:
             if hasattr(node.quantifier, "accept"):
                 self._collect_string_refs(node.quantifier, refs)
             self._collect_string_set_refs(node.string_set, refs)
+            return
+        elif isinstance(node, WithStatement):
+            self._collect_with_statement_refs(node, refs, implicit_string_allowed)
             return
 
         # Recurse into children
@@ -412,7 +478,7 @@ class UndefinedStringDetector:
         )
 
         if isinstance(string_set, str):
-            if string_set != "them":
+            if string_set != "them" and not self._is_local_string_ref(string_set):
                 refs.add(string_set)
             return
 
@@ -426,9 +492,11 @@ class UndefinedStringDetector:
             return
 
         if isinstance(string_set, StringIdentifier):
-            refs.add(string_set.name)
+            if not self._is_local_string_ref(string_set.name):
+                refs.add(string_set.name)
         elif isinstance(string_set, StringWildcard):
-            refs.add(string_set.pattern)
+            if not self._is_local_string_ref(string_set.pattern):
+                refs.add(string_set.pattern)
         elif isinstance(string_set, StringLiteral):
             self._collect_string_set_refs(string_set.value, refs)
         elif isinstance(string_set, Identifier) and string_set.name == "them":
@@ -487,23 +555,28 @@ class UndefinedStringDetector:
             StringOffset,
             StringWildcard,
         )
+        from yaraast.yarax.ast_nodes import WithStatement
 
         if isinstance(node, StringIdentifier):
-            if not (implicit_string_allowed and node.name == "$"):
+            if not (
+                (implicit_string_allowed and node.name == "$")
+                or self._is_local_string_ref(node.name)
+            ):
                 self._mark_used_string_ref(node.name, defined, anonymous, used)
         elif isinstance(node, StringWildcard):
-            self._mark_used_string_ref(node.pattern, defined, anonymous, used)
+            if not self._is_local_string_ref(node.pattern):
+                self._mark_used_string_ref(node.pattern, defined, anonymous, used)
         elif isinstance(node, StringCount | StringOffset | StringLength):
             ref = f"${node.string_id}" if not node.string_id.startswith("$") else node.string_id
-            if not (implicit_string_allowed and ref == "$"):
+            if not ((implicit_string_allowed and ref == "$") or self._is_local_string_ref(ref)):
                 self._mark_used_string_ref(ref, defined, anonymous, used)
         elif isinstance(node, AtExpression):
             ref = node.string_id if node.string_id.startswith("$") else f"${node.string_id}"
-            if not (implicit_string_allowed and ref == "$"):
+            if not ((implicit_string_allowed and ref == "$") or self._is_local_string_ref(ref)):
                 self._mark_used_string_ref(ref, defined, anonymous, used)
         elif isinstance(node, InExpression) and isinstance(node.subject, str):
             ref = node.subject if node.subject.startswith("$") else f"${node.subject}"
-            if not (implicit_string_allowed and ref == "$"):
+            if not ((implicit_string_allowed and ref == "$") or self._is_local_string_ref(ref)):
                 self._mark_used_string_ref(ref, defined, anonymous, used)
         elif isinstance(node, ForOfExpression):
             if hasattr(node.quantifier, "accept"):
@@ -516,6 +589,15 @@ class UndefinedStringDetector:
             if hasattr(node.quantifier, "accept"):
                 self._collect_used_string_defs(node.quantifier, defined, anonymous, used)
             self._mark_used_string_set(node.string_set, defined, anonymous, used)
+            return
+        elif isinstance(node, WithStatement):
+            self._collect_with_statement_used(
+                node,
+                defined,
+                anonymous,
+                used,
+                implicit_string_allowed,
+            )
             return
 
         for child in node.children():
@@ -536,7 +618,7 @@ class UndefinedStringDetector:
         if isinstance(string_set, str):
             if string_set == "them":
                 used.update(defined)
-            else:
+            elif not self._is_local_string_ref(string_set):
                 self._mark_used_string_ref(string_set, defined, anonymous, used)
             return
 
@@ -548,9 +630,11 @@ class UndefinedStringDetector:
         if isinstance(string_set, ParenthesesExpression):
             self._mark_used_string_set(string_set.expression, defined, anonymous, used)
         elif isinstance(string_set, StringIdentifier):
-            self._mark_used_string_ref(string_set.name, defined, anonymous, used)
+            if not self._is_local_string_ref(string_set.name):
+                self._mark_used_string_ref(string_set.name, defined, anonymous, used)
         elif isinstance(string_set, StringWildcard):
-            self._mark_used_string_ref(string_set.pattern, defined, anonymous, used)
+            if not self._is_local_string_ref(string_set.pattern):
+                self._mark_used_string_ref(string_set.pattern, defined, anonymous, used)
         elif isinstance(string_set, StringLiteral):
             self._mark_used_string_set(string_set.value, defined, anonymous, used)
         elif isinstance(string_set, Identifier) and string_set.name == "them":

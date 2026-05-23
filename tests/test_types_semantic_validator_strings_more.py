@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    IntegerLiteral,
+    StringIdentifier,
+    StringLiteral,
+)
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
@@ -15,6 +21,7 @@ from yaraast.types.semantic_validator_strings import (
     StringModifierApplicabilityValidator,
     UndefinedStringDetector,
 )
+from yaraast.yarax.ast_nodes import WithDeclaration, WithStatement
 
 
 def test_string_identifier_validator_covers_plain_hex_regex_and_empty_id() -> None:
@@ -119,6 +126,47 @@ def test_semantic_validator_reports_regex_only_modifiers_on_plain_strings() -> N
 
     assert result.is_valid is False
     assert any("Regex-only modifier 'dotall'" in error.message for error in result.errors)
+
+
+def test_semantic_validator_respects_yarax_with_local_string_variables() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="local_string",
+                strings=[],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", StringLiteral("test"))],
+                    body=BinaryExpression(
+                        StringIdentifier("$x"),
+                        "matches",
+                        StringLiteral("^test$"),
+                    ),
+                ),
+            ),
+            Rule(
+                name="shadowed_string",
+                strings=[PlainString(identifier="$x", value="real")],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", IntegerLiteral(1))],
+                    body=BinaryExpression(
+                        StringIdentifier("$x"),
+                        "==",
+                        IntegerLiteral(1),
+                    ),
+                ),
+            ),
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert not any(
+        "Undefined string '$x' in rule 'local_string'" in message for message in messages
+    )
+    assert any(
+        "Unreferenced string '$x' in rule 'shadowed_string'" in message for message in messages
+    )
 
 
 def test_semantic_validator_rejects_empty_text_and_hex_strings() -> None:
