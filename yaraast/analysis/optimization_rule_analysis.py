@@ -9,7 +9,6 @@ from yaraast.analysis.optimization_grouping_helpers import (
     group_rules_by_pattern,
 )
 from yaraast.analysis.optimization_helpers import (
-    extract_comparison,
     get_condition_pattern,
     get_hex_prefix,
     should_be_hex,
@@ -121,8 +120,8 @@ def visit_binary_expression(analyzer, node) -> None:
     analyzer._condition_depth += 1
     analyzer._max_condition_depth = max(analyzer._max_condition_depth, analyzer._condition_depth)
     if node.operator == "and":
-        left_cmp = extract_comparison(node.left)
-        right_cmp = extract_comparison(node.right)
+        left_cmp = analyzer._extract_comparison(node.left)
+        right_cmp = analyzer._extract_comparison(node.right)
         if (
             left_cmp
             and right_cmp

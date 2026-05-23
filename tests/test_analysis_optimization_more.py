@@ -160,6 +160,22 @@ def test_optimization_analyzer_respects_yarax_with_local_string_shadowing() -> N
     assert not any("String '$a' is referenced" in s.description for s in report.suggestions)
 
 
+def test_optimization_analyzer_respects_yarax_with_local_string_count_shadowing() -> None:
+    ast = parse_yara_source("""
+        rule shadowed_count_redundancy {
+            strings:
+                $a = "value"
+            condition:
+                with $a = 1:
+                    #a > 0 and #a > 1
+        }
+        """)
+
+    report = OptimizationAnalyzer().analyze(ast)
+
+    assert not any("Redundant comparisons on '#a'" in s.description for s in report.suggestions)
+
+
 def test_optimization_analyzer_detects_parsed_any_of_them_specificity() -> None:
     strings = "\n".join(f'        $s{i} = "v{i}"' for i in range(11))
     ast = _parse(f"""

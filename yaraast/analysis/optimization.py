@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from yaraast.analysis.optimization_helpers import extract_comparison
 from yaraast.analysis.optimization_rule_analysis import (
     analyze_condition_patterns,
     analyze_cross_rule_patterns,
@@ -261,6 +262,19 @@ class OptimizationAnalyzer(BaseVisitor[None]):
     def _define_local(self, name: str) -> None:
         if self._local_scopes:
             self._local_scopes[-1].update(self._local_name_variants(name))
+
+    def _extract_comparison(self, expression: Any) -> dict[str, Any] | None:
+        comparison = extract_comparison(expression)
+        if comparison is None:
+            return None
+        if self._is_local_comparison_var(str(comparison["var"])):
+            return None
+        return comparison
+
+    def _is_local_comparison_var(self, name: str) -> bool:
+        if name.startswith("#"):
+            return self._is_local(f"${name[1:]}")
+        return self._is_local(name)
 
     @staticmethod
     def _local_name_variants(name: str) -> set[str]:
