@@ -47,9 +47,13 @@ from yaraast.types._registry import (
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
+    DictExpression,
+    DictItem,
+    ListExpression,
     MatchCase,
     PatternMatch,
     SliceExpression,
+    SpreadOperator,
     TupleIndexing,
 )
 
@@ -815,6 +819,47 @@ def test_expr_inference_for_variable_shadows_same_named_rule() -> None:
 
     assert isinstance(out, BooleanType)
     assert inf.errors == []
+
+
+def test_expr_inference_flattens_collection_spreads() -> None:
+    env = TypeEnvironment()
+    env.define("tail", ArrayType(IntegerType()))
+    env.define("rest", DictionaryType(StringType(), IntegerType()))
+
+    list_inf = ExpressionTypeInference(env)
+    list_type = list_inf.infer(
+        ListExpression(
+            elements=[
+                IntegerLiteral(value=1),
+                SpreadOperator(expression=Identifier(name="tail")),
+            ],
+        )
+    )
+
+    assert isinstance(list_type, ArrayType)
+    assert isinstance(list_type.element_type, IntegerType)
+    assert list_inf.errors == []
+
+    dict_inf = ExpressionTypeInference(env)
+    dict_type = dict_inf.infer(
+        DictExpression(
+            items=[
+                DictItem(key=StringLiteral(value="a"), value=IntegerLiteral(value=1)),
+                DictItem(
+                    key=StringLiteral(value="__spread__"),
+                    value=SpreadOperator(
+                        expression=Identifier(name="rest"),
+                        is_dict=True,
+                    ),
+                ),
+            ],
+        )
+    )
+
+    assert isinstance(dict_type, DictionaryType)
+    assert isinstance(dict_type.key_type, StringType)
+    assert isinstance(dict_type.value_type, IntegerType)
+    assert dict_inf.errors == []
 
 
 def test_expr_inference_helper_and_branch_edges() -> None:

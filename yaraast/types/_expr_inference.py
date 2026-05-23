@@ -37,6 +37,7 @@ from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock
 from yaraast.visitor.defaults import DefaultASTVisitor
+from yaraast.yarax.ast_nodes import SpreadOperator
 
 from . import _expr_inference_ops as ops
 from ._registry import (
@@ -256,17 +257,41 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         return value_type
 
     def visit_list_expression(self, node) -> YaraType:
-        return ArrayType(self._infer_common_type(node.elements))
+        element_types = []
+        for element in node.elements:
+            element_type = self.visit(element)
+            if isinstance(element, SpreadOperator) and not element.is_dict:
+                if isinstance(element_type, ArrayType):
+                    element_types.append(element_type.element_type)
+                else:
+                    self.errors.append(f"List spread requires array, got {element_type}")
+                    element_types.append(UnknownType())
+                continue
+            element_types.append(element_type)
+        return ArrayType(self._infer_common_type_from_types(element_types))
 
     def visit_tuple_expression(self, node) -> YaraType:
         return ArrayType(self._infer_common_type(node.elements))
 
     def visit_dict_expression(self, node) -> YaraType:
-        keys = [item.key for item in node.items]
-        values = [item.value for item in node.items]
+        key_types = []
+        value_types = []
+        for item in node.items:
+            if isinstance(item.value, SpreadOperator) and item.value.is_dict:
+                spread_type = self.visit(item.value)
+                if isinstance(spread_type, DictionaryType):
+                    key_types.append(spread_type.key_type)
+                    value_types.append(spread_type.value_type)
+                else:
+                    self.errors.append(f"Dict spread requires dictionary, got {spread_type}")
+                    key_types.append(UnknownType())
+                    value_types.append(UnknownType())
+                continue
+            key_types.append(self.visit(item.key))
+            value_types.append(self.visit(item.value))
         return DictionaryType(
-            self._infer_common_type(keys),
-            self._infer_common_type(values),
+            self._infer_common_type_from_types(key_types),
+            self._infer_common_type_from_types(value_types),
         )
 
     def visit_dict_item(self, node) -> YaraType:
@@ -389,9 +414,13 @@ class ExpressionTypeInference(_TypeBaseVisitor):
     def _infer_common_type(self, nodes: list) -> YaraType:
         if not nodes:
             return UnknownType()
-        first_type = self.visit(nodes[0])
-        for node in nodes[1:]:
-            current_type = self.visit(node)
+        return self._infer_common_type_from_types([self.visit(node) for node in nodes])
+
+    def _infer_common_type_from_types(self, types: list[YaraType]) -> YaraType:
+        if not types:
+            return UnknownType()
+        first_type = types[0]
+        for current_type in types[1:]:
             if not first_type.is_compatible_with(current_type):
                 self.errors.append(
                     f"Collection elements must have compatible types: {first_type} vs {current_type}"
