@@ -2195,6 +2195,22 @@ def test_evaluator_returns_empty_comprehensions_for_non_iterable_sources() -> No
     assert ev.visit(dict_node) == {}
 
 
+def test_evaluator_restores_none_implicit_for_of_variable() -> None:
+    ev = YaraEvaluator()
+    ev.context.string_matches = {"$a": [(0, 1)]}
+    ev.context.variables["$"] = None
+
+    node = ForOfExpression(
+        quantifier="any",
+        string_set=["$a"],
+        condition=BooleanLiteral(True),
+    )
+
+    assert ev.visit(node) is True
+    assert "$" in ev.context.variables
+    assert ev.context.variables["$"] is None
+
+
 def test_evaluator_evaluates_dictionary_access_and_defined_dictionary_access() -> None:
     ev = YaraEvaluator()
     ev.context.variables["d"] = {"name": "alpha", 1: "one"}

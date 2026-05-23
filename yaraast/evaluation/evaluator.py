@@ -900,13 +900,13 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         for string_id in string_set:
             if node.condition is not None:
                 # Set up implicit $ variable for the condition body
-                old_value = self.context.variables.get("$")
+                old_value = self.context.variables.get("$", self._missing_loop_value)
                 self.context.variables["$"] = string_id
                 try:
                     if _is_evaluation_truthy(self.visit(node.condition)):
                         matches += 1
                 finally:
-                    if old_value is not None:
+                    if old_value is not self._missing_loop_value:
                         self.context.variables["$"] = old_value
                     else:
                         self.context.variables.pop("$", None)
