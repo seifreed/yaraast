@@ -79,10 +79,19 @@ class StringDiagramAnalysisMixin:
 
     def _analyze_hex_tokens(self, tokens: list) -> dict[str, Any]:
         """Analyze hex string tokens."""
-        from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexWildcard
+        from yaraast.ast.strings import (
+            HexAlternative,
+            HexByte,
+            HexJump,
+            HexNegatedByte,
+            HexNibble,
+            HexWildcard,
+        )
 
         analysis = {
             "bytes": 0,
+            "negated_bytes": 0,
+            "nibbles": 0,
             "wildcards": 0,
             "jumps": 0,
             "alternatives": 0,
@@ -93,6 +102,13 @@ class StringDiagramAnalysisMixin:
         for token in tokens:
             if isinstance(token, HexByte):
                 analysis["bytes"] += 1
+            elif isinstance(token, HexNegatedByte):
+                analysis["bytes"] += 1
+                analysis["negated_bytes"] += 1
+                analysis["complexity_score"] += 1
+            elif isinstance(token, HexNibble):
+                analysis["nibbles"] += 1
+                analysis["wildcards"] += 1
             elif isinstance(token, HexWildcard):
                 analysis["wildcards"] += 1
             elif isinstance(token, HexJump):

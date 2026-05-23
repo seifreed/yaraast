@@ -57,11 +57,16 @@ class StringDiagramLabelsMixin:
     def _create_hex_token_label(self, token_analysis: dict[str, Any]) -> str:
         """Create detailed hex token label."""
         bytes_count = token_analysis.get("bytes", 0)
+        negated_bytes = token_analysis.get("negated_bytes", 0)
+        nibbles = token_analysis.get("nibbles", 0)
         wildcards = token_analysis.get("wildcards", 0)
         jumps = token_analysis.get("jumps", 0)
         alternatives = token_analysis.get("alternatives", 0)
 
-        return f"Bytes: {bytes_count}|Wildcards: {wildcards}|Jumps: {jumps}|Alternatives: {alternatives}"
+        return (
+            f"Bytes: {bytes_count}|Negated: {negated_bytes}|Nibbles: {nibbles}|"
+            f"Wildcards: {wildcards}|Jumps: {jumps}|Alternatives: {alternatives}"
+        )
 
     def _create_hex_complexity_label(
         self,

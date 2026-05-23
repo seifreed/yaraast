@@ -4,7 +4,16 @@ from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexByte, HexJump, HexString, HexWildcard, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    HexWildcard,
+    PlainString,
+    RegexString,
+)
 from yaraast.metrics.string_diagrams import StringDiagramGenerator
 
 
@@ -54,6 +63,26 @@ def test_analysis_mixin_core_paths() -> None:
     # regex analysis
     ra = gen._analyze_regex_pattern("^(ab)+[0-9]$")
     assert ra["groups"] >= 1 and ra["quantifiers"] >= 1
+
+
+def test_analysis_counts_nibbles_and_negated_bytes_in_hex_metrics() -> None:
+    gen = StringDiagramGenerator()
+
+    analysis = gen._analyze_hex_tokens(
+        [
+            HexByte(value=0x41),
+            HexNegatedByte(value=0x00),
+            HexNibble(high=True, value=0xA),
+            HexNibble(high=False, value=0xB),
+        ]
+    )
+
+    assert analysis["bytes"] == 2
+    assert analysis["negated_bytes"] == 1
+    assert analysis["nibbles"] == 2
+    assert analysis["wildcards"] == 2
+    assert analysis["wildcard_ratio"] == 0.5
+    assert analysis["complexity_score"] > 0
 
 
 def test_analysis_mixin_handles_byte_plain_strings_in_graphs() -> None:
