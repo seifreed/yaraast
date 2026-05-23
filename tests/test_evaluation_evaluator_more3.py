@@ -2184,6 +2184,24 @@ def test_evaluator_binds_missing_lambda_arguments_as_undefined() -> None:
     assert ev.context.variables["y"] == 99
 
 
+def test_evaluator_calls_lambda_variables() -> None:
+    ev = YaraEvaluator()
+    condition = WithStatement(
+        declarations=[
+            WithDeclaration(
+                "f",
+                LambdaExpression(
+                    parameters=["x"],
+                    body=BinaryExpression(Identifier("x"), "+", IntegerLiteral(1)),
+                ),
+            )
+        ],
+        body=FunctionCall("f", [IntegerLiteral(2)]),
+    )
+
+    assert ev.visit(condition) == 3
+
+
 def test_evaluator_handles_non_iterable_for_source_without_crashing() -> None:
     ev = YaraEvaluator()
 

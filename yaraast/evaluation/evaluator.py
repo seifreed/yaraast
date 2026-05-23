@@ -345,6 +345,10 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 raise EvaluationError(msg)
             return reader(self.data, offset)
 
+        local_function = self.context.variables.get(node.function)
+        if callable(local_function):
+            return local_function(*args)
+
         # Module functions
         if "." in node.function:
             module_name, func_name = node.function.split(".", 1)
