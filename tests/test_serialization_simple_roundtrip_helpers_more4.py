@@ -583,6 +583,9 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="ArrayComprehension variable must be a string"):
         deserialize_node({"type": "ArrayComprehension", "variable": ["x"]})
 
+    with pytest.raises(SerializationError, match="Serialized node must be an object"):
+        deserialize_node({"type": "ArrayComprehension", "expression": False})
+
     with pytest.raises(
         SerializationError, match="DictComprehension value_variable must be a string"
     ):
@@ -598,6 +601,9 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
 
     with pytest.raises(SerializationError, match="PatternMatch cases must be a list"):
         deserialize_node({"type": "PatternMatch", "value": true_expr, "cases": "case"})
+
+    with pytest.raises(SerializationError, match="Serialized node must be an object"):
+        deserialize_node({"type": "Rule", "name": "bad_condition", "condition": False})
 
     with pytest.raises(SerializationError, match="SpreadOperator is_dict must be a boolean"):
         deserialize_node({"type": "SpreadOperator", "expression": true_expr, "is_dict": "yes"})

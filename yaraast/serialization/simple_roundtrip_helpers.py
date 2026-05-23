@@ -308,6 +308,13 @@ def _deserialize_nullable_string_field(
     raise SerializationError(msg)
 
 
+def _deserialize_optional_node_field(data: dict[str, Any], field: str) -> ASTNode | None:
+    value = data.get(field)
+    if value is None:
+        return None
+    return deserialize_node(value)
+
+
 def _deserialize_string_list_field(data: dict[str, Any], field: str, context: str) -> list[str]:
     data = _deserialize_object(data, context)
     value = data.get(field, [])
@@ -1190,27 +1197,23 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ArrayComprehension":
         return ArrayComprehension(
-            expression=deserialize_node(data["expression"]) if data.get("expression") else None,
+            expression=_deserialize_optional_node_field(data, "expression"),
             variable=_deserialize_optional_string_field(data, "variable", "ArrayComprehension"),
-            iterable=deserialize_node(data["iterable"]) if data.get("iterable") else None,
-            condition=deserialize_node(data["condition"]) if data.get("condition") else None,
+            iterable=_deserialize_optional_node_field(data, "iterable"),
+            condition=_deserialize_optional_node_field(data, "condition"),
         )
     if node_type == "DictComprehension":
         return DictComprehension(
-            key_expression=(
-                deserialize_node(data["key_expression"]) if data.get("key_expression") else None
-            ),
-            value_expression=(
-                deserialize_node(data["value_expression"]) if data.get("value_expression") else None
-            ),
+            key_expression=_deserialize_optional_node_field(data, "key_expression"),
+            value_expression=_deserialize_optional_node_field(data, "value_expression"),
             key_variable=_deserialize_optional_string_field(
                 data, "key_variable", "DictComprehension"
             ),
             value_variable=_deserialize_nullable_string_field(
                 data, "value_variable", "DictComprehension"
             ),
-            iterable=deserialize_node(data["iterable"]) if data.get("iterable") else None,
-            condition=deserialize_node(data["condition"]) if data.get("condition") else None,
+            iterable=_deserialize_optional_node_field(data, "iterable"),
+            condition=_deserialize_optional_node_field(data, "condition"),
         )
     if node_type == "TupleExpression":
         return TupleExpression(
@@ -1246,9 +1249,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "SliceExpression":
         return SliceExpression(
             target=deserialize_node(data["target"]),
-            start=deserialize_node(data["start"]) if data.get("start") else None,
-            stop=deserialize_node(data["stop"]) if data.get("stop") else None,
-            step=deserialize_node(data["step"]) if data.get("step") else None,
+            start=_deserialize_optional_node_field(data, "start"),
+            stop=_deserialize_optional_node_field(data, "stop"),
+            step=_deserialize_optional_node_field(data, "step"),
         )
     if node_type == "LambdaExpression":
         return LambdaExpression(
@@ -1262,7 +1265,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
                 deserialize_node(case)
                 for case in _deserialize_list_field(data, "cases", "PatternMatch")
             ],
-            default=deserialize_node(data["default"]) if data.get("default") else None,
+            default=_deserialize_optional_node_field(data, "default"),
         )
     if node_type == "MatchCase":
         return MatchCase(
@@ -1309,13 +1312,14 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
 
 def deserialize_rule(data: dict[str, Any]) -> Rule:
     """Deserialize a Rule."""
+    condition_data = data.get("condition")
     rule = Rule(
         name=_deserialize_string_field(data, "name", "Rule"),
         modifiers=_deserialize_rule_modifiers(
             _deserialize_string_list_field(data, "modifiers", "Rule")
         ),
         condition=(
-            deserialize_node(data["condition"]) if data.get("condition") else BooleanLiteral(True)
+            deserialize_node(condition_data) if condition_data is not None else BooleanLiteral(True)
         ),
     )
 

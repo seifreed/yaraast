@@ -29,7 +29,9 @@ def _deserialize_ast_value(self, data):
 
 
 def _deserialize_optional_expression(self, data):
-    return self._deserialize_expression(data) if data else None
+    if data is None:
+        return None
+    return self._deserialize_expression(data)
 
 
 def _deserialize_location_int_field(data: dict[str, Any], field: str) -> int:
@@ -851,8 +853,9 @@ class JsonSerializerDeserializeMixin:
         strings = [
             self._deserialize_string(s) for s in _deserialize_list_field(data, "strings", "Rule")
         ]
+        condition_data = data.get("condition")
         condition = (
-            self._deserialize_expression(data["condition"]) if data.get("condition") else None
+            self._deserialize_expression(condition_data) if condition_data is not None else None
         )
 
         tags = [self._deserialize_tag(t) for t in _deserialize_list_field(data, "tags", "Rule")]

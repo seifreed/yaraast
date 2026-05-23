@@ -505,6 +505,9 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="ArrayComprehension variable must be a string"):
         s._deserialize_expression({"type": "ArrayComprehension", "variable": ["x"]})
 
+    with pytest.raises(SerializationError, match="Expression must be an object"):
+        s._deserialize_expression({"type": "ArrayComprehension", "expression": False})
+
     with pytest.raises(
         SerializationError, match="DictComprehension value_variable must be a string"
     ):
@@ -554,6 +557,9 @@ def test_json_deserialize_condition_fields_reject_wrong_scalar_types() -> None:
                 "range": true_expr,
             }
         )
+
+    with pytest.raises(SerializationError, match="Expression must be an object"):
+        s._deserialize_rule({"name": "bad_condition", "condition": False})
 
 
 def test_deserialize_expression_comprehensive_branches() -> None:
