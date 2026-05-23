@@ -196,13 +196,22 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         # Unknown identifier evaluates to false (graceful handling)
         return False
 
-    def visit_string_identifier(self, node: StringIdentifier) -> bool:
+    def visit_string_identifier(self, node: StringIdentifier) -> Any:
         """String identifier evaluates to whether it matched."""
+        local_value = self._lookup_explicit_string_variable(node.name)
+        if local_value is not self._missing_loop_value:
+            return local_value
+
         string_id = self._normalize_string_id(node.name)
         return (
             string_id in self.context.string_matches
             and len(self.context.string_matches[string_id]) > 0
         )
+
+    def _lookup_explicit_string_variable(self, name: str) -> Any:
+        if name == "$":
+            return self._missing_loop_value
+        return self.context.variables.get(name, self._missing_loop_value)
 
     def visit_string_wildcard(self, node) -> bool:
         """String wildcard ($*) evaluates to whether any strings matched."""
@@ -929,6 +938,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             value = self.visit(expr)
             return value is not None and not is_yara_undefined(value)
         if isinstance(expr, StringIdentifier) and self._current_rule and self._current_rule.strings:
+            if self._lookup_explicit_string_variable(expr.name) is not self._missing_loop_value:
+                return True
             # Check if string is defined in current rule
             target = self._normalize_string_id(expr.name)
             for string_def in self._current_rule.strings:
@@ -937,7 +948,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
             return False
         if isinstance(expr, StringIdentifier):
-            return False
+            return self._lookup_explicit_string_variable(expr.name) is not self._missing_loop_value
 
         value = self.visit(expr)
         return value is not None and not is_yara_undefined(value)

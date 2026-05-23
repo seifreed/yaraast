@@ -2081,6 +2081,27 @@ def test_evaluator_evaluates_yarax_with_statement_and_pattern_match() -> None:
     assert "x" not in ev.context.variables
 
 
+def test_evaluator_resolves_yarax_dollar_with_declaration_as_value() -> None:
+    ev = YaraEvaluator()
+
+    condition = WithStatement(
+        declarations=[WithDeclaration("$x", StringLiteral("test"))],
+        body=BinaryExpression(
+            BinaryExpression(
+                StringIdentifier("$x"),
+                "matches",
+                StringLiteral("^test$"),
+            ),
+            "and",
+            DefinedExpression(StringIdentifier("$x")),
+        ),
+    )
+
+    assert ev.visit(condition) is True
+    assert "$x" not in ev.context.variables
+    assert "x" not in ev.context.variables
+
+
 def test_evaluator_restores_yarax_with_declarations_when_later_declaration_fails() -> None:
     ev = YaraEvaluator()
 
