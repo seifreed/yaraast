@@ -77,6 +77,20 @@ def test_render_and_helper_pattern_analysis_reports_common_suffixes() -> None:
     assert "_tail" in helper_analysis["patterns"]["common_suffixes"]
 
 
+def test_render_and_helper_pattern_report_counts_triplicate_plain_value_as_one_unique() -> None:
+    strings = [
+        PlainString(identifier="$a", value="same", modifiers=[]),
+        PlainString(identifier="$b", value="same", modifiers=[]),
+        PlainString(identifier="$c", value="same", modifiers=[]),
+    ]
+
+    render_report = render.generate_pattern_report(strings)
+    helper_report = helpers.generate_pattern_report(strings)
+
+    assert render_report["summary"]["unique_patterns"] == 1
+    assert helper_report["summary"]["unique_patterns"] == 1
+
+
 def test_render_and_helpers_regex_hex_reports_cover_remaining_branches() -> None:
     jump_tokens = [
         HexByte(value=0xAA),

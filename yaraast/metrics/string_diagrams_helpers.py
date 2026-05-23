@@ -11,6 +11,7 @@ from yaraast.metrics.string_diagrams_common import (
     format_hex_token_for_diagram,
     modifier_names,
     plain_value_text,
+    string_pattern_identity,
 )
 
 from .string_diagrams import StringDiagramGenerator
@@ -138,7 +139,7 @@ def generate_pattern_report(strings: list) -> dict[str, Any]:
         "summary": {
             "total": analysis["total_strings"],
             "by_type": analysis["types"],
-            "unique_patterns": analysis["total_strings"] - len(analysis["patterns"]["duplicates"]),
+            "unique_patterns": len({string_pattern_identity(string_def) for string_def in strings}),
         },
         "details": [],
     }
