@@ -1070,16 +1070,14 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "StringCount":
         return StringCount(_deserialize_string_field(data, "string_id", "StringCount"))
     if node_type == "StringOffset":
-        index = data.get("index")
         return StringOffset(
             _deserialize_string_field(data, "string_id", "StringOffset"),
-            deserialize_node(index) if index else None,
+            _deserialize_optional_node_field(data, "index"),
         )
     if node_type == "StringLength":
-        index = data.get("index")
         return StringLength(
             _deserialize_string_field(data, "string_id", "StringLength"),
-            deserialize_node(index) if index else None,
+            _deserialize_optional_node_field(data, "index"),
         )
     if node_type == "BinaryExpression":
         return BinaryExpression(
@@ -1126,11 +1124,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             deserialize_node(data["body"]),
         )
     if node_type == "ForOfExpression":
-        condition = data.get("condition")
         return ForOfExpression(
             _deserialize_ast_value(data["quantifier"]),
             _deserialize_ast_value(data["string_set"]),
-            deserialize_node(condition) if condition else None,
+            _deserialize_optional_node_field(data, "condition"),
         )
     if node_type == "AtExpression":
         return AtExpression(

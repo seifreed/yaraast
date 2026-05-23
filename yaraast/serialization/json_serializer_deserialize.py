@@ -446,7 +446,7 @@ def _deser_string_offset(self, data: dict[str, Any]):
     index = data.get("index")
     return StringOffset(
         string_id=_deserialize_string_field(data, "string_id", "StringOffset"),
-        index=self._deserialize_expression(index) if index else None,
+        index=_deserialize_optional_expression(self, index),
     )
 
 
@@ -456,7 +456,7 @@ def _deser_string_length(self, data: dict[str, Any]):
     index = data.get("index")
     return StringLength(
         string_id=_deserialize_string_field(data, "string_id", "StringLength"),
-        index=self._deserialize_expression(index) if index else None,
+        index=_deserialize_optional_expression(self, index),
     )
 
 
@@ -511,7 +511,7 @@ def _deser_for_of_expression(self, data: dict[str, Any]):
     return ForOfExpression(
         quantifier=_deserialize_ast_value(self, data["quantifier"]),
         string_set=_deserialize_ast_value(self, data["string_set"]),
-        condition=self._deserialize_expression(condition) if condition else None,
+        condition=_deserialize_optional_expression(self, condition),
     )
 
 

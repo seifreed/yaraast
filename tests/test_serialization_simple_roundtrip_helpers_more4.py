@@ -567,6 +567,12 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="RegexLiteral modifiers must be a string"):
         deserialize_node({"type": "RegexLiteral", "pattern": "abc", "modifiers": ["i"]})
 
+    with pytest.raises(SerializationError, match="Serialized node must be an object"):
+        deserialize_node({"type": "StringOffset", "string_id": "a", "index": False})
+
+    with pytest.raises(SerializationError, match="Serialized node must be an object"):
+        deserialize_node({"type": "StringLength", "string_id": "a", "index": False})
+
 
 def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types() -> None:
     true_expr = {"type": "BooleanLiteral", "value": True}
@@ -604,6 +610,16 @@ def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types()
 
     with pytest.raises(SerializationError, match="Serialized node must be an object"):
         deserialize_node({"type": "Rule", "name": "bad_condition", "condition": False})
+
+    with pytest.raises(SerializationError, match="Serialized node must be an object"):
+        deserialize_node(
+            {
+                "type": "ForOfExpression",
+                "quantifier": "any",
+                "string_set": "them",
+                "condition": False,
+            }
+        )
 
     with pytest.raises(SerializationError, match="SpreadOperator is_dict must be a boolean"):
         deserialize_node({"type": "SpreadOperator", "expression": true_expr, "is_dict": "yes"})

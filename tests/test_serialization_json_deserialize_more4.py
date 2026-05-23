@@ -486,6 +486,12 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="RegexLiteral modifiers must be a string"):
         s._deserialize_expression({"type": "RegexLiteral", "pattern": "abc", "modifiers": ["i"]})
 
+    with pytest.raises(SerializationError, match="Expression must be an object"):
+        s._deserialize_expression({"type": "StringOffset", "string_id": "a", "index": False})
+
+    with pytest.raises(SerializationError, match="Expression must be an object"):
+        s._deserialize_expression({"type": "StringLength", "string_id": "a", "index": False})
+
 
 def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
@@ -560,6 +566,16 @@ def test_json_deserialize_condition_fields_reject_wrong_scalar_types() -> None:
 
     with pytest.raises(SerializationError, match="Expression must be an object"):
         s._deserialize_rule({"name": "bad_condition", "condition": False})
+
+    with pytest.raises(SerializationError, match="Expression must be an object"):
+        s._deserialize_expression(
+            {
+                "type": "ForOfExpression",
+                "quantifier": "any",
+                "string_set": "them",
+                "condition": False,
+            }
+        )
 
 
 def test_deserialize_expression_comprehensive_branches() -> None:
