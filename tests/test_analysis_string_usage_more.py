@@ -10,6 +10,7 @@ from yaraast.ast.conditions import (
     OfExpression,
 )
 from yaraast.ast.expressions import (
+    BinaryExpression,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
@@ -25,6 +26,7 @@ from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.parser import Parser
 from yaraast.parser.source import parse_yara_source
+from yaraast.yarax.ast_nodes import WithDeclaration, WithStatement
 
 
 def test_string_usage_analyzer_covers_offset_length_at_in_forof_and_of() -> None:
@@ -77,6 +79,31 @@ rule implicit_current_string_usage {
         "$missing_offset",
         "$missing_range",
     ]
+
+
+def test_string_usage_analyzer_respects_with_local_string_ref_shadowing() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="local_count",
+                strings=[PlainString(identifier="$x", value="real")],
+                condition=WithStatement(
+                    declarations=[WithDeclaration("$x", IntegerLiteral(1))],
+                    body=BinaryExpression(
+                        StringCount("x"),
+                        ">",
+                        IntegerLiteral(0),
+                    ),
+                ),
+            )
+        ]
+    )
+
+    results = StringUsageAnalyzer().analyze(ast)
+
+    assert results["local_count"]["used"] == []
+    assert results["local_count"]["unused"] == ["$x"]
+    assert results["local_count"]["usage_rate"] == 0
 
 
 def test_string_usage_analyzer_getters_and_direct_visitor_paths() -> None:

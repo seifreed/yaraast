@@ -316,16 +316,23 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             return
         if text == "them":
             self._mark_all_current_rule_strings()
-        elif "*" in self._normalize_string_id(text):
+            return
+
+        normalized = self._normalize_string_id(text)
+        if self._is_local(normalized):
+            return
+        if "*" in normalized:
             self._mark_wildcard_string_set(text)
         else:
-            self.used_strings[self.current_rule].add(self._normalize_string_id(text))
+            self.used_strings[self.current_rule].add(normalized)
 
     def _mark_condition_string_ref(self, string_id: str) -> None:
         if not (self.current_rule and self.in_condition):
             return
         normalized = self._normalize_string_id(string_id)
-        if self.implicit_current_string_allowed and normalized == "$":
+        if (self.implicit_current_string_allowed and normalized == "$") or self._is_local(
+            normalized
+        ):
             return
         self.used_strings[self.current_rule].add(normalized)
 
