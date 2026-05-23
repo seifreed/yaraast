@@ -489,7 +489,7 @@ def _validate_pe_imports_arguments(ctx, arguments) -> None:
 
 
 def infer_member_access(ctx, node: MemberAccess):
-    obj_type = ctx.visit(node.object)
+    obj_type = _infer_member_object_type(ctx, node.object)
 
     if isinstance(obj_type, ModuleType):
         attr_type = obj_type.get_attribute_type(node.member)
@@ -506,6 +506,17 @@ def infer_member_access(ctx, node: MemberAccess):
 
     ctx.errors.append(f"Cannot access member of non-module type: {obj_type}")
     return UnknownType()
+
+
+def _infer_member_object_type(ctx, obj):
+    if isinstance(obj, Identifier):
+        scoped_type = ctx.env.lookup(obj.name)
+        if scoped_type:
+            return scoped_type
+        module_type = ctx._resolve_module_type(obj.name)
+        if module_type:
+            return module_type
+    return ctx.visit(obj)
 
 
 def infer_collection_access(ctx, node):

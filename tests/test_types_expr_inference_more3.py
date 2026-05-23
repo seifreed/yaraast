@@ -412,6 +412,18 @@ def test_expr_inference_treats_pe_predicates_as_functions_not_attributes() -> No
     assert "Module 'pe' has no attribute 'exports'" in inf.errors
 
 
+def test_expr_inference_member_access_prefers_module_over_same_named_rule() -> None:
+    env = TypeEnvironment()
+    env.add_module("pe")
+    env.add_rule("pe")
+    inf = ExpressionTypeInference(env)
+
+    out = inf.infer(MemberAccess(object=Identifier("pe"), member="number_of_sections"))
+
+    assert isinstance(out, IntegerType)
+    assert inf.errors == []
+
+
 def test_expr_inference_treats_time_now_as_function_not_attribute() -> None:
     env = TypeEnvironment()
     env.add_module("time")
