@@ -454,7 +454,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 if isinstance(spread_value, dict):
                     values.update(spread_value)
                 else:
-                    values.update(dict(spread_value))
+                    with contextlib.suppress(TypeError, ValueError):
+                        values.update(dict(spread_value))
                 continue
 
             key, value = self.visit_dict_item(item)

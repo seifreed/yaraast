@@ -2008,6 +2008,17 @@ def test_evaluator_evaluates_yarax_collection_literals_and_indexing() -> None:
             ]
         )
     ) == {"a": 1, "b": 2}
+    assert ev.visit(
+        DictExpression(
+            [
+                DictItem(
+                    StringLiteral("__spread__"),
+                    SpreadOperator(Identifier("missing"), is_dict=True),
+                ),
+                DictItem(StringLiteral("a"), IntegerLiteral(1)),
+            ]
+        )
+    ) == {"a": 1}
     assert (
         ev.visit(
             TupleIndexing(
