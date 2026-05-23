@@ -48,6 +48,7 @@ from yaraast.yarax.ast_nodes import (
     DictComprehension,
     DictExpression,
     DictItem,
+    LambdaExpression,
     ListExpression,
     MatchCase,
     PatternMatch,
@@ -2133,6 +2134,32 @@ def test_evaluator_restores_original_with_value_for_redeclared_name() -> None:
     )
 
     assert ev.visit(condition) == 2
+    assert ev.context.variables["x"] == 99
+
+
+def test_evaluator_restores_original_loop_value_for_duplicate_bindings() -> None:
+    ev = YaraEvaluator()
+    ev.context.variables["x"] = 99
+    ev.context.variables["pairs"] = [(1, 2)]
+
+    condition = ForExpression(
+        quantifier="any",
+        variable="x, x",
+        iterable=Identifier("pairs"),
+        body=BinaryExpression(Identifier("x"), "==", IntegerLiteral(2)),
+    )
+
+    assert ev.visit(condition) is True
+    assert ev.context.variables["x"] == 99
+
+
+def test_evaluator_restores_original_lambda_value_for_duplicate_parameters() -> None:
+    ev = YaraEvaluator()
+    ev.context.variables["x"] = 99
+
+    func = ev.visit(LambdaExpression(parameters=["x", "x"], body=Identifier("x")))
+
+    assert func(1, 2) == 2
     assert ev.context.variables["x"] == 99
 
 

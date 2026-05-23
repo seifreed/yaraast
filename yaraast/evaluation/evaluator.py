@@ -572,7 +572,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         def lambda_callable(*args):
             previous_values = {}
             for name, value in zip(node.parameters, args, strict=False):
-                previous_values[name] = self.context.variables.get(name, self._missing_loop_value)
+                if name not in previous_values:
+                    previous_values[name] = self.context.variables.get(
+                        name,
+                        self._missing_loop_value,
+                    )
                 self.context.variables[name] = value
 
             try:
@@ -722,7 +726,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         previous_values: dict[str, object] = {}
         for name, value in zip(variable_names, values, strict=True):
-            previous_values[name] = self.context.variables.get(name, self._missing_loop_value)
+            if name not in previous_values:
+                previous_values[name] = self.context.variables.get(
+                    name,
+                    self._missing_loop_value,
+                )
             self.context.variables[name] = value
         return previous_values
 
