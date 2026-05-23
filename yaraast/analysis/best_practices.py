@@ -343,10 +343,14 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         normalized = self._normalize_string_id(string_id)
         self._string_usage[normalized] = self._string_usage.get(normalized, 0) + 1
 
-    def _mark_string_identifier_usage(self, string_id: str) -> None:
-        if self._is_local(string_id):
+    def _mark_condition_string_usage(self, string_id: str) -> None:
+        normalized = self._normalize_string_id(string_id)
+        if self._is_local(normalized):
             return
-        self._mark_string_usage(string_id)
+        self._mark_string_usage(normalized)
+
+    def _mark_string_identifier_usage(self, string_id: str) -> None:
+        self._mark_condition_string_usage(string_id)
 
     def _normalize_string_id(self, string_id: str) -> str:
         return string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
@@ -357,6 +361,8 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
             return
 
         normalized = self._normalize_string_id(text)
+        if self._is_local(normalized):
+            return
         if "*" in normalized:
             self._mark_wildcard_usage(normalized)
             return
@@ -435,23 +441,23 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         self._mark_string_set_text(node.pattern)
 
     def visit_string_count(self, node) -> None:
-        self._mark_string_usage(node.string_id)
+        self._mark_condition_string_usage(node.string_id)
 
     def visit_string_offset(self, node) -> None:
-        self._mark_string_usage(node.string_id)
+        self._mark_condition_string_usage(node.string_id)
         super().visit_string_offset(node)
 
     def visit_string_length(self, node) -> None:
-        self._mark_string_usage(node.string_id)
+        self._mark_condition_string_usage(node.string_id)
         super().visit_string_length(node)
 
     def visit_at_expression(self, node: AtExpression) -> None:
-        self._mark_string_usage(node.string_id)
+        self._mark_condition_string_usage(node.string_id)
         super().visit_at_expression(node)
 
     def visit_in_expression(self, node: InExpression) -> None:
         if isinstance(node.subject, str):
-            self._mark_string_usage(node.subject)
+            self._mark_condition_string_usage(node.subject)
         else:
             self.visit(node.subject)
         self.visit(node.range)

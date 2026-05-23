@@ -164,6 +164,26 @@ rule declaration_value_uses_string {
     assert len(unused_messages) == 1
 
 
+def test_best_practices_respects_yarax_with_local_string_count_shadowing() -> None:
+    ast = parse_yara_source("""
+rule shadowed_count {
+    strings:
+        $a = "value"
+    condition:
+        with $a = 1: #a > 0
+}
+""")
+
+    report = BestPracticesAnalyzer().analyze(ast)
+    unused_messages = [
+        suggestion.message
+        for suggestion in report.suggestions
+        if "defined but never used" in suggestion.message
+    ]
+
+    assert unused_messages == ["String '$a' is defined but never used in condition"]
+
+
 def test_best_practices_named_wildcard_ignores_anonymous_internal_ids() -> None:
     ast = YaraFile(
         rules=[
