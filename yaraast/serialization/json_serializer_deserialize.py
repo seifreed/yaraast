@@ -25,6 +25,8 @@ def _deserialize_object(data: Any, context: str) -> dict[str, Any]:
 def _deserialize_ast_value(self, data):
     if isinstance(data, dict):
         return self._deserialize_expression(data)
+    if isinstance(data, list):
+        return [_deserialize_ast_value(self, item) for item in data]
     return data
 
 

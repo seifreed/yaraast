@@ -204,6 +204,13 @@ def test_json_roundtrip_preserves_raw_for_of_values() -> None:
                 ),
             ),
             Rule(
+                name="expression_string_set",
+                condition=OfExpression(
+                    quantifier="any",
+                    string_set=[StringIdentifier("$a"), "$b"],
+                ),
+            ),
+            Rule(
                 name="raw_tuple",
                 condition=OfExpression(
                     quantifier=IntegerLiteral(2),
@@ -233,21 +240,28 @@ def test_json_roundtrip_preserves_raw_for_of_values() -> None:
     conditions = [rule["condition"] for rule in serialized["ast"]["rules"]]
     assert conditions[0]["string_set"] == "them"
     assert conditions[1]["string_set"] == ["$a", "$b"]
-    assert conditions[2]["string_set"] == ["$a", "$b"]
+    assert conditions[2]["string_set"] == [{"type": "StringIdentifier", "name": "$a"}, "$b"]
     assert conditions[3]["string_set"] == ["$a", "$b"]
-    assert conditions[4]["quantifier"] == {"type": "IntegerLiteral", "value": 2}
+    assert conditions[4]["string_set"] == ["$a", "$b"]
+    assert conditions[5]["quantifier"] == {"type": "IntegerLiteral", "value": 2}
 
     restored = serializer.deserialize(json.dumps(serialized))
     raw_them = restored.rules[0].condition
     raw_list = restored.rules[1].condition
-    raw_tuple = restored.rules[2].condition
-    raw_frozenset = restored.rules[3].condition
-    expression_quantifier = restored.rules[4].condition
+    expression_string_set = restored.rules[2].condition
+    raw_tuple = restored.rules[3].condition
+    raw_frozenset = restored.rules[4].condition
+    expression_quantifier = restored.rules[5].condition
 
     assert isinstance(raw_them, ForOfExpression)
     assert raw_them.string_set == "them"
     assert isinstance(raw_list, OfExpression)
     assert raw_list.string_set == ["$a", "$b"]
+    assert isinstance(expression_string_set, OfExpression)
+    assert isinstance(expression_string_set.string_set, list)
+    assert isinstance(expression_string_set.string_set[0], StringIdentifier)
+    assert expression_string_set.string_set[0].name == "$a"
+    assert expression_string_set.string_set[1] == "$b"
     assert isinstance(raw_tuple, OfExpression)
     assert raw_tuple.string_set == ["$a", "$b"]
     assert isinstance(raw_frozenset, OfExpression)
