@@ -6,6 +6,8 @@ from pathlib import Path
 from textwrap import dedent
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral, Identifier, MemberAccess
+from yaraast.ast.rules import Import, Rule
 from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 from yaraast.metrics.dependency_graph_utils import (
     DependencyGraph,
@@ -86,6 +88,28 @@ def test_dependency_graph_generator_renders_rule_dependency_edges() -> None:
     assert "caller -> base_rule" in dot_source
     assert stats["rules_with_deps"] == 1
     assert stats["total_dependencies"] == 1
+
+
+def test_dependency_graph_generator_does_not_treat_module_member_root_as_rule_dependency() -> None:
+    ast = YaraFile(
+        imports=[Import("pe")],
+        rules=[
+            Rule(name="pe", condition=BooleanLiteral(True)),
+            Rule(
+                name="check",
+                condition=MemberAccess(
+                    object=Identifier("pe"),
+                    member="number_of_sections",
+                ),
+            ),
+        ],
+    )
+
+    generator = DependencyGraphGenerator()
+    generator.visit(ast)
+
+    assert generator.dependencies["check"] == set()
+    assert generator.module_references["check"] == {"pe"}
 
 
 def test_dependency_graph_variant_generators_reset_between_inputs() -> None:

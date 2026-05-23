@@ -126,6 +126,22 @@ def test_build_dependency_graph_visits_rare_expression_paths() -> None:
     assert graph.get_dependencies("h") == {"c"}
 
 
+def test_build_dependency_graph_does_not_treat_member_root_as_rule_dependency() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="pe", condition=StringLiteral("x")),
+            Rule(
+                name="check",
+                condition=MemberAccess(object=Identifier("pe"), member="number_of_sections"),
+            ),
+        ],
+    )
+
+    graph = build_dependency_graph(ast)
+
+    assert graph.get_dependencies("check") == set()
+
+
 def test_dependency_graph_order_and_export_error(tmp_path: Path) -> None:
     graph = DependencyGraph()
     graph.add_edge("rule_c", "rule_b")

@@ -55,7 +55,10 @@ class DependencyFinder(MetricsVisitorBase):
         self.visit(node.index)
 
     def visit_member_access(self, node) -> None:
-        self.visit(node.object)
+        from yaraast.ast.expressions import Identifier
+
+        if not isinstance(node.object, Identifier):
+            self.visit(node.object)
 
     def visit_for_expression(self, node) -> None:
         if hasattr(node.quantifier, "accept"):

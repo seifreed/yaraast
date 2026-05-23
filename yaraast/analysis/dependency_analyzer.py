@@ -6,12 +6,13 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from yaraast.ast.base import ASTNode
+from yaraast.ast.expressions import Identifier
 from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.conditions import ForExpression
-    from yaraast.ast.expressions import FunctionCall, Identifier
+    from yaraast.ast.expressions import FunctionCall
     from yaraast.ast.rules import Import, Include, Rule
     from yaraast.yarax.ast_nodes import (
         ArrayComprehension,
@@ -242,6 +243,11 @@ class DependencyAnalyzer(BaseVisitor[None]):
     def visit_function_call(self, node: FunctionCall) -> None:
         # Function callees are not rule references; only their arguments can contain them.
         super().visit_function_call(node)
+
+    def visit_member_access(self, node) -> None:
+        # Member roots are modules/objects, not bare rule references.
+        if not isinstance(node.object, Identifier):
+            self.visit(node.object)
 
     def visit_for_expression(self, node: ForExpression) -> None:
         if isinstance(node.quantifier, ASTNode):

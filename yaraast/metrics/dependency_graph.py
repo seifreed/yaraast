@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import graphviz
 
+from yaraast.ast.expressions import Identifier
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 from yaraast.metrics.dependency_graph_generation import (
     generate_complexity_graph as dependency_generate_complexity_graph,
@@ -219,7 +220,8 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         if self._current_rule and module_name in self.imports and not self._is_local(module_name):
             self.module_references[self._current_rule].add(module_name)
 
-        self.visit(node.object)
+        if not isinstance(node.object, Identifier):
+            self.visit(node.object)
 
     def visit_function_call(self, node) -> None:
         """Track module function calls."""

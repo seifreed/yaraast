@@ -8,6 +8,7 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     IntegerLiteral,
+    MemberAccess,
     RangeExpression,
     SetExpression,
 )
@@ -119,6 +120,27 @@ rule caller {
     results = DependencyAnalyzer().analyze(ast)
 
     assert results["dependencies"]["caller"] == ["base"]
+
+
+def test_dependency_analyzer_does_not_treat_module_member_root_as_rule_dependency() -> None:
+    ast = YaraFile(
+        imports=[Import("pe")],
+        rules=[
+            Rule(name="pe", condition=BooleanLiteral(True)),
+            Rule(
+                name="check",
+                condition=MemberAccess(
+                    object=Identifier("pe"),
+                    member="number_of_sections",
+                ),
+            ),
+        ],
+    )
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert "check" not in results["dependencies"]
+    assert results["dependency_graph"]["check"]["depends_on"] == []
 
 
 def test_dependency_analyzer_does_not_treat_self_reference_as_dependency() -> None:
