@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from statistics import median
 from typing import Any
 
 
@@ -71,7 +72,7 @@ class StringDiagramStatsMixin:
             "min": min(lengths),
             "max": max(lengths),
             "avg": sum(lengths) / len(lengths),
-            "median": sorted(lengths)[len(lengths) // 2],
+            "median": median(lengths),
         }
 
     def _get_modifier_statistics(self) -> dict[str, int]:

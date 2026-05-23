@@ -114,7 +114,7 @@ def test_graph_stats_and_labels_high_complexity_paths(tmp_path: Path) -> None:
         "min": 30,
         "max": 60,
         "avg": 40.0,
-        "median": 40,
+        "median": 35.0,
     }
 
     empty_gen = StringDiagramGenerator()
@@ -165,6 +165,16 @@ def test_graph_stats_and_labels_high_complexity_paths(tmp_path: Path) -> None:
     out = tmp_path / "similarity.svg"
     svg_fallback = gen.generate_pattern_similarity_diagram(ast, str(out), format="svg")
     assert Path(svg_fallback).exists()
+
+
+def test_pattern_length_statistics_uses_standard_even_median() -> None:
+    gen = StringDiagramGenerator()
+    gen.string_patterns = {
+        "short": {"length": 10},
+        "long": {"length": 20},
+    }
+
+    assert gen._get_length_statistics()["median"] == 15.0
 
 
 def test_similarity_diagram_orders_patterns_within_groups() -> None:
