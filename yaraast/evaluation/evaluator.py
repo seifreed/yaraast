@@ -712,7 +712,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
     def _loop_variable_names(self, variable: str) -> list[str]:
         return [name.strip() for name in variable.split(",") if name.strip()]
 
-    def _evaluate_for_iterable(self, node: Expression) -> Any:
+    def _evaluate_for_iterable(self, node: Expression | None) -> Any:
+        if node is None:
+            return YARA_UNDEFINED
         if isinstance(node, SetExpression):
             return [self._evaluate_for_iterable(element) for element in node.elements]
         return self.visit(node)

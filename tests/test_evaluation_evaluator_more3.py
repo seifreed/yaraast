@@ -2204,6 +2204,17 @@ def test_evaluator_returns_empty_comprehensions_for_non_iterable_sources() -> No
 
     assert ev.visit(array_node) == []
     assert ev.visit(dict_node) == {}
+    assert ev.visit(ArrayComprehension(expression=Identifier("x"), variable="x")) == []
+    assert (
+        ev.visit(
+            DictComprehension(
+                key_expression=Identifier("x"),
+                value_expression=Identifier("x"),
+                key_variable="x",
+            )
+        )
+        == {}
+    )
 
 
 def test_evaluator_restores_none_implicit_for_of_variable() -> None:
