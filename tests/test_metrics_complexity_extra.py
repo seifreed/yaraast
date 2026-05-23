@@ -172,6 +172,25 @@ def test_complexity_string_usage_tracks_condition_string_forms() -> None:
     }
 
 
+def test_complexity_string_usage_tracks_offset_and_length_index_expressions() -> None:
+    code = """
+    rule indexed_string_usage {
+        strings:
+            $a = "a"
+            $b = "b"
+            $c = "c"
+        condition:
+            @a[#b] >= 0 and !a[#c] > 0
+    }
+    """
+    ast = Parser().parse(dedent(code))
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.unused_strings == []
+    assert metrics.string_dependencies["indexed_string_usage"] == {"$a", "$b", "$c"}
+
+
 def test_complexity_string_usage_respects_yarax_with_local_shadowing() -> None:
     code = """
     rule shadowed_string {

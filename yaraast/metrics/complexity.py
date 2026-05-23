@@ -215,9 +215,11 @@ class ComplexityAnalyzer(MetricsVisitorBase):
 
     def visit_string_offset(self, node) -> None:
         self._mark_string_usage(node.string_id)
+        self._visit_ast_value(getattr(node, "index", None))
 
     def visit_string_length(self, node) -> None:
         self._mark_string_usage(node.string_id)
+        self._visit_ast_value(getattr(node, "index", None))
 
     def visit_parentheses_expression(self, node) -> None:
         self.visit(node.expression)
