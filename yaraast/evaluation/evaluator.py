@@ -576,7 +576,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         def lambda_callable(*args):
             previous_values = {}
-            for name, value in zip(node.parameters, args, strict=False):
+            for index, name in enumerate(node.parameters):
+                value = args[index] if index < len(args) else YARA_UNDEFINED
                 if name not in previous_values:
                     previous_values[name] = self.context.variables.get(
                         name,

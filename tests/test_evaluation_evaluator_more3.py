@@ -2174,6 +2174,16 @@ def test_evaluator_restores_original_lambda_value_for_duplicate_parameters() -> 
     assert ev.context.variables["x"] == 99
 
 
+def test_evaluator_binds_missing_lambda_arguments_as_undefined() -> None:
+    ev = YaraEvaluator()
+    ev.context.variables["y"] = 99
+
+    func = ev.visit(LambdaExpression(parameters=["x", "y"], body=Identifier("y")))
+
+    assert func(1) is YARA_UNDEFINED
+    assert ev.context.variables["y"] == 99
+
+
 def test_evaluator_handles_non_iterable_for_source_without_crashing() -> None:
     ev = YaraEvaluator()
 
