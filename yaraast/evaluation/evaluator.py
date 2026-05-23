@@ -488,8 +488,12 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
     def visit_array_comprehension(self, node) -> list[Any]:
         """Evaluate YARA-X array comprehension."""
         iterable = self._evaluate_for_iterable(node.iterable)
+        loop_items = self._loop_items_for_iterable(iterable, 1)
+        if loop_items is None:
+            return []
+
         values = []
-        for item in iterable:
+        for item in loop_items:
             previous_values = self._bind_loop_variables([node.variable], item)
             if previous_values is None:
                 continue
@@ -508,9 +512,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             variable_names.append(node.value_variable)
 
         iterable = self._evaluate_for_iterable(node.iterable)
-        loop_items = (
-            iterable.items() if len(variable_names) > 1 and isinstance(iterable, dict) else iterable
-        )
+        loop_items = self._loop_items_for_iterable(iterable, len(variable_names))
+        if loop_items is None:
+            return {}
 
         values = {}
         for item in loop_items:
@@ -668,15 +672,15 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         variable_names = self._loop_variable_names(node.variable)
         iterable = self._evaluate_for_iterable(node.iterable)
-        if is_yara_undefined(iterable):
+        loop_items = self._loop_items_for_iterable(iterable, len(variable_names))
+        if loop_items is None:
             return False
-        loop_items = (
-            iterable.items() if len(variable_names) > 1 and isinstance(iterable, dict) else iterable
-        )
 
         # Count true evaluations
         true_count = 0
+        total_count = 0
         for item in loop_items:
+            total_count += 1
             previous_values = self._bind_loop_variables(variable_names, item)
             if previous_values is None:
                 continue
@@ -690,7 +694,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         # Evaluate quantifier
         if isinstance(quantifier, str):
             if quantifier == "all":
-                return true_count == len(iterable)
+                return true_count == total_count
             if quantifier == "any":
                 return true_count > 0
             if quantifier == "none":
@@ -711,6 +715,17 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if isinstance(node, SetExpression):
             return [self._evaluate_for_iterable(element) for element in node.elements]
         return self.visit(node)
+
+    def _loop_items_for_iterable(self, iterable: Any, variable_count: int) -> Any | None:
+        if is_yara_undefined(iterable):
+            return None
+        if variable_count > 1 and isinstance(iterable, dict):
+            return iterable.items()
+        try:
+            iter(iterable)
+        except TypeError:
+            return None
+        return iterable
 
     def _bind_loop_variables(
         self,

@@ -2163,6 +2163,38 @@ def test_evaluator_restores_original_lambda_value_for_duplicate_parameters() -> 
     assert ev.context.variables["x"] == 99
 
 
+def test_evaluator_handles_non_iterable_for_source_without_crashing() -> None:
+    ev = YaraEvaluator()
+
+    condition = ForExpression(
+        quantifier="any",
+        variable="x",
+        iterable=Identifier("missing"),
+        body=BooleanLiteral(True),
+    )
+
+    assert ev.visit(condition) is False
+
+
+def test_evaluator_returns_empty_comprehensions_for_non_iterable_sources() -> None:
+    ev = YaraEvaluator()
+
+    array_node = ArrayComprehension(
+        expression=Identifier("x"),
+        variable="x",
+        iterable=Identifier("missing"),
+    )
+    dict_node = DictComprehension(
+        key_expression=Identifier("x"),
+        value_expression=Identifier("x"),
+        key_variable="x",
+        iterable=Identifier("missing"),
+    )
+
+    assert ev.visit(array_node) == []
+    assert ev.visit(dict_node) == {}
+
+
 def test_evaluator_evaluates_dictionary_access_and_defined_dictionary_access() -> None:
     ev = YaraEvaluator()
     ev.context.variables["d"] = {"name": "alpha", 1: "one"}
