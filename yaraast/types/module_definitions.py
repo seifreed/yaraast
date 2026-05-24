@@ -187,9 +187,30 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                         {
                             "major": "i",
                             "minor": "i",
+                            "build_number": "i",
+                            "revision_number": "i",
                         },
                     ),
                 },
+            ),
+            "assembly_refs": (
+                "array",
+                (
+                    "struct",
+                    {
+                        "name": "s",
+                        "version": (
+                            "struct",
+                            {
+                                "major": "i",
+                                "minor": "i",
+                                "build_number": "i",
+                                "revision_number": "i",
+                            },
+                        ),
+                        "public_key_or_token": "s",
+                    },
+                ),
             ),
             "resources": (
                 "array",
@@ -213,6 +234,8 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
                     },
                 ),
             ),
+            "guids": ("array", "s"),
+            "user_strings": ("array", "s"),
         },
     },
     "time": {"funcs": {"now": ("i", [])}},

@@ -494,6 +494,44 @@ class TestSemanticValidator:
 
         assert result.is_valid is True
 
+    def test_validate_accepts_libyara_dotnet_collection_fields(self) -> None:
+        ast = Parser().parse("""
+            import "dotnet"
+
+            rule valid_dotnet_collection_fields {
+                condition:
+                    dotnet.guids[0] == "" or
+                    dotnet.user_strings[0] == "" or
+                    dotnet.assembly.version.build_number == 0 or
+                    dotnet.assembly.version.revision_number == 0 or
+                    dotnet.assembly_refs[0].name == "" or
+                    dotnet.assembly_refs[0].version.major == 0 or
+                    dotnet.assembly_refs[0].version.minor == 0 or
+                    dotnet.assembly_refs[0].version.build_number == 0 or
+                    dotnet.assembly_refs[0].version.revision_number == 0 or
+                    dotnet.assembly_refs[0].public_key_or_token == ""
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
+    def test_validate_rejects_invalid_dotnet_assembly_ref_fields(self) -> None:
+        ast = Parser().parse("""
+            import "dotnet"
+
+            rule invalid_dotnet_assembly_ref_fields {
+                condition:
+                    dotnet.assembly_refs[0].culture == ""
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        assert any("Struct has no field 'culture'" in error.message for error in result.errors)
+
     def test_validate_accepts_libyara_pe_import_export_signatures(self) -> None:
         ast = Parser().parse("""
             import "pe"
