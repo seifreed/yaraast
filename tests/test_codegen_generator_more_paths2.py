@@ -626,7 +626,9 @@ def test_codegen_generators_reject_invalid_string_identifiers() -> None:
     "condition",
     [
         StringIdentifier("$bad-key"),
+        AtExpression("$bad-key", IntegerLiteral(0)),
         BinaryExpression(StringCount("bad-key"), ">", IntegerLiteral(0)),
+        InExpression("$bad-key", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
         BinaryExpression(StringOffset("bad-key"), ">=", IntegerLiteral(0)),
         BinaryExpression(StringLength("bad-key"), ">", IntegerLiteral(0)),
     ],

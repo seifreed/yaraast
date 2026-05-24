@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yaraast.codegen.generator_helpers import validate_string_identifier_text
+
 
 def _render_string_set(gen, string_set) -> str:
     from yaraast.ast.expressions import (
@@ -82,7 +84,11 @@ def render_in_expression(gen, node) -> str:
         StringOffset,
     )
 
-    subject = node.string_id if isinstance(node.subject, str) else gen.visit(node.subject)
+    subject = (
+        validate_string_identifier_text(node.subject)
+        if isinstance(node.subject, str)
+        else gen.visit(node.subject)
+    )
 
     if isinstance(node.range, RangeExpression):
         range_expr = gen.visit(node.range)

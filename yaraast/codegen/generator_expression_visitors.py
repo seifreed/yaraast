@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from yaraast.codegen.generator_helpers import validate_string_identifier_text
+
 _BINARY_PRECEDENCE = {
     "or": 1,
     "and": 2,
@@ -109,4 +111,5 @@ def visit_for_expression(generator, node) -> str:
 
 
 def visit_at_expression(generator, node) -> str:
-    return f"{node.string_id} at {generator.visit(node.offset)}"
+    string_id = validate_string_identifier_text(node.string_id)
+    return f"{string_id} at {generator.visit(node.offset)}"
