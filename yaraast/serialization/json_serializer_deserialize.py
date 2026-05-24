@@ -225,8 +225,11 @@ def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
         raise SerializationError(msg)
     if isinstance(value, bytes):
         return value
+    if not isinstance(value, str):
+        msg = "PlainString value must be a string or bytes"
+        raise SerializationError(msg)
     try:
-        return base64.b64decode(str(value).encode("ascii"), validate=True)
+        return base64.b64decode(value.encode("ascii"), validate=True)
     except (binascii.Error, UnicodeEncodeError) as exc:
         msg = "Invalid base64-encoded plain string value"
         raise SerializationError(msg) from exc

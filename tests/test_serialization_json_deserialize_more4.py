@@ -411,6 +411,17 @@ def test_json_deserialize_strings_reject_wrong_scalar_types() -> None:
             {"type": "PlainString", "identifier": "$a", "value": True, "modifiers": []}
         )
 
+    with pytest.raises(SerializationError, match="PlainString value must be a string or bytes"):
+        s._deserialize_string(
+            {
+                "type": "PlainString",
+                "identifier": "$a",
+                "value": 1234,
+                "value_encoding": "base64",
+                "modifiers": [],
+            }
+        )
+
     with pytest.raises(SerializationError, match="HexString identifier must be a string"):
         s._deserialize_string(
             {"type": "HexString", "identifier": ["$h"], "tokens": [], "modifiers": []}
