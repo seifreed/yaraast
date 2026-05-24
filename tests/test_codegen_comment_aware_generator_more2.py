@@ -5,12 +5,13 @@ from typing import Any, cast
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import Condition
-from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, RegexString
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+from yaraast.yarax.ast_nodes import MatchCase, PatternMatch
 
 
 def test_comment_aware_generator_write_comments_and_generate_non_file_node() -> None:
@@ -110,3 +111,23 @@ def test_comment_aware_generator_condition_trailing_comment_stays_on_condition_l
 
     assert "true  // condition tail\n    }" in out
     assert "// condition tail    }" not in out
+
+
+def test_comment_aware_generator_indents_multiline_match_condition() -> None:
+    condition = PatternMatch(
+        value=IntegerLiteral(1),
+        cases=[MatchCase(pattern=IntegerLiteral(1), result=BooleanLiteral(True))],
+        default=BooleanLiteral(False),
+    )
+    file_ast = YaraFile(rules=[Rule(name="match_rule", condition=condition)])
+
+    out = CommentAwareCodeGenerator().generate(file_ast)
+
+    assert (
+        "    condition:\n"
+        "        match 1 {\n"
+        "            1 => true,\n"
+        "            _ => false,\n"
+        "        }\n"
+    ) in out
+    assert "\n    1 => true,\n" not in out

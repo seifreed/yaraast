@@ -257,11 +257,20 @@ class CommentAwareCodeGenerator(CodeGenerator):
         trailing = getattr(node.condition, "trailing_comment", None)
         if condition_str:
             indent = " " * (self.indent_level * self.indent_size)
-            self._write(indent)
-            self._write(condition_str)
-            if trailing:
-                self._write_comment(trailing, inline=True)
-            self._writeline()
+            if "\n" in condition_str:
+                lines = condition_str.splitlines()
+                for index, line in enumerate(lines):
+                    self._write(indent)
+                    self._write(line)
+                    if trailing and index == len(lines) - 1:
+                        self._write_comment(trailing, inline=True)
+                    self._writeline()
+            else:
+                self._write(indent)
+                self._write(condition_str)
+                if trailing:
+                    self._write_comment(trailing, inline=True)
+                self._writeline()
         elif trailing:
             self._write_comment(trailing)
         else:
