@@ -18,11 +18,13 @@ def _serialize_ast_value(serializer, value):
     return value
 
 
-def _serialize_optional_ast_node(serializer, value, context: str):
+def _serialize_optional_expression(serializer, value, context: str):
+    from yaraast.ast.expressions import Expression
+
     if value is None:
         return None
-    if not hasattr(value, "accept"):
-        msg = f"{context} must be an AST node"
+    if not isinstance(value, Expression):
+        msg = f"{context} must be an AST expression"
         raise SerializationError(msg)
     return serializer.visit(value)
 
@@ -133,7 +135,7 @@ def visit_rule(serializer, node) -> dict[str, Any]:
         "tags": [serializer.visit(tag) for tag in node.tags],
         "meta": [_serialize_meta_entry(serializer, m) for m in node.meta],
         "strings": [serializer.visit(s) for s in node.strings],
-        "condition": _serialize_optional_ast_node(serializer, node.condition, "Rule condition"),
+        "condition": _serialize_optional_expression(serializer, node.condition, "Rule condition"),
         "pragmas": [serializer.visit(pragma) for pragma in node.pragmas],
     }
 
@@ -196,7 +198,7 @@ def visit_string_offset(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringOffset",
         "string_id": node.string_id,
-        "index": _serialize_optional_ast_node(serializer, node.index, "StringOffset index"),
+        "index": _serialize_optional_expression(serializer, node.index, "StringOffset index"),
     }
 
 
@@ -204,7 +206,7 @@ def visit_string_length(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringLength",
         "string_id": node.string_id,
-        "index": _serialize_optional_ast_node(serializer, node.index, "StringLength index"),
+        "index": _serialize_optional_expression(serializer, node.index, "StringLength index"),
     }
 
 
@@ -276,7 +278,7 @@ def visit_for_of_expression(serializer, node) -> dict[str, Any]:
         "type": "ForOfExpression",
         "quantifier": _serialize_quantifier(serializer, node.quantifier),
         "string_set": _serialize_string_set(serializer, node.string_set, "ForOfExpression"),
-        "condition": _serialize_optional_ast_node(
+        "condition": _serialize_optional_expression(
             serializer,
             node.condition,
             "ForOfExpression condition",
@@ -358,18 +360,18 @@ def visit_with_declaration(serializer, node) -> dict[str, Any]:
 def visit_array_comprehension(serializer, node) -> dict[str, Any]:
     return {
         "type": "ArrayComprehension",
-        "expression": _serialize_optional_ast_node(
+        "expression": _serialize_optional_expression(
             serializer,
             node.expression,
             "ArrayComprehension expression",
         ),
         "variable": node.variable,
-        "iterable": _serialize_optional_ast_node(
+        "iterable": _serialize_optional_expression(
             serializer,
             node.iterable,
             "ArrayComprehension iterable",
         ),
-        "condition": _serialize_optional_ast_node(
+        "condition": _serialize_optional_expression(
             serializer,
             node.condition,
             "ArrayComprehension condition",
@@ -380,13 +382,13 @@ def visit_array_comprehension(serializer, node) -> dict[str, Any]:
 def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
     return {
         "type": "DictComprehension",
-        "key_expression": _serialize_optional_ast_node(
+        "key_expression": _serialize_optional_expression(
             serializer,
             node.key_expression,
             "DictComprehension key_expression",
         ),
         "value_expression": (
-            _serialize_optional_ast_node(
+            _serialize_optional_expression(
                 serializer,
                 node.value_expression,
                 "DictComprehension value_expression",
@@ -394,12 +396,12 @@ def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
         ),
         "key_variable": node.key_variable,
         "value_variable": node.value_variable,
-        "iterable": _serialize_optional_ast_node(
+        "iterable": _serialize_optional_expression(
             serializer,
             node.iterable,
             "DictComprehension iterable",
         ),
-        "condition": _serialize_optional_ast_node(
+        "condition": _serialize_optional_expression(
             serializer,
             node.condition,
             "DictComprehension condition",
@@ -448,9 +450,9 @@ def visit_slice_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "SliceExpression",
         "target": serializer.visit(node.target),
-        "start": _serialize_optional_ast_node(serializer, node.start, "SliceExpression start"),
-        "stop": _serialize_optional_ast_node(serializer, node.stop, "SliceExpression stop"),
-        "step": _serialize_optional_ast_node(serializer, node.step, "SliceExpression step"),
+        "start": _serialize_optional_expression(serializer, node.start, "SliceExpression start"),
+        "stop": _serialize_optional_expression(serializer, node.stop, "SliceExpression stop"),
+        "step": _serialize_optional_expression(serializer, node.step, "SliceExpression step"),
     }
 
 
@@ -467,7 +469,7 @@ def visit_pattern_match(serializer, node) -> dict[str, Any]:
         "type": "PatternMatch",
         "value": serializer.visit(node.value),
         "cases": [serializer.visit(case) for case in node.cases],
-        "default": _serialize_optional_ast_node(serializer, node.default, "PatternMatch default"),
+        "default": _serialize_optional_expression(serializer, node.default, "PatternMatch default"),
     }
 
 

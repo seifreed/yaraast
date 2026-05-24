@@ -129,7 +129,7 @@ def test_json_serializer_rejects_invalid_raw_conditions() -> None:
 
     for condition in invalid_conditions:
         ast = YaraFile(rules=[Rule(name="invalid_condition", condition=condition)])
-        with pytest.raises(SerializationError, match="Rule condition must be an AST node"):
+        with pytest.raises(SerializationError, match="Rule condition must be an AST expression"):
             serializer.serialize(ast)
 
 
@@ -147,7 +147,7 @@ def test_json_serializer_rejects_invalid_raw_for_of_conditions() -> None:
 
     with pytest.raises(
         SerializationError,
-        match="ForOfExpression condition must be an AST node",
+        match="ForOfExpression condition must be an AST expression",
     ):
         serializer.serialize(ast)
 
@@ -221,8 +221,38 @@ def test_json_serializer_rejects_invalid_optional_expression_fields() -> None:
         ]
         for expression in expressions:
             ast = YaraFile(rules=[Rule(name="invalid_optional", condition=expression)])
-            with pytest.raises(SerializationError, match="must be an AST node"):
+            with pytest.raises(SerializationError, match="must be an AST expression"):
                 serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_non_expression_optional_ast_nodes() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_node: Any = Import("pe")
+
+    ast = YaraFile(rules=[Rule(name="invalid_condition", condition=invalid_node)])
+    with pytest.raises(SerializationError, match="Rule condition must be an AST expression"):
+        serializer.serialize(ast)
+
+    expressions = [
+        ForOfExpression("any", "them", invalid_node),
+        StringOffset("$a", invalid_node),
+        StringLength("$a", invalid_node),
+        ArrayComprehension(expression=invalid_node),
+        ArrayComprehension(iterable=invalid_node),
+        ArrayComprehension(condition=invalid_node),
+        DictComprehension(key_expression=invalid_node),
+        DictComprehension(value_expression=invalid_node),
+        DictComprehension(iterable=invalid_node),
+        DictComprehension(condition=invalid_node),
+        SliceExpression(Identifier("items"), start=invalid_node),
+        SliceExpression(Identifier("items"), stop=invalid_node),
+        SliceExpression(Identifier("items"), step=invalid_node),
+        PatternMatch(Identifier("subject"), [], default=invalid_node),
+    ]
+    for expression in expressions:
+        ast = YaraFile(rules=[Rule(name="invalid_optional", condition=expression)])
+        with pytest.raises(SerializationError, match="must be an AST expression"):
+            serializer.serialize(ast)
 
 
 def test_json_deserializer_parses_legacy_hex_xor_modifier_values() -> None:
