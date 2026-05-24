@@ -91,6 +91,18 @@ def _deserialize_required_ast_value(self, data: dict[str, Any], field: str, cont
     raise SerializationError(msg)
 
 
+def _deserialize_required_quantifier(self, data: dict[str, Any], field: str, context: str) -> Any:
+    value = _deserialize_required_field(data, field, context)
+    if isinstance(value, list):
+        msg = f"{context} {field} must be a scalar or expression"
+        raise SerializationError(msg)
+    quantifier = _deserialize_ast_value(self, value, f"{context} {field}")
+    if quantifier is not None:
+        return quantifier
+    msg = f"{context} {field} is required"
+    raise SerializationError(msg)
+
+
 def _deserialize_dictionary_key(self, data: dict[str, Any]) -> str | ASTNode:
     if "key" not in data:
         msg = "DictionaryAccess key must be a string or expression"
@@ -562,7 +574,7 @@ def _deser_for_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import ForExpression
 
     return ForExpression(
-        quantifier=_deserialize_required_ast_value(self, data, "quantifier", "ForExpression"),
+        quantifier=_deserialize_required_quantifier(self, data, "quantifier", "ForExpression"),
         variable=_deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
         iterable=_deserialize_required_expression(self, data, "iterable", "ForExpression"),
         body=_deserialize_required_expression(self, data, "body", "ForExpression"),
@@ -574,7 +586,7 @@ def _deser_for_of_expression(self, data: dict[str, Any]):
 
     condition = data.get("condition")
     return ForOfExpression(
-        quantifier=_deserialize_required_ast_value(self, data, "quantifier", "ForOfExpression"),
+        quantifier=_deserialize_required_quantifier(self, data, "quantifier", "ForOfExpression"),
         string_set=_deserialize_required_ast_value(self, data, "string_set", "ForOfExpression"),
         condition=_deserialize_optional_expression(self, condition, "ForOfExpression condition"),
     )
@@ -612,7 +624,7 @@ def _deser_of_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import OfExpression
 
     return OfExpression(
-        quantifier=_deserialize_required_ast_value(self, data, "quantifier", "OfExpression"),
+        quantifier=_deserialize_required_quantifier(self, data, "quantifier", "OfExpression"),
         string_set=_deserialize_required_ast_value(self, data, "string_set", "OfExpression"),
     )
 

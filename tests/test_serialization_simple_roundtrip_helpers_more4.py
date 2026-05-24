@@ -727,6 +727,33 @@ def test_simple_roundtrip_string_set_values_reject_empty_payloads() -> None:
             deserialize_node(payload)
 
 
+def test_simple_roundtrip_quantifiers_reject_lists() -> None:
+    int_expr = {"type": "IntegerLiteral", "value": 1}
+
+    list_quantifier_cases: tuple[dict[str, Any], ...] = (
+        {
+            "type": "ForExpression",
+            "quantifier": [int_expr],
+            "variable": "i",
+            "iterable": int_expr,
+            "body": int_expr,
+        },
+        {
+            "type": "ForOfExpression",
+            "quantifier": [int_expr],
+            "string_set": "them",
+        },
+        {
+            "type": "OfExpression",
+            "quantifier": [int_expr],
+            "string_set": "them",
+        },
+    )
+    for payload in list_quantifier_cases:
+        with pytest.raises(SerializationError, match="quantifier must be a scalar or expression"):
+            deserialize_node(payload)
+
+
 def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types() -> None:
     true_expr = {"type": "BooleanLiteral", "value": True}
 

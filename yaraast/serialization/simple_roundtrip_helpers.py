@@ -523,6 +523,14 @@ def _deserialize_required_ast_value(data: dict[str, Any], field: str, context: s
     )
 
 
+def _deserialize_required_quantifier(data: dict[str, Any], field: str, context: str) -> Any:
+    value = _deserialize_required_field(data, field, context)
+    if isinstance(value, list):
+        msg = f"{context} {field} must be a scalar or expression"
+        raise SerializationError(msg)
+    return _deserialize_ast_value(value, f"{context} {field}")
+
+
 def _serialize_location(location: Location) -> dict[str, Any]:
     data: dict[str, Any] = {"line": location.line, "column": location.column}
     if location.file is not None:
@@ -1185,14 +1193,14 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ForExpression":
         return ForExpression(
-            _deserialize_required_ast_value(data, "quantifier", "ForExpression"),
+            _deserialize_required_quantifier(data, "quantifier", "ForExpression"),
             _deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
             _deserialize_required_node(data, "iterable", "ForExpression"),
             _deserialize_required_node(data, "body", "ForExpression"),
         )
     if node_type == "ForOfExpression":
         return ForOfExpression(
-            _deserialize_required_ast_value(data, "quantifier", "ForOfExpression"),
+            _deserialize_required_quantifier(data, "quantifier", "ForOfExpression"),
             _deserialize_required_ast_value(data, "string_set", "ForOfExpression"),
             _deserialize_optional_node_field(data, "condition", "ForOfExpression condition"),
         )
@@ -1215,7 +1223,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return InExpression(subject, _deserialize_required_node(data, "range", "InExpression"))
     if node_type == "OfExpression":
         return OfExpression(
-            _deserialize_required_ast_value(data, "quantifier", "OfExpression"),
+            _deserialize_required_quantifier(data, "quantifier", "OfExpression"),
             _deserialize_required_ast_value(data, "string_set", "OfExpression"),
         )
     if node_type == "ModuleReference":
