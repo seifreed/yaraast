@@ -131,3 +131,19 @@ def test_comment_aware_generator_indents_multiline_match_condition() -> None:
         "        }\n"
     ) in out
     assert "\n    1 => true,\n" not in out
+
+
+def test_comment_aware_generator_uses_configured_indent_for_match_cases() -> None:
+    condition = PatternMatch(
+        value=IntegerLiteral(1),
+        cases=[MatchCase(pattern=IntegerLiteral(1), result=BooleanLiteral(True))],
+        default=BooleanLiteral(False),
+    )
+    file_ast = YaraFile(rules=[Rule(name="match_rule", condition=condition)])
+
+    out = CommentAwareCodeGenerator(indent_size=2).generate(file_ast)
+
+    assert (
+        "  condition:\n" "    match 1 {\n" "      1 => true,\n" "      _ => false,\n" "    }\n"
+    ) in out
+    assert "\n        1 => true,\n" not in out

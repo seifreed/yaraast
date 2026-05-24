@@ -454,9 +454,10 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_pattern_match(self, node: PatternMatch) -> str:
         lines = [f"match {self.visit(node.value)} {{"]
-        lines.extend(f"    {self.visit(case)}," for case in node.cases)
+        case_indent = " " * self.indent_size
+        lines.extend(f"{case_indent}{self.visit(case)}," for case in node.cases)
         if node.default:
-            lines.append(f"    _ => {self.visit(node.default)},")
+            lines.append(f"{case_indent}_ => {self.visit(node.default)},")
         lines.append("}")
         return "\n".join(lines)
 

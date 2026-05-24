@@ -170,16 +170,17 @@ class YaraXGenerator(BaseGenerator):
         value_str = self.visit(node.value)
 
         lines = [f"match {value_str} {{"]
+        case_indent = " " * self.indent_size
 
         # Generate cases
         for case in node.cases:
             case_str = self.visit(case)
-            lines.append(f"    {case_str},")
+            lines.append(f"{case_indent}{case_str},")
 
         # Generate default case if present
         if node.default:
             default_str = self.visit(node.default)
-            lines.append(f"    _ => {default_str},")
+            lines.append(f"{case_indent}_ => {default_str},")
 
         lines.append("}")
 
