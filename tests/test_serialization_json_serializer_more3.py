@@ -41,7 +41,7 @@ from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModi
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, PragmaScope
-from yaraast.ast.rules import Import, Rule
+from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
@@ -312,6 +312,106 @@ def test_json_serializer_rejects_invalid_leaf_values() -> None:
 
     for expression, message in invalid_cases:
         ast = YaraFile(rules=[Rule(name="invalid_leaf", condition=expression)])
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_text: Any = 123
+
+    invalid_cases: list[tuple[YaraFile, str]] = [
+        (
+            YaraFile(imports=[Import(module=invalid_text)]),
+            "Import module must be a string",
+        ),
+        (
+            YaraFile(imports=[Import(module="pe", alias=invalid_text)]),
+            "Import alias must be a string",
+        ),
+        (
+            YaraFile(includes=[Include(path=invalid_text)]),
+            "Include path must be a string",
+        ),
+        (
+            YaraFile(rules=[Rule(name=invalid_text, condition=BooleanLiteral(True))]),
+            "Rule name must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="invalid_tag",
+                        tags=[Tag(name=invalid_text)],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Tag name must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="invalid_plain_identifier",
+                        strings=[PlainString(identifier=invalid_text, value="x")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "PlainString identifier must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="invalid_plain_value",
+                        strings=[PlainString(identifier="$a", value=invalid_text)],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "PlainString value must be a string or bytes",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="invalid_hex_identifier",
+                        strings=[HexString(identifier=invalid_text, tokens=[])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexString identifier must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="invalid_regex_identifier",
+                        strings=[RegexString(identifier=invalid_text, regex="x")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "RegexString identifier must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="invalid_regex_value",
+                        strings=[RegexString(identifier="$a", regex=invalid_text)],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "RegexString regex must be a string",
+        ),
+    ]
+
+    for ast, message in invalid_cases:
         with pytest.raises(SerializationError, match=message):
             serializer.serialize(ast)
 

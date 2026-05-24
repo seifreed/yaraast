@@ -15,6 +15,12 @@ def _serialize_required_string(value, context: str) -> str:
     return value
 
 
+def _serialize_nullable_string(value, context: str) -> str | None:
+    if value is None:
+        return None
+    return _serialize_required_string(value, context)
+
+
 def _serialize_required_int(value, context: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{context} must be an integer"
@@ -155,6 +161,9 @@ def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> N
         data["value"] = base64.b64encode(value).decode("ascii")
         data["value_encoding"] = "base64"
         return
+    if not isinstance(value, str):
+        msg = "PlainString value must be a string or bytes"
+        raise SerializationError(msg)
     data["value"] = value
 
 
@@ -189,7 +198,7 @@ def visit_yara_file(serializer, node) -> dict[str, Any]:
 def visit_rule(serializer, node) -> dict[str, Any]:
     return {
         "type": "Rule",
-        "name": node.name,
+        "name": _serialize_required_string(node.name, "Rule name"),
         "modifiers": [str(m) for m in node.modifiers],
         "tags": [serializer.visit(tag) for tag in node.tags],
         "meta": [_serialize_meta_entry(serializer, m) for m in node.meta],
@@ -202,7 +211,7 @@ def visit_rule(serializer, node) -> dict[str, Any]:
 def visit_plain_string(serializer, node) -> dict[str, Any]:
     data = {
         "type": "PlainString",
-        "identifier": node.identifier,
+        "identifier": _serialize_required_string(node.identifier, "PlainString identifier"),
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
     if getattr(node, "is_anonymous", False):
@@ -214,7 +223,7 @@ def visit_plain_string(serializer, node) -> dict[str, Any]:
 def visit_hex_string(serializer, node) -> dict[str, Any]:
     data = {
         "type": "HexString",
-        "identifier": node.identifier,
+        "identifier": _serialize_required_string(node.identifier, "HexString identifier"),
         "tokens": [serializer.visit(token) for token in node.tokens],
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
@@ -226,8 +235,8 @@ def visit_hex_string(serializer, node) -> dict[str, Any]:
 def visit_regex_string(serializer, node) -> dict[str, Any]:
     data = {
         "type": "RegexString",
-        "identifier": node.identifier,
-        "regex": node.regex,
+        "identifier": _serialize_required_string(node.identifier, "RegexString identifier"),
+        "regex": _serialize_required_string(node.regex, "RegexString regex"),
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
     if getattr(node, "is_anonymous", False):

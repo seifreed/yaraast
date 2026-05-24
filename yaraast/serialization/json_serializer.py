@@ -10,6 +10,7 @@ from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
+    _serialize_nullable_string,
     _serialize_required_bool,
     _serialize_required_expression,
     _serialize_required_int,
@@ -198,19 +199,29 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return visit_yara_file(self, node)
 
     def visit_import(self, node) -> dict[str, Any]:
-        return self._simple_node("Import", module=node.module, alias=getattr(node, "alias", None))
+        return self._simple_node(
+            "Import",
+            module=_serialize_required_string(node.module, "Import module"),
+            alias=_serialize_nullable_string(getattr(node, "alias", None), "Import alias"),
+        )
 
     def visit_include(self, node) -> dict[str, Any]:
-        return self._simple_node("Include", path=node.path)
+        return self._simple_node(
+            "Include",
+            path=_serialize_required_string(node.path, "Include path"),
+        )
 
     def visit_rule(self, node) -> dict[str, Any]:
         return visit_rule(self, node)
 
     def visit_tag(self, node) -> dict[str, Any]:
-        return self._simple_node("Tag", name=node.name)
+        return self._simple_node("Tag", name=_serialize_required_string(node.name, "Tag name"))
 
     def visit_string_definition(self, node) -> dict[str, Any]:
-        return self._simple_node("StringDefinition", identifier=node.identifier)
+        return self._simple_node(
+            "StringDefinition",
+            identifier=_serialize_required_string(node.identifier, "StringDefinition identifier"),
+        )
 
     def visit_plain_string(self, node) -> dict[str, Any]:
         return visit_plain_string(self, node)
