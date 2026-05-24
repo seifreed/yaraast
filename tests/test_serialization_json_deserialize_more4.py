@@ -35,6 +35,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
+from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression
@@ -63,6 +64,10 @@ def test_deserialize_import_include_meta_and_rule_meta_variants() -> None:
 
     meta = s._deserialize_meta({"key": "author", "value": "me"})
     assert meta.key == "author"
+    typed_meta = s._deserialize_meta({"type": "Meta", "key": "author", "value": "me"})
+    assert isinstance(typed_meta, Meta)
+    typed_meta_entry = s._deserialize_meta({"type": "MetaEntry", "key": "owner", "value": "team"})
+    assert not isinstance(typed_meta_entry, Meta)
 
     rule_dict_meta = s._deserialize_rule(
         {

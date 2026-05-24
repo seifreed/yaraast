@@ -1020,7 +1020,12 @@ class JsonSerializerDeserializeMixin:
         if node_type is not None and node_type not in {"Meta", "MetaEntry"}:
             msg = "Meta type must be Meta or MetaEntry"
             raise SerializationError(msg)
-        if data.get("leading_comments") or data.get("trailing_comment") or data.get("location"):
+        if (
+            node_type == "Meta"
+            or data.get("leading_comments")
+            or data.get("trailing_comment")
+            or data.get("location")
+        ):
             from yaraast.ast.meta import Meta
 
             return self._apply_node_metadata(
