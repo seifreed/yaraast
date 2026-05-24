@@ -270,21 +270,72 @@ def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     return data
 
 
+def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> str:
+    expected_types = expected_type if isinstance(expected_type, tuple) else (expected_type,)
+    return " or ".join(item_type.__name__ for item_type in expected_types)
+
+
+def _serialize_node_list(
+    serializer,
+    values,
+    context: str,
+    expected_type: type[Any] | tuple[type[Any], ...],
+) -> list[dict[str, Any]]:
+    if not isinstance(values, list | tuple):
+        msg = f"{context} must be a list of {_expected_type_names(expected_type)} nodes"
+        raise SerializationError(msg)
+
+    serialized = []
+    for value in values:
+        if not isinstance(value, expected_type):
+            msg = f"{context} item must be a {_expected_type_names(expected_type)} node"
+            raise SerializationError(msg)
+        serialized.append(serializer.visit(value))
+    return serialized
+
+
 def visit_yara_file(serializer, node) -> dict[str, Any]:
+    from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+    from yaraast.ast.pragmas import Pragma
+    from yaraast.ast.rules import Import, Include, Rule
+
+    imports = _serialize_node_list(serializer, node.imports, "YaraFile imports", Import)
+    includes = _serialize_node_list(serializer, node.includes, "YaraFile includes", Include)
+    rules = _serialize_node_list(serializer, node.rules, "YaraFile rules", Rule)
+    extern_rules = _serialize_node_list(
+        serializer,
+        node.extern_rules,
+        "YaraFile extern_rules",
+        ExternRule,
+    )
+    extern_imports = _serialize_node_list(
+        serializer,
+        node.extern_imports,
+        "YaraFile extern_imports",
+        ExternImport,
+    )
+    pragmas = _serialize_node_list(serializer, node.pragmas, "YaraFile pragmas", Pragma)
+    namespaces = _serialize_node_list(
+        serializer,
+        node.namespaces,
+        "YaraFile namespaces",
+        ExternNamespace,
+    )
+
     result: dict[str, Any] = {
         "type": "YaraFile",
-        "imports": [serializer.visit(imp) for imp in node.imports],
-        "includes": [serializer.visit(inc) for inc in node.includes],
-        "rules": [serializer.visit(rule) for rule in node.rules],
+        "imports": imports,
+        "includes": includes,
+        "rules": rules,
     }
-    if getattr(node, "extern_rules", None):
-        result["extern_rules"] = [serializer.visit(er) for er in node.extern_rules]
-    if getattr(node, "extern_imports", None):
-        result["extern_imports"] = [serializer.visit(ei) for ei in node.extern_imports]
-    if getattr(node, "pragmas", None):
-        result["pragmas"] = [serializer.visit(p) for p in node.pragmas]
-    if getattr(node, "namespaces", None):
-        result["namespaces"] = [serializer.visit(ns) for ns in node.namespaces]
+    if extern_rules:
+        result["extern_rules"] = extern_rules
+    if extern_imports:
+        result["extern_imports"] = extern_imports
+    if pragmas:
+        result["pragmas"] = pragmas
+    if namespaces:
+        result["namespaces"] = namespaces
     return result
 
 

@@ -212,6 +212,36 @@ def test_json_serializer_rejects_invalid_raw_quantifiers() -> None:
                 serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_invalid_yara_file_node_lists() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    field_names = (
+        "imports",
+        "includes",
+        "rules",
+        "extern_rules",
+        "extern_imports",
+        "pragmas",
+        "namespaces",
+    )
+
+    for field_name in field_names:
+        ast = YaraFile()
+        setattr(ast, field_name, False)
+        with pytest.raises(
+            SerializationError,
+            match=f"YaraFile {field_name} must be a list",
+        ):
+            serializer.serialize(ast)
+
+        ast = YaraFile()
+        setattr(ast, field_name, [object()])
+        with pytest.raises(
+            SerializationError,
+            match=f"YaraFile {field_name} item must be",
+        ):
+            serializer.serialize(ast)
+
+
 def test_json_serializer_rejects_non_finite_numbers() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_numbers = [float("nan"), float("inf"), float("-inf")]
