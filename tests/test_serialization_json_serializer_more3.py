@@ -55,6 +55,8 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
+    HexNibble,
     HexString,
     PlainString,
     RegexString,
@@ -643,6 +645,146 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
             "Comment is_multiline must be a boolean",
         )
     )
+
+    for ast, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_text: Any = 123
+    invalid_bool: Any = "true"
+    invalid_byte: Any = 999
+    invalid_nibble: Any = 99
+    invalid_jump: Any = -1
+
+    invalid_modifier = StringModifier.from_name_value("ascii")
+    invalid_modifier.modifier_type = invalid_text
+
+    invalid_cases: list[tuple[YaraFile, str]] = [
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_modifier",
+                        strings=[
+                            PlainString(
+                                identifier="$a",
+                                value="x",
+                                modifiers=[invalid_modifier],
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "StringModifier name must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_byte",
+                        strings=[HexString(identifier="$h", tokens=[HexByte(invalid_byte)])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexByte value must be a byte",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_negated_byte",
+                        strings=[
+                            HexString(
+                                identifier="$h",
+                                tokens=[HexNegatedByte(invalid_byte)],
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexNegatedByte value must be a byte",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_min_jump",
+                        strings=[
+                            HexString(identifier="$h", tokens=[HexJump(min_jump=invalid_jump)])
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexJump min_jump must be a non-negative integer",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_max_jump",
+                        strings=[
+                            HexString(identifier="$h", tokens=[HexJump(max_jump=invalid_jump)])
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexJump max_jump must be a non-negative integer",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_jump_bounds",
+                        strings=[HexString(identifier="$h", tokens=[HexJump(5, 1)])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexJump min_jump cannot exceed max_jump",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_nibble_high",
+                        strings=[
+                            HexString(
+                                identifier="$h",
+                                tokens=[HexNibble(high=invalid_bool, value=1)],
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexNibble high must be a boolean",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_nibble_value",
+                        strings=[
+                            HexString(
+                                identifier="$h",
+                                tokens=[HexNibble(high=True, value=invalid_nibble)],
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexNibble value must be a nibble",
+        ),
+    ]
 
     for ast, message in invalid_cases:
         with pytest.raises(SerializationError, match=message):

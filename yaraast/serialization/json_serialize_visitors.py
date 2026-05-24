@@ -7,6 +7,8 @@ from typing import Any
 
 from yaraast.errors import SerializationError
 
+_HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+
 
 def _serialize_required_string(value, context: str) -> str:
     if not isinstance(value, str):
@@ -66,6 +68,53 @@ def _serialize_required_bool(value, context: str) -> bool:
         msg = f"{context} must be a boolean"
         raise SerializationError(msg)
     return value
+
+
+def _serialize_hex_byte_value(value, context: str) -> int | str:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
+        return value
+    if isinstance(value, str) and len(value) == 2 and all(char in _HEX_CHARS for char in value):
+        return value
+    msg = f"{context} value must be a byte"
+    raise SerializationError(msg)
+
+
+def _serialize_hex_jump_bound(value, field: str) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    msg = f"HexJump {field} must be a non-negative integer"
+    raise SerializationError(msg)
+
+
+def _serialize_hex_jump_bounds(
+    min_jump,
+    max_jump,
+) -> tuple[int | None, int | None]:
+    serialized_min = _serialize_hex_jump_bound(min_jump, "min_jump")
+    serialized_max = _serialize_hex_jump_bound(max_jump, "max_jump")
+    if (
+        serialized_min is not None
+        and serialized_max is not None
+        and serialized_min > serialized_max
+    ):
+        msg = "HexJump min_jump cannot exceed max_jump"
+        raise SerializationError(msg)
+    return serialized_min, serialized_max
+
+
+def _serialize_hex_nibble_high(value) -> bool:
+    return _serialize_required_bool(value, "HexNibble high")
+
+
+def _serialize_hex_nibble_value(value) -> int | str:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xF:
+        return value
+    if isinstance(value, str) and len(value) == 1 and value in _HEX_CHARS:
+        return value
+    msg = "HexNibble value must be a nibble"
+    raise SerializationError(msg)
 
 
 def _serialize_ast_value(serializer, value):

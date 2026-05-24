@@ -10,6 +10,10 @@ from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
+    _serialize_hex_byte_value,
+    _serialize_hex_jump_bounds,
+    _serialize_hex_nibble_high,
+    _serialize_hex_nibble_value,
     _serialize_meta_value,
     _serialize_nullable_string,
     _serialize_required_bool,
@@ -236,9 +240,16 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return visit_regex_string(self, node)
 
     def visit_string_modifier(self, node) -> dict[str, Any]:
+        modifier_type = getattr(node, "modifier_type", None)
+        name = getattr(modifier_type, "value", None)
+        if name is None:
+            try:
+                name = node.name
+            except AttributeError:
+                name = None
         return self._simple_node(
             "StringModifier",
-            name=node.name,
+            name=_serialize_required_string(name, "StringModifier name"),
             value=_serialize_modifier_value(node.value),
         )
 
@@ -246,22 +257,33 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node("HexToken")
 
     def visit_hex_byte(self, node) -> dict[str, Any]:
-        return self._simple_node("HexByte", value=node.value)
+        return self._simple_node(
+            "HexByte",
+            value=_serialize_hex_byte_value(node.value, "HexByte"),
+        )
 
     def visit_hex_negated_byte(self, node) -> dict[str, Any]:
-        return self._simple_node("HexNegatedByte", value=node.value)
+        return self._simple_node(
+            "HexNegatedByte",
+            value=_serialize_hex_byte_value(node.value, "HexNegatedByte"),
+        )
 
     def visit_hex_wildcard(self, node) -> dict[str, Any]:
         return self._simple_node("HexWildcard")
 
     def visit_hex_jump(self, node) -> dict[str, Any]:
-        return self._simple_node("HexJump", min_jump=node.min_jump, max_jump=node.max_jump)
+        min_jump, max_jump = _serialize_hex_jump_bounds(node.min_jump, node.max_jump)
+        return self._simple_node("HexJump", min_jump=min_jump, max_jump=max_jump)
 
     def visit_hex_alternative(self, node) -> dict[str, Any]:
         return visit_hex_alternative(self, node)
 
     def visit_hex_nibble(self, node) -> dict[str, Any]:
-        return self._simple_node("HexNibble", high=node.high, value=node.value)
+        return self._simple_node(
+            "HexNibble",
+            high=_serialize_hex_nibble_high(node.high),
+            value=_serialize_hex_nibble_value(node.value),
+        )
 
     # Expression visitor methods (simplified)
     def visit_expression(self, node) -> dict[str, Any]:
