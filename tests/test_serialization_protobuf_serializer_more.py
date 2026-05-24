@@ -489,6 +489,34 @@ def test_protobuf_serializer_rejects_unsupported_hex_tokens() -> None:
         serializer.serialize(ast)
 
 
+@pytest.mark.parametrize(
+    ("token", "message"),
+    [
+        (HexByte(999), "HexByte value must be a byte"),
+        (HexByte(-1), "HexByte value must be a byte"),
+        (HexNegatedByte(999), "HexNegatedByte value must be a byte"),
+        (HexJump(-1, 2), "HexJump min_jump must be a non-negative integer"),
+        (HexJump(5, 3), "HexJump min_jump cannot exceed max_jump"),
+        (HexNibble(True, 16), "HexNibble value must be a nibble"),
+        (HexNibble(cast(Any, "yes"), 1), "HexNibble high must be a boolean"),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_hex_token_fields(token: Any, message: str) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_hex_token",
+                strings=[HexString(identifier="$h", tokens=[token])],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
 def test_protobuf_serializer_preserves_typed_string_modifier_values() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

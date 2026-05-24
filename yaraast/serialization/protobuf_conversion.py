@@ -434,22 +434,18 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
     if isinstance(token, HexByte):
         pb_token.byte.value = _hex_byte_value_to_protobuf(token.value)
     elif isinstance(token, HexNegatedByte):
-        pb_token.negated_byte.value = str(token.value)
+        pb_token.negated_byte.value = _hex_negated_byte_value_to_protobuf(token.value)
     elif isinstance(token, HexWildcard):
         pb_token.wildcard.CopyFrom(yara_ast_pb2.HexWildcard())
     elif isinstance(token, HexJump):
-        pb_token.jump.SetInParent()
-        if token.min_jump is not None:
-            pb_token.jump.min_jump = token.min_jump
-        if token.max_jump is not None:
-            pb_token.jump.max_jump = token.max_jump
+        _copy_hex_jump_to_protobuf(token, pb_token.jump)
     elif isinstance(token, HexAlternative):
         for alternative in token.alternatives:
             pb_alternative = pb_token.alternative.alternatives.add()
             for alternative_token in _coerce_hex_alternative_branch(alternative):
                 convert_hex_token_to_protobuf(alternative_token, pb_alternative.tokens.add())
     elif isinstance(token, HexNibble):
-        pb_token.nibble.high = token.high
+        pb_token.nibble.high = _hex_nibble_high_to_protobuf(token.high)
         pb_token.nibble.value = _hex_nibble_value_to_protobuf(token.value)
     else:
         msg = f"Unsupported protobuf hex token type: {type(token).__name__}"
@@ -457,9 +453,55 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
 
 
 def _hex_byte_value_to_protobuf(value: int | str) -> str:
+    return _hex_byte_like_value_to_protobuf(value, "HexByte value")
+
+
+def _hex_negated_byte_value_to_protobuf(value: int | str) -> str:
+    return _hex_byte_like_value_to_protobuf(value, "HexNegatedByte value")
+
+
+def _hex_byte_like_value_to_protobuf(value: int | str, context: str) -> str:
+    if isinstance(value, bool):
+        msg = f"{context} must be a byte"
+        raise SerializationError(msg)
     if isinstance(value, int):
-        return str(value)
-    return f"hex:{value}"
+        if 0 <= value <= 0xFF:
+            return str(value)
+        msg = f"{context} must be a byte"
+        raise SerializationError(msg)
+    if isinstance(value, str) and len(value) == 2 and all(char in _HEX_CHARS for char in value):
+        return f"hex:{value}"
+    msg = f"{context} must be a byte"
+    raise SerializationError(msg)
+
+
+def _copy_hex_jump_to_protobuf(token, pb_jump) -> None:
+    min_jump = _hex_jump_bound_to_protobuf(token.min_jump, "min_jump")
+    max_jump = _hex_jump_bound_to_protobuf(token.max_jump, "max_jump")
+    if min_jump is not None and max_jump is not None and min_jump > max_jump:
+        msg = "HexJump min_jump cannot exceed max_jump"
+        raise SerializationError(msg)
+    pb_jump.SetInParent()
+    if min_jump is not None:
+        pb_jump.min_jump = min_jump
+    if max_jump is not None:
+        pb_jump.max_jump = max_jump
+
+
+def _hex_jump_bound_to_protobuf(value: int | None, field: str) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        msg = f"HexJump {field} must be a non-negative integer"
+        raise SerializationError(msg)
+    return value
+
+
+def _hex_nibble_high_to_protobuf(value: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    msg = "HexNibble high must be a boolean"
+    raise SerializationError(msg)
 
 
 def _hex_byte_value_from_protobuf(value: str) -> int | str:
@@ -504,9 +546,15 @@ def _hex_int_value_from_protobuf(value: str) -> int:
 
 
 def _hex_nibble_value_to_protobuf(value: int | str) -> int:
-    if isinstance(value, int):
+    if isinstance(value, bool):
+        msg = "HexNibble value must be a nibble"
+        raise SerializationError(msg)
+    if isinstance(value, int) and 0 <= value <= 0xF:
         return value
-    return int(value, 16)
+    if isinstance(value, str) and len(value) == 1 and value in _HEX_CHARS:
+        return int(value, 16)
+    msg = "HexNibble value must be a nibble"
+    raise SerializationError(msg)
 
 
 def _protobuf_hex_nibble_value(value: int) -> int:
