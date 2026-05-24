@@ -41,6 +41,38 @@ def _serialize_quantifier(serializer, value):
     raise SerializationError(msg)
 
 
+def _serialize_string_set_item(serializer, value, context: str):
+    from yaraast.ast.expressions import Expression
+
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Expression):
+        return serializer.visit(value)
+    msg = f"{context} must contain strings or expressions"
+    raise SerializationError(msg)
+
+
+def _serialize_string_set(serializer, value, context: str):
+    from yaraast.ast.expressions import Expression
+
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Expression):
+        return serializer.visit(value)
+
+    field_context = f"{context} string_set"
+    if isinstance(value, list | tuple):
+        return [_serialize_string_set_item(serializer, item, field_context) for item in value]
+    if isinstance(value, set | frozenset):
+        return [
+            _serialize_string_set_item(serializer, item, field_context)
+            for item in sorted(value, key=str)
+        ]
+
+    msg = f"{field_context} must be a string, expression, or list of strings/expressions"
+    raise SerializationError(msg)
+
+
 def _serialize_modifier_value(value: Any) -> Any:
     if isinstance(value, tuple):
         return list(value)
@@ -243,7 +275,7 @@ def visit_for_of_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ForOfExpression",
         "quantifier": _serialize_quantifier(serializer, node.quantifier),
-        "string_set": _serialize_ast_value(serializer, node.string_set),
+        "string_set": _serialize_string_set(serializer, node.string_set, "ForOfExpression"),
         "condition": _serialize_optional_ast_node(
             serializer,
             node.condition,
@@ -269,7 +301,7 @@ def visit_of_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "OfExpression",
         "quantifier": _serialize_quantifier(serializer, node.quantifier),
-        "string_set": _serialize_ast_value(serializer, node.string_set),
+        "string_set": _serialize_string_set(serializer, node.string_set, "OfExpression"),
     }
 
 

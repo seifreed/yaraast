@@ -165,6 +165,32 @@ def test_json_serializer_rejects_invalid_raw_quantifiers() -> None:
                 serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_invalid_raw_string_sets() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_string_sets: list[Any] = [
+        True,
+        123,
+        None,
+        {},
+        object(),
+        [False],
+        [123],
+        [None],
+        [{}],
+        [object()],
+    ]
+
+    for string_set in invalid_string_sets:
+        expressions = [
+            ForOfExpression("any", string_set, None),
+            OfExpression("any", string_set),
+        ]
+        for expression in expressions:
+            ast = YaraFile(rules=[Rule(name="invalid_string_set", condition=expression)])
+            with pytest.raises(SerializationError, match="string_set"):
+                serializer.serialize(ast)
+
+
 def test_json_deserializer_parses_legacy_hex_xor_modifier_values() -> None:
     payload = {
         "type": "YaraFile",
