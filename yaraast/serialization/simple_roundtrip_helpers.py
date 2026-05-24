@@ -620,6 +620,31 @@ def _deserialize_location(data: dict[str, Any]) -> Location:
     )
 
 
+def _deserialize_comment_node(data: Any) -> ASTNode:
+    data = _deserialize_object(data, "Comment metadata")
+    node_type = data.get("type")
+    if node_type == "Comment":
+        return _apply_node_metadata(
+            Comment(
+                _deserialize_comment_text(data),
+                is_multiline=_deserialize_comment_multiline(data),
+            ),
+            data,
+        )
+    if node_type == "CommentGroup":
+        return _apply_node_metadata(
+            CommentGroup(
+                [
+                    cast_comment(_deserialize_comment_node(comment))
+                    for comment in _deserialize_list_field(data, "comments", "CommentGroup")
+                ]
+            ),
+            data,
+        )
+    msg = f"Unknown comment metadata type: {node_type}"
+    raise SerializationError(msg)
+
+
 def _with_node_metadata(node: ASTNode, data: dict[str, Any]) -> dict[str, Any]:
     if node.location is not None:
         data["location"] = _serialize_location(node.location)
@@ -643,11 +668,11 @@ def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
             msg = "leading_comments must be a list"
             raise SerializationError(msg)
         node.leading_comments = [
-            cast_comment(deserialize_node(comment)) for comment in leading_comments
+            cast_comment(_deserialize_comment_node(comment)) for comment in leading_comments
         ]
     trailing_comment = data.get("trailing_comment")
     if isinstance(trailing_comment, dict):
-        node.trailing_comment = cast_trailing_comment(deserialize_node(trailing_comment))
+        node.trailing_comment = cast_trailing_comment(_deserialize_comment_node(trailing_comment))
     elif trailing_comment is not None:
         msg = "trailing_comment must be an object"
         raise SerializationError(msg)
@@ -1106,7 +1131,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "CommentGroup":
         return CommentGroup(
             [
-                cast_comment(deserialize_node(comment))
+                cast_comment(_deserialize_comment_node(comment))
                 for comment in _deserialize_list_field(data, "comments", "CommentGroup")
             ]
         )

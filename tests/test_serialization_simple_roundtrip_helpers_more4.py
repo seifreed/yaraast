@@ -332,6 +332,15 @@ def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
             }
         )
 
+    with pytest.raises(SerializationError, match="Unknown comment metadata type"):
+        deserialize_node(
+            {
+                "type": "Import",
+                "module": "pe",
+                "leading_comments": [{"type": "UnknownComment", "text": "bad"}],
+            }
+        )
+
     with pytest.raises(SerializationError, match="Comment text must be a string"):
         deserialize_node(
             {
