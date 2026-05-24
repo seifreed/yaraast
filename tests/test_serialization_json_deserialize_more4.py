@@ -555,6 +555,12 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="SetExpression elements must be a list"):
         s._deserialize_expression({"type": "SetExpression", "elements": "x"})
 
+    with pytest.raises(SerializationError, match="SetExpression elements must contain expressions"):
+        s._deserialize_expression({"type": "SetExpression", "elements": [None]})
+
+    with pytest.raises(SerializationError, match="FunctionCall arguments must contain expressions"):
+        s._deserialize_expression({"type": "FunctionCall", "function": "fn", "arguments": [None]})
+
     with pytest.raises(SerializationError, match="MemberAccess member must be a string"):
         s._deserialize_expression(
             {"type": "MemberAccess", "object": {"type": "Identifier", "name": "pe"}, "member": []}
@@ -697,6 +703,32 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
 
     with pytest.raises(SerializationError, match="TupleExpression elements must be a list"):
         s._deserialize_expression({"type": "TupleExpression", "elements": "abc"})
+
+    null_list_item_cases = (
+        (
+            {"type": "WithStatement", "declarations": [None], "body": true_expr},
+            "WithStatement declarations must contain expressions",
+        ),
+        (
+            {"type": "TupleExpression", "elements": [None]},
+            "TupleExpression elements must contain expressions",
+        ),
+        (
+            {"type": "ListExpression", "elements": [None]},
+            "ListExpression elements must contain expressions",
+        ),
+        (
+            {"type": "DictExpression", "items": [None]},
+            "DictExpression items must contain expressions",
+        ),
+        (
+            {"type": "PatternMatch", "value": true_expr, "cases": [None]},
+            "PatternMatch cases must contain expressions",
+        ),
+    )
+    for null_payload, message in null_list_item_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(null_payload)
 
     missing_extended_cases = (
         ({"type": "WithStatement", "declarations": []}, "WithStatement body is required"),

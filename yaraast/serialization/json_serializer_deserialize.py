@@ -52,6 +52,19 @@ def _deserialize_required_expression(self, data: dict[str, Any], field: str, con
     raise SerializationError(msg)
 
 
+def _deserialize_expression_list_field(
+    self, data: dict[str, Any], field: str, context: str
+) -> list[Any]:
+    expressions: list[Any] = []
+    for item in _deserialize_list_field(data, field, context):
+        expression = self._deserialize_expression(item)
+        if expression is None:
+            msg = f"{context} {field} must contain expressions"
+            raise SerializationError(msg)
+        expressions.append(expression)
+    return expressions
+
+
 def _deserialize_dictionary_key(self, data: dict[str, Any]) -> str | ASTNode:
     if "key" not in data:
         msg = "DictionaryAccess key must be a string or expression"
@@ -400,10 +413,7 @@ def _deser_parentheses_expression(self, data: dict[str, Any]):
 def _deser_set_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import SetExpression
 
-    elements = [
-        self._deserialize_expression(e)
-        for e in _deserialize_list_field(data, "elements", "SetExpression")
-    ]
+    elements = _deserialize_expression_list_field(self, data, "elements", "SetExpression")
     return SetExpression(elements=elements)
 
 
@@ -418,10 +428,7 @@ def _deser_range_expression(self, data: dict[str, Any]):
 def _deser_function_call(self, data: dict[str, Any]):
     from yaraast.ast.expressions import FunctionCall
 
-    args = [
-        self._deserialize_expression(a)
-        for a in _deserialize_list_field(data, "arguments", "FunctionCall")
-    ]
+    args = _deserialize_expression_list_field(self, data, "arguments", "FunctionCall")
     return FunctionCall(
         function=_deserialize_string_field(data, "function", "FunctionCall"),
         arguments=args,
@@ -658,10 +665,9 @@ def _deser_with_statement(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import WithStatement
 
     return WithStatement(
-        declarations=[
-            self._deserialize_expression(declaration)
-            for declaration in _deserialize_list_field(data, "declarations", "WithStatement")
-        ],
+        declarations=_deserialize_expression_list_field(
+            self, data, "declarations", "WithStatement"
+        ),
         body=_deserialize_required_expression(self, data, "body", "WithStatement"),
     )
 
@@ -705,10 +711,7 @@ def _deser_tuple_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import TupleExpression
 
     return TupleExpression(
-        elements=[
-            self._deserialize_expression(element)
-            for element in _deserialize_list_field(data, "elements", "TupleExpression")
-        ]
+        elements=_deserialize_expression_list_field(self, data, "elements", "TupleExpression")
     )
 
 
@@ -725,10 +728,7 @@ def _deser_list_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import ListExpression
 
     return ListExpression(
-        elements=[
-            self._deserialize_expression(element)
-            for element in _deserialize_list_field(data, "elements", "ListExpression")
-        ]
+        elements=_deserialize_expression_list_field(self, data, "elements", "ListExpression")
     )
 
 
@@ -736,10 +736,7 @@ def _deser_dict_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import DictExpression
 
     return DictExpression(
-        items=[
-            self._deserialize_expression(item)
-            for item in _deserialize_list_field(data, "items", "DictExpression")
-        ]
+        items=_deserialize_expression_list_field(self, data, "items", "DictExpression")
     )
 
 
@@ -777,10 +774,7 @@ def _deser_pattern_match(self, data: dict[str, Any]):
 
     return PatternMatch(
         value=_deserialize_required_expression(self, data, "value", "PatternMatch"),
-        cases=[
-            self._deserialize_expression(case)
-            for case in _deserialize_list_field(data, "cases", "PatternMatch")
-        ],
+        cases=_deserialize_expression_list_field(self, data, "cases", "PatternMatch"),
         default=_deserialize_optional_expression(self, data.get("default")),
     )
 
