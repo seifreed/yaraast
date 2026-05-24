@@ -240,6 +240,15 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
         deserialize_rule({"name": "r1", "pragmas": "pragma", "condition": None})
 
+    with pytest.raises(SerializationError, match="Rule pragmas must contain InRulePragma nodes"):
+        deserialize_rule(
+            {
+                "name": "r1",
+                "pragmas": [{"type": "Pragma", "pragma_type": "custom", "name": "vendor"}],
+                "condition": None,
+            }
+        )
+
     with pytest.raises(SerializationError, match="Serialized node must be an object"):
         deserialize_rule({"name": "r1", "condition": "true"})
 

@@ -1596,7 +1596,8 @@ def deserialize_pragma(data: dict[str, Any]) -> Pragma:
 def cast_in_rule_pragma(node: ASTNode) -> InRulePragma:
     if isinstance(node, InRulePragma):
         return node
-    return InRulePragma(pragma=Pragma(PragmaType.CUSTOM, "custom"))
+    msg = "Rule pragmas must contain InRulePragma nodes"
+    raise SerializationError(msg)
 
 
 def cast_comment(node: ASTNode) -> Comment:
