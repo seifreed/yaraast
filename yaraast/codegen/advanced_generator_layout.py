@@ -8,6 +8,7 @@ from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     _visit_binary_operand,
 )
+from yaraast.codegen.generator_formatting import format_rule_tags
 
 
 def _emit_top_level_line(generator, node) -> None:
@@ -68,12 +69,7 @@ def visit_rule(generator, node) -> str:
         generator._write(":")
         if generator.config.space_after_colon:
             generator._write(" ")
-        tags_str = []
-        for tag in node.tags:
-            tags_str.append(
-                tag if isinstance(tag, str) else tag.name if hasattr(tag, "name") else str(tag)
-            )
-        generator._write(" ".join(tags_str))
+        generator._write(format_rule_tags(node.tags))
 
     if generator.config.brace_style == BraceStyle.SAME_LINE:
         generator._write(" {")

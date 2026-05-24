@@ -21,13 +21,28 @@ def format_rule_modifiers(modifiers) -> str:
 def format_rule_tags(tags) -> str:
     if not tags:
         return ""
-    tag_names = []
-    for tag in tags:
-        if isinstance(tag, str):
-            tag_names.append(tag)
-        else:
-            tag_names.append(tag.name)
+    validate_rule_tags(tags)
+    tag_names = [_rule_tag_name(tag) for tag in tags]
     return " ".join(tag_names)
+
+
+def validate_rule_tags(tags) -> None:
+    if not tags:
+        return
+
+    seen: set[str] = set()
+    for tag in tags:
+        name = _rule_tag_name(tag)
+        if name in seen:
+            msg = f"Duplicate tag identifier '{name}' for libyara output"
+            raise ValueError(msg)
+        seen.add(name)
+
+
+def _rule_tag_name(tag) -> str:
+    if isinstance(tag, str):
+        return tag
+    return str(tag.name if hasattr(tag, "name") else tag)
 
 
 def format_meta_key(key: str, scope: object | None = None) -> str:

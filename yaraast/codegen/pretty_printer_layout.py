@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from yaraast.codegen.generator_formatting import validate_rule_tags
 from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
@@ -84,11 +85,9 @@ def visit_rule(printer, node) -> str:
         line_parts.extend(str(m) for m in node.modifiers)
     line_parts.extend(["rule", node.name])
     if node.tags:
-        tags = (
-            sorted([tag.name for tag in node.tags])
-            if printer.options.sort_tags
-            else [tag.name for tag in node.tags]
-        )
+        validate_rule_tags(node.tags)
+        tag_names = [tag if isinstance(tag, str) else tag.name for tag in node.tags]
+        tags = sorted(tag_names) if printer.options.sort_tags else tag_names
         line_parts.append(":")
         line_parts.extend(tags)
     _write_line(printer, " ".join(line_parts) + " {", getattr(node, "trailing_comment", None))

@@ -16,6 +16,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.codegen.formatting import HexStyle, StringStyle
+from yaraast.codegen.generator_formatting import format_rule_tags
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
@@ -141,8 +142,8 @@ def get_tag_string(tags, config) -> str:
     if not tags:
         return ""
     if config.string_style == StringStyle.COMPACT:
-        return " ".join(str(t.name if hasattr(t, "name") else t) for t in tags)
-    return " ".join(str(t.name if hasattr(t, "name") else t) for t in tags)
+        return format_rule_tags(tags)
+    return format_rule_tags(tags)
 
 
 def _format_hex_jump(token: HexJump) -> str:

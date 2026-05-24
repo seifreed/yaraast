@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
-from yaraast.codegen.generator_formatting import format_meta_key
+from yaraast.codegen.generator_formatting import format_meta_key, format_rule_tags
 from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_regex_modifiers,
@@ -185,9 +185,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         if node.tags:
             self._write(" : ")
-            self._write(
-                " ".join(tag.name if hasattr(tag, "name") else str(tag) for tag in node.tags),
-            )
+            self._write(format_rule_tags(node.tags))
 
         self._write(" {")
 

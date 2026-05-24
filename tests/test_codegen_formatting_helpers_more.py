@@ -50,6 +50,8 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
 
     assert format_rule_tags([]) == ""
     assert format_rule_tags(["t1", Tag(name="t2")]) == "t1 t2"
+    with pytest.raises(ValueError, match="Duplicate tag identifier"):
+        format_rule_tags(["t1", Tag(name="t1")])
 
     assert format_meta_value("s", "x") == 's = "x"'
     assert format_meta_value("b", True) == "b = true"

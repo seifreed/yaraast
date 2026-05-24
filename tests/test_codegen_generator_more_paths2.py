@@ -61,6 +61,7 @@ from yaraast.ast.strings import (
     RegexString,
 )
 from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
+from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.codegen.formatting import FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter
@@ -462,6 +463,27 @@ def test_codegen_generator_rejects_duplicate_string_modifiers() -> None:
 
         with pytest.raises(ValueError, match="Duplicate string modifier"):
             gen.generate(YaraFile(rules=[rule]))
+
+
+def test_codegen_generators_reject_duplicate_rule_tags() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_tags",
+                tags=[Tag("tag"), Tag("tag")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Duplicate tag identifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Duplicate tag identifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Duplicate tag identifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Duplicate tag identifier"):
+        PrettyPrinter().pretty_print(ast)
 
 
 def test_codegen_generator_expression_and_condition_paths() -> None:
