@@ -906,6 +906,7 @@ class JsonSerializerDeserializeMixin:
     def _deserialize_rule(self, data: dict[str, Any]):
         from yaraast.ast.rules import Rule
 
+        data = _deserialize_object(data, "Rule")
         meta_data = data.get("meta", [])
         if isinstance(meta_data, dict):
             meta = [
@@ -957,6 +958,7 @@ class JsonSerializerDeserializeMixin:
     def _deserialize_meta(self, data: dict[str, Any]):
         from yaraast.ast.modifiers import MetaEntry
 
+        data = _deserialize_object(data, "Meta")
         if data.get("leading_comments") or data.get("trailing_comment") or data.get("location"):
             from yaraast.ast.meta import Meta
 
@@ -974,6 +976,7 @@ class JsonSerializerDeserializeMixin:
         )
 
     def _deserialize_string(self, data: dict[str, Any]):
+        data = _deserialize_object(data, "String")
         string_type = data.get("type")
         context = string_type if isinstance(string_type, str) else "String"
         modifiers = [
@@ -1167,6 +1170,7 @@ class JsonSerializerDeserializeMixin:
             UndefDirective,
         )
 
+        data = _deserialize_object(data, "Pragma")
         pragma_type = _deserialize_pragma_type(data)
         scope = _deserialize_pragma_scope(data.get("scope"), "Pragma")
         name = _deserialize_optional_string_field(data, "name", "Pragma", pragma_type.value)

@@ -136,6 +136,18 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="YaraFile extern_rules must be a list"):
         s._deserialize_ast({"type": "YaraFile", "extern_rules": "RemoteRule"})
 
+    with pytest.raises(SerializationError, match="Rule must be an object"):
+        s._deserialize_rule(cast(Any, "rule"))
+
+    with pytest.raises(SerializationError, match="Meta must be an object"):
+        s._deserialize_meta(cast(Any, "meta"))
+
+    with pytest.raises(SerializationError, match="String must be an object"):
+        s._deserialize_string(cast(Any, "string"))
+
+    with pytest.raises(SerializationError, match="Pragma must be an object"):
+        s._deserialize_pragma(cast(Any, "pragma"))
+
     with pytest.raises(SerializationError, match="Rule meta must be a list or dictionary"):
         s._deserialize_rule({"name": "r1", "meta": "author", "condition": None})
 

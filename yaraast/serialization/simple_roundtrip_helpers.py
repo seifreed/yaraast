@@ -1351,6 +1351,7 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
 
 def deserialize_rule(data: dict[str, Any]) -> Rule:
     """Deserialize a Rule."""
+    data = _deserialize_object(data, "Rule")
     condition_data = data.get("condition")
     rule = Rule(
         name=_deserialize_string_field(data, "name", "Rule"),
@@ -1421,6 +1422,7 @@ def _deserialize_pragma_scope(value: Any, context: str = "Pragma") -> PragmaScop
 
 
 def deserialize_pragma(data: dict[str, Any]) -> Pragma:
+    data = _deserialize_object(data, "Pragma")
     pragma_type = _deserialize_pragma_type(data)
     scope = _deserialize_pragma_scope(data.get("scope"))
     name = _deserialize_optional_string_field(data, "name", "Pragma", pragma_type.value)
@@ -1478,6 +1480,7 @@ def cast_trailing_comment(node: ASTNode) -> Any:
 
 def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
     """Deserialize a Meta item."""
+    data = _deserialize_object(data, "Meta")
     scope = data.get("scope")
     if data.get("type") == "MetaEntry" or scope is not None:
         return MetaEntry.from_key_value(
@@ -1493,6 +1496,7 @@ def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
 
 def deserialize_string(data: dict[str, Any]) -> Any:
     """Deserialize a string definition."""
+    data = _deserialize_object(data, "String")
     string_type = data.get("type")
     context = string_type if isinstance(string_type, str) else "String"
     modifiers = _deserialize_modifiers(_deserialize_list_field(data, "modifiers", context))
