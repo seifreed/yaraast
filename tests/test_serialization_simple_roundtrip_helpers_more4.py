@@ -701,6 +701,11 @@ def test_simple_roundtrip_deserialize_strings_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="HexString identifier is required"):
         deserialize_string({"type": "HexString", "tokens": 7, "modifiers": []})
 
+    with pytest.raises(SerializationError, match="Invalid legacy HexString tokens"):
+        deserialize_string(
+            {"type": "HexString", "identifier": "$h", "tokens": "{ GG }", "modifiers": []}
+        )
+
     with pytest.raises(SerializationError, match="RegexString regex must be a string"):
         deserialize_string(
             {"type": "RegexString", "identifier": "$r", "regex": 123, "modifiers": []}

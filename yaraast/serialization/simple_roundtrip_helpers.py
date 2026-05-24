@@ -1912,8 +1912,9 @@ def deserialize_string(data: dict[str, Any]) -> Any:
                     ),
                     data,
                 )
-            except HexParseError:
-                pass
+            except HexParseError as exc:
+                msg = f"Invalid legacy HexString tokens: {exc}"
+                raise SerializationError(msg) from exc
 
         # Legacy format with invalid token payloads: preserve type but do not invent tokens.
         import warnings
