@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment
 from yaraast.ast.conditions import (
     AtExpression,
@@ -787,6 +787,43 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
     ]
 
     for ast, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_invalid_location_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_bool: Any = True
+    invalid_text: Any = "1"
+    invalid_file: Any = 123
+
+    invalid_locations = [
+        (
+            Location(invalid_bool, 1),
+            "Location line must be an integer",
+        ),
+        (
+            Location(1, invalid_text),
+            "Location column must be an integer",
+        ),
+        (
+            Location(1, 1, file=invalid_file),
+            "Location file must be a string",
+        ),
+        (
+            Location(1, 1, end_line=invalid_text),
+            "Location end_line must be an integer",
+        ),
+        (
+            Location(1, 1, end_column=invalid_bool),
+            "Location end_column must be an integer",
+        ),
+    ]
+
+    for location, message in invalid_locations:
+        rule = Rule("invalid_location", condition=BooleanLiteral(True))
+        rule.location = location
+        ast = YaraFile(rules=[rule])
         with pytest.raises(SerializationError, match=message):
             serializer.serialize(ast)
 

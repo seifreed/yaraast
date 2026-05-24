@@ -92,13 +92,19 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._with_node_metadata(node, super().visit(node))
 
     def _serialize_location(self, location: Location) -> dict[str, Any]:
-        data: dict[str, Any] = {"line": location.line, "column": location.column}
+        data: dict[str, Any] = {
+            "line": _serialize_required_int(location.line, "Location line"),
+            "column": _serialize_required_int(location.column, "Location column"),
+        }
         if location.file is not None:
-            data["file"] = location.file
+            data["file"] = _serialize_nullable_string(location.file, "Location file")
         if location.end_line is not None:
-            data["end_line"] = location.end_line
+            data["end_line"] = _serialize_required_int(location.end_line, "Location end_line")
         if location.end_column is not None:
-            data["end_column"] = location.end_column
+            data["end_column"] = _serialize_required_int(
+                location.end_column,
+                "Location end_column",
+            )
         return data
 
     def _with_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> dict[str, Any]:
