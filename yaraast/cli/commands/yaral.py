@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict, is_dataclass
+from typing import Any
+
 import click
 
 from yaraast.cli.utils import format_json, read_text
@@ -28,6 +31,12 @@ from yaraast.cli.yaral_services import (
     validate_yaral,
 )
 from yaraast.yaral.validator import YaraLValidator
+
+
+def _ast_to_serializable_data(ast: Any) -> dict[str, Any]:
+    if is_dataclass(ast):
+        return asdict(ast)
+    return ast.__dict__
 
 
 def _format_yaral_code(code: str) -> str:
@@ -57,13 +66,19 @@ def parse(file: str, enhanced: bool, output: str | None, format: str):
         content = read_text(file)
         display_parse_mode(enhanced)
         ast = parse_yaral(content, enhanced)
+        ast_data = _ast_to_serializable_data(ast)
 
         if format == "json":
-            output_str = format_json(ast.__dict__, default=str)
+            output_str = format_json(ast_data, default=str)
         elif format == "yaml":
             import yaml
 
-            output_str = yaml.dump(ast.__dict__, default_flow_style=False)
+            output_str = yaml.safe_dump(
+                ast_data,
+                default_flow_style=False,
+                allow_unicode=True,
+                sort_keys=False,
+            )
         else:
             output_str = str(ast)
 

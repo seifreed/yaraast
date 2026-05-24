@@ -6,6 +6,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from click.testing import CliRunner
+import yaml
 
 from yaraast.cli.commands.analyze import analyze
 from yaraast.cli.commands.yaral import yaral
@@ -119,6 +120,16 @@ def test_yaral_real_paths(tmp_path: Path) -> None:
 
     parse_yaml = runner.invoke(yaral, ["parse", good, "--format", "yaml"])
     assert parse_yaml.exit_code == 0
+
+    parse_yaml_file = tmp_path / "yaral_ast.yaml"
+    parse_yaml_output = runner.invoke(
+        yaral, ["parse", good, "--format", "yaml", "--output", str(parse_yaml_file)]
+    )
+    assert parse_yaml_output.exit_code == 0
+    yaml_text = parse_yaml_file.read_text(encoding="utf-8")
+    assert "!!python/" not in yaml_text
+    yaml_data = yaml.safe_load(yaml_text)
+    assert yaml_data["rules"][0]["name"] == "login_attempts"
 
     parse_text = runner.invoke(yaral, ["parse", good, "--format", "text"])
     assert parse_text.exit_code == 0
