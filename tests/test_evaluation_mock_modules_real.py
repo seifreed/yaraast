@@ -139,13 +139,16 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
 
 
 def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
-    data = _build_pe_data(
-        dll=False,
-        magic=0x10B,
-        sections=[
-            Section(".text", 0x1000, 0x180, 0x200, 0x200, 0x60000020),
-            Section(".rdata", 0x2000, 0x100, 0x400, 0x100, 0x40000040),
-        ],
+    data = (
+        _build_pe_data(
+            dll=False,
+            magic=0x10B,
+            sections=[
+                Section(".text", 0x1000, 0x180, 0x200, 0x200, 0x60000020),
+                Section(".rdata", 0x2000, 0x100, 0x400, 0x100, 0x40000040),
+            ],
+        )
+        + b"OVL"
     )
 
     pe = MockPE(data)
@@ -155,6 +158,20 @@ def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
     assert pe.section_index(0x1000) == 0
     assert pe.section_index(0x2000) == 1
     assert pe.sections[0] == Section(".text", 0x1000, 0x180, 0x200, 0x200, 0x60000020)
+    assert pe.sections[0].pointer_to_relocations == 0
+    assert pe.sections[0].pointer_to_line_numbers == 0
+    assert pe.sections[0].number_of_relocations == 0
+    assert pe.sections[0].number_of_line_numbers == 0
+    assert pe.overlay.offset == 0x500
+    assert pe.overlay.size == 3
+    assert pe.rich_signature.clear_data == ""
+    assert pe.rich_signature.key == 0
+    assert pe.rich_signature.version(1) == 0
+    assert pe.rich_signature.version(1, 2) == 0
+    assert pe.rich_signature.toolid(1) == 0
+    assert pe.rich_signature.toolid(1, 2) == 0
+    assert pe.number_of_signatures == 0
+    assert pe.signatures == []
     assert pe.rva_to_offset(0x100) == 0x100
     assert pe.rva_to_offset(0x1000) == 0x200
     assert pe.rva_to_offset(0x11FF) == 0x3FF

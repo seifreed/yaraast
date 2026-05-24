@@ -122,6 +122,14 @@ def test_signature_help_edge_cases_and_parameter_counting() -> None:
     assert regex_after_matches_sig.active_parameter == 0
     assert "imports" in regex_after_matches_sig.signatures[0].label
 
+    rich_signature_text = "pe.rich_signature.version(1, "
+    rich_signature_sig = provider.get_signature_help(
+        rich_signature_text, _pos(0, len(rich_signature_text))
+    )
+    assert rich_signature_sig is not None
+    assert rich_signature_sig.active_parameter == 1
+    assert "version" in rich_signature_sig.signatures[0].label
+
     assert provider._calculate_active_parameter("uint32(1,", _pos(1, 0)) == 0
     assert provider._calculate_active_parameter("uint32(1", _pos(0, 99)) == 0
     assert provider._calculate_active_parameter("uint32(1)", _pos(0, len("uint32(1)"))) == 0

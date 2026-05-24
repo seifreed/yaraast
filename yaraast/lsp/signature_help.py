@@ -42,6 +42,16 @@ _SIGNATURE_SPECS: dict[str, tuple[str, str, list[tuple[str, str]]]] = {
         "Get the index of a section by name or RVA",
         [("name_or_rva", "Section name or RVA")],
     ),
+    "pe.rich_signature.version": (
+        "version(toolid: int, version: int = optional) -> int",
+        "Count Rich signature entries matching a tool id and optional version",
+        [("toolid", "Rich signature tool id"), ("version", "Rich signature version")],
+    ),
+    "pe.rich_signature.toolid": (
+        "toolid(toolid: int, version: int = optional) -> int",
+        "Count Rich signature entries matching a tool id and optional version",
+        [("toolid", "Rich signature tool id"), ("version", "Rich signature version")],
+    ),
     # ELF module
     "elf.type": (
         "type -> int",

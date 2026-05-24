@@ -630,13 +630,74 @@ class TestSemanticValidator:
                 condition:
                     pe.sections[0].full_name or
                     pe.sections[0].raw_data_offset or
-                    pe.sections[0].raw_data_size
+                    pe.sections[0].raw_data_size or
+                    pe.sections[0].pointer_to_relocations or
+                    pe.sections[0].pointer_to_line_numbers or
+                    pe.sections[0].number_of_relocations or
+                    pe.sections[0].number_of_line_numbers
             }
         """)
 
         result = SemanticValidator().validate(ast)
 
         assert result.is_valid is True
+
+    def test_validate_accepts_libyara_pe_rich_overlay_and_signature_fields(self) -> None:
+        ast = Parser().parse("""
+            import "pe"
+
+            rule valid_pe_rich_overlay_and_signature_fields {
+                condition:
+                    pe.overlay.offset >= 0 or
+                    pe.overlay.size >= 0 or
+                    pe.rich_signature.clear_data == "" or
+                    pe.rich_signature.key == 0 or
+                    pe.rich_signature.version(1) == 0 or
+                    pe.rich_signature.version(1, 2) == 0 or
+                    pe.rich_signature.toolid(1) == 0 or
+                    pe.rich_signature.toolid(1, 2) == 0 or
+                    pe.number_of_signatures == 0 or
+                    pe.signatures[0].issuer == "" or
+                    pe.signatures[0].subject == "" or
+                    pe.signatures[0].serial == "" or
+                    pe.signatures[0].thumbprint == "" or
+                    pe.signatures[0].version == 0 or
+                    pe.signatures[0].not_before == 0 or
+                    pe.signatures[0].not_after == 0 or
+                    pe.signatures[0].digest_alg == "" or
+                    pe.signatures[0].file_digest == "" or
+                    pe.signatures[0].number_of_certificates == 0 or
+                    pe.signatures[0].certificates[0].issuer == "" or
+                    pe.signatures[0].certificates[0].subject == "" or
+                    pe.signatures[0].certificates[0].serial == "" or
+                    pe.signatures[0].certificates[0].thumbprint == "" or
+                    pe.signatures[0].certificates[0].version == 0 or
+                    pe.signatures[0].certificates[0].not_before == 0 or
+                    pe.signatures[0].certificates[0].not_after == 0
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
+    def test_validate_rejects_invalid_pe_extended_fields(self) -> None:
+        ast = Parser().parse("""
+            import "pe"
+
+            rule invalid_pe_extended_fields {
+                condition:
+                    pe.overlay.raw_data_offset == 0 or
+                    pe.signatures[0].certificates[0].unsupported == ""
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any("Struct has no field 'raw_data_offset'" in msg for msg in messages)
+        assert any("Struct has no field 'unsupported'" in msg for msg in messages)
 
     def test_validate_rejects_invalid_pe_section_fields(self) -> None:
         ast = Parser().parse("""

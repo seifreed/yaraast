@@ -114,6 +114,10 @@ class Section:
     raw_data_size: int
     characteristics: int = 0
     type: int = 0  # For ELF
+    pointer_to_relocations: int = 0
+    pointer_to_line_numbers: int = 0
+    number_of_relocations: int = 0
+    number_of_line_numbers: int = 0
 
     def __getitem__(self, key: str):
         """Allow dictionary-style access."""
@@ -138,6 +142,83 @@ class Section:
     @property
     def flags(self) -> int:
         return self.characteristics
+
+
+@dataclass
+class PEOverlay:
+    """PE overlay descriptor."""
+
+    offset: int | YaraUndefinedValue
+    size: int | YaraUndefinedValue
+
+
+@dataclass
+class PECertificate:
+    """PE Authenticode certificate descriptor."""
+
+    issuer: str
+    subject: str
+    serial: str
+    thumbprint: str
+    version: int
+    not_before: int
+    not_after: int
+
+
+@dataclass
+class PESignature:
+    """PE Authenticode signature descriptor."""
+
+    issuer: str
+    subject: str
+    serial: str
+    thumbprint: str
+    version: int
+    not_before: int
+    not_after: int
+    digest_alg: str
+    file_digest: str
+    certificates: list[PECertificate]
+
+    @property
+    def number_of_certificates(self) -> int:
+        return len(self.certificates)
+
+
+class PERichSignature:
+    """PE Rich signature descriptor."""
+
+    def __init__(
+        self,
+        clear_data: str | YaraUndefinedValue,
+        key: int | YaraUndefinedValue,
+    ) -> None:
+        self.clear_data = clear_data
+        self.key = key
+
+    def version(
+        self,
+        toolid: int,
+        version: int | None = None,
+    ) -> int | YaraUndefinedValue:
+        _require_integer_arg("pe.rich_signature.version", toolid)
+        if version is not None:
+            _require_integer_arg("pe.rich_signature.version", version)
+        if is_yara_undefined(self.key):
+            return YARA_UNDEFINED
+        return 0
+
+    def toolid(
+        self,
+        toolid: int,
+        version: int | None = None,
+    ) -> int | YaraUndefinedValue:
+        _require_integer_arg("pe.rich_signature.toolid", toolid)
+        if version is not None:
+            _require_integer_arg("pe.rich_signature.toolid", version)
+        if is_yara_undefined(self.key):
+            return YARA_UNDEFINED
+        return 0
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +255,11 @@ class MockPE:
         self._is_64bit: bool | YaraUndefinedValue = YARA_UNDEFINED
         self.overlay_offset = YARA_UNDEFINED
         self.overlay_size = YARA_UNDEFINED
+        self.overlay = PEOverlay(YARA_UNDEFINED, YARA_UNDEFINED)
         self.rich_signature_offset = YARA_UNDEFINED
+        self.rich_signature = PERichSignature(YARA_UNDEFINED, YARA_UNDEFINED)
+        self.number_of_signatures = YARA_UNDEFINED
+        self.signatures: list[PESignature] | YaraUndefinedValue = YARA_UNDEFINED
 
         if len(self.data) >= 2 and self.data[:2] == b"MZ" and len(self.data) >= 0x40:
             pe_offset = struct.unpack("<I", self.data[0x3C:0x40])[0]
@@ -189,7 +274,11 @@ class MockPE:
                 self.resource_timestamp = 0
                 self.overlay_offset = 0
                 self.overlay_size = 0
+                self.overlay = PEOverlay(0, 0)
                 self.rich_signature_offset = 0
+                self.rich_signature = PERichSignature("", 0)
+                self.number_of_signatures = 0
+                self.signatures = []
                 coff_offset = pe_offset + 4
                 self.machine = struct.unpack("<H", self.data[coff_offset : coff_offset + 2])[0]
                 self.number_of_sections = struct.unpack(
@@ -231,6 +320,7 @@ class MockPE:
                             "<I", self.data[opt_offset + 60 : opt_offset + 64]
                         )[0]
                 self._parse_sections(opt_offset + size_of_optional_header)
+                self._update_overlay()
                 if _is_strict_int(self.entry_point_raw):
                     entry_point = self.rva_to_offset(self.entry_point_raw)
                     self.entry_point = -1 if entry_point is YARA_UNDEFINED else entry_point
@@ -253,9 +343,25 @@ class MockPE:
                     virtual_address=struct.unpack("<I", section_data[12:16])[0],
                     raw_data_size=struct.unpack("<I", section_data[16:20])[0],
                     raw_data_offset=struct.unpack("<I", section_data[20:24])[0],
+                    pointer_to_relocations=struct.unpack("<I", section_data[24:28])[0],
+                    pointer_to_line_numbers=struct.unpack("<I", section_data[28:32])[0],
+                    number_of_relocations=struct.unpack("<H", section_data[32:34])[0],
+                    number_of_line_numbers=struct.unpack("<H", section_data[34:36])[0],
                     characteristics=struct.unpack("<I", section_data[36:40])[0],
                 )
             )
+
+    def _update_overlay(self) -> None:
+        if not self.sections:
+            return
+
+        overlay_offset = max(
+            section.raw_data_offset + section.raw_data_size for section in self.sections
+        )
+        if overlay_offset < len(self.data):
+            self.overlay_offset = overlay_offset
+            self.overlay_size = len(self.data) - overlay_offset
+            self.overlay = PEOverlay(self.overlay_offset, self.overlay_size)
 
     def imphash(self) -> str:
         """Compute MD5 of import table (simplified)."""
