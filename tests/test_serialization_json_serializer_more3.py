@@ -426,6 +426,54 @@ def test_json_serializer_rejects_invalid_required_expression_fields() -> None:
                 serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_invalid_expression_container_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+
+    with_bad_declarations = WithStatement(
+        [WithDeclaration("x", IntegerLiteral(1))],
+        BooleanLiteral(True),
+    )
+    cast(Any, with_bad_declarations).declarations = False
+
+    with_bad_declaration_item = WithStatement(
+        [WithDeclaration("x", IntegerLiteral(1))],
+        BooleanLiteral(True),
+    )
+    cast(Any, with_bad_declaration_item).declarations = [object()]
+
+    dict_with_bad_items = DictExpression([DictItem(StringLiteral("k"), IntegerLiteral(1))])
+    cast(Any, dict_with_bad_items).items = False
+
+    dict_with_bad_item = DictExpression([DictItem(StringLiteral("k"), IntegerLiteral(1))])
+    cast(Any, dict_with_bad_item).items = [object()]
+
+    match_with_bad_cases = PatternMatch(
+        Identifier("subject"),
+        [MatchCase(StringLiteral("p"), BooleanLiteral(True))],
+    )
+    cast(Any, match_with_bad_cases).cases = False
+
+    match_with_bad_case = PatternMatch(
+        Identifier("subject"),
+        [MatchCase(StringLiteral("p"), BooleanLiteral(True))],
+    )
+    cast(Any, match_with_bad_case).cases = [object()]
+
+    invalid_cases = [
+        (with_bad_declarations, "WithStatement declarations must be a list"),
+        (with_bad_declaration_item, "WithStatement declarations item must be"),
+        (dict_with_bad_items, "DictExpression items must be a list"),
+        (dict_with_bad_item, "DictExpression items item must be"),
+        (match_with_bad_cases, "PatternMatch cases must be a list"),
+        (match_with_bad_case, "PatternMatch cases item must be"),
+    ]
+
+    for expression, message in invalid_cases:
+        ast = YaraFile(rules=[Rule(name="invalid_container", condition=expression)])
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
 def test_json_serializer_rejects_invalid_leaf_values() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_list: Any = ["name"]

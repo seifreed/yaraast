@@ -695,9 +695,16 @@ def visit_pragma_block(serializer, node) -> dict[str, Any]:
 
 
 def visit_with_statement(serializer, node) -> dict[str, Any]:
+    from yaraast.yarax.ast_nodes import WithDeclaration
+
     return {
         "type": "WithStatement",
-        "declarations": [serializer.visit(decl) for decl in node.declarations],
+        "declarations": _serialize_node_list(
+            serializer,
+            node.declarations,
+            "WithStatement declarations",
+            WithDeclaration,
+        ),
         "body": _serialize_required_expression(serializer, node.body, "WithStatement body"),
     }
 
@@ -806,9 +813,11 @@ def visit_list_expression(serializer, node) -> dict[str, Any]:
 
 
 def visit_dict_expression(serializer, node) -> dict[str, Any]:
+    from yaraast.yarax.ast_nodes import DictItem
+
     return {
         "type": "DictExpression",
-        "items": [serializer.visit(item) for item in node.items],
+        "items": _serialize_node_list(serializer, node.items, "DictExpression items", DictItem),
     }
 
 
@@ -842,10 +851,12 @@ def visit_lambda_expression(serializer, node) -> dict[str, Any]:
 
 
 def visit_pattern_match(serializer, node) -> dict[str, Any]:
+    from yaraast.yarax.ast_nodes import MatchCase
+
     return {
         "type": "PatternMatch",
         "value": _serialize_required_expression(serializer, node.value, "PatternMatch value"),
-        "cases": [serializer.visit(case) for case in node.cases],
+        "cases": _serialize_node_list(serializer, node.cases, "PatternMatch cases", MatchCase),
         "default": _serialize_optional_expression(serializer, node.default, "PatternMatch default"),
     }
 
