@@ -242,6 +242,30 @@ def test_json_serializer_rejects_invalid_yara_file_node_lists() -> None:
             serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_invalid_rule_lists() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    field_names = ("modifiers", "tags", "meta", "strings", "pragmas")
+
+    for field_name in field_names:
+        rule = Rule("invalid_rule", condition=BooleanLiteral(True))
+        setattr(rule, field_name, False)
+        ast = YaraFile(rules=[rule])
+        with pytest.raises(
+            SerializationError,
+            match=f"Rule {field_name} must be a list",
+        ):
+            serializer.serialize(ast)
+
+        rule = Rule("invalid_rule", condition=BooleanLiteral(True))
+        setattr(rule, field_name, [object()])
+        ast = YaraFile(rules=[rule])
+        with pytest.raises(
+            SerializationError,
+            match=f"Rule {field_name} item must be",
+        ):
+            serializer.serialize(ast)
+
+
 def test_json_serializer_rejects_non_finite_numbers() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_numbers = [float("nan"), float("inf"), float("-inf")]

@@ -294,6 +294,43 @@ def _serialize_node_list(
     return serialized
 
 
+def _serialize_rule_modifiers(values) -> list[str]:
+    from yaraast.ast.modifiers import RuleModifier
+
+    if not isinstance(values, list | tuple):
+        msg = "Rule modifiers must be a list of rule modifiers"
+        raise SerializationError(msg)
+
+    serialized = []
+    for value in values:
+        if isinstance(value, RuleModifier):
+            serialized.append(str(value))
+            continue
+        if isinstance(value, str):
+            serialized.append(value)
+            continue
+        msg = "Rule modifiers item must be a string or RuleModifier"
+        raise SerializationError(msg)
+    return serialized
+
+
+def _serialize_meta_list(serializer, values) -> list[dict[str, Any]]:
+    from yaraast.ast.meta import Meta
+    from yaraast.ast.modifiers import MetaEntry
+
+    if not isinstance(values, list | tuple):
+        msg = "Rule meta must be a list of meta entries"
+        raise SerializationError(msg)
+
+    serialized = []
+    for value in values:
+        if not isinstance(value, Meta | MetaEntry):
+            msg = "Rule meta item must be a Meta or MetaEntry"
+            raise SerializationError(msg)
+        serialized.append(_serialize_meta_entry(serializer, value))
+    return serialized
+
+
 def visit_yara_file(serializer, node) -> dict[str, Any]:
     from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
     from yaraast.ast.pragmas import Pragma
@@ -340,15 +377,29 @@ def visit_yara_file(serializer, node) -> dict[str, Any]:
 
 
 def visit_rule(serializer, node) -> dict[str, Any]:
+    from yaraast.ast.pragmas import InRulePragma
+    from yaraast.ast.rules import Tag
+    from yaraast.ast.strings import StringDefinition
+
     return {
         "type": "Rule",
         "name": _serialize_required_string(node.name, "Rule name"),
-        "modifiers": [str(m) for m in node.modifiers],
-        "tags": [serializer.visit(tag) for tag in node.tags],
-        "meta": [_serialize_meta_entry(serializer, m) for m in node.meta],
-        "strings": [serializer.visit(s) for s in node.strings],
+        "modifiers": _serialize_rule_modifiers(node.modifiers),
+        "tags": _serialize_node_list(serializer, node.tags, "Rule tags", Tag),
+        "meta": _serialize_meta_list(serializer, node.meta),
+        "strings": _serialize_node_list(
+            serializer,
+            node.strings,
+            "Rule strings",
+            StringDefinition,
+        ),
         "condition": _serialize_optional_expression(serializer, node.condition, "Rule condition"),
-        "pragmas": [serializer.visit(pragma) for pragma in node.pragmas],
+        "pragmas": _serialize_node_list(
+            serializer,
+            node.pragmas,
+            "Rule pragmas",
+            InRulePragma,
+        ),
     }
 
 
