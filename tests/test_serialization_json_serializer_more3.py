@@ -828,6 +828,72 @@ def test_json_serializer_rejects_invalid_location_fields() -> None:
             serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_invalid_anonymous_string_flags() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_flag: Any = "yes"
+
+    invalid_cases: list[tuple[YaraFile, str]] = [
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_plain_anonymous",
+                        strings=[
+                            PlainString(
+                                identifier="$a",
+                                value="x",
+                                is_anonymous=invalid_flag,
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "PlainString is_anonymous must be a boolean",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_anonymous",
+                        strings=[
+                            HexString(
+                                identifier="$h",
+                                tokens=[],
+                                is_anonymous=invalid_flag,
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexString is_anonymous must be a boolean",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_regex_anonymous",
+                        strings=[
+                            RegexString(
+                                identifier="$r",
+                                regex="x",
+                                is_anonymous=invalid_flag,
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "RegexString is_anonymous must be a boolean",
+        ),
+    ]
+
+    for ast, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
 def test_json_serializer_rejects_invalid_raw_string_sets() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_string_sets: list[Any] = [

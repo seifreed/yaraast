@@ -242,6 +242,14 @@ def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> N
     data["value"] = value
 
 
+def _serialize_anonymous_flag(data: dict[str, Any], value, context: str) -> None:
+    if not isinstance(value, bool):
+        msg = f"{context} is_anonymous must be a boolean"
+        raise SerializationError(msg)
+    if value:
+        data["is_anonymous"] = True
+
+
 def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     data = {
         "key": _serialize_required_string(getattr(meta, "key", ""), "Meta key"),
@@ -292,8 +300,7 @@ def visit_plain_string(serializer, node) -> dict[str, Any]:
         "identifier": _serialize_required_string(node.identifier, "PlainString identifier"),
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
-    if getattr(node, "is_anonymous", False):
-        data["is_anonymous"] = True
+    _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "PlainString")
     _serialize_plain_string_value(data, node.value)
     return data
 
@@ -305,8 +312,7 @@ def visit_hex_string(serializer, node) -> dict[str, Any]:
         "tokens": [serializer.visit(token) for token in node.tokens],
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
-    if getattr(node, "is_anonymous", False):
-        data["is_anonymous"] = True
+    _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "HexString")
     return data
 
 
@@ -317,8 +323,7 @@ def visit_regex_string(serializer, node) -> dict[str, Any]:
         "regex": _serialize_required_string(node.regex, "RegexString regex"),
         "modifiers": [_serialize_string_modifier(serializer, mod) for mod in node.modifiers],
     }
-    if getattr(node, "is_anonymous", False):
-        data["is_anonymous"] = True
+    _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "RegexString")
     return data
 
 
