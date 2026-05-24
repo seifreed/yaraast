@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.comments import Comment
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -40,7 +41,15 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, Extern
 from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
-from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, PragmaScope
+from yaraast.ast.pragmas import (
+    ConditionalDirective,
+    CustomPragma,
+    DefineDirective,
+    InRulePragma,
+    Pragma,
+    PragmaScope,
+    PragmaType,
+)
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
@@ -525,6 +534,119 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
     invalid_namespace = ExternRuleReference("external_rule", namespace=invalid_text)
     with pytest.raises(SerializationError, match="ExternRuleReference namespace must be a string"):
         serializer.visit(invalid_namespace)
+
+
+def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_text: Any = 123
+    invalid_bool: Any = "true"
+    invalid_float: Any = 1.2
+    invalid_arguments: Any = ["a", 123]
+    invalid_parameters: Any = [("key", "value")]
+    invalid_parameter_key: Any = {1: "value"}
+
+    define_with_bad_macro_name = DefineDirective("GOOD")
+    define_with_bad_macro_name.macro_name = invalid_text
+    define_with_bad_macro_value = DefineDirective("GOOD", "1")
+    define_with_bad_macro_value.macro_value = invalid_text
+    conditional_with_bad_condition = ConditionalDirective(PragmaType.IFDEF, "GOOD")
+    conditional_with_bad_condition.condition = invalid_text
+
+    invalid_cases: list[tuple[YaraFile, str]] = [
+        (
+            YaraFile(pragmas=[Pragma(PragmaType.CUSTOM, invalid_text)]),
+            "Pragma name must be a string",
+        ),
+        (
+            YaraFile(pragmas=[Pragma(PragmaType.CUSTOM, "custom", invalid_arguments)]),
+            "Pragma arguments must be a list of strings",
+        ),
+        (
+            YaraFile(pragmas=[CustomPragma("custom", parameters=invalid_parameters)]),
+            "Pragma parameters must be a dictionary",
+        ),
+        (
+            YaraFile(pragmas=[CustomPragma("custom", parameters=invalid_parameter_key)]),
+            "Pragma parameters keys must be strings",
+        ),
+        (
+            YaraFile(pragmas=[define_with_bad_macro_name]),
+            "Pragma macro_name must be a string",
+        ),
+        (
+            YaraFile(pragmas=[define_with_bad_macro_value]),
+            "Pragma macro_value must be a string",
+        ),
+        (
+            YaraFile(pragmas=[conditional_with_bad_condition]),
+            "Pragma condition must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_in_rule_pragma",
+                        pragmas=[
+                            InRulePragma(
+                                Pragma(PragmaType.CUSTOM, "custom"),
+                                invalid_text,
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "InRulePragma position must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_meta_key",
+                        meta=[MetaEntry(invalid_text, "value")],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Meta key must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_meta_value",
+                        meta=[MetaEntry("key", invalid_float)],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "Meta value must be a string, integer, or boolean",
+        ),
+    ]
+
+    rule_with_bad_comment_text = Rule("invalid_comment_text", condition=BooleanLiteral(True))
+    rule_with_bad_comment_text.leading_comments.append(Comment(invalid_text))
+    invalid_cases.append(
+        (
+            YaraFile(rules=[rule_with_bad_comment_text]),
+            "Comment text must be a string",
+        )
+    )
+
+    rule_with_bad_comment_flag = Rule("invalid_comment_flag", condition=BooleanLiteral(True))
+    rule_with_bad_comment_flag.leading_comments.append(
+        Comment("comment", is_multiline=invalid_bool)
+    )
+    invalid_cases.append(
+        (
+            YaraFile(rules=[rule_with_bad_comment_flag]),
+            "Comment is_multiline must be a boolean",
+        )
+    )
+
+    for ast, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
 
 
 def test_json_serializer_rejects_invalid_raw_string_sets() -> None:

@@ -28,6 +28,25 @@ def _serialize_string_list(values, context: str) -> list[str]:
     raise SerializationError(msg)
 
 
+def _serialize_string_key_dict(value, context: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        msg = f"{context} must be a dictionary"
+        raise SerializationError(msg)
+    if not all(isinstance(key, str) for key in value):
+        msg = f"{context} keys must be strings"
+        raise SerializationError(msg)
+    return dict(value)
+
+
+def _serialize_meta_value(value) -> str | int | bool:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    msg = "Meta value must be a string, integer, or boolean"
+    raise SerializationError(msg)
+
+
 def _serialize_required_int(value, context: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{context} must be an integer"
@@ -175,7 +194,10 @@ def _serialize_plain_string_value(data: dict[str, Any], value: str | bytes) -> N
 
 
 def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
-    data = {"key": getattr(meta, "key", ""), "value": getattr(meta, "value", "")}
+    data = {
+        "key": _serialize_required_string(getattr(meta, "key", ""), "Meta key"),
+        "value": _serialize_meta_value(getattr(meta, "value", "")),
+    }
     scope = getattr(meta, "scope", None)
     if scope is not None:
         data["scope"] = getattr(scope, "value", str(scope))

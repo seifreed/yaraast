@@ -10,12 +10,14 @@ from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
+    _serialize_meta_value,
     _serialize_nullable_string,
     _serialize_required_bool,
     _serialize_required_expression,
     _serialize_required_int,
     _serialize_required_number,
     _serialize_required_string,
+    _serialize_string_key_dict,
     _serialize_string_list,
     visit_array_access,
     visit_array_comprehension,
@@ -369,7 +371,11 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return visit_of_expression(self, node)
 
     def visit_meta(self, node) -> dict[str, Any]:
-        data = self._simple_node("Meta", key=node.key, value=node.value)
+        data = self._simple_node(
+            "Meta",
+            key=_serialize_required_string(node.key, "Meta key"),
+            value=_serialize_meta_value(node.value),
+        )
         scope = getattr(node, "scope", None)
         if scope is not None:
             data["scope"] = getattr(scope, "value", str(scope))
@@ -385,7 +391,11 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return visit_dictionary_access(self, node)
 
     def visit_comment(self, node) -> dict[str, Any]:
-        return self._simple_node("Comment", text=node.text, is_multiline=node.is_multiline)
+        return self._simple_node(
+            "Comment",
+            text=_serialize_required_string(node.text, "Comment text"),
+            is_multiline=_serialize_required_bool(node.is_multiline, "Comment is_multiline"),
+        )
 
     def visit_comment_group(self, node) -> dict[str, Any]:
         return visit_comment_group(self, node)
@@ -447,25 +457,40 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return {
             "type": "InRulePragma",
             "pragma": self.visit(node.pragma),
-            "position": node.position,
+            "position": _serialize_required_string(
+                node.position,
+                "InRulePragma position",
+            ),
         }
 
     def visit_pragma(self, node) -> dict[str, Any]:
         data = {
             "type": "Pragma",
             "pragma_type": node.pragma_type.value,
-            "name": node.name,
-            "arguments": list(node.arguments),
+            "name": _serialize_required_string(node.name, "Pragma name"),
+            "arguments": _serialize_string_list(node.arguments, "Pragma arguments"),
             "scope": node.scope.value,
         }
         if hasattr(node, "macro_name"):
-            data["macro_name"] = node.macro_name
+            data["macro_name"] = _serialize_required_string(
+                node.macro_name,
+                "Pragma macro_name",
+            )
         if hasattr(node, "macro_value"):
-            data["macro_value"] = node.macro_value
+            data["macro_value"] = _serialize_nullable_string(
+                node.macro_value,
+                "Pragma macro_value",
+            )
         if hasattr(node, "condition"):
-            data["condition"] = node.condition
+            data["condition"] = _serialize_nullable_string(
+                node.condition,
+                "Pragma condition",
+            )
         if hasattr(node, "parameters"):
-            data["parameters"] = dict(node.parameters)
+            data["parameters"] = _serialize_string_key_dict(
+                node.parameters,
+                "Pragma parameters",
+            )
         return data
 
     def visit_pragma_block(self, node) -> dict[str, Any]:
