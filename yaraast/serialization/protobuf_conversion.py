@@ -1669,14 +1669,8 @@ def protobuf_to_expression(pb_expr):
                 is_dict=pb_expr.spread_operator.is_dict,
             ),
         )
-    import warnings
-
-    warnings.warn(
-        "Protobuf deserialization: unrecognized expression field, "
-        "substituting BooleanLiteral(true) — data may have been lost during serialization",
-        stacklevel=2,
-    )
-    return with_metadata(BooleanLiteral(value=True))
+    msg = "Protobuf expression is missing a recognized expression field"
+    raise SerializationError(msg)
 
 
 def protobuf_to_with_declaration(pb_declaration):
