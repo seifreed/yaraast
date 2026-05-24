@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from yaraast.codegen.formatting import BraceStyle, StringStyle
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.generator_expression_visitors import (
+    _render_binary_operator,
+    _visit_binary_operand,
+)
 
 
 def _emit_top_level_line(generator, node) -> None:
@@ -145,7 +149,7 @@ def write_aligned_strings(generator) -> None:
 def write_condition_section(generator, condition) -> None:
     generator._writeline("condition:")
     generator._indent()
-    condition_str = generate_condition_string(condition)
+    condition_str = generate_condition_string(condition, generator.config)
     if len(condition_str) > generator.config.max_line_length:
         generator._writeline(condition_str)
     else:
@@ -159,6 +163,30 @@ def _write_in_rule_pragmas(generator, node, position: str) -> None:
             generator._writeline(generator.visit(pragma))
 
 
-def generate_condition_string(expr) -> str:
-    temp_gen = CodeGenerator()
+class _AdvancedConditionGenerator(CodeGenerator):
+    def __init__(self, config) -> None:
+        super().__init__(getattr(config, "indent_size", 4))
+        self.config = config
+
+    def _comma_separator(self) -> str:
+        return ", " if self.config.space_after_comma else ","
+
+    def visit_binary_expression(self, node) -> str:
+        left = _visit_binary_operand(self, node, node.left, is_right=False)
+        right = _visit_binary_operand(self, node, node.right, is_right=True)
+        operator = _render_binary_operator(node.operator)
+        separator = " " if self.config.space_around_operators else ""
+        return f"{left}{separator}{operator}{separator}{right}"
+
+    def visit_set_expression(self, node) -> str:
+        separator = self._comma_separator()
+        return f"({separator.join(self.visit(elem) for elem in node.elements)})"
+
+    def visit_function_call(self, node) -> str:
+        separator = self._comma_separator()
+        return f"{node.function}({separator.join(self.visit(arg) for arg in node.arguments)})"
+
+
+def generate_condition_string(expr, config=None) -> str:
+    temp_gen = _AdvancedConditionGenerator(config) if config is not None else CodeGenerator()
     return temp_gen.visit(expr)

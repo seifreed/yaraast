@@ -5,7 +5,9 @@ from typing import Any, cast
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import Condition, InExpression
 from yaraast.ast.expressions import (
+    BinaryExpression,
     BooleanLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
     ParenthesesExpression,
@@ -298,6 +300,26 @@ def test_advanced_generator_direct_remaining_branches() -> None:
 
     adv3 = AdvancedCodeGenerator(FormattingConfig())
     assert adv3._format_hex_token(HexByte(0x4D)) in {"4d", "4D"}
+
+
+def test_advanced_generator_applies_expression_spacing_in_condition_sections() -> None:
+    rule = Rule(
+        name="compact_condition",
+        condition=FunctionCall(
+            "foo",
+            [
+                SetExpression([IntegerLiteral(1), IntegerLiteral(2)]),
+                BinaryExpression(Identifier("a"), "==", Identifier("b")),
+            ],
+        ),
+    )
+
+    out = AdvancedCodeGenerator(
+        FormattingConfig(space_after_comma=False, space_around_operators=False)
+    ).generate(YaraFile(rules=[rule]))
+
+    assert "\n        foo((1,2),a==b)\n" in out
+    assert "\n        foo((1, 2), a == b)\n" not in out
 
 
 def test_advanced_generator_final_remaining_string_and_section_paths() -> None:

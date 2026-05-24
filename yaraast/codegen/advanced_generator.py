@@ -150,7 +150,7 @@ class AdvancedCodeGenerator(CodeGenerator):
         write_advanced_condition_section(self, condition)
 
     def _generate_condition_string(self, expr: Expression) -> str:
-        return generate_condition_string(expr)
+        return generate_condition_string(expr, self.config)
 
     def _write_wrapped_condition(self, condition: str) -> None:
         """Write wrapped condition for long lines."""
