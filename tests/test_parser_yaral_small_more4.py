@@ -4,6 +4,7 @@ import pytest
 
 from yaraast.ast.rules import Rule
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.yaral._shared import YaraLParserError
 from yaraast.yaral.lexer import YaraLToken
@@ -71,7 +72,7 @@ def test_comment_aware_rule_modifiers_tags_and_trailing_comment_paths() -> None:
     assert "trailing" in rule.trailing_comment.text
 
 
-def test_comment_aware_string_modifiers_support_nested_xor_parentheses() -> None:
+def test_comment_aware_string_modifiers_reject_nested_xor_parentheses() -> None:
     parser = CommentAwareParser()
     parser.tokens = [
         _t(TokenType.XOR_MOD, "xor", 1),
@@ -86,9 +87,8 @@ def test_comment_aware_string_modifiers_support_nested_xor_parentheses() -> None
     ]
     parser.current = 0
 
-    modifiers = parser._parse_string_modifiers()
-    assert len(modifiers) == 1
-    assert getattr(modifiers[0], "name", "") == "xor"
+    with pytest.raises(ParserError, match="Expected '\\)' after xor parameter"):
+        parser._parse_string_modifiers()
 
 
 def test_parse_event_statement_assignment_with_literal_rhs_returns_generic_statement() -> None:

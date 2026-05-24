@@ -192,6 +192,18 @@ def test_comment_aware_parser_rejects_empty_base64_parameters() -> None:
             )
 
 
+def test_comment_aware_parser_rejects_invalid_xor_parameters() -> None:
+    invalid_rules = [
+        'rule modifiers { strings: $a = "abc" xor() condition: $a }',
+        'rule modifiers { strings: $a = "abc" xor(foo) condition: $a }',
+        'rule modifiers { strings: $a = "abc" xor(1-) condition: $a }',
+    ]
+
+    for rule in invalid_rules:
+        with pytest.raises(ParserError):
+            CommentAwareParser().parse(rule)
+
+
 def test_parse_meta_section_boolean_and_error_paths_and_trailing_comments() -> None:
     p = CommentAwareParser()
 

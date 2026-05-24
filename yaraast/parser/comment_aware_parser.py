@@ -383,23 +383,9 @@ class CommentAwareParser(Parser):
             mod_name_lower = str(mod_name).lower()
 
             if mod_name_lower in {"xor", "base64", "base64wide"} and self._match(TokenType.LPAREN):
-                parameter_start = self.current
-                try:
-                    value = self._parse_string_modifier_parameter(mod_name_lower)
-                except ParserError:
-                    if mod_name_lower != "xor":
-                        raise
-                    self.current = parameter_start
-                    self._skip_string_modifier_parameter()
-                    modifiers.append(StringModifier.from_name_value(mod_name_lower))
-                    continue
+                value = self._parse_string_modifier_parameter(mod_name_lower)
 
                 if not self._match(TokenType.RPAREN):
-                    if mod_name_lower == "xor":
-                        self.current = parameter_start
-                        self._skip_string_modifier_parameter()
-                        modifiers.append(StringModifier.from_name_value(mod_name_lower))
-                        continue
                     msg = f"Expected ')' after {mod_name_lower} parameter"
                     raise ParserError(msg, self._peek())
                 modifiers.append(StringModifier.from_name_value(mod_name_lower, value))
@@ -432,17 +418,6 @@ class CommentAwareParser(Parser):
 
         max_val = self._previous().value
         return (min_val, max_val)
-
-    def _skip_string_modifier_parameter(self) -> None:
-        from yaraast.lexer.tokens import TokenType
-
-        depth = 1
-        while depth > 0 and self._peek():
-            if self._peek().type == TokenType.LPAREN:
-                depth += 1
-            elif self._peek().type == TokenType.RPAREN:
-                depth -= 1
-            self._advance()
 
     def _parse_hex_tokens(self, hex_content: str):
         """Parse hex string tokens."""
