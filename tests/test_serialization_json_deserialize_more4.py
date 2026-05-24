@@ -451,6 +451,16 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Identifier name must be a string"):
         s._deserialize_expression({"type": "Identifier", "name": ["id"]})
 
+    with pytest.raises(SerializationError, match="BinaryExpression left is required"):
+        s._deserialize_expression(
+            {"type": "BinaryExpression", "operator": "and", "right": true_expr}
+        )
+
+    with pytest.raises(SerializationError, match="BinaryExpression right is required"):
+        s._deserialize_expression(
+            {"type": "BinaryExpression", "left": true_expr, "operator": "and"}
+        )
+
     with pytest.raises(SerializationError, match="BinaryExpression operator must be a string"):
         s._deserialize_expression(
             {

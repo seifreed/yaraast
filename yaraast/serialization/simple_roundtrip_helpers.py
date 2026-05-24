@@ -1101,9 +1101,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "BinaryExpression":
         return BinaryExpression(
-            deserialize_node(data["left"]),
+            deserialize_node(_deserialize_required_field(data, "left", "BinaryExpression")),
             _deserialize_string_field(data, "operator", "BinaryExpression"),
-            deserialize_node(data["right"]),
+            deserialize_node(_deserialize_required_field(data, "right", "BinaryExpression")),
         )
     if node_type == "UnaryExpression":
         return UnaryExpression(

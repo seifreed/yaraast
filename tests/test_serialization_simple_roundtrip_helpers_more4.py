@@ -534,6 +534,12 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
 
     true_expr = {"type": "BooleanLiteral", "value": True}
 
+    with pytest.raises(SerializationError, match="BinaryExpression left is required"):
+        deserialize_node({"type": "BinaryExpression", "operator": "and", "right": true_expr})
+
+    with pytest.raises(SerializationError, match="BinaryExpression right is required"):
+        deserialize_node({"type": "BinaryExpression", "left": true_expr, "operator": "and"})
+
     with pytest.raises(SerializationError, match="BinaryExpression operator must be a string"):
         deserialize_node(
             {

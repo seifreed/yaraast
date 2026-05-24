@@ -363,8 +363,12 @@ def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
 def _deser_binary_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import BinaryExpression
 
-    left = self._deserialize_expression(data["left"])
-    right = self._deserialize_expression(data["right"])
+    left = self._deserialize_expression(
+        _deserialize_required_field(data, "left", "BinaryExpression")
+    )
+    right = self._deserialize_expression(
+        _deserialize_required_field(data, "right", "BinaryExpression")
+    )
     return BinaryExpression(
         left=left,
         operator=_deserialize_string_field(data, "operator", "BinaryExpression"),
