@@ -872,6 +872,49 @@ def test_codegen_generators_reject_invalid_quantifiers(condition: Any) -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize(
+    "quantifier",
+    [
+        -1,
+        True,
+        0.5,
+        "-1",
+        "50%",
+        "true",
+        "bad-key",
+        IntegerLiteral(-1),
+        StringLiteral("50%"),
+        StringLiteral("true"),
+        DoubleLiteral(0.5),
+        BooleanLiteral(True),
+        Identifier("true"),
+    ],
+)
+def test_codegen_generators_reject_invalid_for_quantifiers(quantifier: Any) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_for_quantifier",
+                condition=ForExpression(
+                    quantifier,
+                    "i",
+                    SetExpression([IntegerLiteral(1)]),
+                    BooleanLiteral(True),
+                ),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Invalid for quantifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid for quantifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid for quantifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid for quantifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generators_render_fractional_quantifier_percentages() -> None:
     ast = YaraFile(
         rules=[

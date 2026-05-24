@@ -124,13 +124,51 @@ def visit_for_expression(generator, node) -> str:
     if isinstance(node.iterable, RangeExpression):
         iterable = f"({iterable})"
     body = generator.visit(node.body)
-    quantifier = (
-        generator.visit(node.quantifier)
-        if hasattr(node.quantifier, "accept")
-        else str(node.quantifier)
-    )
+    quantifier = _render_for_quantifier(generator, node.quantifier)
     variable = validate_yara_identifier(node.variable, "loop variable")
     return f"for {quantifier} {variable} in {iterable} : ({body})"
+
+
+def _render_for_quantifier(generator, quantifier) -> str:
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        DoubleLiteral,
+        Identifier,
+        IntegerLiteral,
+        StringLiteral,
+    )
+
+    if isinstance(quantifier, bool):
+        msg = f"Invalid for quantifier '{quantifier}' for libyara output"
+        raise ValueError(msg)
+    if isinstance(quantifier, int):
+        return _validate_for_quantifier_text(str(quantifier))
+    if isinstance(quantifier, float):
+        msg = f"Invalid for quantifier '{quantifier}' for libyara output"
+        raise ValueError(msg)
+    if isinstance(quantifier, str):
+        return _validate_for_quantifier_text(quantifier)
+    if isinstance(quantifier, IntegerLiteral):
+        return _validate_for_quantifier_text(str(quantifier.value))
+    if isinstance(quantifier, StringLiteral):
+        return _validate_for_quantifier_text(quantifier.value)
+    if isinstance(quantifier, DoubleLiteral | BooleanLiteral):
+        msg = f"Invalid for quantifier '{generator.visit(quantifier)}' for libyara output"
+        raise ValueError(msg)
+    if isinstance(quantifier, Identifier):
+        return _validate_for_quantifier_text(quantifier.name)
+    return generator.visit(quantifier)
+
+
+def _validate_for_quantifier_text(quantifier: str) -> str:
+    if quantifier in {"all", "any", "none"}:
+        return quantifier
+    if quantifier.endswith("%") or (quantifier.startswith("-") and quantifier[1:].isdigit()):
+        msg = f"Invalid for quantifier '{quantifier}' for libyara output"
+        raise ValueError(msg)
+    if quantifier.isdigit():
+        return quantifier
+    return validate_yara_identifier(quantifier, "for quantifier")
 
 
 def visit_at_expression(generator, node) -> str:
