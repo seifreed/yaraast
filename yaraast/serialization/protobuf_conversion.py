@@ -1038,7 +1038,9 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         if expr.step is not None:
             convert_expression_to_protobuf(expr.step, pb_expr.slice_expression.step)
     elif isinstance(expr, LambdaExpression):
-        pb_expr.lambda_expression.parameters.extend(expr.parameters)
+        pb_expr.lambda_expression.parameters.extend(
+            _protobuf_string_list(expr.parameters, "LambdaExpression parameters")
+        )
         convert_expression_to_protobuf(expr.body, pb_expr.lambda_expression.body)
     elif isinstance(expr, PatternMatch):
         convert_expression_to_protobuf(expr.value, pb_expr.pattern_match.value)

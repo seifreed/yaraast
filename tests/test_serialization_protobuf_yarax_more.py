@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier, IntegerLiteral
 from yaraast.ast.rules import Rule
+from yaraast.errors import SerializationError
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -99,3 +104,22 @@ def test_protobuf_serializer_preserves_yarax_expression_roundtrip() -> None:
     restored = serializer.deserialize(binary_data=serializer.serialize(ast))
 
     assert restored.rules[0].condition == condition
+
+
+@pytest.mark.parametrize("parameters", [cast(Any, "xy"), cast(Any, ["x", 1])])
+def test_protobuf_serializer_rejects_invalid_lambda_parameters(parameters: Any) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_lambda",
+                condition=LambdaExpression(parameters, BooleanLiteral(True)),
+            )
+        ],
+    )
+
+    with pytest.raises(
+        SerializationError,
+        match="LambdaExpression parameters must be a list of strings",
+    ):
+        serializer.serialize(ast)
