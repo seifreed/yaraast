@@ -2,9 +2,16 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.modifiers import RuleModifier
+from yaraast.ast.rules import Import, Rule
+from yaraast.codegen.generator import CodeGenerator
 from yaraast.lexer import Lexer
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
+from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
 
 
@@ -24,6 +31,7 @@ def test_parse_import_and_include_success_and_errors() -> None:
         [_t(TokenType.STRING, "pe"), _t(TokenType.AS, "as"), _t(TokenType.IDENTIFIER, "pe_mod")]
     )
     imp = parser._parse_import()
+    assert isinstance(imp, Import)
     assert imp.module == "pe"
     assert imp.alias == "pe_mod"
 
@@ -171,3 +179,39 @@ def test_parse_import_include_and_rule_via_full_parse() -> None:
     parser.current = 0
     rule = parser._parse_rule()
     assert rule.name == "only_condition"
+
+
+def test_parse_generated_extended_top_level_constructs() -> None:
+    source = CodeGenerator().generate(
+        YaraFile(
+            extern_imports=[
+                ExternImport(
+                    "external.yar",
+                    alias="ext",
+                    rules=["ExternalRule", "legacy.LegacyRule"],
+                )
+            ],
+            namespaces=[ExternNamespace("corp")],
+            extern_rules=[
+                ExternRule(
+                    "ExternalRule",
+                    modifiers=[RuleModifier.from_string("private")],
+                    namespace="legacy",
+                )
+            ],
+            rules=[Rule("uses_external", condition=BooleanLiteral(True))],
+        )
+    )
+
+    ast = Parser(source).parse()
+    comment_ast = CommentAwareParser().parse(source)
+
+    for parsed in (ast, comment_ast):
+        assert parsed.extern_imports[0].module_path == "external.yar"
+        assert parsed.extern_imports[0].alias == "ext"
+        assert parsed.extern_imports[0].rules == ["ExternalRule", "legacy.LegacyRule"]
+        assert parsed.namespaces[0].name == "corp"
+        assert parsed.extern_rules[0].name == "ExternalRule"
+        assert parsed.extern_rules[0].namespace == "legacy"
+        assert [str(modifier) for modifier in parsed.extern_rules[0].modifiers] == ["private"]
+        assert parsed.rules[0].name == "uses_external"

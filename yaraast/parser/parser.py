@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.extern import ExternImport
 from yaraast.errors import ParseError
 from yaraast.interfaces import ILexer, IToken
 from yaraast.lexer import Lexer, TokenType
@@ -98,18 +99,39 @@ class Parser(
         imports = []
         includes = []
         rules = []
+        extern_imports = []
+        extern_rules = []
+        namespaces = []
+        top_level_nodes = []
 
         while not self._is_at_end():
             if self._match(TokenType.IMPORT):
-                imports.append(self._parse_import())
+                parsed_import = self._parse_import()
+                if isinstance(parsed_import, ExternImport):
+                    extern_imports.append(parsed_import)
+                else:
+                    imports.append(parsed_import)
+                top_level_nodes.append(parsed_import)
             elif self._match(TokenType.INCLUDE):
-                includes.append(self._parse_include())
+                include = self._parse_include()
+                includes.append(include)
+                top_level_nodes.append(include)
+            elif self._check_identifier_value("namespace"):
+                namespace = self._parse_extern_namespace()
+                namespaces.append(namespace)
+                top_level_nodes.append(namespace)
+            elif self._check_identifier_value("extern"):
+                extern_rule = self._parse_extern_rule()
+                extern_rules.append(extern_rule)
+                top_level_nodes.append(extern_rule)
             elif (
                 self._check(TokenType.RULE)
                 or self._check(TokenType.PRIVATE)
                 or self._check(TokenType.GLOBAL)
             ):
-                rules.append(self._parse_rule())
+                rule = self._parse_rule()
+                rules.append(rule)
+                top_level_nodes.append(rule)
             else:
                 msg = f"Unexpected token: {self._peek().value}"
                 raise ParserError(
@@ -117,9 +139,14 @@ class Parser(
                     self._peek(),
                 )
 
-        yara_file = YaraFile(imports=imports, includes=includes, rules=rules)
-        if imports or includes or rules:
-            start_node = imports[0] if imports else includes[0] if includes else rules[0]
-            end_node = rules[-1] if rules else includes[-1] if includes else imports[-1]
-            self._set_node_location_from_nodes(yara_file, start_node, end_node)
+        yara_file = YaraFile(
+            imports=imports,
+            includes=includes,
+            rules=rules,
+            extern_rules=extern_rules,
+            extern_imports=extern_imports,
+            namespaces=namespaces,
+        )
+        if top_level_nodes:
+            self._set_node_location_from_nodes(yara_file, top_level_nodes[0], top_level_nodes[-1])
         return yara_file

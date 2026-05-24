@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.ast.conditions import Condition
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import StringDefinition
 from yaraast.lexer import TokenType
@@ -15,7 +17,7 @@ from ._shared import ParserError
 class RuleParsingMixin:
     """Mixin with rule, import, include, and meta parsing."""
 
-    def _parse_import(self) -> Import:
+    def _parse_import(self) -> Import | ExternImport:
         """Parse import statement."""
         start_token = self._previous()
         if not self._match(TokenType.STRING):
@@ -23,6 +25,7 @@ class RuleParsingMixin:
             raise ParserError(msg, self._peek())
 
         module = self._previous().value
+        rules = self._parse_import_rule_list()
         alias = None
 
         # Check for 'as alias'
@@ -32,9 +35,34 @@ class RuleParsingMixin:
                 raise ParserError(msg, self._peek())
             alias = self._previous().value
 
+        if rules is not None:
+            return self._set_node_location_from_tokens(
+                ExternImport(module_path=module, alias=alias, rules=rules),
+                start_token,
+                self._previous(),
+            )
         return self._set_node_location_from_tokens(
             Import(module=module, alias=alias), start_token, self._previous()
         )
+
+    def _parse_import_rule_list(self) -> list[str] | None:
+        """Parse optional selective external import rule list."""
+        if not self._match(TokenType.LPAREN):
+            return None
+        if self._check(TokenType.RPAREN):
+            msg = "Expected rule name in import rule list"
+            raise ParserError(msg, self._peek())
+
+        rules = []
+        while True:
+            rules.append(self._parse_qualified_identifier("Expected rule name in import rule list"))
+            if not self._match(TokenType.COMMA):
+                break
+
+        if not self._match(TokenType.RPAREN):
+            msg = "Expected ')' after import rule list"
+            raise ParserError(msg, self._peek())
+        return rules
 
     def _parse_include(self) -> Include:
         """Parse include statement."""
@@ -47,6 +75,54 @@ class RuleParsingMixin:
         return self._set_node_location_from_tokens(
             Include(path=path), start_token, self._previous()
         )
+
+    def _check_identifier_value(self, value: str) -> bool:
+        return self._check(TokenType.IDENTIFIER) and self._peek().value == value
+
+    def _parse_extern_namespace(self) -> ExternNamespace:
+        """Parse a top-level namespace declaration."""
+        start_token = self._advance()
+        name = self._parse_qualified_identifier("Expected namespace name")
+        return self._set_node_location_from_tokens(
+            ExternNamespace(name=name), start_token, self._previous()
+        )
+
+    def _parse_extern_rule(self) -> ExternRule:
+        """Parse a top-level external rule declaration."""
+        start_token = self._advance()
+        if not self._match(TokenType.RULE):
+            msg = "Expected 'rule' after 'extern'"
+            raise ParserError(msg, self._peek())
+
+        modifiers = []
+        while self._match(TokenType.PRIVATE, TokenType.GLOBAL):
+            modifiers.append(RuleModifier.from_string(str(self._previous().value)))
+
+        qualified_name = self._parse_qualified_identifier("Expected extern rule name")
+        namespace, name = self._split_qualified_rule_name(qualified_name)
+        return self._set_node_location_from_tokens(
+            ExternRule(name=name, modifiers=modifiers, namespace=namespace),
+            start_token,
+            self._previous(),
+        )
+
+    def _parse_qualified_identifier(self, error_message: str) -> str:
+        if not self._match(TokenType.IDENTIFIER):
+            raise ParserError(error_message, self._peek())
+
+        parts = [str(self._previous().value)]
+        while self._match(TokenType.DOT):
+            if not self._match(TokenType.IDENTIFIER):
+                msg = "Expected identifier after '.'"
+                raise ParserError(msg, self._peek())
+            parts.append(str(self._previous().value))
+        return ".".join(parts)
+
+    def _split_qualified_rule_name(self, qualified_name: str) -> tuple[str | None, str]:
+        if "." not in qualified_name:
+            return None, qualified_name
+        namespace, name = qualified_name.rsplit(".", maxsplit=1)
+        return namespace, name
 
     def _parse_rule(self) -> Rule:
         """Parse rule definition."""
