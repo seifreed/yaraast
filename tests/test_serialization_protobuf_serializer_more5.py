@@ -1127,6 +1127,66 @@ def test_protobuf_serializer_preserves_empty_string_sets() -> None:
     assert for_of_condition.string_set == []
 
 
+def _invalid_comment_metadata_cases() -> list[tuple[YaraFile, str]]:
+    bad_leading_comments = Rule(name="bad_leading_comments", condition=BooleanLiteral(True))
+    cast(Any, bad_leading_comments).leading_comments = False
+
+    bad_leading_comment = Rule(name="bad_leading_comment", condition=BooleanLiteral(True))
+    bad_leading_comment.leading_comments = cast(Any, [object()])
+
+    bad_trailing_comment = Rule(name="bad_trailing_comment", condition=BooleanLiteral(True))
+    bad_trailing_comment.trailing_comment = cast(Any, object())
+
+    bad_comment_group = CommentGroup([Comment("ok")])
+    cast(Any, bad_comment_group).comments = False
+    group_rule = Rule(name="bad_comment_group", condition=BooleanLiteral(True))
+    cast(Any, group_rule).trailing_comment = bad_comment_group
+
+    bad_comment_group_item = CommentGroup([Comment("ok")])
+    cast(Any, bad_comment_group_item).comments = [object()]
+    group_item_rule = Rule(name="bad_comment_group_item", condition=BooleanLiteral(True))
+    cast(Any, group_item_rule).trailing_comment = bad_comment_group_item
+
+    bad_comment_text = Rule(name="bad_comment_text", condition=BooleanLiteral(True))
+    bad_comment_text.trailing_comment = Comment(cast(Any, 123))
+
+    bad_comment_multiline = Rule(name="bad_comment_multiline", condition=BooleanLiteral(True))
+    bad_comment_multiline.trailing_comment = Comment("ok", is_multiline=cast(Any, "true"))
+
+    return [
+        (YaraFile(rules=[bad_leading_comments]), "leading_comments must be a list"),
+        (
+            YaraFile(rules=[bad_leading_comment]),
+            "leading_comments item must be Comment or CommentGroup",
+        ),
+        (
+            YaraFile(rules=[bad_trailing_comment]),
+            "trailing_comment must be Comment or CommentGroup",
+        ),
+        (YaraFile(rules=[group_rule]), "CommentGroup comments must be a list"),
+        (
+            YaraFile(rules=[group_item_rule]),
+            "CommentGroup comments item must be Comment",
+        ),
+        (YaraFile(rules=[bad_comment_text]), "Comment text must be a string"),
+        (
+            YaraFile(rules=[bad_comment_multiline]),
+            "Comment is_multiline must be a boolean",
+        ),
+    ]
+
+
+@pytest.mark.parametrize(("ast", "message"), _invalid_comment_metadata_cases())
+def test_protobuf_serializer_rejects_invalid_comment_metadata(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
 def test_protobuf_serializer_preserves_node_comment_metadata() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     plain = PlainString(identifier="$a", value="abc")

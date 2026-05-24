@@ -43,9 +43,10 @@ def _protobuf_has_field(message, field_name: str) -> bool:
 
 
 def _node_has_metadata(node) -> bool:
+    leading_comments = getattr(node, "leading_comments", None)
     return bool(
         getattr(node, "location", None) is not None
-        or getattr(node, "leading_comments", None)
+        or (leading_comments is not None and leading_comments != [])
         or getattr(node, "trailing_comment", None) is not None
     )
 
@@ -76,23 +77,56 @@ def _protobuf_location_to_ast(pb_location):
 
 
 def _copy_comment_to_protobuf(comment, pb_comment) -> None:
-    pb_comment.text = comment.text
-    pb_comment.is_multiline = comment.is_multiline
+    pb_comment.text = _protobuf_required_string(comment.text, "Comment text")
+    pb_comment.is_multiline = _protobuf_required_bool(
+        comment.is_multiline,
+        "Comment is_multiline",
+    )
     _copy_node_metadata_to_protobuf(comment, pb_comment)
 
 
-def _copy_comment_metadata_to_protobuf(comment, pb_comment_metadata) -> None:
+def _protobuf_comment_list(values, context: str) -> list:
+    from yaraast.ast.comments import Comment
+
+    comments = _protobuf_list(values, context)
+    for comment in comments:
+        if not isinstance(comment, Comment):
+            msg = f"{context} item must be Comment"
+            raise SerializationError(msg)
+    return comments
+
+
+def _protobuf_comment_metadata_list(values, context: str) -> list:
+    from yaraast.ast.comments import Comment, CommentGroup
+
+    comments = _protobuf_list(values, context)
+    for comment in comments:
+        if not isinstance(comment, Comment | CommentGroup):
+            msg = f"{context} item must be Comment or CommentGroup"
+            raise SerializationError(msg)
+    return comments
+
+
+def _copy_comment_metadata_to_protobuf(
+    comment,
+    pb_comment_metadata,
+    context: str = "Comment metadata",
+) -> None:
     from yaraast.ast.comments import Comment, CommentGroup
 
     if isinstance(comment, CommentGroup):
         pb_group = pb_comment_metadata.group
-        for nested_comment in comment.comments:
+        for nested_comment in _protobuf_comment_list(
+            comment.comments,
+            "CommentGroup comments",
+        ):
             _copy_comment_to_protobuf(nested_comment, pb_group.comments.add())
         _copy_node_metadata_to_protobuf(comment, pb_group)
     elif isinstance(comment, Comment):
         _copy_comment_to_protobuf(comment, pb_comment_metadata.comment)
     else:
-        pb_comment_metadata.comment.text = str(comment)
+        msg = f"{context} must be Comment or CommentGroup"
+        raise SerializationError(msg)
 
 
 def _protobuf_comment_to_ast(pb_comment):
@@ -128,12 +162,23 @@ def _copy_node_metadata_to_protobuf(node, pb_owner) -> None:
     if location is not None:
         _copy_location_to_protobuf(location, pb_metadata.location)
 
-    for comment in getattr(node, "leading_comments", []):
-        _copy_comment_metadata_to_protobuf(comment, pb_metadata.leading_comments.add())
+    for comment in _protobuf_comment_metadata_list(
+        getattr(node, "leading_comments", []),
+        "leading_comments",
+    ):
+        _copy_comment_metadata_to_protobuf(
+            comment,
+            pb_metadata.leading_comments.add(),
+            "leading_comments item",
+        )
 
     trailing_comment = getattr(node, "trailing_comment", None)
     if trailing_comment is not None:
-        _copy_comment_metadata_to_protobuf(trailing_comment, pb_metadata.trailing_comment)
+        _copy_comment_metadata_to_protobuf(
+            trailing_comment,
+            pb_metadata.trailing_comment,
+            "trailing_comment",
+        )
 
 
 def _apply_node_metadata_from_protobuf(pb_owner, node):
