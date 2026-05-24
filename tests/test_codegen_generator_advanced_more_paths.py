@@ -114,6 +114,20 @@ def test_codegen_generator_additional_visit_paths() -> None:
     )
 
 
+def test_advanced_generator_keeps_top_level_section_items_adjacent() -> None:
+    ast = YaraFile(
+        imports=[Import("pe"), Import("elf")],
+        includes=[Include("a.yar"), Include("b.yar")],
+        rules=[Rule("r", condition=BooleanLiteral(True))],
+    )
+
+    out = AdvancedCodeGenerator().generate(ast)
+
+    assert 'import "pe"\nimport "elf"\n\ninclude "a.yar"\ninclude "b.yar"\n\nrule r' in out
+    assert 'import "pe"\n\nimport "elf"' not in out
+    assert 'include "a.yar"\n\ninclude "b.yar"' not in out
+
+
 def test_code_generators_preserve_scoped_meta_keys() -> None:
     ast = YaraFile(
         rules=[

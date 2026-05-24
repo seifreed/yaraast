@@ -236,12 +236,10 @@ class AdvancedCodeGenerator(CodeGenerator):
         import_line = f'import "{escape_string_literal(node.module)}"'
         if node.alias:
             import_line += f" as {node.alias}"
-        self._writeline(import_line)
-        return ""
+        return import_line
 
     def visit_include(self, node: Include) -> str:
-        self._writeline(f'include "{escape_string_literal(node.path)}"')
-        return ""
+        return f'include "{escape_string_literal(node.path)}"'
 
     def visit_plain_string(self, node: PlainString) -> str:
         return render_advanced_plain_string(self, node)
