@@ -280,6 +280,13 @@ def _protobuf_required_string_key(value, message: str) -> str:
     raise SerializationError(message)
 
 
+def _protobuf_string_list(values, context: str) -> list[str]:
+    if isinstance(values, list | tuple) and all(isinstance(item, str) for item in values):
+        return list(values)
+    msg = f"{context} must be a list of strings"
+    raise SerializationError(msg)
+
+
 def _meta_value_to_python(pb_meta_value):
     if pb_meta_value.HasField("string_value"):
         return pb_meta_value.string_value
@@ -308,23 +315,32 @@ def protobuf_to_rule_meta_entry(pb_meta_entry):
 
 
 def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
-    pb_extern_rule.name = extern_rule.name
+    pb_extern_rule.name = _protobuf_required_string(extern_rule.name, "ExternRule name")
     pb_extern_rule.modifiers.extend(str(modifier) for modifier in extern_rule.modifiers)
-    if extern_rule.namespace:
-        pb_extern_rule.namespace = extern_rule.namespace
+    if extern_rule.namespace is not None:
+        pb_extern_rule.namespace = _protobuf_required_string(
+            extern_rule.namespace,
+            "ExternRule namespace",
+        )
     _copy_node_metadata_to_protobuf(extern_rule, pb_extern_rule)
 
 
 def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
-    pb_extern_import.module_path = extern_import.module_path
-    if extern_import.alias:
-        pb_extern_import.alias = extern_import.alias
-    pb_extern_import.rules.extend(extern_import.rules)
+    pb_extern_import.module_path = _protobuf_required_string(
+        extern_import.module_path,
+        "ExternImport module_path",
+    )
+    if extern_import.alias is not None:
+        pb_extern_import.alias = _protobuf_required_string(
+            extern_import.alias,
+            "ExternImport alias",
+        )
+    pb_extern_import.rules.extend(_protobuf_string_list(extern_import.rules, "ExternImport rules"))
     _copy_node_metadata_to_protobuf(extern_import, pb_extern_import)
 
 
 def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
-    pb_namespace.name = namespace.name
+    pb_namespace.name = _protobuf_required_string(namespace.name, "ExternNamespace name")
     _copy_node_metadata_to_protobuf(namespace, pb_namespace)
     for extern_rule in namespace.extern_rules:
         convert_extern_rule_to_protobuf(extern_rule, pb_namespace.extern_rules.add())
@@ -362,7 +378,10 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
 
 def convert_in_rule_pragma_to_protobuf(in_rule_pragma, pb_in_rule_pragma) -> None:
     convert_pragma_to_protobuf(in_rule_pragma.pragma, pb_in_rule_pragma.pragma)
-    pb_in_rule_pragma.position = in_rule_pragma.position
+    pb_in_rule_pragma.position = _protobuf_required_string(
+        in_rule_pragma.position,
+        "InRulePragma position",
+    )
     _copy_node_metadata_to_protobuf(in_rule_pragma, pb_in_rule_pragma)
 
 

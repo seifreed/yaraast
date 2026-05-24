@@ -405,6 +405,59 @@ def test_protobuf_serializer_rejects_invalid_string_definition_fields(
         serializer.serialize(ast)
 
 
+@pytest.mark.parametrize(
+    ("ast", "message"),
+    [
+        (
+            YaraFile(extern_rules=[ExternRule(cast(Any, 123))]),
+            "ExternRule name must be a string",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("ExternalRule", namespace=cast(Any, 123))]),
+            "ExternRule namespace must be a string",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport(cast(Any, 123))]),
+            "ExternImport module_path must be a string",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external_rules", alias=cast(Any, 123))]),
+            "ExternImport alias must be a string",
+        ),
+        (
+            YaraFile(
+                extern_imports=[ExternImport("external_rules", rules=cast(Any, ["A", 123]))],
+            ),
+            "ExternImport rules must be a list of strings",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace(cast(Any, 123))]),
+            "ExternNamespace name must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="bad_pragma_position",
+                        pragmas=[InRulePragma(CustomPragma("vendor"), position=cast(Any, 123))],
+                        condition=BooleanLiteral(True),
+                    ),
+                ],
+            ),
+            "InRulePragma position must be a string",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_extern_and_in_rule_pragma_fields(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(
