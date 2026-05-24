@@ -161,6 +161,7 @@ def expression_to_string(expr, options=None) -> str:
         _render_binary_operator,
         _visit_binary_operand,
     )
+    from yaraast.codegen.generator_formatting import validate_yara_identifier_path
 
     class PrettyExpressionGenerator(CommentAwareCodeGenerator):
         def _comma_separator(self) -> str:
@@ -182,7 +183,8 @@ def expression_to_string(expr, options=None) -> str:
 
         def visit_function_call(self, node) -> str:
             separator = self._comma_separator()
-            return f"{node.function}({separator.join(self.visit(arg) for arg in node.arguments)})"
+            function = validate_yara_identifier_path(node.function, "function")
+            return f"{function}({separator.join(self.visit(arg) for arg in node.arguments)})"
 
         def visit_with_statement(self, node) -> str:
             separator = self._comma_separator()

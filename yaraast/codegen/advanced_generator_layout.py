@@ -12,6 +12,7 @@ from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
     validate_rule_identifiers,
+    validate_yara_identifier_path,
 )
 from yaraast.codegen.generator_helpers import validate_string_identifiers
 
@@ -194,7 +195,8 @@ class _AdvancedConditionGenerator(CodeGenerator):
 
     def visit_function_call(self, node) -> str:
         separator = self._comma_separator()
-        return f"{node.function}({separator.join(self.visit(arg) for arg in node.arguments)})"
+        function = validate_yara_identifier_path(node.function, "function")
+        return f"{function}({separator.join(self.visit(arg) for arg in node.arguments)})"
 
     def visit_with_statement(self, node) -> str:
         separator = self._comma_separator()

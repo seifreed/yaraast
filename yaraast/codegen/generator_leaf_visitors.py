@@ -9,6 +9,7 @@ from yaraast.codegen.generator_formatting import (
     format_hex_jump,
     format_meta_value,
     format_regex_literal,
+    validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
     format_double_literal,
@@ -115,7 +116,7 @@ def visit_meta(node) -> str:
 
 
 def visit_module_reference(node) -> str:
-    return node.module
+    return validate_yara_identifier(node.module, "module")
 
 
 def visit_dictionary_access(generator, node) -> str:

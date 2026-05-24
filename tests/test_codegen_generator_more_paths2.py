@@ -694,6 +694,31 @@ def test_codegen_generators_reject_invalid_expression_operators(
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (FunctionCall("bad-name", []), "Invalid function identifier"),
+        (FunctionCall("math..entropy", []), "Invalid function identifier"),
+        (MemberAccess(ModuleReference("pe"), "bad-name"), "Invalid member identifier"),
+        (ModuleReference("bad-mod"), "Invalid module identifier"),
+    ],
+)
+def test_codegen_generators_reject_invalid_reference_names(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_reference_name", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generators_allow_for_of_placeholder_string_reference() -> None:
     ast = Parser().parse("""
         rule placeholder {

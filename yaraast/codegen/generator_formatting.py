@@ -85,6 +85,21 @@ def _validate_yara_identifier(name: str, kind: str) -> None:
     raise ValueError(msg)
 
 
+def validate_yara_identifier(name: str, kind: str) -> str:
+    _validate_yara_identifier(name, kind)
+    return name
+
+
+def validate_yara_identifier_path(path: str, kind: str) -> str:
+    parts = path.split(".")
+    if not parts or any(part == "" for part in parts):
+        msg = f"Invalid {kind} identifier '{path}' for libyara output"
+        raise ValueError(msg)
+    for part in parts:
+        _validate_yara_identifier(part, kind)
+    return path
+
+
 def format_meta_key(key: str, scope: object | None = None) -> str:
     _validate_yara_identifier(key, "meta")
     scope_value = getattr(scope, "value", scope)

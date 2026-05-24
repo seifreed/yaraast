@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from yaraast.codegen.generator_formatting import (
+    validate_yara_identifier,
+    validate_yara_identifier_path,
+)
 from yaraast.codegen.generator_helpers import validate_string_identifier_text
 
 _BINARY_PRECEDENCE = {
@@ -100,7 +104,8 @@ def visit_range_expression(generator, node) -> str:
 
 
 def visit_function_call(generator, node) -> str:
-    return f"{node.function}({', '.join(generator.visit(arg) for arg in node.arguments)})"
+    function = validate_yara_identifier_path(node.function, "function")
+    return f"{function}({', '.join(generator.visit(arg) for arg in node.arguments)})"
 
 
 def visit_array_access(generator, node) -> str:
@@ -108,7 +113,8 @@ def visit_array_access(generator, node) -> str:
 
 
 def visit_member_access(generator, node) -> str:
-    return f"{generator.visit(node.object)}.{node.member}"
+    member = validate_yara_identifier(node.member, "member")
+    return f"{generator.visit(node.object)}.{member}"
 
 
 def visit_for_expression(generator, node) -> str:
