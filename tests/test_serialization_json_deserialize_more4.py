@@ -47,6 +47,7 @@ from yaraast.ast.strings import (
     HexWildcard,
     PlainString,
     RegexString,
+    StringDefinition,
 )
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -385,6 +386,18 @@ def test_deserialize_strings_modifiers_and_hex_tokens() -> None:
         }
     )
     assert isinstance(regex, RegexString)
+
+    base = StringDefinition(
+        identifier="$base",
+        modifiers=[StringModifier.from_name_value("wide")],
+        is_anonymous=True,
+    )
+    restored_base = s._deserialize_string(s.visit_string_definition(base))
+    assert isinstance(restored_base, StringDefinition)
+    assert not isinstance(restored_base, PlainString | HexString | RegexString)
+    assert restored_base.identifier == "$base"
+    assert restored_base.modifiers == [StringModifier.from_name_value("wide")]
+    assert restored_base.is_anonymous is True
 
 
 def test_json_deserialize_modifier_and_token_collections_reject_non_lists() -> None:

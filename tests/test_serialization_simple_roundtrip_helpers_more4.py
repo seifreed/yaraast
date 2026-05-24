@@ -150,6 +150,22 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
     assert restored_file.rules[0].name == "helper_rule"
 
 
+def test_simple_roundtrip_preserves_base_string_definition_fields() -> None:
+    string_def = StringDefinition(
+        identifier="$z",
+        modifiers=[StringModifier.from_name_value("wide")],
+        is_anonymous=True,
+    )
+
+    restored = deserialize_string(serialize_string(string_def))
+
+    assert isinstance(restored, StringDefinition)
+    assert not isinstance(restored, PlainString | HexString | RegexString)
+    assert restored.identifier == "$z"
+    assert restored.modifiers == [StringModifier.from_name_value("wide")]
+    assert restored.is_anonymous is True
+
+
 def test_simple_roundtrip_deserializes_legacy_hex_xor_modifier_values() -> None:
     key = deserialize_node(
         {

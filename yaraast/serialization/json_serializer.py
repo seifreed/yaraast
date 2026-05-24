@@ -11,6 +11,7 @@ from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
+    _serialize_anonymous_flag,
     _serialize_hex_byte_value,
     _serialize_hex_jump_bounds,
     _serialize_hex_nibble_high,
@@ -26,6 +27,7 @@ from yaraast.serialization.json_serialize_visitors import (
     _serialize_rule_modifiers,
     _serialize_string_key_dict,
     _serialize_string_list,
+    _serialize_string_modifiers,
     visit_array_access,
     visit_array_comprehension,
     visit_at_expression,
@@ -285,10 +287,13 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node("Tag", name=_serialize_required_string(node.name, "Tag name"))
 
     def visit_string_definition(self, node) -> dict[str, Any]:
-        return self._simple_node(
+        data = self._simple_node(
             "StringDefinition",
             identifier=_serialize_required_string(node.identifier, "StringDefinition identifier"),
+            modifiers=_serialize_string_modifiers(self, node.modifiers, "StringDefinition"),
         )
+        _serialize_anonymous_flag(data, getattr(node, "is_anonymous", False), "StringDefinition")
+        return data
 
     def visit_plain_string(self, node) -> dict[str, Any]:
         return visit_plain_string(self, node)

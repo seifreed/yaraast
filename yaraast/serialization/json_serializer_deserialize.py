@@ -1085,6 +1085,17 @@ class JsonSerializerDeserializeMixin:
                 ),
                 data,
             )
+        if string_type == "StringDefinition":
+            from yaraast.ast.strings import StringDefinition
+
+            return self._apply_node_metadata(
+                StringDefinition(
+                    identifier=_deserialize_string_field(data, "identifier", "StringDefinition"),
+                    modifiers=modifiers,
+                    is_anonymous=_deserialize_is_anonymous(data),
+                ),
+                data,
+            )
         msg = f"Unknown string type: {string_type}"
         raise SerializationError(msg)
 

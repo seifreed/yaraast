@@ -68,6 +68,7 @@ from yaraast.ast.strings import (
     HexWildcard,
     PlainString,
     RegexString,
+    StringDefinition,
 )
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
@@ -1352,6 +1353,18 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
         if string_def.is_anonymous:
             data["is_anonymous"] = True
         return _with_node_metadata(string_def, data)
+    if isinstance(string_def, StringDefinition):
+        data = {
+            "type": "StringDefinition",
+            "identifier": _serialize_required_string(
+                string_def.identifier,
+                "StringDefinition identifier",
+            ),
+            "modifiers": _serialize_modifiers(string_def.modifiers),
+        }
+        if string_def.is_anonymous:
+            data["is_anonymous"] = True
+        return _with_node_metadata(string_def, data)
     data = {"type": "StringDefinition", "data": str(string_def)}
     if isinstance(string_def, ASTNode):
         return _with_node_metadata(string_def, data)
@@ -1944,7 +1957,18 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             ),
             data,
         )
-    if string_type in {None, "StringDefinition", "Unknown"}:
+    if string_type == "StringDefinition":
+        return _apply_node_metadata(
+            StringDefinition(
+                identifier=_deserialize_optional_string_field(
+                    data, "identifier", "StringDefinition", "$unknown"
+                ),
+                modifiers=modifiers,
+                is_anonymous=_deserialize_is_anonymous(data),
+            ),
+            data,
+        )
+    if string_type in {None, "Unknown"}:
         return _apply_node_metadata(
             PlainString(
                 identifier=_deserialize_optional_string_field(
