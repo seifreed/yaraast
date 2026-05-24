@@ -35,6 +35,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     StringOffset,
     StringWildcard,
+    UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
@@ -872,6 +873,47 @@ def test_simple_roundtrip_serialize_string_reference_nodes_reject_wrong_scalar_t
         (StringCount(cast(Any, 7)), "StringCount string_id must be a string"),
         (StringOffset(cast(Any, 7)), "StringOffset string_id must be a string"),
         (StringLength(cast(Any, 7)), "StringLength string_id must be a string"),
+    )
+
+    for node, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
+
+
+def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types() -> None:
+    true_expr = BooleanLiteral(True)
+    invalid_cases = (
+        (
+            BinaryExpression(true_expr, cast(Any, ["and"]), BooleanLiteral(False)),
+            "BinaryExpression operator must be a string",
+        ),
+        (
+            UnaryExpression(cast(Any, ["not"]), true_expr),
+            "UnaryExpression operator must be a string",
+        ),
+        (FunctionCall(cast(Any, ["fn"]), []), "FunctionCall function must be a string"),
+        (
+            MemberAccess(Identifier("pe"), cast(Any, ["machine"])),
+            "MemberAccess member must be a string",
+        ),
+        (AtExpression(cast(Any, 7), IntegerLiteral(0)), "AtExpression string_id must be a string"),
+        (
+            ForExpression("any", cast(Any, ["i"]), SetExpression([]), true_expr),
+            "ForExpression variable must be a string",
+        ),
+        (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
+        (
+            WithDeclaration(cast(Any, ["x"]), IntegerLiteral(1)),
+            "WithDeclaration identifier must be a string",
+        ),
+        (
+            LambdaExpression(cast(Any, "x"), true_expr),
+            "LambdaExpression parameters must be a list of strings",
+        ),
+        (
+            SpreadOperator(Identifier("x"), cast(Any, "true")),
+            "SpreadOperator is_dict must be a boolean",
+        ),
     )
 
     for node, message in invalid_cases:

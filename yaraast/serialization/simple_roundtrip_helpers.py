@@ -920,13 +920,16 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "BinaryExpression",
             "left": serialize_node(node.left),
-            "operator": node.operator,
+            "operator": _serialize_required_string(
+                node.operator,
+                "BinaryExpression operator",
+            ),
             "right": serialize_node(node.right),
         }
     if isinstance(node, UnaryExpression):
         return {
             "type": "UnaryExpression",
-            "operator": node.operator,
+            "operator": _serialize_required_string(node.operator, "UnaryExpression operator"),
             "operand": serialize_node(node.operand),
         }
     if isinstance(node, ParenthesesExpression):
@@ -945,7 +948,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, FunctionCall):
         return {
             "type": "FunctionCall",
-            "function": node.function,
+            "function": _serialize_required_string(node.function, "FunctionCall function"),
             "arguments": [serialize_node(argument) for argument in node.arguments],
         }
     if isinstance(node, ArrayAccess):
@@ -958,13 +961,13 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "MemberAccess",
             "object": serialize_node(node.object),
-            "member": node.member,
+            "member": _serialize_required_string(node.member, "MemberAccess member"),
         }
     if isinstance(node, ForExpression):
         return {
             "type": "ForExpression",
             "quantifier": _serialize_ast_value(node.quantifier),
-            "variable": node.variable,
+            "variable": _serialize_required_string(node.variable, "ForExpression variable"),
             "iterable": serialize_node(node.iterable),
             "body": serialize_node(node.body),
         }
@@ -978,7 +981,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, AtExpression):
         return {
             "type": "AtExpression",
-            "string_id": node.string_id,
+            "string_id": _serialize_required_string(node.string_id, "AtExpression string_id"),
             "offset": serialize_node(node.offset),
         }
     if isinstance(node, InExpression):
@@ -994,7 +997,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "string_set": _serialize_ast_value(node.string_set),
         }
     if isinstance(node, ModuleReference):
-        return {"type": "ModuleReference", "module": node.module}
+        return {
+            "type": "ModuleReference",
+            "module": _serialize_required_string(node.module, "ModuleReference module"),
+        }
     if isinstance(node, DictionaryAccess):
         return {
             "type": "DictionaryAccess",
@@ -1007,7 +1013,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "StringOperatorExpression",
             "left": serialize_node(node.left),
-            "operator": node.operator,
+            "operator": _serialize_required_string(
+                node.operator,
+                "StringOperatorExpression operator",
+            ),
             "right": serialize_node(node.right),
         }
     if isinstance(node, WithStatement):
@@ -1019,14 +1028,20 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, WithDeclaration):
         return {
             "type": "WithDeclaration",
-            "identifier": node.identifier,
+            "identifier": _serialize_required_string(
+                node.identifier,
+                "WithDeclaration identifier",
+            ),
             "value": serialize_node(node.value),
         }
     if isinstance(node, ArrayComprehension):
         return {
             "type": "ArrayComprehension",
             "expression": serialize_node(node.expression) if node.expression else None,
-            "variable": node.variable,
+            "variable": _serialize_required_string(
+                node.variable,
+                "ArrayComprehension variable",
+            ),
             "iterable": serialize_node(node.iterable) if node.iterable else None,
             "condition": serialize_node(node.condition) if node.condition else None,
         }
@@ -1039,8 +1054,14 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "value_expression": (
                 serialize_node(node.value_expression) if node.value_expression else None
             ),
-            "key_variable": node.key_variable,
-            "value_variable": node.value_variable,
+            "key_variable": _serialize_required_string(
+                node.key_variable,
+                "DictComprehension key_variable",
+            ),
+            "value_variable": _serialize_nullable_string(
+                node.value_variable,
+                "DictComprehension value_variable",
+            ),
             "iterable": serialize_node(node.iterable) if node.iterable else None,
             "condition": serialize_node(node.condition) if node.condition else None,
         }
@@ -1082,7 +1103,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, LambdaExpression):
         return {
             "type": "LambdaExpression",
-            "parameters": list(node.parameters),
+            "parameters": _serialize_string_list(node.parameters, "LambdaExpression parameters"),
             "body": serialize_node(node.body),
         }
     if isinstance(node, PatternMatch):
@@ -1102,7 +1123,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "SpreadOperator",
             "expression": serialize_node(node.expression),
-            "is_dict": node.is_dict,
+            "is_dict": _serialize_required_bool(node.is_dict, "SpreadOperator is_dict"),
         }
     return {"type": type(node).__name__, "data": str(node)}
 
