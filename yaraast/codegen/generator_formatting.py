@@ -75,6 +75,7 @@ def _validate_yara_identifier(name: str, kind: str) -> None:
 
 
 def format_meta_key(key: str, scope: object | None = None) -> str:
+    _validate_yara_identifier(key, "meta")
     scope_value = getattr(scope, "value", scope)
     if scope_value and scope_value != "public":
         return f"{scope_value}:{key}"

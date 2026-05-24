@@ -540,6 +540,28 @@ def test_codegen_generators_reject_invalid_rule_identifiers(rule_name: str) -> N
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize("meta_key", ["bad-key", "for", "1bad"])
+def test_codegen_generators_reject_invalid_meta_keys(meta_key: str) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_meta",
+                meta=[Meta(meta_key, "x")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Invalid meta identifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid meta identifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid meta identifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid meta identifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generators_reject_duplicate_string_identifiers() -> None:
     ast = YaraFile(
         rules=[
