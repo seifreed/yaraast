@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -75,10 +76,30 @@ if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
 
 
-def _serialize_modifier_value(value: Any) -> Any:
+def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | None:
+    if value is None or isinstance(value, str):
+        return value
+    if isinstance(value, bool):
+        msg = "StringModifier value must be a string, number, tuple, or null"
+        raise SerializationError(msg)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            msg = "StringModifier value must be finite"
+            raise SerializationError(msg)
+        return value
     if isinstance(value, tuple):
+        if (
+            len(value) != 2
+            or not all(isinstance(item, int) for item in value)
+            or any(isinstance(item, bool) for item in value)
+        ):
+            msg = "StringModifier tuple value must contain two integers"
+            raise SerializationError(msg)
         return list(value)
-    return value
+    msg = "StringModifier value must be a string, number, tuple, or null"
+    raise SerializationError(msg)
 
 
 class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]]):

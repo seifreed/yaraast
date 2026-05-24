@@ -792,6 +792,12 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
 
     invalid_modifier = StringModifier.from_name_value("ascii")
     invalid_modifier.modifier_type = invalid_text
+    invalid_modifier_value = StringModifier.from_name_value("base64", "alphabet")
+    cast(Any, invalid_modifier_value).value = object()
+    invalid_modifier_tuple = StringModifier.from_name_value("xor", (1, 3))
+    cast(Any, invalid_modifier_tuple).value = (1, object())
+    invalid_modifier_float = StringModifier.from_name_value("xor", 1)
+    cast(Any, invalid_modifier_float).value = float("nan")
 
     invalid_cases: list[tuple[YaraFile, str]] = [
         (
@@ -811,6 +817,60 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
                 ]
             ),
             "StringModifier name must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_modifier_value",
+                        strings=[
+                            PlainString(
+                                identifier="$a",
+                                value="x",
+                                modifiers=[invalid_modifier_value],
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "StringModifier value must be a string, number, tuple, or null",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_modifier_tuple",
+                        strings=[
+                            PlainString(
+                                identifier="$a",
+                                value="x",
+                                modifiers=[invalid_modifier_tuple],
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "StringModifier tuple value must contain two integers",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_modifier_float",
+                        strings=[
+                            PlainString(
+                                identifier="$a",
+                                value="x",
+                                modifiers=[invalid_modifier_float],
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "StringModifier value must be finite",
         ),
         (
             YaraFile(
