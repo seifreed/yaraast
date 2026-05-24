@@ -740,6 +740,32 @@ def test_json_deserialize_string_set_lists_reject_empty_items() -> None:
             s._deserialize_expression(payload)
 
 
+def test_json_deserialize_string_sets_reject_invalid_raw_values() -> None:
+    s = JsonSerializer()
+
+    invalid_string_set_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": True},
+            "ForOfExpression string_set must be",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": 123},
+            "OfExpression string_set must be",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": ["$a", False]},
+            "ForOfExpression string_set must contain strings or expressions",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": ["$a", 123]},
+            "OfExpression string_set must contain strings or expressions",
+        ),
+    )
+    for payload, message in invalid_string_set_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
+
 def test_json_deserialize_quantifiers_reject_invalid_raw_values() -> None:
     s = JsonSerializer()
     int_expr = {"type": "IntegerLiteral", "value": 1}

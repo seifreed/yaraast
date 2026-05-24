@@ -531,6 +531,34 @@ def _deserialize_required_quantifier(data: dict[str, Any], field: str, context: 
     return _deserialize_ast_value(value, f"{context} {field}")
 
 
+def _deserialize_string_set_item(value: Any, context: str) -> Any:
+    if value is None or value == {}:
+        msg = f"{context} must contain values"
+        raise SerializationError(msg)
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return _deserialize_required_node_value(value, context)
+    msg = f"{context} must contain strings or expressions"
+    raise SerializationError(msg)
+
+
+def _deserialize_required_string_set(data: dict[str, Any], field: str, context: str) -> Any:
+    value = _deserialize_required_field(data, field, context)
+    field_context = f"{context} {field}"
+    if value is None or value == {}:
+        msg = f"{field_context} is required"
+        raise SerializationError(msg)
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return _deserialize_required_node_value(value, field_context)
+    if isinstance(value, list):
+        return [_deserialize_string_set_item(item, field_context) for item in value]
+    msg = f"{field_context} must be a string, expression, or list of strings/expressions"
+    raise SerializationError(msg)
+
+
 def _serialize_location(location: Location) -> dict[str, Any]:
     data: dict[str, Any] = {"line": location.line, "column": location.column}
     if location.file is not None:
@@ -1201,7 +1229,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "ForOfExpression":
         return ForOfExpression(
             _deserialize_required_quantifier(data, "quantifier", "ForOfExpression"),
-            _deserialize_required_ast_value(data, "string_set", "ForOfExpression"),
+            _deserialize_required_string_set(data, "string_set", "ForOfExpression"),
             _deserialize_optional_node_field(data, "condition", "ForOfExpression condition"),
         )
     if node_type == "AtExpression":
@@ -1224,7 +1252,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "OfExpression":
         return OfExpression(
             _deserialize_required_quantifier(data, "quantifier", "OfExpression"),
-            _deserialize_required_ast_value(data, "string_set", "OfExpression"),
+            _deserialize_required_string_set(data, "string_set", "OfExpression"),
         )
     if node_type == "ModuleReference":
         return ModuleReference(_deserialize_string_field(data, "module", "ModuleReference"))

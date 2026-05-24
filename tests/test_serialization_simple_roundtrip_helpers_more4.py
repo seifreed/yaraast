@@ -727,6 +727,30 @@ def test_simple_roundtrip_string_set_values_reject_empty_payloads() -> None:
             deserialize_node(payload)
 
 
+def test_simple_roundtrip_string_sets_reject_invalid_raw_values() -> None:
+    invalid_string_set_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": True},
+            "ForOfExpression string_set must be",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": 123},
+            "OfExpression string_set must be",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": ["$a", False]},
+            "ForOfExpression string_set must contain strings or expressions",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": ["$a", 123]},
+            "OfExpression string_set must contain strings or expressions",
+        ),
+    )
+    for payload, message in invalid_string_set_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
+
 def test_simple_roundtrip_quantifiers_reject_invalid_raw_values() -> None:
     int_expr = {"type": "IntegerLiteral", "value": 1}
 
