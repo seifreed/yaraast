@@ -230,7 +230,9 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
     from yaraast.ast.rules import Tag
 
     pb_rule.name = _protobuf_required_string(rule.name, "Rule name")
-    pb_rule.modifiers.extend(str(m) for m in rule.modifiers)
+    pb_rule.modifiers.extend(
+        str(modifier) for modifier in _protobuf_rule_modifier_list(rule.modifiers, "Rule modifiers")
+    )
     _copy_node_metadata_to_protobuf(rule, pb_rule)
 
     for tag in _protobuf_node_list(rule.tags, "Rule tags", Tag):
@@ -357,13 +359,39 @@ def _protobuf_node_list(values, context: str, item_type) -> list:
     return items
 
 
-def _protobuf_string_definition_list(values, context: str) -> list:
-    from yaraast.ast.strings import StringDefinition
-
+def _protobuf_list(values, context: str) -> list:
     if not isinstance(values, list | tuple):
         msg = f"{context} must be a list"
         raise SerializationError(msg)
-    items = list(values)
+    return list(values)
+
+
+def _protobuf_rule_modifier_list(values, context: str) -> list:
+    from yaraast.ast.modifiers import RuleModifier
+
+    items = _protobuf_list(values, context)
+    for item in items:
+        if not isinstance(item, RuleModifier | str):
+            msg = f"{context} item must be RuleModifier or string"
+            raise SerializationError(msg)
+    return items
+
+
+def _protobuf_string_modifier_list(values, context: str) -> list:
+    from yaraast.ast.modifiers import StringModifier
+
+    items = _protobuf_list(values, context)
+    for item in items:
+        if not isinstance(item, StringModifier | str):
+            msg = f"{context} item must be StringModifier or string"
+            raise SerializationError(msg)
+    return items
+
+
+def _protobuf_string_definition_list(values, context: str) -> list:
+    from yaraast.ast.strings import StringDefinition
+
+    items = _protobuf_list(values, context)
     for item in items:
         if not isinstance(item, StringDefinition) and not hasattr(item, "identifier"):
             msg = f"{context} item must be StringDefinition"
@@ -400,7 +428,13 @@ def protobuf_to_rule_meta_entry(pb_meta_entry):
 
 def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
     pb_extern_rule.name = _protobuf_required_string(extern_rule.name, "ExternRule name")
-    pb_extern_rule.modifiers.extend(str(modifier) for modifier in extern_rule.modifiers)
+    pb_extern_rule.modifiers.extend(
+        str(modifier)
+        for modifier in _protobuf_rule_modifier_list(
+            extern_rule.modifiers,
+            "ExternRule modifiers",
+        )
+    )
     if extern_rule.namespace is not None:
         pb_extern_rule.namespace = _protobuf_required_string(
             extern_rule.namespace,
@@ -546,16 +580,22 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
         else:
             msg = "PlainString value must be a string or bytes"
             raise SerializationError(msg)
-        for mod in string_def.modifiers:
+        for mod in _protobuf_string_modifier_list(
+            string_def.modifiers,
+            "PlainString modifiers",
+        ):
             pb_mod = pb_string.plain.modifiers.add()
             _copy_modifier_to_protobuf(mod, pb_mod)
 
     elif isinstance(string_def, HexString):
-        for token in string_def.tokens:
+        for token in _protobuf_list(string_def.tokens, "HexString tokens"):
             pb_token = pb_string.hex.tokens.add()
             convert_hex_token_to_protobuf(token, pb_token)
 
-        for mod in string_def.modifiers:
+        for mod in _protobuf_string_modifier_list(
+            string_def.modifiers,
+            "HexString modifiers",
+        ):
             pb_mod = pb_string.hex.modifiers.add()
             _copy_modifier_to_protobuf(mod, pb_mod)
 
@@ -564,7 +604,10 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
             string_def.regex,
             "RegexString regex",
         )
-        for mod in string_def.modifiers:
+        for mod in _protobuf_string_modifier_list(
+            string_def.modifiers,
+            "RegexString modifiers",
+        ):
             pb_mod = pb_string.regex.modifiers.add()
             _copy_modifier_to_protobuf(mod, pb_mod)
     else:
@@ -593,7 +636,10 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
     elif isinstance(token, HexJump):
         _copy_hex_jump_to_protobuf(token, pb_token.jump)
     elif isinstance(token, HexAlternative):
-        for alternative in token.alternatives:
+        for alternative in _protobuf_list(
+            token.alternatives,
+            "HexAlternative alternatives",
+        ):
             pb_alternative = pb_token.alternative.alternatives.add()
             for alternative_token in _coerce_hex_alternative_branch(alternative):
                 convert_hex_token_to_protobuf(alternative_token, pb_alternative.tokens.add())

@@ -41,7 +41,7 @@ from yaraast.ast.pragmas import (
     PragmaType,
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
+from yaraast.ast.strings import HexAlternative, HexByte, HexString, PlainString, RegexString
 from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
 from yaraast.serialization.protobuf_conversion import protobuf_to_ast, protobuf_to_string
@@ -426,6 +426,168 @@ def test_protobuf_serializer_rejects_invalid_string_definition_fields(
             ),
         ],
     )
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+def _invalid_modifier_and_hex_container_cases() -> list[tuple[YaraFile, str]]:
+    bad_rule_modifiers = Rule("bad_rule_modifiers", condition=BooleanLiteral(True))
+    cast(Any, bad_rule_modifiers).modifiers = False
+
+    bad_rule_modifier = Rule("bad_rule_modifier", condition=BooleanLiteral(True))
+    cast(Any, bad_rule_modifier).modifiers = [object()]
+
+    bad_extern_rule_modifiers = ExternRule("ExternalRule")
+    cast(Any, bad_extern_rule_modifiers).modifiers = False
+
+    bad_extern_rule_modifier = ExternRule("ExternalRule")
+    cast(Any, bad_extern_rule_modifier).modifiers = [object()]
+
+    bad_plain_modifiers = PlainString(identifier="$a", value="abc")
+    cast(Any, bad_plain_modifiers).modifiers = False
+
+    bad_plain_modifier = PlainString(identifier="$a", value="abc")
+    cast(Any, bad_plain_modifier).modifiers = [object()]
+
+    bad_hex_tokens = HexString(identifier="$h", tokens=[HexByte(0x90)])
+    cast(Any, bad_hex_tokens).tokens = False
+
+    bad_hex_modifiers = HexString(identifier="$h", tokens=[HexByte(0x90)])
+    cast(Any, bad_hex_modifiers).modifiers = False
+
+    bad_hex_modifier = HexString(identifier="$h", tokens=[HexByte(0x90)])
+    cast(Any, bad_hex_modifier).modifiers = [object()]
+
+    bad_regex_modifiers = RegexString(identifier="$r", regex="abc")
+    cast(Any, bad_regex_modifiers).modifiers = False
+
+    bad_regex_modifier = RegexString(identifier="$r", regex="abc")
+    cast(Any, bad_regex_modifier).modifiers = [object()]
+
+    bad_alternatives = HexAlternative(alternatives=[[HexByte(0x90)]])
+    cast(Any, bad_alternatives).alternatives = False
+
+    return [
+        (
+            YaraFile(rules=[bad_rule_modifiers]),
+            "Rule modifiers must be a list",
+        ),
+        (
+            YaraFile(rules=[bad_rule_modifier]),
+            "Rule modifiers item must be RuleModifier or string",
+        ),
+        (
+            YaraFile(extern_rules=[bad_extern_rule_modifiers]),
+            "ExternRule modifiers must be a list",
+        ),
+        (
+            YaraFile(extern_rules=[bad_extern_rule_modifier]),
+            "ExternRule modifiers item must be RuleModifier or string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_plain_modifiers",
+                        strings=[bad_plain_modifiers],
+                        condition=BooleanLiteral(True),
+                    )
+                ],
+            ),
+            "PlainString modifiers must be a list",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_plain_modifier",
+                        strings=[bad_plain_modifier],
+                        condition=BooleanLiteral(True),
+                    )
+                ],
+            ),
+            "PlainString modifiers item must be StringModifier or string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule("bad_hex_tokens", strings=[bad_hex_tokens], condition=BooleanLiteral(True))
+                ],
+            ),
+            "HexString tokens must be a list",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_hex_modifiers",
+                        strings=[bad_hex_modifiers],
+                        condition=BooleanLiteral(True),
+                    )
+                ],
+            ),
+            "HexString modifiers must be a list",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_hex_modifier",
+                        strings=[bad_hex_modifier],
+                        condition=BooleanLiteral(True),
+                    )
+                ],
+            ),
+            "HexString modifiers item must be StringModifier or string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_regex_modifiers",
+                        strings=[bad_regex_modifiers],
+                        condition=BooleanLiteral(True),
+                    )
+                ],
+            ),
+            "RegexString modifiers must be a list",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_regex_modifier",
+                        strings=[bad_regex_modifier],
+                        condition=BooleanLiteral(True),
+                    )
+                ],
+            ),
+            "RegexString modifiers item must be StringModifier or string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_alternatives",
+                        strings=[
+                            HexString(identifier="$h", tokens=[bad_alternatives]),
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ],
+            ),
+            "HexAlternative alternatives must be a list",
+        ),
+    ]
+
+
+@pytest.mark.parametrize(("ast", "message"), _invalid_modifier_and_hex_container_cases())
+def test_protobuf_serializer_rejects_invalid_modifier_and_hex_container_fields(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(ast)
