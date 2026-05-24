@@ -781,6 +781,12 @@ def test_protobuf_serializer_rejects_invalid_rule_container_fields(
         serializer.serialize(ast)
 
 
+def _custom_pragma_with_parameters(parameters: Any) -> CustomPragma:
+    pragma = CustomPragma("vendor")
+    cast(Any, pragma).parameters = parameters
+    return pragma
+
+
 @pytest.mark.parametrize(
     ("pragma", "message"),
     [
@@ -792,6 +798,14 @@ def test_protobuf_serializer_rejects_invalid_rule_container_fields(
         (
             CustomPragma("vendor", arguments=cast(Any, ["on", 1])),
             "Pragma arguments must be a list of strings",
+        ),
+        (
+            _custom_pragma_with_parameters(False),
+            "Pragma parameters must be a mapping",
+        ),
+        (
+            _custom_pragma_with_parameters([("level", 1)]),
+            "Pragma parameters must be a mapping",
         ),
         (DefineDirective(cast(Any, 123)), "Pragma macro_name must be a string"),
         (

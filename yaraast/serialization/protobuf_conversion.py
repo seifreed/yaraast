@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import math
 import time
 from typing import Any
@@ -366,6 +367,13 @@ def _protobuf_list(values, context: str) -> list:
     return list(values)
 
 
+def _protobuf_mapping(values, context: str) -> Mapping:
+    if not isinstance(values, Mapping):
+        msg = f"{context} must be a mapping"
+        raise SerializationError(msg)
+    return values
+
+
 def _protobuf_rule_modifier_list(values, context: str) -> list:
     from yaraast.ast.modifiers import RuleModifier
 
@@ -499,7 +507,11 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
         _protobuf_string_list(getattr(pragma, "arguments", []), "Pragma arguments")
     )
 
-    for key, value in getattr(pragma, "parameters", {}).items():
+    parameters = _protobuf_mapping(
+        getattr(pragma, "parameters", {}),
+        "Pragma parameters",
+    )
+    for key, value in parameters.items():
         parameter_key = _protobuf_required_string_key(
             key,
             "Pragma parameters keys must be strings",
