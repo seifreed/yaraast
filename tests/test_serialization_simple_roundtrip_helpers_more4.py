@@ -553,6 +553,10 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="DoubleLiteral value must be numeric"):
         deserialize_node({"type": "DoubleLiteral", "value": "1.5"})
 
+    for invalid_number in (float("nan"), float("inf"), float("-inf")):
+        with pytest.raises(SerializationError, match="DoubleLiteral value must be finite"):
+            deserialize_node({"type": "DoubleLiteral", "value": invalid_number})
+
     with pytest.raises(SerializationError, match="StringLiteral value must be a string"):
         deserialize_node({"type": "StringLiteral", "value": True})
 
@@ -803,6 +807,38 @@ def test_simple_roundtrip_quantifiers_reject_invalid_raw_values() -> None:
     )
     for payload in invalid_quantifier_cases:
         with pytest.raises(SerializationError, match="quantifier must be"):
+            deserialize_node(payload)
+
+    non_finite_quantifier_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": float("nan"),
+                "variable": "i",
+                "iterable": int_expr,
+                "body": int_expr,
+            },
+            "ForExpression quantifier must be finite",
+        ),
+        (
+            {
+                "type": "ForOfExpression",
+                "quantifier": float("inf"),
+                "string_set": "them",
+            },
+            "ForOfExpression quantifier must be finite",
+        ),
+        (
+            {
+                "type": "OfExpression",
+                "quantifier": float("-inf"),
+                "string_set": "them",
+            },
+            "OfExpression quantifier must be finite",
+        ),
+    )
+    for payload, message in non_finite_quantifier_cases:
+        with pytest.raises(SerializationError, match=message):
             deserialize_node(payload)
 
 
