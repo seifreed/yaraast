@@ -549,6 +549,22 @@ def test_protobuf_serializer_preserves_meta_entry_scope() -> None:
     assert [entry.key for entry in restored.rules[0].get_private_meta()] == ["secret"]
 
 
+def test_protobuf_deserialize_rejects_invalid_meta_entry_scope() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "invalid_meta_scope"
+    pb_meta = pb_rule.meta_entries.add()
+    pb_meta.key = "owner"
+    pb_meta.value.string_value = "team"
+    pb_meta.scope = "secret"
+
+    with pytest.raises(
+        SerializationError, match="Meta scope must be public, private, or protected"
+    ):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 def test_protobuf_deserializes_legacy_xor_modifier_text_values() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pb_file: Any = yara_ast_pb2.YaraFile()

@@ -117,6 +117,13 @@ def test_json_deserialize_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
         s._deserialize_meta({"key": "score", "value": 1.5})
 
     with pytest.raises(
+        SerializationError, match="Meta scope must be public, private, or protected"
+    ):
+        s._deserialize_meta(
+            {"type": "MetaEntry", "key": "owner", "value": "team", "scope": "secret"}
+        )
+
+    with pytest.raises(
         SerializationError, match="Meta value must be a string, integer, or boolean"
     ):
         s._deserialize_rule(

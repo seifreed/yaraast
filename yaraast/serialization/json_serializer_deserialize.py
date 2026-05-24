@@ -10,6 +10,7 @@ from typing import Any
 from yaraast.ast.base import ASTNode, Location
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.errors import SerializationError, ValidationError
+from yaraast.serialization.meta_scopes import deserialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
 from yaraast.string_escaping import escape_string_source_value
 
@@ -1033,7 +1034,7 @@ class JsonSerializerDeserializeMixin:
         return MetaEntry.from_key_value(
             _deserialize_string_field(data, "key", "Meta"),
             _deserialize_meta_value(data),
-            _deserialize_nullable_string_field(data, "scope", "Meta"),
+            deserialize_meta_scope(_deserialize_nullable_string_field(data, "scope", "Meta")),
         )
 
     def _deserialize_string(self, data: dict[str, Any]):

@@ -72,6 +72,7 @@ from yaraast.ast.strings import (
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.source import parse_yara_source
+from yaraast.serialization.meta_scopes import deserialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
 from yaraast.string_escaping import escape_string_source_value
 from yaraast.yarax.ast_nodes import (
@@ -1641,7 +1642,7 @@ def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
         return MetaEntry.from_key_value(
             _deserialize_string_field(data, "key", "Meta"),
             _deserialize_meta_value(data),
-            _deserialize_nullable_string_field(data, "scope", "Meta"),
+            deserialize_meta_scope(_deserialize_nullable_string_field(data, "scope", "Meta")),
         )
     return _apply_node_metadata(
         Meta(_deserialize_string_field(data, "key", "Meta"), _deserialize_meta_value(data)),

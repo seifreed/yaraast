@@ -185,6 +185,11 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     ):
         deserialize_meta({"key": "score", "value": 1.5})
 
+    with pytest.raises(
+        SerializationError, match="Meta scope must be public, private, or protected"
+    ):
+        deserialize_meta({"type": "MetaEntry", "key": "owner", "value": "team", "scope": "secret"})
+
     with pytest.raises(SerializationError, match="Tag name must be a string"):
         deserialize_rule({"name": "r1", "tags": [{"name": 7}], "condition": None})
 

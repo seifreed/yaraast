@@ -7,6 +7,7 @@ import time
 from typing import Any
 
 from yaraast.errors import SerializationError
+from yaraast.serialization.meta_scopes import deserialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
 from yaraast.string_escaping import escape_string_source_value
 
@@ -283,7 +284,7 @@ def protobuf_to_rule_meta_entry(pb_meta_entry):
     return MetaEntry.from_key_value(
         pb_meta_entry.key,
         value,
-        pb_meta_entry.scope or None,
+        deserialize_meta_scope(pb_meta_entry.scope or None),
     )
 
 
@@ -1007,7 +1008,11 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
             from yaraast.ast.modifiers import MetaEntry
 
             meta = [
-                MetaEntry.from_key_value(key, value, pb_rule.meta_scopes.get(key) or None)
+                MetaEntry.from_key_value(
+                    key,
+                    value,
+                    deserialize_meta_scope(pb_rule.meta_scopes.get(key) or None),
+                )
                 for key, value in sorted(meta_values.items())
             ]
 
