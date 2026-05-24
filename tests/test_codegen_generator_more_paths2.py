@@ -597,6 +597,9 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         gen.visit_string_modifier(StringModifier.from_name_value("xor", (4, 3)))
     with pytest.raises(TypeError, match="xor value must be a byte"):
         gen.visit_string_modifier(StringModifier.from_name_value("xor", 256))
+    for value in ("a", "ff", "1f", "0X0A", "+10"):
+        with pytest.raises(TypeError, match="xor value must be a byte"):
+            gen.visit_string_modifier(StringModifier.from_name_value("xor", value))
     with pytest.raises(TypeError, match="base64 value must be a string"):
         gen.visit_string_modifier(StringModifier.from_name_value("base64", True))
 

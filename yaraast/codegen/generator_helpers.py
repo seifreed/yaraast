@@ -11,6 +11,7 @@ from yaraast.regex_literals import (
     escape_regex_delimiter as _escape_regex_delimiter,
     validate_regex_modifiers,
 )
+from yaraast.xor_keys import parse_xor_key_text
 
 REGEX_SUFFIX_MODIFIERS = VALID_REGEX_MODIFIERS
 REGEX_SUFFIX_NAMES = {"dotall": "s"}
@@ -299,12 +300,8 @@ def _parse_xor_key(value: object) -> _XorKey | None:
         return None
     if isinstance(value, str):
         text = value.strip()
-        try:
-            if text.lower().startswith("0x") or any(char in "abcdefABCDEF" for char in text):
-                key = int(text, 16)
-            else:
-                key = int(text, 10)
-        except ValueError:
+        key = parse_xor_key_text(text)
+        if key is None:
             return None
         if 0 <= key <= 0xFF:
             return _XorKey(key, text)

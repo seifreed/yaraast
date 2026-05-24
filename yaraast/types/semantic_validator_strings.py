@@ -9,6 +9,7 @@ from yaraast.ast.modifiers import StringModifierType
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.types.semantic_validator_core import ValidationResult
 from yaraast.visitor.defaults import DefaultASTVisitor
+from yaraast.xor_keys import parse_xor_key_text
 
 if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
@@ -300,15 +301,7 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
         if isinstance(value, int):
             return value
         if isinstance(value, str):
-            text = value.strip()
-            try:
-                if text.lower().startswith("0x"):
-                    return int(text, 16)
-                if any(char in "abcdefABCDEF" for char in text):
-                    return int(text, 16)
-                return int(text, 10)
-            except ValueError:
-                return None
+            return parse_xor_key_text(value)
         return None
 
     def _check_base64_value(self, node: PlainString, value: object) -> None:

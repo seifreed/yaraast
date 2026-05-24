@@ -21,6 +21,7 @@ from yaraast.ast.strings import (
     RegexString,
 )
 from yaraast.errors import EvaluationError
+from yaraast.xor_keys import parse_xor_key_text
 
 
 @dataclass
@@ -275,15 +276,7 @@ class StringMatcher:
         if isinstance(value, int):
             return value
         if isinstance(value, str):
-            text = value.strip()
-            try:
-                if text.lower().startswith("0x"):
-                    return int(text, 16)
-                if any(char in "abcdefABCDEF" for char in text):
-                    return int(text, 16)
-                return int(text, 10)
-            except ValueError:
-                return None
+            return parse_xor_key_text(value)
         try:
             return int(value)
         except (TypeError, ValueError):

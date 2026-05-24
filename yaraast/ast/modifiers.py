@@ -7,6 +7,7 @@ from typing import Any
 from yaraast.ast.base import ASTNode, _VisitorType
 from yaraast.errors import ValidationError
 from yaraast.string_escaping import escape_string_source_value
+from yaraast.xor_keys import parse_xor_key_text
 
 
 def _is_xor_modifier_text(value: str) -> bool:
@@ -21,12 +22,8 @@ def _is_xor_modifier_text(value: str) -> bool:
 
 
 def _parse_xor_key_text(value: str) -> int | None:
-    text = value.strip()
-    if not text:
-        return None
-    try:
-        key = int(text, 16) if text.lower().startswith("0x") else int(text, 10)
-    except ValueError:
+    key = parse_xor_key_text(value)
+    if key is None:
         return None
     return key if 0 <= key <= 0xFF else None
 
