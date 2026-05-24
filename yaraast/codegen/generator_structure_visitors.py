@@ -58,7 +58,8 @@ def visit_yara_file(generator, node) -> str:
 def visit_import(node) -> str:
     value = f'import "{escape_string_literal(node.module)}"'
     if node.alias:
-        value += f" as {node.alias}"
+        alias = validate_yara_identifier(node.alias, "import alias")
+        value += f" as {alias}"
     return value
 
 

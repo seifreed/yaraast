@@ -10,6 +10,7 @@ from yaraast.codegen.generator_formatting import (
     format_meta_value,
     format_regex_literal,
     validate_yara_identifier,
+    validate_yara_identifier_path,
 )
 from yaraast.codegen.generator_helpers import (
     format_double_literal,
@@ -145,16 +146,19 @@ def visit_comment_group(node) -> str:
 def visit_extern_import(node) -> str:
     value = f'import "{escape_string_literal(node.module_path)}"'
     if node.rules:
-        value += f" ({', '.join(node.rules)})"
+        rules = [validate_yara_identifier(rule, "extern rule") for rule in node.rules]
+        value += f" ({', '.join(rules)})"
     if node.alias:
-        value += f" as {node.alias}"
+        alias = validate_yara_identifier(node.alias, "import alias")
+        value += f" as {alias}"
     return value
 
 
 def visit_extern_namespace(node) -> str:
-    lines = [f"namespace {node.name}"]
+    namespace_name = validate_yara_identifier(node.name, "namespace")
+    lines = [f"namespace {namespace_name}"]
     for rule in node.extern_rules:
-        lines.append(_render_extern_rule(rule, default_namespace=node.name))
+        lines.append(_render_extern_rule(rule, default_namespace=namespace_name))
     return "\n".join(lines)
 
 
@@ -166,12 +170,19 @@ def _render_extern_rule(node, default_namespace: str | None = None) -> str:
     modifiers = " ".join(str(m) for m in node.modifiers) if hasattr(node, "modifiers") else ""
     prefix = f"{modifiers} " if modifiers else ""
     namespace_name = getattr(node, "namespace", None) or default_namespace
-    namespace = f"{namespace_name}." if namespace_name else ""
-    return f"extern rule {prefix}{namespace}{node.name}"
+    namespace = (
+        f"{validate_yara_identifier_path(namespace_name, 'namespace')}." if namespace_name else ""
+    )
+    rule_name = validate_yara_identifier(node.name, "extern rule")
+    return f"extern rule {prefix}{namespace}{rule_name}"
 
 
 def visit_extern_rule_reference(node) -> str:
-    return node.qualified_name
+    if node.namespace:
+        namespace = validate_yara_identifier_path(node.namespace, "namespace")
+        rule_name = validate_yara_identifier(node.rule_name, "extern rule")
+        return f"{namespace}.{rule_name}"
+    return validate_yara_identifier(node.rule_name, "extern rule")
 
 
 def visit_in_rule_pragma(node) -> str:

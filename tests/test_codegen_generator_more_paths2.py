@@ -35,7 +35,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
-from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
@@ -520,6 +520,36 @@ def test_codegen_tag_visitors_reject_invalid_rule_tags(tag_name: str) -> None:
         CommentAwareCodeGenerator().generate(tag)
     with pytest.raises(ValueError, match="Invalid tag identifier"):
         PrettyPrinter().generate(tag)
+
+
+@pytest.mark.parametrize(
+    ("node", "message"),
+    [
+        (Import("pe", alias="bad-alias"), "Invalid import alias identifier"),
+        (ExternImport("mods.yar", alias="bad-alias"), "Invalid import alias identifier"),
+        (ExternImport("mods.yar", rules=["bad-rule"]), "Invalid extern rule identifier"),
+        (ExternNamespace("bad-ns"), "Invalid namespace identifier"),
+        (ExternRule("bad-rule"), "Invalid extern rule identifier"),
+        (ExternRule("Remote", namespace="bad-ns"), "Invalid namespace identifier"),
+        (ExternRuleReference("bad-rule"), "Invalid extern rule identifier"),
+        (
+            ExternRuleReference("Remote", namespace="bad-ns"),
+            "Invalid namespace identifier",
+        ),
+    ],
+)
+def test_codegen_generators_reject_invalid_top_level_reference_names(
+    node: Any,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(node)
+    with pytest.raises(ValueError, match=message):
+        AdvancedCodeGenerator().generate(node)
+    with pytest.raises(ValueError, match=message):
+        CommentAwareCodeGenerator().generate(node)
+    with pytest.raises(ValueError, match=message):
+        PrettyPrinter().generate(node)
 
 
 def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:

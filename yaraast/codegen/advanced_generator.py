@@ -32,7 +32,7 @@ from yaraast.codegen.advanced_generator_layout import (
 from yaraast.codegen.formatting import FormattingConfig, IndentStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import _render_binary_operator
-from yaraast.codegen.generator_formatting import escape_string_literal
+from yaraast.codegen.generator_formatting import escape_string_literal, validate_yara_identifier
 
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
@@ -235,7 +235,8 @@ class AdvancedCodeGenerator(CodeGenerator):
     def visit_import(self, node: Import) -> str:
         import_line = f'import "{escape_string_literal(node.module)}"'
         if node.alias:
-            import_line += f" as {node.alias}"
+            alias = validate_yara_identifier(node.alias, "import alias")
+            import_line += f" as {alias}"
         return import_line
 
     def visit_include(self, node: Include) -> str:
