@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.generator_formatting import format_meta_key
 from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_regex_modifiers,
@@ -201,7 +202,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
             if hasattr(meta, "accept"):
                 self.visit(meta)
             elif hasattr(meta, "key"):
-                self._write_meta_item(meta.key, meta.value)
+                self._write_meta_item(meta.key, meta.value, getattr(meta, "scope", None))
             trailing = getattr(meta, "trailing_comment", None)
             if trailing:
                 self._write_comment(trailing, inline=True)
@@ -253,14 +254,14 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         self._dedent()
 
-    def _write_meta_item(self, key: str, value: any) -> None:
+    def _write_meta_item(self, key: str, value: any, scope: object | None = None) -> None:
         """Write a meta item."""
         from yaraast.codegen.generator_helpers import escape_plain_string_value
 
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
-        self._write(f"{key} = ")
+        self._write(f"{format_meta_key(key, scope)} = ")
 
         if isinstance(value, str):
             # Check if already quoted
@@ -336,7 +337,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
-        self._write(f"{node.key} = ")
+        self._write(f"{format_meta_key(node.key, getattr(node, 'scope', None))} = ")
 
         if isinstance(node.value, str):
             if not (node.value.startswith('"') and node.value.endswith('"')):

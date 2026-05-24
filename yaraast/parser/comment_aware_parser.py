@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.extern import ExternImport
 from yaraast.ast.meta import Meta
+from yaraast.ast.modifiers import MetaScope
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser.comment_aware_helpers import (
@@ -452,15 +453,20 @@ class CommentAwareParser(Parser):
 
         meta_list = []
 
-        while self._peek() and self._peek().type == TokenType.IDENTIFIER:
+        while self._peek() and self._check_meta_entry_start():
             start_token = self._peek()
             start_line = start_token.line if start_token else 1
 
             # Collect leading comments
             leading_comments = self._collect_leading_comments(start_line)
 
-            key = self._peek().value
-            self._advance()
+            scope = self._parse_meta_scope_prefix()
+
+            if not self._match(TokenType.IDENTIFIER):
+                msg = "Expected meta key after scope"
+                raise Exception(msg)
+
+            key = str(self._previous().value)
 
             if not self._match(TokenType.ASSIGN):
                 msg = "Expected '=' in meta"
@@ -478,6 +484,7 @@ class CommentAwareParser(Parser):
                 raise Exception(msg)
 
             meta = Meta(key=key, value=value)
+            cast(Any, meta).scope = MetaScope.from_string(scope) if scope else MetaScope.PUBLIC
             self._set_node_location_from_tokens(meta, start_token, self._previous())
 
             # Attach comments
@@ -492,6 +499,13 @@ class CommentAwareParser(Parser):
             meta_list.append(meta)
 
         return meta_list
+
+    def _check_meta_entry_start(self) -> bool:
+        from yaraast.lexer.tokens import TokenType
+
+        if self._check(TokenType.IDENTIFIER):
+            return True
+        return self._check(TokenType.PRIVATE)
 
     def _attach_trailing_comments(self, node: ASTNode) -> None:
         """Attach any remaining comments as trailing comments on the file node."""

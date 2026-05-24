@@ -241,11 +241,11 @@ class CodeGenerator(ASTVisitor[str]):
         """Write meta entries from list of Meta objects."""
         for m in meta:
             if hasattr(m, "key") and hasattr(m, "value"):
-                self._writeline(self._format_meta_value(m.key, m.value))
+                self._writeline(self._format_meta_value(m.key, m.value, getattr(m, "scope", None)))
 
-    def _format_meta_value(self, key: str, value) -> str:
+    def _format_meta_value(self, key: str, value, scope: object | None = None) -> str:
         """Format a single meta key-value pair."""
-        return format_meta_value(key, value)
+        return format_meta_value(key, value, scope)
 
     def _write_strings_section(self, strings, *, has_condition: bool) -> None:
         """Write strings section if present."""

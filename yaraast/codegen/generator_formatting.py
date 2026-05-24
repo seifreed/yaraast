@@ -29,12 +29,20 @@ def format_rule_tags(tags) -> str:
     return " ".join(tag_names)
 
 
-def format_meta_value(key: str, value) -> str:
+def format_meta_key(key: str, scope: object | None = None) -> str:
+    scope_value = getattr(scope, "value", scope)
+    if scope_value and scope_value != "public":
+        return f"{scope_value}:{key}"
+    return key
+
+
+def format_meta_value(key: str, value, scope: object | None = None) -> str:
+    rendered_key = format_meta_key(key, scope)
     if isinstance(value, str):
-        return f'{key} = "{escape_string_literal(value)}"'
+        return f'{rendered_key} = "{escape_string_literal(value)}"'
     if isinstance(value, bool):
-        return f"{key} = {'true' if value else 'false'}"
-    return f"{key} = {value}"
+        return f"{rendered_key} = {'true' if value else 'false'}"
+    return f"{rendered_key} = {value}"
 
 
 def escape_string_literal(value: str) -> str:

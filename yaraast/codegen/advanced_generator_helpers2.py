@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yaraast.codegen.formatting import StringStyle
+from yaraast.codegen.generator_formatting import format_meta_key
 from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_modifiers,
@@ -32,18 +33,22 @@ def get_max_key_length(meta_list: list) -> int:
     """Return the maximum meta key length used for alignment."""
     if not meta_list:
         return 0
-    return max(len(m.key if hasattr(m, "key") else str(m)) for m in meta_list)
+    return max(
+        len(format_meta_key(m.key, getattr(m, "scope", None)) if hasattr(m, "key") else str(m))
+        for m in meta_list
+    )
 
 
 def write_meta_key(gen, meta, max_key_len: int) -> None:
     """Write a formatted meta key."""
+    key = format_meta_key(meta.key, getattr(meta, "scope", None))
     if gen.config.string_style == StringStyle.TABULAR:
         gen._write(gen._get_indent())
-        gen._write(meta.key.ljust(max_key_len))
+        gen._write(key.ljust(max_key_len))
         gen._write(" = ")
     else:
         gen._write(gen._get_indent())
-        gen._write(f"{meta.key} = ")
+        gen._write(f"{key} = ")
 
 
 def write_meta_value(gen, meta) -> None:

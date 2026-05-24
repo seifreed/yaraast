@@ -17,7 +17,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.modifiers import MetaEntry, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.rules import Import, Include, Rule, Tag
@@ -31,8 +31,10 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
+from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.pretty_printer import PrettyPrinter, PrettyPrintOptions
 
 
 def test_codegen_generator_additional_visit_paths() -> None:
@@ -106,6 +108,34 @@ def test_codegen_generator_additional_visit_paths() -> None:
         )
         == "$a in (1..3)"
     )
+
+
+def test_code_generators_preserve_scoped_meta_keys() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="scoped_meta",
+                meta=[
+                    MetaEntry.from_key_value("secret", "token", "private"),
+                    MetaEntry.from_key_value("classification", 7, "protected"),
+                    MetaEntry.from_key_value("owner", "team"),
+                ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    outputs = [
+        CodeGenerator().generate(ast),
+        CommentAwareCodeGenerator().generate(ast),
+        AdvancedCodeGenerator().generate(ast),
+        PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(ast),
+    ]
+
+    for output in outputs:
+        assert 'private:secret = "token"' in output
+        assert "protected:classification = 7" in output
+        assert 'owner = "team"' in output
 
 
 def test_advanced_generator_additional_paths() -> None:

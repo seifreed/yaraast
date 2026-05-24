@@ -25,7 +25,9 @@ def write_meta_section(gen, meta) -> None:
     for item in meta:
         if hasattr(item, "key") and hasattr(item, "value"):
             _emit_comments(gen, item)
-            gen._writeline(gen._format_meta_value(item.key, item.value))
+            gen._writeline(
+                gen._format_meta_value(item.key, item.value, getattr(item, "scope", None))
+            )
     gen._dedent()
     gen._writeline()
 

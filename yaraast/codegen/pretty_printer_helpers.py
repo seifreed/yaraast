@@ -118,11 +118,14 @@ def calculate_string_alignment_column(ast) -> int:
 
 def calculate_meta_alignment_column(ast, min_alignment_column: int) -> int:
     """Calculate alignment column for meta values."""
+    from yaraast.codegen.generator_formatting import format_meta_key
+
     max_length = 0
     for rule in ast.rules:
         for entry in rule.meta:
             if hasattr(entry, "key"):
-                max_length = max(max_length, len(f"{entry.key} ="))
+                key = format_meta_key(entry.key, getattr(entry, "scope", None))
+                max_length = max(max_length, len(f"{key} ="))
     return max(max_length + 2, min_alignment_column)
 
 

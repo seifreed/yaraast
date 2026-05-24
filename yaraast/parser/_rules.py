@@ -6,7 +6,7 @@ from typing import Any
 
 from yaraast.ast.conditions import Condition
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
-from yaraast.ast.modifiers import RuleModifier
+from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.ast.pragmas import (
     ConditionalDirective,
     DefineDirective,
@@ -288,9 +288,9 @@ class RuleParsingMixin:
 
     def _parse_rule_sections(
         self,
-    ) -> tuple[dict[str, Any], list[StringDefinition], Condition | None]:
+    ) -> tuple[dict[str, Any] | list[MetaEntry], list[StringDefinition], Condition | None]:
         """Parse rule sections (meta, strings, condition)."""
-        meta: dict[str, Any] = {}
+        meta: dict[str, Any] | list[MetaEntry] = {}
         strings: list[StringDefinition] = []
         condition: Condition | None = None
 
@@ -316,42 +316,68 @@ class RuleParsingMixin:
             msg = f"Expected ':' after '{section_name}'"
             raise ParserError(msg, self._peek())
 
-    def _parse_meta_section(self) -> dict[str, Any]:
+    def _parse_meta_section(self) -> dict[str, Any] | list[MetaEntry]:
         """Parse meta section."""
         meta: dict[str, Any] = {}
+        entries: list[MetaEntry] = []
+        has_scoped_meta = False
 
         while not self._check_any(
             TokenType.STRINGS,
             TokenType.CONDITION,
             TokenType.RBRACE,
         ):
+            scope = self._parse_meta_scope_prefix()
             if not self._check(TokenType.IDENTIFIER):
+                if scope is not None:
+                    msg = "Expected meta key after scope"
+                    raise ParserError(msg, self._peek())
                 break
 
-            key = self._advance().value
+            key = str(self._advance().value)
 
             if not self._match(TokenType.ASSIGN):
                 msg = "Expected '=' after meta key"
                 raise ParserError(msg, self._peek())
 
-            # Parse meta value
-            # Handle negative numbers: -159 or -3.14
-            if self._match(TokenType.MINUS):
-                if self._match(TokenType.INTEGER) or self._match(TokenType.DOUBLE):
-                    value = -self._previous().value
-                else:
-                    msg = "Expected number after '-' in meta value"
-                    raise ParserError(msg, self._peek())
-            elif self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
-                value = self._previous().value
-            elif self._match(TokenType.BOOLEAN_TRUE):
-                value = True
-            elif self._match(TokenType.BOOLEAN_FALSE):
-                value = False
-            else:
-                msg = "Invalid meta value"
-                raise ParserError(msg, self._peek())
+            value = self._parse_meta_value()
 
             meta[key] = value
+            entries.append(MetaEntry.from_key_value(key, value, scope))
+            has_scoped_meta = has_scoped_meta or scope is not None
 
-        return meta
+        return entries if has_scoped_meta else meta
+
+    def _parse_meta_scope_prefix(self) -> str | None:
+        saved_current = self.current
+        if self._match(TokenType.PRIVATE):
+            scope = "private"
+        elif self._check(TokenType.IDENTIFIER) and str(self._peek().value).lower() in {
+            "protected",
+            "public",
+        }:
+            scope = str(self._advance().value).lower()
+        else:
+            return None
+
+        if self._match(TokenType.COLON):
+            return scope
+
+        self.current = saved_current
+        return None
+
+    def _parse_meta_value(self) -> str | int | bool:
+        # Handle negative numbers: -159 or -3.14
+        if self._match(TokenType.MINUS):
+            if self._match(TokenType.INTEGER) or self._match(TokenType.DOUBLE):
+                return -self._previous().value
+            msg = "Expected number after '-' in meta value"
+            raise ParserError(msg, self._peek())
+        if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
+            return self._previous().value
+        if self._match(TokenType.BOOLEAN_TRUE):
+            return True
+        if self._match(TokenType.BOOLEAN_FALSE):
+            return False
+        msg = "Invalid meta value"
+        raise ParserError(msg, self._peek())

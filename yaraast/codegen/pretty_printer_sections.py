@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
-from yaraast.codegen.generator_formatting import escape_string_literal
+from yaraast.codegen.generator_formatting import escape_string_literal, format_meta_key
 from yaraast.codegen.pretty_printer_helpers import (
     build_hex_pattern,
     format_plain_string,
@@ -23,7 +23,11 @@ def write_meta_section(printer, meta: list) -> None:
         entries.sort(key=lambda x: getattr(x, "key", ""))
     for entry in entries:
         if hasattr(entry, "key") and hasattr(entry, "value"):
-            write_meta_entry(printer, entry.key, entry.value)
+            write_meta_entry(
+                printer,
+                format_meta_key(entry.key, getattr(entry, "scope", None)),
+                entry.value,
+            )
 
 
 def write_meta_entry(printer, key: str, value: Any) -> None:
