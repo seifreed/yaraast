@@ -661,9 +661,9 @@ def _deser_string_operator_expression(self, data: dict[str, Any]):
     if right is None:
         right = {"type": "Identifier", "name": "true"}
     return StringOperatorExpression(
-        left=self._deserialize_expression(left),
+        left=_deserialize_required_expression_value(self, left, "StringOperatorExpression left"),
         operator=_deserialize_string_field(data, "operator", "StringOperatorExpression"),
-        right=self._deserialize_expression(right),
+        right=_deserialize_required_expression_value(self, right, "StringOperatorExpression right"),
     )
 
 

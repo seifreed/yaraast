@@ -1224,6 +1224,26 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
     )
     assert sop_subject_pattern.operator == "contains"
 
+    with pytest.raises(SerializationError, match="StringOperatorExpression left is required"):
+        s._deserialize_expression(
+            {
+                "type": "StringOperatorExpression",
+                "left": {},
+                "operator": "contains",
+                "right": {"type": "StringLiteral", "value": "abc"},
+            }
+        )
+
+    with pytest.raises(SerializationError, match="StringOperatorExpression right is required"):
+        s._deserialize_expression(
+            {
+                "type": "StringOperatorExpression",
+                "left": {"type": "StringLiteral", "value": "abc"},
+                "operator": "contains",
+                "right": {},
+            }
+        )
+
     sop_defaults = s._deserialize_expression(
         {
             "type": "StringOperatorExpression",
