@@ -86,6 +86,22 @@ def test_pretty_printer_indents_string_entries_under_section() -> None:
     ) in out
 
 
+def test_pretty_printer_indents_meta_entries_under_section() -> None:
+    rule = Rule(
+        name="indented_meta",
+        meta=[Meta("author", "me"), Meta("ok", True)],
+        condition=BooleanLiteral(True),
+    )
+
+    out = PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(
+        YaraFile(rules=[rule])
+    )
+
+    assert (
+        "\n    meta:\n" '        author = "me"\n' "        ok = true\n" "\n    condition:\n"
+    ) in out
+
+
 def test_pretty_printer_preserves_top_level_extensions() -> None:
     yf = YaraFile(
         pragmas=[IncludeOncePragma()],

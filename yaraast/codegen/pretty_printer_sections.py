@@ -33,6 +33,7 @@ def write_meta_section(printer, meta: list) -> None:
 
 def write_meta_entry(printer, key: str, value: Any) -> None:
     """Write a single meta entry with alignment handling."""
+    printer._write(current_indent(printer))
     if printer.options.align_meta_values and printer._meta_alignment_column > 0:
         key_part = f"{key} ="
         padding = max(1, printer._meta_alignment_column - len(key_part))
