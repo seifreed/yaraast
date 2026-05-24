@@ -5,8 +5,10 @@ from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
+    SetExpression,
     StringIdentifier,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
@@ -178,6 +180,23 @@ def test_pretty_printer_honors_compact_symbolic_operators() -> None:
 
     assert "\n        a==b\n" in out
     assert "\n        a == b\n" not in out
+
+
+def test_pretty_printer_honors_compact_expression_commas() -> None:
+    rule = Rule(
+        name="compact_commas",
+        condition=FunctionCall(
+            "foo",
+            [SetExpression([Identifier("a"), Identifier("b")]), Identifier("c")],
+        ),
+    )
+
+    out = PrettyPrinter(PrettyPrintOptions(space_after_comma=False)).pretty_print(
+        YaraFile(rules=[rule])
+    )
+
+    assert "\n        foo((a,b),c)\n" in out
+    assert "\n        foo((a, b), c)\n" not in out
 
 
 def test_pretty_printer_preserves_top_level_extensions() -> None:

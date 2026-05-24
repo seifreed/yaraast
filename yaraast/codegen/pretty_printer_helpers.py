@@ -165,6 +165,9 @@ def expression_to_string(expr, options=None) -> str:
     )
 
     class PrettyExpressionGenerator(CommentAwareCodeGenerator):
+        def _comma_separator(self) -> str:
+            return ", " if getattr(options, "space_after_comma", True) else ","
+
         def visit_binary_expression(self, node) -> str:
             left = _visit_binary_operand(self, node, node.left, is_right=False)
             right = _visit_binary_operand(self, node, node.right, is_right=True)
@@ -174,6 +177,14 @@ def expression_to_string(expr, options=None) -> str:
             else:
                 separator = " " if operator in _WORD_BINARY_OPERATORS else ""
             return f"{left}{separator}{operator}{separator}{right}"
+
+        def visit_set_expression(self, node) -> str:
+            separator = self._comma_separator()
+            return f"({separator.join(self.visit(elem) for elem in node.elements)})"
+
+        def visit_function_call(self, node) -> str:
+            separator = self._comma_separator()
+            return f"{node.function}({separator.join(self.visit(arg) for arg in node.arguments)})"
 
     generator = PrettyExpressionGenerator()
     return generator.visit(expr).strip()
