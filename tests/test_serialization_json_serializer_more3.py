@@ -173,6 +173,26 @@ def test_json_serializer_rejects_invalid_raw_quantifiers() -> None:
                 serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_non_expression_ast_quantifiers() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_quantifier: Any = Import("pe")
+
+    expressions = [
+        ForExpression(
+            invalid_quantifier,
+            "i",
+            Identifier("items"),
+            BooleanLiteral(True),
+        ),
+        ForOfExpression(invalid_quantifier, "them", None),
+        OfExpression(invalid_quantifier, "them"),
+    ]
+    for expression in expressions:
+        ast = YaraFile(rules=[Rule(name="invalid_quantifier", condition=expression)])
+        with pytest.raises(SerializationError, match="quantifier must be"):
+            serializer.serialize(ast)
+
+
 def test_json_serializer_rejects_invalid_raw_string_sets() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_string_sets: list[Any] = [

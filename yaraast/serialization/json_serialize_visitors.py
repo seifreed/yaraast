@@ -30,6 +30,8 @@ def _serialize_optional_expression(serializer, value, context: str):
 
 
 def _serialize_quantifier(serializer, value):
+    from yaraast.ast.expressions import Expression
+
     if isinstance(value, str):
         return value
     if isinstance(value, bool) or value is None or isinstance(value, list | dict | set | tuple):
@@ -37,7 +39,7 @@ def _serialize_quantifier(serializer, value):
         raise SerializationError(msg)
     if isinstance(value, int | float):
         return value
-    if hasattr(value, "accept"):
+    if isinstance(value, Expression):
         return serializer.visit(value)
     msg = "quantifier must be a string, number, or expression"
     raise SerializationError(msg)
