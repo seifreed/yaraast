@@ -959,6 +959,24 @@ def test_simple_roundtrip_required_expression_fields_reject_empty_objects() -> N
             "DefinedExpression expression is required",
         ),
         (
+            {
+                "type": "StringOperatorExpression",
+                "left": {},
+                "operator": "contains",
+                "right": true_expr,
+            },
+            "StringOperatorExpression left is required",
+        ),
+        (
+            {
+                "type": "StringOperatorExpression",
+                "left": true_expr,
+                "operator": "contains",
+                "right": {},
+            },
+            "StringOperatorExpression right is required",
+        ),
+        (
             {"type": "WithStatement", "declarations": [], "body": {}},
             "WithStatement body is required",
         ),

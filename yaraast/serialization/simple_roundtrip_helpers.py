@@ -1244,9 +1244,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         if right is None:
             right = {"type": "Identifier", "name": "true"}
         return StringOperatorExpression(
-            deserialize_node(left),
+            _deserialize_required_node_value(left, "StringOperatorExpression left"),
             _deserialize_string_field(data, "operator", "StringOperatorExpression"),
-            deserialize_node(right),
+            _deserialize_required_node_value(right, "StringOperatorExpression right"),
         )
     if node_type == "WithStatement":
         return WithStatement(
