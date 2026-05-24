@@ -10,16 +10,22 @@ from yaraast.codegen.generator_helpers import (
 
 def _render_string_set(gen, string_set) -> str:
     from yaraast.ast.expressions import (
+        Identifier,
         ParenthesesExpression,
         SetExpression,
+        StringIdentifier,
         StringLiteral,
         StringWildcard,
     )
 
     if isinstance(string_set, StringLiteral):
-        return string_set.value
+        return _render_single_string_set_text(string_set.value)
+    if isinstance(string_set, StringIdentifier):
+        return f"({gen.visit(string_set)})"
     if isinstance(string_set, StringWildcard):
         return f"({gen.visit(string_set)})"
+    if isinstance(string_set, Identifier):
+        return _render_single_string_set_text(string_set.name)
     if isinstance(string_set, ParenthesesExpression):
         return _render_string_set(gen, string_set.expression)
     if isinstance(string_set, SetExpression):
@@ -35,7 +41,14 @@ def _render_string_set(gen, string_set) -> str:
             _render_string_set_item(gen, item) for item in sorted(string_set, key=str)
         ]
         return f"({', '.join(rendered_items)})"
-    return str(string_set)
+    return _render_single_string_set_text(string_set)
+
+
+def _render_single_string_set_text(string_set: object) -> str:
+    text = str(string_set)
+    if text == "them":
+        return text
+    return f"({validate_string_set_item_text(text)})"
 
 
 def _render_string_set_item(gen, item) -> str:

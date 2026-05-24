@@ -651,7 +651,10 @@ def test_codegen_generators_reject_invalid_string_identifiers() -> None:
         AtExpression("$bad-key", IntegerLiteral(0)),
         BinaryExpression(StringCount("bad-key"), ">", IntegerLiteral(0)),
         InExpression("$bad-key", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
+        OfExpression("any", "$bad-key"),
         OfExpression("any", ["$bad-key"]),
+        OfExpression("any", StringLiteral("$bad-key")),
+        OfExpression("any", Identifier("bad-key")),
         OfExpression("any", SetExpression([StringLiteral("$bad-key")])),
         OfExpression("any", StringWildcard("$bad-key*")),
         BinaryExpression(StringOffset("bad-key"), ">=", IntegerLiteral(0)),
@@ -669,6 +672,40 @@ def test_codegen_generators_reject_invalid_string_references(condition: Conditio
         CommentAwareCodeGenerator().generate(ast)
     with pytest.raises(ValueError, match="Invalid string"):
         PrettyPrinter().pretty_print(ast)
+
+
+@pytest.mark.parametrize(
+    ("string_set", "expected"),
+    [
+        ("$a", "any of ($a)"),
+        ("a", "any of ($a)"),
+        ("$a*", "any of ($a*)"),
+        (StringLiteral("$a"), "any of ($a)"),
+        (StringLiteral("a*"), "any of ($a*)"),
+        (StringIdentifier("$a"), "any of ($a)"),
+        (Identifier("$a"), "any of ($a)"),
+        (Identifier("a"), "any of ($a)"),
+        (Identifier("them"), "any of them"),
+    ],
+)
+def test_codegen_generators_parenthesize_single_string_set_items(
+    string_set: Any,
+    expected: str,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="single_string_set",
+                strings=[PlainString(identifier="a", value="x")],
+                condition=OfExpression("any", string_set),
+            )
+        ]
+    )
+
+    assert expected in CodeGenerator().generate(ast)
+    assert expected in AdvancedCodeGenerator().generate(ast)
+    assert expected in CommentAwareCodeGenerator().generate(ast)
+    assert expected in PrettyPrinter().pretty_print(ast)
 
 
 @pytest.mark.parametrize(
