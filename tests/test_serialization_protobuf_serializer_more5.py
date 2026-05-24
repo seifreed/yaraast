@@ -650,6 +650,48 @@ def test_protobuf_serializer_rejects_invalid_modifier_and_hex_container_fields(
         serializer.serialize(ast)
 
 
+def test_protobuf_serializer_rejects_malformed_modifier_names() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    bad_rule_modifier = Rule(
+        "bad_rule_modifier_name",
+        modifiers=[RuleModifier(cast(Any, object()))],
+        condition=BooleanLiteral(True),
+    )
+    bad_extern_rule_modifier = ExternRule(
+        "ExternalRule",
+        modifiers=[RuleModifier(cast(Any, object()))],
+    )
+    bad_string_modifier = PlainString(
+        identifier="$a",
+        value="abc",
+        modifiers=[StringModifier(cast(Any, object()))],
+    )
+
+    cases = [
+        (YaraFile(rules=[bad_rule_modifier]), "Rule modifier name must be a string"),
+        (
+            YaraFile(extern_rules=[bad_extern_rule_modifier]),
+            "ExternRule modifier name must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "bad_string_modifier_name",
+                        strings=[bad_string_modifier],
+                        condition=BooleanLiteral(True),
+                    )
+                ],
+            ),
+            "String modifier name must be a string",
+        ),
+    ]
+
+    for ast, message in cases:
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
 @pytest.mark.parametrize(
     ("ast", "message"),
     [

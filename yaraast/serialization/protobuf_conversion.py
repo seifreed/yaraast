@@ -278,7 +278,8 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
 
     pb_rule.name = _protobuf_required_string(rule.name, "Rule name")
     pb_rule.modifiers.extend(
-        str(modifier) for modifier in _protobuf_rule_modifier_list(rule.modifiers, "Rule modifiers")
+        _protobuf_modifier_name(modifier, "Rule modifier")
+        for modifier in _protobuf_rule_modifier_list(rule.modifiers, "Rule modifiers")
     )
     _copy_node_metadata_to_protobuf(rule, pb_rule)
 
@@ -431,6 +432,20 @@ def _protobuf_rule_modifier_list(values, context: str) -> list:
     return items
 
 
+def _protobuf_modifier_name(modifier, context: str) -> str:
+    if isinstance(modifier, str):
+        return modifier
+    try:
+        name = modifier.name
+    except AttributeError as exc:
+        msg = f"{context} name must be a string"
+        raise SerializationError(msg) from exc
+    if isinstance(name, str):
+        return name
+    msg = f"{context} name must be a string"
+    raise SerializationError(msg)
+
+
 def _protobuf_string_modifier_list(values, context: str) -> list:
     from yaraast.ast.modifiers import StringModifier
 
@@ -483,7 +498,7 @@ def protobuf_to_rule_meta_entry(pb_meta_entry):
 def convert_extern_rule_to_protobuf(extern_rule, pb_extern_rule) -> None:
     pb_extern_rule.name = _protobuf_required_string(extern_rule.name, "ExternRule name")
     pb_extern_rule.modifiers.extend(
-        str(modifier)
+        _protobuf_modifier_name(modifier, "ExternRule modifier")
         for modifier in _protobuf_rule_modifier_list(
             extern_rule.modifiers,
             "ExternRule modifiers",
@@ -600,7 +615,7 @@ def _format_unknown_modifier(name: str, value) -> str:
 
 
 def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
-    pb_mod.name = getattr(mod, "name", str(mod))
+    pb_mod.name = _protobuf_modifier_name(mod, "String modifier")
     _copy_node_metadata_to_protobuf(mod, pb_mod)
     value = getattr(mod, "value", None)
     if value is None:
