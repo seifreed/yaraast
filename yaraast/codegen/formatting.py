@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 
 
 def _coerce_enum[EnumT: Enum](enum_type: type[EnumT], value: object, default: EnumT) -> EnumT:
@@ -145,9 +145,11 @@ class FormattingConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> FormattingConfig:
+    def from_dict(cls, data: object) -> FormattingConfig:
         """Create config from dictionary."""
         config = cls()
+        if not isinstance(data, Mapping):
+            return config
 
         if "indent_style" in data:
             config.indent_style = _coerce_enum(

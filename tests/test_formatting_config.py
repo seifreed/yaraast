@@ -7,6 +7,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.codegen.formatting import (
     BraceStyle,
     FormattingConfig,
@@ -220,6 +222,15 @@ class TestFormattingConfigSerialization:
         assert isinstance(config, FormattingConfig)
         assert config.indent_style == IndentStyle.SPACES
         assert config.indent_size == 4
+
+    def test_from_dict_with_non_mapping_uses_defaults(self) -> None:
+        """From_dict should ignore malformed non-object config."""
+        for value in (None, 42, object()):
+            config = FormattingConfig.from_dict(cast(Any, value))
+
+            assert isinstance(config, FormattingConfig)
+            assert config.indent_style == IndentStyle.SPACES
+            assert config.indent_size == 4
 
     def test_roundtrip_serialization(self) -> None:
         """Config should survive to_dict/from_dict roundtrip."""
