@@ -11,6 +11,7 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaScope
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_helpers import (
     collect_leading_comments,
     collect_trailing_comment,
@@ -227,9 +228,8 @@ class CommentAwareParser(Parser):
                 self._expect_section_colon("condition")
                 condition = self._parse_condition_with_comments()
             else:
-                # Inside this loop, the current token is neither RBRACE nor EOF, so
-                # recovery can always make progress by consuming one token.
-                self._skip_unrecognized_token()
+                msg = f"Unexpected section: {self._peek().value}"
+                raise ParserError(msg, self._peek())
 
         return meta, strings, condition
 

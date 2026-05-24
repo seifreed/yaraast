@@ -74,14 +74,23 @@ def test_parse_rule_sections_skip_and_ensure_condition() -> None:
         _t(TokenType.EOF, "", 1),
     ]
     p.current = 0
-    meta, strings, cond = p._parse_rule_sections_with_comments()
-    assert meta == [] and strings == [] and cond is None
+    with pytest.raises(ParserError, match="Unexpected section: junk"):
+        p._parse_rule_sections_with_comments()
+
+    p.current = 0
+    assert p._skip_unrecognized_token() is True
+    assert p.current == 1
 
     # _skip_unrecognized_token false branch when RBRACE
     assert p._skip_unrecognized_token() is False
 
     ensured = p._ensure_condition(None)
     assert isinstance(ensured, BooleanLiteral)
+
+
+def test_comment_aware_parser_rejects_unknown_rule_sections() -> None:
+    with pytest.raises(ParserError, match="Unexpected section: garbage"):
+        CommentAwareParser().parse("rule r { garbage condition: false }")
 
 
 def test_parse_strings_section_branches_and_modifier_parsing() -> None:
