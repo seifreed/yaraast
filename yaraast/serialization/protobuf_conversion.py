@@ -372,7 +372,7 @@ def _copy_modifier_to_protobuf(mod, pb_mod) -> None:
     elif isinstance(value, int):
         pb_mod.typed_value.int_value = value
     elif isinstance(value, float):
-        pb_mod.typed_value.double_value = value
+        pb_mod.typed_value.double_value = _finite_double_value(value, "String modifier")
     elif isinstance(value, str):
         pb_mod.typed_value.string_value = value
 
@@ -1218,7 +1218,7 @@ def _typed_modifier_value(pb_modifier):
         if typed_value.HasField("int_value"):
             return typed_value.int_value
         if typed_value.HasField("double_value"):
-            return typed_value.double_value
+            return _finite_double_value(typed_value.double_value, "String modifier")
     return None
 
 

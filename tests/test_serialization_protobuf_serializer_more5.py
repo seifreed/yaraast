@@ -84,6 +84,38 @@ def test_protobuf_conversion_escapes_unknown_modifier_string_values() -> None:
     assert restored.modifiers == ['vendor_modifier("a\\"\\\\b\\n")']
 
 
+def test_protobuf_serializer_rejects_non_finite_modifier_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_modifier",
+                strings=[
+                    PlainString(
+                        identifier="$a",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("xor", cast(Any, float("nan")))],
+                    )
+                ],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(SerializationError, match="String modifier value must be finite"):
+        serializer.serialize(ast)
+
+    pb_string = yara_ast_pb2.StringDefinition()
+    pb_string.identifier = "$a"
+    pb_string.plain.value = "abc"
+    pb_modifier = pb_string.plain.modifiers.add()
+    pb_modifier.name = "vendor_modifier"
+    pb_modifier.typed_value.double_value = float("inf")
+
+    with pytest.raises(SerializationError, match="String modifier value must be finite"):
+        protobuf_to_string(pb_string)
+
+
 def test_protobuf_serializer_does_not_coerce_invalid_xor_range_values_to_ints() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(
