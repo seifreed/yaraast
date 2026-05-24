@@ -52,6 +52,7 @@ from yaraast.ast.strings import (
     HexNegatedByte,
     HexNibble,
     HexString,
+    HexToken,
     HexWildcard,
     PlainString,
     RegexString,
@@ -67,8 +68,11 @@ def test_json_serializer_visit_methods_cover_remaining_nodes() -> None:
     assert s.visit_string_definition(StringDefinition("$s"))["type"] == "StringDefinition"
     assert s.visit_expression(Expression())["type"] == "Expression"
     assert s.visit_condition(Condition())["type"] == "Condition"
+    assert type(s._deserialize_expression(s.visit_expression(Expression()))) is Expression
+    assert type(s._deserialize_expression(s.visit_condition(Condition()))) is Condition
 
-    assert s.visit_hex_token(HexByte(0x4D))["type"] == "HexToken"
+    assert s.visit_hex_token(HexToken())["type"] == "HexToken"
+    assert type(s._deserialize_hex_token(s.visit_hex_token(HexToken()))) is HexToken
     assert s.visit_hex_byte(HexByte(0x4D))["type"] == "HexByte"
     assert s.visit_hex_wildcard(HexWildcard())["type"] == "HexWildcard"
     assert s.visit_hex_jump(HexJump(1, 2))["type"] == "HexJump"

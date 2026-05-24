@@ -1132,6 +1132,10 @@ class JsonSerializerDeserializeMixin:
         data = _deserialize_object(data, "Hex token")
         hex_kind = data.get("type")
 
+        if hex_kind == "HexToken":
+            from yaraast.ast.strings import HexToken
+
+            return self._apply_node_metadata(HexToken(), data)
         if hex_kind == "HexByte":
             from yaraast.ast.strings import HexByte
 
@@ -1322,6 +1326,15 @@ class JsonSerializerDeserializeMixin:
             if isinstance(node, ASTNode):
                 return self._apply_node_metadata(node, data)
             return node
+
+        if expr_type == "Expression":
+            from yaraast.ast.expressions import Expression
+
+            return self._apply_node_metadata(Expression(), data)
+        if expr_type == "Condition":
+            from yaraast.ast.conditions import Condition
+
+            return self._apply_node_metadata(Condition(), data)
 
         msg = f"Unknown expression type: {expr_type}"
         raise SerializationError(msg)
