@@ -8,6 +8,7 @@ from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
     format_hex_jump_bounds,
+    validate_string_identifier_text,
 )
 from yaraast.lexer.lexer_tables import KEYWORDS
 from yaraast.regex_literals import validate_regex_modifiers
@@ -15,6 +16,9 @@ from yaraast.regex_literals import validate_regex_modifiers
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
 _YARA_RULE_MODIFIERS = frozenset({"global", "private"})
+_YARA_EXPRESSION_KEYWORDS = frozenset(
+    {"all", "any", "entrypoint", "false", "filesize", "none", "true"}
+)
 
 
 def format_rule_modifiers(modifiers) -> str:
@@ -88,6 +92,14 @@ def _validate_yara_identifier(name: str, kind: str) -> None:
 def validate_yara_identifier(name: str, kind: str) -> str:
     _validate_yara_identifier(name, kind)
     return name
+
+
+def validate_yara_expression_identifier(name: str) -> str:
+    if name.startswith("$"):
+        return validate_string_identifier_text(name)
+    if name in _YARA_EXPRESSION_KEYWORDS:
+        return name
+    return validate_yara_identifier(name, "identifier")
 
 
 def validate_yara_identifier_path(path: str, kind: str) -> str:

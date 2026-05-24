@@ -724,6 +724,53 @@ def test_codegen_string_visitors_reject_invalid_string_identifiers(
 
 
 @pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (Identifier("bad-key"), "Invalid identifier"),
+        (Identifier("for"), "Invalid identifier"),
+        (Identifier("$bad-key"), "Invalid string identifier"),
+    ],
+)
+def test_codegen_generators_reject_invalid_identifier_expressions(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_identifier", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        PrettyPrinter().pretty_print(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "expected"),
+    [
+        (Identifier("filesize"), "filesize"),
+        (Identifier("entrypoint"), "entrypoint"),
+        (Identifier("true"), "true"),
+        (Identifier("false"), "false"),
+        (OfExpression(Identifier("any"), Identifier("them")), "any of them"),
+        (OfExpression(Identifier("none"), Identifier("them")), "none of them"),
+    ],
+)
+def test_codegen_generators_allow_valid_identifier_expressions(
+    condition: Any,
+    expected: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="valid_identifier", condition=condition)])
+
+    assert expected in CodeGenerator().generate(ast)
+    assert expected in AdvancedCodeGenerator().generate(ast)
+    assert expected in CommentAwareCodeGenerator().generate(ast)
+    assert expected in PrettyPrinter().pretty_print(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         StringIdentifier("$bad-key"),

@@ -9,6 +9,7 @@ from yaraast.codegen.generator_formatting import (
     format_hex_jump,
     format_meta_value,
     format_regex_literal,
+    validate_yara_expression_identifier,
     validate_yara_identifier,
     validate_yara_identifier_path,
 )
@@ -55,7 +56,7 @@ def visit_hex_nibble(node) -> str:
 
 
 def visit_identifier(node) -> str:
-    return node.name
+    return validate_yara_expression_identifier(node.name)
 
 
 def visit_string_identifier(node, *, allow_placeholder: bool = False) -> str:
