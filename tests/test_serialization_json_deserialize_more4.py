@@ -625,6 +625,30 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     with pytest.raises(SerializationError, match="TupleExpression elements must be a list"):
         s._deserialize_expression({"type": "TupleExpression", "elements": "abc"})
 
+    missing_extended_cases = (
+        ({"type": "WithStatement", "declarations": []}, "WithStatement body is required"),
+        ({"type": "WithDeclaration", "identifier": "x"}, "WithDeclaration value is required"),
+        (
+            {"type": "TupleIndexing", "index": true_expr},
+            "TupleIndexing tuple_expr is required",
+        ),
+        (
+            {"type": "TupleIndexing", "tuple_expr": {"type": "TupleExpression", "elements": []}},
+            "TupleIndexing index is required",
+        ),
+        ({"type": "DictItem", "value": true_expr}, "DictItem key is required"),
+        ({"type": "DictItem", "key": true_expr}, "DictItem value is required"),
+        ({"type": "SliceExpression"}, "SliceExpression target is required"),
+        ({"type": "LambdaExpression", "parameters": ["x"]}, "LambdaExpression body is required"),
+        ({"type": "PatternMatch", "cases": []}, "PatternMatch value is required"),
+        ({"type": "MatchCase", "result": true_expr}, "MatchCase pattern is required"),
+        ({"type": "MatchCase", "pattern": true_expr}, "MatchCase result is required"),
+        ({"type": "SpreadOperator"}, "SpreadOperator expression is required"),
+    )
+    for payload, message in missing_extended_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
     with pytest.raises(
         SerializationError, match="LambdaExpression parameters must be a list of strings"
     ):

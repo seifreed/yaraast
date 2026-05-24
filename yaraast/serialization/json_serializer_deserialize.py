@@ -671,7 +671,9 @@ def _deser_with_statement(self, data: dict[str, Any]):
             self._deserialize_expression(declaration)
             for declaration in _deserialize_list_field(data, "declarations", "WithStatement")
         ],
-        body=self._deserialize_expression(data["body"]),
+        body=self._deserialize_expression(
+            _deserialize_required_field(data, "body", "WithStatement")
+        ),
     )
 
 
@@ -680,7 +682,9 @@ def _deser_with_declaration(self, data: dict[str, Any]):
 
     return WithDeclaration(
         identifier=_deserialize_string_field(data, "identifier", "WithDeclaration"),
-        value=self._deserialize_expression(data["value"]),
+        value=self._deserialize_expression(
+            _deserialize_required_field(data, "value", "WithDeclaration")
+        ),
     )
 
 
@@ -725,8 +729,12 @@ def _deser_tuple_indexing(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import TupleIndexing
 
     return TupleIndexing(
-        tuple_expr=self._deserialize_expression(data["tuple_expr"]),
-        index=self._deserialize_expression(data["index"]),
+        tuple_expr=self._deserialize_expression(
+            _deserialize_required_field(data, "tuple_expr", "TupleIndexing")
+        ),
+        index=self._deserialize_expression(
+            _deserialize_required_field(data, "index", "TupleIndexing")
+        ),
     )
 
 
@@ -756,8 +764,8 @@ def _deser_dict_item(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import DictItem
 
     return DictItem(
-        key=self._deserialize_expression(data["key"]),
-        value=self._deserialize_expression(data["value"]),
+        key=self._deserialize_expression(_deserialize_required_field(data, "key", "DictItem")),
+        value=self._deserialize_expression(_deserialize_required_field(data, "value", "DictItem")),
     )
 
 
@@ -765,7 +773,9 @@ def _deser_slice_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import SliceExpression
 
     return SliceExpression(
-        target=self._deserialize_expression(data["target"]),
+        target=self._deserialize_expression(
+            _deserialize_required_field(data, "target", "SliceExpression")
+        ),
         start=_deserialize_optional_expression(self, data.get("start")),
         stop=_deserialize_optional_expression(self, data.get("stop")),
         step=_deserialize_optional_expression(self, data.get("step")),
@@ -777,7 +787,9 @@ def _deser_lambda_expression(self, data: dict[str, Any]):
 
     return LambdaExpression(
         parameters=_deserialize_string_list_field(data, "parameters", "LambdaExpression"),
-        body=self._deserialize_expression(data["body"]),
+        body=self._deserialize_expression(
+            _deserialize_required_field(data, "body", "LambdaExpression")
+        ),
     )
 
 
@@ -785,7 +797,9 @@ def _deser_pattern_match(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import PatternMatch
 
     return PatternMatch(
-        value=self._deserialize_expression(data["value"]),
+        value=self._deserialize_expression(
+            _deserialize_required_field(data, "value", "PatternMatch")
+        ),
         cases=[
             self._deserialize_expression(case)
             for case in _deserialize_list_field(data, "cases", "PatternMatch")
@@ -798,8 +812,12 @@ def _deser_match_case(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import MatchCase
 
     return MatchCase(
-        pattern=self._deserialize_expression(data["pattern"]),
-        result=self._deserialize_expression(data["result"]),
+        pattern=self._deserialize_expression(
+            _deserialize_required_field(data, "pattern", "MatchCase")
+        ),
+        result=self._deserialize_expression(
+            _deserialize_required_field(data, "result", "MatchCase")
+        ),
     )
 
 
@@ -807,7 +825,9 @@ def _deser_spread_operator(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import SpreadOperator
 
     return SpreadOperator(
-        expression=self._deserialize_expression(data["expression"]),
+        expression=self._deserialize_expression(
+            _deserialize_required_field(data, "expression", "SpreadOperator")
+        ),
         is_dict=_deserialize_bool_field(data, "is_dict", "SpreadOperator"),
     )
 
