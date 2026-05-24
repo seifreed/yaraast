@@ -20,6 +20,7 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaEntry, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
+from yaraast.ast.pragmas import DefineDirective, InRulePragma, UndefDirective
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
@@ -136,6 +137,35 @@ def test_code_generators_preserve_scoped_meta_keys() -> None:
         assert 'private:secret = "token"' in output
         assert "protected:classification = 7" in output
         assert 'owner = "team"' in output
+
+
+def test_code_generators_preserve_in_rule_pragmas() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="rule_pragmas",
+                pragmas=[
+                    InRulePragma(DefineDirective("LIMIT", "10"), position="before_strings"),
+                    InRulePragma(UndefDirective("LIMIT"), position="before_condition"),
+                ],
+                strings=[PlainString("$a", value="x")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    outputs = [
+        CodeGenerator().generate(ast),
+        CommentAwareCodeGenerator().generate(ast),
+        AdvancedCodeGenerator().generate(ast),
+        PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(ast),
+    ]
+
+    for output in outputs:
+        assert "#define LIMIT 10" in output
+        assert "#undef LIMIT" in output
+        assert output.index("#define LIMIT 10") < output.index("strings:")
+        assert output.index("#undef LIMIT") < output.index("condition:")
 
 
 def test_advanced_generator_additional_paths() -> None:

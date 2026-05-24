@@ -11,6 +11,7 @@ from yaraast.ast.pragmas import (
     CustomPragma,
     DefineDirective,
     IncludeOncePragma,
+    InRulePragma,
     UndefDirective,
 )
 from yaraast.ast.rules import Import, Rule
@@ -324,3 +325,36 @@ def test_parse_generated_scoped_meta_entries() -> None:
 
         assert [entry.key for entry in meta] == ["secret", "classification", "owner"]
         assert [entry.scope.value for entry in meta] == ["private", "protected", "public"]
+
+
+def test_parse_generated_in_rule_pragmas() -> None:
+    source = CodeGenerator().generate(
+        YaraFile(
+            rules=[
+                Rule(
+                    "with_rule_pragmas",
+                    pragmas=[
+                        InRulePragma(
+                            DefineDirective("LIMIT", "10"),
+                            position="before_condition",
+                        )
+                    ],
+                    condition=BooleanLiteral(True),
+                )
+            ],
+        )
+    )
+
+    assert "#define LIMIT 10" in source
+
+    ast = Parser(source).parse()
+    comment_ast = CommentAwareParser().parse(source)
+
+    for parsed in (ast, comment_ast):
+        pragmas = parsed.rules[0].pragmas
+
+        assert len(pragmas) == 1
+        assert isinstance(pragmas[0].pragma, DefineDirective)
+        assert pragmas[0].pragma.macro_name == "LIMIT"
+        assert pragmas[0].pragma.macro_value == "10"
+        assert pragmas[0].position == "before_condition"

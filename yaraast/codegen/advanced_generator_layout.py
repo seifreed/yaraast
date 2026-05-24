@@ -89,11 +89,16 @@ def visit_rule(generator, node) -> str:
         elif section == "strings" and node.strings:
             if sections_written > 0:
                 generator._write_blank_lines(generator.config.blank_lines_between_sections)
+            _write_in_rule_pragmas(generator, node, "before_strings")
             generator._write_strings_section(node.strings)
+            _write_in_rule_pragmas(generator, node, "after_strings")
             sections_written += 1
         elif section == "condition" and node.condition is not None:
             if sections_written > 0:
                 generator._write_blank_lines(generator.config.blank_lines_between_sections)
+            if not node.strings:
+                _write_in_rule_pragmas(generator, node, "before_strings")
+            _write_in_rule_pragmas(generator, node, "before_condition")
             generator._write_condition_section(node.condition)
             sections_written += 1
 
@@ -146,6 +151,12 @@ def write_condition_section(generator, condition) -> None:
     else:
         generator._writeline(condition_str)
     generator._dedent()
+
+
+def _write_in_rule_pragmas(generator, node, position: str) -> None:
+    for pragma in getattr(node, "pragmas", []):
+        if pragma.position == position:
+            generator._writeline(generator.visit(pragma))
 
 
 def generate_condition_string(expr) -> str:

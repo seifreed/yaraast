@@ -162,7 +162,10 @@ class CommentAwareCodeGenerator(CodeGenerator):
         self._indent()
 
         self._write_meta_section(node)
+        self._write_rule_pragmas(node, "before_strings")
         self._write_strings_section(node)
+        self._write_rule_pragmas(node, "after_strings")
+        self._write_rule_pragmas(node, "before_condition")
         self._write_condition_section(node)
 
         # Close rule
@@ -187,6 +190,18 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         if node.trailing_comment:
             self._write_comment(node.trailing_comment, inline=True)
+
+    def _write_rule_pragmas(self, node: Rule, position: str) -> None:
+        for pragma in node.pragmas:
+            if pragma.position != position:
+                continue
+            self._write_leading_comments(getattr(pragma, "leading_comments", []))
+            rendered = self.visit(pragma)
+            if rendered:
+                self._writeline(rendered)
+            trailing = getattr(pragma, "trailing_comment", None)
+            if trailing:
+                self._write_comment(trailing, inline=True)
 
     def _write_meta_section(self, node: Rule) -> None:
         """Write the meta section with comments."""

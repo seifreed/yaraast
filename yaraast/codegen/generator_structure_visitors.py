@@ -66,7 +66,10 @@ def visit_rule(generator, node) -> str:
     generator._writeline(" {")
     generator._indent()
     generator._write_meta_section(node.meta)
+    _write_in_rule_pragmas(generator, node, "before_strings")
     generator._write_strings_section(node.strings, has_condition=node.condition is not None)
+    _write_in_rule_pragmas(generator, node, "after_strings")
+    _write_in_rule_pragmas(generator, node, "before_condition")
     generator._write_condition_section(node.condition)
     generator._dedent()
     generator._write("}")
@@ -81,3 +84,9 @@ def visit_tag(node) -> str:
 
 def visit_string_definition(_node) -> str:
     return ""
+
+
+def _write_in_rule_pragmas(generator, node, position: str) -> None:
+    for pragma in getattr(node, "pragmas", []):
+        if pragma.position == position:
+            generator._writeline(generator.visit(pragma))

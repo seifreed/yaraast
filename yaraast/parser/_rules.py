@@ -11,6 +11,7 @@ from yaraast.ast.pragmas import (
     ConditionalDirective,
     DefineDirective,
     IncludeOncePragma,
+    InRulePragma,
     Pragma,
     PragmaType,
     UndefDirective,
@@ -237,7 +238,9 @@ class RuleParsingMixin:
             msg = "Expected '{' after rule name"
             raise ParserError(msg, self._peek())
 
+        self._parsed_rule_pragmas: list[InRulePragma] = []
         meta, strings, condition = self._parse_rule_sections()
+        pragmas = self._parsed_rule_pragmas
 
         if not self._match(TokenType.RBRACE):
             msg = "Expected '}' at end of rule"
@@ -251,6 +254,7 @@ class RuleParsingMixin:
                 meta=meta,
                 strings=strings,
                 condition=condition,
+                pragmas=pragmas,
             ),
             start_token,
             self._previous(),
@@ -301,6 +305,8 @@ class RuleParsingMixin:
             elif self._match(TokenType.STRINGS):
                 self._expect_colon("strings")
                 strings = self._parse_strings_section()
+            elif self._check_file_pragma():
+                self._parse_in_rule_pragma(strings)
             elif self._match(TokenType.CONDITION):
                 self._expect_colon("condition")
                 condition = self._parse_condition()
@@ -309,6 +315,26 @@ class RuleParsingMixin:
                 raise ParserError(msg, self._peek())
 
         return meta, strings, condition
+
+    def _parse_in_rule_pragma(self, strings: list[StringDefinition]) -> None:
+        pragma = self._parse_file_pragma()
+        in_rule_pragma = InRulePragma(
+            pragma=pragma,
+            position=self._infer_in_rule_pragma_position(strings),
+        )
+        self._set_node_location_from_nodes(in_rule_pragma, pragma, pragma)
+        if not hasattr(self, "_parsed_rule_pragmas"):
+            self._parsed_rule_pragmas = []
+        self._parsed_rule_pragmas.append(in_rule_pragma)
+
+    def _infer_in_rule_pragma_position(self, strings: list[StringDefinition]) -> str:
+        if self._check(TokenType.STRINGS):
+            return "before_strings"
+        if self._check(TokenType.CONDITION):
+            return "before_condition"
+        if strings:
+            return "after_strings"
+        return "before_strings"
 
     def _expect_colon(self, section_name: str) -> None:
         """Expect and consume a colon after section name."""

@@ -144,7 +144,9 @@ class CommentAwareParser(Parser):
         tags = self._parse_rule_tags_with_comments()
 
         self._expect_lbrace()
+        self._parsed_rule_pragmas = []
         meta, strings, condition = self._parse_rule_sections_with_comments()
+        pragmas = self._parsed_rule_pragmas
         self._expect_rbrace_with_recovery()
         condition = self._ensure_condition(condition)
 
@@ -155,6 +157,7 @@ class CommentAwareParser(Parser):
             meta=meta,
             strings=strings,
             condition=condition,
+            pragmas=pragmas,
         )
         self._set_node_location_from_tokens(rule, start_token, self._previous())
 
@@ -218,6 +221,8 @@ class CommentAwareParser(Parser):
             elif self._match(TokenType.STRINGS):
                 self._expect_section_colon("strings")
                 strings = self._parse_strings_section()
+            elif self._check_file_pragma():
+                self._parse_in_rule_pragma(strings)
             elif self._match(TokenType.CONDITION):
                 self._expect_section_colon("condition")
                 condition = self._parse_condition_with_comments()

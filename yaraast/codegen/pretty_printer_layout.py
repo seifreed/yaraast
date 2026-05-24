@@ -84,18 +84,23 @@ def visit_rule(printer, node) -> str:
         printer._indent()
         printer._write_meta_section(node.meta)
         printer._dedent()
-        if node.strings or node.condition:
+        if node.pragmas or node.strings or node.condition:
             for _ in range(printer.options.blank_lines_between_sections):
                 printer._writeline()
+
+    _write_in_rule_pragmas(printer, node, "before_strings")
 
     if node.strings:
         printer._writeline("strings:")
         printer._indent()
         printer._write_strings_section(node.strings)
         printer._dedent()
-        if node.condition:
+        if node.pragmas or node.condition:
             for _ in range(printer.options.blank_lines_between_sections):
                 printer._writeline()
+
+    _write_in_rule_pragmas(printer, node, "after_strings")
+    _write_in_rule_pragmas(printer, node, "before_condition")
 
     if node.condition:
         printer._writeline("condition:")
@@ -106,6 +111,12 @@ def visit_rule(printer, node) -> str:
     printer._dedent()
     printer._writeline("}")
     return printer.buffer.getvalue()
+
+
+def _write_in_rule_pragmas(printer, node, position: str) -> None:
+    for pragma in getattr(node, "pragmas", []):
+        if pragma.position == position:
+            printer._writeline(printer.visit(pragma))
 
 
 def write_string_definition(printer, string_def) -> None:
