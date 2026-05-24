@@ -24,6 +24,11 @@ def _safe_roundtrip(roundtrip, text):
     return original_ast, reconstructed_ast, regenerated
 
 
+@lsp_safe_handler
+def _safe_generate(generator, node):
+    return generator.generate(node)
+
+
 def optimize_rule(authoring, text: str, selection) -> object | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
@@ -37,7 +42,10 @@ def optimize_rule(authoring, text: str, selection) -> object | None:
     if getattr(rule, "condition", None) is None:
         return None
     optimized_rule = authoring._optimizer.optimize_rule(rule)
-    new_text = authoring._generator.generate(optimized_rule).rstrip("\n")
+    generated = _safe_generate(authoring._generator, optimized_rule)
+    if generated is None:
+        return None
+    new_text = generated.rstrip("\n")
     if new_text.strip() == rule_context.text.strip():
         return None
     return replace_rule_text(
@@ -103,7 +111,10 @@ def deduplicate_identical_strings(authoring, text: str, selection) -> object | N
     rule.strings = unique_strings
     if rule.condition is not None:
         rule.condition = StringReferenceRewriter(replacements).visit(rule.condition)
-    new_text = authoring._generator.generate(rule).rstrip("\n")
+    generated = _safe_generate(authoring._generator, rule)
+    if generated is None:
+        return None
+    new_text = generated.rstrip("\n")
     preview = ", ".join(f"{old}->{new}" for old, new in list(replacements.items())[:2])
     return replace_rule_text(
         rule_context,
@@ -146,9 +157,15 @@ def rewrite_of_them(authoring, text: str, selection, *, mode: str, title: str) -
     string_ids = [string_def.identifier for string_def in getattr(rule, "strings", [])]
     if not string_ids or rule.condition is None:
         return None
-    original = authoring._generator.generate(rule).rstrip("\n")
+    original_generated = _safe_generate(authoring._generator, rule)
+    if original_generated is None:
+        return None
+    original = original_generated.rstrip("\n")
     rule.condition = OfThemTransformer(string_ids, mode).visit(rule.condition)
-    rewritten = authoring._generator.generate(rule).rstrip("\n")
+    rewritten_generated = _safe_generate(authoring._generator, rule)
+    if rewritten_generated is None:
+        return None
+    rewritten = rewritten_generated.rstrip("\n")
     if rewritten.strip() == original.strip():
         return None
     preview = len(string_ids)

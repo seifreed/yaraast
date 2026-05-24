@@ -20,7 +20,7 @@ from yaraast.codegen.generator_helpers import (
     format_hex_jump_bounds,
     format_hex_negated_value,
     format_hex_nibble_value,
-    format_modifier,
+    format_modifiers,
     format_regex_modifiers,
     output_string_identifier,
 )
@@ -109,9 +109,7 @@ def format_regex_string(node: RegexString, padding: int) -> str:
 
 
 def modifiers_to_string(modifiers) -> str:
-    if not modifiers:
-        return ""
-    return "".join(f" {format_modifier(mod)}" for mod in modifiers)
+    return format_modifiers(modifiers)
 
 
 def regex_modifiers_to_string(modifiers) -> str:

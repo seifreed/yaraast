@@ -416,6 +416,54 @@ def test_codegen_generator_rejects_invalid_string_modifier_applicability() -> No
         gen.generate(YaraFile(rules=[bad_alphabet_rule]))
 
 
+def test_codegen_generator_rejects_duplicate_string_modifiers() -> None:
+    gen = CodeGenerator()
+    cases = [
+        PlainString(
+            "$plain",
+            value="abc",
+            modifiers=[
+                StringModifier.from_name_value("ascii"),
+                StringModifier.from_name_value("ascii"),
+            ],
+        ),
+        PlainString(
+            "$xor",
+            value="abc",
+            modifiers=[
+                StringModifier.from_name_value("xor"),
+                StringModifier.from_name_value("xor", 1),
+            ],
+        ),
+        HexString(
+            "$hex",
+            tokens=[HexByte(0x41)],
+            modifiers=[
+                StringModifier.from_name_value("private"),
+                StringModifier.from_name_value("private"),
+            ],
+        ),
+        RegexString(
+            "$regex",
+            regex="abc",
+            modifiers=[
+                StringModifier.from_name_value("nocase"),
+                StringModifier.from_name_value("nocase"),
+            ],
+        ),
+    ]
+
+    for string_def in cases:
+        rule = Rule(
+            name="duplicate_modifiers",
+            strings=[string_def],
+            condition=StringIdentifier(string_def.identifier),
+        )
+
+        with pytest.raises(ValueError, match="Duplicate string modifier"):
+            gen.generate(YaraFile(rules=[rule]))
+
+
 def test_codegen_generator_expression_and_condition_paths() -> None:
     gen = CodeGenerator()
 

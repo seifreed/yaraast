@@ -323,6 +323,7 @@ def format_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> st
     """Format modifiers into a string with leading spaces."""
     if not isinstance(modifiers, list | tuple):
         return ""
+    validate_duplicate_string_modifiers(modifiers)
     parts = []
     for mod in modifiers:
         parts.append(format_modifier(mod, visit))
@@ -331,6 +332,7 @@ def format_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> st
 
 def validate_plain_string_modifiers(modifiers) -> None:
     """Reject plain string modifier combinations that libyara rejects."""
+    validate_duplicate_string_modifiers(modifiers)
     names = _modifier_names(modifiers)
     for base64_name in sorted(names & BASE64_MODIFIERS):
         for incompatible_name in sorted(names & _BASE64_INCOMPATIBLE_MODIFIERS):
@@ -353,6 +355,7 @@ def validate_plain_string_modifiers(modifiers) -> None:
 
 def validate_hex_string_modifiers(modifiers) -> None:
     """Reject hex string modifiers that libyara rejects."""
+    validate_duplicate_string_modifiers(modifiers)
     for name in sorted(_modifier_names(modifiers)):
         if name in _HEX_ALLOWED_MODIFIERS:
             continue
@@ -362,6 +365,7 @@ def validate_hex_string_modifiers(modifiers) -> None:
 
 def validate_regex_string_modifiers(modifiers) -> None:
     """Reject regex string modifiers that libyara rejects."""
+    validate_duplicate_string_modifiers(modifiers)
     for name in sorted(_modifier_names(modifiers)):
         if name not in _REGEX_DISALLOWED_MODIFIERS:
             continue
@@ -373,6 +377,22 @@ def _modifier_names(modifiers) -> set[str]:
     if not isinstance(modifiers, list | tuple):
         return set()
     return {_regex_modifier_name(modifier) for modifier in modifiers}
+
+
+def validate_duplicate_string_modifiers(modifiers) -> None:
+    """Reject duplicate string modifiers that libyara rejects."""
+    if not isinstance(modifiers, list | tuple):
+        return
+
+    seen: set[str] = set()
+    for modifier in modifiers:
+        if isinstance(modifier, str) and len(modifier) == 1 and modifier in VALID_REGEX_MODIFIERS:
+            continue
+        name = _regex_modifier_name(modifier)
+        if name in seen:
+            msg = f"Duplicate string modifier '{name}' for libyara output"
+            raise ValueError(msg)
+        seen.add(name)
 
 
 def split_regex_modifiers(

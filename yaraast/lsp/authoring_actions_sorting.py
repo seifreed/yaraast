@@ -13,6 +13,16 @@ def _safe_parse(parser, text):
     return parser.parse(text)
 
 
+@lsp_safe_handler
+def _safe_generate(generator, node):
+    return generator.generate(node)
+
+
+@lsp_safe_handler
+def _safe_format_ast(formatter, ast, *, style: str):
+    return formatter.format_ast(ast, style=style)
+
+
 def sort_strings_by_identifier(authoring, text: str, selection) -> object | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
@@ -33,7 +43,10 @@ def sort_strings_by_identifier(authoring, text: str, selection) -> object | None
     if sorted_ids == current_ids:
         return None
     rule.strings = sorted_strings
-    new_text = authoring._generator.generate(rule).rstrip("\n")
+    generated = _safe_generate(authoring._generator, rule)
+    if generated is None:
+        return None
+    new_text = generated.rstrip("\n")
     return replace_rule_text(
         rule_context,
         new_text,
@@ -61,7 +74,10 @@ def sort_meta_by_key(authoring, text: str, selection) -> object | None:
     if sorted_keys == current_keys:
         return None
     rule.meta = sorted_meta
-    new_text = authoring._generator.generate(rule).rstrip("\n")
+    generated = _safe_generate(authoring._generator, rule)
+    if generated is None:
+        return None
+    new_text = generated.rstrip("\n")
     return replace_rule_text(
         rule_context,
         new_text,
@@ -88,7 +104,10 @@ def sort_tags_alphabetically(authoring, text: str, selection) -> object | None:
     if sorted_names == current_names:
         return None
     rule.tags = [Tag(name=name) for name in sorted_names]
-    new_text = authoring._generator.generate(rule).rstrip("\n")
+    generated = _safe_generate(authoring._generator, rule)
+    if generated is None:
+        return None
+    new_text = generated.rstrip("\n")
     return replace_rule_text(
         rule_context,
         new_text,
@@ -106,7 +125,10 @@ def canonicalize_rule_structure(authoring, text: str, selection) -> object | Non
         return None
     if len(original_ast.rules) != 1:
         return None
-    regenerated = authoring._advanced_generator.generate(original_ast.rules[0]).rstrip("\n")
+    generated = _safe_generate(authoring._advanced_generator, original_ast.rules[0])
+    if generated is None:
+        return None
+    regenerated = generated.rstrip("\n")
     if regenerated.strip() == rule_context.text.strip():
         return None
     regenerated_ast = _safe_parse(authoring._parser, regenerated)
@@ -134,7 +156,10 @@ def pretty_print_rule(authoring, text: str, selection) -> object | None:
         return None
     if len(original_ast.rules) != 1:
         return None
-    regenerated = authoring._ast_formatter.format_ast(original_ast, style="pretty").rstrip("\n")
+    generated = _safe_format_ast(authoring._ast_formatter, original_ast, style="pretty")
+    if generated is None:
+        return None
+    regenerated = generated.rstrip("\n")
     if regenerated.strip() == rule_context.text.strip():
         return None
     regenerated_ast = _safe_parse(authoring._parser, regenerated)

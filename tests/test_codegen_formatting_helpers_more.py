@@ -144,12 +144,15 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
         modifiers_to_string(
             [
                 StringModifier.from_name_value("xor", (1, 3)),
-                StringModifier.from_name_value("xor", "0x10"),
-                StringModifier.from_name_value("xor", "0x01-0xff"),
                 StringModifier.from_name_value("base64", alphabet),
             ]
         )
-        == f' xor(1-3) xor(0x10) xor(0x01-0xff) base64("{alphabet}")'
+        == f' xor(1-3) base64("{alphabet}")'
+    )
+    assert modifiers_to_string([StringModifier.from_name_value("xor", "0x10")]) == " xor(0x10)"
+    assert (
+        modifiers_to_string([StringModifier.from_name_value("xor", "0x01-0xff")])
+        == " xor(0x01-0xff)"
     )
     escaped_alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"\\'
     assert (
@@ -167,6 +170,13 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
     for value in ("custom", "A" * 63, "A" * 65):
         with pytest.raises(TypeError, match="base64 alphabet must be 64 bytes"):
             modifiers_to_string([StringModifier.from_name_value("base64", value)])
+    with pytest.raises(ValueError, match="Duplicate string modifier"):
+        modifiers_to_string(
+            [
+                StringModifier.from_name_value("ascii"),
+                StringModifier.from_name_value("ascii"),
+            ]
+        )
 
     ast = YaraFile(
         rules=[
