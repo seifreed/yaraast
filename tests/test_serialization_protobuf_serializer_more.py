@@ -701,6 +701,32 @@ def test_protobuf_serializer_rejects_unsupported_quantifier_values() -> None:
                 serializer.serialize(ast)
 
 
+def test_protobuf_serializer_rejects_non_finite_numeric_quantifiers() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    expressions: list[Expression] = [
+        ForExpression(
+            quantifier=float("nan"),
+            variable="i",
+            iterable=RangeExpression(IntegerLiteral(0), IntegerLiteral(3)),
+            body=BooleanLiteral(True),
+        ),
+        ForOfExpression(
+            quantifier=float("inf"),
+            string_set=Identifier("them"),
+            condition=None,
+        ),
+        OfExpression(
+            quantifier=float("-inf"),
+            string_set=Identifier("them"),
+        ),
+    ]
+
+    for expression in expressions:
+        ast = YaraFile(rules=[Rule(name="bad_quantifier", condition=expression)])
+        with pytest.raises(SerializationError, match="quantifier must be finite"):
+            serializer.serialize(ast)
+
+
 def test_protobuf_deserializes_legacy_numeric_quantifier_text() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pb_file: Any = yara_ast_pb2.YaraFile()
@@ -717,6 +743,21 @@ def test_protobuf_deserializes_legacy_numeric_quantifier_text() -> None:
 
     assert isinstance(condition, ForExpression)
     assert condition.quantifier == 2
+
+
+def test_protobuf_deserialize_rejects_non_finite_legacy_quantifier_text() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "bad_quantifier"
+    pb_rule.condition.for_expression.quantifier = "1e999"
+    pb_rule.condition.for_expression.variable = "i"
+    pb_rule.condition.for_expression.iterable.range_expression.low.integer_literal.value = 0
+    pb_rule.condition.for_expression.iterable.range_expression.high.integer_literal.value = 3
+    pb_rule.condition.for_expression.body.boolean_literal.value = True
+
+    with pytest.raises(SerializationError, match="quantifier must be finite"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
 def test_protobuf_deserializes_legacy_boolean_quantifier_text_as_text() -> None:

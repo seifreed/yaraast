@@ -26,6 +26,12 @@ def _finite_double_value(value, context: str) -> float:
     return value
 
 
+def _validate_finite_quantifier(value) -> None:
+    if isinstance(value, float) and not math.isfinite(value):
+        msg = "quantifier must be finite"
+        raise SerializationError(msg)
+
+
 def _protobuf_has_field(message, field_name: str) -> bool:
     try:
         return message.HasField(field_name)
@@ -544,11 +550,13 @@ def _coerce_quantifier_text(value) -> str:
         msg = "quantifier must be a string, number, or expression"
         raise SerializationError(msg)
     if isinstance(value, int | float):
+        _validate_finite_quantifier(value)
         return str(value)
 
     if isinstance(value, Expression):
         raw_value = getattr(value, "value", None)
         if raw_value is not None:
+            _validate_finite_quantifier(raw_value)
             return str(raw_value)
 
         name = getattr(value, "name", None)
@@ -659,7 +667,9 @@ def _restore_quantifier_text(value: str):
         return int(value)
     try:
         if any(marker in value for marker in (".", "e", "E")):
-            return float(value)
+            restored_value = float(value)
+            _validate_finite_quantifier(restored_value)
+            return restored_value
     except ValueError:
         pass
     return value
