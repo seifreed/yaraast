@@ -18,6 +18,7 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     MemberAccess,
     RegexLiteral,
+    SetExpression,
     StringCount,
     StringIdentifier,
     StringLength,
@@ -590,6 +591,39 @@ def test_protobuf_serializer_rejects_invalid_expression_leaf_fields(
 ) -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(rules=[Rule(name="invalid_expression_leaf", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+def _invalid_expression_container_cases() -> list[tuple[Any, str]]:
+    set_bad_elements = SetExpression([IntegerLiteral(1)])
+    cast(Any, set_bad_elements).elements = False
+
+    set_bad_element = SetExpression([IntegerLiteral(1)])
+    cast(Any, set_bad_element).elements = [object()]
+
+    call_bad_arguments = FunctionCall("fn", [IntegerLiteral(1)])
+    cast(Any, call_bad_arguments).arguments = False
+
+    call_bad_argument = FunctionCall("fn", [IntegerLiteral(1)])
+    cast(Any, call_bad_argument).arguments = [object()]
+
+    return [
+        (set_bad_elements, "SetExpression elements must be a list"),
+        (set_bad_element, "SetExpression elements item must be Expression"),
+        (call_bad_arguments, "FunctionCall arguments must be a list"),
+        (call_bad_argument, "FunctionCall arguments item must be Expression"),
+    ]
+
+
+@pytest.mark.parametrize(("condition", "message"), _invalid_expression_container_cases())
+def test_protobuf_serializer_rejects_invalid_expression_container_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="invalid_expression_container", condition=condition)])
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(ast)

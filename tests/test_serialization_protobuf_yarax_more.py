@@ -195,6 +195,18 @@ def _invalid_yarax_container_cases() -> list[tuple[Any, str]]:
     )
     cast(Any, match_with_bad_case).cases = [object()]
 
+    tuple_with_bad_elements = TupleExpression([IntegerLiteral(1)])
+    cast(Any, tuple_with_bad_elements).elements = False
+
+    tuple_with_bad_element = TupleExpression([IntegerLiteral(1)])
+    cast(Any, tuple_with_bad_element).elements = [object()]
+
+    list_with_bad_elements = ListExpression([IntegerLiteral(1)])
+    cast(Any, list_with_bad_elements).elements = False
+
+    list_with_bad_element = ListExpression([IntegerLiteral(1)])
+    cast(Any, list_with_bad_element).elements = [object()]
+
     return [
         (with_bad_declarations, "WithStatement declarations must be a list"),
         (with_bad_declaration_item, "WithStatement declarations item must be"),
@@ -202,6 +214,10 @@ def _invalid_yarax_container_cases() -> list[tuple[Any, str]]:
         (dict_with_bad_item, "DictExpression items item must be"),
         (match_with_bad_cases, "PatternMatch cases must be a list"),
         (match_with_bad_case, "PatternMatch cases item must be"),
+        (tuple_with_bad_elements, "TupleExpression elements must be a list"),
+        (tuple_with_bad_element, "TupleExpression elements item must be Expression"),
+        (list_with_bad_elements, "ListExpression elements must be a list"),
+        (list_with_bad_element, "ListExpression elements item must be Expression"),
     ]
 
 

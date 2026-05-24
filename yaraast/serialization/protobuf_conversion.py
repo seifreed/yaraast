@@ -964,7 +964,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     elif isinstance(expr, ParenthesesExpression):
         convert_expression_to_protobuf(expr.expression, pb_expr.parentheses_expression.expression)
     elif isinstance(expr, SetExpression):
-        for element in expr.elements:
+        for element in _protobuf_node_list(expr.elements, "SetExpression elements", Expression):
             convert_expression_to_protobuf(element, pb_expr.set_expression.elements.add())
     elif isinstance(expr, RangeExpression):
         convert_expression_to_protobuf(expr.low, pb_expr.range_expression.low)
@@ -974,7 +974,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             expr.function,
             "FunctionCall function",
         )
-        for argument in expr.arguments:
+        for argument in _protobuf_node_list(expr.arguments, "FunctionCall arguments", Expression):
             convert_expression_to_protobuf(argument, pb_expr.function_call.arguments.add())
     elif isinstance(expr, ArrayAccess):
         convert_expression_to_protobuf(expr.array, pb_expr.array_access.array)
@@ -1114,13 +1114,13 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 pb_expr.dict_comprehension.condition,
             )
     elif isinstance(expr, TupleExpression):
-        for element in expr.elements:
+        for element in _protobuf_node_list(expr.elements, "TupleExpression elements", Expression):
             convert_expression_to_protobuf(element, pb_expr.tuple_expression.elements.add())
     elif isinstance(expr, TupleIndexing):
         convert_expression_to_protobuf(expr.tuple_expr, pb_expr.tuple_indexing.tuple_expr)
         convert_expression_to_protobuf(expr.index, pb_expr.tuple_indexing.index)
     elif isinstance(expr, ListExpression):
-        for element in expr.elements:
+        for element in _protobuf_node_list(expr.elements, "ListExpression elements", Expression):
             convert_expression_to_protobuf(element, pb_expr.list_expression.elements.add())
     elif isinstance(expr, DictExpression):
         for item in _protobuf_node_list(expr.items, "DictExpression items", DictItem):
