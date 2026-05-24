@@ -32,7 +32,7 @@ def test_codegen_in_for_of_variants_and_quantifiers() -> None:
         iterable=RangeExpression(IntegerLiteral(1), IntegerLiteral(3)),
         body=Identifier("i"),
     )
-    assert gen.visit(for_expr) == "for all i in 1..3 : (i)"
+    assert gen.visit(for_expr) == "for all i in (1..3) : (i)"
 
     for_of_with_ast_quantifier = ForOfExpression(
         quantifier=IntegerLiteral(2),

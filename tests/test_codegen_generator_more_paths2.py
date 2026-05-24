@@ -730,6 +730,12 @@ def test_codegen_string_visitors_reject_invalid_string_identifiers(
         (Identifier("bad-key"), "Invalid identifier"),
         (Identifier("for"), "Invalid identifier"),
         (Identifier("$bad-key"), "Invalid string identifier"),
+        (
+            ForExpression(
+                "any", "bad-name", SetExpression([IntegerLiteral(1)]), BooleanLiteral(True)
+            ),
+            "Invalid loop variable identifier",
+        ),
     ],
 )
 def test_codegen_generators_reject_invalid_identifier_expressions(
@@ -1121,7 +1127,7 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
                 "any", "i", RangeExpression(IntegerLiteral(1), IntegerLiteral(2)), Identifier("i")
             )
         )
-        == "for any i in 1..2 : (i)"
+        == "for any i in (1..2) : (i)"
     )
     assert (
         gen.visit_for_of_expression(ForOfExpression("all", Identifier("them"), Identifier("$a")))

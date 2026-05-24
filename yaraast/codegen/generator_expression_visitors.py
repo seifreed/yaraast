@@ -118,14 +118,19 @@ def visit_member_access(generator, node) -> str:
 
 
 def visit_for_expression(generator, node) -> str:
+    from yaraast.ast.expressions import RangeExpression
+
     iterable = generator.visit(node.iterable)
+    if isinstance(node.iterable, RangeExpression):
+        iterable = f"({iterable})"
     body = generator.visit(node.body)
     quantifier = (
         generator.visit(node.quantifier)
         if hasattr(node.quantifier, "accept")
         else str(node.quantifier)
     )
-    return f"for {quantifier} {node.variable} in {iterable} : ({body})"
+    variable = validate_yara_identifier(node.variable, "loop variable")
+    return f"for {quantifier} {variable} in {iterable} : ({body})"
 
 
 def visit_at_expression(generator, node) -> str:
