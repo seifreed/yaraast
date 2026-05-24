@@ -51,6 +51,9 @@ def test_hex_parser_alternative_preserves_negated_byte() -> None:
 
 def test_hex_parser_errors() -> None:
     parser = HexStringParser()
+    with pytest.raises(HexParseError, match="Empty hex string"):
+        parser.parse("   ")
+
     with pytest.raises(HexParseError):
         parser.parse("6")  # incomplete byte
 

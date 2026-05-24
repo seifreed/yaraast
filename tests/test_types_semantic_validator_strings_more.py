@@ -174,11 +174,17 @@ def test_semantic_validator_rejects_empty_text_and_hex_strings() -> None:
         rule empty_strings {
             strings:
                 $text = ""
-                $hex = { }
             condition:
                 any of them
         }
         """)
+    ast.rules.append(
+        Rule(
+            name="empty_hex",
+            strings=[HexString(identifier="$hex", tokens=[])],
+            condition=StringIdentifier("$hex"),
+        )
+    )
 
     result = SemanticValidator().validate(ast)
     messages = [error.message for error in result.errors]

@@ -101,6 +101,10 @@ class HexStringParser:
                 msg = f"Invalid character in hex string: {char}"
                 raise HexParseError(msg, self.pos)
 
+        if not tokens:
+            msg = "Empty hex string"
+            raise HexParseError(msg)
+
         return tokens
 
     def _remove_comments(self, content: str) -> str:

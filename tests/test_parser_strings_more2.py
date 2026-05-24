@@ -8,6 +8,7 @@ from yaraast.ast.strings import RegexString
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
+from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
 from yaraast.types.semantic_validator import SemanticValidator
 
@@ -78,6 +79,14 @@ def test_anonymous_string_internal_names_do_not_collide_with_explicit_names(
     assert [string.identifier for string in strings].count("$anon_1") == 1
     assert SemanticValidator().validate(ast).is_valid
     assert "$anon_2" not in CodeGenerator().generate(ast)
+
+
+def test_parse_rejects_empty_hex_strings() -> None:
+    source = "rule r { strings: $a = { } condition: $a }"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="Empty hex string"):
+            parser_factory().parse(source)
 
 
 def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:
