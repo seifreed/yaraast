@@ -508,6 +508,20 @@ def test_codegen_generators_reject_invalid_rule_tags(tag_name: str) -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize("tag_name", ["bad-tag", "for"])
+def test_codegen_tag_visitors_reject_invalid_rule_tags(tag_name: str) -> None:
+    tag = Tag(tag_name)
+
+    with pytest.raises(ValueError, match="Invalid tag identifier"):
+        CodeGenerator().generate(tag)
+    with pytest.raises(ValueError, match="Invalid tag identifier"):
+        AdvancedCodeGenerator().generate(tag)
+    with pytest.raises(ValueError, match="Invalid tag identifier"):
+        CommentAwareCodeGenerator().generate(tag)
+    with pytest.raises(ValueError, match="Invalid tag identifier"):
+        PrettyPrinter().generate(tag)
+
+
 def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
     ast = YaraFile(
         rules=[

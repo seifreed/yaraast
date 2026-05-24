@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.generator_formatting import escape_string_literal, validate_rule_identifiers
+from yaraast.codegen.generator_formatting import (
+    escape_string_literal,
+    validate_rule_identifiers,
+    validate_yara_identifier,
+)
 
 
 def _emit_comments(generator, node) -> None:
@@ -80,7 +84,7 @@ def visit_rule(generator, node) -> str:
 
 
 def visit_tag(node) -> str:
-    return node.name
+    return validate_yara_identifier(node.name, "tag")
 
 
 def visit_string_definition(_node) -> str:
