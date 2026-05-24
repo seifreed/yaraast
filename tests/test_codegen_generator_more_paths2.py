@@ -39,6 +39,7 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, Extern
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.operators import StringOperatorExpression
 from yaraast.ast.pragmas import (
     DefineDirective,
     IncludeOncePragma,
@@ -886,6 +887,10 @@ def test_codegen_generators_render_fractional_quantifier_percentages() -> None:
     ("condition", "message"),
     [
         (BinaryExpression(IntegerLiteral(1), "???", IntegerLiteral(2)), "Invalid binary operator"),
+        (
+            StringOperatorExpression(StringLiteral("a"), "bad-op", StringLiteral("b")),
+            "Invalid string operator",
+        ),
         (UnaryExpression("!", IntegerLiteral(1)), "Invalid unary operator"),
     ],
 )

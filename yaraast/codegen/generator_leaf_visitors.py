@@ -22,6 +22,19 @@ from yaraast.codegen.generator_helpers import (
     validate_string_wildcard_text,
 )
 
+_STRING_OPERATORS = frozenset(
+    {
+        "contains",
+        "endswith",
+        "icontains",
+        "iendswith",
+        "iequals",
+        "istartswith",
+        "matches",
+        "startswith",
+    }
+)
+
 
 def visit_hex_byte(node) -> str:
     return format_hex_byte_value(node.value, uppercase=True)
@@ -133,7 +146,15 @@ def visit_defined_expression(generator, node) -> str:
 
 
 def visit_string_operator_expression(generator, node) -> str:
-    return f"{generator.visit(node.left)} {node.operator} {generator.visit(node.right)}"
+    operator = _render_string_operator(node.operator)
+    return f"{generator.visit(node.left)} {operator} {generator.visit(node.right)}"
+
+
+def _render_string_operator(operator: str) -> str:
+    if operator in _STRING_OPERATORS:
+        return operator
+    msg = f"Invalid string operator '{operator}' for libyara output"
+    raise ValueError(msg)
 
 
 def visit_comment(node) -> str:
