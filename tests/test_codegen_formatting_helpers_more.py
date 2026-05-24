@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -30,7 +31,11 @@ from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
 )
-from yaraast.codegen.generator_helpers import escape_regex_delimiter
+from yaraast.codegen.generator_helpers import (
+    escape_regex_delimiter,
+    format_double_literal,
+    format_integer_literal,
+)
 from yaraast.codegen.pretty_printer_helpers import (
     build_hex_pattern,
     calculate_meta_alignment_column,
@@ -69,6 +74,18 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     assert format_regex_literal("a\\/b", "") == "/a\\/b/"
     assert format_boolean_literal(True) == "true"
     assert format_boolean_literal(False) == "false"
+    bad_boolean_value: Any = "false"
+    with pytest.raises(TypeError, match="Boolean literal value must be a boolean"):
+        format_boolean_literal(bad_boolean_value)
+    bad_integer_text: Any = "abc"
+    with pytest.raises(TypeError, match="Integer literal value must be an integer"):
+        format_integer_literal(bad_integer_text)
+    bad_integer_number: Any = 1.5
+    with pytest.raises(TypeError, match="Integer literal value must be an integer"):
+        format_integer_literal(bad_integer_number)
+    assert format_integer_literal("0x10") == "0x10"
+    with pytest.raises(ValueError, match="Double literal value must be finite"):
+        format_double_literal(float("nan"))
 
     assert format_hex_jump(None, None) == "[-]"
     assert format_hex_jump(0, 0) == "[0-0]"

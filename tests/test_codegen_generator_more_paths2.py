@@ -1124,6 +1124,21 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
     string_double_value: Any = "1.5"
     with pytest.raises(TypeError, match="Double literal value must be numeric"):
         gen.visit_double_literal(DoubleLiteral(string_double_value))
+    with pytest.raises(ValueError, match="Double literal value must be finite"):
+        gen.visit_double_literal(DoubleLiteral(float("nan")))
+    with pytest.raises(ValueError, match="Double literal value must be finite"):
+        gen.visit_double_literal(DoubleLiteral(float("inf")))
+    bad_integer_text: Any = "abc"
+    with pytest.raises(TypeError, match="Integer literal value must be an integer"):
+        gen.visit_integer_literal(IntegerLiteral(bad_integer_text))
+    bad_integer_number: Any = 1.5
+    with pytest.raises(TypeError, match="Integer literal value must be an integer"):
+        gen.visit_integer_literal(IntegerLiteral(bad_integer_number))
+    hex_integer_text: Any = "0x10"
+    assert gen.visit_integer_literal(IntegerLiteral(hex_integer_text)) == "0x10"
+    bad_boolean_value: Any = "false"
+    with pytest.raises(TypeError, match="Boolean literal value must be a boolean"):
+        gen.visit_boolean_literal(BooleanLiteral(bad_boolean_value))
     assert (
         gen.visit_binary_expression(BinaryExpression(IntegerLiteral(1), "+", IntegerLiteral(2)))
         == "1 + 2"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import math
 import re
 from typing import Any, NamedTuple
 
@@ -38,6 +39,7 @@ _XOR_INCOMPATIBLE_MODIFIERS = frozenset({"base64", "base64wide", "nocase"})
 BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 _STRING_IDENTIFIER_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
+_YARA_INTEGER_TEXT_RE = re.compile(r"^[+-]?(?:0[xX][0-9A-Fa-f]+|0[oO][0-7]+|[0-9]+(?:KB|MB))$")
 
 
 class _XorKey(NamedTuple):
@@ -150,12 +152,17 @@ def format_integer_literal(value) -> str:
         msg = "Integer literal value must be an integer"
         raise TypeError(msg)
     if isinstance(value, str):
-        try:
-            int_value = int(value)
-        except ValueError:
-            return str(value)
-    else:
+        int_value = _parse_integer_literal_text(value)
+        if int_value is None:
+            msg = "Integer literal value must be an integer"
+            raise TypeError(msg)
+        if isinstance(int_value, str):
+            return int_value
+    elif isinstance(value, int):
         int_value = value
+    else:
+        msg = "Integer literal value must be an integer"
+        raise TypeError(msg)
 
     hex_values = {
         0x4D5A: "0x4D5A",
@@ -176,11 +183,27 @@ def format_integer_literal(value) -> str:
     return str(int_value)
 
 
+def _parse_integer_literal_text(value: str) -> int | str | None:
+    if _YARA_INTEGER_TEXT_RE.fullmatch(value) is not None:
+        return value
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return int(value, 0)
+    except ValueError:
+        return None
+
+
 def format_double_literal(value: int | float) -> str:
     """Format a validated numeric double literal."""
     if isinstance(value, bool) or not isinstance(value, int | float):
         msg = "Double literal value must be numeric"
         raise TypeError(msg)
+    if not math.isfinite(value):
+        msg = "Double literal value must be finite"
+        raise ValueError(msg)
     return str(value)
 
 

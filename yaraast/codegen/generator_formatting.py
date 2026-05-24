@@ -149,6 +149,9 @@ def format_regex_literal(pattern: str, modifiers: str) -> str:
 
 
 def format_boolean_literal(value: bool) -> str:
+    if not isinstance(value, bool):
+        msg = "Boolean literal value must be a boolean"
+        raise TypeError(msg)
     return "true" if value else "false"
 
 
