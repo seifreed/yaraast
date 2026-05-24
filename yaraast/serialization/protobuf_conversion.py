@@ -931,7 +931,10 @@ def _expression_string_set_items(value) -> list[str] | None:
         return None
 
     items = []
-    for element in value.elements:
+    elements = getattr(value, "elements", None)
+    if not isinstance(elements, list | tuple):
+        return None
+    for element in elements:
         item_text = _expression_string_set_item_text(element)
         if item_text is None:
             return None

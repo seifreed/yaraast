@@ -442,6 +442,21 @@ def test_protobuf_serializer_rejects_invalid_string_set_list_items() -> None:
                 serializer.serialize(ast)
 
 
+def test_protobuf_serializer_rejects_invalid_string_set_expression_containers() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    string_set = SetExpression([StringIdentifier("$a")])
+    cast(Any, string_set).elements = False
+    expressions: list[Expression] = [
+        OfExpression("any", string_set),
+        ForOfExpression("any", string_set, condition=None),
+    ]
+
+    for expression in expressions:
+        ast = YaraFile(rules=[Rule(name="bad_string_set_expression", condition=expression)])
+        with pytest.raises(SerializationError, match="SetExpression elements must be a list"):
+            serializer.serialize(ast)
+
+
 def test_protobuf_serializer_rejects_unsupported_condition_values() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     invalid_conditions: list[Any] = [False, 0, object()]
