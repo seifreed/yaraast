@@ -269,6 +269,14 @@ def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
             }
         )
 
+    with pytest.raises(SerializationError, match="Unknown comment metadata type"):
+        s._deserialize_import(
+            {
+                "module": "pe",
+                "leading_comments": [{"type": "UnknownComment", "text": "bad"}],
+            }
+        )
+
     with pytest.raises(SerializationError, match="Comment text must be a string"):
         s._deserialize_import(
             {"module": "pe", "leading_comments": [{"type": "Comment", "text": ["bad"]}]}

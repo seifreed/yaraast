@@ -213,7 +213,8 @@ def _deserialize_comment_node(self, data: dict[str, Any]) -> Any:
             ),
             data,
         )
-    return Comment(str(data))
+    msg = f"Unknown comment metadata type: {node_type}"
+    raise SerializationError(msg)
 
 
 def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
