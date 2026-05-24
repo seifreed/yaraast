@@ -315,11 +315,20 @@ def _deserialize_nullable_string_field(
     raise SerializationError(msg)
 
 
-def _deserialize_optional_node_field(data: dict[str, Any], field: str) -> ASTNode | None:
-    value = data.get(field)
+def _deserialize_optional_node_value(value: Any, context: str) -> ASTNode | None:
     if value is None:
         return None
+    if value == {}:
+        msg = f"{context} must be an expression"
+        raise SerializationError(msg)
     return deserialize_node(value)
+
+
+def _deserialize_optional_node_field(
+    data: dict[str, Any], field: str, context: str
+) -> ASTNode | None:
+    value = data.get(field)
+    return _deserialize_optional_node_value(value, context)
 
 
 def _deserialize_dictionary_key(data: dict[str, Any]) -> str | ASTNode:
@@ -1107,12 +1116,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "StringOffset":
         return StringOffset(
             _deserialize_string_field(data, "string_id", "StringOffset"),
-            _deserialize_optional_node_field(data, "index"),
+            _deserialize_optional_node_field(data, "index", "StringOffset index"),
         )
     if node_type == "StringLength":
         return StringLength(
             _deserialize_string_field(data, "string_id", "StringLength"),
-            _deserialize_optional_node_field(data, "index"),
+            _deserialize_optional_node_field(data, "index", "StringLength index"),
         )
     if node_type == "BinaryExpression":
         return BinaryExpression(
@@ -1172,7 +1181,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return ForOfExpression(
             _deserialize_required_ast_value(data, "quantifier", "ForOfExpression"),
             _deserialize_required_ast_value(data, "string_set", "ForOfExpression"),
-            _deserialize_optional_node_field(data, "condition"),
+            _deserialize_optional_node_field(data, "condition", "ForOfExpression condition"),
         )
     if node_type == "AtExpression":
         return AtExpression(
@@ -1241,23 +1250,37 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ArrayComprehension":
         return ArrayComprehension(
-            expression=_deserialize_optional_node_field(data, "expression"),
+            expression=_deserialize_optional_node_field(
+                data, "expression", "ArrayComprehension expression"
+            ),
             variable=_deserialize_optional_string_field(data, "variable", "ArrayComprehension"),
-            iterable=_deserialize_optional_node_field(data, "iterable"),
-            condition=_deserialize_optional_node_field(data, "condition"),
+            iterable=_deserialize_optional_node_field(
+                data, "iterable", "ArrayComprehension iterable"
+            ),
+            condition=_deserialize_optional_node_field(
+                data, "condition", "ArrayComprehension condition"
+            ),
         )
     if node_type == "DictComprehension":
         return DictComprehension(
-            key_expression=_deserialize_optional_node_field(data, "key_expression"),
-            value_expression=_deserialize_optional_node_field(data, "value_expression"),
+            key_expression=_deserialize_optional_node_field(
+                data, "key_expression", "DictComprehension key_expression"
+            ),
+            value_expression=_deserialize_optional_node_field(
+                data, "value_expression", "DictComprehension value_expression"
+            ),
             key_variable=_deserialize_optional_string_field(
                 data, "key_variable", "DictComprehension"
             ),
             value_variable=_deserialize_nullable_string_field(
                 data, "value_variable", "DictComprehension"
             ),
-            iterable=_deserialize_optional_node_field(data, "iterable"),
-            condition=_deserialize_optional_node_field(data, "condition"),
+            iterable=_deserialize_optional_node_field(
+                data, "iterable", "DictComprehension iterable"
+            ),
+            condition=_deserialize_optional_node_field(
+                data, "condition", "DictComprehension condition"
+            ),
         )
     if node_type == "TupleExpression":
         return TupleExpression(
@@ -1295,9 +1318,9 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "SliceExpression":
         return SliceExpression(
             target=deserialize_node(_deserialize_required_field(data, "target", "SliceExpression")),
-            start=_deserialize_optional_node_field(data, "start"),
-            stop=_deserialize_optional_node_field(data, "stop"),
-            step=_deserialize_optional_node_field(data, "step"),
+            start=_deserialize_optional_node_field(data, "start", "SliceExpression start"),
+            stop=_deserialize_optional_node_field(data, "stop", "SliceExpression stop"),
+            step=_deserialize_optional_node_field(data, "step", "SliceExpression step"),
         )
     if node_type == "LambdaExpression":
         return LambdaExpression(
@@ -1311,7 +1334,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
                 deserialize_node(case)
                 for case in _deserialize_list_field(data, "cases", "PatternMatch")
             ],
-            default=_deserialize_optional_node_field(data, "default"),
+            default=_deserialize_optional_node_field(data, "default", "PatternMatch default"),
         )
     if node_type == "MatchCase":
         return MatchCase(
@@ -1362,14 +1385,13 @@ def deserialize_rule(data: dict[str, Any]) -> Rule:
     """Deserialize a Rule."""
     data = _deserialize_object(data, "Rule")
     condition_data = data.get("condition")
+    condition = _deserialize_optional_node_value(condition_data, "Rule condition")
     rule = Rule(
         name=_deserialize_string_field(data, "name", "Rule"),
         modifiers=_deserialize_rule_modifiers(
             _deserialize_string_list_field(data, "modifiers", "Rule")
         ),
-        condition=(
-            deserialize_node(condition_data) if condition_data is not None else BooleanLiteral(True)
-        ),
+        condition=condition if condition is not None else BooleanLiteral(True),
     )
 
     if "tags" in data:
