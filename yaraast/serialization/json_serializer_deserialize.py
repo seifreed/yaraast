@@ -1003,6 +1003,11 @@ class JsonSerializerDeserializeMixin:
     def _deserialize_tag(self, data: dict[str, Any]):
         from yaraast.ast.rules import Tag
 
+        data = _deserialize_object(data, "Tag")
+        node_type = data.get("type")
+        if node_type is not None and node_type != "Tag":
+            msg = "Rule tags must contain Tag nodes"
+            raise SerializationError(msg)
         return self._apply_node_metadata(
             Tag(name=_deserialize_string_field(data, "name", "Tag")), data
         )

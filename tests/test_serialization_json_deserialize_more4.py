@@ -160,6 +160,15 @@ def test_json_deserialize_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="Rule tags must be a list"):
         s._deserialize_rule({"name": "r1", "tags": "tag", "condition": None})
 
+    with pytest.raises(SerializationError, match="Rule tags must contain Tag nodes"):
+        s._deserialize_rule(
+            {
+                "name": "r1",
+                "tags": [{"type": "Import", "name": "not_tag", "module": "pe"}],
+                "condition": None,
+            }
+        )
+
     with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
         s._deserialize_rule({"name": "r1", "pragmas": "pragma", "condition": None})
 
