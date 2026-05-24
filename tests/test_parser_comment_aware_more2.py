@@ -93,6 +93,11 @@ def test_comment_aware_parser_rejects_unknown_rule_sections() -> None:
         CommentAwareParser().parse("rule r { garbage condition: false }")
 
 
+def test_comment_aware_parser_rejects_missing_rule_closing_brace() -> None:
+    with pytest.raises(ParserError, match="Expected '\\}' at end of rule"):
+        CommentAwareParser().parse("rule r { condition: true // trailing\n")
+
+
 def test_parse_strings_section_branches_and_modifier_parsing() -> None:
     p = CommentAwareParser()
 

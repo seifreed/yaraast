@@ -297,13 +297,19 @@ class CommentAwareParser(Parser):
 
     def _expect_rbrace_with_recovery(self) -> None:
         """Expect right brace with error recovery."""
-        if not self._match(TokenType.RBRACE):
-            attempts = 0
-            while not self._is_at_end() and attempts < 1000:
-                if self._match(TokenType.RBRACE):
-                    break
-                self._advance()
-                attempts += 1
+        if self._match(TokenType.RBRACE):
+            return
+
+        error_token = self._peek()
+        attempts = 0
+        while not self._is_at_end() and attempts < 1000:
+            if self._match(TokenType.RBRACE):
+                return
+            self._advance()
+            attempts += 1
+
+        msg = "Expected '}' at end of rule"
+        raise ParserError(msg, error_token)
 
     def _ensure_condition(self, condition: Expression | None) -> Expression:
         """Ensure condition is not None, defaulting to true."""
