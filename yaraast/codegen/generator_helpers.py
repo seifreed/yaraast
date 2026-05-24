@@ -238,10 +238,7 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
             if name == "xor":
                 return f"{name}({_format_xor_modifier_value(value)})"
             if name in BASE64_MODIFIERS:
-                if not isinstance(value, str):
-                    msg = f"{name} value must be a string"
-                    raise TypeError(msg)
-                return f'{name}("{escape_plain_string_value(value)}")'
+                return _format_base64_modifier_value(name, value)
             if isinstance(value, tuple):
                 return f"{name}({value[0]}-{value[1]})"
             if isinstance(value, str):
@@ -252,6 +249,20 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
     text = str(modifier)
     _validate_spaced_string_modifier(text)
     return text
+
+
+def _format_base64_modifier_value(name: str, value: object) -> str:
+    if not isinstance(value, str):
+        msg = f"{name} value must be a string"
+        raise TypeError(msg)
+    try:
+        encoded_value = value.encode("ascii")
+    except UnicodeEncodeError:
+        encoded_value = b""
+    if len(encoded_value) != 64:
+        msg = f"{name} alphabet must be 64 bytes"
+        raise TypeError(msg)
+    return f'{name}("{escape_plain_string_value(value)}")'
 
 
 def _validate_spaced_string_modifier(name: str) -> None:

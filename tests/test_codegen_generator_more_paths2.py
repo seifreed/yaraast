@@ -400,6 +400,21 @@ def test_codegen_generator_rejects_invalid_string_modifier_applicability() -> No
         with pytest.raises(ValueError, match=message):
             gen.generate(YaraFile(rules=[rule]))
 
+    bad_alphabet_rule = Rule(
+        name="bad_base64_alphabet",
+        strings=[
+            PlainString(
+                "$bad64",
+                value="abc",
+                modifiers=[StringModifier.from_name_value("base64", "short")],
+            )
+        ],
+        condition=StringIdentifier("$bad64"),
+    )
+
+    with pytest.raises(TypeError, match="base64 alphabet must be 64 bytes"):
+        gen.generate(YaraFile(rules=[bad_alphabet_rule]))
+
 
 def test_codegen_generator_expression_and_condition_paths() -> None:
     gen = CodeGenerator()
@@ -581,13 +596,15 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
         gen.visit_string_modifier(StringModifier.from_name_value("xor", "0x01-0xff"))
         == "xor(0x01-0xff)"
     )
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
     assert (
-        gen.visit_string_modifier(StringModifier.from_name_value("base64", "custom"))
-        == 'base64("custom")'
+        gen.visit_string_modifier(StringModifier.from_name_value("base64", alphabet))
+        == f'base64("{alphabet}")'
     )
+    escaped_alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"\\'
     assert (
-        gen.visit_string_modifier(StringModifier.from_name_value("base64", 'custom"\\alphabet'))
-        == 'base64("custom\\"\\\\alphabet")'
+        gen.visit_string_modifier(StringModifier.from_name_value("base64", escaped_alphabet))
+        == 'base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\\"\\\\")'
     )
     with pytest.raises(TypeError, match="xor value must be a byte"):
         gen.visit_string_modifier(StringModifier.from_name_value("xor", True))
@@ -600,6 +617,9 @@ def test_codegen_generator_misc_visitors_and_fallbacks() -> None:
     for value in ("a", "ff", "1f", "0X0A", "+10"):
         with pytest.raises(TypeError, match="xor value must be a byte"):
             gen.visit_string_modifier(StringModifier.from_name_value("xor", value))
+    for value in ("custom", "A" * 63, "A" * 65):
+        with pytest.raises(TypeError, match="base64 alphabet must be 64 bytes"):
+            gen.visit_string_modifier(StringModifier.from_name_value("base64", value))
     with pytest.raises(TypeError, match="base64 value must be a string"):
         gen.visit_string_modifier(StringModifier.from_name_value("base64", True))
 

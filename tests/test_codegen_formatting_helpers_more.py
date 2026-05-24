@@ -151,9 +151,10 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
         )
         == f' xor(1-3) xor(0x10) xor(0x01-0xff) base64("{alphabet}")'
     )
+    escaped_alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"\\'
     assert (
-        modifiers_to_string([StringModifier.from_name_value("base64", 'custom"\\alphabet')])
-        == ' base64("custom\\"\\\\alphabet")'
+        modifiers_to_string([StringModifier.from_name_value("base64", escaped_alphabet)])
+        == ' base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\\"\\\\")'
     )
     with pytest.raises(TypeError, match="xor value must be a byte"):
         modifiers_to_string([StringModifier.from_name_value("xor", True)])
@@ -163,6 +164,9 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
         modifiers_to_string([StringModifier.from_name_value("xor", (4, 3))])
     with pytest.raises(TypeError, match="base64wide value must be a string"):
         modifiers_to_string([StringModifier.from_name_value("base64wide", True)])
+    for value in ("custom", "A" * 63, "A" * 65):
+        with pytest.raises(TypeError, match="base64 alphabet must be 64 bytes"):
+            modifiers_to_string([StringModifier.from_name_value("base64", value)])
 
     ast = YaraFile(
         rules=[
