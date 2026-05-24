@@ -6,6 +6,10 @@ from yaraast.analysis import (
     OptimizationAnalyzer,
     OptimizationReport,
 )
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
 from yaraast.parser import Parser
 
 
@@ -58,19 +62,16 @@ class TestBestPracticesAnalyzer:
 
     def test_section_order_suggestion(self) -> None:
         """AST-only analyzer should not guess section order without source-order evidence."""
-        rule_text = """
-        rule wrong_order {
-            condition:
-                true
-            strings:
-                $a = "test"
-            meta:
-                author = "test"
-        }
-        """
-
-        parser = Parser()
-        ast = parser.parse(rule_text)
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="wrong_order",
+                    meta={"author": "test"},
+                    strings=[PlainString(identifier="$a", value="test")],
+                    condition=BooleanLiteral(True),
+                )
+            ]
+        )
 
         analyzer = BestPracticesAnalyzer()
         report = analyzer.analyze(ast)

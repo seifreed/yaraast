@@ -364,14 +364,14 @@ def test_canonicalize_rule_structure_refactor_action() -> None:
     provider = CodeActionsProvider()
     text = """
 rule demo : ztag atag {
-    condition:
-        $z or $a
     meta:
         z = "2"
         a = "1"
     strings:
         $z = "z"
         $a = "a"
+    condition:
+        $z or $a
 }
 """.lstrip()
 

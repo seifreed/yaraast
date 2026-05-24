@@ -180,6 +180,26 @@ def test_parse_rule_and_sections_error_paths() -> None:
     assert condition is None
 
 
+def test_parse_rule_rejects_invalid_section_order_and_missing_sections() -> None:
+    invalid_sources = [
+        "rule r { }",
+        'rule r { strings: $a = "x" }',
+        "rule r { strings: condition: true }",
+        "rule r { meta: condition: true }",
+        "rule r { condition: true condition: false }",
+        'rule r { condition: true strings: $a = "x" }',
+        "rule r { condition: true meta: x = 1 }",
+        'rule r { strings: $a = "x" strings: $b = "y" condition: $a or $b }',
+        "rule r { meta: x = 1 meta: y = 2 condition: true }",
+        'rule r { strings: $a = "x" meta: x = 1 condition: $a }',
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError):
+                parser_factory().parse(source)
+
+
 def test_parse_import_include_and_rule_via_full_parse() -> None:
     ast = Parser(
         'import "pe" as pe_mod include "common.yar" private rule sample : t1 { meta: score = 1 strings: $a = "x" condition: true }'

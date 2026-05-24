@@ -247,7 +247,8 @@ def test_process_files_validate_records_summary(tmp_path: Path) -> None:
     assert result.successful_count == 1
     assert result.failed_count == 1
     assert result.summary["valid.yar"] == {"valid": True, "rule_count": 1}
-    assert result.summary["invalid.yar"] == {"valid": False, "rule_count": 1}
+    assert "invalid.yar" not in result.summary
+    assert any("Failed to parse" in error and "invalid.yar" in error for error in result.errors)
     assert progress_calls == [
         ("Processing validate", 1, 2),
         ("Processing validate", 2, 2),

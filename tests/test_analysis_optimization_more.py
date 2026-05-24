@@ -28,12 +28,15 @@ def test_optimization_report_format_and_high_impact_count() -> None:
 
 
 def test_optimization_analyzer_rule_without_condition_and_non_hex_plain_string() -> None:
-    ast = _parse("""
-        rule no_condition {
-            strings:
-                $a = "printable text"
-        }
-        """)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="no_condition",
+                strings=[PlainString(identifier="$a", value="printable text")],
+                condition=None,
+            )
+        ]
+    )
 
     report = OptimizationAnalyzer().analyze(ast)
 

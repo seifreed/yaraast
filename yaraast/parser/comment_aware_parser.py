@@ -148,6 +148,9 @@ class CommentAwareParser(Parser):
         self._parsed_rule_pragmas = []
         meta, strings, condition = self._parse_rule_sections_with_comments()
         pragmas = self._parsed_rule_pragmas
+        if condition is None:
+            msg = "Expected condition section"
+            raise ParserError(msg, self._peek())
         self._expect_rbrace_with_recovery()
         condition = self._ensure_condition(condition)
 
@@ -217,19 +220,49 @@ class CommentAwareParser(Parser):
         meta = []
         strings = []
         condition = None
+        seen_meta = False
+        seen_strings = False
+        seen_condition = False
 
         while not self._check(TokenType.RBRACE) and not self._is_at_end():
             if self._match(TokenType.META):
+                section_token = self._previous()
+                if seen_meta:
+                    msg = "Duplicate meta section"
+                    raise ParserError(msg, section_token)
+                if seen_strings or seen_condition:
+                    msg = "Unexpected meta section"
+                    raise ParserError(msg, section_token)
                 self._expect_section_colon("meta")
                 meta = self._parse_meta_section()
+                if not meta:
+                    msg = "Expected meta entry"
+                    raise ParserError(msg, self._peek())
+                seen_meta = True
             elif self._match(TokenType.STRINGS):
+                section_token = self._previous()
+                if seen_strings:
+                    msg = "Duplicate strings section"
+                    raise ParserError(msg, section_token)
+                if seen_condition:
+                    msg = "Unexpected strings section"
+                    raise ParserError(msg, section_token)
                 self._expect_section_colon("strings")
                 strings = self._parse_strings_section()
+                if not strings:
+                    msg = "Expected string definition"
+                    raise ParserError(msg, self._peek())
+                seen_strings = True
             elif self._check_file_pragma():
                 self._parse_in_rule_pragma(strings)
             elif self._match(TokenType.CONDITION):
+                section_token = self._previous()
+                if seen_condition:
+                    msg = "Duplicate condition section"
+                    raise ParserError(msg, section_token)
                 self._expect_section_colon("condition")
                 condition = self._parse_condition_with_comments()
+                seen_condition = True
             else:
                 msg = f"Unexpected section: {self._peek().value}"
                 raise ParserError(msg, self._peek())
