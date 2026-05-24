@@ -98,7 +98,7 @@ def infer_binary_expression(ctx, node: BinaryExpression):
         return _infer_arithmetic_op(ctx, node.operator, left_type, right_type, node.right)
 
     if node.operator in ["&", "|", "^", "<<", ">>"]:
-        return _infer_bitwise_op(ctx, node.operator, left_type, right_type)
+        return _infer_bitwise_op(ctx, node.operator, left_type, right_type, node.right)
 
     ctx.errors.append(f"Unknown binary operator: {node.operator}")
     return UnknownType()
@@ -250,11 +250,15 @@ def _infer_arithmetic_op(ctx, operator, left_type, right_type, right_node):
     return IntegerType()
 
 
-def _infer_bitwise_op(ctx, operator, left_type, right_type):
+def _infer_bitwise_op(ctx, operator, left_type, right_type, right_node):
     if not isinstance(left_type, IntegerType):
         ctx.errors.append(f"Left operand of '{operator}' must be integer, got {left_type}")
     if not isinstance(right_type, IntegerType):
         ctx.errors.append(f"Right operand of '{operator}' must be integer, got {right_type}")
+    if operator in {"<<", ">>"}:
+        shift_count = _constant_integer_value(right_node)
+        if shift_count is not None and shift_count < 0:
+            ctx.errors.append(f"Right operand of '{operator}' cannot be negative")
     return IntegerType()
 
 

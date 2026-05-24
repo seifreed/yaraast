@@ -698,6 +698,35 @@ class TestSemanticValidator:
         assert sum("Right operand of '\\' cannot be zero" in message for message in messages) == 2
         assert sum("Right operand of '%' cannot be zero" in message for message in messages) == 2
 
+    def test_validate_rejects_constant_negative_shift_counts(self) -> None:
+        ast = Parser().parse("""
+            rule direct_negative_shift_left {
+                condition:
+                    1 << -1 == 0
+            }
+
+            rule parenthesized_negative_shift_right {
+                condition:
+                    1 >> (0 - 1) == 0
+            }
+
+            rule dynamic_shift_count {
+                condition:
+                    1 << (filesize - 2) == 0
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert (
+            sum("Right operand of '<<' cannot be negative" in message for message in messages) == 1
+        )
+        assert (
+            sum("Right operand of '>>' cannot be negative" in message for message in messages) == 1
+        )
+
     def test_valid_yara_file(self) -> None:
         """Test validation of valid YARA file."""
         yara_code = """
