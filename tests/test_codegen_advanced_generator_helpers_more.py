@@ -50,9 +50,7 @@ def test_collect_string_definitions_supports_all_string_types() -> None:
         modifiers=[mod2],
     )
     regex = RegexString(identifier="$c", regex="ab+", modifiers=[])
-    unknown = StringDefinition(identifier="$d", modifiers=[])
-
-    collected = collect_string_definitions([plain, hexs, regex, unknown], config)
+    collected = collect_string_definitions([plain, hexs, regex], config)
 
     assert collected[0] == ("$a", '"hello"', ["nocase"])
     assert collected[1][0] == "$b"
@@ -60,7 +58,13 @@ def test_collect_string_definitions_supports_all_string_types() -> None:
     assert "AA??" in collected[1][1]
     assert "private" in collected[1][2]
     assert collected[2] == ("$c", "/ab+/", [])
-    assert collected[3] == ("$d", "", [])
+
+
+def test_collect_string_definitions_rejects_unsupported_string_type() -> None:
+    config = FormattingConfig(hex_style=HexStyle.UPPERCASE, hex_group_size=2)
+
+    with pytest.raises(TypeError, match="Unsupported string definition"):
+        collect_string_definitions([StringDefinition(identifier="$d", modifiers=[])], config)
 
 
 def test_collect_string_definitions_rejects_unsupported_regex_multiline_modifier() -> None:

@@ -60,6 +60,7 @@ from yaraast.ast.strings import (
     HexWildcard,
     PlainString,
     RegexString,
+    StringDefinition,
 )
 from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
@@ -524,6 +525,27 @@ def test_codegen_generator_rejects_non_sequence_string_modifiers() -> None:
         )
         with pytest.raises(TypeError, match="String modifiers must be a list or tuple"):
             CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
+def test_codegen_generators_reject_unsupported_string_definitions() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="unsupported_string",
+                strings=[StringDefinition("$base")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Unsupported string definition"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Unsupported string definition"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Unsupported string definition"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Unsupported string definition"):
+        PrettyPrinter().pretty_print(ast)
 
 
 def test_codegen_generators_reject_duplicate_rule_tags() -> None:

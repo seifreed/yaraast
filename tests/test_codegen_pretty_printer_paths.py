@@ -19,7 +19,7 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.pragmas import CustomPragma, IncludeOncePragma, InRulePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString, StringDefinition
+from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.codegen.pretty_printer import (
     PrettyPrinter,
     PrettyPrintOptions,
@@ -51,7 +51,6 @@ def test_pretty_printer_paths_for_includes_modifiers_wrapping_and_fallback() -> 
             PlainString(identifier="$a", value="abc"),
             HexString(identifier="$h", tokens=[HexByte(0x4D), HexByte(0x5A)]),
             RegexString(identifier="$r", regex="ab.*"),
-            StringDefinition(identifier="$fallback"),
         ],
         condition=BinaryExpression(Identifier("a"), "and", Identifier("b")),
     )

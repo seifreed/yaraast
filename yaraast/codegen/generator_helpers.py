@@ -7,7 +7,7 @@ import math
 import re
 from typing import Any, NamedTuple
 
-from yaraast.ast.strings import HexAlternative, HexJump
+from yaraast.ast.strings import HexAlternative, HexJump, HexString, PlainString, RegexString
 from yaraast.regex_literals import (
     VALID_REGEX_MODIFIERS,
     escape_regex_delimiter as _escape_regex_delimiter,
@@ -136,6 +136,7 @@ def validate_string_identifiers(strings) -> None:
 
     seen: set[str] = set()
     for string_def in strings:
+        _validate_supported_string_definition(string_def)
         if getattr(string_def, "is_anonymous", False):
             continue
         identifier = output_string_identifier(string_def)
@@ -144,6 +145,13 @@ def validate_string_identifiers(strings) -> None:
             msg = f"Duplicate string identifier '{identifier}' for libyara output"
             raise ValueError(msg)
         seen.add(identifier)
+
+
+def _validate_supported_string_definition(string_def: object) -> None:
+    if isinstance(string_def, PlainString | HexString | RegexString):
+        return
+    msg = f"Unsupported string definition '{type(string_def).__name__}' for libyara output"
+    raise TypeError(msg)
 
 
 def format_integer_literal(value) -> str:
