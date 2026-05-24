@@ -74,6 +74,10 @@ from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.source import parse_yara_source
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
+from yaraast.serialization.pragma_scopes import (
+    deserialize_pragma_scope,
+    serialize_pragma_scope,
+)
 from yaraast.string_escaping import escape_string_source_value
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -790,7 +794,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "PragmaBlock",
             "pragmas": [serialize_pragma(pragma) for pragma in node.pragmas],
-            "scope": node.scope.value,
+            "scope": serialize_pragma_scope(node.scope, "PragmaBlock"),
         }
     if isinstance(node, Pragma):
         return serialize_pragma(node)
@@ -1073,7 +1077,7 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
         "pragma_type": pragma.pragma_type.value,
         "name": pragma.name,
         "arguments": list(pragma.arguments),
-        "scope": pragma.scope.value,
+        "scope": serialize_pragma_scope(pragma.scope),
     }
     macro_name = getattr(pragma, "macro_name", "")
     if macro_name:
@@ -1560,16 +1564,7 @@ def deserialize_extern_rule(data: dict[str, Any]) -> ExternRule:
 
 
 def _deserialize_pragma_scope(value: Any, context: str = "Pragma") -> PragmaScope:
-    if value is None:
-        return PragmaScope.FILE
-    if not isinstance(value, str):
-        msg = f"{context} scope must be a string"
-        raise SerializationError(msg)
-    try:
-        return PragmaScope(value)
-    except ValueError as exc:
-        msg = f"{context} scope must be a valid pragma scope"
-        raise SerializationError(msg) from exc
+    return deserialize_pragma_scope(value, context)
 
 
 def deserialize_pragma(data: dict[str, Any]) -> Pragma:

@@ -9,6 +9,7 @@ from typing import Any
 from yaraast.errors import SerializationError
 from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
+from yaraast.serialization.pragma_scopes import deserialize_pragma_scope, serialize_pragma_scope
 from yaraast.string_escaping import escape_string_source_value
 
 from . import yara_ast_pb2
@@ -316,7 +317,7 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
     pb_pragma.pragma_type = getattr(pragma.pragma_type, "value", str(pragma.pragma_type))
     pb_pragma.name = pragma.name
     pb_pragma.arguments.extend(pragma.arguments)
-    pb_pragma.scope = getattr(scope, "value", str(scope)) if scope is not None else ""
+    pb_pragma.scope = serialize_pragma_scope(scope) if scope is not None else ""
 
     macro_name = getattr(pragma, "macro_name", "")
     if macro_name:
@@ -1098,12 +1099,7 @@ def protobuf_to_extern_namespace(pb_namespace):
 
 
 def _protobuf_pragma_scope(scope_text):
-    from yaraast.ast.pragmas import PragmaScope
-
-    try:
-        return PragmaScope(scope_text or PragmaScope.FILE.value)
-    except ValueError:
-        return PragmaScope.FILE
+    return deserialize_pragma_scope(scope_text or None)
 
 
 def protobuf_to_pragma(pb_pragma):

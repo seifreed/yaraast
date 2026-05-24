@@ -756,6 +756,8 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
     cast(Any, pragma_with_bad_type).pragma_type = invalid_text
     pragma_with_bad_scope = Pragma(PragmaType.CUSTOM, "custom")
     cast(Any, pragma_with_bad_scope).scope = invalid_text
+    pragma_with_unknown_scope = Pragma(PragmaType.CUSTOM, "custom")
+    cast(Any, pragma_with_unknown_scope).scope = "secret"
     define_with_bad_macro_name = DefineDirective("GOOD")
     define_with_bad_macro_name.macro_name = invalid_text
     define_with_bad_macro_value = DefineDirective("GOOD", "1")
@@ -775,6 +777,10 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
         (
             YaraFile(pragmas=[pragma_with_bad_scope]),
             "Pragma scope must be a string",
+        ),
+        (
+            YaraFile(pragmas=[pragma_with_unknown_scope]),
+            "Pragma scope must be a valid pragma scope",
         ),
         (
             YaraFile(pragmas=[Pragma(PragmaType.CUSTOM, "custom", invalid_arguments)]),
@@ -881,6 +887,11 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
     cast(Any, block_with_bad_scope).scope = invalid_text
     with pytest.raises(SerializationError, match="PragmaBlock scope must be a string"):
         serializer.visit(block_with_bad_scope)
+
+    block_with_unknown_scope = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
+    cast(Any, block_with_unknown_scope).scope = "secret"
+    with pytest.raises(SerializationError, match="PragmaBlock scope must be a valid pragma scope"):
+        serializer.visit(block_with_unknown_scope)
 
     group_with_bad_comments = CommentGroup([Comment("comment")])
     cast(Any, group_with_bad_comments).comments = False

@@ -39,7 +39,14 @@ from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
-from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaBlock, PragmaScope
+from yaraast.ast.pragmas import (
+    CustomPragma,
+    InRulePragma,
+    Pragma,
+    PragmaBlock,
+    PragmaScope,
+    PragmaType,
+)
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import (
     HexAlternative,
@@ -65,6 +72,7 @@ from yaraast.serialization.simple_roundtrip_helpers import (
     deserialize_string,
     serialize_meta,
     serialize_node,
+    serialize_pragma,
     serialize_rule,
     serialize_string,
     serialize_to_file,
@@ -321,6 +329,16 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
 
 
 def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
+    pragma_with_unknown_scope = Pragma(PragmaType.CUSTOM, "vendor")
+    cast(Any, pragma_with_unknown_scope).scope = "secret"
+    with pytest.raises(SerializationError, match="Pragma scope must be a valid pragma scope"):
+        serialize_pragma(pragma_with_unknown_scope)
+
+    block_with_unknown_scope = PragmaBlock([Pragma(PragmaType.CUSTOM, "vendor")])
+    cast(Any, block_with_unknown_scope).scope = "secret"
+    with pytest.raises(SerializationError, match="PragmaBlock scope must be a valid pragma scope"):
+        serialize_node(block_with_unknown_scope)
+
     with pytest.raises(SerializationError, match="Pragma name must be a string"):
         deserialize_node({"type": "Pragma", "pragma_type": "custom", "name": ["vendor"]})
 

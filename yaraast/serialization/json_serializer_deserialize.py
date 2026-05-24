@@ -12,6 +12,7 @@ from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.serialization.meta_scopes import deserialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
+from yaraast.serialization.pragma_scopes import deserialize_pragma_scope
 from yaraast.string_escaping import escape_string_source_value
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
@@ -362,18 +363,7 @@ def _deserialize_pragma_type(data: dict[str, Any]):
 
 
 def _deserialize_pragma_scope(value: Any, context: str):
-    from yaraast.ast.pragmas import PragmaScope
-
-    if value is None:
-        return PragmaScope.FILE
-    if not isinstance(value, str):
-        msg = f"{context} scope must be a string"
-        raise SerializationError(msg)
-    try:
-        return PragmaScope(value)
-    except ValueError as exc:
-        msg = f"{context} scope must be a valid pragma scope"
-        raise SerializationError(msg) from exc
+    return deserialize_pragma_scope(value, context)
 
 
 def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:

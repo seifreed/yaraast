@@ -72,6 +72,7 @@ from yaraast.serialization.json_serializer_deserialize import (
     _deserialize_object,
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
+from yaraast.serialization.pragma_scopes import serialize_pragma_scope
 from yaraast.serialization.serializer_helpers import build_base_metadata, read_text, write_text
 from yaraast.visitor.visitor import ASTVisitor
 
@@ -557,7 +558,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             "pragma_type": _serialize_enum_value(node.pragma_type, "Pragma pragma_type"),
             "name": _serialize_required_string(node.name, "Pragma name"),
             "arguments": _serialize_string_list(node.arguments, "Pragma arguments"),
-            "scope": _serialize_enum_value(node.scope, "Pragma scope"),
+            "scope": serialize_pragma_scope(node.scope),
         }
         if hasattr(node, "macro_name"):
             data["macro_name"] = _serialize_required_string(

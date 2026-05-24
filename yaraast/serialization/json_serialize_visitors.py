@@ -8,6 +8,7 @@ from typing import Any
 
 from yaraast.errors import SerializationError
 from yaraast.serialization.meta_scopes import serialize_meta_scope
+from yaraast.serialization.pragma_scopes import serialize_pragma_scope
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
@@ -704,7 +705,7 @@ def visit_pragma_block(serializer, node) -> dict[str, Any]:
             "PragmaBlock pragmas",
             Pragma,
         ),
-        "scope": _serialize_enum_value(node.scope, "PragmaBlock scope"),
+        "scope": serialize_pragma_scope(node.scope, "PragmaBlock"),
     }
 
 

@@ -343,6 +343,27 @@ def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     assert restored_rule_pragma.parameters == {"enabled": True}
 
 
+def test_protobuf_serialize_rejects_invalid_pragma_scope() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pragma = CustomPragma(name="custom", scope=PragmaScope.FILE)
+    cast(Any, pragma).scope = "secret"
+
+    with pytest.raises(SerializationError, match="Pragma scope must be a valid pragma scope"):
+        serializer.serialize(YaraFile(pragmas=[pragma]))
+
+
+def test_protobuf_deserialize_rejects_invalid_pragma_scope() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_pragma = pb_file.pragmas.add()
+    pb_pragma.pragma_type = "custom"
+    pb_pragma.name = "custom"
+    pb_pragma.scope = "secret"
+
+    with pytest.raises(SerializationError, match="Pragma scope must be a valid pragma scope"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 def test_protobuf_deserializes_legacy_meta_map_in_stable_key_order() -> None:
     pb_file = yara_ast_pb2.YaraFile()
     pb_rule = pb_file.rules.add()
