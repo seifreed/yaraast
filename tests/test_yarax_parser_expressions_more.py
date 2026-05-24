@@ -79,6 +79,11 @@ def test_parse_pattern_match_supports_default_and_trailing_comma() -> None:
     assert expr.default == IntegerLiteral(4)
 
 
+def test_parse_pattern_match_requires_commas_between_cases() -> None:
+    with pytest.raises(Exception, match="Expected ',' or '}' after match case"):
+        YaraXParser("match x { 1 => 2 3 => 4 }").parse_expression()
+
+
 def test_parse_bracket_access_supports_slice_tuple_indexing_and_array_access() -> None:
     parser = _manual_parser(
         [

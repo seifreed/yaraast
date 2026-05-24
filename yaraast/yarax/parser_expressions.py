@@ -95,21 +95,24 @@ class YaraXParserExpressionsMixin:
                 self._advance()
                 self._consume_arrow()
                 default = self.parse_expression()
-
-                if self._check(TokenType.COMMA):
-                    self._advance()
+                self._consume_match_case_separator()
             else:
                 pattern = self.parse_expression()
                 self._consume_arrow()
                 result = self.parse_expression()
                 cases.append(MatchCase(pattern=pattern, result=result))
-
-                if self._check(TokenType.COMMA):
-                    self._advance()
+                self._consume_match_case_separator()
 
         self._consume(TokenType.RBRACE, ERROR_EXPECTED_BRACE_CLOSE)
 
         return PatternMatch(value=value, cases=cases, default=default)
+
+    def _consume_match_case_separator(self) -> None:
+        if self._check(TokenType.COMMA):
+            self._advance()
+            return
+        if not self._check(TokenType.RBRACE):
+            self._consume(TokenType.COMMA, "Expected ',' or '}' after match case")
 
     def _parse_bracket_access(self, expr: Expression):
         """Parse bracket access with slice and tuple-indexing support."""
