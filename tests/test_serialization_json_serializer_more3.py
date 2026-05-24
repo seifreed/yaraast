@@ -416,6 +416,72 @@ def test_json_serializer_rejects_invalid_declaration_string_fields() -> None:
             serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_text: Any = 123
+    invalid_bool: Any = "true"
+    invalid_parameters: Any = ["x", 123]
+
+    invalid_cases = [
+        (
+            BinaryExpression(BooleanLiteral(True), invalid_text, BooleanLiteral(False)),
+            "BinaryExpression operator must be a string",
+        ),
+        (
+            UnaryExpression(invalid_text, BooleanLiteral(True)),
+            "UnaryExpression operator must be a string",
+        ),
+        (
+            FunctionCall(invalid_text, []),
+            "FunctionCall function must be a string",
+        ),
+        (
+            MemberAccess(Identifier("pe"), invalid_text),
+            "MemberAccess member must be a string",
+        ),
+        (
+            ForExpression("any", invalid_text, Identifier("items"), BooleanLiteral(True)),
+            "ForExpression variable must be a string",
+        ),
+        (
+            StringOperatorExpression(StringLiteral("a"), invalid_text, StringLiteral("b")),
+            "StringOperatorExpression operator must be a string",
+        ),
+        (
+            WithStatement(
+                [WithDeclaration(invalid_text, IntegerLiteral(1))],
+                BooleanLiteral(True),
+            ),
+            "WithDeclaration identifier must be a string",
+        ),
+        (
+            ArrayComprehension(variable=invalid_text),
+            "ArrayComprehension variable must be a string",
+        ),
+        (
+            DictComprehension(key_variable=invalid_text),
+            "DictComprehension key_variable must be a string",
+        ),
+        (
+            DictComprehension(value_variable=invalid_text),
+            "DictComprehension value_variable must be a string",
+        ),
+        (
+            LambdaExpression(invalid_parameters, BooleanLiteral(True)),
+            "LambdaExpression parameters must be a list of strings",
+        ),
+        (
+            SpreadOperator(Identifier("items"), is_dict=invalid_bool),
+            "SpreadOperator is_dict must be a boolean",
+        ),
+    ]
+
+    for expression, message in invalid_cases:
+        ast = YaraFile(rules=[Rule(name="invalid_scalar", condition=expression)])
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
 def test_json_serializer_rejects_invalid_raw_string_sets() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_string_sets: list[Any] = [

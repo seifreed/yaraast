@@ -21,6 +21,13 @@ def _serialize_nullable_string(value, context: str) -> str | None:
     return _serialize_required_string(value, context)
 
 
+def _serialize_string_list(values, context: str) -> list[str]:
+    if isinstance(values, list | tuple) and all(isinstance(item, str) for item in values):
+        return list(values)
+    msg = f"{context} must be a list of strings"
+    raise SerializationError(msg)
+
+
 def _serialize_required_int(value, context: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         msg = f"{context} must be an integer"
@@ -286,7 +293,7 @@ def visit_binary_expression(serializer, node) -> dict[str, Any]:
             node.left,
             "BinaryExpression left",
         ),
-        "operator": node.operator,
+        "operator": _serialize_required_string(node.operator, "BinaryExpression operator"),
         "right": _serialize_required_expression(
             serializer,
             node.right,
@@ -298,7 +305,7 @@ def visit_binary_expression(serializer, node) -> dict[str, Any]:
 def visit_unary_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "UnaryExpression",
-        "operator": node.operator,
+        "operator": _serialize_required_string(node.operator, "UnaryExpression operator"),
         "operand": _serialize_required_expression(
             serializer,
             node.operand,
@@ -336,7 +343,7 @@ def visit_range_expression(serializer, node) -> dict[str, Any]:
 def visit_function_call(serializer, node) -> dict[str, Any]:
     return {
         "type": "FunctionCall",
-        "function": node.function,
+        "function": _serialize_required_string(node.function, "FunctionCall function"),
         "arguments": _serialize_expression_list(
             serializer,
             node.arguments,
@@ -361,7 +368,7 @@ def visit_member_access(serializer, node) -> dict[str, Any]:
             node.object,
             "MemberAccess object",
         ),
-        "member": node.member,
+        "member": _serialize_required_string(node.member, "MemberAccess member"),
     }
 
 
@@ -369,7 +376,7 @@ def visit_for_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ForExpression",
         "quantifier": _serialize_quantifier(serializer, node.quantifier),
-        "variable": node.variable,
+        "variable": _serialize_required_string(node.variable, "ForExpression variable"),
         "iterable": _serialize_required_expression(
             serializer,
             node.iterable,
@@ -444,7 +451,10 @@ def visit_string_operator_expression(serializer, node) -> dict[str, Any]:
             node.left,
             "StringOperatorExpression left",
         ),
-        "operator": node.operator,
+        "operator": _serialize_required_string(
+            node.operator,
+            "StringOperatorExpression operator",
+        ),
         "right": _serialize_required_expression(
             serializer,
             node.right,
@@ -474,7 +484,7 @@ def visit_with_statement(serializer, node) -> dict[str, Any]:
 def visit_with_declaration(serializer, node) -> dict[str, Any]:
     return {
         "type": "WithDeclaration",
-        "identifier": node.identifier,
+        "identifier": _serialize_required_string(node.identifier, "WithDeclaration identifier"),
         "value": _serialize_required_expression(serializer, node.value, "WithDeclaration value"),
     }
 
@@ -487,7 +497,10 @@ def visit_array_comprehension(serializer, node) -> dict[str, Any]:
             node.expression,
             "ArrayComprehension expression",
         ),
-        "variable": node.variable,
+        "variable": _serialize_required_string(
+            node.variable,
+            "ArrayComprehension variable",
+        ),
         "iterable": _serialize_optional_expression(
             serializer,
             node.iterable,
@@ -516,8 +529,14 @@ def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
                 "DictComprehension value_expression",
             )
         ),
-        "key_variable": node.key_variable,
-        "value_variable": node.value_variable,
+        "key_variable": _serialize_required_string(
+            node.key_variable,
+            "DictComprehension key_variable",
+        ),
+        "value_variable": _serialize_nullable_string(
+            node.value_variable,
+            "DictComprehension value_variable",
+        ),
         "iterable": _serialize_optional_expression(
             serializer,
             node.iterable,
@@ -593,7 +612,10 @@ def visit_slice_expression(serializer, node) -> dict[str, Any]:
 def visit_lambda_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "LambdaExpression",
-        "parameters": list(node.parameters),
+        "parameters": _serialize_string_list(
+            node.parameters,
+            "LambdaExpression parameters",
+        ),
         "body": _serialize_required_expression(serializer, node.body, "LambdaExpression body"),
     }
 
@@ -623,5 +645,5 @@ def visit_spread_operator(serializer, node) -> dict[str, Any]:
             node.expression,
             "SpreadOperator expression",
         ),
-        "is_dict": node.is_dict,
+        "is_dict": _serialize_required_bool(node.is_dict, "SpreadOperator is_dict"),
     }
