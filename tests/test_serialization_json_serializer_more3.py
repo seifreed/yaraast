@@ -931,6 +931,23 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
             )
         )
 
+    meta_entry_with_unknown_scope = MetaEntry("key", "value")
+    cast(Any, meta_entry_with_unknown_scope).scope = "secret"
+    with pytest.raises(
+        SerializationError, match="Meta scope must be public, private, or protected"
+    ):
+        serializer.serialize(
+            YaraFile(
+                rules=[
+                    Rule(
+                        "unknown_meta_scope",
+                        meta=[meta_entry_with_unknown_scope],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            )
+        )
+
     meta_with_bad_scope = Meta("key", "value")
     cast(Any, meta_with_bad_scope).scope = invalid_text
     with pytest.raises(SerializationError, match="Meta scope must be a string"):

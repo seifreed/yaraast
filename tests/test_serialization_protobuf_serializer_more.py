@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -563,6 +563,26 @@ def test_protobuf_deserialize_rejects_invalid_meta_entry_scope() -> None:
         SerializationError, match="Meta scope must be public, private, or protected"
     ):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_serialize_rejects_invalid_meta_entry_scope() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    invalid_meta = MetaEntry("owner", "team")
+    cast(Any, invalid_meta).scope = "secret"
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_meta_scope",
+                meta=[invalid_meta],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    with pytest.raises(
+        SerializationError, match="Meta scope must be public, private, or protected"
+    ):
+        serializer.serialize(ast)
 
 
 def test_protobuf_deserializes_legacy_xor_modifier_text_values() -> None:

@@ -7,6 +7,7 @@ import math
 from typing import Any
 
 from yaraast.errors import SerializationError
+from yaraast.serialization.meta_scopes import serialize_meta_scope
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
@@ -282,7 +283,7 @@ def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     }
     scope = getattr(meta, "scope", None)
     if scope is not None:
-        data["scope"] = _serialize_enum_value(scope, "Meta scope")
+        data["scope"] = serialize_meta_scope(scope)
     if hasattr(meta, "accept"):
         return serializer._with_node_metadata(meta, data)
     return data

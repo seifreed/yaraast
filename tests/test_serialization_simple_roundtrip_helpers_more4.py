@@ -452,6 +452,13 @@ def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     assert isinstance(restored, MetaEntry)
     assert restored.scope == MetaScope.PRIVATE
 
+    invalid_meta = MetaEntry("owner", "team")
+    cast(Any, invalid_meta).scope = "secret"
+    with pytest.raises(
+        SerializationError, match="Meta scope must be public, private, or protected"
+    ):
+        serialize_meta(invalid_meta)
+
 
 def test_simple_roundtrip_helpers_preserve_unknown_extern_rule_modifier() -> None:
     restored = deserialize_node(

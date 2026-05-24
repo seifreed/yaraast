@@ -71,6 +71,7 @@ from yaraast.serialization.json_serializer_deserialize import (
     _deserialize_list_field,
     _deserialize_object,
 )
+from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.serializer_helpers import build_base_metadata, read_text, write_text
 from yaraast.visitor.visitor import ASTVisitor
 
@@ -458,7 +459,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         )
         scope = getattr(node, "scope", None)
         if scope is not None:
-            data["scope"] = _serialize_enum_value(scope, "Meta scope")
+            data["scope"] = serialize_meta_scope(scope)
         return data
 
     def visit_module_reference(self, node) -> dict[str, Any]:

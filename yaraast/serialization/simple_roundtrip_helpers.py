@@ -72,7 +72,7 @@ from yaraast.ast.strings import (
 from yaraast.errors import SerializationError, ValidationError
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.source import parse_yara_source
-from yaraast.serialization.meta_scopes import deserialize_meta_scope
+from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
 from yaraast.string_escaping import escape_string_source_value
 from yaraast.yarax.ast_nodes import (
@@ -1096,7 +1096,7 @@ def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
     scope = getattr(meta, "scope", None)
     if scope is not None:
         data["type"] = "MetaEntry"
-        data["scope"] = getattr(scope, "value", str(scope))
+        data["scope"] = serialize_meta_scope(scope)
     if isinstance(meta, ASTNode):
         return _with_node_metadata(meta, data)
     return data

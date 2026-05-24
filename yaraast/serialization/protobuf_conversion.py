@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 from yaraast.errors import SerializationError
-from yaraast.serialization.meta_scopes import deserialize_meta_scope
+from yaraast.serialization.meta_scopes import deserialize_meta_scope, serialize_meta_scope
 from yaraast.serialization.modifier_values import deserialize_legacy_modifier_value
 from yaraast.string_escaping import escape_string_source_value
 
@@ -222,7 +222,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         _copy_python_value_to_meta_value(value, pb_meta_entry.value)
         _copy_node_metadata_to_protobuf(entry, pb_meta_entry)
         if scope is not None:
-            scope_text = getattr(scope, "value", str(scope))
+            scope_text = serialize_meta_scope(scope)
             pb_rule.meta_scopes[key] = scope_text
             pb_meta_entry.scope = scope_text
         if hasattr(entry, "location") or hasattr(entry, "leading_comments"):
