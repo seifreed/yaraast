@@ -687,6 +687,46 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
         deserialize_node({"type": "StringLength", "string_id": "a", "index": False})
 
 
+def test_simple_roundtrip_string_set_values_reject_empty_payloads() -> None:
+    empty_string_set_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": None},
+            "ForOfExpression string_set is required",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": {}},
+            "ForOfExpression string_set is required",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": [None]},
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": [{}]},
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": None},
+            "OfExpression string_set is required",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": {}},
+            "OfExpression string_set is required",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": [None]},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": [{}]},
+            "OfExpression string_set must contain values",
+        ),
+    )
+    for payload, message in empty_string_set_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
+
 def test_simple_roundtrip_extended_expression_fields_reject_wrong_scalar_types() -> None:
     true_expr = {"type": "BooleanLiteral", "value": True}
 

@@ -468,12 +468,27 @@ def _serialize_ast_value(value: Any) -> Any:
     return value
 
 
-def _deserialize_ast_value(value: Any) -> Any:
+def _deserialize_ast_value(value: Any, context: str = "AST value") -> Any:
+    if value is None or value == {}:
+        msg = f"{context} is required"
+        raise SerializationError(msg)
     if isinstance(value, dict):
         return deserialize_node(value)
     if isinstance(value, list):
-        return [_deserialize_ast_value(item) for item in value]
+        values = []
+        for item in value:
+            if item is None or item == {}:
+                msg = f"{context} must contain values"
+                raise SerializationError(msg)
+            values.append(_deserialize_ast_value(item, context))
+        return values
     return value
+
+
+def _deserialize_required_ast_value(data: dict[str, Any], field: str, context: str) -> Any:
+    return _deserialize_ast_value(
+        _deserialize_required_field(data, field, context), f"{context} {field}"
+    )
 
 
 def _serialize_location(location: Location) -> dict[str, Any]:
@@ -1148,21 +1163,15 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ForExpression":
         return ForExpression(
-            _deserialize_ast_value(
-                _deserialize_required_field(data, "quantifier", "ForExpression")
-            ),
+            _deserialize_required_ast_value(data, "quantifier", "ForExpression"),
             _deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
             deserialize_node(_deserialize_required_field(data, "iterable", "ForExpression")),
             deserialize_node(_deserialize_required_field(data, "body", "ForExpression")),
         )
     if node_type == "ForOfExpression":
         return ForOfExpression(
-            _deserialize_ast_value(
-                _deserialize_required_field(data, "quantifier", "ForOfExpression")
-            ),
-            _deserialize_ast_value(
-                _deserialize_required_field(data, "string_set", "ForOfExpression")
-            ),
+            _deserialize_required_ast_value(data, "quantifier", "ForOfExpression"),
+            _deserialize_required_ast_value(data, "string_set", "ForOfExpression"),
             _deserialize_optional_node_field(data, "condition"),
         )
     if node_type == "AtExpression":
@@ -1186,8 +1195,8 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "OfExpression":
         return OfExpression(
-            _deserialize_ast_value(_deserialize_required_field(data, "quantifier", "OfExpression")),
-            _deserialize_ast_value(_deserialize_required_field(data, "string_set", "OfExpression")),
+            _deserialize_required_ast_value(data, "quantifier", "OfExpression"),
+            _deserialize_required_ast_value(data, "string_set", "OfExpression"),
         )
     if node_type == "ModuleReference":
         return ModuleReference(_deserialize_string_field(data, "module", "ModuleReference"))
