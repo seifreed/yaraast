@@ -202,7 +202,7 @@ class ExpressionBinaryMixin:
 
         if self._match(TokenType.DEFINED):
             start_token = self._previous()
-            operand = self._parse_postfix_expression()
+            operand = self._parse_unary_expression()
             return self._set_node_location_from_tokens(
                 DefinedExpression(expression=operand), start_token, self._previous()
             )

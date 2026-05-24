@@ -27,6 +27,7 @@ from yaraast.ast.expressions import (
     MemberAccess,
     ParenthesesExpression,
     RangeExpression,
+    RegexLiteral,
     SetExpression,
     StringCount,
     StringIdentifier,
@@ -297,11 +298,11 @@ class TestRegexType:
         regex_type2 = RegexType()
         assert regex_type1.is_compatible_with(regex_type2) is True
 
-    def test_regex_type_compatible_with_string(self) -> None:
-        """Test RegexType is compatible with StringType."""
+    def test_regex_type_incompatible_with_string(self) -> None:
+        """Test RegexType is incompatible with StringType."""
         regex_type = RegexType()
         string_type = StringType()
-        assert regex_type.is_compatible_with(string_type) is True
+        assert regex_type.is_compatible_with(string_type) is False
 
     def test_regex_type_incompatible_with_integer(self) -> None:
         """Test RegexType is incompatible with IntegerType."""
@@ -309,10 +310,10 @@ class TestRegexType:
         int_type = IntegerType()
         assert regex_type.is_compatible_with(int_type) is False
 
-    def test_regex_type_is_string_like(self) -> None:
-        """Test RegexType is string-like."""
+    def test_regex_type_is_not_string_like(self) -> None:
+        """Test RegexType is not string-like."""
         regex_type = RegexType()
-        assert regex_type.is_string_like() is True
+        assert regex_type.is_string_like() is False
 
 
 class TestStringIdentifierType:
@@ -1730,9 +1731,6 @@ class TestTypeInferenceEdgeCases:
         env = TypeEnvironment()
         inference = TypeInference(env)
 
-        # Import RegexLiteral from the correct module
-        from yaraast.ast.expressions import RegexLiteral
-
         node = BinaryExpression(
             left=StringLiteral(value="test"),
             operator="matches",
@@ -2290,6 +2288,50 @@ class TestTypeInferenceEdgeCases:
         result = inference.infer(node)
         assert isinstance(result, BooleanType)
         assert len(inference.errors) > 0
+
+    def test_infer_binary_expression_matches_with_string_rejected(self) -> None:
+        """Test matches operator rejects string literal right operand."""
+        env = TypeEnvironment()
+        inference = TypeInference(env)
+
+        node = BinaryExpression(
+            left=StringLiteral(value="test"),
+            operator="matches",
+            right=StringLiteral(value="[a-z]+"),
+        )
+        result = inference.infer(node)
+        assert isinstance(result, BooleanType)
+        assert "Right operand of 'matches' must be regex, got string" in inference.errors
+
+    def test_infer_binary_expression_regex_comparison_rejected(self) -> None:
+        """Test comparison operators reject regex operands."""
+        env = TypeEnvironment()
+        inference = TypeInference(env)
+
+        node = BinaryExpression(
+            left=RegexLiteral(pattern="[a-z]+"),
+            operator="==",
+            right=StringLiteral(value="test"),
+        )
+        result = inference.infer(node)
+        assert isinstance(result, BooleanType)
+        assert "Regex operands cannot be used with '==' comparisons" in inference.errors
+
+    def test_infer_binary_expression_regex_left_string_operator_rejected(self) -> None:
+        """Test string operators reject regex left operands."""
+        env = TypeEnvironment()
+        inference = TypeInference(env)
+
+        node = BinaryExpression(
+            left=RegexLiteral(pattern="[a-z]+"),
+            operator="contains",
+            right=StringLiteral(value="test"),
+        )
+        result = inference.infer(node)
+        assert isinstance(result, BooleanType)
+        assert (
+            "Left operand of 'contains' must be string-like or array, got regex" in inference.errors
+        )
 
     def test_infer_binary_expression_string_operator_invalid_right(self) -> None:
         """Test string operator with invalid right operand."""

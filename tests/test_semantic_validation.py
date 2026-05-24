@@ -494,6 +494,23 @@ class TestSemanticValidator:
 
         assert result.is_valid is True
 
+    def test_validate_accepts_defined_on_libyara_scalar_expressions(self) -> None:
+        ast = Parser().parse("""
+            rule defined_scalar_expressions {
+                condition:
+                    defined -1 and
+                    defined 1.0 and
+                    defined "abc" and
+                    defined /a/ and
+                    defined (1 + 2) and
+                    defined (1 < 2)
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
     def test_validate_accepts_libyara_dotnet_collection_fields(self) -> None:
         ast = Parser().parse("""
             import "dotnet"
@@ -872,6 +889,33 @@ class TestSemanticValidator:
         assert result.is_valid is False
         messages = [error.message for error in result.errors]
         assert sum("Boolean operands cannot be used with" in message for message in messages) == 3
+
+    def test_validate_rejects_invalid_regex_string_operations(self) -> None:
+        ast = Parser().parse("""
+            rule invalid_regex_string_operations {
+                condition:
+                    "abc" matches "a" or
+                    /a/ == "a" or
+                    /a/ == /a/ or
+                    /a/ contains "a" or
+                    /a/ matches /a/
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any("Right operand of 'matches' must be regex" in message for message in messages)
+        assert any("Regex operands cannot be used with '=='" in message for message in messages)
+        assert any(
+            "Left operand of 'contains' must be string-like or array, got regex" in message
+            for message in messages
+        )
+        assert any(
+            "Left operand of 'matches' must be string-like or array, got regex" in message
+            for message in messages
+        )
 
     def test_validate_rejects_undefined_identifiers_in_comparison_and_defined(self) -> None:
         ast = Parser().parse("""

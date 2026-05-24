@@ -90,10 +90,10 @@ class RegexType(YaraType):
         return "regex"
 
     def is_compatible_with(self, other: YaraType) -> bool:
-        return isinstance(other, RegexType | StringType)
+        return isinstance(other, RegexType)
 
     def is_string_like(self) -> bool:
-        return True
+        return False
 
 
 @dataclass

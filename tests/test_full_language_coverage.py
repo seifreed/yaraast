@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from yaraast import CodeGenerator, Parser
-from yaraast.ast.expressions import BinaryExpression, RegexLiteral
+from yaraast.ast.expressions import BinaryExpression, RegexLiteral, StringLiteral
 from yaraast.types import TypeValidator
 
 
@@ -45,12 +45,12 @@ def test_import_with_alias() -> None:
     assert "as math" not in output
 
 
-def test_regex_matches_regex() -> None:
-    """Test regex matching another regex expression."""
+def test_string_matches_regex_literal() -> None:
+    """Test string matching a regex expression."""
     yara_code = """
-    rule regex_matches_regex {
+    rule string_matches_regex_literal {
         condition:
-            /foo.*bar/i matches /b[a-z]+r/
+            "foo123bar" matches /b[a-z]+r/
     }
     """
 
@@ -65,10 +65,9 @@ def test_regex_matches_regex() -> None:
     assert isinstance(condition, BinaryExpression)
     assert condition.operator == "matches"
 
-    # Check left side is regex literal
-    assert isinstance(condition.left, RegexLiteral)
-    assert condition.left.pattern == "foo.*bar"
-    assert condition.left.modifiers == "i"
+    # Check left side is string literal
+    assert isinstance(condition.left, StringLiteral)
+    assert condition.left.value == "foo123bar"
 
     # Check right side is regex literal
     assert isinstance(condition.right, RegexLiteral)
@@ -78,7 +77,7 @@ def test_regex_matches_regex() -> None:
     # Generate code
     generator = CodeGenerator()
     output = generator.generate(ast)
-    assert "/foo.*bar/i matches /b[a-z]+r/" in output
+    assert '"foo123bar" matches /b[a-z]+r/' in output
 
 
 def test_big_endian_little_endian_functions() -> None:
@@ -133,8 +132,8 @@ def test_complex_regex_in_expressions() -> None:
 
         condition:
             $a and
-            $b matches /.*@(gmail|yahoo|hotmail)\.com/ and
-            /test\d+/ matches /test[0-9]+/
+            "user@gmail.com" matches /.*@(gmail|yahoo|hotmail)\.com/ and
+            "test123" matches /test[0-9]+/
     }
     """
 
@@ -152,8 +151,8 @@ def test_complex_regex_in_expressions() -> None:
     # Verify regex patterns are preserved
     assert r"/[a-z]{3,5}/" in output
     assert r"/\w+@\w+\.\w+/" in output
-    assert r"$b matches /.*@(gmail|yahoo|hotmail)\.com/" in output
-    assert r"/test\d+/ matches /test[0-9]+/" in output
+    assert r'"user@gmail.com" matches /.*@(gmail|yahoo|hotmail)\.com/' in output
+    assert r'"test123" matches /test[0-9]+/' in output
 
 
 def test_string_matches_dynamic_regex() -> None:
@@ -209,7 +208,7 @@ def test_mixed_features() -> None:
             m.entropy(0, 1024) > 6.5 and
             "malicious" matches /mal[a-z]+/ and
             "https://example.test/download/file" matches /.*\/download\//i and
-            /[A-Z]{5,}/ matches /[A-Z]+/
+            "ABCDE" matches /[A-Z]+/
     }
     """
 
@@ -237,7 +236,7 @@ def test_mixed_features() -> None:
     assert "peformat.machine" in output
     assert "m.entropy" in output
     assert '"malicious" matches /mal[a-z]+/' in output
-    assert "/[A-Z]{5,}/ matches /[A-Z]+/" in output
+    assert '"ABCDE" matches /[A-Z]+/' in output
 
 
 if __name__ == "__main__":

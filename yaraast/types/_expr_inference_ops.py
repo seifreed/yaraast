@@ -157,6 +157,10 @@ def _infer_comparison_op(ctx, operator, left_node, left_type, right_node, right_
         ctx.errors.append(f"Boolean operands cannot be used with '{operator}' comparisons")
         return BooleanType()
 
+    if isinstance(left_type, RegexType) or isinstance(right_type, RegexType):
+        ctx.errors.append(f"Regex operands cannot be used with '{operator}' comparisons")
+        return BooleanType()
+
     if (left_type.is_numeric() and right_type.is_numeric()) or left_type.is_compatible_with(
         right_type
     ):
@@ -194,10 +198,8 @@ def _infer_string_op(ctx, operator, left_type, right_type):
             f"Left operand of '{operator}' must be string-like or array, got {left_type}",
         )
     if operator == "matches":
-        if not isinstance(right_type, StringType | RegexType):
-            ctx.errors.append(
-                f"Right operand of 'matches' must be string or regex, got {right_type}"
-            )
+        if not isinstance(right_type, RegexType):
+            ctx.errors.append(f"Right operand of 'matches' must be regex, got {right_type}")
     elif not isinstance(right_type, StringType):
         ctx.errors.append(f"Right operand of '{operator}' must be string, got {right_type}")
     return BooleanType()
