@@ -96,7 +96,15 @@ def visit_parentheses_expression(generator, node) -> str:
 
 
 def visit_set_expression(generator, node) -> str:
+    validate_set_expression_elements(node)
     return f"({', '.join(generator.visit(elem) for elem in node.elements)})"
+
+
+def validate_set_expression_elements(node) -> None:
+    if node.elements:
+        return
+    msg = "Set expression must contain at least one element for libyara output"
+    raise ValueError(msg)
 
 
 def visit_range_expression(generator, node) -> str:

@@ -31,7 +31,10 @@ from yaraast.codegen.advanced_generator_layout import (
 )
 from yaraast.codegen.formatting import FormattingConfig, IndentStyle
 from yaraast.codegen.generator import CodeGenerator
-from yaraast.codegen.generator_expression_visitors import _render_binary_operator
+from yaraast.codegen.generator_expression_visitors import (
+    _render_binary_operator,
+    validate_set_expression_elements,
+)
 from yaraast.codegen.generator_formatting import escape_string_literal, validate_yara_identifier
 
 if TYPE_CHECKING:
@@ -173,6 +176,7 @@ class AdvancedCodeGenerator(CodeGenerator):
 
     def visit_set_expression(self, node: SetExpression) -> str:
         """Generate set expression with spacing."""
+        validate_set_expression_elements(node)
         elements = []
         for elem in node.elements:
             elem_str = self.visit(elem)

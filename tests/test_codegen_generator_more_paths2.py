@@ -956,6 +956,19 @@ def test_codegen_generators_allow_external_identifier_of_quantifier() -> None:
     assert "n of them" in PrettyPrinter().pretty_print(ast)
 
 
+def test_codegen_generators_reject_empty_set_expression() -> None:
+    ast = YaraFile(rules=[Rule(name="empty_set", condition=SetExpression([]))])
+
+    with pytest.raises(ValueError, match="Set expression must contain at least one element"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Set expression must contain at least one element"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Set expression must contain at least one element"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Set expression must contain at least one element"):
+        PrettyPrinter().pretty_print(ast)
+
+
 @pytest.mark.parametrize(
     "quantifier",
     [

@@ -7,6 +7,7 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     _visit_binary_operand,
+    validate_set_expression_elements,
 )
 from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
@@ -192,6 +193,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
         return f"{left}{separator}{operator}{separator}{right}"
 
     def visit_set_expression(self, node) -> str:
+        validate_set_expression_elements(node)
         separator = self._comma_separator()
         return f"({separator.join(self.visit(elem) for elem in node.elements)})"
 
