@@ -14,7 +14,7 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, Extern
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
-from yaraast.ast.rules import Rule
+from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
@@ -322,6 +322,43 @@ def test_protobuf_serializer_rejects_non_string_meta_and_pragma_parameter_keys()
 
     with pytest.raises(SerializationError, match="Pragma parameters keys must be strings"):
         serializer.serialize(pragma_ast)
+
+
+@pytest.mark.parametrize(
+    ("ast", "message"),
+    [
+        (YaraFile(imports=[Import(cast(Any, 123))]), "Import module must be a string"),
+        (
+            YaraFile(imports=[Import("pe", alias=cast(Any, 123))]),
+            "Import alias must be a string",
+        ),
+        (YaraFile(includes=[Include(cast(Any, 123))]), "Include path must be a string"),
+        (
+            YaraFile(rules=[Rule(cast(Any, 123), condition=BooleanLiteral(True))]),
+            "Rule name must be a string",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        name="bad_tag",
+                        tags=[Tag(cast(Any, 123))],
+                        condition=BooleanLiteral(True),
+                    ),
+                ],
+            ),
+            "Tag name must be a string",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_non_string_file_and_rule_fields(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
 
 
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:

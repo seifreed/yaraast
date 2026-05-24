@@ -163,14 +163,14 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
 
     for imp in ast.imports:
         pb_import = pb_file.imports.add()
-        pb_import.module = imp.module
-        if hasattr(imp, "alias") and imp.alias:
-            pb_import.alias = imp.alias
+        pb_import.module = _protobuf_required_string(imp.module, "Import module")
+        if hasattr(imp, "alias") and imp.alias is not None:
+            pb_import.alias = _protobuf_required_string(imp.alias, "Import alias")
         _copy_node_metadata_to_protobuf(imp, pb_import)
 
     for inc in ast.includes:
         pb_include = pb_file.includes.add()
-        pb_include.path = inc.path
+        pb_include.path = _protobuf_required_string(inc.path, "Include path")
         _copy_node_metadata_to_protobuf(inc, pb_include)
 
     for extern_rule in ast.extern_rules:
@@ -204,13 +204,13 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
 
 def convert_rule_to_protobuf(rule, pb_rule) -> None:
     """Convert a single rule AST node to protobuf."""
-    pb_rule.name = rule.name
+    pb_rule.name = _protobuf_required_string(rule.name, "Rule name")
     pb_rule.modifiers.extend(str(m) for m in rule.modifiers)
     _copy_node_metadata_to_protobuf(rule, pb_rule)
 
     for tag in rule.tags:
         pb_tag = pb_rule.tags.add()
-        pb_tag.name = tag.name
+        pb_tag.name = _protobuf_required_string(tag.name, "Tag name")
         _copy_node_metadata_to_protobuf(tag, pb_tag)
 
     for entry in rule.meta:
