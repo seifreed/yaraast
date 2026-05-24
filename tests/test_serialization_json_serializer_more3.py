@@ -892,6 +892,30 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
     with pytest.raises(SerializationError, match="CommentGroup comments item must be"):
         serializer.visit(group_with_bad_comment_item)
 
+    rule_with_bad_leading_comments = Rule(
+        "invalid_leading_comments",
+        condition=BooleanLiteral(True),
+    )
+    cast(Any, rule_with_bad_leading_comments).leading_comments = True
+    with pytest.raises(SerializationError, match="leading_comments must be a list"):
+        serializer.serialize(YaraFile(rules=[rule_with_bad_leading_comments]))
+
+    rule_with_bad_leading_comment_item = Rule(
+        "invalid_leading_comment_item",
+        condition=BooleanLiteral(True),
+    )
+    cast(Any, rule_with_bad_leading_comment_item).leading_comments = [object()]
+    with pytest.raises(SerializationError, match="leading_comments item must be"):
+        serializer.serialize(YaraFile(rules=[rule_with_bad_leading_comment_item]))
+
+    rule_with_bad_trailing_comment = Rule(
+        "invalid_trailing_comment",
+        condition=BooleanLiteral(True),
+    )
+    cast(Any, rule_with_bad_trailing_comment).trailing_comment = object()
+    with pytest.raises(SerializationError, match="trailing_comment must be"):
+        serializer.serialize(YaraFile(rules=[rule_with_bad_trailing_comment]))
+
     meta_entry_with_bad_scope = MetaEntry("key", "value")
     cast(Any, meta_entry_with_bad_scope).scope = invalid_text
     with pytest.raises(SerializationError, match="Meta scope must be a string"):

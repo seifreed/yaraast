@@ -110,6 +110,15 @@ def _serialize_enum_value(value: Any, context: str) -> str:
     return _serialize_required_string(getattr(value, "value", None), context)
 
 
+def _serialize_comment_node(serializer, value, context: str) -> dict[str, Any]:
+    from yaraast.ast.comments import Comment, CommentGroup
+
+    if not isinstance(value, Comment | CommentGroup):
+        msg = f"{context} must be a Comment or CommentGroup node"
+        raise SerializationError(msg)
+    return serializer.visit(value)
+
+
 class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]]):
     """Enhanced JSON serializer for YARA AST with metadata."""
 
@@ -137,12 +146,26 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return data
 
     def _with_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> dict[str, Any]:
+        from yaraast.ast.comments import Comment, CommentGroup
+
         if node.location is not None:
             data["location"] = self._serialize_location(node.location)
+        if not isinstance(node.leading_comments, list | tuple):
+            msg = "leading_comments must be a list of Comment or CommentGroup nodes"
+            raise SerializationError(msg)
         if node.leading_comments:
-            data["leading_comments"] = [self.visit(comment) for comment in node.leading_comments]
+            data["leading_comments"] = _serialize_node_list(
+                self,
+                node.leading_comments,
+                "leading_comments",
+                (Comment, CommentGroup),
+            )
         if node.trailing_comment is not None:
-            data["trailing_comment"] = self.visit(node.trailing_comment)
+            data["trailing_comment"] = _serialize_comment_node(
+                self,
+                node.trailing_comment,
+                "trailing_comment",
+            )
         return data
 
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
