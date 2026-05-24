@@ -27,6 +27,20 @@ def _serialize_optional_ast_node(serializer, value, context: str):
     return serializer.visit(value)
 
 
+def _serialize_quantifier(serializer, value):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, bool) or value is None or isinstance(value, list | dict | set | tuple):
+        msg = "quantifier must be a string, number, or expression"
+        raise SerializationError(msg)
+    if isinstance(value, int | float):
+        return value
+    if hasattr(value, "accept"):
+        return serializer.visit(value)
+    msg = "quantifier must be a string, number, or expression"
+    raise SerializationError(msg)
+
+
 def _serialize_modifier_value(value: Any) -> Any:
     if isinstance(value, tuple):
         return list(value)
@@ -218,7 +232,7 @@ def visit_member_access(serializer, node) -> dict[str, Any]:
 def visit_for_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ForExpression",
-        "quantifier": _serialize_ast_value(serializer, node.quantifier),
+        "quantifier": _serialize_quantifier(serializer, node.quantifier),
         "variable": node.variable,
         "iterable": serializer.visit(node.iterable),
         "body": serializer.visit(node.body),
@@ -228,7 +242,7 @@ def visit_for_expression(serializer, node) -> dict[str, Any]:
 def visit_for_of_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ForOfExpression",
-        "quantifier": _serialize_ast_value(serializer, node.quantifier),
+        "quantifier": _serialize_quantifier(serializer, node.quantifier),
         "string_set": _serialize_ast_value(serializer, node.string_set),
         "condition": _serialize_optional_ast_node(
             serializer,
@@ -254,7 +268,7 @@ def visit_in_expression(serializer, node) -> dict[str, Any]:
 def visit_of_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "OfExpression",
-        "quantifier": _serialize_ast_value(serializer, node.quantifier),
+        "quantifier": _serialize_quantifier(serializer, node.quantifier),
         "string_set": _serialize_ast_value(serializer, node.string_set),
     }
 
