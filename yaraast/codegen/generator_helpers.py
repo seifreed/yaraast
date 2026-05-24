@@ -7,7 +7,17 @@ import math
 import re
 from typing import Any, NamedTuple
 
-from yaraast.ast.strings import HexAlternative, HexJump, HexString, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    HexWildcard,
+    PlainString,
+    RegexString,
+)
 from yaraast.regex_literals import (
     VALID_REGEX_MODIFIERS,
     escape_regex_delimiter as _escape_regex_delimiter,
@@ -304,10 +314,15 @@ def _validate_hex_token_sequence(
     inside_alternative: bool,
 ) -> None:
     for token in tokens:
-        if isinstance(token, HexJump):
+        if inside_alternative and isinstance(token, int | str):
+            _validate_hex_byte_value(token, "HexByte")
+        elif isinstance(token, HexJump):
             format_hex_jump_bounds(token.min_jump, token.max_jump)
         elif isinstance(token, HexAlternative):
             _validate_hex_alternative(token)
+        elif not isinstance(token, HexByte | HexNegatedByte | HexNibble | HexWildcard):
+            msg = f"Unsupported hex token '{type(token).__name__}' for libyara output"
+            raise TypeError(msg)
 
     if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
         msg = f"HexJump cannot appear at the beginning or end of {context} for libyara output"

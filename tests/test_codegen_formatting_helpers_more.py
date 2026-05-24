@@ -110,15 +110,15 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
             HexJump(0, 0),
             HexJump(2, 2),
             HexJump(1, 3),
-            SimpleNamespace(),
+            HexByte(0x00),
         ],
     )
     assert (
         build_hex_pattern(hex_node, hex_uppercase=True, hex_spacing=True)
-        == "4D 5A [0-0] [2] [1-3] ??"
+        == "4D 5A [0-0] [2] [1-3] 00"
     )
     assert (
-        build_hex_pattern(hex_node, hex_uppercase=False, hex_spacing=False) == "4d5a[0-0][2][1-3]??"
+        build_hex_pattern(hex_node, hex_uppercase=False, hex_spacing=False) == "4d5a[0-0][2][1-3]00"
     )
 
     complex_hex_node = HexString(
@@ -235,6 +235,7 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
         (HexNibble(high=False, value=0x10), "HexNibble value must be a nibble"),
         (HexJump(True, 1), "HexJump min_jump must be a non-negative integer"),
         (HexJump(2, 1), "HexJump min_jump cannot exceed max_jump"),
+        (SimpleNamespace(), "Unsupported hex token"),
     ],
 )
 def test_pretty_printer_helpers_reject_invalid_direct_hex_tokens(

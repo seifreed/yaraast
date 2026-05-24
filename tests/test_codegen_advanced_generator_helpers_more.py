@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from yaraast.ast.modifiers import StringModifier, StringModifierType
@@ -153,6 +155,7 @@ def test_format_hex_string_no_grouping_and_single_token_formatting() -> None:
         (HexNibble(high=False, value=0x10), "HexNibble value must be a nibble"),
         (HexJump(True, 1), "HexJump min_jump must be a non-negative integer"),
         (HexJump(2, 1), "HexJump min_jump cannot exceed max_jump"),
+        (object(), "Unsupported hex token"),
     ],
 )
 def test_advanced_generator_helpers_reject_invalid_direct_hex_tokens(
@@ -163,6 +166,14 @@ def test_advanced_generator_helpers_reject_invalid_direct_hex_tokens(
 
     with pytest.raises(TypeError, match=message):
         format_hex_string(HexString("$h", tokens=[token]), config)
+
+
+def test_advanced_generator_helpers_reject_unsupported_hex_token_formatting() -> None:
+    config = FormattingConfig(hex_style=HexStyle.UPPERCASE, hex_group_size=0)
+    token: Any = object()
+
+    with pytest.raises(TypeError, match="Unsupported hex token"):
+        format_hex_token(token, config)
 
 
 def test_advanced_generator_helpers_reject_invalid_hex_alternative_scalar() -> None:

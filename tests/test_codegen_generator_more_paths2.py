@@ -267,6 +267,7 @@ def test_codegen_generator_formats_string_backed_negated_hex_bytes() -> None:
         (HexNibble(high=False, value=0x10), "HexNibble value must be a nibble"),
         (HexJump(True, 1), "HexJump min_jump must be a non-negative integer"),
         (HexJump(2, 1), "HexJump min_jump cannot exceed max_jump"),
+        (object(), "Unsupported hex token"),
     ],
 )
 def test_codegen_generator_rejects_invalid_direct_hex_tokens(token: object, message: str) -> None:
@@ -278,6 +279,27 @@ def test_codegen_generator_rejects_invalid_direct_hex_tokens(token: object, mess
 
     with pytest.raises(TypeError, match=message):
         CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
+def test_codegen_generators_reject_unsupported_hex_tokens() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_hex_token",
+                strings=[HexString("$h", tokens=[HexByte(0x41), object(), HexByte(0x42)])],
+                condition=StringIdentifier("$h"),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Unsupported hex token"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Unsupported hex token"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Unsupported hex token"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Unsupported hex token"):
+        PrettyPrinter().pretty_print(ast)
 
 
 def test_codegen_generator_rejects_invalid_direct_hex_alternative_scalar() -> None:

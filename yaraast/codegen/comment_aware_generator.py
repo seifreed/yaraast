@@ -19,6 +19,7 @@ from yaraast.codegen.generator_helpers import (
     format_regex_modifiers,
     output_string_identifier,
     validate_hex_string_modifiers,
+    validate_hex_string_tokens,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
     validate_string_identifiers,
@@ -322,6 +323,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
     def visit_hex_string(self, node: HexString) -> str:
         """Generate code for HexString with comments."""
         validate_hex_string_modifiers(node.modifiers)
+        validate_hex_string_tokens(node.tokens)
 
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)

@@ -48,6 +48,8 @@ def build_hex_pattern(node: HexString, *, hex_uppercase: bool, hex_spacing: bool
 
 
 def _format_hex_token(token, hex_uppercase: bool, hex_spacing: bool) -> str:
+    if isinstance(token, int | str):
+        return _format_hex_byte_value(token, hex_uppercase)
     if isinstance(token, HexByte):
         return _format_hex_byte_value(token.value, hex_uppercase)
     if isinstance(token, HexWildcard):
@@ -75,7 +77,8 @@ def _format_hex_token(token, hex_uppercase: bool, hex_spacing: bool) -> str:
             for alternative in token.alternatives
         ]
         return f"({alt_separator.join(alternatives)})"
-    return "??"
+    msg = f"Unsupported hex token '{type(token).__name__}' for libyara output"
+    raise TypeError(msg)
 
 
 def _format_hex_byte_value(value: int | str, hex_uppercase: bool) -> str:

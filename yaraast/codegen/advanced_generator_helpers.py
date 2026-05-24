@@ -107,6 +107,8 @@ def format_hex_string(node: HexString, config) -> str:
 
 
 def format_hex_token(token: HexToken, config) -> str:
+    if isinstance(token, int | str):
+        return _format_hex_byte_value(token, config)
     if isinstance(token, HexByte):
         return _format_hex_byte_value(token.value, config)
     if isinstance(token, HexNegatedByte):
@@ -120,7 +122,8 @@ def format_hex_token(token: HexToken, config) -> str:
         return _format_hex_jump(token)
     if isinstance(token, HexNibble):
         return _format_hex_nibble(token, config)
-    return ""
+    msg = f"Unsupported hex token '{type(token).__name__}' for libyara output"
+    raise TypeError(msg)
 
 
 def _coerce_hex_token(token) -> HexToken:
