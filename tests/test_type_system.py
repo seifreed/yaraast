@@ -1966,8 +1966,8 @@ class TestTypeInferenceEdgeCases:
         assert isinstance(result, BooleanType)
         assert len(inference.errors) > 0
 
-    def test_infer_for_expression_with_non_boolean_body(self) -> None:
-        """Test inferring for expression with non-boolean body."""
+    def test_infer_for_expression_with_non_scalar_body(self) -> None:
+        """Test inferring for expression with non-scalar condition body."""
         env = TypeEnvironment()
         inference = TypeInference(env)
 
@@ -1978,7 +1978,7 @@ class TestTypeInferenceEdgeCases:
                 low=IntegerLiteral(value=1),
                 high=IntegerLiteral(value=10),
             ),
-            body=IntegerLiteral(value=1),
+            body=SetExpression(elements=[IntegerLiteral(value=1)]),
         )
         result = inference.infer(node)
         assert isinstance(result, BooleanType)
@@ -2153,8 +2153,8 @@ class TestTypeInferenceEdgeCases:
         assert isinstance(result, BooleanType)
         assert len(inference.errors) > 0
 
-    def test_infer_for_of_expression_with_non_boolean_condition(self) -> None:
-        """Test inferring for-of expression with non-boolean condition."""
+    def test_infer_for_of_expression_with_non_scalar_condition(self) -> None:
+        """Test inferring for-of expression with non-scalar condition."""
         env = TypeEnvironment()
         env.add_string("$str1")
         inference = TypeInference(env)
@@ -2162,7 +2162,7 @@ class TestTypeInferenceEdgeCases:
         node = ForOfExpression(
             quantifier=IntegerLiteral(value=1),
             string_set=SetExpression(elements=[StringIdentifier(name="$str1")]),
-            condition=IntegerLiteral(value=1),  # Invalid: should be boolean
+            condition=SetExpression(elements=[IntegerLiteral(value=1)]),
         )
         result = inference.infer(node)
         assert isinstance(result, BooleanType)

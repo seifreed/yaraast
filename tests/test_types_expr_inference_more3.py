@@ -861,6 +861,27 @@ def test_semantic_validator_accepts_for_expression_tuple_iterables() -> None:
     assert result.errors == []
 
 
+def test_semantic_validator_accepts_scalar_for_loop_conditions() -> None:
+    ast = parse_yara_source("""
+        rule scalar_loop_conditions {
+            strings:
+                $a = "a"
+            condition:
+                for any i in (1, 2) : (i) and
+                for any j in (1, 2) : (1.0) and
+                for any k in (1, 2) : ("x") and
+                for any of them : (#) and
+                for any of them : (@) and
+                for any of them : (!)
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid
+    assert result.errors == []
+
+
 def test_expr_inference_flattens_collection_spreads() -> None:
     env = TypeEnvironment()
     env.define("tail", ArrayType(IntegerType()))

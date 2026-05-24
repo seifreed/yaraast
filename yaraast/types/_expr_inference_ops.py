@@ -602,6 +602,13 @@ def _is_string_set_element(element) -> bool:
     return False
 
 
+def _is_condition_type(value_type: YaraType) -> bool:
+    return isinstance(
+        value_type,
+        BooleanType | IntegerType | DoubleType | FloatType | StringType | StringIdentifierType,
+    )
+
+
 def _infer_quantifier_value(ctx, value):
     if hasattr(value, "accept"):
         return ctx.visit(value)
@@ -797,8 +804,8 @@ def infer_module_or_condition(ctx, node):
         iter_type = ctx.visit(node.iterable)
         _define_for_iteration_variables(ctx, variable_names, iter_type)
         body_type = ctx.visit(node.body)
-        if not isinstance(body_type, BooleanType):
-            ctx.errors.append(f"For loop body must return boolean, got {body_type}")
+        if not _is_condition_type(body_type):
+            ctx.errors.append(f"For loop body must return scalar condition, got {body_type}")
         ctx.env.pop_scope()
         return BooleanType()
 
@@ -816,6 +823,6 @@ def infer_module_or_condition(ctx, node):
             cond_type = ctx.visit(node.condition)
         finally:
             ctx.env.pop_scope()
-        if not isinstance(cond_type, BooleanType | StringIdentifierType):
-            ctx.errors.append(f"'for...of' condition must be boolean, got {cond_type}")
+        if not _is_condition_type(cond_type):
+            ctx.errors.append(f"'for...of' condition must be scalar condition, got {cond_type}")
     return BooleanType()
