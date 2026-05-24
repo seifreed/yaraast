@@ -646,9 +646,16 @@ def visit_dictionary_access(serializer, node) -> dict[str, Any]:
 
 
 def visit_comment_group(serializer, node) -> dict[str, Any]:
+    from yaraast.ast.comments import Comment
+
     return {
         "type": "CommentGroup",
-        "comments": [serializer.visit(comment) for comment in node.comments],
+        "comments": _serialize_node_list(
+            serializer,
+            node.comments,
+            "CommentGroup comments",
+            Comment,
+        ),
     }
 
 

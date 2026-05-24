@@ -8,7 +8,7 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.base import Location, YaraFile
-from yaraast.ast.comments import Comment
+from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -685,21 +685,6 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
         with pytest.raises(SerializationError, match=message):
             serializer.serialize(ast)
 
-    block_with_bad_pragmas = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
-    cast(Any, block_with_bad_pragmas).pragmas = False
-    with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
-        serializer.visit(block_with_bad_pragmas)
-
-    block_with_bad_pragma_item = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
-    cast(Any, block_with_bad_pragma_item).pragmas = [object()]
-    with pytest.raises(SerializationError, match="PragmaBlock pragmas item must be"):
-        serializer.visit(block_with_bad_pragma_item)
-
-    block_with_bad_scope = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
-    cast(Any, block_with_bad_scope).scope = invalid_text
-    with pytest.raises(SerializationError, match="PragmaBlock scope must be a string"):
-        serializer.visit(block_with_bad_scope)
-
     invalid_reference = ExternRuleReference(invalid_text)
     with pytest.raises(SerializationError, match="ExternRuleReference rule_name must be a string"):
         serializer.visit(invalid_reference)
@@ -832,6 +817,31 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
     for ast, message in invalid_cases:
         with pytest.raises(SerializationError, match=message):
             serializer.serialize(ast)
+
+    block_with_bad_pragmas = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
+    cast(Any, block_with_bad_pragmas).pragmas = False
+    with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
+        serializer.visit(block_with_bad_pragmas)
+
+    block_with_bad_pragma_item = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
+    cast(Any, block_with_bad_pragma_item).pragmas = [object()]
+    with pytest.raises(SerializationError, match="PragmaBlock pragmas item must be"):
+        serializer.visit(block_with_bad_pragma_item)
+
+    block_with_bad_scope = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
+    cast(Any, block_with_bad_scope).scope = invalid_text
+    with pytest.raises(SerializationError, match="PragmaBlock scope must be a string"):
+        serializer.visit(block_with_bad_scope)
+
+    group_with_bad_comments = CommentGroup([Comment("comment")])
+    cast(Any, group_with_bad_comments).comments = False
+    with pytest.raises(SerializationError, match="CommentGroup comments must be a list"):
+        serializer.visit(group_with_bad_comments)
+
+    group_with_bad_comment_item = CommentGroup([Comment("comment")])
+    cast(Any, group_with_bad_comment_item).comments = [object()]
+    with pytest.raises(SerializationError, match="CommentGroup comments item must be"):
+        serializer.visit(group_with_bad_comment_item)
 
 
 def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
