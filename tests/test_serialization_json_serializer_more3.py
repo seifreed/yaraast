@@ -212,6 +212,31 @@ def test_json_serializer_rejects_invalid_raw_quantifiers() -> None:
                 serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_non_finite_numbers() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_numbers = [float("nan"), float("inf"), float("-inf")]
+
+    for invalid_number in invalid_numbers:
+        ast = YaraFile(rules=[Rule(name="invalid_double", condition=DoubleLiteral(invalid_number))])
+        with pytest.raises(SerializationError, match="DoubleLiteral value must be finite"):
+            serializer.serialize(ast)
+
+        expressions = [
+            ForExpression(
+                invalid_number,
+                "i",
+                Identifier("items"),
+                BooleanLiteral(True),
+            ),
+            ForOfExpression(invalid_number, "them", None),
+            OfExpression(invalid_number, "them"),
+        ]
+        for expression in expressions:
+            ast = YaraFile(rules=[Rule(name="invalid_quantifier_number", condition=expression)])
+            with pytest.raises(SerializationError, match="quantifier must be finite"):
+                serializer.serialize(ast)
+
+
 def test_json_serializer_rejects_non_expression_ast_quantifiers() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_quantifier: Any = Import("pe")

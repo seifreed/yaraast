@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import math
 from typing import Any
 
 from yaraast.errors import SerializationError
@@ -59,6 +60,9 @@ def _serialize_required_int(value, context: str) -> int:
 def _serialize_required_number(value, context: str) -> int | float:
     if isinstance(value, bool) or not isinstance(value, int | float):
         msg = f"{context} must be numeric"
+        raise SerializationError(msg)
+    if isinstance(value, float) and not math.isfinite(value):
+        msg = f"{context} must be finite"
         raise SerializationError(msg)
     return value
 
@@ -165,6 +169,9 @@ def _serialize_quantifier(serializer, value):
         msg = "quantifier must be a string, number, or expression"
         raise SerializationError(msg)
     if isinstance(value, int | float):
+        if isinstance(value, float) and not math.isfinite(value):
+            msg = "quantifier must be finite"
+            raise SerializationError(msg)
         return value
     if isinstance(value, Expression):
         return serializer.visit(value)
