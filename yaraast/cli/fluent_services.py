@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterable
 from enum import StrEnum
 
+from yaraast.ast.base import ASTNode
+from yaraast.ast.rules import Rule
 from yaraast.builder import (
     malware_rule,
     packed_rule,
@@ -28,7 +30,7 @@ class RuleTemplate(StrEnum):
     NETWORK = "network"
 
 
-def generate_code(ast_or_rule) -> str:
+def generate_code(ast_or_rule: ASTNode) -> str:
     """Generate YARA code from AST or rule."""
     return CodeGenerator().generate(ast_or_rule)
 
@@ -65,11 +67,11 @@ def create_example_rules():
     )
 
 
-def create_string_patterns_rule():
+def create_string_patterns_rule() -> Rule:
     """Create demo rule with string patterns."""
     return (
         rule("string_pattern_demo")
-        .tagged("demo", "strings")
+        .tagged("demo", "string_patterns")
         .authored_by("Fluent API Demo")
         .described_as("Demonstration of string pattern builders")
         .string("$text1")
@@ -100,7 +102,7 @@ def create_string_patterns_rule():
         .nocase()
         .then()
         .string("$regex2")
-        .regex(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
+        .regex(r"\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
         .then()
         .mz_header("$mz")
         .pe_header("$pe")

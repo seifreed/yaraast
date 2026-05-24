@@ -112,6 +112,73 @@ def test_parse_rejects_invalid_regex_patterns(source: str) -> None:
 
 
 @pytest.mark.parametrize(
+    "pattern",
+    [
+        "+",
+        "?",
+        "a**",
+        "a++",
+        "a*+",
+        "a{2,1}",
+        "[]",
+        "[z-a]",
+        r"[\x]",
+        r"[\x0]",
+        "(?:a)",
+        "(?=a)",
+        "(?!a)",
+        "(?P<x>a)",
+        "|a",
+        "(|a)",
+        "()",
+        r"\x",
+        r"\x0",
+        r"\1",
+        "^*",
+        r"\b*",
+    ],
+)
+def test_parse_rejects_libyara_invalid_regex_patterns(pattern: str) -> None:
+    string_source = f"rule r {{ strings: $a = /{pattern}/ condition: $a }}"
+    condition_source = f'rule r {{ condition: "abc" matches /{pattern}/ }}'
+
+    for source in (string_source, condition_source):
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="regex"):
+                parser_factory().parse(source)
+
+
+@pytest.mark.parametrize(
+    "pattern",
+    [
+        "a*?",
+        "a+?",
+        "a??",
+        "a{,2}",
+        "a{2,}",
+        "a{x}",
+        "a{1,2,3}",
+        "a|",
+        "a||b",
+        "(a|)",
+        "(a||b)",
+        r"\q",
+        r"[\1]",
+        "[]a]",
+        "[^]a]",
+    ],
+)
+def test_parse_accepts_libyara_valid_regex_edge_cases(pattern: str) -> None:
+    source = f"rule r {{ strings: $a = /{pattern}/ condition: $a }}"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        string_def = ast.rules[0].strings[0]
+        assert isinstance(string_def, RegexString)
+        assert string_def.regex == pattern
+
+
+@pytest.mark.parametrize(
     ("hex_pattern", "expected_value", "expected_output"),
     [
         ("{ ~?0 }", "?0", "~?0"),

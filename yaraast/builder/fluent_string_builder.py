@@ -237,7 +237,7 @@ class FluentStringBuilder:
 
     def ip_address_pattern(self) -> FluentStringBuilder:
         """IP address regex pattern."""
-        return self.regex(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
+        return self.regex(r"\b([0-9]{1,3}\.){3}[0-9]{1,3}\b")
 
     def url_pattern(self) -> FluentStringBuilder:
         """URL regex pattern."""

@@ -34,6 +34,7 @@ from yaraast.builder.fluent_string_builder import (
     url_regex,
 )
 from yaraast.errors import ValidationError
+from yaraast.parser.parser import Parser
 
 
 def _hex_content(builder: FluentStringBuilder) -> list[HexToken]:
@@ -456,6 +457,8 @@ class TestFluentStringBuilderCommonPatterns:
         string_def = result.build()
 
         assert isinstance(string_def, RegexString)
+        assert "(?:" not in string_def.regex
+        Parser(f"rule r {{ strings: $ip = /{string_def.regex}/ condition: $ip }}").parse()
 
     def test_url_pattern_creates_url_regex(self) -> None:
         """Url_pattern should create URL regex."""
@@ -748,6 +751,10 @@ class TestFluentStringBuilderConvenienceFunctions:
         builder = ip_regex()
 
         assert builder.identifier == "$ip"
+        string_def = builder.build()
+        assert isinstance(string_def, RegexString)
+        assert "(?:" not in string_def.regex
+        Parser(f"rule r {{ strings: $ip = /{string_def.regex}/ condition: $ip }}").parse()
 
     def test_url_regex_function_creates_url_pattern(self) -> None:
         """Url_regex function should create URL pattern."""

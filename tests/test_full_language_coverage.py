@@ -129,7 +129,7 @@ def test_complex_regex_in_expressions() -> None:
         strings:
             $a = /[a-z]{3,5}/ nocase
             $b = /\w+@\w+\.\w+/
-            $c = /(?:https?|ftp):\/\/[^\s]+/i
+            $c = /(https?|ftp):\/\/[^\s]+/i
 
         condition:
             $a and

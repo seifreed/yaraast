@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yaraast.cli import fluent_services as fs
+from yaraast.parser.parser import Parser
 
 
 def test_create_template_rule_supports_trojan_packed_and_generic_types() -> None:
@@ -25,3 +26,10 @@ def test_create_template_rule_supports_trojan_packed_and_generic_types() -> None
     assert "rule generic_demo" in generic_code
     assert "custom" in generic_code
     assert "tag3" in generic_code
+
+
+def test_create_string_patterns_rule_generates_parseable_regexes() -> None:
+    code = fs.generate_code(fs.create_string_patterns_rule())
+
+    assert "(?:" not in code
+    Parser(code).parse()
