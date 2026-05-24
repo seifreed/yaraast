@@ -1294,3 +1294,19 @@ def test_protobuf_serializer_preserves_node_comment_metadata() -> None:
     assert restored_condition is not None
     assert restored_condition.trailing_comment is not None
     assert restored_condition.trailing_comment.text == "condition tail"
+
+
+def test_protobuf_serializer_preserves_empty_comment_groups() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    rule = Rule(name="empty_comment_groups", condition=BooleanLiteral(True))
+    rule.leading_comments = cast(Any, [CommentGroup([])])
+    rule.trailing_comment = cast(Any, CommentGroup([]))
+    ast = YaraFile(rules=[rule])
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert len(restored.rules[0].leading_comments) == 1
+    assert isinstance(restored.rules[0].leading_comments[0], CommentGroup)
+    assert restored.rules[0].leading_comments[0].comments == []
+    assert isinstance(restored.rules[0].trailing_comment, CommentGroup)
+    assert restored.rules[0].trailing_comment.comments == []

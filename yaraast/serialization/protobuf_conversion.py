@@ -116,6 +116,7 @@ def _copy_comment_metadata_to_protobuf(
 
     if isinstance(comment, CommentGroup):
         pb_group = pb_comment_metadata.group
+        pb_group.SetInParent()
         for nested_comment in _protobuf_comment_list(
             comment.comments,
             "CommentGroup comments",
@@ -1125,6 +1126,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     elif isinstance(expr, ParenthesesExpression):
         convert_expression_to_protobuf(expr.expression, pb_expr.parentheses_expression.expression)
     elif isinstance(expr, SetExpression):
+        pb_expr.set_expression.SetInParent()
         for element in _protobuf_node_list(expr.elements, "SetExpression elements", Expression):
             convert_expression_to_protobuf(element, pb_expr.set_expression.elements.add())
     elif isinstance(expr, RangeExpression):
@@ -1284,15 +1286,18 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 pb_expr.dict_comprehension.condition,
             )
     elif isinstance(expr, TupleExpression):
+        pb_expr.tuple_expression.SetInParent()
         for element in _protobuf_node_list(expr.elements, "TupleExpression elements", Expression):
             convert_expression_to_protobuf(element, pb_expr.tuple_expression.elements.add())
     elif isinstance(expr, TupleIndexing):
         convert_expression_to_protobuf(expr.tuple_expr, pb_expr.tuple_indexing.tuple_expr)
         convert_expression_to_protobuf(expr.index, pb_expr.tuple_indexing.index)
     elif isinstance(expr, ListExpression):
+        pb_expr.list_expression.SetInParent()
         for element in _protobuf_node_list(expr.elements, "ListExpression elements", Expression):
             convert_expression_to_protobuf(element, pb_expr.list_expression.elements.add())
     elif isinstance(expr, DictExpression):
+        pb_expr.dict_expression.SetInParent()
         for item in _protobuf_node_list(expr.items, "DictExpression items", DictItem):
             convert_dict_item_to_protobuf(item, pb_expr.dict_expression.items.add())
     elif isinstance(expr, SliceExpression):

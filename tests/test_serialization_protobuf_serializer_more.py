@@ -55,6 +55,7 @@ from yaraast.ast.strings import (
 from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
+from yaraast.yarax.ast_nodes import DictExpression, ListExpression, TupleExpression
 
 
 def _sample_ast() -> YaraFile:
@@ -192,6 +193,26 @@ def test_protobuf_serializer_preserves_empty_hex_alternative() -> None:
 
     assert isinstance(string_def, HexString)
     assert string_def.tokens == [alternative]
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        SetExpression([]),
+        TupleExpression([]),
+        ListExpression([]),
+        DictExpression([]),
+    ],
+)
+def test_protobuf_serializer_preserves_empty_collection_expressions(
+    condition: Expression,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="empty_collection", condition=condition)])
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert restored.rules[0].condition == condition
 
 
 def test_protobuf_serializer_normalizes_scalar_hex_alternatives() -> None:
