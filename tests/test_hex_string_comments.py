@@ -22,7 +22,7 @@ class TestHexStringComments:
             strings:
                 $a = {
                     4? 63 [3]        // comment with {brace}
-                    4? 8b [2-6]
+                    4? 8b [2-6] 90
                 }
             condition:
                 $a
@@ -37,8 +37,8 @@ class TestHexStringComments:
         assert isinstance(string_def, HexString)
         assert string_def.identifier == "$a"
 
-        # Verify tokens parsed correctly: 4? 63 [3] 4? 8b [2-6]
-        assert len(string_def.tokens) == 6
+        # Verify tokens parsed correctly: 4? 63 [3] 4? 8b [2-6] 90
+        assert len(string_def.tokens) == 7
         # First line: 4? 63 [3]
         assert isinstance(string_def.tokens[0], HexNibble)
         assert string_def.tokens[0].high is True
@@ -51,7 +51,7 @@ class TestHexStringComments:
         assert string_def.tokens[2].min_jump == 3
         assert string_def.tokens[2].max_jump == 3
 
-        # Second line: 4? 8b [2-6]
+        # Second line: 4? 8b [2-6] 90
         assert isinstance(string_def.tokens[3], HexNibble)
         assert string_def.tokens[3].high is True
         assert string_def.tokens[3].value == 4
@@ -63,13 +63,16 @@ class TestHexStringComments:
         assert string_def.tokens[5].min_jump == 2
         assert string_def.tokens[5].max_jump == 6
 
+        assert isinstance(string_def.tokens[6], HexByte)
+        assert string_def.tokens[6].value == 0x90
+
     def test_hex_string_with_multiline_comment_containing_brace(self) -> None:
         """Multi-line comment with brace should not confuse lexer."""
         yara_code = """rule Test {
             strings:
                 $a = {
                     4? 63 [3]        /* comment with {brace} */
-                    4? 8b [2-6]
+                    4? 8b [2-6] 90
                 }
             condition:
                 $a
@@ -84,14 +87,15 @@ class TestHexStringComments:
         assert isinstance(string_def, HexString)
         assert string_def.identifier == "$a"
 
-        # Verify tokens parsed correctly: 4? 63 [3] 4? 8b [2-6]
-        assert len(string_def.tokens) == 6
+        # Verify tokens parsed correctly: 4? 63 [3] 4? 8b [2-6] 90
+        assert len(string_def.tokens) == 7
         assert isinstance(string_def.tokens[0], HexNibble)
         assert isinstance(string_def.tokens[1], HexByte)
         assert isinstance(string_def.tokens[2], HexJump)
         assert isinstance(string_def.tokens[3], HexNibble)
         assert isinstance(string_def.tokens[4], HexByte)
         assert isinstance(string_def.tokens[5], HexJump)
+        assert isinstance(string_def.tokens[6], HexByte)
 
     def test_hex_string_with_multiple_comments_with_braces(self) -> None:
         """Multiple comments with braces should all be handled correctly."""
@@ -213,7 +217,7 @@ class TestHexStringComments:
             strings:
                 $s_packer_xor = {
                     4? 63 [3]                       // movsxd  rax, dword [rsp+0x50 {var_78}]
-                    4? 8b [2-6]                     // mov     rcx, qword [rsp+0xd0 {arg_8}]
+                    4? 8b [2-6] 90                  // mov     rcx, qword [rsp+0xd0 {arg_8}]
                 }
             condition:
                 $s_packer_xor
@@ -230,8 +234,8 @@ class TestHexStringComments:
         assert isinstance(string_def, HexString)
         assert string_def.identifier == "$s_packer_xor"
 
-        # Verify structure: 4? 63 [3] 4? 8b [2-6]
-        assert len(string_def.tokens) == 6
+        # Verify structure: 4? 63 [3] 4? 8b [2-6] 90
+        assert len(string_def.tokens) == 7
 
         # First pattern: 4? 63 [3]
         assert isinstance(string_def.tokens[0], HexNibble)
@@ -245,7 +249,7 @@ class TestHexStringComments:
         assert string_def.tokens[2].min_jump == 3
         assert string_def.tokens[2].max_jump == 3
 
-        # Second pattern: 4? 8b [2-6]
+        # Second pattern: 4? 8b [2-6] 90
         assert isinstance(string_def.tokens[3], HexNibble)
         assert string_def.tokens[3].high is True
         assert string_def.tokens[3].value == 4
@@ -256,6 +260,9 @@ class TestHexStringComments:
         assert isinstance(string_def.tokens[5], HexJump)
         assert string_def.tokens[5].min_jump == 2
         assert string_def.tokens[5].max_jump == 6
+
+        assert isinstance(string_def.tokens[6], HexByte)
+        assert string_def.tokens[6].value == 0x90
 
     def test_hex_string_comment_with_brackets_and_braces(self) -> None:
         """Comment with both brackets and braces should work."""

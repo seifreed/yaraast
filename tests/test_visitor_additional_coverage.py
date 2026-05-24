@@ -106,7 +106,7 @@ class TestAdditionalParserBasedCoverage:
                 date = "2026-01-30"
             strings:
                 $plain = "test" wide
-                $hex = { 4D 5A ?? [2-4] }
+                $hex = { 4D 5A ?? [2-4] 00 }
                 $regex = /test[0-9]+/i
             condition:
                 ($plain or $hex or $regex) and

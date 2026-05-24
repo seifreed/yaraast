@@ -105,7 +105,29 @@ class HexStringParser:
             msg = "Empty hex string"
             raise HexParseError(msg)
 
+        self._validate_jump_placement(tokens, in_alternative=False)
         return tokens
+
+    def _validate_jump_placement(
+        self,
+        tokens: list[HexToken],
+        *,
+        in_alternative: bool,
+    ) -> None:
+        """Validate libyara placement rules for parsed jump tokens."""
+        if not tokens:
+            return
+        if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
+            msg = "Invalid jump placement"
+            raise HexParseError(msg)
+
+        for token in tokens:
+            if isinstance(token, HexJump) and in_alternative and token.max_jump is None:
+                msg = "Unbounded jump not allowed inside alternative"
+                raise HexParseError(msg)
+            if isinstance(token, HexAlternative):
+                for alternative in token.alternatives:
+                    self._validate_jump_placement(alternative, in_alternative=True)
 
     def _remove_comments(self, content: str) -> str:
         """Remove single-line and multi-line comments from hex content.

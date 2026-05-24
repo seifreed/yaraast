@@ -17,7 +17,7 @@ from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 def test_hex_parser_basic_tokens() -> None:
     parser = HexStringParser()
-    tokens = parser.parse("6A 4F ?? A? ?B [2-4] [3]")
+    tokens = parser.parse("6A 4F ?? A? ?B [2-4] 00 [3] 11")
 
     assert any(isinstance(t, HexByte) for t in tokens)
     assert any(isinstance(t, HexWildcard) for t in tokens)

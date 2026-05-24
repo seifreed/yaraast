@@ -475,8 +475,8 @@ rule ComplexRule1 : malware trojan {
 
 rule ComplexRule2 {
     strings:
-        $a = { FF 25 [4] }
-        $b = { E8 [4] }
+        $a = { FF 25 [4] 00 }
+        $b = { E8 [4] 00 }
     condition:
         for all i in (1..#a) : (
             @a[i] < pe.entry_point and

@@ -154,7 +154,7 @@ class TestBaseVisitorComprehensive:
         yara_code = """
         rule test {
             strings:
-                $hex = { 4D 5A ?? [2-4] }
+                $hex = { 4D 5A ?? [2-4] 00 }
             condition:
                 $hex
         }

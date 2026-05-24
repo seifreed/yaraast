@@ -179,6 +179,47 @@ def test_parse_accepts_libyara_valid_regex_edge_cases(pattern: str) -> None:
 
 
 @pytest.mark.parametrize(
+    "hex_pattern",
+    [
+        "[1-2]",
+        "00 [1-2]",
+        "[1-2] 00",
+        "00 ( [1-2] | 11 ) 22",
+        "00 ( 11 [1-2] | 22 ) 33",
+        "00 ( 11 | [1-2] 22 ) 33",
+        "00 ( 11 [-] 22 | 33 ) 44",
+        "00 ( 11 [1-] 22 | 33 ) 44",
+    ],
+)
+def test_parse_rejects_invalid_hex_jump_placement(hex_pattern: str) -> None:
+    source = f"rule r {{ strings: $a = {{ {hex_pattern} }} condition: $a }}"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="Hex parse error"):
+            parser_factory().parse(source)
+
+
+@pytest.mark.parametrize(
+    "hex_pattern",
+    [
+        "00 [1-2] 11",
+        "00 [1] 11",
+        "00 [-] 11",
+        "00 [1-] 11",
+        "00 ( 11 [1-2] 22 | 33 ) 44",
+        "00 ( 11 [0-2] 22 | 33 ) 44",
+    ],
+)
+def test_parse_accepts_valid_hex_jump_placement(hex_pattern: str) -> None:
+    source = f"rule r {{ strings: $a = {{ {hex_pattern} }} condition: $a }}"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        string_def = ast.rules[0].strings[0]
+        assert isinstance(string_def, HexString)
+
+
+@pytest.mark.parametrize(
     ("hex_pattern", "expected_value", "expected_output"),
     [
         ("{ ~?0 }", "?0", "~?0"),
