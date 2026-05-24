@@ -875,6 +875,81 @@ def test_json_deserialize_condition_fields_reject_wrong_scalar_types() -> None:
         )
 
 
+def test_json_deserialize_optional_expression_fields_reject_empty_objects() -> None:
+    s = JsonSerializer()
+    true_expr = {"type": "BooleanLiteral", "value": True}
+
+    with pytest.raises(SerializationError, match="Rule condition must be an expression"):
+        s._deserialize_rule({"name": "bad_condition", "condition": {}})
+
+    empty_optional_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "StringOffset", "string_id": "$a", "index": {}},
+            "StringOffset index must be an expression",
+        ),
+        (
+            {"type": "StringLength", "string_id": "$a", "index": {}},
+            "StringLength index must be an expression",
+        ),
+        (
+            {
+                "type": "ForOfExpression",
+                "quantifier": "any",
+                "string_set": "them",
+                "condition": {},
+            },
+            "ForOfExpression condition must be an expression",
+        ),
+        (
+            {"type": "ArrayComprehension", "expression": {}},
+            "ArrayComprehension expression must be an expression",
+        ),
+        (
+            {"type": "ArrayComprehension", "iterable": {}},
+            "ArrayComprehension iterable must be an expression",
+        ),
+        (
+            {"type": "ArrayComprehension", "condition": {}},
+            "ArrayComprehension condition must be an expression",
+        ),
+        (
+            {"type": "DictComprehension", "key_expression": {}},
+            "DictComprehension key_expression must be an expression",
+        ),
+        (
+            {"type": "DictComprehension", "value_expression": {}},
+            "DictComprehension value_expression must be an expression",
+        ),
+        (
+            {"type": "DictComprehension", "iterable": {}},
+            "DictComprehension iterable must be an expression",
+        ),
+        (
+            {"type": "DictComprehension", "condition": {}},
+            "DictComprehension condition must be an expression",
+        ),
+        (
+            {"type": "SliceExpression", "target": true_expr, "start": {}},
+            "SliceExpression start must be an expression",
+        ),
+        (
+            {"type": "SliceExpression", "target": true_expr, "stop": {}},
+            "SliceExpression stop must be an expression",
+        ),
+        (
+            {"type": "SliceExpression", "target": true_expr, "step": {}},
+            "SliceExpression step must be an expression",
+        ),
+        (
+            {"type": "PatternMatch", "value": true_expr, "cases": [], "default": {}},
+            "PatternMatch default must be an expression",
+        ),
+    )
+    for payload, message in empty_optional_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
+
 def test_deserialize_expression_comprehensive_branches() -> None:
     s = JsonSerializer()
 

@@ -38,10 +38,14 @@ def _deserialize_ast_value(self, data):
     return data
 
 
-def _deserialize_optional_expression(self, data):
+def _deserialize_optional_expression(self, data, context: str):
     if data is None:
         return None
-    return self._deserialize_expression(data)
+    expression = self._deserialize_expression(data)
+    if expression is not None:
+        return expression
+    msg = f"{context} must be an expression"
+    raise SerializationError(msg)
 
 
 def _deserialize_required_expression(self, data: dict[str, Any], field: str, context: str) -> Any:
@@ -499,7 +503,7 @@ def _deser_string_offset(self, data: dict[str, Any]):
     index = data.get("index")
     return StringOffset(
         string_id=_deserialize_string_field(data, "string_id", "StringOffset"),
-        index=_deserialize_optional_expression(self, index),
+        index=_deserialize_optional_expression(self, index, "StringOffset index"),
     )
 
 
@@ -509,7 +513,7 @@ def _deser_string_length(self, data: dict[str, Any]):
     index = data.get("index")
     return StringLength(
         string_id=_deserialize_string_field(data, "string_id", "StringLength"),
-        index=_deserialize_optional_expression(self, index),
+        index=_deserialize_optional_expression(self, index, "StringLength index"),
     )
 
 
@@ -564,7 +568,7 @@ def _deser_for_of_expression(self, data: dict[str, Any]):
     return ForOfExpression(
         quantifier=_deserialize_required_ast_value(self, data, "quantifier", "ForOfExpression"),
         string_set=_deserialize_required_ast_value(self, data, "string_set", "ForOfExpression"),
-        condition=_deserialize_optional_expression(self, condition),
+        condition=_deserialize_optional_expression(self, condition, "ForOfExpression condition"),
     )
 
 
@@ -695,10 +699,16 @@ def _deser_array_comprehension(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import ArrayComprehension
 
     return ArrayComprehension(
-        expression=_deserialize_optional_expression(self, data.get("expression")),
+        expression=_deserialize_optional_expression(
+            self, data.get("expression"), "ArrayComprehension expression"
+        ),
         variable=_deserialize_optional_string_field(data, "variable", "ArrayComprehension"),
-        iterable=_deserialize_optional_expression(self, data.get("iterable")),
-        condition=_deserialize_optional_expression(self, data.get("condition")),
+        iterable=_deserialize_optional_expression(
+            self, data.get("iterable"), "ArrayComprehension iterable"
+        ),
+        condition=_deserialize_optional_expression(
+            self, data.get("condition"), "ArrayComprehension condition"
+        ),
     )
 
 
@@ -706,14 +716,22 @@ def _deser_dict_comprehension(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import DictComprehension
 
     return DictComprehension(
-        key_expression=_deserialize_optional_expression(self, data.get("key_expression")),
-        value_expression=_deserialize_optional_expression(self, data.get("value_expression")),
+        key_expression=_deserialize_optional_expression(
+            self, data.get("key_expression"), "DictComprehension key_expression"
+        ),
+        value_expression=_deserialize_optional_expression(
+            self, data.get("value_expression"), "DictComprehension value_expression"
+        ),
         key_variable=_deserialize_optional_string_field(data, "key_variable", "DictComprehension"),
         value_variable=_deserialize_nullable_string_field(
             data, "value_variable", "DictComprehension"
         ),
-        iterable=_deserialize_optional_expression(self, data.get("iterable")),
-        condition=_deserialize_optional_expression(self, data.get("condition")),
+        iterable=_deserialize_optional_expression(
+            self, data.get("iterable"), "DictComprehension iterable"
+        ),
+        condition=_deserialize_optional_expression(
+            self, data.get("condition"), "DictComprehension condition"
+        ),
     )
 
 
@@ -764,9 +782,9 @@ def _deser_slice_expression(self, data: dict[str, Any]):
 
     return SliceExpression(
         target=_deserialize_required_expression(self, data, "target", "SliceExpression"),
-        start=_deserialize_optional_expression(self, data.get("start")),
-        stop=_deserialize_optional_expression(self, data.get("stop")),
-        step=_deserialize_optional_expression(self, data.get("step")),
+        start=_deserialize_optional_expression(self, data.get("start"), "SliceExpression start"),
+        stop=_deserialize_optional_expression(self, data.get("stop"), "SliceExpression stop"),
+        step=_deserialize_optional_expression(self, data.get("step"), "SliceExpression step"),
     )
 
 
@@ -785,7 +803,7 @@ def _deser_pattern_match(self, data: dict[str, Any]):
     return PatternMatch(
         value=_deserialize_required_expression(self, data, "value", "PatternMatch"),
         cases=_deserialize_expression_list_field(self, data, "cases", "PatternMatch"),
-        default=_deserialize_optional_expression(self, data.get("default")),
+        default=_deserialize_optional_expression(self, data.get("default"), "PatternMatch default"),
     )
 
 
@@ -900,9 +918,7 @@ class JsonSerializerDeserializeMixin:
             self._deserialize_string(s) for s in _deserialize_list_field(data, "strings", "Rule")
         ]
         condition_data = data.get("condition")
-        condition = (
-            self._deserialize_expression(condition_data) if condition_data is not None else None
-        )
+        condition = _deserialize_optional_expression(self, condition_data, "Rule condition")
 
         tags = [self._deserialize_tag(t) for t in _deserialize_list_field(data, "tags", "Rule")]
         pragmas = [
