@@ -279,6 +279,9 @@ def _deserialize_hex_jump_bounds(data: dict[str, Any]) -> tuple[int | None, int 
 
 def _deserialize_string_field(data: dict[str, Any], field: str, context: str) -> str:
     data = _deserialize_object(data, context)
+    if field not in data:
+        msg = f"{context} {field} is required"
+        raise SerializationError(msg)
     value = data[field]
     if isinstance(value, str):
         return value

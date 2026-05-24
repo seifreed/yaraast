@@ -163,6 +163,9 @@ def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
 
 def _deserialize_string_field(data: dict[str, Any], field: str, context: str) -> str:
     data = _deserialize_object(data, context)
+    if field not in data:
+        msg = f"{context} {field} is required"
+        raise SerializationError(msg)
     value = data[field]
     if isinstance(value, str):
         return value
