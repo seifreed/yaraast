@@ -8,6 +8,7 @@ from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefin
 from yaraast.codegen.generator_formatting import escape_string_literal, format_meta_key
 from yaraast.codegen.pretty_printer_helpers import (
     build_hex_pattern,
+    current_indent,
     format_plain_string,
     format_regex_string,
     modifiers_to_string,
@@ -57,6 +58,7 @@ def write_strings_section(printer, strings: list[StringDefinition]) -> None:
 
 def write_plain_string_aligned(printer, node: PlainString) -> None:
     """Write a plain string honoring alignment options."""
+    printer._write(current_indent(printer))
     if printer.options.align_string_definitions and printer._string_alignment_column > 0:
         padding = max(0, printer._string_alignment_column - len(output_string_identifier(node)))
         printer._write(format_plain_string(node, '"', padding))
@@ -68,6 +70,7 @@ def write_plain_string_aligned(printer, node: PlainString) -> None:
 
 def write_hex_string_aligned(printer, node: HexString) -> None:
     """Write a hex string honoring alignment and casing options."""
+    printer._write(current_indent(printer))
     hex_pattern = build_hex_pattern(
         node,
         hex_uppercase=printer.options.hex_uppercase,
@@ -85,6 +88,7 @@ def write_hex_string_aligned(printer, node: HexString) -> None:
 
 def write_regex_string_aligned(printer, node: RegexString) -> None:
     """Write a regex string honoring alignment options."""
+    printer._write(current_indent(printer))
     if printer.options.align_string_definitions and printer._string_alignment_column > 0:
         padding = max(0, printer._string_alignment_column - len(output_string_identifier(node)))
         printer._write(format_regex_string(node, padding))

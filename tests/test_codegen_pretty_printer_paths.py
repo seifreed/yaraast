@@ -62,6 +62,30 @@ def test_pretty_printer_paths_for_includes_modifiers_wrapping_and_fallback() -> 
     assert "condition:" in out
 
 
+def test_pretty_printer_indents_string_entries_under_section() -> None:
+    rule = Rule(
+        name="indented_strings",
+        strings=[
+            PlainString("$a", value="abc"),
+            HexString("$h", tokens=[HexByte(0x4D)]),
+            RegexString("$r", regex="ab.*"),
+        ],
+        condition=BooleanLiteral(True),
+    )
+
+    out = PrettyPrinter(PrettyPrintOptions(align_string_definitions=False)).pretty_print(
+        YaraFile(rules=[rule])
+    )
+
+    assert (
+        "\n    strings:\n"
+        '        $a = "abc"\n'
+        "        $h = { 4D }\n"
+        "        $r = /ab.*/\n"
+        "\n    condition:\n"
+    ) in out
+
+
 def test_pretty_printer_preserves_top_level_extensions() -> None:
     yf = YaraFile(
         pragmas=[IncludeOncePragma()],
@@ -228,6 +252,13 @@ def test_pretty_printer_direct_remaining_helper_paths() -> None:
     aligned_out = printer2.buffer.getvalue()
     assert '$a   = "x"' in aligned_out
     assert "$h   = { 4D }" in aligned_out
+
+    printer2.buffer.seek(0)
+    printer2.buffer.truncate(0)
+    printer2.indent_level = 1
+    printer2._write_regex_string_aligned(RegexString("$r", regex="x"))
+    assert printer2.buffer.getvalue() == "    $r   = /x/\n"
+    printer2.indent_level = 0
 
     printer2.buffer.seek(0)
     printer2.buffer.truncate(0)

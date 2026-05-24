@@ -107,6 +107,10 @@ def regex_modifiers_to_string(modifiers) -> str:
     return format_regex_modifiers(modifiers)
 
 
+def current_indent(printer) -> str:
+    return " " * (printer.indent_level * printer.indent_size)
+
+
 def calculate_string_alignment_column(ast) -> int:
     """Calculate alignment column for string identifiers."""
     max_length = 0

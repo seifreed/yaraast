@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from yaraast.codegen.pretty_printer_helpers import (
     build_hex_pattern,
+    current_indent,
     expression_to_string,
     format_plain_string,
     format_regex_string,
@@ -129,6 +130,7 @@ def write_string_definition(printer, string_def) -> None:
             if printer.options.align_string_definitions and printer._string_alignment_column > 0
             else 0
         )
+        printer._write(current_indent(printer))
         printer._write(format_plain_string(string_def, '"', padding))
         printer._write(modifiers_to_string(string_def.modifiers))
         printer._writeline()
@@ -143,8 +145,10 @@ def write_string_definition(printer, string_def) -> None:
         if printer.options.align_string_definitions and printer._string_alignment_column > 0:
             identifier = output_string_identifier(string_def)
             padding = max(0, printer._string_alignment_column - len(identifier))
+            printer._write(current_indent(printer))
             printer._write(f"{identifier}{' ' * padding} = {{ {hex_pattern} }}")
         else:
+            printer._write(current_indent(printer))
             printer._write(f"{output_string_identifier(string_def)} = {{ {hex_pattern} }}")
         printer._write(modifiers_to_string(string_def.modifiers))
         printer._writeline()
@@ -157,6 +161,7 @@ def write_string_definition(printer, string_def) -> None:
             if printer.options.align_string_definitions and printer._string_alignment_column > 0
             else 0
         )
+        printer._write(current_indent(printer))
         printer._write(format_regex_string(string_def, padding))
         printer._write(regex_modifiers_to_string(string_def.modifiers))
         printer._writeline()
