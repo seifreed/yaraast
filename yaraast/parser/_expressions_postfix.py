@@ -9,6 +9,8 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     MemberAccess,
+    ParenthesesExpression,
+    RangeExpression,
     StringIdentifier,
     StringLiteral,
 )
@@ -172,10 +174,7 @@ class ExpressionPostfixMixin:
         """Parse IN postfix expression ($string in range)."""
         if isinstance(expr, StringIdentifier):
             start_token = self._previous()
-            if not self._check(TokenType.LPAREN):
-                msg = "Expected '(' after 'in'"
-                raise ParserError(msg, self._peek())
-            range_expr = self._parse_additive_expression()
+            range_expr = self._parse_parenthesized_range_after_in()
             node = InExpression(subject=expr.name, range=range_expr)
             if getattr(expr, "location", None) is not None:
                 node.location = self._location_from_tokens(
@@ -186,10 +185,7 @@ class ExpressionPostfixMixin:
             return self._set_node_location_from_tokens(node, start_token, self._previous())
         if isinstance(expr, OfExpression):
             start_token = self._previous()
-            if not self._check(TokenType.LPAREN):
-                msg = "Expected '(' after 'in'"
-                raise ParserError(msg, self._peek())
-            range_expr = self._parse_additive_expression()
+            range_expr = self._parse_parenthesized_range_after_in()
             node = InExpression(subject=expr, range=range_expr)
             if getattr(expr, "location", None) is not None:
                 node.location = self._location_from_tokens(
@@ -200,3 +196,33 @@ class ExpressionPostfixMixin:
             return self._set_node_location_from_tokens(node, start_token, self._previous())
         msg = "IN keyword can only be used with string identifiers or 'of' expressions"
         raise ParserError(msg, self._peek())
+
+    def _parse_parenthesized_range_after_in(self) -> RangeExpression:
+        if not self._match(TokenType.LPAREN):
+            msg = "Expected '(' after 'in'"
+            raise ParserError(msg, self._peek())
+
+        start_token = self._previous()
+        low = self._parse_bitwise_or_expression()
+        if self._is_parenthesized_range_bound(low):
+            msg = "Unexpected parenthesized range"
+            raise ParserError(msg, self._previous())
+        if not self._match(TokenType.DOUBLE_DOT):
+            msg = "Expected '..' in range"
+            raise ParserError(msg, self._peek())
+        high = self._parse_bitwise_or_expression()
+        if self._is_parenthesized_range_bound(high):
+            msg = "Unexpected parenthesized range"
+            raise ParserError(msg, self._previous())
+        if not self._match(TokenType.RPAREN):
+            msg = "Expected ')' after range"
+            raise ParserError(msg, self._peek())
+
+        return self._set_node_location_from_tokens(
+            RangeExpression(low=low, high=high), start_token, self._previous()
+        )
+
+    def _is_parenthesized_range_bound(self, expr: Expression) -> bool:
+        return isinstance(expr, ParenthesesExpression) and isinstance(
+            expr.expression, RangeExpression
+        )

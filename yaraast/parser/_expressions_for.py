@@ -9,6 +9,8 @@ from yaraast.ast.expressions import (
     FunctionCall,
     Identifier,
     MemberAccess,
+    ParenthesesExpression,
+    RangeExpression,
     StringLiteral,
 )
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
@@ -64,6 +66,9 @@ class ExpressionForMixin:
             raise ParserError(msg, self._peek())
 
         iterable = self._parse_expression()
+        if self._is_nested_parenthesized_range(iterable):
+            msg = "Unexpected parenthesized range"
+            raise ParserError(msg, self._previous())
 
         if not self._match(TokenType.COLON):
             msg = "Expected ':' after iterable"
@@ -88,6 +93,31 @@ class ExpressionForMixin:
             ),
             start_token,
             self._previous(),
+        )
+
+    def _is_nested_parenthesized_range(self, iterable: Expression) -> bool:
+        if not isinstance(iterable, ParenthesesExpression):
+            return False
+
+        inner = iterable.expression
+        if isinstance(inner, ParenthesesExpression) and isinstance(
+            inner.expression, RangeExpression
+        ):
+            return True
+
+        if isinstance(inner, RangeExpression):
+            return self._range_has_parenthesized_range_bound(inner)
+
+        return False
+
+    def _range_has_parenthesized_range_bound(self, range_expr: RangeExpression) -> bool:
+        return self._is_parenthesized_range_bound(
+            range_expr.low
+        ) or self._is_parenthesized_range_bound(range_expr.high)
+
+    def _is_parenthesized_range_bound(self, expr: Expression) -> bool:
+        return isinstance(expr, ParenthesesExpression) and isinstance(
+            expr.expression, RangeExpression
         )
 
     def _parse_for_of_expression(
