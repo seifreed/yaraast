@@ -186,5 +186,60 @@ def expression_to_string(expr, options=None) -> str:
             separator = self._comma_separator()
             return f"{node.function}({separator.join(self.visit(arg) for arg in node.arguments)})"
 
+        def visit_with_statement(self, node) -> str:
+            separator = self._comma_separator()
+            declarations = separator.join(
+                self.visit(declaration) for declaration in node.declarations
+            )
+            return f"with {declarations}: {self.visit(node.body)}"
+
+        def visit_dict_comprehension(self, node) -> str:
+            separator = self._comma_separator()
+            variables = (
+                separator.join([node.key_variable, node.value_variable])
+                if node.value_variable
+                else node.key_variable
+            )
+            result = (
+                f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
+                f"for {variables} in {self.visit(node.iterable)}"
+            )
+            if node.condition:
+                result += f" if {self.visit(node.condition)}"
+            return result + "}"
+
+        def visit_tuple_expression(self, node) -> str:
+            if not node.elements:
+                return "()"
+            elements = [self.visit(element) for element in node.elements]
+            if len(elements) == 1:
+                return f"({elements[0]},)"
+            separator = self._comma_separator()
+            return f"({separator.join(elements)})"
+
+        def visit_list_expression(self, node) -> str:
+            separator = self._comma_separator()
+            return f"[{separator.join(self.visit(element) for element in node.elements)}]"
+
+        def visit_dict_expression(self, node) -> str:
+            from yaraast.yarax.ast_nodes import SpreadOperator
+
+            separator = self._comma_separator()
+            items = [
+                (
+                    self.visit(item.value)
+                    if isinstance(item.value, SpreadOperator)
+                    else self.visit(item)
+                )
+                for item in node.items
+            ]
+            return f"{{{separator.join(items)}}}"
+
+        def visit_lambda_expression(self, node) -> str:
+            parameters = self._comma_separator().join(node.parameters)
+            if parameters:
+                return f"lambda {parameters}: {self.visit(node.body)}"
+            return f"lambda: {self.visit(node.body)}"
+
     generator = PrettyExpressionGenerator()
     return generator.visit(expr).strip()

@@ -27,6 +27,16 @@ from yaraast.codegen.pretty_printer import (
     pretty_print_readable,
     pretty_print_verbose,
 )
+from yaraast.yarax.ast_nodes import (
+    DictComprehension,
+    DictExpression,
+    DictItem,
+    LambdaExpression,
+    ListExpression,
+    TupleExpression,
+    WithDeclaration,
+    WithStatement,
+)
 
 
 def test_pretty_printer_paths_for_includes_modifiers_wrapping_and_fallback() -> None:
@@ -197,6 +207,54 @@ def test_pretty_printer_honors_compact_expression_commas() -> None:
 
     assert "\n        foo((a,b),c)\n" in out
     assert "\n        foo((a, b), c)\n" not in out
+
+
+def test_pretty_printer_honors_compact_yarax_expression_commas() -> None:
+    rule = Rule(
+        name="compact_yarax_commas",
+        condition=WithStatement(
+            [
+                WithDeclaration("a", Identifier("one")),
+                WithDeclaration("b", Identifier("two")),
+            ],
+            FunctionCall(
+                "foo",
+                [
+                    ListExpression([Identifier("a"), Identifier("b")]),
+                    TupleExpression([Identifier("c"), Identifier("d")]),
+                    DictExpression(
+                        [
+                            DictItem(Identifier("key"), Identifier("value")),
+                            DictItem(Identifier("next"), Identifier("other")),
+                        ]
+                    ),
+                    DictComprehension(
+                        Identifier("k"),
+                        Identifier("v"),
+                        "k",
+                        "v",
+                        Identifier("items"),
+                    ),
+                    LambdaExpression(["x", "y"], Identifier("x")),
+                ],
+            ),
+        ),
+    )
+
+    out = PrettyPrinter(PrettyPrintOptions(space_after_comma=False)).pretty_print(
+        YaraFile(rules=[rule])
+    )
+
+    assert (
+        "\n        with a = one,b = two: "
+        "foo([a,b],(c,d),{key: value,next: other},{k: v for k,v in items},lambda x,y: x)\n"
+    ) in out
+    assert "a = one, b = two" not in out
+    assert "[a, b]" not in out
+    assert "(c, d)" not in out
+    assert "{key: value, next: other}" not in out
+    assert "for k, v in items" not in out
+    assert "lambda x, y: x" not in out
 
 
 def test_pretty_printer_preserves_top_level_extensions() -> None:
