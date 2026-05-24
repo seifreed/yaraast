@@ -47,6 +47,7 @@ from yaraast.ast.pragmas import (
     DefineDirective,
     InRulePragma,
     Pragma,
+    PragmaBlock,
     PragmaScope,
     PragmaType,
 )
@@ -683,6 +684,21 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
     for ast, message in invalid_cases:
         with pytest.raises(SerializationError, match=message):
             serializer.serialize(ast)
+
+    block_with_bad_pragmas = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
+    cast(Any, block_with_bad_pragmas).pragmas = False
+    with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
+        serializer.visit(block_with_bad_pragmas)
+
+    block_with_bad_pragma_item = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
+    cast(Any, block_with_bad_pragma_item).pragmas = [object()]
+    with pytest.raises(SerializationError, match="PragmaBlock pragmas item must be"):
+        serializer.visit(block_with_bad_pragma_item)
+
+    block_with_bad_scope = PragmaBlock([Pragma(PragmaType.CUSTOM, "custom")])
+    cast(Any, block_with_bad_scope).scope = invalid_text
+    with pytest.raises(SerializationError, match="PragmaBlock scope must be a string"):
+        serializer.visit(block_with_bad_scope)
 
     invalid_reference = ExternRuleReference(invalid_text)
     with pytest.raises(SerializationError, match="ExternRuleReference rule_name must be a string"):

@@ -293,6 +293,12 @@ def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> st
     return " or ".join(item_type.__name__ for item_type in expected_types)
 
 
+def _serialize_enum_value(value, context: str) -> str:
+    if isinstance(value, str):
+        return value
+    return _serialize_required_string(getattr(value, "value", None), context)
+
+
 def _serialize_node_list(
     serializer,
     values,
@@ -667,12 +673,17 @@ def visit_string_operator_expression(serializer, node) -> dict[str, Any]:
 
 
 def visit_pragma_block(serializer, node) -> dict[str, Any]:
+    from yaraast.ast.pragmas import Pragma
+
     return {
         "type": "PragmaBlock",
-        "pragmas": (
-            [serializer.visit(p) for p in node.pragmas] if hasattr(node, "pragmas") else []
+        "pragmas": _serialize_node_list(
+            serializer,
+            node.pragmas,
+            "PragmaBlock pragmas",
+            Pragma,
         ),
-        "scope": getattr(getattr(node, "scope", None), "value", "file"),
+        "scope": _serialize_enum_value(node.scope, "PragmaBlock scope"),
     }
 
 
