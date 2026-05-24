@@ -702,6 +702,10 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
     invalid_parameters: Any = [("key", "value")]
     invalid_parameter_key: Any = {1: "value"}
 
+    pragma_with_bad_type = Pragma(PragmaType.CUSTOM, "custom")
+    cast(Any, pragma_with_bad_type).pragma_type = invalid_text
+    pragma_with_bad_scope = Pragma(PragmaType.CUSTOM, "custom")
+    cast(Any, pragma_with_bad_scope).scope = invalid_text
     define_with_bad_macro_name = DefineDirective("GOOD")
     define_with_bad_macro_name.macro_name = invalid_text
     define_with_bad_macro_value = DefineDirective("GOOD", "1")
@@ -713,6 +717,14 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
         (
             YaraFile(pragmas=[Pragma(PragmaType.CUSTOM, invalid_text)]),
             "Pragma name must be a string",
+        ),
+        (
+            YaraFile(pragmas=[pragma_with_bad_type]),
+            "Pragma pragma_type must be a string",
+        ),
+        (
+            YaraFile(pragmas=[pragma_with_bad_scope]),
+            "Pragma scope must be a string",
         ),
         (
             YaraFile(pragmas=[Pragma(PragmaType.CUSTOM, "custom", invalid_arguments)]),

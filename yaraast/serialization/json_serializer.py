@@ -104,6 +104,12 @@ def _serialize_modifier_value(value: Any) -> str | int | float | list[int] | Non
     raise SerializationError(msg)
 
 
+def _serialize_enum_value(value: Any, context: str) -> str:
+    if isinstance(value, str):
+        return value
+    return _serialize_required_string(getattr(value, "value", None), context)
+
+
 class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]]):
     """Enhanced JSON serializer for YARA AST with metadata."""
 
@@ -524,10 +530,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_pragma(self, node) -> dict[str, Any]:
         data = {
             "type": "Pragma",
-            "pragma_type": node.pragma_type.value,
+            "pragma_type": _serialize_enum_value(node.pragma_type, "Pragma pragma_type"),
             "name": _serialize_required_string(node.name, "Pragma name"),
             "arguments": _serialize_string_list(node.arguments, "Pragma arguments"),
-            "scope": node.scope.value,
+            "scope": _serialize_enum_value(node.scope, "Pragma scope"),
         }
         if hasattr(node, "macro_name"):
             data["macro_name"] = _serialize_required_string(
