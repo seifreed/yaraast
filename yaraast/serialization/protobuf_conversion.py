@@ -628,7 +628,11 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
     _copy_node_metadata_to_protobuf(string_def, pb_string)
-    pb_string.is_anonymous = getattr(string_def, "is_anonymous", False)
+    string_context = type(string_def).__name__
+    pb_string.is_anonymous = _protobuf_required_bool(
+        getattr(string_def, "is_anonymous", False),
+        f"{string_context} is_anonymous",
+    )
     if isinstance(string_def, PlainString):
         if isinstance(string_def.value, bytes):
             pb_string.plain.raw_value = string_def.value
@@ -645,6 +649,7 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
             _copy_modifier_to_protobuf(mod, pb_mod)
 
     elif isinstance(string_def, HexString):
+        pb_string.hex.SetInParent()
         for token in _protobuf_list(string_def.tokens, "HexString tokens"):
             pb_token = pb_string.hex.tokens.add()
             convert_hex_token_to_protobuf(token, pb_token)

@@ -431,6 +431,63 @@ def test_protobuf_serializer_rejects_invalid_string_definition_fields(
         serializer.serialize(ast)
 
 
+@pytest.mark.parametrize("invalid_flag", [cast(Any, "yes"), cast(Any, 1)])
+def test_protobuf_serializer_rejects_invalid_anonymous_string_flags(
+    invalid_flag: Any,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    invalid_cases: list[tuple[Any, str]] = [
+        (
+            PlainString(identifier="$a", value="abc", is_anonymous=invalid_flag),
+            "PlainString is_anonymous must be a boolean",
+        ),
+        (
+            HexString(
+                identifier="$h",
+                tokens=[HexByte(0x90)],
+                is_anonymous=invalid_flag,
+            ),
+            "HexString is_anonymous must be a boolean",
+        ),
+        (
+            RegexString(identifier="$r", regex="abc", is_anonymous=invalid_flag),
+            "RegexString is_anonymous must be a boolean",
+        ),
+    ]
+
+    for string_def, message in invalid_cases:
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="bad_anonymous_flag",
+                    strings=[string_def],
+                    condition=BooleanLiteral(value=True),
+                ),
+            ],
+        )
+
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+
+def test_protobuf_serializer_preserves_empty_hex_string() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    empty_hex = HexString(identifier="$h", tokens=[])
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="empty_hex_string",
+                strings=[empty_hex],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+
+    assert restored.rules[0].strings == [empty_hex]
+
+
 def _invalid_modifier_and_hex_container_cases() -> list[tuple[YaraFile, str]]:
     bad_rule_modifiers = Rule("bad_rule_modifiers", condition=BooleanLiteral(True))
     cast(Any, bad_rule_modifiers).modifiers = False
