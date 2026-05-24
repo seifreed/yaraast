@@ -27,6 +27,7 @@ from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexWildcard
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
+from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.parser import Parser
 
@@ -195,6 +196,18 @@ def test_classic_parser_rejects_trailing_commas_in_expression_lists() -> None:
     for source in invalid_sources:
         with pytest.raises(ParserError, match="after ','"):
             Parser().parse(source)
+
+
+def test_classic_parsers_reject_chained_relational_expressions() -> None:
+    invalid_sources = [
+        "rule r { condition: 1 < 2 < 3 }",
+        'rule r { condition: "abc" contains "a" contains "b" }',
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="Unexpected relational operator"):
+                parser_factory().parse(source)
 
 
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:

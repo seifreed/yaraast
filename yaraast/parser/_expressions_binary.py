@@ -6,6 +6,25 @@ from yaraast.ast.expressions import BinaryExpression, Expression, RangeExpressio
 from yaraast.ast.operators import DefinedExpression
 from yaraast.lexer import TokenType
 
+from ._shared import ParserError
+
+RELATIONAL_TOKEN_TYPES = (
+    TokenType.LT,
+    TokenType.LE,
+    TokenType.GT,
+    TokenType.GE,
+    TokenType.EQ,
+    TokenType.NEQ,
+    TokenType.CONTAINS,
+    TokenType.MATCHES,
+    TokenType.STARTSWITH,
+    TokenType.ENDSWITH,
+    TokenType.ICONTAINS,
+    TokenType.ISTARTSWITH,
+    TokenType.IENDSWITH,
+    TokenType.IEQUALS,
+)
+
 
 class ExpressionBinaryMixin:
     """Mixin with logical/arithmetic expression parsing."""
@@ -55,22 +74,7 @@ class ExpressionBinaryMixin:
         """Parse relational expression."""
         expr = self._parse_range_expression()
 
-        while self._match(
-            TokenType.LT,
-            TokenType.LE,
-            TokenType.GT,
-            TokenType.GE,
-            TokenType.EQ,
-            TokenType.NEQ,
-            TokenType.CONTAINS,
-            TokenType.MATCHES,
-            TokenType.STARTSWITH,
-            TokenType.ENDSWITH,
-            TokenType.ICONTAINS,
-            TokenType.ISTARTSWITH,
-            TokenType.IENDSWITH,
-            TokenType.IEQUALS,
-        ):
+        if self._match(*RELATIONAL_TOKEN_TYPES):
             operator = self._previous().value.lower()
             right = self._parse_range_expression()
             expr = self._set_node_location_from_nodes(
@@ -78,6 +82,9 @@ class ExpressionBinaryMixin:
                 expr,
                 right,
             )
+            if self._check_any(*RELATIONAL_TOKEN_TYPES):
+                msg = "Unexpected relational operator"
+                raise ParserError(msg, self._peek())
 
         return expr
 
