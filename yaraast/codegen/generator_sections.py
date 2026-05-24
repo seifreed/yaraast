@@ -54,7 +54,11 @@ def write_condition_section(gen, condition) -> None:
     gen._writeline("condition:")
     gen._indent()
     condition_code = gen.visit(condition)
-    gen._writeline(condition_code)
+    if "\n" in condition_code:
+        for line in condition_code.splitlines():
+            gen._writeline(line)
+    else:
+        gen._writeline(condition_code)
     gen._dedent()
 
 
