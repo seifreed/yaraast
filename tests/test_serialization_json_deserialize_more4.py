@@ -714,6 +714,32 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
         s._deserialize_expression({"type": "StringLength", "string_id": "a", "index": False})
 
 
+def test_json_deserialize_string_set_lists_reject_empty_items() -> None:
+    s = JsonSerializer()
+
+    empty_string_set_item_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": [None]},
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": [{}]},
+            "ForOfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": [None]},
+            "OfExpression string_set must contain values",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": [{}]},
+            "OfExpression string_set must contain values",
+        ),
+    )
+    for payload, message in empty_string_set_item_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
+
 def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types() -> None:
     s = JsonSerializer()
     true_expr = {"type": "BooleanLiteral", "value": True}

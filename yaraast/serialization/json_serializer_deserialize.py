@@ -30,11 +30,17 @@ def _deserialize_required_field(data: dict[str, Any], field: str, context: str) 
     return data[field]
 
 
-def _deserialize_ast_value(self, data):
+def _deserialize_ast_value(self, data, context: str = "AST value"):
     if isinstance(data, dict):
-        return self._deserialize_expression(data)
+        return _deserialize_required_expression_value(self, data, context)
     if isinstance(data, list):
-        return [_deserialize_ast_value(self, item) for item in data]
+        values = []
+        for item in data:
+            if item is None or item == {}:
+                msg = f"{context} must contain values"
+                raise SerializationError(msg)
+            values.append(_deserialize_ast_value(self, item, context))
+        return values
     return data
 
 
@@ -76,7 +82,9 @@ def _deserialize_expression_list_field(
 
 
 def _deserialize_required_ast_value(self, data: dict[str, Any], field: str, context: str) -> Any:
-    value = _deserialize_ast_value(self, _deserialize_required_field(data, field, context))
+    value = _deserialize_ast_value(
+        self, _deserialize_required_field(data, field, context), f"{context} {field}"
+    )
     if value is not None:
         return value
     msg = f"{context} {field} is required"
