@@ -27,12 +27,12 @@ def _expr_parser(text: str) -> Parser:
 
 
 def test_parse_for_expression_success_and_error_paths() -> None:
-    node_any = _expr_parser("any i in 1 : ( true )")._parse_for_expression()
+    node_any = _expr_parser("any i in (1) : ( true )")._parse_for_expression()
     assert isinstance(node_any, ForExpression)
     assert node_any.quantifier == "any"
     assert node_any.variable == "i"
 
-    node_all = _expr_parser("all j in 2 : ( j > 0 )")._parse_for_expression()
+    node_all = _expr_parser("all j in (2) : ( j > 0 )")._parse_for_expression()
     assert isinstance(node_all, ForExpression)
     assert node_all.quantifier == "all"
     assert node_all.variable == "j"
@@ -56,11 +56,11 @@ def test_parse_for_expression_success_and_error_paths() -> None:
     with pytest.raises(ParserError, match="Expected 'in' after variable"):
         _expr_parser("any i 1 : ( true )")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected ':' after iterable"):
-        _expr_parser("any i in 1 true")._parse_for_expression()
+        _expr_parser("any i in values true")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected '\\(' after ':'"):
-        _expr_parser("any i in 1 : true )")._parse_for_expression()
+        _expr_parser("any i in values : true )")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected '\\)' after for body"):
-        _expr_parser("any i in 1 : ( true")._parse_for_expression()
+        _expr_parser("any i in values : ( true")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected '\\)' after condition"):
         _expr_parser("any of them : ( true")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected '\\(' after ':'"):

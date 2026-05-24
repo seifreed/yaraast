@@ -112,7 +112,15 @@ def test_parse_postfix_helpers_cover_success_and_error_paths() -> None:
     assert expr.string_id == "$a"
 
     p = _parser_with_tokens(
-        [_t(TokenType.STRING_IDENTIFIER, "$a"), _t(TokenType.IN, "in"), _t(TokenType.INTEGER, 4)]
+        [
+            _t(TokenType.STRING_IDENTIFIER, "$a"),
+            _t(TokenType.IN, "in"),
+            _t(TokenType.LPAREN, "("),
+            _t(TokenType.INTEGER, 0),
+            _t(TokenType.DOUBLE_DOT, ".."),
+            _t(TokenType.INTEGER, 4),
+            _t(TokenType.RPAREN, ")"),
+        ]
     )
     expr = p._parse_postfix_expression()
     assert isinstance(expr, InExpression)
@@ -120,7 +128,14 @@ def test_parse_postfix_helpers_cover_success_and_error_paths() -> None:
 
     of_expr = OfExpression(quantifier=StringLiteral("any"), string_set=Identifier("them"))
     p = Parser("rule seed { condition: true }")
-    p.tokens = [_t(TokenType.INTEGER, 7), _t(TokenType.EOF, None)]
+    p.tokens = [
+        _t(TokenType.LPAREN, "("),
+        _t(TokenType.INTEGER, 0),
+        _t(TokenType.DOUBLE_DOT, ".."),
+        _t(TokenType.INTEGER, 7),
+        _t(TokenType.RPAREN, ")"),
+        _t(TokenType.EOF, None),
+    ]
     p.current = 0
     expr = p._parse_in_postfix(of_expr)
     assert isinstance(expr, InExpression)
@@ -207,6 +222,18 @@ def test_classic_parsers_reject_chained_relational_expressions() -> None:
     for source in invalid_sources:
         for parser_factory in (Parser, CommentAwareParser):
             with pytest.raises(ParserError, match="Unexpected relational operator"):
+                parser_factory().parse(source)
+
+
+def test_classic_parsers_reject_unparenthesized_in_ranges() -> None:
+    invalid_sources = [
+        'rule r { strings: $a = "x" condition: $a in 0..10 }',
+        "rule r { condition: for any i in 0..10 : (i > 0) }",
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match=r"Expected .* after 'in'"):
                 parser_factory().parse(source)
 
 

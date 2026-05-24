@@ -59,6 +59,10 @@ class ExpressionForMixin:
             msg = "Expected 'in' after variable"
             raise ParserError(msg, self._peek())
 
+        if not self._check_any(TokenType.LPAREN, TokenType.IDENTIFIER):
+            msg = "Expected identifier or '(' after 'in'"
+            raise ParserError(msg, self._peek())
+
         iterable = self._parse_expression()
 
         if not self._match(TokenType.COLON):

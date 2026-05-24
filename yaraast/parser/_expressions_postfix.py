@@ -172,6 +172,9 @@ class ExpressionPostfixMixin:
         """Parse IN postfix expression ($string in range)."""
         if isinstance(expr, StringIdentifier):
             start_token = self._previous()
+            if not self._check(TokenType.LPAREN):
+                msg = "Expected '(' after 'in'"
+                raise ParserError(msg, self._peek())
             range_expr = self._parse_additive_expression()
             node = InExpression(subject=expr.name, range=range_expr)
             if getattr(expr, "location", None) is not None:
@@ -183,6 +186,9 @@ class ExpressionPostfixMixin:
             return self._set_node_location_from_tokens(node, start_token, self._previous())
         if isinstance(expr, OfExpression):
             start_token = self._previous()
+            if not self._check(TokenType.LPAREN):
+                msg = "Expected '(' after 'in'"
+                raise ParserError(msg, self._peek())
             range_expr = self._parse_additive_expression()
             node = InExpression(subject=expr, range=range_expr)
             if getattr(expr, "location", None) is not None:
