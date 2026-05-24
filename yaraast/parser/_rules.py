@@ -163,6 +163,8 @@ class RuleParsingMixin:
             self._extern_rule_names.add((namespace, name))
             if extern_import.alias:
                 self._extern_rule_names.add((extern_import.alias, name))
+                if namespace:
+                    self._extern_rule_names.add((f"{extern_import.alias}.{namespace}", name))
 
     def _register_extern_rule(self, extern_rule: ExternRule) -> None:
         self._extern_rule_names.add((extern_rule.namespace, extern_rule.name))

@@ -251,6 +251,62 @@ def test_parse_generated_extern_rule_reference_conditions() -> None:
         assert SemanticValidator().validate(parsed).errors == []
 
 
+def test_parse_generated_nested_extern_rule_reference_conditions() -> None:
+    source = CodeGenerator().generate(
+        YaraFile(
+            extern_rules=[ExternRule("ExternalRule", namespace="legacy.deep")],
+            rules=[
+                Rule(
+                    "uses_nested_external",
+                    condition=ExternRuleReference("ExternalRule", namespace="legacy.deep"),
+                )
+            ],
+        )
+    )
+
+    ast = Parser(source).parse()
+    comment_ast = CommentAwareParser().parse(source)
+
+    for parsed in (ast, comment_ast):
+        condition = parsed.rules[0].condition
+
+        assert isinstance(condition, ExternRuleReference)
+        assert condition.rule_name == "ExternalRule"
+        assert condition.namespace == "legacy.deep"
+        assert SemanticValidator().validate(parsed).errors == []
+
+
+def test_parse_generated_aliased_nested_extern_import_references() -> None:
+    source = CodeGenerator().generate(
+        YaraFile(
+            extern_imports=[
+                ExternImport(
+                    "external.yar",
+                    alias="ext",
+                    rules=["legacy.LegacyRule"],
+                )
+            ],
+            rules=[
+                Rule(
+                    "uses_nested_alias",
+                    condition=ExternRuleReference("LegacyRule", namespace="ext.legacy"),
+                )
+            ],
+        )
+    )
+
+    ast = Parser(source).parse()
+    comment_ast = CommentAwareParser().parse(source)
+
+    for parsed in (ast, comment_ast):
+        condition = parsed.rules[0].condition
+
+        assert isinstance(condition, ExternRuleReference)
+        assert condition.rule_name == "LegacyRule"
+        assert condition.namespace == "ext.legacy"
+        assert SemanticValidator().validate(parsed).errors == []
+
+
 def test_parse_generated_file_pragmas() -> None:
     pragmas = [
         IncludeOncePragma(),

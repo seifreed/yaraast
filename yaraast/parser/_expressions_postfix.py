@@ -48,9 +48,10 @@ class ExpressionPostfixMixin:
         if not self._match(TokenType.IDENTIFIER):
             msg = "Expected member name after '.'"
             raise ParserError(msg, self._peek())
-        member = self._previous().value
-        if isinstance(expr, Identifier) and self._is_extern_rule_reference(member, expr.name):
-            node = ExternRuleReference(rule_name=member, namespace=expr.name)
+        member = str(self._previous().value)
+        namespace = self._dotted_expression_name(expr)
+        if namespace is not None and self._is_extern_rule_reference(member, namespace):
+            node = ExternRuleReference(rule_name=member, namespace=namespace)
             if getattr(expr, "location", None) is not None:
                 node.location = self._location_from_tokens(
                     self._synthetic_token_from_location(expr.location),
@@ -67,6 +68,17 @@ class ExpressionPostfixMixin:
             )
             return node
         return self._set_node_location_from_tokens(node, dot_token, self._previous())
+
+    def _dotted_expression_name(self, expr: Expression) -> str | None:
+        if isinstance(expr, Identifier):
+            return expr.name
+        if isinstance(expr, ModuleReference):
+            return expr.module
+        if isinstance(expr, MemberAccess):
+            prefix = self._dotted_expression_name(expr.object)
+            if prefix is not None:
+                return f"{prefix}.{expr.member}"
+        return None
 
     def _parse_bracket_access(self, expr: Expression) -> ArrayAccess | DictionaryAccess:
         """Parse bracket access expression (array[index] or dict['key'])."""
