@@ -424,6 +424,42 @@ def _deserialize_string_list_field(data: dict[str, Any], field: str, context: st
     raise SerializationError(msg)
 
 
+def _serialize_required_string(value: Any, context: str) -> str:
+    if isinstance(value, str):
+        return value
+    msg = f"{context} must be a string"
+    raise SerializationError(msg)
+
+
+def _serialize_nullable_string(value: Any, context: str) -> str | None:
+    if value is None:
+        return None
+    return _serialize_required_string(value, context)
+
+
+def _serialize_string_list(values: Any, context: str) -> list[str]:
+    if isinstance(values, list | tuple) and all(isinstance(item, str) for item in values):
+        return list(values)
+    msg = f"{context} must be a list of strings"
+    raise SerializationError(msg)
+
+
+def _serialize_string_key_dict(value: Any, context: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        msg = f"{context} must be a dictionary"
+        raise SerializationError(msg)
+    if not all(isinstance(key, str) for key in value):
+        msg = f"{context} keys must be strings"
+        raise SerializationError(msg)
+    return dict(value)
+
+
+def _serialize_enum_value(value: Any, context: str) -> str:
+    if isinstance(value, str):
+        return value
+    return _serialize_required_string(getattr(value, "value", None), context)
+
+
 def _deserialize_list_field(data: dict[str, Any], field: str, context: str) -> list[Any]:
     data = _deserialize_object(data, context)
     value = data.get(field, [])
@@ -1074,23 +1110,30 @@ def serialize_extern_rule(extern_rule: ExternRule) -> dict[str, Any]:
 def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
     data = {
         "type": "Pragma",
-        "pragma_type": pragma.pragma_type.value,
-        "name": pragma.name,
-        "arguments": list(pragma.arguments),
+        "pragma_type": _serialize_enum_value(pragma.pragma_type, "Pragma pragma_type"),
+        "name": _serialize_required_string(pragma.name, "Pragma name"),
+        "arguments": _serialize_string_list(pragma.arguments, "Pragma arguments"),
         "scope": serialize_pragma_scope(pragma.scope),
     }
-    macro_name = getattr(pragma, "macro_name", "")
+    if hasattr(pragma, "macro_name"):
+        macro_name = _serialize_required_string(pragma.macro_name, "Pragma macro_name")
+    else:
+        macro_name = ""
     if macro_name:
         data["macro_name"] = macro_name
-    macro_value = getattr(pragma, "macro_value", None)
+    macro_value = _serialize_nullable_string(
+        getattr(pragma, "macro_value", None), "Pragma macro_value"
+    )
     if macro_value is not None:
         data["macro_value"] = macro_value
-    condition = getattr(pragma, "condition", None)
+    condition = _serialize_nullable_string(getattr(pragma, "condition", None), "Pragma condition")
     if condition is not None:
         data["condition"] = condition
-    parameters = getattr(pragma, "parameters", None)
+    parameters = None
+    if hasattr(pragma, "parameters"):
+        parameters = _serialize_string_key_dict(pragma.parameters, "Pragma parameters")
     if parameters:
-        data["parameters"] = dict(parameters)
+        data["parameters"] = parameters
     return data
 
 

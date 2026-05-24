@@ -329,6 +329,36 @@ def test_simple_roundtrip_extern_nodes_reject_wrong_scalar_types() -> None:
 
 
 def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
+    invalid_text: Any = 123
+    invalid_arguments: Any = "on"
+    invalid_argument_item: Any = ["on", 1]
+    invalid_parameters: Any = [("key", "value")]
+    invalid_parameter_key: Any = {1: "value"}
+
+    pragma_with_bad_type = Pragma(PragmaType.CUSTOM, "vendor")
+    cast(Any, pragma_with_bad_type).pragma_type = invalid_text
+    with pytest.raises(SerializationError, match="Pragma pragma_type must be a string"):
+        serialize_pragma(pragma_with_bad_type)
+
+    with pytest.raises(SerializationError, match="Pragma name must be a string"):
+        serialize_pragma(Pragma(PragmaType.CUSTOM, invalid_text))
+
+    for invalid_value in (invalid_arguments, invalid_argument_item):
+        pragma_with_bad_arguments = Pragma(PragmaType.CUSTOM, "vendor")
+        cast(Any, pragma_with_bad_arguments).arguments = invalid_value
+        with pytest.raises(SerializationError, match="Pragma arguments must be a list of strings"):
+            serialize_pragma(pragma_with_bad_arguments)
+
+    custom_with_bad_parameters = CustomPragma("vendor")
+    cast(Any, custom_with_bad_parameters).parameters = invalid_parameters
+    with pytest.raises(SerializationError, match="Pragma parameters must be a dictionary"):
+        serialize_pragma(custom_with_bad_parameters)
+
+    custom_with_bad_parameter_key = CustomPragma("vendor")
+    cast(Any, custom_with_bad_parameter_key).parameters = invalid_parameter_key
+    with pytest.raises(SerializationError, match="Pragma parameters keys must be strings"):
+        serialize_pragma(custom_with_bad_parameter_key)
+
     pragma_with_unknown_scope = Pragma(PragmaType.CUSTOM, "vendor")
     cast(Any, pragma_with_unknown_scope).scope = "secret"
     with pytest.raises(SerializationError, match="Pragma scope must be a valid pragma scope"):
