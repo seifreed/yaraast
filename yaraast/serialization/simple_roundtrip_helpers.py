@@ -475,6 +475,10 @@ def _deserialize_rule_tag(value: Any) -> Tag:
     if isinstance(value, str):
         return Tag(name=value)
     if isinstance(value, dict):
+        node_type = value.get("type")
+        if node_type is not None and node_type != "Tag":
+            msg = "Rule tags must contain Tag nodes"
+            raise SerializationError(msg)
         return Tag(name=_deserialize_string_field(value, "name", "Tag"))
     msg = "Tag name must be a string"
     raise SerializationError(msg)
