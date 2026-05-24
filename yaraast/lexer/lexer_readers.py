@@ -50,12 +50,15 @@ def read_hex_string(lexer) -> Token:
         if lexer._current_char() == "}":
             break
         if lexer._current_char() == "/" and lexer._peek_char() == "/":
+            value_chars.append(" ")
             while lexer._current_char() and lexer._current_char() != "\n":
                 lexer._advance()
             if lexer._current_char() == "\n":
+                value_chars.append("\n")
                 lexer._advance()
             continue
         if lexer._current_char() == "/" and lexer._peek_char() == "*":
+            value_chars.append(" ")
             lexer._advance()
             lexer._advance()
             while lexer._current_char():
@@ -63,6 +66,8 @@ def read_hex_string(lexer) -> Token:
                     lexer._advance()
                     lexer._advance()
                     break
+                if lexer._current_char() == "\n":
+                    value_chars.append("\n")
                 lexer._advance()
             continue
         value_chars.append(lexer._current_char())

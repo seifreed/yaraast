@@ -126,6 +126,7 @@ class HexStringParser:
                     i += 1
             elif i < len(content) - 1 and content[i : i + 2] == "/*":
                 # Skip multi-line comment until */
+                cleaned_chars.append(" ")
                 i += 2
                 while i < len(content):
                     if i < len(content) - 1 and content[i : i + 2] == "*/":
@@ -303,7 +304,6 @@ class HexStringParser:
     def _parse_negated_byte(self) -> HexNegatedByte:
         """Parse a negated hex byte ~XX (matches anything except XX)."""
         self.pos += 1  # Skip '~'
-        self._skip_whitespace()
         if self.pos + 1 >= len(self.content):
             msg = "Incomplete negated hex byte"
             raise HexParseError(msg, self.pos)

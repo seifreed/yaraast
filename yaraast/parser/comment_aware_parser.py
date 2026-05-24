@@ -16,9 +16,9 @@ from yaraast.parser.comment_aware_helpers import (
     collect_leading_comments,
     collect_trailing_comment,
     extract_comment_tokens,
-    parse_hex_tokens,
     parse_regex_value,
 )
+from yaraast.parser.hex_parser import HexParseError, HexStringParser
 from yaraast.parser.parser import Parser
 
 if TYPE_CHECKING:
@@ -466,7 +466,10 @@ class CommentAwareParser(Parser):
 
     def _parse_hex_tokens(self, hex_content: str):
         """Parse hex string tokens."""
-        return parse_hex_tokens(hex_content)
+        try:
+            return HexStringParser(error_token=self._peek()).parse(hex_content)
+        except HexParseError as e:
+            raise ParserError(str(e), self._peek()) from e
 
     def _parse_regex_value(self, regex_val: str):
         """Parse regex value and extract modifiers."""

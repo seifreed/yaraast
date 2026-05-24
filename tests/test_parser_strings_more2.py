@@ -89,6 +89,15 @@ def test_parse_rejects_empty_hex_strings() -> None:
             parser_factory().parse(source)
 
 
+@pytest.mark.parametrize("hex_pattern", ["{ ~ 00 }", "{ ~/* comment */00 }", "{ A/* comment */B }"])
+def test_parse_rejects_comment_or_space_joined_hex_tokens(hex_pattern: str) -> None:
+    source = f"rule r {{ strings: $a = {hex_pattern} condition: $a }}"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="Hex parse error"):
+            parser_factory().parse(source)
+
+
 def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:
     ast = Parser("rule r { strings: $r = /ab+c/ims condition: $r }").parse()
     regex = ast.rules[0].strings[0]
