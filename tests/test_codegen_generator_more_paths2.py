@@ -659,6 +659,27 @@ def test_codegen_generators_reject_invalid_string_identifiers() -> None:
 
 
 @pytest.mark.parametrize(
+    "string_def",
+    [
+        PlainString(identifier="$bad-key", value="x"),
+        HexString(identifier="$bad-key", tokens=[HexByte(0x41)]),
+        RegexString(identifier="$bad-key", regex="x"),
+    ],
+)
+def test_codegen_string_visitors_reject_invalid_string_identifiers(
+    string_def: Any,
+) -> None:
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        CodeGenerator().generate(string_def)
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        AdvancedCodeGenerator().generate(string_def)
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        CommentAwareCodeGenerator().generate(string_def)
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        PrettyPrinter().generate(string_def)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         StringIdentifier("$bad-key"),

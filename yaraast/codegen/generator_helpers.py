@@ -88,7 +88,8 @@ def output_string_identifier(string_def: Any) -> str:
     if getattr(string_def, "is_anonymous", False):
         return "$"
     identifier = str(getattr(string_def, "identifier", ""))
-    return identifier if identifier.startswith("$") else f"${identifier}"
+    normalized = identifier if identifier.startswith("$") else f"${identifier}"
+    return validate_string_identifier_text(normalized)
 
 
 def validate_string_identifier_text(identifier: Any) -> str:
