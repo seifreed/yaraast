@@ -196,6 +196,9 @@ class CommentAwareParser(Parser):
 
         tags = []
         if self._match(TokenType.COLON):
+            if not self._peek() or self._peek().type != TokenType.IDENTIFIER:
+                msg = "Expected tag name after ':'"
+                raise ParserError(msg, self._peek())
             while self._peek() and self._peek().type == TokenType.IDENTIFIER:
                 tags.append(
                     self._set_node_location_from_token(Tag(name=self._peek().value), self._peek())

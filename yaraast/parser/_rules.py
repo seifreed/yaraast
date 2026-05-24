@@ -285,6 +285,9 @@ class RuleParsingMixin:
         """Parse rule tags after colon."""
         tags = []
         if self._match(TokenType.COLON):
+            if not self._check(TokenType.IDENTIFIER):
+                msg = "Expected tag name after ':'"
+                raise ParserError(msg, self._peek())
             while self._check(TokenType.IDENTIFIER):
                 tag_token = self._advance()
                 tags.append(

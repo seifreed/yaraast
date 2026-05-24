@@ -161,6 +161,10 @@ def test_parse_rule_and_sections_error_paths() -> None:
     with pytest.raises(ParserError, match="Expected '\\}' at end of rule"):
         Parser("rule r { condition: true ")._parse_rule()
 
+    for parser in (Parser(), CommentAwareParser()):
+        with pytest.raises(ParserError, match="Expected tag name after ':'"):
+            parser.parse("rule empty_tags : { condition: true }")
+
     parser = Parser("rule r { junk: true }")
     parser.current = 3  # position on junk
     with pytest.raises(ParserError, match="Unexpected section: junk"):
