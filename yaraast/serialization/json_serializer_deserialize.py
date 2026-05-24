@@ -426,7 +426,15 @@ def _deserialize_hex_jump_bounds(data: dict[str, Any]) -> tuple[int | None, int 
 def _cast_comment(node: Any) -> Comment:
     if isinstance(node, Comment):
         return node
-    return Comment(str(node))
+    msg = "CommentGroup comments must contain Comment nodes"
+    raise SerializationError(msg)
+
+
+def _cast_leading_comment(node: Any) -> Any:
+    if isinstance(node, Comment | CommentGroup):
+        return node
+    msg = "leading_comments must contain Comment or CommentGroup nodes"
+    raise SerializationError(msg)
 
 
 def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
@@ -442,7 +450,8 @@ def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
             msg = "leading_comments must be a list"
             raise SerializationError(msg)
         node.leading_comments = [
-            _cast_comment(_deserialize_comment_node(self, comment)) for comment in leading_comments
+            _cast_leading_comment(_deserialize_comment_node(self, comment))
+            for comment in leading_comments
         ]
     trailing_comment = data.get("trailing_comment")
     if isinstance(trailing_comment, dict):

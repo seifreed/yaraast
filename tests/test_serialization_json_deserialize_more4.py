@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import pytest
 
+from yaraast.ast.comments import CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
     ForExpression,
@@ -308,6 +309,36 @@ def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
                 "leading_comments": [{"type": "Comment", "text": "bad", "is_multiline": "yes"}],
             }
         )
+
+    with pytest.raises(
+        SerializationError, match="CommentGroup comments must contain Comment nodes"
+    ):
+        s._deserialize_import(
+            {
+                "module": "pe",
+                "trailing_comment": {
+                    "type": "CommentGroup",
+                    "comments": [
+                        {"type": "CommentGroup", "comments": [{"type": "Comment", "text": "bad"}]}
+                    ],
+                },
+            }
+        )
+
+
+def test_json_deserialize_node_metadata_preserves_leading_comment_groups() -> None:
+    s = JsonSerializer()
+    node = s._deserialize_import(
+        {
+            "module": "pe",
+            "leading_comments": [
+                {"type": "CommentGroup", "comments": [{"type": "Comment", "text": "lead"}]}
+            ],
+        }
+    )
+
+    assert isinstance(node.leading_comments[0], CommentGroup)
+    assert node.leading_comments[0].comments[0].text == "lead"
 
 
 def test_deserialize_strings_modifiers_and_hex_tokens() -> None:

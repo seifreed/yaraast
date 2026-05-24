@@ -496,6 +496,37 @@ def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
             }
         )
 
+    with pytest.raises(
+        SerializationError, match="CommentGroup comments must contain Comment nodes"
+    ):
+        deserialize_node(
+            {
+                "type": "Import",
+                "module": "pe",
+                "trailing_comment": {
+                    "type": "CommentGroup",
+                    "comments": [
+                        {"type": "CommentGroup", "comments": [{"type": "Comment", "text": "bad"}]}
+                    ],
+                },
+            }
+        )
+
+
+def test_simple_roundtrip_node_metadata_preserves_leading_comment_groups() -> None:
+    node = deserialize_node(
+        {
+            "type": "Import",
+            "module": "pe",
+            "leading_comments": [
+                {"type": "CommentGroup", "comments": [{"type": "Comment", "text": "lead"}]}
+            ],
+        }
+    )
+
+    assert isinstance(node.leading_comments[0], CommentGroup)
+    assert node.leading_comments[0].comments[0].text == "lead"
+
 
 def test_simple_roundtrip_helpers_preserve_meta_entry_scope() -> None:
     private_meta = MetaEntry.from_key_value("classification", "restricted", "private")

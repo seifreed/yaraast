@@ -844,7 +844,7 @@ def _apply_node_metadata(node: ASTNode, data: dict[str, Any]) -> ASTNode:
             msg = "leading_comments must be a list"
             raise SerializationError(msg)
         node.leading_comments = [
-            cast_comment(_deserialize_comment_node(comment)) for comment in leading_comments
+            cast_leading_comment(_deserialize_comment_node(comment)) for comment in leading_comments
         ]
     trailing_comment = data.get("trailing_comment")
     if isinstance(trailing_comment, dict):
@@ -1830,13 +1830,22 @@ def cast_in_rule_pragma(node: ASTNode) -> InRulePragma:
 def cast_comment(node: ASTNode) -> Comment:
     if isinstance(node, Comment):
         return node
-    return Comment(str(node))
+    msg = "CommentGroup comments must contain Comment nodes"
+    raise SerializationError(msg)
+
+
+def cast_leading_comment(node: ASTNode) -> Any:
+    if isinstance(node, Comment | CommentGroup):
+        return node
+    msg = "leading_comments must contain Comment or CommentGroup nodes"
+    raise SerializationError(msg)
 
 
 def cast_trailing_comment(node: ASTNode) -> Any:
     if isinstance(node, Comment | CommentGroup):
         return node
-    return Comment(str(node))
+    msg = "trailing_comment must contain Comment or CommentGroup nodes"
+    raise SerializationError(msg)
 
 
 def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
