@@ -709,6 +709,54 @@ def test_codegen_generators_parenthesize_single_string_set_items(
 
 
 @pytest.mark.parametrize(
+    "condition",
+    [
+        OfExpression(-1, Identifier("them")),
+        ForOfExpression(-1, Identifier("them"), BooleanLiteral(True)),
+        OfExpression(True, Identifier("them")),
+        OfExpression(0.0, Identifier("them")),
+        OfExpression(1.01, Identifier("them")),
+        OfExpression(DoubleLiteral(0.0), Identifier("them")),
+        OfExpression(DoubleLiteral(1.01), Identifier("them")),
+        OfExpression("-1", Identifier("them")),
+        OfExpression("0%", Identifier("them")),
+        OfExpression("101%", Identifier("them")),
+        OfExpression(StringLiteral("-1"), Identifier("them")),
+        OfExpression(StringLiteral("0%"), Identifier("them")),
+        OfExpression(StringLiteral("101%"), Identifier("them")),
+    ],
+)
+def test_codegen_generators_reject_invalid_quantifiers(condition: Any) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_quantifier", condition=condition)])
+
+    with pytest.raises(ValueError, match="Invalid quantifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid quantifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid quantifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid quantifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_render_fractional_quantifier_percentages() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="fractional_quantifier",
+                strings=[PlainString(identifier="a", value="x")],
+                condition=OfExpression(0.29, Identifier("them")),
+            )
+        ]
+    )
+
+    assert "29% of them" in CodeGenerator().generate(ast)
+    assert "29% of them" in AdvancedCodeGenerator().generate(ast)
+    assert "29% of them" in CommentAwareCodeGenerator().generate(ast)
+    assert "29% of them" in PrettyPrinter().pretty_print(ast)
+
+
+@pytest.mark.parametrize(
     ("condition", "message"),
     [
         (BinaryExpression(IntegerLiteral(1), "???", IntegerLiteral(2)), "Invalid binary operator"),

@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+import re
+
 from yaraast.codegen.generator_helpers import (
     validate_string_identifier_text,
     validate_string_set_item_text,
 )
+
+_INTEGER_QUANTIFIER_RE = re.compile(r"^-?\d+$")
+_PERCENTAGE_QUANTIFIER_RE = re.compile(r"^(\d+)%$")
+_QUANTIFIER_PERCENT_MIN = 1
+_QUANTIFIER_PERCENT_MAX = 100
 
 
 def _render_string_set(gen, string_set) -> str:
@@ -64,15 +71,51 @@ def _render_string_set_item(gen, item) -> str:
 def _render_quantifier(gen, quantifier, *, allow_percentage: bool = False) -> str:
     from yaraast.ast.expressions import DoubleLiteral, StringLiteral
 
-    if isinstance(quantifier, str | int):
+    if isinstance(quantifier, bool):
+        msg = f"Invalid quantifier '{quantifier}' for libyara output"
+        raise ValueError(msg)
+    if isinstance(quantifier, int):
+        if quantifier < 0:
+            msg = f"Invalid quantifier '{quantifier}' for libyara output"
+            raise ValueError(msg)
         return str(quantifier)
+    if isinstance(quantifier, str):
+        return _validate_quantifier_text(quantifier, allow_percentage=allow_percentage)
     if isinstance(quantifier, float) and allow_percentage:
-        return f"{int(quantifier * 100)}%"
+        return _format_fractional_percentage_quantifier(quantifier)
     if isinstance(quantifier, StringLiteral):
-        return quantifier.value
+        return _validate_quantifier_text(quantifier.value, allow_percentage=allow_percentage)
     if isinstance(quantifier, DoubleLiteral) and allow_percentage:
-        return f"{int(quantifier.value * 100)}%"
+        return _format_fractional_percentage_quantifier(quantifier.value)
     return gen.visit(quantifier)
+
+
+def _validate_quantifier_text(text: str, *, allow_percentage: bool) -> str:
+    if _INTEGER_QUANTIFIER_RE.fullmatch(text) is not None and int(text) < 0:
+        msg = f"Invalid quantifier '{text}' for libyara output"
+        raise ValueError(msg)
+
+    percentage = _PERCENTAGE_QUANTIFIER_RE.fullmatch(text)
+    if percentage is not None:
+        if not allow_percentage:
+            msg = f"Invalid quantifier '{text}' for libyara output"
+            raise ValueError(msg)
+        _validate_percentage_quantifier(int(percentage.group(1)), text)
+
+    return text
+
+
+def _format_fractional_percentage_quantifier(value: float) -> str:
+    percent = round(value * 100)
+    _validate_percentage_quantifier(percent, value)
+    return f"{percent}%"
+
+
+def _validate_percentage_quantifier(percent: int, raw_value: object) -> None:
+    if _QUANTIFIER_PERCENT_MIN <= percent <= _QUANTIFIER_PERCENT_MAX:
+        return
+    msg = f"Invalid quantifier '{raw_value}' for libyara output"
+    raise ValueError(msg)
 
 
 def render_for_of_expression(gen, node) -> str:
