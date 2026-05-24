@@ -511,6 +511,21 @@ class TestSemanticValidator:
 
         assert result.is_valid is True
 
+    def test_validate_accepts_defined_on_libyara_expression_operands(self) -> None:
+        ast = Parser().parse("""
+            rule defined_expression_operands {
+                condition:
+                    defined not ("abc") and
+                    defined 1 + 2 and
+                    defined 1 == 1 and
+                    defined 0 % ~(1)
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
     def test_validate_accepts_libyara_dotnet_collection_fields(self) -> None:
         ast = Parser().parse("""
             import "dotnet"
