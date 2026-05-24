@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from yaraast.codegen.generator_formatting import validate_yara_identifier
 from yaraast.codegen.generator_helpers import (
     validate_string_identifier_text,
     validate_string_set_item_text,
@@ -69,7 +70,13 @@ def _render_string_set_item(gen, item) -> str:
 
 
 def _render_quantifier(gen, quantifier, *, allow_percentage: bool = False) -> str:
-    from yaraast.ast.expressions import DoubleLiteral, StringLiteral
+    from yaraast.ast.expressions import (
+        BooleanLiteral,
+        DoubleLiteral,
+        Identifier,
+        IntegerLiteral,
+        StringLiteral,
+    )
 
     if isinstance(quantifier, bool):
         msg = f"Invalid quantifier '{quantifier}' for libyara output"
@@ -83,17 +90,30 @@ def _render_quantifier(gen, quantifier, *, allow_percentage: bool = False) -> st
         return _validate_quantifier_text(quantifier, allow_percentage=allow_percentage)
     if isinstance(quantifier, float) and allow_percentage:
         return _format_fractional_percentage_quantifier(quantifier)
+    if isinstance(quantifier, IntegerLiteral):
+        return _validate_quantifier_text(str(quantifier.value), allow_percentage=allow_percentage)
+    if isinstance(quantifier, BooleanLiteral):
+        msg = f"Invalid quantifier '{gen.visit(quantifier)}' for libyara output"
+        raise ValueError(msg)
     if isinstance(quantifier, StringLiteral):
         return _validate_quantifier_text(quantifier.value, allow_percentage=allow_percentage)
     if isinstance(quantifier, DoubleLiteral) and allow_percentage:
         return _format_fractional_percentage_quantifier(quantifier.value)
+    if isinstance(quantifier, Identifier):
+        return _validate_quantifier_text(quantifier.name, allow_percentage=allow_percentage)
     return gen.visit(quantifier)
 
 
 def _validate_quantifier_text(text: str, *, allow_percentage: bool) -> str:
-    if _INTEGER_QUANTIFIER_RE.fullmatch(text) is not None and int(text) < 0:
-        msg = f"Invalid quantifier '{text}' for libyara output"
-        raise ValueError(msg)
+    if text in {"all", "any", "none"}:
+        return text
+
+    integer = _INTEGER_QUANTIFIER_RE.fullmatch(text)
+    if integer is not None:
+        if int(text) < 0:
+            msg = f"Invalid quantifier '{text}' for libyara output"
+            raise ValueError(msg)
+        return text
 
     percentage = _PERCENTAGE_QUANTIFIER_RE.fullmatch(text)
     if percentage is not None:
@@ -101,8 +121,9 @@ def _validate_quantifier_text(text: str, *, allow_percentage: bool) -> str:
             msg = f"Invalid quantifier '{text}' for libyara output"
             raise ValueError(msg)
         _validate_percentage_quantifier(int(percentage.group(1)), text)
+        return text
 
-    return text
+    return validate_yara_identifier(text, "quantifier")
 
 
 def _format_fractional_percentage_quantifier(value: float) -> str:

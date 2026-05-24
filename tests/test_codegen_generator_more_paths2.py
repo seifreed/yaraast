@@ -917,6 +917,13 @@ def test_codegen_generators_parenthesize_single_string_set_items(
         OfExpression(StringLiteral("-1"), Identifier("them")),
         OfExpression(StringLiteral("0%"), Identifier("them")),
         OfExpression(StringLiteral("101%"), Identifier("them")),
+        OfExpression("bad-key", Identifier("them")),
+        OfExpression("true", Identifier("them")),
+        OfExpression(StringLiteral("bad-key"), Identifier("them")),
+        OfExpression(StringLiteral("true"), Identifier("them")),
+        OfExpression(IntegerLiteral(-1), Identifier("them")),
+        OfExpression(BooleanLiteral(True), Identifier("them")),
+        OfExpression(Identifier("true"), Identifier("them")),
     ],
 )
 def test_codegen_generators_reject_invalid_quantifiers(condition: Any) -> None:
@@ -930,6 +937,23 @@ def test_codegen_generators_reject_invalid_quantifiers(condition: Any) -> None:
         CommentAwareCodeGenerator().generate(ast)
     with pytest.raises(ValueError, match="Invalid quantifier"):
         PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_allow_external_identifier_of_quantifier() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="external_quantifier",
+                strings=[PlainString("$a", value="x")],
+                condition=OfExpression(Identifier("n"), Identifier("them")),
+            )
+        ]
+    )
+
+    assert "n of them" in CodeGenerator().generate(ast)
+    assert "n of them" in AdvancedCodeGenerator().generate(ast)
+    assert "n of them" in CommentAwareCodeGenerator().generate(ast)
+    assert "n of them" in PrettyPrinter().pretty_print(ast)
 
 
 @pytest.mark.parametrize(
