@@ -186,8 +186,11 @@ def write_condition_section(printer, condition) -> None:
         current_line = ""
         for word in condition_str.split():
             if len(current_line + " " + word) > printer.options.max_line_length:
-                printer._writeline(current_line)
-                current_line = indent_unit(printer) + word
+                if current_line:
+                    printer._writeline(current_line)
+                    current_line = indent_unit(printer) + word
+                else:
+                    current_line = word
             elif current_line:
                 current_line += " " + word
             else:

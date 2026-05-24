@@ -152,6 +152,20 @@ def test_pretty_printer_uses_tabs_for_wrapped_condition_continuations() -> None:
     assert "\n\t\t\tbeta" in out
 
 
+def test_pretty_printer_does_not_insert_blank_line_before_long_wrapped_token() -> None:
+    rule = Rule(
+        name="long_first_word",
+        condition=Identifier("very_long_identifier_name"),
+    )
+
+    out = PrettyPrinter(
+        PrettyPrintOptions(wrap_long_conditions=True, max_line_length=8)
+    ).pretty_print(YaraFile(rules=[rule]))
+
+    assert "\n    condition:\n\n" not in out
+    assert "\n        very_long_identifier_name\n" in out
+
+
 def test_pretty_printer_preserves_top_level_extensions() -> None:
     yf = YaraFile(
         pragmas=[IncludeOncePragma()],
