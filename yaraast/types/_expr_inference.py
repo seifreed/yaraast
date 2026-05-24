@@ -187,6 +187,13 @@ class ExpressionTypeInference(_TypeBaseVisitor):
 
     def visit_defined_expression(self, node: DefinedExpression) -> YaraType:
         expression_type = self.visit(node.expression)
+        if isinstance(expression_type, UnknownType):
+            if isinstance(node.expression, StringIdentifier):
+                return BooleanType()
+            if isinstance(node.expression, Identifier):
+                self.errors.append(f"Undefined identifier: {node.expression.name}")
+            else:
+                self.errors.append("'defined' cannot be applied to expression of unknown type")
         if isinstance(expression_type, ArrayType | DictionaryType | StructType | ModuleType):
             self.errors.append(
                 f"'defined' cannot be applied to non-scalar expression of type {expression_type}"

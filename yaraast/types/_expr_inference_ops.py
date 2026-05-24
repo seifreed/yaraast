@@ -89,7 +89,9 @@ def infer_binary_expression(ctx, node: BinaryExpression):
         return _infer_logical_op(ctx, node.operator, left_type, right_type)
 
     if node.operator in ["<", "<=", ">", ">=", "==", "!="]:
-        return _infer_comparison_op(ctx, node.operator, left_type, right_type)
+        return _infer_comparison_op(
+            ctx, node.operator, node.left, left_type, node.right, right_type
+        )
 
     if node.operator in _STRING_OPS:
         return _infer_string_op(ctx, node.operator, left_type, right_type)
@@ -135,7 +137,12 @@ def _infer_logical_op(ctx, operator, left_type, right_type):
     return BooleanType()
 
 
-def _infer_comparison_op(ctx, operator, left_type, right_type):
+def _infer_comparison_op(ctx, operator, left_node, left_type, right_node, right_type):
+    if _has_unknown_comparison_operand(
+        ctx, operator, "Left", left_node, left_type
+    ) or _has_unknown_comparison_operand(ctx, operator, "Right", right_node, right_type):
+        return BooleanType()
+
     if isinstance(left_type, StringIdentifierType) or isinstance(right_type, StringIdentifierType):
         ctx.errors.append(f"String identifiers cannot be used with '{operator}' comparisons")
         return BooleanType()
@@ -150,6 +157,18 @@ def _infer_comparison_op(ctx, operator, left_type, right_type):
         return BooleanType()
     ctx.errors.append(f"Incompatible types for '{operator}': {left_type} and {right_type}")
     return BooleanType()
+
+
+def _has_unknown_comparison_operand(ctx, operator, side, operand, operand_type):
+    if not isinstance(operand_type, UnknownType):
+        return False
+    if isinstance(operand, StringIdentifier):
+        return True
+    if isinstance(operand, Identifier):
+        ctx.errors.append(f"Undefined identifier: {operand.name}")
+        return True
+    ctx.errors.append(f"{side} operand of '{operator}' has unknown type")
+    return True
 
 
 def _infer_string_op(ctx, operator, left_type, right_type):

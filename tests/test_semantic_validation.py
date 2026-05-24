@@ -660,6 +660,32 @@ class TestSemanticValidator:
         messages = [error.message for error in result.errors]
         assert sum("Boolean operands cannot be used with" in message for message in messages) == 3
 
+    def test_validate_rejects_undefined_identifiers_in_comparison_and_defined(self) -> None:
+        ast = Parser().parse("""
+            rule undefined_identifier_equality {
+                condition:
+                    missing_equal == missing_equal
+            }
+
+            rule undefined_identifier_relational {
+                condition:
+                    missing_order < 1
+            }
+
+            rule undefined_identifier_defined {
+                condition:
+                    defined missing_defined
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any("Undefined identifier: missing_equal" in message for message in messages)
+        assert any("Undefined identifier: missing_order" in message for message in messages)
+        assert any("Undefined identifier: missing_defined" in message for message in messages)
+
     def test_validate_rejects_integer_division_and_modulo_by_zero(self) -> None:
         ast = Parser().parse(r"""
             rule string_count_division_by_zero {
