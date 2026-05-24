@@ -302,6 +302,28 @@ def test_protobuf_serializer_rejects_unsupported_meta_and_pragma_parameter_value
         serializer.serialize(pragma_ast)
 
 
+def test_protobuf_serializer_rejects_non_string_meta_and_pragma_parameter_keys() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_meta_key",
+                meta=[Meta(cast(Any, 123), "value")],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(SerializationError, match="Meta key must be a string"):
+        serializer.serialize(ast)
+
+    bad_parameters = {cast(Any, 1): "value"}
+    pragma_ast = YaraFile(pragmas=[CustomPragma("vendor", parameters=bad_parameters)])
+
+    with pytest.raises(SerializationError, match="Pragma parameters keys must be strings"):
+        serializer.serialize(pragma_ast)
+
+
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

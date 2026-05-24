@@ -214,7 +214,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         _copy_node_metadata_to_protobuf(tag, pb_tag)
 
     for entry in rule.meta:
-        key = getattr(entry, "key", "")
+        key = _protobuf_required_string(getattr(entry, "key", None), "Meta key")
         value = getattr(entry, "value", "")
         scope = getattr(entry, "scope", None)
         meta_val = pb_rule.meta[key]
@@ -261,6 +261,19 @@ def _copy_python_value_to_meta_value(value, pb_meta_value, context: str) -> None
     else:
         msg = f"{context} value must be a string, integer, boolean, or finite float"
         raise SerializationError(msg)
+
+
+def _protobuf_required_string(value, context: str) -> str:
+    if isinstance(value, str):
+        return value
+    msg = f"{context} must be a string"
+    raise SerializationError(msg)
+
+
+def _protobuf_required_string_key(value, message: str) -> str:
+    if isinstance(value, str):
+        return value
+    raise SerializationError(message)
 
 
 def _meta_value_to_python(pb_meta_value):
@@ -331,9 +344,13 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
         pb_pragma.condition = condition
 
     for key, value in getattr(pragma, "parameters", {}).items():
+        parameter_key = _protobuf_required_string_key(
+            key,
+            "Pragma parameters keys must be strings",
+        )
         _copy_python_value_to_meta_value(
             value,
-            pb_pragma.parameters[str(key)],
+            pb_pragma.parameters[parameter_key],
             "Pragma parameter",
         )
     _copy_node_metadata_to_protobuf(pragma, pb_pragma)
