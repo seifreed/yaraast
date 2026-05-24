@@ -77,6 +77,17 @@ def _serialize_string_set(serializer, value, context: str):
     raise SerializationError(msg)
 
 
+def _serialize_string_or_expression(serializer, value, context: str):
+    from yaraast.ast.expressions import Expression
+
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Expression):
+        return serializer.visit(value)
+    msg = f"{context} must be a string or expression"
+    raise SerializationError(msg)
+
+
 def _serialize_modifier_value(value: Any) -> Any:
     if isinstance(value, tuple):
         return list(value)
@@ -297,7 +308,7 @@ def visit_at_expression(serializer, node) -> dict[str, Any]:
 
 
 def visit_in_expression(serializer, node) -> dict[str, Any]:
-    subject = _serialize_ast_value(serializer, node.subject)
+    subject = _serialize_string_or_expression(serializer, node.subject, "InExpression subject")
     return {"type": "InExpression", "subject": subject, "range": serializer.visit(node.range)}
 
 
@@ -313,7 +324,7 @@ def visit_dictionary_access(serializer, node) -> dict[str, Any]:
     return {
         "type": "DictionaryAccess",
         "object": serializer.visit(node.object),
-        "key": serializer.visit(node.key) if hasattr(node.key, "accept") else node.key,
+        "key": _serialize_string_or_expression(serializer, node.key, "DictionaryAccess key"),
     }
 
 

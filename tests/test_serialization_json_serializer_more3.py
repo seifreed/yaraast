@@ -193,6 +193,21 @@ def test_json_serializer_rejects_non_expression_ast_quantifiers() -> None:
             serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_invalid_string_or_expression_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_values: list[Any] = [False, 123, None, [], {}, object(), Import("pe")]
+
+    for invalid_value in invalid_values:
+        expressions = [
+            InExpression(invalid_value, IntegerLiteral(1)),
+            DictionaryAccess(Identifier("items"), invalid_value),
+        ]
+        for expression in expressions:
+            ast = YaraFile(rules=[Rule(name="invalid_string_or_expression", condition=expression)])
+            with pytest.raises(SerializationError, match="must be a string or expression"):
+                serializer.serialize(ast)
+
+
 def test_json_serializer_rejects_invalid_raw_string_sets() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_string_sets: list[Any] = [
