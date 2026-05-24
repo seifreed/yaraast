@@ -542,6 +542,15 @@ def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
     raise SerializationError(msg)
 
 
+def _serialize_meta_value(value: Any) -> str | int | bool:
+    if isinstance(value, str | bool):
+        return value
+    if isinstance(value, int):
+        return value
+    msg = "Meta value must be a string, integer, or boolean"
+    raise SerializationError(msg)
+
+
 def _deserialize_rule_tag(value: Any) -> Tag:
     if isinstance(value, Tag):
         return value
@@ -561,10 +570,25 @@ def _deserialize_modifier_value(name: str, value: Any) -> Any:
     return deserialize_legacy_modifier_value(name, value)
 
 
+def _serialize_string_modifier_name(modifier: Any) -> str:
+    if isinstance(modifier, str):
+        return modifier
+    if isinstance(modifier, StringModifier):
+        return _serialize_required_string(
+            getattr(modifier.modifier_type, "value", None),
+            "StringModifier name",
+        )
+    try:
+        name = modifier.name
+    except AttributeError:
+        name = None
+    return _serialize_required_string(name, "StringModifier name")
+
+
 def _serialize_modifiers(modifiers: list[Any]) -> list[dict[str, Any]]:
     return [
         {
-            "name": getattr(modifier, "name", str(modifier)),
+            "name": _serialize_string_modifier_name(modifier),
             "value": _serialize_modifier_value(getattr(modifier, "value", None)),
         }
         for modifier in modifiers
@@ -824,7 +848,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, StringModifier):
         return {
             "type": "StringModifier",
-            "name": node.name,
+            "name": _serialize_string_modifier_name(node),
             "value": _serialize_modifier_value(node.value),
         }
     if isinstance(node, ExternRule):
@@ -861,7 +885,7 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
         return {
             "type": "InRulePragma",
             "pragma": serialize_pragma(node.pragma),
-            "position": node.position,
+            "position": _serialize_required_string(node.position, "InRulePragma position"),
         }
     if isinstance(node, PragmaBlock):
         return {
@@ -1225,7 +1249,11 @@ def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
 
 def serialize_meta(meta: Meta | MetaEntry) -> dict[str, Any]:
     """Serialize a Meta item."""
-    data = {"type": "Meta", "key": meta.key, "value": meta.value}
+    data = {
+        "type": "Meta",
+        "key": _serialize_required_string(meta.key, "Meta key"),
+        "value": _serialize_meta_value(meta.value),
+    }
     scope = getattr(meta, "scope", None)
     if scope is not None:
         data["type"] = "MetaEntry"
@@ -1240,7 +1268,10 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
     if isinstance(string_def, PlainString):
         data = {
             "type": "PlainString",
-            "identifier": string_def.identifier,
+            "identifier": _serialize_required_string(
+                string_def.identifier,
+                "PlainString identifier",
+            ),
             "modifiers": _serialize_modifiers(string_def.modifiers),
         }
         if string_def.is_anonymous:
@@ -1250,7 +1281,10 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
     if isinstance(string_def, HexString):
         data = {
             "type": "HexString",
-            "identifier": string_def.identifier,
+            "identifier": _serialize_required_string(
+                string_def.identifier,
+                "HexString identifier",
+            ),
             "tokens": [_serialize_hex_token(t) for t in string_def.tokens],
             "modifiers": _serialize_modifiers(string_def.modifiers),
         }
@@ -1260,8 +1294,11 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
     if isinstance(string_def, RegexString):
         data = {
             "type": "RegexString",
-            "identifier": string_def.identifier,
-            "regex": string_def.regex,
+            "identifier": _serialize_required_string(
+                string_def.identifier,
+                "RegexString identifier",
+            ),
+            "regex": _serialize_required_string(string_def.regex, "RegexString regex"),
             "modifiers": _serialize_modifiers(string_def.modifiers),
         }
         if string_def.is_anonymous:

@@ -957,6 +957,38 @@ def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types()
             serialize_node(node)
 
 
+def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_types() -> None:
+    invalid_cases = (
+        (Meta(cast(Any, 123), "value"), "Meta key must be a string"),
+        (Meta("key", cast(Any, 1.2)), "Meta value must be a string, integer, or boolean"),
+        (
+            PlainString(identifier=cast(Any, 123), value="abc"),
+            "PlainString identifier must be a string",
+        ),
+        (
+            HexString(identifier=cast(Any, 123), tokens=[]),
+            "HexString identifier must be a string",
+        ),
+        (
+            RegexString(identifier=cast(Any, 123), regex="abc"),
+            "RegexString identifier must be a string",
+        ),
+        (RegexString(identifier="$r", regex=cast(Any, 123)), "RegexString regex must be a string"),
+        (
+            StringModifier(cast(Any, 123)),
+            "StringModifier name must be a string",
+        ),
+        (
+            InRulePragma(Pragma(PragmaType.CUSTOM, "vendor"), cast(Any, 123)),
+            "InRulePragma position must be a string",
+        ),
+    )
+
+    for node, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
+
+
 def test_simple_roundtrip_string_set_values_reject_empty_payloads() -> None:
     empty_string_set_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (
