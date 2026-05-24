@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -32,6 +35,7 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, Extern
 from yaraast.ast.modules import DictionaryAccess
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaBlock, PragmaType
+from yaraast.ast.rules import Rule
 from yaraast.parser.source import parse_yara_source
 from yaraast.types._expr_inference import ExpressionTypeInference, _TypeBaseVisitor
 from yaraast.types._registry import (
@@ -44,6 +48,7 @@ from yaraast.types._registry import (
     TypeEnvironment,
     UnknownType,
 )
+from yaraast.types.semantic_validator import SemanticValidator
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
@@ -85,6 +90,26 @@ def test_type_base_visitor_default_methods_return_unknown() -> None:
             assert isinstance(out, BooleanType)
         else:
             assert isinstance(out, UnknownType)
+
+
+def test_expr_inference_treats_extern_rule_references_as_boolean_conditions() -> None:
+    reference = ExternRuleReference(rule_name="ExternalRule", namespace="ns")
+    inference = ExpressionTypeInference(TypeEnvironment())
+
+    assert isinstance(inference.visit(reference), BooleanType)
+
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="uses_external",
+                condition=cast(Any, reference),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.errors == []
 
 
 def test_expr_inference_reports_undefined_string_variants() -> None:

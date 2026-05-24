@@ -203,6 +203,9 @@ class ExpressionTypeInference(_TypeBaseVisitor):
             ),
         )
 
+    def visit_extern_rule_reference(self, _node: ExternRuleReference) -> YaraType:
+        return BooleanType()
+
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> YaraType:
         return self.visit(node.expression)
 
