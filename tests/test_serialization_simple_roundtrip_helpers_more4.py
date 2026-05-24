@@ -189,6 +189,18 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
         deserialize_rule({"name": "r1", "tags": [{"name": 7}], "condition": None})
 
 
+def test_simple_roundtrip_unknown_node_fallback_rejects_invalid_payload() -> None:
+    fallback = deserialize_node({"type": "UnknownNode", "data": "fallback"})
+    assert isinstance(fallback, Identifier)
+    assert fallback.name == "fallback"
+
+    with pytest.raises(SerializationError, match="Serialized node type must be a string"):
+        deserialize_node({"type": ["UnknownNode"], "data": "fallback"})
+
+    with pytest.raises(SerializationError, match="Serialized node data must be a string"):
+        deserialize_node({"type": "UnknownNode", "data": ["fallback"]})
+
+
 def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="YaraFile imports must be a list"):
         deserialize_node({"type": "YaraFile", "imports": "pe"})
