@@ -168,6 +168,9 @@ def test_simple_roundtrip_rule_metadata_nodes_reject_wrong_scalar_types() -> Non
     with pytest.raises(SerializationError, match="Meta key must be a string"):
         deserialize_meta({"key": ["author"], "value": "me"})
 
+    with pytest.raises(SerializationError, match="Meta type must be Meta or MetaEntry"):
+        deserialize_meta({"type": "Rule", "key": "author", "value": "me"})
+
     with pytest.raises(
         SerializationError, match="Meta value must be a string, integer, or boolean"
     ):

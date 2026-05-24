@@ -1011,6 +1011,10 @@ class JsonSerializerDeserializeMixin:
         from yaraast.ast.modifiers import MetaEntry
 
         data = _deserialize_object(data, "Meta")
+        node_type = data.get("type")
+        if node_type is not None and node_type not in {"Meta", "MetaEntry"}:
+            msg = "Meta type must be Meta or MetaEntry"
+            raise SerializationError(msg)
         if data.get("leading_comments") or data.get("trailing_comment") or data.get("location"):
             from yaraast.ast.meta import Meta
 

@@ -1619,6 +1619,10 @@ def cast_trailing_comment(node: ASTNode) -> Any:
 def deserialize_meta(data: dict[str, Any]) -> Meta | MetaEntry:
     """Deserialize a Meta item."""
     data = _deserialize_object(data, "Meta")
+    node_type = data.get("type")
+    if node_type is not None and node_type not in {"Meta", "MetaEntry"}:
+        msg = "Meta type must be Meta or MetaEntry"
+        raise SerializationError(msg)
     scope = data.get("scope")
     if data.get("type") == "MetaEntry" or scope is not None:
         return MetaEntry.from_key_value(
