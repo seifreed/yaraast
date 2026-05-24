@@ -6,7 +6,11 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
-from yaraast.codegen.generator_formatting import format_meta_key, format_rule_tags
+from yaraast.codegen.generator_formatting import (
+    format_meta_key,
+    format_rule_tags,
+    validate_rule_identifiers,
+)
 from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_regex_modifiers,
@@ -132,6 +136,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_yara_file(self, node: YaraFile) -> str:
         """Generate code for YaraFile with comments."""
+        validate_rule_identifiers(node.rules)
         # Write leading comments
         self._write_leading_comments(node.leading_comments)
 

@@ -486,6 +486,24 @@ def test_codegen_generators_reject_duplicate_rule_tags() -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="duplicate", condition=BooleanLiteral(True)),
+            Rule(name="duplicate", condition=BooleanLiteral(False)),
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Duplicate rule identifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Duplicate rule identifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Duplicate rule identifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Duplicate rule identifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generator_expression_and_condition_paths() -> None:
     gen = CodeGenerator()
 

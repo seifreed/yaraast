@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.generator_formatting import validate_rule_tags
+from yaraast.codegen.generator_formatting import validate_rule_identifiers, validate_rule_tags
 from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
@@ -50,6 +50,7 @@ def _emit_top_level_section(printer, nodes, blank_lines: int = 1) -> None:
 
 
 def visit_yara_file(printer, node) -> str:
+    validate_rule_identifiers(node.rules)
     _emit_top_level_section(printer, node.pragmas)
 
     imports = (

@@ -8,7 +8,7 @@ from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     _visit_binary_operand,
 )
-from yaraast.codegen.generator_formatting import format_rule_tags
+from yaraast.codegen.generator_formatting import format_rule_tags, validate_rule_identifiers
 
 
 def _emit_top_level_line(generator, node) -> None:
@@ -27,6 +27,7 @@ def _emit_top_level_section(generator, nodes) -> None:
 
 
 def visit_yara_file(generator, node) -> str:
+    validate_rule_identifiers(node.rules)
     _emit_top_level_section(generator, node.pragmas)
 
     imports = (

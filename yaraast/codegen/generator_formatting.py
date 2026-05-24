@@ -18,6 +18,19 @@ def format_rule_modifiers(modifiers) -> str:
     return ""
 
 
+def validate_rule_identifiers(rules) -> None:
+    if not rules:
+        return
+
+    seen: set[str] = set()
+    for rule in rules:
+        name = str(getattr(rule, "name", ""))
+        if name in seen:
+            msg = f"Duplicate rule identifier '{name}' for libyara output"
+            raise ValueError(msg)
+        seen.add(name)
+
+
 def format_rule_tags(tags) -> str:
     if not tags:
         return ""
