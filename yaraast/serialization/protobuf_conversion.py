@@ -159,33 +159,53 @@ def _apply_node_metadata_from_protobuf(pb_owner, node):
 
 def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
     """Convert an AST to its protobuf representation."""
+    from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+    from yaraast.ast.pragmas import Pragma
+    from yaraast.ast.rules import Import, Include, Rule
+
     pb_file = yara_ast_pb2.YaraFile()
 
-    for imp in ast.imports:
+    imports = _protobuf_node_list(ast.imports, "YaraFile imports", Import)
+    includes = _protobuf_node_list(ast.includes, "YaraFile includes", Include)
+    extern_rules = _protobuf_node_list(ast.extern_rules, "YaraFile extern_rules", ExternRule)
+    extern_imports = _protobuf_node_list(
+        ast.extern_imports,
+        "YaraFile extern_imports",
+        ExternImport,
+    )
+    pragmas = _protobuf_node_list(ast.pragmas, "YaraFile pragmas", Pragma)
+    namespaces = _protobuf_node_list(
+        ast.namespaces,
+        "YaraFile namespaces",
+        ExternNamespace,
+    )
+    rules = _protobuf_node_list(ast.rules, "YaraFile rules", Rule)
+
+    for imp in imports:
         pb_import = pb_file.imports.add()
         pb_import.module = _protobuf_required_string(imp.module, "Import module")
         if hasattr(imp, "alias") and imp.alias is not None:
             pb_import.alias = _protobuf_required_string(imp.alias, "Import alias")
         _copy_node_metadata_to_protobuf(imp, pb_import)
 
-    for inc in ast.includes:
+    for inc in includes:
         pb_include = pb_file.includes.add()
         pb_include.path = _protobuf_required_string(inc.path, "Include path")
         _copy_node_metadata_to_protobuf(inc, pb_include)
 
-    for extern_rule in ast.extern_rules:
+    for extern_rule in extern_rules:
         convert_extern_rule_to_protobuf(extern_rule, pb_file.extern_rules.add())
 
-    for extern_import in ast.extern_imports:
+    for extern_import in extern_imports:
         convert_extern_import_to_protobuf(extern_import, pb_file.extern_imports.add())
 
-    for pragma in ast.pragmas:
+    for pragma in pragmas:
         convert_pragma_to_protobuf(pragma, pb_file.pragmas.add())
 
-    for namespace in ast.namespaces:
+    for namespace in namespaces:
         convert_extern_namespace_to_protobuf(namespace, pb_file.namespaces.add())
 
-    for rule in ast.rules:
+    for rule in rules:
         pb_rule = pb_file.rules.add()
         convert_rule_to_protobuf(rule, pb_rule)
 
@@ -193,9 +213,9 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
         pb_file.metadata.format = "yaraast-protobuf"
         pb_file.metadata.version = "1.0"
         pb_file.metadata.ast_type = "YaraFile"
-        pb_file.metadata.rules_count = len(ast.rules)
-        pb_file.metadata.imports_count = len(ast.imports)
-        pb_file.metadata.includes_count = len(ast.includes)
+        pb_file.metadata.rules_count = len(rules)
+        pb_file.metadata.imports_count = len(imports)
+        pb_file.metadata.includes_count = len(includes)
         pb_file.metadata.timestamp = int(time.time())
 
     _copy_node_metadata_to_protobuf(ast, pb_file)
@@ -204,16 +224,21 @@ def ast_to_protobuf(ast, *, include_metadata: bool) -> yara_ast_pb2.YaraFile:
 
 def convert_rule_to_protobuf(rule, pb_rule) -> None:
     """Convert a single rule AST node to protobuf."""
+    from yaraast.ast.meta import Meta
+    from yaraast.ast.modifiers import MetaEntry
+    from yaraast.ast.pragmas import InRulePragma
+    from yaraast.ast.rules import Tag
+
     pb_rule.name = _protobuf_required_string(rule.name, "Rule name")
     pb_rule.modifiers.extend(str(m) for m in rule.modifiers)
     _copy_node_metadata_to_protobuf(rule, pb_rule)
 
-    for tag in rule.tags:
+    for tag in _protobuf_node_list(rule.tags, "Rule tags", Tag):
         pb_tag = pb_rule.tags.add()
         pb_tag.name = _protobuf_required_string(tag.name, "Tag name")
         _copy_node_metadata_to_protobuf(tag, pb_tag)
 
-    for entry in rule.meta:
+    for entry in _protobuf_node_list(rule.meta, "Rule meta", (Meta, MetaEntry)):
         key = _protobuf_required_string(getattr(entry, "key", None), "Meta key")
         value = getattr(entry, "value", "")
         scope = getattr(entry, "scope", None)
@@ -237,7 +262,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         elif isinstance(value, float):
             meta_val.double_value = _finite_double_value(value, "Meta")
 
-    for string_def in rule.strings:
+    for string_def in _protobuf_string_definition_list(rule.strings, "Rule strings"):
         pb_string = pb_rule.strings.add()
         string_context = type(string_def).__name__
         pb_string.identifier = _protobuf_required_string(
@@ -249,7 +274,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
     if rule.condition is not None:
         convert_expression_to_protobuf(rule.condition, pb_rule.condition)
 
-    for pragma in rule.pragmas:
+    for pragma in _protobuf_node_list(rule.pragmas, "Rule pragmas", InRulePragma):
         convert_in_rule_pragma_to_protobuf(pragma, pb_rule.pragmas.add())
 
 
@@ -323,7 +348,25 @@ def _protobuf_node_list(values, context: str, item_type) -> list:
     items = list(values)
     for item in items:
         if not isinstance(item, item_type):
-            msg = f"{context} item must be {item_type.__name__}"
+            if isinstance(item_type, tuple):
+                expected = " or ".join(node_type.__name__ for node_type in item_type)
+            else:
+                expected = item_type.__name__
+            msg = f"{context} item must be {expected}"
+            raise SerializationError(msg)
+    return items
+
+
+def _protobuf_string_definition_list(values, context: str) -> list:
+    from yaraast.ast.strings import StringDefinition
+
+    if not isinstance(values, list | tuple):
+        msg = f"{context} must be a list"
+        raise SerializationError(msg)
+    items = list(values)
+    for item in items:
+        if not isinstance(item, StringDefinition) and not hasattr(item, "identifier"):
+            msg = f"{context} item must be StringDefinition"
             raise SerializationError(msg)
     return items
 
@@ -381,9 +424,15 @@ def convert_extern_import_to_protobuf(extern_import, pb_extern_import) -> None:
 
 
 def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
+    from yaraast.ast.extern import ExternRule
+
     pb_namespace.name = _protobuf_required_string(namespace.name, "ExternNamespace name")
     _copy_node_metadata_to_protobuf(namespace, pb_namespace)
-    for extern_rule in namespace.extern_rules:
+    for extern_rule in _protobuf_node_list(
+        namespace.extern_rules,
+        "ExternNamespace extern_rules",
+        ExternRule,
+    ):
         convert_extern_rule_to_protobuf(extern_rule, pb_namespace.extern_rules.add())
 
 

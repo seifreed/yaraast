@@ -484,6 +484,141 @@ def test_protobuf_serializer_rejects_invalid_extern_and_in_rule_pragma_fields(
         serializer.serialize(ast)
 
 
+def _invalid_file_container_cases() -> list[tuple[YaraFile, str]]:
+    bad_imports = YaraFile(imports=[Import("pe")])
+    cast(Any, bad_imports).imports = False
+
+    bad_import = YaraFile(imports=[Import("pe")])
+    cast(Any, bad_import).imports = [object()]
+
+    bad_includes = YaraFile(includes=[Include("rules.yar")])
+    cast(Any, bad_includes).includes = False
+
+    bad_include = YaraFile(includes=[Include("rules.yar")])
+    cast(Any, bad_include).includes = [object()]
+
+    bad_extern_rules = YaraFile(extern_rules=[ExternRule("ExternalRule")])
+    cast(Any, bad_extern_rules).extern_rules = False
+
+    bad_extern_rule = YaraFile(extern_rules=[ExternRule("ExternalRule")])
+    cast(Any, bad_extern_rule).extern_rules = [object()]
+
+    bad_extern_imports = YaraFile(extern_imports=[ExternImport("external_rules")])
+    cast(Any, bad_extern_imports).extern_imports = False
+
+    bad_extern_import = YaraFile(extern_imports=[ExternImport("external_rules")])
+    cast(Any, bad_extern_import).extern_imports = [object()]
+
+    bad_pragmas = YaraFile(pragmas=[CustomPragma("vendor")])
+    cast(Any, bad_pragmas).pragmas = False
+
+    bad_pragma = YaraFile(pragmas=[CustomPragma("vendor")])
+    cast(Any, bad_pragma).pragmas = [object()]
+
+    bad_namespaces = YaraFile(namespaces=[ExternNamespace("corp")])
+    cast(Any, bad_namespaces).namespaces = False
+
+    bad_namespace = YaraFile(namespaces=[ExternNamespace("corp")])
+    cast(Any, bad_namespace).namespaces = [object()]
+
+    namespace_with_bad_rules = ExternNamespace("corp")
+    cast(Any, namespace_with_bad_rules).extern_rules = False
+
+    namespace_with_bad_rule = ExternNamespace("corp")
+    cast(Any, namespace_with_bad_rule).extern_rules = [object()]
+
+    bad_rules = YaraFile(rules=[Rule(name="ok")])
+    cast(Any, bad_rules).rules = False
+
+    bad_rule = YaraFile(rules=[Rule(name="ok")])
+    cast(Any, bad_rule).rules = [object()]
+
+    return [
+        (bad_imports, "YaraFile imports must be a list"),
+        (bad_import, "YaraFile imports item must be Import"),
+        (bad_includes, "YaraFile includes must be a list"),
+        (bad_include, "YaraFile includes item must be Include"),
+        (bad_extern_rules, "YaraFile extern_rules must be a list"),
+        (bad_extern_rule, "YaraFile extern_rules item must be ExternRule"),
+        (bad_extern_imports, "YaraFile extern_imports must be a list"),
+        (bad_extern_import, "YaraFile extern_imports item must be ExternImport"),
+        (bad_pragmas, "YaraFile pragmas must be a list"),
+        (bad_pragma, "YaraFile pragmas item must be Pragma"),
+        (bad_namespaces, "YaraFile namespaces must be a list"),
+        (bad_namespace, "YaraFile namespaces item must be ExternNamespace"),
+        (
+            YaraFile(namespaces=[namespace_with_bad_rules]),
+            "ExternNamespace extern_rules must be a list",
+        ),
+        (
+            YaraFile(namespaces=[namespace_with_bad_rule]),
+            "ExternNamespace extern_rules item must be ExternRule",
+        ),
+        (bad_rules, "YaraFile rules must be a list"),
+        (bad_rule, "YaraFile rules item must be Rule"),
+    ]
+
+
+@pytest.mark.parametrize(("ast", "message"), _invalid_file_container_cases())
+def test_protobuf_serializer_rejects_invalid_file_container_fields(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+def _invalid_rule_container_cases() -> list[tuple[Rule, str]]:
+    bad_tags = Rule(name="bad_rule_container", condition=BooleanLiteral(True))
+    cast(Any, bad_tags).tags = False
+
+    bad_tag = Rule(name="bad_rule_container", condition=BooleanLiteral(True))
+    cast(Any, bad_tag).tags = [object()]
+
+    bad_meta = Rule(name="bad_rule_container", condition=BooleanLiteral(True))
+    cast(Any, bad_meta).meta = False
+
+    bad_meta_entry = Rule(name="bad_rule_container", condition=BooleanLiteral(True))
+    cast(Any, bad_meta_entry).meta = [object()]
+
+    bad_strings = Rule(name="bad_rule_container", condition=BooleanLiteral(True))
+    cast(Any, bad_strings).strings = False
+
+    bad_string = Rule(name="bad_rule_container", condition=BooleanLiteral(True))
+    cast(Any, bad_string).strings = [object()]
+
+    bad_pragmas = Rule(name="bad_rule_container", condition=BooleanLiteral(True))
+    cast(Any, bad_pragmas).pragmas = False
+
+    bad_pragma = Rule(name="bad_rule_container", condition=BooleanLiteral(True))
+    cast(Any, bad_pragma).pragmas = [object()]
+
+    return [
+        (bad_tags, "Rule tags must be a list"),
+        (bad_tag, "Rule tags item must be Tag"),
+        (bad_meta, "Rule meta must be a list"),
+        (bad_meta_entry, "Rule meta item must be Meta or MetaEntry"),
+        (bad_strings, "Rule strings must be a list"),
+        (bad_string, "Rule strings item must be StringDefinition"),
+        (bad_pragmas, "Rule pragmas must be a list"),
+        (bad_pragma, "Rule pragmas item must be InRulePragma"),
+    ]
+
+
+@pytest.mark.parametrize(("rule", "message"), _invalid_rule_container_cases())
+def test_protobuf_serializer_rejects_invalid_rule_container_fields(
+    rule: Rule,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[rule])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
 @pytest.mark.parametrize(
     ("pragma", "message"),
     [
