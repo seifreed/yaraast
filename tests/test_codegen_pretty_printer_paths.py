@@ -166,6 +166,20 @@ def test_pretty_printer_does_not_insert_blank_line_before_long_wrapped_token() -
     assert "\n        very_long_identifier_name\n" in out
 
 
+def test_pretty_printer_honors_compact_symbolic_operators() -> None:
+    rule = Rule(
+        name="compact_ops",
+        condition=BinaryExpression(Identifier("a"), "==", Identifier("b")),
+    )
+
+    out = PrettyPrinter(PrettyPrintOptions(space_around_operators=False)).pretty_print(
+        YaraFile(rules=[rule])
+    )
+
+    assert "\n        a==b\n" in out
+    assert "\n        a == b\n" not in out
+
+
 def test_pretty_printer_preserves_top_level_extensions() -> None:
     yf = YaraFile(
         pragmas=[IncludeOncePragma()],

@@ -173,7 +173,7 @@ def write_string_definition(printer, string_def) -> None:
 
 
 def write_condition_section(printer, condition) -> None:
-    condition_str = expression_to_string(condition)
+    condition_str = expression_to_string(condition, printer.options)
     if "\n" in condition_str:
         for line in condition_str.splitlines():
             printer._writeline(line)

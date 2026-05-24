@@ -24,6 +24,19 @@ from yaraast.codegen.generator_helpers import (
     output_string_identifier,
 )
 
+_WORD_BINARY_OPERATORS = {
+    "and",
+    "contains",
+    "endswith",
+    "icontains",
+    "iendswith",
+    "iequals",
+    "istartswith",
+    "matches",
+    "or",
+    "startswith",
+}
+
 
 def build_hex_pattern(node: HexString, *, hex_uppercase: bool, hex_spacing: bool) -> str:
     hex_parts = [_format_hex_token(token, hex_uppercase, hex_spacing) for token in node.tokens]
@@ -143,9 +156,24 @@ def calculate_meta_alignment_column(ast, min_alignment_column: int) -> int:
     return max(max_length + 2, min_alignment_column)
 
 
-def expression_to_string(expr) -> str:
+def expression_to_string(expr, options=None) -> str:
     """Render an expression with the comment-aware generator."""
     from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+    from yaraast.codegen.generator_expression_visitors import (
+        _render_binary_operator,
+        _visit_binary_operand,
+    )
 
-    generator = CommentAwareCodeGenerator()
+    class PrettyExpressionGenerator(CommentAwareCodeGenerator):
+        def visit_binary_expression(self, node) -> str:
+            left = _visit_binary_operand(self, node, node.left, is_right=False)
+            right = _visit_binary_operand(self, node, node.right, is_right=True)
+            operator = _render_binary_operator(node.operator)
+            if getattr(options, "space_around_operators", True):
+                separator = " "
+            else:
+                separator = " " if operator in _WORD_BINARY_OPERATORS else ""
+            return f"{left}{separator}{operator}{separator}{right}"
+
+    generator = PrettyExpressionGenerator()
     return generator.visit(expr).strip()

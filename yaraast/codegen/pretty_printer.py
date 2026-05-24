@@ -159,7 +159,7 @@ class PrettyPrinter(CommentAwareCodeGenerator):
         """Convert expression to string (simplified)."""
         # This is a simplified implementation
         # In practice, would use a separate visitor for expression serialization
-        return expression_to_string(expr)
+        return expression_to_string(expr, self.options)
 
 
 class StylePresets:
