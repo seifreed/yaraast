@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -264,6 +264,58 @@ def test_json_serializer_rejects_invalid_rule_lists() -> None:
             match=f"Rule {field_name} item must be",
         ):
             serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_invalid_string_definition_lists() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    string_definitions = [
+        PlainString(identifier="$a", value="a"),
+        HexString(identifier="$h", tokens=[HexByte(0x41)]),
+        RegexString(identifier="$r", regex="r"),
+    ]
+
+    for string_definition in string_definitions:
+        context = type(string_definition).__name__
+        cast(Any, string_definition).modifiers = False
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="invalid_string_lists",
+                    strings=[string_definition],
+                    condition=BooleanLiteral(True),
+                )
+            ]
+        )
+        with pytest.raises(
+            SerializationError,
+            match=f"{context} modifiers must be a list",
+        ):
+            serializer.serialize(ast)
+
+        cast(Any, string_definition).modifiers = [object()]
+        with pytest.raises(
+            SerializationError,
+            match=f"{context} modifiers item must be",
+        ):
+            serializer.serialize(ast)
+
+    hex_string = HexString(identifier="$h", tokens=[HexByte(0x41)])
+    cast(Any, hex_string).tokens = False
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_hex_tokens",
+                strings=[hex_string],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+    with pytest.raises(SerializationError, match="HexString tokens must be a list"):
+        serializer.serialize(ast)
+
+    cast(Any, hex_string).tokens = [object()]
+    with pytest.raises(SerializationError, match="HexString tokens item must be"):
+        serializer.serialize(ast)
 
 
 def test_json_serializer_rejects_non_finite_numbers() -> None:
