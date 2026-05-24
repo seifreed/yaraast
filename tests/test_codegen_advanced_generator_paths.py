@@ -29,7 +29,7 @@ class _KeyOnly:
 
 class _AsText:
     def __str__(self) -> str:
-        return "object-tag"
+        return "object_tag"
 
 
 def test_advanced_generator_brace_styles_and_section_layout() -> None:
@@ -205,7 +205,7 @@ def test_advanced_generator_meta_and_tags_branches() -> None:
     )
     out = AdvancedCodeGenerator(cfg).generate(YaraFile(imports=[Import("pe")], rules=[rule]))
 
-    assert "rule meta_rule:x y object-tag" in out
+    assert "rule meta_rule:x y object_tag" in out
     assert 'b             = "already"' in out or 'b = "already"' in out
     assert 'missing_value = ""' in out or 'missing_value = ""' in out
     assert "a             = true" in out or "a = true" in out

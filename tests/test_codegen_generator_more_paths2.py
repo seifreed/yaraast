@@ -486,6 +486,28 @@ def test_codegen_generators_reject_duplicate_rule_tags() -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize("tag_name", ["bad-tag", "for"])
+def test_codegen_generators_reject_invalid_rule_tags(tag_name: str) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_tags",
+                tags=[Tag(tag_name)],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Invalid tag identifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid tag identifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid tag identifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid tag identifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
     ast = YaraFile(
         rules=[
@@ -501,6 +523,20 @@ def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
     with pytest.raises(ValueError, match="Duplicate rule identifier"):
         CommentAwareCodeGenerator().generate(ast)
     with pytest.raises(ValueError, match="Duplicate rule identifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
+@pytest.mark.parametrize("rule_name", ["bad name", "for", "1bad"])
+def test_codegen_generators_reject_invalid_rule_identifiers(rule_name: str) -> None:
+    ast = YaraFile(rules=[Rule(name=rule_name, condition=BooleanLiteral(True))])
+
+    with pytest.raises(ValueError, match="Invalid rule identifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid rule identifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid rule identifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid rule identifier"):
         PrettyPrinter().pretty_print(ast)
 
 

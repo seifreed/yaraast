@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import re
+
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
     escape_regex_delimiter,
     format_hex_jump_bounds,
 )
+from yaraast.lexer.lexer_tables import KEYWORDS
 from yaraast.regex_literals import validate_regex_modifiers
+
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
 def format_rule_modifiers(modifiers) -> str:
@@ -25,6 +31,7 @@ def validate_rule_identifiers(rules) -> None:
     seen: set[str] = set()
     for rule in rules:
         name = str(getattr(rule, "name", ""))
+        _validate_yara_identifier(name, "rule")
         if name in seen:
             msg = f"Duplicate rule identifier '{name}' for libyara output"
             raise ValueError(msg)
@@ -46,6 +53,7 @@ def validate_rule_tags(tags) -> None:
     seen: set[str] = set()
     for tag in tags:
         name = _rule_tag_name(tag)
+        _validate_yara_identifier(name, "tag")
         if name in seen:
             msg = f"Duplicate tag identifier '{name}' for libyara output"
             raise ValueError(msg)
@@ -56,6 +64,14 @@ def _rule_tag_name(tag) -> str:
     if isinstance(tag, str):
         return tag
     return str(tag.name if hasattr(tag, "name") else tag)
+
+
+def _validate_yara_identifier(name: str, kind: str) -> None:
+    if _YARA_IDENTIFIER_RE.fullmatch(name) is not None and name not in _YARA_KEYWORDS:
+        return
+
+    msg = f"Invalid {kind} identifier '{name}' for libyara output"
+    raise ValueError(msg)
 
 
 def format_meta_key(key: str, scope: object | None = None) -> str:

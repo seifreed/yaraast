@@ -266,7 +266,7 @@ def test_round_trip_handles_codegen_failure_without_libyara_dependency() -> None
     assert any("Code generation failed" in d for d in result.ast_differences)
 
 
-def test_round_trip_handles_reparse_failure_with_real_codegen() -> None:
+def test_round_trip_handles_invalid_rule_name_codegen_failure() -> None:
     tester = _tester_without_libyara_init()
     invalid_name_ast = YaraFile(
         rules=[Rule(name="bad name", condition=BooleanLiteral(value=True))],
@@ -276,7 +276,7 @@ def test_round_trip_handles_reparse_failure_with_real_codegen() -> None:
 
     assert result.equivalent is False
     assert result.ast_equivalent is False
-    assert any("Re-parsing failed" in d for d in result.ast_differences)
+    assert any("Code generation failed" in d for d in result.ast_differences)
 
 
 def test_compare_evaluation_reports_missing_and_different_rules() -> None:
