@@ -58,6 +58,10 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
     assert escape_string_literal('a\\"b') == 'a\\\\\\"b'
     assert escape_string_literal("a\nb\t\x00") == "a\\nb\\t\\x00"
     assert format_regex_literal("ab+", "is") == "/ab+/is"
+    with pytest.raises(ValueError, match="Invalid regex modifier: m"):
+        format_regex_literal("ab+", "m")
+    with pytest.raises(ValueError, match="Duplicate regex modifier: i"):
+        format_regex_literal("ab+", "ii")
     assert escape_regex_delimiter("a/b") == "a\\/b"
     assert escape_regex_delimiter("a\\/b") == "a\\/b"
     assert format_regex_literal("a\\/b", "") == "/a\\/b/"

@@ -105,6 +105,30 @@ def test_string_modifier_applicability_validator_rejects_regex_only_on_non_regex
     assert any("modifier 'multiline' used on hex string '$hex'" in e.message for e in result.errors)
 
 
+def test_string_modifier_applicability_validator_rejects_regex_multiline_modifier() -> None:
+    result = ValidationResult()
+    validator = StringModifierApplicabilityValidator(result)
+
+    rule = Rule(
+        name="bad_regex_multiline",
+        strings=[
+            RegexString(
+                identifier="$named",
+                regex="^line",
+                modifiers=[StringModifier.from_name_value("multiline")],
+            ),
+            RegexString(identifier="$raw", regex="^raw", modifiers=["m"]),
+        ],
+        condition=BinaryExpression(StringIdentifier("$named"), "or", StringIdentifier("$raw")),
+    )
+
+    validator.visit_rule(rule)
+
+    messages = [error.message for error in result.errors]
+    assert any("Unsupported regex modifier 'multiline'" in message for message in messages)
+    assert any("Unsupported regex modifier 'm'" in message for message in messages)
+
+
 def test_semantic_validator_reports_regex_only_modifiers_on_plain_strings() -> None:
     ast = YaraFile(
         rules=[

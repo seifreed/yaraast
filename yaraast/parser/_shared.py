@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from yaraast.errors import YaraASTError
 from yaraast.interfaces import IToken
+from yaraast.regex_literals import validate_regex_modifiers
 
 if TYPE_CHECKING:
     from yaraast.ast.modifiers import StringModifier
@@ -27,7 +28,6 @@ KNOWN_MODULES: frozenset[str] = frozenset(
 )
 
 _HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
-_REGEX_MODIFIERS = frozenset("is")
 _REGEX_QUANTIFIERS = frozenset("*+?")
 _REGEX_ZERO_WIDTH_ESCAPES = frozenset("bB")
 
@@ -60,19 +60,6 @@ def split_regex_value(regex_val: str) -> tuple[str, str]:
     pattern = parts[0]
     modifiers = parts[1] if len(parts) > 1 else ""
     return pattern, modifiers
-
-
-def validate_regex_modifiers(modifiers: str) -> None:
-    """Reject regex suffix modifiers that libyara rejects."""
-    seen: set[str] = set()
-    for modifier in modifiers:
-        if modifier not in _REGEX_MODIFIERS:
-            msg = f"Invalid regex modifier: {modifier}"
-            raise ValueError(msg)
-        if modifier in seen:
-            msg = f"Duplicate regex modifier: {modifier}"
-            raise ValueError(msg)
-        seen.add(modifier)
 
 
 def validate_regex_pattern(pattern: str) -> None:

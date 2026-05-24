@@ -300,18 +300,6 @@ def test_codegen_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
                     StringModifier.from_name_value("fullword"),
                 ],
             ),
-            RegexString(
-                "$m",
-                regex="^line",
-                modifiers=["m"],
-            ),
-            RegexString(
-                "$ml",
-                regex="^named",
-                modifiers=[
-                    StringModifier.from_name_value("multiline"),
-                ],
-            ),
         ],
         condition=BinaryExpression(StringIdentifier("$r"), "or", StringIdentifier("$s")),
     )
@@ -320,11 +308,33 @@ def test_codegen_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
 
     assert "$r = /ab.*/is fullword" in out
     assert "$s = /cd.*/s fullword" in out
-    assert "$m = /^line/m" in out
-    assert "$ml = /^named/m" in out
     assert "$r = /ab.*/ i" not in out
-    assert "$m = /^line/ m" not in out
-    assert "$ml = /^named/ multiline" not in out
+
+
+def test_codegen_generator_rejects_unsupported_regex_multiline_modifiers() -> None:
+    gen = CodeGenerator()
+
+    for modifiers in (["m"], [StringModifier.from_name_value("multiline")]):
+        rule = Rule(
+            name="regex_multiline",
+            strings=[RegexString("$r", regex="^line", modifiers=modifiers)],
+            condition=StringIdentifier("$r"),
+        )
+
+        with pytest.raises(ValueError, match="Unsupported regex modifier"):
+            gen.generate(YaraFile(rules=[rule]))
+
+
+def test_codegen_generator_rejects_duplicate_regex_suffix_modifiers() -> None:
+    gen = CodeGenerator()
+    rule = Rule(
+        name="regex_duplicate",
+        strings=[RegexString("$r", regex="line", modifiers=["i", "i"])],
+        condition=StringIdentifier("$r"),
+    )
+
+    with pytest.raises(ValueError, match="Duplicate regex modifier: i"):
+        gen.generate(YaraFile(rules=[rule]))
 
 
 def test_codegen_generator_expression_and_condition_paths() -> None:
@@ -333,6 +343,10 @@ def test_codegen_generator_expression_and_condition_paths() -> None:
     assert gen.visit_string_literal(StringLiteral('a"b')) == '"a\\"b"'
     assert gen.visit_string_literal(StringLiteral("a\nb\t\x00")) == '"a\\nb\\t\\x00"'
     assert gen.visit_regex_literal(RegexLiteral("ab.*", "i")) == "/ab.*/i"
+    with pytest.raises(ValueError, match="Invalid regex modifier: m"):
+        gen.visit_regex_literal(RegexLiteral("ab.*", "m"))
+    with pytest.raises(ValueError, match="Duplicate regex modifier: i"):
+        gen.visit_regex_literal(RegexLiteral("ab.*", "ii"))
     assert gen.visit_double_literal(DoubleLiteral(1.5)) == "1.5"
     with pytest.raises(TypeError, match="Double literal value must be numeric"):
         gen.visit_double_literal(DoubleLiteral(True))

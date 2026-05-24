@@ -6,10 +6,15 @@ from collections.abc import Callable
 import re
 from typing import Any, NamedTuple
 
-from yaraast.regex_literals import escape_regex_delimiter as _escape_regex_delimiter
+from yaraast.regex_literals import (
+    VALID_REGEX_MODIFIERS,
+    escape_regex_delimiter as _escape_regex_delimiter,
+    validate_regex_modifiers,
+)
 
-REGEX_SUFFIX_MODIFIERS = frozenset({"i", "m", "s"})
-REGEX_SUFFIX_NAMES = {"dotall": "s", "multiline": "m"}
+REGEX_SUFFIX_MODIFIERS = VALID_REGEX_MODIFIERS
+REGEX_SUFFIX_NAMES = {"dotall": "s"}
+_UNSUPPORTED_REGEX_MODIFIERS = frozenset({"m", "multiline"})
 BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
@@ -300,16 +305,28 @@ def split_regex_modifiers(
     suffix_parts = []
     spaced_parts = []
     for mod in modifiers:
-        if isinstance(mod, str) and mod in REGEX_SUFFIX_MODIFIERS:
+        name = _regex_modifier_name(mod)
+        if name in _UNSUPPORTED_REGEX_MODIFIERS:
+            msg = f"Unsupported regex modifier: {name}"
+            raise ValueError(msg)
+        if isinstance(mod, str) and len(mod) == 1:
+            validate_regex_modifiers(mod)
             suffix_parts.append(mod)
-        elif isinstance(mod, str) and mod in REGEX_SUFFIX_NAMES:
-            suffix_parts.append(REGEX_SUFFIX_NAMES[mod])
-        elif getattr(mod, "name", None) in REGEX_SUFFIX_NAMES:
-            suffix_parts.append(REGEX_SUFFIX_NAMES[mod.name])
+        elif name in REGEX_SUFFIX_NAMES:
+            suffix_parts.append(REGEX_SUFFIX_NAMES[name])
         else:
             spaced_parts.append(format_modifier(mod, visit))
 
-    return "".join(suffix_parts), spaced_parts
+    suffix = "".join(suffix_parts)
+    validate_regex_modifiers(suffix)
+    return suffix, spaced_parts
+
+
+def _regex_modifier_name(modifier: object) -> str:
+    if isinstance(modifier, str):
+        return modifier
+    name = getattr(modifier, "name", "")
+    return str(name)
 
 
 def format_regex_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> str:

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import (
@@ -114,6 +116,23 @@ def test_advanced_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
     assert "$r = /ab.*/is  fullword" in aligned
     assert "/ab.*/ i" not in compact
     assert "/ab.*/ i" not in aligned
+
+
+def test_advanced_generator_rejects_unsupported_regex_multiline_modifier() -> None:
+    rule = Rule(
+        name="regex_multiline",
+        strings=[
+            RegexString(
+                "$m",
+                regex="^line",
+                modifiers=[StringModifier(StringModifierType.MULTILINE)],
+            ),
+        ],
+        condition=StringIdentifier("$m"),
+    )
+
+    with pytest.raises(ValueError, match="Unsupported regex modifier"):
+        AdvancedCodeGenerator().generate(YaraFile(rules=[rule]))
 
 
 def test_advanced_generator_aligned_plain_strings_escape_values() -> None:

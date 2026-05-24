@@ -63,6 +63,18 @@ def test_collect_string_definitions_supports_all_string_types() -> None:
     assert collected[3] == ("$d", "", [])
 
 
+def test_collect_string_definitions_rejects_unsupported_regex_multiline_modifier() -> None:
+    config = FormattingConfig()
+    regex = RegexString(
+        identifier="$r",
+        regex="^line",
+        modifiers=[StringModifier(StringModifierType.MULTILINE)],
+    )
+
+    with pytest.raises(ValueError, match="Unsupported regex modifier"):
+        collect_string_definitions([regex], config)
+
+
 def test_format_hex_string_grouping_and_token_rendering() -> None:
     config = FormattingConfig(hex_style=HexStyle.UPPERCASE, hex_group_size=3)
     node = HexString(

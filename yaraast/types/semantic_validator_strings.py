@@ -80,6 +80,10 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
         StringModifierType.BASE64.value,
         StringModifierType.BASE64WIDE.value,
     }
+    _REGEX_UNSUPPORTED_MODIFIERS = {
+        "m",
+        StringModifierType.MULTILINE.value,
+    }
     _BASE64_MODIFIERS = {
         StringModifierType.BASE64.value,
         StringModifierType.BASE64WIDE.value,
@@ -135,6 +139,13 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
         self._check_duplicate_modifiers(node)
         for modifier in node.modifiers:
             name = self._modifier_name(modifier)
+            if name in self._REGEX_UNSUPPORTED_MODIFIERS:
+                self.result.add_error(
+                    f"Unsupported regex modifier '{name}' used on regex string '{node.identifier}' in rule '{self.current_rule_name}'",
+                    node.location,
+                    "YARA regex strings support dotall ('s') but not multiline ('m').",
+                )
+                continue
             if name not in self._REGEX_DISALLOWED_MODIFIERS:
                 continue
             self.result.add_error(

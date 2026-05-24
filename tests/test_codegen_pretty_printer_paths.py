@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.comments import Comment
 from yaraast.ast.conditions import Condition
@@ -383,11 +385,6 @@ def test_pretty_printer_regex_suffix_alias_modifiers_are_adjacent() -> None:
                 regex="ab.*",
                 modifiers=["i", "s", StringModifier.from_name_value("fullword")],
             ),
-            RegexString(
-                "$m",
-                regex="^line",
-                modifiers=[StringModifier.from_name_value("multiline")],
-            ),
         ],
         condition=StringIdentifier("$r"),
     )
@@ -395,9 +392,24 @@ def test_pretty_printer_regex_suffix_alias_modifiers_are_adjacent() -> None:
     out = PrettyPrinter(PrettyPrintOptions()).pretty_print(YaraFile(rules=[rule]))
 
     assert "$r  = /ab.*/is fullword" in out
-    assert "$m  = /^line/m" in out
     assert "$r = /ab.*/ i" not in out
-    assert "$m = /^line/ multiline" not in out
+
+
+def test_pretty_printer_rejects_unsupported_regex_multiline_modifier() -> None:
+    rule = Rule(
+        name="regex_multiline",
+        strings=[
+            RegexString(
+                "$m",
+                regex="^line",
+                modifiers=[StringModifier.from_name_value("multiline")],
+            ),
+        ],
+        condition=StringIdentifier("$m"),
+    )
+
+    with pytest.raises(ValueError, match="Unsupported regex modifier"):
+        PrettyPrinter(PrettyPrintOptions()).pretty_print(YaraFile(rules=[rule]))
 
 
 def test_pretty_printer_keeps_yara_string_literals_valid_for_quote_styles() -> None:

@@ -7,6 +7,7 @@ from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_hex_jump_bounds,
 )
+from yaraast.regex_literals import validate_regex_modifiers
 
 
 def format_rule_modifiers(modifiers) -> str:
@@ -50,6 +51,7 @@ def escape_string_literal(value: str) -> str:
 
 
 def format_regex_literal(pattern: str, modifiers: str) -> str:
+    validate_regex_modifiers(modifiers)
     escaped_pattern = escape_regex_delimiter(pattern)
     return f"/{escaped_pattern}/{modifiers}"
 
