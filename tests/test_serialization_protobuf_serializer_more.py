@@ -673,6 +673,34 @@ def test_protobuf_serializer_rejects_boolean_quantifiers() -> None:
             serializer.serialize(ast)
 
 
+def test_protobuf_serializer_rejects_unsupported_quantifier_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    invalid_quantifiers: list[Any] = [None, [], {}, object()]
+
+    for quantifier in invalid_quantifiers:
+        expressions: list[Expression] = [
+            ForExpression(
+                quantifier=quantifier,
+                variable="i",
+                iterable=RangeExpression(IntegerLiteral(0), IntegerLiteral(3)),
+                body=BooleanLiteral(True),
+            ),
+            ForOfExpression(
+                quantifier=quantifier,
+                string_set=Identifier("them"),
+                condition=None,
+            ),
+            OfExpression(
+                quantifier=quantifier,
+                string_set=Identifier("them"),
+            ),
+        ]
+        for expression in expressions:
+            ast = YaraFile(rules=[Rule(name="bad_quantifier", condition=expression)])
+            with pytest.raises(SerializationError, match="quantifier must be"):
+                serializer.serialize(ast)
+
+
 def test_protobuf_deserializes_legacy_numeric_quantifier_text() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pb_file: Any = yara_ast_pb2.YaraFile()

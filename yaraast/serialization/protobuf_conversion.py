@@ -524,6 +524,8 @@ def _coerce_hex_alternative_branch(alternative) -> list:
 
 
 def _coerce_quantifier_text(value) -> str:
+    from yaraast.ast.expressions import Expression
+
     if isinstance(value, str):
         return value
     if isinstance(value, bool):
@@ -532,15 +534,19 @@ def _coerce_quantifier_text(value) -> str:
     if isinstance(value, int | float):
         return str(value)
 
-    raw_value = getattr(value, "value", None)
-    if raw_value is not None:
-        return str(raw_value)
+    if isinstance(value, Expression):
+        raw_value = getattr(value, "value", None)
+        if raw_value is not None:
+            return str(raw_value)
 
-    name = getattr(value, "name", None)
-    if name is not None:
-        return str(name)
+        name = getattr(value, "name", None)
+        if name is not None:
+            return str(name)
 
-    return str(value)
+        return ""
+
+    msg = "quantifier must be a string, number, or expression"
+    raise SerializationError(msg)
 
 
 def _coerce_quantifier_expression(value):
