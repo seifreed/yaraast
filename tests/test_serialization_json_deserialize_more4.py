@@ -612,7 +612,27 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
         with pytest.raises(SerializationError, match=message):
             s._deserialize_expression(payload)
 
-    null_condition_cases = (
+    null_condition_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": None,
+                "variable": "i",
+                "iterable": int_expr,
+                "body": int_expr,
+            },
+            "ForExpression quantifier is required",
+        ),
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": {},
+                "variable": "i",
+                "iterable": int_expr,
+                "body": int_expr,
+            },
+            "ForExpression quantifier is required",
+        ),
         (
             {
                 "type": "ForExpression",
@@ -630,6 +650,14 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
         (
             {"type": "InExpression", "subject": "$a", "range": None},
             "InExpression range is required",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any", "string_set": None},
+            "ForOfExpression string_set is required",
+        ),
+        (
+            {"type": "OfExpression", "quantifier": "any", "string_set": {}},
+            "OfExpression string_set is required",
         ),
         (
             {"type": "DictionaryAccess", "object": None, "key": "name"},
@@ -657,6 +685,15 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
                 "type": "DictionaryAccess",
                 "object": {"type": "ModuleReference", "module": "pe"},
                 "key": ["CompanyName"],
+            }
+        )
+
+    with pytest.raises(SerializationError, match="DictionaryAccess key must be a string"):
+        s._deserialize_expression(
+            {
+                "type": "DictionaryAccess",
+                "object": {"type": "ModuleReference", "module": "pe"},
+                "key": {},
             }
         )
 
