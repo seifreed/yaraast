@@ -280,6 +280,13 @@ def _protobuf_optional_string(value, context: str) -> str | None:
     return _protobuf_required_string(value, context)
 
 
+def _protobuf_required_bool(value, context: str) -> bool:
+    if isinstance(value, bool):
+        return value
+    msg = f"{context} must be a boolean"
+    raise SerializationError(msg)
+
+
 def _protobuf_pragma_type(pragma) -> str:
     pragma_type = getattr(pragma, "pragma_type", None)
     value = getattr(pragma_type, "value", pragma_type)
@@ -988,7 +995,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 expr.expression,
                 pb_expr.array_comprehension.expression,
             )
-        pb_expr.array_comprehension.variable = expr.variable
+        pb_expr.array_comprehension.variable = _protobuf_required_string(
+            expr.variable,
+            "ArrayComprehension variable",
+        )
         if expr.iterable is not None:
             convert_expression_to_protobuf(expr.iterable, pb_expr.array_comprehension.iterable)
         if expr.condition is not None:
@@ -1007,9 +1017,15 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 expr.value_expression,
                 pb_expr.dict_comprehension.value_expression,
             )
-        pb_expr.dict_comprehension.key_variable = expr.key_variable
+        pb_expr.dict_comprehension.key_variable = _protobuf_required_string(
+            expr.key_variable,
+            "DictComprehension key_variable",
+        )
         if expr.value_variable is not None:
-            pb_expr.dict_comprehension.value_variable = expr.value_variable
+            pb_expr.dict_comprehension.value_variable = _protobuf_required_string(
+                expr.value_variable,
+                "DictComprehension value_variable",
+            )
         if expr.iterable is not None:
             convert_expression_to_protobuf(expr.iterable, pb_expr.dict_comprehension.iterable)
         if expr.condition is not None:
@@ -1050,14 +1066,20 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             convert_expression_to_protobuf(expr.default, pb_expr.pattern_match.default)
     elif isinstance(expr, SpreadOperator):
         convert_expression_to_protobuf(expr.expression, pb_expr.spread_operator.expression)
-        pb_expr.spread_operator.is_dict = expr.is_dict
+        pb_expr.spread_operator.is_dict = _protobuf_required_bool(
+            expr.is_dict,
+            "SpreadOperator is_dict",
+        )
     else:
         msg = f"Unsupported protobuf expression type: {type(expr).__name__}"
         raise SerializationError(msg)
 
 
 def convert_with_declaration_to_protobuf(declaration, pb_declaration) -> None:
-    pb_declaration.identifier = declaration.identifier
+    pb_declaration.identifier = _protobuf_required_string(
+        declaration.identifier,
+        "WithDeclaration identifier",
+    )
     convert_expression_to_protobuf(declaration.value, pb_declaration.value)
     _copy_node_metadata_to_protobuf(declaration, pb_declaration)
 

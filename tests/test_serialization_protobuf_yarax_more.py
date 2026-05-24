@@ -123,3 +123,42 @@ def test_protobuf_serializer_rejects_invalid_lambda_parameters(parameters: Any) 
         match="LambdaExpression parameters must be a list of strings",
     ):
         serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            WithStatement(
+                [WithDeclaration(cast(Any, 123), IntegerLiteral(1))],
+                BooleanLiteral(True),
+            ),
+            "WithDeclaration identifier must be a string",
+        ),
+        (
+            ArrayComprehension(variable=cast(Any, 123)),
+            "ArrayComprehension variable must be a string",
+        ),
+        (
+            DictComprehension(key_variable=cast(Any, 123)),
+            "DictComprehension key_variable must be a string",
+        ),
+        (
+            DictComprehension(value_variable=cast(Any, 123)),
+            "DictComprehension value_variable must be a string",
+        ),
+        (
+            SpreadOperator(Identifier("items"), is_dict=cast(Any, "true")),
+            "SpreadOperator is_dict must be a boolean",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_yarax_scalar_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="invalid_yarax_scalar", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
