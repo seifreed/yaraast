@@ -38,9 +38,9 @@ _SIGNATURE_SPECS: dict[str, tuple[str, str, list[tuple[str, str]]]] = {
         [("dll_name", "Name of the DLL"), ("function_name", "Name of the function")],
     ),
     "pe.section_index": (
-        "section_index(name: string) -> int",
-        "Get the index of a section by name",
-        [("name", "Section name")],
+        "section_index(name_or_rva: string | int) -> int",
+        "Get the index of a section by name or RVA",
+        [("name_or_rva", "Section name or RVA")],
     ),
     # ELF module
     "elf.type": (
@@ -50,19 +50,19 @@ _SIGNATURE_SPECS: dict[str, tuple[str, str, list[tuple[str, str]]]] = {
     ),
     # Hash module
     "hash.md5": (
-        "md5(offset: int, length: int) -> string",
-        "Calculate MD5 hash of data region",
-        [("offset", "Starting offset"), ("length", "Number of bytes")],
+        "md5(value: string) -> string | md5(offset: int, length: int) -> string",
+        "Calculate MD5 hash of a string or data region",
+        [("value_or_offset", "String value or starting offset"), ("length", "Number of bytes")],
     ),
     "hash.sha1": (
-        "sha1(offset: int, length: int) -> string",
-        "Calculate SHA1 hash of data region",
-        [("offset", "Starting offset"), ("length", "Number of bytes")],
+        "sha1(value: string) -> string | sha1(offset: int, length: int) -> string",
+        "Calculate SHA1 hash of a string or data region",
+        [("value_or_offset", "String value or starting offset"), ("length", "Number of bytes")],
     ),
     "hash.sha256": (
-        "sha256(offset: int, length: int) -> string",
-        "Calculate SHA256 hash of data region",
-        [("offset", "Starting offset"), ("length", "Number of bytes")],
+        "sha256(value: string) -> string | sha256(offset: int, length: int) -> string",
+        "Calculate SHA256 hash of a string or data region",
+        [("value_or_offset", "String value or starting offset"), ("length", "Number of bytes")],
     ),
     # Math module
     "math.entropy": (

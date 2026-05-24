@@ -275,12 +275,23 @@ class MockPE:
     def is_64bit(self) -> bool | YaraUndefinedValue:
         return self._is_64bit
 
-    def section_index(self, name: str) -> int | YaraUndefinedValue:
-        _require_string_arg("pe.section_index", name)
+    def section_index(self, name_or_rva: object) -> int | YaraUndefinedValue:
+        if not isinstance(name_or_rva, str) and not _is_strict_int(name_or_rva):
+            msg = "pe.section_index() expects a string or integer argument"
+            raise EvaluationError(msg)
         if not self.is_pe:
             return YARA_UNDEFINED
+        if _is_strict_int(name_or_rva):
+            rva = name_or_rva
+            if rva < 0:
+                return YARA_UNDEFINED
+            for i, section in enumerate(self.sections):
+                span = max(section.virtual_size, section.raw_data_size)
+                if section.virtual_address <= rva < section.virtual_address + span:
+                    return i
+            return YARA_UNDEFINED
         for i, section in enumerate(self.sections):
-            if section.name == name:
+            if section.name == name_or_rva:
                 return i
         return YARA_UNDEFINED
 
@@ -746,7 +757,7 @@ class HashModule:
     def md5(
         self, offset: object = _missing_arg, size: object = _missing_arg
     ) -> str | YaraUndefinedValue:
-        region = self._get_region("md5", offset, size)
+        region = self._get_hash_input("md5", offset, size)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         return hashlib.md5(region, usedforsecurity=False).hexdigest()
@@ -754,7 +765,7 @@ class HashModule:
     def sha1(
         self, offset: object = _missing_arg, size: object = _missing_arg
     ) -> str | YaraUndefinedValue:
-        region = self._get_region("sha1", offset, size)
+        region = self._get_hash_input("sha1", offset, size)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         return hashlib.sha1(region, usedforsecurity=False).hexdigest()
@@ -762,7 +773,7 @@ class HashModule:
     def sha256(
         self, offset: object = _missing_arg, size: object = _missing_arg
     ) -> str | YaraUndefinedValue:
-        region = self._get_region("sha256", offset, size)
+        region = self._get_hash_input("sha256", offset, size)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         return hashlib.sha256(region).hexdigest()
@@ -770,7 +781,7 @@ class HashModule:
     def checksum32(
         self, offset: object = _missing_arg, size: object = _missing_arg
     ) -> int | YaraUndefinedValue:
-        region = self._get_region("checksum32", offset, size)
+        region = self._get_hash_input("checksum32", offset, size)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         return sum(region) & 0xFFFFFFFF
@@ -780,10 +791,25 @@ class HashModule:
     ) -> int | YaraUndefinedValue:
         import binascii
 
-        region = self._get_region("crc32", offset, size)
+        region = self._get_hash_input("crc32", offset, size)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         return binascii.crc32(region) & 0xFFFFFFFF
+
+    def _get_hash_input(
+        self, function_name: str, value_or_offset: object, size: object
+    ) -> bytes | YaraUndefinedValue:
+        if size is self._missing_arg and isinstance(value_or_offset, str):
+            return value_or_offset.encode()
+        if size is self._missing_arg or value_or_offset is self._missing_arg:
+            msg = f"hash.{function_name}() expects 1 string argument or 2 integer arguments"
+            raise EvaluationError(msg)
+        if is_yara_undefined(value_or_offset) or is_yara_undefined(size):
+            return YARA_UNDEFINED
+        if not _is_strict_int(value_or_offset) or not _is_strict_int(size):
+            msg = f"hash.{function_name}() expects 1 string argument or 2 integer arguments"
+            raise EvaluationError(msg)
+        return self._get_region(function_name, value_or_offset, size)
 
     def _get_region(
         self, function_name: str, offset: object, size: object

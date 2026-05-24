@@ -461,7 +461,9 @@ class TestSemanticValidator:
                     pe.imports(1, /kernel32/i, /CreateFile/i) or
                     pe.exports("ExportedFunc") or
                     pe.exports(/Exported/i) or
-                    pe.exports(1)
+                    pe.exports(1) or
+                    pe.section_index(".text") == 0 or
+                    pe.section_index(1) == 0
             }
         """)
 
@@ -479,7 +481,8 @@ class TestSemanticValidator:
                     pe.imports("kernel32.dll", /CreateFile/i) or
                     pe.imports(1, 2) or
                     pe.imports("kernel32.dll", "CreateFileA", "extra") or
-                    pe.exports(true)
+                    pe.exports(true) or
+                    pe.section_index(true)
             }
         """)
 
@@ -489,6 +492,48 @@ class TestSemanticValidator:
         messages = [error.message for error in result.errors]
         assert any("Function 'imports' does not accept argument types" in msg for msg in messages)
         assert any("Function 'exports' does not accept argument type" in msg for msg in messages)
+        assert any(
+            "Function 'section_index' does not accept argument type" in msg for msg in messages
+        )
+
+    def test_validate_accepts_libyara_hash_string_and_region_signatures(self) -> None:
+        ast = Parser().parse("""
+            import "hash"
+
+            rule valid_hash_signatures {
+                condition:
+                    hash.md5("abc") == "900150983cd24fb0d6963f7d28e17f72" or
+                    hash.sha1("abc") == "a9993e364706816aba3e25717850c26c9cd0d89d" or
+                    hash.sha256("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" or
+                    hash.checksum32("abc") == 294 or
+                    hash.crc32("abc") == 891568578 or
+                    hash.md5(0, filesize) == "900150983cd24fb0d6963f7d28e17f72"
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
+    def test_validate_rejects_invalid_hash_function_signatures(self) -> None:
+        ast = Parser().parse("""
+            import "hash"
+
+            rule invalid_hash_signatures {
+                condition:
+                    hash.md5(0) == "" or
+                    hash.sha1("abc", 1) == "" or
+                    hash.sha256(true) == ""
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any("Function 'md5' does not accept argument types" in msg for msg in messages)
+        assert any("Function 'sha1' does not accept argument types" in msg for msg in messages)
+        assert any("Function 'sha256' does not accept argument types" in msg for msg in messages)
 
     def test_validate_accepts_libyara_pe_section_fields(self) -> None:
         ast = Parser().parse("""

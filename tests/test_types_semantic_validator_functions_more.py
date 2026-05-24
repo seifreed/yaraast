@@ -21,6 +21,7 @@ from yaraast.ast.expressions import (
     RangeExpression,
     SetExpression,
     StringLength,
+    StringLiteral,
     StringOffset,
     UnaryExpression,
 )
@@ -89,6 +90,9 @@ def test_function_validator_accepts_hash_checksum32_function() -> None:
 
     FunctionCallValidator(result, env).visit(
         FunctionCall(function="hash.checksum32", arguments=[IntegerLiteral(0), IntegerLiteral(1)])
+    )
+    FunctionCallValidator(result, env).visit(
+        FunctionCall(function="hash.checksum32", arguments=[StringLiteral("abc")])
     )
 
     assert result.is_valid is True

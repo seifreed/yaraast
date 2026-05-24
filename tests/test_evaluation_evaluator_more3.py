@@ -180,6 +180,22 @@ def test_hash_module_valid_region_can_extend_to_file_end() -> None:
     assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"trailing_hash_region": True}
 
 
+def test_hash_module_accepts_string_arguments() -> None:
+    ast = Parser().parse("""
+        import "hash"
+        rule string_hashes {
+            condition:
+                hash.md5("abc") == "900150983cd24fb0d6963f7d28e17f72" and
+                hash.sha1("abc") == "a9993e364706816aba3e25717850c26c9cd0d89d" and
+                hash.sha256("abc") == "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" and
+                hash.checksum32("abc") == 294 and
+                hash.crc32("abc") == 891568578
+        }
+        """)
+
+    assert YaraEvaluator().evaluate_file(ast) == {"string_hashes": True}
+
+
 @pytest.mark.parametrize(
     "call",
     [
@@ -193,7 +209,10 @@ def test_hash_module_valid_region_can_extend_to_file_end() -> None:
 def test_hash_module_requires_explicit_region_arguments(call: str) -> None:
     ast = Parser().parse(f'import "hash" rule invalid_hash_call {{ condition: defined {call} }}')
 
-    with pytest.raises(EvaluationError, match=r"hash\.[a-z0-9]+\(\) expects exactly 2 arguments"):
+    with pytest.raises(
+        EvaluationError,
+        match=r"hash\.[a-z0-9]+\(\) expects 1 string argument or 2 integer arguments",
+    ):
         YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 

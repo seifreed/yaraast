@@ -84,8 +84,13 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
 
     pe64.sections = [Section(".text", 0x1000, 0x200, 0x400, 0x200)]
     assert pe64.section_index(".text") == 0
+    assert pe64.section_index(0x1000) == 0
+    assert pe64.section_index(0x11FF) == 0
+    assert pe64.section_index(0x1200) is YARA_UNDEFINED
     assert pe64.section_index(".rdata") is YARA_UNDEFINED
-    with pytest.raises(EvaluationError, match=r"pe\.section_index\(\) expects a string argument"):
+    with pytest.raises(
+        EvaluationError, match=r"pe\.section_index\(\) expects a string or integer argument"
+    ):
         pe64.section_index(cast(Any, True))
 
     pe64._import_list = ["kernel32.dll:CreateFileW", "user32.dll:MessageBoxW"]
@@ -147,6 +152,8 @@ def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
 
     assert pe.number_of_sections == 2
     assert pe.section_index(".text") == 0
+    assert pe.section_index(0x1000) == 0
+    assert pe.section_index(0x2000) == 1
     assert pe.sections[0] == Section(".text", 0x1000, 0x180, 0x200, 0x200, 0x60000020)
     assert pe.rva_to_offset(0x100) == 0x100
     assert pe.rva_to_offset(0x1000) == 0x200

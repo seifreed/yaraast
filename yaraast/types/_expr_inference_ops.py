@@ -119,6 +119,8 @@ _STRING_OPS = frozenset(
     ]
 )
 
+_HASH_FUNCTIONS = frozenset(("md5", "sha1", "sha256", "checksum32", "crc32"))
+
 
 def _infer_logical_op(ctx, operator, left_type, right_type):
     truthy_types = (
@@ -329,6 +331,12 @@ def infer_function_call(ctx, node: FunctionCall):
                         if actual_module == "pe" and func_name == "exports":
                             _validate_pe_exports_arguments(ctx, node.arguments)
                             return func_def.return_type
+                        if actual_module == "pe" and func_name == "section_index":
+                            _validate_pe_section_index_arguments(ctx, node.arguments)
+                            return func_def.return_type
+                        if actual_module == "hash" and func_name in _HASH_FUNCTIONS:
+                            _validate_hash_function_arguments(ctx, func_name, node.arguments)
+                            return func_def.return_type
                         if actual_module == "console" and func_name == "log":
                             _validate_console_log_arguments(ctx, node.arguments)
                             return func_def.return_type
@@ -480,6 +488,39 @@ def _validate_pe_exports_arguments(ctx, arguments) -> None:
     if _all_known(arg_types) and not isinstance(arg_types[0], StringType | RegexType | IntegerType):
         ctx.errors.append(
             "Function 'exports' does not accept argument type "
+            f"({_format_argument_types(arg_types)})"
+        )
+
+
+def _validate_pe_section_index_arguments(ctx, arguments) -> None:
+    arg_types = _argument_types(ctx, arguments)
+    if len(arg_types) != 1:
+        ctx.errors.append(f"Function 'section_index' expects 1 arguments, got {len(arg_types)}")
+        return
+    if _all_known(arg_types) and not isinstance(arg_types[0], StringType | IntegerType):
+        ctx.errors.append(
+            "Function 'section_index' does not accept argument type "
+            f"({_format_argument_types(arg_types)})"
+        )
+
+
+def _validate_hash_function_arguments(ctx, func_name: str, arguments) -> None:
+    arg_types = _argument_types(ctx, arguments)
+    if len(arg_types) not in {1, 2}:
+        ctx.errors.append(
+            f"Function '{func_name}' expects 1 string argument or 2 integer arguments, "
+            f"got {len(arg_types)}"
+        )
+        return
+    if not _all_known(arg_types):
+        return
+    valid_string_digest = len(arg_types) == 1 and isinstance(arg_types[0], StringType)
+    valid_region_digest = len(arg_types) == 2 and all(
+        isinstance(arg_type, IntegerType) for arg_type in arg_types
+    )
+    if not (valid_string_digest or valid_region_digest):
+        ctx.errors.append(
+            f"Function '{func_name}' does not accept argument types "
             f"({_format_argument_types(arg_types)})"
         )
 

@@ -159,11 +159,11 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
     },
     "hash": {
         "funcs": {
-            "md5": ("s", [("offset", "i"), ("size", "i")]),
-            "sha1": ("s", [("offset", "i"), ("size", "i")]),
-            "sha256": ("s", [("offset", "i"), ("size", "i")]),
-            "checksum32": ("i", [("offset", "i"), ("size", "i")]),
-            "crc32": ("i", [("offset", "i"), ("size", "i")]),
+            "md5": ("s", [("value_or_offset", "s"), ("size", "i")], 1),
+            "sha1": ("s", [("value_or_offset", "s"), ("size", "i")], 1),
+            "sha256": ("s", [("value_or_offset", "s"), ("size", "i")], 1),
+            "checksum32": ("i", [("value_or_offset", "s"), ("size", "i")], 1),
+            "crc32": ("i", [("value_or_offset", "s"), ("size", "i")], 1),
         },
     },
     "dotnet": {
