@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.modifiers import StringModifier
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.yaml_serializer import YamlSerializer
 
@@ -38,6 +41,12 @@ def test_yaml_serialize_deserialize_with_metadata() -> None:
     restored = serializer.deserialize(yaml_str)
     assert restored.rules[0].name == "r1"
     assert restored.imports[0].module == "pe"
+
+
+def test_yaml_serializer_rejects_malformed_yaml() -> None:
+    serializer = YamlSerializer()
+    with pytest.raises(SerializationError, match="Invalid YAML input"):
+        serializer.deserialize("ast: [")
 
 
 def test_yaml_minimal_and_rules_only() -> None:

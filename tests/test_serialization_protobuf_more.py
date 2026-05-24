@@ -55,3 +55,9 @@ def test_protobuf_stats_and_errors() -> None:
 
     with pytest.raises(SerializationError):
         serializer.deserialize(binary_data=None)
+
+
+def test_protobuf_deserialize_rejects_malformed_binary() -> None:
+    serializer = ProtobufSerializer()
+    with pytest.raises(SerializationError, match="Invalid Protobuf input"):
+        serializer.deserialize(binary_data=b"\xff\xff\xff")

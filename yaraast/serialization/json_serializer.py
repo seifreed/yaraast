@@ -120,7 +120,11 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
             msg = "No JSON input provided"
             raise SerializationError(msg)
 
-        data = json.loads(json_str)
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as exc:
+            msg = "Invalid JSON input"
+            raise SerializationError(msg) from exc
         return self._deserialize_ast(data)
 
     def _serialize_with_metadata(self, ast: YaraFile) -> dict[str, Any]:

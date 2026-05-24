@@ -46,6 +46,12 @@ def test_json_serializer_missing_input() -> None:
         serializer.deserialize(None)
 
 
+def test_json_serializer_rejects_malformed_json() -> None:
+    serializer = JsonSerializer()
+    with pytest.raises(SerializationError, match="Invalid JSON input"):
+        serializer.deserialize("{bad")
+
+
 def test_json_serializer_bad_ast_type() -> None:
     serializer = JsonSerializer()
     payload = json.dumps({"type": "NotYaraFile"})

@@ -41,7 +41,11 @@ class YamlSerializer(JsonSerializer):
             msg = "No YAML input provided"
             raise SerializationError(msg)
 
-        data = yaml.safe_load(yaml_str)
+        try:
+            data = yaml.safe_load(yaml_str)
+        except yaml.YAMLError as exc:
+            msg = "Invalid YAML input"
+            raise SerializationError(msg) from exc
         return self._deserialize_ast(data)
 
     def _serialize_with_metadata(self, ast: YaraFile) -> dict[str, Any]:

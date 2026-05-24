@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 import warnings
 
+from google.protobuf.message import DecodeError
+
 from yaraast.errors import SerializationError
 from yaraast.serialization.protobuf_conversion import (
     ast_to_protobuf,
@@ -79,7 +81,11 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
             raise SerializationError(msg)
 
         pb_yara_file = yara_ast_pb2.YaraFile()
-        pb_yara_file.ParseFromString(binary_data)
+        try:
+            pb_yara_file.ParseFromString(binary_data)
+        except DecodeError as exc:
+            msg = "Invalid Protobuf input"
+            raise SerializationError(msg) from exc
 
         return self._protobuf_to_ast(pb_yara_file)
 
