@@ -187,7 +187,7 @@
         "name": "helper",
         "range": {
           "end": {
-            "character": 32,
+            "character": 31,
             "line": 0
           },
           "start": {
@@ -203,7 +203,7 @@
         "name": "condition",
         "range": {
           "end": {
-            "character": 30,
+            "character": 26,
             "line": 0
           },
           "start": {
@@ -235,7 +235,7 @@
         "name": "condition",
         "range": {
           "end": {
-            "character": 30,
+            "character": 26,
             "line": 0
           },
           "start": {
@@ -269,7 +269,7 @@
         "name": "sample",
         "range": {
           "end": {
-            "character": 2,
+            "character": 1,
             "line": 4
           },
           "start": {

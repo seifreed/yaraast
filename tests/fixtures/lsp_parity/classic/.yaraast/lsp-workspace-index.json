@@ -331,7 +331,7 @@
         "name": "shared_rule",
         "range": {
           "end": {
-            "character": 2,
+            "character": 1,
             "line": 9
           },
           "start": {
@@ -395,7 +395,7 @@
         "name": "strings",
         "range": {
           "end": {
-            "character": 19,
+            "character": 14,
             "line": 6
           },
           "start": {
@@ -443,7 +443,7 @@
         "name": "condition",
         "range": {
           "end": {
-            "character": 24,
+            "character": 19,
             "line": 8
           },
           "start": {
@@ -475,7 +475,7 @@
         "name": "condition",
         "range": {
           "end": {
-            "character": 24,
+            "character": 19,
             "line": 8
           },
           "start": {
@@ -525,7 +525,7 @@
         "name": "wrapper",
         "range": {
           "end": {
-            "character": 2,
+            "character": 1,
             "line": 5
           },
           "start": {
@@ -541,7 +541,7 @@
         "name": "condition",
         "range": {
           "end": {
-            "character": 20,
+            "character": 9,
             "line": 4
           },
           "start": {
@@ -573,7 +573,7 @@
         "name": "condition",
         "range": {
           "end": {
-            "character": 20,
+            "character": 9,
             "line": 4
           },
           "start": {
