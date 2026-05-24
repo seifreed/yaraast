@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import time
 from typing import Any
 
@@ -12,6 +13,17 @@ from yaraast.string_escaping import escape_string_source_value
 from . import yara_ast_pb2
 
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+
+
+def _finite_double_value(value, context: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        msg = f"{context} value must be numeric"
+        raise SerializationError(msg)
+    value = float(value)
+    if not math.isfinite(value):
+        msg = f"{context} value must be finite"
+        raise SerializationError(msg)
+    return value
 
 
 def _protobuf_has_field(message, field_name: str) -> bool:
@@ -731,7 +743,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     elif isinstance(expr, IntegerLiteral):
         pb_expr.integer_literal.value = expr.value
     elif isinstance(expr, DoubleLiteral):
-        pb_expr.double_literal.value = expr.value
+        pb_expr.double_literal.value = _finite_double_value(expr.value, "DoubleLiteral")
     elif isinstance(expr, StringLiteral):
         pb_expr.string_literal.value = expr.value
     elif isinstance(expr, RegexLiteral):
@@ -1370,7 +1382,9 @@ def protobuf_to_expression(pb_expr):
     if pb_expr.HasField("integer_literal"):
         return with_metadata(IntegerLiteral(value=pb_expr.integer_literal.value))
     if pb_expr.HasField("double_literal"):
-        return with_metadata(DoubleLiteral(value=pb_expr.double_literal.value))
+        return with_metadata(
+            DoubleLiteral(value=_finite_double_value(pb_expr.double_literal.value, "DoubleLiteral"))
+        )
     if pb_expr.HasField("string_literal"):
         return with_metadata(StringLiteral(value=pb_expr.string_literal.value))
     if pb_expr.HasField("regex_literal"):

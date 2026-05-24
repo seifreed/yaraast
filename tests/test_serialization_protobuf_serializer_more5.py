@@ -9,7 +9,7 @@ import pytest
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import ForOfExpression, OfExpression
-from yaraast.ast.expressions import BooleanLiteral, IntegerLiteral, StringIdentifier
+from yaraast.ast.expressions import BooleanLiteral, DoubleLiteral, IntegerLiteral, StringIdentifier
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, StringModifier
@@ -177,6 +177,29 @@ def test_protobuf_deserialization_rejects_descending_hex_jump_bounds() -> None:
     pb_rule.condition.boolean_literal.value = True
 
     with pytest.raises(SerializationError, match="HexJump min_jump cannot exceed max_jump"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_serializer_rejects_non_finite_double_literals() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_double",
+                condition=DoubleLiteral(float("nan")),
+            ),
+        ],
+    )
+
+    with pytest.raises(SerializationError, match="DoubleLiteral value must be finite"):
+        serializer.serialize(ast)
+
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "bad_double"
+    pb_rule.condition.double_literal.value = float("inf")
+
+    with pytest.raises(SerializationError, match="DoubleLiteral value must be finite"):
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
