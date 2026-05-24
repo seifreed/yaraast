@@ -147,6 +147,14 @@ def test_yarax_dict_expression_with_spread() -> None:
     assert isinstance(expr.items[0].value, SpreadOperator)
 
 
+def test_yarax_dict_expression_accepts_spread_after_regular_items() -> None:
+    expr = _parse_expr('{"a": 1, **data}')
+
+    assert isinstance(expr, DictExpression)
+    assert isinstance(expr.items[1].value, SpreadOperator)
+    assert YaraXGenerator().visit(expr) == '{"a": 1, **data}'
+
+
 def test_yarax_dict_comprehension_two_vars() -> None:
     expr = _parse_expr("{k: v for k, v in data if v}")
     assert isinstance(expr, DictComprehension)

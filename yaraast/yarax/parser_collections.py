@@ -160,16 +160,8 @@ class YaraXParserCollectionsMixin:
         """Parse dict with spread operators."""
         items = []
         while not self._check(TokenType.RBRACE):
-            if self._check(TokenType.MULTIPLY) and self._is_dict_spread_operator():
-                self._advance()  # First *
-                self._advance()  # Second *
-                expr = self.parse_expression()
-                items.append(
-                    DictItem(
-                        key=StringLiteral(value="__spread__"),
-                        value=SpreadOperator(expression=expr, is_dict=True),
-                    ),
-                )
+            if self._is_dict_spread_operator():
+                items.append(self._parse_dict_spread_item())
             else:
                 key = self.parse_expression()
                 self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
@@ -182,6 +174,15 @@ class YaraXParserCollectionsMixin:
         self._consume(TokenType.RBRACE, ERROR_EXPECTED_BRACE_CLOSE)
         return DictExpression(items=items)
 
+    def _parse_dict_spread_item(self) -> DictItem:
+        self._advance()
+        self._advance()
+        expr = self.parse_expression()
+        return DictItem(
+            key=StringLiteral(value="__spread__"),
+            value=SpreadOperator(expression=expr, is_dict=True),
+        )
+
     def _parse_regular_dict(self, first_key: Expression, first_value: Expression) -> DictExpression:
         """Parse regular dict after first key-value pair."""
         items = [DictItem(key=first_key, value=first_value)]
@@ -191,10 +192,13 @@ class YaraXParserCollectionsMixin:
             if self._check(TokenType.RBRACE):
                 break
 
-            key = self.parse_expression()
-            self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
-            value = self.parse_expression()
-            items.append(DictItem(key=key, value=value))
+            if self._is_dict_spread_operator():
+                items.append(self._parse_dict_spread_item())
+            else:
+                key = self.parse_expression()
+                self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
+                value = self.parse_expression()
+                items.append(DictItem(key=key, value=value))
 
         self._consume(TokenType.RBRACE, ERROR_EXPECTED_BRACE_CLOSE)
         return DictExpression(items=items)
