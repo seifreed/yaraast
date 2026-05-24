@@ -38,6 +38,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
+from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
@@ -842,6 +843,26 @@ def test_json_serializer_rejects_invalid_pragma_meta_comment_fields() -> None:
     cast(Any, group_with_bad_comment_item).comments = [object()]
     with pytest.raises(SerializationError, match="CommentGroup comments item must be"):
         serializer.visit(group_with_bad_comment_item)
+
+    meta_entry_with_bad_scope = MetaEntry("key", "value")
+    cast(Any, meta_entry_with_bad_scope).scope = invalid_text
+    with pytest.raises(SerializationError, match="Meta scope must be a string"):
+        serializer.serialize(
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_meta_scope",
+                        meta=[meta_entry_with_bad_scope],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            )
+        )
+
+    meta_with_bad_scope = Meta("key", "value")
+    cast(Any, meta_with_bad_scope).scope = invalid_text
+    with pytest.raises(SerializationError, match="Meta scope must be a string"):
+        serializer.visit(meta_with_bad_scope)
 
 
 def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:

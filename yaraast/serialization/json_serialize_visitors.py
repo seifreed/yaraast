@@ -282,7 +282,7 @@ def _serialize_meta_entry(serializer, meta) -> dict[str, Any]:
     }
     scope = getattr(meta, "scope", None)
     if scope is not None:
-        data["scope"] = getattr(scope, "value", str(scope))
+        data["scope"] = _serialize_enum_value(scope, "Meta scope")
     if hasattr(meta, "accept"):
         return serializer._with_node_metadata(meta, data)
     return data

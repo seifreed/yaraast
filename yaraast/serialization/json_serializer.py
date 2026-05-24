@@ -435,7 +435,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         )
         scope = getattr(node, "scope", None)
         if scope is not None:
-            data["scope"] = getattr(scope, "value", str(scope))
+            data["scope"] = _serialize_enum_value(scope, "Meta scope")
         return data
 
     def visit_module_reference(self, node) -> dict[str, Any]:
