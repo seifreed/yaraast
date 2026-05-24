@@ -287,6 +287,13 @@ def _protobuf_required_bool(value, context: str) -> bool:
     raise SerializationError(msg)
 
 
+def _protobuf_required_int(value, context: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        msg = f"{context} must be an integer"
+        raise SerializationError(msg)
+    return value
+
+
 def _protobuf_pragma_type(pragma) -> str:
     pragma_type = getattr(pragma, "pragma_type", None)
     value = getattr(pragma_type, "value", pragma_type)
@@ -870,32 +877,62 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
 
     _copy_node_metadata_to_protobuf(expr, pb_expr)
     if isinstance(expr, Identifier):
-        pb_expr.identifier.name = expr.name
+        pb_expr.identifier.name = _protobuf_required_string(expr.name, "Identifier name")
     elif isinstance(expr, StringIdentifier):
-        pb_expr.string_identifier.name = expr.name
+        pb_expr.string_identifier.name = _protobuf_required_string(
+            expr.name,
+            "StringIdentifier name",
+        )
     elif isinstance(expr, StringWildcard):
-        pb_expr.string_wildcard.pattern = expr.pattern
+        pb_expr.string_wildcard.pattern = _protobuf_required_string(
+            expr.pattern,
+            "StringWildcard pattern",
+        )
     elif isinstance(expr, StringCount):
-        pb_expr.string_count.string_id = expr.string_id
+        pb_expr.string_count.string_id = _protobuf_required_string(
+            expr.string_id,
+            "StringCount string_id",
+        )
     elif isinstance(expr, StringOffset):
-        pb_expr.string_offset.string_id = expr.string_id
+        pb_expr.string_offset.string_id = _protobuf_required_string(
+            expr.string_id,
+            "StringOffset string_id",
+        )
         if expr.index is not None:
             convert_expression_to_protobuf(expr.index, pb_expr.string_offset.index)
     elif isinstance(expr, StringLength):
-        pb_expr.string_length.string_id = expr.string_id
+        pb_expr.string_length.string_id = _protobuf_required_string(
+            expr.string_id,
+            "StringLength string_id",
+        )
         if expr.index is not None:
             convert_expression_to_protobuf(expr.index, pb_expr.string_length.index)
     elif isinstance(expr, IntegerLiteral):
-        pb_expr.integer_literal.value = expr.value
+        pb_expr.integer_literal.value = _protobuf_required_int(
+            expr.value,
+            "IntegerLiteral value",
+        )
     elif isinstance(expr, DoubleLiteral):
         pb_expr.double_literal.value = _finite_double_value(expr.value, "DoubleLiteral")
     elif isinstance(expr, StringLiteral):
-        pb_expr.string_literal.value = expr.value
+        pb_expr.string_literal.value = _protobuf_required_string(
+            expr.value,
+            "StringLiteral value",
+        )
     elif isinstance(expr, RegexLiteral):
-        pb_expr.regex_literal.pattern = expr.pattern
-        pb_expr.regex_literal.modifiers = expr.modifiers
+        pb_expr.regex_literal.pattern = _protobuf_required_string(
+            expr.pattern,
+            "RegexLiteral pattern",
+        )
+        pb_expr.regex_literal.modifiers = _protobuf_required_string(
+            expr.modifiers,
+            "RegexLiteral modifiers",
+        )
     elif isinstance(expr, BooleanLiteral):
-        pb_expr.boolean_literal.value = expr.value
+        pb_expr.boolean_literal.value = _protobuf_required_bool(
+            expr.value,
+            "BooleanLiteral value",
+        )
     elif isinstance(expr, BinaryExpression):
         pb_expr.binary_expression.operator = _protobuf_required_string(
             expr.operator,

@@ -17,8 +17,13 @@ from yaraast.ast.expressions import (
     Identifier,
     IntegerLiteral,
     MemberAccess,
+    RegexLiteral,
+    StringCount,
     StringIdentifier,
+    StringLength,
     StringLiteral,
+    StringOffset,
+    StringWildcard,
     UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
@@ -557,6 +562,34 @@ def test_protobuf_serializer_rejects_invalid_expression_scalar_fields(
 ) -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(rules=[Rule(name="invalid_expression_scalar", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (Identifier(cast(Any, ["id"])), "Identifier name must be a string"),
+        (StringIdentifier(cast(Any, 123)), "StringIdentifier name must be a string"),
+        (StringWildcard(cast(Any, 123)), "StringWildcard pattern must be a string"),
+        (StringCount(cast(Any, 123)), "StringCount string_id must be a string"),
+        (StringOffset(cast(Any, 123)), "StringOffset string_id must be a string"),
+        (StringLength(cast(Any, 123)), "StringLength string_id must be a string"),
+        (IntegerLiteral(cast(Any, True)), "IntegerLiteral value must be an integer"),
+        (IntegerLiteral(cast(Any, "1")), "IntegerLiteral value must be an integer"),
+        (StringLiteral(cast(Any, True)), "StringLiteral value must be a string"),
+        (RegexLiteral(cast(Any, 123)), "RegexLiteral pattern must be a string"),
+        (RegexLiteral("abc", cast(Any, ["i"])), "RegexLiteral modifiers must be a string"),
+        (BooleanLiteral(cast(Any, "true")), "BooleanLiteral value must be a boolean"),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_expression_leaf_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="invalid_expression_leaf", condition=condition)])
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(ast)
