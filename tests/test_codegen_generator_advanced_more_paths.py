@@ -38,6 +38,7 @@ from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter, PrettyPrintOptions
+from yaraast.yarax.ast_nodes import MatchCase, PatternMatch
 
 
 def test_codegen_generator_additional_visit_paths() -> None:
@@ -322,6 +323,27 @@ def test_advanced_generator_applies_expression_spacing_in_condition_sections() -
     assert "\n        foo((1,2),a==b,left and right)\n" in out
     assert "leftandright" not in out
     assert "\n        foo((1, 2), a == b, left and right)\n" not in out
+
+
+def test_advanced_generator_indents_yarax_multiline_match_condition() -> None:
+    condition = PatternMatch(
+        value=IntegerLiteral(1),
+        cases=[MatchCase(pattern=IntegerLiteral(1), result=BooleanLiteral(True))],
+        default=BooleanLiteral(False),
+    )
+    out = AdvancedCodeGenerator().generate(
+        YaraFile(rules=[Rule(name="yarax_match", condition=condition)])
+    )
+
+    assert (
+        "    condition:\n"
+        "        match 1 {\n"
+        "            1 => true,\n"
+        "            _ => false,\n"
+        "        }\n"
+    ) in out
+    assert "\n    1 => true,\n" not in out
+    assert AdvancedCodeGenerator().generate(condition).startswith("match 1 {\n")
 
 
 def test_advanced_generator_final_remaining_string_and_section_paths() -> None:

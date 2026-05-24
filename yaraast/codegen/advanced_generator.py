@@ -186,6 +186,51 @@ class AdvancedCodeGenerator(CodeGenerator):
         self._write(result)
         return result
 
+    def _generate_yarax_expression(self, node: Any) -> str:
+        return generate_condition_string(node, self.config)
+
+    def visit_with_statement(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_with_declaration(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_array_comprehension(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_dict_comprehension(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_tuple_expression(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_tuple_indexing(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_list_expression(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_dict_expression(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_dict_item(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_slice_expression(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_lambda_expression(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_pattern_match(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_match_case(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
+    def visit_spread_operator(self, node: Any) -> str:
+        return self._generate_yarax_expression(node)
+
     # Default visit methods (delegate to parent)
     def visit_import(self, node: Import) -> str:
         import_line = f'import "{escape_string_literal(node.module)}"'

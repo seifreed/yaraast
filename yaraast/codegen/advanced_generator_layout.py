@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.formatting import BraceStyle, StringStyle
+from yaraast.codegen.formatting import BraceStyle, IndentStyle, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
@@ -150,8 +150,9 @@ def write_condition_section(generator, condition) -> None:
     generator._writeline("condition:")
     generator._indent()
     condition_str = generate_condition_string(condition, generator.config)
-    if len(condition_str) > generator.config.max_line_length:
-        generator._writeline(condition_str)
+    if "\n" in condition_str:
+        for line in condition_str.splitlines():
+            generator._writeline(line)
     else:
         generator._writeline(condition_str)
     generator._dedent()
@@ -167,6 +168,11 @@ class _AdvancedConditionGenerator(CodeGenerator):
     def __init__(self, config) -> None:
         super().__init__(getattr(config, "indent_size", 4))
         self.config = config
+
+    def _nested_indent(self) -> str:
+        if self.config.indent_style == IndentStyle.TABS:
+            return "\t"
+        return " " * self.config.indent_size
 
     def _comma_separator(self) -> str:
         return ", " if self.config.space_after_comma else ","
@@ -185,6 +191,101 @@ class _AdvancedConditionGenerator(CodeGenerator):
     def visit_function_call(self, node) -> str:
         separator = self._comma_separator()
         return f"{node.function}({separator.join(self.visit(arg) for arg in node.arguments)})"
+
+    def visit_with_statement(self, node) -> str:
+        separator = self._comma_separator()
+        declarations = separator.join(self.visit(declaration) for declaration in node.declarations)
+        return f"with {declarations}: {self.visit(node.body)}"
+
+    def visit_with_declaration(self, node) -> str:
+        return f"{node.identifier} = {self.visit(node.value)}"
+
+    def visit_array_comprehension(self, node) -> str:
+        result = (
+            f"[{self.visit(node.expression)} for {node.variable} " f"in {self.visit(node.iterable)}"
+        )
+        if node.condition:
+            result += f" if {self.visit(node.condition)}"
+        return f"{result}]"
+
+    def visit_dict_comprehension(self, node) -> str:
+        variables = node.key_variable
+        if node.value_variable:
+            variables = f"{variables}, {node.value_variable}"
+        result = (
+            f"{{{self.visit(node.key_expression)}: {self.visit(node.value_expression)} "
+            f"for {variables} in {self.visit(node.iterable)}"
+        )
+        if node.condition:
+            result += f" if {self.visit(node.condition)}"
+        return f"{result}}}"
+
+    def visit_tuple_expression(self, node) -> str:
+        if not node.elements:
+            return "()"
+        elements = [self.visit(element) for element in node.elements]
+        if len(elements) == 1:
+            return f"({elements[0]},)"
+        return f"({self._comma_separator().join(elements)})"
+
+    def visit_tuple_indexing(self, node) -> str:
+        from yaraast.ast.expressions import FunctionCall, Identifier
+        from yaraast.yarax.ast_nodes import TupleExpression
+
+        tuple_str = self.visit(node.tuple_expr)
+        index_str = self.visit(node.index)
+        if isinstance(node.tuple_expr, FunctionCall | Identifier | TupleExpression):
+            return f"{tuple_str}[{index_str}]"
+        return f"({tuple_str})[{index_str}]"
+
+    def visit_list_expression(self, node) -> str:
+        separator = self._comma_separator()
+        return f"[{separator.join(self.visit(element) for element in node.elements)}]"
+
+    def visit_dict_expression(self, node) -> str:
+        from yaraast.yarax.ast_nodes import SpreadOperator
+
+        items = []
+        for item in node.items:
+            if isinstance(item.value, SpreadOperator):
+                items.append(self.visit(item.value))
+            else:
+                items.append(self.visit(item))
+        return f"{{{self._comma_separator().join(items)}}}"
+
+    def visit_dict_item(self, node) -> str:
+        return f"{self.visit(node.key)}: {self.visit(node.value)}"
+
+    def visit_slice_expression(self, node) -> str:
+        parts = [
+            self.visit(node.start) if node.start is not None else "",
+            self.visit(node.stop) if node.stop is not None else "",
+        ]
+        if node.step is not None:
+            parts.append(self.visit(node.step))
+        return f"{self.visit(node.target)}[{':'.join(parts)}]"
+
+    def visit_lambda_expression(self, node) -> str:
+        parameters = ", ".join(node.parameters)
+        if parameters:
+            return f"lambda {parameters}: {self.visit(node.body)}"
+        return f"lambda: {self.visit(node.body)}"
+
+    def visit_pattern_match(self, node) -> str:
+        lines = [f"match {self.visit(node.value)} {{"]
+        nested_indent = self._nested_indent()
+        lines.extend(f"{nested_indent}{self.visit(case)}," for case in node.cases)
+        if node.default:
+            lines.append(f"{nested_indent}_ => {self.visit(node.default)},")
+        lines.append("}")
+        return "\n".join(lines)
+
+    def visit_match_case(self, node) -> str:
+        return f"{self.visit(node.pattern)} => {self.visit(node.result)}"
+
+    def visit_spread_operator(self, node) -> str:
+        prefix = "**" if node.is_dict else "..."
+        return f"{prefix}{self.visit(node.expression)}"
 
 
 def generate_condition_string(expr, config=None) -> str:
