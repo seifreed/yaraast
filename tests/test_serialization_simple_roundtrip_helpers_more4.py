@@ -921,6 +921,42 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             serialize_node(node)
 
 
+def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types() -> None:
+    invalid_cases = (
+        (Import(cast(Any, 123)), "Import module must be a string"),
+        (Import("pe", alias=cast(Any, 123)), "Import alias must be a string"),
+        (Include(cast(Any, 123)), "Include path must be a string"),
+        (Tag(cast(Any, 123)), "Tag name must be a string"),
+        (Comment(cast(Any, 123)), "Comment text must be a string"),
+        (
+            Comment("note", is_multiline=cast(Any, "false")),
+            "Comment is_multiline must be a boolean",
+        ),
+        (Rule(cast(Any, 123), condition=BooleanLiteral(True)), "Rule name must be a string"),
+        (ExternRule(cast(Any, 123)), "ExternRule name must be a string"),
+        (ExternRule("remote", namespace=cast(Any, 123)), "ExternRule namespace must be a string"),
+        (
+            ExternRuleReference(cast(Any, 123)),
+            "ExternRuleReference rule_name must be a string",
+        ),
+        (
+            ExternRuleReference("remote", namespace=cast(Any, 123)),
+            "ExternRuleReference namespace must be a string",
+        ),
+        (ExternImport(cast(Any, 123)), "ExternImport module_path must be a string"),
+        (ExternImport("external", alias=cast(Any, 123)), "ExternImport alias must be a string"),
+        (
+            ExternImport("external", rules=cast(Any, "RemoteRule")),
+            "ExternImport rules must be a list of strings",
+        ),
+        (ExternNamespace(cast(Any, 123)), "ExternNamespace name must be a string"),
+    )
+
+    for node, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
+
+
 def test_simple_roundtrip_string_set_values_reject_empty_payloads() -> None:
     empty_string_set_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (

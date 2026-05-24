@@ -795,18 +795,22 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, Rule):
         return serialize_rule(node)
     if isinstance(node, Import):
-        return {"type": "Import", "module": node.module, "alias": node.alias}
+        return {
+            "type": "Import",
+            "module": _serialize_required_string(node.module, "Import module"),
+            "alias": _serialize_nullable_string(node.alias, "Import alias"),
+        }
     if isinstance(node, Include):
-        return {"type": "Include", "path": node.path}
+        return {"type": "Include", "path": _serialize_required_string(node.path, "Include path")}
     if isinstance(node, Tag):
-        return {"type": "Tag", "name": node.name}
+        return {"type": "Tag", "name": _serialize_required_string(node.name, "Tag name")}
     if isinstance(node, Meta):
         return serialize_meta(node)
     if isinstance(node, Comment):
         return {
             "type": "Comment",
-            "text": node.text,
-            "is_multiline": node.is_multiline,
+            "text": _serialize_required_string(node.text, "Comment text"),
+            "is_multiline": _serialize_required_bool(node.is_multiline, "Comment is_multiline"),
         }
     if isinstance(node, CommentGroup):
         return {
@@ -828,20 +832,29 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, ExternRuleReference):
         return {
             "type": "ExternRuleReference",
-            "rule_name": node.rule_name,
-            "namespace": node.namespace,
+            "rule_name": _serialize_required_string(
+                node.rule_name,
+                "ExternRuleReference rule_name",
+            ),
+            "namespace": _serialize_nullable_string(
+                node.namespace,
+                "ExternRuleReference namespace",
+            ),
         }
     if isinstance(node, ExternImport):
         return {
             "type": "ExternImport",
-            "module_path": node.module_path,
-            "alias": node.alias,
-            "rules": list(node.rules),
+            "module_path": _serialize_required_string(
+                node.module_path,
+                "ExternImport module_path",
+            ),
+            "alias": _serialize_nullable_string(node.alias, "ExternImport alias"),
+            "rules": _serialize_string_list(node.rules, "ExternImport rules"),
         }
     if isinstance(node, ExternNamespace):
         return {
             "type": "ExternNamespace",
-            "name": node.name,
+            "name": _serialize_required_string(node.name, "ExternNamespace name"),
             "extern_rules": [serialize_extern_rule(rule) for rule in node.extern_rules],
         }
     if isinstance(node, InRulePragma):
@@ -1151,7 +1164,7 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     """Serialize a Rule."""
     data: dict[str, Any] = {
         "type": "Rule",
-        "name": rule.name,
+        "name": _serialize_required_string(rule.name, "Rule name"),
         "modifiers": [str(modifier) for modifier in rule.modifiers],
         "condition": serialize_node(rule.condition) if rule.condition else None,
     }
@@ -1174,9 +1187,9 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
 def serialize_extern_rule(extern_rule: ExternRule) -> dict[str, Any]:
     return {
         "type": "ExternRule",
-        "name": extern_rule.name,
+        "name": _serialize_required_string(extern_rule.name, "ExternRule name"),
         "modifiers": [str(modifier) for modifier in extern_rule.modifiers],
-        "namespace": extern_rule.namespace,
+        "namespace": _serialize_nullable_string(extern_rule.namespace, "ExternRule namespace"),
     }
 
 
