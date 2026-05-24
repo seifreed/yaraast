@@ -25,14 +25,16 @@ def write_meta_section(printer, meta: list) -> None:
         entries.sort(key=lambda x: getattr(x, "key", ""))
     for entry in entries:
         if hasattr(entry, "key") and hasattr(entry, "value"):
+            printer._write_comments(getattr(entry, "leading_comments", None))
             write_meta_entry(
                 printer,
                 format_meta_key(entry.key, getattr(entry, "scope", None)),
                 entry.value,
+                getattr(entry, "trailing_comment", None),
             )
 
 
-def write_meta_entry(printer, key: str, value: Any) -> None:
+def write_meta_entry(printer, key: str, value: Any, trailing_comment=None) -> None:
     """Write a single meta entry with alignment handling."""
     printer._write(current_indent(printer))
     if printer.options.align_meta_values and printer._meta_alignment_column > 0:
@@ -49,6 +51,9 @@ def write_meta_entry(printer, key: str, value: Any) -> None:
     else:
         printer._write(str(value))
 
+    if trailing_comment:
+        printer._write_comment(trailing_comment, inline=True)
+
     printer._writeline()
 
 
@@ -60,6 +65,7 @@ def write_strings_section(printer, strings: list[StringDefinition]) -> None:
 
 def write_plain_string_aligned(printer, node: PlainString) -> None:
     """Write a plain string honoring alignment options."""
+    printer._write_comments(getattr(node, "leading_comments", None))
     printer._write(current_indent(printer))
     if printer.options.align_string_definitions and printer._string_alignment_column > 0:
         padding = max(0, printer._string_alignment_column - len(output_string_identifier(node)))
@@ -67,11 +73,15 @@ def write_plain_string_aligned(printer, node: PlainString) -> None:
     else:
         printer._write(format_plain_string(node, '"', 0))
     printer._write(modifiers_to_string(node.modifiers))
+    trailing_comment = getattr(node, "trailing_comment", None)
+    if trailing_comment:
+        printer._write_comment(trailing_comment, inline=True)
     printer._writeline()
 
 
 def write_hex_string_aligned(printer, node: HexString) -> None:
     """Write a hex string honoring alignment and casing options."""
+    printer._write_comments(getattr(node, "leading_comments", None))
     printer._write(current_indent(printer))
     hex_pattern = build_hex_pattern(
         node,
@@ -85,11 +95,15 @@ def write_hex_string_aligned(printer, node: HexString) -> None:
     else:
         printer._write(f"{output_string_identifier(node)} = {{ {hex_pattern} }}")
     printer._write(modifiers_to_string(node.modifiers))
+    trailing_comment = getattr(node, "trailing_comment", None)
+    if trailing_comment:
+        printer._write_comment(trailing_comment, inline=True)
     printer._writeline()
 
 
 def write_regex_string_aligned(printer, node: RegexString) -> None:
     """Write a regex string honoring alignment options."""
+    printer._write_comments(getattr(node, "leading_comments", None))
     printer._write(current_indent(printer))
     if printer.options.align_string_definitions and printer._string_alignment_column > 0:
         padding = max(0, printer._string_alignment_column - len(output_string_identifier(node)))
@@ -97,6 +111,9 @@ def write_regex_string_aligned(printer, node: RegexString) -> None:
     else:
         printer._write(format_regex_string(node, 0))
     printer._write(regex_modifiers_to_string(node.modifiers))
+    trailing_comment = getattr(node, "trailing_comment", None)
+    if trailing_comment:
+        printer._write_comment(trailing_comment, inline=True)
     printer._writeline()
 
 

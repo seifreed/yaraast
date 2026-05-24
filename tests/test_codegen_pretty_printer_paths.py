@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.comments import Comment
 from yaraast.ast.conditions import Condition
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -14,7 +15,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import StringModifier
-from yaraast.ast.pragmas import IncludeOncePragma
+from yaraast.ast.pragmas import CustomPragma, IncludeOncePragma, InRulePragma
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString, StringDefinition
 from yaraast.codegen.pretty_printer import (
@@ -277,6 +278,65 @@ def test_pretty_printer_preserves_top_level_extensions() -> None:
     assert "namespace corp" in out
     assert "extern rule Remote" in out
     assert "rule r {" in out
+
+
+def test_pretty_printer_preserves_nested_comments_when_enabled() -> None:
+    meta = Meta("author", "alice")
+    meta.leading_comments = [Comment("meta lead")]
+    meta.trailing_comment = Comment("meta tail")
+
+    plain = PlainString("$a", value="abc")
+    plain.leading_comments = [Comment("string lead")]
+    plain.trailing_comment = Comment("string tail")
+
+    condition = StringIdentifier("$a")
+    condition.leading_comments = [Comment("condition lead")]
+    condition.trailing_comment = Comment("condition tail")
+
+    in_rule_pragma = InRulePragma(
+        CustomPragma("opt", arguments=["on"]),
+        position="before_condition",
+    )
+    in_rule_pragma.leading_comments = [Comment("pragma lead")]
+    in_rule_pragma.trailing_comment = Comment("pragma tail")
+
+    rule = Rule(
+        name="commented",
+        meta=[meta],
+        strings=[plain],
+        condition=condition,
+        pragmas=[in_rule_pragma],
+    )
+    rule.leading_comments = [Comment("rule lead")]
+    rule.trailing_comment = Comment("rule tail")
+
+    options = PrettyPrintOptions(
+        align_meta_values=False,
+        align_string_definitions=False,
+    )
+    out = PrettyPrinter(options).pretty_print(YaraFile(rules=[rule]))
+
+    assert "// rule lead" in out
+    assert "rule commented {  // rule tail" in out
+    assert "// meta lead" in out
+    assert 'author = "alice"  // meta tail' in out
+    assert "// string lead" in out
+    assert '$a = "abc"  // string tail' in out
+    assert "// pragma lead" in out
+    assert "#pragma opt on  // pragma tail" in out
+    assert "// condition lead" in out
+    assert "$a  // condition tail" in out
+
+    suppressed = PrettyPrinter(
+        PrettyPrintOptions(
+            align_meta_values=False,
+            align_string_definitions=False,
+            preserve_comments=False,
+        )
+    ).pretty_print(YaraFile(rules=[rule]))
+
+    assert "lead" not in suppressed
+    assert "tail" not in suppressed
 
 
 def test_pretty_printer_regex_suffix_alias_modifiers_are_adjacent() -> None:

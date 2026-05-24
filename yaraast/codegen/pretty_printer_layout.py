@@ -26,6 +26,14 @@ def _emit_top_level_line(printer, node) -> None:
     printer._writeline()
 
 
+def _write_line(printer, text: str, trailing_comment=None) -> None:
+    printer._write(current_indent(printer))
+    printer._write(text)
+    if trailing_comment:
+        printer._write_comment(trailing_comment, inline=True)
+    printer._writeline()
+
+
 def _emit_top_level_section(printer, nodes, blank_lines: int = 1) -> None:
     if not nodes:
         return
@@ -78,7 +86,7 @@ def visit_rule(printer, node) -> str:
         )
         line_parts.append(":")
         line_parts.extend(tags)
-    printer._writeline(" ".join(line_parts) + " {")
+    _write_line(printer, " ".join(line_parts) + " {", getattr(node, "trailing_comment", None))
     printer._indent()
 
     if node.meta:
@@ -118,11 +126,21 @@ def visit_rule(printer, node) -> str:
 def _write_in_rule_pragmas(printer, node, position: str) -> None:
     for pragma in getattr(node, "pragmas", []):
         if pragma.position == position:
-            printer._writeline(printer.visit(pragma))
+            printer._write_comments(getattr(pragma, "leading_comments", None))
+            rendered = printer.visit(pragma)
+            if rendered:
+                _write_line(printer, rendered, getattr(pragma, "trailing_comment", None))
+            else:
+                trailing_comment = getattr(pragma, "trailing_comment", None)
+                if trailing_comment:
+                    printer._write_comment(trailing_comment)
 
 
 def write_string_definition(printer, string_def) -> None:
     from yaraast.ast.strings import HexString, PlainString, RegexString
+
+    printer._write_comments(getattr(string_def, "leading_comments", None))
+    trailing_comment = getattr(string_def, "trailing_comment", None)
 
     if isinstance(string_def, PlainString):
         identifier = output_string_identifier(string_def)
@@ -134,6 +152,8 @@ def write_string_definition(printer, string_def) -> None:
         printer._write(current_indent(printer))
         printer._write(format_plain_string(string_def, '"', padding))
         printer._write(modifiers_to_string(string_def.modifiers))
+        if trailing_comment:
+            printer._write_comment(trailing_comment, inline=True)
         printer._writeline()
         return
 
@@ -152,6 +172,8 @@ def write_string_definition(printer, string_def) -> None:
             printer._write(current_indent(printer))
             printer._write(f"{output_string_identifier(string_def)} = {{ {hex_pattern} }}")
         printer._write(modifiers_to_string(string_def.modifiers))
+        if trailing_comment:
+            printer._write_comment(trailing_comment, inline=True)
         printer._writeline()
         return
 
@@ -165,18 +187,26 @@ def write_string_definition(printer, string_def) -> None:
         printer._write(current_indent(printer))
         printer._write(format_regex_string(string_def, padding))
         printer._write(regex_modifiers_to_string(string_def.modifiers))
+        if trailing_comment:
+            printer._write_comment(trailing_comment, inline=True)
         printer._writeline()
         return
 
     printer.visit(string_def)
+    if trailing_comment:
+        printer._write_comment(trailing_comment, inline=True)
     printer._writeline()
 
 
 def write_condition_section(printer, condition) -> None:
+    printer._write_comments(getattr(condition, "leading_comments", None))
     condition_str = expression_to_string(condition, printer.options)
+    trailing_comment = getattr(condition, "trailing_comment", None)
     if "\n" in condition_str:
-        for line in condition_str.splitlines():
-            printer._writeline(line)
+        lines = condition_str.splitlines()
+        for index, line in enumerate(lines):
+            comment = trailing_comment if index == len(lines) - 1 else None
+            _write_line(printer, line, comment)
         return
 
     if (
@@ -184,10 +214,11 @@ def write_condition_section(printer, condition) -> None:
         and len(condition_str) > printer.options.max_line_length
     ):
         current_line = ""
+        lines = []
         for word in condition_str.split():
             if len(current_line + " " + word) > printer.options.max_line_length:
                 if current_line:
-                    printer._writeline(current_line)
+                    lines.append(current_line)
                     current_line = indent_unit(printer) + word
                 else:
                     current_line = word
@@ -196,6 +227,9 @@ def write_condition_section(printer, condition) -> None:
             else:
                 current_line = word
         if current_line:
-            printer._writeline(current_line)
+            lines.append(current_line)
+        for index, line in enumerate(lines):
+            comment = trailing_comment if index == len(lines) - 1 else None
+            _write_line(printer, line, comment)
         return
-    printer._writeline(condition_str)
+    _write_line(printer, condition_str, trailing_comment)
