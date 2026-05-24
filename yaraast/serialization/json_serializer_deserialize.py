@@ -44,6 +44,14 @@ def _deserialize_optional_expression(self, data):
     return self._deserialize_expression(data)
 
 
+def _deserialize_required_expression(self, data: dict[str, Any], field: str, context: str) -> Any:
+    expression = self._deserialize_expression(_deserialize_required_field(data, field, context))
+    if expression is not None:
+        return expression
+    msg = f"{context} {field} is required"
+    raise SerializationError(msg)
+
+
 def _deserialize_dictionary_key(self, data: dict[str, Any]) -> str | ASTNode:
     if "key" not in data:
         msg = "DictionaryAccess key must be a string or expression"
@@ -363,12 +371,8 @@ def _apply_node_metadata(self, node: ASTNode, data: dict[str, Any]) -> Any:
 def _deser_binary_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import BinaryExpression
 
-    left = self._deserialize_expression(
-        _deserialize_required_field(data, "left", "BinaryExpression")
-    )
-    right = self._deserialize_expression(
-        _deserialize_required_field(data, "right", "BinaryExpression")
-    )
+    left = _deserialize_required_expression(self, data, "left", "BinaryExpression")
+    right = _deserialize_required_expression(self, data, "right", "BinaryExpression")
     return BinaryExpression(
         left=left,
         operator=_deserialize_string_field(data, "operator", "BinaryExpression"),
@@ -379,9 +383,7 @@ def _deser_binary_expression(self, data: dict[str, Any]):
 def _deser_unary_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import UnaryExpression
 
-    operand = self._deserialize_expression(
-        _deserialize_required_field(data, "operand", "UnaryExpression")
-    )
+    operand = _deserialize_required_expression(self, data, "operand", "UnaryExpression")
     return UnaryExpression(
         operator=_deserialize_string_field(data, "operator", "UnaryExpression"),
         operand=operand,
@@ -391,9 +393,7 @@ def _deser_unary_expression(self, data: dict[str, Any]):
 def _deser_parentheses_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import ParenthesesExpression
 
-    expression = self._deserialize_expression(
-        _deserialize_required_field(data, "expression", "ParenthesesExpression")
-    )
+    expression = _deserialize_required_expression(self, data, "expression", "ParenthesesExpression")
     return ParenthesesExpression(expression=expression)
 
 
@@ -410,10 +410,8 @@ def _deser_set_expression(self, data: dict[str, Any]):
 def _deser_range_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import RangeExpression
 
-    low = self._deserialize_expression(_deserialize_required_field(data, "low", "RangeExpression"))
-    high = self._deserialize_expression(
-        _deserialize_required_field(data, "high", "RangeExpression")
-    )
+    low = _deserialize_required_expression(self, data, "low", "RangeExpression")
+    high = _deserialize_required_expression(self, data, "high", "RangeExpression")
     return RangeExpression(low=low, high=high)
 
 
@@ -433,15 +431,15 @@ def _deser_function_call(self, data: dict[str, Any]):
 def _deser_array_access(self, data: dict[str, Any]):
     from yaraast.ast.expressions import ArrayAccess
 
-    array = self._deserialize_expression(_deserialize_required_field(data, "array", "ArrayAccess"))
-    index = self._deserialize_expression(_deserialize_required_field(data, "index", "ArrayAccess"))
+    array = _deserialize_required_expression(self, data, "array", "ArrayAccess")
+    index = _deserialize_required_expression(self, data, "index", "ArrayAccess")
     return ArrayAccess(array=array, index=index)
 
 
 def _deser_member_access(self, data: dict[str, Any]):
     from yaraast.ast.expressions import MemberAccess
 
-    obj = self._deserialize_expression(_deserialize_required_field(data, "object", "MemberAccess"))
+    obj = _deserialize_required_expression(self, data, "object", "MemberAccess")
     return MemberAccess(
         object=obj,
         member=_deserialize_string_field(data, "member", "MemberAccess"),
@@ -533,12 +531,8 @@ def _deser_for_expression(self, data: dict[str, Any]):
             self, _deserialize_required_field(data, "quantifier", "ForExpression")
         ),
         variable=_deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
-        iterable=self._deserialize_expression(
-            _deserialize_required_field(data, "iterable", "ForExpression")
-        ),
-        body=self._deserialize_expression(
-            _deserialize_required_field(data, "body", "ForExpression")
-        ),
+        iterable=_deserialize_required_expression(self, data, "iterable", "ForExpression"),
+        body=_deserialize_required_expression(self, data, "body", "ForExpression"),
     )
 
 
@@ -562,9 +556,7 @@ def _deser_at_expression(self, data: dict[str, Any]):
 
     return AtExpression(
         string_id=_deserialize_string_field(data, "string_id", "AtExpression"),
-        offset=self._deserialize_expression(
-            _deserialize_required_field(data, "offset", "AtExpression")
-        ),
+        offset=_deserialize_required_expression(self, data, "offset", "AtExpression"),
     )
 
 
@@ -583,9 +575,7 @@ def _deser_in_expression(self, data: dict[str, Any]):
         raise SerializationError(msg)
     return InExpression(
         subject=subject,
-        range=self._deserialize_expression(
-            _deserialize_required_field(data, "range", "InExpression")
-        ),
+        range=_deserialize_required_expression(self, data, "range", "InExpression"),
     )
 
 
@@ -611,9 +601,7 @@ def _deser_module_reference(self, data: dict[str, Any]):
 def _deser_dictionary_access(self, data: dict[str, Any]):
     from yaraast.ast.modules import DictionaryAccess
 
-    obj = self._deserialize_expression(
-        _deserialize_required_field(data, "object", "DictionaryAccess")
-    )
+    obj = _deserialize_required_expression(self, data, "object", "DictionaryAccess")
     key = _deserialize_dictionary_key(self, data)
     return DictionaryAccess(object=obj, key=key)
 
@@ -674,9 +662,7 @@ def _deser_with_statement(self, data: dict[str, Any]):
             self._deserialize_expression(declaration)
             for declaration in _deserialize_list_field(data, "declarations", "WithStatement")
         ],
-        body=self._deserialize_expression(
-            _deserialize_required_field(data, "body", "WithStatement")
-        ),
+        body=_deserialize_required_expression(self, data, "body", "WithStatement"),
     )
 
 
@@ -685,9 +671,7 @@ def _deser_with_declaration(self, data: dict[str, Any]):
 
     return WithDeclaration(
         identifier=_deserialize_string_field(data, "identifier", "WithDeclaration"),
-        value=self._deserialize_expression(
-            _deserialize_required_field(data, "value", "WithDeclaration")
-        ),
+        value=_deserialize_required_expression(self, data, "value", "WithDeclaration"),
     )
 
 
@@ -732,12 +716,8 @@ def _deser_tuple_indexing(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import TupleIndexing
 
     return TupleIndexing(
-        tuple_expr=self._deserialize_expression(
-            _deserialize_required_field(data, "tuple_expr", "TupleIndexing")
-        ),
-        index=self._deserialize_expression(
-            _deserialize_required_field(data, "index", "TupleIndexing")
-        ),
+        tuple_expr=_deserialize_required_expression(self, data, "tuple_expr", "TupleIndexing"),
+        index=_deserialize_required_expression(self, data, "index", "TupleIndexing"),
     )
 
 
@@ -767,8 +747,8 @@ def _deser_dict_item(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import DictItem
 
     return DictItem(
-        key=self._deserialize_expression(_deserialize_required_field(data, "key", "DictItem")),
-        value=self._deserialize_expression(_deserialize_required_field(data, "value", "DictItem")),
+        key=_deserialize_required_expression(self, data, "key", "DictItem"),
+        value=_deserialize_required_expression(self, data, "value", "DictItem"),
     )
 
 
@@ -776,9 +756,7 @@ def _deser_slice_expression(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import SliceExpression
 
     return SliceExpression(
-        target=self._deserialize_expression(
-            _deserialize_required_field(data, "target", "SliceExpression")
-        ),
+        target=_deserialize_required_expression(self, data, "target", "SliceExpression"),
         start=_deserialize_optional_expression(self, data.get("start")),
         stop=_deserialize_optional_expression(self, data.get("stop")),
         step=_deserialize_optional_expression(self, data.get("step")),
@@ -790,9 +768,7 @@ def _deser_lambda_expression(self, data: dict[str, Any]):
 
     return LambdaExpression(
         parameters=_deserialize_string_list_field(data, "parameters", "LambdaExpression"),
-        body=self._deserialize_expression(
-            _deserialize_required_field(data, "body", "LambdaExpression")
-        ),
+        body=_deserialize_required_expression(self, data, "body", "LambdaExpression"),
     )
 
 
@@ -800,9 +776,7 @@ def _deser_pattern_match(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import PatternMatch
 
     return PatternMatch(
-        value=self._deserialize_expression(
-            _deserialize_required_field(data, "value", "PatternMatch")
-        ),
+        value=_deserialize_required_expression(self, data, "value", "PatternMatch"),
         cases=[
             self._deserialize_expression(case)
             for case in _deserialize_list_field(data, "cases", "PatternMatch")
@@ -815,12 +789,8 @@ def _deser_match_case(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import MatchCase
 
     return MatchCase(
-        pattern=self._deserialize_expression(
-            _deserialize_required_field(data, "pattern", "MatchCase")
-        ),
-        result=self._deserialize_expression(
-            _deserialize_required_field(data, "result", "MatchCase")
-        ),
+        pattern=_deserialize_required_expression(self, data, "pattern", "MatchCase"),
+        result=_deserialize_required_expression(self, data, "result", "MatchCase"),
     )
 
 
@@ -828,9 +798,7 @@ def _deser_spread_operator(self, data: dict[str, Any]):
     from yaraast.yarax.ast_nodes import SpreadOperator
 
     return SpreadOperator(
-        expression=self._deserialize_expression(
-            _deserialize_required_field(data, "expression", "SpreadOperator")
-        ),
+        expression=_deserialize_required_expression(self, data, "expression", "SpreadOperator"),
         is_dict=_deserialize_bool_field(data, "is_dict", "SpreadOperator"),
     )
 

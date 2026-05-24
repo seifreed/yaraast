@@ -504,6 +504,36 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
         with pytest.raises(SerializationError, match=message):
             s._deserialize_expression(payload)
 
+    null_expression_cases = (
+        (
+            {"type": "BinaryExpression", "left": None, "operator": "and", "right": true_expr},
+            "BinaryExpression left is required",
+        ),
+        (
+            {"type": "UnaryExpression", "operator": "not", "operand": None},
+            "UnaryExpression operand is required",
+        ),
+        (
+            {
+                "type": "RangeExpression",
+                "low": None,
+                "high": {"type": "IntegerLiteral", "value": 1},
+            },
+            "RangeExpression low is required",
+        ),
+        (
+            {"type": "ArrayAccess", "array": None, "index": {"type": "IntegerLiteral", "value": 0}},
+            "ArrayAccess array is required",
+        ),
+        (
+            {"type": "MemberAccess", "object": None, "member": "name"},
+            "MemberAccess object is required",
+        ),
+    )
+    for null_payload, message in null_expression_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(null_payload)
+
     with pytest.raises(SerializationError, match="BinaryExpression operator must be a string"):
         s._deserialize_expression(
             {
@@ -575,6 +605,34 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     for payload, message in missing_condition_cases:
         with pytest.raises(SerializationError, match=message):
             s._deserialize_expression(payload)
+
+    null_condition_cases = (
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "i",
+                "iterable": None,
+                "body": int_expr,
+            },
+            "ForExpression iterable is required",
+        ),
+        (
+            {"type": "AtExpression", "string_id": "$a", "offset": None},
+            "AtExpression offset is required",
+        ),
+        (
+            {"type": "InExpression", "subject": "$a", "range": None},
+            "InExpression range is required",
+        ),
+        (
+            {"type": "DictionaryAccess", "object": None, "key": "name"},
+            "DictionaryAccess object is required",
+        ),
+    )
+    for null_payload, message in null_condition_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(null_payload)
 
     with pytest.raises(SerializationError, match="ModuleReference module must be a string"):
         s._deserialize_expression({"type": "ModuleReference", "module": ["pe"]})
@@ -663,6 +721,32 @@ def test_json_deserialize_extended_expression_fields_reject_wrong_scalar_types()
     for payload, message in missing_extended_cases:
         with pytest.raises(SerializationError, match=message):
             s._deserialize_expression(payload)
+
+    null_extended_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "WithStatement", "declarations": [], "body": None},
+            "WithStatement body is required",
+        ),
+        (
+            {"type": "TupleIndexing", "tuple_expr": None, "index": true_expr},
+            "TupleIndexing tuple_expr is required",
+        ),
+        (
+            {"type": "DictItem", "key": None, "value": true_expr},
+            "DictItem key is required",
+        ),
+        (
+            {"type": "SliceExpression", "target": None},
+            "SliceExpression target is required",
+        ),
+        (
+            {"type": "SpreadOperator", "expression": None},
+            "SpreadOperator expression is required",
+        ),
+    )
+    for null_payload, message in null_extended_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(null_payload)
 
     with pytest.raises(
         SerializationError, match="LambdaExpression parameters must be a list of strings"
