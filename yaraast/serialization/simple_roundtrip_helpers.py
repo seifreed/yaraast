@@ -1108,10 +1108,14 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "UnaryExpression":
         return UnaryExpression(
             _deserialize_string_field(data, "operator", "UnaryExpression"),
-            deserialize_node(data["operand"]),
+            deserialize_node(_deserialize_required_field(data, "operand", "UnaryExpression")),
         )
     if node_type == "ParenthesesExpression":
-        return ParenthesesExpression(deserialize_node(data["expression"]))
+        return ParenthesesExpression(
+            deserialize_node(
+                _deserialize_required_field(data, "expression", "ParenthesesExpression")
+            )
+        )
     if node_type == "SetExpression":
         return SetExpression(
             [
@@ -1120,7 +1124,10 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             ]
         )
     if node_type == "RangeExpression":
-        return RangeExpression(deserialize_node(data["low"]), deserialize_node(data["high"]))
+        return RangeExpression(
+            deserialize_node(_deserialize_required_field(data, "low", "RangeExpression")),
+            deserialize_node(_deserialize_required_field(data, "high", "RangeExpression")),
+        )
     if node_type == "FunctionCall":
         return FunctionCall(
             _deserialize_string_field(data, "function", "FunctionCall"),
@@ -1130,10 +1137,13 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             ],
         )
     if node_type == "ArrayAccess":
-        return ArrayAccess(deserialize_node(data["array"]), deserialize_node(data["index"]))
+        return ArrayAccess(
+            deserialize_node(_deserialize_required_field(data, "array", "ArrayAccess")),
+            deserialize_node(_deserialize_required_field(data, "index", "ArrayAccess")),
+        )
     if node_type == "MemberAccess":
         return MemberAccess(
-            deserialize_node(data["object"]),
+            deserialize_node(_deserialize_required_field(data, "object", "MemberAccess")),
             _deserialize_string_field(data, "member", "MemberAccess"),
         )
     if node_type == "ForExpression":

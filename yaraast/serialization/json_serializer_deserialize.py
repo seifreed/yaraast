@@ -379,7 +379,9 @@ def _deser_binary_expression(self, data: dict[str, Any]):
 def _deser_unary_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import UnaryExpression
 
-    operand = self._deserialize_expression(data["operand"])
+    operand = self._deserialize_expression(
+        _deserialize_required_field(data, "operand", "UnaryExpression")
+    )
     return UnaryExpression(
         operator=_deserialize_string_field(data, "operator", "UnaryExpression"),
         operand=operand,
@@ -389,7 +391,9 @@ def _deser_unary_expression(self, data: dict[str, Any]):
 def _deser_parentheses_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import ParenthesesExpression
 
-    expression = self._deserialize_expression(data["expression"])
+    expression = self._deserialize_expression(
+        _deserialize_required_field(data, "expression", "ParenthesesExpression")
+    )
     return ParenthesesExpression(expression=expression)
 
 
@@ -406,8 +410,10 @@ def _deser_set_expression(self, data: dict[str, Any]):
 def _deser_range_expression(self, data: dict[str, Any]):
     from yaraast.ast.expressions import RangeExpression
 
-    low = self._deserialize_expression(data["low"])
-    high = self._deserialize_expression(data["high"])
+    low = self._deserialize_expression(_deserialize_required_field(data, "low", "RangeExpression"))
+    high = self._deserialize_expression(
+        _deserialize_required_field(data, "high", "RangeExpression")
+    )
     return RangeExpression(low=low, high=high)
 
 
@@ -427,15 +433,15 @@ def _deser_function_call(self, data: dict[str, Any]):
 def _deser_array_access(self, data: dict[str, Any]):
     from yaraast.ast.expressions import ArrayAccess
 
-    array = self._deserialize_expression(data["array"])
-    index = self._deserialize_expression(data["index"])
+    array = self._deserialize_expression(_deserialize_required_field(data, "array", "ArrayAccess"))
+    index = self._deserialize_expression(_deserialize_required_field(data, "index", "ArrayAccess"))
     return ArrayAccess(array=array, index=index)
 
 
 def _deser_member_access(self, data: dict[str, Any]):
     from yaraast.ast.expressions import MemberAccess
 
-    obj = self._deserialize_expression(data["object"])
+    obj = self._deserialize_expression(_deserialize_required_field(data, "object", "MemberAccess"))
     return MemberAccess(
         object=obj,
         member=_deserialize_string_field(data, "member", "MemberAccess"),

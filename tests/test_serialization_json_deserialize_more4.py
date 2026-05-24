@@ -461,6 +461,34 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             {"type": "BinaryExpression", "left": true_expr, "operator": "and"}
         )
 
+    missing_expression_cases = (
+        (
+            {"type": "UnaryExpression", "operator": "not"},
+            "UnaryExpression operand is required",
+        ),
+        ({"type": "ParenthesesExpression"}, "ParenthesesExpression expression is required"),
+        (
+            {"type": "RangeExpression", "high": {"type": "IntegerLiteral", "value": 1}},
+            "RangeExpression low is required",
+        ),
+        (
+            {"type": "RangeExpression", "low": {"type": "IntegerLiteral", "value": 1}},
+            "RangeExpression high is required",
+        ),
+        (
+            {"type": "ArrayAccess", "index": {"type": "IntegerLiteral", "value": 0}},
+            "ArrayAccess array is required",
+        ),
+        (
+            {"type": "ArrayAccess", "array": {"type": "Identifier", "name": "items"}},
+            "ArrayAccess index is required",
+        ),
+        ({"type": "MemberAccess", "member": "name"}, "MemberAccess object is required"),
+    )
+    for payload, message in missing_expression_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
     with pytest.raises(SerializationError, match="BinaryExpression operator must be a string"):
         s._deserialize_expression(
             {
