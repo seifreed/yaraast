@@ -52,14 +52,17 @@ def _node_has_metadata(node) -> bool:
 
 
 def _copy_location_to_protobuf(location, pb_location) -> None:
-    pb_location.line = location.line
-    pb_location.column = location.column
+    pb_location.line = _protobuf_required_int(location.line, "Location line")
+    pb_location.column = _protobuf_required_int(location.column, "Location column")
     if location.file is not None:
-        pb_location.file = location.file
+        pb_location.file = _protobuf_required_string(location.file, "Location file")
     if location.end_line is not None:
-        pb_location.end_line = location.end_line
+        pb_location.end_line = _protobuf_required_int(location.end_line, "Location end_line")
     if location.end_column is not None:
-        pb_location.end_column = location.end_column
+        pb_location.end_column = _protobuf_required_int(
+            location.end_column,
+            "Location end_column",
+        )
 
 
 def _protobuf_location_to_ast(pb_location):

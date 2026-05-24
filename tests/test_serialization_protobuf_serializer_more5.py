@@ -1306,6 +1306,28 @@ def test_protobuf_serializer_rejects_invalid_comment_metadata(
         serializer.serialize(ast)
 
 
+@pytest.mark.parametrize(
+    ("location", "message"),
+    [
+        (Location(cast(Any, True), 1), "Location line must be an integer"),
+        (Location(1, cast(Any, "2")), "Location column must be an integer"),
+        (Location(1, 1, file=cast(Any, [])), "Location file must be a string"),
+        (Location(1, 1, end_line=cast(Any, False)), "Location end_line must be an integer"),
+        (Location(1, 1, end_column=cast(Any, "3")), "Location end_column must be an integer"),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_location_metadata(
+    location: Location,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    rule = Rule(name="bad_location", condition=BooleanLiteral(True))
+    rule.location = location
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(YaraFile(rules=[rule]))
+
+
 def test_protobuf_serializer_preserves_node_comment_metadata() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     plain = PlainString(identifier="$a", value="abc")
