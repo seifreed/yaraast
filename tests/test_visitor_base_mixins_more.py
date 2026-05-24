@@ -63,7 +63,7 @@ class _StructuralRecordingVisitor(BaseVisitor[None]):
 
 class _HexRecordingVisitor(BaseVisitor[None]):
     def __init__(self) -> None:
-        self.negated_values: list[int] = []
+        self.negated_values: list[int | str] = []
         self.byte_values: list[int | str] = []
 
     def visit_hex_byte(self, node: HexByte) -> None:

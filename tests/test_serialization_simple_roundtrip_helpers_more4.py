@@ -1835,6 +1835,19 @@ def test_simple_roundtrip_helpers_compare_and_error_paths(tmp_path: Path) -> Non
     assert isinstance(negated_hex, HexString)
     assert negated_hex.tokens == [HexNegatedByte(value=0x4D)]
 
+    negated_nibble_hex = deserialize_string(
+        {
+            "type": "HexString",
+            "identifier": "$negated_nibble",
+            "tokens": [{"type": "HexNegatedByte", "value": "?0"}],
+        }
+    )
+    assert isinstance(negated_nibble_hex, HexString)
+    assert negated_nibble_hex.tokens == [HexNegatedByte(value="?0")]
+    assert serialize_string(negated_nibble_hex)["tokens"] == [
+        {"type": "HexNegatedByte", "value": "?0"}
+    ]
+
     with pytest.raises(SerializationError, match="Unknown hex token type"):
         deserialize_string(
             {

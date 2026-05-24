@@ -114,6 +114,14 @@ def format_hex_byte_value(value: int | str, *, uppercase: bool, context: str = "
     return f"{value:02X}" if uppercase else f"{value:02x}"
 
 
+def format_hex_negated_value(value: int | str, *, uppercase: bool) -> str:
+    """Format a negated byte or nibble value."""
+    value = _validate_hex_negated_value(value)
+    if isinstance(value, str):
+        return value.upper() if uppercase else value.lower()
+    return f"{value:02X}" if uppercase else f"{value:02x}"
+
+
 def format_hex_nibble_value(value: int | str, *, uppercase: bool) -> str:
     """Format a validated hex nibble value."""
     value = _validate_hex_nibble_value(value)
@@ -150,6 +158,25 @@ def _validate_hex_byte_value(value: int | str, context: str) -> int | str:
         return value
     msg = f"{context} value must be a byte"
     raise TypeError(msg)
+
+
+def _validate_hex_negated_value(value: int | str) -> int | str:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
+        return value
+    if isinstance(value, str):
+        if len(value) == 2 and all(char in _HEX_CHARS for char in value):
+            return value
+        if _is_negated_nibble_pattern(value):
+            return value
+    msg = "HexNegatedByte value must be a byte or negated nibble"
+    raise TypeError(msg)
+
+
+def _is_negated_nibble_pattern(value: str) -> bool:
+    if len(value) != 2:
+        return False
+    first, second = value
+    return (first == "?" and second in _HEX_CHARS) or (first in _HEX_CHARS and second == "?")
 
 
 def _validate_hex_nibble_value(value: int | str) -> int | str:

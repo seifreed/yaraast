@@ -21,6 +21,7 @@ from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_hex_byte_value,
     format_hex_jump_bounds,
+    format_hex_negated_value,
     format_hex_nibble_value,
     format_modifier,
     output_string_identifier,
@@ -96,10 +97,9 @@ def format_hex_token(token: HexToken, config) -> str:
     if isinstance(token, HexByte):
         return _format_hex_byte_value(token.value, config)
     if isinstance(token, HexNegatedByte):
-        return "~" + format_hex_byte_value(
+        return "~" + format_hex_negated_value(
             token.value,
             uppercase=config.hex_style == HexStyle.UPPERCASE,
-            context="HexNegatedByte",
         )
     if isinstance(token, HexWildcard):
         return "??"

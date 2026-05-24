@@ -241,12 +241,12 @@ def test_protobuf_serializer_normalizes_scalar_hex_alternatives() -> None:
 
 def test_protobuf_serializer_preserves_hex_negated_bytes() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
-    negated = HexNegatedByte(value=0x4D)
+    tokens = [HexNegatedByte(value=0x4D), HexNegatedByte(value="?0")]
     ast = YaraFile(
         rules=[
             Rule(
                 name="hex_negated_byte",
-                strings=[HexString(identifier="$h", tokens=[negated])],
+                strings=[HexString(identifier="$h", tokens=tokens)],
                 condition=BooleanLiteral(value=True),
             )
         ]
@@ -256,7 +256,7 @@ def test_protobuf_serializer_preserves_hex_negated_bytes() -> None:
     string_def = restored.rules[0].strings[0]
 
     assert isinstance(string_def, HexString)
-    assert string_def.tokens == [negated]
+    assert string_def.tokens == tokens
 
 
 def test_protobuf_serializer_preserves_string_hex_byte_values() -> None:

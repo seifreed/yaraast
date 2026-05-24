@@ -80,6 +80,9 @@ def test_json_serializer_visit_methods_cover_remaining_nodes() -> None:
         "type": "HexNegatedByte",
         "value": 0x4D,
     }
+    negated_nibble = s.visit_hex_negated_byte(HexNegatedByte("?0"))
+    assert negated_nibble == {"type": "HexNegatedByte", "value": "?0"}
+    assert s._deserialize_hex_token(negated_nibble) == HexNegatedByte("?0")
     assert (
         s.visit_hex_alternative(HexAlternative([[HexByte(1)], [HexByte(2)]]))["type"]
         == "HexAlternative"

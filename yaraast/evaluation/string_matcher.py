@@ -401,8 +401,7 @@ class StringMatcher:
         if isinstance(token, HexNibble):
             return self._match_hex_nibble(data, token, pos)
         if isinstance(token, HexNegatedByte):
-            value = self._hex_value(token.value)
-            return [pos + 1] if pos < len(data) and data[pos] != value else []
+            return self._match_hex_negated_byte(data, token, pos)
         if isinstance(token, HexJump):
             return self._match_hex_jump(data, token, pos)
         if isinstance(token, HexAlternative):
@@ -419,6 +418,19 @@ class StringMatcher:
         if token.high:
             return [pos + 1] if byte >> 4 == value else []
         return [pos + 1] if byte & 0x0F == value else []
+
+    def _match_hex_negated_byte(self, data: bytes, token: HexNegatedByte, pos: int) -> list[int]:
+        if pos >= len(data):
+            return []
+        value = token.value
+        if isinstance(value, str) and len(value) == 2 and "?" in value:
+            nibble_text = value[1] if value[0] == "?" else value[0]
+            nibble = self._hex_value(nibble_text)
+            byte = data[pos]
+            if value[0] == "?":
+                return [pos + 1] if byte & 0x0F != nibble else []
+            return [pos + 1] if byte >> 4 != nibble else []
+        return [pos + 1] if data[pos] != self._hex_value(value) else []
 
     def _match_hex_jump(self, data: bytes, token: HexJump, pos: int) -> list[int]:
         min_jump = token.min_jump if token.min_jump is not None else 0

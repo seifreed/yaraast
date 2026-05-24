@@ -60,9 +60,9 @@ class HexByte(HexToken):
 
 @dataclass
 class HexNegatedByte(HexToken):
-    """Negated hex byte — matches anything except this value."""
+    """Negated hex byte or nibble pattern."""
 
-    value: int = 0
+    value: int | str = 0
 
     def accept(self, visitor: _VisitorType) -> Any:
         if hasattr(visitor, "visit_hex_negated_byte"):

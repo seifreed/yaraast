@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.strings import RegexString
+from yaraast.ast.strings import HexNegatedByte, HexString, RegexString
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
@@ -109,6 +109,30 @@ def test_parse_rejects_invalid_regex_patterns(source: str) -> None:
     for parser_factory in (Parser, CommentAwareParser):
         with pytest.raises(ParserError, match="regex"):
             parser_factory().parse(source)
+
+
+@pytest.mark.parametrize(
+    ("hex_pattern", "expected_value", "expected_output"),
+    [
+        ("{ ~?0 }", "?0", "~?0"),
+        ("{ ~a? }", "a?", "~A?"),
+    ],
+)
+def test_parse_negated_hex_nibbles(
+    hex_pattern: str, expected_value: str, expected_output: str
+) -> None:
+    source = f"rule r {{ strings: $a = {hex_pattern} condition: $a }}"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        string_def = ast.rules[0].strings[0]
+
+        assert isinstance(string_def, HexString)
+        token = string_def.tokens[0]
+        assert isinstance(token, HexNegatedByte)
+        assert token.value == expected_value
+        assert SemanticValidator().validate(ast).is_valid
+        assert expected_output in CodeGenerator().generate(ast)
 
 
 def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:

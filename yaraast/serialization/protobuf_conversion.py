@@ -738,7 +738,16 @@ def _hex_byte_value_to_protobuf(value: int | str) -> str:
 
 
 def _hex_negated_byte_value_to_protobuf(value: int | str) -> str:
+    if isinstance(value, str) and _is_negated_nibble_pattern(value):
+        return value
     return _hex_byte_like_value_to_protobuf(value, "HexNegatedByte value")
+
+
+def _is_negated_nibble_pattern(value: str) -> bool:
+    if len(value) != 2:
+        return False
+    first, second = value
+    return (first == "?" and second in _HEX_CHARS) or (first in _HEX_CHARS and second == "?")
 
 
 def _hex_byte_like_value_to_protobuf(value: int | str, context: str) -> str:
@@ -805,7 +814,9 @@ def _hex_byte_value_from_protobuf(value: str) -> int | str:
     raise SerializationError(msg)
 
 
-def _hex_int_value_from_protobuf(value: str) -> int:
+def _hex_int_value_from_protobuf(value: str) -> int | str:
+    if _is_negated_nibble_pattern(value):
+        return value
     if value.startswith("hex:"):
         raw_value = value.removeprefix("hex:")
         if len(raw_value) == 2 and all(char in _HEX_CHARS for char in raw_value):

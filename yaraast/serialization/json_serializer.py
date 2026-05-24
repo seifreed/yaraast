@@ -14,6 +14,7 @@ from yaraast.serialization.json_serialize_visitors import (
     _serialize_anonymous_flag,
     _serialize_hex_byte_value,
     _serialize_hex_jump_bounds,
+    _serialize_hex_negated_value,
     _serialize_hex_nibble_high,
     _serialize_hex_nibble_value,
     _serialize_meta_value,
@@ -330,7 +331,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_hex_negated_byte(self, node) -> dict[str, Any]:
         return self._simple_node(
             "HexNegatedByte",
-            value=_serialize_hex_byte_value(node.value, "HexNegatedByte"),
+            value=_serialize_hex_negated_value(node.value),
         )
 
     def visit_hex_wildcard(self, node) -> dict[str, Any]:

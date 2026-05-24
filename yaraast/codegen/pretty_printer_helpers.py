@@ -18,6 +18,7 @@ from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_hex_byte_value,
     format_hex_jump_bounds,
+    format_hex_negated_value,
     format_hex_nibble_value,
     format_modifier,
     format_regex_modifiers,
@@ -51,10 +52,9 @@ def _format_hex_token(token, hex_uppercase: bool, hex_spacing: bool) -> str:
     if isinstance(token, HexJump):
         return _format_hex_jump(token)
     if isinstance(token, HexNegatedByte):
-        value = format_hex_byte_value(
+        value = format_hex_negated_value(
             token.value,
             uppercase=hex_uppercase,
-            context="HexNegatedByte",
         )
         return f"~{value}"
     if isinstance(token, HexNibble):

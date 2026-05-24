@@ -74,7 +74,7 @@ from yaraast.codegen.generator_formatting import (
 )
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
-    format_hex_byte_value,
+    format_hex_negated_value,
     format_modifier,
     format_modifiers,
 )
@@ -287,10 +287,9 @@ class CodeGenerator(ASTVisitor[str]):
         return render_hex_byte(node)
 
     def visit_hex_negated_byte(self, node) -> str:
-        value = format_hex_byte_value(
+        value = format_hex_negated_value(
             node.value,
             uppercase=True,
-            context="HexNegatedByte",
         )
         return f"~{value}"
 

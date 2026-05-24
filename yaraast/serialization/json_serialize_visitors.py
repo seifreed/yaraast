@@ -85,6 +85,25 @@ def _serialize_hex_byte_value(value, context: str) -> int | str:
     raise SerializationError(msg)
 
 
+def _serialize_hex_negated_value(value) -> int | str:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
+        return value
+    if isinstance(value, str):
+        if len(value) == 2 and all(char in _HEX_CHARS for char in value):
+            return value
+        if _is_negated_nibble_pattern(value):
+            return value
+    msg = "HexNegatedByte value must be a byte or negated nibble"
+    raise SerializationError(msg)
+
+
+def _is_negated_nibble_pattern(value: str) -> bool:
+    if len(value) != 2:
+        return False
+    first, second = value
+    return (first == "?" and second in _HEX_CHARS) or (first in _HEX_CHARS and second == "?")
+
+
 def _serialize_hex_jump_bound(value, field: str) -> int | None:
     if value is None:
         return None

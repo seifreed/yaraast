@@ -313,6 +313,10 @@ class HexStringParser:
             byte_val = int(self.content[self.pos : self.pos + 2], 16)
             self.pos += 2
             return HexNegatedByte(value=byte_val)
+        if (char1 == "?" and char2 in self.HEX_CHARS) or (char1 in self.HEX_CHARS and char2 == "?"):
+            pattern = self.content[self.pos : self.pos + 2]
+            self.pos += 2
+            return HexNegatedByte(value=pattern)
         msg = f"Invalid negated hex byte at position {self.pos}"
         raise HexParseError(msg, self.pos)
 

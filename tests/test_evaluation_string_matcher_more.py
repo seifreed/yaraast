@@ -408,6 +408,14 @@ def test_string_matcher_hex_tokens_match_yara_token_semantics() -> None:
 
     assert [(match.offset, match.length) for match in negated_matches] == [(0, 2)]
 
+    negated_low_nibble = HexString("$low", tokens=[HexNegatedByte("?0")])
+    low_nibble_matches = matcher.match_string(negated_low_nibble, b"\x00\x01\x10\x1f")
+    assert [(match.offset, match.length) for match in low_nibble_matches] == [(1, 1), (3, 1)]
+
+    negated_high_nibble = HexString("$high", tokens=[HexNegatedByte("A?")])
+    high_nibble_matches = matcher.match_string(negated_high_nibble, b"\xa0\xa1\xb0")
+    assert [(match.offset, match.length) for match in high_nibble_matches] == [(2, 1)]
+
     scalar_alt = HexString("$scalar", tokens=[HexAlternative([0x90, "91"])])
     scalar_matches = matcher.match_string(scalar_alt, b"\x90\x91\x92")
 

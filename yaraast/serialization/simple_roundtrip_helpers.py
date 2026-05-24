@@ -125,6 +125,25 @@ def _validate_hex_byte_value(value: Any, context: str) -> int | str:
     raise SerializationError(msg)
 
 
+def _validate_hex_negated_value(value: Any) -> int | str:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
+        return value
+    if isinstance(value, str):
+        if len(value) == 2 and all(char in _HEX_CHARS for char in value):
+            return value
+        if _is_negated_nibble_pattern(value):
+            return value
+    msg = "HexNegatedByte value must be a byte or negated nibble"
+    raise SerializationError(msg)
+
+
+def _is_negated_nibble_pattern(value: str) -> bool:
+    if len(value) != 2:
+        return False
+    first, second = value
+    return (first == "?" and second in _HEX_CHARS) or (first in _HEX_CHARS and second == "?")
+
+
 def _validate_hex_nibble_value(value: Any) -> int | str:
     if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xF:
         return value
@@ -177,7 +196,7 @@ def _serialize_hex_token(token: Any) -> dict[str, Any]:
     if isinstance(token, HexNegatedByte):
         return {
             "type": "HexNegatedByte",
-            "value": _validate_hex_byte_value(token.value, "HexNegatedByte"),
+            "value": _validate_hex_negated_value(token.value),
         }
     if isinstance(token, HexAlternative):
         return {
@@ -205,7 +224,11 @@ def _deserialize_hex_token(data: dict[str, Any]):
             value=_deserialize_hex_nibble_value(data),
         )
     if hex_kind == "HexNegatedByte":
-        return HexNegatedByte(value=_deserialize_hex_byte_value(data, "HexNegatedByte"))
+        return HexNegatedByte(
+            value=_validate_hex_negated_value(
+                _deserialize_required_field(data, "value", "HexNegatedByte")
+            )
+        )
     if hex_kind == "HexAlternative":
         alternatives = [
             [_deserialize_hex_token(t) for t in _coerce_serialized_hex_alternative_branch(alt)]
