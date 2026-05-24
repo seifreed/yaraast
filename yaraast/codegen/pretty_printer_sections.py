@@ -11,6 +11,7 @@ from yaraast.codegen.pretty_printer_helpers import (
     current_indent,
     format_plain_string,
     format_regex_string,
+    indent_unit,
     modifiers_to_string,
     output_string_identifier,
     regex_modifiers_to_string,
@@ -105,7 +106,7 @@ def write_wrapped_condition(printer, condition_str: str) -> None:
     for word in condition_str.split():
         if len(current_line + " " + word) > printer.options.max_line_length:
             printer._writeline(current_line)
-            current_line = "    " + word
+            current_line = indent_unit(printer) + word
         elif current_line:
             current_line += " " + word
         else:

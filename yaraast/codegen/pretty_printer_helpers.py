@@ -114,6 +114,13 @@ def current_indent(printer) -> str:
     return " " * (printer.indent_level * printer.indent_size)
 
 
+def indent_unit(printer) -> str:
+    options = getattr(printer, "options", None)
+    if getattr(options, "indent_with_tabs", False):
+        return "\t"
+    return " " * printer.indent_size
+
+
 def calculate_string_alignment_column(ast) -> int:
     """Calculate alignment column for string identifiers."""
     max_length = 0

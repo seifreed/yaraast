@@ -132,6 +132,26 @@ def test_pretty_printer_honors_tab_indentation_option() -> None:
     ) in out
 
 
+def test_pretty_printer_uses_tabs_for_wrapped_condition_continuations() -> None:
+    condition = BinaryExpression(
+        BinaryExpression(Identifier("alpha"), "and", Identifier("beta")),
+        "or",
+        BinaryExpression(Identifier("gamma"), "and", Identifier("delta")),
+    )
+    rule = Rule(name="wrapped_tabs", condition=condition)
+
+    out = PrettyPrinter(
+        PrettyPrintOptions(
+            indent_with_tabs=True,
+            wrap_long_conditions=True,
+            max_line_length=12,
+        )
+    ).pretty_print(YaraFile(rules=[rule]))
+
+    assert "\t\t    " not in out
+    assert "\n\t\t\tbeta" in out
+
+
 def test_pretty_printer_preserves_top_level_extensions() -> None:
     yf = YaraFile(
         pragmas=[IncludeOncePragma()],
