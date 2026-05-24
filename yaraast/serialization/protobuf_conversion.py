@@ -547,7 +547,8 @@ def _coerce_quantifier_text(value) -> str:
     if isinstance(value, str):
         return value
     if isinstance(value, bool):
-        return str(value).lower()
+        msg = "quantifier must be a string, number, or expression"
+        raise SerializationError(msg)
     if isinstance(value, int | float):
         return str(value)
 
@@ -636,11 +637,6 @@ def _string_set_item_text(item) -> str:
 
 
 def _restore_quantifier_text(value: str):
-    lower_value = value.lower()
-    if lower_value == "true":
-        return True
-    if lower_value == "false":
-        return False
     if value.lstrip("-").isdigit() and value not in {"", "-"}:
         return int(value)
     try:

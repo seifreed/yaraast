@@ -52,6 +52,7 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
+from yaraast.errors import SerializationError
 from yaraast.serialization import yara_ast_pb2
 from yaraast.serialization.protobuf_serializer import ProtobufSerializer
 
@@ -545,6 +546,32 @@ def test_protobuf_serializer_preserves_expression_quantifiers() -> None:
         assert restored.rules[0].condition == expression
 
 
+def test_protobuf_serializer_rejects_boolean_quantifiers() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    expressions: list[Expression] = [
+        ForExpression(
+            quantifier=True,
+            variable="i",
+            iterable=RangeExpression(IntegerLiteral(0), IntegerLiteral(3)),
+            body=BooleanLiteral(True),
+        ),
+        ForOfExpression(
+            quantifier=False,
+            string_set=Identifier("them"),
+            condition=None,
+        ),
+        OfExpression(
+            quantifier=True,
+            string_set=Identifier("them"),
+        ),
+    ]
+
+    for expression in expressions:
+        ast = YaraFile(rules=[Rule(name="bad_quantifier", condition=expression)])
+        with pytest.raises(SerializationError, match="quantifier must be"):
+            serializer.serialize(ast)
+
+
 def test_protobuf_deserializes_legacy_numeric_quantifier_text() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     pb_file: Any = yara_ast_pb2.YaraFile()
@@ -561,6 +588,21 @@ def test_protobuf_deserializes_legacy_numeric_quantifier_text() -> None:
 
     assert isinstance(condition, ForExpression)
     assert condition.quantifier == 2
+
+
+def test_protobuf_deserializes_legacy_boolean_quantifier_text_as_text() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "legacy_bool_text"
+    pb_rule.condition.of_expression.quantifier_text = "true"
+    pb_rule.condition.of_expression.string_set_text = "them"
+
+    restored = serializer.deserialize(binary_data=pb_file.SerializeToString())
+    condition = restored.rules[0].condition
+
+    assert isinstance(condition, OfExpression)
+    assert condition.quantifier == "true"
 
 
 def test_protobuf_serializer_without_metadata() -> None:
