@@ -388,6 +388,60 @@ def test_protobuf_serializer_canonicalizes_ast_string_set_expression_items() -> 
     assert restored.rules[0].condition == OfExpression("any", ["$a", "$b*"])
 
 
+def test_protobuf_serializer_preserves_non_text_string_set_expression_items() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    string_set_expression = BinaryExpression(
+        BooleanLiteral(True),
+        "and",
+        BooleanLiteral(False),
+    )
+    expressions: list[Expression] = [
+        OfExpression("any", [string_set_expression]),
+        ForOfExpression("any", [string_set_expression], condition=None),
+    ]
+
+    for expression in expressions:
+        ast = YaraFile(rules=[Rule(name="expression_string_set", condition=expression)])
+        restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+        condition = restored.rules[0].condition
+
+        assert isinstance(condition, OfExpression | ForOfExpression)
+        assert condition.string_set == SetExpression([string_set_expression])
+
+
+def test_protobuf_serializer_rejects_invalid_string_set_roots() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    invalid_string_sets: list[Any] = [True, False, 1, 1.5, object()]
+
+    for string_set in invalid_string_sets:
+        expressions: list[Expression] = [
+            OfExpression("any", string_set),
+            ForOfExpression("any", string_set, condition=None),
+        ]
+        for expression in expressions:
+            ast = YaraFile(rules=[Rule(name="bad_string_set", condition=expression)])
+            with pytest.raises(SerializationError, match="string_set must be a string"):
+                serializer.serialize(ast)
+
+
+def test_protobuf_serializer_rejects_invalid_string_set_list_items() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    invalid_string_sets: list[Any] = [[True], [False], [123], [1.5], [object()]]
+
+    for string_set in invalid_string_sets:
+        expressions: list[Expression] = [
+            OfExpression("any", string_set),
+            ForOfExpression("any", string_set, condition=None),
+        ]
+        for expression in expressions:
+            ast = YaraFile(rules=[Rule(name="bad_string_set_item", condition=expression)])
+            with pytest.raises(
+                SerializationError,
+                match="string_set must contain strings or expressions",
+            ):
+                serializer.serialize(ast)
+
+
 def test_protobuf_serializer_preserves_typed_string_modifier_values() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

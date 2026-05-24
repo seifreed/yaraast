@@ -517,32 +517,6 @@ def _coerce_hex_alternative_branch(alternative) -> list:
     return [HexByte(alternative)]
 
 
-def _coerce_expression(value):
-    from yaraast.ast.expressions import (
-        BooleanLiteral,
-        DoubleLiteral,
-        Expression,
-        Identifier,
-        IntegerLiteral,
-        SetExpression,
-        StringIdentifier,
-    )
-
-    if isinstance(value, Expression):
-        return value
-    if isinstance(value, bool):
-        return BooleanLiteral(value=value)
-    if isinstance(value, int):
-        return IntegerLiteral(value=value)
-    if isinstance(value, float):
-        return DoubleLiteral(value=value)
-    if isinstance(value, str):
-        return StringIdentifier(value) if value.startswith("$") else Identifier(value)
-    if isinstance(value, list):
-        return SetExpression([_coerce_expression(item) for item in value])
-    return None
-
-
 def _coerce_quantifier_text(value) -> str:
     if isinstance(value, str):
         return value
@@ -569,19 +543,20 @@ def _coerce_quantifier_expression(value):
     return value if isinstance(value, Expression) else None
 
 
-def _copy_string_set_to_protobuf(value, pb_owner) -> None:
+def _copy_string_set_to_protobuf(value, pb_owner, context: str) -> None:
+    from yaraast.ast.expressions import Expression
+
+    field_context = f"{context} string_set"
     if isinstance(value, str):
         pb_owner.string_set_text = value
         return
 
     if isinstance(value, list | tuple):
-        pb_owner.string_set_items.extend(_string_set_item_text(item) for item in value)
+        _copy_string_set_items_to_protobuf(value, pb_owner, field_context)
         return
 
     if isinstance(value, set | frozenset):
-        pb_owner.string_set_items.extend(
-            _string_set_item_text(item) for item in sorted(value, key=str)
-        )
+        _copy_string_set_items_to_protobuf(sorted(value, key=str), pb_owner, field_context)
         return
 
     string_set_items = _expression_string_set_items(value)
@@ -589,9 +564,24 @@ def _copy_string_set_to_protobuf(value, pb_owner) -> None:
         pb_owner.string_set_items.extend(string_set_items)
         return
 
-    string_set = _coerce_expression(value)
-    if string_set is not None:
-        convert_expression_to_protobuf(string_set, pb_owner.string_set)
+    if isinstance(value, Expression):
+        convert_expression_to_protobuf(value, pb_owner.string_set)
+        return
+
+    msg = f"{field_context} must be a string, expression, or list of strings/expressions"
+    raise SerializationError(msg)
+
+
+def _copy_string_set_items_to_protobuf(items, pb_owner, context: str) -> None:
+    item_texts = [_string_set_item_text(item) for item in items]
+    if all(item_text is not None for item_text in item_texts):
+        pb_owner.string_set_items.extend(item_texts)
+        return
+
+    from yaraast.ast.expressions import SetExpression
+
+    expression_items = [_string_set_item_expression(item, context) for item in items]
+    convert_expression_to_protobuf(SetExpression(expression_items), pb_owner.string_set)
 
 
 def _expression_string_set_items(value) -> list[str] | None:
@@ -623,17 +613,21 @@ def _expression_string_set_item_text(item) -> str | None:
     return None
 
 
-def _string_set_item_text(item) -> str:
-    pattern = getattr(item, "pattern", None)
-    if pattern is not None:
-        return str(pattern)
-    name = getattr(item, "name", None)
-    if name is not None:
-        return str(name)
-    value = getattr(item, "value", None)
-    if value is not None:
-        return str(value)
-    return str(item)
+def _string_set_item_text(item) -> str | None:
+    if isinstance(item, str):
+        return item
+    return _expression_string_set_item_text(item)
+
+
+def _string_set_item_expression(item, context: str):
+    from yaraast.ast.expressions import Expression, Identifier, StringIdentifier
+
+    if isinstance(item, Expression):
+        return item
+    if isinstance(item, str):
+        return StringIdentifier(item) if item.startswith("$") else Identifier(item)
+    msg = f"{context} must contain strings or expressions"
+    raise SerializationError(msg)
 
 
 def _restore_quantifier_text(value: str):
@@ -788,7 +782,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
                 quantifier,
                 pb_expr.for_of_expression.quantifier_expr,
             )
-        _copy_string_set_to_protobuf(expr.string_set, pb_expr.for_of_expression)
+        _copy_string_set_to_protobuf(
+            expr.string_set,
+            pb_expr.for_of_expression,
+            "ForOfExpression",
+        )
         if expr.condition is not None:
             convert_expression_to_protobuf(expr.condition, pb_expr.for_of_expression.condition)
     elif isinstance(expr, AtExpression):
@@ -806,7 +804,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
             convert_expression_to_protobuf(quantifier, pb_expr.of_expression.quantifier)
         else:
             pb_expr.of_expression.quantifier_text = _coerce_quantifier_text(expr.quantifier)
-        _copy_string_set_to_protobuf(expr.string_set, pb_expr.of_expression)
+        _copy_string_set_to_protobuf(
+            expr.string_set,
+            pb_expr.of_expression,
+            "OfExpression",
+        )
     elif isinstance(expr, DefinedExpression):
         convert_expression_to_protobuf(expr.expression, pb_expr.defined_expression.expression)
     elif isinstance(expr, StringOperatorExpression):
