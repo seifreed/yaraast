@@ -427,6 +427,9 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="IntegerLiteral value must be an integer"):
         s._deserialize_expression({"type": "IntegerLiteral", "value": True})
 
+    with pytest.raises(SerializationError, match="IntegerLiteral value is required"):
+        s._deserialize_expression({"type": "IntegerLiteral"})
+
     with pytest.raises(SerializationError, match="BooleanLiteral value must be a boolean"):
         s._deserialize_expression({"type": "BooleanLiteral", "value": "false"})
 

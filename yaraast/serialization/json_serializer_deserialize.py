@@ -22,6 +22,14 @@ def _deserialize_object(data: Any, context: str) -> dict[str, Any]:
     raise SerializationError(msg)
 
 
+def _deserialize_required_field(data: dict[str, Any], field: str, context: str) -> Any:
+    data = _deserialize_object(data, context)
+    if field not in data:
+        msg = f"{context} {field} is required"
+        raise SerializationError(msg)
+    return data[field]
+
+
 def _deserialize_ast_value(self, data):
     if isinstance(data, dict):
         return self._deserialize_expression(data)
@@ -118,7 +126,7 @@ def _deserialize_comment_node(self, data: dict[str, Any]) -> Any:
 
 
 def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
-    value = data["value"]
+    value = _deserialize_required_field(data, "value", "PlainString")
     if data.get("value_encoding") != "base64":
         if isinstance(value, str | bytes):
             return value
@@ -138,7 +146,7 @@ def _deserialize_is_anonymous(data: dict[str, Any]) -> bool:
 
 
 def _deserialize_integer_literal_value(data: dict[str, Any]) -> int:
-    value = data["value"]
+    value = _deserialize_required_field(data, "value", "IntegerLiteral")
     if isinstance(value, int) and not isinstance(value, bool):
         return value
     msg = "IntegerLiteral value must be an integer"
@@ -146,7 +154,7 @@ def _deserialize_integer_literal_value(data: dict[str, Any]) -> int:
 
 
 def _deserialize_boolean_literal_value(data: dict[str, Any]) -> bool:
-    value = data["value"]
+    value = _deserialize_required_field(data, "value", "BooleanLiteral")
     if isinstance(value, bool):
         return value
     msg = "BooleanLiteral value must be a boolean"
@@ -154,7 +162,7 @@ def _deserialize_boolean_literal_value(data: dict[str, Any]) -> bool:
 
 
 def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
-    value = data["value"]
+    value = _deserialize_required_field(data, "value", "DoubleLiteral")
     if isinstance(value, int | float) and not isinstance(value, bool):
         return float(value)
     msg = "DoubleLiteral value must be numeric"
@@ -162,11 +170,7 @@ def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
 
 
 def _deserialize_string_field(data: dict[str, Any], field: str, context: str) -> str:
-    data = _deserialize_object(data, context)
-    if field not in data:
-        msg = f"{context} {field} is required"
-        raise SerializationError(msg)
-    value = data[field]
+    value = _deserialize_required_field(data, field, context)
     if isinstance(value, str):
         return value
     msg = f"{context} {field} must be a string"
@@ -270,7 +274,7 @@ def _deserialize_pragma_scope(value: Any, context: str):
 
 
 def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
-    value = data["value"]
+    value = _deserialize_required_field(data, "value", "Meta")
     if isinstance(value, str | bool):
         return value
     if isinstance(value, int):
@@ -280,7 +284,7 @@ def _deserialize_meta_value(data: dict[str, Any]) -> str | int | bool:
 
 
 def _deserialize_hex_byte_value(data: dict[str, Any], context: str) -> int | str:
-    value = data["value"]
+    value = _deserialize_required_field(data, "value", context)
     if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
         return value
     if isinstance(value, str) and len(value) == 2 and all(char in _HEX_CHARS for char in value):
@@ -290,7 +294,7 @@ def _deserialize_hex_byte_value(data: dict[str, Any], context: str) -> int | str
 
 
 def _deserialize_hex_nibble_value(data: dict[str, Any]) -> int | str:
-    value = data["value"]
+    value = _deserialize_required_field(data, "value", "HexNibble")
     if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xF:
         return value
     if isinstance(value, str) and len(value) == 1 and value in _HEX_CHARS:

@@ -508,6 +508,9 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
     with pytest.raises(SerializationError, match="IntegerLiteral value must be an integer"):
         deserialize_node({"type": "IntegerLiteral", "value": True})
 
+    with pytest.raises(SerializationError, match="IntegerLiteral value is required"):
+        deserialize_node({"type": "IntegerLiteral"})
+
     with pytest.raises(SerializationError, match="BooleanLiteral value must be a boolean"):
         deserialize_node({"type": "BooleanLiteral", "value": "false"})
 
