@@ -8,6 +8,7 @@ from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_formatting import (
     format_meta_key,
+    format_rule_modifiers,
     format_rule_tags,
     validate_rule_identifiers,
 )
@@ -184,8 +185,9 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def _write_rule_header(self, node: Rule) -> None:
         """Write rule modifiers, name, tags, and opening brace."""
-        if node.modifiers:
-            self._write(" ".join(str(m) for m in node.modifiers) + " ")
+        modifiers = format_rule_modifiers(node.modifiers)
+        if modifiers:
+            self._write(f"{modifiers} ")
 
         self._write(f"rule {node.name}")
 

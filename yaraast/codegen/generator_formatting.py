@@ -14,14 +14,25 @@ from yaraast.regex_literals import validate_regex_modifiers
 
 _YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _YARA_KEYWORDS = frozenset(KEYWORDS)
+_YARA_RULE_MODIFIERS = frozenset({"global", "private"})
 
 
 def format_rule_modifiers(modifiers) -> str:
     if not modifiers:
         return ""
     if isinstance(modifiers, list | tuple):
+        validate_rule_modifiers(modifiers)
         return " ".join(str(m) for m in modifiers)
     return ""
+
+
+def validate_rule_modifiers(modifiers) -> None:
+    for modifier in modifiers:
+        name = str(modifier)
+        if name in _YARA_RULE_MODIFIERS:
+            continue
+        msg = f"Invalid rule modifier '{name}' for libyara output"
+        raise ValueError(msg)
 
 
 def validate_rule_identifiers(rules) -> None:

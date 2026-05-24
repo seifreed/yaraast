@@ -540,6 +540,21 @@ def test_codegen_generators_reject_invalid_rule_identifiers(rule_name: str) -> N
         PrettyPrinter().pretty_print(ast)
 
 
+def test_codegen_generators_reject_invalid_rule_modifiers() -> None:
+    ast = YaraFile(
+        rules=[Rule(name="invalid_modifier", modifiers=["foo"], condition=BooleanLiteral(True))]
+    )
+
+    with pytest.raises(ValueError, match="Invalid rule modifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid rule modifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid rule modifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid rule modifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
 @pytest.mark.parametrize("meta_key", ["bad-key", "for", "1bad"])
 def test_codegen_generators_reject_invalid_meta_keys(meta_key: str) -> None:
     ast = YaraFile(

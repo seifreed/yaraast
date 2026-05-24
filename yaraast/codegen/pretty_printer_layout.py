@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.generator_formatting import validate_rule_identifiers, validate_rule_tags
+from yaraast.codegen.generator_formatting import (
+    format_rule_modifiers,
+    validate_rule_identifiers,
+    validate_rule_tags,
+)
 from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
@@ -82,8 +86,9 @@ def visit_yara_file(printer, node) -> str:
 def visit_rule(printer, node) -> str:
     printer._write_comments(node.leading_comments)
     line_parts = []
-    if node.modifiers:
-        line_parts.extend(str(m) for m in node.modifiers)
+    modifiers = format_rule_modifiers(node.modifiers)
+    if modifiers:
+        line_parts.append(modifiers)
     line_parts.extend(["rule", node.name])
     if node.tags:
         validate_rule_tags(node.tags)

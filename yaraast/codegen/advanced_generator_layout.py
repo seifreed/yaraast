@@ -8,7 +8,11 @@ from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     _visit_binary_operand,
 )
-from yaraast.codegen.generator_formatting import format_rule_tags, validate_rule_identifiers
+from yaraast.codegen.generator_formatting import (
+    format_rule_modifiers,
+    format_rule_tags,
+    validate_rule_identifiers,
+)
 from yaraast.codegen.generator_helpers import validate_string_identifiers
 
 
@@ -61,8 +65,9 @@ def visit_yara_file(generator, node) -> str:
 
 
 def visit_rule(generator, node) -> str:
-    if node.modifiers:
-        generator._write(" ".join(str(m) for m in node.modifiers) + " ")
+    modifiers = format_rule_modifiers(node.modifiers)
+    if modifiers:
+        generator._write(f"{modifiers} ")
     generator._write(f"rule {node.name}")
 
     if node.tags:
