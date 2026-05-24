@@ -8,6 +8,7 @@ from yaraast.codegen.generator_formatting import (
     format_boolean_literal,
     format_hex_jump,
     format_meta_value,
+    format_nonempty_quoted_value,
     format_regex_literal,
     validate_yara_expression_identifier,
     validate_yara_identifier,
@@ -180,7 +181,7 @@ def visit_comment_group(node) -> str:
 
 
 def visit_extern_import(node) -> str:
-    value = f'import "{escape_string_literal(node.module_path)}"'
+    value = f"import \"{format_nonempty_quoted_value(node.module_path, 'Import module')}\""
     if node.rules:
         rules = [validate_yara_identifier(rule, "extern rule") for rule in node.rules]
         value += f" ({', '.join(rules)})"

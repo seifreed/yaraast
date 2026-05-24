@@ -116,6 +116,40 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     assert 'include "dir\\"\\\\common.yar"' in advanced_escaped
 
 
+@pytest.mark.parametrize(
+    ("ast", "message"),
+    [
+        (
+            YaraFile(imports=[Import("")], rules=[Rule("r", condition=BooleanLiteral(True))]),
+            "Import module must not be empty",
+        ),
+        (
+            YaraFile(includes=[Include("")], rules=[Rule("r", condition=BooleanLiteral(True))]),
+            "Include path must not be empty",
+        ),
+        (
+            YaraFile(
+                extern_imports=[ExternImport("")],
+                rules=[Rule("r", condition=BooleanLiteral(True))],
+            ),
+            "Import module must not be empty",
+        ),
+    ],
+)
+def test_codegen_generators_reject_empty_import_and_include_paths(
+    ast: YaraFile,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generate_resets_indent_after_failed_generation() -> None:
     gen = CodeGenerator()
     with pytest.raises(RuntimeError, match="broken condition"):

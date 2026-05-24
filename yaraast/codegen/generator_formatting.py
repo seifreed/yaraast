@@ -143,6 +143,16 @@ def escape_string_literal(value: str) -> str:
     return escape_plain_string_value(value)
 
 
+def format_nonempty_quoted_value(value: str, kind: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{kind} must be a string for libyara output"
+        raise TypeError(msg)
+    if not value:
+        msg = f"{kind} must not be empty for libyara output"
+        raise ValueError(msg)
+    return escape_string_literal(value)
+
+
 def format_regex_literal(pattern: str, modifiers: str) -> str:
     validate_regex_modifiers(modifiers)
     escaped_pattern = escape_regex_delimiter(pattern)

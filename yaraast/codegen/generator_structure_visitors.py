@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.codegen.generator_formatting import (
-    escape_string_literal,
+    format_nonempty_quoted_value,
     validate_rule_identifiers,
     validate_yara_identifier,
 )
@@ -56,7 +56,7 @@ def visit_yara_file(generator, node) -> str:
 
 
 def visit_import(node) -> str:
-    value = f'import "{escape_string_literal(node.module)}"'
+    value = f"import \"{format_nonempty_quoted_value(node.module, 'Import module')}\""
     if node.alias:
         alias = validate_yara_identifier(node.alias, "import alias")
         value += f" as {alias}"
@@ -64,7 +64,7 @@ def visit_import(node) -> str:
 
 
 def visit_include(node) -> str:
-    return f'include "{escape_string_literal(node.path)}"'
+    return f"include \"{format_nonempty_quoted_value(node.path, 'Include path')}\""
 
 
 def visit_rule(generator, node) -> str:

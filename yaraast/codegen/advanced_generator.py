@@ -35,7 +35,10 @@ from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
     validate_set_expression_elements,
 )
-from yaraast.codegen.generator_formatting import escape_string_literal, validate_yara_identifier
+from yaraast.codegen.generator_formatting import (
+    format_nonempty_quoted_value,
+    validate_yara_identifier,
+)
 
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
@@ -237,14 +240,14 @@ class AdvancedCodeGenerator(CodeGenerator):
 
     # Default visit methods (delegate to parent)
     def visit_import(self, node: Import) -> str:
-        import_line = f'import "{escape_string_literal(node.module)}"'
+        import_line = f"import \"{format_nonempty_quoted_value(node.module, 'Import module')}\""
         if node.alias:
             alias = validate_yara_identifier(node.alias, "import alias")
             import_line += f" as {alias}"
         return import_line
 
     def visit_include(self, node: Include) -> str:
-        return f'include "{escape_string_literal(node.path)}"'
+        return f"include \"{format_nonempty_quoted_value(node.path, 'Include path')}\""
 
     def visit_plain_string(self, node: PlainString) -> str:
         return render_advanced_plain_string(self, node)
