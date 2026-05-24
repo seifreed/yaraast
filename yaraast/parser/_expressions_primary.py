@@ -181,10 +181,17 @@ class ExpressionPrimaryMixin:
         exprs = [self._parse_expression()]
 
         if self._match(TokenType.COMMA):
-            while not self._check(TokenType.RPAREN) and not self._is_at_end():
+            if self._check(TokenType.RPAREN) or self._is_at_end():
+                msg = "Expected expression after ',' in set"
+                raise ParserError(msg, self._peek())
+
+            while True:
                 exprs.append(self._parse_expression())
                 if not self._match(TokenType.COMMA):
                     break
+                if self._check(TokenType.RPAREN) or self._is_at_end():
+                    msg = "Expected expression after ',' in set"
+                    raise ParserError(msg, self._peek())
 
             if not self._match(TokenType.RPAREN):
                 msg = "Expected ')' after set elements"

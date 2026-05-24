@@ -184,6 +184,19 @@ def test_parse_postfix_helpers_cover_success_and_error_paths() -> None:
     )
 
 
+def test_classic_parser_rejects_trailing_commas_in_expression_lists() -> None:
+    invalid_sources = [
+        "rule r { condition: uint8(0,) == 0 }",
+        'import "math" rule r { condition: math.entropy(0, 1,) > 0 }',
+        'rule r { strings: $a = "x" condition: any of ($a,) }',
+        "rule r { condition: for any i in (1, 2,) : (true) }",
+    ]
+
+    for source in invalid_sources:
+        with pytest.raises(ParserError, match="after ','"):
+            Parser().parse(source)
+
+
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:
     p = _parser_with_tokens([_t(TokenType.INTEGER, 7)])
     assert isinstance(p._parse_primary_expression(), IntegerLiteral)
