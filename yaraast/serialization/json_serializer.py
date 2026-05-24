@@ -16,6 +16,7 @@ from yaraast.serialization.json_serialize_visitors import (
     _serialize_required_int,
     _serialize_required_number,
     _serialize_required_string,
+    _serialize_string_list,
     visit_array_access,
     visit_array_comprehension,
     visit_at_expression,
@@ -406,31 +407,40 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     def visit_extern_import(self, node) -> dict[str, Any]:
         return self._simple_node(
             "ExternImport",
-            module_path=node.module_path,
-            alias=node.alias,
-            rules=list(node.rules),
+            module_path=_serialize_required_string(
+                node.module_path,
+                "ExternImport module_path",
+            ),
+            alias=_serialize_nullable_string(node.alias, "ExternImport alias"),
+            rules=_serialize_string_list(node.rules, "ExternImport rules"),
         )
 
     def visit_extern_namespace(self, node) -> dict[str, Any]:
         return self._simple_node(
             "ExternNamespace",
-            name=node.name,
+            name=_serialize_required_string(node.name, "ExternNamespace name"),
             extern_rules=[self.visit(rule) for rule in node.extern_rules],
         )
 
     def visit_extern_rule(self, node) -> dict[str, Any]:
         return {
             "type": "ExternRule",
-            "name": node.name,
+            "name": _serialize_required_string(node.name, "ExternRule name"),
             "modifiers": [str(modifier) for modifier in node.modifiers],
-            "namespace": node.namespace,
+            "namespace": _serialize_nullable_string(node.namespace, "ExternRule namespace"),
         }
 
     def visit_extern_rule_reference(self, node) -> dict[str, Any]:
         return {
             "type": "ExternRuleReference",
-            "rule_name": node.rule_name,
-            "namespace": node.namespace,
+            "rule_name": _serialize_required_string(
+                node.rule_name,
+                "ExternRuleReference rule_name",
+            ),
+            "namespace": _serialize_nullable_string(
+                node.namespace,
+                "ExternRuleReference namespace",
+            ),
         }
 
     def visit_in_rule_pragma(self, node) -> dict[str, Any]:

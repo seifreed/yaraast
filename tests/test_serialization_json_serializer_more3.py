@@ -482,6 +482,51 @@ def test_json_serializer_rejects_invalid_expression_scalar_fields() -> None:
             serializer.serialize(ast)
 
 
+def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_text: Any = 123
+    invalid_rules: Any = ["rule_a", 123]
+
+    invalid_cases: list[tuple[YaraFile, str]] = [
+        (
+            YaraFile(extern_imports=[ExternImport(invalid_text)]),
+            "ExternImport module_path must be a string",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external", alias=invalid_text)]),
+            "ExternImport alias must be a string",
+        ),
+        (
+            YaraFile(extern_imports=[ExternImport("external", rules=invalid_rules)]),
+            "ExternImport rules must be a list of strings",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule(invalid_text)]),
+            "ExternRule name must be a string",
+        ),
+        (
+            YaraFile(extern_rules=[ExternRule("external_rule", namespace=invalid_text)]),
+            "ExternRule namespace must be a string",
+        ),
+        (
+            YaraFile(namespaces=[ExternNamespace(invalid_text)]),
+            "ExternNamespace name must be a string",
+        ),
+    ]
+
+    for ast, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
+
+    invalid_reference = ExternRuleReference(invalid_text)
+    with pytest.raises(SerializationError, match="ExternRuleReference rule_name must be a string"):
+        serializer.visit(invalid_reference)
+
+    invalid_namespace = ExternRuleReference("external_rule", namespace=invalid_text)
+    with pytest.raises(SerializationError, match="ExternRuleReference namespace must be a string"):
+        serializer.visit(invalid_namespace)
+
+
 def test_json_serializer_rejects_invalid_raw_string_sets() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_string_sets: list[Any] = [
