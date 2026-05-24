@@ -272,3 +272,25 @@ def test_parse_generated_file_pragmas() -> None:
     for parsed in (ast, comment_ast):
         assert [str(pragma) for pragma in parsed.pragmas] == [str(pragma) for pragma in pragmas]
         assert parsed.rules[0].name == "with_pragmas"
+
+
+def test_parse_generated_namespace_extern_rules_stay_nested() -> None:
+    source = CodeGenerator().generate(
+        YaraFile(
+            namespaces=[
+                ExternNamespace(
+                    "corp",
+                    extern_rules=[ExternRule("Nested")],
+                )
+            ],
+        )
+    )
+
+    ast = Parser(source).parse()
+    comment_ast = CommentAwareParser().parse(source)
+
+    for parsed in (ast, comment_ast):
+        assert parsed.extern_rules == []
+        assert parsed.namespaces[0].name == "corp"
+        assert parsed.namespaces[0].extern_rules[0].name == "Nested"
+        assert parsed.namespaces[0].extern_rules[0].namespace == "corp"

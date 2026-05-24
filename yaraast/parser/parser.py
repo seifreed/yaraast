@@ -130,7 +130,7 @@ class Parser(
                 top_level_nodes.append(namespace)
             elif self._check_identifier_value("extern"):
                 extern_rule = self._parse_extern_rule()
-                extern_rules.append(extern_rule)
+                self._append_extern_rule(namespaces, extern_rules, extern_rule)
                 self._register_extern_rule(extern_rule)
                 top_level_nodes.append(extern_rule)
             elif (

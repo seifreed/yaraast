@@ -169,6 +169,18 @@ class RuleParsingMixin:
     def _is_extern_rule_reference(self, rule_name: str, namespace: str | None = None) -> bool:
         return (namespace, rule_name) in self._extern_rule_names
 
+    def _append_extern_rule(
+        self,
+        namespaces: list[ExternNamespace],
+        extern_rules: list[ExternRule],
+        extern_rule: ExternRule,
+    ) -> None:
+        for namespace in namespaces:
+            if extern_rule.namespace == namespace.name:
+                namespace.extern_rules.append(extern_rule)
+                return
+        extern_rules.append(extern_rule)
+
     def _parse_extern_namespace(self) -> ExternNamespace:
         """Parse a top-level namespace declaration."""
         start_token = self._advance()
