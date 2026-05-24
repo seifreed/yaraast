@@ -174,6 +174,7 @@ def test_advanced_generator_meta_and_tags_branches() -> None:
 
 def test_advanced_generator_binary_and_set_spacing() -> None:
     expr = BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))
+    equality = BinaryExpression(IntegerLiteral(1), "==", IntegerLiteral(2))
     division = BinaryExpression(IntegerLiteral(5), "/", IntegerLiteral(2))
 
     spaced = AdvancedCodeGenerator(FormattingConfig(space_around_operators=True))
@@ -183,5 +184,6 @@ def test_advanced_generator_binary_and_set_spacing() -> None:
 
     compact = AdvancedCodeGenerator(FormattingConfig(space_around_operators=False))
     compact.generate(YaraFile(rules=[]))
-    assert "(trueandfalse)" in compact.visit_binary_expression(expr)
+    assert "(true and false)" in compact.visit_binary_expression(expr)
+    assert "(1==2)" in compact.visit_binary_expression(equality)
     assert "(5\\2)" in compact.visit_binary_expression(division)

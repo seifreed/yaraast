@@ -175,7 +175,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
         left = _visit_binary_operand(self, node, node.left, is_right=False)
         right = _visit_binary_operand(self, node, node.right, is_right=True)
         operator = _render_binary_operator(node.operator)
-        separator = " " if self.config.space_around_operators else ""
+        separator = " " if self.config.space_around_operators or operator.isalpha() else ""
         return f"{left}{separator}{operator}{separator}{right}"
 
     def visit_set_expression(self, node) -> str:

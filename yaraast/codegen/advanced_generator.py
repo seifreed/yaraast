@@ -165,10 +165,8 @@ class AdvancedCodeGenerator(CodeGenerator):
         right = self.visit(node.right)
         operator = _render_binary_operator(node.operator)
 
-        if self.config.space_around_operators:
-            result = f"({left} {operator} {right})"
-        else:
-            result = f"({left}{operator}{right})"
+        separator = " " if self.config.space_around_operators or operator.isalpha() else ""
+        result = f"({left}{separator}{operator}{separator}{right})"
 
         self._write(result)
         return result

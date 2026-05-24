@@ -310,6 +310,7 @@ def test_advanced_generator_applies_expression_spacing_in_condition_sections() -
             [
                 SetExpression([IntegerLiteral(1), IntegerLiteral(2)]),
                 BinaryExpression(Identifier("a"), "==", Identifier("b")),
+                BinaryExpression(Identifier("left"), "and", Identifier("right")),
             ],
         ),
     )
@@ -318,8 +319,9 @@ def test_advanced_generator_applies_expression_spacing_in_condition_sections() -
         FormattingConfig(space_after_comma=False, space_around_operators=False)
     ).generate(YaraFile(rules=[rule]))
 
-    assert "\n        foo((1,2),a==b)\n" in out
-    assert "\n        foo((1, 2), a == b)\n" not in out
+    assert "\n        foo((1,2),a==b,left and right)\n" in out
+    assert "leftandright" not in out
+    assert "\n        foo((1, 2), a == b, left and right)\n" not in out
 
 
 def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
