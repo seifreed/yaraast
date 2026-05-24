@@ -6,6 +6,7 @@ from collections.abc import Callable
 import re
 from typing import Any, NamedTuple
 
+from yaraast.ast.strings import HexAlternative, HexJump
 from yaraast.regex_literals import (
     VALID_REGEX_MODIFIERS,
     escape_regex_delimiter as _escape_regex_delimiter,
@@ -226,6 +227,62 @@ def format_hex_jump_bounds(min_jump: int | None, max_jump: int | None) -> str:
     if max_jump is None:
         return f"[{min_jump}-]"
     return f"[{min_jump}-{max_jump}]"
+
+
+def validate_hex_string_tokens(tokens: Any) -> None:
+    """Reject hex token sequences that libyara cannot parse."""
+    if not isinstance(tokens, list | tuple) or not tokens:
+        msg = "Hex string must contain at least one token for libyara output"
+        raise ValueError(msg)
+    _validate_hex_token_sequence(tokens, context="hex string", inside_alternative=False)
+
+
+def validate_hex_alternative_token(token: HexAlternative) -> None:
+    """Reject hex alternatives that libyara cannot parse."""
+    _validate_hex_alternative(token)
+
+
+def _validate_hex_alternative(token: HexAlternative) -> None:
+    alternatives = token.alternatives
+    if not isinstance(alternatives, list | tuple) or not alternatives:
+        msg = "HexAlternative must contain at least one branch for libyara output"
+        raise ValueError(msg)
+
+    for alternative in alternatives:
+        branch = alternative if isinstance(alternative, list) else [alternative]
+        if not branch:
+            msg = "HexAlternative branches must not be empty for libyara output"
+            raise ValueError(msg)
+        _validate_hex_token_sequence(
+            branch,
+            context="hex alternative branch",
+            inside_alternative=True,
+        )
+
+
+def _validate_hex_token_sequence(
+    tokens: list[Any] | tuple[Any, ...],
+    *,
+    context: str,
+    inside_alternative: bool,
+) -> None:
+    for token in tokens:
+        if isinstance(token, HexJump):
+            format_hex_jump_bounds(token.min_jump, token.max_jump)
+        elif isinstance(token, HexAlternative):
+            _validate_hex_alternative(token)
+
+    if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
+        msg = f"HexJump cannot appear at the beginning or end of {context} for libyara output"
+        raise ValueError(msg)
+
+    if not inside_alternative:
+        return
+
+    for token in tokens:
+        if isinstance(token, HexJump) and token.max_jump is None:
+            msg = "Unbounded HexJump is not allowed inside hex alternatives for libyara output"
+            raise ValueError(msg)
 
 
 def _validate_hex_byte_value(value: int | str, context: str) -> int | str:

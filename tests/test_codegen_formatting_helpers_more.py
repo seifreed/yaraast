@@ -108,7 +108,7 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
                 [
                     [HexByte(0x41), HexByte("42")],
                     [HexWildcard()],
-                    [HexJump(None, 5)],
+                    [HexByte(0x43), HexJump(None, 5), HexByte(0x44)],
                     [HexNibble(high=True, value=0xC)],
                 ]
             ),
@@ -116,11 +116,11 @@ def test_pretty_printer_helpers_cover_all_branches() -> None:
     )
     assert (
         build_hex_pattern(complex_hex_node, hex_uppercase=True, hex_spacing=True)
-        == "AF ~4D ?B (41 42 | ?? | [0-5] | C?)"
+        == "AF ~4D ?B (41 42 | ?? | 43 [0-5] 44 | C?)"
     )
     assert (
         build_hex_pattern(complex_hex_node, hex_uppercase=False, hex_spacing=False)
-        == "af~4d?b(4142|??|[0-5]|c?)"
+        == "af~4d?b(4142|??|43[0-5]44|c?)"
     )
 
     plain = PlainString("$a", value="hello")
@@ -229,3 +229,25 @@ def test_pretty_printer_helpers_reject_invalid_hex_alternative_scalar() -> None:
             hex_uppercase=True,
             hex_spacing=True,
         )
+
+
+@pytest.mark.parametrize(
+    ("tokens", "message"),
+    [
+        ([], "Hex string must contain at least one token"),
+        ([HexJump(0, 1), HexByte(0x41)], "HexJump cannot appear"),
+        ([HexByte(0x41), HexJump(0, 1)], "HexJump cannot appear"),
+        ([HexAlternative([])], "HexAlternative must contain at least one branch"),
+        ([HexAlternative([[]])], "HexAlternative branches must not be empty"),
+        (
+            [HexAlternative([[HexByte(0x41), HexJump(1, None), HexByte(0x42)]])],
+            "Unbounded HexJump is not allowed inside hex alternatives",
+        ),
+    ],
+)
+def test_pretty_printer_helpers_reject_invalid_hex_string_structure(
+    tokens: list[object],
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        build_hex_pattern(HexString("$h", tokens=tokens), hex_uppercase=True, hex_spacing=True)

@@ -7,6 +7,7 @@ from yaraast.codegen.generator_helpers import (
     format_regex_modifiers,
     output_string_identifier,
     validate_hex_string_modifiers,
+    validate_hex_string_tokens,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
     validate_string_identifiers,
@@ -82,6 +83,7 @@ def write_plain_string(gen, node) -> str:
 def write_hex_string(gen, node) -> str:
     """Render a hex string definition."""
     validate_hex_string_modifiers(node.modifiers)
+    validate_hex_string_tokens(node.tokens)
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
     gen._write(f"{output_string_identifier(node)} = {{ ")

@@ -130,13 +130,13 @@ def test_format_hex_string_no_grouping_and_single_token_formatting() -> None:
                 [
                     [HexNibble(high=True, value=0x4)],
                     [HexNegatedByte(0x41)],
-                    [HexJump(1, 2), HexByte(0x42)],
+                    [HexByte(0x41), HexJump(1, 2), HexByte(0x42)],
                     [HexWildcard()],
                 ]
             )
         ],
     )
-    assert format_hex_string(complex_alt, upper) == "{ (4? | ~41 | [1-2] 42 | ??) }"
+    assert format_hex_string(complex_alt, upper) == "{ (4? | ~41 | 41 [1-2] 42 | ??) }"
 
 
 @pytest.mark.parametrize(
@@ -166,6 +166,30 @@ def test_advanced_generator_helpers_reject_invalid_hex_alternative_scalar() -> N
 
     with pytest.raises(TypeError, match="HexByte value must be a byte"):
         format_hex_string(HexString("$h", tokens=[HexAlternative([True])]), config)
+
+
+@pytest.mark.parametrize(
+    ("tokens", "message"),
+    [
+        ([], "Hex string must contain at least one token"),
+        ([HexJump(0, 1), HexByte(0x41)], "HexJump cannot appear"),
+        ([HexByte(0x41), HexJump(0, 1)], "HexJump cannot appear"),
+        ([HexAlternative([])], "HexAlternative must contain at least one branch"),
+        ([HexAlternative([[]])], "HexAlternative branches must not be empty"),
+        (
+            [HexAlternative([[HexByte(0x41), HexJump(1, None), HexByte(0x42)]])],
+            "Unbounded HexJump is not allowed inside hex alternatives",
+        ),
+    ],
+)
+def test_advanced_generator_helpers_reject_invalid_hex_string_structure(
+    tokens: list[object],
+    message: str,
+) -> None:
+    config = FormattingConfig(hex_style=HexStyle.UPPERCASE, hex_group_size=0)
+
+    with pytest.raises(ValueError, match=message):
+        format_hex_string(HexString("$h", tokens=tokens), config)
 
 
 def test_get_tag_string_and_hex_jump_ranges() -> None:

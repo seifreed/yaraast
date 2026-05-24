@@ -23,6 +23,8 @@ from yaraast.codegen.generator_helpers import (
     format_modifiers,
     format_regex_modifiers,
     output_string_identifier,
+    validate_hex_alternative_token,
+    validate_hex_string_tokens,
 )
 
 _WORD_BINARY_OPERATORS = {
@@ -40,6 +42,7 @@ _WORD_BINARY_OPERATORS = {
 
 
 def build_hex_pattern(node: HexString, *, hex_uppercase: bool, hex_spacing: bool) -> str:
+    validate_hex_string_tokens(node.tokens)
     hex_parts = [_format_hex_token(token, hex_uppercase, hex_spacing) for token in node.tokens]
     return " ".join(hex_parts) if hex_spacing else "".join(hex_parts)
 
@@ -61,6 +64,7 @@ def _format_hex_token(token, hex_uppercase: bool, hex_spacing: bool) -> str:
         value = _format_hex_nibble_value(token.value, hex_uppercase)
         return f"{value}?" if token.high else f"?{value}"
     if isinstance(token, HexAlternative):
+        validate_hex_alternative_token(token)
         separator = " " if hex_spacing else ""
         alt_separator = " | " if hex_spacing else "|"
         alternatives = [

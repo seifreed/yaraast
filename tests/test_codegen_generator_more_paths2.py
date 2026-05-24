@@ -284,6 +284,46 @@ def test_codegen_generator_rejects_invalid_direct_hex_alternative_scalar() -> No
         CodeGenerator().visit_hex_alternative(HexAlternative([True]))
 
 
+@pytest.mark.parametrize(
+    ("tokens", "message"),
+    [
+        ([], "Hex string must contain at least one token"),
+        ([HexJump(0, 1), HexByte(0x41)], "HexJump cannot appear"),
+        ([HexByte(0x41), HexJump(0, 1)], "HexJump cannot appear"),
+        ([HexAlternative([])], "HexAlternative must contain at least one branch"),
+        ([HexAlternative([[]])], "HexAlternative branches must not be empty"),
+        (
+            [HexByte(0x41), HexAlternative([[HexByte(0x42), HexJump(1, None), HexByte(0x43)]])],
+            "Unbounded HexJump is not allowed inside hex alternatives",
+        ),
+    ],
+)
+def test_codegen_generator_rejects_invalid_hex_string_structure(
+    tokens: list[object],
+    message: str,
+) -> None:
+    rule = Rule(
+        name="bad_hex_structure",
+        strings=[HexString("$h", tokens=tokens)],
+        condition=BooleanLiteral(True),
+    )
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
+def test_codegen_generator_allows_unbounded_hex_jump_between_tokens() -> None:
+    rule = Rule(
+        name="unbounded_jump",
+        strings=[HexString("$h", tokens=[HexByte(0x41), HexJump(None, None), HexByte(0x42)])],
+        condition=StringIdentifier("$h"),
+    )
+
+    out = CodeGenerator().generate(YaraFile(rules=[rule]))
+
+    assert "$h = { 41 [-] 42 }" in out
+
+
 def test_codegen_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:
     gen = CodeGenerator()
     rule = Rule(

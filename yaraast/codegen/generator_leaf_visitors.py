@@ -18,6 +18,7 @@ from yaraast.codegen.generator_helpers import (
     format_hex_byte_value,
     format_hex_nibble_value,
     format_integer_literal,
+    validate_hex_alternative_token,
     validate_string_identifier_text,
     validate_string_wildcard_text,
 )
@@ -49,6 +50,7 @@ def visit_hex_jump(node) -> str:
 
 
 def visit_hex_alternative(generator, node) -> str:
+    validate_hex_alternative_token(node)
     alts = []
     for alt in node.alternatives:
         tokens = alt if isinstance(alt, list) else [alt]

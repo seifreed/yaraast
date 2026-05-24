@@ -27,7 +27,9 @@ from yaraast.codegen.generator_helpers import (
     format_modifier,
     output_string_identifier,
     split_regex_modifiers,
+    validate_hex_alternative_token,
     validate_hex_string_modifiers,
+    validate_hex_string_tokens,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
     validate_string_identifiers,
@@ -69,6 +71,7 @@ def collect_string_definitions(
 
 
 def format_hex_string(node: HexString, config) -> str:
+    validate_hex_string_tokens(node.tokens)
     parts = []
 
     for token in node.tokens:
@@ -81,6 +84,7 @@ def format_hex_string(node: HexString, config) -> str:
         elif isinstance(token, HexJump):
             parts.append(_format_hex_jump(token))
         elif isinstance(token, HexAlternative):
+            validate_hex_alternative_token(token)
             alt_parts = []
             for alt in token.alternatives:
                 tokens = alt if isinstance(alt, list) else [alt]
