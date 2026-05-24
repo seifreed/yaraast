@@ -187,6 +187,35 @@ def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
     with pytest.raises(SerializationError, match="YaraFile extern_rules must be a list"):
         deserialize_node({"type": "YaraFile", "extern_rules": "RemoteRule"})
 
+    with pytest.raises(SerializationError, match="YaraFile imports must contain Import nodes"):
+        deserialize_node({"type": "YaraFile", "imports": [{"type": "Rule", "name": "not_import"}]})
+
+    with pytest.raises(SerializationError, match="YaraFile includes must contain Include nodes"):
+        deserialize_node({"type": "YaraFile", "includes": [{"type": "Import", "module": "pe"}]})
+
+    with pytest.raises(SerializationError, match="YaraFile rules must contain Rule nodes"):
+        deserialize_node({"type": "YaraFile", "rules": [{"type": "Import", "module": "pe"}]})
+
+    with pytest.raises(
+        SerializationError, match="YaraFile extern_rules must contain ExternRule nodes"
+    ):
+        deserialize_node({"type": "YaraFile", "extern_rules": [{"type": "Rule", "name": "remote"}]})
+
+    with pytest.raises(
+        SerializationError, match="YaraFile extern_imports must contain ExternImport nodes"
+    ):
+        deserialize_node(
+            {"type": "YaraFile", "extern_imports": [{"type": "Import", "module": "pe"}]}
+        )
+
+    with pytest.raises(SerializationError, match="YaraFile pragmas must contain Pragma nodes"):
+        deserialize_node({"type": "YaraFile", "pragmas": [{"type": "Rule", "name": "not_pragma"}]})
+
+    with pytest.raises(
+        SerializationError, match="YaraFile namespaces must contain ExternNamespace nodes"
+    ):
+        deserialize_node({"type": "YaraFile", "namespaces": [{"type": "Import", "module": "pe"}]})
+
     with pytest.raises(SerializationError, match="Rule must be an object"):
         deserialize_rule(cast(Any, "rule"))
 

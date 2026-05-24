@@ -361,6 +361,34 @@ def _deserialize_node_list_field(data: dict[str, Any], field: str, context: str)
     return nodes
 
 
+def _deserialize_expected_node(
+    data: Any, expected_type: type[Any], context: str, expected_name: str
+) -> Any:
+    node = deserialize_node(data)
+    if isinstance(node, expected_type):
+        return node
+    msg = f"{context} must contain {expected_name} nodes"
+    raise SerializationError(msg)
+
+
+def _deserialize_extern_rule_item(data: Any, context: str) -> ExternRule:
+    data = _deserialize_object(data, "ExternRule")
+    node_type = data.get("type")
+    if node_type is not None and node_type != "ExternRule":
+        msg = f"{context} must contain ExternRule nodes"
+        raise SerializationError(msg)
+    return deserialize_extern_rule(data)
+
+
+def _deserialize_pragma_item(data: Any, context: str) -> Pragma:
+    data = _deserialize_object(data, "Pragma")
+    node_type = data.get("type")
+    if node_type is not None and node_type != "Pragma":
+        msg = f"{context} must contain Pragma nodes"
+        raise SerializationError(msg)
+    return deserialize_pragma(data)
+
+
 def _deserialize_dictionary_key(data: dict[str, Any]) -> str | ASTNode:
     if "key" not in data:
         msg = "DictionaryAccess key must be a string or expression"
@@ -1420,27 +1448,36 @@ def deserialize_yarafile(data: dict[str, Any]) -> YaraFile:
     """Deserialize a YaraFile."""
     yf = YaraFile()
     yf.imports = [
-        deserialize_node(imp) for imp in _deserialize_list_field(data, "imports", "YaraFile")
+        _deserialize_expected_node(imp, Import, "YaraFile imports", "Import")
+        for imp in _deserialize_list_field(data, "imports", "YaraFile")
     ]
     yf.includes = [
-        deserialize_node(inc) for inc in _deserialize_list_field(data, "includes", "YaraFile")
+        _deserialize_expected_node(inc, Include, "YaraFile includes", "Include")
+        for inc in _deserialize_list_field(data, "includes", "YaraFile")
     ]
     yf.rules = [
-        deserialize_node(rule) for rule in _deserialize_list_field(data, "rules", "YaraFile")
+        _deserialize_expected_node(rule, Rule, "YaraFile rules", "Rule")
+        for rule in _deserialize_list_field(data, "rules", "YaraFile")
     ]
     yf.extern_rules = [
-        deserialize_extern_rule(rule)
+        _deserialize_extern_rule_item(rule, "YaraFile extern_rules")
         for rule in _deserialize_list_field(data, "extern_rules", "YaraFile")
     ]
     yf.extern_imports = [
-        deserialize_node(imp) for imp in _deserialize_list_field(data, "extern_imports", "YaraFile")
+        _deserialize_expected_node(imp, ExternImport, "YaraFile extern_imports", "ExternImport")
+        for imp in _deserialize_list_field(data, "extern_imports", "YaraFile")
     ]
     yf.pragmas = [
-        deserialize_pragma(pragma)
+        _deserialize_pragma_item(pragma, "YaraFile pragmas")
         for pragma in _deserialize_list_field(data, "pragmas", "YaraFile")
     ]
     yf.namespaces = [
-        deserialize_node(namespace)
+        _deserialize_expected_node(
+            namespace,
+            ExternNamespace,
+            "YaraFile namespaces",
+            "ExternNamespace",
+        )
         for namespace in _deserialize_list_field(data, "namespaces", "YaraFile")
     ]
     return yf
