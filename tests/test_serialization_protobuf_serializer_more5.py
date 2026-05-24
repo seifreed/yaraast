@@ -871,6 +871,18 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
             "DictionaryAccess key must be a string or expression",
         ),
         (
+            ExternRuleReference(cast(Any, 123)),
+            "ExternRuleReference rule_name must be a string",
+        ),
+        (
+            ExternRuleReference("ExternalRule", namespace=cast(Any, False)),
+            "ExternRuleReference namespace must be a string",
+        ),
+        (
+            ExternRuleReference("ExternalRule", namespace=cast(Any, object())),
+            "ExternRuleReference namespace must be a string",
+        ),
+        (
             StringOperatorExpression(StringLiteral("a"), cast(Any, 123), StringLiteral("b")),
             "StringOperatorExpression operator must be a string",
         ),
