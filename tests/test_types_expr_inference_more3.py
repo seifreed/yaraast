@@ -846,6 +846,21 @@ def test_expr_inference_for_variable_shadows_same_named_rule() -> None:
     assert inf.errors == []
 
 
+def test_semantic_validator_accepts_for_expression_tuple_iterables() -> None:
+    ast = parse_yara_source("""
+        rule tuple_iterables {
+            condition:
+                for any i in (1, 2, 3) : (i == 2) and
+                for any s in ("a", "b") : (s == "a")
+        }
+        """)
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid
+    assert result.errors == []
+
+
 def test_expr_inference_flattens_collection_spreads() -> None:
     env = TypeEnvironment()
     env.define("tail", ArrayType(IntegerType()))

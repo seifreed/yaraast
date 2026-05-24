@@ -557,15 +557,12 @@ def _infer_dictionary_key_type(ctx, key):
 
 def infer_set_or_range(ctx, node):
     if isinstance(node, SetExpression):
-        if node.elements:
-            first_type = ctx.visit(node.elements[0])
-            for elem in node.elements[1:]:
-                elem_type = ctx.visit(elem)
-                if not first_type.is_compatible_with(elem_type):
-                    ctx.errors.append(
-                        f"Set elements must have same type: {first_type} vs {elem_type}"
-                    )
-        return StringSetType()
+        if _is_string_set_expression(node):
+            for elem in node.elements:
+                if hasattr(elem, "accept"):
+                    ctx.visit(elem)
+            return StringSetType()
+        return ArrayType(_infer_set_element_type(ctx, node.elements))
 
     low_type = ctx.visit(node.low)
     high_type = ctx.visit(node.high)
@@ -574,6 +571,35 @@ def infer_set_or_range(ctx, node):
     if not isinstance(high_type, IntegerType):
         ctx.errors.append(f"Range high bound must be integer, got {high_type}")
     return RangeType()
+
+
+def _infer_set_element_type(ctx, elements):
+    if not elements:
+        return UnknownType()
+
+    first_type = ctx.visit(elements[0])
+    for elem in elements[1:]:
+        elem_type = ctx.visit(elem)
+        if not first_type.is_compatible_with(elem_type):
+            ctx.errors.append(f"Set elements must have same type: {first_type} vs {elem_type}")
+    return first_type
+
+
+def _is_string_set_expression(node: SetExpression) -> bool:
+    if not node.elements:
+        return True
+    return all(_is_string_set_element(element) for element in node.elements)
+
+
+def _is_string_set_element(element) -> bool:
+    if isinstance(element, StringIdentifier | StringWildcard):
+        return True
+    if isinstance(element, StringLiteral):
+        value = element.value
+        return value == "them" or value.startswith("$")
+    if isinstance(element, Identifier):
+        return element.name == "them"
+    return False
 
 
 def _infer_quantifier_value(ctx, value):

@@ -1227,7 +1227,8 @@ class TestTypeInference:
             ],
         )
         result = inference.infer(node)
-        assert isinstance(result, StringSetType)
+        assert isinstance(result, ArrayType)
+        assert isinstance(result.element_type, StringType)
 
     def test_infer_range_expression(self) -> None:
         """Test inferring type of range expression."""
@@ -1821,7 +1822,8 @@ class TestTypeInferenceEdgeCases:
             ],
         )
         result = inference.infer(node)
-        assert isinstance(result, StringSetType)
+        assert isinstance(result, ArrayType)
+        assert isinstance(result.element_type, StringType)
         assert len(inference.errors) > 0
 
     def test_infer_range_expression_with_non_integer(self) -> None:
