@@ -548,6 +548,47 @@ def test_codegen_generators_reject_unsupported_string_definitions() -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+_BAD_PLAIN_STRING_VALUE: Any = 123
+_BAD_REGEX_PATTERN: Any = 123
+
+
+@pytest.mark.parametrize(
+    ("string_def", "message"),
+    [
+        (
+            PlainString("$plain", value=_BAD_PLAIN_STRING_VALUE),
+            "Plain string value must be a string or bytes",
+        ),
+        (
+            RegexString("$regex", regex=_BAD_REGEX_PATTERN),
+            "Regex pattern must be a string",
+        ),
+    ],
+)
+def test_codegen_generators_reject_invalid_string_value_types(
+    string_def: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_string_value",
+                strings=[string_def],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match=message):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match=message):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match=message):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generators_reject_duplicate_rule_tags() -> None:
     ast = YaraFile(
         rules=[

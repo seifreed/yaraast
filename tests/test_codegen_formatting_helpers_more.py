@@ -64,7 +64,13 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
 
     assert escape_string_literal('a\\"b') == 'a\\\\\\"b'
     assert escape_string_literal("a\nb\t\x00") == "a\\nb\\t\\x00"
+    bad_string_value: Any = 123
+    with pytest.raises(TypeError, match="Plain string value must be a string or bytes"):
+        escape_string_literal(bad_string_value)
     assert format_regex_literal("ab+", "is") == "/ab+/is"
+    bad_regex_pattern: Any = 123
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        format_regex_literal(bad_regex_pattern, "")
     with pytest.raises(ValueError, match="Invalid regex modifier: m"):
         format_regex_literal("ab+", "m")
     with pytest.raises(ValueError, match="Duplicate regex modifier: i"):

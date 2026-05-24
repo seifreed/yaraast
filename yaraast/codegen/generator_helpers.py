@@ -67,6 +67,9 @@ def escape_plain_string_value(value: str | bytes) -> str:
     """Escape plain string content for YARA output."""
     if isinstance(value, bytes):
         return "".join(_escape_plain_byte(byte) for byte in value)
+    if not isinstance(value, str):
+        msg = "Plain string value must be a string or bytes for libyara output"
+        raise TypeError(msg)
 
     escaped_value = value.replace("\\", "\\\\")
     escaped_value = escaped_value.replace('"', '\\"')
@@ -83,6 +86,9 @@ def escape_plain_string_value(value: str | bytes) -> str:
 
 def escape_regex_delimiter(pattern: str) -> str:
     """Escape unescaped '/' characters without double-escaping existing escapes."""
+    if not isinstance(pattern, str):
+        msg = "Regex pattern must be a string for libyara output"
+        raise TypeError(msg)
     return _escape_regex_delimiter(pattern)
 
 
