@@ -45,10 +45,16 @@ def _deserialize_optional_expression(self, data):
 
 
 def _deserialize_required_expression(self, data: dict[str, Any], field: str, context: str) -> Any:
-    expression = self._deserialize_expression(_deserialize_required_field(data, field, context))
+    return _deserialize_required_expression_value(
+        self, _deserialize_required_field(data, field, context), f"{context} {field}"
+    )
+
+
+def _deserialize_required_expression_value(self, value: Any, context: str) -> Any:
+    expression = self._deserialize_expression(value)
     if expression is not None:
         return expression
-    msg = f"{context} {field} is required"
+    msg = f"{context} is required"
     raise SerializationError(msg)
 
 
@@ -578,7 +584,7 @@ def _deser_in_expression(self, data: dict[str, Any]):
     if raw_subject is None and "string_id" in data:
         raw_subject = data["string_id"]
     if isinstance(raw_subject, dict):
-        subject = self._deserialize_expression(raw_subject)
+        subject = _deserialize_required_expression_value(self, raw_subject, "InExpression subject")
     elif isinstance(raw_subject, str):
         subject = raw_subject
     else:
@@ -622,7 +628,11 @@ def _deser_defined_expression(self, data: dict[str, Any]):
     if expression is None:
         msg = "DefinedExpression expression is required"
         raise SerializationError(msg)
-    return DefinedExpression(expression=self._deserialize_expression(expression))
+    return DefinedExpression(
+        expression=_deserialize_required_expression_value(
+            self, expression, "DefinedExpression expression"
+        )
+    )
 
 
 def _deser_string_operator_expression(self, data: dict[str, Any]):

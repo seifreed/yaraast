@@ -652,6 +652,10 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             "InExpression range is required",
         ),
         (
+            {"type": "InExpression", "subject": {}, "range": int_expr},
+            "InExpression subject is required",
+        ),
+        (
             {"type": "ForOfExpression", "quantifier": "any", "string_set": None},
             "ForOfExpression string_set is required",
         ),
@@ -1105,6 +1109,9 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
 
     with pytest.raises(SerializationError, match="DefinedExpression expression is required"):
         s._deserialize_expression({"type": "DefinedExpression"})
+
+    with pytest.raises(SerializationError, match="DefinedExpression expression is required"):
+        s._deserialize_expression({"type": "DefinedExpression", "expression": {}})
 
     sop_subject_pattern = s._deserialize_expression(
         {
