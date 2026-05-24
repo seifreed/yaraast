@@ -222,6 +222,12 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
 def test_json_deserialize_node_metadata_rejects_wrong_scalar_types() -> None:
     s = JsonSerializer()
 
+    with pytest.raises(SerializationError, match="Location line is required"):
+        s._deserialize_import({"module": "pe", "location": {"column": 1}})
+
+    with pytest.raises(SerializationError, match="Location column is required"):
+        s._deserialize_import({"module": "pe", "location": {"line": 1}})
+
     with pytest.raises(SerializationError, match="Location line must be an integer"):
         s._deserialize_import({"module": "pe", "location": {"line": True, "column": 1}})
 

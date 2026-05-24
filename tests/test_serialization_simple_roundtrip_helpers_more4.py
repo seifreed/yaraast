@@ -277,6 +277,12 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
 
 
 def test_simple_roundtrip_node_metadata_rejects_wrong_scalar_types() -> None:
+    with pytest.raises(SerializationError, match="Location line is required"):
+        deserialize_node({"type": "Import", "module": "pe", "location": {"column": 1}})
+
+    with pytest.raises(SerializationError, match="Location column is required"):
+        deserialize_node({"type": "Import", "module": "pe", "location": {"line": 1}})
+
     with pytest.raises(SerializationError, match="Location line must be an integer"):
         deserialize_node(
             {"type": "Import", "module": "pe", "location": {"line": True, "column": 1}}

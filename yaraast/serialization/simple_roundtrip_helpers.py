@@ -488,7 +488,7 @@ def _serialize_location(location: Location) -> dict[str, Any]:
 
 
 def _deserialize_location_int_field(data: dict[str, Any], field: str) -> int:
-    value = data[field]
+    value = _deserialize_required_field(data, field, "Location")
     if isinstance(value, int) and not isinstance(value, bool):
         return value
     msg = f"Location {field} must be an integer"
