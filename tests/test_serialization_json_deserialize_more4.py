@@ -524,6 +524,43 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
             }
         )
 
+    int_expr = {"type": "IntegerLiteral", "value": 1}
+    missing_condition_cases = (
+        (
+            {"type": "ForExpression", "variable": "i", "iterable": int_expr, "body": int_expr},
+            "ForExpression quantifier is required",
+        ),
+        (
+            {"type": "ForExpression", "quantifier": "any", "variable": "i", "body": int_expr},
+            "ForExpression iterable is required",
+        ),
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "variable": "i",
+                "iterable": int_expr,
+            },
+            "ForExpression body is required",
+        ),
+        (
+            {"type": "ForOfExpression", "string_set": "them"},
+            "ForOfExpression quantifier is required",
+        ),
+        (
+            {"type": "ForOfExpression", "quantifier": "any"},
+            "ForOfExpression string_set is required",
+        ),
+        ({"type": "AtExpression", "string_id": "$a"}, "AtExpression offset is required"),
+        ({"type": "InExpression", "subject": "$a"}, "InExpression range is required"),
+        ({"type": "OfExpression", "string_set": "them"}, "OfExpression quantifier is required"),
+        ({"type": "OfExpression", "quantifier": "any"}, "OfExpression string_set is required"),
+        ({"type": "DictionaryAccess", "key": "name"}, "DictionaryAccess object is required"),
+    )
+    for payload, message in missing_condition_cases:
+        with pytest.raises(SerializationError, match=message):
+            s._deserialize_expression(payload)
+
     with pytest.raises(SerializationError, match="ModuleReference module must be a string"):
         s._deserialize_expression({"type": "ModuleReference", "module": ["pe"]})
 

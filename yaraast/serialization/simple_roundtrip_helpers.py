@@ -1148,21 +1148,27 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ForExpression":
         return ForExpression(
-            _deserialize_ast_value(data["quantifier"]),
+            _deserialize_ast_value(
+                _deserialize_required_field(data, "quantifier", "ForExpression")
+            ),
             _deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
-            deserialize_node(data["iterable"]),
-            deserialize_node(data["body"]),
+            deserialize_node(_deserialize_required_field(data, "iterable", "ForExpression")),
+            deserialize_node(_deserialize_required_field(data, "body", "ForExpression")),
         )
     if node_type == "ForOfExpression":
         return ForOfExpression(
-            _deserialize_ast_value(data["quantifier"]),
-            _deserialize_ast_value(data["string_set"]),
+            _deserialize_ast_value(
+                _deserialize_required_field(data, "quantifier", "ForOfExpression")
+            ),
+            _deserialize_ast_value(
+                _deserialize_required_field(data, "string_set", "ForOfExpression")
+            ),
             _deserialize_optional_node_field(data, "condition"),
         )
     if node_type == "AtExpression":
         return AtExpression(
             _deserialize_string_field(data, "string_id", "AtExpression"),
-            deserialize_node(data["offset"]),
+            deserialize_node(_deserialize_required_field(data, "offset", "AtExpression")),
         )
     if node_type == "InExpression":
         raw_subject = data.get("subject")
@@ -1175,17 +1181,19 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         else:
             msg = "InExpression subject must be a string or expression"
             raise SerializationError(msg)
-        return InExpression(subject, deserialize_node(data["range"]))
+        return InExpression(
+            subject, deserialize_node(_deserialize_required_field(data, "range", "InExpression"))
+        )
     if node_type == "OfExpression":
         return OfExpression(
-            _deserialize_ast_value(data["quantifier"]),
-            _deserialize_ast_value(data["string_set"]),
+            _deserialize_ast_value(_deserialize_required_field(data, "quantifier", "OfExpression")),
+            _deserialize_ast_value(_deserialize_required_field(data, "string_set", "OfExpression")),
         )
     if node_type == "ModuleReference":
         return ModuleReference(_deserialize_string_field(data, "module", "ModuleReference"))
     if node_type == "DictionaryAccess":
         return DictionaryAccess(
-            deserialize_node(data["object"]),
+            deserialize_node(_deserialize_required_field(data, "object", "DictionaryAccess")),
             _deserialize_dictionary_key(data),
         )
     if node_type == "DefinedExpression":

@@ -529,10 +529,16 @@ def _deser_for_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import ForExpression
 
     return ForExpression(
-        quantifier=_deserialize_ast_value(self, data["quantifier"]),
+        quantifier=_deserialize_ast_value(
+            self, _deserialize_required_field(data, "quantifier", "ForExpression")
+        ),
         variable=_deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
-        iterable=self._deserialize_expression(data["iterable"]),
-        body=self._deserialize_expression(data["body"]),
+        iterable=self._deserialize_expression(
+            _deserialize_required_field(data, "iterable", "ForExpression")
+        ),
+        body=self._deserialize_expression(
+            _deserialize_required_field(data, "body", "ForExpression")
+        ),
     )
 
 
@@ -541,8 +547,12 @@ def _deser_for_of_expression(self, data: dict[str, Any]):
 
     condition = data.get("condition")
     return ForOfExpression(
-        quantifier=_deserialize_ast_value(self, data["quantifier"]),
-        string_set=_deserialize_ast_value(self, data["string_set"]),
+        quantifier=_deserialize_ast_value(
+            self, _deserialize_required_field(data, "quantifier", "ForOfExpression")
+        ),
+        string_set=_deserialize_ast_value(
+            self, _deserialize_required_field(data, "string_set", "ForOfExpression")
+        ),
         condition=_deserialize_optional_expression(self, condition),
     )
 
@@ -552,7 +562,9 @@ def _deser_at_expression(self, data: dict[str, Any]):
 
     return AtExpression(
         string_id=_deserialize_string_field(data, "string_id", "AtExpression"),
-        offset=self._deserialize_expression(data["offset"]),
+        offset=self._deserialize_expression(
+            _deserialize_required_field(data, "offset", "AtExpression")
+        ),
     )
 
 
@@ -571,7 +583,9 @@ def _deser_in_expression(self, data: dict[str, Any]):
         raise SerializationError(msg)
     return InExpression(
         subject=subject,
-        range=self._deserialize_expression(data["range"]),
+        range=self._deserialize_expression(
+            _deserialize_required_field(data, "range", "InExpression")
+        ),
     )
 
 
@@ -579,8 +593,12 @@ def _deser_of_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import OfExpression
 
     return OfExpression(
-        quantifier=_deserialize_ast_value(self, data["quantifier"]),
-        string_set=_deserialize_ast_value(self, data["string_set"]),
+        quantifier=_deserialize_ast_value(
+            self, _deserialize_required_field(data, "quantifier", "OfExpression")
+        ),
+        string_set=_deserialize_ast_value(
+            self, _deserialize_required_field(data, "string_set", "OfExpression")
+        ),
     )
 
 
@@ -593,7 +611,9 @@ def _deser_module_reference(self, data: dict[str, Any]):
 def _deser_dictionary_access(self, data: dict[str, Any]):
     from yaraast.ast.modules import DictionaryAccess
 
-    obj = self._deserialize_expression(data["object"])
+    obj = self._deserialize_expression(
+        _deserialize_required_field(data, "object", "DictionaryAccess")
+    )
     key = _deserialize_dictionary_key(self, data)
     return DictionaryAccess(object=obj, key=key)
 
