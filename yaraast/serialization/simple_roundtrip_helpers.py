@@ -214,6 +214,14 @@ def _deserialize_plain_string_value(data: dict[str, Any]) -> str | bytes:
         raise SerializationError(msg) from exc
 
 
+def _deserialize_legacy_string_data(data: dict[str, Any]) -> str | bytes:
+    value = data.get("data", "")
+    if isinstance(value, str | bytes):
+        return value
+    msg = "String data must be a string or bytes"
+    raise SerializationError(msg)
+
+
 def _deserialize_is_anonymous(data: dict[str, Any]) -> bool:
     return data.get("is_anonymous") is True
 
@@ -1712,7 +1720,12 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         )
     if string_type in {None, "StringDefinition", "Unknown"}:
         return _apply_node_metadata(
-            PlainString(identifier=data.get("identifier", "$unknown"), value=data.get("data", "")),
+            PlainString(
+                identifier=_deserialize_optional_string_field(
+                    data, "identifier", "String", "$unknown"
+                ),
+                value=_deserialize_legacy_string_data(data),
+            ),
             data,
         )
     msg = f"Unknown string type: {string_type}"

@@ -118,6 +118,12 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
     with pytest.raises(SerializationError, match="Unknown string type: Import"):
         deserialize_string({"type": "Import", "module": "pe"})
 
+    with pytest.raises(SerializationError, match="String identifier must be a string"):
+        deserialize_string({"type": "Unknown", "identifier": ["$x"], "data": "raw"})
+
+    with pytest.raises(SerializationError, match="String data must be a string or bytes"):
+        deserialize_string({"type": "Unknown", "identifier": "$x", "data": 7})
+
     path = tmp_path / "helper.json"
     serialize_to_file(
         YaraFile(imports=[Import(module="pe")], includes=[Include(path="inc.yar")], rules=[rule]),
