@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.cli import fluent_services as fs
 from yaraast.parser.parser import Parser
 
@@ -33,3 +35,17 @@ def test_create_string_patterns_rule_generates_parseable_regexes() -> None:
 
     assert "(?:" not in code
     Parser(code).parse()
+
+    yara = pytest.importorskip("yara")
+    yara.compile(source=code)
+
+
+def test_demo_rule_groups_generate_libyara_compatible_files() -> None:
+    yara = pytest.importorskip("yara")
+
+    for rules in (
+        fs.create_condition_demo_rules(),
+        fs.create_transformation_rules(),
+    ):
+        code = fs.build_yara_file_with_rules(rules)
+        yara.compile(source=code)

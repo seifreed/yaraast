@@ -126,7 +126,7 @@ def create_string_patterns_rule() -> Rule:
     )
 
 
-def create_condition_demo_rules():
+def create_condition_demo_rules() -> list[Rule]:
     """Create demo rules for condition builders."""
     rules = []
     rules.append(
@@ -138,7 +138,6 @@ def create_condition_demo_rules():
         .text_string("$b", "trojan")
         .text_string("$c", "backdoor")
         .hex_string("$mz", "4D 5A")
-        .hex_string("$pe", "50 45 00 00")
         .with_condition_builder(
             lambda c: (
                 c.string_matches("$mz")
@@ -184,7 +183,7 @@ def create_condition_demo_rules():
     return rules
 
 
-def build_yara_file_with_rules(rules: Iterable) -> str:
+def build_yara_file_with_rules(rules: Iterable[Rule]) -> str:
     """Build a YARA file from rules and return generated code."""
     ast_builder = yara_file().import_module("pe").import_module("math")
     for r in rules:
@@ -192,7 +191,7 @@ def build_yara_file_with_rules(rules: Iterable) -> str:
     return generate_code(ast_builder.build())
 
 
-def create_transformation_rules():
+def create_transformation_rules() -> list[Rule]:
     """Create demo rules for AST transformations."""
     base_rule = (
         malware_rule("base_malware")
@@ -218,7 +217,11 @@ def create_transformation_rules():
         .build(),
     )
     rules.append(
-        transform_rule(base_rule).add_suffix("_private").make_private().add_tag("private").build(),
+        transform_rule(base_rule)
+        .add_suffix("_private")
+        .make_private()
+        .add_tag("private_variant")
+        .build(),
     )
     packed_base = packed_rule("packed_sample").described_as("Packed executable template").build()
     rules.append(packed_base)
