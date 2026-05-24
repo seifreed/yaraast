@@ -77,7 +77,7 @@ def serialize_with_roundtrip_metadata(
     standard_data["roundtrip_metadata"] = metadata.to_dict()
 
     if format == "yaml":
-        return yaml.dump(
+        return yaml.safe_dump(
             standard_data,
             default_flow_style=False,
             allow_unicode=True,

@@ -109,7 +109,7 @@ def _generate_yaml_output(ast, output: str | None) -> None:
 
     dumper = ASTDumper()
     result = dumper.visit(ast)
-    yaml_str = yaml.dump(
+    yaml_str = yaml.safe_dump(
         result,
         default_flow_style=False,
         allow_unicode=True,

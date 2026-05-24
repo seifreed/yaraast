@@ -110,7 +110,7 @@ def count_string_types(ast) -> dict[str, int]:
 def dump_pipeline_yaml(
     data: Any, output_path: str | Path | None, *, width: int = 100, explicit_markers: bool = False
 ) -> str:
-    yaml_str = yaml.dump(
+    yaml_str = yaml.safe_dump(
         data,
         default_flow_style=False,
         allow_unicode=True,

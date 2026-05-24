@@ -13,7 +13,9 @@ from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.serialization.roundtrip_helpers import create_generator, detect_formatting
 from yaraast.serialization.roundtrip_models import FormattingInfo, RoundTripMetadata
+from yaraast.serialization.roundtrip_pipeline_helpers import dump_pipeline_yaml
 from yaraast.serialization.yaml_serializer import YamlSerializer
+from yaraast.serialization.yaml_serializer_helpers import dump_yaml
 
 
 def _sample_ast() -> YaraFile:
@@ -84,3 +86,15 @@ def test_yaml_serializer_without_metadata_skips_yaml_metadata_block() -> None:
     yaml_str = serializer.serialize(_sample_ast())
     data = yaml.safe_load(yaml_str)
     assert "metadata" not in data
+
+
+def test_yaml_helpers_emit_safe_loadable_sequence_data_without_python_tags() -> None:
+    data = {"values": ("alpha", "beta")}
+
+    yaml_str = dump_yaml(data, flow_style=False)
+    assert "!!python/" not in yaml_str
+    assert yaml.safe_load(yaml_str) == {"values": ["alpha", "beta"]}
+
+    pipeline_yaml = dump_pipeline_yaml(data, output_path=None)
+    assert "!!python/" not in pipeline_yaml
+    assert yaml.safe_load(pipeline_yaml) == {"values": ["alpha", "beta"]}

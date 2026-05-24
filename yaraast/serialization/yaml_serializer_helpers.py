@@ -13,7 +13,7 @@ from yaraast.serialization.serializer_helpers import write_text
 
 def dump_yaml(data: Any, *, flow_style: bool, width: int = YAML_DEFAULT_WIDTH) -> str:
     """Render YAML with consistent formatting defaults."""
-    return yaml.dump(
+    return yaml.safe_dump(
         data,
         default_flow_style=flow_style,
         allow_unicode=True,
