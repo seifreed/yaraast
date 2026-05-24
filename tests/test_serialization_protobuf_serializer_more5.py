@@ -271,6 +271,37 @@ def test_protobuf_serializer_rejects_non_finite_meta_values() -> None:
         serializer.deserialize(binary_data=legacy_pb_file.SerializeToString())
 
 
+def test_protobuf_serializer_rejects_unsupported_meta_and_pragma_parameter_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    bad_meta_value = cast(Any, ["not", "a", "scalar"])
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_meta_value",
+                meta=[Meta("labels", bad_meta_value)],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(
+        SerializationError,
+        match="Meta value must be a string, integer, boolean, or finite float",
+    ):
+        serializer.serialize(ast)
+
+    bad_parameter_value = cast(Any, {"nested": "value"})
+    pragma_ast = YaraFile(
+        pragmas=[CustomPragma("vendor", parameters={"config": bad_parameter_value})],
+    )
+
+    with pytest.raises(
+        SerializationError,
+        match="Pragma parameter value must be a string, integer, boolean, or finite float",
+    ):
+        serializer.serialize(pragma_ast)
+
+
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

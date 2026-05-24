@@ -220,7 +220,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         meta_val = pb_rule.meta[key]
         pb_meta_entry = pb_rule.meta_entries.add()
         pb_meta_entry.key = key
-        _copy_python_value_to_meta_value(value, pb_meta_entry.value)
+        _copy_python_value_to_meta_value(value, pb_meta_entry.value, "Meta")
         _copy_node_metadata_to_protobuf(entry, pb_meta_entry)
         if scope is not None:
             scope_text = serialize_meta_scope(scope)
@@ -235,7 +235,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         elif isinstance(value, int):
             meta_val.int_value = value
         elif isinstance(value, float):
-            meta_val.double_value = value
+            meta_val.double_value = _finite_double_value(value, "Meta")
 
     for string_def in rule.strings:
         pb_string = pb_rule.strings.add()
@@ -249,7 +249,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         convert_in_rule_pragma_to_protobuf(pragma, pb_rule.pragmas.add())
 
 
-def _copy_python_value_to_meta_value(value, pb_meta_value) -> None:
+def _copy_python_value_to_meta_value(value, pb_meta_value, context: str) -> None:
     if isinstance(value, str):
         pb_meta_value.string_value = value
     elif isinstance(value, bool):
@@ -257,9 +257,10 @@ def _copy_python_value_to_meta_value(value, pb_meta_value) -> None:
     elif isinstance(value, int):
         pb_meta_value.int_value = value
     elif isinstance(value, float):
-        pb_meta_value.double_value = _finite_double_value(value, "Meta")
+        pb_meta_value.double_value = _finite_double_value(value, context)
     else:
-        pb_meta_value.string_value = str(value)
+        msg = f"{context} value must be a string, integer, boolean, or finite float"
+        raise SerializationError(msg)
 
 
 def _meta_value_to_python(pb_meta_value):
@@ -330,7 +331,11 @@ def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
         pb_pragma.condition = condition
 
     for key, value in getattr(pragma, "parameters", {}).items():
-        _copy_python_value_to_meta_value(value, pb_pragma.parameters[str(key)])
+        _copy_python_value_to_meta_value(
+            value,
+            pb_pragma.parameters[str(key)],
+            "Pragma parameter",
+        )
     _copy_node_metadata_to_protobuf(pragma, pb_pragma)
 
 
