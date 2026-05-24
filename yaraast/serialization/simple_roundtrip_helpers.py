@@ -1699,14 +1699,15 @@ def deserialize_string(data: dict[str, Any]) -> Any:
         # Legacy format with invalid token payloads: preserve type but do not invent tokens.
         import warnings
 
+        identifier = _deserialize_string_field(data, "identifier", "HexString")
         warnings.warn(
-            f"HexString '{data['identifier']}' has non-list tokens in serialized data, "
+            f"HexString '{identifier}' has non-list tokens in serialized data, "
             "tokens will be empty after deserialization",
             stacklevel=2,
         )
         return _apply_node_metadata(
             HexString(
-                identifier=_deserialize_string_field(data, "identifier", "HexString"),
+                identifier=identifier,
                 tokens=[],
                 modifiers=modifiers,
                 is_anonymous=_deserialize_is_anonymous(data),
