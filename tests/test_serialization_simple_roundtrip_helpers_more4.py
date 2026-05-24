@@ -1000,6 +1000,44 @@ def test_simple_roundtrip_required_expression_fields_reject_empty_objects() -> N
             deserialize_node(payload)
 
 
+def test_simple_roundtrip_expression_lists_reject_empty_items() -> None:
+    true_expr = {"type": "BooleanLiteral", "value": True}
+
+    empty_list_item_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "SetExpression", "elements": [{}]},
+            "SetExpression elements must contain nodes",
+        ),
+        (
+            {"type": "FunctionCall", "function": "fn", "arguments": [{}]},
+            "FunctionCall arguments must contain nodes",
+        ),
+        (
+            {"type": "WithStatement", "declarations": [{}], "body": true_expr},
+            "WithStatement declarations must contain nodes",
+        ),
+        (
+            {"type": "TupleExpression", "elements": [{}]},
+            "TupleExpression elements must contain nodes",
+        ),
+        (
+            {"type": "ListExpression", "elements": [{}]},
+            "ListExpression elements must contain nodes",
+        ),
+        (
+            {"type": "DictExpression", "items": [{}]},
+            "DictExpression items must contain nodes",
+        ),
+        (
+            {"type": "PatternMatch", "value": true_expr, "cases": [{}]},
+            "PatternMatch cases must contain nodes",
+        ),
+    )
+    for payload, message in empty_list_item_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
+
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
     ast = YaraFile(
         rules=[

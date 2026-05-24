@@ -344,6 +344,16 @@ def _deserialize_required_node(data: dict[str, Any], field: str, context: str) -
     )
 
 
+def _deserialize_node_list_field(data: dict[str, Any], field: str, context: str) -> list[ASTNode]:
+    nodes = []
+    for item in _deserialize_list_field(data, field, context):
+        if item is None or item == {}:
+            msg = f"{context} {field} must contain nodes"
+            raise SerializationError(msg)
+        nodes.append(deserialize_node(item))
+    return nodes
+
+
 def _deserialize_dictionary_key(data: dict[str, Any]) -> str | ASTNode:
     if "key" not in data:
         msg = "DictionaryAccess key must be a string or expression"
@@ -1152,12 +1162,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_required_node(data, "expression", "ParenthesesExpression")
         )
     if node_type == "SetExpression":
-        return SetExpression(
-            [
-                deserialize_node(element)
-                for element in _deserialize_list_field(data, "elements", "SetExpression")
-            ]
-        )
+        return SetExpression(_deserialize_node_list_field(data, "elements", "SetExpression"))
     if node_type == "RangeExpression":
         return RangeExpression(
             _deserialize_required_node(data, "low", "RangeExpression"),
@@ -1166,10 +1171,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "FunctionCall":
         return FunctionCall(
             _deserialize_string_field(data, "function", "FunctionCall"),
-            [
-                deserialize_node(argument)
-                for argument in _deserialize_list_field(data, "arguments", "FunctionCall")
-            ],
+            _deserialize_node_list_field(data, "arguments", "FunctionCall"),
         )
     if node_type == "ArrayAccess":
         return ArrayAccess(
@@ -1248,10 +1250,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "WithStatement":
         return WithStatement(
-            declarations=[
-                deserialize_node(declaration)
-                for declaration in _deserialize_list_field(data, "declarations", "WithStatement")
-            ],
+            declarations=_deserialize_node_list_field(data, "declarations", "WithStatement"),
             body=_deserialize_required_node(data, "body", "WithStatement"),
         )
     if node_type == "WithDeclaration":
@@ -1295,10 +1294,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "TupleExpression":
         return TupleExpression(
-            elements=[
-                deserialize_node(element)
-                for element in _deserialize_list_field(data, "elements", "TupleExpression")
-            ],
+            elements=_deserialize_node_list_field(data, "elements", "TupleExpression"),
         )
     if node_type == "TupleIndexing":
         return TupleIndexing(
@@ -1307,17 +1303,11 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ListExpression":
         return ListExpression(
-            elements=[
-                deserialize_node(element)
-                for element in _deserialize_list_field(data, "elements", "ListExpression")
-            ],
+            elements=_deserialize_node_list_field(data, "elements", "ListExpression"),
         )
     if node_type == "DictExpression":
         return DictExpression(
-            items=[
-                deserialize_node(item)
-                for item in _deserialize_list_field(data, "items", "DictExpression")
-            ],
+            items=_deserialize_node_list_field(data, "items", "DictExpression"),
         )
     if node_type == "DictItem":
         return DictItem(
@@ -1339,10 +1329,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "PatternMatch":
         return PatternMatch(
             value=_deserialize_required_node(data, "value", "PatternMatch"),
-            cases=[
-                deserialize_node(case)
-                for case in _deserialize_list_field(data, "cases", "PatternMatch")
-            ],
+            cases=_deserialize_node_list_field(data, "cases", "PatternMatch"),
             default=_deserialize_optional_node_field(data, "default", "PatternMatch default"),
         )
     if node_type == "MatchCase":
