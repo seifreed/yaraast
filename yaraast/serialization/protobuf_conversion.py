@@ -984,9 +984,7 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
 
         strings = []
         for pb_string in pb_rule.strings:
-            string_def = protobuf_to_string(pb_string)
-            if string_def is not None:
-                strings.append(string_def)
+            strings.append(protobuf_to_string(pb_string))
 
         condition = (
             protobuf_to_expression(pb_rule.condition) if pb_rule.HasField("condition") else None
@@ -1173,9 +1171,7 @@ def _protobuf_to_hex_token(pb_token):
         for pb_alternative in pb_token.alternative.alternatives:
             alternative = []
             for nested_pb_token in pb_alternative.tokens:
-                token = _protobuf_to_hex_token(nested_pb_token)
-                if token is not None:
-                    alternative.append(token)
+                alternative.append(_protobuf_to_hex_token(nested_pb_token))
             alternatives.append(alternative)
         return _apply_node_metadata_from_protobuf(
             pb_token,
@@ -1189,7 +1185,8 @@ def _protobuf_to_hex_token(pb_token):
                 value=_protobuf_hex_nibble_value(pb_token.nibble.value),
             ),
         )
-    return None
+    msg = "Protobuf hex token is missing a token type"
+    raise SerializationError(msg)
 
 
 def _typed_modifier_value(pb_modifier):
@@ -1261,9 +1258,7 @@ def protobuf_to_string(pb_string) -> Any:
     if pb_string.HasField("hex"):
         tokens = []
         for pb_token in pb_string.hex.tokens:
-            token = _protobuf_to_hex_token(pb_token)
-            if token is not None:
-                tokens.append(token)
+            tokens.append(_protobuf_to_hex_token(pb_token))
         modifiers = _protobuf_modifiers_to_ast(pb_string.hex.modifiers)
         s = HexString(
             identifier=pb_string.identifier,
@@ -1281,7 +1276,8 @@ def protobuf_to_string(pb_string) -> Any:
         )
         s.modifiers = modifiers
         return _apply_node_metadata_from_protobuf(pb_string, s)
-    return None
+    msg = "Protobuf string definition is missing a string type"
+    raise SerializationError(msg)
 
 
 def protobuf_to_expression(pb_expr):

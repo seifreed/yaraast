@@ -683,6 +683,32 @@ def test_protobuf_deserialize_rejects_nested_empty_expression_payload() -> None:
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
+def test_protobuf_deserialize_rejects_empty_string_definition() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_string"
+    pb_rule.strings.add().identifier = "$a"
+    pb_rule.condition.boolean_literal.value = True
+
+    with pytest.raises(SerializationError, match="Protobuf string definition is missing"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
+def test_protobuf_deserialize_rejects_empty_hex_token() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pb_file: Any = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "empty_hex_token"
+    pb_string = pb_rule.strings.add()
+    pb_string.identifier = "$h"
+    pb_string.hex.tokens.add()
+    pb_rule.condition.boolean_literal.value = True
+
+    with pytest.raises(SerializationError, match="Protobuf hex token is missing"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+
 def test_protobuf_serializer_without_metadata() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = _sample_ast()
