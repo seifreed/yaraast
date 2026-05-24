@@ -36,6 +36,7 @@ _BASE64_INCOMPATIBLE_MODIFIERS = frozenset({"fullword", "nocase", "xor"})
 _XOR_INCOMPATIBLE_MODIFIERS = frozenset({"base64", "base64wide", "nocase"})
 BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
+_STRING_IDENTIFIER_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 class _XorKey(NamedTuple):
@@ -100,6 +101,10 @@ def validate_string_identifiers(strings) -> None:
         if getattr(string_def, "is_anonymous", False):
             continue
         identifier = output_string_identifier(string_def)
+        body = identifier.removeprefix("$")
+        if not body or _STRING_IDENTIFIER_BODY_RE.fullmatch(body) is None:
+            msg = f"Invalid string identifier '{identifier}' for libyara output"
+            raise ValueError(msg)
         if identifier in seen:
             msg = f"Duplicate string identifier '{identifier}' for libyara output"
             raise ValueError(msg)

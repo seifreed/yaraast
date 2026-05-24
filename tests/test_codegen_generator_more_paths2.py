@@ -528,6 +528,51 @@ def test_codegen_generators_reject_duplicate_string_identifiers() -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+def test_codegen_generators_reject_invalid_string_identifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_string_identifier",
+                strings=[PlainString(identifier="$bad-key", value="x")],
+                condition=StringIdentifier("$bad-key"),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_allow_libyara_string_identifier_forms() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="valid_string_identifiers",
+                strings=[
+                    PlainString(identifier="$1", value="x"),
+                    PlainString(identifier="$for", value="y"),
+                ],
+                condition=BinaryExpression(
+                    StringIdentifier("$1"),
+                    "or",
+                    StringIdentifier("$for"),
+                ),
+            )
+        ]
+    )
+
+    assert '$1 = "x"' in CodeGenerator().generate(ast)
+    assert '$for = "y"' in AdvancedCodeGenerator().generate(ast)
+    assert '$1 = "x"' in CommentAwareCodeGenerator().generate(ast)
+    assert '$for  = "y"' in PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generators_allow_multiple_anonymous_strings() -> None:
     ast = YaraFile(
         rules=[
