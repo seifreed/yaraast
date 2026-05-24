@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 import yaml
 
 from yaraast.dialects import YaraDialect, detect_dialect
+from yaraast.errors import SerializationError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
@@ -105,10 +106,19 @@ class RoundTripSerializer:
     ) -> tuple[YaraFile, str]:
         """Deserialize and generate YARA code with preserved formatting."""
         # Load serialized data
-        if format.lower() == "yaml":
-            data = yaml.safe_load(serialized_data)
+        format_name = format.lower()
+        if format_name == "yaml":
+            try:
+                data = yaml.safe_load(serialized_data)
+            except yaml.YAMLError as exc:
+                msg = "Invalid YAML input"
+                raise SerializationError(msg) from exc
         else:
-            data = json.loads(serialized_data)
+            try:
+                data = json.loads(serialized_data)
+            except json.JSONDecodeError as exc:
+                msg = "Invalid JSON input"
+                raise SerializationError(msg) from exc
 
         # Extract metadata and AST
         roundtrip_metadata = None
@@ -116,7 +126,7 @@ class RoundTripSerializer:
             roundtrip_metadata = RoundTripMetadata.from_dict(data["roundtrip_metadata"])
 
         # Deserialize AST
-        if format.lower() == "yaml":
+        if format_name == "yaml":
             ast = self.yaml_serializer.deserialize(serialized_data)
         else:
             ast = self.json_serializer.deserialize(serialized_data)

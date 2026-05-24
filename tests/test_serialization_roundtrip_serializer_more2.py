@@ -71,6 +71,24 @@ def test_roundtrip_deserialize_rejects_non_object_payload_as_serialization_error
 
 
 @pytest.mark.parametrize(
+    ("format_name", "payload", "message"),
+    [
+        ("json", "{bad", "Invalid JSON input"),
+        ("yaml", "ast: [", "Invalid YAML input"),
+    ],
+)
+def test_roundtrip_deserialize_rejects_malformed_serialized_input(
+    format_name: str,
+    payload: str,
+    message: str,
+) -> None:
+    serializer = RoundTripSerializer()
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.deserialize_and_generate(payload, format=format_name)
+
+
+@pytest.mark.parametrize(
     ("metadata", "message"),
     [
         ("metadata", "RoundTripMetadata must be an object"),
