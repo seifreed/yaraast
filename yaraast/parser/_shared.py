@@ -18,7 +18,6 @@ KNOWN_MODULES: frozenset[str] = frozenset(
         "math",
         "dotnet",
         "cuckoo",
-        "magic",
         "hash",
         "console",
         "string",

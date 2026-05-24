@@ -24,7 +24,6 @@ KNOWN_MODULES: frozenset[str] = frozenset(
         "string",
         "dex",
         "macho",
-        "magic",
         "vt",
     }
 )

@@ -27,7 +27,6 @@ class DocumentLinksProvider:
             "pe": "https://yara.readthedocs.io/en/stable/modules/pe.html",
             "elf": "https://yara.readthedocs.io/en/stable/modules/elf.html",
             "cuckoo": "https://yara.readthedocs.io/en/stable/modules/cuckoo.html",
-            "magic": "https://yara.readthedocs.io/en/stable/modules/magic.html",
             "hash": "https://yara.readthedocs.io/en/stable/modules/hash.html",
             "math": "https://yara.readthedocs.io/en/stable/modules/math.html",
             "dotnet": "https://yara.readthedocs.io/en/stable/modules/dotnet.html",

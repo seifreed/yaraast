@@ -58,7 +58,6 @@ MODULE_DOCS: dict[str, str] = {
     "hash": "Hash calculation module. Provides MD5, SHA1, SHA256, and checksum functions.",
     "dotnet": ".NET module. Provides access to .NET assembly metadata.",
     "time": "Time module. Provides functions for time-based operations.",
-    "magic": "Magic module. Provides file type identification.",
     "console": "Console module. Provides console output for debugging.",
     "cuckoo": "Cuckoo sandbox integration module.",
     "string": "String manipulation module.",

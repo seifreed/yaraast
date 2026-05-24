@@ -321,7 +321,6 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
             "sync.mutex": ("b", [("regexp", "r")]),
         },
     },
-    "magic": {"attrs": {"mime_type": "s", "type": "s"}},
     "vt": {"attrs": {"metadata": ("struct", {})}},
 }
 

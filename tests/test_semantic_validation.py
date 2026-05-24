@@ -768,6 +768,21 @@ class TestSemanticValidator:
         assert any("Struct has no field 'link'" in msg for msg in messages)
         assert any("Struct has no field 'visibility'" in msg for msg in messages)
 
+    def test_validate_rejects_unavailable_magic_module(self) -> None:
+        ast = Parser().parse("""
+            import "magic"
+
+            rule unavailable_magic_module {
+                condition:
+                    magic.mime_type == ""
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        assert any("Unknown module: magic" in error.message for error in result.errors)
+
     def test_validate_libyara_truthy_scalar_conditions(self) -> None:
         ast = Parser().parse("""
             rule string_literal_condition {

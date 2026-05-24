@@ -17,6 +17,7 @@ def test_builtin_modules() -> None:
     assert "pe" in loader.modules
     assert "elf" in loader.modules
     assert "math" in loader.modules
+    assert "magic" not in loader.modules
 
     # Check PE module
     pe_module = loader.get_module("pe")
