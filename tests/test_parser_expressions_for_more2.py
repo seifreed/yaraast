@@ -51,6 +51,8 @@ def test_parse_for_expression_success_and_error_paths() -> None:
         _expr_parser("them")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected variable name"):
         _expr_parser("any in 1 : ( true )")._parse_for_expression()
+    with pytest.raises(ParserError, match="Expected second variable after ','"):
+        _expr_parser("any i, in 1 : ( true )")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected 'in' after variable"):
         _expr_parser("any i 1 : ( true )")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected ':' after iterable"):

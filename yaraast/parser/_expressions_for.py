@@ -49,7 +49,10 @@ class ExpressionForMixin:
         variable = self._previous().value
 
         # Support multi-variable for loops: for any k, v in dict : (...)
-        if self._match(TokenType.COMMA) and self._match(TokenType.IDENTIFIER):
+        if self._match(TokenType.COMMA):
+            if not self._match(TokenType.IDENTIFIER):
+                msg = "Expected second variable after ','"
+                raise ParserError(msg, self._peek())
             variable = f"{variable},{self._previous().value}"
 
         if not self._match(TokenType.IN):
