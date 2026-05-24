@@ -16,12 +16,14 @@ from yaraast.serialization.json_serialize_visitors import (
     _serialize_hex_nibble_high,
     _serialize_hex_nibble_value,
     _serialize_meta_value,
+    _serialize_node_list,
     _serialize_nullable_string,
     _serialize_required_bool,
     _serialize_required_expression,
     _serialize_required_int,
     _serialize_required_number,
     _serialize_required_string,
+    _serialize_rule_modifiers,
     _serialize_string_key_dict,
     _serialize_string_list,
     visit_array_access,
@@ -475,17 +477,24 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         )
 
     def visit_extern_namespace(self, node) -> dict[str, Any]:
+        from yaraast.ast.extern import ExternRule
+
         return self._simple_node(
             "ExternNamespace",
             name=_serialize_required_string(node.name, "ExternNamespace name"),
-            extern_rules=[self.visit(rule) for rule in node.extern_rules],
+            extern_rules=_serialize_node_list(
+                self,
+                node.extern_rules,
+                "ExternNamespace extern_rules",
+                ExternRule,
+            ),
         )
 
     def visit_extern_rule(self, node) -> dict[str, Any]:
         return {
             "type": "ExternRule",
             "name": _serialize_required_string(node.name, "ExternRule name"),
-            "modifiers": [str(modifier) for modifier in node.modifiers],
+            "modifiers": _serialize_rule_modifiers(node.modifiers, "ExternRule"),
             "namespace": _serialize_nullable_string(node.namespace, "ExternRule namespace"),
         }
 

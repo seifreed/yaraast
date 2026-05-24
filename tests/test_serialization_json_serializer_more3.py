@@ -628,6 +628,14 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
     serializer = JsonSerializer(include_metadata=False)
     invalid_text: Any = 123
     invalid_rules: Any = ["rule_a", 123]
+    invalid_extern_rule_modifier_list = ExternRule("external_rule")
+    cast(Any, invalid_extern_rule_modifier_list).modifiers = False
+    invalid_extern_rule_modifier_item = ExternRule("external_rule")
+    cast(Any, invalid_extern_rule_modifier_item).modifiers = [object()]
+    invalid_namespace_rules_list = ExternNamespace("external")
+    cast(Any, invalid_namespace_rules_list).extern_rules = False
+    invalid_namespace_rules_item = ExternNamespace("external")
+    cast(Any, invalid_namespace_rules_item).extern_rules = [object()]
 
     invalid_cases: list[tuple[YaraFile, str]] = [
         (
@@ -651,8 +659,24 @@ def test_json_serializer_rejects_invalid_extern_scalar_fields() -> None:
             "ExternRule namespace must be a string",
         ),
         (
+            YaraFile(extern_rules=[invalid_extern_rule_modifier_list]),
+            "ExternRule modifiers must be a list",
+        ),
+        (
+            YaraFile(extern_rules=[invalid_extern_rule_modifier_item]),
+            "ExternRule modifiers item must be",
+        ),
+        (
             YaraFile(namespaces=[ExternNamespace(invalid_text)]),
             "ExternNamespace name must be a string",
+        ),
+        (
+            YaraFile(namespaces=[invalid_namespace_rules_list]),
+            "ExternNamespace extern_rules must be a list",
+        ),
+        (
+            YaraFile(namespaces=[invalid_namespace_rules_item]),
+            "ExternNamespace extern_rules item must be",
         ),
     ]
 

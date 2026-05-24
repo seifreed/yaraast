@@ -312,11 +312,11 @@ def _serialize_node_list(
     return serialized
 
 
-def _serialize_rule_modifiers(values) -> list[str]:
+def _serialize_rule_modifiers(values, context: str = "Rule") -> list[str]:
     from yaraast.ast.modifiers import RuleModifier
 
     if not isinstance(values, list | tuple):
-        msg = "Rule modifiers must be a list of rule modifiers"
+        msg = f"{context} modifiers must be a list of rule modifiers"
         raise SerializationError(msg)
 
     serialized = []
@@ -327,7 +327,7 @@ def _serialize_rule_modifiers(values) -> list[str]:
         if isinstance(value, str):
             serialized.append(value)
             continue
-        msg = "Rule modifiers item must be a string or RuleModifier"
+        msg = f"{context} modifiers item must be a string or RuleModifier"
         raise SerializationError(msg)
     return serialized
 
