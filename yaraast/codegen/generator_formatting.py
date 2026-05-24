@@ -116,7 +116,8 @@ def format_meta_key(key: str, scope: object | None = None) -> str:
     _validate_yara_identifier(key, "meta")
     scope_value = getattr(scope, "value", scope)
     if scope_value and scope_value != "public":
-        return f"{scope_value}:{key}"
+        msg = f"Unsupported meta scope '{scope_value}' for libyara output"
+        raise ValueError(msg)
     return key
 
 

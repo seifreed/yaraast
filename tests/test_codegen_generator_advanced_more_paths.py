@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, cast
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import Condition, InExpression
 from yaraast.ast.expressions import (
@@ -128,16 +130,35 @@ def test_advanced_generator_keeps_top_level_section_items_adjacent() -> None:
     assert 'include "a.yar"\n\ninclude "b.yar"' not in out
 
 
-def test_code_generators_preserve_scoped_meta_keys() -> None:
+def test_code_generators_reject_scoped_meta_keys_for_libyara_output() -> None:
     ast = YaraFile(
         rules=[
             Rule(
                 name="scoped_meta",
                 meta=[
                     MetaEntry.from_key_value("secret", "token", "private"),
-                    MetaEntry.from_key_value("classification", 7, "protected"),
-                    MetaEntry.from_key_value("owner", "team"),
                 ],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Unsupported meta scope"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Unsupported meta scope"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Unsupported meta scope"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Unsupported meta scope"):
+        PrettyPrinter(PrettyPrintOptions(align_meta_values=False)).pretty_print(ast)
+
+
+def test_code_generators_allow_public_meta_scope_for_libyara_output() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="public_meta",
+                meta=[MetaEntry.from_key_value("owner", "team")],
                 condition=BooleanLiteral(True),
             )
         ]
@@ -151,8 +172,6 @@ def test_code_generators_preserve_scoped_meta_keys() -> None:
     ]
 
     for output in outputs:
-        assert 'private:secret = "token"' in output
-        assert "protected:classification = 7" in output
         assert 'owner = "team"' in output
 
 
