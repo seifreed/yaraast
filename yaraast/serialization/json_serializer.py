@@ -10,6 +10,7 @@ from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
+    _serialize_required_expression,
     visit_array_access,
     visit_array_comprehension,
     visit_at_expression,
@@ -347,7 +348,14 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return visit_comment_group(self, node)
 
     def visit_defined_expression(self, node) -> dict[str, Any]:
-        return self._simple_node("DefinedExpression", expression=self.visit(node.expression))
+        return self._simple_node(
+            "DefinedExpression",
+            expression=_serialize_required_expression(
+                self,
+                node.expression,
+                "DefinedExpression expression",
+            ),
+        )
 
     def visit_string_operator_expression(self, node) -> dict[str, Any]:
         return visit_string_operator_expression(self, node)

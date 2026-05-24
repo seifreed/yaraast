@@ -29,6 +29,24 @@ def _serialize_optional_expression(serializer, value, context: str):
     return serializer.visit(value)
 
 
+def _serialize_required_expression(serializer, value, context: str):
+    from yaraast.ast.expressions import Expression
+
+    if not isinstance(value, Expression):
+        msg = f"{context} must be an AST expression"
+        raise SerializationError(msg)
+    return serializer.visit(value)
+
+
+def _serialize_expression_list(serializer, values, context: str):
+    if not isinstance(values, list | tuple):
+        msg = f"{context} must be a list of AST expressions"
+        raise SerializationError(msg)
+    return [
+        _serialize_required_expression(serializer, value, f"{context} item") for value in values
+    ]
+
+
 def _serialize_quantifier(serializer, value):
     from yaraast.ast.expressions import Expression
 
@@ -226,9 +244,17 @@ def visit_string_length(serializer, node) -> dict[str, Any]:
 def visit_binary_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "BinaryExpression",
-        "left": serializer.visit(node.left),
+        "left": _serialize_required_expression(
+            serializer,
+            node.left,
+            "BinaryExpression left",
+        ),
         "operator": node.operator,
-        "right": serializer.visit(node.right),
+        "right": _serialize_required_expression(
+            serializer,
+            node.right,
+            "BinaryExpression right",
+        ),
     }
 
 
@@ -236,23 +262,37 @@ def visit_unary_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "UnaryExpression",
         "operator": node.operator,
-        "operand": serializer.visit(node.operand),
+        "operand": _serialize_required_expression(
+            serializer,
+            node.operand,
+            "UnaryExpression operand",
+        ),
     }
 
 
 def visit_parentheses_expression(serializer, node) -> dict[str, Any]:
-    return {"type": "ParenthesesExpression", "expression": serializer.visit(node.expression)}
+    return {
+        "type": "ParenthesesExpression",
+        "expression": _serialize_required_expression(
+            serializer,
+            node.expression,
+            "ParenthesesExpression expression",
+        ),
+    }
 
 
 def visit_set_expression(serializer, node) -> dict[str, Any]:
-    return {"type": "SetExpression", "elements": [serializer.visit(elem) for elem in node.elements]}
+    return {
+        "type": "SetExpression",
+        "elements": _serialize_expression_list(serializer, node.elements, "SetExpression elements"),
+    }
 
 
 def visit_range_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "RangeExpression",
-        "low": serializer.visit(node.low),
-        "high": serializer.visit(node.high),
+        "low": _serialize_required_expression(serializer, node.low, "RangeExpression low"),
+        "high": _serialize_required_expression(serializer, node.high, "RangeExpression high"),
     }
 
 
@@ -260,20 +300,32 @@ def visit_function_call(serializer, node) -> dict[str, Any]:
     return {
         "type": "FunctionCall",
         "function": node.function,
-        "arguments": [serializer.visit(arg) for arg in node.arguments],
+        "arguments": _serialize_expression_list(
+            serializer,
+            node.arguments,
+            "FunctionCall arguments",
+        ),
     }
 
 
 def visit_array_access(serializer, node) -> dict[str, Any]:
     return {
         "type": "ArrayAccess",
-        "array": serializer.visit(node.array),
-        "index": serializer.visit(node.index),
+        "array": _serialize_required_expression(serializer, node.array, "ArrayAccess array"),
+        "index": _serialize_required_expression(serializer, node.index, "ArrayAccess index"),
     }
 
 
 def visit_member_access(serializer, node) -> dict[str, Any]:
-    return {"type": "MemberAccess", "object": serializer.visit(node.object), "member": node.member}
+    return {
+        "type": "MemberAccess",
+        "object": _serialize_required_expression(
+            serializer,
+            node.object,
+            "MemberAccess object",
+        ),
+        "member": node.member,
+    }
 
 
 def visit_for_expression(serializer, node) -> dict[str, Any]:
@@ -281,8 +333,12 @@ def visit_for_expression(serializer, node) -> dict[str, Any]:
         "type": "ForExpression",
         "quantifier": _serialize_quantifier(serializer, node.quantifier),
         "variable": node.variable,
-        "iterable": serializer.visit(node.iterable),
-        "body": serializer.visit(node.body),
+        "iterable": _serialize_required_expression(
+            serializer,
+            node.iterable,
+            "ForExpression iterable",
+        ),
+        "body": _serialize_required_expression(serializer, node.body, "ForExpression body"),
     }
 
 
@@ -303,13 +359,17 @@ def visit_at_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "AtExpression",
         "string_id": node.string_id,
-        "offset": serializer.visit(node.offset),
+        "offset": _serialize_required_expression(serializer, node.offset, "AtExpression offset"),
     }
 
 
 def visit_in_expression(serializer, node) -> dict[str, Any]:
     subject = _serialize_string_or_expression(serializer, node.subject, "InExpression subject")
-    return {"type": "InExpression", "subject": subject, "range": serializer.visit(node.range)}
+    return {
+        "type": "InExpression",
+        "subject": subject,
+        "range": _serialize_required_expression(serializer, node.range, "InExpression range"),
+    }
 
 
 def visit_of_expression(serializer, node) -> dict[str, Any]:
@@ -323,7 +383,11 @@ def visit_of_expression(serializer, node) -> dict[str, Any]:
 def visit_dictionary_access(serializer, node) -> dict[str, Any]:
     return {
         "type": "DictionaryAccess",
-        "object": serializer.visit(node.object),
+        "object": _serialize_required_expression(
+            serializer,
+            node.object,
+            "DictionaryAccess object",
+        ),
         "key": _serialize_string_or_expression(serializer, node.key, "DictionaryAccess key"),
     }
 
@@ -338,9 +402,17 @@ def visit_comment_group(serializer, node) -> dict[str, Any]:
 def visit_string_operator_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringOperatorExpression",
-        "left": serializer.visit(node.left),
+        "left": _serialize_required_expression(
+            serializer,
+            node.left,
+            "StringOperatorExpression left",
+        ),
         "operator": node.operator,
-        "right": serializer.visit(node.right),
+        "right": _serialize_required_expression(
+            serializer,
+            node.right,
+            "StringOperatorExpression right",
+        ),
     }
 
 
@@ -358,7 +430,7 @@ def visit_with_statement(serializer, node) -> dict[str, Any]:
     return {
         "type": "WithStatement",
         "declarations": [serializer.visit(decl) for decl in node.declarations],
-        "body": serializer.visit(node.body),
+        "body": _serialize_required_expression(serializer, node.body, "WithStatement body"),
     }
 
 
@@ -366,7 +438,7 @@ def visit_with_declaration(serializer, node) -> dict[str, Any]:
     return {
         "type": "WithDeclaration",
         "identifier": node.identifier,
-        "value": serializer.visit(node.value),
+        "value": _serialize_required_expression(serializer, node.value, "WithDeclaration value"),
     }
 
 
@@ -425,22 +497,34 @@ def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
 def visit_tuple_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "TupleExpression",
-        "elements": [serializer.visit(element) for element in node.elements],
+        "elements": _serialize_expression_list(
+            serializer,
+            node.elements,
+            "TupleExpression elements",
+        ),
     }
 
 
 def visit_tuple_indexing(serializer, node) -> dict[str, Any]:
     return {
         "type": "TupleIndexing",
-        "tuple_expr": serializer.visit(node.tuple_expr),
-        "index": serializer.visit(node.index),
+        "tuple_expr": _serialize_required_expression(
+            serializer,
+            node.tuple_expr,
+            "TupleIndexing tuple_expr",
+        ),
+        "index": _serialize_required_expression(serializer, node.index, "TupleIndexing index"),
     }
 
 
 def visit_list_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "ListExpression",
-        "elements": [serializer.visit(element) for element in node.elements],
+        "elements": _serialize_expression_list(
+            serializer,
+            node.elements,
+            "ListExpression elements",
+        ),
     }
 
 
@@ -454,15 +538,15 @@ def visit_dict_expression(serializer, node) -> dict[str, Any]:
 def visit_dict_item(serializer, node) -> dict[str, Any]:
     return {
         "type": "DictItem",
-        "key": serializer.visit(node.key),
-        "value": serializer.visit(node.value),
+        "key": _serialize_required_expression(serializer, node.key, "DictItem key"),
+        "value": _serialize_required_expression(serializer, node.value, "DictItem value"),
     }
 
 
 def visit_slice_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "SliceExpression",
-        "target": serializer.visit(node.target),
+        "target": _serialize_required_expression(serializer, node.target, "SliceExpression target"),
         "start": _serialize_optional_expression(serializer, node.start, "SliceExpression start"),
         "stop": _serialize_optional_expression(serializer, node.stop, "SliceExpression stop"),
         "step": _serialize_optional_expression(serializer, node.step, "SliceExpression step"),
@@ -473,14 +557,14 @@ def visit_lambda_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "LambdaExpression",
         "parameters": list(node.parameters),
-        "body": serializer.visit(node.body),
+        "body": _serialize_required_expression(serializer, node.body, "LambdaExpression body"),
     }
 
 
 def visit_pattern_match(serializer, node) -> dict[str, Any]:
     return {
         "type": "PatternMatch",
-        "value": serializer.visit(node.value),
+        "value": _serialize_required_expression(serializer, node.value, "PatternMatch value"),
         "cases": [serializer.visit(case) for case in node.cases],
         "default": _serialize_optional_expression(serializer, node.default, "PatternMatch default"),
     }
@@ -489,14 +573,18 @@ def visit_pattern_match(serializer, node) -> dict[str, Any]:
 def visit_match_case(serializer, node) -> dict[str, Any]:
     return {
         "type": "MatchCase",
-        "pattern": serializer.visit(node.pattern),
-        "result": serializer.visit(node.result),
+        "pattern": _serialize_required_expression(serializer, node.pattern, "MatchCase pattern"),
+        "result": _serialize_required_expression(serializer, node.result, "MatchCase result"),
     }
 
 
 def visit_spread_operator(serializer, node) -> dict[str, Any]:
     return {
         "type": "SpreadOperator",
-        "expression": serializer.visit(node.expression),
+        "expression": _serialize_required_expression(
+            serializer,
+            node.expression,
+            "SpreadOperator expression",
+        ),
         "is_dict": node.is_dict,
     }

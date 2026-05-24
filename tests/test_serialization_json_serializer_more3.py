@@ -8,20 +8,35 @@ from typing import Any
 import pytest
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
+    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
+    FunctionCall,
     Identifier,
     IntegerLiteral,
+    MemberAccess,
+    ParenthesesExpression,
+    RangeExpression,
+    SetExpression,
     StringCount,
     StringIdentifier,
     StringLength,
+    StringLiteral,
     StringOffset,
+    UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.operators import DefinedExpression, StringOperatorExpression
 from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, PragmaScope
 from yaraast.ast.rules import Import, Rule
 from yaraast.ast.strings import (
@@ -39,8 +54,18 @@ from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
+    DictExpression,
+    DictItem,
+    LambdaExpression,
+    ListExpression,
+    MatchCase,
     PatternMatch,
     SliceExpression,
+    SpreadOperator,
+    TupleExpression,
+    TupleIndexing,
+    WithDeclaration,
+    WithStatement,
 )
 
 
@@ -205,6 +230,52 @@ def test_json_serializer_rejects_invalid_string_or_expression_fields() -> None:
         for expression in expressions:
             ast = YaraFile(rules=[Rule(name="invalid_string_or_expression", condition=expression)])
             with pytest.raises(SerializationError, match="must be a string or expression"):
+                serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_invalid_required_expression_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_values: list[Any] = [False, Import("pe")]
+
+    for invalid_value in invalid_values:
+        expressions = [
+            BinaryExpression(invalid_value, "and", BooleanLiteral(True)),
+            BinaryExpression(BooleanLiteral(True), "and", invalid_value),
+            UnaryExpression("not", invalid_value),
+            ParenthesesExpression(invalid_value),
+            SetExpression([invalid_value]),
+            RangeExpression(invalid_value, IntegerLiteral(1)),
+            RangeExpression(IntegerLiteral(0), invalid_value),
+            FunctionCall("fn", [invalid_value]),
+            ArrayAccess(invalid_value, IntegerLiteral(0)),
+            ArrayAccess(Identifier("items"), invalid_value),
+            MemberAccess(invalid_value, "field"),
+            ForExpression("any", "i", invalid_value, BooleanLiteral(True)),
+            ForExpression("any", "i", Identifier("items"), invalid_value),
+            AtExpression("$a", invalid_value),
+            InExpression("$a", invalid_value),
+            DictionaryAccess(invalid_value, "key"),
+            DefinedExpression(invalid_value),
+            StringOperatorExpression(invalid_value, "contains", StringLiteral("x")),
+            StringOperatorExpression(StringLiteral("x"), "contains", invalid_value),
+            WithStatement([], invalid_value),
+            WithStatement([WithDeclaration("x", invalid_value)], BooleanLiteral(True)),
+            TupleExpression([invalid_value]),
+            TupleIndexing(invalid_value, IntegerLiteral(0)),
+            TupleIndexing(Identifier("tuple"), invalid_value),
+            ListExpression([invalid_value]),
+            DictExpression([DictItem(invalid_value, IntegerLiteral(1))]),
+            DictExpression([DictItem(StringLiteral("k"), invalid_value)]),
+            SliceExpression(invalid_value),
+            LambdaExpression(["x"], invalid_value),
+            PatternMatch(invalid_value, []),
+            PatternMatch(Identifier("subject"), [MatchCase(invalid_value, BooleanLiteral(True))]),
+            PatternMatch(Identifier("subject"), [MatchCase(StringLiteral("p"), invalid_value)]),
+            SpreadOperator(invalid_value),
+        ]
+        for expression in expressions:
+            ast = YaraFile(rules=[Rule(name="invalid_required", condition=expression)])
+            with pytest.raises(SerializationError, match="must be an AST expression"):
                 serializer.serialize(ast)
 
 
