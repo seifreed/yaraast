@@ -66,19 +66,38 @@ _SIGNATURE_SPECS: dict[str, tuple[str, str, list[tuple[str, str]]]] = {
     ),
     # Math module
     "math.entropy": (
-        "entropy(offset: int, length: int) -> float",
-        "Calculate entropy of data region",
-        [("offset", "Starting offset"), ("length", "Number of bytes")],
+        "entropy(value: string) -> float | entropy(offset: int, length: int) -> float",
+        "Calculate entropy of a string or data region",
+        [("value_or_offset", "String value or starting offset"), ("length", "Number of bytes")],
     ),
     "math.mean": (
-        "mean(offset: int, length: int) -> float",
-        "Calculate mean of byte values in region",
-        [("offset", "Starting offset"), ("length", "Number of bytes")],
+        "mean(value: string) -> float | mean(offset: int, length: int) -> float",
+        "Calculate mean byte value of a string or data region",
+        [("value_or_offset", "String value or starting offset"), ("length", "Number of bytes")],
     ),
     "math.deviation": (
-        "deviation(offset: int, length: int, mean: float) -> float",
+        "deviation(value: string, mean: float) -> float | deviation(offset: int, length: int, mean: float) -> float",
         "Calculate standard deviation of byte values",
-        [("offset", "Starting offset"), ("length", "Number of bytes"), ("mean", "Mean value")],
+        [
+            ("value_or_offset", "String value or starting offset"),
+            ("length_or_mean", "Number of bytes or mean value"),
+            ("mean", "Mean value"),
+        ],
+    ),
+    "math.count": (
+        "count(byte: int, offset: int, length: int) -> int",
+        "Count byte occurrences in a data region",
+        [("byte", "Byte value"), ("offset", "Starting offset"), ("length", "Number of bytes")],
+    ),
+    "math.percentage": (
+        "percentage(byte: int, offset: int, length: int) -> float",
+        "Calculate byte occurrence ratio in a data region",
+        [("byte", "Byte value"), ("offset", "Starting offset"), ("length", "Number of bytes")],
+    ),
+    "math.mode": (
+        "mode(offset: int, length: int) -> int",
+        "Find most common byte in a data region",
+        [("offset", "Starting offset"), ("length", "Number of bytes")],
     ),
     # Built-in functions
     "uint8": (

@@ -599,6 +599,8 @@ class MockELF:
 class MockMath:
     """Math module: real implementations of all YARA math functions."""
 
+    _missing_arg = object()
+
     def __init__(self, data: bytes) -> None:
         self.data = data
 
@@ -630,8 +632,10 @@ class MockMath:
             raise EvaluationError(msg)
         return int(value)
 
-    def entropy(self, offset: int, size: int) -> float | YaraUndefinedValue:
-        region = self._get_region("math.entropy", offset, size, min_size=0)
+    def entropy(
+        self, value_or_offset: object, size: object = _missing_arg
+    ) -> float | YaraUndefinedValue:
+        region = self._get_math_input("math.entropy", value_or_offset, size, min_size=0)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         if not region:
@@ -649,29 +653,47 @@ class MockMath:
 
         return entropy
 
-    def mean(self, offset: int, size: int) -> float | YaraUndefinedValue:
+    def mean(
+        self, value_or_offset: object, size: object = _missing_arg
+    ) -> float | YaraUndefinedValue:
         """Calculate mean byte value of data region."""
-        region = self._get_region("math.mean", offset, size, min_size=1)
+        region = self._get_math_input("math.mean", value_or_offset, size, min_size=1)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         return sum(region) / len(region)
 
-    def deviation(self, offset: int, size: int, mean_val: float) -> float | YaraUndefinedValue:
+    def deviation(
+        self,
+        value_or_offset: object,
+        size_or_mean: object,
+        mean_val: object = _missing_arg,
+    ) -> float | YaraUndefinedValue:
         """Calculate standard deviation from mean."""
-        if is_yara_undefined(mean_val):
-            return YARA_UNDEFINED
-        if not isinstance(mean_val, float):
-            msg = "math.deviation() expects a floating-point mean argument"
-            raise EvaluationError(msg)
-        region = self._get_region("math.deviation", offset, size, min_size=1)
+        if mean_val is self._missing_arg:
+            region = self._get_math_input(
+                "math.deviation", value_or_offset, self._missing_arg, min_size=1
+            )
+            mean_value = size_or_mean
+        else:
+            region = self._get_math_input(
+                "math.deviation", value_or_offset, size_or_mean, min_size=1
+            )
+            mean_value = mean_val
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
-        variance = sum((b - mean_val) ** 2 for b in region) / len(region)
+        if is_yara_undefined(mean_value):
+            return YARA_UNDEFINED
+        if not isinstance(mean_value, float):
+            msg = "math.deviation() expects a floating-point mean argument"
+            raise EvaluationError(msg)
+        variance = sum((b - mean_value) ** 2 for b in region) / len(region)
         return math.sqrt(variance)
 
-    def serial_correlation(self, offset: int, size: int) -> float | YaraUndefinedValue:
+    def serial_correlation(
+        self, value_or_offset: object, size: object = _missing_arg
+    ) -> float | YaraUndefinedValue:
         """Calculate serial correlation of data region."""
-        region = self._get_region("math.serial_correlation", offset, size, min_size=0)
+        region = self._get_math_input("math.serial_correlation", value_or_offset, size, min_size=0)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         n = len(region)
@@ -682,9 +704,11 @@ class MockMath:
         den = sum((b - mean_val) ** 2 for b in region)
         return num / den if den != 0 else SERIAL_CORRELATION_DEGENERATE
 
-    def monte_carlo_pi(self, offset: int, size: int) -> float | YaraUndefinedValue:
+    def monte_carlo_pi(
+        self, value_or_offset: object, size: object = _missing_arg
+    ) -> float | YaraUndefinedValue:
         """Estimate deviation from pi using Monte Carlo method."""
-        region = self._get_region("math.monte_carlo_pi", offset, size, min_size=6)
+        region = self._get_math_input("math.monte_carlo_pi", value_or_offset, size, min_size=6)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
         n_points = len(region) // 6
@@ -697,6 +721,51 @@ class MockMath:
                 inside += 1
         pi_estimate = 4.0 * inside / n_points
         return abs(pi_estimate - math.pi) / math.pi
+
+    def count(self, byte: object, offset: object, size: object) -> int | YaraUndefinedValue:
+        """Count byte occurrences in a data region."""
+        _require_strict_ints("math.count", byte)
+        byte_value = int(byte)
+        if not 0 <= byte_value <= 255:
+            return YARA_UNDEFINED
+        region = self._get_region("math.count", offset, size, min_size=0)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
+        return region.count(byte_value)
+
+    def percentage(self, byte: object, offset: object, size: object) -> float | YaraUndefinedValue:
+        """Calculate byte occurrence ratio in a data region."""
+        _require_strict_ints("math.percentage", byte)
+        byte_value = int(byte)
+        if not 0 <= byte_value <= 255:
+            return YARA_UNDEFINED
+        region = self._get_region("math.percentage", offset, size, min_size=0)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
+        return region.count(byte_value) / len(region) if region else 0.0
+
+    def mode(self, offset: object, size: object) -> int | YaraUndefinedValue:
+        """Return the most common byte in a data region."""
+        region = self._get_region("math.mode", offset, size, min_size=1)
+        if region is YARA_UNDEFINED:
+            return YARA_UNDEFINED
+        return max(range(256), key=region.count)
+
+    def _get_math_input(
+        self,
+        function_name: str,
+        value_or_offset: object,
+        size: object,
+        *,
+        min_size: int,
+    ) -> bytes | YaraUndefinedValue:
+        if size is self._missing_arg and isinstance(value_or_offset, str):
+            region = value_or_offset.encode()
+            return region if len(region) >= min_size else YARA_UNDEFINED
+        if size is self._missing_arg:
+            msg = f"{function_name}() expects 1 string argument or 2 integer arguments"
+            raise EvaluationError(msg)
+        return self._get_region(function_name, value_or_offset, size, min_size=min_size)
 
     def _get_region(
         self,

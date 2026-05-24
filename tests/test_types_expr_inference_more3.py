@@ -354,7 +354,7 @@ def test_expr_inference_validates_module_function_argument_types() -> None:
         )
     )
     assert any(
-        "Argument 'mean' to function 'deviation' must be double, got integer" in e
+        "Function 'deviation' does not accept argument types (integer, integer, integer)" in e
         for e in int_to_deviation_mean.errors
     )
 
@@ -378,25 +378,46 @@ def test_expr_inference_accepts_extended_math_module_functions() -> None:
 
     calls = [
         FunctionCall(function="math.mean", arguments=[IntegerLiteral(0), IntegerLiteral(1)]),
+        FunctionCall(function="math.mean", arguments=[StringLiteral("abc")]),
         FunctionCall(
             function="math.deviation",
             arguments=[IntegerLiteral(0), IntegerLiteral(1), DoubleLiteral(97.0)],
+        ),
+        FunctionCall(
+            function="math.deviation",
+            arguments=[StringLiteral("abc"), DoubleLiteral(97.0)],
         ),
         FunctionCall(
             function="math.serial_correlation",
             arguments=[IntegerLiteral(0), IntegerLiteral(2)],
         ),
         FunctionCall(
+            function="math.serial_correlation",
+            arguments=[StringLiteral("abc")],
+        ),
+        FunctionCall(
             function="math.monte_carlo_pi",
             arguments=[IntegerLiteral(0), IntegerLiteral(6)],
         ),
+        FunctionCall(
+            function="math.count",
+            arguments=[IntegerLiteral(97), IntegerLiteral(0), IntegerLiteral(3)],
+        ),
+        FunctionCall(
+            function="math.percentage",
+            arguments=[IntegerLiteral(97), IntegerLiteral(0), IntegerLiteral(3)],
+        ),
+        FunctionCall(function="math.mode", arguments=[IntegerLiteral(0), IntegerLiteral(3)]),
     ]
 
     for call in calls:
         inf = ExpressionTypeInference(env)
         out = inf.infer(call)
 
-        assert isinstance(out, DoubleType)
+        if call.function in {"math.count", "math.mode"}:
+            assert isinstance(out, IntegerType)
+        else:
+            assert isinstance(out, DoubleType)
         assert inf.errors == []
 
 

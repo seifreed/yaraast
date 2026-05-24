@@ -120,6 +120,10 @@ _STRING_OPS = frozenset(
 )
 
 _HASH_FUNCTIONS = frozenset(("md5", "sha1", "sha256", "checksum32", "crc32"))
+_MATH_STRING_REGION_FUNCTIONS = frozenset(
+    ("entropy", "mean", "serial_correlation", "monte_carlo_pi")
+)
+_MATH_INTEGER_REGION_FUNCTIONS = frozenset(("count", "percentage", "mode"))
 
 
 def _infer_logical_op(ctx, operator, left_type, right_type):
@@ -337,6 +341,13 @@ def infer_function_call(ctx, node: FunctionCall):
                         if actual_module == "hash" and func_name in _HASH_FUNCTIONS:
                             _validate_hash_function_arguments(ctx, func_name, node.arguments)
                             return func_def.return_type
+                        if actual_module == "math" and (
+                            func_name in _MATH_STRING_REGION_FUNCTIONS
+                            or func_name == "deviation"
+                            or func_name in _MATH_INTEGER_REGION_FUNCTIONS
+                        ):
+                            _validate_math_function_arguments(ctx, func_name, node.arguments)
+                            return func_def.return_type
                         if actual_module == "console" and func_name == "log":
                             _validate_console_log_arguments(ctx, node.arguments)
                             return func_def.return_type
@@ -523,6 +534,51 @@ def _validate_hash_function_arguments(ctx, func_name: str, arguments) -> None:
             f"Function '{func_name}' does not accept argument types "
             f"({_format_argument_types(arg_types)})"
         )
+
+
+def _validate_math_function_arguments(ctx, func_name: str, arguments) -> None:
+    arg_types = _argument_types(ctx, arguments)
+    if not _all_known(arg_types):
+        return
+
+    if func_name in _MATH_STRING_REGION_FUNCTIONS:
+        valid = _matches_math_string_or_region_signature(arg_types)
+    elif func_name == "deviation":
+        valid = _matches_math_deviation_signature(arg_types)
+    elif func_name in {"count", "percentage"}:
+        valid = len(arg_types) == 3 and all(
+            isinstance(arg_type, IntegerType) for arg_type in arg_types
+        )
+    else:
+        valid = len(arg_types) == 2 and all(
+            isinstance(arg_type, IntegerType) for arg_type in arg_types
+        )
+
+    if not valid:
+        ctx.errors.append(
+            f"Function '{func_name}' does not accept argument types "
+            f"({_format_argument_types(arg_types)})"
+        )
+
+
+def _matches_math_string_or_region_signature(arg_types: list[YaraType]) -> bool:
+    return (len(arg_types) == 1 and isinstance(arg_types[0], StringType)) or (
+        len(arg_types) == 2 and all(isinstance(arg_type, IntegerType) for arg_type in arg_types)
+    )
+
+
+def _matches_math_deviation_signature(arg_types: list[YaraType]) -> bool:
+    if len(arg_types) == 2:
+        return isinstance(arg_types[0], StringType) and isinstance(
+            arg_types[1], DoubleType | FloatType
+        )
+    if len(arg_types) == 3:
+        return (
+            isinstance(arg_types[0], IntegerType)
+            and isinstance(arg_types[1], IntegerType)
+            and isinstance(arg_types[2], DoubleType | FloatType)
+        )
+    return False
 
 
 def _validate_pe_imports_arguments(ctx, arguments) -> None:

@@ -107,18 +107,32 @@ def test_function_validator_accepts_extended_math_module_functions() -> None:
 
     for call in [
         FunctionCall(function="math.mean", arguments=[IntegerLiteral(0), IntegerLiteral(1)]),
+        FunctionCall(function="math.mean", arguments=[StringLiteral("abc")]),
         FunctionCall(
             function="math.deviation",
             arguments=[IntegerLiteral(0), IntegerLiteral(1), IntegerLiteral(97)],
         ),
         FunctionCall(
+            function="math.deviation", arguments=[StringLiteral("abc"), IntegerLiteral(97)]
+        ),
+        FunctionCall(
             function="math.serial_correlation",
             arguments=[IntegerLiteral(0), IntegerLiteral(2)],
         ),
+        FunctionCall(function="math.serial_correlation", arguments=[StringLiteral("abc")]),
         FunctionCall(
             function="math.monte_carlo_pi",
             arguments=[IntegerLiteral(0), IntegerLiteral(6)],
         ),
+        FunctionCall(
+            function="math.count",
+            arguments=[IntegerLiteral(97), IntegerLiteral(0), IntegerLiteral(3)],
+        ),
+        FunctionCall(
+            function="math.percentage",
+            arguments=[IntegerLiteral(97), IntegerLiteral(0), IntegerLiteral(3)],
+        ),
+        FunctionCall(function="math.mode", arguments=[IntegerLiteral(0), IntegerLiteral(3)]),
     ]:
         validator.visit(call)
 
@@ -144,13 +158,11 @@ def test_function_validator_rejects_too_few_module_function_arguments() -> None:
     env = TypeEnvironment()
     env.add_module("math")
 
-    FunctionCallValidator(result, env).visit(
-        FunctionCall(function="math.entropy", arguments=[IntegerLiteral(0)])
-    )
+    FunctionCallValidator(result, env).visit(FunctionCall(function="math.entropy", arguments=[]))
 
     assert result.is_valid is False
     assert any(
-        "Function 'entropy' expects at least 2 argument(s), got 1" in err.message
+        "Function 'entropy' expects at least 1 argument(s), got 0" in err.message
         for err in result.errors
     )
 

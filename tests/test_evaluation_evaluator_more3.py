@@ -236,6 +236,24 @@ def test_math_module_invalid_regions_evaluate_as_undefined() -> None:
     assert YaraEvaluator(data=b"").evaluate_file(ast) == {"invalid_math_regions": False}
 
 
+def test_math_module_accepts_string_arguments_and_byte_statistics() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule math_string_and_statistics {
+            condition:
+                math.entropy("abc") > 0.0 and
+                math.mean("abc") == 98.0 and
+                math.deviation("abc", 98.0) > 0.0 and
+                math.serial_correlation("aa") == -100000.0 and
+                math.count(97, 0, filesize) == 2 and
+                math.percentage(97, 0, filesize) == 0.5 and
+                math.mode(0, filesize) == 97
+        }
+        """)
+
+    assert YaraEvaluator(data=b"aabc").evaluate_file(ast) == {"math_string_and_statistics": True}
+
+
 def test_math_serial_correlation_returns_libyara_sentinel_for_degenerate_regions() -> None:
     ast = Parser().parse("""
         import "math"

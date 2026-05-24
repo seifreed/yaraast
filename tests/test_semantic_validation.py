@@ -314,7 +314,56 @@ class TestFunctionCallValidator:
         result = SemanticValidator().validate(ast)
 
         assert result.is_valid is False
-        assert "must be double, got integer" in result.errors[0].message
+        assert "Function 'deviation' does not accept argument types" in result.errors[0].message
+
+    def test_validate_accepts_libyara_math_string_and_region_signatures(self) -> None:
+        ast = Parser().parse("""
+            import "math"
+
+            rule valid_math_signatures {
+                condition:
+                    math.entropy("abc") >= 0.0 or
+                    math.mean("abc") >= 0.0 or
+                    math.deviation("abc", 97.0) >= 0.0 or
+                    math.serial_correlation("abc") >= -100000.0 or
+                    math.monte_carlo_pi("abcdef") >= 0.0 or
+                    math.count(97, 0, filesize) >= 0 or
+                    math.percentage(97, 0, filesize) >= 0.0 or
+                    math.mode(0, filesize) >= 0
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+
+    def test_validate_rejects_invalid_math_function_signatures(self) -> None:
+        ast = Parser().parse("""
+            import "math"
+
+            rule invalid_math_signatures {
+                condition:
+                    math.entropy(0) >= 0.0 or
+                    math.mean("abc", 1) >= 0.0 or
+                    math.deviation("abc", 97) >= 0.0 or
+                    math.count(97, "abc") >= 0 or
+                    math.percentage(97, "abc") >= 0.0 or
+                    math.mode("abc") >= 0
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any("Function 'entropy' does not accept argument types" in msg for msg in messages)
+        assert any("Function 'mean' does not accept argument types" in msg for msg in messages)
+        assert any("Function 'deviation' does not accept argument types" in msg for msg in messages)
+        assert any("Function 'count' does not accept argument types" in msg for msg in messages)
+        assert any(
+            "Function 'percentage' does not accept argument types" in msg for msg in messages
+        )
+        assert any("Function 'mode' does not accept argument types" in msg for msg in messages)
 
     def test_modulo_rejects_float_operands(self) -> None:
         ast = Parser().parse("""
