@@ -15,6 +15,20 @@ from yaraast.regex_literals import (
 REGEX_SUFFIX_MODIFIERS = VALID_REGEX_MODIFIERS
 REGEX_SUFFIX_NAMES = {"dotall": "s"}
 _UNSUPPORTED_REGEX_MODIFIERS = frozenset({"m", "multiline"})
+_UNSUPPORTED_SPACED_STRING_MODIFIERS = frozenset(
+    {
+        "case",
+        "dotall",
+        "i",
+        "m",
+        "multiline",
+        "s",
+        "utf8",
+        "utf16",
+        "utf16le",
+        "utf16be",
+    }
+)
 BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
@@ -214,6 +228,7 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
     ):
         name = modifier.name
         value = modifier.value
+        _validate_spaced_string_modifier(name)
         if value is not None:
             if name == "xor":
                 return f"{name}({_format_xor_modifier_value(value)})"
@@ -229,7 +244,15 @@ def format_modifier(modifier: Any, visit: Callable[[Any], str] | None = None) ->
             return f"{name}({value})"
         return str(name)
 
-    return str(modifier)
+    text = str(modifier)
+    _validate_spaced_string_modifier(text)
+    return text
+
+
+def _validate_spaced_string_modifier(name: str) -> None:
+    if name in _UNSUPPORTED_SPACED_STRING_MODIFIERS:
+        msg = f"Unsupported string modifier for libyara output: {name}"
+        raise ValueError(msg)
 
 
 def _format_xor_modifier_value(value: object) -> str:

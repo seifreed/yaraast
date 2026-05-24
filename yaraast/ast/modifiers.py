@@ -44,7 +44,7 @@ class StringModifierType(Enum):
 
     # Case sensitivity
     NOCASE = "nocase"
-    CASE = "case"  # Explicit case-sensitive (rare but valid)
+    CASE = "case"  # Dialect-specific explicit case-sensitive modifier
     DOTALL = "dotall"
     MULTILINE = "multiline"
 

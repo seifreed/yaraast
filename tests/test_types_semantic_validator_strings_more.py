@@ -129,6 +129,47 @@ def test_string_modifier_applicability_validator_rejects_regex_multiline_modifie
     assert any("Unsupported regex modifier 'm'" in message for message in messages)
 
 
+def test_semantic_validator_rejects_classic_unsupported_string_modifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_classic_modifiers",
+                strings=[
+                    PlainString(
+                        identifier="$case",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("case")],
+                    ),
+                    PlainString(
+                        identifier="$utf",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("utf16")],
+                    ),
+                    PlainString(identifier="$raw", value="abc", modifiers=["i"]),
+                    RegexString(
+                        identifier="$regex",
+                        regex="abc",
+                        modifiers=[StringModifier.from_name_value("utf8")],
+                    ),
+                ],
+                condition=BinaryExpression(
+                    BinaryExpression(StringIdentifier("$case"), "or", StringIdentifier("$utf")),
+                    "or",
+                    BinaryExpression(StringIdentifier("$raw"), "or", StringIdentifier("$regex")),
+                ),
+            )
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert any("Unsupported string modifier 'case'" in message for message in messages)
+    assert any("Unsupported string modifier 'utf16'" in message for message in messages)
+    assert any("Unsupported string modifier 'i'" in message for message in messages)
+    assert any("Unsupported regex modifier 'utf8'" in message for message in messages)
+
+
 def test_semantic_validator_reports_regex_only_modifiers_on_plain_strings() -> None:
     ast = YaraFile(
         rules=[

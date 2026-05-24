@@ -72,6 +72,18 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
         StringModifierType.DOTALL.value,
         StringModifierType.MULTILINE.value,
     }
+    _CLASSIC_UNSUPPORTED_NAMED_MODIFIERS = {
+        StringModifierType.CASE.value,
+        StringModifierType.UTF8.value,
+        StringModifierType.UTF16.value,
+        StringModifierType.UTF16LE.value,
+        StringModifierType.UTF16BE.value,
+    }
+    _TEXT_UNSUPPORTED_MODIFIERS = _CLASSIC_UNSUPPORTED_NAMED_MODIFIERS | {
+        "i",
+        "m",
+        "s",
+    }
     _HEX_ALLOWED_MODIFIERS = {
         StringModifierType.PRIVATE.value,
     }
@@ -83,7 +95,7 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
     _REGEX_UNSUPPORTED_MODIFIERS = {
         "m",
         StringModifierType.MULTILINE.value,
-    }
+    } | _CLASSIC_UNSUPPORTED_NAMED_MODIFIERS
     _BASE64_MODIFIERS = {
         StringModifierType.BASE64.value,
         StringModifierType.BASE64WIDE.value,
@@ -112,6 +124,7 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
     def visit_plain_string(self, node: PlainString) -> None:
         self._check_duplicate_modifiers(node)
         self._check_plain_string_content(node)
+        self._check_unsupported_modifiers(node, self._TEXT_UNSUPPORTED_MODIFIERS, "string")
         self._check_non_regex_string(node, "plain")
         self._check_text_string_combinations(node)
         self._check_text_string_modifier_values(node)
@@ -152,6 +165,23 @@ class StringModifierApplicabilityValidator(DefaultASTVisitor[None]):
                 f"String modifier '{name}' used on regex string '{node.identifier}' in rule '{self.current_rule_name}'",
                 node.location,
                 "Use base64, base64wide, and xor only on text strings.",
+            )
+
+    def _check_unsupported_modifiers(
+        self,
+        node: StringDefinition,
+        unsupported_modifiers: set[str],
+        label: str,
+    ) -> None:
+        for modifier in node.modifiers:
+            name = self._modifier_name(modifier)
+            if name not in unsupported_modifiers:
+                continue
+
+            self.result.add_error(
+                f"Unsupported {label} modifier '{name}' used on string '{node.identifier}' in rule '{self.current_rule_name}'",
+                node.location,
+                "Remove modifiers that are not supported by classic YARA syntax.",
             )
 
     def _check_plain_string_content(self, node: PlainString) -> None:

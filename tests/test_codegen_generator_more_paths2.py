@@ -337,6 +337,27 @@ def test_codegen_generator_rejects_duplicate_regex_suffix_modifiers() -> None:
         gen.generate(YaraFile(rules=[rule]))
 
 
+def test_codegen_generator_rejects_unsupported_spaced_string_modifiers() -> None:
+    gen = CodeGenerator()
+    strings = [
+        PlainString("$case", value="abc", modifiers=[StringModifier.from_name_value("case")]),
+        PlainString("$utf", value="abc", modifiers=[StringModifier.from_name_value("utf16")]),
+        PlainString("$raw", value="abc", modifiers=["i"]),
+        PlainString("$dotall", value="abc", modifiers=[StringModifier.from_name_value("dotall")]),
+        RegexString("$regex", regex="abc", modifiers=[StringModifier.from_name_value("utf8")]),
+    ]
+
+    for string_def in strings:
+        rule = Rule(
+            name="bad_spaced_modifier",
+            strings=[string_def],
+            condition=StringIdentifier(string_def.identifier),
+        )
+
+        with pytest.raises(ValueError, match="Unsupported string modifier"):
+            gen.generate(YaraFile(rules=[rule]))
+
+
 def test_codegen_generator_expression_and_condition_paths() -> None:
     gen = CodeGenerator()
 
