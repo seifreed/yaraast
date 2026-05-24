@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -111,7 +112,7 @@ class RoundTripSerializer:
 
         # Extract metadata and AST
         roundtrip_metadata = None
-        if "roundtrip_metadata" in data:
+        if isinstance(data, Mapping) and "roundtrip_metadata" in data:
             roundtrip_metadata = RoundTripMetadata.from_dict(data["roundtrip_metadata"])
 
         # Deserialize AST

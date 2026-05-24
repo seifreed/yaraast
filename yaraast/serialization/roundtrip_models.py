@@ -2,8 +2,69 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
+
+from yaraast.errors import SerializationError
+
+
+def _deserialize_object(data: object, context: str) -> Mapping[str, object]:
+    if isinstance(data, Mapping):
+        return data
+    msg = f"{context} must be an object"
+    raise SerializationError(msg)
+
+
+def _deserialize_string_field(
+    data: Mapping[str, object],
+    field_name: str,
+    default: str,
+    context: str,
+) -> str:
+    value = data.get(field_name, default)
+    if isinstance(value, str):
+        return value
+    msg = f"{context} {field_name} must be a string"
+    raise SerializationError(msg)
+
+
+def _deserialize_nullable_string_field(
+    data: Mapping[str, object],
+    field_name: str,
+    context: str,
+) -> str | None:
+    value = data.get(field_name)
+    if value is None or isinstance(value, str):
+        return value
+    msg = f"{context} {field_name} must be a string"
+    raise SerializationError(msg)
+
+
+def _deserialize_int_field(
+    data: Mapping[str, object],
+    field_name: str,
+    default: int,
+    context: str,
+) -> int:
+    value = data.get(field_name, default)
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    msg = f"{context} {field_name} must be an integer"
+    raise SerializationError(msg)
+
+
+def _deserialize_bool_field(
+    data: Mapping[str, object],
+    field_name: str,
+    default: bool,
+    context: str,
+) -> bool:
+    value = data.get(field_name, default)
+    if isinstance(value, bool):
+        return value
+    msg = f"{context} {field_name} must be a boolean"
+    raise SerializationError(msg)
 
 
 @dataclass
@@ -35,9 +96,48 @@ class FormattingInfo:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> FormattingInfo:
+    def from_dict(cls, data: object) -> FormattingInfo:
         """Create from dictionary."""
-        return cls(**data)
+        mapping = _deserialize_object(data, "FormattingInfo")
+        defaults = cls()
+        return cls(
+            indent_size=_deserialize_int_field(
+                mapping, "indent_size", defaults.indent_size, "FormattingInfo"
+            ),
+            indent_style=_deserialize_string_field(
+                mapping, "indent_style", defaults.indent_style, "FormattingInfo"
+            ),
+            line_endings=_deserialize_string_field(
+                mapping, "line_endings", defaults.line_endings, "FormattingInfo"
+            ),
+            blank_lines_before_rule=_deserialize_int_field(
+                mapping,
+                "blank_lines_before_rule",
+                defaults.blank_lines_before_rule,
+                "FormattingInfo",
+            ),
+            blank_lines_after_imports=_deserialize_int_field(
+                mapping,
+                "blank_lines_after_imports",
+                defaults.blank_lines_after_imports,
+                "FormattingInfo",
+            ),
+            blank_lines_after_includes=_deserialize_int_field(
+                mapping,
+                "blank_lines_after_includes",
+                defaults.blank_lines_after_includes,
+                "FormattingInfo",
+            ),
+            comment_style=_deserialize_string_field(
+                mapping, "comment_style", defaults.comment_style, "FormattingInfo"
+            ),
+            preserve_spacing=_deserialize_bool_field(
+                mapping, "preserve_spacing", defaults.preserve_spacing, "FormattingInfo"
+            ),
+            preserve_alignment=_deserialize_bool_field(
+                mapping, "preserve_alignment", defaults.preserve_alignment, "FormattingInfo"
+            ),
+        )
 
 
 @dataclass
@@ -67,18 +167,31 @@ class RoundTripMetadata:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> RoundTripMetadata:
+    def from_dict(cls, data: object) -> RoundTripMetadata:
         """Create from dictionary."""
-        formatting_data = data.get("formatting", {})
+        mapping = _deserialize_object(data, "RoundTripMetadata")
+        formatting_data = mapping.get("formatting", {})
         formatting = FormattingInfo.from_dict(formatting_data)
 
         return cls(
-            original_source=data.get("original_source"),
-            source_file=data.get("source_file"),
-            parsed_at=data.get("parsed_at"),
-            serializer_version=data.get("serializer_version", "1.0.0"),
+            original_source=_deserialize_nullable_string_field(
+                mapping, "original_source", "RoundTripMetadata"
+            ),
+            source_file=_deserialize_nullable_string_field(
+                mapping, "source_file", "RoundTripMetadata"
+            ),
+            parsed_at=_deserialize_nullable_string_field(mapping, "parsed_at", "RoundTripMetadata"),
+            serializer_version=_deserialize_string_field(
+                mapping, "serializer_version", "1.0.0", "RoundTripMetadata"
+            ),
             formatting=formatting,
-            comments_preserved=data.get("comments_preserved", True),
-            formatting_preserved=data.get("formatting_preserved", True),
-            parser_version=data.get("parser_version"),
+            comments_preserved=_deserialize_bool_field(
+                mapping, "comments_preserved", True, "RoundTripMetadata"
+            ),
+            formatting_preserved=_deserialize_bool_field(
+                mapping, "formatting_preserved", True, "RoundTripMetadata"
+            ),
+            parser_version=_deserialize_nullable_string_field(
+                mapping, "parser_version", "RoundTripMetadata"
+            ),
         )
