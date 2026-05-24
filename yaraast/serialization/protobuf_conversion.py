@@ -222,7 +222,7 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
         pb_string.identifier = string_def.identifier
         convert_string_to_protobuf(string_def, pb_string)
 
-    if rule.condition:
+    if rule.condition is not None:
         convert_expression_to_protobuf(rule.condition, pb_rule.condition)
 
     for pragma in rule.pragmas:
@@ -394,6 +394,9 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
         for mod in string_def.modifiers:
             pb_mod = pb_string.regex.modifiers.add()
             _copy_modifier_to_protobuf(mod, pb_mod)
+    else:
+        msg = f"Unsupported protobuf string definition type: {type(string_def).__name__}"
+        raise SerializationError(msg)
 
 
 def convert_hex_token_to_protobuf(token, pb_token) -> None:
@@ -428,6 +431,9 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
     elif isinstance(token, HexNibble):
         pb_token.nibble.high = token.high
         pb_token.nibble.value = _hex_nibble_value_to_protobuf(token.value)
+    else:
+        msg = f"Unsupported protobuf hex token type: {type(token).__name__}"
+        raise SerializationError(msg)
 
 
 def _hex_byte_value_to_protobuf(value: int | str) -> str:
@@ -653,8 +659,6 @@ def _protobuf_string_set_to_ast(pb_owner):
 
 def convert_expression_to_protobuf(expr, pb_expr) -> None:
     """Convert an AST expression to protobuf."""
-    import warnings
-
     from yaraast.ast.conditions import (
         AtExpression,
         ForExpression,
@@ -890,11 +894,8 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.expression, pb_expr.spread_operator.expression)
         pb_expr.spread_operator.is_dict = expr.is_dict
     else:
-        warnings.warn(
-            f"Protobuf serialization: unsupported expression type {type(expr).__name__}, "
-            "data will be lost",
-            stacklevel=2,
-        )
+        msg = f"Unsupported protobuf expression type: {type(expr).__name__}"
+        raise SerializationError(msg)
 
 
 def convert_with_declaration_to_protobuf(declaration, pb_declaration) -> None:

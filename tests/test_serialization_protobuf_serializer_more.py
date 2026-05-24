@@ -442,6 +442,53 @@ def test_protobuf_serializer_rejects_invalid_string_set_list_items() -> None:
                 serializer.serialize(ast)
 
 
+def test_protobuf_serializer_rejects_unsupported_condition_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    invalid_conditions: list[Any] = [False, 0, object()]
+
+    for condition in invalid_conditions:
+        ast = YaraFile(rules=[Rule(name="unsupported_condition", condition=condition)])
+        with pytest.raises(SerializationError, match="Unsupported protobuf expression type"):
+            serializer.serialize(ast)
+
+
+def test_protobuf_serializer_rejects_unsupported_string_definitions() -> None:
+    class UnsupportedStringDefinition:
+        identifier = "$x"
+
+    serializer = ProtobufSerializer(include_metadata=False)
+    unsupported_string: Any = UnsupportedStringDefinition()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="unsupported_string",
+                strings=[unsupported_string],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(SerializationError, match="Unsupported protobuf string definition type"):
+        serializer.serialize(ast)
+
+
+def test_protobuf_serializer_rejects_unsupported_hex_tokens() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    unsupported_token: Any = object()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="unsupported_hex_token",
+                strings=[HexString(identifier="$h", tokens=[unsupported_token])],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(SerializationError, match="Unsupported protobuf hex token type"):
+        serializer.serialize(ast)
+
+
 def test_protobuf_serializer_preserves_typed_string_modifier_values() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(
