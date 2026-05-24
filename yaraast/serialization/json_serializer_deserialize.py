@@ -93,8 +93,8 @@ def _deserialize_required_ast_value(self, data: dict[str, Any], field: str, cont
 
 def _deserialize_required_quantifier(self, data: dict[str, Any], field: str, context: str) -> Any:
     value = _deserialize_required_field(data, field, context)
-    if isinstance(value, list):
-        msg = f"{context} {field} must be a scalar or expression"
+    if isinstance(value, bool | list):
+        msg = f"{context} {field} must be a string, number, or expression"
         raise SerializationError(msg)
     quantifier = _deserialize_ast_value(self, value, f"{context} {field}")
     if quantifier is not None:
