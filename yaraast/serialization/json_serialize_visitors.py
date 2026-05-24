@@ -5,6 +5,8 @@ from __future__ import annotations
 import base64
 from typing import Any
 
+from yaraast.errors import SerializationError
+
 
 def _serialize_ast_value(serializer, value):
     if hasattr(value, "accept"):
@@ -14,6 +16,15 @@ def _serialize_ast_value(serializer, value):
     if isinstance(value, set | frozenset):
         return [_serialize_ast_value(serializer, item) for item in sorted(value, key=str)]
     return value
+
+
+def _serialize_optional_ast_node(serializer, value, context: str):
+    if value is None:
+        return None
+    if not hasattr(value, "accept"):
+        msg = f"{context} must be an AST node"
+        raise SerializationError(msg)
+    return serializer.visit(value)
 
 
 def _serialize_modifier_value(value: Any) -> Any:
@@ -76,7 +87,7 @@ def visit_rule(serializer, node) -> dict[str, Any]:
         "tags": [serializer.visit(tag) for tag in node.tags],
         "meta": [_serialize_meta_entry(serializer, m) for m in node.meta],
         "strings": [serializer.visit(s) for s in node.strings],
-        "condition": serializer.visit(node.condition) if node.condition else None,
+        "condition": _serialize_optional_ast_node(serializer, node.condition, "Rule condition"),
         "pragmas": [serializer.visit(pragma) for pragma in node.pragmas],
     }
 
@@ -219,7 +230,11 @@ def visit_for_of_expression(serializer, node) -> dict[str, Any]:
         "type": "ForOfExpression",
         "quantifier": _serialize_ast_value(serializer, node.quantifier),
         "string_set": _serialize_ast_value(serializer, node.string_set),
-        "condition": serializer.visit(node.condition) if node.condition else None,
+        "condition": _serialize_optional_ast_node(
+            serializer,
+            node.condition,
+            "ForOfExpression condition",
+        ),
     }
 
 

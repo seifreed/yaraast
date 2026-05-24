@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import pytest
 
@@ -112,6 +113,35 @@ def test_json_roundtrip_preserves_anonymous_strings_for_codegen() -> None:
     assert "$ = { 41 }" in output
     assert "$ = /def/" in output
     assert "$anon_" not in output
+
+
+def test_json_serializer_rejects_invalid_raw_conditions() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_conditions: list[Any] = [False, 0, object()]
+
+    for condition in invalid_conditions:
+        ast = YaraFile(rules=[Rule(name="invalid_condition", condition=condition)])
+        with pytest.raises(SerializationError, match="Rule condition must be an AST node"):
+            serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_invalid_raw_for_of_conditions() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_condition: Any = False
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_for_of_condition",
+                condition=ForOfExpression("any", Identifier("them"), invalid_condition),
+            )
+        ]
+    )
+
+    with pytest.raises(
+        SerializationError,
+        match="ForOfExpression condition must be an AST node",
+    ):
+        serializer.serialize(ast)
 
 
 def test_json_deserializer_parses_legacy_hex_xor_modifier_values() -> None:
