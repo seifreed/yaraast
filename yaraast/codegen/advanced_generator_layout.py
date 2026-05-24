@@ -12,6 +12,7 @@ from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
     validate_rule_identifiers,
+    validate_yara_identifier,
     validate_yara_identifier_path,
 )
 from yaraast.codegen.generator_helpers import validate_string_identifiers
@@ -69,7 +70,8 @@ def visit_rule(generator, node) -> str:
     modifiers = format_rule_modifiers(node.modifiers)
     if modifiers:
         generator._write(f"{modifiers} ")
-    generator._write(f"rule {node.name}")
+    rule_name = validate_yara_identifier(node.name, "rule")
+    generator._write(f"rule {rule_name}")
 
     if node.tags:
         if generator.config.space_before_colon:

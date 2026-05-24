@@ -540,6 +540,20 @@ def test_codegen_generators_reject_invalid_rule_identifiers(rule_name: str) -> N
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize("rule_name", ["bad-name", "for", "1bad"])
+def test_codegen_rule_visitors_reject_invalid_rule_identifiers(rule_name: str) -> None:
+    rule = Rule(name=rule_name, condition=BooleanLiteral(True))
+
+    with pytest.raises(ValueError, match="Invalid rule identifier"):
+        CodeGenerator().generate(rule)
+    with pytest.raises(ValueError, match="Invalid rule identifier"):
+        AdvancedCodeGenerator().generate(rule)
+    with pytest.raises(ValueError, match="Invalid rule identifier"):
+        CommentAwareCodeGenerator().generate(rule)
+    with pytest.raises(ValueError, match="Invalid rule identifier"):
+        PrettyPrinter().visit_rule(rule)
+
+
 def test_codegen_generators_reject_invalid_rule_modifiers() -> None:
     ast = YaraFile(
         rules=[Rule(name="invalid_modifier", modifiers=["foo"], condition=BooleanLiteral(True))]

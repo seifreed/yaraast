@@ -71,6 +71,7 @@ from yaraast.codegen.generator_formatting import (
     format_meta_value,
     format_rule_modifiers,
     format_rule_tags,
+    validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
@@ -211,7 +212,8 @@ class CodeGenerator(ASTVisitor[str]):
         if modifiers:
             self._write(f"{modifiers} ")
 
-        self._write(f"rule {node.name}")
+        rule_name = validate_yara_identifier(node.name, "rule")
+        self._write(f"rule {rule_name}")
         self._write_rule_tags(node.tags)
 
     def _format_rule_modifiers(self, node: Rule) -> str:

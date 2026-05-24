@@ -12,6 +12,7 @@ from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
     validate_rule_identifiers,
+    validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
@@ -24,7 +25,7 @@ from yaraast.codegen.generator_helpers import (
 )
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import YaraFile
+    from yaraast.ast.base import ASTNode, YaraFile
     from yaraast.ast.meta import Meta
     from yaraast.ast.rules import Rule
     from yaraast.ast.strings import HexString, PlainString, RegexString
@@ -123,7 +124,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
             self._write_top_level_node(node)
         self._writeline()
 
-    def generate(self, node: YaraFile) -> str:
+    def generate(self, node: ASTNode) -> str:
         """Generate code with comments."""
         self.buffer.seek(0)
         self.buffer.truncate()
@@ -190,7 +191,8 @@ class CommentAwareCodeGenerator(CodeGenerator):
         if modifiers:
             self._write(f"{modifiers} ")
 
-        self._write(f"rule {node.name}")
+        rule_name = validate_yara_identifier(node.name, "rule")
+        self._write(f"rule {rule_name}")
 
         if node.tags:
             self._write(" : ")

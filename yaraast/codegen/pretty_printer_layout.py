@@ -6,6 +6,7 @@ from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     validate_rule_identifiers,
     validate_rule_tags,
+    validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
@@ -89,7 +90,8 @@ def visit_rule(printer, node) -> str:
     modifiers = format_rule_modifiers(node.modifiers)
     if modifiers:
         line_parts.append(modifiers)
-    line_parts.extend(["rule", node.name])
+    rule_name = validate_yara_identifier(node.name, "rule")
+    line_parts.extend(["rule", rule_name])
     if node.tags:
         validate_rule_tags(node.tags)
         tag_names = [tag if isinstance(tag, str) else tag.name for tag in node.tags]
