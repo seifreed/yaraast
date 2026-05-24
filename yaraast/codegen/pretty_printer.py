@@ -106,6 +106,23 @@ class PrettyPrinter(CommentAwareCodeGenerator):
             self.buffer.write(text)
         self.buffer.write("\n")
 
+    def _write_single_comment(self, comment: Any, inline: bool = False) -> None:
+        if not inline:
+            super()._write_single_comment(comment, inline)
+            return
+
+        text = comment.text
+        if text.startswith("//"):
+            text = text[2:].strip()
+        elif text.startswith("/*") and text.endswith("*/"):
+            text = text[2:-2].strip()
+
+        spacing = max(0, self.options.inline_comment_spacing)
+        if self.options.align_comments:
+            current_line = self.buffer.getvalue().rsplit("\n", 1)[-1]
+            spacing = max(spacing, self.options.comment_column - len(current_line))
+        self._write(f"{' ' * spacing}// {text}")
+
     def pretty_print(self, ast: YaraFile) -> str:
         """Pretty print the entire YARA file."""
         self.buffer = StringIO()

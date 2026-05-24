@@ -311,6 +311,7 @@ def test_pretty_printer_preserves_nested_comments_when_enabled() -> None:
     rule.trailing_comment = Comment("rule tail")
 
     options = PrettyPrintOptions(
+        align_comments=False,
         align_meta_values=False,
         align_string_definitions=False,
     )
@@ -329,6 +330,7 @@ def test_pretty_printer_preserves_nested_comments_when_enabled() -> None:
 
     suppressed = PrettyPrinter(
         PrettyPrintOptions(
+            align_comments=False,
             align_meta_values=False,
             align_string_definitions=False,
             preserve_comments=False,
@@ -337,6 +339,39 @@ def test_pretty_printer_preserves_nested_comments_when_enabled() -> None:
 
     assert "lead" not in suppressed
     assert "tail" not in suppressed
+
+
+def test_pretty_printer_honors_inline_comment_spacing_options() -> None:
+    meta = Meta("author", "alice")
+    meta.trailing_comment = Comment("meta tail")
+    rule = Rule(
+        name="inline_comments",
+        meta=[meta],
+        condition=BooleanLiteral(True),
+    )
+
+    spaced = PrettyPrinter(
+        PrettyPrintOptions(
+            align_comments=False,
+            align_meta_values=False,
+            inline_comment_spacing=5,
+        )
+    ).pretty_print(YaraFile(rules=[rule]))
+
+    assert 'author = "alice"     // meta tail' in spaced
+    assert 'author = "alice"  // meta tail' not in spaced
+
+    aligned = PrettyPrinter(
+        PrettyPrintOptions(
+            align_comments=True,
+            align_meta_values=False,
+            comment_column=32,
+            inline_comment_spacing=1,
+        )
+    ).pretty_print(YaraFile(rules=[rule]))
+    meta_line = next(line for line in aligned.splitlines() if "author =" in line)
+
+    assert meta_line.index("//") == 32
 
 
 def test_pretty_printer_regex_suffix_alias_modifiers_are_adjacent() -> None:
