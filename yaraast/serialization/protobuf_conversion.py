@@ -1146,8 +1146,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.object, pb_expr.dictionary_access.object)
         if isinstance(expr.key, Expression):
             convert_expression_to_protobuf(expr.key, pb_expr.dictionary_access.key_expr)
+        elif isinstance(expr.key, str):
+            pb_expr.dictionary_access.key = expr.key
         else:
-            pb_expr.dictionary_access.key = str(expr.key)
+            msg = "DictionaryAccess key must be a string or expression"
+            raise SerializationError(msg)
     elif isinstance(expr, ExternRuleReference):
         pb_expr.extern_rule_reference.rule_name = expr.rule_name
         if expr.namespace:

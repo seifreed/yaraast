@@ -30,7 +30,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, StringModifier
-from yaraast.ast.modules import ModuleReference
+from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.operators import StringOperatorExpression
 from yaraast.ast.pragmas import (
     ConditionalDirective,
@@ -862,6 +862,14 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
             "AtExpression string_id must be a string",
         ),
         (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
+        (
+            DictionaryAccess(Identifier("items"), cast(Any, 123)),
+            "DictionaryAccess key must be a string or expression",
+        ),
+        (
+            DictionaryAccess(Identifier("items"), cast(Any, object())),
+            "DictionaryAccess key must be a string or expression",
+        ),
         (
             StringOperatorExpression(StringLiteral("a"), cast(Any, 123), StringLiteral("b")),
             "StringOperatorExpression operator must be a string",
