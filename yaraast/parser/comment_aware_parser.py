@@ -50,11 +50,16 @@ class CommentAwareParser(Parser):
         extern_imports = []
         extern_rules = []
         namespaces = []
+        pragmas = []
         top_level_nodes = []
         self._extern_rule_names = set()
 
         while not self._is_at_end():
-            if self._match(TokenType.IMPORT):
+            if self._check_file_pragma():
+                pragma = self._parse_file_pragma()
+                pragmas.append(pragma)
+                top_level_nodes.append(pragma)
+            elif self._match(TokenType.IMPORT):
                 parsed_import = self._parse_import()
                 if isinstance(parsed_import, ExternImport):
                     extern_imports.append(parsed_import)
@@ -95,6 +100,7 @@ class CommentAwareParser(Parser):
             rules=rules,
             extern_rules=extern_rules,
             extern_imports=extern_imports,
+            pragmas=pragmas,
             namespaces=namespaces,
         )
         if top_level_nodes:

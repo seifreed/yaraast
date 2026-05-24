@@ -7,6 +7,14 @@ from typing import Any
 from yaraast.ast.conditions import Condition
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import RuleModifier
+from yaraast.ast.pragmas import (
+    ConditionalDirective,
+    DefineDirective,
+    IncludeOncePragma,
+    Pragma,
+    PragmaType,
+    UndefDirective,
+)
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import StringDefinition
 from yaraast.lexer import TokenType
@@ -74,6 +82,75 @@ class RuleParsingMixin:
         path = self._previous().value
         return self._set_node_location_from_tokens(
             Include(path=path), start_token, self._previous()
+        )
+
+    def _check_file_pragma(self) -> bool:
+        return self._check(TokenType.STRING_COUNT) and str(self._peek().value).startswith("#")
+
+    def _parse_file_pragma(self) -> Pragma:
+        """Parse a top-level preprocessor directive or pragma."""
+        start_token = self._advance()
+        directive = str(start_token.value)[1:]
+        arguments = self._parse_pragma_line_arguments(start_token.line)
+        end_token = self._previous()
+
+        if directive == "include_once":
+            pragma = IncludeOncePragma()
+        elif directive == "define":
+            pragma = self._parse_define_directive(arguments)
+        elif directive == "undef":
+            pragma = self._parse_undef_directive(arguments)
+        elif directive in {"ifdef", "ifndef"}:
+            pragma = self._parse_conditional_directive(directive, arguments)
+        elif directive == "endif":
+            pragma = ConditionalDirective.endif()
+        elif directive == "pragma":
+            pragma = self._parse_named_pragma(arguments)
+        else:
+            pragma = Pragma(
+                pragma_type=PragmaType.from_string(directive),
+                name=directive,
+                arguments=arguments,
+            )
+
+        return self._set_node_location_from_tokens(pragma, start_token, end_token)
+
+    def _parse_pragma_line_arguments(self, line: int) -> list[str]:
+        arguments = []
+        while not self._is_at_end() and self._peek().line == line:
+            arguments.append(str(self._advance().value))
+        return arguments
+
+    def _parse_define_directive(self, arguments: list[str]) -> DefineDirective:
+        if not arguments:
+            msg = "Expected macro name after '#define'"
+            raise ParserError(msg, self._peek())
+        macro_value = " ".join(arguments[1:]) if len(arguments) > 1 else None
+        return DefineDirective(arguments[0], macro_value)
+
+    def _parse_undef_directive(self, arguments: list[str]) -> UndefDirective:
+        if not arguments:
+            msg = "Expected macro name after '#undef'"
+            raise ParserError(msg, self._peek())
+        return UndefDirective(arguments[0])
+
+    def _parse_conditional_directive(
+        self, directive: str, arguments: list[str]
+    ) -> ConditionalDirective:
+        if not arguments:
+            msg = f"Expected condition after '#{directive}'"
+            raise ParserError(msg, self._peek())
+        pragma_type = PragmaType.IFDEF if directive == "ifdef" else PragmaType.IFNDEF
+        return ConditionalDirective(pragma_type, arguments[0])
+
+    def _parse_named_pragma(self, arguments: list[str]) -> Pragma:
+        if not arguments:
+            msg = "Expected pragma name after '#pragma'"
+            raise ParserError(msg, self._peek())
+        return Pragma(
+            pragma_type=PragmaType.PRAGMA,
+            name=arguments[0],
+            arguments=arguments[1:],
         )
 
     def _check_identifier_value(self, value: str) -> bool:

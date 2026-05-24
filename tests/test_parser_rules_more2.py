@@ -6,6 +6,13 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modifiers import RuleModifier
+from yaraast.ast.pragmas import (
+    ConditionalDirective,
+    CustomPragma,
+    DefineDirective,
+    IncludeOncePragma,
+    UndefDirective,
+)
 from yaraast.ast.rules import Import, Rule
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.lexer import Lexer
@@ -241,3 +248,27 @@ def test_parse_generated_extern_rule_reference_conditions() -> None:
         assert condition.rule_name == "ExternalRule"
         assert condition.namespace == "legacy"
         assert SemanticValidator().validate(parsed).errors == []
+
+
+def test_parse_generated_file_pragmas() -> None:
+    pragmas = [
+        IncludeOncePragma(),
+        DefineDirective("FEATURE", "1"),
+        UndefDirective("OLD_FEATURE"),
+        ConditionalDirective.ifdef("FEATURE"),
+        ConditionalDirective.endif(),
+        CustomPragma("optimize", ["on"]),
+    ]
+    source = CodeGenerator().generate(
+        YaraFile(
+            pragmas=pragmas,
+            rules=[Rule("with_pragmas", condition=BooleanLiteral(True))],
+        )
+    )
+
+    ast = Parser(source).parse()
+    comment_ast = CommentAwareParser().parse(source)
+
+    for parsed in (ast, comment_ast):
+        assert [str(pragma) for pragma in parsed.pragmas] == [str(pragma) for pragma in pragmas]
+        assert parsed.rules[0].name == "with_pragmas"
