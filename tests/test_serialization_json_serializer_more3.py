@@ -929,6 +929,9 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
     cast(Any, invalid_modifier_tuple).value = (1, object())
     invalid_modifier_float = StringModifier.from_name_value("xor", 1)
     cast(Any, invalid_modifier_float).value = float("nan")
+    invalid_hex_alternatives = HexAlternative([[HexByte(0x90)]])
+    cast(Any, invalid_hex_alternatives).alternatives = False
+    invalid_hex_alternative_token = HexAlternative([[object()]])
 
     invalid_cases: list[tuple[YaraFile, str]] = [
         (
@@ -1105,6 +1108,35 @@ def test_json_serializer_rejects_invalid_hex_and_modifier_fields() -> None:
                 ]
             ),
             "HexNibble value must be a nibble",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_alternatives",
+                        strings=[HexString(identifier="$h", tokens=[invalid_hex_alternatives])],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexAlternative alternatives must be a list",
+        ),
+        (
+            YaraFile(
+                rules=[
+                    Rule(
+                        "invalid_hex_alternative_token",
+                        strings=[
+                            HexString(
+                                identifier="$h",
+                                tokens=[invalid_hex_alternative_token],
+                            )
+                        ],
+                        condition=BooleanLiteral(True),
+                    )
+                ]
+            ),
+            "HexByte value must be a byte",
         ),
     ]
 

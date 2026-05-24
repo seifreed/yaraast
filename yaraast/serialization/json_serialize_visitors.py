@@ -463,19 +463,32 @@ def visit_regex_string(serializer, node) -> dict[str, Any]:
 def visit_hex_alternative(serializer, node) -> dict[str, Any]:
     return {
         "type": "HexAlternative",
-        "alternatives": [
-            [serializer.visit(token) for token in _coerce_hex_alternative_branch(alt)]
-            for alt in node.alternatives
-        ],
+        "alternatives": _serialize_hex_alternative_branches(serializer, node.alternatives),
     }
 
 
-def _coerce_hex_alternative_branch(alternative) -> list:
-    from yaraast.ast.strings import HexByte
+def _serialize_hex_alternative_branches(serializer, alternatives) -> list[list[dict[str, Any]]]:
+    if not isinstance(alternatives, list | tuple):
+        msg = "HexAlternative alternatives must be a list"
+        raise SerializationError(msg)
+    return [
+        [serializer.visit(token) for token in _coerce_hex_alternative_branch(alternative)]
+        for alternative in alternatives
+    ]
 
-    if isinstance(alternative, list):
-        return alternative
-    return [HexByte(alternative)]
+
+def _coerce_hex_alternative_branch(alternative) -> list:
+    if isinstance(alternative, list | tuple):
+        return [_coerce_hex_alternative_token(token) for token in alternative]
+    return [_coerce_hex_alternative_token(alternative)]
+
+
+def _coerce_hex_alternative_token(token):
+    from yaraast.ast.strings import HexByte, HexToken
+
+    if isinstance(token, HexToken):
+        return token
+    return HexByte(token)
 
 
 def visit_string_offset(serializer, node) -> dict[str, Any]:
