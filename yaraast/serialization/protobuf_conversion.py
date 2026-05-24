@@ -316,6 +316,18 @@ def _protobuf_string_list(values, context: str) -> list[str]:
     raise SerializationError(msg)
 
 
+def _protobuf_node_list(values, context: str, item_type) -> list:
+    if not isinstance(values, list | tuple):
+        msg = f"{context} must be a list"
+        raise SerializationError(msg)
+    items = list(values)
+    for item in items:
+        if not isinstance(item, item_type):
+            msg = f"{context} item must be {item_type.__name__}"
+            raise SerializationError(msg)
+    return items
+
+
 def _meta_value_to_python(pb_meta_value):
     if pb_meta_value.HasField("string_value"):
         return pb_meta_value.string_value
@@ -865,13 +877,16 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         ArrayComprehension,
         DictComprehension,
         DictExpression,
+        DictItem,
         LambdaExpression,
         ListExpression,
+        MatchCase,
         PatternMatch,
         SliceExpression,
         SpreadOperator,
         TupleExpression,
         TupleIndexing,
+        WithDeclaration,
         WithStatement,
     )
 
@@ -1044,7 +1059,11 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         )
         convert_expression_to_protobuf(expr.right, pb_expr.string_operator_expression.right)
     elif isinstance(expr, WithStatement):
-        for declaration in expr.declarations:
+        for declaration in _protobuf_node_list(
+            expr.declarations,
+            "WithStatement declarations",
+            WithDeclaration,
+        ):
             convert_with_declaration_to_protobuf(
                 declaration,
                 pb_expr.with_statement.declarations.add(),
@@ -1104,7 +1123,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         for element in expr.elements:
             convert_expression_to_protobuf(element, pb_expr.list_expression.elements.add())
     elif isinstance(expr, DictExpression):
-        for item in expr.items:
+        for item in _protobuf_node_list(expr.items, "DictExpression items", DictItem):
             convert_dict_item_to_protobuf(item, pb_expr.dict_expression.items.add())
     elif isinstance(expr, SliceExpression):
         convert_expression_to_protobuf(expr.target, pb_expr.slice_expression.target)
@@ -1121,7 +1140,7 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.body, pb_expr.lambda_expression.body)
     elif isinstance(expr, PatternMatch):
         convert_expression_to_protobuf(expr.value, pb_expr.pattern_match.value)
-        for case in expr.cases:
+        for case in _protobuf_node_list(expr.cases, "PatternMatch cases", MatchCase):
             convert_match_case_to_protobuf(case, pb_expr.pattern_match.cases.add())
         if expr.default is not None:
             convert_expression_to_protobuf(expr.default, pb_expr.pattern_match.default)

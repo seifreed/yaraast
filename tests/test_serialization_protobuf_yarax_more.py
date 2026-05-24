@@ -162,3 +162,56 @@ def test_protobuf_serializer_rejects_invalid_yarax_scalar_fields(
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(ast)
+
+
+def _invalid_yarax_container_cases() -> list[tuple[Any, str]]:
+    with_bad_declarations = WithStatement(
+        [WithDeclaration("x", IntegerLiteral(1))],
+        BooleanLiteral(True),
+    )
+    cast(Any, with_bad_declarations).declarations = False
+
+    with_bad_declaration_item = WithStatement(
+        [WithDeclaration("x", IntegerLiteral(1))],
+        BooleanLiteral(True),
+    )
+    cast(Any, with_bad_declaration_item).declarations = [object()]
+
+    dict_with_bad_items = DictExpression([DictItem(Identifier("key"), IntegerLiteral(1))])
+    cast(Any, dict_with_bad_items).items = False
+
+    dict_with_bad_item = DictExpression([DictItem(Identifier("key"), IntegerLiteral(1))])
+    cast(Any, dict_with_bad_item).items = [object()]
+
+    match_with_bad_cases = PatternMatch(
+        Identifier("subject"),
+        [MatchCase(IntegerLiteral(1), BooleanLiteral(True))],
+    )
+    cast(Any, match_with_bad_cases).cases = False
+
+    match_with_bad_case = PatternMatch(
+        Identifier("subject"),
+        [MatchCase(IntegerLiteral(1), BooleanLiteral(True))],
+    )
+    cast(Any, match_with_bad_case).cases = [object()]
+
+    return [
+        (with_bad_declarations, "WithStatement declarations must be a list"),
+        (with_bad_declaration_item, "WithStatement declarations item must be"),
+        (dict_with_bad_items, "DictExpression items must be a list"),
+        (dict_with_bad_item, "DictExpression items item must be"),
+        (match_with_bad_cases, "PatternMatch cases must be a list"),
+        (match_with_bad_case, "PatternMatch cases item must be"),
+    ]
+
+
+@pytest.mark.parametrize(("condition", "message"), _invalid_yarax_container_cases())
+def test_protobuf_serializer_rejects_invalid_yarax_container_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="invalid_yarax_container", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
