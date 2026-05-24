@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 from yaraast.ast.base import YaraFile
@@ -14,7 +15,16 @@ from yaraast.types.semantic_validator_strings import (
     StringModifierApplicabilityValidator,
     UndefinedStringDetector,
 )
-from yaraast.types.type_system import TypeChecker, TypeEnvironment
+from yaraast.types.type_system import (
+    BooleanType,
+    DoubleType,
+    IntegerType,
+    StringType,
+    TypeChecker,
+    TypeEnvironment,
+    UnknownType,
+    YaraType,
+)
 
 __all__ = [
     "FunctionCallValidator",
@@ -38,14 +48,21 @@ if TYPE_CHECKING:
 class SemanticValidator:
     """Comprehensive semantic validator for YARA AST."""
 
-    def __init__(self) -> None:
+    def __init__(self, externals: Mapping[str, object] | None = None) -> None:
         self.module_loader = ModuleLoader()
+        self.externals = dict(externals or {})
 
-    def validate(self, ast: YaraFile) -> ValidationResult:
+    def validate(
+        self,
+        ast: YaraFile,
+        externals: Mapping[str, object] | None = None,
+    ) -> ValidationResult:
         """Perform complete semantic validation on YARA file."""
         result = ValidationResult()
         env = TypeEnvironment()
+        effective_externals = self._effective_externals(externals)
 
+        _define_external_types(env, effective_externals)
         populate_env_for_file(ast, env)
 
         string_validator = StringIdentifierValidator(result)
@@ -64,7 +81,9 @@ class SemanticValidator:
             if rule.condition:
                 function_validator.visit(rule.condition)
 
-        type_checker = TypeChecker()
+        type_env = TypeEnvironment()
+        _define_external_types(type_env, effective_externals)
+        type_checker = TypeChecker(type_env)
         type_errors = type_checker.check(ast)
 
         for error_msg in type_errors:
@@ -79,6 +98,7 @@ class SemanticValidator:
         self,
         rule: Rule,
         env: TypeEnvironment | None = None,
+        externals: Mapping[str, object] | None = None,
     ) -> ValidationResult:
         """Validate a single rule."""
         result = ValidationResult()
@@ -86,6 +106,7 @@ class SemanticValidator:
         if env is None:
             env = TypeEnvironment()
 
+        _define_external_types(env, self._effective_externals(externals))
         populate_env_for_rule(rule, env)
 
         string_validator = StringIdentifierValidator(result)
@@ -115,6 +136,7 @@ class SemanticValidator:
         self,
         expr: Expression,
         env: TypeEnvironment | None = None,
+        externals: Mapping[str, object] | None = None,
     ) -> ValidationResult:
         """Validate a single expression."""
         result = ValidationResult()
@@ -122,6 +144,7 @@ class SemanticValidator:
         if env is None:
             env = TypeEnvironment()
 
+        _define_external_types(env, self._effective_externals(externals))
         function_validator = FunctionCallValidator(result, env)
         function_validator.visit(expr)
 
@@ -135,20 +158,50 @@ class SemanticValidator:
 
         return result
 
+    def _effective_externals(
+        self,
+        externals: Mapping[str, object] | None,
+    ) -> Mapping[str, object]:
+        return self.externals if externals is None else externals
+
+
+def _external_type(value: object) -> YaraType:
+    if isinstance(value, bool):
+        return BooleanType()
+    if isinstance(value, int):
+        return IntegerType()
+    if isinstance(value, float):
+        return DoubleType()
+    if isinstance(value, str):
+        return StringType()
+    return UnknownType()
+
+
+def _define_external_types(
+    env: TypeEnvironment,
+    externals: Mapping[str, object],
+) -> None:
+    for name, value in externals.items():
+        env.define(name, _external_type(value))
+
 
 # Convenience functions for easy usage
-def validate_yara_file(ast: YaraFile) -> ValidationResult:
+def validate_yara_file(
+    ast: YaraFile,
+    externals: Mapping[str, object] | None = None,
+) -> ValidationResult:
     """Validate YARA file with comprehensive semantic checks."""
-    validator = SemanticValidator()
+    validator = SemanticValidator(externals=externals)
     return validator.validate(ast)
 
 
 def validate_yara_rule(
     rule: Rule,
     env: TypeEnvironment | None = None,
+    externals: Mapping[str, object] | None = None,
 ) -> ValidationResult:
     """Validate a single YARA rule."""
-    validator = SemanticValidator()
+    validator = SemanticValidator(externals=externals)
     return validator.validate_rule(rule, env)
 
 

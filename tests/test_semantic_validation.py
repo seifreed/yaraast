@@ -879,6 +879,47 @@ class TestSemanticValidator:
         assert any("Undefined identifier: missing_order" in message for message in messages)
         assert any("Undefined identifier: missing_defined" in message for message in messages)
 
+    def test_validate_accepts_declared_external_variables(self) -> None:
+        ast = Parser().parse("""
+            rule external_variables {
+                condition:
+                    ext_int == 1 and
+                    ext_str == "x" and
+                    ext_bool and
+                    ext_float == 1.5
+            }
+        """)
+
+        result = SemanticValidator(
+            externals={
+                "ext_int": 1,
+                "ext_str": "x",
+                "ext_bool": True,
+                "ext_float": 1.5,
+            }
+        ).validate(ast)
+
+        assert result.is_valid is True
+
+    def test_validate_rejects_external_variables_with_wrong_types(self) -> None:
+        ast = Parser().parse("""
+            rule external_variable_types {
+                condition:
+                    ext_int contains "x" or
+                    ext_bool == true
+            }
+        """)
+
+        result = SemanticValidator().validate(ast, externals={"ext_int": 1, "ext_bool": True})
+
+        assert result.is_valid is False
+        messages = [error.message for error in result.errors]
+        assert any(
+            "Left operand of 'contains' must be string-like or array, got integer" in msg
+            for msg in messages
+        )
+        assert any("Boolean operands cannot be used with '=='" in msg for msg in messages)
+
     def test_validate_rejects_integer_division_and_modulo_by_zero(self) -> None:
         ast = Parser().parse(r"""
             rule string_count_division_by_zero {
