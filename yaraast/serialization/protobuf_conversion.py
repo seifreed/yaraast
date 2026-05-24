@@ -274,6 +274,21 @@ def _protobuf_required_string(value, context: str) -> str:
     raise SerializationError(msg)
 
 
+def _protobuf_optional_string(value, context: str) -> str | None:
+    if value is None:
+        return None
+    return _protobuf_required_string(value, context)
+
+
+def _protobuf_pragma_type(pragma) -> str:
+    pragma_type = getattr(pragma, "pragma_type", None)
+    value = getattr(pragma_type, "value", pragma_type)
+    if isinstance(value, str):
+        return value
+    msg = "Pragma pragma_type must be a string"
+    raise SerializationError(msg)
+
+
 def _protobuf_required_string_key(value, message: str) -> str:
     if isinstance(value, str):
         return value
@@ -348,20 +363,32 @@ def convert_extern_namespace_to_protobuf(namespace, pb_namespace) -> None:
 
 def convert_pragma_to_protobuf(pragma, pb_pragma) -> None:
     scope = getattr(pragma, "scope", None)
-    pb_pragma.pragma_type = getattr(pragma.pragma_type, "value", str(pragma.pragma_type))
-    pb_pragma.name = pragma.name
-    pb_pragma.arguments.extend(pragma.arguments)
+    pb_pragma.pragma_type = _protobuf_pragma_type(pragma)
+    pb_pragma.name = _protobuf_required_string(pragma.name, "Pragma name")
     pb_pragma.scope = serialize_pragma_scope(scope) if scope is not None else ""
 
-    macro_name = getattr(pragma, "macro_name", "")
+    macro_name = _protobuf_optional_string(
+        getattr(pragma, "macro_name", None),
+        "Pragma macro_name",
+    )
     if macro_name:
         pb_pragma.macro_name = macro_name
-    macro_value = getattr(pragma, "macro_value", None)
+    macro_value = _protobuf_optional_string(
+        getattr(pragma, "macro_value", None),
+        "Pragma macro_value",
+    )
     if macro_value is not None:
         pb_pragma.macro_value = macro_value
-    condition = getattr(pragma, "condition", None)
+    condition = _protobuf_optional_string(
+        getattr(pragma, "condition", None),
+        "Pragma condition",
+    )
     if condition is not None:
         pb_pragma.condition = condition
+
+    pb_pragma.arguments.extend(
+        _protobuf_string_list(getattr(pragma, "arguments", []), "Pragma arguments")
+    )
 
     for key, value in getattr(pragma, "parameters", {}).items():
         parameter_key = _protobuf_required_string_key(

@@ -13,7 +13,14 @@ from yaraast.ast.expressions import BooleanLiteral, DoubleLiteral, IntegerLitera
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, StringModifier
-from yaraast.ast.pragmas import CustomPragma, InRulePragma, PragmaScope
+from yaraast.ast.pragmas import (
+    ConditionalDirective,
+    CustomPragma,
+    DefineDirective,
+    InRulePragma,
+    PragmaScope,
+    PragmaType,
+)
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.errors import SerializationError
@@ -456,6 +463,48 @@ def test_protobuf_serializer_rejects_invalid_extern_and_in_rule_pragma_fields(
 
     with pytest.raises(SerializationError, match=message):
         serializer.serialize(ast)
+
+
+@pytest.mark.parametrize(
+    ("pragma", "message"),
+    [
+        (CustomPragma(cast(Any, 123)), "Pragma name must be a string"),
+        (
+            CustomPragma("vendor", arguments=cast(Any, "on")),
+            "Pragma arguments must be a list of strings",
+        ),
+        (
+            CustomPragma("vendor", arguments=cast(Any, ["on", 1])),
+            "Pragma arguments must be a list of strings",
+        ),
+        (DefineDirective(cast(Any, 123)), "Pragma macro_name must be a string"),
+        (
+            DefineDirective("FLAG", macro_value=cast(Any, 123)),
+            "Pragma macro_value must be a string",
+        ),
+        (
+            ConditionalDirective(PragmaType.IFDEF, condition=cast(Any, 123)),
+            "Pragma condition must be a string",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_pragma_fields(
+    pragma: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(YaraFile(pragmas=[pragma]))
+
+
+def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    pragma = CustomPragma("vendor")
+    cast(Any, pragma).pragma_type = 123
+
+    with pytest.raises(SerializationError, match="Pragma pragma_type must be a string"):
+        serializer.serialize(YaraFile(pragmas=[pragma]))
 
 
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
