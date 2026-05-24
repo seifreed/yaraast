@@ -11,6 +11,9 @@ from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_regex_modifiers,
     output_string_identifier,
+    validate_hex_string_modifiers,
+    validate_plain_string_modifiers,
+    validate_regex_string_modifiers,
 )
 
 if TYPE_CHECKING:
@@ -302,6 +305,8 @@ class CommentAwareCodeGenerator(CodeGenerator):
         """Generate code for PlainString with comments."""
         from yaraast.codegen.generator_helpers import escape_plain_string_value
 
+        validate_plain_string_modifiers(node.modifiers)
+
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
@@ -318,6 +323,8 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_hex_string(self, node: HexString) -> str:
         """Generate code for HexString with comments."""
+        validate_hex_string_modifiers(node.modifiers)
+
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
@@ -342,6 +349,8 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_regex_string(self, node: RegexString) -> str:
         """Generate code for RegexString with comments."""
+        validate_regex_string_modifiers(node.modifiers)
+
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)

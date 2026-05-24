@@ -60,7 +60,7 @@ def test_comment_aware_generator_hex_and_regex_modifier_paths() -> None:
     hexs = HexString(
         identifier="$h",
         tokens=[HexByte(0xAA)],
-        modifiers=[StringModifier(StringModifierType.FULLWORD)],
+        modifiers=[StringModifier(StringModifierType.PRIVATE)],
     )
     regex = RegexString(
         identifier="$r",
@@ -81,7 +81,7 @@ def test_comment_aware_generator_hex_and_regex_modifier_paths() -> None:
 
     out = CommentAwareCodeGenerator().generate(file_ast)
 
-    assert "$h = { AA } fullword" in out
+    assert "$h = { AA } private" in out
     assert "$r = /abc/" in out
     assert 'author = "bob"' in out
     assert "// cond lead" in out

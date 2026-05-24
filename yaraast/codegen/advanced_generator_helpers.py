@@ -26,6 +26,9 @@ from yaraast.codegen.generator_helpers import (
     format_modifier,
     output_string_identifier,
     split_regex_modifiers,
+    validate_hex_string_modifiers,
+    validate_plain_string_modifiers,
+    validate_regex_string_modifiers,
 )
 
 
@@ -38,10 +41,13 @@ def collect_string_definitions(
     for string_def in strings:
         identifier = output_string_identifier(string_def)
         if isinstance(string_def, PlainString):
+            validate_plain_string_modifiers(string_def.modifiers)
             value = f'"{escape_plain_string_value(string_def.value)}"'
         elif isinstance(string_def, HexString):
+            validate_hex_string_modifiers(string_def.modifiers)
             value = format_hex_string(string_def, config)
         elif isinstance(string_def, RegexString):
+            validate_regex_string_modifiers(string_def.modifiers)
             escaped = escape_regex_delimiter(string_def.regex)
             suffix, spaced_modifiers = split_regex_modifiers(string_def.modifiers)
             value = f"/{escaped}/{suffix}"

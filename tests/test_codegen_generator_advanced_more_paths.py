@@ -273,7 +273,7 @@ def test_advanced_generator_direct_remaining_branches() -> None:
     hexs = HexString(
         "$h",
         tokens=[HexByte(0x4D)],
-        modifiers=[StringModifier.from_name_value("wide")],
+        modifiers=[StringModifier.from_name_value("private")],
     )
     regex = RegexString(
         "$r",
@@ -290,7 +290,7 @@ def test_advanced_generator_direct_remaining_branches() -> None:
     assert "\n\nmeta:\n" not in out
     assert "\n\n\n    strings:\n" in out
     assert '$a = "x" ascii' in out
-    assert "$h = { 4d } wide" in out or "$h = { 4D } wide" in out
+    assert "$h = { 4d } private" in out or "$h = { 4D } private" in out
     assert "$r = /abc/ nocase" in out
 
     adv2 = AdvancedCodeGenerator(FormattingConfig(space_after_comma=False))
@@ -380,7 +380,7 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
         strings=[
             PlainString("$a", value="x", modifiers=[StringModifier.from_name_value("ascii")]),
             HexString(
-                "$h", tokens=[HexByte(0x4D)], modifiers=[StringModifier.from_name_value("wide")]
+                "$h", tokens=[HexByte(0x4D)], modifiers=[StringModifier.from_name_value("private")]
             ),
             RegexString("$r", regex="abc", modifiers=[StringModifier.from_name_value("nocase")]),
         ],
@@ -407,13 +407,13 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
     assert (
         adv2.visit_hex_string(
             HexString(
-                "$h", tokens=[HexByte(0x4D)], modifiers=[StringModifier.from_name_value("wide")]
+                "$h", tokens=[HexByte(0x4D)], modifiers=[StringModifier.from_name_value("private")]
             )
         )
         == ""
     )
     hex_output = adv2.buffer.getvalue()
-    assert hex_output in {"$h = { 4d } wide", "$h = { 4D } wide"}
+    assert hex_output in {"$h = { 4d } private", "$h = { 4D } private"}
 
     adv2.buffer.seek(0)
     adv2.buffer.truncate(0)

@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+from yaraast.codegen.generator_helpers import (
+    validate_hex_string_modifiers,
+    validate_plain_string_modifiers,
+    validate_regex_string_modifiers,
+)
 from yaraast.codegen.pretty_printer_helpers import (
     build_hex_pattern,
     current_indent,
@@ -143,6 +148,7 @@ def write_string_definition(printer, string_def) -> None:
     trailing_comment = getattr(string_def, "trailing_comment", None)
 
     if isinstance(string_def, PlainString):
+        validate_plain_string_modifiers(string_def.modifiers)
         identifier = output_string_identifier(string_def)
         padding = (
             max(0, printer._string_alignment_column - len(identifier))
@@ -158,6 +164,7 @@ def write_string_definition(printer, string_def) -> None:
         return
 
     if isinstance(string_def, HexString):
+        validate_hex_string_modifiers(string_def.modifiers)
         hex_pattern = build_hex_pattern(
             string_def,
             hex_uppercase=printer.options.hex_uppercase,
@@ -178,6 +185,7 @@ def write_string_definition(printer, string_def) -> None:
         return
 
     if isinstance(string_def, RegexString):
+        validate_regex_string_modifiers(string_def.modifiers)
         identifier = output_string_identifier(string_def)
         padding = (
             max(0, printer._string_alignment_column - len(identifier))

@@ -6,6 +6,9 @@ from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_regex_modifiers,
     output_string_identifier,
+    validate_hex_string_modifiers,
+    validate_plain_string_modifiers,
+    validate_regex_string_modifiers,
 )
 
 
@@ -64,6 +67,7 @@ def write_condition_section(gen, condition) -> None:
 
 def write_plain_string(gen, node) -> str:
     """Render a plain string definition."""
+    validate_plain_string_modifiers(node.modifiers)
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
     escaped_value = gen._escape_plain_string_value(node.value)
@@ -75,6 +79,7 @@ def write_plain_string(gen, node) -> str:
 
 def write_hex_string(gen, node) -> str:
     """Render a hex string definition."""
+    validate_hex_string_modifiers(node.modifiers)
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
     gen._write(f"{output_string_identifier(node)} = {{ ")
@@ -89,6 +94,7 @@ def write_hex_string(gen, node) -> str:
 
 def write_regex_string(gen, node) -> str:
     """Render a regex string definition."""
+    validate_regex_string_modifiers(node.modifiers)
     indent = " " * (gen.indent_level * gen.indent_size)
     gen._write(indent)
     escaped_regex = escape_regex_delimiter(node.regex)

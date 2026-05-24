@@ -29,6 +29,10 @@ _UNSUPPORTED_SPACED_STRING_MODIFIERS = frozenset(
         "utf16be",
     }
 )
+_HEX_ALLOWED_MODIFIERS = frozenset({"private"})
+_REGEX_DISALLOWED_MODIFIERS = frozenset({"base64", "base64wide", "xor"})
+_BASE64_INCOMPATIBLE_MODIFIERS = frozenset({"fullword", "nocase", "xor"})
+_XOR_INCOMPATIBLE_MODIFIERS = frozenset({"base64", "base64wide", "nocase"})
 BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
@@ -317,6 +321,52 @@ def format_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> st
     return "".join(f" {part}" for part in parts)
 
 
+def validate_plain_string_modifiers(modifiers) -> None:
+    """Reject plain string modifier combinations that libyara rejects."""
+    names = _modifier_names(modifiers)
+    for base64_name in sorted(names & BASE64_MODIFIERS):
+        for incompatible_name in sorted(names & _BASE64_INCOMPATIBLE_MODIFIERS):
+            msg = (
+                f"String modifier '{incompatible_name}' cannot be combined with "
+                f"'{base64_name}' for libyara output"
+            )
+            raise ValueError(msg)
+
+    if "xor" not in names:
+        return
+
+    for incompatible_name in sorted(names & _XOR_INCOMPATIBLE_MODIFIERS):
+        msg = (
+            f"String modifier '{incompatible_name}' cannot be combined with "
+            "'xor' for libyara output"
+        )
+        raise ValueError(msg)
+
+
+def validate_hex_string_modifiers(modifiers) -> None:
+    """Reject hex string modifiers that libyara rejects."""
+    for name in sorted(_modifier_names(modifiers)):
+        if name in _HEX_ALLOWED_MODIFIERS:
+            continue
+        msg = f"String modifier '{name}' is not valid on hex strings for libyara output"
+        raise ValueError(msg)
+
+
+def validate_regex_string_modifiers(modifiers) -> None:
+    """Reject regex string modifiers that libyara rejects."""
+    for name in sorted(_modifier_names(modifiers)):
+        if name not in _REGEX_DISALLOWED_MODIFIERS:
+            continue
+        msg = f"String modifier '{name}' is not valid on regex strings for libyara output"
+        raise ValueError(msg)
+
+
+def _modifier_names(modifiers) -> set[str]:
+    if not isinstance(modifiers, list | tuple):
+        return set()
+    return {_regex_modifier_name(modifier) for modifier in modifiers}
+
+
 def split_regex_modifiers(
     modifiers,
     visit: Callable[[Any], str] | None = None,
@@ -354,6 +404,7 @@ def _regex_modifier_name(modifier: object) -> str:
 
 def format_regex_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> str:
     """Format regex modifiers, keeping inline regex flags adjacent to the literal."""
+    validate_regex_string_modifiers(modifiers)
     suffix, spaced_parts = split_regex_modifiers(modifiers, visit)
     spaced = "".join(f" {part}" for part in spaced_parts)
     return f"{suffix}{spaced}"

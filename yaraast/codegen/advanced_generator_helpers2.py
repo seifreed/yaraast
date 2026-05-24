@@ -9,6 +9,9 @@ from yaraast.codegen.generator_helpers import (
     format_modifiers,
     format_regex_modifiers,
     output_string_identifier,
+    validate_hex_string_modifiers,
+    validate_plain_string_modifiers,
+    validate_regex_string_modifiers,
 )
 
 
@@ -74,6 +77,7 @@ def render_advanced_plain_string(gen, node) -> str:
     """Render a plain string in advanced generator styles."""
     from yaraast.codegen.generator_helpers import escape_plain_string_value
 
+    validate_plain_string_modifiers(node.modifiers)
     escaped = escape_plain_string_value(node.value)
     identifier = output_string_identifier(node)
     if gen.config.string_style == StringStyle.COMPACT:
@@ -86,6 +90,7 @@ def render_advanced_plain_string(gen, node) -> str:
 
 def render_advanced_hex_string(gen, node) -> str:
     """Render a hex string in advanced generator styles."""
+    validate_hex_string_modifiers(node.modifiers)
     hex_str = gen._format_hex_string(node)
     identifier = output_string_identifier(node)
     if gen.config.string_style == StringStyle.COMPACT:
@@ -98,6 +103,7 @@ def render_advanced_hex_string(gen, node) -> str:
 
 def render_advanced_regex_string(gen, node) -> str:
     """Render a regex string in advanced generator styles."""
+    validate_regex_string_modifiers(node.modifiers)
     regex = escape_regex_delimiter(node.regex)
     identifier = output_string_identifier(node)
     if gen.config.string_style == StringStyle.COMPACT:

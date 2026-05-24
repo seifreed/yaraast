@@ -35,7 +35,7 @@ class _TagObj:
 def test_collect_string_definitions_supports_all_string_types() -> None:
     config = FormattingConfig(hex_style=HexStyle.UPPERCASE, hex_group_size=2)
     mod1 = StringModifier(StringModifierType.NOCASE)
-    mod2 = StringModifier(StringModifierType.XOR, value=3)
+    mod2 = StringModifier(StringModifierType.PRIVATE)
 
     plain = PlainString(identifier="$a", value="hello", modifiers=[mod1])
     hexs = HexString(
@@ -58,7 +58,7 @@ def test_collect_string_definitions_supports_all_string_types() -> None:
     assert collected[1][0] == "$b"
     assert collected[1][1].startswith("{ ")
     assert "AA??" in collected[1][1]
-    assert "xor(3)" in collected[1][2]
+    assert "private" in collected[1][2]
     assert collected[2] == ("$c", "/ab+/", [])
     assert collected[3] == ("$d", "", [])
 

@@ -412,6 +412,23 @@ def test_pretty_printer_rejects_unsupported_regex_multiline_modifier() -> None:
         PrettyPrinter(PrettyPrintOptions()).pretty_print(YaraFile(rules=[rule]))
 
 
+def test_pretty_printer_rejects_invalid_regex_string_modifier() -> None:
+    rule = Rule(
+        name="regex_base64",
+        strings=[
+            RegexString(
+                "$r",
+                regex="abc",
+                modifiers=[StringModifier.from_name_value("base64")],
+            ),
+        ],
+        condition=StringIdentifier("$r"),
+    )
+
+    with pytest.raises(ValueError, match="not valid on regex strings"):
+        PrettyPrinter(PrettyPrintOptions()).pretty_print(YaraFile(rules=[rule]))
+
+
 def test_pretty_printer_keeps_yara_string_literals_valid_for_quote_styles() -> None:
     rule = Rule(
         name="quotes",

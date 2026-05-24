@@ -135,6 +135,26 @@ def test_advanced_generator_rejects_unsupported_regex_multiline_modifier() -> No
         AdvancedCodeGenerator().generate(YaraFile(rules=[rule]))
 
 
+def test_advanced_generator_rejects_invalid_plain_modifier_combination() -> None:
+    rule = Rule(
+        name="plain_base64_nocase",
+        strings=[
+            PlainString(
+                "$a",
+                value="abc",
+                modifiers=[
+                    StringModifier.from_name_value("base64"),
+                    StringModifier.from_name_value("nocase"),
+                ],
+            ),
+        ],
+        condition=StringIdentifier("$a"),
+    )
+
+    with pytest.raises(ValueError, match="cannot be combined"):
+        AdvancedCodeGenerator().generate(YaraFile(rules=[rule]))
+
+
 def test_advanced_generator_aligned_plain_strings_escape_values() -> None:
     rule = Rule(
         name="escaped_strings",

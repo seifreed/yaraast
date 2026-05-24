@@ -210,7 +210,7 @@ def test_codegen_generator_meta_and_string_section_variants() -> None:
             HexString(
                 "$h",
                 tokens=[HexByte("4d"), HexNibble(high=True, value="A")],
-                modifiers=[StringModifier.from_name_value("wide")],
+                modifiers=[StringModifier.from_name_value("private")],
             ),
             RegexString("$r", regex="ab.*", modifiers=[StringModifier.from_name_value("nocase")]),
         ],
@@ -222,7 +222,7 @@ def test_codegen_generator_meta_and_string_section_variants() -> None:
     assert 'author = "me"' in out
     assert "enabled = true" in out
     assert '$a = "hello" ascii' in out
-    assert "$h = { 4D A? } wide" in out
+    assert "$h = { 4D A? } private" in out
     assert "$r = /ab.*/ nocase" in out
 
     gen2 = CodeGenerator()
@@ -355,6 +355,49 @@ def test_codegen_generator_rejects_unsupported_spaced_string_modifiers() -> None
         )
 
         with pytest.raises(ValueError, match="Unsupported string modifier"):
+            gen.generate(YaraFile(rules=[rule]))
+
+
+def test_codegen_generator_rejects_invalid_string_modifier_applicability() -> None:
+    gen = CodeGenerator()
+    cases = [
+        (
+            PlainString(
+                "$plain",
+                value="abc",
+                modifiers=[
+                    StringModifier.from_name_value("nocase"),
+                    StringModifier.from_name_value("base64"),
+                ],
+            ),
+            "cannot be combined",
+        ),
+        (
+            RegexString(
+                "$regex",
+                regex="abc",
+                modifiers=[StringModifier.from_name_value("base64")],
+            ),
+            "not valid on regex strings",
+        ),
+        (
+            HexString(
+                "$hex",
+                tokens=[HexByte(0x41)],
+                modifiers=[StringModifier.from_name_value("wide")],
+            ),
+            "not valid on hex strings",
+        ),
+    ]
+
+    for string_def, message in cases:
+        rule = Rule(
+            name="bad_modifier_applicability",
+            strings=[string_def],
+            condition=StringIdentifier(string_def.identifier),
+        )
+
+        with pytest.raises(ValueError, match=message):
             gen.generate(YaraFile(rules=[rule]))
 
 
