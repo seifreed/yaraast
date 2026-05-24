@@ -203,6 +203,42 @@ def test_protobuf_serializer_rejects_non_finite_double_literals() -> None:
         serializer.deserialize(binary_data=pb_file.SerializeToString())
 
 
+def test_protobuf_serializer_rejects_non_finite_meta_values() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_meta",
+                meta=[Meta("score", cast(Any, float("nan")))],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(SerializationError, match="Meta value must be finite"):
+        serializer.serialize(ast)
+
+    pb_file = yara_ast_pb2.YaraFile()
+    pb_rule = pb_file.rules.add()
+    pb_rule.name = "bad_meta"
+    pb_rule.condition.boolean_literal.value = True
+    pb_meta = pb_rule.meta_entries.add()
+    pb_meta.key = "score"
+    pb_meta.value.double_value = float("inf")
+
+    with pytest.raises(SerializationError, match="Meta value must be finite"):
+        serializer.deserialize(binary_data=pb_file.SerializeToString())
+
+    legacy_pb_file = yara_ast_pb2.YaraFile()
+    legacy_pb_rule = legacy_pb_file.rules.add()
+    legacy_pb_rule.name = "bad_legacy_meta"
+    legacy_pb_rule.condition.boolean_literal.value = True
+    legacy_pb_rule.meta["score"].double_value = float("-inf")
+
+    with pytest.raises(SerializationError, match="Meta value must be finite"):
+        serializer.deserialize(binary_data=legacy_pb_file.SerializeToString())
+
+
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(

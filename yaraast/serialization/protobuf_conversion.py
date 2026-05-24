@@ -249,7 +249,7 @@ def _copy_python_value_to_meta_value(value, pb_meta_value) -> None:
     elif isinstance(value, int):
         pb_meta_value.int_value = value
     elif isinstance(value, float):
-        pb_meta_value.double_value = value
+        pb_meta_value.double_value = _finite_double_value(value, "Meta")
     else:
         pb_meta_value.string_value = str(value)
 
@@ -262,7 +262,7 @@ def _meta_value_to_python(pb_meta_value):
     if pb_meta_value.HasField("int_value"):
         return pb_meta_value.int_value
     if pb_meta_value.HasField("double_value"):
-        return pb_meta_value.double_value
+        return _finite_double_value(pb_meta_value.double_value, "Meta")
     return ""
 
 
@@ -992,7 +992,7 @@ def protobuf_to_ast(pb_file: yara_ast_pb2.YaraFile):
                 elif meta_val.HasField("int_value"):
                     meta_values[key] = meta_val.int_value
                 elif meta_val.HasField("double_value"):
-                    meta_values[key] = meta_val.double_value
+                    meta_values[key] = _finite_double_value(meta_val.double_value, "Meta")
 
             from yaraast.ast.modifiers import MetaEntry
 
