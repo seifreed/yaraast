@@ -181,12 +181,10 @@ def _serialize_hex_token(token: Any) -> dict[str, Any]:
     if isinstance(token, HexAlternative):
         return {
             "type": "HexAlternative",
-            "alternatives": [
-                [_serialize_hex_token(t) for t in _coerce_hex_alternative_branch(alt)]
-                for alt in token.alternatives
-            ],
+            "alternatives": _serialize_hex_alternative_branches(token.alternatives),
         }
-    return {"type": "Unknown", "data": str(token)}
+    msg = f"Unsupported hex token type: {type(token).__name__}"
+    raise SerializationError(msg)
 
 
 def _deserialize_hex_token(data: dict[str, Any]):
@@ -221,6 +219,16 @@ def _coerce_hex_alternative_branch(alternative) -> list:
     if isinstance(alternative, list):
         return alternative
     return [HexByte(alternative)]
+
+
+def _serialize_hex_alternative_branches(alternatives: Any) -> list[list[dict[str, Any]]]:
+    if not isinstance(alternatives, list):
+        msg = "HexAlternative alternatives must be a list"
+        raise SerializationError(msg)
+    return [
+        [_serialize_hex_token(token) for token in _coerce_hex_alternative_branch(alternative)]
+        for alternative in alternatives
+    ]
 
 
 def _coerce_serialized_hex_alternative_branch(alternative) -> list:

@@ -1,0 +1,16 @@
+// YARA Pattern Similarity
+digraph {
+	bgcolor=white fontname=Arial overlap=scale sep="+20"
+	subgraph cluster_0 {
+		alpha=0.5 fillcolor=lightblue label="Precise Hex Patterns" style=filled
+		pattern_2 [label="$b" fillcolor=white style=filled]
+	}
+	subgraph cluster_1 {
+		alpha=0.5 fillcolor=lightgreen label="Regex Patterns" style=filled
+		pattern_3 [label="$c" fillcolor=white style=filled]
+	}
+	subgraph cluster_2 {
+		alpha=0.5 fillcolor=lightyellow label="Short Plain Patterns" style=filled
+		pattern_1 [label="$a" fillcolor=white style=filled]
+	}
+}

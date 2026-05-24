@@ -1,0 +1,9 @@
+// YARA Hex Pattern Analysis
+digraph {
+	bgcolor=white fontname=Arial rankdir=LR
+	pattern_2 [label="$b\nRule: sample_more" fillcolor=lightblue shape=box style=filled]
+	pattern_2_tokens [label="Bytes: 3|Negated: 0|Nibbles: 0|Wildcards: 1|Jumps: 0|Alternatives: 0" fillcolor=lightyellow shape=record style=filled]
+	pattern_2 -> pattern_2_tokens [label=tokens]
+	pattern_2_complexity [label="Overall Complexity: 1\nWildcard Ratio: 25.0%\nToken Score: 0.5" fillcolor=lightgreen shape=note style=filled]
+	pattern_2 -> pattern_2_complexity [label=metrics]
+}

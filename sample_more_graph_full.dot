@@ -1,0 +1,19 @@
+// YARA Dependencies
+digraph {
+	bgcolor=white fontname=Arial rankdir=TB
+	subgraph cluster_imports {
+		fillcolor=lightcyan label=Imports style=filled
+		node [fillcolor=lightblue shape=box]
+		import_pe [label="\"pe\""]
+	}
+	subgraph cluster_rules {
+		fillcolor=lightgray label=Rules style=filled
+		node [fillcolor=white shape=ellipse]
+		dep_target [label=dep_target fillcolor=lightcoral]
+		sample_more [label=sample_more fillcolor=lightgreen]
+	}
+	sample_more -> dep_target [label="depends on" color=blue]
+	mod_pe -> sample_more [label="imported by"]
+	sample_more_strings [label="Strings\n(3)" fillcolor=lightyellow shape=box style=filled]
+	sample_more -> sample_more_strings [label=defines color=green]
+}

@@ -1,0 +1,12 @@
+// YARA Complexity Visualization
+digraph {
+	bgcolor=white fontname=Arial rankdir=TB
+	dep_target [label="dep_target\nComplexity: 1\nStrings: 0" fillcolor=lightgreen shape=box style=filled]
+	sample_more [label="sample_more\nComplexity: 3\nStrings: 3" fillcolor=lightgreen shape=box style=filled]
+	subgraph cluster_legend {
+		fillcolor=white label="Complexity Legend" style=filled
+		low [label="Low (≤5)" fillcolor=lightgreen shape=box]
+		med [label="Medium (6-10)" fillcolor=yellow shape=box]
+		high [label="High (>10)" fillcolor=lightcoral shape=box]
+	}
+}

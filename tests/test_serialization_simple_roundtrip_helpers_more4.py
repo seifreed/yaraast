@@ -990,6 +990,10 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
 
 
 def test_simple_roundtrip_serialize_hex_tokens_and_location_reject_wrong_types() -> None:
+    invalid_alternatives = HexAlternative([[HexByte(0x90)]])
+    cast(Any, invalid_alternatives).alternatives = False
+    invalid_alternative_token = HexAlternative([[object()]])
+
     invalid_nodes = (
         (HexByte(cast(Any, True)), "HexByte value must be a byte"),
         (HexByte(cast(Any, "GG")), "HexByte value must be a byte"),
@@ -999,6 +1003,12 @@ def test_simple_roundtrip_serialize_hex_tokens_and_location_reject_wrong_types()
         (HexNibble(cast(Any, "true"), 10), "HexNibble high must be a boolean"),
         (HexNibble(True, cast(Any, True)), "HexNibble value must be a nibble"),
         (HexNibble(True, 16), "HexNibble value must be a nibble"),
+        (invalid_alternatives, "HexAlternative alternatives must be a list"),
+        (invalid_alternative_token, "Unsupported hex token type: object"),
+        (
+            HexString(identifier="$h", tokens=[cast(Any, object())]),
+            "Unsupported hex token type: object",
+        ),
     )
 
     for node, message in invalid_nodes:

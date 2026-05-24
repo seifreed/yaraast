@@ -1,0 +1,13 @@
+// YARA Pattern Complexity
+digraph {
+	bgcolor=white fontname=Arial overlap=false splines=true
+	pattern_1 [label="$a\nComplexity: 1" fillcolor=lightgreen height=0.56 shape=circle style=filled width=0.56]
+	pattern_2 [label="$b\nComplexity: 1\nTokens: 4" fillcolor=lightgreen height=0.58 shape=hexagon style=filled width=0.58]
+	pattern_3 [label="$c\nComplexity: 2" fillcolor=lightgreen height=0.58 shape=ellipse style=filled width=0.58]
+	subgraph cluster_legend {
+		fillcolor=white label="Complexity Legend" style=filled
+		low_c [label="Low (≤3)" fillcolor=lightgreen shape=circle]
+		med_c [label="Medium (4-6)" fillcolor=yellow shape=circle]
+		high_c [label="High (>6)" fillcolor=lightcoral shape=circle]
+	}
+}
