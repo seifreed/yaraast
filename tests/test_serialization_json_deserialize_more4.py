@@ -479,6 +479,10 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="DoubleLiteral value must be numeric"):
         s._deserialize_expression({"type": "DoubleLiteral", "value": "1.5"})
 
+    for invalid_number in (float("nan"), float("inf"), float("-inf")):
+        with pytest.raises(SerializationError, match="DoubleLiteral value must be finite"):
+            s._deserialize_expression({"type": "DoubleLiteral", "value": invalid_number})
+
     with pytest.raises(SerializationError, match="StringLiteral value must be a string"):
         s._deserialize_expression({"type": "StringLiteral", "value": True})
 
@@ -690,6 +694,18 @@ def test_json_deserialize_literal_nodes_reject_wrong_scalar_types() -> None:
     for null_payload, message in null_condition_cases:
         with pytest.raises(SerializationError, match=message):
             s._deserialize_expression(null_payload)
+
+    for invalid_quantifier in (float("nan"), float("inf"), float("-inf")):
+        with pytest.raises(SerializationError, match="ForExpression quantifier must be finite"):
+            s._deserialize_expression(
+                {
+                    "type": "ForExpression",
+                    "quantifier": invalid_quantifier,
+                    "variable": "i",
+                    "iterable": int_expr,
+                    "body": int_expr,
+                }
+            )
 
     with pytest.raises(SerializationError, match="ModuleReference module must be a string"):
         s._deserialize_expression({"type": "ModuleReference", "module": ["pe"]})

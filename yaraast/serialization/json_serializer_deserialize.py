@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import math
 from typing import Any
 
 from yaraast.ast.base import ASTNode, Location
@@ -95,6 +96,9 @@ def _deserialize_required_quantifier(self, data: dict[str, Any], field: str, con
     value = _deserialize_required_field(data, field, context)
     if isinstance(value, bool | list):
         msg = f"{context} {field} must be a string, number, or expression"
+        raise SerializationError(msg)
+    if isinstance(value, float) and not math.isfinite(value):
+        msg = f"{context} {field} must be finite"
         raise SerializationError(msg)
     quantifier = _deserialize_ast_value(self, value, f"{context} {field}")
     if quantifier is not None:
@@ -259,6 +263,9 @@ def _deserialize_boolean_literal_value(data: dict[str, Any]) -> bool:
 def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
     value = _deserialize_required_field(data, "value", "DoubleLiteral")
     if isinstance(value, int | float) and not isinstance(value, bool):
+        if isinstance(value, float) and not math.isfinite(value):
+            msg = "DoubleLiteral value must be finite"
+            raise SerializationError(msg)
         return float(value)
     msg = "DoubleLiteral value must be numeric"
     raise SerializationError(msg)
