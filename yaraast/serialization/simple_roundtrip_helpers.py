@@ -1209,7 +1209,8 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "expression": serialize_node(node.expression),
             "is_dict": _serialize_required_bool(node.is_dict, "SpreadOperator is_dict"),
         }
-    return {"type": type(node).__name__, "data": str(node)}
+    msg = f"Unsupported simple AST node type: {type(node).__name__}"
+    raise SerializationError(msg)
 
 
 def serialize_yarafile(yf: YaraFile) -> dict[str, Any]:

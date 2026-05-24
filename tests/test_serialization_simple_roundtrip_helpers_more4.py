@@ -7,7 +7,7 @@ from typing import Any, cast
 
 import pytest
 
-from yaraast.ast.base import Location, YaraFile
+from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -97,6 +97,11 @@ from yaraast.yarax.ast_nodes import (
     WithDeclaration,
     WithStatement,
 )
+
+
+class UnsupportedSimpleNode(ASTNode):
+    def accept(self, visitor: Any) -> Any:
+        return visitor.visit_unsupported_simple_node(self)
 
 
 def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: Path) -> None:
@@ -215,6 +220,11 @@ def test_simple_roundtrip_unknown_node_fallback_rejects_invalid_payload() -> Non
 
     with pytest.raises(SerializationError, match="Serialized node data must be a string"):
         deserialize_node({"type": "UnknownNode", "data": ["fallback"]})
+
+
+def test_simple_roundtrip_serialize_rejects_unsupported_ast_nodes() -> None:
+    with pytest.raises(SerializationError, match="Unsupported simple AST node type:"):
+        serialize_node(UnsupportedSimpleNode())
 
 
 def test_simple_roundtrip_ast_and_rule_collections_reject_non_lists() -> None:
