@@ -950,6 +950,9 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
     )
     assert isinstance(defined_with_identifier, DefinedExpression)
 
+    with pytest.raises(SerializationError, match="DefinedExpression expression is required"):
+        s._deserialize_expression({"type": "DefinedExpression"})
+
     sop_subject_pattern = s._deserialize_expression(
         {
             "type": "StringOperatorExpression",

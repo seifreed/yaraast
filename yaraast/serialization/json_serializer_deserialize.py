@@ -624,6 +624,9 @@ def _deser_defined_expression(self, data: dict[str, Any]):
     expression = data.get("expression")
     if expression is None and "identifier" in data:
         expression = {"type": "Identifier", "name": data["identifier"]}
+    if expression is None:
+        msg = "DefinedExpression expression is required"
+        raise SerializationError(msg)
     return DefinedExpression(expression=self._deserialize_expression(expression))
 
 
