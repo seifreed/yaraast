@@ -629,6 +629,9 @@ def test_codegen_generators_reject_invalid_string_identifiers() -> None:
         AtExpression("$bad-key", IntegerLiteral(0)),
         BinaryExpression(StringCount("bad-key"), ">", IntegerLiteral(0)),
         InExpression("$bad-key", RangeExpression(IntegerLiteral(0), IntegerLiteral(1))),
+        OfExpression("any", ["$bad-key"]),
+        OfExpression("any", SetExpression([StringLiteral("$bad-key")])),
+        OfExpression("any", StringWildcard("$bad-key*")),
         BinaryExpression(StringOffset("bad-key"), ">=", IntegerLiteral(0)),
         BinaryExpression(StringLength("bad-key"), ">", IntegerLiteral(0)),
     ],
@@ -636,13 +639,13 @@ def test_codegen_generators_reject_invalid_string_identifiers() -> None:
 def test_codegen_generators_reject_invalid_string_references(condition: Condition) -> None:
     ast = YaraFile(rules=[Rule(name="invalid_string_reference", condition=condition)])
 
-    with pytest.raises(ValueError, match="Invalid string identifier"):
+    with pytest.raises(ValueError, match="Invalid string"):
         CodeGenerator().generate(ast)
-    with pytest.raises(ValueError, match="Invalid string identifier"):
+    with pytest.raises(ValueError, match="Invalid string"):
         AdvancedCodeGenerator().generate(ast)
-    with pytest.raises(ValueError, match="Invalid string identifier"):
+    with pytest.raises(ValueError, match="Invalid string"):
         CommentAwareCodeGenerator().generate(ast)
-    with pytest.raises(ValueError, match="Invalid string identifier"):
+    with pytest.raises(ValueError, match="Invalid string"):
         PrettyPrinter().pretty_print(ast)
 
 

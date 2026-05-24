@@ -16,6 +16,7 @@ from yaraast.codegen.generator_helpers import (
     format_hex_nibble_value,
     format_integer_literal,
     validate_string_identifier_text,
+    validate_string_wildcard_text,
 )
 
 
@@ -62,7 +63,7 @@ def visit_string_identifier(node, *, allow_placeholder: bool = False) -> str:
 
 
 def visit_string_wildcard(node) -> str:
-    return node.pattern
+    return validate_string_wildcard_text(node.pattern)
 
 
 def _string_reference_suffix(string_id) -> str:

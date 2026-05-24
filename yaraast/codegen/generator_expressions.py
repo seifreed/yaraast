@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.generator_helpers import validate_string_identifier_text
+from yaraast.codegen.generator_helpers import (
+    validate_string_identifier_text,
+    validate_string_set_item_text,
+)
 
 
 def _render_string_set(gen, string_set) -> str:
@@ -39,10 +42,10 @@ def _render_string_set_item(gen, item) -> str:
     from yaraast.ast.expressions import StringLiteral
 
     if isinstance(item, StringLiteral):
-        return item.value
+        return validate_string_set_item_text(item.value)
     if hasattr(item, "accept"):
         return gen.visit(item)
-    return str(item)
+    return validate_string_set_item_text(item)
 
 
 def _render_quantifier(gen, quantifier, *, allow_percentage: bool = False) -> str:

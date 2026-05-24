@@ -102,6 +102,29 @@ def validate_string_identifier_text(identifier: Any) -> str:
     return normalized
 
 
+def validate_string_wildcard_text(pattern: Any) -> str:
+    """Return a normalized string wildcard or reject invalid libyara output."""
+    text = str(pattern)
+    normalized = text if text.startswith("$") else f"${text}"
+    body = normalized.removeprefix("$")
+    if body == "*":
+        return normalized
+    if body.endswith("*"):
+        prefix = body[:-1]
+        if prefix and _STRING_IDENTIFIER_BODY_RE.fullmatch(prefix) is not None:
+            return normalized
+    msg = f"Invalid string wildcard '{normalized}' for libyara output"
+    raise ValueError(msg)
+
+
+def validate_string_set_item_text(item: Any) -> str:
+    """Return a normalized string-set item or reject invalid libyara output."""
+    text = str(item)
+    if "*" in text:
+        return validate_string_wildcard_text(text)
+    return validate_string_identifier_text(text)
+
+
 def validate_string_identifiers(strings) -> None:
     """Reject duplicate named string identifiers that libyara rejects."""
     if not strings:
