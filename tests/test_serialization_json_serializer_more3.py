@@ -16,6 +16,8 @@ from yaraast.ast.expressions import (
     IntegerLiteral,
     StringCount,
     StringIdentifier,
+    StringLength,
+    StringOffset,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modifiers import MetaEntry, MetaScope, RuleModifier, StringModifier
@@ -34,6 +36,12 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.yarax.ast_nodes import (
+    ArrayComprehension,
+    DictComprehension,
+    PatternMatch,
+    SliceExpression,
+)
 
 
 def _sample_ast() -> YaraFile:
@@ -188,6 +196,32 @@ def test_json_serializer_rejects_invalid_raw_string_sets() -> None:
         for expression in expressions:
             ast = YaraFile(rules=[Rule(name="invalid_string_set", condition=expression)])
             with pytest.raises(SerializationError, match="string_set"):
+                serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_invalid_optional_expression_fields() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_values: list[Any] = [False, 0, "", [], {}, object()]
+
+    for invalid_value in invalid_values:
+        expressions = [
+            StringOffset("$a", invalid_value),
+            StringLength("$a", invalid_value),
+            ArrayComprehension(expression=invalid_value),
+            ArrayComprehension(iterable=invalid_value),
+            ArrayComprehension(condition=invalid_value),
+            DictComprehension(key_expression=invalid_value),
+            DictComprehension(value_expression=invalid_value),
+            DictComprehension(iterable=invalid_value),
+            DictComprehension(condition=invalid_value),
+            SliceExpression(Identifier("items"), start=invalid_value),
+            SliceExpression(Identifier("items"), stop=invalid_value),
+            SliceExpression(Identifier("items"), step=invalid_value),
+            PatternMatch(Identifier("subject"), [], default=invalid_value),
+        ]
+        for expression in expressions:
+            ast = YaraFile(rules=[Rule(name="invalid_optional", condition=expression)])
+            with pytest.raises(SerializationError, match="must be an AST node"):
                 serializer.serialize(ast)
 
 

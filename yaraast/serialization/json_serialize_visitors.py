@@ -196,7 +196,7 @@ def visit_string_offset(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringOffset",
         "string_id": node.string_id,
-        "index": serializer.visit(node.index) if node.index else None,
+        "index": _serialize_optional_ast_node(serializer, node.index, "StringOffset index"),
     }
 
 
@@ -204,7 +204,7 @@ def visit_string_length(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringLength",
         "string_id": node.string_id,
-        "index": serializer.visit(node.index) if node.index else None,
+        "index": _serialize_optional_ast_node(serializer, node.index, "StringLength index"),
     }
 
 
@@ -358,24 +358,52 @@ def visit_with_declaration(serializer, node) -> dict[str, Any]:
 def visit_array_comprehension(serializer, node) -> dict[str, Any]:
     return {
         "type": "ArrayComprehension",
-        "expression": serializer.visit(node.expression) if node.expression else None,
+        "expression": _serialize_optional_ast_node(
+            serializer,
+            node.expression,
+            "ArrayComprehension expression",
+        ),
         "variable": node.variable,
-        "iterable": serializer.visit(node.iterable) if node.iterable else None,
-        "condition": serializer.visit(node.condition) if node.condition else None,
+        "iterable": _serialize_optional_ast_node(
+            serializer,
+            node.iterable,
+            "ArrayComprehension iterable",
+        ),
+        "condition": _serialize_optional_ast_node(
+            serializer,
+            node.condition,
+            "ArrayComprehension condition",
+        ),
     }
 
 
 def visit_dict_comprehension(serializer, node) -> dict[str, Any]:
     return {
         "type": "DictComprehension",
-        "key_expression": serializer.visit(node.key_expression) if node.key_expression else None,
+        "key_expression": _serialize_optional_ast_node(
+            serializer,
+            node.key_expression,
+            "DictComprehension key_expression",
+        ),
         "value_expression": (
-            serializer.visit(node.value_expression) if node.value_expression else None
+            _serialize_optional_ast_node(
+                serializer,
+                node.value_expression,
+                "DictComprehension value_expression",
+            )
         ),
         "key_variable": node.key_variable,
         "value_variable": node.value_variable,
-        "iterable": serializer.visit(node.iterable) if node.iterable else None,
-        "condition": serializer.visit(node.condition) if node.condition else None,
+        "iterable": _serialize_optional_ast_node(
+            serializer,
+            node.iterable,
+            "DictComprehension iterable",
+        ),
+        "condition": _serialize_optional_ast_node(
+            serializer,
+            node.condition,
+            "DictComprehension condition",
+        ),
     }
 
 
@@ -420,9 +448,9 @@ def visit_slice_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "SliceExpression",
         "target": serializer.visit(node.target),
-        "start": serializer.visit(node.start) if node.start else None,
-        "stop": serializer.visit(node.stop) if node.stop else None,
-        "step": serializer.visit(node.step) if node.step else None,
+        "start": _serialize_optional_ast_node(serializer, node.start, "SliceExpression start"),
+        "stop": _serialize_optional_ast_node(serializer, node.stop, "SliceExpression stop"),
+        "step": _serialize_optional_ast_node(serializer, node.step, "SliceExpression step"),
     }
 
 
@@ -439,7 +467,7 @@ def visit_pattern_match(serializer, node) -> dict[str, Any]:
         "type": "PatternMatch",
         "value": serializer.visit(node.value),
         "cases": [serializer.visit(case) for case in node.cases],
-        "default": serializer.visit(node.default) if node.default else None,
+        "default": _serialize_optional_ast_node(serializer, node.default, "PatternMatch default"),
     }
 
 
