@@ -989,6 +989,33 @@ def test_simple_roundtrip_serialize_meta_string_and_pragma_fields_reject_wrong_t
             serialize_node(node)
 
 
+def test_simple_roundtrip_serialize_hex_tokens_and_location_reject_wrong_types() -> None:
+    invalid_nodes = (
+        (HexByte(cast(Any, True)), "HexByte value must be a byte"),
+        (HexByte(cast(Any, "GG")), "HexByte value must be a byte"),
+        (HexNegatedByte(cast(Any, True)), "HexNegatedByte value must be a byte"),
+        (HexJump(cast(Any, True), 3), "HexJump min_jump must be a non-negative integer"),
+        (HexJump(5, 3), "HexJump min_jump cannot exceed max_jump"),
+        (HexNibble(cast(Any, "true"), 10), "HexNibble high must be a boolean"),
+        (HexNibble(True, cast(Any, True)), "HexNibble value must be a nibble"),
+        (HexNibble(True, 16), "HexNibble value must be a nibble"),
+    )
+
+    for node, message in invalid_nodes:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
+
+    import_with_bad_line = Import("pe")
+    import_with_bad_line.location = Location(cast(Any, True), 1)
+    with pytest.raises(SerializationError, match="Location line must be an integer"):
+        serialize_node(import_with_bad_line)
+
+    import_with_bad_file = Import("pe")
+    import_with_bad_file.location = Location(1, 1, file=cast(Any, []))
+    with pytest.raises(SerializationError, match="Location file must be a string"):
+        serialize_node(import_with_bad_file)
+
+
 def test_simple_roundtrip_string_set_values_reject_empty_payloads() -> None:
     empty_string_set_cases: tuple[tuple[dict[str, Any], str], ...] = (
         (

@@ -115,18 +115,69 @@ def _deserialize_required_field(data: dict[str, Any], field: str, context: str) 
     return data[field]
 
 
-def _serialize_hex_token(token) -> dict[str, Any]:
+def _validate_hex_byte_value(value: Any, context: str) -> int | str:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
+        return value
+    if isinstance(value, str) and len(value) == 2 and all(char in _HEX_CHARS for char in value):
+        return value
+    msg = f"{context} value must be a byte"
+    raise SerializationError(msg)
+
+
+def _validate_hex_nibble_value(value: Any) -> int | str:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xF:
+        return value
+    if isinstance(value, str) and len(value) == 1 and value in _HEX_CHARS:
+        return value
+    msg = "HexNibble value must be a nibble"
+    raise SerializationError(msg)
+
+
+def _validate_hex_nibble_high(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    msg = "HexNibble high must be a boolean"
+    raise SerializationError(msg)
+
+
+def _validate_hex_jump_bound(value: Any, field: str) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    msg = f"HexJump {field} must be a non-negative integer"
+    raise SerializationError(msg)
+
+
+def _validate_hex_jump_bounds(min_value: Any, max_value: Any) -> tuple[int | None, int | None]:
+    min_jump = _validate_hex_jump_bound(min_value, "min_jump")
+    max_jump = _validate_hex_jump_bound(max_value, "max_jump")
+    if min_jump is not None and max_jump is not None and min_jump > max_jump:
+        msg = "HexJump min_jump cannot exceed max_jump"
+        raise SerializationError(msg)
+    return min_jump, max_jump
+
+
+def _serialize_hex_token(token: Any) -> dict[str, Any]:
     """Serialize a single hex token to a dictionary."""
     if isinstance(token, HexByte):
-        return {"type": "HexByte", "value": token.value}
+        return {"type": "HexByte", "value": _validate_hex_byte_value(token.value, "HexByte")}
     if isinstance(token, HexWildcard):
         return {"type": "HexWildcard"}
     if isinstance(token, HexJump):
-        return {"type": "HexJump", "min_jump": token.min_jump, "max_jump": token.max_jump}
+        min_jump, max_jump = _validate_hex_jump_bounds(token.min_jump, token.max_jump)
+        return {"type": "HexJump", "min_jump": min_jump, "max_jump": max_jump}
     if isinstance(token, HexNibble):
-        return {"type": "HexNibble", "high": token.high, "value": token.value}
+        return {
+            "type": "HexNibble",
+            "high": _validate_hex_nibble_high(token.high),
+            "value": _validate_hex_nibble_value(token.value),
+        }
     if isinstance(token, HexNegatedByte):
-        return {"type": "HexNegatedByte", "value": token.value}
+        return {
+            "type": "HexNegatedByte",
+            "value": _validate_hex_byte_value(token.value, "HexNegatedByte"),
+        }
     if isinstance(token, HexAlternative):
         return {
             "type": "HexAlternative",
@@ -259,50 +310,26 @@ def _deserialize_double_literal_value(data: dict[str, Any]) -> float:
 
 
 def _deserialize_hex_byte_value(data: dict[str, Any], context: str) -> int | str:
-    value = _deserialize_required_field(data, "value", context)
-    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
-        return value
-    if isinstance(value, str) and len(value) == 2 and all(char in _HEX_CHARS for char in value):
-        return value
-    msg = f"{context} value must be a byte"
-    raise SerializationError(msg)
+    return _validate_hex_byte_value(_deserialize_required_field(data, "value", context), context)
 
 
 def _deserialize_hex_nibble_value(data: dict[str, Any]) -> int | str:
-    value = _deserialize_required_field(data, "value", "HexNibble")
-    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xF:
-        return value
-    if isinstance(value, str) and len(value) == 1 and value in _HEX_CHARS:
-        return value
-    msg = "HexNibble value must be a nibble"
-    raise SerializationError(msg)
+    return _validate_hex_nibble_value(_deserialize_required_field(data, "value", "HexNibble"))
 
 
 def _deserialize_hex_nibble_high(data: dict[str, Any]) -> bool:
-    value = data.get("high", True)
-    if isinstance(value, bool):
-        return value
-    msg = "HexNibble high must be a boolean"
-    raise SerializationError(msg)
+    return _validate_hex_nibble_high(data.get("high", True))
 
 
 def _deserialize_hex_jump_bound(data: dict[str, Any], field: str) -> int | None:
-    value = data.get(field)
-    if value is None:
-        return None
-    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
-        return value
-    msg = f"HexJump {field} must be a non-negative integer"
-    raise SerializationError(msg)
+    return _validate_hex_jump_bound(data.get(field), field)
 
 
 def _deserialize_hex_jump_bounds(data: dict[str, Any]) -> tuple[int | None, int | None]:
-    min_jump = _deserialize_hex_jump_bound(data, "min_jump")
-    max_jump = _deserialize_hex_jump_bound(data, "max_jump")
-    if min_jump is not None and max_jump is not None and min_jump > max_jump:
-        msg = "HexJump min_jump cannot exceed max_jump"
-        raise SerializationError(msg)
-    return min_jump, max_jump
+    return _validate_hex_jump_bounds(
+        _deserialize_hex_jump_bound(data, "min_jump"),
+        _deserialize_hex_jump_bound(data, "max_jump"),
+    )
 
 
 def _deserialize_string_field(data: dict[str, Any], field: str, context: str) -> str:
@@ -465,6 +492,12 @@ def _serialize_required_int(value: Any, context: str) -> int:
         msg = f"{context} must be an integer"
         raise SerializationError(msg)
     return value
+
+
+def _serialize_nullable_int(value: Any, context: str) -> int | None:
+    if value is None:
+        return None
+    return _serialize_required_int(value, context)
 
 
 def _serialize_required_number(value: Any, context: str) -> int | float:
@@ -699,13 +732,19 @@ def _deserialize_required_string_set(data: dict[str, Any], field: str, context: 
 
 
 def _serialize_location(location: Location) -> dict[str, Any]:
-    data: dict[str, Any] = {"line": location.line, "column": location.column}
-    if location.file is not None:
-        data["file"] = location.file
-    if location.end_line is not None:
-        data["end_line"] = location.end_line
-    if location.end_column is not None:
-        data["end_column"] = location.end_column
+    data: dict[str, Any] = {
+        "line": _serialize_required_int(location.line, "Location line"),
+        "column": _serialize_required_int(location.column, "Location column"),
+    }
+    file = _serialize_nullable_string(location.file, "Location file")
+    if file is not None:
+        data["file"] = file
+    end_line = _serialize_nullable_int(location.end_line, "Location end_line")
+    if end_line is not None:
+        data["end_line"] = end_line
+    end_column = _serialize_nullable_int(location.end_column, "Location end_column")
+    if end_column is not None:
+        data["end_column"] = end_column
     return data
 
 
