@@ -108,6 +108,9 @@ def regex_modifiers_to_string(modifiers) -> str:
 
 
 def current_indent(printer) -> str:
+    options = getattr(printer, "options", None)
+    if getattr(options, "indent_with_tabs", False):
+        return "\t" * printer.indent_level
     return " " * (printer.indent_level * printer.indent_size)
 
 

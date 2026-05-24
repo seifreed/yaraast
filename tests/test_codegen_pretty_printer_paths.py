@@ -102,6 +102,36 @@ def test_pretty_printer_indents_meta_entries_under_section() -> None:
     ) in out
 
 
+def test_pretty_printer_honors_tab_indentation_option() -> None:
+    rule = Rule(
+        name="tabbed",
+        meta=[Meta("a", 1)],
+        strings=[PlainString("$s", value="x")],
+        condition=BooleanLiteral(True),
+    )
+
+    out = PrettyPrinter(
+        PrettyPrintOptions(
+            indent_with_tabs=True,
+            align_meta_values=False,
+            align_string_definitions=False,
+        )
+    ).pretty_print(YaraFile(rules=[rule]))
+
+    assert (
+        "rule tabbed {\n"
+        "\tmeta:\n"
+        "\t\ta = 1\n"
+        "\n"
+        "\tstrings:\n"
+        '\t\t$s = "x"\n'
+        "\n"
+        "\tcondition:\n"
+        "\t\ttrue\n"
+        "}\n"
+    ) in out
+
+
 def test_pretty_printer_preserves_top_level_extensions() -> None:
     yf = YaraFile(
         pragmas=[IncludeOncePragma()],

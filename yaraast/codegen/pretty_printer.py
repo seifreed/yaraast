@@ -11,6 +11,7 @@ from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.codegen.pretty_printer_helpers import (
     calculate_meta_alignment_column,
     calculate_string_alignment_column,
+    current_indent,
     expression_to_string,
 )
 from yaraast.codegen.pretty_printer_layout import (
@@ -95,6 +96,15 @@ class PrettyPrinter(CommentAwareCodeGenerator):
         )
         self._string_alignment_column = 0
         self._meta_alignment_column = 0
+
+    def _get_indent(self) -> str:
+        return current_indent(self)
+
+    def _writeline(self, text: str = "") -> None:
+        if text:
+            self.buffer.write(self._get_indent())
+            self.buffer.write(text)
+        self.buffer.write("\n")
 
     def pretty_print(self, ast: YaraFile) -> str:
         """Pretty print the entire YARA file."""
