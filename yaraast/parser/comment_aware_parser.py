@@ -478,7 +478,13 @@ class CommentAwareParser(Parser):
                 raise Exception(msg)
 
             # Parse value
-            if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
+            if self._match(TokenType.MINUS):
+                if self._match(TokenType.INTEGER) or self._match(TokenType.DOUBLE):
+                    value = -self._previous().value
+                else:
+                    msg = "Expected number after '-' in meta value"
+                    raise Exception(msg)
+            elif self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
                 value = self._previous().value
             elif self._match(TokenType.BOOLEAN_TRUE):
                 value = True

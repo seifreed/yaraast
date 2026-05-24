@@ -226,6 +226,13 @@ def test_parse_meta_section_boolean_and_error_paths_and_trailing_comments() -> N
         p._parse_meta_section()
 
 
+def test_comment_aware_parser_accepts_negative_meta_values() -> None:
+    ast = CommentAwareParser().parse("rule r { meta: score = -1 condition: true }")
+
+    assert ast.rules[0].meta[0].key == "score"
+    assert ast.rules[0].meta[0].value == -1
+
+
 def test_attach_trailing_comments_group_and_single() -> None:
     p = CommentAwareParser()
 
