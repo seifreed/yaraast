@@ -1728,6 +1728,23 @@ def test_json_roundtrip_preserves_externs_and_pragmas() -> None:
     assert reference.qualified_name == "ns.ExternalRule"
 
 
+def test_json_serializer_preserves_extern_rule_reference_conditions() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    reference = ExternRuleReference("ExternalRule", namespace="ns")
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="uses_external",
+                condition=cast(Any, reference),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(serializer.serialize(ast))
+
+    assert cast(Any, restored.rules[0].condition) == reference
+
+
 def test_json_deserialize_expressions() -> None:
     serializer = JsonSerializer()
 

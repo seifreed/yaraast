@@ -134,23 +134,26 @@ def _serialize_ast_value(serializer, value):
 
 
 def _serialize_optional_expression(serializer, value, context: str):
-    from yaraast.ast.expressions import Expression
-
     if value is None:
         return None
-    if not isinstance(value, Expression):
+    if not _is_serializable_expression(value):
         msg = f"{context} must be an AST expression"
         raise SerializationError(msg)
     return serializer.visit(value)
 
 
 def _serialize_required_expression(serializer, value, context: str):
-    from yaraast.ast.expressions import Expression
-
-    if not isinstance(value, Expression):
+    if not _is_serializable_expression(value):
         msg = f"{context} must be an AST expression"
         raise SerializationError(msg)
     return serializer.visit(value)
+
+
+def _is_serializable_expression(value) -> bool:
+    from yaraast.ast.expressions import Expression
+    from yaraast.ast.extern import ExternRuleReference
+
+    return isinstance(value, Expression | ExternRuleReference)
 
 
 def _serialize_expression_list(serializer, values, context: str):
