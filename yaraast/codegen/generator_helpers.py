@@ -465,6 +465,7 @@ def format_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> st
 
 def validate_plain_string_modifiers(modifiers) -> None:
     """Reject plain string modifier combinations that libyara rejects."""
+    _validate_string_modifier_collection(modifiers)
     validate_duplicate_string_modifiers(modifiers)
     names = _modifier_names(modifiers)
     for base64_name in sorted(names & BASE64_MODIFIERS):
@@ -488,6 +489,7 @@ def validate_plain_string_modifiers(modifiers) -> None:
 
 def validate_hex_string_modifiers(modifiers) -> None:
     """Reject hex string modifiers that libyara rejects."""
+    _validate_string_modifier_collection(modifiers)
     validate_duplicate_string_modifiers(modifiers)
     for name in sorted(_modifier_names(modifiers)):
         if name in _HEX_ALLOWED_MODIFIERS:
@@ -498,6 +500,7 @@ def validate_hex_string_modifiers(modifiers) -> None:
 
 def validate_regex_string_modifiers(modifiers) -> None:
     """Reject regex string modifiers that libyara rejects."""
+    _validate_string_modifier_collection(modifiers)
     validate_duplicate_string_modifiers(modifiers)
     for name in sorted(_modifier_names(modifiers)):
         if name not in _REGEX_DISALLOWED_MODIFIERS:
@@ -510,6 +513,15 @@ def _modifier_names(modifiers) -> set[str]:
     if not isinstance(modifiers, list | tuple):
         return set()
     return {_regex_modifier_name(modifier) for modifier in modifiers}
+
+
+def _validate_string_modifier_collection(modifiers) -> None:
+    if not modifiers:
+        return
+    if isinstance(modifiers, list | tuple):
+        return
+    msg = "String modifiers must be a list or tuple for libyara output"
+    raise TypeError(msg)
 
 
 def validate_duplicate_string_modifiers(modifiers) -> None:

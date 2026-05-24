@@ -506,6 +506,26 @@ def test_codegen_generator_rejects_duplicate_string_modifiers() -> None:
             gen.generate(YaraFile(rules=[rule]))
 
 
+def test_codegen_generator_rejects_non_sequence_string_modifiers() -> None:
+    bad_plain_modifiers: Any = "wide"
+    bad_hex_modifiers: Any = "private"
+    bad_regex_modifiers: Any = "fullword"
+    cases = [
+        PlainString("$plain", value="abc", modifiers=bad_plain_modifiers),
+        HexString("$hex", tokens=[HexByte(0x41)], modifiers=bad_hex_modifiers),
+        RegexString("$regex", regex="abc", modifiers=bad_regex_modifiers),
+    ]
+
+    for string_def in cases:
+        rule = Rule(
+            name="bad_string_modifiers",
+            strings=[string_def],
+            condition=BooleanLiteral(True),
+        )
+        with pytest.raises(TypeError, match="String modifiers must be a list or tuple"):
+            CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
 def test_codegen_generators_reject_duplicate_rule_tags() -> None:
     ast = YaraFile(
         rules=[
