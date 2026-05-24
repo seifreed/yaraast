@@ -23,7 +23,7 @@ from yaraast.ast.extern import ExternRuleReference
 from yaraast.ast.modules import ModuleReference
 from yaraast.lexer import TokenType
 
-from ._shared import KNOWN_MODULES, ParserError
+from ._shared import KNOWN_MODULES, ParserError, split_regex_value, validate_regex_pattern
 
 
 class ExpressionPrimaryMixin:
@@ -54,13 +54,11 @@ class ExpressionPrimaryMixin:
 
         if self._match(TokenType.REGEX):
             regex_val = self._previous().value
-            pattern = regex_val
-            modifiers = ""
-
-            if "\x00" in regex_val:
-                parts = regex_val.split("\x00", 1)
-                pattern = parts[0]
-                modifiers = parts[1] if len(parts) > 1 else ""
+            try:
+                pattern, modifiers = split_regex_value(regex_val)
+                validate_regex_pattern(pattern)
+            except ValueError as e:
+                raise ParserError(str(e), self._previous()) from e
 
             return self._set_node_location_from_token(
                 RegexLiteral(pattern=pattern, modifiers=modifiers), self._previous()

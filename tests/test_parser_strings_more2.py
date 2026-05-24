@@ -98,6 +98,19 @@ def test_parse_rejects_comment_or_space_joined_hex_tokens(hex_pattern: str) -> N
             parser_factory().parse(source)
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        "rule r { strings: $a = /(/ condition: $a }",
+        'rule r { condition: "abc" matches /(/ }',
+    ],
+)
+def test_parse_rejects_invalid_regex_patterns(source: str) -> None:
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="regex"):
+            parser_factory().parse(source)
+
+
 def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:
     ast = Parser("rule r { strings: $r = /ab+c/ims condition: $r }").parse()
     regex = ast.rules[0].strings[0]

@@ -81,7 +81,10 @@ class StringParsingMixin:
                     string_def.is_anonymous = True
                 strings.append(string_def)
             elif self._match(TokenType.REGEX):
-                regex, regex_modifiers = parse_regex_value(self._previous().value)
+                try:
+                    regex, regex_modifiers = parse_regex_value(self._previous().value)
+                except ValueError as e:
+                    raise ParserError(str(e), self._previous()) from e
                 modifiers = [*regex_modifiers, *self._parse_string_modifiers()]
                 string_def = self._set_node_location_from_tokens(
                     RegexString(identifier=identifier, regex=regex, modifiers=modifiers),

@@ -473,7 +473,10 @@ class CommentAwareParser(Parser):
 
     def _parse_regex_value(self, regex_val: str):
         """Parse regex value and extract modifiers."""
-        return parse_regex_value(regex_val)
+        try:
+            return parse_regex_value(regex_val)
+        except ValueError as e:
+            raise ParserError(str(e), self._peek()) from e
 
     def _parse_meta_section(self) -> list[Meta]:
         """Parse meta section with comment preservation."""
