@@ -210,6 +210,9 @@ def test_json_deserialize_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma condition must be a string"):
         s._deserialize_pragma({"pragma_type": "ifdef", "condition": True})
 
+    with pytest.raises(SerializationError, match="InRulePragma pragma is required"):
+        s._deserialize_in_rule_pragma({"position": "before_condition"})
+
     with pytest.raises(SerializationError, match="InRulePragma position must be a string"):
         s._deserialize_in_rule_pragma(
             {

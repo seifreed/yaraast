@@ -1210,7 +1210,9 @@ class JsonSerializerDeserializeMixin:
 
         return self._apply_node_metadata(
             InRulePragma(
-                pragma=self._deserialize_pragma(data["pragma"]),
+                pragma=self._deserialize_pragma(
+                    _deserialize_required_field(data, "pragma", "InRulePragma")
+                ),
                 position=_deserialize_optional_string_field(
                     data, "position", "InRulePragma", "before_strings"
                 ),

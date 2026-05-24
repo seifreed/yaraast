@@ -1053,7 +1053,7 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "InRulePragma":
         return InRulePragma(
-            pragma=deserialize_pragma(data["pragma"]),
+            pragma=deserialize_pragma(_deserialize_required_field(data, "pragma", "InRulePragma")),
             position=_deserialize_optional_string_field(
                 data, "position", "InRulePragma", "before_strings"
             ),

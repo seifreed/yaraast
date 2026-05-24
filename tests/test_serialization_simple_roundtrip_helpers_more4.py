@@ -266,6 +266,9 @@ def test_simple_roundtrip_pragmas_reject_wrong_scalar_types() -> None:
     with pytest.raises(SerializationError, match="Pragma condition must be a string"):
         deserialize_node({"type": "Pragma", "pragma_type": "ifdef", "condition": True})
 
+    with pytest.raises(SerializationError, match="InRulePragma pragma is required"):
+        deserialize_node({"type": "InRulePragma", "position": "before_condition"})
+
     with pytest.raises(SerializationError, match="InRulePragma position must be a string"):
         deserialize_node(
             {
