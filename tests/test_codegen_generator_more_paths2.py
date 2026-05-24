@@ -671,6 +671,29 @@ def test_codegen_generators_reject_invalid_string_references(condition: Conditio
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (BinaryExpression(IntegerLiteral(1), "???", IntegerLiteral(2)), "Invalid binary operator"),
+        (UnaryExpression("!", IntegerLiteral(1)), "Invalid unary operator"),
+    ],
+)
+def test_codegen_generators_reject_invalid_expression_operators(
+    condition: Any,
+    message: str,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_operator", condition=condition)])
+
+    with pytest.raises(ValueError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=message):
+        PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generators_allow_for_of_placeholder_string_reference() -> None:
     ast = Parser().parse("""
         rule placeholder {

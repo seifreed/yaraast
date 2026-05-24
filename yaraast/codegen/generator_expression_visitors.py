@@ -33,6 +33,7 @@ _BINARY_PRECEDENCE = {
     "\\": 9,
     "%": 9,
 }
+_UNARY_OPERATORS = frozenset({"not", "-", "~"})
 
 
 def _precedence(operator: str) -> int:
@@ -40,9 +41,19 @@ def _precedence(operator: str) -> int:
 
 
 def _render_binary_operator(operator: str) -> str:
+    if operator not in _BINARY_PRECEDENCE:
+        msg = f"Invalid binary operator '{operator}' for libyara output"
+        raise ValueError(msg)
     if operator == "/":
         return "\\"
     return operator
+
+
+def _render_unary_operator(operator: str) -> str:
+    if operator in _UNARY_OPERATORS:
+        return operator
+    msg = f"Invalid unary operator '{operator}' for libyara output"
+    raise ValueError(msg)
 
 
 def _visit_binary_operand(generator, parent, operand, *, is_right: bool) -> str:
@@ -65,14 +76,15 @@ def visit_binary_expression(generator, node) -> str:
 
 
 def visit_unary_expression(generator, node) -> str:
+    operator = _render_unary_operator(node.operator)
     operand = generator.visit(node.operand)
     from yaraast.ast.expressions import BinaryExpression
 
     if isinstance(node.operand, BinaryExpression):
         operand = f"({operand})"
-    if node.operator == "not":
+    if operator == "not":
         return f"not {operand}"
-    return f"{node.operator}{operand}"
+    return f"{operator}{operand}"
 
 
 def visit_parentheses_expression(generator, node) -> str:
