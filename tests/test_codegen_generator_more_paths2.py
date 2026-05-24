@@ -891,6 +891,10 @@ def test_codegen_generators_render_fractional_quantifier_percentages() -> None:
             StringOperatorExpression(StringLiteral("a"), "bad-op", StringLiteral("b")),
             "Invalid string operator",
         ),
+        (
+            StringOperatorExpression(StringLiteral("a"), "matches", StringLiteral("b")),
+            "requires a regex literal",
+        ),
         (UnaryExpression("!", IntegerLiteral(1)), "Invalid unary operator"),
     ],
 )
@@ -908,6 +912,26 @@ def test_codegen_generators_reject_invalid_expression_operators(
         CommentAwareCodeGenerator().generate(ast)
     with pytest.raises(ValueError, match=message):
         PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_allow_matches_regex_literal() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="matches_regex",
+                condition=StringOperatorExpression(
+                    StringLiteral("abc"),
+                    "matches",
+                    RegexLiteral("a.c"),
+                ),
+            )
+        ]
+    )
+
+    assert '"abc" matches /a.c/' in CodeGenerator().generate(ast)
+    assert '"abc" matches /a.c/' in AdvancedCodeGenerator().generate(ast)
+    assert '"abc" matches /a.c/' in CommentAwareCodeGenerator().generate(ast)
+    assert '"abc" matches /a.c/' in PrettyPrinter().pretty_print(ast)
 
 
 @pytest.mark.parametrize(

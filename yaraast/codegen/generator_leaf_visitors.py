@@ -147,6 +147,7 @@ def visit_defined_expression(generator, node) -> str:
 
 def visit_string_operator_expression(generator, node) -> str:
     operator = _render_string_operator(node.operator)
+    _validate_string_operator_operands(node, operator)
     return f"{generator.visit(node.left)} {operator} {generator.visit(node.right)}"
 
 
@@ -154,6 +155,17 @@ def _render_string_operator(operator: str) -> str:
     if operator in _STRING_OPERATORS:
         return operator
     msg = f"Invalid string operator '{operator}' for libyara output"
+    raise ValueError(msg)
+
+
+def _validate_string_operator_operands(node, operator: str) -> None:
+    if operator != "matches":
+        return
+    from yaraast.ast.expressions import RegexLiteral
+
+    if isinstance(node.right, RegexLiteral):
+        return
+    msg = "String operator 'matches' requires a regex literal for libyara output"
     raise ValueError(msg)
 
 
