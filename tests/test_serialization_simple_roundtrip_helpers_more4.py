@@ -900,6 +900,106 @@ def test_simple_roundtrip_optional_expression_fields_reject_empty_objects() -> N
             deserialize_node(payload)
 
 
+def test_simple_roundtrip_required_expression_fields_reject_empty_objects() -> None:
+    true_expr = {"type": "BooleanLiteral", "value": True}
+    int_expr = {"type": "IntegerLiteral", "value": 1}
+
+    empty_required_cases: tuple[tuple[dict[str, Any], str], ...] = (
+        (
+            {"type": "BinaryExpression", "left": {}, "operator": "and", "right": true_expr},
+            "BinaryExpression left is required",
+        ),
+        (
+            {"type": "UnaryExpression", "operator": "not", "operand": {}},
+            "UnaryExpression operand is required",
+        ),
+        (
+            {"type": "ParenthesesExpression", "expression": {}},
+            "ParenthesesExpression expression is required",
+        ),
+        (
+            {"type": "RangeExpression", "low": {}, "high": int_expr},
+            "RangeExpression low is required",
+        ),
+        (
+            {"type": "ArrayAccess", "array": {}, "index": int_expr},
+            "ArrayAccess array is required",
+        ),
+        (
+            {"type": "MemberAccess", "object": {}, "member": "name"},
+            "MemberAccess object is required",
+        ),
+        (
+            {
+                "type": "ForExpression",
+                "quantifier": "any",
+                "iterable": {},
+                "body": true_expr,
+            },
+            "ForExpression iterable is required",
+        ),
+        (
+            {"type": "AtExpression", "string_id": "$a", "offset": {}},
+            "AtExpression offset is required",
+        ),
+        (
+            {"type": "InExpression", "subject": {}, "range": int_expr},
+            "InExpression subject is required",
+        ),
+        (
+            {"type": "InExpression", "subject": "$a", "range": {}},
+            "InExpression range is required",
+        ),
+        (
+            {"type": "DictionaryAccess", "object": {}, "key": "name"},
+            "DictionaryAccess object is required",
+        ),
+        (
+            {"type": "DefinedExpression", "expression": {}},
+            "DefinedExpression expression is required",
+        ),
+        (
+            {"type": "WithStatement", "declarations": [], "body": {}},
+            "WithStatement body is required",
+        ),
+        (
+            {"type": "WithDeclaration", "identifier": "x", "value": {}},
+            "WithDeclaration value is required",
+        ),
+        (
+            {"type": "TupleIndexing", "tuple_expr": {}, "index": int_expr},
+            "TupleIndexing tuple_expr is required",
+        ),
+        (
+            {"type": "DictItem", "key": {}, "value": int_expr},
+            "DictItem key is required",
+        ),
+        (
+            {"type": "SliceExpression", "target": {}},
+            "SliceExpression target is required",
+        ),
+        (
+            {"type": "LambdaExpression", "parameters": ["x"], "body": {}},
+            "LambdaExpression body is required",
+        ),
+        (
+            {"type": "PatternMatch", "value": {}, "cases": []},
+            "PatternMatch value is required",
+        ),
+        (
+            {"type": "MatchCase", "pattern": {}, "result": true_expr},
+            "MatchCase pattern is required",
+        ),
+        (
+            {"type": "SpreadOperator", "expression": {}},
+            "SpreadOperator expression is required",
+        ),
+    )
+    for payload, message in empty_required_cases:
+        with pytest.raises(SerializationError, match=message):
+            deserialize_node(payload)
+
+
 def test_simple_roundtrip_helpers_file_io_preserves_xor_range_modifier(tmp_path: Path) -> None:
     ast = YaraFile(
         rules=[

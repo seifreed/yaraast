@@ -331,6 +331,19 @@ def _deserialize_optional_node_field(
     return _deserialize_optional_node_value(value, context)
 
 
+def _deserialize_required_node_value(value: Any, context: str) -> ASTNode:
+    if value is None or value == {}:
+        msg = f"{context} is required"
+        raise SerializationError(msg)
+    return deserialize_node(value)
+
+
+def _deserialize_required_node(data: dict[str, Any], field: str, context: str) -> ASTNode:
+    return _deserialize_required_node_value(
+        _deserialize_required_field(data, field, context), f"{context} {field}"
+    )
+
+
 def _deserialize_dictionary_key(data: dict[str, Any]) -> str | ASTNode:
     if "key" not in data:
         msg = "DictionaryAccess key must be a string or expression"
@@ -339,7 +352,7 @@ def _deserialize_dictionary_key(data: dict[str, Any]) -> str | ASTNode:
     if isinstance(value, str):
         return value
     if isinstance(value, dict):
-        return deserialize_node(value)
+        return _deserialize_required_node_value(value, "DictionaryAccess key")
     msg = "DictionaryAccess key must be a string or expression"
     raise SerializationError(msg)
 
@@ -1125,20 +1138,18 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "BinaryExpression":
         return BinaryExpression(
-            deserialize_node(_deserialize_required_field(data, "left", "BinaryExpression")),
+            _deserialize_required_node(data, "left", "BinaryExpression"),
             _deserialize_string_field(data, "operator", "BinaryExpression"),
-            deserialize_node(_deserialize_required_field(data, "right", "BinaryExpression")),
+            _deserialize_required_node(data, "right", "BinaryExpression"),
         )
     if node_type == "UnaryExpression":
         return UnaryExpression(
             _deserialize_string_field(data, "operator", "UnaryExpression"),
-            deserialize_node(_deserialize_required_field(data, "operand", "UnaryExpression")),
+            _deserialize_required_node(data, "operand", "UnaryExpression"),
         )
     if node_type == "ParenthesesExpression":
         return ParenthesesExpression(
-            deserialize_node(
-                _deserialize_required_field(data, "expression", "ParenthesesExpression")
-            )
+            _deserialize_required_node(data, "expression", "ParenthesesExpression")
         )
     if node_type == "SetExpression":
         return SetExpression(
@@ -1149,8 +1160,8 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "RangeExpression":
         return RangeExpression(
-            deserialize_node(_deserialize_required_field(data, "low", "RangeExpression")),
-            deserialize_node(_deserialize_required_field(data, "high", "RangeExpression")),
+            _deserialize_required_node(data, "low", "RangeExpression"),
+            _deserialize_required_node(data, "high", "RangeExpression"),
         )
     if node_type == "FunctionCall":
         return FunctionCall(
@@ -1162,20 +1173,20 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "ArrayAccess":
         return ArrayAccess(
-            deserialize_node(_deserialize_required_field(data, "array", "ArrayAccess")),
-            deserialize_node(_deserialize_required_field(data, "index", "ArrayAccess")),
+            _deserialize_required_node(data, "array", "ArrayAccess"),
+            _deserialize_required_node(data, "index", "ArrayAccess"),
         )
     if node_type == "MemberAccess":
         return MemberAccess(
-            deserialize_node(_deserialize_required_field(data, "object", "MemberAccess")),
+            _deserialize_required_node(data, "object", "MemberAccess"),
             _deserialize_string_field(data, "member", "MemberAccess"),
         )
     if node_type == "ForExpression":
         return ForExpression(
             _deserialize_required_ast_value(data, "quantifier", "ForExpression"),
             _deserialize_optional_string_field(data, "variable", "ForExpression", "i"),
-            deserialize_node(_deserialize_required_field(data, "iterable", "ForExpression")),
-            deserialize_node(_deserialize_required_field(data, "body", "ForExpression")),
+            _deserialize_required_node(data, "iterable", "ForExpression"),
+            _deserialize_required_node(data, "body", "ForExpression"),
         )
     if node_type == "ForOfExpression":
         return ForOfExpression(
@@ -1186,22 +1197,20 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "AtExpression":
         return AtExpression(
             _deserialize_string_field(data, "string_id", "AtExpression"),
-            deserialize_node(_deserialize_required_field(data, "offset", "AtExpression")),
+            _deserialize_required_node(data, "offset", "AtExpression"),
         )
     if node_type == "InExpression":
         raw_subject = data.get("subject")
         if raw_subject is None and "string_id" in data:
             raw_subject = data["string_id"]
         if isinstance(raw_subject, dict):
-            subject = deserialize_node(raw_subject)
+            subject = _deserialize_required_node_value(raw_subject, "InExpression subject")
         elif isinstance(raw_subject, str):
             subject = raw_subject
         else:
             msg = "InExpression subject must be a string or expression"
             raise SerializationError(msg)
-        return InExpression(
-            subject, deserialize_node(_deserialize_required_field(data, "range", "InExpression"))
-        )
+        return InExpression(subject, _deserialize_required_node(data, "range", "InExpression"))
     if node_type == "OfExpression":
         return OfExpression(
             _deserialize_required_ast_value(data, "quantifier", "OfExpression"),
@@ -1211,14 +1220,16 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         return ModuleReference(_deserialize_string_field(data, "module", "ModuleReference"))
     if node_type == "DictionaryAccess":
         return DictionaryAccess(
-            deserialize_node(_deserialize_required_field(data, "object", "DictionaryAccess")),
+            _deserialize_required_node(data, "object", "DictionaryAccess"),
             _deserialize_dictionary_key(data),
         )
     if node_type == "DefinedExpression":
         expression = data.get("expression")
         if expression is None and "identifier" in data:
             expression = {"type": "Identifier", "name": data["identifier"]}
-        return DefinedExpression(deserialize_node(expression))
+        return DefinedExpression(
+            _deserialize_required_node_value(expression, "DefinedExpression expression")
+        )
     if node_type == "StringOperatorExpression":
         left = data.get("left")
         right = data.get("right")
@@ -1241,12 +1252,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
                 deserialize_node(declaration)
                 for declaration in _deserialize_list_field(data, "declarations", "WithStatement")
             ],
-            body=deserialize_node(_deserialize_required_field(data, "body", "WithStatement")),
+            body=_deserialize_required_node(data, "body", "WithStatement"),
         )
     if node_type == "WithDeclaration":
         return WithDeclaration(
             identifier=_deserialize_string_field(data, "identifier", "WithDeclaration"),
-            value=deserialize_node(_deserialize_required_field(data, "value", "WithDeclaration")),
+            value=_deserialize_required_node(data, "value", "WithDeclaration"),
         )
     if node_type == "ArrayComprehension":
         return ArrayComprehension(
@@ -1291,10 +1302,8 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "TupleIndexing":
         return TupleIndexing(
-            tuple_expr=deserialize_node(
-                _deserialize_required_field(data, "tuple_expr", "TupleIndexing")
-            ),
-            index=deserialize_node(_deserialize_required_field(data, "index", "TupleIndexing")),
+            tuple_expr=_deserialize_required_node(data, "tuple_expr", "TupleIndexing"),
+            index=_deserialize_required_node(data, "index", "TupleIndexing"),
         )
     if node_type == "ListExpression":
         return ListExpression(
@@ -1312,12 +1321,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "DictItem":
         return DictItem(
-            key=deserialize_node(_deserialize_required_field(data, "key", "DictItem")),
-            value=deserialize_node(_deserialize_required_field(data, "value", "DictItem")),
+            key=_deserialize_required_node(data, "key", "DictItem"),
+            value=_deserialize_required_node(data, "value", "DictItem"),
         )
     if node_type == "SliceExpression":
         return SliceExpression(
-            target=deserialize_node(_deserialize_required_field(data, "target", "SliceExpression")),
+            target=_deserialize_required_node(data, "target", "SliceExpression"),
             start=_deserialize_optional_node_field(data, "start", "SliceExpression start"),
             stop=_deserialize_optional_node_field(data, "stop", "SliceExpression stop"),
             step=_deserialize_optional_node_field(data, "step", "SliceExpression step"),
@@ -1325,11 +1334,11 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
     if node_type == "LambdaExpression":
         return LambdaExpression(
             parameters=_deserialize_string_list_field(data, "parameters", "LambdaExpression"),
-            body=deserialize_node(_deserialize_required_field(data, "body", "LambdaExpression")),
+            body=_deserialize_required_node(data, "body", "LambdaExpression"),
         )
     if node_type == "PatternMatch":
         return PatternMatch(
-            value=deserialize_node(_deserialize_required_field(data, "value", "PatternMatch")),
+            value=_deserialize_required_node(data, "value", "PatternMatch"),
             cases=[
                 deserialize_node(case)
                 for case in _deserialize_list_field(data, "cases", "PatternMatch")
@@ -1338,14 +1347,12 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
         )
     if node_type == "MatchCase":
         return MatchCase(
-            pattern=deserialize_node(_deserialize_required_field(data, "pattern", "MatchCase")),
-            result=deserialize_node(_deserialize_required_field(data, "result", "MatchCase")),
+            pattern=_deserialize_required_node(data, "pattern", "MatchCase"),
+            result=_deserialize_required_node(data, "result", "MatchCase"),
         )
     if node_type == "SpreadOperator":
         return SpreadOperator(
-            expression=deserialize_node(
-                _deserialize_required_field(data, "expression", "SpreadOperator")
-            ),
+            expression=_deserialize_required_node(data, "expression", "SpreadOperator"),
             is_dict=_deserialize_bool_field(data, "is_dict", "SpreadOperator"),
         )
     return Identifier(data.get("data", "unknown"))
