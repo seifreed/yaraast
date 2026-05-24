@@ -897,11 +897,17 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
     elif isinstance(expr, BooleanLiteral):
         pb_expr.boolean_literal.value = expr.value
     elif isinstance(expr, BinaryExpression):
-        pb_expr.binary_expression.operator = expr.operator
+        pb_expr.binary_expression.operator = _protobuf_required_string(
+            expr.operator,
+            "BinaryExpression operator",
+        )
         convert_expression_to_protobuf(expr.left, pb_expr.binary_expression.left)
         convert_expression_to_protobuf(expr.right, pb_expr.binary_expression.right)
     elif isinstance(expr, UnaryExpression):
-        pb_expr.unary_expression.operator = expr.operator
+        pb_expr.unary_expression.operator = _protobuf_required_string(
+            expr.operator,
+            "UnaryExpression operator",
+        )
         convert_expression_to_protobuf(expr.operand, pb_expr.unary_expression.operand)
     elif isinstance(expr, ParenthesesExpression):
         convert_expression_to_protobuf(expr.expression, pb_expr.parentheses_expression.expression)
@@ -912,7 +918,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.low, pb_expr.range_expression.low)
         convert_expression_to_protobuf(expr.high, pb_expr.range_expression.high)
     elif isinstance(expr, FunctionCall):
-        pb_expr.function_call.function = expr.function
+        pb_expr.function_call.function = _protobuf_required_string(
+            expr.function,
+            "FunctionCall function",
+        )
         for argument in expr.arguments:
             convert_expression_to_protobuf(argument, pb_expr.function_call.arguments.add())
     elif isinstance(expr, ArrayAccess):
@@ -920,9 +929,15 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.index, pb_expr.array_access.index)
     elif isinstance(expr, MemberAccess):
         convert_expression_to_protobuf(expr.object, pb_expr.member_access.object)
-        pb_expr.member_access.member = expr.member
+        pb_expr.member_access.member = _protobuf_required_string(
+            expr.member,
+            "MemberAccess member",
+        )
     elif isinstance(expr, ModuleReference):
-        pb_expr.module_reference.module = expr.module
+        pb_expr.module_reference.module = _protobuf_required_string(
+            expr.module,
+            "ModuleReference module",
+        )
     elif isinstance(expr, DictionaryAccess):
         convert_expression_to_protobuf(expr.object, pb_expr.dictionary_access.object)
         if isinstance(expr.key, Expression):
@@ -938,7 +953,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         quantifier = _coerce_quantifier_expression(expr.quantifier)
         if quantifier is not None:
             convert_expression_to_protobuf(quantifier, pb_expr.for_expression.quantifier_expr)
-        pb_expr.for_expression.variable = expr.variable
+        pb_expr.for_expression.variable = _protobuf_required_string(
+            expr.variable,
+            "ForExpression variable",
+        )
         convert_expression_to_protobuf(expr.iterable, pb_expr.for_expression.iterable)
         convert_expression_to_protobuf(expr.body, pb_expr.for_expression.body)
     elif isinstance(expr, ForOfExpression):
@@ -957,7 +975,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         if expr.condition is not None:
             convert_expression_to_protobuf(expr.condition, pb_expr.for_of_expression.condition)
     elif isinstance(expr, AtExpression):
-        pb_expr.at_expression.string_id = expr.string_id
+        pb_expr.at_expression.string_id = _protobuf_required_string(
+            expr.string_id,
+            "AtExpression string_id",
+        )
         convert_expression_to_protobuf(expr.offset, pb_expr.at_expression.offset)
     elif isinstance(expr, InExpression):
         if isinstance(expr.subject, str):
@@ -980,7 +1001,10 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         convert_expression_to_protobuf(expr.expression, pb_expr.defined_expression.expression)
     elif isinstance(expr, StringOperatorExpression):
         convert_expression_to_protobuf(expr.left, pb_expr.string_operator_expression.left)
-        pb_expr.string_operator_expression.operator = expr.operator
+        pb_expr.string_operator_expression.operator = _protobuf_required_string(
+            expr.operator,
+            "StringOperatorExpression operator",
+        )
         convert_expression_to_protobuf(expr.right, pb_expr.string_operator_expression.right)
     elif isinstance(expr, WithStatement):
         for declaration in expr.declarations:

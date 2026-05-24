@@ -8,11 +8,24 @@ import pytest
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.conditions import ForOfExpression, OfExpression
-from yaraast.ast.expressions import BooleanLiteral, DoubleLiteral, IntegerLiteral, StringIdentifier
+from yaraast.ast.conditions import AtExpression, ForExpression, ForOfExpression, OfExpression
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    DoubleLiteral,
+    FunctionCall,
+    Identifier,
+    IntegerLiteral,
+    MemberAccess,
+    StringIdentifier,
+    StringLiteral,
+    UnaryExpression,
+)
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.meta import Meta
 from yaraast.ast.modifiers import RuleModifier, StringModifier
+from yaraast.ast.modules import ModuleReference
+from yaraast.ast.operators import StringOperatorExpression
 from yaraast.ast.pragmas import (
     ConditionalDirective,
     CustomPragma,
@@ -505,6 +518,48 @@ def test_protobuf_serializer_rejects_invalid_pragma_type() -> None:
 
     with pytest.raises(SerializationError, match="Pragma pragma_type must be a string"):
         serializer.serialize(YaraFile(pragmas=[pragma]))
+
+
+@pytest.mark.parametrize(
+    ("condition", "message"),
+    [
+        (
+            BinaryExpression(BooleanLiteral(True), cast(Any, 123), BooleanLiteral(False)),
+            "BinaryExpression operator must be a string",
+        ),
+        (
+            UnaryExpression(cast(Any, 123), BooleanLiteral(True)),
+            "UnaryExpression operator must be a string",
+        ),
+        (FunctionCall(cast(Any, 123), []), "FunctionCall function must be a string"),
+        (
+            MemberAccess(Identifier("pe"), cast(Any, 123)),
+            "MemberAccess member must be a string",
+        ),
+        (
+            ForExpression("any", cast(Any, 123), StringIdentifier("$a"), BooleanLiteral(True)),
+            "ForExpression variable must be a string",
+        ),
+        (
+            AtExpression(cast(Any, 123), IntegerLiteral(0)),
+            "AtExpression string_id must be a string",
+        ),
+        (ModuleReference(cast(Any, ["pe"])), "ModuleReference module must be a string"),
+        (
+            StringOperatorExpression(StringLiteral("a"), cast(Any, 123), StringLiteral("b")),
+            "StringOperatorExpression operator must be a string",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_expression_scalar_fields(
+    condition: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(rules=[Rule(name="invalid_expression_scalar", condition=condition)])
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
 
 
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
