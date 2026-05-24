@@ -9,6 +9,7 @@ from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
+    validate_string_identifiers,
 )
 
 
@@ -39,6 +40,7 @@ def write_strings_section(gen, strings, *, has_condition: bool) -> None:
     """Write strings section if present."""
     if not strings:
         return
+    validate_string_identifiers(strings)
     gen._writeline("strings:")
     gen._indent()
     for string in strings:

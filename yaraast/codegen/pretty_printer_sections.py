@@ -10,6 +10,7 @@ from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
+    validate_string_identifiers,
 )
 from yaraast.codegen.pretty_printer_helpers import (
     build_hex_pattern,
@@ -64,6 +65,7 @@ def write_meta_entry(printer, key: str, value: Any, trailing_comment=None) -> No
 
 def write_strings_section(printer, strings: list[StringDefinition]) -> None:
     """Write all string definitions."""
+    validate_string_identifiers(strings)
     for string_def in strings:
         printer._write_string_definition(string_def)
 

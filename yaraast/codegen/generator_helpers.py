@@ -90,6 +90,22 @@ def output_string_identifier(string_def: Any) -> str:
     return identifier if identifier.startswith("$") else f"${identifier}"
 
 
+def validate_string_identifiers(strings) -> None:
+    """Reject duplicate named string identifiers that libyara rejects."""
+    if not strings:
+        return
+
+    seen: set[str] = set()
+    for string_def in strings:
+        if getattr(string_def, "is_anonymous", False):
+            continue
+        identifier = output_string_identifier(string_def)
+        if identifier in seen:
+            msg = f"Duplicate string identifier '{identifier}' for libyara output"
+            raise ValueError(msg)
+        seen.add(identifier)
+
+
 def format_integer_literal(value) -> str:
     """Format integer literals with common hex values preserved."""
     if isinstance(value, bool):

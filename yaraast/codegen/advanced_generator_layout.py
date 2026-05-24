@@ -9,6 +9,7 @@ from yaraast.codegen.generator_expression_visitors import (
     _visit_binary_operand,
 )
 from yaraast.codegen.generator_formatting import format_rule_tags, validate_rule_identifiers
+from yaraast.codegen.generator_helpers import validate_string_identifiers
 
 
 def _emit_top_level_line(generator, node) -> None:
@@ -109,6 +110,7 @@ def visit_rule(generator, node) -> str:
 
 
 def write_strings_section(generator, strings) -> None:
+    validate_string_identifiers(strings)
     generator._writeline("strings:")
     generator._indent()
     if generator.config.sort_strings:

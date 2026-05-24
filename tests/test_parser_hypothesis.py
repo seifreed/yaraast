@@ -42,6 +42,7 @@ def _rule_with_strings() -> st.SearchStrategy[str]:
             ),
             min_size=1,
             max_size=5,
+            unique_by=lambda string_def: string_def[0],
         ),
     ).map(lambda t: _build_rule_with_strings(t[0], t[1]))
 

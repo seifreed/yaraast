@@ -504,6 +504,50 @@ def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+def test_codegen_generators_reject_duplicate_string_identifiers() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_strings",
+                strings=[
+                    PlainString(identifier="$a", value="x"),
+                    PlainString(identifier="$a", value="y"),
+                ],
+                condition=StringIdentifier("$a"),
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="Duplicate string identifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Duplicate string identifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Duplicate string identifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Duplicate string identifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_allow_multiple_anonymous_strings() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="anonymous_strings",
+                strings=[
+                    PlainString(identifier="$anon_1", value="x", is_anonymous=True),
+                    PlainString(identifier="$anon_2", value="y", is_anonymous=True),
+                ],
+                condition=StringIdentifier("$anon_1"),
+            )
+        ]
+    )
+
+    assert '$ = "x"' in CodeGenerator().generate(ast)
+    assert '$ = "x"' in AdvancedCodeGenerator().generate(ast)
+    assert '$ = "x"' in CommentAwareCodeGenerator().generate(ast)
+    assert '$  = "x"' in PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generator_expression_and_condition_paths() -> None:
     gen = CodeGenerator()
 

@@ -30,6 +30,7 @@ from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
+    validate_string_identifiers,
 )
 
 
@@ -37,6 +38,7 @@ def collect_string_definitions(
     strings: list[StringDefinition],
     config,
 ) -> list[tuple[str, str, list[str]]]:
+    validate_string_identifiers(strings)
     collected: list[tuple[str, str, list[str]]] = []
 
     for string_def in strings:

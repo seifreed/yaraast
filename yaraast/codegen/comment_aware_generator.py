@@ -18,6 +18,7 @@ from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
+    validate_string_identifiers,
 )
 
 if TYPE_CHECKING:
@@ -235,6 +236,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         """Write the strings section with comments."""
         if not node.strings:
             return
+        validate_string_identifiers(node.strings)
 
         self._writeline("strings:")
         self._indent()
