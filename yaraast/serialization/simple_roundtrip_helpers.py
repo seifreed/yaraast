@@ -879,28 +879,41 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "value": _serialize_required_string(node.value, "StringLiteral value"),
         }
     if isinstance(node, RegexLiteral):
-        return {"type": "RegexLiteral", "pattern": node.pattern, "modifiers": node.modifiers}
+        return {
+            "type": "RegexLiteral",
+            "pattern": _serialize_required_string(node.pattern, "RegexLiteral pattern"),
+            "modifiers": _serialize_required_string(node.modifiers, "RegexLiteral modifiers"),
+        }
     if isinstance(node, Identifier):
         return {
             "type": "Identifier",
             "name": _serialize_required_string(node.name, "Identifier name"),
         }
     if isinstance(node, StringIdentifier):
-        return {"type": "StringIdentifier", "name": node.name}
+        return {
+            "type": "StringIdentifier",
+            "name": _serialize_required_string(node.name, "StringIdentifier name"),
+        }
     if isinstance(node, StringWildcard):
-        return {"type": "StringWildcard", "pattern": node.pattern}
+        return {
+            "type": "StringWildcard",
+            "pattern": _serialize_required_string(node.pattern, "StringWildcard pattern"),
+        }
     if isinstance(node, StringCount):
-        return {"type": "StringCount", "string_id": node.string_id}
+        return {
+            "type": "StringCount",
+            "string_id": _serialize_required_string(node.string_id, "StringCount string_id"),
+        }
     if isinstance(node, StringOffset):
         return {
             "type": "StringOffset",
-            "string_id": node.string_id,
+            "string_id": _serialize_required_string(node.string_id, "StringOffset string_id"),
             "index": serialize_node(node.index) if node.index else None,
         }
     if isinstance(node, StringLength):
         return {
             "type": "StringLength",
-            "string_id": node.string_id,
+            "string_id": _serialize_required_string(node.string_id, "StringLength string_id"),
             "index": serialize_node(node.index) if node.index else None,
         }
     if isinstance(node, BinaryExpression):

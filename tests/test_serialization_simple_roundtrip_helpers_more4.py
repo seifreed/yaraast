@@ -29,6 +29,7 @@ from yaraast.ast.expressions import (
     RangeExpression,
     RegexLiteral,
     SetExpression,
+    StringCount,
     StringIdentifier,
     StringLength,
     StringLiteral,
@@ -855,6 +856,22 @@ def test_simple_roundtrip_serialize_literal_nodes_reject_wrong_scalar_types() ->
         (DoubleLiteral(float("inf")), "DoubleLiteral value must be finite"),
         (StringLiteral(cast(Any, True)), "StringLiteral value must be a string"),
         (Identifier(cast(Any, ["id"])), "Identifier name must be a string"),
+    )
+
+    for node, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
+
+
+def test_simple_roundtrip_serialize_string_reference_nodes_reject_wrong_scalar_types() -> None:
+    invalid_cases = (
+        (RegexLiteral(cast(Any, 123)), "RegexLiteral pattern must be a string"),
+        (RegexLiteral("abc", cast(Any, ["i"])), "RegexLiteral modifiers must be a string"),
+        (StringIdentifier(cast(Any, ["$a"])), "StringIdentifier name must be a string"),
+        (StringWildcard(cast(Any, ["$a*"])), "StringWildcard pattern must be a string"),
+        (StringCount(cast(Any, 7)), "StringCount string_id must be a string"),
+        (StringOffset(cast(Any, 7)), "StringOffset string_id must be a string"),
+        (StringLength(cast(Any, 7)), "StringLength string_id must be a string"),
     )
 
     for node, message in invalid_cases:
