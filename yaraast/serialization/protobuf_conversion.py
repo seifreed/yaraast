@@ -239,7 +239,11 @@ def convert_rule_to_protobuf(rule, pb_rule) -> None:
 
     for string_def in rule.strings:
         pb_string = pb_rule.strings.add()
-        pb_string.identifier = string_def.identifier
+        string_context = type(string_def).__name__
+        pb_string.identifier = _protobuf_required_string(
+            string_def.identifier,
+            f"{string_context} identifier",
+        )
         convert_string_to_protobuf(string_def, pb_string)
 
     if rule.condition is not None:
@@ -416,8 +420,11 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
     if isinstance(string_def, PlainString):
         if isinstance(string_def.value, bytes):
             pb_string.plain.raw_value = string_def.value
-        else:
+        elif isinstance(string_def.value, str):
             pb_string.plain.value = string_def.value
+        else:
+            msg = "PlainString value must be a string or bytes"
+            raise SerializationError(msg)
         for mod in string_def.modifiers:
             pb_mod = pb_string.plain.modifiers.add()
             _copy_modifier_to_protobuf(mod, pb_mod)
@@ -432,7 +439,10 @@ def convert_string_to_protobuf(string_def, pb_string) -> None:
             _copy_modifier_to_protobuf(mod, pb_mod)
 
     elif isinstance(string_def, RegexString):
-        pb_string.regex.regex = string_def.regex
+        pb_string.regex.regex = _protobuf_required_string(
+            string_def.regex,
+            "RegexString regex",
+        )
         for mod in string_def.modifiers:
             pb_mod = pb_string.regex.modifiers.add()
             _copy_modifier_to_protobuf(mod, pb_mod)

@@ -361,6 +361,50 @@ def test_protobuf_serializer_rejects_non_string_file_and_rule_fields(
         serializer.serialize(ast)
 
 
+@pytest.mark.parametrize(
+    ("string_def", "message"),
+    [
+        (
+            PlainString(identifier=cast(Any, 123), value="abc"),
+            "PlainString identifier must be a string",
+        ),
+        (
+            PlainString(identifier="$a", value=cast(Any, ["abc"])),
+            "PlainString value must be a string or bytes",
+        ),
+        (
+            HexString(identifier=cast(Any, 123), tokens=[HexByte(0x90)]),
+            "HexString identifier must be a string",
+        ),
+        (
+            RegexString(identifier=cast(Any, 123), regex="abc"),
+            "RegexString identifier must be a string",
+        ),
+        (
+            RegexString(identifier="$r", regex=cast(Any, 123)),
+            "RegexString regex must be a string",
+        ),
+    ],
+)
+def test_protobuf_serializer_rejects_invalid_string_definition_fields(
+    string_def: Any,
+    message: str,
+) -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="bad_string_fields",
+                strings=[string_def],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    with pytest.raises(SerializationError, match=message):
+        serializer.serialize(ast)
+
+
 def test_protobuf_serializer_preserves_file_externs_and_pragmas() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(
