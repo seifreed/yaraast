@@ -14,6 +14,7 @@ from ._registry import (
     DoubleType,
     FloatType,
     IntegerType,
+    RegexType,
     StringIdentifierType,
     StringType,
     TypeEnvironment,
@@ -126,11 +127,13 @@ class TypeChecker(BaseVisitor[None]):
                     | IntegerType
                     | DoubleType
                     | FloatType
+                    | RegexType
                     | StringType
                     | StringIdentifierType,
                 ):
                     self.errors.append(
-                        f"Rule condition must be boolean, integer, double, string, or string identifier, got {cond_type}",
+                        "Rule condition must be boolean, integer, double, regex, string, "
+                        f"or string identifier, got {cond_type}",
                     )
         finally:
             self.env.strings = previous_strings | rule_strings

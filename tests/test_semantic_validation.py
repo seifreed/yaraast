@@ -795,6 +795,11 @@ class TestSemanticValidator:
                     1.0
             }
 
+            rule regex_literal_condition {
+                condition:
+                    /a/
+            }
+
             rule string_logical_operand {
                 condition:
                     "abc" and true

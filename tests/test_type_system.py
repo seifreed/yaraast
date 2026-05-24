@@ -1444,7 +1444,7 @@ class TestTypeChecker:
 
         errors = checker.check(ast)
         assert len(errors) == 1
-        assert "must be boolean, integer, double, string, or string identifier" in errors[0]
+        assert "must be boolean, integer, double, regex, string, or string identifier" in errors[0]
 
     def test_check_returns_error_snapshot(self) -> None:
         """Test returned errors cannot mutate checker state."""
