@@ -454,10 +454,10 @@ class CommentAwareParser(Parser):
 
             # Parse value
             if self._match(TokenType.MINUS):
-                if self._match(TokenType.INTEGER) or self._match(TokenType.DOUBLE):
+                if self._match(TokenType.INTEGER):
                     value = -self._previous().value
                 else:
-                    msg = "Expected number after '-' in meta value"
+                    msg = "Expected integer after '-' in meta value"
                     raise Exception(msg)
             elif self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
                 value = self._previous().value

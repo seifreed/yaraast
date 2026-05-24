@@ -395,11 +395,11 @@ class RuleParsingMixin:
         return None
 
     def _parse_meta_value(self) -> str | int | bool:
-        # Handle negative numbers: -159 or -3.14
+        # Handle negative integer metadata: -159
         if self._match(TokenType.MINUS):
-            if self._match(TokenType.INTEGER) or self._match(TokenType.DOUBLE):
+            if self._match(TokenType.INTEGER):
                 return -self._previous().value
-            msg = "Expected number after '-' in meta value"
+            msg = "Expected integer after '-' in meta value"
             raise ParserError(msg, self._peek())
         if self._match(TokenType.STRING) or self._match(TokenType.INTEGER):
             return self._previous().value

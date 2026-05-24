@@ -73,6 +73,10 @@ def test_parse_rule_helpers_and_meta_section_variants() -> None:
     assert len(rule.strings) == 1
     assert rule.condition is not None
 
+    for parser in (Parser(), CommentAwareParser()):
+        with pytest.raises(Exception, match="Expected integer after '-' in meta value"):
+            parser.parse("rule invalid_meta { meta: score = -1.5 condition: true }")
+
     parser2 = _parser_with_tokens(
         [_t(TokenType.PRIVATE, "PRIVATE"), _t(TokenType.GLOBAL, "GLOBAL")]
     )
@@ -127,7 +131,7 @@ def test_parse_rule_helpers_and_meta_section_variants() -> None:
             _t(TokenType.STRING, "x"),
         ]
     )
-    with pytest.raises(ParserError, match="Expected number after '-' in meta value"):
+    with pytest.raises(ParserError, match="Expected integer after '-' in meta value"):
         parser7._parse_meta_section()
 
     parser8 = _parser_with_tokens(
