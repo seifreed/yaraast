@@ -622,6 +622,44 @@ def test_codegen_generators_reject_invalid_string_identifiers() -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize(
+    "condition",
+    [
+        StringIdentifier("$bad-key"),
+        BinaryExpression(StringCount("bad-key"), ">", IntegerLiteral(0)),
+        BinaryExpression(StringOffset("bad-key"), ">=", IntegerLiteral(0)),
+        BinaryExpression(StringLength("bad-key"), ">", IntegerLiteral(0)),
+    ],
+)
+def test_codegen_generators_reject_invalid_string_references(condition: Condition) -> None:
+    ast = YaraFile(rules=[Rule(name="invalid_string_reference", condition=condition)])
+
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="Invalid string identifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_allow_for_of_placeholder_string_reference() -> None:
+    ast = Parser().parse("""
+        rule placeholder {
+            strings:
+                $a = "a"
+            condition:
+                for any of them : ($)
+        }
+        """)
+
+    assert "for any of them : ($)" in CodeGenerator().generate(ast)
+    assert "for any of them : ($)" in AdvancedCodeGenerator().generate(ast)
+    assert "for any of them : ($)" in CommentAwareCodeGenerator().generate(ast)
+    assert "for any of them : ($)" in PrettyPrinter().pretty_print(ast)
+
+
 def test_codegen_generators_allow_libyara_string_identifier_forms() -> None:
     ast = YaraFile(
         rules=[

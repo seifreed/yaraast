@@ -91,6 +91,17 @@ def output_string_identifier(string_def: Any) -> str:
     return identifier if identifier.startswith("$") else f"${identifier}"
 
 
+def validate_string_identifier_text(identifier: Any) -> str:
+    """Return a normalized string identifier or reject invalid libyara output."""
+    text = str(identifier)
+    normalized = text if text.startswith("$") else f"${text}"
+    body = normalized.removeprefix("$")
+    if not body or _STRING_IDENTIFIER_BODY_RE.fullmatch(body) is None:
+        msg = f"Invalid string identifier '{normalized}' for libyara output"
+        raise ValueError(msg)
+    return normalized
+
+
 def validate_string_identifiers(strings) -> None:
     """Reject duplicate named string identifiers that libyara rejects."""
     if not strings:
@@ -101,10 +112,7 @@ def validate_string_identifiers(strings) -> None:
         if getattr(string_def, "is_anonymous", False):
             continue
         identifier = output_string_identifier(string_def)
-        body = identifier.removeprefix("$")
-        if not body or _STRING_IDENTIFIER_BODY_RE.fullmatch(body) is None:
-            msg = f"Invalid string identifier '{identifier}' for libyara output"
-            raise ValueError(msg)
+        validate_string_identifier_text(identifier)
         if identifier in seen:
             msg = f"Duplicate string identifier '{identifier}' for libyara output"
             raise ValueError(msg)

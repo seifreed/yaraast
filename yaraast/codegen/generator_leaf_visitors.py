@@ -15,6 +15,7 @@ from yaraast.codegen.generator_helpers import (
     format_hex_byte_value,
     format_hex_nibble_value,
     format_integer_literal,
+    validate_string_identifier_text,
 )
 
 
@@ -54,8 +55,10 @@ def visit_identifier(node) -> str:
     return node.name
 
 
-def visit_string_identifier(node) -> str:
-    return node.name
+def visit_string_identifier(node, *, allow_placeholder: bool = False) -> str:
+    if allow_placeholder and node.name == "$":
+        return "$"
+    return validate_string_identifier_text(node.name)
 
 
 def visit_string_wildcard(node) -> str:
@@ -65,7 +68,7 @@ def visit_string_wildcard(node) -> str:
 def _string_reference_suffix(string_id) -> str:
     text = str(string_id)
     text = text.lstrip("#@!")
-    return text[1:] if text.startswith("$") else text
+    return validate_string_identifier_text(text).removeprefix("$")
 
 
 def visit_string_count(node) -> str:

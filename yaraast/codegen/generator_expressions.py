@@ -62,7 +62,12 @@ def render_for_of_expression(gen, node) -> str:
     quantifier = _render_quantifier(gen, node.quantifier, allow_percentage=True)
     string_set = _render_string_set(gen, node.string_set)
     if node.condition:
-        condition = gen.visit(node.condition)
+        previous = getattr(gen, "_allow_string_placeholder", False)
+        gen._allow_string_placeholder = True
+        try:
+            condition = gen.visit(node.condition)
+        finally:
+            gen._allow_string_placeholder = previous
         return f"for {quantifier} of {string_set} : ({condition})"
     return f"{quantifier} of {string_set}"
 

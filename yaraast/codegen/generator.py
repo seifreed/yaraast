@@ -313,7 +313,10 @@ class CodeGenerator(ASTVisitor[str]):
         return render_identifier(node)
 
     def visit_string_identifier(self, node: StringIdentifier) -> str:
-        return render_string_identifier(node)
+        return render_string_identifier(
+            node,
+            allow_placeholder=getattr(self, "_allow_string_placeholder", False),
+        )
 
     def visit_string_wildcard(self, node: StringWildcard) -> str:
         return render_string_wildcard(node)

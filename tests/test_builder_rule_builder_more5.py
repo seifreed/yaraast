@@ -48,6 +48,13 @@ def test_rule_builder_hex_regex_and_condition_variants() -> None:
     assert rule.condition.name == "$a"
 
 
+def test_rule_builder_keeps_complex_string_condition_text_raw() -> None:
+    rule = RuleBuilder("raw_condition").with_condition("$mz at 0 and $suspicious").build()
+
+    assert isinstance(rule.condition, Identifier)
+    assert rule.condition.name == "$mz at 0 and $suspicious"
+
+
 def test_rule_builder_raw_hex_rejects_invalid_input() -> None:
     with pytest.raises(ValidationError, match="Invalid hex byte at offset 2: ZZ"):
         RuleBuilder("invalid").with_hex_string_raw("$hex", "4D ZZ ??")

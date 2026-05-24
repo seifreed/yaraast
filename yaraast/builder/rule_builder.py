@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 from typing import TYPE_CHECKING, Any, Self, cast
 
 from yaraast.ast.conditions import Condition, OfExpression
@@ -28,6 +29,9 @@ from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
     from yaraast.builder.hex_string_builder import HexStringBuilder
+
+
+_SIMPLE_STRING_IDENTIFIER_RE = re.compile(r"^\$[A-Za-z0-9_]+$")
 
 
 class RuleBuilder:
@@ -264,7 +268,7 @@ class RuleBuilder:
                     quantifier=StringLiteral(value="all"),
                     string_set=Identifier(name="them"),
                 )
-            elif condition.startswith("$"):
+            elif _SIMPLE_STRING_IDENTIFIER_RE.fullmatch(condition):
                 self._condition = cast(Condition, StringIdentifier(name=condition))
             else:
                 # For complex conditions, would need a parser
