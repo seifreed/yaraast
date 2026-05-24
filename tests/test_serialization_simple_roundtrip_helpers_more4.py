@@ -20,6 +20,7 @@ from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
+    DoubleLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
@@ -843,6 +844,22 @@ def test_simple_roundtrip_deserialize_literal_nodes_reject_wrong_scalar_types() 
 
     with pytest.raises(SerializationError, match="Serialized node must be an object"):
         deserialize_node({"type": "StringLength", "string_id": "a", "index": False})
+
+
+def test_simple_roundtrip_serialize_literal_nodes_reject_wrong_scalar_types() -> None:
+    invalid_cases = (
+        (IntegerLiteral(cast(Any, True)), "IntegerLiteral value must be an integer"),
+        (BooleanLiteral(cast(Any, "false")), "BooleanLiteral value must be a boolean"),
+        (DoubleLiteral(cast(Any, True)), "DoubleLiteral value must be numeric"),
+        (DoubleLiteral(float("nan")), "DoubleLiteral value must be finite"),
+        (DoubleLiteral(float("inf")), "DoubleLiteral value must be finite"),
+        (StringLiteral(cast(Any, True)), "StringLiteral value must be a string"),
+        (Identifier(cast(Any, ["id"])), "Identifier name must be a string"),
+    )
+
+    for node, message in invalid_cases:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
 
 
 def test_simple_roundtrip_string_set_values_reject_empty_payloads() -> None:

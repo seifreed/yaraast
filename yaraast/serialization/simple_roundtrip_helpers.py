@@ -460,6 +460,30 @@ def _serialize_enum_value(value: Any, context: str) -> str:
     return _serialize_required_string(getattr(value, "value", None), context)
 
 
+def _serialize_required_int(value: Any, context: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        msg = f"{context} must be an integer"
+        raise SerializationError(msg)
+    return value
+
+
+def _serialize_required_number(value: Any, context: str) -> int | float:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        msg = f"{context} must be numeric"
+        raise SerializationError(msg)
+    if isinstance(value, float) and not math.isfinite(value):
+        msg = f"{context} must be finite"
+        raise SerializationError(msg)
+    return value
+
+
+def _serialize_required_bool(value: Any, context: str) -> bool:
+    if not isinstance(value, bool):
+        msg = f"{context} must be a boolean"
+        raise SerializationError(msg)
+    return value
+
+
 def _deserialize_list_field(data: dict[str, Any], field: str, context: str) -> list[Any]:
     data = _deserialize_object(data, context)
     value = data.get(field, [])
@@ -835,17 +859,32 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, Pragma):
         return serialize_pragma(node)
     if isinstance(node, BooleanLiteral):
-        return {"type": "BooleanLiteral", "value": node.value}
+        return {
+            "type": "BooleanLiteral",
+            "value": _serialize_required_bool(node.value, "BooleanLiteral value"),
+        }
     if isinstance(node, IntegerLiteral):
-        return {"type": "IntegerLiteral", "value": node.value}
+        return {
+            "type": "IntegerLiteral",
+            "value": _serialize_required_int(node.value, "IntegerLiteral value"),
+        }
     if isinstance(node, DoubleLiteral):
-        return {"type": "DoubleLiteral", "value": node.value}
+        return {
+            "type": "DoubleLiteral",
+            "value": _serialize_required_number(node.value, "DoubleLiteral value"),
+        }
     if isinstance(node, StringLiteral):
-        return {"type": "StringLiteral", "value": node.value}
+        return {
+            "type": "StringLiteral",
+            "value": _serialize_required_string(node.value, "StringLiteral value"),
+        }
     if isinstance(node, RegexLiteral):
         return {"type": "RegexLiteral", "pattern": node.pattern, "modifiers": node.modifiers}
     if isinstance(node, Identifier):
-        return {"type": "Identifier", "name": node.name}
+        return {
+            "type": "Identifier",
+            "name": _serialize_required_string(node.name, "Identifier name"),
+        }
     if isinstance(node, StringIdentifier):
         return {"type": "StringIdentifier", "name": node.name}
     if isinstance(node, StringWildcard):
