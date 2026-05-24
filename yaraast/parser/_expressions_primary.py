@@ -19,6 +19,7 @@ from yaraast.ast.expressions import (
     StringOffset,
     StringWildcard,
 )
+from yaraast.ast.extern import ExternRuleReference
 from yaraast.ast.modules import ModuleReference
 from yaraast.lexer import TokenType
 
@@ -238,6 +239,10 @@ class ExpressionPrimaryMixin:
             return None
         token = self._previous()
         name = self._previous().value
+        if self._is_extern_rule_reference(str(name)):
+            return self._set_node_location_from_token(
+                ExternRuleReference(rule_name=str(name)), token
+            )
         if name in KNOWN_MODULES:
             return self._set_node_location_from_token(ModuleReference(module=name), token)
         return self._set_node_location_from_token(Identifier(name=name), token)

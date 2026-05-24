@@ -79,6 +79,19 @@ class RuleParsingMixin:
     def _check_identifier_value(self, value: str) -> bool:
         return self._check(TokenType.IDENTIFIER) and self._peek().value == value
 
+    def _register_extern_import(self, extern_import: ExternImport) -> None:
+        for rule_name in extern_import.rules:
+            namespace, name = self._split_qualified_rule_name(rule_name)
+            self._extern_rule_names.add((namespace, name))
+            if extern_import.alias:
+                self._extern_rule_names.add((extern_import.alias, name))
+
+    def _register_extern_rule(self, extern_rule: ExternRule) -> None:
+        self._extern_rule_names.add((extern_rule.namespace, extern_rule.name))
+
+    def _is_extern_rule_reference(self, rule_name: str, namespace: str | None = None) -> bool:
+        return (namespace, rule_name) in self._extern_rule_names
+
     def _parse_extern_namespace(self) -> ExternNamespace:
         """Parse a top-level namespace declaration."""
         start_token = self._advance()

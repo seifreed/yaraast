@@ -4,7 +4,7 @@ import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
-from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
 from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.rules import Import, Rule
 from yaraast.codegen.generator import CodeGenerator
@@ -13,6 +13,7 @@ from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
+from yaraast.types.semantic_validator import SemanticValidator
 
 
 def _t(tt: TokenType, value: str | int | float | None) -> Token:
@@ -215,3 +216,28 @@ def test_parse_generated_extended_top_level_constructs() -> None:
         assert parsed.extern_rules[0].namespace == "legacy"
         assert [str(modifier) for modifier in parsed.extern_rules[0].modifiers] == ["private"]
         assert parsed.rules[0].name == "uses_external"
+
+
+def test_parse_generated_extern_rule_reference_conditions() -> None:
+    source = CodeGenerator().generate(
+        YaraFile(
+            extern_rules=[ExternRule("ExternalRule", namespace="legacy")],
+            rules=[
+                Rule(
+                    "uses_external",
+                    condition=ExternRuleReference("ExternalRule", namespace="legacy"),
+                )
+            ],
+        )
+    )
+
+    ast = Parser(source).parse()
+    comment_ast = CommentAwareParser().parse(source)
+
+    for parsed in (ast, comment_ast):
+        condition = parsed.rules[0].condition
+
+        assert isinstance(condition, ExternRuleReference)
+        assert condition.rule_name == "ExternalRule"
+        assert condition.namespace == "legacy"
+        assert SemanticValidator().validate(parsed).errors == []

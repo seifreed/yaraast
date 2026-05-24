@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode, _VisitorType
+from yaraast.ast.expressions import Expression
 from yaraast.string_escaping import escape_string_source_value
 
 if TYPE_CHECKING:
@@ -50,7 +51,7 @@ class ExternRule(ASTNode):
 
 
 @dataclass
-class ExternRuleReference(ASTNode):
+class ExternRuleReference(Expression):
     """Reference to an external rule in expressions.
 
     Used when referencing extern rules in conditions or other expressions.
