@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
-from yaraast.codegen.generator_formatting import escape_string_literal, format_meta_key
+from yaraast.codegen.generator_formatting import format_meta_key, format_meta_literal
 from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
@@ -50,12 +50,7 @@ def write_meta_entry(printer, key: str, value: Any, trailing_comment=None) -> No
     else:
         printer._write(f"{key} = ")
 
-    if isinstance(value, str):
-        printer._write(f'"{escape_string_literal(value)}"')
-    elif isinstance(value, bool):
-        printer._write("true" if value else "false")
-    else:
-        printer._write(str(value))
+    printer._write(format_meta_literal(value))
 
     if trailing_comment:
         printer._write_comment(trailing_comment, inline=True)

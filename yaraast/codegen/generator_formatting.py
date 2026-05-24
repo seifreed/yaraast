@@ -93,13 +93,22 @@ def format_meta_key(key: str, scope: object | None = None) -> str:
     return key
 
 
+def format_meta_literal(value, *, preserve_quoted: bool = False) -> str:
+    if isinstance(value, str):
+        if preserve_quoted and value.startswith('"') and value.endswith('"'):
+            return value
+        return f'"{escape_string_literal(value)}"'
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    msg = f"Invalid meta value type '{type(value).__name__}' for libyara output"
+    raise TypeError(msg)
+
+
 def format_meta_value(key: str, value, scope: object | None = None) -> str:
     rendered_key = format_meta_key(key, scope)
-    if isinstance(value, str):
-        return f'{rendered_key} = "{escape_string_literal(value)}"'
-    if isinstance(value, bool):
-        return f"{rendered_key} = {'true' if value else 'false'}"
-    return f"{rendered_key} = {value}"
+    return f"{rendered_key} = {format_meta_literal(value)}"
 
 
 def escape_string_literal(value: str) -> str:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.codegen.formatting import StringStyle
-from yaraast.codegen.generator_formatting import format_meta_key
+from yaraast.codegen.generator_formatting import format_meta_key, format_meta_literal
 from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_modifiers,
@@ -56,21 +56,11 @@ def write_meta_key(gen, meta, max_key_len: int) -> None:
 
 def write_meta_value(gen, meta) -> None:
     """Write a formatted meta value."""
-    from yaraast.codegen.generator_helpers import escape_plain_string_value
-
     if not hasattr(meta, "value"):
         gen._write('""')
         return
 
-    if isinstance(meta.value, str):
-        if meta.value.startswith('"') and meta.value.endswith('"'):
-            gen._write(meta.value)
-        else:
-            gen._write(f'"{escape_plain_string_value(meta.value)}"')
-    elif isinstance(meta.value, bool):
-        gen._write("true" if meta.value else "false")
-    else:
-        gen._write(str(meta.value))
+    gen._write(format_meta_literal(meta.value, preserve_quoted=True))
 
 
 def render_advanced_plain_string(gen, node) -> str:

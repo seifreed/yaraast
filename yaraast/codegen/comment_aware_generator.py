@@ -8,6 +8,7 @@ from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_formatting import (
     format_meta_key,
+    format_meta_literal,
     format_rule_modifiers,
     format_rule_tags,
     validate_rule_identifiers,
@@ -290,23 +291,11 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def _write_meta_item(self, key: str, value: any, scope: object | None = None) -> None:
         """Write a meta item."""
-        from yaraast.codegen.generator_helpers import escape_plain_string_value
-
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
         self._write(f"{format_meta_key(key, scope)} = ")
-
-        if isinstance(value, str):
-            # Check if already quoted
-            if not (value.startswith('"') and value.endswith('"')):
-                self._write(f'"{escape_plain_string_value(value)}"')
-            else:
-                self._write(value)
-        elif isinstance(value, bool):
-            self._write("true" if value else "false")
-        else:
-            self._write(str(value))
+        self._write(format_meta_literal(value, preserve_quoted=True))
 
     def visit_plain_string(self, node: PlainString) -> str:
         """Generate code for PlainString with comments."""
@@ -372,22 +361,11 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_meta(self, node: Meta) -> str:
         """Generate code for Meta with comments."""
-        from yaraast.codegen.generator_helpers import escape_plain_string_value
-
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
         self._write(f"{format_meta_key(node.key, getattr(node, 'scope', None))} = ")
-
-        if isinstance(node.value, str):
-            if not (node.value.startswith('"') and node.value.endswith('"')):
-                self._write(f'"{escape_plain_string_value(node.value)}"')
-            else:
-                self._write(node.value)
-        elif isinstance(node.value, bool):
-            self._write("true" if node.value else "false")
-        else:
-            self._write(str(node.value))
+        self._write(format_meta_literal(node.value, preserve_quoted=True))
 
         return ""
 
