@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.lexer.string_escape import StringEscapeHandler
 
 
@@ -12,7 +14,8 @@ def test_string_escape_basic_sequences() -> None:
     assert handler.handle_backslash("n").chars == ["\n"]
     assert handler.handle_backslash("r").chars == ["\r"]
     assert handler.handle_backslash("t").chars == ["\t"]
-    assert handler.handle_backslash(None).chars == ["\\"]
+    with pytest.raises(ValueError, match="Unterminated escape sequence"):
+        handler.handle_backslash(None)
 
 
 def test_string_escape_hex_sequence() -> None:
@@ -24,16 +27,16 @@ def test_string_escape_hex_sequence() -> None:
 
     bad_text = "\\xZZ"
     handler = StringEscapeHandler(bad_text, 1)
-    result = handler.handle_backslash("x")
-    assert result.chars == ["\\", "x"]
+    with pytest.raises(ValueError, match="Invalid hex escape sequence"):
+        handler.handle_backslash("x")
 
 
 def test_string_escape_escaped_quote_and_malformed() -> None:
     text = '\\" ascii\n'
     handler = StringEscapeHandler(text, 1)  # position at quote after backslash
     result = handler.handle_backslash('"')
-    assert result.ends_string is True
-    assert result.chars == ["\\"]
+    assert result.ends_string is False
+    assert result.chars == ['"']
 
     normal_text = 'abc\\"def'
     handler = StringEscapeHandler(normal_text, 4)  # position at quote

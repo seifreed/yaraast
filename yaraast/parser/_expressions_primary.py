@@ -23,7 +23,13 @@ from yaraast.ast.extern import ExternRuleReference
 from yaraast.ast.modules import ModuleReference
 from yaraast.lexer import TokenType
 
-from ._shared import KNOWN_MODULES, ParserError, split_regex_value, validate_regex_pattern
+from ._shared import (
+    KNOWN_MODULES,
+    ParserError,
+    split_regex_value,
+    validate_regex_modifiers,
+    validate_regex_pattern,
+)
 
 
 class ExpressionPrimaryMixin:
@@ -57,6 +63,7 @@ class ExpressionPrimaryMixin:
             try:
                 pattern, modifiers = split_regex_value(regex_val)
                 validate_regex_pattern(pattern)
+                validate_regex_modifiers(modifiers)
             except ValueError as e:
                 raise ParserError(str(e), self._previous()) from e
 

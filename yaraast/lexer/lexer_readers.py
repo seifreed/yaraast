@@ -16,10 +16,15 @@ def read_string(lexer) -> Token:
     value_chars: list[str] = []
     lexer._advance()
     while lexer._current_char() and lexer._current_char() != '"':
+        if lexer._current_char() in "\n\r":
+            raise LexerError("Unterminated string", start_line, start_column)
         if lexer._current_char() == "\\":
             lexer._advance()
             handler = StringEscapeHandler(lexer.text, lexer.position)
-            result = handler.handle_backslash(lexer._current_char())
+            try:
+                result = handler.handle_backslash(lexer._current_char())
+            except ValueError as e:
+                raise LexerError(str(e), lexer.line, lexer.column) from e
             value_chars.extend(result.chars)
             for _ in range(result.advance_count):
                 lexer._advance()
@@ -103,7 +108,7 @@ def read_regex(lexer) -> Token:
         raise LexerError("Unterminated regex", start_line, start_column)
     lexer._advance()
     modifiers = ""
-    while lexer._current_char() and lexer._current_char() in "ims":
+    while lexer._current_char() and lexer._current_char() in "is":
         modifiers += lexer._current_char()
         lexer._advance()
     value = "".join(value_chars)

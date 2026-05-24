@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser.comment_aware_helpers import (
     collect_leading_comments,
@@ -70,10 +72,12 @@ def test_parse_regex_value_branches() -> None:
     assert pattern_s == "abc"
     assert [m.name for m in mods_s] == ["dotall"]
 
-    pattern_mix, mods_mix = parse_regex_value("abc\x00isx")
+    pattern_mix, mods_mix = parse_regex_value("abc\x00is")
     assert pattern_mix == "abc"
     assert [m.name for m in mods_mix] == ["nocase", "dotall"]
 
-    pattern_m, mods_m = parse_regex_value("abc\x00m")
-    assert pattern_m == "abc"
-    assert [m.name for m in mods_m] == ["multiline"]
+    with pytest.raises(ValueError, match="Invalid regex modifier"):
+        parse_regex_value("abc\x00m")
+
+    with pytest.raises(ValueError, match="Duplicate regex modifier"):
+        parse_regex_value("abc\x00ii")

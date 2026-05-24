@@ -284,14 +284,18 @@ class YaraLLexer:
                     self.text[self.position + 1] if self.position + 1 < len(self.text) else None
                 )
                 handler = StringEscapeHandler(self.text, self.position + 1)
-                result = handler.handle_backslash(next_char)
-                value += "".join(result.chars)
                 advance = 2 if next_char is not None else 1
-                advance += result.advance_count
+                try:
+                    result = handler.handle_backslash(next_char)
+                except ValueError:
+                    value += "\\" if next_char is None else f"\\{next_char}"
+                else:
+                    value += "".join(result.chars)
+                    advance += result.advance_count
+                    if result.ends_string:
+                        break
                 self.position += advance
                 self.column += advance
-                if result.ends_string:
-                    break
             else:
                 value += self.text[self.position]
                 self.position += 1

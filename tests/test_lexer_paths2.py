@@ -141,6 +141,15 @@ def test_lexer_string_and_hex_error_paths() -> None:
     with pytest.raises(LexerError, match="Unterminated string"):
         Lexer('"unterminated').tokenize()
 
+    with pytest.raises(LexerError, match="Invalid escape sequence"):
+        Lexer(r'rule r { strings: $a = "\z" condition: $a }').tokenize()
+
+    with pytest.raises(LexerError, match="Invalid hex escape sequence"):
+        Lexer(r'rule r { strings: $a = "\x4" condition: $a }').tokenize()
+
+    with pytest.raises(LexerError, match="Unterminated string"):
+        Lexer('rule r { strings: $a = "abc\nreal" condition: $a }').tokenize()
+
     code = """
 rule r {
  strings:
@@ -194,9 +203,9 @@ rule r {
     assert "5A" in hex_value
     assert "90" in hex_value
 
-    regex_tokens = Lexer(r"rule r { condition: /ab+c/ims }").tokenize()
+    regex_tokens = Lexer(r"rule r { condition: /ab+c/is }").tokenize()
     assert any(
-        t.type == TokenType.REGEX and isinstance(t.value, str) and t.value.endswith("\x00ims")
+        t.type == TokenType.REGEX and isinstance(t.value, str) and t.value.endswith("\x00is")
         for t in regex_tokens
     )
 
@@ -215,13 +224,13 @@ def test_lexer_reports_unterminated_regex_and_handles_hex_numbers_and_line_conti
     assert lex._is_line_continuation() is True
 
 
-def test_lexer_covers_escape_sequences_and_malformed_string_endings() -> None:
+def test_lexer_covers_valid_escape_sequences() -> None:
     string_tokens = [t for t in Lexer(r"""
 rule r {
  strings:
    $a = "line\n\t\r\""
    $b = "\x41"
-   $c = "C:\TEMP\" wide
+   $c = "C:\\TEMP\\" wide
  condition:
    all of them
 }

@@ -244,24 +244,34 @@ def test_parse_negated_hex_nibbles(
 
 
 def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:
-    ast = Parser("rule r { strings: $r = /ab+c/ims condition: $r }").parse()
+    ast = Parser("rule r { strings: $r = /ab+c/is condition: $r }").parse()
     regex = ast.rules[0].strings[0]
 
     assert isinstance(regex, RegexString)
     assert regex.regex == "ab+c"
-    assert [modifier.name for modifier in regex.modifiers] == ["nocase", "multiline", "dotall"]
+    assert [modifier.name for modifier in regex.modifiers] == ["nocase", "dotall"]
 
     generated = CodeGenerator().generate(ast)
     assert "\x00" not in generated
-    assert "$r = /ab+c/ms nocase" in generated
+    assert "$r = /ab+c/s nocase" in generated
     reparsed = Parser(generated).parse()
     reparsed_regex = reparsed.rules[0].strings[0]
     assert isinstance(reparsed_regex, RegexString)
-    assert [modifier.name for modifier in reparsed_regex.modifiers] == [
-        "multiline",
-        "dotall",
-        "nocase",
-    ]
+    assert [modifier.name for modifier in reparsed_regex.modifiers] == ["dotall", "nocase"]
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "rule r { strings: $r = /ab+c/m condition: $r }",
+        "rule r { strings: $r = /ab+c/ii condition: $r }",
+        'rule r { condition: "abc" matches /ab+c/m }',
+        'rule r { condition: "abc" matches /ab+c/ii }',
+    ],
+)
+def test_parse_rejects_invalid_regex_literal_modifiers(source: str) -> None:
+    with pytest.raises(ParserError):
+        Parser(source).parse()
 
 
 def test_parse_string_modifiers_xor_variants_and_errors() -> None:

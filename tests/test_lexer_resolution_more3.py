@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
+
 from yaraast.lexer.error_tolerant_lexer import ErrorTolerantLexer, LexerErrorInfo
 from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lexer.tokens import TokenType
@@ -12,26 +14,15 @@ from yaraast.resolution.include_resolver import IncludeResolver
 
 
 def test_string_escape_handler_covers_remaining_paths() -> None:
-    unknown = StringEscapeHandler(r"\q", 1).handle_backslash("q")
-    assert unknown.chars == ["\\", "q"]
+    with pytest.raises(ValueError, match="Invalid escape sequence"):
+        StringEscapeHandler(r"\q", 1).handle_backslash("q")
 
-    short_hex = StringEscapeHandler(r"\x4", 1).handle_backslash("x")
-    assert short_hex.chars == ["\\", "x"]
+    with pytest.raises(ValueError, match="Invalid hex escape sequence"):
+        StringEscapeHandler(r"\x4", 1).handle_backslash("x")
 
     eof_after_quote = StringEscapeHandler(r"\"", 1).handle_backslash('"')
-    assert eof_after_quote.ends_string is True
-
-    whitespace_only = StringEscapeHandler('\\"   ', 1).handle_backslash('"')
-    assert whitespace_only.ends_string is True
-
-    newline_after = StringEscapeHandler('\\"\n', 1).handle_backslash('"')
-    assert newline_after.ends_string is True
-
-    comment_after = StringEscapeHandler('\\" // comment', 1).handle_backslash('"')
-    assert comment_after.ends_string is True
-
-    base64wide = StringEscapeHandler('\\" base64wide', 1).handle_backslash('"')
-    assert base64wide.ends_string is True
+    assert eof_after_quote.chars == ['"']
+    assert eof_after_quote.ends_string is False
 
 
 def test_error_info_format_without_context_includes_suggestion() -> None:
