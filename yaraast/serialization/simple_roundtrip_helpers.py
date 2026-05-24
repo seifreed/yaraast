@@ -1640,7 +1640,10 @@ def deserialize_string(data: dict[str, Any]) -> Any:
     """Deserialize a string definition."""
     data = _deserialize_object(data, "String")
     string_type = data.get("type")
-    context = string_type if isinstance(string_type, str) else "String"
+    if string_type is not None and not isinstance(string_type, str):
+        msg = "String type must be a string"
+        raise SerializationError(msg)
+    context = string_type if string_type is not None else "String"
     modifiers = _deserialize_modifiers(_deserialize_list_field(data, "modifiers", context))
 
     if string_type == "PlainString":
@@ -1707,10 +1710,13 @@ def deserialize_string(data: dict[str, Any]) -> Any:
             ),
             data,
         )
-    return _apply_node_metadata(
-        PlainString(identifier=data.get("identifier", "$unknown"), value=data.get("data", "")),
-        data,
-    )
+    if string_type in {None, "StringDefinition", "Unknown"}:
+        return _apply_node_metadata(
+            PlainString(identifier=data.get("identifier", "$unknown"), value=data.get("data", "")),
+            data,
+        )
+    msg = f"Unknown string type: {string_type}"
+    raise SerializationError(msg)
 
 
 def serialize_to_file(node: ASTNode, file_path: str | Path) -> None:

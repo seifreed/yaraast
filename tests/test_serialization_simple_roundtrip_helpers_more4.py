@@ -115,6 +115,9 @@ def test_simple_roundtrip_helpers_serialize_meta_and_string_fallbacks(tmp_path: 
     assert deserialize_meta({"key": "author", "value": "me"}).key == "author"
     assert deserialize_string({"type": "Unknown", "identifier": "$x", "data": "raw"}).value == "raw"
 
+    with pytest.raises(SerializationError, match="Unknown string type: Import"):
+        deserialize_string({"type": "Import", "module": "pe"})
+
     path = tmp_path / "helper.json"
     serialize_to_file(
         YaraFile(imports=[Import(module="pe")], includes=[Include(path="inc.yar")], rules=[rule]),
