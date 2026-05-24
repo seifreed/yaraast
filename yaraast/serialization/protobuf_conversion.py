@@ -698,6 +698,7 @@ def convert_hex_token_to_protobuf(token, pb_token) -> None:
     elif isinstance(token, HexJump):
         _copy_hex_jump_to_protobuf(token, pb_token.jump)
     elif isinstance(token, HexAlternative):
+        pb_token.alternative.SetInParent()
         for alternative in _protobuf_list(
             token.alternatives,
             "HexAlternative alternatives",

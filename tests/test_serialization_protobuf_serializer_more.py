@@ -174,6 +174,26 @@ def test_protobuf_serializer_preserves_hex_alternatives() -> None:
     assert string_def.tokens == [alternative]
 
 
+def test_protobuf_serializer_preserves_empty_hex_alternative() -> None:
+    serializer = ProtobufSerializer(include_metadata=False)
+    alternative = HexAlternative(alternatives=[])
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="empty_hex_alternative",
+                strings=[HexString(identifier="$h", tokens=[alternative])],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    restored = serializer.deserialize(binary_data=serializer.serialize(ast))
+    string_def = restored.rules[0].strings[0]
+
+    assert isinstance(string_def, HexString)
+    assert string_def.tokens == [alternative]
+
+
 def test_protobuf_serializer_normalizes_scalar_hex_alternatives() -> None:
     serializer = ProtobufSerializer(include_metadata=False)
     ast = YaraFile(
