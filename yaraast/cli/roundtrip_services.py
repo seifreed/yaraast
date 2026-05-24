@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from yaraast.ast.base import YaraFile
 from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.cli.utils import read_text
 from yaraast.codegen.pretty_printer import PrettyPrinter, StylePresets
+from yaraast.errors import ValidationError
 from yaraast.serialization.roundtrip_serializer import (
     RoundTripSerializer,
     create_rules_manifest,
@@ -17,6 +18,20 @@ from yaraast.serialization.roundtrip_serializer import (
     serialize_for_pipeline,
 )
 from yaraast.shared.numeric_validation import validate_positive_int_setting
+
+
+def _parse_pipeline_info(pipeline_info: str | None) -> dict[str, Any] | None:
+    if not pipeline_info:
+        return None
+    try:
+        parsed = json.loads(pipeline_info)
+    except json.JSONDecodeError as exc:
+        msg = "pipeline_info must be valid JSON"
+        raise ValidationError(msg) from exc
+    if not isinstance(parsed, dict):
+        msg = "pipeline_info must be a JSON object"
+        raise ValidationError(msg)
+    return cast(dict[str, Any], parsed)
 
 
 def serialize_roundtrip_file(
@@ -93,7 +108,7 @@ def pipeline_serialize_file(
 ) -> tuple[Any, str, dict | None]:
     yara_source = read_text(input_file)
     ast = parse_yara_source(yara_source)
-    pipeline_data = json.loads(pipeline_info) if pipeline_info else None
+    pipeline_data = _parse_pipeline_info(pipeline_info)
     yaml_content = serialize_for_pipeline(ast, pipeline_data)
     return ast, yaml_content, pipeline_data
 

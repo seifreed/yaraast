@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 from yaraast.ast.base import YaraFile
@@ -15,6 +16,7 @@ from yaraast.cli.roundtrip_services import (
     test_roundtrip_file as run_roundtrip_file_test,
 )
 from yaraast.cli.semantic_services import _create_validation_context, _process_file
+from yaraast.errors import ValidationError
 from yaraast.parser import Parser
 from yaraast.yarax.ast_nodes import WithStatement
 from yaraast.yarax.parser import YaraXParser
@@ -85,6 +87,26 @@ def test_roundtrip_pipeline_and_manifest_services(tmp_path: Path) -> None:
     manifest = build_rules_manifest(ast)
     manifest_data = yaml.safe_load(manifest)
     assert manifest_data["summary"]["total_rules"] == 1
+
+
+@pytest.mark.parametrize("pipeline_info", ['"ci"', "[1]", "42"])
+def test_pipeline_serialize_file_rejects_non_object_pipeline_info(
+    tmp_path: Path,
+    pipeline_info: str,
+) -> None:
+    yara_path = tmp_path / "sample.yar"
+    _write_rule(yara_path)
+
+    with pytest.raises(ValidationError, match="pipeline_info must be a JSON object"):
+        pipeline_serialize_file(yara_path, pipeline_info)
+
+
+def test_pipeline_serialize_file_rejects_invalid_pipeline_info_json(tmp_path: Path) -> None:
+    yara_path = tmp_path / "sample.yar"
+    _write_rule(yara_path)
+
+    with pytest.raises(ValidationError, match="pipeline_info must be valid JSON"):
+        pipeline_serialize_file(yara_path, "{bad json")
 
 
 def test_roundtrip_pretty_print_compact_and_verbose_styles(tmp_path: Path) -> None:
