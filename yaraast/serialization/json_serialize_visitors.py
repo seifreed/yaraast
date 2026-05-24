@@ -8,6 +8,34 @@ from typing import Any
 from yaraast.errors import SerializationError
 
 
+def _serialize_required_string(value, context: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{context} must be a string"
+        raise SerializationError(msg)
+    return value
+
+
+def _serialize_required_int(value, context: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        msg = f"{context} must be an integer"
+        raise SerializationError(msg)
+    return value
+
+
+def _serialize_required_number(value, context: str) -> int | float:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        msg = f"{context} must be numeric"
+        raise SerializationError(msg)
+    return value
+
+
+def _serialize_required_bool(value, context: str) -> bool:
+    if not isinstance(value, bool):
+        msg = f"{context} must be a boolean"
+        raise SerializationError(msg)
+    return value
+
+
 def _serialize_ast_value(serializer, value):
     if hasattr(value, "accept"):
         return serializer.visit(value)
@@ -228,7 +256,7 @@ def _coerce_hex_alternative_branch(alternative) -> list:
 def visit_string_offset(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringOffset",
-        "string_id": node.string_id,
+        "string_id": _serialize_required_string(node.string_id, "StringOffset string_id"),
         "index": _serialize_optional_expression(serializer, node.index, "StringOffset index"),
     }
 
@@ -236,7 +264,7 @@ def visit_string_offset(serializer, node) -> dict[str, Any]:
 def visit_string_length(serializer, node) -> dict[str, Any]:
     return {
         "type": "StringLength",
-        "string_id": node.string_id,
+        "string_id": _serialize_required_string(node.string_id, "StringLength string_id"),
         "index": _serialize_optional_expression(serializer, node.index, "StringLength index"),
     }
 
@@ -358,7 +386,7 @@ def visit_for_of_expression(serializer, node) -> dict[str, Any]:
 def visit_at_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "AtExpression",
-        "string_id": node.string_id,
+        "string_id": _serialize_required_string(node.string_id, "AtExpression string_id"),
         "offset": _serialize_required_expression(serializer, node.offset, "AtExpression offset"),
     }
 

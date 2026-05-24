@@ -10,7 +10,11 @@ from yaraast.ast.base import ASTNode, Location
 from yaraast.config import JSON_DEFAULT_INDENT
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serialize_visitors import (
+    _serialize_required_bool,
     _serialize_required_expression,
+    _serialize_required_int,
+    _serialize_required_number,
+    _serialize_required_string,
     visit_array_access,
     visit_array_comprehension,
     visit_at_expression,
@@ -250,16 +254,28 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return self._simple_node("Expression")
 
     def visit_identifier(self, node) -> dict[str, Any]:
-        return self._simple_node("Identifier", name=node.name)
+        return self._simple_node(
+            "Identifier",
+            name=_serialize_required_string(node.name, "Identifier name"),
+        )
 
     def visit_string_identifier(self, node) -> dict[str, Any]:
-        return self._simple_node("StringIdentifier", name=node.name)
+        return self._simple_node(
+            "StringIdentifier",
+            name=_serialize_required_string(node.name, "StringIdentifier name"),
+        )
 
     def visit_string_wildcard(self, node) -> dict[str, Any]:
-        return self._simple_node("StringWildcard", pattern=node.pattern)
+        return self._simple_node(
+            "StringWildcard",
+            pattern=_serialize_required_string(node.pattern, "StringWildcard pattern"),
+        )
 
     def visit_string_count(self, node) -> dict[str, Any]:
-        return self._simple_node("StringCount", string_id=node.string_id)
+        return self._simple_node(
+            "StringCount",
+            string_id=_serialize_required_string(node.string_id, "StringCount string_id"),
+        )
 
     def visit_string_offset(self, node) -> dict[str, Any]:
         return visit_string_offset(self, node)
@@ -268,23 +284,35 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return visit_string_length(self, node)
 
     def visit_integer_literal(self, node) -> dict[str, Any]:
-        return self._simple_node("IntegerLiteral", value=node.value)
+        return self._simple_node(
+            "IntegerLiteral",
+            value=_serialize_required_int(node.value, "IntegerLiteral value"),
+        )
 
     def visit_double_literal(self, node) -> dict[str, Any]:
-        return self._simple_node("DoubleLiteral", value=node.value)
+        return self._simple_node(
+            "DoubleLiteral",
+            value=_serialize_required_number(node.value, "DoubleLiteral value"),
+        )
 
     def visit_string_literal(self, node) -> dict[str, Any]:
-        return self._simple_node("StringLiteral", value=node.value)
+        return self._simple_node(
+            "StringLiteral",
+            value=_serialize_required_string(node.value, "StringLiteral value"),
+        )
 
     def visit_regex_literal(self, node) -> dict[str, Any]:
         return {
             "type": "RegexLiteral",
-            "pattern": node.pattern,
-            "modifiers": node.modifiers,
+            "pattern": _serialize_required_string(node.pattern, "RegexLiteral pattern"),
+            "modifiers": _serialize_required_string(node.modifiers, "RegexLiteral modifiers"),
         }
 
     def visit_boolean_literal(self, node) -> dict[str, Any]:
-        return self._simple_node("BooleanLiteral", value=node.value)
+        return self._simple_node(
+            "BooleanLiteral",
+            value=_serialize_required_bool(node.value, "BooleanLiteral value"),
+        )
 
     def visit_binary_expression(self, node) -> dict[str, Any]:
         return visit_binary_expression(self, node)
@@ -336,7 +364,10 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
         return data
 
     def visit_module_reference(self, node) -> dict[str, Any]:
-        return self._simple_node("ModuleReference", module=node.module)
+        return self._simple_node(
+            "ModuleReference",
+            module=_serialize_required_string(node.module, "ModuleReference module"),
+        )
 
     def visit_dictionary_access(self, node) -> dict[str, Any]:
         return visit_dictionary_access(self, node)

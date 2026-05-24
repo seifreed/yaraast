@@ -19,18 +19,21 @@ from yaraast.ast.expressions import (
     ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
+    DoubleLiteral,
     FunctionCall,
     Identifier,
     IntegerLiteral,
     MemberAccess,
     ParenthesesExpression,
     RangeExpression,
+    RegexLiteral,
     SetExpression,
     StringCount,
     StringIdentifier,
     StringLength,
     StringLiteral,
     StringOffset,
+    StringWildcard,
     UnaryExpression,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
@@ -277,6 +280,40 @@ def test_json_serializer_rejects_invalid_required_expression_fields() -> None:
             ast = YaraFile(rules=[Rule(name="invalid_required", condition=expression)])
             with pytest.raises(SerializationError, match="must be an AST expression"):
                 serializer.serialize(ast)
+
+
+def test_json_serializer_rejects_invalid_leaf_values() -> None:
+    serializer = JsonSerializer(include_metadata=False)
+    invalid_list: Any = ["name"]
+    invalid_text: Any = 123
+    invalid_integer: Any = "1"
+    invalid_number: Any = "1.2"
+    invalid_string: Any = True
+    invalid_regex_modifiers: Any = ["i"]
+    invalid_bool: Any = "true"
+
+    invalid_cases = [
+        (Identifier(invalid_list), "Identifier name must be a string"),
+        (StringIdentifier(invalid_text), "StringIdentifier name must be a string"),
+        (StringWildcard(invalid_text), "StringWildcard pattern must be a string"),
+        (StringCount(invalid_text), "StringCount string_id must be a string"),
+        (StringOffset(invalid_text), "StringOffset string_id must be a string"),
+        (StringLength(invalid_text), "StringLength string_id must be a string"),
+        (IntegerLiteral(True), "IntegerLiteral value must be an integer"),
+        (IntegerLiteral(invalid_integer), "IntegerLiteral value must be an integer"),
+        (DoubleLiteral(invalid_number), "DoubleLiteral value must be numeric"),
+        (StringLiteral(invalid_string), "StringLiteral value must be a string"),
+        (RegexLiteral(invalid_text), "RegexLiteral pattern must be a string"),
+        (RegexLiteral("abc", invalid_regex_modifiers), "RegexLiteral modifiers must be a string"),
+        (BooleanLiteral(invalid_bool), "BooleanLiteral value must be a boolean"),
+        (ModuleReference(invalid_list), "ModuleReference module must be a string"),
+        (AtExpression(invalid_text, IntegerLiteral(0)), "AtExpression string_id must be a string"),
+    ]
+
+    for expression, message in invalid_cases:
+        ast = YaraFile(rules=[Rule(name="invalid_leaf", condition=expression)])
+        with pytest.raises(SerializationError, match=message):
+            serializer.serialize(ast)
 
 
 def test_json_serializer_rejects_invalid_raw_string_sets() -> None:
