@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
-from ._shared import YaraLParserError, parse_numeric_token_value
+from ._shared import YaraLParserError, parse_numeric_token_value, split_regex_token_value
 from .ast_nodes import (
     BinaryCondition,
     ConditionExpression,
     ConditionSection,
     EventCountCondition,
     EventExistsCondition,
+    ReferenceList,
+    RegexPattern,
     UnaryCondition,
     VariableComparisonCondition,
 )
@@ -135,8 +137,18 @@ class YaraLConditionParsingMixin:
 
     def _parse_comparison_value(self):
         """Parse the value on the right side of a comparison."""
+        if self._check(BaseTokenType.BOOLEAN_TRUE):
+            self._advance()
+            return True
+        if self._check(BaseTokenType.BOOLEAN_FALSE):
+            self._advance()
+            return False
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return parse_numeric_token_value(self._advance().value)
+        if self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):
+            return ReferenceList(name=self._advance().value.strip("%"))
+        if self._check(BaseTokenType.REGEX) or self._check(BaseTokenType.DIVIDE):
+            return self._parse_condition_regex_pattern()
         if (
             self._check(BaseTokenType.STRING)
             or self._check_yaral_type(YaraLTokenType.EVENT_VAR)
@@ -147,6 +159,36 @@ class YaraLConditionParsingMixin:
 
         msg = "Expected value after comparison operator"
         raise YaraLParserError(msg, self._peek())
+
+    def _parse_condition_regex_pattern(self) -> RegexPattern:
+        if self._check(BaseTokenType.REGEX):
+            pattern, flags = split_regex_token_value(self._advance().value)
+            return self._parse_condition_regex_word_modifiers(
+                RegexPattern(pattern=pattern, flags=flags)
+            )
+
+        self._consume(BaseTokenType.DIVIDE, "Expected '/' for regex")
+        pattern_parts = []
+        while not self._check(BaseTokenType.DIVIDE) and not self._is_at_end():
+            pattern_parts.append(str(self._advance().value))
+
+        self._consume(BaseTokenType.DIVIDE, "Expected '/' to close regex")
+        flags = []
+        if self._check(BaseTokenType.IDENTIFIER):
+            token_value = str(self._peek().value)
+            if len(token_value) <= 3 and all(char in "igms" for char in token_value):
+                flags = list(str(self._advance().value))
+
+        return self._parse_condition_regex_word_modifiers(
+            RegexPattern(pattern="".join(pattern_parts), flags=flags)
+        )
+
+    def _parse_condition_regex_word_modifiers(self, pattern: RegexPattern) -> RegexPattern:
+        if self._check_keyword("nocase"):
+            self._advance()
+            if "nocase" not in pattern.flags:
+                pattern.flags.append("nocase")
+        return pattern
 
     def _check_comparison_operator(self) -> bool:
         """Check if the current token is a comparison operator."""
@@ -159,14 +201,87 @@ class YaraLConditionParsingMixin:
             or self._check(BaseTokenType.NEQ)
         )
 
+    def _check_condition_operator(self) -> bool:
+        return (
+            self._check_comparison_operator()
+            or self._check(BaseTokenType.IN)
+            or self._check_keyword("in")
+            or self._check_keyword("matches")
+            or self._check_keyword("regex")
+            or (self._check_keyword("not") and self._token_ahead_value(1) == "matches")
+        )
+
+    def _consume_condition_operator(self) -> str:
+        if self._check_comparison_operator():
+            return self._consume_comparison_operator()
+        if self._check(BaseTokenType.IN) or self._check_keyword("in"):
+            self._advance()
+            return "in"
+        if self._check_keyword("matches"):
+            self._advance()
+            return "=~"
+        if self._check_keyword("regex"):
+            self._advance()
+            return "regex"
+        if self._check_keyword("not") and self._token_ahead_value(1) == "matches":
+            self._advance()
+            self._advance()
+            return "!~"
+
+        msg = "Expected comparison operator"
+        raise YaraLParserError(msg, self._peek())
+
+    def _token_ahead_value(self, offset: int) -> object | None:
+        position = self.current + offset
+        if position >= len(self.tokens):
+            return None
+        return self.tokens[position].value
+
+    def _parse_condition_reference_text(self, name: str) -> str:
+        parts = [name]
+        while self._check(BaseTokenType.DOT) or self._check(BaseTokenType.LBRACKET):
+            if self._check(BaseTokenType.DOT):
+                self._advance()
+                if self._check(BaseTokenType.IDENTIFIER):
+                    parts.append(str(self._advance().value))
+                elif self._check(BaseTokenType.LBRACKET):
+                    self._advance()
+                    parts.append(self._parse_condition_bracket_part())
+                else:
+                    raise YaraLParserError("Expected field name", self._peek())
+            else:
+                self._advance()
+                parts.append(self._parse_condition_bracket_part())
+        return self._format_condition_reference_parts(parts)
+
+    def _parse_condition_bracket_part(self) -> str:
+        if self._check(BaseTokenType.STRING):
+            key = self._advance().value
+            self._consume(BaseTokenType.RBRACKET, "Expected ']'")
+            return f'["{key}"]'
+        if self._check(BaseTokenType.INTEGER):
+            index = self._advance().value
+            self._consume(BaseTokenType.RBRACKET, "Expected ']'")
+            return f"[{index}]"
+        raise YaraLParserError("Expected field key or index", self._peek())
+
+    def _format_condition_reference_parts(self, parts: list[str]) -> str:
+        reference = parts[0]
+        for part in parts[1:]:
+            if part.startswith("["):
+                reference += part
+            else:
+                reference += f".{part}"
+        return reference
+
     def _parse_variable_condition(self) -> ConditionExpression:
         """Parse a condition starting with a variable ($var or $e1)."""
         var_token = self._advance()
-        var_name = var_token.value
+        var_name = self._parse_condition_reference_text(str(var_token.value))
 
         # Check if followed by comparison operator
-        if self._check_comparison_operator():
-            operator = self._consume_comparison_operator()
+        if self._check_condition_operator():
+            operator = self._consume_condition_operator()
             value = self._parse_comparison_value()
             return VariableComparisonCondition(variable=var_name, operator=operator, value=value)
 
@@ -176,11 +291,11 @@ class YaraLConditionParsingMixin:
 
     def _parse_identifier_condition(self) -> ConditionExpression:
         """Parse a condition starting with an identifier."""
-        name = self._advance().value
+        name = self._parse_condition_reference_text(str(self._advance().value))
 
         # Check if followed by comparison operator
-        if self._check_comparison_operator():
-            operator = self._consume_comparison_operator()
+        if self._check_condition_operator():
+            operator = self._consume_condition_operator()
             value = self._parse_comparison_value()
             return VariableComparisonCondition(variable=name, operator=operator, value=value)
 

@@ -8,9 +8,12 @@ from yaraast.yaral.ast_nodes import (
     BinaryCondition,
     EventCountCondition,
     EventExistsCondition,
+    ReferenceList,
+    RegexPattern,
     UnaryCondition,
     VariableComparisonCondition,
 )
+from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.tokens import YaraLTokenType
@@ -379,3 +382,40 @@ def test_parse_primary_condition_variable_gt_integer_and_fallback_gt() -> None:
     assert isinstance(cond2, VariableComparisonCondition)
     assert cond2.operator == ">"
     assert cond2.value == 1
+
+
+def test_parse_condition_event_field_predicates_preserve_generated_text() -> None:
+    parser = YaraLParser("""
+        rule field_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            #e > 0 and $e.target.hostname matches /admin.*/i nocase and $e.principal.ip in %blocked%
+        }
+        """)
+    ast = parser.parse()
+
+    generated = YaraLGenerator().generate(ast)
+    assert "#e > 0" in generated
+    assert "$e.target.hostname =~ /admin.*/i nocase" in generated
+    assert "$e.principal.ip in %blocked%" in generated
+
+
+def test_parse_condition_field_predicate_values() -> None:
+    parser = YaraLParser("$e.target.hostname matches /admin.*/i nocase")
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, VariableComparisonCondition)
+    assert condition.variable == "$e.target.hostname"
+    assert condition.operator == "=~"
+    assert isinstance(condition.value, RegexPattern)
+    assert condition.value.as_string == "/admin.*/i nocase"
+
+    parser2 = YaraLParser("principal.ip in %blocked%")
+    condition2 = parser2._parse_condition_expression()
+
+    assert isinstance(condition2, VariableComparisonCondition)
+    assert condition2.variable == "principal.ip"
+    assert condition2.operator == "in"
+    assert isinstance(condition2.value, ReferenceList)
+    assert condition2.value.name == "blocked"
