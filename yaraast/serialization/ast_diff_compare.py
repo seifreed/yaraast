@@ -18,45 +18,63 @@ from yaraast.serialization.ast_diff_tags import emit_tags_diff, tag_payloads
 
 def compare_imports(old_imports, new_imports, result, diff_node, diff_type) -> None:
     """Compare import lists."""
-    old_modules = {imp.module: imp for imp in old_imports}
-    new_modules = {imp.module: imp for imp in new_imports}
+    old_modules = _nodes_by_key(old_imports, _import_key)
+    new_modules = _nodes_by_key(new_imports, _import_key)
 
-    for module in new_modules:
+    for module in sorted(new_modules.keys() - old_modules.keys()):
         if module not in old_modules:
+            new_bucket = new_modules[module]
             result.differences.append(
                 diff_node(
                     path=f"/imports/{module}",
                     diff_type=diff_type.ADDED,
-                    new_value=module,
+                    new_value=_import_bucket_value(module, new_bucket),
                     node_type="Import",
                 ),
             )
 
-    for module in old_modules:
+    for module in sorted(old_modules.keys() - new_modules.keys()):
         if module not in new_modules:
+            old_bucket = old_modules[module]
             result.differences.append(
                 diff_node(
                     path=f"/imports/{module}",
                     diff_type=diff_type.REMOVED,
-                    old_value=module,
+                    old_value=_import_bucket_value(module, old_bucket),
                     node_type="Import",
                 ),
             )
 
-    for module in old_modules:
+    for module in sorted(old_modules.keys() & new_modules.keys()):
         if module in new_modules:
-            old_alias = getattr(old_modules[module], "alias", None)
-            new_alias = getattr(new_modules[module], "alias", None)
-            if old_alias != new_alias:
-                result.differences.append(
-                    diff_node(
-                        path=f"/imports/{module}/alias",
-                        diff_type=diff_type.MODIFIED,
-                        old_value=old_alias,
-                        new_value=new_alias,
-                        node_type="Import",
-                    ),
-                )
+            old_bucket = old_modules[module]
+            new_bucket = new_modules[module]
+            if len(old_bucket) == 1 and len(new_bucket) == 1:
+                old_alias = getattr(old_bucket[0], "alias", None)
+                new_alias = getattr(new_bucket[0], "alias", None)
+                if old_alias != new_alias:
+                    result.differences.append(
+                        diff_node(
+                            path=f"/imports/{module}/alias",
+                            diff_type=diff_type.MODIFIED,
+                            old_value=old_alias,
+                            new_value=new_alias,
+                            node_type="Import",
+                        ),
+                    )
+            else:
+                old_value = _import_payloads(old_bucket)
+                new_value = _import_payloads(new_bucket)
+                if old_value != new_value:
+                    result.differences.append(
+                        diff_node(
+                            path=f"/imports/{module}",
+                            diff_type=diff_type.MODIFIED,
+                            old_value=old_value,
+                            new_value=new_value,
+                            node_type="Import",
+                        ),
+                    )
 
 
 def compare_extended_file_fields(old_ast, new_ast, result, hasher, diff_node, diff_type) -> None:
@@ -206,6 +224,44 @@ def _nodes_by_key(nodes, key_func) -> dict[str, list]:
     return grouped
 
 
+def _import_key(node) -> str:
+    return str(getattr(node, "module", ""))
+
+
+def _import_payload(node) -> dict[str, str | None]:
+    return {
+        "alias": getattr(node, "alias", None),
+        "module": _import_key(node),
+    }
+
+
+def _import_payloads(imports) -> list[dict[str, str | None]]:
+    return sorted(
+        [_import_payload(import_node) for import_node in imports],
+        key=lambda item: (item["module"] or "", item["alias"] or ""),
+    )
+
+
+def _import_bucket_value(module: str, imports):
+    if len(imports) == 1:
+        return module
+    return _import_payloads(imports)
+
+
+def _include_key(node) -> str:
+    return str(getattr(node, "path", ""))
+
+
+def _include_bucket_value(path: str, includes):
+    if len(includes) == 1:
+        return path
+    return [path] * len(includes)
+
+
+def _include_payloads(path: str, includes) -> list[str]:
+    return [path] * len(includes)
+
+
 def _extern_import_key(node) -> str:
     return str(getattr(node, "module_path", getattr(node, "module", "")))
 
@@ -234,28 +290,46 @@ def _name_key(node) -> str:
 
 def compare_includes(old_includes, new_includes, result, diff_node, diff_type) -> None:
     """Compare include lists."""
-    old_paths = {inc.path for inc in old_includes}
-    new_paths = {inc.path for inc in new_includes}
+    old_paths = _nodes_by_key(old_includes, _include_key)
+    new_paths = _nodes_by_key(new_includes, _include_key)
 
-    for path in sorted(new_paths - old_paths):
+    for path in sorted(new_paths.keys() - old_paths.keys()):
+        new_bucket = new_paths[path]
         result.differences.append(
             diff_node(
                 path=f"/includes/{path}",
                 diff_type=diff_type.ADDED,
-                new_value=path,
+                new_value=_include_bucket_value(path, new_bucket),
                 node_type="Include",
             ),
         )
 
-    for path in sorted(old_paths - new_paths):
+    for path in sorted(old_paths.keys() - new_paths.keys()):
+        old_bucket = old_paths[path]
         result.differences.append(
             diff_node(
                 path=f"/includes/{path}",
                 diff_type=diff_type.REMOVED,
-                old_value=path,
+                old_value=_include_bucket_value(path, old_bucket),
                 node_type="Include",
             ),
         )
+
+    for path in sorted(old_paths.keys() & new_paths.keys()):
+        old_bucket = old_paths[path]
+        new_bucket = new_paths[path]
+        old_value = _include_payloads(path, old_bucket)
+        new_value = _include_payloads(path, new_bucket)
+        if old_value != new_value:
+            result.differences.append(
+                diff_node(
+                    path=f"/includes/{path}",
+                    diff_type=diff_type.MODIFIED,
+                    old_value=old_value,
+                    new_value=new_value,
+                    node_type="Include",
+                ),
+            )
 
 
 def compare_rules(old_rules, new_rules, result, hasher, diff_node, diff_type) -> None:

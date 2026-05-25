@@ -19,7 +19,7 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, UndefDirective
-from yaraast.ast.rules import Rule, Tag
+from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher, DiffType
 
@@ -148,6 +148,32 @@ def test_ast_diff_detects_duplicate_tag_changes() -> None:
     assert tag_diff.diff_type == DiffType.MODIFIED
     assert tag_diff.old_value == ["shared", "shared"]
     assert tag_diff.new_value == ["shared"]
+    assert result.has_changes
+
+
+def test_ast_diff_detects_duplicate_import_changes() -> None:
+    old_ast = YaraFile(imports=[Import("pe"), Import("pe")])
+    new_ast = YaraFile(imports=[Import("pe")])
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    import_diff = next(diff for diff in result.differences if diff.path == "/imports/pe")
+    assert import_diff.diff_type == DiffType.MODIFIED
+    assert import_diff.old_value == [{"alias": None, "module": "pe"}] * 2
+    assert import_diff.new_value == [{"alias": None, "module": "pe"}]
+    assert result.has_changes
+
+
+def test_ast_diff_detects_duplicate_include_changes() -> None:
+    old_ast = YaraFile(includes=[Include("shared.yar"), Include("shared.yar")])
+    new_ast = YaraFile(includes=[Include("shared.yar")])
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    include_diff = next(diff for diff in result.differences if diff.path == "/includes/shared.yar")
+    assert include_diff.diff_type == DiffType.MODIFIED
+    assert include_diff.old_value == ["shared.yar", "shared.yar"]
+    assert include_diff.new_value == ["shared.yar"]
     assert result.has_changes
 
 
