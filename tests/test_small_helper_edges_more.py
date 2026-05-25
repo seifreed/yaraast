@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import Counter
+
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.performance.memory_helpers import clear_tracking, maybe_collect, pooled_value
@@ -53,8 +55,8 @@ def test_ast_diff_string_and_modifier_helpers_full_paths() -> None:
     old_rule = Rule(name="r1", modifiers=["private"])
     new_rule = Rule(name="r1", modifiers=["global"])
     old_mods, new_mods = modifier_payloads(old_rule, new_rule)
-    assert old_mods == {"private"}
-    assert new_mods == {"global"}
+    assert old_mods == Counter({"private": 1})
+    assert new_mods == Counter({"global": 1})
 
     old_strings = [PlainString(identifier="$a", value="x")]
     new_strings = [PlainString(identifier="$b", value="y")]

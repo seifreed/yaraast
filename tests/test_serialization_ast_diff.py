@@ -16,7 +16,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
 )
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
-from yaraast.ast.modifiers import MetaEntry
+from yaraast.ast.modifiers import MetaEntry, RuleModifier
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, UndefDirective
 from yaraast.ast.rules import Import, Include, Rule, Tag
@@ -149,6 +149,40 @@ def test_ast_diff_detects_duplicate_tag_changes() -> None:
     assert tag_diff.diff_type == DiffType.MODIFIED
     assert tag_diff.old_value == ["shared", "shared"]
     assert tag_diff.new_value == ["shared"]
+    assert result.has_changes
+
+
+def test_ast_diff_detects_duplicate_modifier_changes() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_modifiers",
+                modifiers=[
+                    RuleModifier.from_string("private"),
+                    RuleModifier.from_string("private"),
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_modifiers",
+                modifiers=[RuleModifier.from_string("private")],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    modifier_diff = next(
+        diff for diff in result.differences if diff.path == "/rules/duplicate_modifiers/modifiers"
+    )
+    assert modifier_diff.diff_type == DiffType.MODIFIED
+    assert modifier_diff.old_value == ["private", "private"]
+    assert modifier_diff.new_value == ["private"]
     assert result.has_changes
 
 
