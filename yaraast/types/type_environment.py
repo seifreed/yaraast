@@ -2,10 +2,20 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from ._registry_base import YaraType
 
 
-def _normalize_string_id(string_id: str) -> str:
+def _require_string(value: Any, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _normalize_string_id(string_id: str, field_name: str = "TypeEnvironment string id") -> str:
+    string_id = _require_string(string_id, field_name)
     return string_id if string_id.startswith("$") else f"${string_id}"
 
 
@@ -28,32 +38,44 @@ class TypeEnvironment:
             self.scopes.pop()
 
     def define(self, name: str, type: YaraType) -> None:
-        self.scopes[-1][name] = type
+        variable_name = _require_string(name, "TypeEnvironment variable name")
+        if not isinstance(type, YaraType):
+            msg = "TypeEnvironment type must be a YaraType"
+            raise TypeError(msg)
+        self.scopes[-1][variable_name] = type
 
     def lookup(self, name: str) -> YaraType | None:
+        variable_name = _require_string(name, "TypeEnvironment variable name")
         for scope in reversed(self.scopes):
-            if name in scope:
-                return scope[name]
+            if variable_name in scope:
+                return scope[variable_name]
         return None
 
     def add_module(self, alias: str, module: str | None = None) -> None:
+        alias = _require_string(alias, "TypeEnvironment module alias")
         if module is None:
             self.modules.add(alias)
         else:
+            module = _require_string(module, "TypeEnvironment module name")
             self.modules.add(alias)
             self.modules.add(module)
             self.module_aliases[alias] = module
 
     def add_string(self, string_id: str, *, is_anonymous: bool = False) -> None:
+        if not isinstance(is_anonymous, bool):
+            msg = "TypeEnvironment is_anonymous must be a boolean"
+            raise TypeError(msg)
         string_id = _normalize_string_id(string_id)
         self.strings.add(string_id)
         if is_anonymous:
             self.anonymous_strings.add(string_id)
 
     def has_module(self, name: str) -> bool:
+        name = _require_string(name, "TypeEnvironment module name")
         return name in self.modules or name in self.module_aliases
 
     def get_module_name(self, name: str) -> str | None:
+        name = _require_string(name, "TypeEnvironment module name")
         if name in self.module_aliases:
             return self.module_aliases[name]
         if name in self.modules:
@@ -65,7 +87,7 @@ class TypeEnvironment:
         return string_id in self.strings
 
     def has_string_pattern(self, pattern: str) -> bool:
-        pattern = _normalize_string_id(pattern)
+        pattern = _normalize_string_id(pattern, "TypeEnvironment string pattern")
         if not pattern.endswith("*"):
             return self.has_string(pattern)
         if pattern == "$*":
@@ -76,7 +98,9 @@ class TypeEnvironment:
         )
 
     def add_rule(self, rule_name: str) -> None:
+        rule_name = _require_string(rule_name, "TypeEnvironment rule name")
         self.rules.add(rule_name)
 
     def has_rule(self, rule_name: str) -> bool:
+        rule_name = _require_string(rule_name, "TypeEnvironment rule name")
         return rule_name in self.rules

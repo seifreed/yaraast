@@ -6,6 +6,8 @@ This test suite validates real code behavior without mocks or stubs.
 Tests for YARA type system implementation.
 """
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -852,6 +854,49 @@ class TestTypeEnvironment:
         assert env.has_rule("rule1") is True
         assert env.has_rule("rule2") is True
         assert env.has_rule("nonexistent") is False
+
+    def test_type_environment_rejects_invalid_public_inputs_without_partial_update(
+        self,
+    ) -> None:
+        """Test public mutators reject invalid inputs before mutating state."""
+        env = TypeEnvironment()
+        env.define("x", IntegerType())
+        env.add_module("pe")
+        env.add_string("$s")
+        env.add_rule("rule1")
+
+        with pytest.raises(TypeError, match="TypeEnvironment variable name must be a string"):
+            env.define(cast(Any, object()), IntegerType())
+        with pytest.raises(TypeError, match="TypeEnvironment type must be a YaraType"):
+            env.define("bad", cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment variable name must be a string"):
+            env.lookup(cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment module alias must be a string"):
+            env.add_module(cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment module name must be a string"):
+            env.add_module("alias", cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment module name must be a string"):
+            env.has_module(cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment module name must be a string"):
+            env.get_module_name(cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment string id must be a string"):
+            env.add_string(cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment is_anonymous must be a boolean"):
+            env.add_string("$anon", is_anonymous=cast(Any, "yes"))
+        with pytest.raises(TypeError, match="TypeEnvironment string id must be a string"):
+            env.has_string(cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment string pattern must be a string"):
+            env.has_string_pattern(cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment rule name must be a string"):
+            env.add_rule(cast(Any, object()))
+        with pytest.raises(TypeError, match="TypeEnvironment rule name must be a string"):
+            env.has_rule(cast(Any, object()))
+
+        assert env.lookup("x") is not None
+        assert env.modules == {"pe"}
+        assert env.strings == {"$s"}
+        assert env.anonymous_strings == set()
+        assert env.rules == {"rule1"}
 
 
 class TestTypeSystem:
