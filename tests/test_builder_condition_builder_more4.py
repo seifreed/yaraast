@@ -162,6 +162,24 @@ def test_condition_builder_rejects_boolean_offsets_and_range_bounds() -> None:
         ConditionBuilder().array_access(ConditionBuilder().identifier("arr"), cast(Any, "0"))
 
 
+def test_condition_builder_rejects_invalid_numeric_operands() -> None:
+    builder = ConditionBuilder().filesize()
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        builder.gt(cast(Any, True))
+
+    with pytest.raises(TypeError, match=r"Cannot convert .* to integer expression"):
+        builder.lt(cast(Any, "10"))
+
+    arithmetic = ConditionBuilder().integer(1)
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        arithmetic.add(cast(Any, True))
+
+    with pytest.raises(TypeError, match=r"Cannot convert .* to integer expression"):
+        arithmetic.sub(cast(Any, "1"))
+
+
 def test_condition_builder_errors_on_empty() -> None:
     with pytest.raises(ValidationError):
         ConditionBuilder().and_(ConditionBuilder().true())

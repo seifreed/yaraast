@@ -167,19 +167,19 @@ class ConditionBuilder:
 
     def lt(self, other: ConditionBuilder | Expression | int) -> Self:
         """Less than comparison."""
-        return self._binary_op("<", other)
+        return self._integer_binary_op("<", other)
 
     def le(self, other: ConditionBuilder | Expression | int) -> Self:
         """Less than or equal comparison."""
-        return self._binary_op("<=", other)
+        return self._integer_binary_op("<=", other)
 
     def gt(self, other: ConditionBuilder | Expression | int) -> Self:
         """Greater than comparison."""
-        return self._binary_op(">", other)
+        return self._integer_binary_op(">", other)
 
     def ge(self, other: ConditionBuilder | Expression | int) -> Self:
         """Greater than or equal comparison."""
-        return self._binary_op(">=", other)
+        return self._integer_binary_op(">=", other)
 
     # String operations
     def contains(self, pattern: str | ConditionBuilder) -> Self:
@@ -320,36 +320,36 @@ class ConditionBuilder:
     # Arithmetic operations
     def add(self, other: ConditionBuilder | int) -> Self:
         """Addition."""
-        return self._binary_op("+", other)
+        return self._integer_binary_op("+", other)
 
     def sub(self, other: ConditionBuilder | int) -> Self:
         """Subtraction."""
-        return self._binary_op("-", other)
+        return self._integer_binary_op("-", other)
 
     def mul(self, other: ConditionBuilder | int) -> Self:
         """Multiplication."""
-        return self._binary_op("*", other)
+        return self._integer_binary_op("*", other)
 
     def div(self, other: ConditionBuilder | int) -> Self:
         """Division."""
-        return self._binary_op("\\", other)
+        return self._integer_binary_op("\\", other)
 
     def mod(self, other: ConditionBuilder | int) -> Self:
         """Modulo."""
-        return self._binary_op("%", other)
+        return self._integer_binary_op("%", other)
 
     # Bitwise operations
     def bitwise_and(self, other: ConditionBuilder | int) -> Self:
         """Bitwise AND."""
-        return self._binary_op("&", other)
+        return self._integer_binary_op("&", other)
 
     def bitwise_or(self, other: ConditionBuilder | int) -> Self:
         """Bitwise OR."""
-        return self._binary_op("|", other)
+        return self._integer_binary_op("|", other)
 
     def bitwise_xor(self, other: ConditionBuilder | int) -> Self:
         """Bitwise XOR."""
-        return self._binary_op("^", other)
+        return self._integer_binary_op("^", other)
 
     def bitwise_not(self) -> Self:
         """Bitwise NOT."""
@@ -361,11 +361,11 @@ class ConditionBuilder:
 
     def shift_left(self, other: ConditionBuilder | int) -> Self:
         """Shift left."""
-        return self._binary_op("<<", other)
+        return self._integer_binary_op("<<", other)
 
     def shift_right(self, other: ConditionBuilder | int) -> Self:
         """Shift right."""
-        return self._binary_op(">>", other)
+        return self._integer_binary_op(">>", other)
 
     # Grouping
     def group(self) -> Self:
@@ -388,6 +388,20 @@ class ConditionBuilder:
             raise ValidationError(msg)
 
         right = self._to_expression(other)
+        return ConditionBuilder(
+            BinaryExpression(left=self._expression, operator=op, right=right),
+        )
+
+    def _integer_binary_op(
+        self,
+        op: str,
+        other: ConditionBuilder | Expression | int,
+    ) -> Self:
+        if not self._expression:
+            msg = f"Cannot apply {op} to empty expression"
+            raise ValidationError(msg)
+
+        right = self._to_integer_expression(other)
         return ConditionBuilder(
             BinaryExpression(left=self._expression, operator=op, right=right),
         )
