@@ -501,7 +501,8 @@ def _parse_xor_key(value: object) -> _XorKey | None:
 
 def format_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> str:
     """Format modifiers into a string with leading spaces."""
-    if not isinstance(modifiers, list | tuple):
+    _validate_string_modifier_collection(modifiers)
+    if not modifiers:
         return ""
     validate_duplicate_string_modifiers(modifiers)
     parts = []
@@ -563,7 +564,7 @@ def _modifier_names(modifiers) -> set[str]:
 
 
 def _validate_string_modifier_collection(modifiers) -> None:
-    if not modifiers:
+    if modifiers is None:
         return
     if isinstance(modifiers, list | tuple):
         return
@@ -592,7 +593,8 @@ def split_regex_modifiers(
     visit: Callable[[Any], str] | None = None,
 ) -> tuple[str, list[str]]:
     """Split regex inline flags from spaced string modifiers."""
-    if not isinstance(modifiers, list | tuple):
+    _validate_string_modifier_collection(modifiers)
+    if not modifiers:
         return "", []
 
     suffix_parts: list[str] = []

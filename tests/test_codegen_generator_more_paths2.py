@@ -577,10 +577,14 @@ def test_codegen_generator_rejects_non_sequence_string_modifiers() -> None:
     bad_plain_modifiers: Any = "wide"
     bad_hex_modifiers: Any = "private"
     bad_regex_modifiers: Any = "fullword"
+    falsey_bad_modifiers: Any = False
     cases = [
         PlainString("$plain", value="abc", modifiers=bad_plain_modifiers),
         HexString("$hex", tokens=[HexByte(0x41)], modifiers=bad_hex_modifiers),
         RegexString("$regex", regex="abc", modifiers=bad_regex_modifiers),
+        PlainString("$plain_false", value="abc", modifiers=falsey_bad_modifiers),
+        HexString("$hex_false", tokens=[HexByte(0x41)], modifiers=falsey_bad_modifiers),
+        RegexString("$regex_false", regex="abc", modifiers=falsey_bad_modifiers),
     ]
 
     for string_def in cases:
