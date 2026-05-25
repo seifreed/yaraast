@@ -2,16 +2,23 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
 import yaml
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import RegexString
+from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.serialization.roundtrip_pipeline_helpers import (
+    build_pipeline_statistics,
+    build_rules_manifest,
+)
 from yaraast.serialization.roundtrip_serializer import EnhancedYamlSerializer
 from yaraast.serialization.simple_roundtrip import SimpleRoundTrip
 
@@ -46,6 +53,57 @@ def test_enhanced_yaml_serializer_counts_regex_strings() -> None:
     serializer = EnhancedYamlSerializer(include_pipeline_metadata=False)
     data = yaml.safe_load(serializer.serialize_for_pipeline(ast))
     assert data["statistics"]["string_patterns"]["regex"] == 1
+
+
+_PIPELINE_HELPERS: dict[str, Callable[[YaraFile], dict[str, Any]]] = {
+    "statistics": build_pipeline_statistics,
+    "manifest": build_rules_manifest,
+}
+
+
+@pytest.mark.parametrize(
+    ("helper_name", "field_name", "message"),
+    [
+        ("statistics", "imports", "YaraFile imports"),
+        ("statistics", "rules", "YaraFile rules"),
+        ("manifest", "imports", "YaraFile imports"),
+        ("manifest", "includes", "YaraFile includes"),
+        ("manifest", "rules", "YaraFile rules"),
+    ],
+)
+def test_roundtrip_pipeline_helpers_reject_invalid_yara_file_collections(
+    helper_name: str,
+    field_name: str,
+    message: str,
+) -> None:
+    ast = _sample_ast()
+    setattr(ast, field_name, "")
+
+    with pytest.raises(SerializationError, match=message):
+        _PIPELINE_HELPERS[helper_name](ast)
+
+
+@pytest.mark.parametrize(
+    ("helper_name", "field_name", "message"),
+    [
+        ("statistics", "tags", "Rule tags"),
+        ("statistics", "strings", "Rule strings"),
+        ("manifest", "modifiers", "Rule modifiers"),
+        ("manifest", "tags", "Rule tags"),
+        ("manifest", "meta", "Rule meta"),
+        ("manifest", "strings", "Rule strings"),
+    ],
+)
+def test_roundtrip_pipeline_helpers_reject_invalid_rule_collections(
+    helper_name: str,
+    field_name: str,
+    message: str,
+) -> None:
+    ast = _sample_ast()
+    setattr(ast.rules[0], field_name, "")
+
+    with pytest.raises(SerializationError, match=message):
+        _PIPELINE_HELPERS[helper_name](ast)
 
 
 def test_simple_roundtrip_test_handles_real_type_error() -> None:
