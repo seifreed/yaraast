@@ -50,7 +50,7 @@ class OutcomeArgumentParsingMixin:
             if self._check(BaseTokenType.DOT):
                 self._advance()
                 field_parts = self._parse_outcome_field_path()
-                return f"{var_name}.{'.'.join(field_parts)}"
+                return f"{var_name}.{UDMFieldPath(parts=field_parts).path}"
             return var_name
 
         if self._check(BaseTokenType.STRING):
@@ -122,7 +122,7 @@ class OutcomeArgumentParsingMixin:
                 op_token = self._advance()
                 right_value = self._parse_outcome_argument()
                 return (
-                    f"{var_name}.{'.'.join(field_parts)} {op_token.value} "
+                    f"{var_name}.{field.path} {op_token.value} "
                     f"{self._format_outcome_argument_source(right_value, quote_strings=True)}"
                 )
 

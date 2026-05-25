@@ -233,6 +233,28 @@ def test_parser_outcome_two_argument_conditional_preserves_generated_text() -> N
     assert '$flag = if($count > 100, "HIGH", )' not in generated
 
 
+def test_parser_outcome_conditional_preserves_bracketed_event_fields() -> None:
+    code = dedent(
+        """
+        rule outcome_bracketed_if {
+            events:
+                $e.fields["key"][0].value = "x"
+            outcome:
+                $flag = if($e.fields["key"][0].value = "x", "YES", "NO")
+            condition:
+                $e
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$flag = if($e.fields["key"][0].value = "x", "YES", "NO")' in generated
+    assert '.["key"]' not in generated
+    assert ".[0]" not in generated
+
+
 def test_parser_normalizes_regex_token_delimiters_for_generation() -> None:
     code = dedent(
         r"""
