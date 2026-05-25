@@ -700,6 +700,40 @@ def test_codegen_generators_reject_invalid_rule_collections(
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize("invalid_collection", [False, 0, "", None])
+def test_codegen_generators_reject_invalid_leaf_collections(
+    invalid_collection: Any,
+) -> None:
+    cases = [
+        (
+            ExternImport("mods.yar", rules=invalid_collection),
+            "ExternImport rules must be a list or tuple",
+        ),
+        (
+            ExternNamespace("corp", extern_rules=invalid_collection),
+            "ExternNamespace extern_rules must be a list or tuple",
+        ),
+        (
+            ExternRule("Remote", modifiers=invalid_collection),
+            "ExternRule modifiers must be a list or tuple",
+        ),
+        (
+            PragmaBlock(pragmas=invalid_collection),
+            "PragmaBlock pragmas must be a list or tuple",
+        ),
+    ]
+
+    for node, message in cases:
+        with pytest.raises(TypeError, match=message):
+            CodeGenerator().generate(node)
+        with pytest.raises(TypeError, match=message):
+            AdvancedCodeGenerator().generate(node)
+        with pytest.raises(TypeError, match=message):
+            CommentAwareCodeGenerator().generate(node)
+        with pytest.raises(TypeError, match=message):
+            PrettyPrinter().generate(node)
+
+
 _BAD_PLAIN_STRING_VALUE: Any = 123
 _BAD_REGEX_PATTERN: Any = 123
 

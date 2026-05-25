@@ -10,6 +10,7 @@ from yaraast.codegen.generator_formatting import (
     format_meta_value,
     format_nonempty_quoted_value,
     format_regex_literal,
+    validate_rule_modifiers,
     validate_yara_expression_identifier,
     validate_yara_identifier,
     validate_yara_identifier_path,
@@ -183,6 +184,7 @@ def visit_comment_group(node) -> str:
 
 def visit_extern_import(node) -> str:
     value = f"import \"{format_nonempty_quoted_value(node.module_path, 'Import module')}\""
+    _validate_collection(node.rules, "ExternImport rules")
     if node.rules:
         rules = [validate_yara_identifier_path(rule, "extern rule") for rule in node.rules]
         value += f" ({', '.join(rules)})"
@@ -195,6 +197,7 @@ def visit_extern_import(node) -> str:
 def visit_extern_namespace(node) -> str:
     namespace_name = validate_yara_identifier(node.name, "namespace")
     lines = [f"namespace {namespace_name}"]
+    _validate_collection(node.extern_rules, "ExternNamespace extern_rules")
     for rule in node.extern_rules:
         lines.append(_render_extern_rule(rule, default_namespace=namespace_name))
     return "\n".join(lines)
@@ -205,7 +208,10 @@ def visit_extern_rule(node) -> str:
 
 
 def _render_extern_rule(node, default_namespace: str | None = None) -> str:
-    modifiers = " ".join(str(m) for m in node.modifiers) if hasattr(node, "modifiers") else ""
+    modifiers_value = getattr(node, "modifiers", [])
+    _validate_collection(modifiers_value, "ExternRule modifiers")
+    validate_rule_modifiers(modifiers_value)
+    modifiers = " ".join(str(m) for m in modifiers_value)
     prefix = f"{modifiers} " if modifiers else ""
     namespace_name = getattr(node, "namespace", None) or default_namespace
     namespace = (
@@ -232,4 +238,12 @@ def visit_pragma(node) -> str:
 
 
 def visit_pragma_block(generator, node) -> str:
+    _validate_collection(node.pragmas, "PragmaBlock pragmas")
     return "\n".join(generator.visit(pragma) for pragma in node.pragmas)
+
+
+def _validate_collection(value, field_name: str) -> None:
+    if isinstance(value, list | tuple):
+        return
+    msg = f"{field_name} must be a list or tuple for libyara output"
+    raise TypeError(msg)
