@@ -82,6 +82,7 @@ def test_lexer_number_suffix_and_regex_context_and_hex_context_helpers() -> None
 
 def test_lexer_rejects_integer_literals_above_int64_maximum() -> None:
     valid_values = [
+        "0",
         "9223372036854775807",
         "0x7fffffffffffffff",
         "0o777777777777777777777",

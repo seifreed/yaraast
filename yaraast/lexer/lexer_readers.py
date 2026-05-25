@@ -165,8 +165,9 @@ def read_number(lexer) -> Token:
     start_line = lexer.line
     start_column = lexer.column
     value = ""
+    next_char = lexer._peek_char()
     # Hexadecimal: 0x1A, 0xFF_FF
-    if lexer._current_char() == "0" and lexer._peek_char() in "xX":
+    if lexer._current_char() == "0" and next_char is not None and next_char in "xX":
         value += lexer._current_char()
         lexer._advance()
         value += lexer._current_char()
@@ -183,7 +184,7 @@ def read_number(lexer) -> Token:
             raise LexerError(msg, start_line, start_column)
         return _integer_token(int(value, 16), start_line, start_column, lexer.column - start_column)
     # Octal: 0o77, 0o123
-    if lexer._current_char() == "0" and lexer._peek_char() in "oO":
+    if lexer._current_char() == "0" and next_char is not None and next_char in "oO":
         value += lexer._current_char()
         lexer._advance()
         value += lexer._current_char()
