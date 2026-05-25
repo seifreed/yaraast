@@ -457,6 +457,10 @@ class DeadCodeEliminator(ASTTransformer):
                     kept_strings.append(string_def)
             rule.strings = kept_strings
 
+        self.in_condition = False
+        self.current_rule = None
+        self.current_rule_key = None
+        self.current_rule_strings = set()
         self.current_rule_anonymous_strings = set()
         return rule
 

@@ -392,6 +392,23 @@ def test_eliminate_dead_code_single_rule_and_convenience_wrapper() -> None:
     assert isinstance(elim_count, int)
 
 
+def test_eliminate_dead_code_single_rule_resets_condition_context() -> None:
+    dce = DeadCodeEliminator()
+    rule = Rule(
+        name="single",
+        strings=[PlainString(identifier="$x", value="x")],
+        condition=StringIdentifier("$x"),
+    )
+
+    dce.eliminate_dead_code(rule)
+    dce.visit_string_identifier(StringIdentifier("$outside"))
+
+    assert dce.in_condition is False
+    assert dce.current_rule is None
+    assert dce.current_rule_key is None
+    assert "$outside" not in dce.used_strings
+
+
 def test_visit_boolean_literal_passthrough() -> None:
     dce = DeadCodeEliminator()
     lit = BooleanLiteral(True)
