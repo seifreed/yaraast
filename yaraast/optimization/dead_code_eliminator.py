@@ -80,9 +80,9 @@ class DeadCodeEliminator(ASTTransformer):
                     ):
                         self.elimination_count += 1
 
-        # Count rules with always-false conditions
+        # Count rules that will be removed
         for rule in ast.rules:
-            if self._is_removable_false_rule(rule):
+            if self._should_remove_rule(rule):
                 self.elimination_count += 1
 
         # Second pass: eliminate unused code
@@ -153,28 +153,10 @@ class DeadCodeEliminator(ASTTransformer):
         kept_rules = []
 
         for rule in node.rules:
-            # Skip rules with always-false conditions
-            if self._is_removable_false_rule(rule):
+            if self._should_remove_rule(rule):
                 continue  # Remove this rule
 
-            # Keep only used rules (or all if we can't determine)
-            if self.used_rules:
-                # Determine if the rule is private (internal helper)
-                is_private = False
-                if hasattr(rule, "modifiers") and isinstance(
-                    rule.modifiers,
-                    list | tuple,
-                ):
-                    is_private = any(
-                        getattr(m, "modifier_type", None) and m.modifier_type.value == "private"
-                        for m in rule.modifiers
-                    )
-                # Remove only private rules that nobody references
-                if not is_private or rule.name in self.used_rules:
-                    kept_rules.append(self.visit(rule))
-            else:
-                # If no usage info, keep all rules but optimize them
-                kept_rules.append(self.visit(rule))
+            kept_rules.append(self.visit(rule))
 
         node.rules = kept_rules
         return node
@@ -186,6 +168,26 @@ class DeadCodeEliminator(ASTTransformer):
             and not rule.condition.value
             and rule.name not in self.used_rules
         )
+
+    def _should_remove_rule(self, rule: Rule) -> bool:
+        return self._is_removable_false_rule(rule) or self._is_unreferenced_private_rule(rule)
+
+    def _is_unreferenced_private_rule(self, rule: Rule) -> bool:
+        return self._is_private_rule(rule) and rule.name not in self.used_rules
+
+    def _is_private_rule(self, rule: Rule) -> bool:
+        modifiers = getattr(rule, "modifiers", ())
+        if not isinstance(modifiers, list | tuple):
+            return False
+        for modifier in modifiers:
+            if isinstance(modifier, str) and modifier == "private":
+                return True
+            modifier_type = getattr(modifier, "modifier_type", None)
+            if getattr(modifier_type, "value", None) == "private":
+                return True
+            if getattr(modifier, "name", None) == "private":
+                return True
+        return False
 
     def _is_referenced_by_other_rules(self, rule_name: str) -> bool:
         """Check if this rule is referenced by any other rule."""

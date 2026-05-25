@@ -21,6 +21,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
     UnaryExpression,
 )
+from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.codegen import CodeGenerator
@@ -150,6 +151,25 @@ def test_referenced_false_rule_is_not_removed() -> None:
     assert [rule.name for rule in optimized.rules] == ["helper", "main"]
     assert "private rule helper" in output
     Parser().parse(output)
+
+
+def test_dead_code_eliminator_removes_unreferenced_private_rules_without_other_references() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="helper",
+                modifiers=[RuleModifier.from_string("private")],
+                condition=BooleanLiteral(True),
+            ),
+            Rule(name="legacy_helper", modifiers=["private"], condition=BooleanLiteral(True)),
+            Rule(name="main", condition=BooleanLiteral(True)),
+        ]
+    )
+
+    optimized, count = DeadCodeEliminator().eliminate(ast)
+
+    assert count == 2
+    assert [rule.name for rule in optimized.rules] == ["main"]
 
 
 def test_dead_code_eliminator_ignores_member_roots_when_tracking_rule_references() -> None:
