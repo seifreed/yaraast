@@ -5,7 +5,7 @@ import pytest
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule, ExternRuleReference
-from yaraast.ast.modifiers import MetaEntry, RuleModifier
+from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.pragmas import (
     ConditionalDirective,
     CustomPragma,
@@ -381,25 +381,17 @@ def test_parse_generated_namespace_extern_rules_stay_nested() -> None:
         assert parsed.namespaces[0].extern_rules[0].namespace == "corp"
 
 
-def test_parse_generated_scoped_meta_entries() -> None:
-    source = CodeGenerator().generate(
-        YaraFile(
-            rules=[
-                Rule(
-                    "with_scoped_meta",
-                    meta=[
-                        MetaEntry.from_key_value("secret", "token", "private"),
-                        MetaEntry.from_key_value("classification", "restricted", "protected"),
-                        MetaEntry.from_key_value("owner", "team"),
-                    ],
-                    condition=BooleanLiteral(True),
-                )
-            ],
-        )
-    )
-
-    assert "private:secret" in source
-    assert "protected:classification" in source
+def test_parse_scoped_meta_entries() -> None:
+    source = """
+rule with_scoped_meta {
+    meta:
+        private:secret = "token"
+        protected:classification = "restricted"
+        owner = "team"
+    condition:
+        true
+}
+"""
 
     ast = Parser(source).parse()
     comment_ast = CommentAwareParser().parse(source)

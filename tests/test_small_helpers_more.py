@@ -144,7 +144,8 @@ def test_generator_helpers_escape_integer_and_modifiers() -> None:
     escaped = escape_plain_string_value('a\\b"c\n\r\t\x00\x01')
     assert escaped == 'a\\\\b\\"c\\n\\r\\t\\x00\\x01'
 
-    assert format_integer_literal("not-a-number") == "not-a-number"
+    with pytest.raises(TypeError, match="Integer literal value must be an integer"):
+        format_integer_literal("not-a-number")
     assert format_integer_literal("1024") == "0x400"
     assert format_integer_literal(0x4D5A) == "0x4D5A"
     assert format_integer_literal(0x30) == "48"
