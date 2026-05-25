@@ -38,6 +38,24 @@ def test_rule_builder_rejects_invalid_rule_names(rule_name: str) -> None:
         RuleBuilder().with_name(rule_name)
 
 
+@pytest.mark.parametrize("tag_name", ["bad tag", "bad-tag", "for", "1bad", ""])
+def test_rule_builder_rejects_invalid_rule_tags(tag_name: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid tag identifier"):
+        RuleBuilder("tags").with_tag(tag_name)
+
+    with pytest.raises(ValidationError, match="Invalid tag identifier"):
+        RuleBuilder("tags").with_tags("known_good", tag_name)
+
+
+@pytest.mark.parametrize("meta_key", ["bad key", "bad-key", "for", "1bad", ""])
+def test_rule_builder_rejects_invalid_meta_keys(meta_key: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid meta identifier"):
+        RuleBuilder("metadata_rule").with_meta(meta_key, "x")
+
+    with pytest.raises(ValidationError, match="Invalid meta identifier"):
+        RuleBuilder("metadata_rule").add_meta(meta_key, "x")
+
+
 def test_rule_builder_hex_regex_and_condition_variants() -> None:
     rule = (
         RuleBuilder("variants")

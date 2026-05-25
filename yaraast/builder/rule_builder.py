@@ -54,14 +54,26 @@ def _parse_condition_text(condition: str) -> Condition:
     return parsed_condition
 
 
-def _validate_rule_identifier(name: str) -> None:
+def _validate_yara_identifier(name: str, kind: str) -> None:
     if not isinstance(name, str):
-        msg = f"Invalid rule identifier: {name}"
+        msg = f"Invalid {kind} identifier: {name}"
         raise TypeError(msg)
     if _YARA_IDENTIFIER_RE.fullmatch(name) is not None and name not in _YARA_KEYWORDS:
         return
-    msg = f"Invalid rule identifier: {name}"
+    msg = f"Invalid {kind} identifier: {name}"
     raise ValidationError(msg)
+
+
+def _validate_rule_identifier(name: str) -> None:
+    _validate_yara_identifier(name, "rule")
+
+
+def _validate_tag_identifier(tag: str) -> None:
+    _validate_yara_identifier(tag, "tag")
+
+
+def _validate_meta_identifier(key: str) -> None:
+    _validate_yara_identifier(key, "meta")
 
 
 class RuleBuilder:
@@ -118,6 +130,7 @@ class RuleBuilder:
 
     def with_tag(self, tag: str) -> Self:
         """Add a tag to the rule."""
+        _validate_tag_identifier(tag)
         self._tags.append(tag)
         return self
 
@@ -141,11 +154,14 @@ class RuleBuilder:
 
     def with_tags(self, *tags: str) -> Self:
         """Add multiple tags to the rule."""
+        for tag in tags:
+            _validate_tag_identifier(tag)
         self._tags.extend(tags)
         return self
 
     def with_meta(self, key: str, value: str | int | bool) -> Self:
         """Add a meta field."""
+        _validate_meta_identifier(key)
         self._meta[key] = value
         return self
 
