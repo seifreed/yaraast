@@ -113,10 +113,17 @@ def test_yaral_optimizer_conditions_helpers_and_outcomes() -> None:
         opt._field_path_to_string(UDMFieldPath(parts=["metadata", "event_timestamp"]))
         == "metadata.event_timestamp"
     )
+    assert (
+        opt._field_path_to_string(
+            UDMFieldPath(parts=["metadata", '["event_type"]', "[0]", "value"])
+        )
+        == 'metadata["event_type"][0].value'
+    )
     assert opt._field_path_to_string("principal.ip") == "principal.ip"
     assert opt._should_index_field(_assignment(["metadata", "event_type"], "=", "LOGIN"))
     assert opt._should_index_field(_assignment(["metadata", "event_timestamp"], ">", 1))
     assert opt._should_index_field(_assignment(["principal", "ip"], "contains", "1.2.3.4"))
+    assert opt._should_index_field(_assignment(["principal", "ip", "[0]"], "contains", "1.2.3.4"))
     assert not opt._should_index_field(_assignment(["metadata", "description"], "contains", "x"))
 
     assert opt._are_contradictory(_assignment(["a"], "=", 1), _assignment(["a"], "!=", 1))

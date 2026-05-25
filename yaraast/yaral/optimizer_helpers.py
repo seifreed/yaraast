@@ -11,16 +11,31 @@ class YaraLOptimizerHelpersMixin:
     """Shared helper methods for optimizer."""
 
     def _field_path_to_string(self, field_path: UDMFieldPath | str) -> str:
-        if hasattr(field_path, "parts"):
-            return ".".join(field_path.parts)
+        if isinstance(field_path, UDMFieldPath):
+            return field_path.path
         return str(field_path)
+
+    def _field_path_parts(self, field_path: UDMFieldPath | str) -> list[str]:
+        if isinstance(field_path, UDMFieldPath):
+            raw_parts = field_path.parts
+        else:
+            raw_parts = str(field_path).split(".")
+
+        parts = []
+        for part in raw_parts:
+            if part.startswith("["):
+                continue
+            base_part = part.split("[", 1)[0]
+            if base_part:
+                parts.append(base_part)
+        return parts
 
     def _should_index_field(self, assignment: EventAssignment) -> bool:
         if assignment.operator == "=":
             return True
 
         field_str = self._field_path_to_string(assignment.field_path)
-        field_parts = field_str.split(".")
+        field_parts = self._field_path_parts(assignment.field_path)
         if "timestamp" in field_str and assignment.operator in [">", "<", ">=", "<="]:
             return True
 

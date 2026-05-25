@@ -55,6 +55,7 @@ def test_optimize_event_statement_and_selectivity_scoring_paths() -> None:
         assignments[2]
     )
     assert opt._calculate_selectivity_score(_assign(["principal", "ip"], "!~", "/abc/")) > 0
+    assert opt._calculate_selectivity_score(_assign(["principal", "ip", "[0]"], "!~", "/abc/")) > 0
     assert opt._calculate_selectivity_score(_assign(["metadata", "other"], "contains", 1)) == 0.0
     assert opt._calculate_selectivity_score(_assign(["principal", "user"], "contains", 1)) > 0
 

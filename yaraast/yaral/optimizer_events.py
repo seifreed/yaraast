@@ -81,7 +81,7 @@ class YaraLOptimizerEventsMixin:
             score += 3.0
 
         field_str = self._field_path_to_string(assignment.field_path)
-        field_parts = field_str.split(".")
+        field_parts = self._field_path_parts(assignment.field_path)
         if "event_type" in field_str:
             score += 5.0
         elif "hostname" in field_parts or "ip" in field_parts:
