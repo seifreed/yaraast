@@ -116,6 +116,7 @@ class WorkspaceSymbolsProvider:
     def clear_cache(self) -> None:
         """Clear the symbol cache."""
         if self.runtime:
+            self.runtime.cache.workspace_symbol_cache.clear()
             return
         self.symbol_cache.clear()
 

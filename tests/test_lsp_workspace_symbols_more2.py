@@ -103,3 +103,16 @@ def test_workspace_symbols_rejects_non_string_query_before_scanning(tmp_path: Pa
     runtime_provider = WorkspaceSymbolsProvider(LspRuntime())
     with pytest.raises(TypeError, match="Workspace symbol query must be a string"):
         runtime_provider.get_workspace_symbols(cast(Any, object()))
+
+
+def test_workspace_symbols_runtime_provider_clear_cache_clears_runtime_cache() -> None:
+    runtime = LspRuntime()
+    runtime.open_document("file:///sample.yar", "rule sample { condition: true }\n")
+    provider = WorkspaceSymbolsProvider(runtime)
+
+    assert provider.get_workspace_symbols("")
+    assert runtime.cache.workspace_symbol_cache
+
+    provider.clear_cache()
+
+    assert runtime.cache.workspace_symbol_cache == {}
