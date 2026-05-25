@@ -5,16 +5,40 @@ from __future__ import annotations
 __all__ = ["emit_meta_diff", "meta_payloads"]
 
 
+def _meta_entry_payload(item, fallback_key: str) -> tuple[str, dict]:
+    scope = getattr(item, "scope", None)
+    key = getattr(item, "key", fallback_key)
+    entry = {"value": getattr(item, "value", item)}
+    if scope is not None:
+        entry["scope"] = getattr(scope, "value", str(scope))
+    return key, entry
+
+
+def _sort_duplicate_entries(entries: list[dict]) -> list[dict]:
+    return sorted(
+        entries,
+        key=lambda entry: (
+            repr(entry.get("value")),
+            str(entry.get("scope", "")),
+        ),
+    )
+
+
 def _meta_to_dict(meta) -> dict:
     """Convert meta (list[MetaEntry]) to a comparable dict."""
     payload = {}
     for i, item in enumerate(meta):
-        scope = getattr(item, "scope", None)
-        key = getattr(item, "key", str(i))
-        entry = {"value": getattr(item, "value", item)}
-        if scope is not None:
-            entry["scope"] = getattr(scope, "value", str(scope))
-        payload[key] = entry
+        key, entry = _meta_entry_payload(item, str(i))
+        existing = payload.get(key)
+        if existing is None:
+            payload[key] = entry
+        elif isinstance(existing, list):
+            existing.append(entry)
+        else:
+            payload[key] = [existing, entry]
+    for key, value in payload.items():
+        if isinstance(value, list):
+            payload[key] = _sort_duplicate_entries(value)
     return payload
 
 

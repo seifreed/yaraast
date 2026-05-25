@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import dedent
+from typing import Any, cast
 
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.conditions import OfExpression
@@ -80,6 +81,43 @@ def test_ast_diff_detects_meta_scope_changes() -> None:
     assert isinstance(meta_diff.new_value, dict)
     assert meta_diff.old_value["secret"]["scope"] == "public"
     assert meta_diff.new_value["secret"]["scope"] == "private"
+
+
+def test_ast_diff_detects_duplicate_meta_key_changes() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_meta",
+                meta=[
+                    MetaEntry.from_key_value("author", "alice"),
+                    MetaEntry.from_key_value("author", "bob"),
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_meta",
+                meta=[MetaEntry.from_key_value("author", "bob")],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    meta_diff = next(
+        diff for diff in result.differences if diff.path == "/rules/duplicate_meta/meta"
+    )
+    old_value = cast(dict[str, Any], meta_diff.old_value)
+    new_value = cast(dict[str, Any], meta_diff.new_value)
+    assert meta_diff.diff_type == DiffType.MODIFIED
+    assert isinstance(old_value["author"], list)
+    assert len(old_value["author"]) == 2
+    assert new_value["author"]["value"] == "bob"
+    assert result.has_changes
 
 
 def test_ast_diff_detects_extended_file_field_changes() -> None:
