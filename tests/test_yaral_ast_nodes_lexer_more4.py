@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
@@ -211,6 +213,17 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
     yf = YaraLFile()
     yf.add_rule(YaraLRule(name="r1"))
     assert yf.accept(visitor) == 1
+
+
+def test_yaral_file_rejects_invalid_rule_inputs_without_partial_update() -> None:
+    yf = YaraLFile()
+    yf.add_rule(YaraLRule(name="r1"))
+    bad_rule: Any = object()
+
+    with pytest.raises(TypeError, match="YaraL rule input must be a YaraLRule"):
+        yf.add_rule(bad_rule)
+
+    assert [rule.name for rule in yf.rules] == ["r1"]
 
 
 def test_yaral_lexer_handles_large_inputs_and_multiline_backtick_regex() -> None:
