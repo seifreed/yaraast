@@ -10,6 +10,7 @@ from yaraast.yaral._parsing_events import (
     _join_event_statement_tokens,
     _join_prefixed_event_statement,
     _prefix_event_statement,
+    _token_value_is,
 )
 from yaraast.yaral.ast_nodes import (
     ConditionExpression,
@@ -119,20 +120,9 @@ class EnhancedYaraLParserEventsMixin:
             BaseTokenType.STRING_IDENTIFIER
         ):
             next_token = self._peek_ahead(1)
-            return bool(
-                next_token
-                and next_token.type
-                in {
-                    BaseTokenType.DOT,
-                    BaseTokenType.EQ,
-                    BaseTokenType.IEQUALS,
-                    BaseTokenType.NEQ,
-                    BaseTokenType.GT,
-                    BaseTokenType.LT,
-                    BaseTokenType.GE,
-                    BaseTokenType.LE,
-                    BaseTokenType.IN,
-                }
+            return bool(next_token) and (
+                next_token.type in {BaseTokenType.DOT, BaseTokenType.EQ}
+                or self._is_event_var_comparison_operator_at(1)
             )
 
         return False
@@ -154,15 +144,32 @@ class EnhancedYaraLParserEventsMixin:
         }
 
     def _is_event_var_comparison_start(self) -> bool:
-        return (
-            self._check(BaseTokenType.NEQ)
-            or self._check(BaseTokenType.IEQUALS)
-            or self._check(BaseTokenType.GT)
-            or self._check(BaseTokenType.LT)
-            or self._check(BaseTokenType.GE)
-            or self._check(BaseTokenType.LE)
-            or self._check(BaseTokenType.IN)
-            or self._check_keyword("in")
+        return self._is_event_var_comparison_operator_at(0)
+
+    def _is_event_var_comparison_operator_at(self, offset: int) -> bool:
+        token = self._peek_ahead(offset)
+        if token is None:
+            return False
+        if token.type in {
+            BaseTokenType.NEQ,
+            BaseTokenType.IEQUALS,
+            BaseTokenType.GT,
+            BaseTokenType.LT,
+            BaseTokenType.GE,
+            BaseTokenType.LE,
+            BaseTokenType.IN,
+            BaseTokenType.MATCHES,
+        }:
+            return True
+        if _token_value_is(token, "in") or _token_value_is(token, "matches"):
+            return True
+        if not _token_value_is(token, "not"):
+            return False
+        next_token = self._peek_ahead(offset + 1)
+        return next_token is not None and (
+            next_token.type in {BaseTokenType.IN, BaseTokenType.MATCHES}
+            or _token_value_is(next_token, "in")
+            or _token_value_is(next_token, "matches")
         )
 
     def _collect_assignment_rhs_tokens(self) -> list[Any]:
@@ -178,11 +185,10 @@ class EnhancedYaraLParserEventsMixin:
                 or self._check(BaseTokenType.STRING_IDENTIFIER)
             ):
                 next_token = self._peek_ahead(1)
-                if next_token and next_token.type in {
-                    BaseTokenType.EQ,
-                    BaseTokenType.IEQUALS,
-                    BaseTokenType.DOT,
-                }:
+                if next_token and (
+                    next_token.type in {BaseTokenType.EQ, BaseTokenType.DOT}
+                    or self._is_event_var_comparison_operator_at(1)
+                ):
                     break
 
             tokens.append(self._advance())

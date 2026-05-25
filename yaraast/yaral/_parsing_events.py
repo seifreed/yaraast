@@ -129,14 +129,32 @@ class YaraLEventsParsingMixin:
 
     def _check_comparison_or_in(self) -> bool:
         """Check if the current token is a comparison operator or 'in' keyword."""
-        return (
-            self._check(BaseTokenType.NEQ)
-            or self._check(BaseTokenType.GT)
-            or self._check(BaseTokenType.LT)
-            or self._check(BaseTokenType.GE)
-            or self._check(BaseTokenType.LE)
-            or self._check_keyword("in")
-            or self._check(BaseTokenType.IEQUALS)
+        return self._is_event_var_comparison_operator_at(0)
+
+    def _is_event_var_comparison_operator_at(self, offset: int) -> bool:
+        token = self._event_value_token_ahead(offset)
+        if token is None:
+            return False
+        if token.type in {
+            BaseTokenType.NEQ,
+            BaseTokenType.GT,
+            BaseTokenType.LT,
+            BaseTokenType.GE,
+            BaseTokenType.LE,
+            BaseTokenType.IN,
+            BaseTokenType.IEQUALS,
+            BaseTokenType.MATCHES,
+        }:
+            return True
+        if _token_value_is(token, "in") or _token_value_is(token, "matches"):
+            return True
+        if not _token_value_is(token, "not"):
+            return False
+        next_token = self._event_value_token_ahead(offset + 1)
+        return next_token is not None and (
+            next_token.type in {BaseTokenType.IN, BaseTokenType.MATCHES}
+            or _token_value_is(next_token, "in")
+            or _token_value_is(next_token, "matches")
         )
 
     def _parse_event_var_comparison(self, event_var: EventVariable) -> EventStatement:
@@ -199,20 +217,12 @@ class YaraLEventsParsingMixin:
 
     def _looks_like_new_statement(self) -> bool:
         """Check if the next token suggests a new statement."""
-        next_pos = self.current + 1
-        if next_pos < len(self.tokens):
-            next_token = self.tokens[next_pos]
-            return next_token.type in (
-                BaseTokenType.EQ,
-                BaseTokenType.IEQUALS,
-                BaseTokenType.DOT,
-                BaseTokenType.LE,
-                BaseTokenType.GE,
-                BaseTokenType.LT,
-                BaseTokenType.GT,
-                BaseTokenType.NEQ,
-            )
-        return False
+        next_token = self._event_value_token_ahead(1)
+        if next_token is None:
+            return False
+        return next_token.type in {BaseTokenType.EQ, BaseTokenType.DOT} or (
+            self._is_event_var_comparison_operator_at(1)
+        )
 
     def _parse_event_assignment(self, event_var: EventVariable) -> EventStatement:
         """Parse an event assignment: $var = expression."""
@@ -266,19 +276,15 @@ class YaraLEventsParsingMixin:
             if current_token.line > start_line and self._is_complex_event_pattern_start():
                 break
 
-            if current_token.line > start_line and (
-                self._check_yaral_type(YaraLTokenType.EVENT_VAR)
-                or self._check(BaseTokenType.STRING_IDENTIFIER)
+            if (
+                current_token.line > start_line
+                and (
+                    self._check_yaral_type(YaraLTokenType.EVENT_VAR)
+                    or self._check(BaseTokenType.STRING_IDENTIFIER)
+                )
+                and self._looks_like_new_statement()
             ):
-                next_pos = self.current + 1
-                if next_pos < len(self.tokens):
-                    next_token = self.tokens[next_pos]
-                    if next_token.type in {
-                        BaseTokenType.EQ,
-                        BaseTokenType.IEQUALS,
-                        BaseTokenType.DOT,
-                    }:
-                        break
+                break
 
             tokens.append(self._advance())
         return tokens
@@ -584,3 +590,8 @@ def _event_statement_token_text(token: Any) -> str:
         escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
         return f'"{escaped}"'
     return str(value)
+
+
+def _token_value_is(token: Any, expected: str) -> bool:
+    value = token.value
+    return isinstance(value, str) and value.lower() == expected

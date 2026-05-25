@@ -479,4 +479,4 @@ class YaraLLexer:
         # Look back for operators or delimiters that can introduce regex values.
         lookback = max(0, self.position - 20)
         recent = self.text[lookback : self.position].strip()
-        return recent.endswith(("=", "regex", "~", ",", "("))
+        return recent.endswith(("=", "regex", "matches", "~", ",", "("))

@@ -210,6 +210,33 @@ def test_parse_field_event_assignment_preserves_generated_text() -> None:
     assert "$host = $e.target.hostname" in generated
 
 
+def test_parse_event_assignment_stops_before_negated_variable_statements() -> None:
+    for statement in ("$host not in %blocked%", "$host not matches /admin.*/"):
+        parser = EnhancedYaraLParser(f"""
+            rule negated_event_statement {{
+              events:
+                $host = $e.target.hostname
+                {statement}
+              condition:
+                $host
+            }}
+            """)
+        ast = parser.parse()
+
+        assert parser.errors == []
+        events = ast.rules[0].events
+        assert events is not None
+        assert len(events.statements) == 2
+        first, second = events.statements
+        assert isinstance(first, EventStatement)
+        assert isinstance(second, EventStatement)
+        assert first.text == "$host = $e.target.hostname"
+        assert second.text == statement
+
+        generated = YaraLGenerator().generate(ast)
+        assert f"$host = $e.target.hostname\n    {statement}" in generated
+
+
 def test_parse_event_variable_comparison_preserves_generated_text() -> None:
     ast = EnhancedYaraLParser("rule cmp_event { events: $left != $right condition: $left }").parse()
 
