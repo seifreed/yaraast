@@ -10,6 +10,7 @@ from yaraast.yaral.ast_nodes import (
     RegexPattern,
     UDMFieldAccess,
 )
+from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.tokens import YaraLTokenType
@@ -69,6 +70,24 @@ def test_parse_outcome_argument_basic_if_and_grouped_expression() -> None:
         ],
     )
     assert parser2._parse_outcome_argument_basic() == "(1 + 2)"
+
+
+def test_parenthesized_two_argument_outcome_if_roundtrips_without_none() -> None:
+    parser = YaraLParser("""
+        rule parenthesized_if {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $result = (if($e.metadata.event_type = "LOGIN", "yes"))
+          condition:
+            $e
+        }
+        """)
+
+    generated = YaraLGenerator().generate(parser.parse())
+
+    assert '$result = (if($e.metadata.event_type = "LOGIN", "yes"))' in generated
+    assert "None" not in generated
 
 
 def test_parse_outcome_argument_basic_identifier_call_and_error() -> None:

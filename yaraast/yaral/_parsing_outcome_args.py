@@ -203,6 +203,8 @@ class OutcomeArgumentParsingMixin:
                 value.true_value,
                 quote_strings=True,
             )
+            if value.false_value is None:
+                return f"if({condition}, {true_value})"
             false_value = self._format_outcome_argument_source(
                 value.false_value,
                 quote_strings=True,
