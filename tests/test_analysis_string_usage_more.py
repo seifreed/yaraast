@@ -175,6 +175,35 @@ rule two {
     assert analyzer.used_strings["manual"] == {"$a", "$b"}
 
 
+def test_string_usage_analyzer_preserves_duplicate_rule_occurrences() -> None:
+    ast = Parser().parse("""
+rule dup {
+    strings:
+        $a = "a"
+        $unused_first = "unused"
+    condition:
+        $a
+}
+rule dup {
+    strings:
+        $b = "b"
+        $unused_second = "unused"
+    condition:
+        $b
+}
+""")
+
+    analyzer = StringUsageAnalyzer()
+    results = analyzer.analyze(ast)
+
+    assert list(results) == ["dup#1", "dup#2"]
+    assert results["dup#1"]["used"] == ["$a"]
+    assert results["dup#1"]["unused"] == ["$unused_first"]
+    assert results["dup#2"]["used"] == ["$b"]
+    assert results["dup#2"]["unused"] == ["$unused_second"]
+    assert analyzer.get_unused_strings("dup#1") == {"dup#1": ["$unused_first"]}
+
+
 def test_string_usage_public_lists_are_stably_sorted() -> None:
     ast = Parser().parse("""
 rule ordered_usage {

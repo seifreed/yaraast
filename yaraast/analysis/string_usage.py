@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter, defaultdict
 from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING, Any
 
@@ -35,6 +36,8 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.anonymous_strings: dict[str, set[str]] = {}  # rule_name -> anonymous internal ids
         self.used_strings: dict[str, set[str]] = {}  # rule_name -> set of string ids
         self.current_rule: str | None = None
+        self.current_rule_key: str | None = None
+        self.rule_usage_keys: dict[int, str] = {}
         self.in_condition: bool = False
         self.implicit_current_string_allowed: bool = False
         self.local_scopes: list[set[str]] = []
@@ -44,7 +47,9 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self.defined_strings.clear()
         self.anonymous_strings.clear()
         self.used_strings.clear()
+        self.rule_usage_keys.clear()
         self.local_scopes.clear()
+        self.current_rule_key = None
 
         self.visit(yara_file)
 
@@ -111,14 +116,23 @@ class StringUsageAnalyzer(BaseVisitor[None]):
 
     # Visitor methods
     def visit_yara_file(self, node: YaraFile) -> None:
+        rule_counts = Counter(rule.name for rule in node.rules)
+        seen_rules: defaultdict[str, int] = defaultdict(int)
         for rule in node.rules:
+            seen_rules[rule.name] += 1
+            self.rule_usage_keys[id(rule)] = self._rule_usage_key(
+                rule.name,
+                seen_rules[rule.name],
+                rule_counts,
+            )
             self.visit(rule)
 
     def visit_rule(self, node: Rule) -> None:
         self.current_rule = node.name
-        self.defined_strings[node.name] = set()
-        self.anonymous_strings[node.name] = set()
-        self.used_strings[node.name] = set()
+        self.current_rule_key = self._usage_key_for_rule(node)
+        self.defined_strings[self.current_rule_key] = set()
+        self.anonymous_strings[self.current_rule_key] = set()
+        self.used_strings[self.current_rule_key] = set()
         self.in_condition = False
         self.local_scopes.clear()
 
@@ -134,14 +148,27 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         finally:
             self.in_condition = False
             self.current_rule = None
+            self.current_rule_key = None
             self.local_scopes.clear()
 
+    def _rule_usage_key(self, rule_name: str, occurrence: int, counts: Counter[str]) -> str:
+        if counts[rule_name] == 1:
+            return rule_name
+        return f"{rule_name}#{occurrence}"
+
+    def _usage_key_for_rule(self, rule: Rule) -> str:
+        return self.rule_usage_keys.get(id(rule), rule.name)
+
+    def _active_rule_key(self) -> str | None:
+        return self.current_rule_key or self.current_rule
+
     def visit_string_definition(self, node: StringDefinition) -> None:
-        if self.current_rule:
+        rule_key = self._active_rule_key()
+        if rule_key:
             normalized = self._normalize_string_id(node.identifier)
-            self.defined_strings[self.current_rule].add(normalized)
+            self.defined_strings[rule_key].add(normalized)
             if getattr(node, "is_anonymous", False):
-                self.anonymous_strings[self.current_rule].add(normalized)
+                self.anonymous_strings[rule_key].add(normalized)
 
     def visit_plain_string(self, node: PlainString) -> None:
         self.visit_string_definition(node)
@@ -312,7 +339,8 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self._visit_ast_value(string_set)
 
     def _mark_string_set_text(self, text: str) -> None:
-        if not (self.current_rule and self.in_condition):
+        rule_key = self._active_rule_key()
+        if not (rule_key and self.in_condition):
             return
         if text == "them":
             self._mark_all_current_rule_strings()
@@ -324,17 +352,18 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         if "*" in normalized:
             self._mark_wildcard_string_set(text)
         else:
-            self.used_strings[self.current_rule].add(normalized)
+            self.used_strings[rule_key].add(normalized)
 
     def _mark_condition_string_ref(self, string_id: str) -> None:
-        if not (self.current_rule and self.in_condition):
+        rule_key = self._active_rule_key()
+        if not (rule_key and self.in_condition):
             return
         normalized = self._normalize_string_id(string_id)
         if (self.implicit_current_string_allowed and normalized == "$") or self._is_local(
             normalized
         ):
             return
-        self.used_strings[self.current_rule].add(normalized)
+        self.used_strings[rule_key].add(normalized)
 
     def _mark_condition_string_identifier(self, string_id: str) -> None:
         if self._is_local(string_id):
@@ -342,7 +371,8 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self._mark_condition_string_ref(string_id)
 
     def _mark_wildcard_string_set(self, pattern: str) -> None:
-        if not self.current_rule:
+        rule_key = self._active_rule_key()
+        if not rule_key:
             return
 
         normalized = self._normalize_string_id(pattern)
@@ -350,22 +380,23 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             self._mark_all_current_rule_strings()
             return
 
-        anonymous = self.anonymous_strings.get(self.current_rule, set())
+        anonymous = self.anonymous_strings.get(rule_key, set())
         matches = {
             string_id
-            for string_id in self.defined_strings.get(self.current_rule, set())
+            for string_id in self.defined_strings.get(rule_key, set())
             if string_id not in anonymous and fnmatchcase(string_id, normalized)
         }
         if matches:
-            self.used_strings[self.current_rule].update(matches)
+            self.used_strings[rule_key].update(matches)
             return
 
-        self.used_strings[self.current_rule].add(normalized)
+        self.used_strings[rule_key].add(normalized)
 
     def _mark_all_current_rule_strings(self) -> None:
-        if self.current_rule:
-            self.used_strings[self.current_rule].update(
-                self.defined_strings[self.current_rule],
+        rule_key = self._active_rule_key()
+        if rule_key:
+            self.used_strings[rule_key].update(
+                self.defined_strings[rule_key],
             )
 
     def visit_set_expression(self, node: SetExpression) -> None:
