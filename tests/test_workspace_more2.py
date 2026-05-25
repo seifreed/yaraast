@@ -246,6 +246,12 @@ def test_include_resolver_rejects_invalid_search_paths() -> None:
         IncludeResolver(cast(Any, "abc"))
 
     with pytest.raises(TypeError, match="IncludeResolver search_paths must be a list of strings"):
+        IncludeResolver(cast(Any, ""))
+
+    with pytest.raises(TypeError, match="IncludeResolver search_paths must be a list of strings"):
+        IncludeResolver(cast(Any, ()))
+
+    with pytest.raises(TypeError, match="IncludeResolver search_paths must be a list of strings"):
         IncludeResolver(cast(Any, [object()]))
 
 

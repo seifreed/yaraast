@@ -55,7 +55,7 @@ class IncludeResolver:
         paths = []
 
         # Add provided paths
-        if search_paths:
+        if search_paths is not None:
             if not isinstance(search_paths, list) or not all(
                 isinstance(path, str) for path in search_paths
             ):
