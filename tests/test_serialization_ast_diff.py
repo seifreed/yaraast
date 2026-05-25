@@ -19,7 +19,7 @@ from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
 from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, UndefDirective
-from yaraast.ast.rules import Rule
+from yaraast.ast.rules import Rule, Tag
 from yaraast.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher, DiffType
 
@@ -117,6 +117,37 @@ def test_ast_diff_detects_duplicate_meta_key_changes() -> None:
     assert isinstance(old_value["author"], list)
     assert len(old_value["author"]) == 2
     assert new_value["author"]["value"] == "bob"
+    assert result.has_changes
+
+
+def test_ast_diff_detects_duplicate_tag_changes() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_tags",
+                tags=[Tag("shared"), Tag("shared")],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_tags",
+                tags=[Tag("shared")],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    tag_diff = next(
+        diff for diff in result.differences if diff.path == "/rules/duplicate_tags/tags"
+    )
+    assert tag_diff.diff_type == DiffType.MODIFIED
+    assert tag_diff.old_value == ["shared", "shared"]
+    assert tag_diff.new_value == ["shared"]
     assert result.has_changes
 
 
