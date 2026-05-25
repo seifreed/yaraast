@@ -1063,6 +1063,46 @@ def test_simple_roundtrip_serialize_expression_scalar_fields_reject_wrong_types(
             serialize_node(node)
 
 
+@pytest.mark.parametrize("invalid_collection", [False, 0, "", None])
+def test_simple_roundtrip_serialize_expression_collections_reject_non_lists(
+    invalid_collection: Any,
+) -> None:
+    cases = (
+        (
+            FunctionCall("fn", invalid_collection),
+            "FunctionCall arguments must be a list",
+        ),
+        (
+            SetExpression(invalid_collection),
+            "SetExpression elements must be a list",
+        ),
+        (
+            WithStatement(invalid_collection, BooleanLiteral(True)),
+            "WithStatement declarations must be a list",
+        ),
+        (
+            TupleExpression(invalid_collection),
+            "TupleExpression elements must be a list",
+        ),
+        (
+            ListExpression(invalid_collection),
+            "ListExpression elements must be a list",
+        ),
+        (
+            DictExpression(invalid_collection),
+            "DictExpression items must be a list",
+        ),
+        (
+            PatternMatch(Identifier("value"), invalid_collection),
+            "PatternMatch cases must be a list",
+        ),
+    )
+
+    for node, message in cases:
+        with pytest.raises(SerializationError, match=message):
+            serialize_node(node)
+
+
 def test_simple_roundtrip_serialize_structural_nodes_reject_wrong_scalar_types() -> None:
     invalid_cases = (
         (Import(cast(Any, 123)), "Import module must be a string"),

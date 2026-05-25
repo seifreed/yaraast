@@ -23,6 +23,7 @@ from yaraast.ast.expressions import (
     BinaryExpression,
     BooleanLiteral,
     DoubleLiteral,
+    Expression,
     FunctionCall,
     Identifier,
     IntegerLiteral,
@@ -1118,9 +1119,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, ParenthesesExpression):
         return {"type": "ParenthesesExpression", "expression": serialize_node(node.expression)}
     if isinstance(node, SetExpression):
+        elements = _validated_node_collection(node.elements, "SetExpression elements", Expression)
         return {
             "type": "SetExpression",
-            "elements": [serialize_node(element) for element in node.elements],
+            "elements": [serialize_node(element) for element in elements],
         }
     if isinstance(node, RangeExpression):
         return {
@@ -1129,10 +1131,15 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "high": serialize_node(node.high),
         }
     if isinstance(node, FunctionCall):
+        arguments = _validated_node_collection(
+            node.arguments,
+            "FunctionCall arguments",
+            Expression,
+        )
         return {
             "type": "FunctionCall",
             "function": _serialize_required_string(node.function, "FunctionCall function"),
-            "arguments": [serialize_node(argument) for argument in node.arguments],
+            "arguments": [serialize_node(argument) for argument in arguments],
         }
     if isinstance(node, ArrayAccess):
         return {
@@ -1203,9 +1210,14 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "right": serialize_node(node.right),
         }
     if isinstance(node, WithStatement):
+        declarations = _validated_node_collection(
+            node.declarations,
+            "WithStatement declarations",
+            WithDeclaration,
+        )
         return {
             "type": "WithStatement",
-            "declarations": [serialize_node(declaration) for declaration in node.declarations],
+            "declarations": [serialize_node(declaration) for declaration in declarations],
             "body": serialize_node(node.body),
         }
     if isinstance(node, WithDeclaration):
@@ -1249,9 +1261,14 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "condition": serialize_node(node.condition) if node.condition else None,
         }
     if isinstance(node, TupleExpression):
+        elements = _validated_node_collection(
+            node.elements,
+            "TupleExpression elements",
+            Expression,
+        )
         return {
             "type": "TupleExpression",
-            "elements": [serialize_node(element) for element in node.elements],
+            "elements": [serialize_node(element) for element in elements],
         }
     if isinstance(node, TupleIndexing):
         return {
@@ -1260,14 +1277,16 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "index": serialize_node(node.index),
         }
     if isinstance(node, ListExpression):
+        elements = _validated_node_collection(node.elements, "ListExpression elements", Expression)
         return {
             "type": "ListExpression",
-            "elements": [serialize_node(element) for element in node.elements],
+            "elements": [serialize_node(element) for element in elements],
         }
     if isinstance(node, DictExpression):
+        items = _validated_node_collection(node.items, "DictExpression items", DictItem)
         return {
             "type": "DictExpression",
-            "items": [serialize_node(item) for item in node.items],
+            "items": [serialize_node(item) for item in items],
         }
     if isinstance(node, DictItem):
         return {
@@ -1290,10 +1309,11 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "body": serialize_node(node.body),
         }
     if isinstance(node, PatternMatch):
+        cases = _validated_node_collection(node.cases, "PatternMatch cases", MatchCase)
         return {
             "type": "PatternMatch",
             "value": serialize_node(node.value),
-            "cases": [serialize_node(case) for case in node.cases],
+            "cases": [serialize_node(case) for case in cases],
             "default": serialize_node(node.default) if node.default else None,
         }
     if isinstance(node, MatchCase):
