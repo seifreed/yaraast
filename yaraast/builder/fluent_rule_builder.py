@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Self
 
 from yaraast.ast.rules import Rule
+from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.builder.fluent_rule_helpers import apply_last_string_modifier, combine_condition
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
@@ -244,6 +245,9 @@ class FluentRuleBuilder:
         """Set condition using a builder function."""
         condition_builder = FluentConditionBuilder()
         result = builder_func(condition_builder)
+        if not isinstance(result, ConditionBuilder):
+            msg = "Condition builder callback must return a ConditionBuilder"
+            raise ValidationError(msg)
         return self.condition(result)
 
     # File property conditions

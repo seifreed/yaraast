@@ -208,6 +208,20 @@ def test_fluent_rule_builder_rejects_duplicate_string_identifiers() -> None:
         ).matches_any().build()
 
 
+def test_fluent_rule_builder_rejects_missing_condition_builder_return() -> None:
+    bad_callback = cast(Any, lambda cb: None)
+
+    with pytest.raises(ValidationError, match="Condition builder callback must return"):
+        rule("missing_condition").with_condition_builder(bad_callback)
+
+
+def test_fluent_rule_builder_rejects_invalid_condition_builder_return() -> None:
+    bad_callback = cast(Any, lambda cb: "bad")
+
+    with pytest.raises(ValidationError, match="Condition builder callback must return"):
+        rule("bad_condition").with_condition_builder(bad_callback)
+
+
 def test_rule_metadata_aliases_and_example_rules_paths() -> None:
     built = (
         FluentRuleBuilder()
