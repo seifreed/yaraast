@@ -620,6 +620,26 @@ def _require_variant_private(value: object) -> bool:
     raise TypeError(msg)
 
 
+def _require_rule_collection(value: object) -> list[Rule]:
+    if isinstance(value, str) or not isinstance(value, Iterable):
+        msg = "Rule collection rules must be an iterable of Rule"
+        raise TypeError(msg)
+    collection_rules: list[Rule] = []
+    for rule in value:
+        if not isinstance(rule, Rule):
+            msg = "Rule collection rules must contain Rule values"
+            raise TypeError(msg)
+        collection_rules.append(rule)
+    return collection_rules
+
+
+def _require_collection_name(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    msg = "Rule collection name must be a string"
+    raise TypeError(msg)
+
+
 # Factory functions for common transformations
 def create_variant_rule(rule: Rule, variant_name: str, **changes) -> Rule:
     """Create a variant of a rule with changes."""
@@ -648,10 +668,12 @@ def create_rule_collection(rules: list[Rule], collection_name: str) -> YaraFile:
     """Create a YARA file from a collection of rules."""
     yara_file = YaraFile()
     transformer = YaraFileTransformer(yara_file)
+    collection_rules = _require_rule_collection(rules)
+    collection_prefix = _require_collection_name(collection_name)
 
     # Add all rules with collection prefix
-    for rule in rules:
-        new_rule = RuleTransformer(rule).add_prefix(f"{collection_name}_").build()
+    for rule in collection_rules:
+        new_rule = RuleTransformer(rule).add_prefix(f"{collection_prefix}_").build()
         transformer = transformer.add_rule(new_rule)
 
     return transformer.build()

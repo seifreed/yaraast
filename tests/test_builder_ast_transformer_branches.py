@@ -477,6 +477,22 @@ def test_create_variant_rule_rejects_invalid_option_types(
         create_variant_rule(_sample_rule("base"), "variant", **changes)
 
 
+@pytest.mark.parametrize(
+    ("rules", "collection_name", "message"),
+    [
+        (object(), "grp", "Rule collection rules must be an iterable of Rule"),
+        ("abc", "grp", "Rule collection rules must be an iterable of Rule"),
+        ([object()], "grp", "Rule collection rules must contain Rule values"),
+        ([_sample_rule("base")], True, "Rule collection name must be a string"),
+    ],
+)
+def test_create_rule_collection_rejects_invalid_inputs(
+    rules: object, collection_name: object, message: str
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        create_rule_collection(cast(Any, rules), cast(Any, collection_name))
+
+
 def test_yara_file_transformer_rejects_duplicate_rule_names_without_partial_update() -> None:
     existing = _sample_rule("duplicate")
     transformer = YaraFileTransformer(YaraFile(rules=[existing]))
