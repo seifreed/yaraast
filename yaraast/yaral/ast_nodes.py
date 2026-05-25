@@ -112,7 +112,7 @@ class UDMFieldPath(ASTNode):
 
     @property
     def path(self) -> str:
-        return ".".join(self.parts)
+        return _format_udm_field_path(self.parts)
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_udm_field_path(self)
@@ -133,6 +133,18 @@ class UDMFieldAccess(ASTNode):
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_udm_field_access(self)
+
+
+def _format_udm_field_path(parts: list[str]) -> str:
+    if not parts:
+        return ""
+    path = parts[0]
+    for part in parts[1:]:
+        if part.startswith("["):
+            path += part
+        else:
+            path += f".{part}"
+    return path
 
 
 @dataclass

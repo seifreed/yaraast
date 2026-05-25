@@ -168,6 +168,10 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
     assert access.accept(visitor) == "$e.metadata.event_type"
     bare_access = UDMFieldAccess(event=None, field=UDMFieldPath(parts=["metadata", "id"]))
     assert bare_access.full_path == "metadata.id"
+    bracketed_path = UDMFieldPath(parts=["fields", '["key"]', "[0]", "value"])
+    bracketed_access = UDMFieldAccess(event=event_var, field=bracketed_path)
+    assert bracketed_path.path == 'fields["key"][0].value'
+    assert bracketed_access.full_path == '$e.fields["key"][0].value'
     assert ReferenceList(name="%list%").accept(visitor) == "%list%"
     tw = TimeWindow(duration=5, unit="m", modifier="every")
     assert MatchSection(variables=[]).accept(visitor) == 0
@@ -215,6 +219,9 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
     assert FunctionCall(function="re.regex", arguments=["$e", "x"]).call_string == "re.regex($e, x)"
     assert FunctionCall(function="strings.length", arguments=[access]).call_string == (
         "strings.length($e.metadata.event_type)"
+    )
+    assert FunctionCall(function="strings.length", arguments=[bracketed_access]).call_string == (
+        'strings.length($e.fields["key"][0].value)'
     )
     assert FunctionCall(function="empty", arguments=[]).call_string == "empty()"
     assert FunctionCall(function="empty", arguments=[]).accept(visitor) == "empty()"
