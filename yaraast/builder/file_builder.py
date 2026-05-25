@@ -56,6 +56,9 @@ class YaraFileBuilder:
 
     def with_rule_builder(self, builder_func) -> Self:
         """Add a rule using a builder function."""
+        if not callable(builder_func):
+            msg = "Rule builder callback must be callable"
+            raise TypeError(msg)
         builder = RuleBuilder()
         builder_func(builder)
         built_rule = builder.build()

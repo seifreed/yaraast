@@ -7,6 +7,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.base import YaraFile
@@ -336,6 +338,11 @@ class TestYaraFileBuilderRules:
 
         assert len(yara_file.rules) == 1
         assert yara_file.rules[0].name == "FunctionRule"
+
+    def test_rule_builder_callback_must_be_callable(self) -> None:
+        """With_rule_builder should reject invalid callbacks before calling them."""
+        with pytest.raises(TypeError, match="Rule builder callback must be callable"):
+            YaraFileBuilder().with_rule_builder(cast(Any, 123))
 
     def test_add_multiple_rules_with_builder_function(self) -> None:
         """Multiple with_rule_builder calls should work."""
