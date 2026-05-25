@@ -193,7 +193,11 @@ class RuleBuilder:
     def with_regex_string(self, identifier: str, pattern: str, **modifiers) -> Self:
         """Add a regex string with modifiers."""
         pattern = _validate_regex_pattern(pattern)
-        mod_list = [StringModifier.from_name_value(k) for k, v in modifiers.items() if v]
+        mod_list = [
+            StringModifier.from_name_value(name)
+            for name, value in modifiers.items()
+            if _require_bool_flag(value, name)
+        ]
         self._append_string_definition(
             RegexString(identifier=identifier, regex=pattern, modifiers=mod_list),
         )

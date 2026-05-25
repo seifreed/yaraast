@@ -127,6 +127,9 @@ def test_rule_builder_rejects_non_boolean_flags() -> None:
     with pytest.raises(TypeError, match="RuleBuilder dotall flag must be a boolean"):
         RuleBuilder("regex_rule").with_regex("$r", "x", dotall=cast(Any, "yes"))
 
+    with pytest.raises(TypeError, match="RuleBuilder nocase flag must be a boolean"):
+        RuleBuilder("regex_rule").with_regex_string("$r", "x", nocase=cast(Any, "yes"))
+
     with pytest.raises(TypeError, match="RuleBuilder require flag must be a boolean"):
         RuleBuilder("condition_rule").require_condition(cast(Any, "yes"))
 
