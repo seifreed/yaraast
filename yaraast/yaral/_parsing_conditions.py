@@ -288,6 +288,7 @@ class YaraLConditionParsingMixin:
             or self._check_keyword("matches")
             or self._check_keyword("regex")
             or (self._check_keyword("not") and self._token_ahead_value(1) == "matches")
+            or (self._check_keyword("not") and self._token_ahead_value(1) == "in")
         )
 
     def _consume_condition_operator(self) -> str:
@@ -308,6 +309,10 @@ class YaraLConditionParsingMixin:
             self._advance()
             self._advance()
             return "!~"
+        if self._check_keyword("not") and self._token_ahead_value(1) == "in":
+            self._advance()
+            self._advance()
+            return "not in"
 
         msg = "Expected comparison operator"
         raise YaraLParserError(msg, self._peek())

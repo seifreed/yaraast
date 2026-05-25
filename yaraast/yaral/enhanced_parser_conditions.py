@@ -244,6 +244,11 @@ class EnhancedYaraLParserConditionsMixin:
                 and self._peek_ahead(1) is not None
                 and self._peek_ahead(1).value == "matches"
             )
+            or (
+                self._check_keyword("not")
+                and self._peek_ahead(1) is not None
+                and self._peek_ahead(1).value == "in"
+            )
         )
 
     def _parse_field_comparison(self) -> ConditionExpression:

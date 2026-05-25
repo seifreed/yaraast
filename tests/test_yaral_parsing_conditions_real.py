@@ -424,6 +424,16 @@ def test_parse_condition_field_predicate_values() -> None:
     assert isinstance(condition2.value, ReferenceList)
     assert condition2.value.name == "blocked"
 
+    parser3 = YaraLParser("$e.target.hostname not in %blocked%")
+    condition3 = parser3._parse_condition_expression()
+
+    assert isinstance(condition3, VariableComparisonCondition)
+    assert condition3.variable == "$e.target.hostname"
+    assert condition3.operator == "not in"
+    assert isinstance(condition3.value, ReferenceList)
+    assert condition3.value.name == "blocked"
+    assert parser3._is_at_end()
+
 
 def test_parse_condition_field_reference_values_preserve_generated_text() -> None:
     parser = YaraLParser("$e.principal.ip = $e.target.ip")

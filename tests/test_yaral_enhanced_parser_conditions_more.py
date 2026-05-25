@@ -164,6 +164,24 @@ def test_enhanced_regex_keyword_conditions_preserve_generated_text() -> None:
     assert "$e.target.hostname regex /admin.*/" in generated
 
 
+def test_enhanced_not_in_conditions_preserve_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_not_in_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e.target.hostname not in %blocked%
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 1
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.target.hostname not in %blocked%" in generated
+
+
 def test_enhanced_single_equals_conditions_generate_double_equals() -> None:
     parser = EnhancedYaraLParser("""
         rule enhanced_single_equals_condition {

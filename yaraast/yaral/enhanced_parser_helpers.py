@@ -113,6 +113,10 @@ class EnhancedYaraLParserHelpersMixin:
             self._advance()
             self._advance()
             return "!~"
+        if self._check_keyword("not") and self._peek_ahead(1) and self._peek_ahead(1).value == "in":
+            self._advance()
+            self._advance()
+            return "not in"
         raise self._error("Expected comparison operator")
 
     def _parse_time_window(self) -> TimeWindow:
