@@ -15,6 +15,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
+from yaraast.codegen.generator import CodeGenerator
 
 
 def test_fluent_condition_quantifiers_and_strings() -> None:
@@ -50,9 +51,22 @@ def test_fluent_condition_filesize_and_entropy() -> None:
     expr = FluentConditionBuilder().entropy_gt(0, 1024, 7.0).build()
     assert isinstance(expr, BinaryExpression)
 
-    # at_least_n_of should chain OR expressions
+    # at_least_n_of should use YARA's threshold quantifier directly.
     expr = FluentConditionBuilder().at_least_n_of(1, "$a", "$b").build()
-    assert isinstance(expr, BinaryExpression)
+    assert isinstance(expr, OfExpression)
+
+
+def test_fluent_condition_exact_and_upper_bound_quantifiers() -> None:
+    generator = CodeGenerator()
+
+    one = FluentConditionBuilder().one_of("$a", "$b").build()
+    assert generator.visit(one) == "1 of ($a, $b) and not 2 of ($a, $b)"
+
+    at_most = FluentConditionBuilder().at_most_n_of(1, "$a", "$b", "$c").build()
+    assert generator.visit(at_most) == "not 2 of ($a, $b, $c)"
+
+    between = FluentConditionBuilder().between_n_and_m_of(1, 2, "$a", "$b", "$c").build()
+    assert generator.visit(between) == "1 of ($a, $b, $c) and not 3 of ($a, $b, $c)"
 
 
 def test_fluent_condition_helpers_return_literals() -> None:

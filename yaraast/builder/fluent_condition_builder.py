@@ -21,11 +21,11 @@ from yaraast.builder.fluent_condition_helpers import (
     build_entropy_compare,
     build_of_expression,
     build_string_set,
-    chain_or,
     make_filesize_compare,
     make_integer_literal,
     make_string_count_compare,
 )
+from yaraast.errors import ValidationError
 
 
 class FluentConditionBuilder(ConditionBuilder):
@@ -54,15 +54,15 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def one_of(self, *strings: str) -> FluentConditionBuilder:
         """Exactly one of the specified strings."""
-        return self.n_of(1, *strings)
+        return self.between_n_and_m_of(1, 1, *strings)
 
     def two_of(self, *strings: str) -> FluentConditionBuilder:
         """Exactly two of the specified strings."""
-        return self.n_of(2, *strings)
+        return self.between_n_and_m_of(2, 2, *strings)
 
     def three_of(self, *strings: str) -> FluentConditionBuilder:
         """Exactly three of the specified strings."""
-        return self.n_of(3, *strings)
+        return self.between_n_and_m_of(3, 3, *strings)
 
     def most_of(self, *strings: str) -> FluentConditionBuilder:
         """Most of the strings (more than half)."""
@@ -79,15 +79,23 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def at_least_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At least N of the specified strings."""
-        make_integer_literal(n)
-        conditions = [self._create_n_of(i, *strings) for i in range(n, len(strings) + 1)]
-        return FluentConditionBuilder(chain_or(conditions))
+        self._validate_quantifier_count("Minimum", n)
+        if n == 0:
+            return FluentConditionBuilder(BooleanLiteral(value=True))
+        return FluentConditionBuilder(build_of_expression(n, build_string_set(*strings)))
 
     def at_most_n_of(self, n: int, *strings: str) -> FluentConditionBuilder:
         """At most N of the specified strings."""
-        make_integer_literal(n)
-        conditions = [self._create_n_of(i, *strings) for i in range(1, n + 1)]
-        return FluentConditionBuilder(chain_or(conditions))
+        self._validate_quantifier_count("Maximum", n)
+        string_set = build_string_set(*strings)
+        if n == 0:
+            return FluentConditionBuilder(build_of_expression("none", string_set))
+        return FluentConditionBuilder(
+            UnaryExpression(
+                operator="not",
+                operand=build_of_expression(n + 1, string_set),
+            ),
+        )
 
     def between_n_and_m_of(
         self,
@@ -96,10 +104,25 @@ class FluentConditionBuilder(ConditionBuilder):
         *strings: str,
     ) -> FluentConditionBuilder:
         """Between N and M of the specified strings."""
-        make_integer_literal(min_n)
-        make_integer_literal(max_m)
-        conditions = [self._create_n_of(i, *strings) for i in range(min_n, max_m + 1)]
-        return FluentConditionBuilder(chain_or(conditions))
+        self._validate_quantifier_count("Minimum", min_n)
+        self._validate_quantifier_count("Maximum", max_m)
+        if min_n > max_m:
+            msg = f"Minimum count {min_n} cannot exceed maximum {max_m}"
+            raise ValidationError(msg)
+        if min_n == 0:
+            return self.at_most_n_of(max_m, *strings)
+
+        string_set = build_string_set(*strings)
+        return FluentConditionBuilder(
+            BinaryExpression(
+                left=build_of_expression(min_n, string_set),
+                operator="and",
+                right=UnaryExpression(
+                    operator="not",
+                    operand=build_of_expression(max_m + 1, string_set),
+                ),
+            ),
+        )
 
     # String-specific helpers
     def string_matches(self, string_id: str) -> FluentConditionBuilder:
@@ -338,6 +361,12 @@ class FluentConditionBuilder(ConditionBuilder):
         """Create N of strings expression."""
         string_set = build_string_set(*strings)
         return build_of_expression(n, string_set)
+
+    def _validate_quantifier_count(self, name: str, count: int) -> None:
+        make_integer_literal(count)
+        if count < 0:
+            msg = f"{name} count must be non-negative, got {count}"
+            raise ValidationError(msg)
 
     # Factory methods
     @staticmethod
