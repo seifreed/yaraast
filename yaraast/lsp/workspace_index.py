@@ -14,6 +14,13 @@ from yaraast.lsp.document_types import YARA_FILE_SUFFIXES, SymbolRecord
 logger = logging.getLogger(__name__)
 
 
+def _normalize_workspace_folders(folders: object) -> list[Path]:
+    if not isinstance(folders, list) or not all(isinstance(folder, str) for folder in folders):
+        msg = "Workspace folders must be a list of strings"
+        raise TypeError(msg)
+    return [Path(folder) for folder in folders if folder]
+
+
 class WorkspaceIndex:
     """Workspace-wide view built on top of cached documents."""
 
@@ -22,7 +29,7 @@ class WorkspaceIndex:
         self.persisted_symbols: dict[str, list[SymbolRecord]] = {}
 
     def set_workspace_folders(self, folders: list[str]) -> None:
-        self.workspace_folders = [Path(folder) for folder in folders if folder]
+        self.workspace_folders = _normalize_workspace_folders(folders)
         self.load()
 
     def _cache_path(self) -> Path | None:

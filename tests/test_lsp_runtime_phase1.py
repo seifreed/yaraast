@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from lsprotocol.types import FileChangeType, FileEvent, Location, Position, Range
+import pytest
 
 from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.references import ReferencesProvider
@@ -113,6 +115,28 @@ def test_workspace_index_discovers_multidialect_extensions(tmp_path: Path) -> No
         "native.yaral",
         "native.yarax",
     }
+
+
+def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(
+    tmp_path: Path,
+) -> None:
+    index = WorkspaceIndex()
+    index.set_workspace_folders([str(tmp_path)])
+
+    with pytest.raises(TypeError, match="Workspace folders must be a list of strings"):
+        index.set_workspace_folders(cast(Any, str(tmp_path)))
+    with pytest.raises(TypeError, match="Workspace folders must be a list of strings"):
+        index.set_workspace_folders(cast(Any, [str(tmp_path), object()]))
+
+    assert index.workspace_folders == [tmp_path]
+
+    runtime = LspRuntime()
+    runtime.set_workspace_folders([str(tmp_path)])
+
+    with pytest.raises(TypeError, match="Workspace folders must be a list of strings"):
+        runtime.set_workspace_folders(cast(Any, str(tmp_path)))
+
+    assert runtime.index.workspace_folders == [tmp_path]
 
 
 def test_workspace_index_skips_malformed_cached_symbols(tmp_path: Path) -> None:
