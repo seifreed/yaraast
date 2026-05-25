@@ -193,3 +193,44 @@ def test_enhanced_parenthesized_arithmetic_condition_values_preserve_generated_t
     assert isinstance(condition.expression.value, RawConditionValue)
     assert condition.expression.value == "(1 + 2) * 3"
     assert "$risk_score > (1 + 2) * 3" in YaraLGenerator().generate(ast)
+
+
+def test_enhanced_arithmetic_condition_left_preserves_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_left_arithmetic_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = count($e.principal.ip)
+          condition:
+            $risk_score + 1 > 5
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 1
+    generated = YaraLGenerator().generate(ast)
+    assert "$risk_score + 1 > 5" in generated
+
+    parser2 = EnhancedYaraLParser("""
+        rule enhanced_parenthesized_left_arithmetic_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = count($e.principal.ip)
+          condition:
+            ($risk_score + 1) * 2 > 4
+        }
+        """)
+
+    ast2 = parser2.parse()
+
+    assert parser2.errors == []
+    assert len(ast2.rules) == 1
+    condition = ast2.rules[0].condition
+    assert condition is not None
+    assert isinstance(condition.expression, VariableComparisonCondition)
+    assert condition.expression.variable == "($risk_score + 1) * 2"
+    assert "($risk_score + 1) * 2 > 4" in YaraLGenerator().generate(ast2)

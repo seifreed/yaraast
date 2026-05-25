@@ -68,6 +68,8 @@ class EnhancedYaraLParserConditionsMixin:
             self._advance()
             expr = self._parse_condition_expression()
             self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
+            if self._check_event_arithmetic_operator() or self._check_condition_operator():
+                return self._parse_parenthesized_comparison_condition(expr)
             return expr
 
         if self._check(BaseTokenType.STRING_COUNT):
@@ -85,7 +87,9 @@ class EnhancedYaraLParserConditionsMixin:
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
             if self._peek_ahead(1) and self._peek_ahead(1).type == BaseTokenType.DOT:
                 return self._parse_field_comparison()
-            event_name = self._advance().value
+            event_name = str(self._advance().value)
+            if self._check_event_arithmetic_operator():
+                event_name = self._parse_event_arithmetic_text(event_name)
             # Check for 'is null' / 'is not null' after event variable
             if self._check_yaral_type(YaraLTokenType.IS):
                 return self._parse_null_check(event_name)
@@ -103,6 +107,37 @@ class EnhancedYaraLParserConditionsMixin:
             return self._parse_field_comparison()
 
         raise self._error("Expected condition expression")
+
+    def _parse_parenthesized_comparison_condition(
+        self,
+        expr: ConditionExpression,
+    ) -> VariableComparisonCondition:
+        variable = f"({self._format_condition_expression_text(expr)})"
+        if self._check_event_arithmetic_operator():
+            variable = self._parse_event_arithmetic_text(variable)
+        operator = self._parse_comparison_operator()
+        value = self._parse_event_value()
+        return VariableComparisonCondition(variable=variable, operator=operator, value=value)
+
+    def _format_condition_expression_text(self, expr: ConditionExpression) -> str:
+        if isinstance(expr, EventExistsCondition):
+            event = expr.event
+            if event.startswith("$"):
+                return event
+            return f"${event}"
+        if isinstance(expr, VariableComparisonCondition):
+            value = self._format_event_value_text(expr.value)
+            return f"{expr.variable} {expr.operator} {value}"
+        if isinstance(expr, EventCountCondition):
+            return f"#{expr.event} {expr.operator} {expr.count}"
+        if isinstance(expr, UnaryCondition):
+            operand = self._format_condition_expression_text(expr.operand)
+            return f"{expr.operator} {operand}"
+        if isinstance(expr, BinaryCondition):
+            left = self._format_condition_expression_text(expr.left)
+            right = self._format_condition_expression_text(expr.right)
+            return f"{left} {expr.operator} {right}"
+        return str(expr)
 
     def _parse_n_of_condition(self, count: int) -> ConditionExpression:
         """Parse N of ($e1, $e2, $e3) quantified event matching."""
