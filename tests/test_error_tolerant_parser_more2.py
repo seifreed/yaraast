@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from yaraast.ast.expressions import BooleanLiteral, Identifier
+from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier, StringIdentifier
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.parser.error_tolerant_parser import ErrorTolerantParser
 from yaraast.parser.error_tolerant_types import ParserError
@@ -120,8 +120,11 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
     assert isinstance(rule.strings[0], PlainString)
     assert isinstance(rule.strings[1], HexString)
     assert isinstance(rule.strings[2], RegexString)
-    assert isinstance(rule.condition, Identifier)
-    assert rule.condition.name == "complex and expr"
+    assert isinstance(rule.condition, BinaryExpression)
+    assert isinstance(rule.condition.left, Identifier)
+    assert rule.condition.left.name == "complex"
+    assert isinstance(rule.condition.right, Identifier)
+    assert rule.condition.right.name == "expr"
 
     string_meta = p._parse_meta_line('k = "v"')
     integer_meta = p._parse_meta_line("n = 9")
@@ -165,7 +168,14 @@ def test_rule_body_parsing_meta_strings_condition_and_helpers() -> None:
 
     assert p._parse_condition("true") == BooleanLiteral(True)
     assert p._parse_condition("false") == BooleanLiteral(False)
-    assert p._parse_condition("$a") == Identifier("$a")
+    parsed_string_condition = p._parse_condition("$a")
+    assert isinstance(parsed_string_condition, StringIdentifier)
+    assert parsed_string_condition.name == "$a"
+    parsed_binary_condition = p._parse_condition("$a or true")
+    assert isinstance(parsed_binary_condition, BinaryExpression)
+    assert isinstance(parsed_binary_condition.left, StringIdentifier)
+    assert isinstance(parsed_binary_condition.right, BooleanLiteral)
+    assert p._parse_condition("$a or") == Identifier("$a or")
 
 
 def test_parse_with_errors_api_and_format_errors_no_errors_branch() -> None:

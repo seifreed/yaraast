@@ -206,17 +206,29 @@ def parse_condition(
     parser, condition_text: str, line_num: int | None = None, raw_line: str | None = None
 ) -> Any:
     condition_text = condition_text.strip()
-    if condition_text == "true":
-        node = BooleanLiteral(True)
-    elif condition_text == "false":
-        node = BooleanLiteral(False)
-    else:
-        node = Identifier(condition_text)
+    node = _parse_recovered_condition_expression(condition_text)
     start = raw_line.find(condition_text) if raw_line else 0
     if start < 0:
         start = 0
     set_recovered_location(parser, node, line_num, raw_line, start, start + len(condition_text))
     return node
+
+
+def _parse_recovered_condition_expression(condition_text: str) -> Any:
+    if condition_text == "true":
+        return BooleanLiteral(True)
+    if condition_text == "false":
+        return BooleanLiteral(False)
+
+    from yaraast.parser.parser import Parser
+
+    try:
+        ast = Parser().parse(f"rule __recovered_condition {{ condition: {condition_text} }}")
+    except (YaraASTError, ValueError, TypeError, AttributeError):
+        return Identifier(condition_text)
+    if not ast.rules or ast.rules[0].condition is None:
+        return Identifier(condition_text)
+    return ast.rules[0].condition
 
 
 def set_recovered_location(
