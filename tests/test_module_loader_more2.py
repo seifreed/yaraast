@@ -37,6 +37,28 @@ def test_module_loader_handles_invalid_files_and_unknown_types(tmp_path: Path) -
     assert isinstance(loader._parse_type({"type": "mystery"}), AnyType)
 
 
+def test_module_loader_skips_invalid_module_name_without_aborting_file(tmp_path: Path) -> None:
+    json_path = tmp_path / "modules.json"
+    json_path.write_text(
+        json.dumps(
+            [
+                {"name": "first", "attributes": {"enabled": "bool"}},
+                {"name": ["bad"], "attributes": {"broken": "int"}},
+                {"name": "last", "constants": {"K": "int"}},
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"] = str(json_path)
+    try:
+        loader = ModuleLoader()
+    finally:
+        del os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"]
+
+    assert loader.list_modules() == ["first", "last"]
+
+
 def test_module_loader_ignores_unreadable_module_specs(tmp_path: Path) -> None:
     loader = ModuleLoader()
     before = dict(loader.modules)

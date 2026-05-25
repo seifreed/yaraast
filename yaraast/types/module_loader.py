@@ -12,6 +12,12 @@ from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
 from yaraast.types.module_definitions import load_builtin_modules
 
 
+def _normalize_module_name(name: object) -> str:
+    if not isinstance(name, str) or not name:
+        raise ValueError("Module name must be a non-empty string")
+    return name
+
+
 class ModuleLoader:
     """Load YARA module definitions from JSON files."""
 
@@ -78,10 +84,10 @@ class ModuleLoader:
         except (OSError, ValueError, TypeError, AttributeError):
             pass
 
-    def _parse_module(self, name: str, data: dict[str, Any]) -> ModuleDefinition | None:
+    def _parse_module(self, name: object, data: dict[str, Any]) -> ModuleDefinition | None:
         """Parse module definition from JSON data."""
         try:
-            module = ModuleDefinition(name=data.get("name", name))
+            module = ModuleDefinition(name=_normalize_module_name(data.get("name", name)))
 
             # Parse attributes
             if "attributes" in data:
