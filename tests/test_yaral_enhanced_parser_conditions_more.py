@@ -3,7 +3,13 @@ from __future__ import annotations
 import pytest
 
 from yaraast.lexer.tokens import TokenType as T
-from yaraast.yaral.ast_nodes import BinaryCondition, NOfCondition, NullCheckCondition, ReferenceList
+from yaraast.yaral.ast_nodes import (
+    BinaryCondition,
+    NOfCondition,
+    NullCheckCondition,
+    ReferenceList,
+    VariableComparisonCondition,
+)
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
@@ -136,3 +142,29 @@ def test_enhanced_double_equals_conditions_preserve_generated_text() -> None:
     generated = YaraLGenerator().generate(ast)
     assert "#e == 0" in generated
     assert '$e.target.hostname == "admin"' in generated
+
+
+def test_enhanced_outcome_variable_conditions_preserve_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_outcome_variable_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = count($e.principal.ip)
+          condition:
+            $risk_score > 5 and $risk_score == 10
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 1
+    condition = ast.rules[0].condition
+    assert condition is not None
+    assert isinstance(condition.expression, BinaryCondition)
+    assert isinstance(condition.expression.left, VariableComparisonCondition)
+    assert isinstance(condition.expression.right, VariableComparisonCondition)
+    generated = YaraLGenerator().generate(ast)
+    assert "$risk_score > 5" in generated
+    assert "$risk_score == 10" in generated

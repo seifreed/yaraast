@@ -11,6 +11,7 @@ from yaraast.yaral.ast_nodes import (
     EventExistsCondition,
     ReferenceList,
     UnaryCondition,
+    VariableComparisonCondition,
 )
 from yaraast.yaral.tokens import YaraLTokenType
 
@@ -88,6 +89,14 @@ class EnhancedYaraLParserConditionsMixin:
             # Check for 'is null' / 'is not null' after event variable
             if self._check_yaral_type(YaraLTokenType.IS):
                 return self._parse_null_check(event_name)
+            if self._check_condition_operator():
+                operator = self._parse_comparison_operator()
+                value = self._parse_event_value()
+                return VariableComparisonCondition(
+                    variable=event_name,
+                    operator=operator,
+                    value=value,
+                )
             return EventExistsCondition(event=event_name)
 
         if self._check(BaseTokenType.IDENTIFIER):
@@ -164,6 +173,26 @@ class EnhancedYaraLParserConditionsMixin:
             self._advance()
             return "<="
         raise self._error("Expected numeric comparison operator (>, <, >=, <=, =, !=)")
+
+    def _check_condition_operator(self) -> bool:
+        return (
+            self._check(BaseTokenType.EQ)
+            or self._check(BaseTokenType.IEQUALS)
+            or self._check(BaseTokenType.NEQ)
+            or self._check(BaseTokenType.GT)
+            or self._check(BaseTokenType.LT)
+            or self._check(BaseTokenType.GE)
+            or self._check(BaseTokenType.LE)
+            or self._check(BaseTokenType.MATCHES)
+            or self._check(BaseTokenType.IN)
+            or self._check_keyword("in")
+            or self._check_keyword("matches")
+            or (
+                self._check_keyword("not")
+                and self._peek_ahead(1) is not None
+                and self._peek_ahead(1).value == "matches"
+            )
+        )
 
     def _parse_field_comparison(self) -> ConditionExpression:
         """Parse field comparison condition."""

@@ -297,6 +297,27 @@ def test_enhanced_outcome_function_style_conditional_roundtrip() -> None:
     assert '$fallback = if($e.target.hostname =~ /admin.*/ nocase, "yes")' in generated
 
 
+def test_enhanced_outcome_conditional_can_compare_outcome_variables() -> None:
+    parser = EnhancedYaraLParser("""
+        rule outcome_variable_conditional {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = count($e.principal.ip)
+            $label = if($risk_score == 1, "one", "many")
+          condition:
+            $risk_score > 0
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    generated = YaraLGenerator().generate(ast)
+    assert '$label = if($risk_score == 1, "one", "many")' in generated
+    assert "$risk_score > 0" in generated
+
+
 def test_enhanced_outcome_numeric_aggregation_arguments_roundtrip_as_numbers() -> None:
     parser = EnhancedYaraLParser("""
         rule numeric_aggregation_args {
