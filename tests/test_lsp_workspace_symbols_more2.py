@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any, cast
 
 from lsprotocol.types import SymbolInformation
+import pytest
 
+from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
 
 
@@ -83,3 +86,20 @@ rule sample {
         assert key not in provider.symbol_cache
         provider.clear_cache()
         assert provider.symbol_cache == {}
+
+
+def test_workspace_symbols_rejects_non_string_query_before_scanning(tmp_path: Path) -> None:
+    yara_file = tmp_path / "a.yar"
+    yara_file.write_text("rule a { condition: true }\n", encoding="utf-8")
+
+    provider = WorkspaceSymbolsProvider()
+    provider.set_workspace_root(str(tmp_path))
+
+    with pytest.raises(TypeError, match="Workspace symbol query must be a string"):
+        provider.get_workspace_symbols(cast(Any, object()))
+
+    assert provider.symbol_cache == {}
+
+    runtime_provider = WorkspaceSymbolsProvider(LspRuntime())
+    with pytest.raises(TypeError, match="Workspace symbol query must be a string"):
+        runtime_provider.get_workspace_symbols(cast(Any, object()))

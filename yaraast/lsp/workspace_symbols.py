@@ -26,8 +26,10 @@ class WorkspaceSymbolsProvider:
         """Set the workspace root directory."""
         self.workspace_root = Path(root_path)
 
-    def get_workspace_symbols(self, query: str) -> list[SymbolInformation]:
+    def get_workspace_symbols(self, query: object) -> list[SymbolInformation]:
         """Search for symbols across the entire workspace."""
+        if not isinstance(query, str):
+            raise TypeError("Workspace symbol query must be a string")
         if self.runtime:
             return self.runtime.workspace_symbols(query)
         if not self.workspace_root or not self.workspace_root.exists():
