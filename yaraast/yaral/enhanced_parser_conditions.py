@@ -115,7 +115,7 @@ class EnhancedYaraLParserConditionsMixin:
         self._consume(BaseTokenType.RPAREN, "Expected ')' after event list")
         return NOfCondition(count=count, events=events)
 
-    def _parse_null_check(self, field_name: str) -> ConditionExpression:
+    def _parse_null_check(self, field_name: object) -> ConditionExpression:
         """Parse 'is null' or 'is not null' condition."""
         from yaraast.yaral.ast_nodes import NullCheckCondition
 
@@ -124,8 +124,10 @@ class EnhancedYaraLParserConditionsMixin:
         if self._check_keyword("not"):
             self._advance()
             negated = True
-        if self._check_yaral_type(YaraLTokenType.NULL):
+        if self._check_yaral_type(YaraLTokenType.NULL) or self._check_keyword("null"):
             self._advance()
+        else:
+            raise self._error("Expected 'null' after 'is'")
         return NullCheckCondition(field=field_name, negated=negated)
 
     def _parse_event_count_condition(self) -> EventCountCondition:
@@ -163,6 +165,8 @@ class EnhancedYaraLParserConditionsMixin:
     def _parse_field_comparison(self) -> ConditionExpression:
         """Parse field comparison condition."""
         field = self._parse_udm_field_access()
+        if self._check_yaral_type(YaraLTokenType.IS) or self._check_keyword("is"):
+            return self._parse_null_check(field)
         operator = self._parse_comparison_operator()
         value = self._parse_event_value()
 

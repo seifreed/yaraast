@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from yaraast.lexer.tokens import TokenType as T
-from yaraast.yaral.ast_nodes import BinaryCondition, NOfCondition, ReferenceList
+from yaraast.yaral.ast_nodes import BinaryCondition, NOfCondition, NullCheckCondition, ReferenceList
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
@@ -93,3 +93,27 @@ def test_enhanced_n_of_condition_preserves_generated_text() -> None:
     assert isinstance(condition.expression, NOfCondition)
     assert condition.expression.events == ["$e1", "$e2"]
     assert "2 of ($e1, $e2)" in YaraLGenerator().generate(ast)
+
+
+def test_enhanced_field_null_checks_preserve_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_null_check {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e.principal.user.userid is null and principal.ip is not null
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 1
+    condition = ast.rules[0].condition
+    assert condition is not None
+    assert isinstance(condition.expression, BinaryCondition)
+    assert isinstance(condition.expression.left, NullCheckCondition)
+    assert isinstance(condition.expression.right, NullCheckCondition)
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.principal.user.userid is null" in generated
+    assert "principal.ip is not null" in generated
