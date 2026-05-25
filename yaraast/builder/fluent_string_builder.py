@@ -398,6 +398,32 @@ class FluentStringBuilder:
             msg = f"Regex-only modifier(s) cannot be used with {self._string_type} string {self.identifier}: {names}"
             raise ValidationError(msg)
 
+        if self._string_type == "hex":
+            allowed = {StringModifierType.PRIVATE}
+            invalid = [
+                modifier.name
+                for modifier in self._modifiers
+                if modifier.modifier_type not in allowed
+            ]
+        elif self._string_type == "regex":
+            disallowed = {
+                StringModifierType.XOR,
+                StringModifierType.BASE64,
+                StringModifierType.BASE64WIDE,
+            }
+            invalid = [
+                modifier.name
+                for modifier in self._modifiers
+                if modifier.modifier_type in disallowed
+            ]
+        else:
+            invalid = []
+
+        if invalid:
+            names = ", ".join(invalid)
+            msg = f"Modifier(s) cannot be used with {self._string_type} string {self.identifier}: {names}"
+            raise ValidationError(msg)
+
     def _parse_hex_pattern(self, pattern: str) -> list[HexToken]:
         """Parse hex pattern string into tokens."""
         if not isinstance(pattern, str):

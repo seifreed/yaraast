@@ -116,7 +116,7 @@ def test_condition_and_string_builders_build_independent_ast_nodes() -> None:
     assert hex_second[0].value == 0x41
     assert hex_third[0].value == 0x41
 
-    string_builder = FluentStringBuilder("$h").hex_bytes("41").xor(7)
+    string_builder = FluentStringBuilder("$h").hex_bytes("41").private()
     string_first = string_builder.build()
     string_second = string_builder.build()
     assert isinstance(string_first, HexString)
@@ -126,7 +126,7 @@ def test_condition_and_string_builders_build_independent_ast_nodes() -> None:
     string_first.tokens[0].value = 0
     string_first.modifiers[0].value = 9
     assert string_second.tokens[0].value == 0x41
-    assert string_second.modifiers[0].value == 7
+    assert string_second.modifiers[0].value is None
 
 
 def test_file_builders_build_independent_rule_nodes() -> None:

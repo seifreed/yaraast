@@ -213,6 +213,20 @@ def test_fluent_string_builder_rejects_regex_only_modifiers_on_non_regex() -> No
         FluentStringBuilder("$hex").multiline().hex("41 42").build()
 
 
+def test_fluent_string_builder_rejects_invalid_type_specific_modifiers() -> None:
+    with pytest.raises(ValidationError, match="cannot be used with hex string"):
+        FluentStringBuilder("$hex").hex("41").ascii().build()
+
+    with pytest.raises(ValidationError, match="cannot be used with hex string"):
+        FluentStringBuilder("$hex").hex("41").xor().build()
+
+    with pytest.raises(ValidationError, match="cannot be used with regex string"):
+        FluentStringBuilder("$regex").regex("abc").base64().build()
+
+    with pytest.raises(ValidationError, match="cannot be used with regex string"):
+        FluentStringBuilder("$regex").regex("abc").xor(1).build()
+
+
 def test_fluent_string_builder_parse_nibble_low_and_non_wildcard_string_path() -> None:
     builder = FluentStringBuilder("$mixed").hex_bytes("4D", "??", "?A", "A?")
     content = builder._content
