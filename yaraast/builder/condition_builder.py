@@ -90,8 +90,8 @@ class ConditionBuilder:
 
     def range(self, start: int | ConditionBuilder, end: int | ConditionBuilder) -> Self:
         """Create a range expression."""
-        start_expr = self._to_expression(start)
-        end_expr = self._to_expression(end)
+        start_expr = self._to_integer_expression(start)
+        end_expr = self._to_integer_expression(end)
         return ConditionBuilder(RangeExpression(low=start_expr, high=end_expr))
 
     def member_access(self, obj: ConditionBuilder | Expression, member: str) -> Self:
@@ -199,7 +199,7 @@ class ConditionBuilder:
             msg = "'at' can only be used with string identifiers"
             raise ValidationError(msg)
 
-        offset_expr = self._to_expression(offset)
+        offset_expr = self._to_integer_expression(offset)
         return ConditionBuilder(
             AtExpression(string_id=self._expression.name, offset=offset_expr),
         )
@@ -214,8 +214,8 @@ class ConditionBuilder:
             msg = "'in' can only be used with string identifiers"
             raise ValidationError(msg)
 
-        start_expr = self._to_expression(start)
-        end_expr = self._to_expression(end)
+        start_expr = self._to_integer_expression(start)
+        end_expr = self._to_integer_expression(end)
         range_expr = RangeExpression(low=start_expr, high=end_expr)
 
         return ConditionBuilder(
@@ -394,6 +394,23 @@ class ConditionBuilder:
                 return StringIdentifier(name=value)
             return StringLiteral(value=value)
         msg = f"Cannot convert {type(value)} to expression"
+        raise TypeError(msg)
+
+    def _to_integer_expression(
+        self,
+        value: ConditionBuilder | Expression | int,
+    ) -> Expression:
+        """Convert integer-position arguments without accepting booleans as 0/1."""
+        if isinstance(value, ConditionBuilder):
+            if not value._expression:
+                msg = "Empty condition builder"
+                raise ValidationError(msg)
+            return value._expression
+        if isinstance(value, Expression):
+            return value
+        if isinstance(value, int):
+            return self._integer_literal(value)
+        msg = f"Cannot convert {type(value)} to integer expression"
         raise TypeError(msg)
 
     def build(self) -> Expression:
