@@ -949,8 +949,14 @@ class TestYaraLASTNodes:
         pattern1 = RegexPattern(pattern="test.*", flags=[])
         assert pattern1.as_string == "/test.*/"
 
+        pattern_inline = RegexPattern(pattern="case.*", flags=["i", "m"])
+        assert pattern_inline.as_string == "/case.*/im"
+
         pattern2 = RegexPattern(pattern="case.*", flags=["nocase"])
         assert pattern2.as_string == "/case.*/ nocase"
+
+        pattern_mixed = RegexPattern(pattern="case.*", flags=["i", "nocase"])
+        assert pattern_mixed.as_string == "/case.*/i nocase"
 
     def test_aggregation_function_call_string(self) -> None:
         """Test AggregationFunction.call_string property."""

@@ -401,9 +401,13 @@ class RegexPattern(ASTNode):
 
     @property
     def as_string(self) -> str:
-        flags_str = " ".join(self.flags) if self.flags else ""
+        inline_flags = "".join(flag for flag in self.flags if len(flag) == 1)
+        word_flags = [flag for flag in self.flags if len(flag) > 1]
         pattern = escape_regex_delimiter(self.pattern)
-        return f"/{pattern}/ {flags_str}".strip()
+        rendered = f"/{pattern}/{inline_flags}"
+        if word_flags:
+            rendered = f"{rendered} {' '.join(word_flags)}"
+        return rendered
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_regex_pattern(self)
