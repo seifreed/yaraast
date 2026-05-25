@@ -123,6 +123,9 @@ class ExpressionBuilder:
     @staticmethod
     def set(*elements: Expression) -> SetExpression:
         """Create set expression."""
+        if not elements:
+            msg = "At least one set element is required"
+            raise ValidationError(msg)
         return SetExpression(elements=list(elements))
 
     @staticmethod

@@ -100,6 +100,9 @@ def test_expression_builder_rejects_invalid_string_literal_values() -> None:
 
 
 def test_expression_builder_rejects_empty_string_sets() -> None:
+    with pytest.raises(ValidationError, match="At least one set element is required"):
+        ExpressionBuilder.set()
+
     with pytest.raises(ValidationError, match="At least one string identifier is required"):
         ExpressionBuilder.string_set()
 
