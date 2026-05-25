@@ -178,6 +178,33 @@ def test_dependency_graph_public_outputs_are_stably_sorted() -> None:
     assert find_circular_dependencies(cycle_graph) == [["a_rule", "b_rule", "c_rule", "a_rule"]]
 
 
+def test_dependency_graph_rejects_invalid_public_node_inputs_without_partial_update() -> None:
+    graph = DependencyGraph()
+    graph.add_edge("existing", "dependency")
+
+    with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
+        graph.add_node(cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph edge source must be a string"):
+        graph.add_edge(cast(Any, object()), "dependency")
+    with pytest.raises(ValidationError, match="DependencyGraph edge target must be a string"):
+        graph.add_edge("existing", cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
+        graph.has_node(cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph edge source must be a string"):
+        graph.has_edge(cast(Any, object()), "dependency")
+    with pytest.raises(ValidationError, match="DependencyGraph edge target must be a string"):
+        graph.has_edge("existing", cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
+        graph.get_dependencies(cast(Any, object()))
+    with pytest.raises(ValidationError, match="DependencyGraph node must be a string"):
+        graph.get_dependents(cast(Any, object()))
+
+    assert graph.to_dict() == {
+        "nodes": ["dependency", "existing"],
+        "edges": {"existing": ["dependency"]},
+    }
+
+
 @pytest.mark.parametrize(
     ("payload", "message"),
     [

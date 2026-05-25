@@ -22,6 +22,13 @@ def _deserialize_string_list(value: object, context: str) -> list[str]:
     raise ValidationError(msg)
 
 
+def _require_graph_node(value: object, context: str) -> str:
+    if isinstance(value, str):
+        return value
+    msg = f"{context} must be a string"
+    raise ValidationError(msg)
+
+
 class DependencyGraph:
     """Simple dependency graph implementation."""
 
@@ -32,10 +39,13 @@ class DependencyGraph:
 
     def add_node(self, node: str) -> None:
         """Add a node to the graph."""
+        node = _require_graph_node(node, "DependencyGraph node")
         self.nodes.add(node)
 
     def add_edge(self, from_node: str, to_node: str) -> None:
         """Add an edge from from_node to to_node."""
+        from_node = _require_graph_node(from_node, "DependencyGraph edge source")
+        to_node = _require_graph_node(to_node, "DependencyGraph edge target")
         self.add_node(from_node)
         self.add_node(to_node)
         self.edges[from_node].add(to_node)
@@ -43,18 +53,23 @@ class DependencyGraph:
 
     def has_node(self, node: str) -> bool:
         """Check if node exists in graph."""
+        node = _require_graph_node(node, "DependencyGraph node")
         return node in self.nodes
 
     def has_edge(self, from_node: str, to_node: str) -> bool:
         """Check if edge exists."""
+        from_node = _require_graph_node(from_node, "DependencyGraph edge source")
+        to_node = _require_graph_node(to_node, "DependencyGraph edge target")
         return to_node in self.edges.get(from_node, set())
 
     def get_dependencies(self, node: str) -> set[str]:
         """Get nodes that this node depends on."""
+        node = _require_graph_node(node, "DependencyGraph node")
         return self.edges.get(node, set()).copy()
 
     def get_dependents(self, node: str) -> set[str]:
         """Get nodes that depend on this node."""
+        node = _require_graph_node(node, "DependencyGraph node")
         return self._reverse_edges.get(node, set()).copy()
 
     def to_dict(self) -> dict[str, Any]:
