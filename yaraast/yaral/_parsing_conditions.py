@@ -145,7 +145,8 @@ class YaraLConditionParsingMixin:
             self._advance()
             return False
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
-            return parse_numeric_token_value(self._advance().value)
+            value = parse_numeric_token_value(self._advance().value)
+            return self._parse_condition_arithmetic_value(value)
         if self._check_yaral_type(YaraLTokenType.REFERENCE_LIST):
             return ReferenceList(name=self._advance().value.strip("%"))
         if self._check(BaseTokenType.REGEX) or self._check(BaseTokenType.DIVIDE):
@@ -155,13 +156,15 @@ class YaraLConditionParsingMixin:
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
             BaseTokenType.STRING_IDENTIFIER
         ):
-            return RawConditionValue(
+            value = RawConditionValue(
                 self._parse_condition_reference_text(str(self._advance().value))
             )
+            return self._parse_condition_arithmetic_value(value)
         if self._check(BaseTokenType.IDENTIFIER):
-            return RawConditionValue(
+            value = RawConditionValue(
                 self._parse_condition_reference_text(str(self._advance().value))
             )
+            return self._parse_condition_arithmetic_value(value)
 
         msg = "Expected value after comparison operator"
         raise YaraLParserError(msg, self._peek())
@@ -280,10 +283,43 @@ class YaraLConditionParsingMixin:
                 reference += f".{part}"
         return reference
 
+    def _parse_condition_arithmetic_value(self, value):
+        if not self._check_condition_arithmetic_operator():
+            return value
+        return RawConditionValue(self._parse_condition_arithmetic_text(str(value)))
+
+    def _parse_condition_arithmetic_text(self, left: str) -> str:
+        expression = left
+        while self._check_condition_arithmetic_operator():
+            operator = str(self._advance().value)
+            right = self._parse_condition_arithmetic_operand_text()
+            expression = f"{expression} {operator} {right}"
+        return expression
+
+    def _parse_condition_arithmetic_operand_text(self) -> str:
+        if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+            return str(parse_numeric_token_value(self._advance().value))
+        if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+            BaseTokenType.STRING_IDENTIFIER
+        ):
+            return self._parse_condition_reference_text(str(self._advance().value))
+        if self._check(BaseTokenType.IDENTIFIER):
+            return self._parse_condition_reference_text(str(self._advance().value))
+        raise YaraLParserError("Expected arithmetic operand", self._peek())
+
+    def _check_condition_arithmetic_operator(self) -> bool:
+        return (
+            self._check(BaseTokenType.PLUS)
+            or self._check(BaseTokenType.MINUS)
+            or self._check(BaseTokenType.MULTIPLY)
+            or self._check(BaseTokenType.DIVIDE)
+        )
+
     def _parse_variable_condition(self) -> ConditionExpression:
         """Parse a condition starting with a variable ($var or $e1)."""
         var_token = self._advance()
         var_name = self._parse_condition_reference_text(str(var_token.value))
+        var_name = self._parse_condition_arithmetic_text(var_name)
 
         # Check if followed by comparison operator
         if self._check_condition_operator():
@@ -298,6 +334,7 @@ class YaraLConditionParsingMixin:
     def _parse_identifier_condition(self) -> ConditionExpression:
         """Parse a condition starting with an identifier."""
         name = self._parse_condition_reference_text(str(self._advance().value))
+        name = self._parse_condition_arithmetic_text(name)
 
         # Check if followed by comparison operator
         if self._check_condition_operator():

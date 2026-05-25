@@ -453,3 +453,37 @@ def test_parse_condition_field_reference_values_preserve_generated_text() -> Non
         """).parse()
     generated = YaraLGenerator().generate(ast)
     assert "$e.principal.ip == $e.target.ip" in generated
+
+
+def test_parse_condition_arithmetic_comparisons_preserve_generated_text() -> None:
+    parser = YaraLParser("$count + 1 > 5")
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, VariableComparisonCondition)
+    assert condition.variable == "$count + 1"
+    assert condition.operator == ">"
+    assert condition.value == 5
+    assert parser._is_at_end()
+
+    parser2 = YaraLParser("$left + $right >= $threshold - 1")
+    condition2 = parser2._parse_condition_expression()
+
+    assert isinstance(condition2, VariableComparisonCondition)
+    assert condition2.variable == "$left + $right"
+    assert condition2.operator == ">="
+    assert isinstance(condition2.value, RawConditionValue)
+    assert condition2.value == "$threshold - 1"
+    assert parser2._is_at_end()
+
+    ast = YaraLParser("""
+        rule arithmetic_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $count = count($e.principal.ip)
+          condition:
+            $count + 1 > 5
+        }
+        """).parse()
+    generated = YaraLGenerator().generate(ast)
+    assert "$count + 1 > 5" in generated
