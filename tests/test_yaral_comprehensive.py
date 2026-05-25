@@ -180,6 +180,15 @@ class TestYaraLLexerComprehensive:
         assert isinstance(pattern, str)
         assert "pattern" in pattern
 
+    def test_lexer_regex_as_first_function_argument(self) -> None:
+        lexer = YaraLLexer("custom(/pattern/i, value)")
+        tokens = lexer.tokenize()
+
+        regex_tokens = [token for token in tokens if token.type == BaseTokenType.REGEX]
+
+        assert len(regex_tokens) == 1
+        assert regex_tokens[0].value == "/pattern/i"
+
     def test_lexer_numbers(self) -> None:
         """Test lexing integer and decimal numbers."""
         lexer = YaraLLexer("42 123 999 3.14")
