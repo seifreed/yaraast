@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -144,6 +144,26 @@ def test_rule_builder_parses_complex_string_condition_text() -> None:
 def test_rule_builder_rejects_invalid_string_condition_text() -> None:
     with pytest.raises(ValidationError, match="Invalid condition expression"):
         RuleBuilder("raw_condition").with_condition("$mz at")
+
+
+def test_rule_builder_rejects_invalid_runtime_condition_objects() -> None:
+    builder = RuleBuilder("bad_runtime_condition").with_condition("true")
+
+    with pytest.raises(TypeError, match="Rule condition must be an Expression"):
+        builder.with_condition(cast(Any, object()))
+
+    assert isinstance(builder.build().condition, BooleanLiteral)
+
+
+def test_rule_builder_copies_direct_condition_expressions() -> None:
+    condition = BooleanLiteral(value=True)
+    builder = RuleBuilder("stable_condition").with_condition(condition)
+
+    condition.value = False
+
+    built_condition = builder.build().condition
+    assert isinstance(built_condition, BooleanLiteral)
+    assert built_condition.value is True
 
 
 def test_rule_builder_raw_hex_rejects_invalid_input() -> None:

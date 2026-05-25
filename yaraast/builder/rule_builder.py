@@ -345,8 +345,11 @@ class RuleBuilder:
                 self._condition = _parse_condition_text(condition)
         elif isinstance(condition, ConditionBuilder):
             self._condition = cast(Condition, condition.build())
+        elif isinstance(condition, Expression):
+            self._condition = cast(Condition, deepcopy(condition))
         else:
-            self._condition = cast(Condition, condition)
+            msg = f"Rule condition must be an Expression, got {type(condition).__name__}"
+            raise TypeError(msg)
 
         return self
 
