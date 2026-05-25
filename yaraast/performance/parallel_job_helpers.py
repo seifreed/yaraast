@@ -138,7 +138,11 @@ def process_items(
 ) -> list[Job]:
     """Process items via a worker function and return tracked jobs."""
     jobs: list[Job] = []
-    parameters = parameters or {}
+    if parameters is None:
+        parameters = {}
+    elif not isinstance(parameters, dict):
+        msg = "parameters must be a dictionary"
+        raise TypeError(msg)
     for item in items:
         job = start_job(job_type)
         jobs.append(job)

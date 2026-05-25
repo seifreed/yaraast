@@ -274,6 +274,9 @@ def test_parallel_analyzer_files_custom_and_graphs(tmp_path: Path) -> None:
     with pytest.raises(TypeError, match="chunk_size must be an integer"):
         analyzer.parse_files_parallel([str(good_a)], chunk_size=cast(Any, True))
 
+    with pytest.raises(TypeError, match="parameters must be a dictionary"):
+        analyzer.process_batch(rules, _worker_rule_name, parameters=cast(Any, []))
+
     ast = _parsed_ast("graph_rule")
     graph_jobs = analyzer.generate_graphs_parallel([ast], tmp_path / "graphs", ["full", "rules"])
     assert len(graph_jobs) == 1
