@@ -75,7 +75,7 @@ class YaraFileBuilder:
     def _build_rule(self, rule: Rule | RuleBuilder) -> Rule:
         if isinstance(rule, RuleBuilder):
             return rule.build()
-        return rule
+        return deepcopy(rule)
 
     def build(self) -> YaraFile:
         """Build the YaraFile AST node."""

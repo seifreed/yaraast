@@ -45,7 +45,7 @@ class FluentYaraFileBuilder:
         """Add a rule."""
         validate_rule_names([rule])
         validate_unique_rule_names(self.rules, [rule])
-        self.rules.append(rule)
+        self.rules.append(deepcopy(rule))
         return self
 
     def rule(self, name: str) -> FluentRuleBuilderWithFile:

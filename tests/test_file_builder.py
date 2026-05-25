@@ -283,6 +283,27 @@ class TestYaraFileBuilderRules:
             empty_builder.with_rules(Rule(name="BatchRule"), Rule(name="bad-name"))
         assert empty_builder.build().rules == []
 
+    def test_direct_rule_inputs_are_copied_when_added(self) -> None:
+        """Mutating source rules after insertion should not alter builder state."""
+        rule = Rule(name="StableRule")
+        builder = YaraFileBuilder().with_rule(rule)
+
+        rule.name = "bad-name"
+
+        assert [built_rule.name for built_rule in builder.build().rules] == ["StableRule"]
+
+        first = Rule(name="BatchOne")
+        second = Rule(name="BatchTwo")
+        batch_builder = YaraFileBuilder().with_rules(first, second)
+
+        first.name = "bad-name"
+        second.name = "bad-name"
+
+        assert [built_rule.name for built_rule in batch_builder.build().rules] == [
+            "BatchOne",
+            "BatchTwo",
+        ]
+
     def test_add_mixed_rule_types(self) -> None:
         """With_rules should accept both Rule and RuleBuilder."""
         builder = YaraFileBuilder()
