@@ -392,8 +392,7 @@ class MockPE:
             if rva < 0:
                 return YARA_UNDEFINED
             for i, section in enumerate(self.sections):
-                span = max(section.virtual_size, section.raw_data_size)
-                if section.virtual_address <= rva < section.virtual_address + span:
+                if _section_contains_address(section, rva):
                     return i
             return YARA_UNDEFINED
         for i, section in enumerate(self.sections):
@@ -525,6 +524,19 @@ def _split_imports(imports: list[str]) -> list[tuple[str, str]]:
 
 def _matches_import_dll(imported_dll: str, requested_dll: object) -> bool:
     return isinstance(requested_dll, str) and imported_dll.casefold() == requested_dll.casefold()
+
+
+def _section_contains_address(section: Section, address: int) -> bool:
+    virtual_span = max(section.virtual_size, section.raw_data_size)
+    return _address_in_span(
+        address,
+        section.virtual_address,
+        virtual_span,
+    ) or _address_in_span(address, section.raw_data_offset, section.raw_data_size)
+
+
+def _address_in_span(address: int, start: int, size: int) -> bool:
+    return size > 0 and start <= address < start + size
 
 
 def _normalized_imphash_imports(imports: list[str]) -> list[str]:

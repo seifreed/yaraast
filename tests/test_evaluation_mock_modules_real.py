@@ -87,7 +87,10 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     assert pe64.section_index(".text") == 0
     assert pe64.section_index(0x1000) == 0
     assert pe64.section_index(0x11FF) == 0
+    assert pe64.section_index(0x400) == 0
+    assert pe64.section_index(0x5FF) == 0
     assert pe64.section_index(0x1200) is YARA_UNDEFINED
+    assert pe64.section_index(0x600) is YARA_UNDEFINED
     assert pe64.section_index(".rdata") is YARA_UNDEFINED
     with pytest.raises(
         EvaluationError, match=r"pe\.section_index\(\) expects a string or integer argument"
