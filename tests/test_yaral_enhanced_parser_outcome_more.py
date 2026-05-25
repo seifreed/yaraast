@@ -318,6 +318,37 @@ def test_enhanced_outcome_arithmetic_expressions_roundtrip() -> None:
     assert "$total = count($e.principal.ip) + 1" in generated
 
 
+def test_enhanced_outcome_parenthesized_arithmetic_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_outcome_parenthesized_arithmetic {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $score = (1 + 2) * 3
+            $max_score = max((1 + 2) * 3)
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    outcome = ast.rules[0].outcome
+    assert outcome is not None
+    score = outcome.assignments[0].expression
+    assert isinstance(score, ArithmeticExpression)
+    assert score.operator == "*"
+    assert isinstance(score.left, ArithmeticExpression)
+    assert score.left.operator == "+"
+    max_score = outcome.assignments[1].expression
+    assert isinstance(max_score, AggregationFunction)
+    assert isinstance(max_score.arguments[0], ArithmeticExpression)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$score = (1 + 2) * 3" in generated
+    assert "$max_score = max((1 + 2) * 3)" in generated
+
+
 def test_enhanced_outcome_boolean_literals_roundtrip() -> None:
     parser = EnhancedYaraLParser("""
         rule enhanced_outcome_booleans {

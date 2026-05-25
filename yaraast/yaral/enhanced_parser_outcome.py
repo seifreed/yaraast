@@ -103,6 +103,12 @@ class EnhancedYaraLParserOutcomeMixin:
 
     def _parse_outcome_primary_expression(self) -> OutcomeExpression | Any:
         """Parse a primary enhanced outcome expression."""
+        if self._check(BaseTokenType.LPAREN):
+            self._advance()
+            expression = self._parse_outcome_expression()
+            self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
+            return expression
+
         if self._check_keyword("if"):
             return self._parse_conditional_expression()
 
@@ -146,29 +152,11 @@ class EnhancedYaraLParserOutcomeMixin:
         self._consume(BaseTokenType.LPAREN, f"Expected '(' after {func_name}")
 
         arguments = []
-        while not self._check(BaseTokenType.RPAREN):
-            if self._is_outcome_field_access_start() or self._check(BaseTokenType.IDENTIFIER):
-                arg = self._parse_udm_field_access()
-                arguments.append(arg)
-            elif self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
-                BaseTokenType.STRING
-            ):
-                arg = self._advance().value
-                arguments.append(arg)
-            elif self._check(BaseTokenType.BOOLEAN_TRUE):
+        if not self._check(BaseTokenType.RPAREN):
+            arguments.append(self._parse_outcome_expression())
+            while self._check(BaseTokenType.COMMA):
                 self._advance()
-                arguments.append(True)
-            elif self._check(BaseTokenType.BOOLEAN_FALSE):
-                self._advance()
-                arguments.append(False)
-            elif self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
-                arg = parse_numeric_token_value(self._advance().value)
-                arguments.append(arg)
-
-            if self._check(BaseTokenType.COMMA):
-                self._advance()
-            else:
-                break
+                arguments.append(self._parse_outcome_expression())
 
         self._consume(BaseTokenType.RPAREN, f"Expected ')' after {func_name} arguments")
 
