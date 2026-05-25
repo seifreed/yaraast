@@ -291,9 +291,11 @@ class FluentStringBuilder:
                 modifiers=deepcopy(self._modifiers),
             )
         if self._string_type == "hex":
+            tokens = self._hex_tokens_for_build()
+            self._validate_hex_tokens(tokens)
             return HexString(
                 identifier=self.identifier,
-                tokens=deepcopy(self._content) if isinstance(self._content, list) else [],
+                tokens=deepcopy(tokens),
                 modifiers=deepcopy(self._modifiers),
             )
         if self._string_type == "regex":
@@ -306,6 +308,19 @@ class FluentStringBuilder:
         raise ValidationError(msg)
 
     # Helper methods
+    def _hex_tokens_for_build(self) -> list[HexToken]:
+        if isinstance(self._content, list):
+            return self._content
+        return []
+
+    def _validate_hex_tokens(self, tokens: list[HexToken]) -> None:
+        if not tokens:
+            msg = f"Hex string content not set for {self.identifier}"
+            raise ValidationError(msg)
+        if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
+            msg = f"HexJump cannot appear at the beginning or end of hex string {self.identifier}"
+            raise ValidationError(msg)
+
     def _add_modifier(self, modifier_type: StringModifierType) -> None:
         """Add a modifier, avoiding duplicates."""
         # Remove existing modifier of same type

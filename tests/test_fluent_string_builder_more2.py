@@ -38,6 +38,13 @@ def test_fluent_string_builder_hex_build_returns_token_snapshot() -> None:
     assert second.tokens[0].value == 0x41
 
 
+def test_fluent_string_builder_rejects_standalone_hex_jump() -> None:
+    builder = FluentStringBuilder("$jump").jump_pattern(2, 8)
+
+    with pytest.raises(ValidationError, match="HexJump cannot appear"):
+        builder.build()
+
+
 def test_fluent_string_builder_rejects_invalid_integer_hex_bytes() -> None:
     with pytest.raises(TypeError, match="Invalid type for hex value"):
         FluentStringBuilder("$bool").hex_bytes(True)
