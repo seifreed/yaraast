@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import struct
 from typing import Any, cast
 
@@ -179,6 +180,26 @@ def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
     assert pe.rva_to_offset(-1) is YARA_UNDEFINED
     with pytest.raises(EvaluationError, match=r"pe\.rva_to_offset\(\) expects an integer argument"):
         pe.rva_to_offset(cast(Any, True))
+
+
+def test_mock_pe_imphash_preserves_import_order_and_normalizes_names() -> None:
+    pe = MockPE(_build_pe_data(dll=False, magic=0x10B))
+    pe._import_list = [
+        "USER32.DLL:MessageBoxW",
+        "KERNEL32.dll:CreateFileA",
+        "driver.SYS:IoCreateDevice",
+        "control.OCX:Init",
+    ]
+
+    normalized = "user32.messageboxw,kernel32.createfilea,driver.iocreatedevice,control.init"
+
+    assert (
+        pe.imphash()
+        == hashlib.md5(
+            normalized.encode(),
+            usedforsecurity=False,
+        ).hexdigest()
+    )
 
 
 def test_evaluator_supports_pe_rva_to_offset_function() -> None:

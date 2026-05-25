@@ -364,8 +364,8 @@ class MockPE:
             self.overlay = PEOverlay(self.overlay_offset, self.overlay_size)
 
     def imphash(self) -> str:
-        """Compute MD5 of import table (simplified)."""
-        import_str = ",".join(sorted(self._import_list)).lower()
+        """Compute a pefile-compatible import hash."""
+        import_str = ",".join(_normalized_imphash_imports(self._import_list))
         return (
             hashlib.md5(import_str.encode(), usedforsecurity=False).hexdigest()
             if import_str
@@ -512,6 +512,21 @@ def _split_imports(imports: list[str]) -> list[tuple[str, str]]:
         if separator:
             split_imports.append((dll, function))
     return split_imports
+
+
+def _normalized_imphash_imports(imports: list[str]) -> list[str]:
+    normalized_imports = []
+    for dll, function in _split_imports(imports):
+        normalized_imports.append(f"{_remove_library_extension(dll).lower()}.{function.lower()}")
+    return normalized_imports
+
+
+def _remove_library_extension(library_name: str) -> str:
+    library = library_name.lower()
+    for extension in (".dll", ".ocx", ".sys"):
+        if library.endswith(extension):
+            return library_name[: -len(extension)]
+    return library_name
 
 
 # ---------------------------------------------------------------------------
