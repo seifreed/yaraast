@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from enum import StrEnum
 
-from yaraast.ast.base import ASTNode
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.rules import Rule
 from yaraast.builder import (
     malware_rule,
@@ -35,7 +35,7 @@ def generate_code(ast_or_rule: ASTNode) -> str:
     return CodeGenerator().generate(ast_or_rule)
 
 
-def create_example_rules():
+def create_example_rules() -> YaraFile:
     """Create example rules using fluent API."""
     return (
         yara_file()
