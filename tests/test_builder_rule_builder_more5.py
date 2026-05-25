@@ -80,6 +80,23 @@ def test_rule_builder_rejects_invalid_meta_values(meta_value: Any) -> None:
         RuleBuilder("metadata_rule").add_meta("value", meta_value)
 
 
+def test_rule_builder_rejects_invalid_string_content_types() -> None:
+    with pytest.raises(TypeError, match="Plain string value must be a string or bytes"):
+        RuleBuilder("string_rule").with_plain_string("$a", cast(Any, True))
+
+    with pytest.raises(TypeError, match="Plain string value must be a string or bytes"):
+        RuleBuilder("string_rule").add_string("$a", cast(Any, 123))
+
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        RuleBuilder("string_rule").with_regex_string("$r", cast(Any, 123))
+
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        RuleBuilder("string_rule").with_regex("$r", cast(Any, ["x"]))
+
+    with pytest.raises(TypeError, match="Hex pattern must be a string"):
+        RuleBuilder("string_rule").with_hex_string_raw("$h", cast(Any, True))
+
+
 @pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$", ""])
 def test_rule_builder_rejects_invalid_string_identifiers(identifier: str) -> None:
     with pytest.raises(ValidationError, match="Invalid string identifier"):

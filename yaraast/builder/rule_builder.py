@@ -94,6 +94,29 @@ def _validate_meta_value(value: object) -> None:
     raise TypeError(msg)
 
 
+def _coerce_plain_string_value(value: object) -> str:
+    if isinstance(value, bytes):
+        return value.decode("latin-1")
+    if isinstance(value, str):
+        return value
+    msg = "Plain string value must be a string or bytes"
+    raise TypeError(msg)
+
+
+def _validate_regex_pattern(pattern: object) -> str:
+    if isinstance(pattern, str):
+        return pattern
+    msg = "Regex pattern must be a string"
+    raise TypeError(msg)
+
+
+def _validate_hex_pattern(pattern: object) -> str:
+    if isinstance(pattern, str):
+        return pattern
+    msg = "Hex pattern must be a string"
+    raise TypeError(msg)
+
+
 class RuleBuilder:
     """Fluent builder for constructing YARA rules programmatically.
 
@@ -154,6 +177,7 @@ class RuleBuilder:
 
     def with_regex_string(self, identifier: str, pattern: str, **modifiers) -> Self:
         """Add a regex string with modifiers."""
+        pattern = _validate_regex_pattern(pattern)
         mod_list = [StringModifier.from_name_value(k) for k, v in modifiers.items() if v]
         self._append_string_definition(
             RegexString(identifier=identifier, regex=pattern, modifiers=mod_list),
@@ -209,8 +233,7 @@ class RuleBuilder:
         fullword: bool = False,
     ) -> Self:
         """Add a plain string."""
-        if isinstance(value, bytes):
-            value = value.decode("latin-1")
+        value = _coerce_plain_string_value(value)
         modifiers = []
         if nocase:
             modifiers.append(StringModifier.from_name_value("nocase"))
@@ -268,6 +291,7 @@ class RuleBuilder:
 
     def with_hex_string_raw(self, identifier: str, hex_pattern: str) -> Self:
         """Add a hex string from raw pattern."""
+        hex_pattern = _validate_hex_pattern(hex_pattern)
         # Parse hex pattern - simplified version
         tokens = []
         i = 0
@@ -308,6 +332,7 @@ class RuleBuilder:
         """Add a regex string."""
         from yaraast.ast.modifiers import StringModifier, StringModifierType
 
+        pattern = _validate_regex_pattern(pattern)
         mods: list[StringModifier] = []
         if case_insensitive:
             mods.append(StringModifier(modifier_type=StringModifierType.NOCASE))
