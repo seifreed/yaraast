@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
+from yaraast.codegen.generator_formatting import validate_yara_file_collections
 from yaraast.codegen.pretty_printer_helpers import (
     calculate_meta_alignment_column,
     calculate_string_alignment_column,
@@ -127,6 +128,7 @@ class PrettyPrinter(CommentAwareCodeGenerator):
         """Pretty print the entire YARA file."""
         self.buffer = StringIO()
         self.indent_level = 0
+        validate_yara_file_collections(ast)
 
         # Calculate alignment columns if needed
         if self.options.align_string_definitions:

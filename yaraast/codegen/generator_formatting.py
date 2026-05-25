@@ -19,6 +19,15 @@ _YARA_RULE_MODIFIERS = frozenset({"global", "private"})
 _YARA_EXPRESSION_KEYWORDS = frozenset(
     {"all", "any", "entrypoint", "false", "filesize", "none", "true"}
 )
+_YARA_FILE_COLLECTION_FIELDS = (
+    "imports",
+    "includes",
+    "rules",
+    "extern_rules",
+    "extern_imports",
+    "pragmas",
+    "namespaces",
+)
 
 
 def format_rule_modifiers(modifiers) -> str:
@@ -54,6 +63,15 @@ def validate_rule_identifiers(rules) -> None:
             msg = f"Duplicate rule identifier '{name}' for libyara output"
             raise ValueError(msg)
         seen.add(name)
+
+
+def validate_yara_file_collections(node) -> None:
+    for field_name in _YARA_FILE_COLLECTION_FIELDS:
+        value = getattr(node, field_name)
+        if isinstance(value, list | tuple):
+            continue
+        msg = f"YaraFile {field_name} must be a list or tuple for libyara output"
+        raise TypeError(msg)
 
 
 def format_rule_tags(tags) -> str:

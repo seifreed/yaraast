@@ -13,6 +13,7 @@ from yaraast.codegen.generator_formatting import (
     format_rule_tags,
     validate_rule_identifiers,
     validate_rule_meta,
+    validate_yara_file_collections,
     validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
@@ -142,6 +143,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def visit_yara_file(self, node: YaraFile) -> str:
         """Generate code for YaraFile with comments."""
+        validate_yara_file_collections(node)
         validate_rule_identifiers(node.rules)
         # Write leading comments
         self._write_leading_comments(node.leading_comments)

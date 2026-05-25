@@ -642,6 +642,37 @@ def test_codegen_generators_reject_invalid_rule_string_collections(
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize(
+    "field_name",
+    [
+        "imports",
+        "includes",
+        "rules",
+        "extern_rules",
+        "extern_imports",
+        "pragmas",
+        "namespaces",
+    ],
+)
+@pytest.mark.parametrize("invalid_collection", [False, 0, "", None])
+def test_codegen_generators_reject_invalid_yara_file_collections(
+    field_name: str,
+    invalid_collection: Any,
+) -> None:
+    ast = YaraFile(rules=[Rule(name="valid", condition=BooleanLiteral(True))])
+    setattr(ast, field_name, invalid_collection)
+
+    message = f"YaraFile {field_name} must be a list or tuple"
+    with pytest.raises(TypeError, match=message):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match=message):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match=message):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match=message):
+        PrettyPrinter().pretty_print(ast)
+
+
 _BAD_PLAIN_STRING_VALUE: Any = 123
 _BAD_REGEX_PATTERN: Any = 123
 

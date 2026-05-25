@@ -7,6 +7,7 @@ from yaraast.codegen.generator_formatting import (
     validate_rule_identifiers,
     validate_rule_meta,
     validate_rule_tags,
+    validate_yara_file_collections,
     validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
@@ -57,6 +58,7 @@ def _emit_top_level_section(printer, nodes, blank_lines: int = 1) -> None:
 
 
 def visit_yara_file(printer, node) -> str:
+    validate_yara_file_collections(node)
     validate_rule_identifiers(node.rules)
     _emit_top_level_section(printer, node.pragmas)
 

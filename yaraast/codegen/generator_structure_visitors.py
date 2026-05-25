@@ -5,6 +5,7 @@ from __future__ import annotations
 from yaraast.codegen.generator_formatting import (
     format_nonempty_quoted_value,
     validate_rule_identifiers,
+    validate_yara_file_collections,
     validate_yara_identifier,
 )
 
@@ -40,6 +41,7 @@ def _emit_top_level_section(generator, nodes) -> bool:
 
 
 def visit_yara_file(generator, node) -> str:
+    validate_yara_file_collections(node)
     validate_rule_identifiers(node.rules)
     _emit_top_level_section(generator, node.pragmas)
     _emit_top_level_section(generator, node.imports)

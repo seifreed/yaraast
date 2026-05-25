@@ -14,6 +14,7 @@ from yaraast.codegen.generator_formatting import (
     format_rule_tags,
     validate_rule_identifiers,
     validate_rule_meta,
+    validate_yara_file_collections,
     validate_yara_identifier,
     validate_yara_identifier_path,
 )
@@ -36,6 +37,7 @@ def _emit_top_level_section(generator, nodes) -> None:
 
 
 def visit_yara_file(generator, node) -> str:
+    validate_yara_file_collections(node)
     validate_rule_identifiers(node.rules)
     _emit_top_level_section(generator, node.pragmas)
 
