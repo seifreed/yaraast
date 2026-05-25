@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import ForOfExpression, OfExpression
 from yaraast.ast.expressions import (
@@ -272,3 +276,22 @@ def test_validate_expression_detects_type_errors() -> None:
 
     assert result.is_valid is False
     assert any("Right operand of '+' must be numeric" in error.message for error in result.errors)
+
+
+def test_semantic_validator_rejects_non_mapping_externals() -> None:
+    ast = YaraFile(rules=[Rule(name="externals", condition=BooleanLiteral(True))])
+    rule = ast.rules[0]
+
+    with pytest.raises(TypeError, match="SemanticValidator externals must be a mapping"):
+        SemanticValidator(externals=cast(Any, []))
+
+    validator = SemanticValidator()
+
+    with pytest.raises(TypeError, match="SemanticValidator externals must be a mapping"):
+        validator.validate(ast, externals=cast(Any, []))
+
+    with pytest.raises(TypeError, match="SemanticValidator externals must be a mapping"):
+        validator.validate_rule(rule, externals=cast(Any, []))
+
+    with pytest.raises(TypeError, match="SemanticValidator externals must be a mapping"):
+        validator.validate_expression(BooleanLiteral(True), externals=cast(Any, []))

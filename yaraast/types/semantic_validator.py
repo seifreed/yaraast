@@ -50,7 +50,7 @@ class SemanticValidator:
 
     def __init__(self, externals: Mapping[str, object] | None = None) -> None:
         self.module_loader = ModuleLoader()
-        self.externals = dict(externals or {})
+        self.externals = _normalize_externals(externals)
 
     def validate(
         self,
@@ -161,8 +161,17 @@ class SemanticValidator:
     def _effective_externals(
         self,
         externals: Mapping[str, object] | None,
-    ) -> Mapping[str, object]:
-        return self.externals if externals is None else externals
+    ) -> dict[str, object]:
+        return self.externals if externals is None else _normalize_externals(externals)
+
+
+def _normalize_externals(externals: Mapping[str, object] | None) -> dict[str, object]:
+    if externals is None:
+        return {}
+    if not isinstance(externals, Mapping):
+        msg = "SemanticValidator externals must be a mapping"
+        raise TypeError(msg)
+    return dict(externals)
 
 
 def _external_type(value: object) -> YaraType:
