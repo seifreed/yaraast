@@ -12,6 +12,7 @@ from .ast_nodes import (
     EventCountCondition,
     EventExistsCondition,
     FunctionCall,
+    NOfCondition,
     NullCheckCondition,
     RawConditionValue,
     ReferenceList,
@@ -80,6 +81,9 @@ class YaraLConditionParsingMixin:
         if self._check(BaseTokenType.STRING_COUNT):
             return self._parse_event_count_condition()
 
+        if self._check(BaseTokenType.INTEGER) and self._token_ahead_value(1) == "of":
+            return self._parse_n_of_condition()
+
         # Variable or event reference: $var or $e1
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
             BaseTokenType.STRING_IDENTIFIER
@@ -120,6 +124,28 @@ class YaraLConditionParsingMixin:
         )
 
         return EventCountCondition(event=event_name, operator=operator, count=count)
+
+    def _parse_n_of_condition(self) -> NOfCondition:
+        count = int(self._advance().value)
+        self._consume_keyword("of")
+        self._consume(BaseTokenType.LPAREN, "Expected '(' after 'of'")
+
+        events = []
+        while not self._check(BaseTokenType.RPAREN) and not self._is_at_end():
+            if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+                BaseTokenType.STRING_IDENTIFIER
+            ):
+                events.append(str(self._advance().value))
+            else:
+                raise YaraLParserError("Expected event variable in N-of condition", self._peek())
+
+            if self._check(BaseTokenType.COMMA):
+                self._advance()
+            elif not self._check(BaseTokenType.RPAREN):
+                raise YaraLParserError("Expected ',' or ')' in N-of condition", self._peek())
+
+        self._consume(BaseTokenType.RPAREN, "Expected ')' after event list")
+        return NOfCondition(count=count, events=events)
 
     def _consume_comparison_operator(self) -> str:
         """Consume and return a comparison operator token."""

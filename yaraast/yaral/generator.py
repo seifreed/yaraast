@@ -362,6 +362,9 @@ class YaraLGenerator(YaraLVisitor[str]):
         field = self.visit(node.field) if hasattr(node.field, "accept") else str(node.field)
         return f"{field} {operator}"
 
+    def visit_n_of_condition(self, node) -> str:
+        return f"{node.count} of ({', '.join(node.events)})"
+
     def visit_join_condition(self, node) -> str:
         return f"join {node.left_event} {node.join_type} {node.right_event}"
 
@@ -467,6 +470,9 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_yaral_null_check_condition(self, node) -> str:
         return self.visit_null_check_condition(node)
+
+    def visit_yaral_n_of_condition(self, node) -> str:
+        return self.visit_n_of_condition(node)
 
     def visit_yaral_join_condition(self, node) -> str:
         return self.visit_join_condition(node)

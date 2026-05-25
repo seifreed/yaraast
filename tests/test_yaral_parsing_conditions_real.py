@@ -9,6 +9,7 @@ from yaraast.yaral.ast_nodes import (
     EventCountCondition,
     EventExistsCondition,
     FunctionCall,
+    NOfCondition,
     NullCheckCondition,
     RawConditionValue,
     ReferenceList,
@@ -632,3 +633,28 @@ def test_parse_condition_null_checks_preserve_generated_text() -> None:
     generated = YaraLGenerator().generate(ast)
     assert '$e.principal.ip == "1.2.3.4"' in generated
     assert "$e.principal.user.userid is null" in generated
+
+
+def test_parse_condition_n_of_events_preserve_generated_text() -> None:
+    parser = YaraLParser("2 of ($e1, $e2)")
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, NOfCondition)
+    assert condition.count == 2
+    assert condition.events == ["$e1", "$e2"]
+    assert parser._is_at_end()
+    assert YaraLGenerator().visit(condition) == "2 of ($e1, $e2)"
+
+    ast = YaraLParser("""
+        rule n_of_condition {
+          events:
+            $e1.metadata.event_type = "LOGIN"
+            $e2.metadata.event_type = "LOGIN"
+            $e3.metadata.event_type = "LOGIN"
+          condition:
+            3 of ($e1, $e2, $e3) and $e1
+        }
+        """).parse()
+    generated = YaraLGenerator().generate(ast)
+    assert "3 of ($e1, $e2, $e3)" in generated
+    assert "$e1" in generated
