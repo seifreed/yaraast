@@ -60,7 +60,7 @@ def write_meta_value(gen, meta) -> None:
         gen._write('""')
         return
 
-    gen._write(format_meta_literal(meta.value, preserve_quoted=True))
+    gen._write(format_meta_literal(meta.value))
 
 
 def render_advanced_plain_string(gen, node) -> str:

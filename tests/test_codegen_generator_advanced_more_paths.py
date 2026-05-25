@@ -270,7 +270,7 @@ def test_advanced_generator_additional_formatting_paths() -> None:
     out = adv.generate(YaraFile(rules=[rule]))
     assert "rule fmt" in out
     assert "{\n" in out
-    assert 'a    = "quoted"' in out or 'a = "quoted"' in out
+    assert 'a    = "\\"quoted\\""' in out or 'a = "\\"quoted\\""' in out
     assert "flag = true" in out
     assert "$a" in out and "$b" in out
 

@@ -837,6 +837,32 @@ def test_codegen_generators_reject_invalid_meta_values(meta_value: Any) -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+def test_codegen_generators_escape_quoted_meta_string_values() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="quoted_meta",
+                meta=[Meta("m", '"a" b"')],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+    expected_literal = '"\\"a\\" b\\""'
+
+    outputs = [
+        CodeGenerator().generate(ast),
+        AdvancedCodeGenerator().generate(ast),
+        CommentAwareCodeGenerator().generate(ast),
+        PrettyPrinter().pretty_print(ast),
+    ]
+
+    for output in outputs:
+        assert any(
+            line.strip().startswith("m =") and expected_literal in line
+            for line in output.splitlines()
+        )
+
+
 def test_codegen_generators_reject_duplicate_string_identifiers() -> None:
     ast = YaraFile(
         rules=[

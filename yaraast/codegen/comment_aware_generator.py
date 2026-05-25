@@ -298,7 +298,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
         self._write(f"{format_meta_key(key, scope)} = ")
-        self._write(format_meta_literal(value, preserve_quoted=True))
+        self._write(format_meta_literal(value))
 
     def visit_plain_string(self, node: PlainString) -> str:
         """Generate code for PlainString with comments."""
@@ -369,7 +369,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         indent = " " * (self.indent_level * self.indent_size)
         self._write(indent)
         self._write(f"{format_meta_key(node.key, getattr(node, 'scope', None))} = ")
-        self._write(format_meta_literal(node.value, preserve_quoted=True))
+        self._write(format_meta_literal(node.value))
 
         return ""
 

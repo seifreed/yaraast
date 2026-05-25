@@ -51,7 +51,7 @@ def test_comment_aware_generator_meta_dict_and_missing_sections() -> None:
     assert 'author = "alice"' in out
     assert "enabled = true" in out
     assert "count = 3" in out
-    assert 'quoted = "x"' in out
+    assert 'quoted = "\\"x\\""' in out
     assert "rule only_condition {" in out
     assert "condition:" in out
 
@@ -83,7 +83,7 @@ def test_comment_aware_generator_hex_and_regex_modifier_paths() -> None:
 
     assert "$h = { AA } private" in out
     assert "$r = /abc/" in out
-    assert 'author = "bob"' in out
+    assert 'author = "\\"bob\\""' in out
     assert "// cond lead" in out
 
 
