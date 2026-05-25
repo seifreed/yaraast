@@ -578,6 +578,18 @@ def test_rule_transformer_rejects_invalid_meta_values_without_partial_update(
     assert transformer.build().get_meta_value("new_key") is None
 
 
+@pytest.mark.parametrize("version", [True, "1", 1.5])
+def test_rule_transformer_rejects_invalid_version_without_partial_update(
+    version: object,
+) -> None:
+    transformer = RuleTransformer(_sample_rule("metadata_rule"))
+
+    with pytest.raises(TypeError, match="Version value must be an integer"):
+        transformer.set_version(cast(Any, version))
+
+    assert transformer.build().get_meta_value("version") is None
+
+
 def test_rule_transformer_rejects_duplicate_strings_without_partial_update() -> None:
     transformer = RuleTransformer(_sample_rule("string_rule"))
 

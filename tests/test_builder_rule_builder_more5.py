@@ -80,6 +80,12 @@ def test_rule_builder_rejects_invalid_meta_values(meta_value: Any) -> None:
         RuleBuilder("metadata_rule").add_meta("value", meta_value)
 
 
+@pytest.mark.parametrize("version", [True, "1", 1.5])
+def test_rule_builder_rejects_invalid_version_value(version: object) -> None:
+    with pytest.raises(TypeError, match="Version value must be an integer"):
+        RuleBuilder("metadata_rule").with_version(cast(Any, version))
+
+
 def test_rule_builder_rejects_invalid_string_content_types() -> None:
     with pytest.raises(TypeError, match="Plain string value must be a string or bytes"):
         RuleBuilder("string_rule").with_plain_string("$a", cast(Any, True))

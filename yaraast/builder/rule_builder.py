@@ -25,6 +25,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
+from yaraast.builder.file_builder_validation import validate_version_value
 from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.builder.string_identifier_validation import validate_new_string_definitions
 from yaraast.errors import ValidationError, YaraASTError
@@ -221,7 +222,7 @@ class RuleBuilder:
 
     def with_version(self, version: int) -> Self:
         """Add version meta field."""
-        return self.with_meta("version", version)
+        return self.with_meta("version", validate_version_value(version))
 
     def with_plain_string(
         self,

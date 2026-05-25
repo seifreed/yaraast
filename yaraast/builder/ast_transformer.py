@@ -27,6 +27,7 @@ from yaraast.builder.file_builder_validation import (
     validate_nonempty_text,
     validate_optional_identifier,
     validate_unique_rule_names,
+    validate_version_value,
 )
 from yaraast.builder.string_identifier_validation import validate_new_string_definitions
 from yaraast.errors import ValidationError
@@ -172,7 +173,7 @@ class RuleTransformer:
 
     def set_version(self, version: int) -> RuleTransformer:
         """Set version metadata."""
-        return self.add_meta("version", version)
+        return self.add_meta("version", validate_version_value(version))
 
     def rename_strings(self, mapping: dict[str, str]) -> RuleTransformer:
         """Rename string identifiers based on mapping."""

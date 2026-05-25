@@ -57,6 +57,13 @@ def validate_meta_value(value: object) -> None:
     raise TypeError(msg)
 
 
+def validate_version_value(value: object) -> int:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    msg = "Version value must be an integer"
+    raise TypeError(msg)
+
+
 def validate_optional_identifier(value: object | None, kind: str) -> None:
     if value is None:
         return
