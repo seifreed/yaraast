@@ -357,6 +357,11 @@ class YaraLGenerator(YaraLVisitor[str]):
         variable = node.variable
         return f"{variable} {node.operator} {self._format_value(node.value)}"
 
+    def visit_null_check_condition(self, node) -> str:
+        operator = "is not null" if node.negated else "is null"
+        field = self.visit(node.field) if hasattr(node.field, "accept") else str(node.field)
+        return f"{field} {operator}"
+
     def visit_join_condition(self, node) -> str:
         return f"join {node.left_event} {node.join_type} {node.right_event}"
 
@@ -459,6 +464,9 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_yaral_variable_comparison_condition(self, node) -> str:
         return self.visit_variable_comparison_condition(node)
+
+    def visit_yaral_null_check_condition(self, node) -> str:
+        return self.visit_null_check_condition(node)
 
     def visit_yaral_join_condition(self, node) -> str:
         return self.visit_join_condition(node)

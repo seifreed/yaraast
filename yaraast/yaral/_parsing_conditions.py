@@ -12,6 +12,7 @@ from .ast_nodes import (
     EventCountCondition,
     EventExistsCondition,
     FunctionCall,
+    NullCheckCondition,
     RawConditionValue,
     ReferenceList,
     RegexPattern,
@@ -257,6 +258,20 @@ class YaraLConditionParsingMixin:
         msg = "Expected comparison operator"
         raise YaraLParserError(msg, self._peek())
 
+    def _check_null_check_operator(self) -> bool:
+        return self._check_yaral_type(YaraLTokenType.IS) or self._check_keyword("is")
+
+    def _parse_null_check_condition(self, field_name: str) -> NullCheckCondition:
+        self._advance()
+        negated = False
+        if self._check_keyword("not"):
+            self._advance()
+            negated = True
+        if not self._check_yaral_type(YaraLTokenType.NULL) and not self._check_keyword("null"):
+            raise YaraLParserError("Expected 'null' after 'is'", self._peek())
+        self._advance()
+        return NullCheckCondition(field=field_name, negated=negated)
+
     def _token_ahead_value(self, offset: int) -> object | None:
         position = self.current + offset
         if position >= len(self.tokens):
@@ -358,6 +373,9 @@ class YaraLConditionParsingMixin:
         var_name = self._parse_condition_reference_text(str(var_token.value))
         var_name = self._parse_condition_arithmetic_text(var_name)
 
+        if self._check_null_check_operator():
+            return self._parse_null_check_condition(var_name)
+
         # Check if followed by comparison operator
         if self._check_condition_operator():
             operator = self._consume_condition_operator()
@@ -372,6 +390,9 @@ class YaraLConditionParsingMixin:
         """Parse a condition starting with an identifier."""
         name = self._parse_condition_reference_text(str(self._advance().value))
         name = self._parse_condition_arithmetic_text(name)
+
+        if self._check_null_check_operator():
+            return self._parse_null_check_condition(name)
 
         # Check if followed by comparison operator
         if self._check_condition_operator():

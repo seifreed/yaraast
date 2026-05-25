@@ -9,6 +9,7 @@ from yaraast.yaral.ast_nodes import (
     EventCountCondition,
     EventExistsCondition,
     FunctionCall,
+    NullCheckCondition,
     RawConditionValue,
     ReferenceList,
     RegexPattern,
@@ -599,3 +600,35 @@ def test_parse_condition_parenthesized_values_preserve_generated_text() -> None:
         """).parse()
     generated = YaraLGenerator().generate(ast)
     assert "$risk_score > (max(1, 2))" in generated
+
+
+def test_parse_condition_null_checks_preserve_generated_text() -> None:
+    parser = YaraLParser("$e.principal.user.userid is null")
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, NullCheckCondition)
+    assert condition.field == "$e.principal.user.userid"
+    assert condition.negated is False
+    assert parser._is_at_end()
+    assert YaraLGenerator().visit(condition) == "$e.principal.user.userid is null"
+
+    parser2 = YaraLParser("principal.user.userid is not null")
+    condition2 = parser2._parse_condition_expression()
+
+    assert isinstance(condition2, NullCheckCondition)
+    assert condition2.field == "principal.user.userid"
+    assert condition2.negated is True
+    assert parser2._is_at_end()
+    assert YaraLGenerator().visit(condition2) == "principal.user.userid is not null"
+
+    ast = YaraLParser("""
+        rule null_check_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e.principal.ip = "1.2.3.4" and $e.principal.user.userid is null
+        }
+        """).parse()
+    generated = YaraLGenerator().generate(ast)
+    assert '$e.principal.ip == "1.2.3.4"' in generated
+    assert "$e.principal.user.userid is null" in generated
