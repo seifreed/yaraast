@@ -7,7 +7,13 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.conditions import ForExpression, OfExpression
-from yaraast.ast.expressions import ArrayAccess, BinaryExpression, IntegerLiteral, UnaryExpression
+from yaraast.ast.expressions import (
+    ArrayAccess,
+    BinaryExpression,
+    Identifier,
+    IntegerLiteral,
+    UnaryExpression,
+)
 from yaraast.builder.expression_builder import ExpressionBuilder
 from yaraast.errors import ValidationError
 
@@ -79,6 +85,18 @@ def test_expression_builder_rejects_mixed_them_string_sets() -> None:
 
     with pytest.raises(ValidationError, match="'them' cannot be mixed"):
         ExpressionBuilder.n_of(1, "$a", "them")
+
+
+def test_expression_builder_treats_all_them_as_special_string_set() -> None:
+    expr = ExpressionBuilder.any_of("them")
+
+    assert isinstance(expr, OfExpression)
+    assert isinstance(expr.string_set, Identifier)
+    assert expr.string_set.name == "them"
+
+    expr = ExpressionBuilder.n_of(1, "them", "them")
+    assert isinstance(expr.string_set, Identifier)
+    assert expr.string_set.name == "them"
 
 
 def test_expression_builder_accessors_and_errors() -> None:

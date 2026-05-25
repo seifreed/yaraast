@@ -127,7 +127,7 @@ class ExpressionBuilder:
     @staticmethod
     def any_of(*strings: str) -> OfExpression:
         """Create 'any of (...)' expression."""
-        string_set = ExpressionBuilder.string_set(*strings)
+        string_set = ExpressionBuilder._of_string_set(*strings)
         return OfExpression(
             quantifier=StringLiteral(value="any"),
             string_set=string_set,
@@ -136,7 +136,7 @@ class ExpressionBuilder:
     @staticmethod
     def all_of(*strings: str) -> OfExpression:
         """Create 'all of (...)' expression."""
-        string_set = ExpressionBuilder.string_set(*strings)
+        string_set = ExpressionBuilder._of_string_set(*strings)
         return OfExpression(
             quantifier=StringLiteral(value="all"),
             string_set=string_set,
@@ -145,7 +145,7 @@ class ExpressionBuilder:
     @staticmethod
     def n_of(n: int, *strings: str) -> OfExpression:
         """Create 'n of (...)' expression."""
-        string_set = ExpressionBuilder.string_set(*strings)
+        string_set = ExpressionBuilder._of_string_set(*strings)
         return OfExpression(quantifier=ExpressionBuilder._integer_literal(n), string_set=string_set)
 
     @staticmethod
@@ -233,6 +233,13 @@ class ExpressionBuilder:
         if "them" in strings and not all(string == "them" for string in strings):
             msg = "'them' cannot be mixed with explicit string identifiers"
             raise ValidationError(msg)
+
+    @staticmethod
+    def _of_string_set(*strings: str) -> Expression:
+        ExpressionBuilder._validate_string_set_args(strings)
+        if all(string == "them" for string in strings):
+            return Identifier(name="them")
+        return ExpressionBuilder.string_set(*strings)
 
     @staticmethod
     def member_access(obj: Expression, member: str) -> MemberAccess:
