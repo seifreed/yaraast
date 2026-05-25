@@ -7,6 +7,7 @@ from pathlib import Path
 
 DEFAULT_CLASSIC_YARA_FILE_PATTERNS = ("*.yar", "*.yara")
 FilePatterns = str | Iterable[str] | None
+FILE_PATTERNS_TYPE_ERROR = "File patterns must be a string or iterable of strings"
 
 
 def normalize_file_patterns(
@@ -18,7 +19,12 @@ def normalize_file_patterns(
         return default
     if isinstance(patterns, str):
         return (patterns,)
-    return tuple(patterns)
+    if not isinstance(patterns, Iterable):
+        raise TypeError(FILE_PATTERNS_TYPE_ERROR)
+    normalized = tuple(patterns)
+    if not all(isinstance(pattern, str) for pattern in normalized):
+        raise TypeError(FILE_PATTERNS_TYPE_ERROR)
+    return normalized
 
 
 def iter_matching_files(
