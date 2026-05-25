@@ -30,8 +30,8 @@ class EnhancedYaraLParserRulesMixin:
         outcome = None
         options = None
 
-        # YARA-L requires strict section order: meta, events, match, condition, outcome, options
-        section_order = ["meta", "events", "match", "condition", "outcome", "options"]
+        # YARA-L requires strict section order: meta, events, match, outcome, condition, options
+        section_order = ["meta", "events", "match", "outcome", "condition", "options"]
         last_section_index = -1
 
         while not self._check(BaseTokenType.RBRACE) and not self._is_at_end():

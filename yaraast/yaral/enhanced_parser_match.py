@@ -21,7 +21,9 @@ class EnhancedYaraLParserMatchMixin:
                 standalone_window = self._parse_time_window()
                 if variables:
                     variables[-1].time_window = standalone_window
-            elif self._check(BaseTokenType.IDENTIFIER):
+            elif self._check(BaseTokenType.IDENTIFIER) or self._check(
+                BaseTokenType.STRING_IDENTIFIER
+            ):
                 var = self._parse_match_variable()
                 variables.append(var)
             else:
@@ -31,7 +33,12 @@ class EnhancedYaraLParserMatchMixin:
 
     def _parse_match_variable(self) -> MatchVariable:
         """Parse match variable with grouping conditions."""
-        name = self._consume(BaseTokenType.IDENTIFIER, "Expected variable name").value
+        if self._check_yaral_type(self._get_event_var_type()) or self._check(
+            BaseTokenType.STRING_IDENTIFIER
+        ):
+            name = self._advance().value
+        else:
+            name = self._consume(BaseTokenType.IDENTIFIER, "Expected variable name").value
 
         grouping_field = None
         if self._check(BaseTokenType.EQ):

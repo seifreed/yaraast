@@ -21,12 +21,12 @@ def test_enhanced_parser_parses_events_conditions_outcome_options() -> None:
             $e.security_result.action = true
             $e.metadata.product_name = %products%
 
-        condition:
-            not ($e and #e > 1) or src.ip in %suspicious_ips%
-
         outcome:
             $count = count(metadata.event_type)
             if #e > 0 then "high" else "low"
+
+        condition:
+            not ($e and #e > 1) or src.ip in %suspicious_ips%
 
         options:
             case_sensitive = false

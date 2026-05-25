@@ -25,11 +25,32 @@ class EnhancedYaraLParserHelpersMixin:
         parts = []
         parts.append(self._consume(BaseTokenType.IDENTIFIER, "Expected field name").value)
 
-        while self._check(BaseTokenType.DOT):
-            self._advance()
-            parts.append(self._consume(BaseTokenType.IDENTIFIER, "Expected field name").value)
+        while self._check(BaseTokenType.DOT) or self._check(BaseTokenType.LBRACKET):
+            if self._check(BaseTokenType.DOT):
+                self._advance()
+                if self._check(BaseTokenType.IDENTIFIER):
+                    parts.append(self._advance().value)
+                elif self._check(BaseTokenType.LBRACKET):
+                    self._advance()
+                    parts.append(self._parse_udm_bracket_part())
+                else:
+                    raise self._error("Expected field name")
+            elif self._check(BaseTokenType.LBRACKET):
+                self._advance()
+                parts.append(self._parse_udm_bracket_part())
 
         return UDMFieldPath(parts=parts)
+
+    def _parse_udm_bracket_part(self) -> str:
+        if self._check(BaseTokenType.STRING):
+            key = self._advance().value
+            self._consume(BaseTokenType.RBRACKET, "Expected ']'")
+            return f'["{key}"]'
+        if self._check(BaseTokenType.INTEGER):
+            index = self._advance().value
+            self._consume(BaseTokenType.RBRACKET, "Expected ']'")
+            return f"[{index}]"
+        raise self._error("Expected field key or index")
 
     def _parse_udm_field_access(self) -> UDMFieldAccess:
         """Parse UDM field access like $e.metadata.event_type."""

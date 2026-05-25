@@ -14,12 +14,12 @@ def test_enhanced_parser_full_rule() -> None:
         events:
             $e.metadata.event_type = "LOGIN" and $e.principal.hostname = "host1"
 
-        condition:
-            #e > 1 and $e
-
         outcome:
             $e = count(metadata.event_type)
             if #e > 1 then "high" else "low"
+
+        condition:
+            #e > 1 and $e
 
         options:
             case_insensitive = true

@@ -104,3 +104,27 @@ def test_enhanced_match_grouping_field_preserves_generated_text() -> None:
 
     generated = YaraLGenerator().generate(ast)
     assert "$m = $e.principal.ip over 5m" in generated
+
+
+def test_enhanced_match_dollar_grouping_field_preserves_bracketed_path() -> None:
+    parser = EnhancedYaraLParser("""
+        rule grouped_match_bracket {
+          events:
+            $e.metadata.event_type = "v"
+          match:
+            $m = $e.metadata["event_type"] over 5m
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    match_section = ast.rules[0].match
+    assert match_section is not None
+    assert match_section.variables[0].variable == "m"
+    assert match_section.variables[0].grouping_field is not None
+    assert match_section.variables[0].grouping_field.full_path == '$e.metadata["event_type"]'
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$m = $e.metadata["event_type"] over 5m' in generated

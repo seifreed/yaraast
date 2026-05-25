@@ -130,6 +130,23 @@ def test_parse_function_event_statement_preserves_generated_text() -> None:
     assert 're.regex($e.target.hostname, "evil.*") nocase' in generated
 
 
+def test_parse_bracketed_event_assignment_preserves_generated_text() -> None:
+    parser = EnhancedYaraLParser(
+        'rule bracket_event { events: $e.metadata["event_type"] = "LOGIN" condition: $e }'
+    )
+    ast = parser.parse()
+
+    assert parser.errors == []
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventAssignment)
+    assert statement.field_path.path == 'metadata["event_type"]'
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$e.metadata["event_type"] = "LOGIN"' in generated
+
+
 def test_parse_parenthesized_event_statement_preserves_generated_text() -> None:
     ast = EnhancedYaraLParser(
         'rule bool_event { events: ($e.metadata.event_type = "LOGIN" or $e.metadata.event_type = "AUTH") condition: $e }'

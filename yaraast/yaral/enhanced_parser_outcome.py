@@ -15,6 +15,16 @@ from yaraast.yaral.ast_nodes import (
 )
 from yaraast.yaral.tokens import YaraLTokenType
 
+_OUTCOME_FIELD_YARAL_TYPES = {
+    YaraLTokenType.METADATA,
+    YaraLTokenType.PRINCIPAL,
+    YaraLTokenType.TARGET,
+    YaraLTokenType.NETWORK,
+    YaraLTokenType.SECURITY_RESULT,
+    YaraLTokenType.UDM,
+    YaraLTokenType.ADDITIONAL,
+}
+
 
 class EnhancedYaraLParserOutcomeMixin:
     """Mixin for outcome parsing."""
@@ -82,7 +92,7 @@ class EnhancedYaraLParserOutcomeMixin:
         raise self._error("Expected outcome expression")
 
     def _is_outcome_field_access_start(self) -> bool:
-        if self._check_yaral_type(YaraLTokenType.UDM):
+        if getattr(self._peek(), "yaral_type", None) in _OUTCOME_FIELD_YARAL_TYPES:
             return True
         next_token = self._peek_ahead(1)
         if next_token is None or next_token.type != BaseTokenType.DOT:

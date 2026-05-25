@@ -38,11 +38,11 @@ def test_enhanced_parser_outcome_conditional_and_aggregation() -> None:
         rule outcome_rule {
             events:
                 $e.metadata.event_type = "LOGIN"
-            condition:
-                $e
             outcome:
                 if #e > 0 then "high" else "low"
                 $count = count(metadata.event_type)
+            condition:
+                $e
         }
         """,
     )

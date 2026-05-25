@@ -35,6 +35,23 @@ def test_parse_udm_paths_and_access() -> None:
     _set_tokens(
         p,
         [
+            _tok(T.IDENTIFIER, "metadata"),
+            _tok(T.LBRACKET, "["),
+            _tok(T.STRING, "event_type"),
+            _tok(T.RBRACKET, "]"),
+            _tok(T.LBRACKET, "["),
+            _tok(T.INTEGER, 0),
+            _tok(T.RBRACKET, "]"),
+            _tok(T.DOT, "."),
+            _tok(T.IDENTIFIER, "value"),
+        ],
+    )
+    bracketed_path = p._parse_udm_field_path()
+    assert bracketed_path.path == 'metadata["event_type"][0].value'
+
+    _set_tokens(
+        p,
+        [
             _tok(T.IDENTIFIER, "$e", YaraLTokenType.EVENT_VAR),
             _tok(T.DOT, "."),
             _tok(T.IDENTIFIER, "principal"),

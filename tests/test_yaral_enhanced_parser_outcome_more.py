@@ -192,12 +192,12 @@ def test_enhanced_outcome_event_field_references_roundtrip() -> None:
         rule outcome_fields {
           events:
             $e.metadata.event_type = "LOGIN"
-          condition:
-            $e
           outcome:
             $host = $e.target.hostname
             $hosts = array_distinct($e.principal.ip)
             if $e.metadata.event_type = "LOGIN" then $e.target.hostname else "none"
+          condition:
+            $e
         }
         """)
     ast = parser.parse()
@@ -227,11 +227,12 @@ def test_enhanced_outcome_bare_udm_references_roundtrip() -> None:
         rule outcome_bare_udm {
           events:
             $e.metadata.event_type = "LOGIN"
-          condition:
-            $e
           outcome:
             $field = metadata.event_type
             $count = count(metadata.event_type)
+            $indexed = metadata["event_type"][0]
+          condition:
+            $e
         }
         """)
     ast = parser.parse()
@@ -239,14 +240,18 @@ def test_enhanced_outcome_bare_udm_references_roundtrip() -> None:
     assert parser.errors == []
     rule = ast.rules[0]
     assert rule.outcome is not None
-    assert len(rule.outcome.assignments) == 2
+    assert len(rule.outcome.assignments) == 3
     direct_field = rule.outcome.assignments[0].expression
     assert isinstance(direct_field, UDMFieldAccess)
     assert direct_field.event is None
     aggregation = rule.outcome.assignments[1].expression
     assert isinstance(aggregation, AggregationFunction)
     assert isinstance(aggregation.arguments[0], UDMFieldAccess)
+    indexed = rule.outcome.assignments[2].expression
+    assert isinstance(indexed, UDMFieldAccess)
+    assert indexed.field.path == 'metadata["event_type"][0]'
 
     generated = YaraLGenerator().generate(ast)
     assert "$field = metadata.event_type" in generated
     assert "$count = count(metadata.event_type)" in generated
+    assert '$indexed = metadata["event_type"][0]' in generated
