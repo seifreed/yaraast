@@ -24,7 +24,12 @@ class EnhancedYaraLParserConditionsMixin:
         self._consume_keyword("condition")
         self._consume(BaseTokenType.COLON, "Expected ':' after 'condition'")
 
-        expression = self._parse_condition_expression()
+        previous_normalize_equality = self._normalize_condition_equality_enabled()
+        self._normalize_condition_equality = True
+        try:
+            expression = self._parse_condition_expression()
+        finally:
+            self._normalize_condition_equality = previous_normalize_equality
         return ConditionSection(expression=expression)
 
     def _parse_condition_expression(self) -> ConditionExpression:
@@ -94,7 +99,7 @@ class EnhancedYaraLParserConditionsMixin:
             if self._check_yaral_type(YaraLTokenType.IS):
                 return self._parse_null_check(event_name)
             if self._check_condition_operator():
-                operator = self._parse_comparison_operator()
+                operator = self._parse_condition_comparison_operator()
                 value = self._parse_event_value()
                 return VariableComparisonCondition(
                     variable=event_name,
@@ -115,9 +120,18 @@ class EnhancedYaraLParserConditionsMixin:
         variable = f"({self._format_condition_expression_text(expr)})"
         if self._check_event_arithmetic_operator():
             variable = self._parse_event_arithmetic_text(variable)
-        operator = self._parse_comparison_operator()
+        operator = self._parse_condition_comparison_operator()
         value = self._parse_event_value()
         return VariableComparisonCondition(variable=variable, operator=operator, value=value)
+
+    def _parse_condition_comparison_operator(self) -> str:
+        operator = self._parse_comparison_operator()
+        if operator == "=" and self._normalize_condition_equality_enabled():
+            return "=="
+        return operator
+
+    def _normalize_condition_equality_enabled(self) -> bool:
+        return bool(getattr(self, "_normalize_condition_equality", False))
 
     def _format_condition_expression_text(self, expr: ConditionExpression) -> str:
         if isinstance(expr, EventExistsCondition):
@@ -188,6 +202,8 @@ class EnhancedYaraLParserConditionsMixin:
         """Parse only numeric comparison operators (no regex/string operators)."""
         if self._check(BaseTokenType.EQ):
             self._advance()
+            if self._normalize_condition_equality_enabled():
+                return "=="
             return "="
         if self._check(BaseTokenType.IEQUALS):
             self._advance()
@@ -234,7 +250,7 @@ class EnhancedYaraLParserConditionsMixin:
         field = self._parse_udm_field_access()
         if self._check_yaral_type(YaraLTokenType.IS) or self._check_keyword("is"):
             return self._parse_null_check(field)
-        operator = self._parse_comparison_operator()
+        operator = self._parse_condition_comparison_operator()
         value = self._parse_event_value()
 
         return BinaryCondition(left=field, operator=operator, right=value)

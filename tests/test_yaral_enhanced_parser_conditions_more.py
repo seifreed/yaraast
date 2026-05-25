@@ -146,6 +146,28 @@ def test_enhanced_double_equals_conditions_preserve_generated_text() -> None:
     assert '$e.target.hostname == "admin"' in generated
 
 
+def test_enhanced_single_equals_conditions_generate_double_equals() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_single_equals_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = 1
+          condition:
+            #e = 0 or $e.target.hostname = "admin" or $risk_score = 1
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    generated = YaraLGenerator().generate(ast)
+    assert '$e.metadata.event_type = "LOGIN"' in generated
+    assert "#e == 0" in generated
+    assert '$e.target.hostname == "admin"' in generated
+    assert "$risk_score == 1" in generated
+
+
 def test_enhanced_outcome_variable_conditions_preserve_generated_text() -> None:
     parser = EnhancedYaraLParser("""
         rule enhanced_outcome_variable_condition {
@@ -217,7 +239,7 @@ def test_enhanced_conditional_condition_values_preserve_generated_text() -> None
     assert isinstance(condition.expression, VariableComparisonCondition)
     assert isinstance(condition.expression.value, ConditionalExpression)
     generated = YaraLGenerator().generate(ast)
-    assert '$risk_score > if($e.metadata.event_type = "LOGIN", 1, 0)' in generated
+    assert '$risk_score > if($e.metadata.event_type == "LOGIN", 1, 0)' in generated
 
 
 def test_enhanced_parenthesized_arithmetic_condition_values_preserve_generated_text() -> None:
