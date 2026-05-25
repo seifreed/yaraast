@@ -176,6 +176,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
         # Check for comparison operators
         if (
             self._check(BaseTokenType.EQ)
+            or self._check(BaseTokenType.IEQUALS)
             or self._check(BaseTokenType.NEQ)
             or self._check(BaseTokenType.GT)
             or self._check(BaseTokenType.LT)

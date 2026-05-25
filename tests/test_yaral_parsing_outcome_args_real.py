@@ -151,6 +151,26 @@ def test_outcome_boolean_literals_roundtrip_in_values_and_arguments() -> None:
     assert '$conditional = if($e.metadata.event_type = "LOGIN", true, false)' in generated
 
 
+def test_outcome_condition_double_equals_roundtrips() -> None:
+    parser = YaraLParser("""
+        rule outcome_double_equals {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $score = count($e.principal.ip)
+            $label = if($score == 1, "one", "many")
+            $host = if($e.target.hostname == "admin", "admin", "other")
+          condition:
+            $score > 0
+        }
+        """)
+
+    generated = YaraLGenerator().generate(parser.parse())
+
+    assert '$label = if($score == 1, "one", "many")' in generated
+    assert '$host = if($e.target.hostname == "admin", "admin", "other")' in generated
+
+
 def test_outcome_function_arithmetic_arguments_roundtrip_without_quotes() -> None:
     parser = YaraLParser("""
         rule outcome_function_arithmetic_args {
@@ -414,3 +434,8 @@ def test_check_any_operator_variants() -> None:
     _set_tokens(parser2, [_tok(T.MULTIPLY, "*"), _tok(T.EOF, None, YaraLTokenType.EOF)])
     assert parser2._check_any_operator()
     assert parser2._check_any_operator(arithmetic_only=True)
+
+    parser3 = YaraLParser("")
+    _set_tokens(parser3, [_tok(T.IEQUALS, "=="), _tok(T.EOF, None, YaraLTokenType.EOF)])
+    assert parser3._check_any_operator()
+    assert parser3._check_any_operator(arithmetic_only=True)
