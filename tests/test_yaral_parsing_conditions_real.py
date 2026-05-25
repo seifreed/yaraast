@@ -614,6 +614,14 @@ def test_parse_condition_parenthesized_values_preserve_generated_text() -> None:
     assert condition2.value == "(1 + $offset)"
     assert parser2._is_at_end()
 
+    parser3 = YaraLParser("$risk_score > (1 + 2) * 3")
+    condition3 = parser3._parse_condition_expression()
+
+    assert isinstance(condition3, VariableComparisonCondition)
+    assert isinstance(condition3.value, RawConditionValue)
+    assert condition3.value == "(1 + 2) * 3"
+    assert parser3._is_at_end()
+
     ast = YaraLParser("""
         rule parenthesized_condition_value {
           events:
@@ -626,6 +634,19 @@ def test_parse_condition_parenthesized_values_preserve_generated_text() -> None:
         """).parse()
     generated = YaraLGenerator().generate(ast)
     assert "$risk_score > (max(1, 2))" in generated
+
+    ast2 = YaraLParser("""
+        rule parenthesized_arithmetic_condition_value {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = count($e.principal.ip)
+          condition:
+            $risk_score > (1 + 2) * 3
+        }
+        """).parse()
+    generated2 = YaraLGenerator().generate(ast2)
+    assert "$risk_score > (1 + 2) * 3" in generated2
 
 
 def test_parse_condition_null_checks_preserve_generated_text() -> None:

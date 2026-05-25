@@ -169,7 +169,8 @@ class YaraLConditionParsingMixin:
     def _parse_comparison_value(self):
         """Parse the value on the right side of a comparison."""
         if self._check(BaseTokenType.LPAREN):
-            return self._parse_parenthesized_comparison_value()
+            value = self._parse_parenthesized_comparison_value()
+            return self._parse_condition_arithmetic_value(value)
         if self._check(BaseTokenType.BOOLEAN_TRUE):
             self._advance()
             return True
