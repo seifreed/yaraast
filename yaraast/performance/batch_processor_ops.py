@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter, defaultdict
 import copy
 from pathlib import Path
 import time
@@ -44,6 +45,21 @@ def analyze_complexity(item: Rule) -> dict[str, Any]:
     analyzer = RuleAnalyzer()
     yara_file = YaraFile(imports=[], includes=[], rules=[item])
     return analyzer.analyze(yara_file)
+
+
+def _rule_summary_key(rule_name: str, occurrence: int, counts: Counter[str]) -> str:
+    if counts[rule_name] == 1:
+        return rule_name
+    return f"{rule_name}#{occurrence}"
+
+
+def _add_complexity_summaries(summary: dict[str, Any], rules: list[Rule]) -> None:
+    rule_counts = Counter(rule.name for rule in rules)
+    seen_rules: defaultdict[str, int] = defaultdict(int)
+    for rule in rules:
+        seen_rules[rule.name] += 1
+        summary_key = _rule_summary_key(rule.name, seen_rules[rule.name], rule_counts)
+        summary[summary_key] = analyze_complexity(rule)
 
 
 def serialize_item(item: Any) -> str:
@@ -190,8 +206,7 @@ def process_files_single(
                 content = handle.read()
             parsed = _require_parsed_item(parse_item(content), file_path)
             if operation == BatchOperation.COMPLEXITY:
-                for rule in parsed.rules:
-                    result.summary[rule.name] = analyze_complexity(rule)
+                _add_complexity_summaries(result.summary, parsed.rules)
             elif operation == BatchOperation.HTML_TREE and output_dir:
                 output_file = output_dir / f"{file_path.stem}.html"
                 html_content = HtmlTreeGenerator().generate_html(parsed, None)
@@ -248,12 +263,8 @@ def process_large_file(
             if operation == BatchOperation.PARSE:
                 result.successful_count = len(parsed.rules) if split_rules else 1
             elif operation == BatchOperation.COMPLEXITY:
-                for rule in parsed.rules:
-                    result.summary[rule.name] = analyze_complexity(rule)
-                    if split_rules:
-                        result.successful_count += 1
-                if not split_rules:
-                    result.successful_count = 1
+                _add_complexity_summaries(result.summary, parsed.rules)
+                result.successful_count = len(parsed.rules) if split_rules else 1
             elif operation == BatchOperation.SERIALIZE:
                 _process_large_serialize(file_path, parsed, output_dir, split_rules, result)
             elif operation == BatchOperation.HTML_TREE:

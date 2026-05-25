@@ -119,6 +119,35 @@ def test_large_file_split_preserves_top_level_extensions() -> None:
         assert ast.namespaces == parsed.namespaces
 
 
+def test_complexity_summary_preserves_duplicate_rule_names(tmp_path: Path) -> None:
+    rule_file = tmp_path / "duplicates.yar"
+    rule_file.write_text(
+        """
+rule dup { condition: true }
+rule dup { condition: false }
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    processor = BatchProcessor()
+
+    result = processor.process_files([rule_file], BatchOperation.COMPLEXITY)
+
+    assert result.successful_count == 1
+    assert list(result.summary) == ["dup#1", "dup#2"]
+
+    large_results = processor.process_large_file(
+        rule_file,
+        operations=[BatchOperation.COMPLEXITY],
+        output_dir=tmp_path / "out",
+        split_rules=True,
+    )
+    large_summary = large_results[BatchOperation.COMPLEXITY].summary
+
+    assert large_results[BatchOperation.COMPLEXITY].successful_count == 2
+    assert list(large_summary) == ["dup#1", "dup#2"]
+
+
 def test_batch_processor_accepts_yarax_sources_and_files(tmp_path: Path) -> None:
     source = _yarax_rule()
     processor = BatchProcessor(batch_size=1)
