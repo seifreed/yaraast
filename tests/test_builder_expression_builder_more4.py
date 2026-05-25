@@ -172,6 +172,38 @@ def test_expression_builder_accessors_and_errors() -> None:
         ExpressionBuilder.or_()
 
 
+def test_expression_builder_rejects_non_expression_operands() -> None:
+    with pytest.raises(TypeError, match="Logical operand must be an Expression"):
+        ExpressionBuilder.and_(ExpressionBuilder.true(), cast(Any, True))
+
+    with pytest.raises(TypeError, match="Logical operand must be an Expression"):
+        ExpressionBuilder.or_(ExpressionBuilder.true(), cast(Any, 1))
+
+    with pytest.raises(TypeError, match="Unary operand must be an Expression"):
+        ExpressionBuilder.not_(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Parenthesized value must be an Expression"):
+        ExpressionBuilder.parentheses(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Set element must be an Expression"):
+        ExpressionBuilder.set(ExpressionBuilder.integer(1), cast(Any, 2))
+
+    with pytest.raises(TypeError, match="Function argument must be an Expression"):
+        ExpressionBuilder.function_call("uint8", cast(Any, 0))
+
+    with pytest.raises(TypeError, match="Member object must be an Expression"):
+        ExpressionBuilder.member_access(cast(Any, True), "field")
+
+    with pytest.raises(TypeError, match="Array object must be an Expression"):
+        ExpressionBuilder.array_access(cast(Any, True), 0)
+
+    with pytest.raises(TypeError, match="Loop iterable must be an Expression"):
+        ExpressionBuilder.for_any("i", cast(Any, True), ExpressionBuilder.true())
+
+    with pytest.raises(TypeError, match="Loop body must be an Expression"):
+        ExpressionBuilder.for_all("i", ExpressionBuilder.range(0, 1), cast(Any, True))
+
+
 @pytest.mark.parametrize("function", ["bad-key", "math..entropy", "for.fn", ""])
 def test_expression_builder_rejects_invalid_function_names(function: str) -> None:
     with pytest.raises(ValidationError, match="Invalid function identifier"):

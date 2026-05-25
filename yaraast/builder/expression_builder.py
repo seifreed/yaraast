@@ -46,6 +46,17 @@ class ExpressionBuilder:
         return ExpressionBuilder._integer_literal(value)
 
     @staticmethod
+    def _expression(value: object, kind: str) -> Expression:
+        if isinstance(value, Expression):
+            return value
+        msg = f"{kind} must be an Expression"
+        raise TypeError(msg)
+
+    @staticmethod
+    def _expressions(values: tuple[object, ...], kind: str) -> list[Expression]:
+        return [ExpressionBuilder._expression(value, kind) for value in values]
+
+    @staticmethod
     def _double_literal(value: object) -> DoubleLiteral:
         if isinstance(value, bool) or not isinstance(value, int | float):
             msg = "Double literal value must be numeric"
@@ -126,7 +137,7 @@ class ExpressionBuilder:
         if not elements:
             msg = "At least one set element is required"
             raise ValidationError(msg)
-        return SetExpression(elements=list(elements))
+        return SetExpression(elements=ExpressionBuilder._expressions(elements, "Set element"))
 
     @staticmethod
     def string_set(*identifiers: str) -> SetExpression:
@@ -182,8 +193,9 @@ class ExpressionBuilder:
             msg = "At least one expression required"
             raise ValidationError(msg)
 
-        result = expressions[0]
-        for expr in expressions[1:]:
+        operands = ExpressionBuilder._expressions(expressions, "Logical operand")
+        result = operands[0]
+        for expr in operands[1:]:
             result = BinaryExpression(left=result, operator="and", right=expr)
 
         return result
@@ -195,8 +207,9 @@ class ExpressionBuilder:
             msg = "At least one expression required"
             raise ValidationError(msg)
 
-        result = expressions[0]
-        for expr in expressions[1:]:
+        operands = ExpressionBuilder._expressions(expressions, "Logical operand")
+        result = operands[0]
+        for expr in operands[1:]:
             result = BinaryExpression(left=result, operator="or", right=expr)
 
         return result
@@ -204,12 +217,14 @@ class ExpressionBuilder:
     @staticmethod
     def not_(expression: Expression) -> UnaryExpression:
         """Create NOT expression."""
-        return UnaryExpression(operator="not", operand=expression)
+        operand = ExpressionBuilder._expression(expression, "Unary operand")
+        return UnaryExpression(operator="not", operand=operand)
 
     @staticmethod
     def parentheses(expression: Expression) -> ParenthesesExpression:
         """Wrap expression in parentheses."""
-        return ParenthesesExpression(expression=expression)
+        inner = ExpressionBuilder._expression(expression, "Parenthesized value")
+        return ParenthesesExpression(expression=inner)
 
     @staticmethod
     def at(string_id: str, offset: int | Expression) -> AtExpression:
@@ -233,29 +248,36 @@ class ExpressionBuilder:
     def for_any(var: str, iterable: Expression, body: Expression) -> ForExpression:
         """Create 'for any' expression."""
         validate_identifier(var, "loop variable")
+        iterable_expr = ExpressionBuilder._expression(iterable, "Loop iterable")
+        body_expr = ExpressionBuilder._expression(body, "Loop body")
         return ForExpression(
             quantifier="any",
             variable=var,
-            iterable=iterable,
-            body=body,
+            iterable=iterable_expr,
+            body=body_expr,
         )
 
     @staticmethod
     def for_all(var: str, iterable: Expression, body: Expression) -> ForExpression:
         """Create 'for all' expression."""
         validate_identifier(var, "loop variable")
+        iterable_expr = ExpressionBuilder._expression(iterable, "Loop iterable")
+        body_expr = ExpressionBuilder._expression(body, "Loop body")
         return ForExpression(
             quantifier="all",
             variable=var,
-            iterable=iterable,
-            body=body,
+            iterable=iterable_expr,
+            body=body_expr,
         )
 
     @staticmethod
     def function_call(name: str, *args: Expression) -> FunctionCall:
         """Create function call."""
         validate_identifier_path(name, "function")
-        return FunctionCall(function=name, arguments=list(args))
+        return FunctionCall(
+            function=name,
+            arguments=ExpressionBuilder._expressions(args, "Function argument"),
+        )
 
     @staticmethod
     def _validate_string_set_args(strings: tuple[str, ...]) -> None:
@@ -291,10 +313,12 @@ class ExpressionBuilder:
     def member_access(obj: Expression, member: str) -> MemberAccess:
         """Create member access."""
         validate_identifier(member, "member")
-        return MemberAccess(object=obj, member=member)
+        object_expr = ExpressionBuilder._expression(obj, "Member object")
+        return MemberAccess(object=object_expr, member=member)
 
     @staticmethod
     def array_access(array: Expression, index: int | Expression) -> ArrayAccess:
         """Create array access."""
+        array_expr = ExpressionBuilder._expression(array, "Array object")
         index_expr = ExpressionBuilder._integer_or_expression(index)
-        return ArrayAccess(array=array, index=index_expr)
+        return ArrayAccess(array=array_expr, index=index_expr)
