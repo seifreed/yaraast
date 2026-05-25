@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 from typing import Self
 
 from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
@@ -26,6 +27,8 @@ from yaraast.ast.expressions import (
 )
 from yaraast.errors import ValidationError
 
+_STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
+
 
 class ConditionBuilder:
     """Fluent builder for constructing conditions."""
@@ -47,20 +50,28 @@ class ConditionBuilder:
 
     def string_count(self, identifier: str) -> Self:
         """Reference string count (#string)."""
-        return ConditionBuilder(StringCount(string_id=identifier.lstrip("#")))
+        return ConditionBuilder(
+            StringCount(string_id=self._normalize_string_reference(identifier, "#"))
+        )
 
     def string_offset(self, identifier: str, index: int | None = None) -> Self:
         """Reference string offset (@string or @string[i])."""
         index_expr = self._integer_literal(index) if index is not None else None
         return ConditionBuilder(
-            StringOffset(string_id=identifier.lstrip("@"), index=index_expr),
+            StringOffset(
+                string_id=self._normalize_string_reference(identifier, "@"),
+                index=index_expr,
+            ),
         )
 
     def string_length(self, identifier: str, index: int | None = None) -> Self:
         """Reference string length (!string or !string[i])."""
         index_expr = self._integer_literal(index) if index is not None else None
         return ConditionBuilder(
-            StringLength(string_id=identifier.lstrip("!"), index=index_expr),
+            StringLength(
+                string_id=self._normalize_string_reference(identifier, "!"),
+                index=index_expr,
+            ),
         )
 
     # Literals
@@ -423,6 +434,17 @@ class ConditionBuilder:
         if "them" in strings and not all(string == "them" for string in strings):
             msg = "'them' cannot be mixed with explicit string identifiers"
             raise ValidationError(msg)
+
+    def _normalize_string_reference(self, identifier: str, marker: str) -> str:
+        if not isinstance(identifier, str):
+            msg = f"Invalid string reference: {identifier}"
+            raise TypeError(msg)
+        normalized = identifier[1:] if identifier.startswith(marker) else identifier
+        body = normalized[1:] if normalized.startswith("$") else normalized
+        if not body or _STRING_REFERENCE_BODY_RE.fullmatch(body) is None:
+            msg = f"Invalid string reference: {identifier}"
+            raise ValidationError(msg)
+        return normalized
 
     def build(self) -> Expression:
         """Build the final expression."""

@@ -74,6 +74,22 @@ def test_condition_builder_rejects_mixed_them_string_sets() -> None:
         ConditionBuilder().n_of(1, "$a", "them")
 
 
+def test_condition_builder_rejects_invalid_count_offset_length_identifiers() -> None:
+    invalid_cases = (
+        (ConditionBuilder().string_count, "#"),
+        (ConditionBuilder().string_count, "##a"),
+        (ConditionBuilder().string_count, "bad-key"),
+        (ConditionBuilder().string_offset, "@"),
+        (ConditionBuilder().string_offset, "@@a"),
+        (ConditionBuilder().string_length, "!"),
+        (ConditionBuilder().string_length, "!!a"),
+    )
+
+    for method, identifier in invalid_cases:
+        with pytest.raises(ValidationError, match="Invalid string reference"):
+            method(identifier)
+
+
 def test_condition_builder_rejects_boolean_offsets_and_range_bounds() -> None:
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         ConditionBuilder().string("$a").at(cast(Any, True))

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
@@ -15,6 +17,8 @@ from yaraast.ast.expressions import (
     StringLiteral,
 )
 from yaraast.errors import ValidationError
+
+_STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 def make_binary(left: Expression, operator: str, right: Expression) -> BinaryExpression:
@@ -36,7 +40,7 @@ def make_string_count_compare(string_id: str, operator: str, count: int) -> Bina
     from yaraast.ast.expressions import StringCount
 
     return make_binary(
-        StringCount(string_id=string_id.lstrip("#")),
+        StringCount(string_id=_normalize_string_reference(string_id, "#")),
         operator,
         make_integer_literal(count),
     )
@@ -53,6 +57,18 @@ def build_string_set(*strings: str) -> Expression:
         return Identifier(name="them")
     elements = [StringIdentifier(name=s) for s in strings]
     return SetExpression(elements=elements)
+
+
+def _normalize_string_reference(identifier: str, marker: str) -> str:
+    if not isinstance(identifier, str):
+        msg = f"Invalid string reference: {identifier}"
+        raise TypeError(msg)
+    normalized = identifier[1:] if identifier.startswith(marker) else identifier
+    body = normalized[1:] if normalized.startswith("$") else normalized
+    if not body or _STRING_REFERENCE_BODY_RE.fullmatch(body) is None:
+        msg = f"Invalid string reference: {identifier}"
+        raise ValidationError(msg)
+    return normalized
 
 
 def build_of_expression(quantifier: int | str, string_set: Expression) -> OfExpression:
