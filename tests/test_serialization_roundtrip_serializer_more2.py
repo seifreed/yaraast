@@ -135,3 +135,14 @@ def test_roundtrip_test_result() -> None:
     result = serializer.roundtrip_test(source, format="json")
     assert result["format"] == "json"
     assert "original_source" in result
+
+
+def test_roundtrip_test_uses_structural_success_for_reformatted_source() -> None:
+    source = 'rule r1 { strings: $a = "x" condition: $a }'
+    serializer = RoundTripSerializer()
+
+    result = serializer.roundtrip_test(source, format="json")
+
+    assert result["round_trip_successful"] is True
+    assert result["differences"] == []
+    assert result["metadata"]["source_differences"]

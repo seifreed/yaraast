@@ -13,6 +13,7 @@ from yaraast.dialects import YaraDialect, detect_dialect
 from yaraast.errors import SerializationError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
+from yaraast.serialization.ast_diff import AstDiff
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.roundtrip_helpers import (
     build_roundtrip_metadata,
@@ -34,6 +35,35 @@ from yaraast.yarax.parser import YaraXParser
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+    from yaraast.serialization.ast_diff import DiffNode
+
+
+def _source_line_differences(original_source: str, reconstructed_source: str) -> list[str]:
+    original_lines = original_source.strip().split("\n")
+    reconstructed_lines = reconstructed_source.strip().split("\n")
+    differences = []
+
+    if len(original_lines) != len(reconstructed_lines):
+        differences.append(
+            f"Line count differs: {len(original_lines)} vs {len(reconstructed_lines)}",
+        )
+
+    for index, (original, reconstructed) in enumerate(
+        zip(original_lines, reconstructed_lines, strict=False),
+    ):
+        if original.strip() != reconstructed.strip():
+            differences.append(
+                f"Line {index + 1} differs: '{original.strip()}' vs " f"'{reconstructed.strip()}'",
+            )
+    return differences
+
+
+def _format_ast_difference(diff: DiffNode) -> str:
+    node_type = f" {diff.node_type}" if diff.node_type else ""
+    return (
+        f"{diff.diff_type.value}{node_type} at {diff.path}: "
+        f"{diff.old_value!r} -> {diff.new_value!r}"
+    )
 
 
 class RoundTripSerializer:
@@ -152,6 +182,8 @@ class RoundTripSerializer:
             format=format,
         )
 
+        generated_ast = self._parse_source(reconstructed_yara)
+
         # Compare results
         result = {
             "original_source": yara_source,
@@ -163,27 +195,22 @@ class RoundTripSerializer:
             "metadata": {},
         }
 
-        # Basic comparison (could be enhanced with AST structural comparison)
-        original_lines = yara_source.strip().split("\n")
-        reconstructed_lines = reconstructed_yara.strip().split("\n")
-
-        if len(original_lines) != len(reconstructed_lines):
+        ast_diff = AstDiff().compare(original_ast, generated_ast)
+        result["differences"] = [_format_ast_difference(diff) for diff in ast_diff.differences]
+        if not result["differences"] and ast_diff.old_ast_hash != ast_diff.new_ast_hash:
             result["differences"].append(
-                f"Line count differs: {len(original_lines)} vs {len(reconstructed_lines)}",
+                "AST hash differs without localized diff details: "
+                f"{ast_diff.old_ast_hash} vs {ast_diff.new_ast_hash}",
             )
-
-        # Line-by-line comparison (simplified)
-        for i, (orig, recon) in enumerate(
-            zip(original_lines, reconstructed_lines, strict=False),
-        ):
-            if orig.strip() != recon.strip():
-                result["differences"].append(
-                    f"Line {i + 1} differs: '{orig.strip()}' vs '{recon.strip()}'",
-                )
 
         result["round_trip_successful"] = len(result["differences"]) == 0
         result["metadata"]["original_rule_count"] = len(original_ast.rules)
-        result["metadata"]["reconstructed_rule_count"] = len(reconstructed_ast.rules)
+        result["metadata"]["deserialized_rule_count"] = len(reconstructed_ast.rules)
+        result["metadata"]["reconstructed_rule_count"] = len(generated_ast.rules)
+        result["metadata"]["source_differences"] = _source_line_differences(
+            yara_source,
+            reconstructed_yara,
+        )
 
         return result
 
