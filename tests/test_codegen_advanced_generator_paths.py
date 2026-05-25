@@ -85,6 +85,9 @@ def test_advanced_generator_long_condition_path_and_string_styles() -> None:
 
     assert '$a="v"' in out
     assert "condition:" in out
+    condition_body = out.split("condition:\n", maxsplit=1)[1].split("\n}", maxsplit=1)[0]
+    condition_lines = [line for line in condition_body.splitlines() if line.strip()]
+    assert len(condition_lines) > 1
 
 
 def test_advanced_generator_regex_suffix_alias_modifiers_are_adjacent() -> None:

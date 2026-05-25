@@ -28,6 +28,7 @@ from yaraast.codegen.advanced_generator_layout import (
     write_aligned_strings as write_advanced_aligned_strings,
     write_condition_section as write_advanced_condition_section,
     write_strings_section as write_advanced_strings_section,
+    write_wrapped_condition as write_advanced_wrapped_condition,
 )
 from yaraast.codegen.formatting import FormattingConfig, IndentStyle
 from yaraast.codegen.generator import CodeGenerator
@@ -162,9 +163,7 @@ class AdvancedCodeGenerator(CodeGenerator):
 
     def _write_wrapped_condition(self, condition: str) -> None:
         """Write wrapped condition for long lines."""
-        # Simple wrapping at operators
-        # This is a simplified implementation
-        self._writeline(condition)
+        write_advanced_wrapped_condition(self, condition)
 
     # Operator formatting
     def visit_binary_expression(self, node: BinaryExpression) -> str:

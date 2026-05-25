@@ -167,12 +167,37 @@ def write_condition_section(generator, condition) -> None:
     generator._writeline("condition:")
     generator._indent()
     condition_str = generate_condition_string(condition, generator.config)
-    if "\n" in condition_str:
-        for line in condition_str.splitlines():
-            generator._writeline(line)
-    else:
-        generator._writeline(condition_str)
+    write_wrapped_condition(generator, condition_str)
     generator._dedent()
+
+
+def write_wrapped_condition(generator, condition: str) -> None:
+    if "\n" in condition:
+        for line in condition.splitlines():
+            generator._writeline(line)
+        return
+
+    base_limit = max(1, generator.config.max_line_length - len(generator._get_indent()))
+    if len(condition) <= base_limit:
+        generator._writeline(condition)
+        return
+
+    continuation_indent = (
+        "\t"
+        if generator.config.indent_style == IndentStyle.TABS
+        else " " * generator.config.indent_size
+    )
+    current_line = ""
+    for word in condition.split():
+        candidate = f"{current_line} {word}" if current_line else word
+        if len(candidate) > base_limit and current_line:
+            generator._writeline(current_line)
+            current_line = f"{continuation_indent}{word}"
+        else:
+            current_line = candidate
+
+    if current_line:
+        generator._writeline(current_line)
 
 
 def _write_in_rule_pragmas(generator, node, position: str) -> None:
