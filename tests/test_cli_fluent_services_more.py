@@ -40,6 +40,16 @@ def test_create_string_patterns_rule_generates_parseable_regexes() -> None:
     yara.compile(source=code)
 
 
+def test_create_example_rules_generate_libyara_compatible_file() -> None:
+    code = fs.generate_code(fs.create_example_rules())
+
+    assert "$mz at 0 and $suspicious" in code
+    Parser(code).parse()
+
+    yara = pytest.importorskip("yara")
+    yara.compile(source=code)
+
+
 def test_demo_rule_groups_generate_libyara_compatible_files() -> None:
     yara = pytest.importorskip("yara")
 

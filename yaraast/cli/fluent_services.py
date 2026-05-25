@@ -51,7 +51,9 @@ def create_example_rules():
             .text("backdoor")
             .nocase()
             .then()
-            .condition("$mz at 0 and $suspicious")
+            .with_condition_builder(
+                lambda c: c.string_matches("$mz").at(0).and_(c.string_matches("$suspicious")),
+            )
             .build(),
         )
         .with_rule(
