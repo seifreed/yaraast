@@ -35,6 +35,7 @@ class FluentStringBuilder:
     # String content methods
     def literal(self, content: str) -> FluentStringBuilder:
         """Set as plain string literal."""
+        self._validate_plain_content(content)
         self._content = content
         self._string_type = "plain"
         return self
@@ -96,6 +97,7 @@ class FluentStringBuilder:
 
     def regex(self, pattern: str) -> FluentStringBuilder:
         """Set as regex string."""
+        self._validate_regex_pattern(pattern)
         self._content = pattern
         self._string_type = "regex"
         return self
@@ -320,9 +322,10 @@ class FluentStringBuilder:
         self._validate_modifier_compatibility()
 
         if self._string_type == "plain":
+            content = self._plain_content_for_build()
             return PlainString(
                 identifier=self.identifier,
-                value=str(self._content),
+                value=content,
                 modifiers=deepcopy(self._modifiers),
             )
         if self._string_type == "hex":
@@ -334,15 +337,36 @@ class FluentStringBuilder:
                 modifiers=deepcopy(self._modifiers),
             )
         if self._string_type == "regex":
+            pattern = self._regex_pattern_for_build()
             return RegexString(
                 identifier=self.identifier,
-                regex=str(self._content),
+                regex=pattern,
                 modifiers=deepcopy(self._modifiers),
             )
         msg = f"Unknown string type: {self._string_type}"
         raise ValidationError(msg)
 
     # Helper methods
+    def _validate_plain_content(self, content: object) -> None:
+        if isinstance(content, str):
+            return
+        msg = "Plain string content must be a string"
+        raise TypeError(msg)
+
+    def _validate_regex_pattern(self, pattern: object) -> None:
+        if isinstance(pattern, str):
+            return
+        msg = "Regex pattern must be a string"
+        raise TypeError(msg)
+
+    def _plain_content_for_build(self) -> str:
+        self._validate_plain_content(self._content)
+        return self._content
+
+    def _regex_pattern_for_build(self) -> str:
+        self._validate_regex_pattern(self._content)
+        return self._content
+
     def _hex_tokens_for_build(self) -> list[HexToken]:
         if isinstance(self._content, list):
             return self._content
@@ -386,6 +410,9 @@ class FluentStringBuilder:
 
     def _normalize_hex_pattern(self, pattern: str) -> str:
         """Normalize hex pattern by removing whitespace and converting to uppercase."""
+        if not isinstance(pattern, str):
+            msg = "Hex pattern must be a string"
+            raise TypeError(msg)
         return pattern.replace(" ", "").replace("\t", "").replace("\n", "").upper()
 
     def _parse_hex_pair(self, two_char: str) -> tuple[HexToken | None, int]:

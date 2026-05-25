@@ -14,6 +14,9 @@ from yaraast.errors import ValidationError
 
 
 def test_fluent_string_builder_invalid_hex_inputs_and_trailing_nibble() -> None:
+    with pytest.raises(TypeError, match="Hex pattern must be a string"):
+        FluentStringBuilder("$hex").hex(cast(Any, True))
+
     with pytest.raises(ValidationError, match="Invalid hex byte: GG"):
         FluentStringBuilder("$hex").hex_bytes("GG")
 
@@ -25,6 +28,20 @@ def test_fluent_string_builder_invalid_hex_inputs_and_trailing_nibble() -> None:
 
     with pytest.raises(ValidationError, match="Invalid hex pair: GZ"):
         FluentStringBuilder("$pair")._parse_hex_pair("GZ")
+
+
+def test_fluent_string_builder_rejects_non_string_text_and_regex_content() -> None:
+    with pytest.raises(TypeError, match="Plain string content must be a string"):
+        FluentStringBuilder("$plain").literal(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Plain string content must be a string"):
+        FluentStringBuilder("$text").text(cast(Any, 123))
+
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        FluentStringBuilder("$regex").regex(cast(Any, 123))
+
+    with pytest.raises(TypeError, match="Regex pattern must be a string"):
+        FluentStringBuilder("$regexp").regexp(cast(Any, ["x"]))
 
 
 def test_fluent_string_builder_hex_build_returns_token_snapshot() -> None:
