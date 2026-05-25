@@ -14,8 +14,11 @@ def reset_graph_state(generator) -> None:
     generator.string_references.clear()
     generator.module_references.clear()
     generator._current_rule = None
+    generator._current_rule_key = None
     generator._local_scopes.clear()
     generator._rule_names.clear()
+    generator._rule_graph_keys.clear()
+    generator._rule_graph_keys_by_name.clear()
 
 
 def render_graph(dot, output_path: str | None, format: str) -> str:

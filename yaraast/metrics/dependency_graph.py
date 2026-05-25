@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any
 
 import graphviz
@@ -50,8 +50,11 @@ class DependencyGraphGenerator(MetricsVisitorBase):
             set,
         )  # rule -> modules
         self._current_rule: str | None = None
+        self._current_rule_key: str | None = None
         self._local_scopes: list[set[str]] = []
         self._rule_names: set[str] = set()
+        self._rule_graph_keys: dict[int, str] = {}
+        self._rule_graph_keys_by_name: dict[str, list[str]] = {}
 
     def generate_graph(
         self,
@@ -113,6 +116,8 @@ class DependencyGraphGenerator(MetricsVisitorBase):
     def visit_yara_file(self, node: YaraFile) -> None:
         """Visit YARA file and collect imports/includes."""
         self._rule_names = {rule.name for rule in node.rules}
+        self._rule_graph_keys.clear()
+        self._rule_graph_keys_by_name.clear()
 
         for imp in node.imports:
             self.imports.add(imp.module)
@@ -120,18 +125,30 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         for inc in node.includes:
             self.includes.add(inc.path)
 
+        rule_counts = Counter(rule.name for rule in node.rules)
+        seen_rules: defaultdict[str, int] = defaultdict(int)
         for rule in node.rules:
+            seen_rules[rule.name] += 1
+            rule_key = self._rule_graph_key(
+                rule.name,
+                seen_rules[rule.name],
+                rule_counts,
+            )
+            self._rule_graph_keys[id(rule)] = rule_key
+            self._rule_graph_keys_by_name.setdefault(rule.name, []).append(rule_key)
             self.visit(rule)
 
     def visit_rule(self, node: Rule) -> None:
         """Visit rule and collect information."""
         self._current_rule = node.name
+        rule_key = self._graph_key_for_rule(node)
+        self._current_rule_key = rule_key
 
-        self.rules[node.name] = rule_info(node)
+        self.rules[rule_key] = rule_info(node)
 
         # Visit strings to track references
         for string_def in node.strings:
-            self.string_references[node.name].add(string_def.identifier)
+            self.string_references[rule_key].add(string_def.identifier)
 
         # Visit condition to find module usage
         try:
@@ -139,6 +156,24 @@ class DependencyGraphGenerator(MetricsVisitorBase):
                 self.visit(node.condition)
         finally:
             self._current_rule = None
+            self._current_rule_key = None
+
+    def _rule_graph_key(self, rule_name: str, occurrence: int, counts: Counter[str]) -> str:
+        if counts[rule_name] == 1:
+            return rule_name
+        return f"{rule_name}#{occurrence}"
+
+    def _graph_key_for_rule(self, rule: Rule) -> str:
+        return self._rule_graph_keys.get(id(rule), rule.name)
+
+    def _active_rule_key(self) -> str | None:
+        return self._current_rule_key or self._current_rule
+
+    def _dependency_targets_for_rule_name(self, rule_name: str) -> tuple[str, ...]:
+        rule_keys = self._rule_graph_keys_by_name.get(rule_name)
+        if not rule_keys:
+            return (rule_name,)
+        return tuple(rule_keys)
 
     def _module_name_for_object(self, value) -> str | None:
         if hasattr(value, "module"):
@@ -148,8 +183,9 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         return None
 
     def _add_module_reference(self, module_name: str) -> None:
-        if self._current_rule and not self._is_local(module_name):
-            self.module_references[self._current_rule].add(module_name)
+        rule_key = self._active_rule_key()
+        if rule_key and not self._is_local(module_name):
+            self.module_references[rule_key].add(module_name)
 
     def _is_local(self, name: str) -> bool:
         return any(name in scope for scope in reversed(self._local_scopes))
@@ -217,8 +253,9 @@ class DependencyGraphGenerator(MetricsVisitorBase):
     def visit_member_access(self, node) -> None:
         """Track module usage in member access."""
         module_name = self._module_name_for_object(node.object)
-        if self._current_rule and module_name in self.imports and not self._is_local(module_name):
-            self.module_references[self._current_rule].add(module_name)
+        rule_key = self._active_rule_key()
+        if rule_key and module_name in self.imports and not self._is_local(module_name):
+            self.module_references[rule_key].add(module_name)
 
         if not isinstance(node.object, Identifier):
             self.visit(node.object)
@@ -285,13 +322,15 @@ class DependencyGraphGenerator(MetricsVisitorBase):
         self._add_module_reference(node.module)
 
     def visit_identifier(self, node) -> None:
+        rule_key = self._active_rule_key()
         if (
-            self._current_rule
+            rule_key
+            and self._current_rule
             and node.name in self._rule_names
             and node.name != self._current_rule
             and not self._is_local(node.name)
         ):
-            self.dependencies[self._current_rule].add(node.name)
+            self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(node.name))
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)

@@ -29,6 +29,7 @@ from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.metrics.dependency_graph import DependencyGraphGenerator
 from yaraast.metrics.dependency_graph_helpers import render_graph, rule_info
+from yaraast.metrics.dependency_graph_utils import build_dependency_graph
 from yaraast.parser import Parser
 
 
@@ -171,6 +172,54 @@ def test_dependency_graph_generator_remaining_visitors_and_stats() -> None:
     assert "pe" in gen.module_references["manual"]
     assert "math" in gen.module_references["manual"]
     assert "dotnet" in gen.module_references["manual"]
+
+
+def test_dependency_graph_preserves_duplicate_rule_occurrences() -> None:
+    ast = Parser().parse("""
+import "pe"
+
+rule dup {
+    strings:
+        $a = "a"
+    condition:
+        $a and pe.number_of_sections > 0
+}
+
+rule dup {
+    strings:
+        $b = "b"
+    condition:
+        $b and helper
+}
+
+rule helper {
+    condition:
+        true
+}
+
+rule caller {
+    condition:
+        dup
+}
+""")
+    gen = DependencyGraphGenerator()
+
+    gen.visit(ast)
+
+    assert set(gen.rules) == {"dup#1", "dup#2", "helper", "caller"}
+    assert gen.string_references["dup#1"] == {"$a"}
+    assert gen.string_references["dup#2"] == {"$b"}
+    assert gen.module_references["dup#1"] == {"pe"}
+    assert gen.module_references["dup#2"] == set()
+    assert gen.dependencies["dup#2"] == {"helper"}
+    assert gen.dependencies["caller"] == {"dup#1", "dup#2"}
+    assert gen.get_dependency_stats()["total_rules"] == 4
+
+    graph = build_dependency_graph(ast)
+
+    assert graph.nodes == {"dup#1", "dup#2", "helper", "caller"}
+    assert graph.get_dependencies("dup#2") == {"helper"}
+    assert graph.get_dependencies("caller") == {"dup#1", "dup#2"}
 
 
 def test_dependency_graph_generator_complexity_graph(tmp_path: Path) -> None:

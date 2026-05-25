@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 import json
 from pathlib import Path
@@ -13,6 +13,7 @@ from yaraast.metrics.dependency_graph_finder import DependencyFinder
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+    from yaraast.ast.rules import Rule
 
 
 def _deserialize_string_list(value: object, context: str) -> list[str]:
@@ -118,11 +119,12 @@ class DependencyGraph:
 def build_dependency_graph(ast: YaraFile) -> DependencyGraph:
     """Build dependency graph from YARA AST."""
     graph = DependencyGraph()
+    rule_keys, rule_keys_by_name = _rule_occurrence_maps(ast.rules)
 
     for rule in ast.rules:
-        graph.add_node(rule.name)
+        graph.add_node(rule_keys[id(rule)])
 
-    all_rule_names = {rule.name for rule in ast.rules}
+    all_rule_names = set(rule_keys_by_name)
 
     for rule in ast.rules:
         if rule.condition:
@@ -130,9 +132,41 @@ def build_dependency_graph(ast: YaraFile) -> DependencyGraph:
             finder.visit(rule.condition)
 
             for dep in finder.dependencies:
-                graph.add_edge(rule.name, dep)
+                for dep_key in _dependency_targets_for_rule_name(dep, rule_keys_by_name):
+                    graph.add_edge(rule_keys[id(rule)], dep_key)
 
     return graph
+
+
+def _rule_occurrence_maps(rules: list[Rule]) -> tuple[dict[int, str], dict[str, list[str]]]:
+    counts = Counter(rule.name for rule in rules)
+    seen: defaultdict[str, int] = defaultdict(int)
+    rule_keys: dict[int, str] = {}
+    rule_keys_by_name: dict[str, list[str]] = {}
+
+    for rule in rules:
+        seen[rule.name] += 1
+        rule_key = _rule_occurrence_key(rule.name, seen[rule.name], counts)
+        rule_keys[id(rule)] = rule_key
+        rule_keys_by_name.setdefault(rule.name, []).append(rule_key)
+
+    return rule_keys, rule_keys_by_name
+
+
+def _rule_occurrence_key(rule_name: str, occurrence: int, counts: Counter[str]) -> str:
+    if counts[rule_name] == 1:
+        return rule_name
+    return f"{rule_name}#{occurrence}"
+
+
+def _dependency_targets_for_rule_name(
+    rule_name: str,
+    rule_keys_by_name: dict[str, list[str]],
+) -> tuple[str, ...]:
+    rule_keys = rule_keys_by_name.get(rule_name)
+    if not rule_keys:
+        return (rule_name,)
+    return tuple(rule_keys)
 
 
 def analyze_dependencies(ast: YaraFile) -> dict[str, Any]:
