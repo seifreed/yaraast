@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 from yaraast.yaral._parsing_events import (
     _RAW_EVENT_MODULES,
     _join_event_statement_tokens,
+    _join_prefixed_event_statement,
     _prefix_event_statement,
 )
 from yaraast.yaral.ast_nodes import (
@@ -75,6 +78,25 @@ class EnhancedYaraLParserEventsMixin:
             return None
         return EventStatement(text=_join_event_statement_tokens(tokens))
 
+    def _collect_assignment_rhs_tokens(self) -> list[Any]:
+        tokens = []
+        start_line = self._peek().line if not self._is_at_end() else -1
+        while not self._is_at_end():
+            current_token = self._peek()
+            if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
+                break
+
+            if current_token.line > start_line and (
+                self._check_yaral_type(YaraLTokenType.EVENT_VAR)
+                or self._check(BaseTokenType.STRING_IDENTIFIER)
+            ):
+                next_token = self._peek_ahead(1)
+                if next_token and next_token.type in {BaseTokenType.EQ, BaseTokenType.DOT}:
+                    break
+
+            tokens.append(self._advance())
+        return tokens
+
     def _parse_event_statement(self) -> list[EventStatement] | None:
         """Parse enhanced event statement with multiple conditions."""
         event = None
@@ -89,7 +111,14 @@ class EnhancedYaraLParserEventsMixin:
                     raw_statement = self._parse_raw_event_statement()
                     if raw_statement is not None:
                         return [_prefix_event_statement(f"{event.name} =", raw_statement)]
-                return None
+                return [
+                    EventStatement(
+                        text=_join_prefixed_event_statement(
+                            f"{event.name} =",
+                            self._collect_assignment_rhs_tokens(),
+                        )
+                    )
+                ]
 
         while self._check(BaseTokenType.DOT) or (
             self._check(BaseTokenType.IDENTIFIER) and not self._check_section_keyword()

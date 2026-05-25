@@ -144,3 +144,18 @@ def test_parse_function_event_assignment_preserves_generated_text() -> None:
 
     generated = YaraLGenerator().generate(ast)
     assert '$host = re.capture($e.target.hostname, "(.*)")' in generated
+
+
+def test_parse_field_event_assignment_preserves_generated_text() -> None:
+    ast = EnhancedYaraLParser(
+        "rule host_event { events: $host = $e.target.hostname condition: $e }"
+    ).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventStatement)
+    assert statement.text == "$host = $e.target.hostname"
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$host = $e.target.hostname" in generated
