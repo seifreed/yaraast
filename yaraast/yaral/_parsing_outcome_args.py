@@ -145,21 +145,21 @@ class OutcomeArgumentParsingMixin:
             field_parts = self._parse_outcome_field_path()
             field = UDMFieldPath(parts=field_parts)
 
-            if self._check_any_operator():
-                op_token = self._advance()
+            operator = self._parse_outcome_argument_operator()
+            if operator is not None:
                 right_value = self._parse_outcome_argument()
                 return (
-                    f"{var_name}.{field.path} {op_token.value} "
+                    f"{var_name}.{field.path} {operator} "
                     f"{self._format_outcome_argument_source(right_value, quote_strings=True)}"
                 )
 
             return UDMFieldAccess(event=event, field=field)
 
-        if self._check_any_operator():
-            op_token = self._advance()
+        operator = self._parse_outcome_argument_operator()
+        if operator is not None:
             right_value = self._parse_outcome_argument()
             return (
-                f"{var_name} {op_token.value} "
+                f"{var_name} {operator} "
                 f"{self._format_outcome_argument_source(right_value, quote_strings=True)}"
             )
         return var_name
@@ -252,6 +252,57 @@ class OutcomeArgumentParsingMixin:
         if isinstance(value, str) and quote_strings and not value.startswith(("$", "%", "(")):
             return quote_string_literal(value)
         return str(value)
+
+    def _parse_outcome_argument_operator(self) -> str | None:
+        operator = self._parse_outcome_comparison_operator()
+        if operator is not None:
+            return operator
+        if self._check_any_operator(arithmetic_only=True):
+            return str(self._advance().value)
+        return None
+
+    def _parse_outcome_comparison_operator(self) -> str | None:
+        if self._check(BaseTokenType.MATCHES):
+            return str(self._advance().value)
+        if self._check_keyword("matches"):
+            self._advance()
+            return "=~"
+        if self._check_keyword("not"):
+            next_token = self._outcome_token_ahead(1)
+            if next_token is not None and self._outcome_token_value_is(next_token, "matches"):
+                self._advance()
+                self._advance()
+                return "!~"
+            if next_token is not None and (
+                next_token.type == BaseTokenType.IN
+                or self._outcome_token_value_is(next_token, "in")
+            ):
+                self._advance()
+                self._advance()
+                return "not in"
+        if (
+            self._check(BaseTokenType.EQ)
+            or self._check(BaseTokenType.IEQUALS)
+            or self._check(BaseTokenType.NEQ)
+            or self._check(BaseTokenType.GT)
+            or self._check(BaseTokenType.LT)
+            or self._check(BaseTokenType.GE)
+            or self._check(BaseTokenType.LE)
+            or self._check(BaseTokenType.IN)
+        ):
+            return str(self._advance().value)
+        return None
+
+    def _outcome_token_ahead(self, offset: int) -> Any | None:
+        position = self.current + offset
+        if position >= len(self.tokens):
+            return None
+        return self.tokens[position]
+
+    @staticmethod
+    def _outcome_token_value_is(token: Any, expected: str) -> bool:
+        value = token.value
+        return isinstance(value, str) and value.lower() == expected
 
     def _parse_outcome_field_path(self) -> list[str]:
         field_parts = []

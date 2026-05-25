@@ -298,6 +298,32 @@ def test_enhanced_outcome_function_style_conditional_roundtrip() -> None:
     assert '$fallback = if($e.target.hostname =~ /admin.*/ nocase, "yes")' in generated
 
 
+def test_enhanced_outcome_direct_boolean_expressions_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule direct_outcome_conditions {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $allowed = $e.principal.ip not in %blocked%
+            $match = $e.target.hostname matches /admin.*/
+            $not_match = $e.target.hostname not matches /admin.*/
+            $regex_match = $e.target.hostname =~ /admin.*/
+            $func_arg = custom($e.target.hostname matches /admin.*/, "x")
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    generated = YaraLGenerator().generate(ast)
+    assert "$allowed = $e.principal.ip not in %blocked%" in generated
+    assert "$match = $e.target.hostname =~ /admin.*/" in generated
+    assert "$not_match = $e.target.hostname !~ /admin.*/" in generated
+    assert "$regex_match = $e.target.hostname =~ /admin.*/" in generated
+    assert '$func_arg = custom($e.target.hostname =~ /admin.*/, "x")' in generated
+
+
 def test_enhanced_outcome_conditional_can_compare_outcome_variables() -> None:
     parser = EnhancedYaraLParser("""
         rule outcome_variable_conditional {

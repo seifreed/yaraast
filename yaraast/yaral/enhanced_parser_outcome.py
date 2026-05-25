@@ -15,7 +15,9 @@ from yaraast.yaral.ast_nodes import (
     OutcomeExpression,
     OutcomeSection,
     RawOutcomeExpression,
+    UDMFieldAccess,
 )
+from yaraast.yaral.generator_helpers import format_literal
 from yaraast.yaral.tokens import YaraLTokenType
 
 _OUTCOME_FIELD_YARAL_TYPES = {
@@ -81,7 +83,62 @@ class EnhancedYaraLParserOutcomeMixin:
 
     def _parse_outcome_expression(self) -> OutcomeExpression | Any:
         """Parse enhanced outcome expression with aggregations."""
-        return self._parse_outcome_additive_expression()
+        left = self._parse_outcome_additive_expression()
+        if not self._check_outcome_comparison_operator():
+            return left
+
+        operator = self._parse_comparison_operator()
+        right = self._parse_event_value()
+        return RawOutcomeExpression(
+            f"{self._format_outcome_expression_text(left)} {operator} "
+            f"{self._format_event_value_text(right)}"
+        )
+
+    def _check_outcome_comparison_operator(self) -> bool:
+        if (
+            self._check(BaseTokenType.EQ)
+            or self._check(BaseTokenType.IEQUALS)
+            or self._check(BaseTokenType.NEQ)
+            or self._check(BaseTokenType.GT)
+            or self._check(BaseTokenType.LT)
+            or self._check(BaseTokenType.GE)
+            or self._check(BaseTokenType.LE)
+            or self._check(BaseTokenType.MATCHES)
+            or self._check(BaseTokenType.IN)
+            or self._check_keyword("matches")
+            or self._check_keyword("in")
+        ):
+            return True
+        next_token = self._peek_ahead(1)
+        return bool(
+            self._check_keyword("not")
+            and next_token is not None
+            and next_token.value in {"matches", "in"}
+        )
+
+    def _format_outcome_expression_text(self, value: Any) -> str:
+        if isinstance(value, RawOutcomeExpression):
+            return str(value)
+        if isinstance(value, ArithmeticExpression):
+            left = self._format_outcome_expression_text(value.left)
+            right = self._format_outcome_expression_text(value.right)
+            return f"{left} {value.operator} {right}"
+        if isinstance(value, AggregationFunction):
+            args = ", ".join(self._format_outcome_expression_text(arg) for arg in value.arguments)
+            return f"{value.function}({args})"
+        if isinstance(value, FunctionCall):
+            args = ", ".join(self._format_outcome_expression_text(arg) for arg in value.arguments)
+            return f"{value.function}({args})"
+        if isinstance(value, ConditionalExpression):
+            condition = self._format_condition_expression_text(value.condition)
+            true_value = self._format_outcome_expression_text(value.true_value)
+            if value.false_value is None:
+                return f"if({condition}, {true_value})"
+            false_value = self._format_outcome_expression_text(value.false_value)
+            return f"if({condition}, {true_value}, {false_value})"
+        if isinstance(value, UDMFieldAccess):
+            return value.full_path
+        return format_literal(value)
 
     def _parse_outcome_additive_expression(self) -> OutcomeExpression | Any:
         left = self._parse_outcome_multiplicative_expression()

@@ -196,6 +196,31 @@ def test_outcome_condition_membership_and_regex_operators_roundtrip() -> None:
     assert '$regex_not_match = if($e.target.hostname !~ /admin.*/, "yes", "no")' in generated
 
 
+def test_outcome_direct_boolean_expressions_roundtrip() -> None:
+    parser = YaraLParser("""
+        rule direct_outcome_conditions {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $allowed = $e.principal.ip not in %blocked%
+            $match = $e.target.hostname matches /admin.*/
+            $not_match = $e.target.hostname not matches /admin.*/
+            $regex_match = $e.target.hostname =~ /admin.*/
+            $func_arg = custom($e.target.hostname matches /admin.*/, "x")
+          condition:
+            $e
+        }
+        """)
+
+    generated = YaraLGenerator().generate(parser.parse())
+
+    assert "$allowed = $e.principal.ip not in %blocked%" in generated
+    assert "$match = $e.target.hostname =~ /admin.*/" in generated
+    assert "$not_match = $e.target.hostname !~ /admin.*/" in generated
+    assert "$regex_match = $e.target.hostname =~ /admin.*/" in generated
+    assert '$func_arg = custom($e.target.hostname =~ /admin.*/, "x")' in generated
+
+
 def test_outcome_function_arithmetic_arguments_roundtrip_without_quotes() -> None:
     parser = YaraLParser("""
         rule outcome_function_arithmetic_args {
