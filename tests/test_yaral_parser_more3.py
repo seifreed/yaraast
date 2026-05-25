@@ -80,6 +80,7 @@ def test_parser_event_assignment_value_can_be_udm_field_access() -> None:
     assert len(statements) == 2
     assert isinstance(statements[0], EventAssignment)
     assert isinstance(statements[0].value, UDMFieldAccess)
+    assert statements[0].value.event is not None
     assert statements[0].value.event.name == "$e2"
     assert statements[0].value.field.path == "principal.ip"
 

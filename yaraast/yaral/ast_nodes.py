@@ -122,11 +122,13 @@ class UDMFieldPath(ASTNode):
 class UDMFieldAccess(ASTNode):
     """Access to UDM field with event variable."""
 
-    event: EventVariable
+    event: EventVariable | None
     field: UDMFieldPath
 
     @property
     def full_path(self) -> str:
+        if self.event is None:
+            return self.field.path
         return f"{self.event.name}.{self.field.path}"
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -333,7 +335,7 @@ class AggregationFunction(OutcomeExpression):
 
     @property
     def call_string(self) -> str:
-        args = ", ".join(str(arg) for arg in self.arguments)
+        args = ", ".join(_format_yaral_call_argument(arg) for arg in self.arguments)
         return f"{self.function}({args})"
 
     def accept(self, visitor: _VisitorType) -> Any:
@@ -411,11 +413,23 @@ class FunctionCall(ASTNode):
 
     @property
     def call_string(self) -> str:
-        args = ", ".join(str(arg) for arg in self.arguments)
+        args = ", ".join(_format_yaral_call_argument(arg) for arg in self.arguments)
         return f"{self.function}({args})"
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_function_call(self)
+
+
+def _format_yaral_call_argument(value: Any) -> str:
+    if isinstance(value, UDMFieldAccess):
+        return value.full_path
+    if isinstance(value, EventVariable):
+        return value.name
+    if isinstance(value, RegexPattern):
+        return value.as_string
+    if isinstance(value, AggregationFunction | FunctionCall):
+        return value.call_string
+    return str(value)
 
 
 @dataclass

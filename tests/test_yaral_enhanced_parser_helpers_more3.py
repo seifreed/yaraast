@@ -43,6 +43,7 @@ def test_parse_udm_paths_and_access() -> None:
         ],
     )
     access = p._parse_udm_field_access()
+    assert access.event is not None
     assert access.event.name == "$e"
     assert access.field.parts == ["principal", "ip"]
 

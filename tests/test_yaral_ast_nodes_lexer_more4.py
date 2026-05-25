@@ -166,6 +166,8 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
     assert event_var.accept(visitor) == "$e"
     assert path.accept(visitor) == "metadata.event_type"
     assert access.accept(visitor) == "$e.metadata.event_type"
+    bare_access = UDMFieldAccess(event=None, field=UDMFieldPath(parts=["metadata", "id"]))
+    assert bare_access.full_path == "metadata.id"
     assert ReferenceList(name="%list%").accept(visitor) == "%list%"
     tw = TimeWindow(duration=5, unit="m", modifier="every")
     assert MatchSection(variables=[]).accept(visitor) == 0
@@ -200,6 +202,9 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
         == "if:t:f"
     )
     assert AggregationFunction(function="count", arguments=["$e"]).accept(visitor) == "count($e)"
+    assert AggregationFunction(function="count", arguments=[access]).call_string == (
+        "count($e.metadata.event_type)"
+    )
     assert ArithmeticExpression(operator="+", left=1, right=2).accept(visitor) == "+"
 
     assert OptionsSection(options={"sample": True}).accept(visitor) == {"sample": True}
@@ -208,6 +213,9 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
     assert CIDRExpression(field=access, cidr="10.0.0.0/8").accept(visitor) == "10.0.0.0/8"
 
     assert FunctionCall(function="re.regex", arguments=["$e", "x"]).call_string == "re.regex($e, x)"
+    assert FunctionCall(function="strings.length", arguments=[access]).call_string == (
+        "strings.length($e.metadata.event_type)"
+    )
     assert FunctionCall(function="empty", arguments=[]).call_string == "empty()"
     assert FunctionCall(function="empty", arguments=[]).accept(visitor) == "empty()"
     yf = YaraLFile()
