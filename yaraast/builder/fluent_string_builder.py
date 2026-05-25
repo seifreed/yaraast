@@ -84,6 +84,9 @@ class FluentStringBuilder:
 
     def hex_builder(self, builder_func) -> FluentStringBuilder:
         """Set hex content using a HexStringBuilder lambda."""
+        if not callable(builder_func):
+            msg = "Hex builder callback must be callable"
+            raise TypeError(msg)
         builder = HexStringBuilder()
         result = builder_func(builder)
         if result is None:

@@ -71,6 +71,11 @@ def test_fluent_string_builder_hex_builder_accepts_mutating_callbacks() -> None:
     assert isinstance(string_def.tokens[2], HexByte)
 
 
+def test_fluent_string_builder_rejects_non_callable_hex_builder() -> None:
+    with pytest.raises(TypeError, match="Hex builder callback must be callable"):
+        FluentStringBuilder("$hex").hex_builder(cast(Any, 123))
+
+
 def test_fluent_string_builder_rejects_standalone_hex_jump() -> None:
     builder = FluentStringBuilder("$jump").jump_pattern(2, 8)
 
