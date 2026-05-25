@@ -732,6 +732,16 @@ def test_codegen_generators_reject_invalid_top_level_reference_names(
         PrettyPrinter().generate(node)
 
 
+def test_codegen_generators_allow_qualified_extern_import_rule_names() -> None:
+    node = ExternImport("mods.yar", alias="ext", rules=["legacy.LegacyRule"])
+    expected = 'import "mods.yar" (legacy.LegacyRule) as ext'
+
+    assert CodeGenerator().generate(node) == expected
+    assert AdvancedCodeGenerator().generate(node) == expected
+    assert CommentAwareCodeGenerator().generate(node) == expected
+    assert PrettyPrinter().generate(node) == expected
+
+
 def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
     ast = YaraFile(
         rules=[

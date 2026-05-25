@@ -183,7 +183,7 @@ def visit_comment_group(node) -> str:
 def visit_extern_import(node) -> str:
     value = f"import \"{format_nonempty_quoted_value(node.module_path, 'Import module')}\""
     if node.rules:
-        rules = [validate_yara_identifier(rule, "extern rule") for rule in node.rules]
+        rules = [validate_yara_identifier_path(rule, "extern rule") for rule in node.rules]
         value += f" ({', '.join(rules)})"
     if node.alias:
         alias = validate_yara_identifier(node.alias, "import alias")
