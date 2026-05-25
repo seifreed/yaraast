@@ -50,8 +50,11 @@ class EnhancedYaraLParserEventsMixin:
                 if raw_statement is not None:
                     statements.append(raw_statement)
             else:
-                if self._parse_complex_event_pattern() is None:
+                complex_pattern = self._parse_complex_event_pattern()
+                if complex_pattern is None:
                     self._advance()
+                else:
+                    statements.append(complex_pattern)
 
         return EventsSection(statements=statements)
 
@@ -99,7 +102,11 @@ class EnhancedYaraLParserEventsMixin:
         if current_token.line <= start_line or self._previous_token_continues_statement(tokens):
             return False
 
-        if self._check_keyword("join") or self._is_raw_event_statement_start():
+        if (
+            self._check_keyword("join")
+            or self._is_raw_event_statement_start()
+            or self._is_complex_event_pattern_start()
+        ):
             return True
 
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
@@ -252,30 +259,33 @@ class EnhancedYaraLParserEventsMixin:
 
     def _parse_complex_event_pattern(self) -> EventStatement | None:
         """Parse complex event patterns with temporal operators."""
+        if not self._is_complex_event_pattern_start():
+            return None
         if self._check_keyword("all"):
             return self._parse_all_pattern()
         if self._check_keyword("any"):
             return self._parse_any_pattern()
-        if self._check(BaseTokenType.IDENTIFIER):
-            peek_ahead = self._peek_ahead(1)
-            if peek_ahead and peek_ahead.value in ["followed", "before", "after"]:
-                return self._parse_temporal_pattern()
+        return self._parse_temporal_pattern()
 
-        return None
+    def _is_complex_event_pattern_start(self) -> bool:
+        if self._check_keyword("all") or self._check_keyword("any"):
+            return True
+        if not self._check(BaseTokenType.IDENTIFIER):
+            return False
+        peek_ahead = self._peek_ahead(1)
+        return bool(peek_ahead and peek_ahead.value in ["followed", "before", "after"])
 
     def _parse_all_pattern(self) -> EventStatement | None:
         """Parse 'all' pattern for events."""
-        self._consume_keyword("all")
-        return None
+        return self._parse_raw_event_statement()
 
     def _parse_any_pattern(self) -> EventStatement | None:
         """Parse 'any' pattern for events."""
-        self._consume_keyword("any")
-        return None
+        return self._parse_raw_event_statement()
 
     def _parse_temporal_pattern(self) -> EventStatement | None:
         """Parse temporal patterns like 'followed by', 'before', 'after'."""
-        return None
+        return self._parse_raw_event_statement()
 
     def _parse_join_condition(self) -> ConditionExpression:
         """Parse join condition for event correlation."""

@@ -63,15 +63,29 @@ def test_parse_join_and_pattern_helpers_real() -> None:
 
     p2 = EnhancedYaraLParser("")
     _set_tokens(p2, [_tok(T.IDENTIFIER, "all")])
-    assert p2._parse_complex_event_pattern() is None
+    all_pattern = p2._parse_complex_event_pattern()
+    assert isinstance(all_pattern, EventStatement)
+    assert all_pattern.text == "all"
 
     p3 = EnhancedYaraLParser("")
     _set_tokens(p3, [_tok(T.IDENTIFIER, "any")])
-    assert p3._parse_complex_event_pattern() is None
+    any_pattern = p3._parse_complex_event_pattern()
+    assert isinstance(any_pattern, EventStatement)
+    assert any_pattern.text == "any"
 
     p4 = EnhancedYaraLParser("")
-    _set_tokens(p4, [_tok(T.IDENTIFIER, "evt"), _tok(T.IDENTIFIER, "followed")])
-    assert p4._parse_complex_event_pattern() is None
+    _set_tokens(
+        p4,
+        [
+            _tok(T.IDENTIFIER, "evt"),
+            _tok(T.IDENTIFIER, "followed"),
+            _tok(T.IDENTIFIER, "by"),
+            _tok(T.IDENTIFIER, "evt2"),
+        ],
+    )
+    temporal_pattern = p4._parse_complex_event_pattern()
+    assert isinstance(temporal_pattern, EventStatement)
+    assert temporal_pattern.text == "evt followed by evt2"
 
 
 def test_parse_events_section_real() -> None:
@@ -244,3 +258,27 @@ def test_parse_raw_event_statement_preserves_multiline_continuation() -> None:
     statement = events.statements[0]
     assert isinstance(statement, EventStatement)
     assert statement.text == "604800 <= $e.metadata.event_timestamp.seconds"
+
+
+def test_parse_complex_event_patterns_preserves_generated_text() -> None:
+    ast = EnhancedYaraLParser("""
+        rule complex_patterns {
+          events:
+            all
+            any
+            e1 followed by e2
+          condition:
+            $e
+        }
+        """).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    assert [statement.text for statement in events.statements] == [
+        "all",
+        "any",
+        "e1 followed by e2",
+    ]
+
+    generated = YaraLGenerator().generate(ast)
+    assert "all\n    any\n    e1 followed by e2" in generated
