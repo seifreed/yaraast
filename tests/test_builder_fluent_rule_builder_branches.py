@@ -170,6 +170,17 @@ def test_file_builder_chaining_and_duplicate_elimination() -> None:
     assert built_file.rules[1].condition is not None
 
 
+def test_fluent_file_builder_rejects_duplicate_rule_names() -> None:
+    first = rule("same_rule").condition("true").build()
+    second = rule("same_rule").condition("false").build()
+    builder = yara_file().with_rule(first)
+
+    with pytest.raises(ValidationError, match="Duplicate rule identifier"):
+        builder.with_rule(second)
+
+    assert [built_rule.name for built_rule in builder.build().rules] == ["same_rule"]
+
+
 def test_rule_metadata_aliases_and_example_rules_paths() -> None:
     built = (
         FluentRuleBuilder()

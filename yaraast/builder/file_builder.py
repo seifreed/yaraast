@@ -5,6 +5,7 @@ from typing import Self
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include, Rule
+from yaraast.builder.file_builder_validation import validate_unique_rule_names
 from yaraast.builder.rule_builder import RuleBuilder
 
 
@@ -38,23 +39,31 @@ class YaraFileBuilder:
 
     def with_rule(self, rule: Rule | RuleBuilder) -> Self:
         """Add a rule."""
-        if isinstance(rule, RuleBuilder):
-            rule = rule.build()
-        self._rules.append(rule)
+        built_rule = self._build_rule(rule)
+        validate_unique_rule_names(self._rules, [built_rule])
+        self._rules.append(built_rule)
         return self
 
     def with_rule_builder(self, builder_func) -> Self:
         """Add a rule using a builder function."""
         builder = RuleBuilder()
         builder_func(builder)
-        self._rules.append(builder.build())
+        built_rule = builder.build()
+        validate_unique_rule_names(self._rules, [built_rule])
+        self._rules.append(built_rule)
         return self
 
     def with_rules(self, *rules: Rule | RuleBuilder) -> Self:
         """Add multiple rules."""
-        for rule in rules:
-            self.with_rule(rule)
+        built_rules = [self._build_rule(rule) for rule in rules]
+        validate_unique_rule_names(self._rules, built_rules)
+        self._rules.extend(built_rules)
         return self
+
+    def _build_rule(self, rule: Rule | RuleBuilder) -> Rule:
+        if isinstance(rule, RuleBuilder):
+            return rule.build()
+        return rule
 
     def build(self) -> YaraFile:
         """Build the YaraFile AST node."""

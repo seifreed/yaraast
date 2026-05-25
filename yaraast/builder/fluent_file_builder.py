@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Self
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include, Rule
+from yaraast.builder.file_builder_validation import validate_unique_rule_names
 
 if TYPE_CHECKING:
     from yaraast.builder.fluent_rule_builder import FluentRuleBuilderWithFile
@@ -34,6 +35,7 @@ class FluentYaraFileBuilder:
 
     def with_rule(self, rule: Rule) -> Self:
         """Add a rule."""
+        validate_unique_rule_names(self.rules, [rule])
         self.rules.append(rule)
         return self
 

@@ -7,6 +7,8 @@ This test suite validates real code behavior without mocks or stubs.
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import Identifier
 from yaraast.ast.rules import Import, Include, Rule
@@ -14,6 +16,7 @@ from yaraast.ast.strings import PlainString
 from yaraast.builder.file_builder import YaraFileBuilder
 from yaraast.builder.fluent_file_builder import yara_file
 from yaraast.builder.rule_builder import RuleBuilder
+from yaraast.errors import ValidationError
 
 
 class TestYaraFileBuilderInitialization:
@@ -211,6 +214,23 @@ class TestYaraFileBuilderRules:
         yara_file = builder.build()
 
         assert len(yara_file.rules) == 2
+
+    def test_reject_duplicate_rule_names_without_partial_update(self) -> None:
+        """Duplicate rule names should be rejected before code generation."""
+        builder = YaraFileBuilder().with_rule(Rule(name="DuplicateRule"))
+
+        with pytest.raises(ValidationError, match="Duplicate rule identifier"):
+            builder.with_rule(Rule(name="DuplicateRule"))
+
+        with pytest.raises(ValidationError, match="Duplicate rule identifier"):
+            builder.with_rules(Rule(name="NewRule"), Rule(name="DuplicateRule"))
+
+        assert [rule.name for rule in builder.build().rules] == ["DuplicateRule"]
+
+        empty_builder = YaraFileBuilder()
+        with pytest.raises(ValidationError, match="Duplicate rule identifier"):
+            empty_builder.with_rules(Rule(name="BatchRule"), Rule(name="BatchRule"))
+        assert empty_builder.build().rules == []
 
     def test_add_mixed_rule_types(self) -> None:
         """With_rules should accept both Rule and RuleBuilder."""
