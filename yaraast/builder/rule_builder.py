@@ -368,7 +368,11 @@ class RuleBuilder:
     def with_condition_lambda(self, builder_func) -> Self:
         """Set condition using a lambda that receives a ConditionBuilder."""
         cb = ConditionBuilder()
-        self._condition = cast(Condition, builder_func(cb).build())
+        result = builder_func(cb)
+        if not isinstance(result, ConditionBuilder):
+            msg = "Condition lambda must return a ConditionBuilder"
+            raise ValidationError(msg)
+        self._condition = cast(Condition, result.build())
         return self
 
     def require_condition(self, require: bool = True) -> Self:
