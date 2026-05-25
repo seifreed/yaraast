@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from yaraast.yaral.ast_nodes import EventAssignment, ReferenceList, RegexPattern, UDMFieldAccess
+from yaraast.yaral.ast_nodes import (
+    EventAssignment,
+    EventStatement,
+    ReferenceList,
+    RegexPattern,
+    UDMFieldAccess,
+)
 from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.parser import YaraLParser
 
@@ -72,6 +78,35 @@ def test_parser_event_assignment_value_can_be_udm_field_access() -> None:
     assert isinstance(statements[0].value, UDMFieldAccess)
     assert statements[0].value.event.name == "$e2"
     assert statements[0].value.field.path == "principal.ip"
+
+
+def test_parser_complex_event_patterns_preserve_generated_text() -> None:
+    code = dedent(
+        """
+        rule complex_patterns {
+            events:
+                all
+                any
+                e1 followed by e2
+            condition:
+                $e
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+    events = ast.rules[0].events
+    assert events is not None
+    assert len(events.statements) == 3
+    assert all(isinstance(statement, EventStatement) for statement in events.statements)
+    assert [statement.text for statement in events.statements] == [
+        "all",
+        "any",
+        "e1 followed by e2",
+    ]
+
+    generated = YaraLGenerator().generate(ast)
+    assert "all\n    any\n    e1 followed by e2" in generated
 
 
 def test_parser_normalizes_regex_token_delimiters_for_generation() -> None:

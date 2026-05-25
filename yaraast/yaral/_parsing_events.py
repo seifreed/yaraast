@@ -65,6 +65,9 @@ class YaraLEventsParsingMixin:
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return self._parse_integer_comparison_statement()
 
+        if self._is_complex_event_pattern_start():
+            return self._parse_complex_event_pattern_statement()
+
         # Look for event variable ($e, $e1, etc.) or placeholder variable ($var)
         if not self._check_yaral_type(YaraLTokenType.EVENT_VAR) and not self._check(
             BaseTokenType.STRING_IDENTIFIER
@@ -256,6 +259,9 @@ class YaraLEventsParsingMixin:
                 break
 
             # Stop if we see a new line starting with a $ variable (potential new statement)
+            if current_token.line > start_line and self._is_complex_event_pattern_start():
+                break
+
             if current_token.line > start_line and (
                 self._check_yaral_type(YaraLTokenType.EVENT_VAR)
                 or self._check(BaseTokenType.STRING_IDENTIFIER)
@@ -268,6 +274,48 @@ class YaraLEventsParsingMixin:
 
             tokens.append(self._advance())
         return tokens
+
+    def _is_complex_event_pattern_start(self) -> bool:
+        if self._check_keyword("all") or self._check_keyword("any"):
+            return True
+        if not self._check(BaseTokenType.IDENTIFIER):
+            return False
+        next_pos = self.current + 1
+        if next_pos >= len(self.tokens):
+            return False
+        return self.tokens[next_pos].value in {"followed", "before", "after"}
+
+    def _parse_complex_event_pattern_statement(self) -> EventStatement:
+        start_line = self._peek().line
+        tokens = []
+
+        while not self._is_at_end():
+            current_token = self._peek()
+            if self._check_section_keyword() or self._check(BaseTokenType.RBRACE):
+                break
+            if tokens and current_token.line > start_line and self._is_event_statement_start():
+                break
+            tokens.append(self._advance())
+
+        return EventStatement(text=_join_event_statement_tokens(tokens))
+
+    def _is_event_statement_start(self) -> bool:
+        if (
+            self._check_yaral_type(YaraLTokenType.EVENT_VAR)
+            or self._check(BaseTokenType.STRING_IDENTIFIER)
+            or self._check(BaseTokenType.INTEGER)
+            or self._check(BaseTokenType.DOUBLE)
+            or self._check(BaseTokenType.LPAREN)
+            or self._is_complex_event_pattern_start()
+        ):
+            return True
+
+        if not self._check(BaseTokenType.IDENTIFIER):
+            return False
+        identifier = self._peek().value
+        return identifier in _RAW_EVENT_MODULES or (
+            "." in identifier and identifier.split(".", 1)[0] in _RAW_EVENT_MODULES
+        )
 
     def _parse_field_path(self) -> UDMFieldPath:
         """Parse UDM field path."""
