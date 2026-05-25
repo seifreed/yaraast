@@ -95,6 +95,15 @@ def test_streaming_parser_parse_files_supports_yarax(tmp_path: Path) -> None:
     assert rows[0].ast.rules[0].condition.__class__.__name__ == "WithStatement"
 
 
+def test_streaming_parser_rejects_single_string_file_paths(tmp_path: Path) -> None:
+    path = tmp_path / "single.yar"
+    path.write_text("rule single { condition: true }", encoding="utf-8")
+    parser = StreamingParser()
+
+    with pytest.raises(TypeError, match="file_paths must be a sequence of paths"):
+        list(parser.parse_files(cast(Any, str(path))))
+
+
 def test_streaming_parser_mmap_import_include_and_token_branches(tmp_path: Path) -> None:
     code = """
 import "pe"

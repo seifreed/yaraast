@@ -21,7 +21,10 @@ from yaraast.performance.streaming_result_builders import (
     default_streaming_stats,
     timed_now,
 )
-from yaraast.performance.validation import validate_positive_int_setting
+from yaraast.performance.validation import (
+    validate_file_path_sequence,
+    validate_positive_int_setting,
+)
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
 if TYPE_CHECKING:
@@ -193,7 +196,8 @@ class StreamingParser:
 
     def parse_files(self, file_paths: list[Path]) -> Iterator[Any]:
         """Parse multiple files (yields one result per file)."""
-        for idx, file_path in enumerate(file_paths, 1):
+        normalized_file_paths = validate_file_path_sequence(file_paths)
+        for idx, file_path in enumerate(normalized_file_paths, 1):
             if self._cancelled:
                 break
 
@@ -210,7 +214,7 @@ class StreamingParser:
 
                 # Call progress callback if provided
                 if self.progress_callback:
-                    self.progress_callback(idx, len(file_paths), str(file_path))
+                    self.progress_callback(idx, len(normalized_file_paths), str(file_path))
 
                 yield build_file_parse_result(file_path, ast, parse_time)
             except Exception as e:
