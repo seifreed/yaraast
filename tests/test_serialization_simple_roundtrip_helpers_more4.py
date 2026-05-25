@@ -73,6 +73,7 @@ from yaraast.serialization.simple_roundtrip_helpers import (
     deserialize_pragma,
     deserialize_rule,
     deserialize_string,
+    serialize_extern_rule,
     serialize_meta,
     serialize_node,
     serialize_pragma,
@@ -670,6 +671,28 @@ def test_simple_roundtrip_modifier_and_token_collections_reject_non_lists() -> N
         deserialize_string(
             {"type": "HexString", "identifier": "$h", "tokens": ["AA"], "modifiers": []}
         )
+
+
+def test_simple_roundtrip_serializers_reject_non_list_collections() -> None:
+    rule = Rule(name="r1", condition=BooleanLiteral(True))
+    cast(Any, rule).modifiers = "private"
+    with pytest.raises(SerializationError, match="Rule modifiers must be a list"):
+        serialize_rule(rule)
+
+    cast(Any, rule).modifiers = []
+    cast(Any, rule).tags = "tag"
+    with pytest.raises(SerializationError, match="Rule tags must be a list"):
+        serialize_rule(rule)
+
+    extern_rule = ExternRule(name="RemoteRule")
+    cast(Any, extern_rule).modifiers = "private"
+    with pytest.raises(SerializationError, match="ExternRule modifiers must be a list"):
+        serialize_extern_rule(extern_rule)
+
+    plain = PlainString(identifier="$a", value="abc")
+    cast(Any, plain).modifiers = "ascii"
+    with pytest.raises(SerializationError, match="PlainString modifiers must be a list"):
+        serialize_string(plain)
 
 
 def test_simple_roundtrip_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:

@@ -650,7 +650,10 @@ def _serialize_string_modifier_name(modifier: Any) -> str:
     return _serialize_required_string(name, "StringModifier name")
 
 
-def _serialize_modifiers(modifiers: list[Any]) -> list[dict[str, Any]]:
+def _serialize_modifiers(modifiers: Any, context: str) -> list[dict[str, Any]]:
+    if not isinstance(modifiers, list | tuple):
+        msg = f"{context} modifiers must be a list"
+        raise SerializationError(msg)
     return [
         {
             "name": _serialize_string_modifier_name(modifier),
@@ -1261,12 +1264,13 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     data: dict[str, Any] = {
         "type": "Rule",
         "name": _serialize_required_string(rule.name, "Rule name"),
-        "modifiers": [str(modifier) for modifier in rule.modifiers],
+        "modifiers": _serialize_rule_modifiers(rule.modifiers, "Rule"),
         "condition": serialize_node(rule.condition) if rule.condition else None,
     }
 
-    if rule.tags:
-        data["tags"] = [tag.name if hasattr(tag, "name") else tag for tag in rule.tags]
+    tags = _serialize_rule_tags(rule.tags)
+    if tags:
+        data["tags"] = tags
 
     if rule.meta:
         data["meta"] = [serialize_meta(m) for m in rule.meta]
@@ -1284,9 +1288,45 @@ def serialize_extern_rule(extern_rule: ExternRule) -> dict[str, Any]:
     return {
         "type": "ExternRule",
         "name": _serialize_required_string(extern_rule.name, "ExternRule name"),
-        "modifiers": [str(modifier) for modifier in extern_rule.modifiers],
+        "modifiers": _serialize_rule_modifiers(extern_rule.modifiers, "ExternRule"),
         "namespace": _serialize_nullable_string(extern_rule.namespace, "ExternRule namespace"),
     }
+
+
+def _serialize_rule_modifiers(modifiers: Any, context: str) -> list[str]:
+    if not isinstance(modifiers, list | tuple):
+        msg = f"{context} modifiers must be a list"
+        raise SerializationError(msg)
+
+    serialized = []
+    for modifier in modifiers:
+        if isinstance(modifier, RuleModifier):
+            serialized.append(str(modifier))
+            continue
+        if isinstance(modifier, str):
+            serialized.append(modifier)
+            continue
+        msg = f"{context} modifiers must contain strings or RuleModifier nodes"
+        raise SerializationError(msg)
+    return serialized
+
+
+def _serialize_rule_tags(tags: Any) -> list[str]:
+    if not isinstance(tags, list | tuple):
+        msg = "Rule tags must be a list"
+        raise SerializationError(msg)
+
+    serialized = []
+    for tag in tags:
+        if isinstance(tag, Tag):
+            serialized.append(_serialize_required_string(tag.name, "Tag name"))
+            continue
+        if isinstance(tag, str):
+            serialized.append(tag)
+            continue
+        msg = "Rule tags must contain Tag nodes or strings"
+        raise SerializationError(msg)
+    return serialized
 
 
 def serialize_pragma(pragma: Pragma) -> dict[str, Any]:
@@ -1344,7 +1384,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
                 string_def.identifier,
                 "PlainString identifier",
             ),
-            "modifiers": _serialize_modifiers(string_def.modifiers),
+            "modifiers": _serialize_modifiers(string_def.modifiers, "PlainString"),
         }
         if string_def.is_anonymous:
             data["is_anonymous"] = True
@@ -1358,7 +1398,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
                 "HexString identifier",
             ),
             "tokens": [_serialize_hex_token(t) for t in string_def.tokens],
-            "modifiers": _serialize_modifiers(string_def.modifiers),
+            "modifiers": _serialize_modifiers(string_def.modifiers, "HexString"),
         }
         if string_def.is_anonymous:
             data["is_anonymous"] = True
@@ -1371,7 +1411,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
                 "RegexString identifier",
             ),
             "regex": _serialize_required_string(string_def.regex, "RegexString regex"),
-            "modifiers": _serialize_modifiers(string_def.modifiers),
+            "modifiers": _serialize_modifiers(string_def.modifiers, "RegexString"),
         }
         if string_def.is_anonymous:
             data["is_anonymous"] = True
@@ -1383,7 +1423,7 @@ def serialize_string(string_def: Any) -> dict[str, Any]:
                 string_def.identifier,
                 "StringDefinition identifier",
             ),
-            "modifiers": _serialize_modifiers(string_def.modifiers),
+            "modifiers": _serialize_modifiers(string_def.modifiers, "StringDefinition"),
         }
         if string_def.is_anonymous:
             data["is_anonymous"] = True
