@@ -241,6 +241,11 @@ def test_fluent_rule_builder_rejects_invalid_condition_builder_return() -> None:
         rule("bad_condition").with_condition_builder(bad_callback)
 
 
+def test_fluent_rule_builder_rejects_non_callable_condition_builder() -> None:
+    with pytest.raises(TypeError, match="Condition builder callback must be callable"):
+        rule("bad_condition").with_condition_builder(cast(Any, 123))
+
+
 def test_rule_metadata_aliases_and_example_rules_paths() -> None:
     built = (
         FluentRuleBuilder()

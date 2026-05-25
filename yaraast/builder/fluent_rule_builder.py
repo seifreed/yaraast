@@ -243,6 +243,9 @@ class FluentRuleBuilder:
         builder_func: Callable[[FluentConditionBuilder], FluentConditionBuilder],
     ) -> Self:
         """Set condition using a builder function."""
+        if not callable(builder_func):
+            msg = "Condition builder callback must be callable"
+            raise TypeError(msg)
         condition_builder = FluentConditionBuilder()
         result = builder_func(condition_builder)
         if not isinstance(result, ConditionBuilder):
