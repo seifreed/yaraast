@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import Any, overload
 
 from yaraast.ast.base import YaraFile
@@ -181,11 +182,8 @@ class ExpressionOptimizer(ASTTransformer):
                 optimized_rule = self._optimize_rule(rule)
                 optimized_rules.append(optimized_rule)
 
-            optimized_file = YaraFile(
-                imports=node.imports,
-                includes=node.includes,
-                rules=optimized_rules,
-            )
+            optimized_file = copy.copy(node)
+            optimized_file.rules = optimized_rules
             return optimized_file, self.optimization_count
         # Single expression optimization
         return self.visit(node)

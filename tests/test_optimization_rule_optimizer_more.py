@@ -12,6 +12,8 @@ from yaraast.ast.expressions import (
     RangeExpression,
     StringIdentifier,
 )
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.pragmas import IncludeOncePragma
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.evaluation.evaluator import YaraEvaluator
@@ -123,3 +125,28 @@ def test_empty_in_range_optimizes_to_false_and_is_counted() -> None:
 
     assert optimized == BooleanLiteral(False)
     assert optimizer.optimization_count == 1
+
+
+def test_expression_optimizer_preserves_yara_file_top_level_extensions() -> None:
+    namespace_rule = ExternRule(name="remote")
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="fold",
+                condition=BinaryExpression(IntegerLiteral(1), "==", IntegerLiteral(1)),
+            )
+        ],
+        extern_rules=[ExternRule(name="external")],
+        extern_imports=[ExternImport(module_path="external_rules", rules=["external"])],
+        pragmas=[IncludeOncePragma()],
+        namespaces=[ExternNamespace(name="corp", extern_rules=[namespace_rule])],
+    )
+
+    optimized, count = ExpressionOptimizer().optimize(ast)
+
+    assert count == 1
+    assert [rule.name for rule in optimized.extern_rules] == ["external"]
+    assert [imp.module_path for imp in optimized.extern_imports] == ["external_rules"]
+    assert [pragma.name for pragma in optimized.pragmas] == ["include_once"]
+    assert optimized.namespaces[0].name == "corp"
+    assert optimized.namespaces[0].extern_rules == [namespace_rule]
