@@ -241,6 +241,14 @@ def test_include_resolver_rechecks_cached_files_with_missing_includes(tmp_path: 
     assert [included.path for included in second.includes] == [child.resolve()]
 
 
+def test_include_resolver_rejects_invalid_search_paths() -> None:
+    with pytest.raises(TypeError, match="IncludeResolver search_paths must be a list of strings"):
+        IncludeResolver(cast(Any, "abc"))
+
+    with pytest.raises(TypeError, match="IncludeResolver search_paths must be a list of strings"):
+        IncludeResolver(cast(Any, [object()]))
+
+
 def test_include_resolver_treats_directory_matches_as_unresolved(tmp_path: Path) -> None:
     directory = tmp_path / "not_a_rule.yar"
     directory.mkdir()

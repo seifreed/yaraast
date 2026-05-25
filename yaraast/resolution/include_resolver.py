@@ -56,6 +56,11 @@ class IncludeResolver:
 
         # Add provided paths
         if search_paths:
+            if not isinstance(search_paths, list) or not all(
+                isinstance(path, str) for path in search_paths
+            ):
+                msg = "IncludeResolver search_paths must be a list of strings"
+                raise TypeError(msg)
             paths.extend(Path(p).resolve() for p in search_paths)
 
         # Add current directory
