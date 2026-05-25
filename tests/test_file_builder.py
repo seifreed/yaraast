@@ -266,6 +266,23 @@ class TestYaraFileBuilderRules:
             empty_builder.with_rules(Rule(name="BatchRule"), Rule(name="BatchRule"))
         assert empty_builder.build().rules == []
 
+    def test_reject_invalid_rule_names_without_partial_update(self) -> None:
+        """Invalid direct rule names should be rejected before code generation."""
+        builder = YaraFileBuilder().with_rule(Rule(name="ValidRule"))
+
+        with pytest.raises(ValidationError, match="Invalid rule identifier"):
+            builder.with_rule(Rule(name="bad-name"))
+
+        with pytest.raises(ValidationError, match="Invalid rule identifier"):
+            builder.with_rules(Rule(name="NewRule"), Rule(name="bad-name"))
+
+        assert [rule.name for rule in builder.build().rules] == ["ValidRule"]
+
+        empty_builder = YaraFileBuilder()
+        with pytest.raises(ValidationError, match="Invalid rule identifier"):
+            empty_builder.with_rules(Rule(name="BatchRule"), Rule(name="bad-name"))
+        assert empty_builder.build().rules == []
+
     def test_add_mixed_rule_types(self) -> None:
         """With_rules should accept both Rule and RuleBuilder."""
         builder = YaraFileBuilder()

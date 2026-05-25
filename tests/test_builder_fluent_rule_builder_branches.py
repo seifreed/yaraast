@@ -8,6 +8,7 @@ import pytest
 
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import BinaryExpression
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexString, PlainString, RegexString
 from yaraast.builder.fluent_file_builder import yara_file
 from yaraast.builder.fluent_rule_builder import FluentRuleBuilder
@@ -179,6 +180,15 @@ def test_fluent_file_builder_rejects_duplicate_rule_names() -> None:
         builder.with_rule(second)
 
     assert [built_rule.name for built_rule in builder.build().rules] == ["same_rule"]
+
+
+def test_fluent_file_builder_rejects_invalid_rule_names_without_partial_update() -> None:
+    builder = yara_file().with_rule(Rule(name="valid_rule"))
+
+    with pytest.raises(ValidationError, match="Invalid rule identifier"):
+        builder.with_rule(Rule(name="bad-name"))
+
+    assert [built_rule.name for built_rule in builder.build().rules] == ["valid_rule"]
 
 
 def test_fluent_file_builder_rejects_empty_imports_and_includes() -> None:

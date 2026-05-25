@@ -10,6 +10,7 @@ from yaraast.ast.rules import Import, Include, Rule
 from yaraast.builder.file_builder_validation import (
     validate_nonempty_text,
     validate_optional_identifier,
+    validate_rule_names,
     validate_unique_rule_names,
 )
 
@@ -42,6 +43,7 @@ class FluentYaraFileBuilder:
 
     def with_rule(self, rule: Rule) -> Self:
         """Add a rule."""
+        validate_rule_names([rule])
         validate_unique_rule_names(self.rules, [rule])
         self.rules.append(rule)
         return self

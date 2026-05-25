@@ -51,6 +51,11 @@ def validate_optional_identifier(value: object | None, kind: str) -> None:
     validate_identifier(value, kind)
 
 
+def validate_rule_names(rules: Sequence[Rule]) -> None:
+    for rule in rules:
+        validate_identifier(rule.name, "rule")
+
+
 def validate_unique_rule_names(existing_rules: Sequence[Rule], new_rules: Sequence[Rule]) -> None:
     seen = {rule.name for rule in existing_rules}
     for rule in new_rules:

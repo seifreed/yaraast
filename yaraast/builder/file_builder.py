@@ -8,6 +8,7 @@ from yaraast.ast.rules import Import, Include, Rule
 from yaraast.builder.file_builder_validation import (
     validate_nonempty_text,
     validate_nonempty_texts,
+    validate_rule_names,
     validate_unique_rule_names,
 )
 from yaraast.builder.rule_builder import RuleBuilder
@@ -48,6 +49,7 @@ class YaraFileBuilder:
     def with_rule(self, rule: Rule | RuleBuilder) -> Self:
         """Add a rule."""
         built_rule = self._build_rule(rule)
+        validate_rule_names([built_rule])
         validate_unique_rule_names(self._rules, [built_rule])
         self._rules.append(built_rule)
         return self
@@ -57,6 +59,7 @@ class YaraFileBuilder:
         builder = RuleBuilder()
         builder_func(builder)
         built_rule = builder.build()
+        validate_rule_names([built_rule])
         validate_unique_rule_names(self._rules, [built_rule])
         self._rules.append(built_rule)
         return self
@@ -64,6 +67,7 @@ class YaraFileBuilder:
     def with_rules(self, *rules: Rule | RuleBuilder) -> Self:
         """Add multiple rules."""
         built_rules = [self._build_rule(rule) for rule in rules]
+        validate_rule_names(built_rules)
         validate_unique_rule_names(self._rules, built_rules)
         self._rules.extend(built_rules)
         return self
