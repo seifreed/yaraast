@@ -2,14 +2,66 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 import graphlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from yaraast.errors import ValidationError
+
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
+
+
+def _require_path(value: object, context: str) -> Path:
+    if isinstance(value, Path):
+        return value
+    if isinstance(value, str):
+        return Path(value)
+    msg = f"{context} must be a path"
+    raise ValidationError(msg)
+
+
+def _require_string(value: object, context: str) -> str:
+    if isinstance(value, str):
+        return value
+    msg = f"{context} must be a string"
+    raise ValidationError(msg)
+
+
+def _require_string_or_path(value: object, context: str) -> str | Path:
+    if isinstance(value, str | Path):
+        return value
+    msg = f"{context} must be a string or path"
+    raise ValidationError(msg)
+
+
+def _require_yara_file(value: object) -> YaraFile:
+    from yaraast.ast.base import YaraFile
+
+    if isinstance(value, YaraFile):
+        return value
+    msg = "DependencyGraph ast must be a YaraFile"
+    raise ValidationError(msg)
+
+
+def _normalize_include_resolutions(value: object) -> dict[str, str | Path]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        msg = "DependencyGraph include resolutions must be a mapping"
+        raise ValidationError(msg)
+
+    resolutions: dict[str, str | Path] = {}
+    for include_path, resolved_path in value.items():
+        key = _require_string(include_path, "DependencyGraph include resolution key")
+        resolutions[key] = _require_string_or_path(
+            resolved_path,
+            "DependencyGraph include resolution value",
+        )
+    return resolutions
 
 
 @dataclass
@@ -36,11 +88,15 @@ class DependencyGraph:
         self,
         file_path: Path,
         ast: YaraFile,
-        include_resolutions: dict[str, Path] | None = None,
+        include_resolutions: Mapping[str, str | Path] | None = None,
     ) -> None:
         """Add a YARA file to the dependency graph."""
+        file_path = _require_path(file_path, "DependencyGraph file_path")
+        ast = _require_yara_file(ast)
+        include_resolutions = _normalize_include_resolutions(include_resolutions)
+        self._validate_file_ast(ast)
+
         file_key = str(file_path)
-        include_resolutions = include_resolutions or {}
 
         self._remove_existing_file_state(file_key)
 
@@ -71,6 +127,33 @@ class DependencyGraph:
         # Add rules and analyze their dependencies
         for rule in ast.rules:
             self._add_rule(file_key, rule)
+
+    def _validate_file_ast(self, ast: YaraFile) -> None:
+        """Validate graph-relevant AST fields before mutating graph state."""
+        from yaraast.ast.rules import Import, Include, Rule, Tag
+
+        for import_stmt in ast.imports:
+            if not isinstance(import_stmt, Import):
+                msg = "DependencyGraph imports must contain Import nodes"
+                raise ValidationError(msg)
+            _require_string(import_stmt.module, "DependencyGraph import module")
+
+        for include_stmt in ast.includes:
+            if not isinstance(include_stmt, Include):
+                msg = "DependencyGraph includes must contain Include nodes"
+                raise ValidationError(msg)
+            _require_string_or_path(include_stmt.path, "DependencyGraph include path")
+
+        for rule in ast.rules:
+            if not isinstance(rule, Rule):
+                msg = "DependencyGraph rules must contain Rule nodes"
+                raise ValidationError(msg)
+            _require_string(rule.name, "DependencyGraph rule name")
+            for tag in getattr(rule, "tags", []):
+                if not isinstance(tag, Tag):
+                    msg = "DependencyGraph rule tags must contain Tag nodes"
+                    raise ValidationError(msg)
+                _require_string(tag.name, "DependencyGraph tag name")
 
     def _remove_existing_file_state(self, file_key: str) -> None:
         """Remove stale graph state before re-adding a file."""

@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
+
+import pytest
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include, Rule
+from yaraast.errors import ValidationError
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import TokenType
 from yaraast.resolution.dependency_graph import DependencyGraph, DependencyNode
@@ -167,6 +171,44 @@ def test_dependency_graph_readding_file_removes_stale_nodes_and_edges() -> None:
     assert "rule:old_rule" not in graph.nodes
     assert graph.get_statistics()["rule_count"] == 1
     assert {"new.yar", "rule:new_rule"}.issubset(dependencies)
+
+
+def test_dependency_graph_add_file_rejects_invalid_inputs_without_partial_update() -> None:
+    graph = DependencyGraph()
+    graph.add_file(Path("existing.yar"), YaraFile(rules=[Rule(name="existing")]))
+
+    original_nodes = set(graph.nodes)
+    original_file_rules = {key: set(value) for key, value in graph.file_rules.items()}
+    original_rule_files = dict(graph.rule_files)
+
+    invalid_cases: list[tuple[tuple[Any, ...], str]] = [
+        ((object(), YaraFile()), "DependencyGraph file_path must be a path"),
+        (("bad_ast.yar", object()), "DependencyGraph ast must be a YaraFile"),
+        (
+            ("bad_import.yar", YaraFile(imports=[Import(module=cast(Any, object()))])),
+            "DependencyGraph import module must be a string",
+        ),
+        (
+            ("bad_include.yar", YaraFile(includes=[Include(path=cast(Any, object()))])),
+            "DependencyGraph include path must be a string or path",
+        ),
+        (
+            ("bad_rule.yar", YaraFile(rules=[Rule(name=cast(Any, object()))])),
+            "DependencyGraph rule name must be a string",
+        ),
+        (
+            ("bad_resolution.yar", YaraFile(includes=[Include(path="shared.yar")]), "not-map"),
+            "DependencyGraph include resolutions must be a mapping",
+        ),
+    ]
+
+    for args, message in invalid_cases:
+        with pytest.raises(ValidationError, match=message):
+            graph.add_file(*args)
+
+    assert set(graph.nodes) == original_nodes
+    assert graph.file_rules == original_file_rules
+    assert graph.rule_files == original_rule_files
 
 
 def test_resolution_dependency_graph_public_outputs_are_stably_sorted() -> None:
