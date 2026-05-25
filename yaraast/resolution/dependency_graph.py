@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-import graphlib
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -420,32 +419,43 @@ class DependencyGraph:
 
     def find_cycles(self) -> list[list[str]]:
         """Find dependency cycles in the graph."""
-        # Build adjacency list for cycle detection
-        graph = {}
-        for node_key, node in sorted(self.nodes.items()):
-            graph[node_key] = sorted(node.dependencies)
+        cycles: list[list[str]] = []
+        visited: set[str] = set()
+        active: set[str] = set()
+        path: list[str] = []
 
-        # Use graphlib to find cycles
-        ts = graphlib.TopologicalSorter(graph)
-        try:
-            # If this succeeds, there are no cycles
-            list(ts.static_order())
-            return []
-        except graphlib.CycleError as e:
-            # Extract cycles from the error
-            # This is a simplified version - a full implementation would
-            # properly extract all cycles
-            cycles = []
-            if hasattr(e, "args") and len(e.args) > 1:
-                cycle_nodes = e.args[1]
-                if isinstance(cycle_nodes, list | tuple):
-                    unique_cycle = list(cycle_nodes)
-                    if len(unique_cycle) > 1 and unique_cycle[0] == unique_cycle[-1]:
-                        unique_cycle = unique_cycle[:-1]
-                    min_idx = unique_cycle.index(min(unique_cycle))
-                    normalized = unique_cycle[min_idx:] + unique_cycle[:min_idx]
-                    cycles.append([*normalized, normalized[0]])
-            return cycles
+        def add_cycle(cycle: list[str]) -> None:
+            body = cycle[:-1]
+            if not body:
+                return
+            min_idx = body.index(min(body))
+            rotated = body[min_idx:] + body[:min_idx]
+            normalized = [*rotated, rotated[0]]
+            if normalized not in cycles:
+                cycles.append(normalized)
+
+        def dfs(node_key: str) -> None:
+            visited.add(node_key)
+            active.add(node_key)
+            path.append(node_key)
+
+            for dependency in sorted(self.nodes[node_key].dependencies):
+                if dependency not in self.nodes:
+                    continue
+                if dependency not in visited:
+                    dfs(dependency)
+                elif dependency in active:
+                    cycle_start = path.index(dependency)
+                    add_cycle([*path[cycle_start:], dependency])
+
+            path.pop()
+            active.remove(node_key)
+
+        for node_key in sorted(self.nodes):
+            if node_key not in visited:
+                dfs(node_key)
+
+        return cycles
 
     def get_isolated_nodes(self) -> set[str]:
         """Get nodes with no dependencies or dependents."""

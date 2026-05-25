@@ -183,6 +183,16 @@ def test_transitive_graph_queries_do_not_return_start_node_in_cycles() -> None:
     assert graph.get_file_dependents("A") == {"B"}
 
 
+def test_dependency_graph_find_cycles_returns_all_disjoint_cycles() -> None:
+    graph = DependencyGraph()
+    graph.nodes["A"] = DependencyNode("A", "file", dependencies={"B"})
+    graph.nodes["B"] = DependencyNode("B", "file", dependencies={"A"})
+    graph.nodes["C"] = DependencyNode("C", "file", dependencies={"D"})
+    graph.nodes["D"] = DependencyNode("D", "file", dependencies={"C"})
+
+    assert graph.find_cycles() == [["A", "B", "A"], ["C", "D", "C"]]
+
+
 def test_dependency_graph_readding_file_removes_stale_nodes_and_edges() -> None:
     graph = DependencyGraph()
     file_path = Path("rules.yar")
@@ -270,4 +280,4 @@ def test_resolution_dependency_graph_public_outputs_are_stably_sorted() -> None:
     cycle_graph.nodes["c_rule"] = DependencyNode("c_rule", "file", dependencies={"a_rule"})
     cycle_graph.nodes["a_rule"] = DependencyNode("a_rule", "file", dependencies={"b_rule"})
 
-    assert cycle_graph.find_cycles() == [["a_rule", "c_rule", "b_rule", "a_rule"]]
+    assert cycle_graph.find_cycles() == [["a_rule", "b_rule", "c_rule", "a_rule"]]
