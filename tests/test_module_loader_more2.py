@@ -124,3 +124,27 @@ def test_module_loader_normalizes_invalid_parameter_names() -> None:
     )
 
     assert [name for name, _type in parameters] == ["param_0", "param_1", "param_2"]
+
+
+def test_module_loader_normalizes_invalid_function_arity_metadata() -> None:
+    loader = ModuleLoader()
+
+    module = loader._parse_module(
+        "manual",
+        {
+            "name": "manual",
+            "functions": {
+                "f": {
+                    "return": "bool",
+                    "parameters": ["x"],
+                    "min_parameters": "bad",
+                    "variadic": "yes",
+                }
+            },
+        },
+    )
+
+    assert module is not None
+    func = module.functions["f"]
+    assert func.min_parameters is None
+    assert func.variadic is False

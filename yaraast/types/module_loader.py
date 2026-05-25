@@ -24,6 +24,16 @@ def _normalize_parameter_name(name: object, index: int) -> str:
     return f"param_{index}"
 
 
+def _normalize_min_parameters(value: object) -> int | None:
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    return None
+
+
+def _normalize_variadic(value: object) -> bool:
+    return value if isinstance(value, bool) else False
+
+
 class ModuleLoader:
     """Load YARA module definitions from JSON files."""
 
@@ -112,8 +122,10 @@ class ModuleLoader:
                             parameters=self._parse_parameters(
                                 func_data.get("parameters", []),
                             ),
-                            min_parameters=func_data.get("min_parameters"),
-                            variadic=func_data.get("variadic", False),
+                            min_parameters=_normalize_min_parameters(
+                                func_data.get("min_parameters")
+                            ),
+                            variadic=_normalize_variadic(func_data.get("variadic")),
                         )
                         module.functions[func_name] = func_def
 
