@@ -445,7 +445,10 @@ class MockPE:
 
         if len(args) == 1:
             dll = args[0]
-            return any(imp.startswith(f"{dll}:") for imp in self._import_list)
+            return any(
+                _matches_import_dll(imported_dll, dll)
+                for imported_dll, _ in _split_imports(self._import_list)
+            )
 
         if len(args) == 2:
             dll, function = args
@@ -459,7 +462,10 @@ class MockPE:
                 return any(imp.endswith(f":{function}") for imp in self._import_list)
             if _is_strict_int(function):
                 return False
-            return f"{dll}:{function}" in self._import_list
+            return any(
+                _matches_import_dll(imported_dll, dll) and imported_function == function
+                for imported_dll, imported_function in _split_imports(self._import_list)
+            )
 
         _, dll, function = args
         if _is_regex_pattern(dll) and _is_regex_pattern(function):
@@ -470,7 +476,10 @@ class MockPE:
             )
         if _is_strict_int(function):
             return False
-        return f"{dll}:{function}" in self._import_list
+        return any(
+            _matches_import_dll(imported_dll, dll) and imported_function == function
+            for imported_dll, imported_function in _split_imports(self._import_list)
+        )
 
     def locale(self, locale_id: int) -> bool | YaraUndefinedValue:
         _require_integer_arg("pe.locale", locale_id)
@@ -512,6 +521,10 @@ def _split_imports(imports: list[str]) -> list[tuple[str, str]]:
         if separator:
             split_imports.append((dll, function))
     return split_imports
+
+
+def _matches_import_dll(imported_dll: str, requested_dll: object) -> bool:
+    return isinstance(requested_dll, str) and imported_dll.casefold() == requested_dll.casefold()
 
 
 def _normalized_imphash_imports(imports: list[str]) -> list[str]:

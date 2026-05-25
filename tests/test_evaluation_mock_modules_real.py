@@ -96,14 +96,15 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
 
     pe64._import_list = ["kernel32.dll:CreateFileW", "user32.dll:MessageBoxW"]
     assert pe64.imports("kernel32.dll", "CreateFileW") is True
+    assert pe64.imports("KERNEL32.DLL", "CreateFileW") is True
     assert pe64.imports("kernel32.dll", "CloseHandle") is False
     assert pe64.imports(RegexLiteral("KERNEL32", "i"), RegexLiteral("createfilew", "i")) is True
     assert pe64.imports("kernel32.dll", 1) is False
     assert pe64.imports(1, "CreateFileW") is True
-    assert pe64.imports(1, "kernel32.dll", "CreateFileW") is True
+    assert pe64.imports(1, "KERNEL32.DLL", "CreateFileW") is True
     assert pe64.imports(1, RegexLiteral("KERNEL32", "i"), RegexLiteral("createfilew", "i")) is True
     assert pe64.imports(1, "kernel32.dll", 1) is False
-    assert pe64.imports("user32.dll") is True
+    assert pe64.imports("USER32.DLL") is True
     with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects libyara-compatible"):
         pe64.imports(cast(Any, True))
     with pytest.raises(EvaluationError, match=r"pe\.imports\(\) expects libyara-compatible"):
