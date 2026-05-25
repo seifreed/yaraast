@@ -200,10 +200,10 @@ class OutcomeArgumentParsingMixin:
         self._advance()  # consume LPAREN
         arguments: list[Any] = []
         if not self._check(BaseTokenType.RPAREN):
-            arguments.append(self._parse_outcome_argument())
+            arguments.append(self._parse_outcome_arithmetic_expression())
             while self._check(BaseTokenType.COMMA):
                 self._advance()
-                arguments.append(self._parse_outcome_argument())
+                arguments.append(self._parse_outcome_arithmetic_expression())
         self._consume(BaseTokenType.RPAREN, f"Expected ')' after {func_name} arguments")
         return FunctionCall(function=func_name, arguments=arguments)
 

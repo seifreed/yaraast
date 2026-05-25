@@ -190,6 +190,23 @@ def test_outcome_function_arithmetic_arguments_roundtrip_without_quotes() -> Non
     assert '"score + 3"' not in generated
 
 
+def test_outcome_function_parenthesized_arithmetic_arguments_roundtrip() -> None:
+    parser = YaraLParser("""
+        rule outcome_function_parenthesized_arithmetic_args {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $result = custom((1 + 2) * 3, 10 / (2 + 3))
+          condition:
+            $e
+        }
+        """)
+
+    generated = YaraLGenerator().generate(parser.parse())
+
+    assert "$result = custom((1 + 2) * 3, 10 / (2 + 3))" in generated
+
+
 def test_outcome_function_regex_first_argument_roundtrips() -> None:
     parser = YaraLParser("""
         rule outcome_function_regex_arg {
