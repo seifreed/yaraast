@@ -79,7 +79,7 @@ class EnhancedYaraLParser(
         if token.type == BaseTokenType.IN and keyword == "in":
             return True
         # Check by value for YARA-L keywords mapped to dedicated token types
-        if hasattr(token, "value") and token.value and token.value.lower() == keyword.lower():
+        if isinstance(token.value, str) and token.value.lower() == keyword.lower():
             return True
         return token.type == BaseTokenType.IDENTIFIER and token.value == keyword
 

@@ -27,7 +27,7 @@ class TokenStreamMixin:
         if self._is_at_end():
             return False
         token = self._peek()
-        return token.value and token.value.lower() == keyword.lower()
+        return isinstance(token.value, str) and token.value.lower() == keyword.lower()
 
     def _check_yaral_type(self, yaral_type: YaraLTokenType) -> bool:
         """Check if current token has specific YARA-L type."""

@@ -113,6 +113,23 @@ def test_parenthesized_outcome_function_arguments_roundtrip_as_expressions() -> 
     assert '$literal = string_concat("(literal)", "tail")' in generated
 
 
+def test_outcome_function_arguments_accept_double_literals_without_keyword_crash() -> None:
+    parser = YaraLParser("""
+        rule double_arg {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $result = string_concat("a", 1, 2.5)
+          condition:
+            $e
+        }
+        """)
+
+    generated = YaraLGenerator().generate(parser.parse())
+
+    assert '$result = string_concat("a", 1, 2.5)' in generated
+
+
 def test_parse_outcome_argument_basic_identifier_call_and_error() -> None:
     parser = YaraLParser("")
     _set_tokens(
