@@ -260,48 +260,109 @@ def compare_includes(old_includes, new_includes, result, diff_node, diff_type) -
 
 def compare_rules(old_rules, new_rules, result, hasher, diff_node, diff_type) -> None:
     """Compare rule lists."""
-    old_rule_map = {rule.name: rule for rule in old_rules}
-    new_rule_map = {rule.name: rule for rule in new_rules}
+    old_rule_map = _nodes_by_key(old_rules, _name_key)
+    new_rule_map = _nodes_by_key(new_rules, _name_key)
 
     for name in new_rule_map:
         if name not in old_rule_map:
+            new_bucket = new_rule_map[name]
             result.differences.append(
                 diff_node(
                     path=f"/rules/{name}",
                     diff_type=diff_type.ADDED,
-                    new_value=name,
+                    new_value=_rule_bucket_value(name, new_bucket, hasher),
                     node_type="Rule",
-                    details={
-                        "rule_summary": get_rule_summary(new_rule_map[name]),
-                    },
+                    details=_rule_added_details(new_bucket),
                 ),
             )
 
     for name in old_rule_map:
         if name not in new_rule_map:
+            old_bucket = old_rule_map[name]
             result.differences.append(
                 diff_node(
                     path=f"/rules/{name}",
                     diff_type=diff_type.REMOVED,
-                    old_value=name,
+                    old_value=_rule_bucket_value(name, old_bucket, hasher),
                     node_type="Rule",
-                    details={
-                        "rule_summary": get_rule_summary(old_rule_map[name]),
-                    },
+                    details=_rule_removed_details(old_bucket),
                 ),
             )
 
     for name in old_rule_map:
         if name in new_rule_map:
-            compare_rule_content(
-                old_rule_map[name],
-                new_rule_map[name],
-                f"/rules/{name}",
-                result,
-                hasher,
-                diff_node,
-                diff_type,
-            )
+            old_bucket = old_rule_map[name]
+            new_bucket = new_rule_map[name]
+            if len(old_bucket) == 1 and len(new_bucket) == 1:
+                compare_rule_content(
+                    old_bucket[0],
+                    new_bucket[0],
+                    f"/rules/{name}",
+                    result,
+                    hasher,
+                    diff_node,
+                    diff_type,
+                )
+            else:
+                _compare_duplicate_rule_bucket(
+                    name,
+                    old_bucket,
+                    new_bucket,
+                    result,
+                    hasher,
+                    diff_node,
+                    diff_type,
+                )
+
+
+def _rule_bucket_hashes(rules, hasher) -> list[str]:
+    return sorted(hasher.visit(rule) for rule in rules)
+
+
+def _rule_bucket_value(name: str, rules, hasher):
+    if len(rules) == 1:
+        return name
+    return _rule_bucket_hashes(rules, hasher)
+
+
+def _rule_added_details(rules) -> dict[str, Any]:
+    if len(rules) == 1:
+        return {"rule_summary": get_rule_summary(rules[0])}
+    return {"new_rule_summaries": [get_rule_summary(rule) for rule in rules]}
+
+
+def _rule_removed_details(rules) -> dict[str, Any]:
+    if len(rules) == 1:
+        return {"rule_summary": get_rule_summary(rules[0])}
+    return {"old_rule_summaries": [get_rule_summary(rule) for rule in rules]}
+
+
+def _compare_duplicate_rule_bucket(
+    name: str,
+    old_rules,
+    new_rules,
+    result,
+    hasher,
+    diff_node,
+    diff_type,
+) -> None:
+    old_value = _rule_bucket_hashes(old_rules, hasher)
+    new_value = _rule_bucket_hashes(new_rules, hasher)
+    if old_value == new_value:
+        return
+    result.differences.append(
+        diff_node(
+            path=f"/rules/{name}",
+            diff_type=diff_type.MODIFIED,
+            old_value=old_value,
+            new_value=new_value,
+            node_type="Rule",
+            details={
+                "old_rule_summaries": [get_rule_summary(rule) for rule in old_rules],
+                "new_rule_summaries": [get_rule_summary(rule) for rule in new_rules],
+            },
+        ),
+    )
 
 
 def compare_rule_content(

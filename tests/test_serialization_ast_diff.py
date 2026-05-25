@@ -135,6 +135,31 @@ def test_ast_diff_detects_duplicate_extended_file_field_key_changes() -> None:
     assert result.has_changes
 
 
+def test_ast_diff_detects_duplicate_rule_key_changes() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(name="duplicate", condition=BooleanLiteral(value=True)),
+            Rule(name="duplicate", condition=IntegerLiteral(value=1)),
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(name="duplicate", condition=IntegerLiteral(value=1)),
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    by_path = {diff.path: diff for diff in result.differences}
+    diff = by_path["/rules/duplicate"]
+    assert diff.diff_type == DiffType.MODIFIED
+    assert isinstance(diff.old_value, list)
+    assert isinstance(diff.new_value, list)
+    assert len(diff.old_value) == 2
+    assert len(diff.new_value) == 1
+    assert result.has_changes
+
+
 def test_ast_diff_detects_order_sensitive_file_pragma_reordering() -> None:
     old_ast = YaraFile(
         pragmas=[
