@@ -75,7 +75,7 @@ def test_enhanced_outcome_expression_aggregation_udm_string_int_and_error() -> N
     assert agg.function == "count"
     assert len(agg.arguments) == 3
     assert agg.arguments[1] == "LOGIN"
-    assert agg.arguments[2] == "7"
+    assert agg.arguments[2] == 7
 
     _set_tokens(
         p,
@@ -141,7 +141,19 @@ def test_enhanced_aggregation_and_conditional_branches() -> None:
         ],
     )
     agg_int = p._parse_aggregation_function()
-    assert agg_int.arguments == ["1"]
+    assert agg_int.arguments == [1]
+
+    _set_tokens(
+        p,
+        [
+            _tok(T.IDENTIFIER, "avg"),
+            _tok(T.LPAREN, "("),
+            _tok(T.DOUBLE, 2.5),
+            _tok(T.RPAREN, ")"),
+        ],
+    )
+    agg_double = p._parse_aggregation_function()
+    assert agg_double.arguments == [2.5]
 
     _set_tokens(
         p,
@@ -220,6 +232,25 @@ def test_enhanced_outcome_event_field_references_roundtrip() -> None:
     assert "$host = $e.target.hostname" in generated
     assert "$hosts = array_distinct($e.principal.ip)" in generated
     assert '_ = if($e.metadata.event_type = "LOGIN", $e.target.hostname, "none")' in generated
+
+
+def test_enhanced_outcome_numeric_aggregation_arguments_roundtrip_as_numbers() -> None:
+    parser = EnhancedYaraLParser("""
+        rule numeric_aggregation_args {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $result = string_concat("a", 1, 2.5)
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    generated = YaraLGenerator().generate(ast)
+    assert '$result = string_concat("a", 1, 2.5)' in generated
+    assert 'string_concat("a", "1", 2.5)' not in generated
 
 
 def test_enhanced_outcome_bare_udm_references_roundtrip() -> None:

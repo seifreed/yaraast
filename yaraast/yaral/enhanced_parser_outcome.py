@@ -116,13 +116,13 @@ class EnhancedYaraLParserOutcomeMixin:
             if self._is_outcome_field_access_start() or self._check(BaseTokenType.IDENTIFIER):
                 arg = self._parse_udm_field_access()
                 arguments.append(arg)
-            elif (
-                self._check_yaral_type(YaraLTokenType.EVENT_VAR)
-                or self._check(BaseTokenType.STRING)
-                or self._check(BaseTokenType.INTEGER)
-                or self._check(BaseTokenType.DOUBLE)
+            elif self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+                BaseTokenType.STRING
             ):
                 arg = self._advance().value
+                arguments.append(arg)
+            elif self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+                arg = parse_numeric_token_value(self._advance().value)
                 arguments.append(arg)
 
             if self._check(BaseTokenType.COMMA):
