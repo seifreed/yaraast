@@ -543,6 +543,17 @@ def test_parse_condition_function_values_preserve_generated_text() -> None:
     assert condition3.value == "max(1, 2) + $offset"
     assert parser3._is_at_end()
 
+    parser4 = YaraLParser("$risk_score > math.max(1 + 2, score + 3)")
+    condition4 = parser4._parse_condition_expression()
+
+    assert isinstance(condition4, VariableComparisonCondition)
+    assert isinstance(condition4.value, FunctionCall)
+    assert condition4.value.function == "math.max"
+    assert str(condition4.value.arguments[0]) == "1 + 2"
+    assert str(condition4.value.arguments[1]) == "score + 3"
+    assert parser4._is_at_end()
+    assert YaraLGenerator().visit(condition4) == "$risk_score > math.max(1 + 2, score + 3)"
+
     ast = YaraLParser("""
         rule function_condition {
           events:

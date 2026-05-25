@@ -151,6 +151,25 @@ def test_outcome_boolean_literals_roundtrip_in_values_and_arguments() -> None:
     assert '$conditional = if($e.metadata.event_type = "LOGIN", true, false)' in generated
 
 
+def test_outcome_function_arithmetic_arguments_roundtrip_without_quotes() -> None:
+    parser = YaraLParser("""
+        rule outcome_function_arithmetic_args {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $result = math.max(1 + 2, score + 3)
+          condition:
+            $e
+        }
+        """)
+
+    generated = YaraLGenerator().generate(parser.parse())
+
+    assert "$result = math.max(1 + 2, score + 3)" in generated
+    assert '"1 + 2"' not in generated
+    assert '"score + 3"' not in generated
+
+
 def test_parse_outcome_argument_basic_identifier_call_and_error() -> None:
     parser = YaraLParser("")
     _set_tokens(

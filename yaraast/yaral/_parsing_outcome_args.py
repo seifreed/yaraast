@@ -170,7 +170,7 @@ class OutcomeArgumentParsingMixin:
         if self._check_any_operator(arithmetic_only=True):
             op_token = self._advance()
             right_value = self._parse_outcome_argument()
-            return (
+            return RawOutcomeExpression(
                 f"{num_value} {op_token.value} {self._format_outcome_argument_source(right_value)}"
             )
         return num_value
@@ -190,7 +190,9 @@ class OutcomeArgumentParsingMixin:
         if self._check_any_operator(arithmetic_only=True):
             op_token = self._advance()
             right_value = self._parse_outcome_argument()
-            return f"{ident} {op_token.value} {self._format_outcome_argument_source(right_value)}"
+            return RawOutcomeExpression(
+                f"{ident} {op_token.value} {self._format_outcome_argument_source(right_value)}"
+            )
         return ident
 
     def _parse_function_call_args(self, func_name: str) -> FunctionCall:
