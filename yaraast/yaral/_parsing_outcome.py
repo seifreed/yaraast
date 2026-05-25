@@ -173,20 +173,8 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
         # This handles: $field1 - $field2 > value or function() >= value
         left = self._parse_outcome_arithmetic_term()
 
-        # Check for comparison operators
-        if (
-            self._check(BaseTokenType.EQ)
-            or self._check(BaseTokenType.IEQUALS)
-            or self._check(BaseTokenType.NEQ)
-            or self._check(BaseTokenType.GT)
-            or self._check(BaseTokenType.LT)
-            or self._check(BaseTokenType.GE)
-            or self._check(BaseTokenType.LE)
-            or self._check(BaseTokenType.IN)
-        ):
-            op_token = self._advance()
-            op = op_token.value
-
+        op = self._parse_outcome_comparison_operator()
+        if op is not None:
             # Parse right-hand side with arithmetic support
             right = self._parse_outcome_arithmetic_term()
 
@@ -202,6 +190,49 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
             )
 
         return left
+
+    def _parse_outcome_comparison_operator(self) -> str | None:
+        if self._check(BaseTokenType.MATCHES):
+            return str(self._advance().value)
+        if self._check_keyword("matches"):
+            self._advance()
+            return "=~"
+        if self._check_keyword("not"):
+            next_token = self._outcome_token_ahead(1)
+            if next_token is not None and self._outcome_token_value_is(next_token, "matches"):
+                self._advance()
+                self._advance()
+                return "!~"
+            if next_token is not None and (
+                next_token.type == BaseTokenType.IN
+                or self._outcome_token_value_is(next_token, "in")
+            ):
+                self._advance()
+                self._advance()
+                return "not in"
+        if (
+            self._check(BaseTokenType.EQ)
+            or self._check(BaseTokenType.IEQUALS)
+            or self._check(BaseTokenType.NEQ)
+            or self._check(BaseTokenType.GT)
+            or self._check(BaseTokenType.LT)
+            or self._check(BaseTokenType.GE)
+            or self._check(BaseTokenType.LE)
+            or self._check(BaseTokenType.IN)
+        ):
+            return str(self._advance().value)
+        return None
+
+    def _outcome_token_ahead(self, offset: int) -> Any | None:
+        position = self.current + offset
+        if position >= len(self.tokens):
+            return None
+        return self.tokens[position]
+
+    @staticmethod
+    def _outcome_token_value_is(token: Any, expected: str) -> bool:
+        value = token.value
+        return isinstance(value, str) and value.lower() == expected
 
     def _parse_outcome_arithmetic_term(self) -> Any:
         """Parse arithmetic term in outcome condition (handles +, -, *, / for comparisons)."""
