@@ -91,6 +91,14 @@ def test_expression_builder_rejects_invalid_double_values() -> None:
         ExpressionBuilder.double(float("inf"))
 
 
+def test_expression_builder_rejects_invalid_string_literal_values() -> None:
+    invalid_values = (True, 123, ["x"])
+
+    for value in invalid_values:
+        with pytest.raises(TypeError, match="String literal value must be a string"):
+            ExpressionBuilder.string_literal(cast(Any, value))
+
+
 def test_expression_builder_rejects_empty_string_sets() -> None:
     with pytest.raises(ValidationError, match="At least one string identifier is required"):
         ExpressionBuilder.string_set()

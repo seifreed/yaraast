@@ -56,6 +56,13 @@ class ExpressionBuilder:
         return DoubleLiteral(value=value)
 
     @staticmethod
+    def _string_literal(value: object) -> StringLiteral:
+        if isinstance(value, str):
+            return StringLiteral(value=value)
+        msg = "String literal value must be a string"
+        raise TypeError(msg)
+
+    @staticmethod
     def string(identifier: str) -> StringIdentifier:
         """Create string identifier."""
         ExpressionBuilder._validate_string_reference(identifier)
@@ -74,7 +81,7 @@ class ExpressionBuilder:
     @staticmethod
     def string_literal(value: str) -> StringLiteral:
         """Create string literal."""
-        return StringLiteral(value=value)
+        return ExpressionBuilder._string_literal(value)
 
     @staticmethod
     def true() -> BooleanLiteral:
