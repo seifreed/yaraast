@@ -25,13 +25,29 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
-from yaraast.errors import ValidationError
+from yaraast.errors import ValidationError, YaraASTError
 
 if TYPE_CHECKING:
     from yaraast.builder.hex_string_builder import HexStringBuilder
 
 
 _SIMPLE_STRING_IDENTIFIER_RE = re.compile(r"^\$[A-Za-z0-9_]+$")
+
+
+def _parse_condition_text(condition: str) -> Condition:
+    from yaraast.parser.parser import Parser
+
+    try:
+        ast = Parser(f"rule __condition_probe {{ condition: {condition} }}").parse()
+    except YaraASTError as exc:
+        msg = f"Invalid condition expression: {condition}"
+        raise ValidationError(msg) from exc
+
+    parsed_condition = ast.rules[0].condition if ast.rules else None
+    if parsed_condition is None:
+        msg = f"Invalid condition expression: {condition}"
+        raise ValidationError(msg)
+    return parsed_condition
 
 
 class RuleBuilder:
@@ -271,8 +287,7 @@ class RuleBuilder:
             elif _SIMPLE_STRING_IDENTIFIER_RE.fullmatch(condition):
                 self._condition = cast(Condition, StringIdentifier(name=condition))
             else:
-                # For complex conditions, would need a parser
-                self._condition = cast(Condition, Identifier(name=condition))
+                self._condition = _parse_condition_text(condition)
         elif isinstance(condition, ConditionBuilder):
             self._condition = cast(Condition, condition.build())
         else:

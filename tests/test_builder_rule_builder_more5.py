@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.expressions import BooleanLiteral, Identifier, StringIdentifier
+from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier, StringIdentifier
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.rule_builder import RuleBuilder
+from yaraast.codegen.generator import CodeGenerator
 from yaraast.errors import ValidationError
 
 
@@ -48,11 +49,22 @@ def test_rule_builder_hex_regex_and_condition_variants() -> None:
     assert rule.condition.name == "$a"
 
 
-def test_rule_builder_keeps_complex_string_condition_text_raw() -> None:
-    rule = RuleBuilder("raw_condition").with_condition("$mz at 0 and $suspicious").build()
+def test_rule_builder_parses_complex_string_condition_text() -> None:
+    rule = (
+        RuleBuilder("raw_condition")
+        .with_hex_string_raw("$mz", "4D 5A")
+        .with_plain_string("$suspicious", "backdoor")
+        .with_condition("$mz at 0 and $suspicious")
+        .build()
+    )
 
-    assert isinstance(rule.condition, Identifier)
-    assert rule.condition.name == "$mz at 0 and $suspicious"
+    assert isinstance(rule.condition, BinaryExpression)
+    assert "$mz at 0 and $suspicious" in CodeGenerator().generate(rule)
+
+
+def test_rule_builder_rejects_invalid_string_condition_text() -> None:
+    with pytest.raises(ValidationError, match="Invalid condition expression"):
+        RuleBuilder("raw_condition").with_condition("$mz at")
 
 
 def test_rule_builder_raw_hex_rejects_invalid_input() -> None:
