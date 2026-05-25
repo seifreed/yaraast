@@ -386,9 +386,8 @@ class StringMatcher:
 
     def _match_hex_token(self, data: bytes, token: Any, pos: int) -> list[int]:
         if isinstance(token, HexByte):
-            return (
-                [pos + 1] if pos < len(data) and data[pos] == self._hex_value(token.value) else []
-            )
+            value = self._hex_byte_value(token.value)
+            return [pos + 1] if value is not None and pos < len(data) and data[pos] == value else []
         if isinstance(token, HexWildcard):
             return [pos + 1] if pos < len(data) else []
         if isinstance(token, HexNibble):
@@ -406,7 +405,9 @@ class StringMatcher:
     def _match_hex_nibble(self, data: bytes, token: HexNibble, pos: int) -> list[int]:
         if pos >= len(data):
             return []
-        value = self._hex_value(token.value)
+        value = self._hex_nibble_value(token.value)
+        if value is None:
+            return []
         byte = data[pos]
         if token.high:
             return [pos + 1] if byte >> 4 == value else []
@@ -418,16 +419,23 @@ class StringMatcher:
         value = token.value
         if isinstance(value, str) and len(value) == 2 and "?" in value:
             nibble_text = value[1] if value[0] == "?" else value[0]
-            nibble = self._hex_value(nibble_text)
+            nibble = self._hex_nibble_value(nibble_text)
+            if nibble is None:
+                return []
             byte = data[pos]
             if value[0] == "?":
                 return [pos + 1] if byte & 0x0F != nibble else []
             return [pos + 1] if byte >> 4 != nibble else []
-        return [pos + 1] if data[pos] != self._hex_value(value) else []
+        byte_value = self._hex_byte_value(value)
+        if byte_value is None:
+            return []
+        return [pos + 1] if data[pos] != byte_value else []
 
     def _match_hex_jump(self, data: bytes, token: HexJump, pos: int) -> list[int]:
-        min_jump = token.min_jump if token.min_jump is not None else 0
-        max_jump = token.max_jump if token.max_jump is not None else len(data) - pos
+        min_jump = self._hex_jump_bound(token.min_jump, default=0)
+        max_jump = self._hex_jump_bound(token.max_jump, default=len(data) - pos)
+        if min_jump is None or max_jump is None:
+            return []
         max_jump = min(max_jump, len(data) - pos)
         if min_jump > max_jump:
             return []
@@ -455,9 +463,35 @@ class StringMatcher:
             return HexByte(token)
         return token
 
-    def _hex_value(self, value: int | str) -> int:
+    def _hex_value(self, value: Any) -> int | None:
+        if isinstance(value, bool):
+            return None
+        if isinstance(value, int):
+            return value
         if isinstance(value, str):
-            return int(value, 16)
+            try:
+                return int(value, 16)
+            except ValueError:
+                return None
+        return None
+
+    def _hex_byte_value(self, value: Any) -> int | None:
+        byte_value = self._hex_value(value)
+        if byte_value is None or not 0 <= byte_value <= 0xFF:
+            return None
+        return byte_value
+
+    def _hex_nibble_value(self, value: Any) -> int | None:
+        nibble_value = self._hex_value(value)
+        if nibble_value is None or not 0 <= nibble_value <= 0x0F:
+            return None
+        return nibble_value
+
+    def _hex_jump_bound(self, value: Any, *, default: int) -> int | None:
+        if value is None:
+            return default
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            return None
         return value
 
     def _match_regex_string(self, data: bytes, string_def: RegexString) -> None:

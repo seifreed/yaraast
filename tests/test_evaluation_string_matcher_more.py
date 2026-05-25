@@ -425,6 +425,33 @@ def test_string_matcher_hex_tokens_match_yara_token_semantics() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    "hex_string",
+    [
+        HexString("$byte_bool", tokens=[HexByte(cast(Any, True))]),
+        HexString("$byte_text", tokens=[HexByte("GG")]),
+        HexString("$nibble_bool", tokens=[HexNibble(high=True, value=cast(Any, True))]),
+        HexString("$nibble_text", tokens=[HexNibble(high=False, value="G")]),
+        HexString("$negated_bool", tokens=[HexNegatedByte(cast(Any, True))]),
+        HexString("$negated_text", tokens=[HexNegatedByte("G?")]),
+        HexString(
+            "$jump_bool",
+            tokens=[HexByte(0x41), HexJump(cast(Any, True), 1), HexByte(0x42)],
+        ),
+        HexString(
+            "$jump_text",
+            tokens=[HexByte(0x41), HexJump(cast(Any, "1"), 1), HexByte(0x42)],
+        ),
+    ],
+)
+def test_string_matcher_invalid_hex_token_values_do_not_match_or_crash(
+    hex_string: HexString,
+) -> None:
+    matcher = StringMatcher()
+
+    assert matcher.match_string(hex_string, b"\x01A\x00B") == []
+
+
 def test_string_matcher_hex_keeps_shortest_match_per_offset() -> None:
     matcher = StringMatcher()
     unbounded_jump = HexString("$h", tokens=[HexByte(0x41), HexJump(1, None), HexByte(0x42)])
