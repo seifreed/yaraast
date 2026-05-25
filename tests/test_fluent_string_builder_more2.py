@@ -105,6 +105,17 @@ def test_fluent_string_builder_rejects_invalid_wildcard_sequence_counts() -> Non
         FluentStringBuilder("$wild").wildcard_sequence(cast(Any, True))
 
 
+def test_fluent_string_builder_rejects_invalid_jump_pattern_bounds() -> None:
+    with pytest.raises(TypeError, match="Invalid jump bound type"):
+        FluentStringBuilder("$jump").jump_pattern(cast(Any, True), 4)
+
+    with pytest.raises(ValidationError, match="Jump minimum must be non-negative"):
+        FluentStringBuilder("$jump").jump_pattern(-1, 4)
+
+    with pytest.raises(ValidationError, match="Jump minimum 5 cannot exceed maximum 4"):
+        FluentStringBuilder("$jump").jump_pattern(5, 4)
+
+
 def test_fluent_string_builder_regex_specific_modifiers() -> None:
     string_def = FluentStringBuilder("$re").regex("abc.*").dotall().multiline().build()
 

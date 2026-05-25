@@ -277,11 +277,30 @@ class FluentStringBuilder:
         """Create hex jump pattern [min-max]."""
         if max_bytes is None:
             max_bytes = min_bytes
+        self._validate_jump_bounds(min_bytes, max_bytes)
 
         tokens = [HexJump(min_jump=min_bytes, max_jump=max_bytes)]
         self._content = tokens
         self._string_type = "hex"
         return self
+
+    def _validate_jump_bounds(self, min_bytes: int, max_bytes: int) -> None:
+        self._validate_jump_bound_type("minimum", min_bytes)
+        self._validate_jump_bound_type("maximum", max_bytes)
+        if min_bytes < 0:
+            msg = f"Jump minimum must be non-negative, got {min_bytes}"
+            raise ValidationError(msg)
+        if max_bytes < 0:
+            msg = f"Jump maximum must be non-negative, got {max_bytes}"
+            raise ValidationError(msg)
+        if min_bytes > max_bytes:
+            msg = f"Jump minimum {min_bytes} cannot exceed maximum {max_bytes}"
+            raise ValidationError(msg)
+
+    def _validate_jump_bound_type(self, name: str, value: int) -> None:
+        if not isinstance(value, int) or isinstance(value, bool):
+            msg = f"Invalid jump bound type for {name}: {type(value)}"
+            raise TypeError(msg)
 
     # Build methods
     def build(self) -> StringDefinition:
