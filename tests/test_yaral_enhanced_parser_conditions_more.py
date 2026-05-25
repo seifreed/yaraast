@@ -7,6 +7,7 @@ from yaraast.yaral.ast_nodes import (
     BinaryCondition,
     NOfCondition,
     NullCheckCondition,
+    RawConditionValue,
     ReferenceList,
     VariableComparisonCondition,
 )
@@ -168,3 +169,27 @@ def test_enhanced_outcome_variable_conditions_preserve_generated_text() -> None:
     generated = YaraLGenerator().generate(ast)
     assert "$risk_score > 5" in generated
     assert "$risk_score == 10" in generated
+
+
+def test_enhanced_parenthesized_arithmetic_condition_values_preserve_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_parenthesized_arithmetic_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = count($e.principal.ip)
+          condition:
+            $risk_score > (1 + 2) * 3
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 1
+    condition = ast.rules[0].condition
+    assert condition is not None
+    assert isinstance(condition.expression, VariableComparisonCondition)
+    assert isinstance(condition.expression.value, RawConditionValue)
+    assert condition.expression.value == "(1 + 2) * 3"
+    assert "$risk_score > (1 + 2) * 3" in YaraLGenerator().generate(ast)

@@ -9,12 +9,14 @@ from yaraast.yaral._shared import parse_numeric_token_value
 from yaraast.yaral.ast_nodes import (
     EventVariable,
     FunctionCall,
+    RawConditionValue,
     ReferenceList,
     RegexPattern,
     TimeWindow,
     UDMFieldAccess,
     UDMFieldPath,
 )
+from yaraast.yaral.generator_helpers import format_literal
 from yaraast.yaral.tokens import YaraLTokenType
 
 
@@ -119,6 +121,13 @@ class EnhancedYaraLParserHelpersMixin:
 
     def _parse_event_value(self) -> Any:
         """Parse event value (literal, reference, or field)."""
+        if self._check(BaseTokenType.LPAREN):
+            value = self._parse_parenthesized_event_value()
+            return self._parse_event_arithmetic_value(value)
+        value = self._parse_event_primary_value()
+        return self._parse_event_arithmetic_value(value)
+
+    def _parse_event_primary_value(self) -> Any:
         if self._check(BaseTokenType.BOOLEAN_TRUE):
             self._advance()
             return True
@@ -145,6 +154,52 @@ class EnhancedYaraLParserHelpersMixin:
         if self._check(BaseTokenType.REGEX) or self._check(BaseTokenType.DIVIDE):
             return self._parse_regex_pattern()
         raise self._error("Expected value")
+
+    def _parse_parenthesized_event_value(self) -> RawConditionValue:
+        self._advance()
+        value = self._parse_event_value()
+        self._consume(BaseTokenType.RPAREN, "Expected ')' after value")
+        return RawConditionValue(f"({self._format_event_value_text(value)})")
+
+    def _parse_event_arithmetic_value(self, value: Any) -> Any:
+        if not self._check_event_arithmetic_operator():
+            return value
+        left = self._format_event_value_text(value)
+        return RawConditionValue(self._parse_event_arithmetic_text(left))
+
+    def _parse_event_arithmetic_text(self, left: str) -> str:
+        expression = left
+        while self._check_event_arithmetic_operator():
+            operator = str(self._advance().value)
+            right = self._format_event_value_text(self._parse_event_value())
+            expression = f"{expression} {operator} {right}"
+        return expression
+
+    def _check_event_arithmetic_operator(self) -> bool:
+        return (
+            self._check(BaseTokenType.PLUS)
+            or self._check(BaseTokenType.MINUS)
+            or self._check(BaseTokenType.MULTIPLY)
+            or self._check(BaseTokenType.DIVIDE)
+        )
+
+    def _format_event_value_text(self, value: Any) -> str:
+        if isinstance(value, RawConditionValue):
+            return str(value)
+        if isinstance(value, UDMFieldAccess):
+            return value.full_path
+        if isinstance(value, UDMFieldPath):
+            return value.path
+        if isinstance(value, EventVariable):
+            return value.name
+        if isinstance(value, ReferenceList):
+            return f"%{value.name}%"
+        if isinstance(value, RegexPattern):
+            return value.as_string
+        if isinstance(value, FunctionCall):
+            arguments = ", ".join(self._format_event_value_text(arg) for arg in value.arguments)
+            return f"{value.function}({arguments})"
+        return format_literal(value)
 
     def _is_event_function_call_value_start(self) -> bool:
         next_token = self._peek_ahead(1)
