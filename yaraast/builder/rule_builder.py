@@ -25,6 +25,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
+from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.errors import ValidationError, YaraASTError
 
 if TYPE_CHECKING:
@@ -201,6 +202,7 @@ class RuleBuilder:
     def with_hex_string(self, identifier: str, builder: HexStringBuilder | list) -> Self:
         """Add a hex string using a builder or token list."""
         tokens = list(builder) if isinstance(builder, list) else builder.build()
+        validate_hex_tokens_for_builder(tokens, identifier)
         self._strings.append(HexString(identifier=identifier, tokens=tokens, modifiers=[]))
         return self
 
@@ -237,9 +239,8 @@ class RuleBuilder:
                 tokens.append(HexByte(value=byte_val))
                 i += 2
 
-        self._strings.append(
-            HexString(identifier=identifier, tokens=tokens, modifiers=[]),
-        )
+        validate_hex_tokens_for_builder(tokens, identifier)
+        self._strings.append(HexString(identifier=identifier, tokens=tokens, modifiers=[]))
         return self
 
     def with_regex(

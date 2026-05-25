@@ -17,6 +17,7 @@ from yaraast.ast.strings import (
     StringDefinition,
 )
 from yaraast.builder.hex_string_builder import HexStringBuilder
+from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.errors import ValidationError
 
 
@@ -292,7 +293,7 @@ class FluentStringBuilder:
             )
         if self._string_type == "hex":
             tokens = self._hex_tokens_for_build()
-            self._validate_hex_tokens(tokens)
+            validate_hex_tokens_for_builder(tokens, self.identifier)
             return HexString(
                 identifier=self.identifier,
                 tokens=deepcopy(tokens),
@@ -312,14 +313,6 @@ class FluentStringBuilder:
         if isinstance(self._content, list):
             return self._content
         return []
-
-    def _validate_hex_tokens(self, tokens: list[HexToken]) -> None:
-        if not tokens:
-            msg = f"Hex string content not set for {self.identifier}"
-            raise ValidationError(msg)
-        if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
-            msg = f"HexJump cannot appear at the beginning or end of hex string {self.identifier}"
-            raise ValidationError(msg)
 
     def _add_modifier(self, modifier_type: StringModifierType) -> None:
         """Add a modifier, avoiding duplicates."""
