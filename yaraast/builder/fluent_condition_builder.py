@@ -24,6 +24,7 @@ from yaraast.builder.fluent_condition_helpers import (
     make_filesize_compare,
     make_integer_literal,
     make_string_count_compare,
+    validate_string_reference,
 )
 from yaraast.errors import ValidationError
 
@@ -127,6 +128,7 @@ class FluentConditionBuilder(ConditionBuilder):
     # String-specific helpers
     def string_matches(self, string_id: str) -> FluentConditionBuilder:
         """String matches (shorthand for string identifier)."""
+        validate_string_reference(string_id)
         return FluentConditionBuilder(StringIdentifier(name=string_id))
 
     def string_count_eq(self, string_id: str, count: int) -> FluentConditionBuilder:
@@ -143,18 +145,21 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def string_at_entrypoint(self, string_id: str) -> FluentConditionBuilder:
         """String at entrypoint."""
+        validate_string_reference(string_id)
         return FluentConditionBuilder(
             AtExpression(string_id=string_id, offset=Identifier(name="entrypoint")),
         )
 
     def string_at_offset(self, string_id: str, offset: int) -> FluentConditionBuilder:
         """String at specific offset."""
+        validate_string_reference(string_id)
         return FluentConditionBuilder(
             AtExpression(string_id=string_id, offset=make_integer_literal(offset)),
         )
 
     def string_in_first_kb(self, string_id: str) -> FluentConditionBuilder:
         """String in first 1KB of file."""
+        validate_string_reference(string_id)
         return FluentConditionBuilder(
             InExpression(
                 subject=string_id,
@@ -167,6 +172,7 @@ class FluentConditionBuilder(ConditionBuilder):
 
     def string_in_last_kb(self, string_id: str) -> FluentConditionBuilder:
         """String in last 1KB of file."""
+        validate_string_reference(string_id)
         return FluentConditionBuilder(
             InExpression(
                 subject=string_id,
@@ -377,6 +383,7 @@ class FluentConditionBuilder(ConditionBuilder):
     @staticmethod
     def match_string(string_id: str) -> FluentConditionBuilder:
         """Create condition matching a string."""
+        validate_string_reference(string_id)
         return FluentConditionBuilder(StringIdentifier(name=string_id))
 
     @staticmethod

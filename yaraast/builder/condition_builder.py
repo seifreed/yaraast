@@ -46,6 +46,7 @@ class ConditionBuilder:
     # String references
     def string(self, identifier: str) -> Self:
         """Reference a string identifier."""
+        self._validate_string_reference(identifier)
         return ConditionBuilder(StringIdentifier(name=identifier))
 
     def string_count(self, identifier: str) -> Self:
@@ -434,6 +435,12 @@ class ConditionBuilder:
         if "them" in strings and not all(string == "them" for string in strings):
             msg = "'them' cannot be mixed with explicit string identifiers"
             raise ValidationError(msg)
+        for string in strings:
+            if string != "them":
+                self._validate_string_reference(string)
+
+    def _validate_string_reference(self, identifier: str) -> None:
+        self._normalize_string_reference(identifier, "$")
 
     def _normalize_string_reference(self, identifier: str, marker: str) -> str:
         if not isinstance(identifier, str):

@@ -46,6 +46,16 @@ class TestConditionBuilderStringReferences:
         assert isinstance(expr, StringIdentifier)
         assert expr.name == "$malware"
 
+    @pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$", ""])
+    def test_rejects_invalid_string_references(self, identifier: str) -> None:
+        builder = ConditionBuilder()
+
+        with pytest.raises(ValidationError, match="Invalid string reference"):
+            builder.string(identifier)
+
+        with pytest.raises(ValidationError, match="Invalid string reference"):
+            builder.any_of("$a", identifier)
+
     def test_string_count_creates_string_count(self) -> None:
         """String_count should create StringCount expression."""
         builder = ConditionBuilder()

@@ -55,8 +55,14 @@ def build_string_set(*strings: str) -> Expression:
         raise ValidationError(msg)
     if all(s == "them" for s in strings):
         return Identifier(name="them")
+    for string in strings:
+        validate_string_reference(string)
     elements = [StringIdentifier(name=s) for s in strings]
     return SetExpression(elements=elements)
+
+
+def validate_string_reference(identifier: str) -> None:
+    _normalize_string_reference(identifier, "$")
 
 
 def _normalize_string_reference(identifier: str, marker: str) -> str:

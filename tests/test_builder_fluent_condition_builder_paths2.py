@@ -104,6 +104,18 @@ def test_fluent_condition_string_in_last_kb_expression_shape() -> None:
     assert isinstance(expr.range, type(expr.range))
 
 
+@pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$", ""])
+def test_fluent_condition_builder_rejects_invalid_string_references(identifier: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        FluentConditionBuilder.match_string(identifier)
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        FluentConditionBuilder().one_of("$a", identifier)
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        FluentConditionBuilder().string_at_offset(identifier, 0)
+
+
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python is not installed")
 def test_pe_predicate_helpers_generate_libyara_compatible_calls() -> None:
     condition_expr = (
