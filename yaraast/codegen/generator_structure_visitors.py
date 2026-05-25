@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from yaraast.codegen.generator_formatting import (
     format_nonempty_quoted_value,
+    validate_rule_collections,
     validate_rule_identifiers,
     validate_yara_file_collections,
     validate_yara_identifier,
@@ -70,6 +71,7 @@ def visit_include(node) -> str:
 
 
 def visit_rule(generator, node) -> str:
+    validate_rule_collections(node)
     generator._write_rule_header(node)
     generator._writeline(" {")
     generator._indent()

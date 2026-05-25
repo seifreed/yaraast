@@ -28,6 +28,10 @@ _YARA_FILE_COLLECTION_FIELDS = (
     "pragmas",
     "namespaces",
 )
+_RULE_COLLECTION_FIELDS = (
+    ("tags", "Rule tags"),
+    ("pragmas", "Rule pragmas"),
+)
 
 
 def format_rule_modifiers(modifiers) -> str:
@@ -71,6 +75,15 @@ def validate_yara_file_collections(node) -> None:
         if isinstance(value, list | tuple):
             continue
         msg = f"YaraFile {field_name} must be a list or tuple for libyara output"
+        raise TypeError(msg)
+
+
+def validate_rule_collections(node) -> None:
+    for field_name, display_name in _RULE_COLLECTION_FIELDS:
+        value = getattr(node, field_name)
+        if isinstance(value, list | tuple):
+            continue
+        msg = f"{display_name} must be a list or tuple for libyara output"
         raise TypeError(msg)
 
 
