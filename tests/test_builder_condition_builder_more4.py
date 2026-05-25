@@ -30,6 +30,22 @@ def test_condition_builder_group_and_for() -> None:
     assert isinstance(loop, ForExpression)
 
 
+def test_condition_builder_rejects_invalid_logical_operands() -> None:
+    builder = ConditionBuilder().true()
+
+    with pytest.raises(ValidationError, match="Empty condition builder"):
+        builder.and_(ConditionBuilder())
+
+    with pytest.raises(ValidationError, match="Empty condition builder"):
+        builder.or_(ConditionBuilder())
+
+    with pytest.raises(TypeError, match="Logical operand must be a ConditionBuilder or Expression"):
+        builder.and_(cast(Any, 1))
+
+    with pytest.raises(TypeError, match="Logical operand must be a ConditionBuilder or Expression"):
+        builder.or_(cast(Any, True))
+
+
 @pytest.mark.parametrize("member", ["bad-key", "for", "1bad", ""])
 def test_condition_builder_rejects_invalid_member_names(member: str) -> None:
     with pytest.raises(ValidationError, match="Invalid member identifier"):

@@ -130,7 +130,7 @@ class ConditionBuilder:
             msg = "Cannot apply AND to empty expression"
             raise ValidationError(msg)
 
-        right = other._expression if isinstance(other, ConditionBuilder) else other
+        right = self._to_logical_operand(other)
         return ConditionBuilder(
             BinaryExpression(left=self._expression, operator="and", right=right),
         )
@@ -141,7 +141,7 @@ class ConditionBuilder:
             msg = "Cannot apply OR to empty expression"
             raise ValidationError(msg)
 
-        right = other._expression if isinstance(other, ConditionBuilder) else other
+        right = self._to_logical_operand(other)
         return ConditionBuilder(
             BinaryExpression(left=self._expression, operator="or", right=right),
         )
@@ -391,6 +391,17 @@ class ConditionBuilder:
         return ConditionBuilder(
             BinaryExpression(left=self._expression, operator=op, right=right),
         )
+
+    def _to_logical_operand(self, value: ConditionBuilder | Expression) -> Expression:
+        if isinstance(value, ConditionBuilder):
+            if not value._expression:
+                msg = "Empty condition builder"
+                raise ValidationError(msg)
+            return value._expression
+        if isinstance(value, Expression):
+            return value
+        msg = "Logical operand must be a ConditionBuilder or Expression"
+        raise TypeError(msg)
 
     def _to_expression(
         self,
