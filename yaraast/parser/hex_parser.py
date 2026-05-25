@@ -66,11 +66,12 @@ class HexStringParser:
         self.content = ""
         self.pos = 0
 
-    def parse(self, hex_content: str) -> list[HexToken]:
+    def parse(self, hex_content: str, *, validate_placement: bool = True) -> list[HexToken]:
         """Parse hex string content into tokens.
 
         Args:
             hex_content: The raw hex string content (without curly braces).
+            validate_placement: Enforce libyara jump placement constraints.
 
         Returns:
             List of HexToken objects representing the parsed hex string.
@@ -105,7 +106,8 @@ class HexStringParser:
             msg = "Empty hex string"
             raise HexParseError(msg)
 
-        self._validate_jump_placement(tokens, in_alternative=False)
+        if validate_placement:
+            self._validate_jump_placement(tokens, in_alternative=False)
         return tokens
 
     def _validate_jump_placement(

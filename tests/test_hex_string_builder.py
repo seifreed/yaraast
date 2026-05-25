@@ -11,7 +11,15 @@ from typing import Any, cast
 
 import pytest
 
-from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexToken, HexWildcard
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexToken,
+    HexWildcard,
+)
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.errors import ValidationError
 
@@ -735,6 +743,23 @@ class TestHexStringBuilderPattern:
         assert tokens[4].value == 4
         assert isinstance(tokens[5], HexByte)
         assert tokens[5].value == 0x50
+
+    def test_pattern_with_alternatives_comments_and_negated_bytes(self) -> None:
+        """Pattern should use the full hex parser, including alternatives."""
+        builder = HexStringBuilder()
+
+        builder.pattern("4D (5A | ~00 | A?) // comment\n ??")
+        tokens = builder.build()
+
+        assert len(tokens) == 3
+        assert isinstance(tokens[0], HexByte)
+        assert isinstance(tokens[1], HexAlternative)
+        assert isinstance(tokens[2], HexWildcard)
+        alternatives = tokens[1].alternatives
+        assert len(alternatives) == 3
+        assert isinstance(alternatives[0][0], HexByte)
+        assert isinstance(alternatives[1][0], HexNegatedByte)
+        assert isinstance(alternatives[2][0], HexNibble)
 
     def test_pattern_rejects_invalid_jump_ranges(self) -> None:
         """Pattern parsing should reject invalid jumps."""

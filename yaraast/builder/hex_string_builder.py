@@ -8,6 +8,7 @@ from typing import Self
 
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexToken, HexWildcard
 from yaraast.errors import ValidationError
+from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 
 class HexStringBuilder:
@@ -169,67 +170,35 @@ class HexStringBuilder:
 
     def pattern(self, pattern: str) -> Self:
         """Add tokens from a pattern string like 'FF ?? [2-4] (AA|BB)'."""
-        # This is a simplified parser - in production would need full parser
         if not isinstance(pattern, str):
             msg = "Hex pattern must be a string"
             raise TypeError(msg)
-        parts = pattern.split()
-
-        for part in parts:
-            self._process_pattern_part(part)
+        try:
+            self._tokens.extend(HexStringParser().parse(pattern, validate_placement=False))
+        except HexParseError as exc:
+            raise ValidationError(self._pattern_error_message(pattern, exc)) from exc
 
         return self
 
-    def _process_pattern_part(self, part: str) -> None:
-        """Process a single pattern part."""
-        if part == "??":
-            self.wildcard()
-        elif self._is_jump_pattern(part):
-            self._process_jump_pattern(part)
-        elif self._is_nibble_pattern(part):
-            self.nibble(part)
-        elif self._is_hex_byte(part):
-            self._add_hex_byte_safely(part)
-        else:
-            msg = f"Invalid pattern part: {part}"
-            raise ValidationError(msg)
+    def _pattern_error_message(self, pattern: str, error: HexParseError) -> str:
+        part = self._pattern_part_at(pattern, error.position)
+        if not part:
+            return str(error)
+        if len(part) == 2:
+            return f"Invalid hex value: {part}"
+        return f"Invalid pattern part: {part}"
 
-    def _is_jump_pattern(self, part: str) -> bool:
-        """Check if part is a jump pattern like [2-4]."""
-        return part.startswith("[") and part.endswith("]")
-
-    def _is_nibble_pattern(self, part: str) -> bool:
-        """Check if part is a nibble pattern like A?."""
-        return len(part) == 2 and "?" in part
-
-    def _is_hex_byte(self, part: str) -> bool:
-        """Check if part is a regular hex byte."""
-        return len(part) == 2
-
-    def _process_jump_pattern(self, part: str) -> None:
-        """Process jump pattern like [2-4]."""
-        jump_str = part[1:-1]
-        try:
-            if "-" in jump_str:
-                parts = jump_str.split("-")
-                if len(parts) != 2:
-                    msg = f"Invalid jump pattern: {part}"
-                    raise ValidationError(msg)
-                if parts[0] == "" and parts[1] != "":
-                    msg = f"Invalid jump pattern: {part}"
-                    raise ValidationError(msg)
-                min_j = int(parts[0]) if parts[0] else None
-                max_j = int(parts[1]) if parts[1] else None
-                self.jump(min_j, max_j)
-            else:
-                exact_jump = int(jump_str)
-                if exact_jump == 0:
-                    msg = f"Invalid jump pattern: {part}"
-                    raise ValidationError(msg)
-                self.jump_exact(exact_jump)
-        except ValueError:
-            msg = f"Invalid jump pattern: {part}"
-            raise ValidationError(msg) from None
+    @staticmethod
+    def _pattern_part_at(pattern: str, position: int | None) -> str:
+        if position is None or position < 0 or position >= len(pattern):
+            return ""
+        start = position
+        while start > 0 and not pattern[start - 1].isspace():
+            start -= 1
+        end = position
+        while end < len(pattern) and not pattern[end].isspace():
+            end += 1
+        return pattern[start:end]
 
     def _validate_jump_bounds(self, min_jump: int | None, max_jump: int | None) -> None:
         """Validate jump bounds."""
@@ -249,10 +218,6 @@ class HexStringBuilder:
         if value is not None and (not isinstance(value, int) or isinstance(value, bool)):
             msg = f"Invalid jump bound type for {name}: {type(value)}"
             raise TypeError(msg)
-
-    def _add_hex_byte_safely(self, part: str) -> None:
-        """Add a hex byte token."""
-        self.add(part)
 
     def build(self) -> list[HexToken]:
         """Build the list of hex tokens."""
