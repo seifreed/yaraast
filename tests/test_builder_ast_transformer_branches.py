@@ -400,6 +400,46 @@ def test_yara_file_transformer_rejects_duplicate_rule_names_without_partial_upda
     assert [rule.name for rule in transformer.build().rules] == ["duplicate"]
 
 
+def test_yara_file_transformer_rejects_invalid_added_rule_names_without_partial_update() -> None:
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("valid")]))
+
+    with pytest.raises(ValidationError, match="Invalid rule identifier"):
+        transformer.add_rule(_sample_rule("bad-name"))
+
+    assert [rule.name for rule in transformer.build().rules] == ["valid"]
+
+
+def test_yara_file_transformer_rejects_duplicate_transformed_rule_names_without_partial_update() -> (
+    None
+):
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("one"), _sample_rule("two")]))
+
+    with pytest.raises(ValidationError, match="Duplicate rule identifier"):
+        transformer.transform_rule("one", lambda rule: RuleTransformer(rule).rename("two").build())
+
+    assert [rule.name for rule in transformer.build().rules] == ["one", "two"]
+
+
+def test_yara_file_transformer_rejects_non_rule_transform_results_without_partial_update() -> None:
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("one")]))
+
+    with pytest.raises(TypeError, match="Rule transformer must return a Rule"):
+        transformer.transform_rule("one", cast(Any, lambda rule: None))
+
+    assert [rule.name for rule in transformer.build().rules] == ["one"]
+
+
+def test_yara_file_transformer_rejects_duplicate_all_rule_transform_names_without_partial_update() -> (
+    None
+):
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("one"), _sample_rule("two")]))
+
+    with pytest.raises(ValidationError, match="Duplicate rule identifier"):
+        transformer.transform_all_rules(lambda rule: RuleTransformer(rule).rename("same").build())
+
+    assert [rule.name for rule in transformer.build().rules] == ["one", "two"]
+
+
 def test_yara_file_transformer_rejects_empty_imports_and_includes() -> None:
     transformer = YaraFileTransformer(YaraFile()).add_import("pe").add_include("common.yar")
 

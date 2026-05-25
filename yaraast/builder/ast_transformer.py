@@ -397,6 +397,19 @@ class YaraFileTransformer:
     def __init__(self, yara_file: YaraFile) -> None:
         self.yara_file = CloneTransformer.clone_yara_file(yara_file)
 
+    @staticmethod
+    def _require_rule(value: object) -> Rule:
+        if isinstance(value, Rule):
+            return value
+        msg = f"Rule transformer must return a Rule, got {type(value).__name__}"
+        raise TypeError(msg)
+
+    @staticmethod
+    def _validate_rule_list(rules: list[Rule]) -> None:
+        for rule in rules:
+            validate_identifier(rule.name, "rule")
+        validate_unique_rule_names([], rules)
+
     def add_import(self, module: str, alias: str | None = None) -> YaraFileTransformer:
         """Add an import statement."""
         validate_nonempty_text(module, "Import module")
@@ -426,6 +439,7 @@ class YaraFileTransformer:
 
     def add_rule(self, rule: Rule) -> YaraFileTransformer:
         """Add a rule to the file."""
+        validate_identifier(rule.name, "rule")
         validate_unique_rule_names(self.yara_file.rules, [rule])
         self.yara_file.rules.append(CloneTransformer.clone_rule(rule))
         return self
@@ -443,7 +457,13 @@ class YaraFileTransformer:
         """Transform a specific rule."""
         for i, rule in enumerate(self.yara_file.rules):
             if rule.name == rule_name:
-                self.yara_file.rules[i] = transformer_func(rule)
+                transformed_rule = self._require_rule(
+                    transformer_func(CloneTransformer.clone_rule(rule))
+                )
+                transformed_rules = self.yara_file.rules.copy()
+                transformed_rules[i] = transformed_rule
+                self._validate_rule_list(transformed_rules)
+                self.yara_file.rules = transformed_rules
                 break
         return self
 
@@ -452,7 +472,12 @@ class YaraFileTransformer:
         transformer_func: Callable[[Rule], Rule],
     ) -> YaraFileTransformer:
         """Transform all rules."""
-        self.yara_file.rules = [transformer_func(rule) for rule in self.yara_file.rules]
+        transformed_rules = [
+            self._require_rule(transformer_func(CloneTransformer.clone_rule(rule)))
+            for rule in self.yara_file.rules
+        ]
+        self._validate_rule_list(transformed_rules)
+        self.yara_file.rules = transformed_rules
         return self
 
     def prefix_all_rules(self, prefix: str) -> YaraFileTransformer:
