@@ -118,6 +118,38 @@ def test_ast_differ_detects_changed_duplicate_rule_occurrence() -> None:
     assert any("Condition logic changed in rule 'duplicate#1'" in c for c in result.logical_changes)
 
 
+def test_ast_differ_detects_changed_duplicate_string_occurrence() -> None:
+    ast1 = YaraFile(
+        rules=[
+            Rule(
+                "strings",
+                strings=[
+                    PlainString("$a", value="first"),
+                    PlainString("$a", value="second"),
+                ],
+                condition=BooleanLiteral(True),
+            ),
+        ],
+    )
+    ast2 = YaraFile(
+        rules=[
+            Rule(
+                "strings",
+                strings=[
+                    PlainString("$a", value="changed"),
+                    PlainString("$a", value="second"),
+                ],
+                condition=BooleanLiteral(True),
+            ),
+        ],
+    )
+
+    result = ASTDiffer().diff_asts(ast1, ast2)
+
+    assert result.has_changes is True
+    assert "String 'strings:$a#1' content modified" in result.logical_changes
+
+
 def test_ast_differ_public_change_lists_are_stably_sorted() -> None:
     ast1 = Parser().parse("""
 rule z_removed { condition: true }
