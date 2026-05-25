@@ -95,6 +95,13 @@ def _validate_meta_value(value: object) -> None:
     raise TypeError(msg)
 
 
+def _validate_text_value(value: object, field: str) -> str:
+    if isinstance(value, str):
+        return value
+    msg = f"{field} must be a string"
+    raise TypeError(msg)
+
+
 def _coerce_plain_string_value(value: object) -> str:
     if isinstance(value, bytes):
         return value.decode("latin-1")
@@ -214,10 +221,12 @@ class RuleBuilder:
 
     def with_author(self, author: str) -> Self:
         """Add author meta field."""
+        author = _validate_text_value(author, "Author")
         return self.with_meta("author", author)
 
     def with_description(self, description: str) -> Self:
         """Add description meta field."""
+        description = _validate_text_value(description, "Description")
         return self.with_meta("description", description)
 
     def with_version(self, version: int) -> Self:
