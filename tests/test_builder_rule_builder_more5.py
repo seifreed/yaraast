@@ -80,6 +80,34 @@ def test_rule_builder_rejects_invalid_meta_values(meta_value: Any) -> None:
         RuleBuilder("metadata_rule").add_meta("value", meta_value)
 
 
+@pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$", ""])
+def test_rule_builder_rejects_invalid_string_identifiers(identifier: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid string identifier"):
+        RuleBuilder("string_rule").with_plain_string(identifier, "x")
+
+    with pytest.raises(ValidationError, match="Invalid string identifier"):
+        RuleBuilder("string_rule").with_regex_string(identifier, "x")
+
+    with pytest.raises(ValidationError, match="Invalid string identifier"):
+        RuleBuilder("string_rule").with_hex_string_raw(identifier, "4D 5A")
+
+
+def test_rule_builder_rejects_duplicate_string_identifiers_without_partial_update() -> None:
+    builder = RuleBuilder("string_rule").with_plain_string("$a", "first")
+
+    with pytest.raises(ValidationError, match="Duplicate string identifier"):
+        builder.with_plain_string("$a", "second")
+
+    with pytest.raises(ValidationError, match="Duplicate string identifier"):
+        builder.with_regex_string("a", "third")
+
+    rule = builder.build()
+    assert [string_def.identifier for string_def in rule.strings] == ["$a"]
+    only_string = rule.strings[0]
+    assert isinstance(only_string, PlainString)
+    assert only_string.value == "first"
+
+
 def test_rule_builder_hex_regex_and_condition_variants() -> None:
     rule = (
         RuleBuilder("variants")

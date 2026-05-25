@@ -18,6 +18,7 @@ from yaraast.ast.strings import (
 )
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
+from yaraast.builder.string_identifier_validation import normalize_string_identifier
 from yaraast.errors import ValidationError
 
 
@@ -311,6 +312,7 @@ class FluentStringBuilder:
     # Build methods
     def build(self) -> StringDefinition:
         """Build the string definition."""
+        normalize_string_identifier(self.identifier)
         if self._content is None:
             msg = f"String content not set for {self.identifier}"
             raise ValidationError(msg)

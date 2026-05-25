@@ -26,6 +26,7 @@ from yaraast.ast.strings import (
 )
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
+from yaraast.builder.string_identifier_validation import validate_new_string_definitions
 from yaraast.errors import ValidationError, YaraASTError
 from yaraast.lexer.lexer_tables import KEYWORDS
 
@@ -154,19 +155,19 @@ class RuleBuilder:
     def with_regex_string(self, identifier: str, pattern: str, **modifiers) -> Self:
         """Add a regex string with modifiers."""
         mod_list = [StringModifier.from_name_value(k) for k, v in modifiers.items() if v]
-        self._strings.append(
+        self._append_string_definition(
             RegexString(identifier=identifier, regex=pattern, modifiers=mod_list),
         )
         return self
 
     def add_string_definition(self, string_def: StringDefinition) -> Self:
         """Add a prebuilt string definition."""
-        self._strings.append(string_def)
+        self._append_string_definition(string_def)
         return self
 
     def add_string_definitions(self, string_defs: list[StringDefinition]) -> Self:
         """Add multiple prebuilt string definitions."""
-        self._strings.extend(string_defs)
+        self._extend_string_definitions(string_defs)
         return self
 
     def with_tags(self, *tags: str) -> Self:
@@ -220,7 +221,7 @@ class RuleBuilder:
         if fullword:
             modifiers.append(StringModifier.from_name_value("fullword"))
 
-        self._strings.append(
+        self._append_string_definition(
             PlainString(identifier=identifier, value=value, modifiers=modifiers),
         )
         return self
@@ -252,7 +253,9 @@ class RuleBuilder:
         """Add a hex string using a builder or token list."""
         tokens = list(builder) if isinstance(builder, list) else builder.build()
         validate_hex_tokens_for_builder(tokens, identifier)
-        self._strings.append(HexString(identifier=identifier, tokens=tokens, modifiers=[]))
+        self._append_string_definition(
+            HexString(identifier=identifier, tokens=tokens, modifiers=[])
+        )
         return self
 
     def with_hex_string_builder(self, identifier: str, builder_func) -> Self:
@@ -289,7 +292,9 @@ class RuleBuilder:
                 i += 2
 
         validate_hex_tokens_for_builder(tokens, identifier)
-        self._strings.append(HexString(identifier=identifier, tokens=tokens, modifiers=[]))
+        self._append_string_definition(
+            HexString(identifier=identifier, tokens=tokens, modifiers=[])
+        )
         return self
 
     def with_regex(
@@ -311,7 +316,7 @@ class RuleBuilder:
         if multiline:
             mods.append(StringModifier(modifier_type=StringModifierType.MULTILINE))
 
-        self._strings.append(
+        self._append_string_definition(
             RegexString(identifier=identifier, regex=pattern, modifiers=mods),
         )
         return self
@@ -380,11 +385,21 @@ class RuleBuilder:
         self._require_condition = require
         return self
 
+    def _append_string_definition(self, string_def: StringDefinition) -> None:
+        validate_new_string_definitions(self._strings, [string_def])
+        self._strings.append(string_def)
+
+    def _extend_string_definitions(self, string_defs: list[StringDefinition]) -> None:
+        validate_new_string_definitions(self._strings, string_defs)
+        self._strings.extend(string_defs)
+
     def build(self) -> Rule:
         """Build the Rule AST node."""
         if not self._name:
             msg = "Rule name is required"
             raise ValidationError(msg)
+
+        validate_new_string_definitions([], self._strings)
 
         if not self._condition:
             if self._require_condition:

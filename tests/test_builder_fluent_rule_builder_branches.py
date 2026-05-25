@@ -201,6 +201,13 @@ def test_fluent_file_builder_rejects_invalid_import_alias(alias: str) -> None:
         yara_file().import_module("pe", alias=alias)
 
 
+def test_fluent_rule_builder_rejects_duplicate_string_identifiers() -> None:
+    with pytest.raises(ValidationError, match="Duplicate string identifier"):
+        rule("duplicate_strings").text_string("$a", "one").text_string(
+            "a", "two"
+        ).matches_any().build()
+
+
 def test_rule_metadata_aliases_and_example_rules_paths() -> None:
     built = (
         FluentRuleBuilder()
