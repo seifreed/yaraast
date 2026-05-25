@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from yaraast.ast.base import ASTNode
@@ -41,9 +41,13 @@ class DependencyAnalyzer(BaseVisitor[None]):
             set,
         )  # rule -> rules it depends on
         self.current_rule: str | None = None
+        self.current_rule_key: str | None = None
         self.imported_modules: set[str] = set()
         self.included_files: set[str] = set()
         self.local_scopes: list[set[str]] = []
+        self._raw_rule_names: set[str] = set()
+        self._rule_keys_by_id: dict[int, str] = {}
+        self._rule_keys_by_name: dict[str, list[str]] = {}
 
     def analyze(self, yara_file: YaraFile) -> dict[str, Any]:
         """Analyze dependencies in YARA file."""
@@ -52,11 +56,26 @@ class DependencyAnalyzer(BaseVisitor[None]):
         self.imported_modules.clear()
         self.included_files.clear()
         self.current_rule = None
+        self.current_rule_key = None
         self.local_scopes.clear()
+        self._raw_rule_names.clear()
+        self._rule_keys_by_id.clear()
+        self._rule_keys_by_name.clear()
 
         # First pass: collect all rule names
+        self._raw_rule_names = {rule.name for rule in yara_file.rules}
+        rule_counts = Counter(rule.name for rule in yara_file.rules)
+        seen_rules: defaultdict[str, int] = defaultdict(int)
         for rule in yara_file.rules:
-            self.rule_names.add(rule.name)
+            seen_rules[rule.name] += 1
+            rule_key = self._rule_analysis_key(
+                rule.name,
+                seen_rules[rule.name],
+                rule_counts,
+            )
+            self.rule_names.add(rule_key)
+            self._rule_keys_by_id[id(rule)] = rule_key
+            self._rule_keys_by_name.setdefault(rule.name, []).append(rule_key)
 
         # Visit imports and includes
         for imp in yara_file.imports:
@@ -223,22 +242,52 @@ class DependencyAnalyzer(BaseVisitor[None]):
 
     def visit_rule(self, node: Rule) -> None:
         self.current_rule = node.name
+        self.current_rule_key = self._analysis_key_for_rule(node)
 
         # Check condition for rule references
-        if node.condition:
-            self.visit(node.condition)
+        try:
+            if node.condition:
+                self.visit(node.condition)
+        finally:
+            self.current_rule = None
+            self.current_rule_key = None
 
-        self.current_rule = None
+    def _rule_analysis_key(
+        self,
+        rule_name: str,
+        occurrence: int,
+        counts: Counter[str],
+    ) -> str:
+        if counts[rule_name] == 1:
+            return rule_name
+        return f"{rule_name}#{occurrence}"
+
+    def _analysis_key_for_rule(self, rule: Rule) -> str:
+        return self._rule_keys_by_id.get(id(rule), rule.name)
+
+    def _active_rule_key(self) -> str | None:
+        return self.current_rule_key or self.current_rule
+
+    def _known_raw_rule_names(self) -> set[str]:
+        return self._raw_rule_names or self.rule_names
+
+    def _dependency_targets_for_rule_name(self, rule_name: str) -> tuple[str, ...]:
+        rule_keys = self._rule_keys_by_name.get(rule_name)
+        if not rule_keys:
+            return (rule_name,)
+        return tuple(rule_keys)
 
     def visit_identifier(self, node: Identifier) -> None:
         # Check if identifier is a rule reference
+        rule_key = self._active_rule_key()
         if (
-            self.current_rule
-            and node.name in self.rule_names
+            rule_key
+            and self.current_rule
+            and node.name in self._known_raw_rule_names()
             and node.name != self.current_rule
             and not self._is_local(node.name)
         ):
-            self.dependencies[self.current_rule].add(node.name)
+            self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(node.name))
 
     def visit_function_call(self, node: FunctionCall) -> None:
         # Function callees are not rule references; only their arguments can contain them.

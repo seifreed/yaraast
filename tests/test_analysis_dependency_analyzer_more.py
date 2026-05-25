@@ -99,6 +99,41 @@ rule caller {
     assert analyzer.current_rule is None
 
 
+def test_dependency_analyzer_preserves_duplicate_rule_occurrences() -> None:
+    ast = Parser().parse("""
+rule dup {
+    condition:
+        true
+}
+
+rule dup {
+    condition:
+        helper
+}
+
+rule helper {
+    condition:
+        true
+}
+
+rule caller {
+    condition:
+        dup
+}
+""")
+    analyzer = DependencyAnalyzer()
+
+    results = analyzer.analyze(ast)
+
+    assert results["rules"] == ["caller", "dup#1", "dup#2", "helper"]
+    assert results["dependencies"]["dup#2"] == ["helper"]
+    assert results["dependencies"]["caller"] == ["dup#1", "dup#2"]
+    assert results["dependency_graph"]["dup#1"]["is_independent"] is False
+    assert results["dependency_graph"]["dup#2"]["depends_on"] == ["helper"]
+    assert analyzer.get_dependencies("caller") == ["dup#1", "dup#2"]
+    assert analyzer.get_dependents("helper") == ["dup#2"]
+
+
 def test_dependency_analyzer_does_not_treat_function_name_as_rule_dependency() -> None:
     ast = Parser().parse("""
 rule helper {
