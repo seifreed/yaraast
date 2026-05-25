@@ -14,9 +14,11 @@ from yaraast.ast.expressions import (
     BooleanLiteral,
     Identifier,
     IntegerLiteral,
+    StringIdentifier,
     UnaryExpression,
 )
 from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
 from yaraast.libyara.ast_optimizer import ASTOptimizer
 from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE, LibyaraCompiler
 from yaraast.libyara.direct_compiler import YARA_AVAILABLE, DirectASTCompiler, OptimizedMatcher
@@ -102,6 +104,28 @@ def test_ast_optimizer_rule_and_constant_paths() -> None:
     assert optimizer._fold_constants(IntegerLiteral(7), "/", IntegerLiteral(0)) is None
     assert (
         optimizer._fold_constants(IntegerLiteral(cast(Any, "bad")), "+", IntegerLiteral(1)) is None
+    )
+
+
+def test_ast_optimizer_rule_removes_unused_strings() -> None:
+    optimizer = ASTOptimizer()
+    rule = Rule(
+        name="string_rule",
+        strings=[
+            PlainString(identifier="$used", value="used"),
+            PlainString(identifier="$unused", value="unused"),
+        ],
+        condition=StringIdentifier("$used"),
+    )
+
+    optimizer._optimize_rule(rule)
+
+    assert [string.identifier for string in rule.strings] == ["$used"]
+    assert optimizer.stats.strings_optimized == 1
+    assert optimizer.stats.dead_code_removed == 1
+    assert any(
+        "Removed 1 unused strings in rule 'string_rule'" in item
+        for item in optimizer.optimizations_applied
     )
 
 

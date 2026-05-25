@@ -67,11 +67,15 @@ class ASTOptimizer:
 
     def _optimize_rule(self, rule: Rule) -> None:
         """Optimize a single rule."""
-        # Remove unused strings (simplified check)
-        len(rule.strings) if rule.strings else 0
-
-        # For now, keep all strings (full implementation would check condition usage)
-        # This is a simplified version to make it work
+        original_string_count = len(rule.strings)
+        DeadCodeEliminator().eliminate_dead_code(rule)
+        removed_string_count = original_string_count - len(rule.strings)
+        if removed_string_count > 0:
+            self.stats.strings_optimized += removed_string_count
+            self.stats.dead_code_removed += removed_string_count
+            self.optimizations_applied.append(
+                f"Removed {removed_string_count} unused strings in rule '{rule.name}'",
+            )
 
         # Optimize condition
         if rule.condition:
