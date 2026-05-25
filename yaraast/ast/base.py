@@ -92,11 +92,20 @@ class YaraFile(ASTNode):
 
     def add_extern_rule(self, extern_rule: ExternRule) -> None:
         """Add an extern rule to the file."""
+        from yaraast.ast.extern import ExternRule
+
+        if not isinstance(extern_rule, ExternRule):
+            msg = "Extern rule input must be an ExternRule"
+            raise TypeError(msg)
         self.extern_rules.append(extern_rule)
 
     def add_pragma(self, pragma: Pragma) -> None:
         """Add a file-level pragma."""
-        from yaraast.ast.pragmas import PragmaScope
+        from yaraast.ast.pragmas import Pragma, PragmaScope
+
+        if not isinstance(pragma, Pragma):
+            msg = "Pragma input must be a Pragma"
+            raise TypeError(msg)
 
         pragma.scope = PragmaScope.FILE
         self.pragmas.append(pragma)

@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.extern import ExternNamespace, ExternRule
 from yaraast.ast.pragmas import IncludeOncePragma, Pragma, PragmaType
@@ -29,6 +33,23 @@ def test_yarafile_accept_and_pragma_lookup_paths() -> None:
     assert include_pragmas == [include_once]
     assert define_pragmas == [define]
     assert missing_pragmas == []
+
+
+def test_yarafile_rejects_invalid_extern_rules_and_pragmas_without_partial_update() -> None:
+    file_node = YaraFile()
+    extern_rule = ExternRule(name="r1")
+    pragma = IncludeOncePragma()
+    file_node.add_extern_rule(extern_rule)
+    file_node.add_pragma(pragma)
+
+    with pytest.raises(TypeError, match="Extern rule input must be an ExternRule"):
+        file_node.add_extern_rule(cast(Any, object()))
+
+    with pytest.raises(TypeError, match="Pragma input must be a Pragma"):
+        file_node.add_pragma(cast(Any, object()))
+
+    assert file_node.extern_rules == [extern_rule]
+    assert file_node.pragmas == [pragma]
 
 
 def test_get_extern_rule_by_name_none_path() -> None:

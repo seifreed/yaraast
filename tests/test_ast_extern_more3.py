@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.extern import (
     ExternImport,
     ExternNamespace,
@@ -51,3 +55,14 @@ def test_extern_namespace_negative_lookup_and_factory_without_modifiers() -> Non
     helper_rule = create_extern_rule("R2")
     assert helper_rule.modifiers == []
     assert helper_rule.namespace is None
+
+
+def test_extern_namespace_rejects_invalid_rule_inputs_without_partial_update() -> None:
+    ns = ExternNamespace(name="ext")
+    rule = ExternRule(name="R1")
+    ns.add_extern_rule(rule)
+
+    with pytest.raises(TypeError, match="Extern rule input must be an ExternRule"):
+        ns.add_extern_rule(cast(Any, object()))
+
+    assert ns.extern_rules == [rule]

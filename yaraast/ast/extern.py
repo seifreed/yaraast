@@ -124,6 +124,9 @@ class ExternNamespace(ASTNode):
 
     def add_extern_rule(self, extern_rule: ExternRule) -> None:
         """Add an extern rule to this namespace."""
+        if not isinstance(extern_rule, ExternRule):
+            msg = "Extern rule input must be an ExternRule"
+            raise TypeError(msg)
         extern_rule.namespace = self.name
         self.extern_rules.append(extern_rule)
 
