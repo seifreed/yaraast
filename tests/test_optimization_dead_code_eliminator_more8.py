@@ -325,6 +325,36 @@ def test_dead_code_eliminator_tracks_string_usage_per_rule() -> None:
     assert [string.identifier for string in optimized.rules[1].strings] == ["$b"]
 
 
+def test_dead_code_eliminator_tracks_string_usage_per_duplicate_rule_name() -> None:
+    dce = DeadCodeEliminator()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="dup",
+                strings=[
+                    PlainString(identifier="$a", value="a"),
+                    PlainString(identifier="$b", value="b"),
+                ],
+                condition=StringIdentifier("$a"),
+            ),
+            Rule(
+                name="dup",
+                strings=[
+                    PlainString(identifier="$a", value="a"),
+                    PlainString(identifier="$b", value="b"),
+                ],
+                condition=StringIdentifier("$b"),
+            ),
+        ]
+    )
+
+    optimized, count = dce.eliminate(ast)
+
+    assert count == 2
+    assert [string.identifier for string in optimized.rules[0].strings] == ["$a"]
+    assert [string.identifier for string in optimized.rules[1].strings] == ["$b"]
+
+
 def test_eliminate_dead_code_single_rule_and_convenience_wrapper() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(
