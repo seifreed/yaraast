@@ -22,7 +22,7 @@ from yaraast.ast.expressions import (
     StringWildcard,
 )
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import RuleModifier, RuleModifierType
+from yaraast.ast.modifiers import MetaEntry, RuleModifier, RuleModifierType
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.cli.visitors import ASTDumper, ASTTreeBuilder, ConditionStringFormatter
@@ -50,8 +50,28 @@ def test_ast_dumper_handles_tags_meta_and_modifiers() -> None:
     assert "123" in dumped["modifiers"]
     assert any(tag.get("name") == "alpha" for tag in dumped["tags"] if isinstance(tag, dict))
     assert "beta" in dumped["tags"]
-    assert dumped["meta"]["owner"] == "me"
-    assert dumped["meta"]["flag"] is True
+    assert dumped["meta"] == [
+        {"key": "owner", "value": "me"},
+        {"key": "flag", "value": True},
+    ]
+
+
+def test_ast_dumper_preserves_duplicate_meta_entries() -> None:
+    rule = Rule(
+        name="r1",
+        meta=[
+            MetaEntry.from_key_value("author", "alice"),
+            MetaEntry.from_key_value("author", "bob", "private"),
+        ],
+        condition=BooleanLiteral(value=True),
+    )
+
+    dumped = ASTDumper().visit_rule(rule)
+
+    assert dumped["meta"] == [
+        {"key": "author", "value": "alice", "scope": "public"},
+        {"key": "author", "value": "bob", "scope": "private"},
+    ]
 
 
 def test_condition_formatter_literals_and_calls() -> None:

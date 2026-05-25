@@ -104,13 +104,17 @@ class ASTDumper(ASTVisitor[dict]):
                 result.append(self.visit(tag))
         return result
 
-    def _process_meta(self, meta) -> dict:
+    def _process_meta(self, meta) -> list[dict[str, Any]]:
         """Process meta from rule node."""
-        result = {}
+        result = []
         if isinstance(meta, list):
             for m in meta:
                 if hasattr(m, "key") and hasattr(m, "value"):
-                    result[m.key] = m.value
+                    entry = {"key": m.key, "value": m.value}
+                    scope = getattr(m, "scope", None)
+                    if scope is not None:
+                        entry["scope"] = getattr(scope, "value", str(scope))
+                    result.append(entry)
         return result
 
     def _process_modifiers(self, node: Rule) -> list:

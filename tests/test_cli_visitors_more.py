@@ -29,4 +29,4 @@ def test_ast_dumper_outputs_structure() -> None:
     assert dump["includes"][0]["path"] == "base.yar"
     assert dump["rules"][0]["name"] == "demo"
     assert dump["rules"][0]["tags"]
-    assert dump["rules"][0]["meta"]["author"] == "unit"
+    assert dump["rules"][0]["meta"] == [{"key": "author", "value": "unit", "scope": "public"}]

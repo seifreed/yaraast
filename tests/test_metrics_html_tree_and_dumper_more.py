@@ -51,7 +51,7 @@ def test_ast_dumper_direct_visitors_for_remaining_nodes() -> None:
     assert dumper._process_modifiers(cast(Any, rule_with_accept_modifier)) == [
         {"type": "StringModifier", "name": "global", "value": None},
     ]
-    assert dumper._process_meta(None) == {}
+    assert dumper._process_meta(None) == []
 
     hex_dump = dumper.visit_hex_string(HexString(identifier="$h", tokens=[HexByte(value=0x41)]))
     regex_dump = dumper.visit_regex_string(RegexString(identifier="$r", regex="abc"))

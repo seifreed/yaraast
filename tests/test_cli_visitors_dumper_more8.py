@@ -65,7 +65,7 @@ def test_dumper_branches_for_modifiers_meta_and_generic_nodes() -> None:
 
     # _process_meta list branch + ignored entries
     meta = d._process_meta([Meta(key="a", value=1), SimpleNamespace(foo=1)])
-    assert meta == {"a": 1}
+    assert meta == [{"key": "a", "value": 1}]
 
     # visit_string_definition
     base_sd = d.visit_string_definition(PlainString(identifier="$x", value="abc"))
