@@ -44,6 +44,9 @@ class CloneTransformer:
     @staticmethod
     def clone(node: ASTNode) -> ASTNode:
         """Deep clone an AST node."""
+        if not isinstance(node, ASTNode):
+            msg = "AST node input must be an ASTNode"
+            raise TypeError(msg)
         return deepcopy(node)
 
     @staticmethod
