@@ -150,6 +150,8 @@ class EnhancedYaraLParserHelpersMixin:
             if token.value in ["true", "false"]:
                 self._advance()
                 return token.value == "true"
+            if self._check_keyword("if"):
+                return self._parse_conditional_expression()
             if self._is_event_function_call_value_start():
                 return self._parse_event_function_call_value()
             return self._parse_udm_field_path()

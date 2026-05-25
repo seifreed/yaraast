@@ -5,6 +5,7 @@ import pytest
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral.ast_nodes import (
     BinaryCondition,
+    ConditionalExpression,
     NOfCondition,
     NullCheckCondition,
     RawConditionValue,
@@ -193,6 +194,30 @@ def test_enhanced_outcome_variable_condition_values_preserve_generated_text() ->
     assert isinstance(condition.expression, VariableComparisonCondition)
     assert condition.expression.value == "$threshold"
     assert "$risk_score > $threshold" in YaraLGenerator().generate(ast)
+
+
+def test_enhanced_conditional_condition_values_preserve_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_conditional_condition_value {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = count($e.principal.ip)
+          condition:
+            $risk_score > if($e.metadata.event_type = "LOGIN", 1, 0)
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 1
+    condition = ast.rules[0].condition
+    assert condition is not None
+    assert isinstance(condition.expression, VariableComparisonCondition)
+    assert isinstance(condition.expression.value, ConditionalExpression)
+    generated = YaraLGenerator().generate(ast)
+    assert '$risk_score > if($e.metadata.event_type = "LOGIN", 1, 0)' in generated
 
 
 def test_enhanced_parenthesized_arithmetic_condition_values_preserve_generated_text() -> None:
