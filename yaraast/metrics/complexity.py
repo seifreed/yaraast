@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter, defaultdict
 from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING
 
@@ -31,6 +32,8 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         super().__init__(default=None)
         self.metrics = ComplexityMetrics()
         self._current_rule: Rule | None = None
+        self._current_rule_key: str | None = None
+        self._rule_metric_keys: dict[int, str] = {}
         self._condition_depths: list[int] = []
         self._current_depth = 0
         self._string_usage: dict[str, set[str]] = {}
@@ -41,6 +44,8 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         """Analyze AST and return complexity metrics."""
         self.metrics = ComplexityMetrics()
         self._current_rule = None
+        self._current_rule_key = None
+        self._rule_metric_keys.clear()
         self._condition_depths.clear()
         self._current_depth = 0
         self._string_usage = {}
@@ -57,7 +62,15 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             self.metrics.module_usage[imp.module] = self.metrics.module_usage.get(imp.module, 0) + 1
 
         # Analyze each rule
+        rule_counts = Counter(rule.name for rule in ast.rules)
+        seen_rules: defaultdict[str, int] = defaultdict(int)
         for rule in ast.rules:
+            seen_rules[rule.name] += 1
+            self._rule_metric_keys[id(rule)] = self._rule_metric_key(
+                rule.name,
+                seen_rules[rule.name],
+                rule_counts,
+            )
             analyze_rule(self, rule)
 
         # Post-analysis calculations
@@ -126,9 +139,25 @@ class ComplexityAnalyzer(MetricsVisitorBase):
         return string_id if string_id.startswith("$") else f"${string_id.lstrip('#@!')}"
 
     def _mark_string_usage(self, string_id: str) -> None:
-        if self._current_rule:
+        rule_key = self._active_rule_key()
+        if rule_key:
             normalized = self._normalize_string_id(string_id)
-            self._string_usage.setdefault(self._current_rule.name, set()).add(normalized)
+            self._string_usage.setdefault(rule_key, set()).add(normalized)
+
+    def _rule_metric_key(self, rule_name: str, occurrence: int, counts: Counter[str]) -> str:
+        if counts[rule_name] == 1:
+            return rule_name
+        return f"{rule_name}#{occurrence}"
+
+    def _metric_key_for_rule(self, rule: Rule) -> str:
+        return self._rule_metric_keys.get(id(rule), rule.name)
+
+    def _active_rule_key(self) -> str | None:
+        if self._current_rule_key:
+            return self._current_rule_key
+        if self._current_rule:
+            return self._metric_key_for_rule(self._current_rule)
+        return None
 
     def _mark_string_identifier_usage(self, string_id: str) -> None:
         if self._is_local(string_id):

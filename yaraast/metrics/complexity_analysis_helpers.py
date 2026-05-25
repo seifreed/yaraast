@@ -9,6 +9,7 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 
 def analyze_rule(analyzer, rule) -> None:
     analyzer._current_rule = rule
+    analyzer._current_rule_key = analyzer._metric_key_for_rule(rule)
     if any(str(m) == "private" for m in rule.modifiers):
         analyzer.metrics.private_rules += 1
     if any(str(m) == "global" for m in rule.modifiers):
@@ -29,17 +30,18 @@ def analyze_rule(analyzer, rule) -> None:
         analyzer.metrics.max_condition_depth = max(
             analyzer.metrics.max_condition_depth, rule_max_depth
         )
-        analyzer.metrics.cyclomatic_complexity[rule.name] = calculate_cyclomatic_complexity(
-            analyzer
-        )
-        if rule_max_depth > 6 or analyzer.metrics.cyclomatic_complexity[rule.name] > 10:
-            analyzer.metrics.complex_rules.append(rule.name)
+        rule_key = analyzer._active_rule_key()
+        analyzer.metrics.cyclomatic_complexity[rule_key] = calculate_cyclomatic_complexity(analyzer)
+        if rule_max_depth > 6 or analyzer.metrics.cyclomatic_complexity[rule_key] > 10:
+            analyzer.metrics.complex_rules.append(rule_key)
+    analyzer._current_rule_key = None
 
 
 def analyze_strings(analyzer, rule) -> None:
+    rule_key = analyzer._active_rule_key()
     for string_def in rule.strings:
         analyzer.metrics.total_strings += 1
-        analyzer._rule_strings.setdefault(rule.name, set()).add(string_def.identifier)
+        analyzer._rule_strings.setdefault(rule_key, set()).add(string_def.identifier)
         if isinstance(string_def, PlainString):
             analyzer.metrics.plain_strings += 1
             if string_def.modifiers:

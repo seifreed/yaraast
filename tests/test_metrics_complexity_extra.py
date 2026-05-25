@@ -172,6 +172,33 @@ def test_complexity_string_usage_tracks_condition_string_forms() -> None:
     }
 
 
+def test_complexity_metrics_preserve_duplicate_rule_occurrences() -> None:
+    code = """
+    rule dup {
+        strings:
+            $a = "a"
+            $unused_first = "unused"
+        condition:
+            $a
+    }
+
+    rule dup {
+        strings:
+            $b = "b"
+            $unused_second = "unused"
+        condition:
+            $b
+    }
+    """
+    ast = Parser().parse(dedent(code))
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert set(metrics.cyclomatic_complexity) == {"dup#1", "dup#2"}
+    assert metrics.string_dependencies == {"dup#1": {"$a"}, "dup#2": {"$b"}}
+    assert metrics.unused_strings == ["dup#1:$unused_first", "dup#2:$unused_second"]
+
+
 def test_complexity_string_usage_tracks_offset_and_length_index_expressions() -> None:
     code = """
     rule indexed_string_usage {
