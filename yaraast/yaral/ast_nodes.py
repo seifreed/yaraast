@@ -533,7 +533,12 @@ YARAL_BUILTIN_FUNCTIONS: dict[str, dict[str, str]] = {
     "count": {"args": "field", "returns": "integer", "doc": "Count occurrences"},
     "count_distinct": {"args": "field", "returns": "integer", "doc": "Count distinct values"},
     "sum": {"args": "field", "returns": "number", "doc": "Sum values"},
+    "avg": {"args": "field", "returns": "number", "doc": "Average value"},
     "min": {"args": "field", "returns": "number", "doc": "Minimum value"},
     "max": {"args": "field", "returns": "number", "doc": "Maximum value"},
+    "array": {"args": "field", "returns": "array", "doc": "Values as array"},
     "array_distinct": {"args": "field", "returns": "array", "doc": "Distinct values as array"},
+    "earliest": {"args": "field", "returns": "any", "doc": "Earliest value"},
+    "latest": {"args": "field", "returns": "any", "doc": "Latest value"},
+    "string_concat": {"args": "field", "returns": "string", "doc": "Concatenate string values"},
 }

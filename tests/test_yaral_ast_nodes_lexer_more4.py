@@ -6,6 +6,7 @@ import pytest
 
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral.ast_nodes import (
+    YARAL_BUILTIN_FUNCTIONS,
     AggregationFunction,
     ArithmeticExpression,
     BinaryCondition,
@@ -228,6 +229,29 @@ def test_yaral_ast_nodes_accept_and_call_string_paths() -> None:
     yf = YaraLFile()
     yf.add_rule(YaraLRule(name="r1"))
     assert yf.accept(visitor) == 1
+
+
+def test_yaral_builtin_function_metadata_covers_supported_aggregations() -> None:
+    expected_aggregations = {
+        "count",
+        "count_distinct",
+        "sum",
+        "avg",
+        "min",
+        "max",
+        "array",
+        "array_distinct",
+        "earliest",
+        "latest",
+        "string_concat",
+    }
+
+    assert expected_aggregations <= YARAL_BUILTIN_FUNCTIONS.keys()
+    for name in expected_aggregations:
+        metadata = YARAL_BUILTIN_FUNCTIONS[name]
+        assert metadata["args"]
+        assert metadata["returns"]
+        assert metadata["doc"]
 
 
 def test_yaral_file_rejects_invalid_rule_inputs_without_partial_update() -> None:
