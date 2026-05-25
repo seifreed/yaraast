@@ -72,6 +72,19 @@ def test_custom_pragma_and_block_helpers() -> None:
     assert str(block) == str(custom)
 
 
+def test_custom_pragma_parameter_keys_must_be_strings_without_partial_update() -> None:
+    custom = CustomPragma(name="vendor", arguments=["x"], scope=PragmaScope.FILE)
+    custom.set_parameter("level", 3)
+
+    with pytest.raises(TypeError, match="Pragma parameter key must be a string"):
+        custom.set_parameter(cast(Any, object()), 4)
+
+    with pytest.raises(TypeError, match="Pragma parameter key must be a string"):
+        custom.get_parameter(cast(Any, object()))
+
+    assert custom.parameters == {"level": 3}
+
+
 def test_pragma_block_rejects_invalid_pragmas_without_partial_update() -> None:
     custom = CustomPragma(name="vendor", arguments=["x"], scope=PragmaScope.FILE)
     block = PragmaBlock(scope=PragmaScope.RULE)

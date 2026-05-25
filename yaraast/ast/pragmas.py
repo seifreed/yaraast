@@ -212,11 +212,11 @@ class CustomPragma(Pragma):
 
     def get_parameter(self, key: str, default: Any = None) -> Any:
         """Get a parameter value by key."""
-        return self.parameters.get(key, default)
+        return self.parameters.get(_require_string(key, "Pragma parameter key"), default)
 
     def set_parameter(self, key: str, value: Any) -> None:
         """Set a parameter value."""
-        self.parameters[key] = value
+        self.parameters[_require_string(key, "Pragma parameter key")] = value
 
     def __str__(self) -> str:
         args_str = " " + " ".join(self.arguments) if self.arguments else ""
