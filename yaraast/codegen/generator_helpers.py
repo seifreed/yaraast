@@ -50,6 +50,7 @@ BASE64_MODIFIERS = frozenset({"base64", "base64wide"})
 _HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 _STRING_IDENTIFIER_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 _YARA_INTEGER_TEXT_RE = re.compile(r"^[+-]?(?:0[xX][0-9A-Fa-f]+|0[oO][0-7]+|[0-9]+(?:KB|MB))$")
+_STRING_PLACEHOLDER_REFERENCES = frozenset({"", "$"})
 
 
 class _XorKey(NamedTuple):
@@ -120,6 +121,22 @@ def validate_string_identifier_text(identifier: Any) -> str:
         msg = f"Invalid string identifier '{normalized}' for libyara output"
         raise ValueError(msg)
     return normalized
+
+
+def format_string_reference_identifier(identifier: Any, *, allow_placeholder: bool) -> str:
+    """Return a string identifier, allowing the for-of placeholder when requested."""
+    text = str(identifier)
+    if allow_placeholder and text in _STRING_PLACEHOLDER_REFERENCES:
+        return "$"
+    return validate_string_identifier_text(identifier)
+
+
+def format_string_reference_suffix(identifier: Any, *, allow_placeholder: bool) -> str:
+    """Return the suffix for #/@/! string references."""
+    text = str(identifier).lstrip("#@!")
+    if allow_placeholder and text in _STRING_PLACEHOLDER_REFERENCES:
+        return ""
+    return validate_string_identifier_text(text).removeprefix("$")
 
 
 def validate_string_wildcard_text(pattern: Any) -> str:

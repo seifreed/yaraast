@@ -6,7 +6,7 @@ from yaraast.codegen.generator_formatting import (
     validate_yara_identifier,
     validate_yara_identifier_path,
 )
-from yaraast.codegen.generator_helpers import validate_string_identifier_text
+from yaraast.codegen.generator_helpers import format_string_reference_identifier
 
 _BINARY_PRECEDENCE = {
     "or": 1,
@@ -180,5 +180,8 @@ def _validate_for_quantifier_text(quantifier: str) -> str:
 
 
 def visit_at_expression(generator, node) -> str:
-    string_id = validate_string_identifier_text(node.string_id)
+    string_id = format_string_reference_identifier(
+        node.string_id,
+        allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
+    )
     return f"{string_id} at {generator.visit(node.offset)}"

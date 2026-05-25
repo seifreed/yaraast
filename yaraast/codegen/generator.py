@@ -324,7 +324,10 @@ class CodeGenerator(ASTVisitor[str]):
         return render_string_wildcard(node)
 
     def visit_string_count(self, node: StringCount) -> str:
-        return render_string_count(node)
+        return render_string_count(
+            node,
+            allow_placeholder=getattr(self, "_allow_string_placeholder", False),
+        )
 
     def visit_string_offset(self, node: StringOffset) -> str:
         return render_string_offset(self, node)

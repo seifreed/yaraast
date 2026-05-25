@@ -993,6 +993,31 @@ def test_codegen_generators_allow_valid_identifier_expressions(
 
 
 @pytest.mark.parametrize(
+    ("condition", "expected"),
+    [
+        ("$", "for any of them : ($)"),
+        ("# > 0", "for any of them : (# > 0)"),
+        ("@ > 0", "for any of them : (@ > 0)"),
+        ("! > 0", "for any of them : (! > 0)"),
+        ("$ at 0", "for any of them : ($ at 0)"),
+        ("$ in (0..10)", "for any of them : ($ in (0..10))"),
+    ],
+)
+def test_codegen_generators_allow_for_of_placeholder_references(
+    condition: str,
+    expected: str,
+) -> None:
+    ast = Parser(
+        f'rule placeholder {{ strings: $a = "abc" condition: for any of them : ( {condition} ) }}'
+    ).parse()
+
+    assert expected in CodeGenerator().generate(ast)
+    assert expected in AdvancedCodeGenerator().generate(ast)
+    assert expected in CommentAwareCodeGenerator().generate(ast)
+    assert expected in PrettyPrinter().pretty_print(ast)
+
+
+@pytest.mark.parametrize(
     "condition",
     [
         StringIdentifier("$bad-key"),

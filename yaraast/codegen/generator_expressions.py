@@ -6,7 +6,7 @@ import re
 
 from yaraast.codegen.generator_formatting import validate_yara_identifier
 from yaraast.codegen.generator_helpers import (
-    validate_string_identifier_text,
+    format_string_reference_identifier,
     validate_string_set_item_text,
 )
 
@@ -165,7 +165,10 @@ def render_in_expression(gen, node) -> str:
     )
 
     subject = (
-        validate_string_identifier_text(node.subject)
+        format_string_reference_identifier(
+            node.subject,
+            allow_placeholder=getattr(gen, "_allow_string_placeholder", False),
+        )
         if isinstance(node.subject, str)
         else gen.visit(node.subject)
     )

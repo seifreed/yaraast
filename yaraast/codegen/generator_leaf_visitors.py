@@ -19,6 +19,7 @@ from yaraast.codegen.generator_helpers import (
     format_hex_byte_value,
     format_hex_nibble_value,
     format_integer_literal,
+    format_string_reference_suffix,
     validate_hex_alternative_token,
     validate_string_identifier_text,
     validate_string_wildcard_text,
@@ -85,25 +86,25 @@ def visit_string_wildcard(node) -> str:
     return validate_string_wildcard_text(node.pattern)
 
 
-def _string_reference_suffix(string_id) -> str:
-    text = str(string_id)
-    text = text.lstrip("#@!")
-    return validate_string_identifier_text(text).removeprefix("$")
-
-
-def visit_string_count(node) -> str:
-    return f"#{_string_reference_suffix(node.string_id)}"
+def visit_string_count(node, *, allow_placeholder: bool = False) -> str:
+    return f"#{format_string_reference_suffix(node.string_id, allow_placeholder=allow_placeholder)}"
 
 
 def visit_string_offset(generator, node) -> str:
-    suffix = _string_reference_suffix(node.string_id)
+    suffix = format_string_reference_suffix(
+        node.string_id,
+        allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
+    )
     if node.index:
         return f"@{suffix}[{generator.visit(node.index)}]"
     return f"@{suffix}"
 
 
 def visit_string_length(generator, node) -> str:
-    suffix = _string_reference_suffix(node.string_id)
+    suffix = format_string_reference_suffix(
+        node.string_id,
+        allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
+    )
     if node.index:
         return f"!{suffix}[{generator.visit(node.index)}]"
     return f"!{suffix}"
