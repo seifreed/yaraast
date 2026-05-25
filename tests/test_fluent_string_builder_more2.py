@@ -7,6 +7,7 @@ import pytest
 from yaraast.ast.modifiers import StringModifierType
 from yaraast.ast.strings import HexByte, HexNibble, HexString, HexWildcard, RegexString
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
+from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.errors import ValidationError
 
 
@@ -43,6 +44,18 @@ def test_fluent_string_builder_rejects_standalone_hex_jump() -> None:
 
     with pytest.raises(ValidationError, match="HexJump cannot appear"):
         builder.build()
+
+
+def test_fluent_string_builder_rejects_invalid_hex_alternatives() -> None:
+    with pytest.raises(ValidationError, match="HexAlternative branches must not be empty"):
+        FluentStringBuilder("$h").hex_builder(lambda hb: hb.alternative([])).build()
+
+    with pytest.raises(ValidationError, match="Unbounded HexJump"):
+        FluentStringBuilder("$h").hex_builder(
+            lambda hb: hb.add(0x41)
+            .alternative(HexStringBuilder().add(0x42).jump_any().add(0x43))
+            .add(0x44),
+        ).build()
 
 
 def test_fluent_string_builder_rejects_invalid_integer_hex_bytes() -> None:
