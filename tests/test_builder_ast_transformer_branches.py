@@ -444,6 +444,15 @@ def test_yara_file_transformer_rejects_invalid_added_rule_names_without_partial_
     assert [rule.name for rule in transformer.build().rules] == ["valid"]
 
 
+def test_yara_file_transformer_rejects_invalid_added_rule_inputs_without_partial_update() -> None:
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("valid")]))
+
+    with pytest.raises(TypeError, match="Rule input must be a Rule"):
+        transformer.add_rule(cast(Any, object()))
+
+    assert [rule.name for rule in transformer.build().rules] == ["valid"]
+
+
 def test_yara_file_transformer_rejects_duplicate_transformed_rule_names_without_partial_update() -> (
     None
 ):

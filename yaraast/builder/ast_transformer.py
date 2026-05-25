@@ -461,6 +461,9 @@ class YaraFileTransformer:
 
     def add_rule(self, rule: Rule) -> YaraFileTransformer:
         """Add a rule to the file."""
+        if not isinstance(rule, Rule):
+            msg = "Rule input must be a Rule"
+            raise TypeError(msg)
         validate_identifier(rule.name, "rule")
         validate_unique_rule_names(self.yara_file.rules, [rule])
         self.yara_file.rules.append(CloneTransformer.clone_rule(rule))
