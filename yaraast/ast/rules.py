@@ -166,6 +166,11 @@ class Rule(ASTNode):
 
     def add_pragma(self, pragma: InRulePragma) -> None:
         """Add a pragma to this rule."""
+        from yaraast.ast.pragmas import InRulePragma
+
+        if not isinstance(pragma, InRulePragma):
+            msg = "Rule pragma input must be an InRulePragma"
+            raise TypeError(msg)
         self.pragmas.append(pragma)
 
     def get_pragmas_by_position(self, position: str) -> list[InRulePragma]:

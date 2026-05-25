@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.pragmas import (
     ConditionalDirective,
     CustomPragma,
@@ -65,6 +69,17 @@ def test_custom_pragma_and_block_helpers() -> None:
     assert block.get_pragmas_by_type(PragmaType.CUSTOM) == [custom]
     assert block.get_pragmas_by_type(PragmaType.DEFINE) == []
     assert str(block) == str(custom)
+
+
+def test_pragma_block_rejects_invalid_pragmas_without_partial_update() -> None:
+    custom = CustomPragma(name="vendor", arguments=["x"], scope=PragmaScope.FILE)
+    block = PragmaBlock(scope=PragmaScope.RULE)
+    block.add_pragma(custom)
+
+    with pytest.raises(TypeError, match="Pragma input must be a Pragma"):
+        block.add_pragma(cast(Any, object()))
+
+    assert block.pragmas == [custom]
 
 
 def test_create_helpers_and_in_rule_positions() -> None:

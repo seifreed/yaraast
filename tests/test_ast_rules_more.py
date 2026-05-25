@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from yaraast.ast.modifiers import MetaEntry, RuleModifier, RuleModifierType
 from yaraast.ast.pragmas import InRulePragma, Pragma, PragmaType
 from yaraast.ast.rules import Rule, Tag
@@ -44,3 +48,14 @@ def test_rule_pragmas_by_position() -> None:
     after = rule.get_pragmas_by_position("after_strings")
     assert before == [pragma_before]
     assert after == [pragma_after]
+
+
+def test_rule_rejects_invalid_pragmas_without_partial_update() -> None:
+    rule = Rule(name="r2")
+    pragma = InRulePragma(pragma=Pragma(PragmaType.DEFINE, "define"))
+    rule.add_pragma(pragma)
+
+    with pytest.raises(TypeError, match="Rule pragma input must be an InRulePragma"):
+        rule.add_pragma(cast(Any, object()))
+
+    assert rule.pragmas == [pragma]
