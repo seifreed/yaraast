@@ -207,6 +207,31 @@ def test_parser_outcome_arithmetic_preserves_generated_text() -> None:
     assert "AggregationFunction" not in generated
 
 
+def test_parser_outcome_two_argument_conditional_preserves_generated_text() -> None:
+    code = dedent(
+        """
+        rule outcome_two_arg_if {
+            events:
+                $e.field = "value"
+            condition:
+                $e
+            outcome:
+                $flag = if($count > 100, "HIGH")
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+    outcome = ast.rules[0].outcome
+    assert outcome is not None
+    assert isinstance(outcome.assignments[0].expression, ConditionalExpression)
+    assert outcome.assignments[0].expression.false_value is None
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$flag = if($count > 100, "HIGH")' in generated
+    assert '$flag = if($count > 100, "HIGH", )' not in generated
+
+
 def test_parser_normalizes_regex_token_delimiters_for_generation() -> None:
     code = dedent(
         r"""

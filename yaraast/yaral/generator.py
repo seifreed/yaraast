@@ -289,6 +289,8 @@ class YaraLGenerator(YaraLVisitor[str]):
         """Generate code for conditional expression using YARA-L function syntax."""
         condition = self._format_condition_value(node.condition)
         true_value = self._format_value(node.true_value)
+        if node.false_value is None:
+            return f"if({condition}, {true_value})"
         false_value = self._format_value(node.false_value)
         return f"if({condition}, {true_value}, {false_value})"
 
