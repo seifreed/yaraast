@@ -1065,6 +1065,39 @@ def test_codegen_generators_reject_invalid_rule_meta_collections() -> None:
             PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize("invalid_meta", [False, 0])
+def test_codegen_generators_reject_mutated_invalid_rule_meta_collections(
+    invalid_meta: Any,
+) -> None:
+    rule = Rule(name="invalid_mutated_meta", condition=BooleanLiteral(True))
+    rule.meta = invalid_meta
+    ast = YaraFile(rules=[rule])
+
+    with pytest.raises(TypeError, match="Rule meta must be a dictionary, list, or tuple"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule meta must be a dictionary, list, or tuple"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule meta must be a dictionary, list, or tuple"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule meta must be a dictionary, list, or tuple"):
+        PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_allow_mutated_none_rule_meta_collection() -> None:
+    rule = Rule(name="none_mutated_meta", condition=BooleanLiteral(True))
+    rule.meta = None
+    ast = YaraFile(rules=[rule])
+
+    for output in (
+        CodeGenerator().generate(ast),
+        AdvancedCodeGenerator().generate(ast),
+        CommentAwareCodeGenerator().generate(ast),
+        PrettyPrinter().pretty_print(ast),
+    ):
+        assert "meta:" not in output
+        assert "condition:" in output
+
+
 @pytest.mark.parametrize("meta_value", [1.5, None, ["x"]])
 def test_codegen_generators_reject_invalid_meta_values(meta_value: Any) -> None:
     ast = YaraFile(

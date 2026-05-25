@@ -152,10 +152,13 @@ def calculate_string_alignment_column(ast) -> int:
 
 def calculate_meta_alignment_column(ast, min_alignment_column: int) -> int:
     """Calculate alignment column for meta values."""
-    from yaraast.codegen.generator_formatting import format_meta_key
+    from yaraast.codegen.generator_formatting import format_meta_key, validate_rule_meta
 
     max_length = 0
     for rule in ast.rules:
+        validate_rule_meta(rule.meta)
+        if rule.meta is None:
+            continue
         for entry in rule.meta:
             if hasattr(entry, "key"):
                 key = format_meta_key(entry.key, getattr(entry, "scope", None))
