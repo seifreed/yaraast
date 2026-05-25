@@ -46,6 +46,18 @@ def test_expression_builder_quantifiers_and_loops() -> None:
     assert isinstance(loop, ForExpression)
 
 
+@pytest.mark.parametrize("variable", ["bad-key", "for", "1bad", ""])
+def test_expression_builder_rejects_invalid_loop_variables(variable: str) -> None:
+    iterable = ExpressionBuilder.range(0, 2)
+    body = ExpressionBuilder.true()
+
+    with pytest.raises(ValidationError, match="Invalid loop variable identifier"):
+        ExpressionBuilder.for_any(variable, iterable, body)
+
+    with pytest.raises(ValidationError, match="Invalid loop variable identifier"):
+        ExpressionBuilder.for_all(variable, iterable, body)
+
+
 def test_expression_builder_rejects_booleans_as_integer_values() -> None:
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         ExpressionBuilder.integer(cast(Any, True))

@@ -30,6 +30,18 @@ def test_condition_builder_group_and_for() -> None:
     assert isinstance(loop, ForExpression)
 
 
+@pytest.mark.parametrize("variable", ["bad-key", "for", "1bad", ""])
+def test_condition_builder_rejects_invalid_loop_variables(variable: str) -> None:
+    iterable = ConditionBuilder().range(0, 3)
+    body = ConditionBuilder().true()
+
+    with pytest.raises(ValidationError, match="Invalid loop variable identifier"):
+        ConditionBuilder().for_any(variable, iterable, body)
+
+    with pytest.raises(ValidationError, match="Invalid loop variable identifier"):
+        ConditionBuilder().for_all(variable, iterable, body)
+
+
 def test_condition_builder_keeps_boolean_values_distinct_from_integers() -> None:
     comparison = ConditionBuilder().identifier("enabled").eq(True).build()
 

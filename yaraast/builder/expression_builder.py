@@ -22,6 +22,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     UnaryExpression,
 )
+from yaraast.builder.file_builder_validation import validate_identifier
 from yaraast.errors import ValidationError
 
 _STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
@@ -210,6 +211,7 @@ class ExpressionBuilder:
     @staticmethod
     def for_any(var: str, iterable: Expression, body: Expression) -> ForExpression:
         """Create 'for any' expression."""
+        validate_identifier(var, "loop variable")
         return ForExpression(
             quantifier="any",
             variable=var,
@@ -220,6 +222,7 @@ class ExpressionBuilder:
     @staticmethod
     def for_all(var: str, iterable: Expression, body: Expression) -> ForExpression:
         """Create 'for all' expression."""
+        validate_identifier(var, "loop variable")
         return ForExpression(
             quantifier="all",
             variable=var,

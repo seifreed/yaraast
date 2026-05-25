@@ -25,6 +25,7 @@ from yaraast.ast.expressions import (
     StringOffset,
     UnaryExpression,
 )
+from yaraast.builder.file_builder_validation import validate_identifier
 from yaraast.errors import ValidationError
 
 _STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
@@ -282,6 +283,7 @@ class ConditionBuilder:
         condition: ConditionBuilder | Expression,
     ) -> Self:
         """For any loop."""
+        validate_identifier(var, "loop variable")
         iter_expr = self._to_expression(iterable)
         cond_expr = self._to_expression(condition)
 
@@ -301,6 +303,7 @@ class ConditionBuilder:
         condition: ConditionBuilder | Expression,
     ) -> Self:
         """For all loop."""
+        validate_identifier(var, "loop variable")
         iter_expr = self._to_expression(iterable)
         cond_expr = self._to_expression(condition)
 
