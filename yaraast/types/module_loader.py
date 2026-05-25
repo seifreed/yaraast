@@ -18,6 +18,12 @@ def _normalize_module_name(name: object) -> str:
     return name
 
 
+def _normalize_parameter_name(name: object, index: int) -> str:
+    if isinstance(name, str) and name:
+        return name
+    return f"param_{index}"
+
+
 class ModuleLoader:
     """Load YARA module definitions from JSON files."""
 
@@ -184,16 +190,26 @@ class ModuleLoader:
             # List of parameter names (assume any type)
             for param in params:
                 if isinstance(param, str):
-                    result.append((param, self._parse_type("any")))
+                    result.append(
+                        (
+                            _normalize_parameter_name(param, len(result)),
+                            self._parse_type("any"),
+                        )
+                    )
                 elif isinstance(param, dict):
-                    name = param.get("name", f"param_{len(result)}")
+                    name = _normalize_parameter_name(param.get("name"), len(result))
                     type_ = self._parse_type(param.get("type", "any"))
                     result.append((name, type_))
 
         elif isinstance(params, dict):
             # Dict of name: type
             for name, type_str in params.items():
-                result.append((name, self._parse_type(type_str)))
+                result.append(
+                    (
+                        _normalize_parameter_name(name, len(result)),
+                        self._parse_type(type_str),
+                    )
+                )
 
         return result
 

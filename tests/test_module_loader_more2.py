@@ -110,3 +110,17 @@ def test_module_loader_parses_parameter_forms_and_lists_modules(tmp_path: Path) 
     assert parsed is not None
     assert isinstance(parsed.attributes["enabled"], BooleanType)
     assert parsed.functions["two"].parameters == [("n", IntegerType())]
+
+
+def test_module_loader_normalizes_invalid_parameter_names() -> None:
+    loader = ModuleLoader()
+
+    parameters = loader._parse_parameters(
+        [
+            {"name": ["bad"], "type": "int"},
+            {"name": "", "type": "bool"},
+            {"type": "string"},
+        ]
+    )
+
+    assert [name for name, _type in parameters] == ["param_0", "param_1", "param_2"]
