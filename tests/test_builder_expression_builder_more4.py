@@ -70,6 +70,17 @@ def test_expression_builder_rejects_empty_string_sets() -> None:
         ExpressionBuilder.n_of(1)
 
 
+def test_expression_builder_rejects_mixed_them_string_sets() -> None:
+    with pytest.raises(ValidationError, match="'them' cannot be mixed"):
+        ExpressionBuilder.any_of("them", "$a")
+
+    with pytest.raises(ValidationError, match="'them' cannot be mixed"):
+        ExpressionBuilder.all_of("$a", "them")
+
+    with pytest.raises(ValidationError, match="'them' cannot be mixed"):
+        ExpressionBuilder.n_of(1, "$a", "them")
+
+
 def test_expression_builder_accessors_and_errors() -> None:
     arr = ExpressionBuilder.array_access(ExpressionBuilder.identifier("arr"), 1)
     assert isinstance(arr, ArrayAccess)

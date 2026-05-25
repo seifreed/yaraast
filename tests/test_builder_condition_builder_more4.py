@@ -63,6 +63,17 @@ def test_condition_builder_rejects_empty_string_sets() -> None:
         ConditionBuilder().n_of(1)
 
 
+def test_condition_builder_rejects_mixed_them_string_sets() -> None:
+    with pytest.raises(ValidationError, match="'them' cannot be mixed"):
+        ConditionBuilder().any_of("them", "$a")
+
+    with pytest.raises(ValidationError, match="'them' cannot be mixed"):
+        ConditionBuilder().all_of("$a", "them")
+
+    with pytest.raises(ValidationError, match="'them' cannot be mixed"):
+        ConditionBuilder().n_of(1, "$a", "them")
+
+
 def test_condition_builder_rejects_boolean_offsets_and_range_bounds() -> None:
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         ConditionBuilder().string("$a").at(cast(Any, True))

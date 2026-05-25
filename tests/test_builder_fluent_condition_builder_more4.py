@@ -78,6 +78,14 @@ def test_fluent_condition_builder_rejects_empty_string_sets() -> None:
         FluentConditionBuilder().at_most_n_of(1)
 
 
+def test_fluent_condition_builder_rejects_mixed_them_string_sets() -> None:
+    with pytest.raises(ValidationError, match="'them' cannot be mixed"):
+        FluentConditionBuilder().one_of("them", "$a")
+
+    with pytest.raises(ValidationError, match="'them' cannot be mixed"):
+        FluentConditionBuilder().at_least_n_of(1, "$a", "them")
+
+
 def test_fluent_condition_helpers_return_literals() -> None:
     expr = FluentConditionBuilder()._create_n_of(1, "$a", "$b")
     assert isinstance(expr, OfExpression)

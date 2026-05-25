@@ -420,6 +420,9 @@ class ConditionBuilder:
         if not strings:
             msg = "At least one string identifier is required"
             raise ValidationError(msg)
+        if "them" in strings and not all(string == "them" for string in strings):
+            msg = "'them' cannot be mixed with explicit string identifiers"
+            raise ValidationError(msg)
 
     def build(self) -> Expression:
         """Build the final expression."""
