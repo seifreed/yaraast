@@ -111,7 +111,7 @@ def profile_performance(
     worker_counts: list[int] | None = None,
 ) -> dict[str, Any]:
     """Measure analyze_rules throughput across worker counts."""
-    if not worker_counts:
+    if worker_counts is None:
         worker_counts = [1, 2, 4, 8, mp.cpu_count()]
 
     results = {}

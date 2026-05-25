@@ -207,6 +207,18 @@ def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> 
         "rule_count": len(small_rules),
     }
 
+    empty_profile = analyzer.profile_performance(small_rules, worker_counts=[])
+    assert empty_profile == {
+        "worker_performance": {},
+        "optimal_workers": None,
+        "rule_count": len(small_rules),
+    }
+
+    analyzer.reset_statistics()
+    empty_after_reset = analyzer.profile_performance(small_rules, worker_counts=[])
+    assert empty_after_reset["worker_performance"] == {}
+    assert analyzer.get_statistics()["rules_analyzed"] == 0
+
     analyzer.reset_statistics()
     jobs = analyzer.process_batch(small_rules, _worker_rule_name, job_type="names")
     assert [job.result for job in jobs] == ["a", "b"]
