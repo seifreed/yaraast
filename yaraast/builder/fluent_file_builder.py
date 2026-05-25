@@ -43,6 +43,9 @@ class FluentYaraFileBuilder:
 
     def with_rule(self, rule: Rule) -> Self:
         """Add a rule."""
+        if not isinstance(rule, Rule):
+            msg = "Rule input must be a Rule"
+            raise TypeError(msg)
         validate_rule_names([rule])
         validate_unique_rule_names(self.rules, [rule])
         self.rules.append(deepcopy(rule))

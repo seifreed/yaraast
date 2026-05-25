@@ -191,6 +191,15 @@ def test_fluent_file_builder_rejects_invalid_rule_names_without_partial_update()
     assert [built_rule.name for built_rule in builder.build().rules] == ["valid_rule"]
 
 
+def test_fluent_file_builder_rejects_invalid_rule_inputs_without_partial_update() -> None:
+    builder = yara_file().with_rule(Rule(name="valid_rule"))
+
+    with pytest.raises(TypeError, match="Rule input must be a Rule"):
+        builder.with_rule(cast(Any, object()))
+
+    assert [built_rule.name for built_rule in builder.build().rules] == ["valid_rule"]
+
+
 def test_fluent_file_builder_copies_direct_rule_inputs() -> None:
     source_rule = Rule(name="stable_rule")
     builder = yara_file().with_rule(source_rule)
