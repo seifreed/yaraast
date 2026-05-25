@@ -85,7 +85,7 @@ class Rule(ASTNode):
             >>> rule.get_meta_value("author")
             'me'
         """
-        normalized_mods = cls._normalize_modifiers(modifiers or [])
+        normalized_mods = cls._normalize_modifiers(modifiers)
         normalized_meta = cls._normalize_meta(meta or [])
         return cls(
             name=name,
@@ -99,9 +99,11 @@ class Rule(ASTNode):
         modifiers: Sequence[Any] | str | None,
     ) -> list[Any]:
         """Normalize modifiers to a list of RuleModifier."""
-        if not modifiers:
+        if modifiers is None:
             return []
         if isinstance(modifiers, str):
+            if modifiers == "":
+                return []
             try:
                 return [RuleModifier.from_string(modifiers)]
             except (ValueError, ValidationError):
