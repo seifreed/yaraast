@@ -32,6 +32,12 @@ def _types_match_for_equality(left: Any, right: Any) -> bool:
     return True
 
 
+def _types_support_ordered_comparison(left: Any, right: Any) -> bool:
+    return (_is_runtime_number(left) and _is_runtime_number(right)) or (
+        isinstance(left, str) and isinstance(right, str)
+    )
+
+
 def _divide_by_double_zero(left: int | float, right: int | float) -> float:
     if left == 0:
         return math.nan
@@ -142,6 +148,11 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
         ):
             return _compare_double_equality(left, right, operator)
         return left != right
+    if operator in ("<", "<=", ">", ">=") and not _types_support_ordered_comparison(
+        left,
+        right,
+    ):
+        return False
     try:
         if operator == "<":
             return left < right

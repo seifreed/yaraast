@@ -134,6 +134,25 @@ def test_evaluate_comparison_incompatible_ordered_operands_are_false(
     assert evaluate_comparison(1, "a", operator) is False
 
 
+@pytest.mark.parametrize(
+    ("left", "right", "operator"),
+    [
+        (False, True, "<"),
+        (False, False, "<="),
+        (True, False, ">"),
+        (True, True, ">="),
+        ([], [1], "<"),
+        ((1,), (2,), "<"),
+    ],
+)
+def test_evaluate_comparison_rejects_non_yara_ordered_operands(
+    left: object,
+    right: object,
+    operator: str,
+) -> None:
+    assert evaluate_comparison(left, right, operator) is False
+
+
 def test_evaluate_string_operator_all_paths() -> None:
     assert evaluate_string_operator("hello", "ell", "contains") is True
     assert evaluate_string_operator("hello", "", "contains") is False
