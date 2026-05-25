@@ -642,6 +642,33 @@ def test_rule_transformer_rejects_invalid_rule_names_without_partial_update(
     assert transformer.build().name == "valid_name"
 
 
+@pytest.mark.parametrize(
+    ("operation", "argument", "message"),
+    [
+        ("add_prefix", True, "Rule prefix must be a string"),
+        ("add_suffix", True, "Rule suffix must be a string"),
+        ("add_modifier", True, "Rule modifier must be a string"),
+        ("set_author", True, "Rule author must be a string"),
+        ("set_description", 123, "Rule description must be a string"),
+    ],
+)
+def test_rule_transformer_rejects_non_string_text_inputs_without_partial_update(
+    operation: str,
+    argument: object,
+    message: str,
+) -> None:
+    transformer = RuleTransformer(_sample_rule("valid_name"))
+
+    with pytest.raises(TypeError, match=message):
+        getattr(transformer, operation)(cast(Any, argument))
+
+    transformed = transformer.build()
+    assert transformed.name == "valid_name"
+    assert [str(modifier) for modifier in transformed.modifiers] == ["global"]
+    assert transformed.get_meta_value("author") == "me"
+    assert transformed.get_meta_value("description") is None
+
+
 @pytest.mark.parametrize("tag", ["bad tag", "bad-tag", "for", "1bad", ""])
 def test_rule_transformer_rejects_invalid_tags_without_partial_update(tag: str) -> None:
     transformer = RuleTransformer(_sample_rule("tagged"))

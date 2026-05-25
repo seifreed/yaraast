@@ -87,6 +87,13 @@ class RuleTransformer:
         msg = f"{context} must be callable"
         raise TypeError(msg)
 
+    @staticmethod
+    def _require_text(value: object, context: str) -> str:
+        if isinstance(value, str):
+            return value
+        msg = f"{context} must be a string"
+        raise TypeError(msg)
+
     def rename(self, new_name: str) -> RuleTransformer:
         """Rename the rule."""
         validate_identifier(new_name, "rule")
@@ -95,6 +102,7 @@ class RuleTransformer:
 
     def add_prefix(self, prefix: str) -> RuleTransformer:
         """Add prefix to rule name."""
+        prefix = self._require_text(prefix, "Rule prefix")
         new_name = f"{prefix}{self.rule.name}"
         validate_identifier(new_name, "rule")
         self.rule.name = new_name
@@ -102,6 +110,7 @@ class RuleTransformer:
 
     def add_suffix(self, suffix: str) -> RuleTransformer:
         """Add suffix to rule name."""
+        suffix = self._require_text(suffix, "Rule suffix")
         new_name = f"{self.rule.name}{suffix}"
         validate_identifier(new_name, "rule")
         self.rule.name = new_name
@@ -132,6 +141,7 @@ class RuleTransformer:
 
     def add_modifier(self, modifier: str) -> RuleTransformer:
         """Add a modifier to the rule."""
+        modifier = self._require_text(modifier, "Rule modifier")
         if not any(str(m) == modifier for m in self.rule.modifiers):
             try:
                 from yaraast.ast.modifiers import RuleModifier
@@ -182,10 +192,12 @@ class RuleTransformer:
 
     def set_author(self, author: str) -> RuleTransformer:
         """Set author metadata."""
+        author = self._require_text(author, "Rule author")
         return self.add_meta("author", author)
 
     def set_description(self, description: str) -> RuleTransformer:
         """Set description metadata."""
+        description = self._require_text(description, "Rule description")
         return self.add_meta("description", description)
 
     def set_version(self, version: int) -> RuleTransformer:
