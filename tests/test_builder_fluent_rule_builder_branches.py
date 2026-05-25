@@ -181,6 +181,20 @@ def test_fluent_file_builder_rejects_duplicate_rule_names() -> None:
     assert [built_rule.name for built_rule in builder.build().rules] == ["same_rule"]
 
 
+def test_fluent_file_builder_rejects_empty_imports_and_includes() -> None:
+    builder = yara_file().import_module("pe").include_file("common.yar")
+
+    with pytest.raises(ValidationError, match="Import module must not be empty"):
+        builder.import_module("")
+
+    with pytest.raises(ValidationError, match="Include path must not be empty"):
+        builder.include_file("")
+
+    built = builder.build()
+    assert [imp.module for imp in built.imports] == ["pe"]
+    assert [inc.path for inc in built.includes] == ["common.yar"]
+
+
 def test_rule_metadata_aliases_and_example_rules_paths() -> None:
     built = (
         FluentRuleBuilder()

@@ -5,7 +5,11 @@ from typing import Self
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include, Rule
-from yaraast.builder.file_builder_validation import validate_unique_rule_names
+from yaraast.builder.file_builder_validation import (
+    validate_nonempty_text,
+    validate_nonempty_texts,
+    validate_unique_rule_names,
+)
 from yaraast.builder.rule_builder import RuleBuilder
 
 
@@ -19,21 +23,25 @@ class YaraFileBuilder:
 
     def with_import(self, module: str) -> Self:
         """Add an import."""
+        validate_nonempty_text(module, "Import module")
         self._imports.append(module)
         return self
 
     def with_imports(self, *modules: str) -> Self:
         """Add multiple imports."""
+        validate_nonempty_texts(modules, "Import module")
         self._imports.extend(modules)
         return self
 
     def with_include(self, path: str) -> Self:
         """Add an include."""
+        validate_nonempty_text(path, "Include path")
         self._includes.append(path)
         return self
 
     def with_includes(self, *paths: str) -> Self:
         """Add multiple includes."""
+        validate_nonempty_texts(paths, "Include path")
         self._includes.extend(paths)
         return self
 

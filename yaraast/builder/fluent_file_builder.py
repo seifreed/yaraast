@@ -7,7 +7,10 @@ from typing import TYPE_CHECKING, Self
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include, Rule
-from yaraast.builder.file_builder_validation import validate_unique_rule_names
+from yaraast.builder.file_builder_validation import (
+    validate_nonempty_text,
+    validate_unique_rule_names,
+)
 
 if TYPE_CHECKING:
     from yaraast.builder.fluent_rule_builder import FluentRuleBuilderWithFile
@@ -23,12 +26,14 @@ class FluentYaraFileBuilder:
 
     def import_module(self, module: str, alias: str | None = None) -> Self:
         """Add import statement."""
+        validate_nonempty_text(module, "Import module")
         if not any(imp.module == module for imp in self.imports):
             self.imports.append(Import(module=module, alias=alias))
         return self
 
     def include_file(self, path: str) -> Self:
         """Add include statement."""
+        validate_nonempty_text(path, "Include path")
         if not any(inc.path == path for inc in self.includes):
             self.includes.append(Include(path=path))
         return self

@@ -91,6 +91,23 @@ class TestYaraFileBuilderImports:
 
         assert len(yara_file.imports) == 4
 
+    def test_reject_empty_imports_without_partial_update(self) -> None:
+        """Empty import modules should be rejected before code generation."""
+        builder = YaraFileBuilder().with_import("pe")
+
+        with pytest.raises(ValidationError, match="Import module must not be empty"):
+            builder.with_import("")
+
+        with pytest.raises(ValidationError, match="Import module must not be empty"):
+            builder.with_imports("math", "")
+
+        assert [imp.module for imp in builder.build().imports] == ["pe"]
+
+        empty_builder = YaraFileBuilder()
+        with pytest.raises(ValidationError, match="Import module must not be empty"):
+            empty_builder.with_imports("pe", "")
+        assert empty_builder.build().imports == []
+
 
 class TestYaraFileBuilderIncludes:
     """Test include functionality."""
@@ -139,6 +156,23 @@ class TestYaraFileBuilderIncludes:
         yara_file = builder.build()
 
         assert len(yara_file.includes) == 4
+
+    def test_reject_empty_includes_without_partial_update(self) -> None:
+        """Empty include paths should be rejected before code generation."""
+        builder = YaraFileBuilder().with_include("common.yar")
+
+        with pytest.raises(ValidationError, match="Include path must not be empty"):
+            builder.with_include("")
+
+        with pytest.raises(ValidationError, match="Include path must not be empty"):
+            builder.with_includes("utils.yar", "")
+
+        assert [inc.path for inc in builder.build().includes] == ["common.yar"]
+
+        empty_builder = YaraFileBuilder()
+        with pytest.raises(ValidationError, match="Include path must not be empty"):
+            empty_builder.with_includes("common.yar", "")
+        assert empty_builder.build().includes == []
 
 
 class TestYaraFileBuilderRules:
