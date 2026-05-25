@@ -21,6 +21,7 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.builder.file_builder_validation import validate_unique_rule_names
 from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
@@ -396,6 +397,7 @@ class YaraFileTransformer:
 
     def add_rule(self, rule: Rule) -> YaraFileTransformer:
         """Add a rule to the file."""
+        validate_unique_rule_names(self.yara_file.rules, [rule])
         self.yara_file.rules.append(CloneTransformer.clone_rule(rule))
         return self
 

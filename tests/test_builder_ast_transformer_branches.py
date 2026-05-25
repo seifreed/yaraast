@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.comments import Comment
 from yaraast.ast.conditions import ForOfExpression, OfExpression
@@ -33,6 +35,7 @@ from yaraast.builder.ast_transformer import (
     transform_rule,
     transform_yara_file,
 )
+from yaraast.errors import ValidationError
 
 
 def _sample_rule(name: str = "r1") -> Rule:
@@ -351,3 +354,13 @@ def test_convenience_transform_functions_and_variant_collection_merge_paths() ->
     deep_clone = CloneTransformer.clone(base)
     assert isinstance(direct_clone, Rule)
     assert isinstance(deep_clone, Rule)
+
+
+def test_yara_file_transformer_rejects_duplicate_rule_names_without_partial_update() -> None:
+    existing = _sample_rule("duplicate")
+    transformer = YaraFileTransformer(YaraFile(rules=[existing]))
+
+    with pytest.raises(ValidationError, match="Duplicate rule identifier"):
+        transformer.add_rule(_sample_rule("duplicate"))
+
+    assert [rule.name for rule in transformer.build().rules] == ["duplicate"]
