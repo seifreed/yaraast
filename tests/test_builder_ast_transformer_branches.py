@@ -78,6 +78,17 @@ def test_clone_helpers_create_deep_independent_copies() -> None:
     assert original_file.rules[0].name == "orig"
 
 
+def test_rule_clone_and_transform_helpers_reject_invalid_rule_inputs() -> None:
+    with pytest.raises(TypeError, match="Rule input must be a Rule"):
+        clone_rule(cast(Any, object()))
+
+    with pytest.raises(TypeError, match="Rule input must be a Rule"):
+        RuleTransformer(cast(Any, object()))
+
+    with pytest.raises(TypeError, match="Rule input must be a Rule"):
+        transform_rule(cast(Any, object()))
+
+
 def test_clone_helpers_preserve_rule_metadata_and_pragmas() -> None:
     original_rule = _sample_rule("annotated")
     original_rule.location = Location(line=3, column=1, file="sample.yar")

@@ -49,6 +49,9 @@ class CloneTransformer:
     @staticmethod
     def clone_rule(rule: Rule) -> Rule:
         """Clone a rule with all its components."""
+        if not isinstance(rule, Rule):
+            msg = "Rule input must be a Rule"
+            raise TypeError(msg)
         return deepcopy(rule)
 
     @staticmethod
