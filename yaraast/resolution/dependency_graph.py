@@ -78,32 +78,37 @@ def _module_name_for_object(value: object) -> str | None:
 class _RuleDependencyCollector(DependencyFinder):
     """Collect rule and imported-module references from one rule condition."""
 
-    def __init__(self, current_rule: str, rule_names: set[str], module_names: set[str]) -> None:
+    def __init__(
+        self,
+        current_rule: str,
+        rule_names: set[str],
+        module_aliases: Mapping[str, str],
+    ) -> None:
         super().__init__(current_rule, rule_names)
-        self.module_names = module_names
+        self.module_aliases = module_aliases
         self.module_references: set[str] = set()
 
     def visit_function_call(self, node: Any) -> None:
         function_name = getattr(node, "function", "")
         module_name = function_name.split(".", 1)[0] if "." in function_name else None
-        if module_name in self.module_names and not self._is_local(module_name):
-            self.module_references.add(module_name)
+        self._add_module_reference(module_name)
         super().visit_function_call(node)
 
     def visit_member_access(self, node: Any) -> None:
         module_name = _module_name_for_object(node.object)
-        if module_name in self.module_names and not self._is_local(module_name):
-            self.module_references.add(module_name)
+        self._add_module_reference(module_name)
         super().visit_member_access(node)
 
     def visit_module_reference(self, node: Any) -> None:
         module_name = getattr(node, "module", None)
-        if (
-            isinstance(module_name, str)
-            and module_name in self.module_names
-            and not self._is_local(module_name)
-        ):
-            self.module_references.add(module_name)
+        self._add_module_reference(module_name)
+
+    def _add_module_reference(self, module_name: object) -> None:
+        if not isinstance(module_name, str) or self._is_local(module_name):
+            return
+        canonical_name = self.module_aliases.get(module_name)
+        if canonical_name:
+            self.module_references.add(canonical_name)
 
 
 def _rule_occurrence_keys(rules: list[Rule]) -> dict[int, str]:
@@ -179,9 +184,13 @@ class DependencyGraph:
         self.file_rules[file_key] = set()
 
         # Add imports as dependencies
+        module_aliases: dict[str, str] = {}
         for import_stmt in ast.imports:
             module_name = import_stmt.module
             self._add_module_dependency(file_key, module_name)
+            module_aliases[module_name] = module_name
+            if import_stmt.alias:
+                module_aliases[import_stmt.alias] = module_name
 
         # Add includes as dependencies
         for include_stmt in ast.includes:
@@ -194,7 +203,11 @@ class DependencyGraph:
             self._add_rule(file_key, rule, rule_keys[id(rule)])
 
         for rule in ast.rules:
-            self._analyze_rule_dependencies(f"rule:{rule_keys[id(rule)]}", rule)
+            self._analyze_rule_dependencies(
+                f"rule:{rule_keys[id(rule)]}",
+                rule,
+                module_aliases,
+            )
 
     def _validate_file_ast(self, ast: YaraFile) -> None:
         """Validate graph-relevant AST fields before mutating graph state."""
@@ -308,7 +321,12 @@ class DependencyGraph:
         self.nodes[file_key].dependencies.add(rule_key)
         self.nodes[rule_key].dependents.add(file_key)
 
-    def _analyze_rule_dependencies(self, rule_key: str, rule: Rule) -> None:
+    def _analyze_rule_dependencies(
+        self,
+        rule_key: str,
+        rule: Rule,
+        module_aliases: Mapping[str, str],
+    ) -> None:
         """Analyze dependencies within a rule."""
         if not rule.condition:
             return
@@ -316,7 +334,7 @@ class DependencyGraph:
         collector = _RuleDependencyCollector(
             rule.name,
             self._raw_rule_names(),
-            self._module_names(),
+            module_aliases,
         )
         collector.visit(rule.condition)
 
@@ -330,9 +348,6 @@ class DependencyGraph:
 
     def _raw_rule_names(self) -> set[str]:
         return {node.name for node in self.nodes.values() if node.type == "rule"}
-
-    def _module_names(self) -> set[str]:
-        return {node_key for node_key, node in self.nodes.items() if node.type == "module"}
 
     def _rule_node_keys_for_name(self, rule_name: str) -> list[str]:
         return [

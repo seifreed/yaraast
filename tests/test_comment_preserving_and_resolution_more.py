@@ -174,6 +174,23 @@ rule caller {
     assert "rule:caller" in graph.nodes["rule:dup#1"].dependents
 
 
+def test_dependency_graph_resolves_import_alias_module_dependencies() -> None:
+    ast = Parser().parse("""
+import "pe" as p
+
+rule caller {
+    condition:
+        p.number_of_sections > 0
+}
+""")
+    graph = DependencyGraph()
+
+    graph.add_file(Path("aliased.yar"), ast)
+
+    assert graph.get_rule_dependencies("caller") == {"pe"}
+    assert "rule:caller" in graph.nodes["pe"].dependents
+
+
 def test_transitive_graph_queries_do_not_return_start_node_in_cycles() -> None:
     graph = DependencyGraph()
     graph.nodes["A"] = DependencyNode("A", "file", dependencies={"B"}, dependents={"B"})
