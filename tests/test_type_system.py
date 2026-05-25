@@ -898,6 +898,33 @@ class TestTypeEnvironment:
         assert env.anonymous_strings == set()
         assert env.rules == {"rule1"}
 
+    def test_type_environment_rejects_empty_public_names_without_partial_update(self) -> None:
+        """Test public mutators reject empty names before mutating state."""
+        env = TypeEnvironment()
+        env.define("x", IntegerType())
+        env.add_module("pe")
+        env.add_string("$s")
+        env.add_rule("rule1")
+
+        with pytest.raises(ValueError, match="TypeEnvironment variable name cannot be empty"):
+            env.define("", IntegerType())
+        with pytest.raises(ValueError, match="TypeEnvironment module alias cannot be empty"):
+            env.add_module("")
+        with pytest.raises(ValueError, match="TypeEnvironment module name cannot be empty"):
+            env.add_module("alias", "")
+        with pytest.raises(ValueError, match="TypeEnvironment string id cannot be empty"):
+            env.add_string("")
+        with pytest.raises(ValueError, match="TypeEnvironment rule name cannot be empty"):
+            env.add_rule("")
+
+        assert list(env.scopes[0]) == ["x"]
+        assert isinstance(env.lookup("x"), IntegerType)
+        assert env.modules == {"pe"}
+        assert env.module_aliases == {}
+        assert env.strings == {"$s"}
+        assert env.anonymous_strings == set()
+        assert env.rules == {"rule1"}
+
 
 class TestTypeSystem:
     """Tests for TypeSystem class."""

@@ -14,6 +14,14 @@ def _require_string(value: Any, field_name: str) -> str:
     return value
 
 
+def _require_nonempty_string(value: Any, field_name: str) -> str:
+    text = _require_string(value, field_name)
+    if not text.strip():
+        msg = f"{field_name} cannot be empty"
+        raise ValueError(msg)
+    return text
+
+
 def _normalize_string_id(string_id: str, field_name: str = "TypeEnvironment string id") -> str:
     string_id = _require_string(string_id, field_name)
     return string_id if string_id.startswith("$") else f"${string_id}"
@@ -38,7 +46,7 @@ class TypeEnvironment:
             self.scopes.pop()
 
     def define(self, name: str, type: YaraType) -> None:
-        variable_name = _require_string(name, "TypeEnvironment variable name")
+        variable_name = _require_nonempty_string(name, "TypeEnvironment variable name")
         if not isinstance(type, YaraType):
             msg = "TypeEnvironment type must be a YaraType"
             raise TypeError(msg)
@@ -52,11 +60,11 @@ class TypeEnvironment:
         return None
 
     def add_module(self, alias: str, module: str | None = None) -> None:
-        alias = _require_string(alias, "TypeEnvironment module alias")
+        alias = _require_nonempty_string(alias, "TypeEnvironment module alias")
         if module is None:
             self.modules.add(alias)
         else:
-            module = _require_string(module, "TypeEnvironment module name")
+            module = _require_nonempty_string(module, "TypeEnvironment module name")
             self.modules.add(alias)
             self.modules.add(module)
             self.module_aliases[alias] = module
@@ -65,6 +73,7 @@ class TypeEnvironment:
         if not isinstance(is_anonymous, bool):
             msg = "TypeEnvironment is_anonymous must be a boolean"
             raise TypeError(msg)
+        _require_nonempty_string(string_id, "TypeEnvironment string id")
         string_id = _normalize_string_id(string_id)
         self.strings.add(string_id)
         if is_anonymous:
@@ -98,7 +107,7 @@ class TypeEnvironment:
         )
 
     def add_rule(self, rule_name: str) -> None:
-        rule_name = _require_string(rule_name, "TypeEnvironment rule name")
+        rule_name = _require_nonempty_string(rule_name, "TypeEnvironment rule name")
         self.rules.add(rule_name)
 
     def has_rule(self, rule_name: str) -> bool:
