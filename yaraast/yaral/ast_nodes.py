@@ -12,6 +12,10 @@ type YaraLValue = ASTNode | str | int | float | bool | None
 type OutcomeValue = YaraLValue
 
 
+class RawOutcomeExpression(str):
+    """Source-preserving YARA-L outcome expression fragment."""
+
+
 @dataclass
 class YaraLRule(ASTNode):
     """YARA-L rule AST node."""

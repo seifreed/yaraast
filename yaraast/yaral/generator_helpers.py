@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.codegen.generator_helpers import escape_plain_string_value
+from yaraast.yaral.ast_nodes import RawOutcomeExpression
 
 
 def quote_string_literal(value: str) -> str:
@@ -16,6 +17,8 @@ def format_literal(value: Any) -> str:
         return ""
     if hasattr(value, "accept"):
         return ""
+    if isinstance(value, RawOutcomeExpression):
+        return str(value)
     if isinstance(value, str):
         if value.startswith("$") or value.startswith("%"):
             return value

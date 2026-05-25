@@ -90,6 +90,29 @@ def test_parenthesized_two_argument_outcome_if_roundtrips_without_none() -> None
     assert "None" not in generated
 
 
+def test_parenthesized_outcome_function_arguments_roundtrip_as_expressions() -> None:
+    parser = YaraLParser("""
+        rule parenthesized_function_args {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $result = string_concat((if($e.metadata.event_type = "LOGIN", "yes")), "tail")
+            $fallback = if($e.metadata.event_type = "LOGIN", (string_concat("a", "b")))
+            $literal = string_concat("(literal)", "tail")
+          condition:
+            $e
+        }
+        """)
+
+    generated = YaraLGenerator().generate(parser.parse())
+
+    assert 'string_concat((if($e.metadata.event_type = "LOGIN", "yes")), "tail")' in generated
+    assert (
+        '$fallback = if($e.metadata.event_type = "LOGIN", (string_concat("a", "b")))' in generated
+    )
+    assert '$literal = string_concat("(literal)", "tail")' in generated
+
+
 def test_parse_outcome_argument_basic_identifier_call_and_error() -> None:
     parser = YaraLParser("")
     _set_tokens(

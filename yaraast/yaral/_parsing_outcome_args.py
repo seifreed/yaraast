@@ -19,6 +19,7 @@ from .ast_nodes import (
     ConditionalExpression,
     EventVariable,
     FunctionCall,
+    RawOutcomeExpression,
     RegexPattern,
     UDMFieldAccess,
     UDMFieldPath,
@@ -49,7 +50,7 @@ class OutcomeArgumentParsingMixin:
             self._advance()
             expr = self._parse_outcome_condition()
             self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
-            return f"({self._format_outcome_argument_source(expr)})"
+            return RawOutcomeExpression(f"({self._format_outcome_argument_source(expr)})")
 
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
             BaseTokenType.STRING_IDENTIFIER
@@ -90,7 +91,7 @@ class OutcomeArgumentParsingMixin:
             self._advance()
             expr = self._parse_outcome_arithmetic_expression()
             self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
-            return f"({self._format_outcome_argument_source(expr)})"
+            return RawOutcomeExpression(f"({self._format_outcome_argument_source(expr)})")
 
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
             BaseTokenType.STRING_IDENTIFIER
@@ -226,6 +227,8 @@ class OutcomeArgumentParsingMixin:
             return f"/{escape_regex_delimiter(value.pattern)}/{flags}"
         if isinstance(value, EventVariable):
             return value.name
+        if isinstance(value, RawOutcomeExpression):
+            return str(value)
         if isinstance(value, str) and quote_strings and not value.startswith(("$", "%", "(")):
             return quote_string_literal(value)
         return str(value)
