@@ -26,6 +26,16 @@ from .ast_nodes import (
 from .generator_helpers import quote_string_literal
 from .tokens import YaraLTokenType
 
+_BARE_UDM_YARAL_TYPES = {
+    YaraLTokenType.METADATA,
+    YaraLTokenType.PRINCIPAL,
+    YaraLTokenType.TARGET,
+    YaraLTokenType.NETWORK,
+    YaraLTokenType.SECURITY_RESULT,
+    YaraLTokenType.UDM,
+    YaraLTokenType.ADDITIONAL,
+}
+
 
 class OutcomeArgumentParsingMixin:
     """Mixin for parsing outcome arguments and field paths."""
@@ -154,8 +164,9 @@ class OutcomeArgumentParsingMixin:
         ident = str(token.value)
         if self._check(BaseTokenType.LPAREN):
             return self._parse_function_call_args(ident)
-        if getattr(token, "yaral_type", None) == YaraLTokenType.UDM:
-            return UDMFieldAccess(event=None, field=UDMFieldPath(parts=[ident]))
+        if getattr(token, "yaral_type", None) in _BARE_UDM_YARAL_TYPES:
+            field_parts = self._parse_outcome_field_path_continuation(ident.split("."))
+            return UDMFieldAccess(event=None, field=UDMFieldPath(parts=field_parts))
 
         if self._check_any_operator(arithmetic_only=True):
             op_token = self._advance()
@@ -223,6 +234,9 @@ class OutcomeArgumentParsingMixin:
             self._consume(BaseTokenType.IDENTIFIER, EXPECTED_FIELD_NAME_ERROR).value,
         )
 
+        return self._parse_outcome_field_path_continuation(field_parts)
+
+    def _parse_outcome_field_path_continuation(self, field_parts: list[str]) -> list[str]:
         while self._check(BaseTokenType.DOT) or self._check(BaseTokenType.LBRACKET):
             if self._check(BaseTokenType.DOT):
                 self._advance()

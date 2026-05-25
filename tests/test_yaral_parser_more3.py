@@ -125,6 +125,8 @@ def test_parser_outcome_bare_udm_references_preserve_generated_text() -> None:
             outcome:
                 $field = metadata.event_type
                 $count = count(metadata.event_type)
+                $indexed = metadata["event_type"][0]
+                $repeated = principal.ip[0]
         }
         """,
     )
@@ -132,18 +134,27 @@ def test_parser_outcome_bare_udm_references_preserve_generated_text() -> None:
     ast = YaraLParser(code).parse()
     outcome = ast.rules[0].outcome
     assert outcome is not None
-    assert len(outcome.assignments) == 2
+    assert len(outcome.assignments) == 4
     direct_field = outcome.assignments[0].expression
     assert isinstance(direct_field, UDMFieldAccess)
     assert direct_field.event is None
     aggregation = outcome.assignments[1].expression
     assert isinstance(aggregation, AggregationFunction)
     assert isinstance(aggregation.arguments[0], UDMFieldAccess)
+    indexed = outcome.assignments[2].expression
+    assert isinstance(indexed, UDMFieldAccess)
+    assert indexed.field.path == 'metadata["event_type"][0]'
+    repeated = outcome.assignments[3].expression
+    assert isinstance(repeated, UDMFieldAccess)
+    assert repeated.field.path == "principal.ip[0]"
 
     generated = YaraLGenerator().generate(ast)
     assert "$field = metadata.event_type" in generated
     assert "$count = count(metadata.event_type)" in generated
+    assert '$indexed = metadata["event_type"][0]' in generated
+    assert "$repeated = principal.ip[0]" in generated
     assert '"metadata.event_type"' not in generated
+    assert '"metadata"' not in generated
 
 
 def test_parser_outcome_function_calls_preserve_generated_text() -> None:
