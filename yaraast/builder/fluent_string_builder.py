@@ -251,6 +251,13 @@ class FluentStringBuilder:
     # Advanced hex patterns
     def wildcard_sequence(self, count: int) -> FluentStringBuilder:
         """Create sequence of hex wildcards."""
+        if not isinstance(count, int) or isinstance(count, bool):
+            msg = f"Invalid wildcard count type: {type(count)}"
+            raise TypeError(msg)
+        if count <= 0:
+            msg = f"Wildcard count must be positive, got {count}"
+            raise ValidationError(msg)
+
         tokens = [HexWildcard() for _ in range(count)]
         self._content = tokens
         self._string_type = "hex"

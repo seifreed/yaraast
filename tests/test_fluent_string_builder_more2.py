@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.modifiers import StringModifierType
@@ -90,6 +92,17 @@ def test_fluent_string_builder_rejects_boolean_xor_keys() -> None:
 
     with pytest.raises(ValidationError, match="XOR range must be ascending"):
         FluentStringBuilder("$xor").literal("abc").xor_range(5, 1)
+
+
+def test_fluent_string_builder_rejects_invalid_wildcard_sequence_counts() -> None:
+    with pytest.raises(ValidationError, match="Wildcard count must be positive"):
+        FluentStringBuilder("$wild").wildcard_sequence(0)
+
+    with pytest.raises(ValidationError, match="Wildcard count must be positive"):
+        FluentStringBuilder("$wild").wildcard_sequence(-1)
+
+    with pytest.raises(TypeError, match="Invalid wildcard count type"):
+        FluentStringBuilder("$wild").wildcard_sequence(cast(Any, True))
 
 
 def test_fluent_string_builder_regex_specific_modifiers() -> None:
