@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 import graphlib
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from yaraast.errors import ValidationError
+from yaraast.metrics.dependency_graph_finder import DependencyFinder
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
@@ -64,6 +66,69 @@ def _normalize_include_resolutions(value: object) -> dict[str, str | Path]:
     return resolutions
 
 
+def _module_name_for_object(value: object) -> str | None:
+    module = getattr(value, "module", None)
+    if isinstance(module, str):
+        return module
+    name = getattr(value, "name", None)
+    if isinstance(name, str):
+        return name
+    return None
+
+
+class _RuleDependencyCollector(DependencyFinder):
+    """Collect rule and imported-module references from one rule condition."""
+
+    def __init__(self, current_rule: str, rule_names: set[str], module_names: set[str]) -> None:
+        super().__init__(current_rule, rule_names)
+        self.module_names = module_names
+        self.module_references: set[str] = set()
+
+    def visit_function_call(self, node: Any) -> None:
+        function_name = getattr(node, "function", "")
+        module_name = function_name.split(".", 1)[0] if "." in function_name else None
+        if module_name in self.module_names and not self._is_local(module_name):
+            self.module_references.add(module_name)
+        super().visit_function_call(node)
+
+    def visit_member_access(self, node: Any) -> None:
+        module_name = _module_name_for_object(node.object)
+        if module_name in self.module_names and not self._is_local(module_name):
+            self.module_references.add(module_name)
+        super().visit_member_access(node)
+
+    def visit_module_reference(self, node: Any) -> None:
+        module_name = getattr(node, "module", None)
+        if (
+            isinstance(module_name, str)
+            and module_name in self.module_names
+            and not self._is_local(module_name)
+        ):
+            self.module_references.add(module_name)
+
+
+def _rule_occurrence_keys(rules: list[Rule]) -> dict[int, str]:
+    counts = Counter(rule.name for rule in rules)
+    seen_rules: defaultdict[str, int] = defaultdict(int)
+    rule_keys: dict[int, str] = {}
+
+    for rule in rules:
+        seen_rules[rule.name] += 1
+        rule_keys[id(rule)] = _rule_occurrence_key(
+            rule.name,
+            seen_rules[rule.name],
+            counts,
+        )
+
+    return rule_keys
+
+
+def _rule_occurrence_key(rule_name: str, occurrence: int, counts: Counter[str]) -> str:
+    if counts[rule_name] == 1:
+        return rule_name
+    return f"{rule_name}#{occurrence}"
+
+
 @dataclass
 class DependencyNode:
     """Node in the dependency graph."""
@@ -81,8 +146,8 @@ class DependencyGraph:
 
     def __init__(self) -> None:
         self.nodes: dict[str, DependencyNode] = {}
-        self.file_rules: dict[str, set[str]] = {}  # file_path -> rule_names
-        self.rule_files: dict[str, str] = {}  # rule_name -> file_path
+        self.file_rules: dict[str, set[str]] = {}  # file_path -> rule occurrence names
+        self.rule_files: dict[str, str] = {}  # rule occurrence name -> file_path
 
     def add_file(
         self,
@@ -124,9 +189,13 @@ class DependencyGraph:
             include_target = include_resolutions.get(include_stmt.path, include_stmt.path)
             self._add_include_dependency(file_key, include_target)
 
-        # Add rules and analyze their dependencies
+        # Add all rules first so forward references can resolve during analysis.
+        rule_keys = _rule_occurrence_keys(ast.rules)
         for rule in ast.rules:
-            self._add_rule(file_key, rule)
+            self._add_rule(file_key, rule, rule_keys[id(rule)])
+
+        for rule in ast.rules:
+            self._analyze_rule_dependencies(f"rule:{rule_keys[id(rule)]}", rule)
 
     def _validate_file_ast(self, ast: YaraFile) -> None:
         """Validate graph-relevant AST fields before mutating graph state."""
@@ -217,9 +286,9 @@ class DependencyGraph:
         self.nodes[file_key].dependencies.add(include_key)
         self.nodes[include_key].dependents.add(file_key)
 
-    def _add_rule(self, file_key: str, rule: Rule) -> None:
+    def _add_rule(self, file_key: str, rule: Rule, rule_name: str) -> None:
         """Add rule to the graph and analyze its dependencies."""
-        rule_key = f"rule:{rule.name}"
+        rule_key = f"rule:{rule_name}"
 
         # Create rule node
         self.nodes[rule_key] = DependencyNode(
@@ -233,23 +302,51 @@ class DependencyGraph:
         )
 
         # Track rule location
-        self.file_rules[file_key].add(rule.name)
-        self.rule_files[rule.name] = file_key
+        self.file_rules[file_key].add(rule_name)
+        self.rule_files[rule_name] = file_key
 
         # File depends on rule
         self.nodes[file_key].dependencies.add(rule_key)
         self.nodes[rule_key].dependents.add(file_key)
 
-        # Analyze rule dependencies
-        self._analyze_rule_dependencies(rule_key, rule)
-
     def _analyze_rule_dependencies(self, rule_key: str, rule: Rule) -> None:
         """Analyze dependencies within a rule."""
-        # This would analyze the rule's condition to find:
-        # - References to other rules
-        # - Module function calls
-        # - String references
-        # For now, we'll keep it simple
+        if not rule.condition:
+            return
+
+        collector = _RuleDependencyCollector(
+            rule.name,
+            self._raw_rule_names(),
+            self._module_names(),
+        )
+        collector.visit(rule.condition)
+
+        for dependency_name in sorted(collector.dependencies):
+            for dependency_key in self._rule_node_keys_for_name(dependency_name):
+                if dependency_key != rule_key:
+                    self._add_dependency_edge(rule_key, dependency_key)
+
+        for module_name in sorted(collector.module_references):
+            self._add_dependency_edge(rule_key, module_name)
+
+    def _raw_rule_names(self) -> set[str]:
+        return {node.name for node in self.nodes.values() if node.type == "rule"}
+
+    def _module_names(self) -> set[str]:
+        return {node_key for node_key, node in self.nodes.items() if node.type == "module"}
+
+    def _rule_node_keys_for_name(self, rule_name: str) -> list[str]:
+        return [
+            node_key
+            for node_key, node in sorted(self.nodes.items())
+            if node.type == "rule" and node.name == rule_name
+        ]
+
+    def _add_dependency_edge(self, from_key: str, to_key: str) -> None:
+        if from_key not in self.nodes or to_key not in self.nodes:
+            return
+        self.nodes[from_key].dependencies.add(to_key)
+        self.nodes[to_key].dependents.add(from_key)
 
     def get_file_dependencies(self, file_path: str) -> set[str]:
         """Get all dependencies of a file (transitive)."""

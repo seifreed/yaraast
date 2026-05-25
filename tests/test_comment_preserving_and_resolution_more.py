@@ -12,6 +12,7 @@ from yaraast.ast.rules import Import, Include, Rule
 from yaraast.errors import ValidationError
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import TokenType
+from yaraast.parser import Parser
 from yaraast.resolution.dependency_graph import DependencyGraph, DependencyNode
 
 
@@ -134,6 +135,43 @@ def test_rule_dependency_getter_does_not_expose_internal_set() -> None:
     dependencies.add("mutated")
 
     assert graph.nodes["rule:test"].dependencies == {"dep"}
+
+
+def test_dependency_graph_analyzes_rule_module_and_duplicate_dependencies() -> None:
+    ast = Parser().parse("""
+import "pe"
+
+rule dup {
+    condition:
+        true
+}
+
+rule dup {
+    condition:
+        helper
+}
+
+rule helper {
+    condition:
+        true
+}
+
+rule caller {
+    condition:
+        dup and pe.number_of_sections > 0
+}
+""")
+    graph = DependencyGraph()
+
+    graph.add_file(Path("rules.yar"), ast)
+
+    assert {"rule:dup#1", "rule:dup#2", "rule:helper", "rule:caller"}.issubset(graph.nodes)
+    assert graph.file_rules["rules.yar"] == {"dup#1", "dup#2", "helper", "caller"}
+    assert graph.rule_files["dup#1"] == "rules.yar"
+    assert graph.get_rule_dependencies("dup#2") == {"rule:helper"}
+    assert graph.get_rule_dependencies("caller") == {"rule:dup#1", "rule:dup#2", "pe"}
+    assert "rule:caller" in graph.nodes["pe"].dependents
+    assert "rule:caller" in graph.nodes["rule:dup#1"].dependents
 
 
 def test_transitive_graph_queries_do_not_return_start_node_in_cycles() -> None:
