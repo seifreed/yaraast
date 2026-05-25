@@ -104,6 +104,7 @@ class ExpressionBuilder:
     @staticmethod
     def string_set(*identifiers: str) -> SetExpression:
         """Create set of string identifiers."""
+        ExpressionBuilder._validate_string_set_args(identifiers)
         elements = [StringIdentifier(name=s) for s in identifiers]
         return SetExpression(elements=elements)
 
@@ -223,6 +224,12 @@ class ExpressionBuilder:
     def function_call(name: str, *args: Expression) -> FunctionCall:
         """Create function call."""
         return FunctionCall(function=name, arguments=list(args))
+
+    @staticmethod
+    def _validate_string_set_args(strings: tuple[str, ...]) -> None:
+        if not strings:
+            msg = "At least one string identifier is required"
+            raise ValidationError(msg)
 
     @staticmethod
     def member_access(obj: Expression, member: str) -> MemberAccess:

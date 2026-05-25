@@ -43,6 +43,9 @@ def make_string_count_compare(string_id: str, operator: str, count: int) -> Bina
 
 
 def build_string_set(*strings: str) -> Expression:
+    if not strings:
+        msg = "At least one string identifier is required"
+        raise ValidationError(msg)
     if all(s == "them" for s in strings):
         return Identifier(name="them")
     elements = [StringIdentifier(name=s) for s in strings]

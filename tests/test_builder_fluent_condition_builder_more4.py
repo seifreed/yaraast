@@ -16,6 +16,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.builder.fluent_condition_builder import FluentConditionBuilder
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.errors import ValidationError
 
 
 def test_fluent_condition_quantifiers_and_strings() -> None:
@@ -67,6 +68,14 @@ def test_fluent_condition_exact_and_upper_bound_quantifiers() -> None:
 
     between = FluentConditionBuilder().between_n_and_m_of(1, 2, "$a", "$b", "$c").build()
     assert generator.visit(between) == "1 of ($a, $b, $c) and not 3 of ($a, $b, $c)"
+
+
+def test_fluent_condition_builder_rejects_empty_string_sets() -> None:
+    with pytest.raises(ValidationError, match="At least one string identifier is required"):
+        FluentConditionBuilder().one_of()
+
+    with pytest.raises(ValidationError, match="At least one string identifier is required"):
+        FluentConditionBuilder().at_most_n_of(1)
 
 
 def test_fluent_condition_helpers_return_literals() -> None:

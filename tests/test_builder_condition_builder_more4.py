@@ -52,6 +52,17 @@ def test_condition_builder_n_of_rejects_boolean_quantifier() -> None:
         ConditionBuilder().n_of(cast(Any, 1.5), "$a", "$b")
 
 
+def test_condition_builder_rejects_empty_string_sets() -> None:
+    with pytest.raises(ValidationError, match="At least one string identifier is required"):
+        ConditionBuilder().any_of()
+
+    with pytest.raises(ValidationError, match="At least one string identifier is required"):
+        ConditionBuilder().all_of()
+
+    with pytest.raises(ValidationError, match="At least one string identifier is required"):
+        ConditionBuilder().n_of(1)
+
+
 def test_condition_builder_rejects_boolean_offsets_and_range_bounds() -> None:
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         ConditionBuilder().string("$a").at(cast(Any, True))

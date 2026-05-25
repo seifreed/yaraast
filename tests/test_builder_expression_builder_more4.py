@@ -59,6 +59,17 @@ def test_expression_builder_rejects_non_integer_literal_values() -> None:
         ExpressionBuilder.array_access(ExpressionBuilder.identifier("arr"), cast(Any, "0"))
 
 
+def test_expression_builder_rejects_empty_string_sets() -> None:
+    with pytest.raises(ValidationError, match="At least one string identifier is required"):
+        ExpressionBuilder.string_set()
+
+    with pytest.raises(ValidationError, match="At least one string identifier is required"):
+        ExpressionBuilder.any_of()
+
+    with pytest.raises(ValidationError, match="At least one string identifier is required"):
+        ExpressionBuilder.n_of(1)
+
+
 def test_expression_builder_accessors_and_errors() -> None:
     arr = ExpressionBuilder.array_access(ExpressionBuilder.identifier("arr"), 1)
     assert isinstance(arr, ArrayAccess)

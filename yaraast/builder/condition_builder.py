@@ -225,6 +225,7 @@ class ConditionBuilder:
     # Quantifiers
     def any_of(self, *strings: str) -> Self:
         """Any of strings."""
+        self._validate_string_set_args(strings)
         if all(s == "them" for s in strings):
             string_set = Identifier(name="them")
         else:
@@ -237,6 +238,7 @@ class ConditionBuilder:
 
     def all_of(self, *strings: str) -> Self:
         """All of strings."""
+        self._validate_string_set_args(strings)
         if all(s == "them" for s in strings):
             string_set = Identifier(name="them")
         else:
@@ -249,6 +251,7 @@ class ConditionBuilder:
 
     def n_of(self, n: int, *strings: str) -> Self:
         """N of strings."""
+        self._validate_string_set_args(strings)
         if all(s == "them" for s in strings):
             string_set = Identifier(name="them")
         else:
@@ -412,6 +415,11 @@ class ConditionBuilder:
             return self._integer_literal(value)
         msg = f"Cannot convert {type(value)} to integer expression"
         raise TypeError(msg)
+
+    def _validate_string_set_args(self, strings: tuple[str, ...]) -> None:
+        if not strings:
+            msg = "At least one string identifier is required"
+            raise ValidationError(msg)
 
     def build(self) -> Expression:
         """Build the final expression."""
