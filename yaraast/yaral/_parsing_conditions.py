@@ -140,6 +140,8 @@ class YaraLConditionParsingMixin:
 
     def _parse_comparison_value(self):
         """Parse the value on the right side of a comparison."""
+        if self._check(BaseTokenType.LPAREN):
+            return self._parse_parenthesized_comparison_value()
         if self._check(BaseTokenType.BOOLEAN_TRUE):
             self._advance()
             return True
@@ -204,6 +206,12 @@ class YaraLConditionParsingMixin:
         if self._check(BaseTokenType.LPAREN):
             return self._parse_function_call_args(value)
         return RawConditionValue(value)
+
+    def _parse_parenthesized_comparison_value(self) -> RawConditionValue:
+        self._advance()
+        value = self._parse_comparison_value()
+        self._consume(BaseTokenType.RPAREN, "Expected ')' after comparison value")
+        return RawConditionValue(f"({self._format_condition_raw_value(value)})")
 
     def _check_comparison_operator(self) -> bool:
         """Check if the current token is a comparison operator."""

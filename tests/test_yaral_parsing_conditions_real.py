@@ -555,3 +555,36 @@ def test_parse_condition_function_values_preserve_generated_text() -> None:
         """).parse()
     generated = YaraLGenerator().generate(ast)
     assert '$risk_score > max($e.principal.ip, "fallback", true)' in generated
+
+
+def test_parse_condition_parenthesized_values_preserve_generated_text() -> None:
+    parser = YaraLParser("$risk_score > (max(1, 2))")
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, VariableComparisonCondition)
+    assert condition.variable == "$risk_score"
+    assert condition.operator == ">"
+    assert isinstance(condition.value, RawConditionValue)
+    assert condition.value == "(max(1, 2))"
+    assert parser._is_at_end()
+
+    parser2 = YaraLParser("$risk_score > (1 + $offset)")
+    condition2 = parser2._parse_condition_expression()
+
+    assert isinstance(condition2, VariableComparisonCondition)
+    assert isinstance(condition2.value, RawConditionValue)
+    assert condition2.value == "(1 + $offset)"
+    assert parser2._is_at_end()
+
+    ast = YaraLParser("""
+        rule parenthesized_condition_value {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = count($e.principal.ip)
+          condition:
+            $risk_score > (max(1, 2))
+        }
+        """).parse()
+    generated = YaraLGenerator().generate(ast)
+    assert "$risk_score > (max(1, 2))" in generated
