@@ -86,6 +86,8 @@ class EnhancedYaraLParserHelpersMixin:
         if self._check(BaseTokenType.LE):
             self._advance()
             return "<="
+        if self._check(BaseTokenType.MATCHES):
+            return str(self._advance().value)
         if self._check_keyword("matches"):
             self._advance()
             return "=~"

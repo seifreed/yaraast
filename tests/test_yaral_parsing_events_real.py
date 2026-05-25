@@ -563,3 +563,25 @@ def test_parse_integer_event_comparison_preserves_generated_text() -> None:
 
     generated = YaraLGenerator().generate(ast)
     assert "604800 <= $e.metadata.event_timestamp.seconds" in generated
+
+
+@pytest.mark.parametrize("operator", ["=~", "!~"])
+def test_parse_event_symbolic_regex_operator_preserves_generated_text(operator: str) -> None:
+    ast = YaraLParser(f"""
+        rule event_regex_operator {{
+          events:
+            $e.target.hostname {operator} /admin.*/
+          condition:
+            $e
+        }}
+        """).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventAssignment)
+    assert statement.operator == operator
+    assert isinstance(statement.value, RegexPattern)
+
+    generated = YaraLGenerator().generate(ast)
+    assert f"$e.target.hostname {operator} /admin.*/" in generated

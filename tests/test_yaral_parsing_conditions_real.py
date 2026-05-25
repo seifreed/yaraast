@@ -487,3 +487,28 @@ def test_parse_condition_arithmetic_comparisons_preserve_generated_text() -> Non
         """).parse()
     generated = YaraLGenerator().generate(ast)
     assert "$count + 1 > 5" in generated
+
+
+@pytest.mark.parametrize(("source_operator", "operator"), [("=~", "=~"), ("!~", "!~")])
+def test_parse_condition_symbolic_regex_operators_preserve_generated_text(
+    source_operator: str, operator: str
+) -> None:
+    parser = YaraLParser(f"$e.target.hostname {source_operator} /admin.*/")
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, VariableComparisonCondition)
+    assert condition.variable == "$e.target.hostname"
+    assert condition.operator == operator
+    assert isinstance(condition.value, RegexPattern)
+    assert parser._is_at_end()
+
+    ast = YaraLParser(f"""
+        rule regex_operator_condition {{
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e.target.hostname {source_operator} /admin.*/
+        }}
+        """).parse()
+    generated = YaraLGenerator().generate(ast)
+    assert f"$e.target.hostname {operator} /admin.*/" in generated

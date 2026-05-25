@@ -102,18 +102,22 @@ class TestYaraLLexerComprehensive:
 
     def test_lexer_two_char_operators(self) -> None:
         """Test lexing two-character operators."""
-        lexer = YaraLLexer("-> :: >= <= == !=")
+        lexer = YaraLLexer("-> :: >= <= == != =~ !~")
         tokens = lexer.tokenize()
 
         operators = [t for t in tokens if t.type != BaseTokenType.EOF]
 
-        assert len(operators) == 6
+        assert len(operators) == 8
         assert operators[0].value == "->"
         assert operators[1].value == "::"
         assert operators[2].value == ">="
         assert operators[3].value == "<="
         assert operators[4].value == "=="
         assert operators[5].value == "!="
+        assert operators[6].type == BaseTokenType.MATCHES
+        assert operators[6].value == "=~"
+        assert operators[7].type == BaseTokenType.MATCHES
+        assert operators[7].value == "!~"
 
     def test_lexer_single_line_comment(self) -> None:
         """Test that single-line comments are skipped."""

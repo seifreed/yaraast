@@ -69,6 +69,8 @@ TWO_CHAR_TOKENS = {
     "<=": (BaseTokenType.LE, None),
     "==": (BaseTokenType.IEQUALS, None),
     "!=": (BaseTokenType.NEQ, None),
+    "=~": (BaseTokenType.MATCHES, None),
+    "!~": (BaseTokenType.MATCHES, None),
 }
 
 SINGLE_CHAR_TOKENS = {

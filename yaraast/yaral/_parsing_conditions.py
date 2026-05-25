@@ -213,6 +213,7 @@ class YaraLConditionParsingMixin:
     def _check_condition_operator(self) -> bool:
         return (
             self._check_comparison_operator()
+            or self._check(BaseTokenType.MATCHES)
             or self._check(BaseTokenType.IN)
             or self._check_keyword("in")
             or self._check_keyword("matches")
@@ -223,6 +224,8 @@ class YaraLConditionParsingMixin:
     def _consume_condition_operator(self) -> str:
         if self._check_comparison_operator():
             return self._consume_comparison_operator()
+        if self._check(BaseTokenType.MATCHES):
+            return str(self._advance().value)
         if self._check(BaseTokenType.IN) or self._check_keyword("in"):
             self._advance()
             return "in"

@@ -75,6 +75,8 @@ def test_parse_comparison_operators_and_errors() -> None:
         (_tok(T.LT, "<"), "<"),
         (_tok(T.GE, ">="), ">="),
         (_tok(T.LE, "<="), "<="),
+        (_tok(T.MATCHES, "=~"), "=~"),
+        (_tok(T.MATCHES, "!~"), "!~"),
         (_tok(T.IDENTIFIER, "matches"), "=~"),
         (_tok(T.IN, "in"), "in"),
         (_tok(T.IDENTIFIER, "in"), "in"),
