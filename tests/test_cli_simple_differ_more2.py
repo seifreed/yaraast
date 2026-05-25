@@ -58,6 +58,97 @@ def test_simple_ast_differ_modified_rule(tmp_path: Path) -> None:
     assert result.modified_rules == ["r1"]
 
 
+def test_simple_ast_differ_diff_files_detects_changed_duplicate_rule_occurrence(
+    tmp_path: Path,
+) -> None:
+    file1 = tmp_path / "old.yar"
+    file2 = tmp_path / "new.yar"
+
+    file1.write_text(
+        "rule dup { condition: true }\nrule dup { condition: 1 }\n",
+        encoding="utf-8",
+    )
+    file2.write_text(
+        "rule dup { condition: false }\nrule dup { condition: 1 }\n",
+        encoding="utf-8",
+    )
+
+    result = SimpleASTDiffer().diff_files(file1, file2)
+
+    assert result.has_changes is True
+    assert result.modified_rules == ["dup#1"]
+    assert result.logical_changes == ["Rule modified: dup#1"]
+    assert result.change_summary["modified_rules"] == 1
+
+
+def test_simple_ast_differ_diff_files_preserves_duplicate_rule_adds_and_removals(
+    tmp_path: Path,
+) -> None:
+    file1 = tmp_path / "old.yar"
+    file2 = tmp_path / "new.yar"
+
+    file1.write_text(
+        "\n".join(
+            [
+                "rule adddup { condition: true }",
+                "rule remdup { condition: true }",
+                "rule remdup { condition: false }",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    file2.write_text(
+        "\n".join(
+            [
+                "rule adddup { condition: true }",
+                "rule adddup { condition: false }",
+                "rule remdup { condition: true }",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = SimpleASTDiffer().diff_files(file1, file2)
+
+    assert result.added_rules == ["adddup#2"]
+    assert result.removed_rules == ["remdup#2"]
+    assert result.modified_rules == []
+    assert result.logical_changes == ["Rule added: adddup#2", "Rule removed: remdup#2"]
+
+
+def test_simple_ast_differ_diff_files_ignores_rule_location_changes(
+    tmp_path: Path,
+) -> None:
+    file1 = tmp_path / "old.yar"
+    file2 = tmp_path / "new.yar"
+
+    file1.write_text(
+        "\n".join(
+            [
+                "rule shifted { condition: true }",
+                "rule stable { condition: false }",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    file2.write_text(
+        "\n".join(
+            [
+                "rule added { condition: true }",
+                "rule shifted { condition: true }",
+                "rule stable { condition: false }",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    result = SimpleASTDiffer().diff_files(file1, file2)
+
+    assert result.added_rules == ["added"]
+    assert result.modified_rules == []
+    assert result.logical_changes == ["Rule added: added"]
+
+
 def test_simple_ast_differ_modified_rules_are_sorted(tmp_path: Path) -> None:
     file1 = tmp_path / "old.yar"
     file2 = tmp_path / "new.yar"

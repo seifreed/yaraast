@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 import difflib
 from enum import Enum
 from pathlib import Path
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Rule
 from yaraast.cli.parser_helpers import parse_yara_source
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.parser.parser import Parser
@@ -229,6 +230,35 @@ class ASTDiffResult:
     style_only_changes: list[str]
 
 
+def _rule_occurrence_names(rules1: list[Rule], rules2: list[Rule]) -> set[str]:
+    counts1 = Counter(rule.name for rule in rules1)
+    counts2 = Counter(rule.name for rule in rules2)
+    return {
+        name
+        for name in set(counts1) | set(counts2)
+        if counts1.get(name, 0) > 1 or counts2.get(name, 0) > 1
+    }
+
+
+def _rule_occurrence_map(rules: list[Rule], occurrence_names: set[str]) -> dict[str, Rule]:
+    seen: defaultdict[str, int] = defaultdict(int)
+    result: dict[str, Rule] = {}
+
+    for rule in rules:
+        if rule.name not in occurrence_names:
+            result[rule.name] = rule
+            continue
+
+        seen[rule.name] += 1
+        result[f"{rule.name}#{seen[rule.name]}"] = rule
+
+    return result
+
+
+def _rule_signature(rule: Rule, generator: CodeGenerator) -> str:
+    return generator.generate(YaraFile(rules=[rule]))
+
+
 class SimpleASTDiffer(SimpleDiffer):
     """Simplified AST differ for CLI use."""
 
@@ -250,15 +280,18 @@ class SimpleASTDiffer(SimpleDiffer):
             ast1 = parse_yara_source(content1)
             ast2 = parse_yara_source(content2)
 
-        rules1 = {rule.name: rule for rule in ast1.rules}
-        rules2 = {rule.name: rule for rule in ast2.rules}
+        occurrence_names = _rule_occurrence_names(ast1.rules, ast2.rules)
+        rules1 = _rule_occurrence_map(ast1.rules, occurrence_names)
+        rules2 = _rule_occurrence_map(ast2.rules, occurrence_names)
 
         added_rules = sorted(set(rules2) - set(rules1))
         removed_rules = sorted(set(rules1) - set(rules2))
 
         modified_rules: list[str] = []
         for name in sorted(set(rules1) & set(rules2)):
-            if repr(rules1[name]) != repr(rules2[name]):
+            if _rule_signature(rules1[name], self.generator) != _rule_signature(
+                rules2[name], self.generator
+            ):
                 modified_rules.append(name)
 
         logical_changes = []
