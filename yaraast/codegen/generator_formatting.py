@@ -22,12 +22,15 @@ _YARA_EXPRESSION_KEYWORDS = frozenset(
 
 
 def format_rule_modifiers(modifiers) -> str:
+    if modifiers is None:
+        return ""
+    if not isinstance(modifiers, list | tuple):
+        msg = "Rule modifiers must be a list or tuple for libyara output"
+        raise TypeError(msg)
     if not modifiers:
         return ""
-    if isinstance(modifiers, list | tuple):
-        validate_rule_modifiers(modifiers)
-        return " ".join(str(m) for m in modifiers)
-    return ""
+    validate_rule_modifiers(modifiers)
+    return " ".join(str(m) for m in modifiers)
 
 
 def validate_rule_modifiers(modifiers) -> None:
@@ -54,6 +57,11 @@ def validate_rule_identifiers(rules) -> None:
 
 
 def format_rule_tags(tags) -> str:
+    if tags is None:
+        return ""
+    if not isinstance(tags, list | tuple):
+        msg = "Rule tags must be a list or tuple for libyara output"
+        raise TypeError(msg)
     if not tags:
         return ""
     validate_rule_tags(tags)

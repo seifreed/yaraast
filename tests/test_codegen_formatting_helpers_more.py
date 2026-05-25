@@ -50,11 +50,17 @@ from yaraast.codegen.pretty_printer_helpers import (
 def test_generator_formatting_helpers_cover_all_branches() -> None:
     assert format_rule_modifiers([]) == ""
     assert format_rule_modifiers(["private", "global"]) == "private global"
-    assert format_rule_modifiers("private") == ""  # bare strings no longer accepted
-    assert format_rule_modifiers(123) == ""
+    invalid_modifier_containers: list[Any] = ["private", 123, False]
+    for invalid_modifiers in invalid_modifier_containers:
+        with pytest.raises(TypeError, match="Rule modifiers must be a list or tuple"):
+            format_rule_modifiers(invalid_modifiers)
 
     assert format_rule_tags([]) == ""
     assert format_rule_tags(["t1", Tag(name="t2")]) == "t1 t2"
+    invalid_tag_containers: list[Any] = ["abc", 123, False]
+    for invalid_tags in invalid_tag_containers:
+        with pytest.raises(TypeError, match="Rule tags must be a list or tuple"):
+            format_rule_tags(invalid_tags)
     with pytest.raises(ValueError, match="Duplicate tag identifier"):
         format_rule_tags(["t1", Tag(name="t1")])
 
