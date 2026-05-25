@@ -781,16 +781,10 @@ class TestHexStringBuilderStaticMethods:
         assert _byte_value(tokens[2]) == 0xBE
         assert _byte_value(tokens[3]) == 0xEF
 
-    def test_from_hex_string_odd_length(self) -> None:
-        """From_hex_string should handle odd-length strings."""
-        hex_str = "ABC"
-
-        builder = HexStringBuilder.from_hex_string(hex_str)
-        tokens = builder.build()
-
-        # Should only process AB, skipping incomplete C
-        assert len(tokens) == 1
-        assert _byte_value(tokens[0]) == 0xAB
+    def test_from_hex_string_rejects_odd_length(self) -> None:
+        """From_hex_string should reject truncated byte input."""
+        with pytest.raises(ValidationError, match="Invalid trailing hex byte"):
+            HexStringBuilder.from_hex_string("ABC")
 
 
 class TestHexStringBuilderComplexScenarios:

@@ -255,6 +255,9 @@ class HexStringBuilder:
         """Create builder from hex string."""
         builder = HexStringBuilder()
         hex_str = hex_str.replace(" ", "").upper()
+        if len(hex_str) % 2 != 0:
+            msg = f"Invalid trailing hex byte: {hex_str[-1]}"
+            raise ValidationError(msg)
 
         for i in range(0, len(hex_str), 2):
             if i + 1 < len(hex_str):
