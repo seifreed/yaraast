@@ -23,6 +23,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.builder.file_builder_validation import (
     validate_identifier,
+    validate_meta_value,
     validate_nonempty_text,
     validate_optional_identifier,
     validate_unique_rule_names,
@@ -134,6 +135,9 @@ class RuleTransformer:
     def add_meta(self, key: str, value: str | int | bool) -> RuleTransformer:
         """Add metadata."""
         from yaraast.ast.modifiers import MetaEntry
+
+        validate_identifier(key, "meta")
+        validate_meta_value(value)
 
         # Update existing entry or append new one
         for entry in self.rule.meta:

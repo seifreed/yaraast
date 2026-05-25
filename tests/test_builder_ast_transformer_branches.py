@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.base import Location, YaraFile
@@ -427,3 +429,32 @@ def test_rule_transformer_rejects_duplicate_replacement_tag_without_partial_upda
         transformer.replace_tag("t1", "t2")
 
     assert [rule_tag.name for rule_tag in transformer.build().tags] == ["t1", "t2"]
+
+
+@pytest.mark.parametrize("meta_key", ["bad key", "bad-key", "for", "1bad", ""])
+def test_rule_transformer_rejects_invalid_meta_keys_without_partial_update(
+    meta_key: str,
+) -> None:
+    transformer = RuleTransformer(_sample_rule("metadata_rule"))
+
+    with pytest.raises(ValidationError, match="Invalid meta identifier"):
+        transformer.add_meta(meta_key, "x")
+
+    transformed = transformer.build()
+    assert transformed.get_meta_value("author") == "me"
+    assert transformed.get_meta_value(meta_key) is None
+
+
+@pytest.mark.parametrize("meta_value", [1.5, None, ["x"]])
+def test_rule_transformer_rejects_invalid_meta_values_without_partial_update(
+    meta_value: object,
+) -> None:
+    transformer = RuleTransformer(_sample_rule("metadata_rule"))
+
+    with pytest.raises(TypeError, match="Invalid meta value"):
+        transformer.add_meta("author", cast(Any, meta_value))
+    assert transformer.build().get_meta_value("author") == "me"
+
+    with pytest.raises(TypeError, match="Invalid meta value"):
+        transformer.add_meta("new_key", cast(Any, meta_value))
+    assert transformer.build().get_meta_value("new_key") is None

@@ -38,6 +38,13 @@ def validate_identifier(value: object, kind: str) -> None:
     raise ValidationError(msg)
 
 
+def validate_meta_value(value: object) -> None:
+    if isinstance(value, str | bool | int):
+        return
+    msg = f"Invalid meta value: {value}"
+    raise TypeError(msg)
+
+
 def validate_optional_identifier(value: object | None, kind: str) -> None:
     if value is None:
         return
