@@ -305,9 +305,7 @@ class RuleBuilder:
 
     def with_simple_condition(self, condition: str) -> Self:
         """Set a simple condition string."""
-        condition_value = condition.lstrip("$")
-        self._condition = cast(Condition, Identifier(name=condition_value))
-        return self
+        return self.with_condition(condition)
 
     def with_any_string(self) -> Self:
         """Set condition to any of them."""

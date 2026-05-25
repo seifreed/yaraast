@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, Identifier, StringIdentifier
+from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, StringIdentifier
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.rule_builder import RuleBuilder
@@ -86,9 +86,15 @@ def test_rule_builder_complex_conditions_and_lambda() -> None:
     assert isinstance(rule.condition, BooleanLiteral)
     assert rule.condition.value is True
 
-    simple = RuleBuilder("simple").with_simple_condition("$seen").build()
-    assert isinstance(simple.condition, Identifier)
-    assert simple.condition.name == "seen"
+    simple = (
+        RuleBuilder("simple")
+        .with_plain_string("$seen", "marker")
+        .with_simple_condition("$seen")
+        .build()
+    )
+    assert isinstance(simple.condition, StringIdentifier)
+    assert simple.condition.name == "$seen"
+    assert "$seen" in CodeGenerator().generate(simple)
 
 
 def test_rule_builder_true_condition_direct_builder_and_plain_regex() -> None:

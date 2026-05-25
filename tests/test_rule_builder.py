@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.expressions import BooleanLiteral, Identifier
+from yaraast.ast.expressions import BooleanLiteral, StringIdentifier
 from yaraast.ast.modifiers import RuleModifier
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
@@ -423,7 +423,8 @@ class TestRuleBuilderConditions:
         rule = builder.build()
 
         assert rule.condition is not None
-        assert isinstance(rule.condition, Identifier)
+        assert isinstance(rule.condition, StringIdentifier)
+        assert rule.condition.name == "$s"
 
     def test_with_any_string_condition(self) -> None:
         """With_any_string should create 'any of them' condition."""
