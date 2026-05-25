@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, cast
 
 import pytest
@@ -11,6 +12,8 @@ from yaraast.ast.extern import (
     ExternNamespace,
     ExternRule,
     ExternRuleReference,
+    create_extern_import,
+    create_extern_reference,
     create_extern_rule,
 )
 
@@ -66,3 +69,52 @@ def test_extern_namespace_rejects_invalid_rule_inputs_without_partial_update() -
         ns.add_extern_rule(cast(Any, object()))
 
     assert ns.extern_rules == [rule]
+
+
+def test_extern_helpers_reject_invalid_inputs_at_creation_time() -> None:
+    invalid_cases: list[tuple[Callable[[], object], str]] = [
+        (
+            lambda: create_extern_rule(cast(Any, object())),
+            "ExternRule name must be a string",
+        ),
+        (
+            lambda: create_extern_rule("R1", modifiers=cast(Any, "private")),
+            "ExternRule modifiers must be a list of strings",
+        ),
+        (
+            lambda: create_extern_rule("R1", modifiers=cast(Any, [object()])),
+            "ExternRule modifiers must be a list of strings",
+        ),
+        (
+            lambda: create_extern_rule("R1", namespace=cast(Any, object())),
+            "ExternRule namespace must be a string",
+        ),
+        (
+            lambda: create_extern_reference(cast(Any, object())),
+            "ExternRuleReference rule_name must be a string",
+        ),
+        (
+            lambda: create_extern_reference("R1", namespace=cast(Any, object())),
+            "ExternRuleReference namespace must be a string",
+        ),
+        (
+            lambda: create_extern_import(cast(Any, object())),
+            "ExternImport module_path must be a string",
+        ),
+        (
+            lambda: create_extern_import("external", alias=cast(Any, object())),
+            "ExternImport alias must be a string",
+        ),
+        (
+            lambda: create_extern_import("external", rules=cast(Any, "R1")),
+            "ExternImport rules must be a list of strings",
+        ),
+        (
+            lambda: create_extern_import("external", rules=cast(Any, [object()])),
+            "ExternImport rules must be a list of strings",
+        ),
+    ]
+
+    for factory, message in invalid_cases:
+        with pytest.raises(TypeError, match=message):
+            factory()

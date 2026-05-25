@@ -13,6 +13,28 @@ if TYPE_CHECKING:
     from yaraast.ast.modifiers import RuleModifier
 
 
+def _require_string(value: Any, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _require_optional_string(value: Any, field_name: str) -> str | None:
+    if value is None:
+        return None
+    return _require_string(value, field_name)
+
+
+def _normalize_string_list(values: list[str] | None, field_name: str) -> list[str]:
+    if values is None:
+        return []
+    if not isinstance(values, list) or not all(isinstance(item, str) for item in values):
+        msg = f"{field_name} must be a list of strings"
+        raise TypeError(msg)
+    return list(values)
+
+
 @dataclass
 class ExternRule(ASTNode):
     """External rule declaration.
@@ -152,12 +174,13 @@ def create_extern_rule(
     """Create an extern rule with string modifiers."""
     from yaraast.ast.modifiers import RuleModifier
 
+    rule_name = _require_string(name, "ExternRule name")
+    rule_namespace = _require_optional_string(namespace, "ExternRule namespace")
     rule_modifiers = []
-    if modifiers:
-        for mod_str in modifiers:
-            rule_modifiers.append(RuleModifier.from_string(mod_str))
+    for mod_str in _normalize_string_list(modifiers, "ExternRule modifiers"):
+        rule_modifiers.append(RuleModifier.from_string(mod_str))
 
-    return ExternRule(name=name, modifiers=rule_modifiers, namespace=namespace)
+    return ExternRule(name=rule_name, modifiers=rule_modifiers, namespace=rule_namespace)
 
 
 def create_extern_reference(
@@ -165,7 +188,10 @@ def create_extern_reference(
     namespace: str | None = None,
 ) -> ExternRuleReference:
     """Create an extern rule reference."""
-    return ExternRuleReference(rule_name=rule_name, namespace=namespace)
+    return ExternRuleReference(
+        rule_name=_require_string(rule_name, "ExternRuleReference rule_name"),
+        namespace=_require_optional_string(namespace, "ExternRuleReference namespace"),
+    )
 
 
 def create_extern_import(
@@ -174,4 +200,8 @@ def create_extern_import(
     rules: list[str] | None = None,
 ) -> ExternImport:
     """Create an extern import statement."""
-    return ExternImport(module_path=module_path, alias=alias, rules=rules or [])
+    return ExternImport(
+        module_path=_require_string(module_path, "ExternImport module_path"),
+        alias=_require_optional_string(alias, "ExternImport alias"),
+        rules=_normalize_string_list(rules, "ExternImport rules"),
+    )
