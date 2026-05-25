@@ -21,7 +21,11 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
-from yaraast.builder.file_builder_validation import validate_unique_rule_names
+from yaraast.builder.file_builder_validation import (
+    validate_nonempty_text,
+    validate_optional_identifier,
+    validate_unique_rule_names,
+)
 from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
@@ -373,6 +377,8 @@ class YaraFileTransformer:
 
     def add_import(self, module: str, alias: str | None = None) -> YaraFileTransformer:
         """Add an import statement."""
+        validate_nonempty_text(module, "Import module")
+        validate_optional_identifier(alias, "import alias")
         # Check if already imported
         if not any(imp.module == module for imp in self.yara_file.imports):
             self.yara_file.imports.append(Import(module=module, alias=alias))
@@ -385,6 +391,7 @@ class YaraFileTransformer:
 
     def add_include(self, path: str) -> YaraFileTransformer:
         """Add an include statement."""
+        validate_nonempty_text(path, "Include path")
         # Check if already included
         if not any(inc.path == path for inc in self.yara_file.includes):
             self.yara_file.includes.append(Include(path=path))

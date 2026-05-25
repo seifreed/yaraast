@@ -364,3 +364,23 @@ def test_yara_file_transformer_rejects_duplicate_rule_names_without_partial_upda
         transformer.add_rule(_sample_rule("duplicate"))
 
     assert [rule.name for rule in transformer.build().rules] == ["duplicate"]
+
+
+def test_yara_file_transformer_rejects_empty_imports_and_includes() -> None:
+    transformer = YaraFileTransformer(YaraFile()).add_import("pe").add_include("common.yar")
+
+    with pytest.raises(ValidationError, match="Import module must not be empty"):
+        transformer.add_import("")
+
+    with pytest.raises(ValidationError, match="Include path must not be empty"):
+        transformer.add_include("")
+
+    transformed = transformer.build()
+    assert [imp.module for imp in transformed.imports] == ["pe"]
+    assert [inc.path for inc in transformed.includes] == ["common.yar"]
+
+
+@pytest.mark.parametrize("alias", ["bad alias", "bad-alias", "for", "1bad", ""])
+def test_yara_file_transformer_rejects_invalid_import_alias(alias: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid import alias identifier"):
+        YaraFileTransformer(YaraFile()).add_import("pe", alias)
