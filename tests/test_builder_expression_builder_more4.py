@@ -77,6 +77,20 @@ def test_expression_builder_rejects_non_integer_literal_values() -> None:
         ExpressionBuilder.array_access(ExpressionBuilder.identifier("arr"), cast(Any, "0"))
 
 
+def test_expression_builder_rejects_invalid_double_values() -> None:
+    with pytest.raises(TypeError, match="Double literal value must be numeric"):
+        ExpressionBuilder.double(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Double literal value must be numeric"):
+        ExpressionBuilder.double(cast(Any, "1.5"))
+
+    with pytest.raises(ValueError, match="Double literal value must be finite"):
+        ExpressionBuilder.double(float("nan"))
+
+    with pytest.raises(ValueError, match="Double literal value must be finite"):
+        ExpressionBuilder.double(float("inf"))
+
+
 def test_expression_builder_rejects_empty_string_sets() -> None:
     with pytest.raises(ValidationError, match="At least one string identifier is required"):
         ExpressionBuilder.string_set()

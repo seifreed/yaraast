@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 
 from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
@@ -45,6 +46,16 @@ class ExpressionBuilder:
         return ExpressionBuilder._integer_literal(value)
 
     @staticmethod
+    def _double_literal(value: object) -> DoubleLiteral:
+        if isinstance(value, bool) or not isinstance(value, int | float):
+            msg = "Double literal value must be numeric"
+            raise TypeError(msg)
+        if not math.isfinite(value):
+            msg = "Double literal value must be finite"
+            raise ValueError(msg)
+        return DoubleLiteral(value=value)
+
+    @staticmethod
     def string(identifier: str) -> StringIdentifier:
         """Create string identifier."""
         ExpressionBuilder._validate_string_reference(identifier)
@@ -58,7 +69,7 @@ class ExpressionBuilder:
     @staticmethod
     def double(value: float) -> DoubleLiteral:
         """Create double literal."""
-        return DoubleLiteral(value=value)
+        return ExpressionBuilder._double_literal(value)
 
     @staticmethod
     def string_literal(value: str) -> StringLiteral:
