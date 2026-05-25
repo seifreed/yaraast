@@ -30,6 +30,12 @@ def test_condition_builder_group_and_for() -> None:
     assert isinstance(loop, ForExpression)
 
 
+@pytest.mark.parametrize("member", ["bad-key", "for", "1bad", ""])
+def test_condition_builder_rejects_invalid_member_names(member: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid member identifier"):
+        ConditionBuilder().member_access(ConditionBuilder().identifier("pe"), member)
+
+
 @pytest.mark.parametrize("variable", ["bad-key", "for", "1bad", ""])
 def test_condition_builder_rejects_invalid_loop_variables(variable: str) -> None:
     iterable = ConditionBuilder().range(0, 3)

@@ -109,6 +109,7 @@ class ConditionBuilder:
 
     def member_access(self, obj: ConditionBuilder | Expression, member: str) -> Self:
         """Member access (obj.member)."""
+        validate_identifier(member, "member")
         obj_expr = self._to_expression(obj)
         return ConditionBuilder(MemberAccess(object=obj_expr, member=member))
 

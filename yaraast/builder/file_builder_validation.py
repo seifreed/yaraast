@@ -38,6 +38,18 @@ def validate_identifier(value: object, kind: str) -> None:
     raise ValidationError(msg)
 
 
+def validate_identifier_path(value: object, kind: str) -> None:
+    if not isinstance(value, str):
+        msg = f"Invalid {kind} identifier: {value}"
+        raise TypeError(msg)
+    parts = value.split(".")
+    if any(part == "" for part in parts):
+        msg = f"Invalid {kind} identifier: {value}"
+        raise ValidationError(msg)
+    for part in parts:
+        validate_identifier(part, kind)
+
+
 def validate_meta_value(value: object) -> None:
     if isinstance(value, str | bool | int):
         return

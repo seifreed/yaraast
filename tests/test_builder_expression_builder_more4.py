@@ -145,3 +145,15 @@ def test_expression_builder_accessors_and_errors() -> None:
 
     with pytest.raises(ValidationError):
         ExpressionBuilder.or_()
+
+
+@pytest.mark.parametrize("function", ["bad-key", "math..entropy", "for.fn", ""])
+def test_expression_builder_rejects_invalid_function_names(function: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid function identifier"):
+        ExpressionBuilder.function_call(function)
+
+
+@pytest.mark.parametrize("member", ["bad-key", "for", "1bad", ""])
+def test_expression_builder_rejects_invalid_member_names(member: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid member identifier"):
+        ExpressionBuilder.member_access(ExpressionBuilder.identifier("pe"), member)

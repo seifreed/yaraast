@@ -22,7 +22,7 @@ from yaraast.ast.expressions import (
     StringLiteral,
     UnaryExpression,
 )
-from yaraast.builder.file_builder_validation import validate_identifier
+from yaraast.builder.file_builder_validation import validate_identifier, validate_identifier_path
 from yaraast.errors import ValidationError
 
 _STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
@@ -233,6 +233,7 @@ class ExpressionBuilder:
     @staticmethod
     def function_call(name: str, *args: Expression) -> FunctionCall:
         """Create function call."""
+        validate_identifier_path(name, "function")
         return FunctionCall(function=name, arguments=list(args))
 
     @staticmethod
@@ -268,6 +269,7 @@ class ExpressionBuilder:
     @staticmethod
     def member_access(obj: Expression, member: str) -> MemberAccess:
         """Create member access."""
+        validate_identifier(member, "member")
         return MemberAccess(object=obj, member=member)
 
     @staticmethod
