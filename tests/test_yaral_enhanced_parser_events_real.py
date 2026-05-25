@@ -202,3 +202,45 @@ def test_parse_integer_event_comparison_preserves_generated_text() -> None:
 
     generated = YaraLGenerator().generate(ast)
     assert "604800 <= $e.metadata.event_timestamp.seconds" in generated
+
+
+def test_parse_raw_event_statement_stops_before_next_event_statement() -> None:
+    ast = EnhancedYaraLParser("""
+        rule multi_raw {
+          events:
+            re.regex($e.hostname, "evil")
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e
+        }
+        """).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    assert len(events.statements) == 2
+    first, second = events.statements
+    assert isinstance(first, EventStatement)
+    assert first.text == 're.regex($e.hostname, "evil")'
+    assert isinstance(second, EventAssignment)
+    assert second.event_var.name == "$e"
+
+    generated = YaraLGenerator().generate(ast)
+    assert 're.regex($e.hostname, "evil")\n    $e.metadata.event_type = "LOGIN"' in generated
+
+
+def test_parse_raw_event_statement_preserves_multiline_continuation() -> None:
+    ast = EnhancedYaraLParser("""
+        rule multiline_raw {
+          events:
+            604800 <=
+              $e.metadata.event_timestamp.seconds
+          condition:
+            $e
+        }
+        """).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventStatement)
+    assert statement.text == "604800 <= $e.metadata.event_timestamp.seconds"

@@ -65,11 +65,14 @@ class EnhancedYaraLParserEventsMixin:
 
     def _parse_raw_event_statement(self) -> EventStatement | None:
         tokens = []
+        start_line = self._peek().line if not self._is_at_end() else -1
         paren_depth = 0
         while not self._is_at_end():
             if paren_depth == 0 and (
                 self._check_section_keyword() or self._check(BaseTokenType.RBRACE)
             ):
+                break
+            if self._is_raw_event_statement_boundary(start_line, paren_depth, tokens):
                 break
 
             token = self._peek()
@@ -82,6 +85,64 @@ class EnhancedYaraLParserEventsMixin:
         if not tokens:
             return None
         return EventStatement(text=_join_event_statement_tokens(tokens))
+
+    def _is_raw_event_statement_boundary(
+        self,
+        start_line: int,
+        paren_depth: int,
+        tokens: list[Any],
+    ) -> bool:
+        if paren_depth > 0 or not tokens:
+            return False
+
+        current_token = self._peek()
+        if current_token.line <= start_line or self._previous_token_continues_statement(tokens):
+            return False
+
+        if self._check_keyword("join") or self._is_raw_event_statement_start():
+            return True
+
+        if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
+            return True
+
+        if self._check(BaseTokenType.LPAREN):
+            return True
+
+        if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+            BaseTokenType.STRING_IDENTIFIER
+        ):
+            next_token = self._peek_ahead(1)
+            return bool(
+                next_token
+                and next_token.type
+                in {
+                    BaseTokenType.DOT,
+                    BaseTokenType.EQ,
+                    BaseTokenType.NEQ,
+                    BaseTokenType.GT,
+                    BaseTokenType.LT,
+                    BaseTokenType.GE,
+                    BaseTokenType.LE,
+                    BaseTokenType.IN,
+                }
+            )
+
+        return False
+
+    @staticmethod
+    def _previous_token_continues_statement(tokens: list[Any]) -> bool:
+        return tokens[-1].type in {
+            BaseTokenType.COMMA,
+            BaseTokenType.DOT,
+            BaseTokenType.EQ,
+            BaseTokenType.NEQ,
+            BaseTokenType.GT,
+            BaseTokenType.LT,
+            BaseTokenType.GE,
+            BaseTokenType.LE,
+            BaseTokenType.IN,
+            BaseTokenType.LPAREN,
+        }
 
     def _is_event_var_comparison_start(self) -> bool:
         return (
