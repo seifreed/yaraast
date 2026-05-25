@@ -187,9 +187,13 @@ class ModuleLoader:
                     self._parse_type(type_str.get("value", "any")),
                 )
             if type_str.get("type") == "struct":
-                fields = {}
-                for field_name, field_type in type_str.get("fields", {}).items():
-                    fields[field_name] = self._parse_type(field_type)
+                raw_fields = type_str.get("fields", {})
+                if not isinstance(raw_fields, dict):
+                    return AnyType()
+                fields: dict[str, YaraType] = {}
+                for field_name, field_type in raw_fields.items():
+                    if isinstance(field_name, str) and field_name:
+                        fields[field_name] = self._parse_type(field_type)
                 return StructType(fields)
 
         return AnyType()

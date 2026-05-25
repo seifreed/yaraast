@@ -148,3 +148,22 @@ def test_module_loader_normalizes_invalid_function_arity_metadata() -> None:
     func = module.functions["f"]
     assert func.min_parameters is None
     assert func.variadic is False
+
+
+def test_module_loader_degrades_malformed_complex_type_without_aborting_module() -> None:
+    loader = ModuleLoader()
+
+    module = loader._parse_module(
+        "manual",
+        {
+            "name": "manual",
+            "attributes": {
+                "broken": {"type": "struct", "fields": ["bad"]},
+                "ok": "int",
+            },
+        },
+    )
+
+    assert module is not None
+    assert isinstance(module.attributes["broken"], AnyType)
+    assert isinstance(module.attributes["ok"], IntegerType)
