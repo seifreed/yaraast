@@ -251,6 +251,22 @@ class TestHexStringBuilderWildcards:
         assert len(tokens) == 3
         assert all(isinstance(t, HexWildcard) for t in tokens)
 
+    @pytest.mark.parametrize("count", [0, -1])
+    def test_wildcard_rejects_non_positive_counts(self, count: int) -> None:
+        """Wildcard counts should produce at least one wildcard token."""
+        builder = HexStringBuilder()
+
+        with pytest.raises(ValidationError, match="Wildcard count must be positive"):
+            builder.wildcard(count)
+
+    @pytest.mark.parametrize("count", [True, "2"])
+    def test_wildcard_rejects_invalid_count_types(self, count: object) -> None:
+        """Wildcard counts should reject bools and non-integer values."""
+        builder = HexStringBuilder()
+
+        with pytest.raises(TypeError, match="Invalid wildcard count type"):
+            builder.wildcard(cast(Any, count))
+
     def test_wildcards_in_sequence(self) -> None:
         """Wildcards should work in sequence with bytes."""
         builder = HexStringBuilder()

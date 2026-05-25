@@ -61,6 +61,13 @@ class HexStringBuilder:
 
     def wildcard(self, count: int = 1) -> Self:
         """Add wildcard bytes (??)."""
+        if not isinstance(count, int) or isinstance(count, bool):
+            msg = f"Invalid wildcard count type: {type(count)}"
+            raise TypeError(msg)
+        if count <= 0:
+            msg = f"Wildcard count must be positive, got {count}"
+            raise ValidationError(msg)
+
         for _ in range(count):
             self._tokens.append(HexWildcard())
         return self
