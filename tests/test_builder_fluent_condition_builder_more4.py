@@ -73,3 +73,9 @@ def test_fluent_condition_builder_rejects_boolean_integer_arguments() -> None:
 
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         builder.at_least_n_of(cast(Any, True), "$a", "$b")
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        builder.filesize_gt(cast(Any, "10"))
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        builder.entropy_gt(0, cast(Any, 3.5), 7.0)

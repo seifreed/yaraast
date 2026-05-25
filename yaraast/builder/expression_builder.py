@@ -27,11 +27,17 @@ class ExpressionBuilder:
     """Static helper methods for building expressions."""
 
     @staticmethod
-    def _integer_literal(value: int) -> IntegerLiteral:
-        if isinstance(value, bool):
+    def _integer_literal(value: object) -> IntegerLiteral:
+        if not isinstance(value, int) or isinstance(value, bool):
             msg = f"Invalid integer literal value: {value}"
             raise TypeError(msg)
         return IntegerLiteral(value=value)
+
+    @staticmethod
+    def _integer_or_expression(value: object) -> Expression:
+        if isinstance(value, Expression):
+            return value
+        return ExpressionBuilder._integer_literal(value)
 
     @staticmethod
     def string(identifier: str) -> StringIdentifier:
@@ -86,8 +92,8 @@ class ExpressionBuilder:
     @staticmethod
     def range(low: int | Expression, high: int | Expression) -> RangeExpression:
         """Create range expression."""
-        low_expr = ExpressionBuilder._integer_literal(low) if isinstance(low, int) else low
-        high_expr = ExpressionBuilder._integer_literal(high) if isinstance(high, int) else high
+        low_expr = ExpressionBuilder._integer_or_expression(low)
+        high_expr = ExpressionBuilder._integer_or_expression(high)
         return RangeExpression(low=low_expr, high=high_expr)
 
     @staticmethod
@@ -180,9 +186,7 @@ class ExpressionBuilder:
     @staticmethod
     def at(string_id: str, offset: int | Expression) -> AtExpression:
         """Create 'at' expression."""
-        offset_expr = (
-            ExpressionBuilder._integer_literal(offset) if isinstance(offset, int) else offset
-        )
+        offset_expr = ExpressionBuilder._integer_or_expression(offset)
         return AtExpression(string_id=string_id, offset=offset_expr)
 
     @staticmethod
@@ -228,5 +232,5 @@ class ExpressionBuilder:
     @staticmethod
     def array_access(array: Expression, index: int | Expression) -> ArrayAccess:
         """Create array access."""
-        index_expr = ExpressionBuilder._integer_literal(index) if isinstance(index, int) else index
+        index_expr = ExpressionBuilder._integer_or_expression(index)
         return ArrayAccess(array=array, index=index_expr)

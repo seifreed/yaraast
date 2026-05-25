@@ -40,10 +40,16 @@ def test_condition_builder_keeps_boolean_values_distinct_from_integers() -> None
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         ConditionBuilder().integer(cast(Any, True))
 
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ConditionBuilder().integer(cast(Any, "1"))
+
 
 def test_condition_builder_n_of_rejects_boolean_quantifier() -> None:
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         ConditionBuilder().n_of(cast(Any, True), "$a", "$b")
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ConditionBuilder().n_of(cast(Any, 1.5), "$a", "$b")
 
 
 def test_condition_builder_rejects_boolean_offsets_and_range_bounds() -> None:

@@ -48,6 +48,17 @@ def test_expression_builder_rejects_booleans_as_integer_values() -> None:
         ExpressionBuilder.range(cast(Any, True), 2)
 
 
+def test_expression_builder_rejects_non_integer_literal_values() -> None:
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ExpressionBuilder.integer(cast(Any, "1"))
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ExpressionBuilder.range(0, cast(Any, 2.5))
+
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ExpressionBuilder.array_access(ExpressionBuilder.identifier("arr"), cast(Any, "0"))
+
+
 def test_expression_builder_accessors_and_errors() -> None:
     arr = ExpressionBuilder.array_access(ExpressionBuilder.identifier("arr"), 1)
     assert isinstance(arr, ArrayAccess)

@@ -35,7 +35,7 @@ class ConditionBuilder:
 
     @staticmethod
     def _integer_literal(value: int) -> IntegerLiteral:
-        if isinstance(value, bool):
+        if not isinstance(value, int) or isinstance(value, bool):
             msg = f"Invalid integer literal value: {value}"
             raise TypeError(msg)
         return IntegerLiteral(value=value)

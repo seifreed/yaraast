@@ -22,7 +22,7 @@ def make_binary(left: Expression, operator: str, right: Expression) -> BinaryExp
 
 
 def make_integer_literal(value: int) -> IntegerLiteral:
-    if isinstance(value, bool):
+    if not isinstance(value, int) or isinstance(value, bool):
         msg = f"Invalid integer literal value: {value}"
         raise TypeError(msg)
     return IntegerLiteral(value=value)
