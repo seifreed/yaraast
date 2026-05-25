@@ -108,6 +108,19 @@ def test_condition_builder_rejects_invalid_count_offset_length_identifiers() -> 
             method(identifier)
 
 
+@pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$"])
+def test_condition_builder_rejects_invalid_string_references_during_conversion(
+    identifier: str,
+) -> None:
+    builder = ConditionBuilder().identifier("x")
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        builder.eq(identifier)
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        builder._to_expression(identifier)
+
+
 def test_condition_builder_rejects_boolean_offsets_and_range_bounds() -> None:
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         ConditionBuilder().string("$a").at(cast(Any, True))

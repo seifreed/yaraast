@@ -410,6 +410,7 @@ class ConditionBuilder:
             return IntegerLiteral(value=value)
         if isinstance(value, str):
             if value.startswith("$"):
+                self._validate_string_reference(value)
                 return StringIdentifier(name=value)
             return StringLiteral(value=value)
         msg = f"Cannot convert {type(value)} to expression"
