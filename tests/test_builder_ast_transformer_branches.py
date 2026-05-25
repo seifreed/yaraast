@@ -89,6 +89,23 @@ def test_rule_clone_and_transform_helpers_reject_invalid_rule_inputs() -> None:
         transform_rule(cast(Any, object()))
 
 
+def test_yara_file_clone_and_transform_helpers_reject_invalid_file_inputs() -> None:
+    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
+        clone_yara_file(cast(Any, object()))
+
+    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
+        YaraFileTransformer(cast(Any, object()))
+
+    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
+        transform_yara_file(cast(Any, object()))
+
+    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
+        merge_yara_files(cast(Any, object()))
+
+    with pytest.raises(TypeError, match="YaraFile input must be a YaraFile"):
+        merge_yara_files(YaraFile(), cast(Any, object()))
+
+
 def test_clone_helpers_preserve_rule_metadata_and_pragmas() -> None:
     original_rule = _sample_rule("annotated")
     original_rule.location = Location(line=3, column=1, file="sample.yar")

@@ -57,6 +57,9 @@ class CloneTransformer:
     @staticmethod
     def clone_yara_file(yara_file: YaraFile) -> YaraFile:
         """Clone a YARA file with all its components."""
+        if not isinstance(yara_file, YaraFile):
+            msg = "YaraFile input must be a YaraFile"
+            raise TypeError(msg)
         return deepcopy(yara_file)
 
 
@@ -632,16 +635,18 @@ def merge_yara_files(*yara_files: YaraFile) -> YaraFile:
     transformer = YaraFileTransformer(result)
 
     for yara_file in yara_files[1:]:
+        source_file = CloneTransformer.clone_yara_file(yara_file)
+
         # Add imports (avoiding duplicates)
-        for imp in yara_file.imports:
+        for imp in source_file.imports:
             transformer = transformer.add_import(imp.module, imp.alias)
 
         # Add includes (avoiding duplicates)
-        for inc in yara_file.includes:
+        for inc in source_file.includes:
             transformer = transformer.add_include(inc.path)
 
         # Add rules (all rules, may have name conflicts)
-        for rule in yara_file.rules:
+        for rule in source_file.rules:
             transformer = transformer.add_rule(rule)
 
     return transformer.build()
