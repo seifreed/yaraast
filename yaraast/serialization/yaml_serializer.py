@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
+from yaraast.ast.rules import Rule
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.serialization.serializer_helpers import read_text, require_bool_option
@@ -70,6 +71,15 @@ class YamlSerializer(JsonSerializer):
         output_path: str | Path | None = None,
     ) -> str:
         """Serialize only the rules section to YAML (useful for rule analysis)."""
+        if not isinstance(ast.rules, list | tuple):
+            msg = "YaraFile rules must be a list of Rule nodes"
+            raise SerializationError(msg)
+
+        for rule in ast.rules:
+            if not isinstance(rule, Rule):
+                msg = "YaraFile rules item must be a Rule node"
+                raise SerializationError(msg)
+
         rules_data = {
             "rules": [self.visit(rule) for rule in ast.rules],
             "rule_count": len(ast.rules),
