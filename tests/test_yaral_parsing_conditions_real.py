@@ -492,6 +492,30 @@ def test_parse_condition_arithmetic_comparisons_preserve_generated_text() -> Non
     assert "$count + 1 > 5" in generated
 
 
+def test_parse_condition_parenthesized_arithmetic_left_preserves_generated_text() -> None:
+    parser = YaraLParser("($score + 1) * 2 > 4")
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, VariableComparisonCondition)
+    assert condition.variable == "($score + 1) * 2"
+    assert condition.operator == ">"
+    assert condition.value == 4
+    assert parser._is_at_end()
+
+    ast = YaraLParser("""
+        rule parenthesized_left_arithmetic_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $score = 1
+          condition:
+            ($score + 1) * 2 > 4
+        }
+        """).parse()
+    generated = YaraLGenerator().generate(ast)
+    assert "($score + 1) * 2 > 4" in generated
+
+
 @pytest.mark.parametrize(("source_operator", "operator"), [("=~", "=~"), ("!~", "!~")])
 def test_parse_condition_symbolic_regex_operators_preserve_generated_text(
     source_operator: str, operator: str

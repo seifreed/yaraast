@@ -105,7 +105,32 @@ class YaraLConditionParsingMixin:
         self._advance()
         expr = self._parse_condition_expression()
         self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
+        if self._check_condition_arithmetic_operator() or self._check_condition_operator():
+            return self._parse_parenthesized_comparison_condition(expr)
         return expr
+
+    def _parse_parenthesized_comparison_condition(
+        self,
+        expr: ConditionExpression,
+    ) -> VariableComparisonCondition:
+        variable = f"({self._format_condition_expression_text(expr)})"
+        variable = self._parse_condition_arithmetic_text(variable)
+        operator = self._consume_condition_operator()
+        value = self._parse_comparison_value()
+        return VariableComparisonCondition(variable=variable, operator=operator, value=value)
+
+    def _format_condition_expression_text(self, expr: ConditionExpression) -> str:
+        if isinstance(expr, EventExistsCondition):
+            event = expr.event
+            if event.startswith("$"):
+                return event
+            return f"${event}"
+        if isinstance(expr, VariableComparisonCondition):
+            value = self._format_condition_raw_value(expr.value)
+            return f"{expr.variable} {expr.operator} {value}"
+        if isinstance(expr, EventCountCondition):
+            return f"#{expr.event} {expr.operator} {expr.count}"
+        return str(expr)
 
     def _parse_event_count_condition(self) -> EventCountCondition:
         """Parse an event count condition: #e > 5."""
