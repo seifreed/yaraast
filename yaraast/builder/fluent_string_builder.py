@@ -161,7 +161,7 @@ class FluentStringBuilder:
         else:
             modifier = StringModifier(modifier_type=StringModifierType.XOR)
 
-        self._modifiers.append(modifier)
+        self._replace_modifier(modifier)
         return self
 
     def _coerce_xor_key(self, key: int | str) -> int:
@@ -202,7 +202,7 @@ class FluentStringBuilder:
             modifier_type=StringModifierType.XOR,
             value=(min_key, max_key),
         )
-        self._modifiers.append(modifier)
+        self._replace_modifier(modifier)
         return self
 
     # Regex-specific modifiers
@@ -378,10 +378,15 @@ class FluentStringBuilder:
 
     def _add_modifier(self, modifier_type: StringModifierType) -> None:
         """Add a modifier, avoiding duplicates."""
-        # Remove existing modifier of same type
-        self._modifiers = [m for m in self._modifiers if m.modifier_type != modifier_type]
-        # Add new modifier
-        self._modifiers.append(StringModifier(modifier_type=modifier_type))
+        self._replace_modifier(StringModifier(modifier_type=modifier_type))
+
+    def _replace_modifier(self, modifier: StringModifier) -> None:
+        self._modifiers = [
+            existing
+            for existing in self._modifiers
+            if existing.modifier_type != modifier.modifier_type
+        ]
+        self._modifiers.append(modifier)
 
     def _validate_modifier_compatibility(self) -> None:
         regex_only = {StringModifierType.DOTALL, StringModifierType.MULTILINE}

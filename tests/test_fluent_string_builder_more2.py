@@ -168,6 +168,12 @@ def test_fluent_string_builder_rejects_boolean_xor_keys() -> None:
         FluentStringBuilder("$xor").literal("abc").xor_range(5, 1)
 
 
+def test_fluent_string_builder_replaces_existing_xor_modifier() -> None:
+    string_def = FluentStringBuilder("$xor").literal("abc").xor().xor_range(1, 2).xor(3).build()
+
+    assert [(modifier.name, modifier.value) for modifier in string_def.modifiers] == [("xor", 3)]
+
+
 def test_fluent_string_builder_rejects_invalid_wildcard_sequence_counts() -> None:
     with pytest.raises(ValidationError, match="Wildcard count must be positive"):
         FluentStringBuilder("$wild").wildcard_sequence(0)
