@@ -5,6 +5,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 from yaraast.yaral.ast_nodes import (
+    AggregationFunction,
     EventAssignment,
     EventStatement,
     ReferenceList,
@@ -107,6 +108,38 @@ def test_parser_complex_event_patterns_preserve_generated_text() -> None:
 
     generated = YaraLGenerator().generate(ast)
     assert "all\n    any\n    e1 followed by e2" in generated
+
+
+def test_parser_outcome_bare_udm_references_preserve_generated_text() -> None:
+    code = dedent(
+        """
+        rule outcome_bare_udm {
+            events:
+                $e.metadata.event_type = "LOGIN"
+            condition:
+                $e
+            outcome:
+                $field = metadata.event_type
+                $count = count(metadata.event_type)
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+    outcome = ast.rules[0].outcome
+    assert outcome is not None
+    assert len(outcome.assignments) == 2
+    direct_field = outcome.assignments[0].expression
+    assert isinstance(direct_field, UDMFieldAccess)
+    assert direct_field.event is None
+    aggregation = outcome.assignments[1].expression
+    assert isinstance(aggregation, AggregationFunction)
+    assert isinstance(aggregation.arguments[0], UDMFieldAccess)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$field = metadata.event_type" in generated
+    assert "$count = count(metadata.event_type)" in generated
+    assert '"metadata.event_type"' not in generated
 
 
 def test_parser_normalizes_regex_token_delimiters_for_generation() -> None:

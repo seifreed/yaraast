@@ -131,9 +131,12 @@ class OutcomeArgumentParsingMixin:
 
     def _parse_outcome_identifier(self) -> Any:
         """Parse an identifier, possibly a function call or binary expression."""
-        ident = self._advance().value
+        token = self._advance()
+        ident = str(token.value)
         if self._check(BaseTokenType.LPAREN):
             return self._parse_function_call_args(ident)
+        if getattr(token, "yaral_type", None) == YaraLTokenType.UDM:
+            return UDMFieldAccess(event=None, field=UDMFieldPath(parts=[ident]))
 
         if self._check_any_operator(arithmetic_only=True):
             op_token = self._advance()
