@@ -6,6 +6,7 @@ from textwrap import dedent
 
 from yaraast.yaral.ast_nodes import EventAssignment, ReferenceList, RegexPattern
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
+from yaraast.yaral.generator import YaraLGenerator
 
 
 def test_enhanced_parser_parses_not_matches_and_in() -> None:
@@ -30,6 +31,26 @@ def test_enhanced_parser_parses_not_matches_and_in() -> None:
     assignments = [stmt for stmt in rule.events.statements if isinstance(stmt, EventAssignment)]
     assert any(isinstance(stmt.value, RegexPattern) for stmt in assignments)
     assert any(isinstance(stmt.value, ReferenceList) for stmt in assignments)
+
+
+def test_enhanced_parser_preserves_regex_nocase_modifiers() -> None:
+    code = dedent(
+        """
+        rule enhanced_regex_nocase {
+            events:
+                $e.metadata.event_type = /AUTH.*/ nocase
+            condition:
+                $e.target.hostname matches /admin.*/ nocase
+        }
+        """,
+    )
+    parser = EnhancedYaraLParser(code)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.metadata.event_type = /AUTH.*/ nocase" in generated
+    assert "$e.target.hostname =~ /admin.*/ nocase" in generated
 
 
 def test_enhanced_parser_outcome_conditional_and_aggregation() -> None:

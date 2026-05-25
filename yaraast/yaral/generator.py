@@ -334,9 +334,13 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_regex_pattern(self, node: RegexPattern) -> str:
         """Generate code for regex pattern."""
-        flags = "".join(node.flags) if node.flags else ""
+        inline_flags = "".join(flag for flag in node.flags if len(flag) == 1)
+        word_flags = [flag for flag in node.flags if len(flag) > 1]
         pattern = escape_regex_delimiter(node.pattern)
-        return f"/{pattern}/{flags}"
+        rendered = f"/{pattern}/{inline_flags}"
+        if word_flags:
+            rendered = f"{rendered} {' '.join(word_flags)}"
+        return rendered
 
     def visit_options_section(self, node: OptionsSection) -> str:
         """Generate code for options section."""

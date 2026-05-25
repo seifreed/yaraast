@@ -150,7 +150,9 @@ class EnhancedYaraLParserHelpersMixin:
             else:
                 pattern = value
                 modifiers = ""
-            return RegexPattern(pattern=pattern, flags=list(modifiers))
+            return self._parse_regex_word_modifiers(
+                RegexPattern(pattern=pattern, flags=list(modifiers))
+            )
 
         self._consume(BaseTokenType.DIVIDE, "Expected '/' for regex")
         pattern_parts = []
@@ -166,7 +168,16 @@ class EnhancedYaraLParserHelpersMixin:
             if len(token.value) <= 3 and all(c in "igms" for c in token.value):
                 modifiers = self._advance().value
 
-        return RegexPattern(pattern=pattern, flags=list(modifiers))
+        return self._parse_regex_word_modifiers(
+            RegexPattern(pattern=pattern, flags=list(modifiers))
+        )
+
+    def _parse_regex_word_modifiers(self, pattern: RegexPattern) -> RegexPattern:
+        if self._check_keyword("nocase"):
+            self._advance()
+            if "nocase" not in pattern.flags:
+                pattern.flags.append("nocase")
+        return pattern
 
     def _parse_time_duration(self) -> str:
         """Parse time duration like '5m', '1h', '30s'."""
