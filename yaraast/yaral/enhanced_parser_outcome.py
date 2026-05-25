@@ -79,14 +79,22 @@ class EnhancedYaraLParserOutcomeMixin:
 
     def _parse_outcome_expression(self) -> OutcomeExpression | Any:
         """Parse enhanced outcome expression with aggregations."""
+        return self._parse_outcome_additive_expression()
+
+    def _parse_outcome_additive_expression(self) -> OutcomeExpression | Any:
+        left = self._parse_outcome_multiplicative_expression()
+
+        while self._check(BaseTokenType.PLUS) or self._check(BaseTokenType.MINUS):
+            operator = self._advance().value
+            right = self._parse_outcome_multiplicative_expression()
+            left = ArithmeticExpression(operator=operator, left=left, right=right)
+
+        return left
+
+    def _parse_outcome_multiplicative_expression(self) -> OutcomeExpression | Any:
         left = self._parse_outcome_primary_expression()
 
-        while (
-            self._check(BaseTokenType.PLUS)
-            or self._check(BaseTokenType.MINUS)
-            or self._check(BaseTokenType.MULTIPLY)
-            or self._check(BaseTokenType.DIVIDE)
-        ):
+        while self._check(BaseTokenType.MULTIPLY) or self._check(BaseTokenType.DIVIDE):
             operator = self._advance().value
             right = self._parse_outcome_primary_expression()
             left = ArithmeticExpression(operator=operator, left=left, right=right)

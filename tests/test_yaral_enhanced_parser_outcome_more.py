@@ -292,7 +292,7 @@ def test_enhanced_outcome_arithmetic_expressions_roundtrip() -> None:
           events:
             $e.metadata.event_type = "LOGIN"
           outcome:
-            $score = 1 + 2
+            $score = 1 + 2 * 3
             $total = count($e.principal.ip) + 1
           condition:
             $e
@@ -307,9 +307,14 @@ def test_enhanced_outcome_arithmetic_expressions_roundtrip() -> None:
         isinstance(assignment.expression, ArithmeticExpression)
         for assignment in outcome.assignments
     )
+    score = outcome.assignments[0].expression
+    assert isinstance(score, ArithmeticExpression)
+    assert score.operator == "+"
+    assert isinstance(score.right, ArithmeticExpression)
+    assert score.right.operator == "*"
 
     generated = YaraLGenerator().generate(ast)
-    assert "$score = 1 + 2" in generated
+    assert "$score = 1 + 2 * 3" in generated
     assert "$total = count($e.principal.ip) + 1" in generated
 
 

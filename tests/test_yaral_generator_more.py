@@ -116,3 +116,28 @@ def test_yaral_generator_reference_list_has_balanced_delimiters() -> None:
 
     assert generator.visit_reference_list(ReferenceList(name="blocked_ips")) == "%blocked_ips%"
     assert generator.visit_reference_list(ReferenceList(name="%blocked_ips%")) == "%blocked_ips%"
+
+
+def test_yaral_generator_parenthesizes_nested_arithmetic_when_required() -> None:
+    generator = YaraLGenerator()
+
+    assert (
+        generator.visit_arithmetic_expression(
+            ArithmeticExpression(
+                operator="*",
+                left=ArithmeticExpression(operator="+", left=1, right=2),
+                right=3,
+            )
+        )
+        == "(1 + 2) * 3"
+    )
+    assert (
+        generator.visit_arithmetic_expression(
+            ArithmeticExpression(
+                operator="-",
+                left=10,
+                right=ArithmeticExpression(operator="+", left=3, right=1),
+            )
+        )
+        == "10 - (3 + 1)"
+    )

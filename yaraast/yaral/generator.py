@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from yaraast.codegen.generator_helpers import escape_regex_delimiter
+from yaraast.yaral.ast_nodes import ArithmeticExpression
 from yaraast.yaral.generator_helpers import (
     format_literal,
     format_modifiers,
@@ -356,9 +357,32 @@ class YaraLGenerator(YaraLVisitor[str]):
         return f"join {node.left_event} {node.join_type} {node.right_event}"
 
     def visit_arithmetic_expression(self, node) -> str:
-        left = self._format_condition_value(node.left)
-        right = self._format_condition_value(node.right)
+        left = self._format_arithmetic_operand(node.left, node.operator, is_right=False)
+        right = self._format_arithmetic_operand(node.right, node.operator, is_right=True)
         return f"{left} {node.operator} {right}"
+
+    def _format_arithmetic_operand(
+        self, operand: Any, parent_operator: str, *, is_right: bool
+    ) -> str:
+        rendered = self._format_condition_value(operand)
+        if not isinstance(operand, ArithmeticExpression):
+            return rendered
+        if self._needs_arithmetic_parentheses(parent_operator, operand.operator, is_right):
+            return f"({rendered})"
+        return rendered
+
+    def _needs_arithmetic_parentheses(
+        self,
+        parent_operator: str,
+        child_operator: str,
+        is_right: bool,
+    ) -> bool:
+        precedence = {"+": 1, "-": 1, "*": 2, "/": 2}
+        parent_precedence = precedence[parent_operator]
+        child_precedence = precedence[child_operator]
+        if child_precedence < parent_precedence:
+            return True
+        return is_right and parent_operator in {"-", "/"} and child_precedence == parent_precedence
 
     def visit_cidr_expression(self, node) -> str:
         field = self.visit(node.field)
