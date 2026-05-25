@@ -159,6 +159,9 @@ class HexStringBuilder:
 
     def group(self, builder_func: Callable[[HexStringBuilder], None]) -> Self:
         """Add a group using a builder function."""
+        if not callable(builder_func):
+            msg = "Hex group builder callback must be callable"
+            raise TypeError(msg)
         inner_builder = HexStringBuilder()
         builder_func(inner_builder)
         self._tokens.extend(inner_builder.build())

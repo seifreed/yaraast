@@ -617,6 +617,11 @@ class TestHexStringBuilderGrouping:
         assert _byte_value(tokens[1]) == 0xBB
         assert _byte_value(tokens[2]) == 0xCC
 
+    def test_group_rejects_non_callable_builder_function(self) -> None:
+        """Group should reject invalid callbacks before calling them."""
+        with pytest.raises(TypeError, match="Hex group builder callback must be callable"):
+            HexStringBuilder().group(cast(Any, 123))
+
 
 class TestHexStringBuilderPattern:
     """Test pattern string parsing."""
