@@ -24,6 +24,20 @@ rule r1 {
 """
 
 
+def _sample_with_extended_preamble() -> str:
+    return """
+#pragma optimize on
+import "external.yar" (legacy.ExternalRule) as ext
+namespace legacy
+extern rule private legacy.ExternalRule
+
+rule uses_external {
+  condition:
+    true
+}
+"""
+
+
 def test_parse_file_traditional_real(tmp_path: Path) -> None:
     f = tmp_path / "sample.yar"
     f.write_text(_sample_with_preamble(), encoding="utf-8")
@@ -45,6 +59,24 @@ def test_parse_file_force_streaming_real(tmp_path: Path) -> None:
     assert len(ast.imports) == 2
     assert len(ast.includes) == 1
     assert {imp.module for imp in ast.imports} == {"pe", "math"}
+
+
+def test_parse_file_force_streaming_preserves_extended_preamble(tmp_path: Path) -> None:
+    f = tmp_path / "sample_stream_extended.yar"
+    f.write_text(_sample_with_extended_preamble(), encoding="utf-8")
+
+    ast = UnifiedParser.parse_file(f, dialect=YaraDialect.YARA, force_streaming=True)
+
+    assert isinstance(ast, YaraFile)
+    assert len(ast.rules) == 1
+    assert ast.pragmas[0].name == "optimize"
+    assert ast.extern_imports[0].module_path == "external.yar"
+    assert ast.extern_imports[0].alias == "ext"
+    assert ast.extern_imports[0].rules == ["legacy.ExternalRule"]
+    assert ast.namespaces[0].name == "legacy"
+    assert ast.namespaces[0].extern_rules[0].name == "ExternalRule"
+    assert ast.namespaces[0].extern_rules[0].namespace == "legacy"
+    assert ast.extern_rules == []
 
 
 def test_parse_empty_file_force_streaming_real(tmp_path: Path) -> None:

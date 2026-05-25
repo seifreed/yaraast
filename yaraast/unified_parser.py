@@ -135,19 +135,10 @@ class UnifiedParser:
         return (clean_line if clean_line.strip() else None), in_multiline
 
     @classmethod
-    def _extract_preamble_fast(cls, file_path: Path) -> tuple[list[Import], list[Include]]:
-        """Extract imports/includes from file preamble without full parsing.
-
-        Reads lines before the first ``rule`` keyword using regex matching.
-        O(k) where k is the number of preamble lines. Returns empty lists on error.
-        """
-        imports: list[Import] = []
-        includes: list[Include] = []
-
-        # Regex patterns for parsing
-        import_pattern = re.compile(r'^\s*import\s+"([^"]+)"(?:\s+as\s+(\w+))?\s*$')
-        include_pattern = re.compile(r'^\s*include\s+"([^"]+)"\s*$')
+    def _extract_preamble_source(cls, file_path: Path) -> str:
+        """Extract source lines before the first real rule definition."""
         rule_start_pattern = re.compile(r"^(?:(?:private|global)\s+)*rule\b", re.IGNORECASE)
+        preamble_lines: list[str] = []
 
         try:
             with open(file_path, encoding="utf-8") as f:
@@ -168,21 +159,33 @@ class UnifiedParser:
                     if rule_start_pattern.match(stripped):
                         break
 
-                    import_match = import_pattern.match(stripped)
-                    if import_match:
-                        imports.append(
-                            Import(module=import_match.group(1), alias=import_match.group(2))
-                        )
-                        continue
-
-                    include_match = include_pattern.match(stripped)
-                    if include_match:
-                        includes.append(Include(path=include_match.group(1)))
+                    preamble_lines.append(
+                        clean_line if clean_line.endswith(("\n", "\r")) else f"{clean_line}\n"
+                    )
 
         except (OSError, UnicodeDecodeError):
-            return [], []
+            return ""
 
-        return imports, includes
+        return "".join(preamble_lines)
+
+    @classmethod
+    def _extract_preamble_ast_fast(cls, file_path: Path) -> YaraFile:
+        """Parse top-level constructs before the first real rule definition."""
+        preamble_source = cls._extract_preamble_source(file_path)
+        if not preamble_source.strip():
+            return YaraFile()
+
+        return YaraParser(preamble_source).parse()
+
+    @classmethod
+    def _extract_preamble_fast(cls, file_path: Path) -> tuple[list[Import], list[Include]]:
+        """Extract imports/includes from file preamble without full-file parsing.
+
+        Reads and parses only lines before the first real rule definition.
+        O(k) where k is the number of preamble lines. Returns empty lists on read error.
+        """
+        preamble_ast = cls._extract_preamble_ast_fast(file_path)
+        return preamble_ast.imports, preamble_ast.includes
 
     @classmethod
     def parse_file(
@@ -266,14 +269,15 @@ class UnifiedParser:
                 return parser.parse()
 
         # Use StreamingParser for very large standard YARA files
-        imports, includes = cls._extract_preamble_fast(file_path_obj)
+        preamble_ast = cls._extract_preamble_ast_fast(file_path_obj)
 
         def _dialect_factory(text: str, dialect: YaraDialect | None) -> YaraFile | YaraLFile:
             return cls(text, dialect).parse()
 
         streaming_parser = StreamingParser(dialect_parser_factory=_dialect_factory)
         rules = list(streaming_parser.parse_file(file_path_obj))
-        return YaraFile(imports=imports, includes=includes, rules=rules)
+        preamble_ast.rules = rules
+        return preamble_ast
 
     @classmethod
     def detect_file_dialect(cls, file_path: str) -> YaraDialect:
