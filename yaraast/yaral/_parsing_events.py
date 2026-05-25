@@ -398,6 +398,14 @@ class YaraLEventsParsingMixin:
             self._advance()
             self._advance()
             return "!~"
+        if (
+            self._check_keyword("not")
+            and next_token is not None
+            and (next_token.type == BaseTokenType.IN or _token_value_is(next_token, "in"))
+        ):
+            self._advance()
+            self._advance()
+            return "not in"
         if self._check_keyword("regex"):
             self._advance()
             return "regex"

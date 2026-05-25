@@ -115,6 +115,27 @@ def test_parse_event_value_supports_reference_lists_and_regex() -> None:
     assert regex_value.pattern == "foo.*bar"
 
 
+def test_parse_event_field_not_in_reference_list_preserves_generated_text() -> None:
+    ast = YaraLParser("""
+        rule field_not_in {
+          events:
+            $e.principal.ip not in %blocked%
+          condition:
+            $e
+        }
+        """).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventAssignment)
+    assert statement.operator == "not in"
+    assert isinstance(statement.value, ReferenceList)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.principal.ip not in %blocked%" in generated
+
+
 def test_parse_function_call_statement_consumes_assignment_and_nocase() -> None:
     parser = YaraLParser("")
     _set_tokens(
