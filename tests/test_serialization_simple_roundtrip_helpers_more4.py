@@ -740,6 +740,18 @@ def test_simple_roundtrip_node_serializers_reject_non_list_child_collections() -
         serialize_node(pragma_block)
 
 
+def test_simple_roundtrip_serialize_node_rejects_invalid_metadata_collections() -> None:
+    rule = Rule(name="r1", condition=BooleanLiteral(True))
+    cast(Any, rule).leading_comments = False
+    with pytest.raises(SerializationError, match="leading_comments must be a list"):
+        serialize_node(rule)
+
+    cast(Any, rule).leading_comments = []
+    cast(Any, rule).trailing_comment = False
+    with pytest.raises(SerializationError, match="trailing_comment must be a Comment"):
+        serialize_node(rule)
+
+
 def test_simple_roundtrip_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:
     plain = deserialize_string(
         {

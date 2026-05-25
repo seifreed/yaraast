@@ -900,9 +900,17 @@ def _deserialize_comment_node(data: Any) -> ASTNode:
 def _with_node_metadata(node: ASTNode, data: dict[str, Any]) -> dict[str, Any]:
     if node.location is not None:
         data["location"] = _serialize_location(node.location)
-    if node.leading_comments:
-        data["leading_comments"] = [serialize_node(comment) for comment in node.leading_comments]
+    leading_comments = _validated_node_collection(
+        node.leading_comments,
+        "leading_comments",
+        (Comment, CommentGroup),
+    )
+    if leading_comments:
+        data["leading_comments"] = [serialize_node(comment) for comment in leading_comments]
     if node.trailing_comment is not None:
+        if not isinstance(node.trailing_comment, Comment | CommentGroup):
+            msg = "trailing_comment must be a Comment or CommentGroup node"
+            raise SerializationError(msg)
         data["trailing_comment"] = serialize_node(node.trailing_comment)
     return data
 
