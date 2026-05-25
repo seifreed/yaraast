@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from yaraast.errors import YaraASTError
 from yaraast.interfaces import IToken
 from yaraast.regex_literals import validate_regex_modifiers
-
-if TYPE_CHECKING:
-    from yaraast.ast.modifiers import StringModifier
 
 # Known YARA modules for identifier resolution
 KNOWN_MODULES: frozenset[str] = frozenset(
@@ -32,24 +27,12 @@ _REGEX_QUANTIFIERS = frozenset("*+?")
 _REGEX_ZERO_WIDTH_ESCAPES = frozenset("bB")
 
 
-def parse_regex_value(regex_val: str) -> tuple[str, list[StringModifier]]:
-    """Parse lexer regex payloads and convert inline flags to string modifiers."""
-    from yaraast.ast.modifiers import StringModifier
-
+def parse_regex_value(regex_val: str) -> tuple[str, list[str]]:
+    """Parse lexer regex payloads and preserve inline regex suffix flags."""
     pattern, mod_str = split_regex_value(regex_val)
     validate_regex_pattern(pattern)
     validate_regex_modifiers(mod_str)
-    modifiers = []
-
-    modifier_names = {
-        "i": "nocase",
-        "s": "dotall",
-    }
-    for modifier in mod_str:
-        if modifier in modifier_names:
-            modifiers.append(StringModifier.from_name_value(modifier_names[modifier]))
-
-    return pattern, modifiers
+    return pattern, list(mod_str)
 
 
 def split_regex_value(regex_val: str) -> tuple[str, str]:

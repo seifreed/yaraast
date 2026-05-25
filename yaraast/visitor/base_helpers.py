@@ -14,7 +14,7 @@ T = TypeVar("T", covariant=True)
 class VisitorHelperProtocol(Protocol[T]):
     def _noop(self) -> T: ...
 
-    def _visit_all(self, items: Sequence[ASTNode]) -> None: ...
+    def _visit_all(self, items: Sequence[object]) -> None: ...
 
     def _visit_if(self, node: ASTNode | None) -> None: ...
 
@@ -30,10 +30,11 @@ class BaseVisitorHelpersMixin[T]:
     def _noop(self) -> T:
         return cast(T, None)
 
-    def _visit_all(self, items: Sequence[ASTNode]) -> None:
+    def _visit_all(self, items: Sequence[object]) -> None:
         visitor = cast(ASTVisitor[T], self)
         for item in items:
-            visitor.visit(item)
+            if isinstance(item, ASTNode):
+                visitor.visit(item)
 
     def _visit_if(self, node: ASTNode | None) -> None:
         if node:

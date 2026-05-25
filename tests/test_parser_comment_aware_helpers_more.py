@@ -62,15 +62,15 @@ def test_parse_regex_value_branches() -> None:
 
     pattern_i, mods_i = parse_regex_value("abc\x00i")
     assert pattern_i == "abc"
-    assert [m.name for m in mods_i] == ["nocase"]
+    assert mods_i == ["i"]
 
     pattern_s, mods_s = parse_regex_value("abc\x00s")
     assert pattern_s == "abc"
-    assert [m.name for m in mods_s] == ["dotall"]
+    assert mods_s == ["s"]
 
     pattern_mix, mods_mix = parse_regex_value("abc\x00is")
     assert pattern_mix == "abc"
-    assert [m.name for m in mods_mix] == ["nocase", "dotall"]
+    assert mods_mix == ["i", "s"]
 
     with pytest.raises(ValueError, match="Invalid regex modifier"):
         parse_regex_value("abc\x00m")

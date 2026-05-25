@@ -7,6 +7,8 @@ import html as html_mod
 from pathlib import Path
 from typing import Any
 
+from yaraast.ast.base import ASTNode
+
 
 class HtmlTreeNodesMixin:
     """Mixin providing HTML tree node helpers."""
@@ -36,7 +38,14 @@ class HtmlTreeNodesMixin:
         return node
 
     def _child_nodes(self, items: Iterable[Any]) -> list[dict[str, Any]]:
-        return [self.visit(item) for item in items]
+        return [
+            (
+                self.visit(item)
+                if isinstance(item, ASTNode)
+                else self._simple_node("Value", "value", value=html_mod.escape(str(item)))
+            )
+            for item in items
+        ]
 
     def _children_section(
         self,

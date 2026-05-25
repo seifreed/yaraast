@@ -249,15 +249,27 @@ def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:
 
     assert isinstance(regex, RegexString)
     assert regex.regex == "ab+c"
-    assert [modifier.name for modifier in regex.modifiers] == ["nocase", "dotall"]
+    assert regex.modifiers == ["i", "s"]
 
     generated = CodeGenerator().generate(ast)
     assert "\x00" not in generated
-    assert "$r = /ab+c/s nocase" in generated
+    assert "$r = /ab+c/is" in generated
     reparsed = Parser(generated).parse()
     reparsed_regex = reparsed.rules[0].strings[0]
     assert isinstance(reparsed_regex, RegexString)
-    assert [modifier.name for modifier in reparsed_regex.modifiers] == ["dotall", "nocase"]
+    assert reparsed_regex.modifiers == ["i", "s"]
+
+
+@pytest.mark.parametrize("parser_factory", [Parser, CommentAwareParser])
+def test_parse_regex_inline_and_spaced_nocase_roundtrips(
+    parser_factory: type[Parser] | type[CommentAwareParser],
+) -> None:
+    source = "rule r { strings: $r = /ab+c/i nocase condition: $r }"
+    ast = parser_factory().parse(source)
+
+    assert SemanticValidator().validate(ast).is_valid
+    generated = CodeGenerator().generate(ast)
+    assert "$r = /ab+c/i nocase" in generated
 
 
 @pytest.mark.parametrize(
