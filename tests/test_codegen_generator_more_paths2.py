@@ -734,6 +734,32 @@ def test_codegen_generators_reject_invalid_leaf_collections(
             PrettyPrinter().generate(node)
 
 
+@pytest.mark.parametrize("invalid_collection", [False, 0, "", None])
+def test_codegen_generators_reject_invalid_expression_collections(
+    invalid_collection: Any,
+) -> None:
+    cases = [
+        (
+            FunctionCall("foo", invalid_collection),
+            "FunctionCall arguments must be a list or tuple",
+        ),
+        (
+            SetExpression(invalid_collection),
+            "SetExpression elements must be a list or tuple",
+        ),
+    ]
+
+    for node, message in cases:
+        with pytest.raises(TypeError, match=message):
+            CodeGenerator().generate(node)
+        with pytest.raises(TypeError, match=message):
+            AdvancedCodeGenerator().generate(node)
+        with pytest.raises(TypeError, match=message):
+            CommentAwareCodeGenerator().generate(node)
+        with pytest.raises(TypeError, match=message):
+            PrettyPrinter().generate(node)
+
+
 _BAD_PLAIN_STRING_VALUE: Any = 123
 _BAD_REGEX_PATTERN: Any = 123
 

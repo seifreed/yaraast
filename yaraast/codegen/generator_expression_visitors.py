@@ -101,10 +101,21 @@ def visit_set_expression(generator, node) -> str:
 
 
 def validate_set_expression_elements(node) -> None:
-    if node.elements:
+    _validate_expression_collection(node.elements, "SetExpression elements")
+    if not node.elements:
+        msg = "Set expression must contain at least one element for libyara output"
+        raise ValueError(msg)
+
+
+def validate_function_call_arguments(node) -> None:
+    _validate_expression_collection(node.arguments, "FunctionCall arguments")
+
+
+def _validate_expression_collection(value, field_name: str) -> None:
+    if isinstance(value, list | tuple):
         return
-    msg = "Set expression must contain at least one element for libyara output"
-    raise ValueError(msg)
+    msg = f"{field_name} must be a list or tuple for libyara output"
+    raise TypeError(msg)
 
 
 def visit_range_expression(generator, node) -> str:
@@ -113,6 +124,7 @@ def visit_range_expression(generator, node) -> str:
 
 def visit_function_call(generator, node) -> str:
     function = validate_yara_identifier_path(node.function, "function")
+    validate_function_call_arguments(node)
     return f"{function}({', '.join(generator.visit(arg) for arg in node.arguments)})"
 
 
