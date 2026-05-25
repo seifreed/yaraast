@@ -240,8 +240,8 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_binary_condition(self, node: BinaryCondition) -> str:
         """Generate code for binary condition."""
-        left = self.visit(node.left) if hasattr(node, "left") and node.left else ""
-        right = self.visit(node.right) if hasattr(node, "right") and node.right else ""
+        left = self._format_value(node.left) if hasattr(node, "left") and node.left else ""
+        right = self._format_value(node.right) if hasattr(node, "right") and node.right else ""
         operator = node.operator
 
         if operator in ["and", "or"]:

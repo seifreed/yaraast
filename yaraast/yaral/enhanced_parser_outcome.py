@@ -69,12 +69,10 @@ class EnhancedYaraLParserOutcomeMixin:
             ]:
                 return self._parse_aggregation_function()
 
-        if (
-            self._check(BaseTokenType.IDENTIFIER)
-            and self._peek_ahead(1)
-            and self._peek_ahead(1).type == BaseTokenType.DOT
-        ):
+        if self._is_outcome_field_access_start():
             return self._parse_udm_field_access()
+        if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
+            return self._advance().value
 
         if self._check(BaseTokenType.STRING):
             return self._advance().value
@@ -82,6 +80,14 @@ class EnhancedYaraLParserOutcomeMixin:
             return parse_numeric_token_value(self._advance().value)
 
         raise self._error("Expected outcome expression")
+
+    def _is_outcome_field_access_start(self) -> bool:
+        next_token = self._peek_ahead(1)
+        if next_token is None or next_token.type != BaseTokenType.DOT:
+            return False
+        return self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+            BaseTokenType.IDENTIFIER
+        )
 
     def _parse_aggregation_function(self) -> AggregationFunction:
         """Parse aggregation function."""
@@ -91,11 +97,12 @@ class EnhancedYaraLParserOutcomeMixin:
 
         arguments = []
         while not self._check(BaseTokenType.RPAREN):
-            if self._check(BaseTokenType.IDENTIFIER):
+            if self._is_outcome_field_access_start() or self._check(BaseTokenType.IDENTIFIER):
                 arg = self._parse_udm_field_access()
                 arguments.append(arg)
             elif (
-                self._check(BaseTokenType.STRING)
+                self._check_yaral_type(YaraLTokenType.EVENT_VAR)
+                or self._check(BaseTokenType.STRING)
                 or self._check(BaseTokenType.INTEGER)
                 or self._check(BaseTokenType.DOUBLE)
             ):

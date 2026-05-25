@@ -82,6 +82,8 @@ class EnhancedYaraLParserConditionsMixin:
             self.current = saved
 
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
+            if self._peek_ahead(1) and self._peek_ahead(1).type == BaseTokenType.DOT:
+                return self._parse_field_comparison()
             event_name = self._advance().value
             # Check for 'is null' / 'is not null' after event variable
             if self._check_yaral_type(YaraLTokenType.IS):

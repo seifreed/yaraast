@@ -5,6 +5,7 @@ import pytest
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral.ast_nodes import AggregationFunction, ConditionalExpression, UDMFieldAccess
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
+from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.tokens import YaraLTokenType
 
@@ -88,6 +89,22 @@ def test_enhanced_outcome_expression_aggregation_udm_string_int_and_error() -> N
     assert isinstance(access, UDMFieldAccess)
     assert access.field.parts == ["metadata", "event_type"]
 
+    _set_tokens(
+        p,
+        [
+            _tok(T.IDENTIFIER, "$e", YaraLTokenType.EVENT_VAR),
+            _tok(T.DOT, "."),
+            _tok(T.IDENTIFIER, "target"),
+            _tok(T.DOT, "."),
+            _tok(T.IDENTIFIER, "hostname"),
+        ],
+    )
+    event_access = p._parse_outcome_expression()
+    assert isinstance(event_access, UDMFieldAccess)
+    assert event_access.event is not None
+    assert event_access.event.name == "$e"
+    assert event_access.field.parts == ["target", "hostname"]
+
     _set_tokens(p, [_tok(T.STRING, "abc")])
     assert p._parse_outcome_expression() == "abc"
 
@@ -129,6 +146,22 @@ def test_enhanced_aggregation_and_conditional_branches() -> None:
     _set_tokens(
         p,
         [
+            _tok(T.IDENTIFIER, "array_distinct"),
+            _tok(T.LPAREN, "("),
+            _tok(T.IDENTIFIER, "$e", YaraLTokenType.EVENT_VAR),
+            _tok(T.DOT, "."),
+            _tok(T.IDENTIFIER, "principal"),
+            _tok(T.DOT, "."),
+            _tok(T.IDENTIFIER, "ip"),
+            _tok(T.RPAREN, ")"),
+        ],
+    )
+    agg_event_field = p._parse_aggregation_function()
+    assert isinstance(agg_event_field.arguments[0], UDMFieldAccess)
+
+    _set_tokens(
+        p,
+        [
             _tok(T.IDENTIFIER, "if"),
             _tok(T.IDENTIFIER, "$e", YaraLTokenType.EVENT_VAR),
             _tok(T.IDENTIFIER, "then"),
@@ -152,3 +185,38 @@ def test_enhanced_aggregation_and_conditional_branches() -> None:
     )
     cond_with_else = p._parse_conditional_expression()
     assert cond_with_else.false_value == 0
+
+
+def test_enhanced_outcome_event_field_references_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule outcome_fields {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e
+          outcome:
+            $host = $e.target.hostname
+            $hosts = array_distinct($e.principal.ip)
+            if $e.metadata.event_type = "LOGIN" then $e.target.hostname else "none"
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    rule = ast.rules[0]
+    assert rule.outcome is not None
+    assert len(rule.outcome.assignments) == 3
+    direct_field = rule.outcome.assignments[0].expression
+    assert isinstance(direct_field, UDMFieldAccess)
+    assert direct_field.event is not None
+    assert direct_field.event.name == "$e"
+    aggregation = rule.outcome.assignments[1].expression
+    assert isinstance(aggregation, AggregationFunction)
+    assert isinstance(aggregation.arguments[0], UDMFieldAccess)
+    conditional = rule.outcome.assignments[2].expression
+    assert isinstance(conditional, ConditionalExpression)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$host = $e.target.hostname" in generated
+    assert "$hosts = array_distinct($e.principal.ip)" in generated
+    assert '_ = if($e.metadata.event_type = "LOGIN", $e.target.hostname, "none")' in generated
