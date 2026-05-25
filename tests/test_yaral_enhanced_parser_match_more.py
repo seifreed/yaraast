@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
+from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.tokens import YaraLTokenType
 
@@ -37,6 +38,8 @@ def test_parse_match_variable_with_field_and_over_condition() -> None:
 
     parsed = p._parse_match_variable()
     assert parsed.variable == "m"
+    assert parsed.grouping_field is not None
+    assert parsed.grouping_field.full_path == "$e.principal.ip"
     assert parsed.time_window.duration == 5
     assert parsed.time_window.unit == "m"
 
@@ -75,5 +78,29 @@ def test_parse_match_section_with_variable_time_window_and_skip_token() -> None:
     section = p._parse_match_section()
     assert len(section.variables) == 1
     assert section.variables[0].variable == "v"
+    assert section.variables[0].grouping_field is not None
+    assert section.variables[0].grouping_field.full_path == "metadata.event_type"
     assert section.variables[0].time_window.duration == 10
     assert section.variables[0].time_window.unit == "m"
+
+
+def test_enhanced_match_grouping_field_preserves_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule grouped_match {
+          events:
+            $e.field = "v"
+          match:
+            m = $e.principal.ip over 5m
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    match_section = ast.rules[0].match
+    assert match_section is not None
+    assert match_section.variables[0].grouping_field is not None
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$m = $e.principal.ip over 5m" in generated

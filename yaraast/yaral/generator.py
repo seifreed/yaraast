@@ -218,6 +218,9 @@ class YaraLGenerator(YaraLVisitor[str]):
         variable = node.variable
         if not variable.startswith("$"):
             variable = f"${variable}"
+        if node.grouping_field is not None:
+            grouping = self.visit(node.grouping_field)
+            return f"{self._indent()}{variable} = {grouping} over {self.visit(node.time_window)}"
         return f"{self._indent()}{variable} over {self.visit(node.time_window)}"
 
     def visit_time_window(self, node: TimeWindow) -> str:
