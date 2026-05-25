@@ -5,6 +5,7 @@ from __future__ import annotations
 from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     validate_rule_identifiers,
+    validate_rule_meta,
     validate_rule_tags,
     validate_yara_identifier,
 )
@@ -86,6 +87,7 @@ def visit_yara_file(printer, node) -> str:
 
 def visit_rule(printer, node) -> str:
     printer._write_comments(node.leading_comments)
+    validate_rule_meta(node.meta)
     line_parts = []
     modifiers = format_rule_modifiers(node.modifiers)
     if modifiers:

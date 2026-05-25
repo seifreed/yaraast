@@ -263,11 +263,11 @@ def test_codegen_generator_meta_and_string_section_variants() -> None:
     assert "$r = /ab.*/ nocase" in out
 
     gen2 = CodeGenerator()
-    gen2._write_meta_section([Meta("score", 7), object()])
+    gen2._write_meta_section([Meta("score", 7)])
     assert "score = 7" in gen2.buffer.getvalue()
     gen3 = CodeGenerator()
-    gen3._write_meta_section("ignored")
-    assert "meta:" in gen3.buffer.getvalue()
+    with pytest.raises(TypeError, match="Rule meta must be a dictionary, list, or tuple"):
+        gen3._write_meta_section("ignored")
 
     gen4 = CodeGenerator()
     gen4._write_strings_section([PlainString("$b", value="x")], has_condition=False)
@@ -846,6 +846,30 @@ def test_codegen_generators_reject_invalid_meta_keys(meta_key: str) -> None:
         CommentAwareCodeGenerator().generate(ast)
     with pytest.raises(ValueError, match="Invalid meta identifier"):
         PrettyPrinter().pretty_print(ast)
+
+
+def test_codegen_generators_reject_invalid_rule_meta_collections() -> None:
+    false_meta: Any = False
+    cases = [
+        Rule(name="invalid_meta_container", meta=false_meta, condition=BooleanLiteral(True)),
+        Rule.from_raw(
+            name="invalid_raw_meta_container",
+            meta=false_meta,
+            condition=BooleanLiteral(True),
+        ),
+        Rule(name="invalid_meta_item", meta=[false_meta], condition=BooleanLiteral(True)),
+    ]
+
+    for rule in cases:
+        ast = YaraFile(rules=[rule])
+        with pytest.raises(TypeError, match="Rule meta must contain meta entries"):
+            CodeGenerator().generate(ast)
+        with pytest.raises(TypeError, match="Rule meta must contain meta entries"):
+            AdvancedCodeGenerator().generate(ast)
+        with pytest.raises(TypeError, match="Rule meta must contain meta entries"):
+            CommentAwareCodeGenerator().generate(ast)
+        with pytest.raises(TypeError, match="Rule meta must contain meta entries"):
+            PrettyPrinter().pretty_print(ast)
 
 
 @pytest.mark.parametrize("meta_value", [1.5, None, ["x"]])

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from yaraast.codegen.generator_formatting import validate_rule_meta
 from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
     format_regex_modifiers,
@@ -23,12 +24,15 @@ def _emit_comments(gen, node) -> None:
 
 def write_meta_section(gen, meta) -> None:
     """Write meta section if present."""
+    validate_rule_meta(meta)
     if not meta:
         return
     gen._writeline("meta:")
     gen._indent()
-    for item in meta:
-        if hasattr(item, "key") and hasattr(item, "value"):
+    if isinstance(meta, dict):
+        gen._write_meta_dict(meta)
+    else:
+        for item in meta:
             _emit_comments(gen, item)
             gen._writeline(
                 gen._format_meta_value(item.key, item.value, getattr(item, "scope", None))

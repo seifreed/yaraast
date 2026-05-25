@@ -22,11 +22,6 @@ from yaraast.codegen.advanced_generator import AdvancedCodeGenerator
 from yaraast.codegen.formatting import BraceStyle, FormattingConfig, StringStyle
 
 
-class _KeyOnly:
-    def __init__(self, key: str) -> None:
-        self.key = key
-
-
 class _AsText:
     def __str__(self) -> str:
         return "object_tag"
@@ -187,7 +182,7 @@ def test_advanced_generator_generate_returns_direct_expression_output() -> None:
 
 def test_advanced_generator_meta_and_tags_branches() -> None:
     mod = StringModifier(StringModifierType.NOCASE)
-    meta_list = [Meta("b", '"already"'), _KeyOnly("missing_value"), Meta("a", True)]
+    meta_list = [Meta("b", '"already"'), Meta("a", True)]
 
     rule = Rule(
         name="meta_rule",
@@ -207,7 +202,6 @@ def test_advanced_generator_meta_and_tags_branches() -> None:
 
     assert "rule meta_rule:x y object_tag" in out
     assert 'b             = "\\"already\\""' in out or 'b = "\\"already\\""' in out
-    assert 'missing_value = ""' in out or 'missing_value = ""' in out
     assert "a             = true" in out or "a = true" in out
 
 

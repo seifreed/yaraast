@@ -62,8 +62,7 @@ class Rule(ASTNode):
     def __post_init__(self) -> None:
         """Normalize modifiers to RuleModifier and meta to list[MetaEntry]."""
         self.modifiers = self._normalize_modifiers(self.modifiers)
-        if isinstance(self.meta, dict):
-            self.meta = self._normalize_meta(self.meta)
+        self.meta = self._normalize_meta(self.meta)
 
     @classmethod
     def from_raw(
@@ -86,7 +85,7 @@ class Rule(ASTNode):
             'me'
         """
         normalized_mods = cls._normalize_modifiers(modifiers)
-        normalized_meta = cls._normalize_meta(meta or [])
+        normalized_meta = cls._normalize_meta(meta)
         return cls(
             name=name,
             modifiers=normalized_mods,
@@ -122,15 +121,15 @@ class Rule(ASTNode):
         return [modifiers]
 
     @staticmethod
-    def _normalize_meta(
-        meta: list[MetaEntry] | tuple[MetaEntry, ...] | dict[str, str | int | bool] | None,
-    ) -> list[MetaEntry]:
+    def _normalize_meta(meta: Any) -> list[Any]:
         """Normalize meta to a list of MetaEntry."""
-        if not meta:
+        if meta is None:
             return []
         if isinstance(meta, dict):
             return [MetaEntry.from_key_value(k, v) for k, v in meta.items()]
-        return list(meta)
+        if isinstance(meta, list | tuple):
+            return list(meta)
+        return [meta]
 
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_rule(self)

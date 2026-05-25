@@ -37,6 +37,7 @@ from yaraast.codegen.generator_expression_visitors import (
 )
 from yaraast.codegen.generator_formatting import (
     format_nonempty_quoted_value,
+    validate_rule_meta,
     validate_yara_identifier,
 )
 
@@ -115,6 +116,7 @@ class AdvancedCodeGenerator(CodeGenerator):
 
     def _write_meta_section(self, meta_data: dict[str, Any] | list[Meta]) -> None:
         """Write meta section with formatting."""
+        validate_rule_meta(meta_data)
         self._writeline("meta:")
         self._indent()
 

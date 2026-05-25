@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
-from yaraast.codegen.generator_formatting import format_meta_key, format_meta_literal
+from yaraast.codegen.generator_formatting import (
+    format_meta_key,
+    format_meta_literal,
+    validate_rule_meta,
+)
 from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
@@ -26,6 +30,7 @@ from yaraast.codegen.pretty_printer_helpers import (
 
 def write_meta_section(printer, meta: list) -> None:
     """Write meta entries preserving PrettyPrinter behavior."""
+    validate_rule_meta(meta)
     entries = list(meta)
     if printer.options.sort_meta_keys:
         entries.sort(key=lambda x: getattr(x, "key", ""))

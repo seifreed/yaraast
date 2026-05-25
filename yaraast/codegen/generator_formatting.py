@@ -83,6 +83,23 @@ def validate_rule_tags(tags) -> None:
         seen.add(name)
 
 
+def validate_rule_meta(meta) -> None:
+    if meta is None:
+        return
+    if not isinstance(meta, dict | list | tuple):
+        msg = "Rule meta must be a dictionary, list, or tuple for libyara output"
+        raise TypeError(msg)
+    if isinstance(meta, dict):
+        for key, value in meta.items():
+            format_meta_value(key, value)
+        return
+    for entry in meta:
+        if not (hasattr(entry, "key") and hasattr(entry, "value")):
+            msg = "Rule meta must contain meta entries for libyara output"
+            raise TypeError(msg)
+        format_meta_value(entry.key, entry.value, getattr(entry, "scope", None))
+
+
 def _rule_tag_name(tag) -> str:
     if isinstance(tag, str):
         return tag

@@ -54,7 +54,7 @@ def test_codegen_generator_additional_visit_paths() -> None:
                 name="r1",
                 modifiers=["private"],
                 tags=[Tag("t1")],
-                meta=[Meta("author", "me"), object()],
+                meta=[Meta("author", "me")],
                 strings=[
                     PlainString(
                         "$a", value="x", modifiers=[StringModifier.from_name_value("ascii")]
@@ -287,9 +287,8 @@ def test_advanced_generator_direct_remaining_branches() -> None:
     )
 
     invalid_meta_list = cast(Any, [Meta("k", ""), object()])
-    adv._write_meta_section(invalid_meta_list)
-    meta_output = adv.buffer.getvalue()
-    assert 'k = ""' in meta_output
+    with pytest.raises(TypeError, match="Rule meta must contain meta entries"):
+        adv._write_meta_section(invalid_meta_list)
 
     adv.buffer.seek(0)
     adv.buffer.truncate(0)
@@ -315,7 +314,7 @@ def test_advanced_generator_direct_remaining_branches() -> None:
     )
     rule = Rule(
         name="styled",
-        meta=[Meta("author", "me"), object()],
+        meta=[Meta("author", "me")],
         strings=[plain, hexs, regex],
         condition=BooleanLiteral(True),
     )
@@ -400,9 +399,8 @@ def test_advanced_generator_final_remaining_string_and_section_paths() -> None:
         )
     )
 
-    # Exercise the defensive continue in _write_meta_section when a key disappears.
-    adv._write_meta_section(cast(Any, [FlakyMeta()]))
-    assert "meta:" in adv.buffer.getvalue()
+    with pytest.raises(TypeError, match="Rule meta must contain meta entries"):
+        adv._write_meta_section(cast(Any, [FlakyMeta()]))
 
     adv.buffer.seek(0)
     adv.buffer.truncate(0)

@@ -13,6 +13,7 @@ from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
     validate_rule_identifiers,
+    validate_rule_meta,
     validate_yara_identifier,
     validate_yara_identifier_path,
 )
@@ -68,6 +69,7 @@ def visit_yara_file(generator, node) -> str:
 
 
 def visit_rule(generator, node) -> str:
+    validate_rule_meta(node.meta)
     modifiers = format_rule_modifiers(node.modifiers)
     if modifiers:
         generator._write(f"{modifiers} ")

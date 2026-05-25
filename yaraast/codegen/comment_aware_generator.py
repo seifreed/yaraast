@@ -12,6 +12,7 @@ from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     format_rule_tags,
     validate_rule_identifiers,
+    validate_rule_meta,
     validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
@@ -218,6 +219,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def _write_meta_section(self, node: Rule) -> None:
         """Write the meta section with comments."""
+        validate_rule_meta(node.meta)
         if not node.meta:
             return
 
