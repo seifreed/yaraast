@@ -20,6 +20,7 @@ from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.builder.string_identifier_validation import normalize_string_identifier
 from yaraast.errors import ValidationError
+from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 
 class FluentStringBuilder:
@@ -394,22 +395,15 @@ class FluentStringBuilder:
 
     def _parse_hex_pattern(self, pattern: str) -> list[HexToken]:
         """Parse hex pattern string into tokens."""
-        tokens = []
-        hex_chars = self._normalize_hex_pattern(pattern)
-
-        i = 0
-        while i < len(hex_chars):
-            if i + 1 >= len(hex_chars):
-                msg = f"Invalid hex pattern at offset {i}: {hex_chars[i:]}"
-                raise ValidationError(msg)
-
-            two_char = hex_chars[i : i + 2]
-            token, consumed = self._parse_hex_pair(two_char)
-
-            tokens.append(token)
-            i += consumed
-
-        return tokens
+        if not isinstance(pattern, str):
+            msg = "Hex pattern must be a string"
+            raise TypeError(msg)
+        try:
+            return HexStringParser().parse(pattern)
+        except HexParseError as exc:
+            if exc.position is None and str(exc) == "Hex parse error: Empty hex string":
+                return []
+            raise ValidationError(str(exc)) from exc
 
     def _normalize_hex_pattern(self, pattern: str) -> str:
         """Normalize hex pattern by removing whitespace and converting to uppercase."""

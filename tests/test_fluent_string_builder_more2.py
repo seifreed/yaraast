@@ -7,7 +7,16 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.modifiers import StringModifierType
-from yaraast.ast.strings import HexByte, HexNibble, HexString, HexWildcard, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    HexWildcard,
+    RegexString,
+)
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.errors import ValidationError
@@ -23,7 +32,10 @@ def test_fluent_string_builder_invalid_hex_inputs_and_trailing_nibble() -> None:
     with pytest.raises(ValidationError, match="Invalid hex byte: 100"):
         FluentStringBuilder("$hex").hex_bytes("100")
 
-    with pytest.raises(ValidationError, match="Invalid hex pattern at offset 2"):
+    with pytest.raises(
+        ValidationError,
+        match="Hex parse error at position 3: Invalid character in hex string: G",
+    ):
         FluentStringBuilder("$parse")._parse_hex_pattern("AA G")
 
     with pytest.raises(ValidationError, match="Invalid hex pair: GZ"):
@@ -56,6 +68,33 @@ def test_fluent_string_builder_hex_build_returns_token_snapshot() -> None:
     assert len(second.tokens) == 1
     assert isinstance(second.tokens[0], HexByte)
     assert second.tokens[0].value == 0x41
+
+
+def test_fluent_string_builder_hex_uses_full_hex_parser() -> None:
+    string_def = (
+        FluentStringBuilder("$hex").hex("4D A? ?F [2-4] (~00 | 41) // comment\n 5A").build()
+    )
+
+    assert isinstance(string_def, HexString)
+    tokens = string_def.tokens
+    assert isinstance(tokens[0], HexByte)
+    assert tokens[0].value == 0x4D
+    assert isinstance(tokens[1], HexNibble)
+    assert tokens[1].high is True
+    assert tokens[1].value == 0xA
+    assert isinstance(tokens[2], HexNibble)
+    assert tokens[2].high is False
+    assert tokens[2].value == 0xF
+    assert isinstance(tokens[3], HexJump)
+    assert tokens[3].min_jump == 2
+    assert tokens[3].max_jump == 4
+    assert isinstance(tokens[4], HexAlternative)
+    assert isinstance(tokens[4].alternatives[0][0], HexNegatedByte)
+    assert tokens[4].alternatives[0][0].value == 0x00
+    assert isinstance(tokens[4].alternatives[1][0], HexByte)
+    assert tokens[4].alternatives[1][0].value == 0x41
+    assert isinstance(tokens[5], HexByte)
+    assert tokens[5].value == 0x5A
 
 
 def test_fluent_string_builder_hex_builder_accepts_mutating_callbacks() -> None:
