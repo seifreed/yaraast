@@ -62,6 +62,7 @@ def test_generator_full_rule() -> None:
     assert "match:" in code
     assert "condition:" in code
     assert "outcome:" in code
+    assert code.index("outcome:") < code.index("condition:")
     assert "nocase" in code
     assert "count($e)" in code
 

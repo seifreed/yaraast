@@ -116,13 +116,13 @@ class YaraLGenerator(YaraLVisitor[str]):
         if node.match:
             parts.append(self.visit(node.match))
 
-        # Add condition section
-        if node.condition:
-            parts.append(self.visit(node.condition))
-
         # Add outcome section
         if node.outcome:
             parts.append(self.visit(node.outcome))
+
+        # Add condition section
+        if node.condition:
+            parts.append(self.visit(node.condition))
 
         # Add options section
         if node.options:
