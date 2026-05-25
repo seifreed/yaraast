@@ -42,7 +42,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
 
                 self._consume(BaseTokenType.EQ, "Expected '=' after outcome variable")
 
-                expression = self._parse_outcome_arithmetic_expression()
+                expression = self._parse_outcome_boolean_expression()
 
                 assignments.append(
                     OutcomeAssignment(variable=var_name, expression=expression),
@@ -75,11 +75,11 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
                 # Parse arguments
                 arguments = []
                 if not self._check(BaseTokenType.RPAREN):
-                    arguments.append(self._parse_outcome_arithmetic_expression())
+                    arguments.append(self._parse_outcome_boolean_expression())
 
                     while self._check(BaseTokenType.COMMA):
                         self._advance()
-                        arguments.append(self._parse_outcome_arithmetic_expression())
+                        arguments.append(self._parse_outcome_boolean_expression())
 
                 self._consume(
                     BaseTokenType.RPAREN,
@@ -96,13 +96,13 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
             condition = self._parse_outcome_condition()
             self._consume(BaseTokenType.COMMA, "Expected ',' after condition")
 
-            true_value = self._parse_outcome_argument()
+            true_value = self._parse_outcome_boolean_expression()
 
             # Check if there's a third argument (false value)
             false_value = None
             if self._check(BaseTokenType.COMMA):
                 self._advance()  # Consume comma
-                false_value = self._parse_outcome_argument()
+                false_value = self._parse_outcome_boolean_expression()
 
             self._consume(BaseTokenType.RPAREN, "Expected ')' after if expression")
 

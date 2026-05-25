@@ -207,6 +207,10 @@ def test_outcome_direct_boolean_expressions_roundtrip() -> None:
             $not_match = $e.target.hostname not matches /admin.*/
             $regex_match = $e.target.hostname =~ /admin.*/
             $func_arg = custom($e.target.hostname matches /admin.*/, "x")
+            $and_chain = $e.target.hostname matches /admin.*/ and $e.principal.ip not in %blocked%
+            $or_chain = $e.target.hostname matches /admin.*/ or $e.principal.ip not in %blocked%
+            $negated = not $e.target.hostname matches /admin.*/
+            $grouped = ($e.target.hostname matches /admin.*/ and $e.principal.ip not in %blocked%)
           condition:
             $e
         }
@@ -219,6 +223,19 @@ def test_outcome_direct_boolean_expressions_roundtrip() -> None:
     assert "$not_match = $e.target.hostname !~ /admin.*/" in generated
     assert "$regex_match = $e.target.hostname =~ /admin.*/" in generated
     assert '$func_arg = custom($e.target.hostname =~ /admin.*/, "x")' in generated
+    assert (
+        "$and_chain = $e.target.hostname =~ /admin.*/ and $e.principal.ip not in %blocked%"
+        in generated
+    )
+    assert (
+        "$or_chain = $e.target.hostname =~ /admin.*/ or $e.principal.ip not in %blocked%"
+        in generated
+    )
+    assert "$negated = not $e.target.hostname =~ /admin.*/" in generated
+    assert (
+        "$grouped = ($e.target.hostname =~ /admin.*/ and $e.principal.ip not in %blocked%)"
+        in generated
+    )
 
 
 def test_outcome_function_arithmetic_arguments_roundtrip_without_quotes() -> None:

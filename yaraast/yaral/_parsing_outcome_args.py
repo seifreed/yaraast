@@ -48,7 +48,7 @@ class OutcomeArgumentParsingMixin:
 
         if self._check(BaseTokenType.LPAREN):
             self._advance()
-            expr = self._parse_outcome_condition()
+            expr = self._parse_outcome_boolean_expression()
             self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
             return RawOutcomeExpression(f"({self._format_outcome_argument_source(expr)})")
 
@@ -98,7 +98,7 @@ class OutcomeArgumentParsingMixin:
 
         if self._check(BaseTokenType.LPAREN):
             self._advance()
-            expr = self._parse_outcome_arithmetic_expression()
+            expr = self._parse_outcome_boolean_expression()
             self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
             return RawOutcomeExpression(f"({self._format_outcome_argument_source(expr)})")
 
@@ -200,10 +200,10 @@ class OutcomeArgumentParsingMixin:
         self._advance()  # consume LPAREN
         arguments: list[Any] = []
         if not self._check(BaseTokenType.RPAREN):
-            arguments.append(self._parse_outcome_arithmetic_expression())
+            arguments.append(self._parse_outcome_boolean_expression())
             while self._check(BaseTokenType.COMMA):
                 self._advance()
-                arguments.append(self._parse_outcome_arithmetic_expression())
+                arguments.append(self._parse_outcome_boolean_expression())
         self._consume(BaseTokenType.RPAREN, f"Expected ')' after {func_name} arguments")
         return FunctionCall(function=func_name, arguments=arguments)
 
@@ -252,6 +252,24 @@ class OutcomeArgumentParsingMixin:
         if isinstance(value, str) and quote_strings and not value.startswith(("$", "%", "(")):
             return quote_string_literal(value)
         return str(value)
+
+    def _parse_outcome_boolean_expression(self) -> Any:
+        left = self._parse_outcome_boolean_factor()
+        while self._check_keyword("and") or self._check_keyword("or"):
+            operator = str(self._advance().value).lower()
+            right = self._parse_outcome_boolean_factor()
+            left = RawOutcomeExpression(
+                f"{self._format_outcome_argument_source(left)} {operator} "
+                f"{self._format_outcome_argument_source(right)}"
+            )
+        return left
+
+    def _parse_outcome_boolean_factor(self) -> Any:
+        if self._check_keyword("not"):
+            self._advance()
+            operand = self._parse_outcome_boolean_factor()
+            return RawOutcomeExpression(f"not {self._format_outcome_argument_source(operand)}")
+        return self._parse_outcome_arithmetic_expression()
 
     def _parse_outcome_argument_operator(self) -> str | None:
         operator = self._parse_outcome_comparison_operator()

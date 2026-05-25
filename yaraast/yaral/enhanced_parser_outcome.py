@@ -83,6 +83,38 @@ class EnhancedYaraLParserOutcomeMixin:
 
     def _parse_outcome_expression(self) -> OutcomeExpression | Any:
         """Parse enhanced outcome expression with aggregations."""
+        return self._parse_outcome_or_expression()
+
+    def _parse_outcome_or_expression(self) -> OutcomeExpression | Any:
+        left = self._parse_outcome_and_expression()
+        while self._check_keyword("or"):
+            operator = str(self._advance().value).lower()
+            right = self._parse_outcome_and_expression()
+            left = RawOutcomeExpression(
+                f"{self._format_outcome_expression_text(left)} {operator} "
+                f"{self._format_outcome_expression_text(right)}"
+            )
+        return left
+
+    def _parse_outcome_and_expression(self) -> OutcomeExpression | Any:
+        left = self._parse_outcome_not_expression()
+        while self._check_keyword("and"):
+            operator = str(self._advance().value).lower()
+            right = self._parse_outcome_not_expression()
+            left = RawOutcomeExpression(
+                f"{self._format_outcome_expression_text(left)} {operator} "
+                f"{self._format_outcome_expression_text(right)}"
+            )
+        return left
+
+    def _parse_outcome_not_expression(self) -> OutcomeExpression | Any:
+        if self._check_keyword("not"):
+            self._advance()
+            operand = self._parse_outcome_not_expression()
+            return RawOutcomeExpression(f"not {self._format_outcome_expression_text(operand)}")
+        return self._parse_outcome_comparison_expression()
+
+    def _parse_outcome_comparison_expression(self) -> OutcomeExpression | Any:
         left = self._parse_outcome_additive_expression()
         if not self._check_outcome_comparison_operator():
             return left
@@ -166,6 +198,8 @@ class EnhancedYaraLParserOutcomeMixin:
             self._advance()
             expression = self._parse_outcome_expression()
             self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
+            if isinstance(expression, RawOutcomeExpression):
+                return RawOutcomeExpression(f"({expression})")
             return expression
 
         if self._check_keyword("if"):
