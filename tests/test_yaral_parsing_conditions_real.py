@@ -8,6 +8,7 @@ from yaraast.yaral.ast_nodes import (
     BinaryCondition,
     EventCountCondition,
     EventExistsCondition,
+    FunctionCall,
     RawConditionValue,
     ReferenceList,
     RegexPattern,
@@ -512,3 +513,45 @@ def test_parse_condition_symbolic_regex_operators_preserve_generated_text(
         """).parse()
     generated = YaraLGenerator().generate(ast)
     assert f"$e.target.hostname {operator} /admin.*/" in generated
+
+
+def test_parse_condition_function_values_preserve_generated_text() -> None:
+    parser = YaraLParser("$risk_score > max(1, 2)")
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, VariableComparisonCondition)
+    assert condition.variable == "$risk_score"
+    assert condition.operator == ">"
+    assert isinstance(condition.value, FunctionCall)
+    assert condition.value.function == "max"
+    assert condition.value.arguments == [1, 2]
+    assert parser._is_at_end()
+
+    parser2 = YaraLParser('$risk_score > max($e.principal.ip, "fallback", true)')
+    condition2 = parser2._parse_condition_expression()
+
+    assert isinstance(condition2, VariableComparisonCondition)
+    assert isinstance(condition2.value, FunctionCall)
+    assert condition2.value.function == "max"
+    assert parser2._is_at_end()
+
+    parser3 = YaraLParser("$risk_score > max(1, 2) + $offset")
+    condition3 = parser3._parse_condition_expression()
+
+    assert isinstance(condition3, VariableComparisonCondition)
+    assert isinstance(condition3.value, RawConditionValue)
+    assert condition3.value == "max(1, 2) + $offset"
+    assert parser3._is_at_end()
+
+    ast = YaraLParser("""
+        rule function_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $risk_score = count($e.principal.ip)
+          condition:
+            $risk_score > max($e.principal.ip, "fallback", true)
+        }
+        """).parse()
+    generated = YaraLGenerator().generate(ast)
+    assert '$risk_score > max($e.principal.ip, "fallback", true)' in generated
