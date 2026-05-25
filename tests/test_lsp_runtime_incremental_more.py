@@ -74,6 +74,18 @@ rule sample {
     assert {"sample", "$a"} <= names
 
 
+def test_runtime_update_config_rejects_non_mapping_settings() -> None:
+    runtime = LspRuntime()
+
+    runtime.update_config(None)
+    runtime.update_config({})
+
+    invalid_settings: tuple[Any, ...] = ([], "", "YARA")
+    for settings in invalid_settings:
+        with pytest.raises(TypeError, match="LSP runtime settings must be a dictionary"):
+            runtime.update_config(cast(Any, settings))
+
+
 def test_runtime_workspace_symbols_ignore_persisted_index_when_cache_disabled(
     tmp_path: Path,
 ) -> None:

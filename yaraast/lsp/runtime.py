@@ -259,6 +259,11 @@ class LspRuntime:
                 self.get_document(path_to_uri(path))
 
     def update_config(self, settings: dict[str, Any] | None) -> None:
+        if settings is None:
+            return
+        if not isinstance(settings, dict):
+            msg = "LSP runtime settings must be a dictionary"
+            raise TypeError(msg)
         if not settings:
             return
         if "YARA" in settings and isinstance(settings["YARA"], dict):
