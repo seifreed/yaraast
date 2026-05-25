@@ -133,7 +133,7 @@ def test_parse_outcome_argument_event_field_comparison_and_field_access() -> Non
             _tok(T.EOF, None, YaraLTokenType.EOF),
         ],
     )
-    assert parser._parse_outcome_argument() == "$e.metadata.event_type = LOGIN"
+    assert parser._parse_outcome_argument() == '$e.metadata.event_type = "LOGIN"'
 
     parser2 = YaraLParser("")
     _set_tokens(

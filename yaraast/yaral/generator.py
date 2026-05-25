@@ -279,7 +279,7 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_outcome_assignment(self, node: OutcomeAssignment) -> str:
         """Generate code for outcome assignment."""
-        return f"{self._indent()}{node.variable} = {self._format_value(node.expression)}"
+        return f"{self._indent()}{node.variable} = {self._format_condition_value(node.expression)}"
 
     def visit_outcome_expression(self, node: OutcomeExpression) -> str:
         """Generate code for outcome expression."""
@@ -300,7 +300,21 @@ class YaraLGenerator(YaraLVisitor[str]):
         return self._format_value(value)
 
     def _is_raw_condition_text(self, value: str) -> bool:
-        raw_markers = ("(", "=", "!=", "<", ">", " in ", " and ", " or ", " not ")
+        raw_markers = (
+            "(",
+            "=",
+            "!=",
+            "<",
+            ">",
+            " + ",
+            " - ",
+            " * ",
+            " / ",
+            " in ",
+            " and ",
+            " or ",
+            " not ",
+        )
         return value.startswith(("$", "%")) or any(marker in value for marker in raw_markers)
 
     def visit_aggregation_function(self, node: AggregationFunction) -> str:
@@ -337,8 +351,8 @@ class YaraLGenerator(YaraLVisitor[str]):
         return f"join {node.left_event} {node.join_type} {node.right_event}"
 
     def visit_arithmetic_expression(self, node) -> str:
-        left = self._format_value(node.left)
-        right = self._format_value(node.right)
+        left = self._format_condition_value(node.left)
+        right = self._format_condition_value(node.right)
         return f"{left} {node.operator} {right}"
 
     def visit_cidr_expression(self, node) -> str:

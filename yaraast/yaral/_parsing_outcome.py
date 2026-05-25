@@ -7,13 +7,15 @@ from typing import Any
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
 from ._parsing_outcome_args import OutcomeArgumentParsingMixin
-from ._shared import format_regex_token_value
+from ._shared import split_regex_token_value
 from .ast_nodes import (
     AggregationFunction,
+    ArithmeticExpression,
     ConditionalExpression,
     OutcomeAssignment,
     OutcomeExpression,
     OutcomeSection,
+    RegexPattern,
 )
 from .tokens import YaraLTokenType
 
@@ -126,10 +128,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
         ):
             operator = self._advance().value
             right = self._parse_outcome_expression()
-            left = (
-                f"{self._format_outcome_argument_source(left)} {operator} "
-                f"{self._format_outcome_argument_source(right)}"
-            )
+            left = ArithmeticExpression(operator=operator, left=left, right=right)
 
         return left
 
@@ -198,7 +197,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
 
             return (
                 f"{self._format_outcome_argument_source(left)} {op} "
-                f"{self._format_outcome_argument_source(right)}{modifier}"
+                f"{self._format_outcome_argument_source(right, quote_strings=True)}{modifier}"
             )
 
         return left
@@ -216,10 +215,7 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
         ):
             operator = self._advance().value
             right = self._parse_outcome_primary()
-            left = (
-                f"{self._format_outcome_argument_source(left)} {operator} "
-                f"{self._format_outcome_argument_source(right)}"
-            )
+            left = ArithmeticExpression(operator=operator, left=left, right=right)
 
         return left
 
@@ -228,7 +224,8 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
         # Check for regex pattern
         if self._check(BaseTokenType.REGEX):
             pattern_token = self._advance()
-            return format_regex_token_value(pattern_token.value)
+            pattern, flags = split_regex_token_value(pattern_token.value)
+            return RegexPattern(pattern=pattern, flags=flags)
 
         # Delegate to existing argument parsing for other types
         return self._parse_outcome_argument_basic()

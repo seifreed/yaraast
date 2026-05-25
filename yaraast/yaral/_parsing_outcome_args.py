@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.regex_literals import escape_regex_delimiter
 
 from ._shared import (
     EXPECTED_FIELD_NAME_ERROR,
@@ -12,7 +13,17 @@ from ._shared import (
     parse_numeric_token_value,
     split_regex_token_value,
 )
-from .ast_nodes import EventVariable, FunctionCall, RegexPattern, UDMFieldAccess, UDMFieldPath
+from .ast_nodes import (
+    AggregationFunction,
+    ArithmeticExpression,
+    ConditionalExpression,
+    EventVariable,
+    FunctionCall,
+    RegexPattern,
+    UDMFieldAccess,
+    UDMFieldPath,
+)
+from .generator_helpers import quote_string_literal
 from .tokens import YaraLTokenType
 
 
@@ -28,7 +39,7 @@ class OutcomeArgumentParsingMixin:
             self._advance()
             expr = self._parse_outcome_condition()
             self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
-            return f"({expr})"
+            return f"({self._format_outcome_argument_source(expr)})"
 
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
             BaseTokenType.STRING_IDENTIFIER
@@ -69,7 +80,7 @@ class OutcomeArgumentParsingMixin:
             self._advance()
             expr = self._parse_outcome_arithmetic_expression()
             self._consume(BaseTokenType.RPAREN, "Expected ')' after expression")
-            return f"({expr})"
+            return f"({self._format_outcome_argument_source(expr)})"
 
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
             BaseTokenType.STRING_IDENTIFIER
@@ -110,14 +121,20 @@ class OutcomeArgumentParsingMixin:
             if self._check_any_operator():
                 op_token = self._advance()
                 right_value = self._parse_outcome_argument()
-                return f"{var_name}.{'.'.join(field_parts)} {op_token.value} {right_value}"
+                return (
+                    f"{var_name}.{'.'.join(field_parts)} {op_token.value} "
+                    f"{self._format_outcome_argument_source(right_value, quote_strings=True)}"
+                )
 
             return UDMFieldAccess(event=event, field=field)
 
         if self._check_any_operator():
             op_token = self._advance()
             right_value = self._parse_outcome_argument()
-            return f"{var_name} {op_token.value} {right_value}"
+            return (
+                f"{var_name} {op_token.value} "
+                f"{self._format_outcome_argument_source(right_value, quote_strings=True)}"
+            )
         return var_name
 
     def _parse_outcome_integer(self) -> Any:
@@ -126,7 +143,9 @@ class OutcomeArgumentParsingMixin:
         if self._check_any_operator(arithmetic_only=True):
             op_token = self._advance()
             right_value = self._parse_outcome_argument()
-            return f"{num_value} {op_token.value} {right_value}"
+            return (
+                f"{num_value} {op_token.value} {self._format_outcome_argument_source(right_value)}"
+            )
         return num_value
 
     def _parse_outcome_identifier(self) -> Any:
@@ -141,7 +160,7 @@ class OutcomeArgumentParsingMixin:
         if self._check_any_operator(arithmetic_only=True):
             op_token = self._advance()
             right_value = self._parse_outcome_argument()
-            return f"{ident} {op_token.value} {right_value}"
+            return f"{ident} {op_token.value} {self._format_outcome_argument_source(right_value)}"
         return ident
 
     def _parse_function_call_args(self, func_name: str) -> FunctionCall:
@@ -156,9 +175,33 @@ class OutcomeArgumentParsingMixin:
         self._consume(BaseTokenType.RPAREN, f"Expected ')' after {func_name} arguments")
         return FunctionCall(function=func_name, arguments=arguments)
 
-    def _format_outcome_argument_source(self, value: Any) -> str:
+    def _format_outcome_argument_source(self, value: Any, *, quote_strings: bool = False) -> str:
+        if isinstance(value, AggregationFunction):
+            args = ", ".join(
+                self._format_outcome_argument_source(arg, quote_strings=True)
+                for arg in value.arguments
+            )
+            return f"{value.function}({args})"
+        if isinstance(value, ArithmeticExpression):
+            left = self._format_outcome_argument_source(value.left)
+            right = self._format_outcome_argument_source(value.right)
+            return f"{left} {value.operator} {right}"
+        if isinstance(value, ConditionalExpression):
+            condition = self._format_outcome_argument_source(value.condition)
+            true_value = self._format_outcome_argument_source(
+                value.true_value,
+                quote_strings=True,
+            )
+            false_value = self._format_outcome_argument_source(
+                value.false_value,
+                quote_strings=True,
+            )
+            return f"if({condition}, {true_value}, {false_value})"
         if isinstance(value, FunctionCall):
-            args = ", ".join(self._format_outcome_argument_source(arg) for arg in value.arguments)
+            args = ", ".join(
+                self._format_outcome_argument_source(arg, quote_strings=True)
+                for arg in value.arguments
+            )
             return f"{value.function}({args})"
         if isinstance(value, UDMFieldAccess):
             field = value.field.path
@@ -166,9 +209,12 @@ class OutcomeArgumentParsingMixin:
                 return field
             return f"{value.event.name}.{field}"
         if isinstance(value, RegexPattern):
-            return value.as_string
+            flags = "".join(value.flags) if value.flags else ""
+            return f"/{escape_regex_delimiter(value.pattern)}/{flags}"
         if isinstance(value, EventVariable):
             return value.name
+        if isinstance(value, str) and quote_strings and not value.startswith(("$", "%", "(")):
+            return quote_string_literal(value)
         return str(value)
 
     def _parse_outcome_field_path(self) -> list[str]:

@@ -6,6 +6,7 @@ from textwrap import dedent
 
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
+    ArithmeticExpression,
     ConditionalExpression,
     EventAssignment,
     EventStatement,
@@ -172,6 +173,38 @@ def test_parser_outcome_function_calls_preserve_generated_text() -> None:
     assert "$upper = strings.to_upper($e.field)" in generated
     assert '$result = if(strings.length($e.field) > 10, "LONG", "SHORT")' in generated
     assert "UDMFieldAccess" not in generated
+
+
+def test_parser_outcome_arithmetic_preserves_generated_text() -> None:
+    code = dedent(
+        """
+        rule outcome_arithmetic {
+            events:
+                $e.field = "value"
+            condition:
+                $e
+            outcome:
+                $sum = $e.a + $e.b
+                $score = count($e.id) * 10
+                $paren = ($e.a + $e.b) * 2
+                $risk = if($e.severity = "HIGH" and $e.count > 10, 100, 0)
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+    outcome = ast.rules[0].outcome
+    assert outcome is not None
+    assert isinstance(outcome.assignments[1].expression, ArithmeticExpression)
+    assert isinstance(outcome.assignments[2].expression, ArithmeticExpression)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$sum = $e.a + $e.b" in generated
+    assert "$score = count($e.id) * 10" in generated
+    assert "$paren = ($e.a + $e.b) * 2" in generated
+    assert '$risk = if($e.severity = "HIGH" and $e.count > 10, 100, 0)' in generated
+    assert "UDMFieldAccess" not in generated
+    assert "AggregationFunction" not in generated
 
 
 def test_parser_normalizes_regex_token_delimiters_for_generation() -> None:
