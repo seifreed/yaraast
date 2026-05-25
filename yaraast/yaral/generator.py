@@ -287,10 +287,21 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_conditional_expression(self, node: ConditionalExpression) -> str:
         """Generate code for conditional expression using YARA-L function syntax."""
-        condition = self._format_value(node.condition)
+        condition = self._format_condition_value(node.condition)
         true_value = self._format_value(node.true_value)
         false_value = self._format_value(node.false_value)
         return f"if({condition}, {true_value}, {false_value})"
+
+    def _format_condition_value(self, value: Any) -> str:
+        if hasattr(value, "accept"):
+            return self.visit(value)
+        if isinstance(value, str) and self._is_raw_condition_text(value):
+            return value
+        return self._format_value(value)
+
+    def _is_raw_condition_text(self, value: str) -> bool:
+        raw_markers = ("(", "=", "!=", "<", ">", " in ", " and ", " or ", " not ")
+        return value.startswith(("$", "%")) or any(marker in value for marker in raw_markers)
 
     def visit_aggregation_function(self, node: AggregationFunction) -> str:
         """Generate code for aggregation function."""

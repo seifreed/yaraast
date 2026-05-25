@@ -6,8 +6,10 @@ from textwrap import dedent
 
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
+    ConditionalExpression,
     EventAssignment,
     EventStatement,
+    FunctionCall,
     ReferenceList,
     RegexPattern,
     UDMFieldAccess,
@@ -140,6 +142,36 @@ def test_parser_outcome_bare_udm_references_preserve_generated_text() -> None:
     assert "$field = metadata.event_type" in generated
     assert "$count = count(metadata.event_type)" in generated
     assert '"metadata.event_type"' not in generated
+
+
+def test_parser_outcome_function_calls_preserve_generated_text() -> None:
+    code = dedent(
+        """
+        rule outcome_functions {
+            events:
+                $e.field = "value"
+            condition:
+                $e
+            outcome:
+                $len = strings.length($e.field)
+                $upper = strings.to_upper($e.field)
+                $result = if(strings.length($e.field) > 10, "LONG", "SHORT")
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+    outcome = ast.rules[0].outcome
+    assert outcome is not None
+    assert isinstance(outcome.assignments[0].expression, FunctionCall)
+    assert isinstance(outcome.assignments[1].expression, FunctionCall)
+    assert isinstance(outcome.assignments[2].expression, ConditionalExpression)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$len = strings.length($e.field)" in generated
+    assert "$upper = strings.to_upper($e.field)" in generated
+    assert '$result = if(strings.length($e.field) > 10, "LONG", "SHORT")' in generated
+    assert "UDMFieldAccess" not in generated
 
 
 def test_parser_normalizes_regex_token_delimiters_for_generation() -> None:

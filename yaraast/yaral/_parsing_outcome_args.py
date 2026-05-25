@@ -12,7 +12,7 @@ from ._shared import (
     parse_numeric_token_value,
     split_regex_token_value,
 )
-from .ast_nodes import EventVariable, RegexPattern, UDMFieldAccess, UDMFieldPath
+from .ast_nodes import EventVariable, FunctionCall, RegexPattern, UDMFieldAccess, UDMFieldPath
 from .tokens import YaraLTokenType
 
 
@@ -144,8 +144,8 @@ class OutcomeArgumentParsingMixin:
             return f"{ident} {op_token.value} {right_value}"
         return ident
 
-    def _parse_function_call_args(self, func_name: str) -> str:
-        """Parse function call arguments and return the formatted call string."""
+    def _parse_function_call_args(self, func_name: str) -> FunctionCall:
+        """Parse function call arguments."""
         self._advance()  # consume LPAREN
         arguments: list[Any] = []
         if not self._check(BaseTokenType.RPAREN):
@@ -154,8 +154,22 @@ class OutcomeArgumentParsingMixin:
                 self._advance()
                 arguments.append(self._parse_outcome_argument())
         self._consume(BaseTokenType.RPAREN, f"Expected ')' after {func_name} arguments")
-        args_str = ", ".join(str(arg) for arg in arguments)
-        return f"{func_name}({args_str})"
+        return FunctionCall(function=func_name, arguments=arguments)
+
+    def _format_outcome_argument_source(self, value: Any) -> str:
+        if isinstance(value, FunctionCall):
+            args = ", ".join(self._format_outcome_argument_source(arg) for arg in value.arguments)
+            return f"{value.function}({args})"
+        if isinstance(value, UDMFieldAccess):
+            field = value.field.path
+            if value.event is None:
+                return field
+            return f"{value.event.name}.{field}"
+        if isinstance(value, RegexPattern):
+            return value.as_string
+        if isinstance(value, EventVariable):
+            return value.name
+        return str(value)
 
     def _parse_outcome_field_path(self) -> list[str]:
         field_parts = []

@@ -126,8 +126,10 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
         ):
             operator = self._advance().value
             right = self._parse_outcome_expression()
-            # Return as string representation for now
-            left = f"{left} {operator} {right}"
+            left = (
+                f"{self._format_outcome_argument_source(left)} {operator} "
+                f"{self._format_outcome_argument_source(right)}"
+            )
 
         return left
 
@@ -194,8 +196,10 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
                 modifier = " nocase"
                 self._advance()
 
-            # Return as string representation
-            return f"{left} {op} {right}{modifier}"
+            return (
+                f"{self._format_outcome_argument_source(left)} {op} "
+                f"{self._format_outcome_argument_source(right)}{modifier}"
+            )
 
         return left
 
@@ -212,8 +216,10 @@ class YaraLOutcomeParsingMixin(OutcomeArgumentParsingMixin):
         ):
             operator = self._advance().value
             right = self._parse_outcome_primary()
-            # Return as string representation
-            left = f"{left} {operator} {right}"
+            left = (
+                f"{self._format_outcome_argument_source(left)} {operator} "
+                f"{self._format_outcome_argument_source(right)}"
+            )
 
         return left
 

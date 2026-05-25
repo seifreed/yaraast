@@ -4,7 +4,12 @@ import pytest
 
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral._shared import YaraLParserError, format_regex_token_value
-from yaraast.yaral.ast_nodes import ConditionalExpression, RegexPattern, UDMFieldAccess
+from yaraast.yaral.ast_nodes import (
+    ConditionalExpression,
+    FunctionCall,
+    RegexPattern,
+    UDMFieldAccess,
+)
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.tokens import YaraLTokenType
@@ -81,7 +86,10 @@ def test_parse_outcome_argument_basic_identifier_call_and_error() -> None:
         ],
     )
 
-    assert parser._parse_outcome_argument_basic() == "func(1, x)"
+    call = parser._parse_outcome_argument_basic()
+    assert isinstance(call, FunctionCall)
+    assert call.function == "func"
+    assert call.arguments == [1, "x"]
 
     parser_ident = YaraLParser("")
     _set_tokens(
@@ -99,7 +107,10 @@ def test_parse_outcome_argument_basic_identifier_call_and_error() -> None:
             _tok(T.EOF, None, YaraLTokenType.EOF),
         ],
     )
-    assert parser_empty_call._parse_outcome_argument_basic() == "empty()"
+    empty_call = parser_empty_call._parse_outcome_argument_basic()
+    assert isinstance(empty_call, FunctionCall)
+    assert empty_call.function == "empty"
+    assert empty_call.arguments == []
 
     parser2 = YaraLParser("")
     _set_tokens(parser2, [_tok(T.RBRACE, "}"), _tok(T.EOF, None, YaraLTokenType.EOF)])
@@ -155,7 +166,10 @@ def test_parse_outcome_argument_identifier_call_ops_regex_and_error() -> None:
             _tok(T.EOF, None, YaraLTokenType.EOF),
         ],
     )
-    assert parser._parse_outcome_argument() == "sum(1, 2)"
+    call = parser._parse_outcome_argument()
+    assert isinstance(call, FunctionCall)
+    assert call.function == "sum"
+    assert call.arguments == [1, 2]
 
     parser_ident = YaraLParser("")
     _set_tokens(parser_ident, [_tok(T.IDENTIFIER, "score"), _tok(T.EOF, None, YaraLTokenType.EOF)])
@@ -171,7 +185,10 @@ def test_parse_outcome_argument_identifier_call_ops_regex_and_error() -> None:
             _tok(T.EOF, None, YaraLTokenType.EOF),
         ],
     )
-    assert parser_empty_call._parse_outcome_argument() == "noop()"
+    empty_call = parser_empty_call._parse_outcome_argument()
+    assert isinstance(empty_call, FunctionCall)
+    assert empty_call.function == "noop"
+    assert empty_call.arguments == []
 
     parser2 = YaraLParser("")
     _set_tokens(
