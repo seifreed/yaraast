@@ -63,6 +63,13 @@ def _copy_semantic_tokens(tokens: SemanticTokens) -> SemanticTokens:
     return SemanticTokens(data=list(tokens.data), result_id=tokens.result_id)
 
 
+def _require_range(value: object) -> Range:
+    if not isinstance(value, Range):
+        msg = "range_ must be an LSP Range"
+        raise TypeError(msg)
+    return value
+
+
 class SemanticTokensProvider:
     """Provides semantic tokens for advanced syntax highlighting."""
 
@@ -119,6 +126,7 @@ class SemanticTokensProvider:
         self, text: str, range_: Range, uri: str | None = None
     ) -> SemanticTokens:
         """Get semantic tokens for a specific range."""
+        range_ = _require_range(range_)
         ctx = self.runtime.ensure_document(uri, text) if self.runtime and uri else None
         cache_key = None
         if ctx is not None:

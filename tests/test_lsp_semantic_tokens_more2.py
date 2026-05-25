@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from lsprotocol.types import Position, Range
+import pytest
 
 from yaraast.lexer.lexer_tables import KEYWORDS
 from yaraast.lsp.semantic_tokens import TOKEN_TYPES, SemanticTokensProvider
@@ -40,6 +43,16 @@ def test_semantic_tokens_range_returns_empty_on_lexer_failure() -> None:
         Range(start=Position(line=0, character=0), end=Position(line=1, character=20)),
     )
     assert tokens.data == []
+
+
+def test_semantic_tokens_range_rejects_non_range_inputs() -> None:
+    provider = SemanticTokensProvider()
+
+    with pytest.raises(TypeError, match="range_ must be an LSP Range"):
+        provider.get_semantic_tokens_range(
+            "rule sample { condition: true }",
+            cast(Any, object()),
+        )
 
 
 def test_semantic_tokens_range_excludes_tokens_outside_nonempty_range() -> None:
