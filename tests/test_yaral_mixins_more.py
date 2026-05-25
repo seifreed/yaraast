@@ -311,3 +311,12 @@ def test_yaral_optimizer_validator_and_rule_file_edge_paths() -> None:
         AggregationFunction(function="weird_sum", arguments=["$e"])
     )
     assert any("Unknown aggregation function" in warn.message for warn in validator.warnings)
+
+    validator.warnings.clear()
+    validator.visit_yaral_aggregation_function(
+        AggregationFunction(function="earliest", arguments=["$e"])
+    )
+    validator.visit_yaral_aggregation_function(
+        AggregationFunction(function="latest", arguments=["$e"])
+    )
+    assert validator.warnings == []

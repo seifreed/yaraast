@@ -255,3 +255,33 @@ def test_enhanced_outcome_bare_udm_references_roundtrip() -> None:
     assert "$field = metadata.event_type" in generated
     assert "$count = count(metadata.event_type)" in generated
     assert '$indexed = metadata["event_type"][0]' in generated
+
+
+def test_enhanced_outcome_time_aggregations_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule outcome_time_aggs {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $first = earliest($e.metadata.event_timestamp)
+            $last = latest($e.metadata.event_timestamp)
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    rule = ast.rules[0]
+    assert rule.outcome is not None
+    assert len(rule.outcome.assignments) == 2
+    first = rule.outcome.assignments[0].expression
+    last = rule.outcome.assignments[1].expression
+    assert isinstance(first, AggregationFunction)
+    assert first.function == "earliest"
+    assert isinstance(last, AggregationFunction)
+    assert last.function == "latest"
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$first = earliest($e.metadata.event_timestamp)" in generated
+    assert "$last = latest($e.metadata.event_timestamp)" in generated

@@ -120,6 +120,8 @@ class YaraLValidator(
         "max",
         "array",
         "array_distinct",
+        "earliest",
+        "latest",
         "string_concat",
     ]
 

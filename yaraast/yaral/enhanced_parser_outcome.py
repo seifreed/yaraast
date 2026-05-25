@@ -25,6 +25,20 @@ _OUTCOME_FIELD_YARAL_TYPES = {
     YaraLTokenType.ADDITIONAL,
 }
 
+_AGGREGATION_FUNCTIONS = {
+    "count",
+    "count_distinct",
+    "sum",
+    "min",
+    "max",
+    "avg",
+    "array",
+    "array_distinct",
+    "earliest",
+    "latest",
+    "string_concat",
+}
+
 
 class EnhancedYaraLParserOutcomeMixin:
     """Mixin for outcome parsing."""
@@ -66,17 +80,7 @@ class EnhancedYaraLParserOutcomeMixin:
         """Parse enhanced outcome expression with aggregations."""
         if self._check(BaseTokenType.IDENTIFIER):
             token = self._peek()
-            if token.value in [
-                "count",
-                "count_distinct",
-                "sum",
-                "min",
-                "max",
-                "avg",
-                "array",
-                "array_distinct",
-                "string_concat",
-            ]:
+            if token.value in _AGGREGATION_FUNCTIONS:
                 return self._parse_aggregation_function()
 
         if self._is_outcome_field_access_start():
