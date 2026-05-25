@@ -28,6 +28,7 @@ from yaraast.builder.file_builder_validation import (
     validate_optional_identifier,
     validate_unique_rule_names,
 )
+from yaraast.builder.string_identifier_validation import validate_new_string_definitions
 from yaraast.errors import ValidationError
 
 if TYPE_CHECKING:
@@ -205,6 +206,7 @@ class RuleTransformer:
 
     def add_string(self, string_def: StringDefinition) -> RuleTransformer:
         """Add a string definition."""
+        validate_new_string_definitions(self.rule.strings, [string_def])
         self.rule.strings.append(string_def)
         return self
 

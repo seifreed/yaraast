@@ -458,3 +458,23 @@ def test_rule_transformer_rejects_invalid_meta_values_without_partial_update(
     with pytest.raises(TypeError, match="Invalid meta value"):
         transformer.add_meta("new_key", cast(Any, meta_value))
     assert transformer.build().get_meta_value("new_key") is None
+
+
+def test_rule_transformer_rejects_duplicate_strings_without_partial_update() -> None:
+    transformer = RuleTransformer(_sample_rule("string_rule"))
+
+    with pytest.raises(ValidationError, match="Duplicate string identifier"):
+        transformer.add_string(PlainString(identifier="$a", value="duplicate"))
+
+    transformed = transformer.build()
+    assert transformed.strings == [PlainString(identifier="$a", value="x")]
+
+
+def test_rule_transformer_rejects_invalid_strings_without_partial_update() -> None:
+    transformer = RuleTransformer(_sample_rule("string_rule"))
+
+    with pytest.raises(ValidationError, match="Invalid string identifier"):
+        transformer.add_string(PlainString(identifier="$bad-key", value="invalid"))
+
+    transformed = transformer.build()
+    assert transformed.strings == [PlainString(identifier="$a", value="x")]
