@@ -8,6 +8,7 @@ from yaraast.lexer.tokens import TokenType as BaseTokenType
 from yaraast.yaral._shared import parse_numeric_token_value
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
+    ArithmeticExpression,
     ConditionalExpression,
     OutcomeAssignment,
     OutcomeExpression,
@@ -78,6 +79,22 @@ class EnhancedYaraLParserOutcomeMixin:
 
     def _parse_outcome_expression(self) -> OutcomeExpression | Any:
         """Parse enhanced outcome expression with aggregations."""
+        left = self._parse_outcome_primary_expression()
+
+        while (
+            self._check(BaseTokenType.PLUS)
+            or self._check(BaseTokenType.MINUS)
+            or self._check(BaseTokenType.MULTIPLY)
+            or self._check(BaseTokenType.DIVIDE)
+        ):
+            operator = self._advance().value
+            right = self._parse_outcome_primary_expression()
+            left = ArithmeticExpression(operator=operator, left=left, right=right)
+
+        return left
+
+    def _parse_outcome_primary_expression(self) -> OutcomeExpression | Any:
+        """Parse a primary enhanced outcome expression."""
         if self._check_keyword("if"):
             return self._parse_conditional_expression()
 

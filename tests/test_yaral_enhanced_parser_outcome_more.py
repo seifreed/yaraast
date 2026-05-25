@@ -3,7 +3,12 @@ from __future__ import annotations
 import pytest
 
 from yaraast.lexer.tokens import TokenType as T
-from yaraast.yaral.ast_nodes import AggregationFunction, ConditionalExpression, UDMFieldAccess
+from yaraast.yaral.ast_nodes import (
+    AggregationFunction,
+    ArithmeticExpression,
+    ConditionalExpression,
+    UDMFieldAccess,
+)
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
@@ -279,6 +284,33 @@ def test_enhanced_outcome_numeric_aggregation_arguments_roundtrip_as_numbers() -
     generated = YaraLGenerator().generate(ast)
     assert '$result = string_concat("a", 1, 2.5)' in generated
     assert 'string_concat("a", "1", 2.5)' not in generated
+
+
+def test_enhanced_outcome_arithmetic_expressions_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_outcome_arithmetic {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $score = 1 + 2
+            $total = count($e.principal.ip) + 1
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    outcome = ast.rules[0].outcome
+    assert outcome is not None
+    assert all(
+        isinstance(assignment.expression, ArithmeticExpression)
+        for assignment in outcome.assignments
+    )
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$score = 1 + 2" in generated
+    assert "$total = count($e.principal.ip) + 1" in generated
 
 
 def test_enhanced_outcome_boolean_literals_roundtrip() -> None:
