@@ -78,6 +78,9 @@ class EnhancedYaraLParserOutcomeMixin:
 
     def _parse_outcome_expression(self) -> OutcomeExpression | Any:
         """Parse enhanced outcome expression with aggregations."""
+        if self._check_keyword("if"):
+            return self._parse_conditional_expression()
+
         if self._check(BaseTokenType.IDENTIFIER):
             token = self._peek()
             if token.value in _AGGREGATION_FUNCTIONS:

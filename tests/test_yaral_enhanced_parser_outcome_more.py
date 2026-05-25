@@ -234,6 +234,34 @@ def test_enhanced_outcome_event_field_references_roundtrip() -> None:
     assert '_ = if($e.metadata.event_type = "LOGIN", $e.target.hostname, "none")' in generated
 
 
+def test_enhanced_outcome_assigned_conditional_expressions_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule assigned_conditionals {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $result = if $e.metadata.event_type = "LOGIN" then "yes" else "no"
+            $fallback = if $e.metadata.event_type = "LOGIN" then "yes"
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    outcome = ast.rules[0].outcome
+    assert outcome is not None
+    assert [assignment.variable for assignment in outcome.assignments] == ["$result", "$fallback"]
+    assert all(
+        isinstance(assignment.expression, ConditionalExpression)
+        for assignment in outcome.assignments
+    )
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$result = if($e.metadata.event_type = "LOGIN", "yes", "no")' in generated
+    assert '$fallback = if($e.metadata.event_type = "LOGIN", "yes")' in generated
+
+
 def test_enhanced_outcome_numeric_aggregation_arguments_roundtrip_as_numbers() -> None:
     parser = EnhancedYaraLParser("""
         rule numeric_aggregation_args {
