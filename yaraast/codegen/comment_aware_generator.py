@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.codegen.generator_expression_visitors import validate_expression_collection
 from yaraast.codegen.generator_formatting import (
     format_meta_key,
     format_meta_literal,
@@ -380,6 +381,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         return ""
 
     def visit_with_statement(self, node: WithStatement) -> str:
+        validate_expression_collection(node.declarations, "WithStatement declarations")
         declarations = ", ".join(self.visit(declaration) for declaration in node.declarations)
         return f"with {declarations}: {self.visit(node.body)}"
 
@@ -409,6 +411,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
         return result + "}"
 
     def visit_tuple_expression(self, node: TupleExpression) -> str:
+        validate_expression_collection(node.elements, "TupleExpression elements")
         if not node.elements:
             return "()"
         elements = [self.visit(element) for element in node.elements]
@@ -427,11 +430,13 @@ class CommentAwareCodeGenerator(CodeGenerator):
         return f"({tuple_str})[{index_str}]"
 
     def visit_list_expression(self, node: ListExpression) -> str:
+        validate_expression_collection(node.elements, "ListExpression elements")
         return f"[{', '.join(self.visit(element) for element in node.elements)}]"
 
     def visit_dict_expression(self, node: DictExpression) -> str:
         from yaraast.yarax.ast_nodes import SpreadOperator
 
+        validate_expression_collection(node.items, "DictExpression items")
         items = [
             self.visit(item.value) if isinstance(item.value, SpreadOperator) else self.visit(item)
             for item in node.items
@@ -451,12 +456,14 @@ class CommentAwareCodeGenerator(CodeGenerator):
         return f"{self.visit(node.target)}[{':'.join(parts)}]"
 
     def visit_lambda_expression(self, node: LambdaExpression) -> str:
+        validate_expression_collection(node.parameters, "LambdaExpression parameters")
         parameters = ", ".join(node.parameters)
         if parameters:
             return f"lambda {parameters}: {self.visit(node.body)}"
         return f"lambda: {self.visit(node.body)}"
 
     def visit_pattern_match(self, node: PatternMatch) -> str:
+        validate_expression_collection(node.cases, "PatternMatch cases")
         lines = [f"match {self.visit(node.value)} {{"]
         case_indent = " " * self.indent_size
         lines.extend(f"{case_indent}{self.visit(case)}," for case in node.cases)

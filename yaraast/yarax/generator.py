@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from yaraast import CodeGenerator as BaseGenerator
+from yaraast.codegen.generator_expression_visitors import validate_expression_collection
 
 if TYPE_CHECKING:
     from yaraast.yarax.ast_nodes import (
@@ -31,6 +32,7 @@ class YaraXGenerator(BaseGenerator):
     def visit_with_statement(self, node: WithStatement) -> str:
         """Generate code for with statement."""
         # Generate declarations
+        validate_expression_collection(node.declarations, "WithStatement declarations")
         declarations = []
         for decl in node.declarations:
             declarations.append(self.visit(decl))
@@ -85,6 +87,7 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_tuple_expression(self, node: TupleExpression) -> str:
         """Generate code for tuple expression."""
+        validate_expression_collection(node.elements, "TupleExpression elements")
         if not node.elements:
             return "()"
 
@@ -113,6 +116,7 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_list_expression(self, node: ListExpression) -> str:
         """Generate code for list expression."""
+        validate_expression_collection(node.elements, "ListExpression elements")
         elements = []
         for elem in node.elements:
             # Handle all elements (including spread operators) uniformly
@@ -124,6 +128,7 @@ class YaraXGenerator(BaseGenerator):
         """Generate code for dict expression."""
         from yaraast.yarax.ast_nodes import SpreadOperator
 
+        validate_expression_collection(node.items, "DictExpression items")
         items = []
         for item in node.items:
             # Check for spread operator (special case)
@@ -158,6 +163,7 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_lambda_expression(self, node: LambdaExpression) -> str:
         """Generate code for lambda expression."""
+        validate_expression_collection(node.parameters, "LambdaExpression parameters")
         params = ", ".join(node.parameters)
         body_str = self.visit(node.body)
 
@@ -173,6 +179,7 @@ class YaraXGenerator(BaseGenerator):
         case_indent = " " * self.indent_size
 
         # Generate cases
+        validate_expression_collection(node.cases, "PatternMatch cases")
         for case in node.cases:
             case_str = self.visit(case)
             lines.append(f"{case_indent}{case_str},")

@@ -101,17 +101,17 @@ def visit_set_expression(generator, node) -> str:
 
 
 def validate_set_expression_elements(node) -> None:
-    _validate_expression_collection(node.elements, "SetExpression elements")
+    validate_expression_collection(node.elements, "SetExpression elements")
     if not node.elements:
         msg = "Set expression must contain at least one element for libyara output"
         raise ValueError(msg)
 
 
 def validate_function_call_arguments(node) -> None:
-    _validate_expression_collection(node.arguments, "FunctionCall arguments")
+    validate_expression_collection(node.arguments, "FunctionCall arguments")
 
 
-def _validate_expression_collection(value, field_name: str) -> None:
+def validate_expression_collection(value, field_name: str) -> None:
     if isinstance(value, list | tuple):
         return
     msg = f"{field_name} must be a list or tuple for libyara output"

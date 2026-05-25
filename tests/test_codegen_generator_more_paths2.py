@@ -69,6 +69,15 @@ from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.yarax.ast_nodes import (
+    DictExpression,
+    LambdaExpression,
+    ListExpression,
+    PatternMatch,
+    TupleExpression,
+    WithStatement,
+)
+from yaraast.yarax.generator import YaraXGenerator
 
 
 class _BrokenCondition(Condition):
@@ -752,6 +761,48 @@ def test_codegen_generators_reject_invalid_expression_collections(
     for node, message in cases:
         with pytest.raises(TypeError, match=message):
             CodeGenerator().generate(node)
+        with pytest.raises(TypeError, match=message):
+            AdvancedCodeGenerator().generate(node)
+        with pytest.raises(TypeError, match=message):
+            CommentAwareCodeGenerator().generate(node)
+        with pytest.raises(TypeError, match=message):
+            PrettyPrinter().generate(node)
+
+
+@pytest.mark.parametrize("invalid_collection", [False, 0, "", None])
+def test_yarax_codegen_generators_reject_invalid_collections(
+    invalid_collection: Any,
+) -> None:
+    cases = [
+        (
+            WithStatement(invalid_collection, BooleanLiteral(True)),
+            "WithStatement declarations must be a list or tuple",
+        ),
+        (
+            TupleExpression(invalid_collection),
+            "TupleExpression elements must be a list or tuple",
+        ),
+        (
+            ListExpression(invalid_collection),
+            "ListExpression elements must be a list or tuple",
+        ),
+        (
+            DictExpression(invalid_collection),
+            "DictExpression items must be a list or tuple",
+        ),
+        (
+            LambdaExpression(invalid_collection, Identifier("x")),
+            "LambdaExpression parameters must be a list or tuple",
+        ),
+        (
+            PatternMatch(Identifier("x"), invalid_collection, default=StringLiteral("fallback")),
+            "PatternMatch cases must be a list or tuple",
+        ),
+    ]
+
+    for node, message in cases:
+        with pytest.raises(TypeError, match=message):
+            YaraXGenerator().generate(node)
         with pytest.raises(TypeError, match=message):
             AdvancedCodeGenerator().generate(node)
         with pytest.raises(TypeError, match=message):

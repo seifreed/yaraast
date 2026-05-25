@@ -169,6 +169,7 @@ def expression_to_string(expr, options=None) -> str:
     from yaraast.codegen.generator_expression_visitors import (
         _render_binary_operator,
         _visit_binary_operand,
+        validate_expression_collection,
         validate_function_call_arguments,
         validate_set_expression_elements,
     )
@@ -201,6 +202,7 @@ def expression_to_string(expr, options=None) -> str:
 
         def visit_with_statement(self, node) -> str:
             separator = self._comma_separator()
+            validate_expression_collection(node.declarations, "WithStatement declarations")
             declarations = separator.join(
                 self.visit(declaration) for declaration in node.declarations
             )
@@ -222,6 +224,7 @@ def expression_to_string(expr, options=None) -> str:
             return result + "}"
 
         def visit_tuple_expression(self, node) -> str:
+            validate_expression_collection(node.elements, "TupleExpression elements")
             if not node.elements:
                 return "()"
             elements = [self.visit(element) for element in node.elements]
@@ -232,12 +235,14 @@ def expression_to_string(expr, options=None) -> str:
 
         def visit_list_expression(self, node) -> str:
             separator = self._comma_separator()
+            validate_expression_collection(node.elements, "ListExpression elements")
             return f"[{separator.join(self.visit(element) for element in node.elements)}]"
 
         def visit_dict_expression(self, node) -> str:
             from yaraast.yarax.ast_nodes import SpreadOperator
 
             separator = self._comma_separator()
+            validate_expression_collection(node.items, "DictExpression items")
             items = [
                 (
                     self.visit(item.value)
@@ -249,6 +254,7 @@ def expression_to_string(expr, options=None) -> str:
             return f"{{{separator.join(items)}}}"
 
         def visit_lambda_expression(self, node) -> str:
+            validate_expression_collection(node.parameters, "LambdaExpression parameters")
             parameters = self._comma_separator().join(node.parameters)
             if parameters:
                 return f"lambda {parameters}: {self.visit(node.body)}"
