@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -25,6 +26,18 @@ def test_condition_builder_n_of_them_and_empty_arithmetic_error() -> None:
 
 
 def test_hex_string_builder_invalid_low_nibble_and_unknown_pattern_part() -> None:
+    with pytest.raises(TypeError, match="Nibble pattern must be a string"):
+        HexStringBuilder().nibble(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Hex pattern must be a string"):
+        HexStringBuilder().pattern(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Hex string must be a string"):
+        HexStringBuilder.from_hex_string(cast(Any, True))
+
+    with pytest.raises(TypeError, match="Raw byte data must be bytes"):
+        HexStringBuilder.from_bytes(cast(Any, "AB"))
+
     with pytest.raises(ValidationError, match="Invalid nibble pattern: \\?G"):
         HexStringBuilder().nibble("?G")
 

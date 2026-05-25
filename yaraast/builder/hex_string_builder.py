@@ -74,6 +74,9 @@ class HexStringBuilder:
 
     def nibble(self, value: str) -> Self:
         """Add a nibble pattern like 'F?', '?F', etc."""
+        if not isinstance(value, str):
+            msg = "Nibble pattern must be a string"
+            raise TypeError(msg)
         if len(value) != 2:
             msg = "Nibble must be 2 characters"
             raise ValidationError(msg)
@@ -164,6 +167,9 @@ class HexStringBuilder:
     def pattern(self, pattern: str) -> Self:
         """Add tokens from a pattern string like 'FF ?? [2-4] (AA|BB)'."""
         # This is a simplified parser - in production would need full parser
+        if not isinstance(pattern, str):
+            msg = "Hex pattern must be a string"
+            raise TypeError(msg)
         parts = pattern.split()
 
         for part in parts:
@@ -252,6 +258,9 @@ class HexStringBuilder:
     @staticmethod
     def from_bytes(data: bytes) -> HexStringBuilder:
         """Create builder from raw bytes."""
+        if not isinstance(data, bytes):
+            msg = "Raw byte data must be bytes"
+            raise TypeError(msg)
         builder = HexStringBuilder()
         for byte in data:
             builder.add(byte)
@@ -260,6 +269,9 @@ class HexStringBuilder:
     @staticmethod
     def from_hex_string(hex_str: str) -> HexStringBuilder:
         """Create builder from hex string."""
+        if not isinstance(hex_str, str):
+            msg = "Hex string must be a string"
+            raise TypeError(msg)
         builder = HexStringBuilder()
         hex_str = hex_str.replace(" ", "").upper()
         if len(hex_str) % 2 != 0:
