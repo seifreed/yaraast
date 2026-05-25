@@ -399,6 +399,13 @@ def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[
             {"get_pattern_statistics": lambda self: (_ for _ in ()).throw(AttributeError("boom"))},
         )(),
     )
+    _display_pattern_statistics(
+        type(
+            "PartialStats",
+            (),
+            {"get_pattern_statistics": lambda self: {"total_patterns": 1}},
+        )(),
+    )
 
     from yaraast.cli.metrics_reporting import (
         _display_hex_string,
