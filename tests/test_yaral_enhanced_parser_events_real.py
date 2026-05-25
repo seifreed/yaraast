@@ -129,3 +129,18 @@ def test_parse_parenthesized_event_statement_preserves_generated_text() -> None:
 
     generated = YaraLGenerator().generate(ast)
     assert '($e.metadata.event_type = "LOGIN" or $e.metadata.event_type = "AUTH")' in generated
+
+
+def test_parse_function_event_assignment_preserves_generated_text() -> None:
+    ast = EnhancedYaraLParser(
+        'rule capture_event { events: $host = re.capture($e.target.hostname, "(.*)") condition: $e }'
+    ).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventStatement)
+    assert statement.text == '$host = re.capture($e.target.hostname, "(.*)")'
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$host = re.capture($e.target.hostname, "(.*)")' in generated

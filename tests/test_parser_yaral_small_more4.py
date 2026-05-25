@@ -104,4 +104,5 @@ def test_parse_event_statement_assignment_with_literal_rhs_returns_generic_state
     stmt = parser._parse_event_statement()
 
     assert stmt is not None
-    assert parser.current == 2
+    assert stmt.text == '$var = "literal"'
+    assert parser.current == 3

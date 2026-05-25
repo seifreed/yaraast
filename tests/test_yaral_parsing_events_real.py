@@ -5,6 +5,7 @@ import pytest
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral._shared import YaraLParserError
 from yaraast.yaral.ast_nodes import EventStatement, ReferenceList, RegexPattern
+from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.tokens import YaraLTokenType
@@ -450,3 +451,31 @@ def test_parse_function_and_boolean_expressions_handle_unbalanced_input() -> Non
     _set_tokens(parser2, [_tok(T.LPAREN, "("), _tok(T.EOF, None, yaral_type=YaraLTokenType.EOF)])
     stmt2 = parser2._parse_boolean_expression()
     assert isinstance(stmt2, EventStatement)
+
+
+def test_parse_math_event_statement_preserves_function_name() -> None:
+    ast = YaraLParser("rule math_event { events: math.abs($e.value) condition: $e }").parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventStatement)
+    assert statement.text == "math.abs($e.value)"
+
+    generated = YaraLGenerator().generate(ast)
+    assert "math.abs($e.value)" in generated
+
+
+def test_parse_function_event_assignment_preserves_left_hand_side() -> None:
+    ast = YaraLParser(
+        'rule capture_event { events: $host = re.capture($e.target.hostname, "(.*)") condition: $e }'
+    ).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventStatement)
+    assert statement.text == '$host = re.capture($e.target.hostname, "(.*)")'
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$host = re.capture($e.target.hostname, "(.*)")' in generated

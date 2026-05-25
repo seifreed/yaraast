@@ -24,6 +24,8 @@ from .ast_nodes import (
 )
 from .tokens import YaraLTokenType
 
+_RAW_EVENT_MODULES = frozenset({"arrays", "math", "net", "re", "strings"})
+
 
 class YaraLEventsParsingMixin:
     """Mixin providing YARA-L parse routines."""
@@ -115,8 +117,8 @@ class YaraLEventsParsingMixin:
     def _try_parse_function_call_start(self) -> EventStatement | None:
         """Try to parse a function call statement if the identifier matches a known pattern."""
         identifier = self._peek().value
-        if identifier in ["re.regex", "re.capture", "strings", "net", "arrays"] or (
-            "." in identifier and identifier.split(".")[0] in ["re", "strings", "net", "arrays"]
+        if identifier in _RAW_EVENT_MODULES or (
+            "." in identifier and identifier.split(".", 1)[0] in _RAW_EVENT_MODULES
         ):
             return self._parse_function_call_statement()
         return None
@@ -211,32 +213,43 @@ class YaraLEventsParsingMixin:
     def _parse_event_assignment(self, event_var: EventVariable) -> EventStatement:
         """Parse an event assignment: $var = expression."""
         self._advance()  # Consume '='
+        prefix = f"{event_var.name} ="
 
         # Check if it's a function call
         if self._check(BaseTokenType.IDENTIFIER):
             identifier = self._peek().value
-            if identifier in ["re.regex", "re.capture", "strings", "net", "arrays"] or (
-                identifier.startswith("strings.")
-                or identifier.startswith("re.")
-                or identifier.startswith("net.")
-                or identifier.startswith("arrays.")
-                or identifier.startswith("math.")
+            if identifier in _RAW_EVENT_MODULES or (
+                "." in identifier and identifier.split(".", 1)[0] in _RAW_EVENT_MODULES
             ):
-                return self._parse_function_call_statement()
+                return _prefix_event_statement(prefix, self._parse_function_call_statement())
 
         # Handle field access on right side: $var = $event.field.path
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
             BaseTokenType.STRING_IDENTIFIER
         ):
-            self._skip_rhs_expression()
-            return EventStatement()
+            return EventStatement(
+                text=_join_prefixed_event_statement(
+                    prefix,
+                    self._collect_rhs_expression_tokens(),
+                ),
+            )
 
         # Otherwise skip this statement (not fully supported yet)
-        return EventStatement()
+        return EventStatement(
+            text=_join_prefixed_event_statement(
+                prefix,
+                self._collect_rhs_expression_tokens(),
+            ),
+        )
 
     def _skip_rhs_expression(self) -> None:
         """Skip the right-hand side of an assignment by consuming tokens until end of statement."""
+        self._collect_rhs_expression_tokens()
+
+    def _collect_rhs_expression_tokens(self) -> list[Any]:
+        """Collect right-hand side tokens until the next event statement boundary."""
         start_line = self._peek().line if not self._is_at_end() else -1
+        tokens = []
 
         while not self._is_at_end():
             current_token = self._peek()
@@ -256,7 +269,8 @@ class YaraLEventsParsingMixin:
                     if next_token.type == BaseTokenType.EQ or next_token.type == BaseTokenType.DOT:
                         break
 
-            self._advance()
+            tokens.append(self._advance())
+        return tokens
 
     def _parse_field_path(self) -> UDMFieldPath:
         """Parse UDM field path."""
@@ -433,6 +447,18 @@ def _join_event_statement_tokens(tokens: list[Any]) -> str:
                 text += " "
             text += piece
     return text.strip()
+
+
+def _prefix_event_statement(prefix: str, statement: EventStatement) -> EventStatement:
+    statement.text = f"{prefix} {statement.text}".strip()
+    return statement
+
+
+def _join_prefixed_event_statement(prefix: str, tokens: list[Any]) -> str:
+    rhs = _join_event_statement_tokens(tokens)
+    if rhs:
+        return f"{prefix} {rhs}"
+    return prefix
 
 
 def _event_statement_token_text(token: Any) -> str:

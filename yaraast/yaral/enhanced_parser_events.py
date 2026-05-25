@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
-from yaraast.yaral._parsing_events import _join_event_statement_tokens
+from yaraast.yaral._parsing_events import (
+    _RAW_EVENT_MODULES,
+    _join_event_statement_tokens,
+    _prefix_event_statement,
+)
 from yaraast.yaral.ast_nodes import (
     ConditionExpression,
     EventAssignment,
@@ -47,13 +51,9 @@ class EnhancedYaraLParserEventsMixin:
         if not self._check(BaseTokenType.IDENTIFIER):
             return False
         identifier = str(self._peek().value)
-        return "." in identifier and identifier.split(".", 1)[0] in {
-            "arrays",
-            "math",
-            "net",
-            "re",
-            "strings",
-        }
+        return identifier in _RAW_EVENT_MODULES or (
+            "." in identifier and identifier.split(".", 1)[0] in _RAW_EVENT_MODULES
+        )
 
     def _parse_raw_event_statement(self) -> EventStatement | None:
         tokens = []
@@ -83,6 +83,13 @@ class EnhancedYaraLParserEventsMixin:
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
             event_token = self._advance()
             event = EventVariable(name=event_token.value)
+            if self._check(BaseTokenType.EQ):
+                self._advance()
+                if self._is_raw_event_statement_start():
+                    raw_statement = self._parse_raw_event_statement()
+                    if raw_statement is not None:
+                        return [_prefix_event_statement(f"{event.name} =", raw_statement)]
+                return None
 
         while self._check(BaseTokenType.DOT) or (
             self._check(BaseTokenType.IDENTIFIER) and not self._check_section_keyword()
