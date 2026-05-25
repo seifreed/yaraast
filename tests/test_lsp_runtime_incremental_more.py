@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from lsprotocol.types import Position, Range
 import pytest
@@ -107,6 +107,19 @@ def test_runtime_get_document_invalidates_workspace_symbol_cache(tmp_path: Path)
 
     names = {symbol.name for symbol in runtime.workspace_symbols("")}
     assert "loaded_later" in names
+
+
+def test_runtime_workspace_symbol_queries_reject_non_strings_before_cache_update() -> None:
+    runtime = LspRuntime()
+    runtime.open_document("file:///sample.yar", "rule sample { condition: true }\n")
+
+    with pytest.raises(TypeError, match="Workspace symbol query must be a string"):
+        runtime.workspace_symbols(cast(Any, object()))
+
+    with pytest.raises(TypeError, match="Workspace symbol query must be a string"):
+        runtime.workspace_symbol_records(cast(Any, object()))
+
+    assert runtime.cache.workspace_symbol_cache == {}
 
 
 def test_runtime_latency_metrics_and_debounce() -> None:

@@ -332,10 +332,10 @@ class LspRuntime:
                 self._dirty_documents.discard(uri)
                 self.cache.bump_generation()
 
-    def workspace_symbols(self, query: str) -> list[SymbolInformation]:
+    def workspace_symbols(self, query: object) -> list[SymbolInformation]:
         return runtime_workspace_symbols(self, query)
 
-    def workspace_symbol_records(self, query: str = "") -> list[SymbolRecord]:
+    def workspace_symbol_records(self, query: object = "") -> list[SymbolRecord]:
         return runtime_workspace_symbol_records(self, query)
 
     def resolve_symbol(self, uri: str, text: str, position: Position) -> ResolvedSymbol | None:
