@@ -16,7 +16,10 @@ from yaraast.performance.batch_processor_ops import (
     serialize_item,
     validate_item,
 )
-from yaraast.performance.validation import validate_positive_int_setting
+from yaraast.performance.validation import (
+    validate_file_path_sequence,
+    validate_positive_int_setting,
+)
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
 if TYPE_CHECKING:
@@ -179,14 +182,19 @@ class BatchProcessor:
         output_dir: Path | None = None,
     ) -> dict[BatchOperation, BatchResult] | BatchResult:
         """Process multiple YARA files with one or more operations."""
+        normalized_file_paths = [Path(path) for path in validate_file_path_sequence(file_paths)]
         # Support both single operation and list of operations
         if isinstance(operations, BatchOperation):
-            return self._process_files_single(file_paths, operations, output_dir)
+            return self._process_files_single(normalized_file_paths, operations, output_dir)
 
         # Process multiple operations
         results = {}
         for operation in operations:
-            results[operation] = self._process_files_single(file_paths, operation, output_dir)
+            results[operation] = self._process_files_single(
+                normalized_file_paths,
+                operation,
+                output_dir,
+            )
         return results
 
     def _process_files_single(
