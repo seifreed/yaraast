@@ -574,3 +574,17 @@ def test_rule_transformer_rejects_invalid_strings_without_partial_update() -> No
 
     transformed = transformer.build()
     assert transformed.strings == [PlainString(identifier="$a", value="x")]
+
+
+def test_rule_transformer_copies_added_string_definitions() -> None:
+    source = PlainString(identifier="$extra", value="z")
+    transformer = RuleTransformer(_sample_rule("string_rule")).add_string(source)
+
+    source.identifier = "$renamed"
+    source.value = "changed"
+
+    transformed = transformer.build()
+    assert [string_def.identifier for string_def in transformed.strings] == ["$a", "$extra"]
+    added_string = transformed.strings[1]
+    assert isinstance(added_string, PlainString)
+    assert added_string.value == "z"

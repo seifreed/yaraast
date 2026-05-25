@@ -390,11 +390,11 @@ class RuleBuilder:
 
     def _append_string_definition(self, string_def: StringDefinition) -> None:
         validate_new_string_definitions(self._strings, [string_def])
-        self._strings.append(string_def)
+        self._strings.append(deepcopy(string_def))
 
     def _extend_string_definitions(self, string_defs: list[StringDefinition]) -> None:
         validate_new_string_definitions(self._strings, string_defs)
-        self._strings.extend(string_defs)
+        self._strings.extend(deepcopy(string_defs))
 
     def build(self) -> Rule:
         """Build the Rule AST node."""

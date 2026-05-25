@@ -108,6 +108,33 @@ def test_rule_builder_rejects_duplicate_string_identifiers_without_partial_updat
     assert only_string.value == "first"
 
 
+def test_rule_builder_copies_direct_string_definitions_when_added() -> None:
+    source = PlainString(identifier="$a", value="first")
+    builder = RuleBuilder("string_rule").add_string_definition(source)
+
+    source.identifier = "$renamed"
+    source.value = "changed"
+
+    built = builder.build()
+    assert len(built.strings) == 1
+    only_string = built.strings[0]
+    assert isinstance(only_string, PlainString)
+    assert only_string.identifier == "$a"
+    assert only_string.value == "first"
+
+    first = PlainString(identifier="$one", value="one")
+    second = PlainString(identifier="$two", value="two")
+    batch_builder = RuleBuilder("batch_rule").add_string_definitions([first, second])
+
+    first.identifier = "$renamed_one"
+    second.identifier = "$renamed_two"
+
+    assert [string_def.identifier for string_def in batch_builder.build().strings] == [
+        "$one",
+        "$two",
+    ]
+
+
 def test_rule_builder_hex_regex_and_condition_variants() -> None:
     rule = (
         RuleBuilder("variants")

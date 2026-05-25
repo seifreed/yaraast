@@ -219,7 +219,7 @@ class RuleTransformer:
     def add_string(self, string_def: StringDefinition) -> RuleTransformer:
         """Add a string definition."""
         validate_new_string_definitions(self.rule.strings, [string_def])
-        self.rule.strings.append(string_def)
+        self.rule.strings.append(deepcopy(string_def))
         return self
 
     def remove_string(self, identifier: str) -> RuleTransformer:
