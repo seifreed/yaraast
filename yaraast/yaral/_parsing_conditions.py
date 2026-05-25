@@ -11,6 +11,7 @@ from .ast_nodes import (
     ConditionSection,
     EventCountCondition,
     EventExistsCondition,
+    RawConditionValue,
     ReferenceList,
     RegexPattern,
     UnaryCondition,
@@ -149,13 +150,18 @@ class YaraLConditionParsingMixin:
             return ReferenceList(name=self._advance().value.strip("%"))
         if self._check(BaseTokenType.REGEX) or self._check(BaseTokenType.DIVIDE):
             return self._parse_condition_regex_pattern()
-        if (
-            self._check(BaseTokenType.STRING)
-            or self._check_yaral_type(YaraLTokenType.EVENT_VAR)
-            or self._check(BaseTokenType.STRING_IDENTIFIER)
-            or self._check(BaseTokenType.IDENTIFIER)
-        ):
+        if self._check(BaseTokenType.STRING):
             return self._advance().value
+        if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+            BaseTokenType.STRING_IDENTIFIER
+        ):
+            return RawConditionValue(
+                self._parse_condition_reference_text(str(self._advance().value))
+            )
+        if self._check(BaseTokenType.IDENTIFIER):
+            return RawConditionValue(
+                self._parse_condition_reference_text(str(self._advance().value))
+            )
 
         msg = "Expected value after comparison operator"
         raise YaraLParserError(msg, self._peek())

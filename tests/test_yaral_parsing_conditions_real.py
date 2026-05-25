@@ -8,6 +8,7 @@ from yaraast.yaral.ast_nodes import (
     BinaryCondition,
     EventCountCondition,
     EventExistsCondition,
+    RawConditionValue,
     ReferenceList,
     RegexPattern,
     UnaryCondition,
@@ -419,3 +420,36 @@ def test_parse_condition_field_predicate_values() -> None:
     assert condition2.operator == "in"
     assert isinstance(condition2.value, ReferenceList)
     assert condition2.value.name == "blocked"
+
+
+def test_parse_condition_field_reference_values_preserve_generated_text() -> None:
+    parser = YaraLParser("$e.principal.ip = $e.target.ip")
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, VariableComparisonCondition)
+    assert condition.variable == "$e.principal.ip"
+    assert condition.operator == "=="
+    assert isinstance(condition.value, RawConditionValue)
+    assert condition.value == "$e.target.ip"
+    assert parser._is_at_end()
+
+    parser2 = YaraLParser("principal.ip = target.ip")
+    condition2 = parser2._parse_condition_expression()
+
+    assert isinstance(condition2, VariableComparisonCondition)
+    assert condition2.variable == "principal.ip"
+    assert condition2.operator == "=="
+    assert isinstance(condition2.value, RawConditionValue)
+    assert condition2.value == "target.ip"
+    assert parser2._is_at_end()
+
+    ast = YaraLParser("""
+        rule field_value_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e.principal.ip = $e.target.ip
+        }
+        """).parse()
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.principal.ip == $e.target.ip" in generated

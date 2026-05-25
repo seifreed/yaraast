@@ -16,6 +16,10 @@ class RawOutcomeExpression(str):
     """Source-preserving YARA-L outcome expression fragment."""
 
 
+class RawConditionValue(str):
+    """Source-preserving YARA-L condition comparison value."""
+
+
 @dataclass
 class YaraLRule(ASTNode):
     """YARA-L rule AST node."""
