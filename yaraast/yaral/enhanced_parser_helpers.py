@@ -8,6 +8,7 @@ from yaraast.lexer.tokens import TokenType as BaseTokenType
 from yaraast.yaral._shared import parse_numeric_token_value
 from yaraast.yaral.ast_nodes import (
     EventVariable,
+    FunctionCall,
     ReferenceList,
     RegexPattern,
     TimeWindow,
@@ -133,10 +134,47 @@ class EnhancedYaraLParserHelpersMixin:
             if token.value in ["true", "false"]:
                 self._advance()
                 return token.value == "true"
+            if self._is_event_function_call_value_start():
+                return self._parse_event_function_call_value()
             return self._parse_udm_field_path()
         if self._check(BaseTokenType.REGEX) or self._check(BaseTokenType.DIVIDE):
             return self._parse_regex_pattern()
         raise self._error("Expected value")
+
+    def _is_event_function_call_value_start(self) -> bool:
+        next_token = self._peek_ahead(1)
+        if next_token is None:
+            return False
+        if next_token.type == BaseTokenType.LPAREN:
+            return True
+        if next_token.type != BaseTokenType.DOT:
+            return False
+        function_token = self._peek_ahead(2)
+        open_paren = self._peek_ahead(3)
+        return (
+            function_token is not None
+            and function_token.type == BaseTokenType.IDENTIFIER
+            and open_paren is not None
+            and open_paren.type == BaseTokenType.LPAREN
+        )
+
+    def _parse_event_function_call_value(self) -> FunctionCall:
+        function_name = str(self._advance().value)
+        if self._check(BaseTokenType.DOT):
+            self._advance()
+            function_part = self._consume(BaseTokenType.IDENTIFIER, "Expected function name").value
+            function_name = f"{function_name}.{function_part}"
+
+        self._consume(BaseTokenType.LPAREN, f"Expected '(' after {function_name}")
+        arguments = []
+        if not self._check(BaseTokenType.RPAREN):
+            arguments.append(self._parse_event_value())
+            while self._check(BaseTokenType.COMMA):
+                self._advance()
+                arguments.append(self._parse_event_value())
+
+        self._consume(BaseTokenType.RPAREN, f"Expected ')' after {function_name} arguments")
+        return FunctionCall(function=function_name, arguments=arguments)
 
     def _parse_regex_pattern(self) -> RegexPattern:
         """Parse regex pattern like /pattern/modifiers."""

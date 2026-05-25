@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as T
-from yaraast.yaral.ast_nodes import EventAssignment, EventStatement, JoinCondition
+from yaraast.yaral.ast_nodes import EventAssignment, EventStatement, FunctionCall, JoinCondition
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
@@ -175,6 +175,24 @@ def test_parse_function_event_assignment_preserves_generated_text() -> None:
 
     generated = YaraLGenerator().generate(ast)
     assert '$host = re.capture($e.target.hostname, "(.*)")' in generated
+
+
+def test_parse_field_event_assignment_function_call_value_preserves_generated_text() -> None:
+    parser = EnhancedYaraLParser(
+        "rule field_capture_event { events: $e.field = re.capture($e.msg, /foo.*/i) condition: $e }"
+    )
+    ast = parser.parse()
+
+    assert parser.errors == []
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventAssignment)
+    assert isinstance(statement.value, FunctionCall)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.field = re.capture($e.msg, /foo.*/i)" in generated
+    assert "\n    ($e.msg" not in generated
 
 
 def test_parse_field_event_assignment_preserves_generated_text() -> None:

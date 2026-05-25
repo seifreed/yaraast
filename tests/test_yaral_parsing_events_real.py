@@ -4,7 +4,13 @@ import pytest
 
 from yaraast.lexer.tokens import TokenType as T
 from yaraast.yaral._shared import YaraLParserError
-from yaraast.yaral.ast_nodes import EventStatement, ReferenceList, RegexPattern
+from yaraast.yaral.ast_nodes import (
+    EventAssignment,
+    EventStatement,
+    FunctionCall,
+    ReferenceList,
+    RegexPattern,
+)
 from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.parser import YaraLParser
@@ -479,6 +485,22 @@ def test_parse_function_event_assignment_preserves_left_hand_side() -> None:
 
     generated = YaraLGenerator().generate(ast)
     assert '$host = re.capture($e.target.hostname, "(.*)")' in generated
+
+
+def test_parse_field_event_assignment_function_call_value_preserves_generated_text() -> None:
+    ast = YaraLParser(
+        "rule field_capture_event { events: $e.field = re.capture($e.msg, /foo.*/i) condition: $e }"
+    ).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventAssignment)
+    assert isinstance(statement.value, FunctionCall)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.field = re.capture($e.msg, /foo.*/i)" in generated
+    assert "\n    ($e.msg" not in generated
 
 
 def test_parse_event_variable_comparison_preserves_generated_text() -> None:

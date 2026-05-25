@@ -17,6 +17,7 @@ from .ast_nodes import (
     EventsSection,
     EventStatement,
     EventVariable,
+    FunctionCall,
     ReferenceList,
     RegexPattern,
     UDMFieldAccess,
@@ -400,8 +401,53 @@ class YaraLEventsParsingMixin:
             pattern_token = self._advance()
             pattern, flags = split_regex_token_value(pattern_token.value)
             return RegexPattern(pattern=pattern, flags=flags)
+        if self._is_event_function_call_value_start():
+            return self._parse_event_function_call_value()
         # Could be another field reference
         return self._advance().value
+
+    def _is_event_function_call_value_start(self) -> bool:
+        if not self._check(BaseTokenType.IDENTIFIER):
+            return False
+        next_token = self._event_value_token_ahead(1)
+        if next_token is None:
+            return False
+        if next_token.type == BaseTokenType.LPAREN:
+            return True
+        if next_token.type != BaseTokenType.DOT:
+            return False
+        function_token = self._event_value_token_ahead(2)
+        open_paren = self._event_value_token_ahead(3)
+        return (
+            function_token is not None
+            and function_token.type == BaseTokenType.IDENTIFIER
+            and open_paren is not None
+            and open_paren.type == BaseTokenType.LPAREN
+        )
+
+    def _event_value_token_ahead(self, offset: int) -> Any | None:
+        position = self.current + offset
+        if position >= len(self.tokens):
+            return None
+        return self.tokens[position]
+
+    def _parse_event_function_call_value(self) -> FunctionCall:
+        function_name = str(self._advance().value)
+        if self._check(BaseTokenType.DOT):
+            self._advance()
+            function_part = self._consume(BaseTokenType.IDENTIFIER, "Expected function name").value
+            function_name = f"{function_name}.{function_part}"
+
+        self._consume(BaseTokenType.LPAREN, f"Expected '(' after {function_name}")
+        arguments = []
+        if not self._check(BaseTokenType.RPAREN):
+            arguments.append(self._parse_event_value())
+            while self._check(BaseTokenType.COMMA):
+                self._advance()
+                arguments.append(self._parse_event_value())
+
+        self._consume(BaseTokenType.RPAREN, f"Expected ')' after {function_name} arguments")
+        return FunctionCall(function=function_name, arguments=arguments)
 
     def _parse_function_call_statement(self) -> EventStatement:
         """Parse function call statement like re.regex($e.field, `pattern`) nocase."""
