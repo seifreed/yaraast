@@ -78,6 +78,17 @@ class EnhancedYaraLParserEventsMixin:
             return None
         return EventStatement(text=_join_event_statement_tokens(tokens))
 
+    def _is_event_var_comparison_start(self) -> bool:
+        return (
+            self._check(BaseTokenType.NEQ)
+            or self._check(BaseTokenType.GT)
+            or self._check(BaseTokenType.LT)
+            or self._check(BaseTokenType.GE)
+            or self._check(BaseTokenType.LE)
+            or self._check(BaseTokenType.IN)
+            or self._check_keyword("in")
+        )
+
     def _collect_assignment_rhs_tokens(self) -> list[Any]:
         tokens = []
         start_line = self._peek().line if not self._is_at_end() else -1
@@ -115,6 +126,15 @@ class EnhancedYaraLParserEventsMixin:
                     EventStatement(
                         text=_join_prefixed_event_statement(
                             f"{event.name} =",
+                            self._collect_assignment_rhs_tokens(),
+                        )
+                    )
+                ]
+            if self._is_event_var_comparison_start():
+                return [
+                    EventStatement(
+                        text=_join_prefixed_event_statement(
+                            event.name,
                             self._collect_assignment_rhs_tokens(),
                         )
                     )

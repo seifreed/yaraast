@@ -82,7 +82,7 @@ class YaraLEventsParsingMixin:
 
         # Check if this is a comparison expression: $var != $other_var or $var in %list%
         if self._check_comparison_or_in():
-            return self._parse_event_var_comparison()
+            return self._parse_event_var_comparison(event_var)
 
         # Expect dot for field access
         self._consume(BaseTokenType.DOT, "Expected '.' after event variable")
@@ -134,14 +134,11 @@ class YaraLEventsParsingMixin:
             or self._check_keyword("in")
         )
 
-    def _parse_event_var_comparison(self) -> EventStatement:
+    def _parse_event_var_comparison(self, event_var: EventVariable) -> EventStatement:
         """Parse a comparison expression starting after an event variable."""
-        # Skip the comparison operator
-        self._advance()
-        # Skip the right-hand side value (could be variable, reference list, etc.)
-        if not self._is_at_end():
-            self._advance()
-        return EventStatement()
+        tokens = [self._advance()]
+        tokens.extend(self._collect_rhs_expression_tokens())
+        return EventStatement(text=_join_prefixed_event_statement(event_var.name, tokens))
 
     def _parse_integer_comparison_statement(self) -> EventStatement:
         """Parse a statement starting with an integer literal (e.g., 604800 <= $field1 - $field2)."""
