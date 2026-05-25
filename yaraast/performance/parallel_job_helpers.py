@@ -7,7 +7,10 @@ import time
 import uuid
 
 from yaraast.performance.parallel_models import Job, JobStatus, ParseErrorMarker
-from yaraast.performance.validation import validate_positive_int_setting
+from yaraast.performance.validation import (
+    validate_file_path_sequence,
+    validate_positive_int_setting,
+)
 
 
 def default_parallel_stats() -> dict[str, float | int]:
@@ -94,11 +97,15 @@ def export_graph_files(
 
 def parse_file_chunks(file_paths: list, chunk_size: int = 10) -> list[Job]:
     """Parse file paths in chunks and return job objects."""
+    normalized_file_paths = validate_file_path_sequence(file_paths)
     validate_positive_int_setting(chunk_size, "chunk_size")
 
     from yaraast.parser.source import parse_yara_source
 
-    chunks = [file_paths[i : i + chunk_size] for i in range(0, len(file_paths), chunk_size)]
+    chunks = [
+        normalized_file_paths[i : i + chunk_size]
+        for i in range(0, len(normalized_file_paths), chunk_size)
+    ]
     jobs: list[Job] = []
 
     for chunk in chunks:

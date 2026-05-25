@@ -7,7 +7,10 @@ import multiprocessing as mp
 import time
 from typing import TYPE_CHECKING, Any
 
-from yaraast.performance.validation import validate_positive_int_setting
+from yaraast.performance.validation import (
+    validate_file_path_sequence,
+    validate_positive_int_setting,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -63,12 +66,13 @@ def batch_analyze_files(
     max_workers: int | None = None,
 ) -> list[dict[str, Any]]:
     """Analyze multiple files with a thread pool."""
+    normalized_file_paths = validate_file_path_sequence(file_paths)
     worker_count = _resolve_worker_count(analyzer, max_workers)
-    ordered_results: list[dict[str, Any] | None] = [None] * len(file_paths)
+    ordered_results: list[dict[str, Any] | None] = [None] * len(normalized_file_paths)
     with concurrent.futures.ThreadPoolExecutor(max_workers=worker_count) as executor:
         future_to_path = {
             executor.submit(analyzer._analyze_file_path, path): (index, path)
-            for index, path in enumerate(file_paths)
+            for index, path in enumerate(normalized_file_paths)
         }
         for future in concurrent.futures.as_completed(future_to_path):
             index, path = future_to_path[future]

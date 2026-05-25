@@ -168,6 +168,18 @@ def test_parallel_analyzer_rejects_invalid_worker_counts(tmp_path: Path) -> None
         analyzer.profile_performance(rules, worker_counts=[0])
 
 
+def test_parallel_analyzer_rejects_single_string_file_paths(tmp_path: Path) -> None:
+    file_path = tmp_path / "single.yar"
+    file_path.write_text(_rule_code("single"), encoding="utf-8")
+    analyzer = ParallelAnalyzer(max_workers=1)
+
+    with pytest.raises(TypeError, match="file_paths must be a sequence of paths"):
+        analyzer.parse_files_parallel(cast(Any, str(file_path)), chunk_size=1)
+
+    with pytest.raises(TypeError, match="file_paths must be a sequence of paths"):
+        analyzer.batch_analyze_files(cast(Any, str(file_path)), max_workers=1)
+
+
 def test_parallel_analyzer_batch_profile_and_optimal_workers(tmp_path: Path) -> None:
     analyzer = ParallelAnalyzer(max_workers=1)
     small_rules = Parser().parse(_rule_code("a") + _rule_code("b")).rules
