@@ -441,8 +441,11 @@ class YaraLEventsParsingMixin:
             return RegexPattern(pattern=pattern, flags=flags)
         if self._is_event_function_call_value_start():
             return self._parse_event_function_call_value()
-        # Could be another field reference
-        return self._advance().value
+        if self._check(BaseTokenType.IDENTIFIER):
+            # Could be another field reference.
+            return self._advance().value
+        msg = f"Expected event value, got {self._peek()}"
+        raise YaraLParserError(msg, self._peek())
 
     def _is_event_function_call_value_start(self) -> bool:
         if not self._check(BaseTokenType.IDENTIFIER):

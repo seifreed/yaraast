@@ -485,6 +485,25 @@ def test_parse_event_value_fallback_identifier_value() -> None:
     assert value == "literal_value"
 
 
+def test_parse_event_value_rejects_negative_numeric_literal() -> None:
+    parser = YaraLParser("")
+    _set_tokens(
+        parser,
+        [
+            _tok(T.STRING_IDENTIFIER, "$e", yaral_type=YaraLTokenType.EVENT_VAR),
+            _tok(T.DOT, "."),
+            _tok(T.IDENTIFIER, "value"),
+            _tok(T.EQ, "="),
+            _tok(T.MINUS, "-"),
+            _tok(T.INTEGER, "1"),
+            _tok(T.EOF, None, yaral_type=YaraLTokenType.EOF),
+        ],
+    )
+
+    with pytest.raises(YaraLParserError, match="Expected event value"):
+        parser._parse_event_statement()
+
+
 def test_parse_function_and_boolean_expressions_handle_unbalanced_input() -> None:
     parser = YaraLParser("")
     _set_tokens(
