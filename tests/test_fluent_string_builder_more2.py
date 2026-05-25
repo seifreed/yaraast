@@ -41,6 +41,19 @@ def test_fluent_string_builder_hex_build_returns_token_snapshot() -> None:
     assert second.tokens[0].value == 0x41
 
 
+def test_fluent_string_builder_hex_builder_accepts_mutating_callbacks() -> None:
+    def build_hex(builder: HexStringBuilder) -> None:
+        builder.add(0x41).wildcard().add(0x42)
+
+    string_def = FluentStringBuilder("$hex").hex_builder(build_hex).build()
+
+    assert isinstance(string_def, HexString)
+    assert len(string_def.tokens) == 3
+    assert isinstance(string_def.tokens[0], HexByte)
+    assert isinstance(string_def.tokens[1], HexWildcard)
+    assert isinstance(string_def.tokens[2], HexByte)
+
+
 def test_fluent_string_builder_rejects_standalone_hex_jump() -> None:
     builder = FluentStringBuilder("$jump").jump_pattern(2, 8)
 

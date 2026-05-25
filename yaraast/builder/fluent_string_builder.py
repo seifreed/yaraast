@@ -83,7 +83,13 @@ class FluentStringBuilder:
     def hex_builder(self, builder_func) -> FluentStringBuilder:
         """Set hex content using a HexStringBuilder lambda."""
         builder = HexStringBuilder()
-        self._content = builder_func(builder).build()
+        result = builder_func(builder)
+        if result is None:
+            result = builder
+        if not isinstance(result, HexStringBuilder):
+            msg = f"Hex builder callback must return HexStringBuilder or None, got {type(result)}"
+            raise TypeError(msg)
+        self._content = result.build()
         self._string_type = "hex"
         return self
 
