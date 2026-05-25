@@ -9,7 +9,17 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.libyara.compiler import YARA_AVAILABLE, LibyaraCompiler
+from yaraast.libyara.direct_compiler import DirectASTCompiler
 from yaraast.parser.source import parse_yara_source
+
+
+@pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")
+def test_libyara_compilers_reject_non_mapping_externals() -> None:
+    with pytest.raises(TypeError, match="libyara externals must be a dictionary"):
+        LibyaraCompiler(externals=cast(Any, []))
+
+    with pytest.raises(TypeError, match="libyara externals must be a dictionary"):
+        DirectASTCompiler(externals=cast(Any, []))
 
 
 @pytest.mark.skipif(not YARA_AVAILABLE, reason="yara-python not available")

@@ -22,6 +22,16 @@ if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
 
 
+def normalize_libyara_externals(externals: dict[str, Any] | None) -> dict[str, Any]:
+    """Normalize libyara external variables."""
+    if externals is None:
+        return {}
+    if not isinstance(externals, dict):
+        msg = "libyara externals must be a dictionary"
+        raise TypeError(msg)
+    return dict(externals)
+
+
 @dataclass
 class CompilationResult:
     """Result of compiling AST to libyara."""
@@ -55,7 +65,7 @@ class LibyaraCompiler:
                 msg,
             )
 
-        self.externals = externals or {}
+        self.externals = normalize_libyara_externals(externals)
         self.code_generator = CodeGenerator()
 
     def compile_ast(

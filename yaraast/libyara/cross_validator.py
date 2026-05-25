@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.evaluation.evaluator import YaraEvaluator
 
-from .compiler import LibyaraCompiler
+from .compiler import LibyaraCompiler, normalize_libyara_externals
 from .scanner import LibyaraScanner
 
 if TYPE_CHECKING:
@@ -76,11 +76,16 @@ class CrossValidator:
             ValidationResult with comparison
 
         """
+        normalized_externals = normalize_libyara_externals(externals)
         result = ValidationResult(valid=True)
 
         start_time = time.time()
         try:
-            yaraast_results = self._evaluate_with_yaraast(ast, test_data, externals)
+            yaraast_results = self._evaluate_with_yaraast(
+                ast,
+                test_data,
+                normalized_externals,
+            )
             result.yaraast_results = yaraast_results
             result.yaraast_time = time.time() - start_time
         except Exception as e:
@@ -90,7 +95,7 @@ class CrossValidator:
 
         # Step 2: Compile with libyara
         start_time = time.time()
-        self.compiler.externals = externals or {}
+        self.compiler.externals = normalized_externals
 
         compilation = self.compiler.compile_ast(ast)
         result.libyara_compile_time = time.time() - start_time
@@ -153,10 +158,11 @@ class CrossValidator:
             List of ValidationResult for each sample
 
         """
+        normalized_externals = normalize_libyara_externals(externals)
         results = []
 
         # Compile once with libyara
-        self.compiler.externals = externals or {}
+        self.compiler.externals = normalized_externals
         compilation = self.compiler.compile_ast(ast)
         if not compilation.success:
             # Return error for all samples
@@ -172,7 +178,7 @@ class CrossValidator:
                 ast,
                 test_data,
                 compilation.compiled_rules,
-                externals,
+                normalized_externals,
             )
             results.append(result)
 

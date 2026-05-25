@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.libyara.compiler import YARA_AVAILABLE as COMPILER_AVAILABLE
@@ -52,6 +54,18 @@ def test_cross_validator_applies_externals_to_yaraast_and_batch_compile() -> Non
     assert batch[0].valid is True
     assert batch[0].yaraast_results == {"ext_rule": True}
     assert batch[0].libyara_results == {"ext_rule": True}
+
+
+@pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")
+def test_cross_validator_rejects_non_mapping_externals() -> None:
+    ast = Parser().parse("rule ext_rule { condition: true }")
+    validator = CrossValidator()
+
+    with pytest.raises(TypeError, match="libyara externals must be a dictionary"):
+        validator.validate(ast, b"payload", externals=cast(Any, []))
+
+    with pytest.raises(TypeError, match="libyara externals must be a dictionary"):
+        validator.validate_batch(ast, [b"payload"], externals=cast(Any, []))
 
 
 @pytest.mark.skipif(not COMPILER_AVAILABLE, reason="yara-python not available")

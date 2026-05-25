@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from yaraast.errors import EvaluationError
 from yaraast.libyara.ast_optimizer import ASTOptimizer
+from yaraast.libyara.compiler import normalize_libyara_externals
 from yaraast.libyara.direct_helpers import (
     compile_source,
     compile_source_with_file_context,
@@ -51,7 +52,7 @@ class DirectASTCompiler:
                 msg,
             )
 
-        self.externals = externals or {}
+        self.externals = normalize_libyara_externals(externals)
         self.enable_optimization = enable_optimization
         self.debug_mode = debug_mode
         self.optimizer = ASTOptimizer() if enable_optimization else None
