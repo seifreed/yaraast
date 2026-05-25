@@ -10,9 +10,11 @@ from yaraast.yaral.ast_nodes import (
     AggregationFunction,
     ArithmeticExpression,
     ConditionalExpression,
+    FunctionCall,
     OutcomeAssignment,
     OutcomeExpression,
     OutcomeSection,
+    RawOutcomeExpression,
 )
 from yaraast.yaral.tokens import YaraLTokenType
 
@@ -114,6 +116,11 @@ class EnhancedYaraLParserOutcomeMixin:
 
         if self._check(BaseTokenType.IDENTIFIER):
             token = self._peek()
+            next_token = self._peek_ahead(1)
+            if next_token is not None and next_token.type == BaseTokenType.LPAREN:
+                if token.value in _AGGREGATION_FUNCTIONS:
+                    return self._parse_aggregation_function()
+                return self._parse_outcome_function_call()
             if token.value in _AGGREGATION_FUNCTIONS:
                 return self._parse_aggregation_function()
 
@@ -132,6 +139,10 @@ class EnhancedYaraLParserOutcomeMixin:
             return False
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return parse_numeric_token_value(self._advance().value)
+        if self._check(BaseTokenType.REGEX) or self._check(BaseTokenType.DIVIDE):
+            return self._parse_regex_pattern()
+        if self._check(BaseTokenType.IDENTIFIER):
+            return RawOutcomeExpression(str(self._advance().value))
 
         raise self._error("Expected outcome expression")
 
@@ -161,6 +172,23 @@ class EnhancedYaraLParserOutcomeMixin:
         self._consume(BaseTokenType.RPAREN, f"Expected ')' after {func_name} arguments")
 
         return AggregationFunction(function=func_name, arguments=arguments)
+
+    def _parse_outcome_function_call(self) -> FunctionCall:
+        """Parse a generic outcome function call."""
+        func_name = str(self._advance().value)
+
+        self._consume(BaseTokenType.LPAREN, f"Expected '(' after {func_name}")
+
+        arguments = []
+        if not self._check(BaseTokenType.RPAREN):
+            arguments.append(self._parse_outcome_expression())
+            while self._check(BaseTokenType.COMMA):
+                self._advance()
+                arguments.append(self._parse_outcome_expression())
+
+        self._consume(BaseTokenType.RPAREN, f"Expected ')' after {func_name} arguments")
+
+        return FunctionCall(function=func_name, arguments=arguments)
 
     def _parse_conditional_expression(self) -> ConditionalExpression:
         """Parse conditional expression in outcome section."""

@@ -7,6 +7,7 @@ from yaraast.yaral.ast_nodes import (
     AggregationFunction,
     ArithmeticExpression,
     ConditionalExpression,
+    FunctionCall,
     UDMFieldAccess,
 )
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
@@ -335,6 +336,36 @@ def test_enhanced_outcome_numeric_aggregation_arguments_roundtrip_as_numbers() -
     generated = YaraLGenerator().generate(ast)
     assert '$result = string_concat("a", 1, 2.5)' in generated
     assert 'string_concat("a", "1", 2.5)' not in generated
+
+
+def test_enhanced_outcome_generic_function_calls_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_generic_outcome_functions {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $math = math.max(1 + 2, score + 3)
+            $strings = strings.concat("a", "b")
+            $custom = custom(/evil.*/i, "tail")
+            $capture = re.capture($e.target.hostname, "(.*)")
+          condition:
+            $e
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    outcome = ast.rules[0].outcome
+    assert outcome is not None
+    assert all(
+        isinstance(assignment.expression, FunctionCall) for assignment in outcome.assignments
+    )
+    generated = YaraLGenerator().generate(ast)
+    assert "$math = math.max(1 + 2, score + 3)" in generated
+    assert '$strings = strings.concat("a", "b")' in generated
+    assert '$custom = custom(/evil.*/i, "tail")' in generated
+    assert '$capture = re.capture($e.target.hostname, "(.*)")' in generated
 
 
 def test_enhanced_outcome_arithmetic_expressions_roundtrip() -> None:
