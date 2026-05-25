@@ -250,6 +250,11 @@ def test_rule_builder_condition_lambda_rejects_invalid_return() -> None:
         RuleBuilder("bad_condition").with_condition_lambda(lambda cb: "bad")
 
 
+def test_rule_builder_condition_lambda_rejects_non_callable() -> None:
+    with pytest.raises(TypeError, match="Condition lambda must be callable"):
+        RuleBuilder("bad_condition").with_condition_lambda(cast(Any, 123))
+
+
 def test_rule_builder_true_condition_direct_builder_and_plain_regex() -> None:
     builder_condition_rule = (
         RuleBuilder("builder_cond").with_condition(ConditionBuilder().true()).build()

@@ -274,7 +274,15 @@ class RuleBuilder:
 
     def with_hex_string(self, identifier: str, builder: HexStringBuilder | list) -> Self:
         """Add a hex string using a builder or token list."""
-        tokens = list(builder) if isinstance(builder, list) else builder.build()
+        from yaraast.builder.hex_string_builder import HexStringBuilder
+
+        if isinstance(builder, list):
+            tokens = list(builder)
+        elif isinstance(builder, HexStringBuilder):
+            tokens = builder.build()
+        else:
+            msg = "Hex string builder must be a HexStringBuilder or token list"
+            raise TypeError(msg)
         validate_hex_tokens_for_builder(tokens, identifier)
         self._append_string_definition(
             HexString(identifier=identifier, tokens=tokens, modifiers=[])
@@ -285,6 +293,9 @@ class RuleBuilder:
         """Add a hex string using a builder callback."""
         from yaraast.builder.hex_string_builder import HexStringBuilder
 
+        if not callable(builder_func):
+            msg = "Hex string builder callback must be callable"
+            raise TypeError(msg)
         builder = HexStringBuilder(identifier=identifier)
         builder_func(builder)
         return self.with_hex_string(identifier, builder)
@@ -400,6 +411,9 @@ class RuleBuilder:
 
     def with_condition_lambda(self, builder_func) -> Self:
         """Set condition using a lambda that receives a ConditionBuilder."""
+        if not callable(builder_func):
+            msg = "Condition lambda must be callable"
+            raise TypeError(msg)
         cb = ConditionBuilder()
         result = builder_func(cb)
         if not isinstance(result, ConditionBuilder):

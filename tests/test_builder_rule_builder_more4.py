@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.conditions import OfExpression
@@ -80,3 +82,11 @@ def test_rule_builder_rejects_unsupported_raw_hex_tokens() -> None:
         )
         .build()
     )
+
+
+def test_rule_builder_rejects_invalid_hex_builder_argument_shapes() -> None:
+    with pytest.raises(TypeError, match="Hex string builder must be"):
+        RuleBuilder("bad").with_hex_string("$h", cast(Any, object()))
+
+    with pytest.raises(TypeError, match="Hex string builder callback must be callable"):
+        RuleBuilder("bad").with_hex_string_builder("$h", cast(Any, 123))
