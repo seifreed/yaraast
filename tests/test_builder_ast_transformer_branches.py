@@ -203,6 +203,17 @@ def test_rule_transformer_rejects_invalid_condition_transform_results_without_pa
     assert transformed.condition.name == "$a"
 
 
+def test_rule_transformer_rejects_non_callable_condition_transformer() -> None:
+    transformer = RuleTransformer(_sample_rule("condition_rule"))
+
+    with pytest.raises(TypeError, match="Condition transformer must be callable"):
+        transformer.transform_condition(cast(Any, 123))
+
+    transformed = transformer.build()
+    assert isinstance(transformed.condition, StringIdentifier)
+    assert transformed.condition.name == "$a"
+
+
 def test_rule_transformer_renames_nested_string_references() -> None:
     rule = Rule(
         name="nested_refs",
@@ -453,6 +464,15 @@ def test_yara_file_transformer_rejects_non_rule_transform_results_without_partia
     assert [rule.name for rule in transformer.build().rules] == ["one"]
 
 
+def test_yara_file_transformer_rejects_non_callable_rule_transformer() -> None:
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("one")]))
+
+    with pytest.raises(TypeError, match="Rule transformer must be callable"):
+        transformer.transform_rule("one", cast(Any, 123))
+
+    assert [rule.name for rule in transformer.build().rules] == ["one"]
+
+
 def test_yara_file_transformer_rejects_duplicate_all_rule_transform_names_without_partial_update() -> (
     None
 ):
@@ -462,6 +482,15 @@ def test_yara_file_transformer_rejects_duplicate_all_rule_transform_names_withou
         transformer.transform_all_rules(lambda rule: RuleTransformer(rule).rename("same").build())
 
     assert [rule.name for rule in transformer.build().rules] == ["one", "two"]
+
+
+def test_yara_file_transformer_rejects_non_callable_all_rule_transformer() -> None:
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("one")]))
+
+    with pytest.raises(TypeError, match="Rule transformer must be callable"):
+        transformer.transform_all_rules(cast(Any, 123))
+
+    assert [rule.name for rule in transformer.build().rules] == ["one"]
 
 
 def test_yara_file_transformer_filter_predicates_receive_rule_copies() -> None:
@@ -482,6 +511,15 @@ def test_yara_file_transformer_rejects_non_bool_filter_results_without_partial_u
 
     with pytest.raises(TypeError, match="Rule filter predicate must return bool"):
         transformer.filter_rules(cast(Any, lambda rule: "truthy"))
+
+    assert [rule.name for rule in transformer.build().rules] == ["stable"]
+
+
+def test_yara_file_transformer_rejects_non_callable_filter_predicate() -> None:
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("stable")]))
+
+    with pytest.raises(TypeError, match="Rule filter predicate must be callable"):
+        transformer.filter_rules(cast(Any, 123))
 
     assert [rule.name for rule in transformer.build().rules] == ["stable"]
 

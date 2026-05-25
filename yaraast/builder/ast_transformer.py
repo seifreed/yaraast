@@ -70,6 +70,13 @@ class RuleTransformer:
         msg = f"{context}, got {type(value).__name__}"
         raise TypeError(msg)
 
+    @staticmethod
+    def _require_callable(value: object, context: str) -> None:
+        if callable(value):
+            return
+        msg = f"{context} must be callable"
+        raise TypeError(msg)
+
     def rename(self, new_name: str) -> RuleTransformer:
         """Rename the rule."""
         validate_identifier(new_name, "rule")
@@ -241,6 +248,7 @@ class RuleTransformer:
         transformer_func: Callable[[Expression], Expression],
     ) -> RuleTransformer:
         """Transform the condition using a function."""
+        self._require_callable(transformer_func, "Condition transformer")
         if self.rule.condition is not None:
             self.rule.condition = self._require_expression(
                 transformer_func(deepcopy(self.rule.condition)),
@@ -469,6 +477,7 @@ class YaraFileTransformer:
         transformer_func: Callable[[Rule], Rule],
     ) -> YaraFileTransformer:
         """Transform a specific rule."""
+        RuleTransformer._require_callable(transformer_func, "Rule transformer")
         for i, rule in enumerate(self.yara_file.rules):
             if rule.name == rule_name:
                 transformed_rule = self._require_rule(
@@ -486,6 +495,7 @@ class YaraFileTransformer:
         transformer_func: Callable[[Rule], Rule],
     ) -> YaraFileTransformer:
         """Transform all rules."""
+        RuleTransformer._require_callable(transformer_func, "Rule transformer")
         transformed_rules = [
             self._require_rule(transformer_func(CloneTransformer.clone_rule(rule)))
             for rule in self.yara_file.rules
@@ -526,6 +536,7 @@ class YaraFileTransformer:
 
     def filter_rules(self, predicate: Callable[[Rule], bool]) -> YaraFileTransformer:
         """Filter rules based on predicate."""
+        RuleTransformer._require_callable(predicate, "Rule filter predicate")
         filtered_rules = []
         for rule in self.yara_file.rules:
             should_keep = predicate(CloneTransformer.clone_rule(rule))
