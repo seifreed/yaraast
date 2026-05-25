@@ -842,6 +842,42 @@ def test_expr_inference_validates_for_expression_quantifier_type() -> None:
     assert any("'for' quantifier must be string or integer" in e for e in inf.errors)
 
 
+def test_expr_inference_rejects_raw_boolean_quantifiers() -> None:
+    of_inf = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        of_inf.infer(OfExpression(quantifier=True, string_set=Identifier(name="them"))),
+        BooleanType,
+    )
+    assert any("'of' quantifier must be string, integer, or percentage" in e for e in of_inf.errors)
+
+    for_inf = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        for_inf.infer(
+            ForExpression(
+                quantifier=True,
+                variable="i",
+                iterable=SetExpression([IntegerLiteral(value=1)]),
+                body=BooleanLiteral(value=True),
+            )
+        ),
+        BooleanType,
+    )
+    assert any("'for' quantifier must be string or integer" in e for e in for_inf.errors)
+
+    for_of_inf = ExpressionTypeInference(TypeEnvironment())
+    assert isinstance(
+        for_of_inf.infer(
+            ForOfExpression(
+                quantifier=True,
+                string_set=Identifier(name="them"),
+                condition=BooleanLiteral(value=True),
+            )
+        ),
+        BooleanType,
+    )
+    assert any("'for...of' quantifier must be string or integer" in e for e in for_of_inf.errors)
+
+
 def test_expr_inference_for_variable_shadows_same_named_rule() -> None:
     env = TypeEnvironment()
     env.add_rule("item")

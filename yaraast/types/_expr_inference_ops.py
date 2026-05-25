@@ -734,6 +734,8 @@ def _is_condition_type(value_type: YaraType) -> bool:
 def _infer_quantifier_value(ctx, value):
     if hasattr(value, "accept"):
         return ctx.visit(value)
+    if isinstance(value, bool):
+        return BooleanType()
     if isinstance(value, int):
         return IntegerType()
     if isinstance(value, float):
