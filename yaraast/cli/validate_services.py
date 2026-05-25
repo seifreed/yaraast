@@ -41,6 +41,9 @@ def parse_externals(external: tuple[str, ...]) -> dict[str, str]:
             msg = f"Invalid external format: {ext}"
             raise ValidationError(msg)
         key, value = ext.split("=", 1)
+        if not key:
+            msg = "External variable name cannot be empty"
+            raise ValidationError(msg)
         externals[key] = value
     return externals
 
