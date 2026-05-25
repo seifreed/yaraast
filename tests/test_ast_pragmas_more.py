@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any, cast
 
 import pytest
@@ -112,6 +113,65 @@ def test_create_helpers_and_in_rule_positions() -> None:
 
     in_rule2 = create_in_rule_pragma(pragma, "before_condition")
     assert in_rule2.is_before_condition is True
+
+
+def test_pragma_helpers_reject_invalid_inputs_at_creation_time() -> None:
+    pragma = create_pragma("vendor")
+
+    invalid_cases: list[tuple[Callable[[], object], str]] = [
+        (
+            lambda: PragmaType.from_string(cast(Any, object())),
+            "Pragma type input must be a string",
+        ),
+        (
+            lambda: create_pragma(cast(Any, object())),
+            "Pragma name must be a string",
+        ),
+        (
+            lambda: create_pragma("vendor", cast(Any, "on")),
+            "Pragma arguments must be a list of strings",
+        ),
+        (
+            lambda: create_pragma("vendor", cast(Any, ["on", object()])),
+            "Pragma arguments must be a list of strings",
+        ),
+        (
+            lambda: create_pragma("vendor", scope=cast(Any, "file")),
+            "Pragma scope must be a PragmaScope",
+        ),
+        (
+            lambda: create_define(cast(Any, object())),
+            "Pragma macro_name must be a string",
+        ),
+        (
+            lambda: create_define("FLAG", cast(Any, object())),
+            "Pragma macro_value must be a string",
+        ),
+        (
+            lambda: create_undef(cast(Any, object())),
+            "Pragma macro_name must be a string",
+        ),
+        (
+            lambda: create_ifdef(cast(Any, object())),
+            "Pragma condition must be a string",
+        ),
+        (
+            lambda: create_ifndef(cast(Any, object())),
+            "Pragma condition must be a string",
+        ),
+        (
+            lambda: create_in_rule_pragma(cast(Any, object())),
+            "InRulePragma pragma must be a Pragma",
+        ),
+        (
+            lambda: create_in_rule_pragma(pragma, cast(Any, object())),
+            "InRulePragma position must be a string",
+        ),
+    ]
+
+    for factory, message in invalid_cases:
+        with pytest.raises(TypeError, match=message):
+            factory()
 
 
 def test_pragma_accept_methods() -> None:
