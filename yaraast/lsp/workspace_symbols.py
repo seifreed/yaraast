@@ -123,6 +123,7 @@ class WorkspaceSymbolsProvider:
     def invalidate_file(self, file_path: str) -> None:
         """Invalidate cache for a specific file."""
         if self.runtime:
+            self.runtime.cache.workspace_symbol_cache.clear()
             return
         if file_path in self.symbol_cache:
             del self.symbol_cache[file_path]

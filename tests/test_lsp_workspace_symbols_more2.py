@@ -116,3 +116,17 @@ def test_workspace_symbols_runtime_provider_clear_cache_clears_runtime_cache() -
     provider.clear_cache()
 
     assert runtime.cache.workspace_symbol_cache == {}
+
+
+def test_workspace_symbols_runtime_provider_invalidate_file_clears_runtime_cache() -> None:
+    uri = "file:///sample.yar"
+    runtime = LspRuntime()
+    runtime.open_document(uri, "rule sample { condition: true }\n")
+    provider = WorkspaceSymbolsProvider(runtime)
+
+    assert provider.get_workspace_symbols("")
+    assert runtime.cache.workspace_symbol_cache
+
+    provider.invalidate_file(uri)
+
+    assert runtime.cache.workspace_symbol_cache == {}
