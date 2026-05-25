@@ -480,6 +480,7 @@ class ConditionBuilder:
     @staticmethod
     def match(string_id: str) -> ConditionBuilder:
         """Create condition that matches a string."""
+        ConditionBuilder()._validate_string_reference(string_id)
         return ConditionBuilder(StringIdentifier(name=string_id))
 
     @staticmethod
