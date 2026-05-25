@@ -179,8 +179,9 @@ class RuleBuilder:
     def public(self) -> Self:
         """Mark rule as public.
 
-        Public is the default visibility, so this is a compatibility no-op.
+        Public is the default visibility, so remove any private modifier.
         """
+        self._modifiers = [modifier for modifier in self._modifiers if modifier.name != "private"]
         return self
 
     def with_tag(self, tag: str) -> Self:
