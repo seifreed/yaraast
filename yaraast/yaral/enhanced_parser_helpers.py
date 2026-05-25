@@ -96,6 +96,9 @@ class EnhancedYaraLParserHelpersMixin:
         if self._check_keyword("matches"):
             self._advance()
             return "=~"
+        if self._check_keyword("regex"):
+            self._advance()
+            return "regex"
         if self._check(BaseTokenType.IN):
             self._advance()
             return "in"

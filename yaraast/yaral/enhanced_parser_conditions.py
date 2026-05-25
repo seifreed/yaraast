@@ -238,6 +238,7 @@ class EnhancedYaraLParserConditionsMixin:
             or self._check(BaseTokenType.IN)
             or self._check_keyword("in")
             or self._check_keyword("matches")
+            or self._check_keyword("regex")
             or (
                 self._check_keyword("not")
                 and self._peek_ahead(1) is not None

@@ -146,6 +146,24 @@ def test_enhanced_double_equals_conditions_preserve_generated_text() -> None:
     assert '$e.target.hostname == "admin"' in generated
 
 
+def test_enhanced_regex_keyword_conditions_preserve_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_regex_keyword_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e.target.hostname regex /admin.*/
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 1
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.target.hostname regex /admin.*/" in generated
+
+
 def test_enhanced_single_equals_conditions_generate_double_equals() -> None:
     parser = EnhancedYaraLParser("""
         rule enhanced_single_equals_condition {
