@@ -157,14 +157,12 @@ class TestRuleBuilderTags:
 
         assert len(rule.tags) == 4
 
-    def test_tags_allow_duplicates(self) -> None:
-        """Tags should allow duplicates (YARA behavior)."""
+    def test_tags_reject_duplicates(self) -> None:
+        """Duplicate tags should be rejected before code generation."""
         builder = RuleBuilder(name="TestRule")
 
-        builder.with_tag("test").with_tag("test")
-        rule = builder.build()
-
-        assert len(rule.tags) == 2
+        with pytest.raises(ValidationError, match="Duplicate tag identifier"):
+            builder.with_tag("test").with_tag("test")
 
 
 class TestRuleBuilderMetadata:

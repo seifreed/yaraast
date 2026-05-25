@@ -49,6 +49,19 @@ def test_rule_builder_rejects_invalid_rule_tags(tag_name: str) -> None:
         RuleBuilder("tags").with_tags("known_good", tag_name)
 
 
+def test_rule_builder_rejects_duplicate_rule_tags_without_partial_update() -> None:
+    with pytest.raises(ValidationError, match="Duplicate tag identifier"):
+        RuleBuilder("tags").with_tag("duplicate").with_tag("duplicate")
+
+    with pytest.raises(ValidationError, match="Duplicate tag identifier"):
+        RuleBuilder("tags").with_tags("duplicate", "duplicate")
+
+    builder = RuleBuilder("tags").with_tag("duplicate")
+    with pytest.raises(ValidationError, match="Duplicate tag identifier"):
+        builder.with_tags("new_tag", "duplicate")
+    assert [tag.name for tag in builder.build().tags] == ["duplicate"]
+
+
 @pytest.mark.parametrize("meta_key", ["bad key", "bad-key", "for", "1bad", ""])
 def test_rule_builder_rejects_invalid_meta_keys(meta_key: str) -> None:
     with pytest.raises(ValidationError, match="Invalid meta identifier"):

@@ -72,6 +72,16 @@ def _validate_tag_identifier(tag: str) -> None:
     _validate_yara_identifier(tag, "tag")
 
 
+def _validate_new_tags(existing: list[str], tags: tuple[str, ...]) -> None:
+    seen = set(existing)
+    for tag in tags:
+        _validate_tag_identifier(tag)
+        if tag in seen:
+            msg = f"Duplicate tag identifier: {tag}"
+            raise ValidationError(msg)
+        seen.add(tag)
+
+
 def _validate_meta_identifier(key: str) -> None:
     _validate_yara_identifier(key, "meta")
 
@@ -137,7 +147,7 @@ class RuleBuilder:
 
     def with_tag(self, tag: str) -> Self:
         """Add a tag to the rule."""
-        _validate_tag_identifier(tag)
+        _validate_new_tags(self._tags, (tag,))
         self._tags.append(tag)
         return self
 
@@ -161,8 +171,7 @@ class RuleBuilder:
 
     def with_tags(self, *tags: str) -> Self:
         """Add multiple tags to the rule."""
-        for tag in tags:
-            _validate_tag_identifier(tag)
+        _validate_new_tags(self._tags, tags)
         self._tags.extend(tags)
         return self
 
