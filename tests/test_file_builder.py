@@ -285,6 +285,23 @@ class TestYaraFileBuilderRules:
             empty_builder.with_rules(Rule(name="BatchRule"), Rule(name="bad-name"))
         assert empty_builder.build().rules == []
 
+    def test_reject_invalid_rule_inputs_without_partial_update(self) -> None:
+        """Non-rule inputs should be rejected with a stable API error."""
+        builder = YaraFileBuilder().with_rule(Rule(name="StableRule"))
+
+        with pytest.raises(TypeError, match="Rule input must be a Rule or RuleBuilder"):
+            builder.with_rule(cast(Any, object()))
+
+        with pytest.raises(TypeError, match="Rule input must be a Rule or RuleBuilder"):
+            builder.with_rules(Rule(name="NewRule"), cast(Any, object()))
+
+        assert [rule.name for rule in builder.build().rules] == ["StableRule"]
+
+        empty_builder = YaraFileBuilder()
+        with pytest.raises(TypeError, match="Rule input must be a Rule or RuleBuilder"):
+            empty_builder.with_rules(Rule(name="BatchRule"), cast(Any, object()))
+        assert empty_builder.build().rules == []
+
     def test_direct_rule_inputs_are_copied_when_added(self) -> None:
         """Mutating source rules after insertion should not alter builder state."""
         rule = Rule(name="StableRule")
@@ -485,6 +502,11 @@ class TestYaraFileBuilderStaticMethods:
 
         assert isinstance(yara_file, YaraFile)
         assert yara_file.rules == []
+
+    def test_from_rules_rejects_invalid_rule_inputs(self) -> None:
+        """From_rules should reject unsupported rule inputs before validation."""
+        with pytest.raises(TypeError, match="Rule input must be a Rule or RuleBuilder"):
+            YaraFileBuilder.from_rules(Rule(name="ValidRule"), cast(Any, object()))
 
 
 class TestYaraFileBuilderFluentAPI:
