@@ -142,6 +142,8 @@ class EnhancedYaraLParserHelpersMixin:
             name = self._advance().value.strip("%")
             return ReferenceList(name=name)
         if self._check_yaral_type(YaraLTokenType.EVENT_VAR):
+            if self._peek_ahead(1) is None or self._peek_ahead(1).type != BaseTokenType.DOT:
+                return str(self._advance().value)
             return self._parse_udm_field_access()
         if self._check(BaseTokenType.IDENTIFIER):
             token = self._peek()
