@@ -76,6 +76,13 @@ def _validate_meta_identifier(key: str) -> None:
     _validate_yara_identifier(key, "meta")
 
 
+def _validate_meta_value(value: object) -> None:
+    if isinstance(value, str | bool | int):
+        return
+    msg = f"Invalid meta value: {value}"
+    raise TypeError(msg)
+
+
 class RuleBuilder:
     """Fluent builder for constructing YARA rules programmatically.
 
@@ -162,6 +169,7 @@ class RuleBuilder:
     def with_meta(self, key: str, value: str | int | bool) -> Self:
         """Add a meta field."""
         _validate_meta_identifier(key)
+        _validate_meta_value(value)
         self._meta[key] = value
         return self
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, StringIdentifier
@@ -54,6 +56,15 @@ def test_rule_builder_rejects_invalid_meta_keys(meta_key: str) -> None:
 
     with pytest.raises(ValidationError, match="Invalid meta identifier"):
         RuleBuilder("metadata_rule").add_meta(meta_key, "x")
+
+
+@pytest.mark.parametrize("meta_value", [1.5, None, ["x"]])
+def test_rule_builder_rejects_invalid_meta_values(meta_value: Any) -> None:
+    with pytest.raises(TypeError, match="Invalid meta value"):
+        RuleBuilder("metadata_rule").with_meta("value", meta_value)
+
+    with pytest.raises(TypeError, match="Invalid meta value"):
+        RuleBuilder("metadata_rule").add_meta("value", meta_value)
 
 
 def test_rule_builder_hex_regex_and_condition_variants() -> None:
