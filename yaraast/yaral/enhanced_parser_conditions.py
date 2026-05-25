@@ -100,17 +100,19 @@ class EnhancedYaraLParserConditionsMixin:
         from yaraast.yaral.ast_nodes import NOfCondition
 
         events = []
-        if self._match(BaseTokenType.LPAREN):
-            while not self._check(BaseTokenType.RPAREN) and not self._is_at_end():
-                if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
-                    BaseTokenType.STRING_IDENTIFIER
-                ):
-                    events.append(self._advance().value)
-                else:
-                    self._advance()
-                if not self._match(BaseTokenType.COMMA):
-                    break
-            self._consume(BaseTokenType.RPAREN, "Expected ')' after event list")
+        self._consume(BaseTokenType.LPAREN, "Expected '(' after 'of'")
+        while not self._check(BaseTokenType.RPAREN) and not self._is_at_end():
+            if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+                BaseTokenType.STRING_IDENTIFIER
+            ):
+                events.append(self._advance().value)
+            else:
+                raise self._error("Expected event variable in N-of condition")
+            if self._check(BaseTokenType.COMMA):
+                self._advance()
+            elif not self._check(BaseTokenType.RPAREN):
+                raise self._error("Expected ',' or ')' in N-of condition")
+        self._consume(BaseTokenType.RPAREN, "Expected ')' after event list")
         return NOfCondition(count=count, events=events)
 
     def _parse_null_check(self, field_name: str) -> ConditionExpression:

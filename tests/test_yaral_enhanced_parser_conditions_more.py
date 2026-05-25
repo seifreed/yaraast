@@ -3,8 +3,9 @@ from __future__ import annotations
 import pytest
 
 from yaraast.lexer.tokens import TokenType as T
-from yaraast.yaral.ast_nodes import BinaryCondition, ReferenceList
+from yaraast.yaral.ast_nodes import BinaryCondition, NOfCondition, ReferenceList
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
+from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.tokens import YaraLTokenType
 
@@ -70,3 +71,25 @@ def test_enhanced_primary_condition_rejects_invalid_token() -> None:
 
     with pytest.raises(ValueError, match="Expected condition expression"):
         p._parse_primary_condition()
+
+
+def test_enhanced_n_of_condition_preserves_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_n_of {
+          events:
+            $e1.metadata.event_type = "LOGIN"
+            $e2.metadata.event_type = "LOGIN"
+          condition:
+            2 of ($e1, $e2)
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 1
+    condition = ast.rules[0].condition
+    assert condition is not None
+    assert isinstance(condition.expression, NOfCondition)
+    assert condition.expression.events == ["$e1", "$e2"]
+    assert "2 of ($e1, $e2)" in YaraLGenerator().generate(ast)
