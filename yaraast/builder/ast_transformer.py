@@ -82,6 +82,7 @@ class RuleTransformer:
 
     def add_tag(self, tag: str) -> RuleTransformer:
         """Add a tag to the rule."""
+        validate_identifier(tag, "tag")
         if not any(t.name == tag for t in self.rule.tags):
             self.rule.tags.append(Tag(name=tag))
         return self
@@ -93,6 +94,10 @@ class RuleTransformer:
 
     def replace_tag(self, old_tag: str, new_tag: str) -> RuleTransformer:
         """Replace a tag."""
+        validate_identifier(new_tag, "tag")
+        if old_tag != new_tag and any(t.name == new_tag for t in self.rule.tags):
+            msg = f"Duplicate tag identifier: {new_tag}"
+            raise ValidationError(msg)
         for tag in self.rule.tags:
             if tag.name == old_tag:
                 tag.name = new_tag

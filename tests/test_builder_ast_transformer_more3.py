@@ -84,7 +84,7 @@ def test_yara_file_transformer_and_merge() -> None:
         transform_yara_file(merged)
         .add_import("hash")
         .remove_include("inc.yar")
-        .add_tag_to_all_rules("all")
+        .add_tag_to_all_rules("all_rules")
         .make_all_rules_private()
         .build()
     )

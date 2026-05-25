@@ -291,10 +291,10 @@ def test_yara_file_transformer_operations_and_filters() -> None:
         .transform_rule("one", lambda r: RuleTransformer(r).rename("renamed").build())
         .prefix_all_rules("pre_")
         .suffix_all_rules("_suf")
-        .add_tag_to_all_rules("all")
+        .add_tag_to_all_rules("all_rules")
         .make_all_rules_private()
         .set_author_for_all_rules("team")
-        .filter_by_tag("all")
+        .filter_by_tag("all_rules")
         .filter_by_modifier("private")
         .build()
     )
@@ -405,3 +405,25 @@ def test_rule_transformer_rejects_invalid_rule_names_without_partial_update(
         getattr(transformer, operation)(argument)
 
     assert transformer.build().name == "valid_name"
+
+
+@pytest.mark.parametrize("tag", ["bad tag", "bad-tag", "for", "1bad", ""])
+def test_rule_transformer_rejects_invalid_tags_without_partial_update(tag: str) -> None:
+    transformer = RuleTransformer(_sample_rule("tagged"))
+
+    with pytest.raises(ValidationError, match="Invalid tag identifier"):
+        transformer.add_tag(tag)
+    assert [rule_tag.name for rule_tag in transformer.build().tags] == ["t1"]
+
+    with pytest.raises(ValidationError, match="Invalid tag identifier"):
+        transformer.replace_tag("t1", tag)
+    assert [rule_tag.name for rule_tag in transformer.build().tags] == ["t1"]
+
+
+def test_rule_transformer_rejects_duplicate_replacement_tag_without_partial_update() -> None:
+    transformer = RuleTransformer(_sample_rule("tagged")).add_tag("t2")
+
+    with pytest.raises(ValidationError, match="Duplicate tag identifier"):
+        transformer.replace_tag("t1", "t2")
+
+    assert [rule_tag.name for rule_tag in transformer.build().tags] == ["t1", "t2"]
