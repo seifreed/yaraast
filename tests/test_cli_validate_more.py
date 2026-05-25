@@ -50,3 +50,15 @@ def test_validate_parse_externals_and_roundtrip_skip_when_no_yara(tmp_path: Path
     )
     assert blank_key.exit_code != 0
     assert "External variable name cannot be empty" in blank_key.output
+
+    invalid_name = runner.invoke(
+        validate, ["cross", dummy_rule, dummy_data, "--external", "bad-name=value"]
+    )
+    assert invalid_name.exit_code != 0
+    assert "Invalid external variable name: bad-name" in invalid_name.output
+
+    digit_name = runner.invoke(
+        validate, ["cross", dummy_rule, dummy_data, "--external", "1bad=value"]
+    )
+    assert digit_name.exit_code != 0
+    assert "Invalid external variable name: 1bad" in digit_name.output

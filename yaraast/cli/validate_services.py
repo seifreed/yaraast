@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 from yaraast.cli.utils import parse_yara_file
 from yaraast.errors import ValidationError
@@ -10,6 +11,8 @@ from yaraast.libyara.cross_validator import CrossValidator
 from yaraast.libyara.equivalence import EquivalenceTester
 from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
+
+EXTERNAL_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def validate_rule_file(rule_file: str):
@@ -43,6 +46,9 @@ def parse_externals(external: tuple[str, ...]) -> dict[str, str]:
         key, value = ext.split("=", 1)
         if not key.strip():
             msg = "External variable name cannot be empty"
+            raise ValidationError(msg)
+        if EXTERNAL_NAME_RE.fullmatch(key) is None:
+            msg = f"Invalid external variable name: {key}"
             raise ValidationError(msg)
         externals[key] = value
     return externals
