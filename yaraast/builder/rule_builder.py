@@ -27,12 +27,15 @@ from yaraast.ast.strings import (
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.errors import ValidationError, YaraASTError
+from yaraast.lexer.lexer_tables import KEYWORDS
 
 if TYPE_CHECKING:
     from yaraast.builder.hex_string_builder import HexStringBuilder
 
 
 _SIMPLE_STRING_IDENTIFIER_RE = re.compile(r"^\$[A-Za-z0-9_]+$")
+_YARA_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_YARA_KEYWORDS = frozenset(KEYWORDS)
 
 
 def _parse_condition_text(condition: str) -> Condition:
@@ -49,6 +52,16 @@ def _parse_condition_text(condition: str) -> Condition:
         msg = f"Invalid condition expression: {condition}"
         raise ValidationError(msg)
     return parsed_condition
+
+
+def _validate_rule_identifier(name: str) -> None:
+    if not isinstance(name, str):
+        msg = f"Invalid rule identifier: {name}"
+        raise TypeError(msg)
+    if _YARA_IDENTIFIER_RE.fullmatch(name) is not None and name not in _YARA_KEYWORDS:
+        return
+    msg = f"Invalid rule identifier: {name}"
+    raise ValidationError(msg)
 
 
 class RuleBuilder:
@@ -68,16 +81,19 @@ class RuleBuilder:
     """
 
     def __init__(self, name: str | None = None) -> None:
-        self._name: str | None = name
+        self._name: str | None = None
         self._modifiers: list[RuleModifier] = []
         self._tags: list[str] = []
         self._meta: dict[str, Any] = {}
         self._strings: list[StringDefinition] = []
         self._condition: Condition | None = None
         self._require_condition: bool = False
+        if name is not None:
+            self.with_name(name)
 
     def with_name(self, name: str) -> Self:
         """Set the rule name."""
+        _validate_rule_identifier(name)
         self._name = name
         return self
 

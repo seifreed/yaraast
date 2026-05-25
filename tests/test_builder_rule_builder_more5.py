@@ -29,6 +29,15 @@ def test_rule_builder_aliases_and_modifier_paths() -> None:
     assert rule.condition.value is False
 
 
+@pytest.mark.parametrize("rule_name", ["bad name", "bad-name", "for", "1bad", ""])
+def test_rule_builder_rejects_invalid_rule_names(rule_name: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid rule identifier"):
+        RuleBuilder(rule_name)
+
+    with pytest.raises(ValidationError, match="Invalid rule identifier"):
+        RuleBuilder().with_name(rule_name)
+
+
 def test_rule_builder_hex_regex_and_condition_variants() -> None:
     rule = (
         RuleBuilder("variants")
