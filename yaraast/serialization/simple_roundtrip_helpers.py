@@ -960,9 +960,14 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "is_multiline": _serialize_required_bool(node.is_multiline, "Comment is_multiline"),
         }
     if isinstance(node, CommentGroup):
+        comments = _validated_node_collection(
+            node.comments,
+            "CommentGroup comments",
+            Comment,
+        )
         return {
             "type": "CommentGroup",
-            "comments": [serialize_node(comment) for comment in node.comments],
+            "comments": [serialize_node(comment) for comment in comments],
         }
     if isinstance(node, PlainString | HexString | RegexString):
         return serialize_string(node)
@@ -999,10 +1004,15 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "rules": _serialize_string_list(node.rules, "ExternImport rules"),
         }
     if isinstance(node, ExternNamespace):
+        extern_rules = _validated_node_collection(
+            node.extern_rules,
+            "ExternNamespace extern_rules",
+            ExternRule,
+        )
         return {
             "type": "ExternNamespace",
             "name": _serialize_required_string(node.name, "ExternNamespace name"),
-            "extern_rules": [serialize_extern_rule(rule) for rule in node.extern_rules],
+            "extern_rules": [serialize_extern_rule(rule) for rule in extern_rules],
         }
     if isinstance(node, InRulePragma):
         return {
@@ -1011,9 +1021,14 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
             "position": _serialize_required_string(node.position, "InRulePragma position"),
         }
     if isinstance(node, PragmaBlock):
+        pragmas = _validated_node_collection(
+            node.pragmas,
+            "PragmaBlock pragmas",
+            Pragma,
+        )
         return {
             "type": "PragmaBlock",
-            "pragmas": [serialize_pragma(pragma) for pragma in node.pragmas],
+            "pragmas": [serialize_pragma(pragma) for pragma in pragmas],
             "scope": serialize_pragma_scope(node.scope, "PragmaBlock"),
         }
     if isinstance(node, Pragma):

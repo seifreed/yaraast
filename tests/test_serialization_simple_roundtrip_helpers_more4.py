@@ -723,6 +723,23 @@ def test_simple_roundtrip_serializers_reject_non_list_ast_collections() -> None:
         serialize_rule(rule)
 
 
+def test_simple_roundtrip_node_serializers_reject_non_list_child_collections() -> None:
+    comment_group = CommentGroup(comments=[])
+    cast(Any, comment_group).comments = False
+    with pytest.raises(SerializationError, match="CommentGroup comments must be a list"):
+        serialize_node(comment_group)
+
+    namespace = ExternNamespace(name="remote")
+    cast(Any, namespace).extern_rules = "RemoteRule"
+    with pytest.raises(SerializationError, match="ExternNamespace extern_rules must be a list"):
+        serialize_node(namespace)
+
+    pragma_block = PragmaBlock(pragmas=[], scope=PragmaScope.FILE)
+    cast(Any, pragma_block).pragmas = False
+    with pytest.raises(SerializationError, match="PragmaBlock pragmas must be a list"):
+        serialize_node(pragma_block)
+
+
 def test_simple_roundtrip_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:
     plain = deserialize_string(
         {
