@@ -195,6 +195,12 @@ def test_fluent_file_builder_rejects_empty_imports_and_includes() -> None:
     assert [inc.path for inc in built.includes] == ["common.yar"]
 
 
+@pytest.mark.parametrize("alias", ["bad alias", "bad-alias", "for", "1bad", ""])
+def test_fluent_file_builder_rejects_invalid_import_alias(alias: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid import alias identifier"):
+        yara_file().import_module("pe", alias=alias)
+
+
 def test_rule_metadata_aliases_and_example_rules_paths() -> None:
     built = (
         FluentRuleBuilder()

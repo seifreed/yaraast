@@ -9,6 +9,7 @@ from yaraast.ast.base import YaraFile
 from yaraast.ast.rules import Import, Include, Rule
 from yaraast.builder.file_builder_validation import (
     validate_nonempty_text,
+    validate_optional_identifier,
     validate_unique_rule_names,
 )
 
@@ -27,6 +28,7 @@ class FluentYaraFileBuilder:
     def import_module(self, module: str, alias: str | None = None) -> Self:
         """Add import statement."""
         validate_nonempty_text(module, "Import module")
+        validate_optional_identifier(alias, "import alias")
         if not any(imp.module == module for imp in self.imports):
             self.imports.append(Import(module=module, alias=alias))
         return self
