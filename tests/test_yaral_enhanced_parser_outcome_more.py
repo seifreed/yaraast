@@ -220,3 +220,33 @@ def test_enhanced_outcome_event_field_references_roundtrip() -> None:
     assert "$host = $e.target.hostname" in generated
     assert "$hosts = array_distinct($e.principal.ip)" in generated
     assert '_ = if($e.metadata.event_type = "LOGIN", $e.target.hostname, "none")' in generated
+
+
+def test_enhanced_outcome_bare_udm_references_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule outcome_bare_udm {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e
+          outcome:
+            $field = metadata.event_type
+            $count = count(metadata.event_type)
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    rule = ast.rules[0]
+    assert rule.outcome is not None
+    assert len(rule.outcome.assignments) == 2
+    direct_field = rule.outcome.assignments[0].expression
+    assert isinstance(direct_field, UDMFieldAccess)
+    assert direct_field.event is None
+    aggregation = rule.outcome.assignments[1].expression
+    assert isinstance(aggregation, AggregationFunction)
+    assert isinstance(aggregation.arguments[0], UDMFieldAccess)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$field = metadata.event_type" in generated
+    assert "$count = count(metadata.event_type)" in generated

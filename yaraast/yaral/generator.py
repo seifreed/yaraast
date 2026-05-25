@@ -196,8 +196,10 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_udm_field_access(self, node: UDMFieldAccess) -> str:
         """Generate code for UDM field access."""
-        event = self.visit(node.event)
         field = self.visit(node.field)
+        if node.event is None:
+            return field
+        event = self.visit(node.event)
         return f"{event}.{field}"
 
     def visit_match_section(self, node: MatchSection) -> str:

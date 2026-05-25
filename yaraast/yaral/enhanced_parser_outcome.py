@@ -82,6 +82,8 @@ class EnhancedYaraLParserOutcomeMixin:
         raise self._error("Expected outcome expression")
 
     def _is_outcome_field_access_start(self) -> bool:
+        if self._check_yaral_type(YaraLTokenType.UDM):
+            return True
         next_token = self._peek_ahead(1)
         if next_token is None or next_token.type != BaseTokenType.DOT:
             return False
