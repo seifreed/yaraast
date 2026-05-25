@@ -651,18 +651,40 @@ def compare_rule_strings(
     """Compare string definitions in rules."""
     old_string_map, new_string_map = string_maps(old_strings, new_strings)
 
-    for identifier in new_string_map:
-        if identifier not in old_string_map:
+    for identifier in sorted(new_string_map.keys() - old_string_map.keys()):
+        new_bucket = new_string_map[identifier]
+        if len(new_bucket) == 1:
             emit_string_added(base_path, result, diff_node, diff_type, identifier)
+        else:
+            result.differences.append(
+                diff_node(
+                    path=f"{base_path}/{identifier}",
+                    diff_type=diff_type.ADDED,
+                    new_value=_string_bucket_hashes(new_bucket, hasher),
+                    node_type="StringDefinition",
+                ),
+            )
 
-    for identifier in old_string_map:
-        if identifier not in new_string_map:
+    for identifier in sorted(old_string_map.keys() - new_string_map.keys()):
+        old_bucket = old_string_map[identifier]
+        if len(old_bucket) == 1:
             emit_string_removed(base_path, result, diff_node, diff_type, identifier)
+        else:
+            result.differences.append(
+                diff_node(
+                    path=f"{base_path}/{identifier}",
+                    diff_type=diff_type.REMOVED,
+                    old_value=_string_bucket_hashes(old_bucket, hasher),
+                    node_type="StringDefinition",
+                ),
+            )
 
-    for identifier in old_string_map:
-        if identifier in new_string_map:
-            old_hash = hasher.visit(old_string_map[identifier])
-            new_hash = hasher.visit(new_string_map[identifier])
+    for identifier in sorted(old_string_map.keys() & new_string_map.keys()):
+        old_bucket = old_string_map[identifier]
+        new_bucket = new_string_map[identifier]
+        if len(old_bucket) == 1 and len(new_bucket) == 1:
+            old_hash = hasher.visit(old_bucket[0])
+            new_hash = hasher.visit(new_bucket[0])
             if old_hash != new_hash:
                 emit_string_modified(
                     base_path,
@@ -673,6 +695,23 @@ def compare_rule_strings(
                     old_hash,
                     new_hash,
                 )
+        else:
+            old_value = _string_bucket_hashes(old_bucket, hasher)
+            new_value = _string_bucket_hashes(new_bucket, hasher)
+            if old_value != new_value:
+                result.differences.append(
+                    diff_node(
+                        path=f"{base_path}/{identifier}",
+                        diff_type=diff_type.MODIFIED,
+                        old_value=old_value,
+                        new_value=new_value,
+                        node_type="StringDefinition",
+                    ),
+                )
+
+
+def _string_bucket_hashes(strings, hasher) -> list[str]:
+    return sorted(hasher.visit(string_def) for string_def in strings)
 
 
 def get_rule_summary(rule) -> dict[str, Any]:

@@ -20,6 +20,7 @@ from yaraast.ast.modifiers import MetaEntry
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.pragmas import CustomPragma, DefineDirective, InRulePragma, UndefDirective
 from yaraast.ast.rules import Import, Include, Rule, Tag
+from yaraast.ast.strings import PlainString
 from yaraast.parser import Parser
 from yaraast.serialization.ast_diff import AstDiff, AstHasher, DiffType
 
@@ -174,6 +175,42 @@ def test_ast_diff_detects_duplicate_include_changes() -> None:
     assert include_diff.diff_type == DiffType.MODIFIED
     assert include_diff.old_value == ["shared.yar", "shared.yar"]
     assert include_diff.new_value == ["shared.yar"]
+    assert result.has_changes
+
+
+def test_ast_diff_detects_duplicate_string_identifier_changes() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_strings",
+                strings=[
+                    PlainString("$a", value="one"),
+                    PlainString("$a", value="two"),
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_strings",
+                strings=[PlainString("$a", value="two")],
+                condition=BooleanLiteral(value=True),
+            )
+        ],
+    )
+
+    result = AstDiff().compare(old_ast, new_ast)
+
+    string_diff = next(
+        diff for diff in result.differences if diff.path == "/rules/duplicate_strings/strings/$a"
+    )
+    assert string_diff.diff_type == DiffType.MODIFIED
+    assert isinstance(string_diff.old_value, list)
+    assert isinstance(string_diff.new_value, list)
+    assert len(string_diff.old_value) == 2
+    assert len(string_diff.new_value) == 1
     assert result.has_changes
 
 

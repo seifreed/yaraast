@@ -11,8 +11,15 @@ __all__ = [
 
 
 def string_maps(old_strings, new_strings) -> tuple[dict, dict]:
-    """Map string identifiers for comparison."""
-    return {s.identifier: s for s in old_strings}, {s.identifier: s for s in new_strings}
+    """Map string identifiers to all matching definitions."""
+    return _strings_by_identifier(old_strings), _strings_by_identifier(new_strings)
+
+
+def _strings_by_identifier(strings) -> dict[str, list]:
+    grouped: dict[str, list] = {}
+    for string_def in strings:
+        grouped.setdefault(string_def.identifier, []).append(string_def)
+    return grouped
 
 
 def emit_string_added(base_path: str, result, diff_node, diff_type, identifier: str) -> None:
