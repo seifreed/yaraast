@@ -274,6 +274,38 @@ def test_rule_transformer_renames_string_literals_inside_string_sets() -> None:
     assert nested_item.value == "$renamed"
 
 
+def test_rule_transformer_rejects_duplicate_string_renames_without_partial_update() -> None:
+    rule = Rule(
+        name="duplicate_rename",
+        strings=[
+            PlainString(identifier="$a", value="1"),
+            PlainString(identifier="$b", value="2"),
+        ],
+        condition=StringIdentifier("$a"),
+    )
+    transformer = RuleTransformer(rule)
+
+    with pytest.raises(ValidationError, match="Duplicate string identifier"):
+        transformer.rename_strings({"$a": "$b"})
+
+    transformed = transformer.build()
+    assert [string.identifier for string in transformed.strings] == ["$a", "$b"]
+    assert isinstance(transformed.condition, StringIdentifier)
+    assert transformed.condition.name == "$a"
+
+
+def test_rule_transformer_rejects_invalid_string_renames_without_partial_update() -> None:
+    transformer = RuleTransformer(_sample_rule("invalid_rename"))
+
+    with pytest.raises(ValidationError, match="Invalid string identifier"):
+        transformer.rename_strings({"$a": "$bad-key"})
+
+    transformed = transformer.build()
+    assert [string.identifier for string in transformed.strings] == ["$a"]
+    assert isinstance(transformed.condition, StringIdentifier)
+    assert transformed.condition.name == "$a"
+
+
 def test_yara_file_transformer_operations_and_filters() -> None:
     original = YaraFile(
         imports=[Import(module="pe")],

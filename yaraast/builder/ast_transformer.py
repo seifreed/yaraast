@@ -169,6 +169,11 @@ class RuleTransformer:
 
     def rename_strings(self, mapping: dict[str, str]) -> RuleTransformer:
         """Rename string identifiers based on mapping."""
+        renamed_strings = deepcopy(self.rule.strings)
+        for string_def in renamed_strings:
+            string_def.identifier = self._rename_string_reference(string_def.identifier, mapping)
+        validate_new_string_definitions([], renamed_strings)
+
         # Update string definitions
         for string_def in self.rule.strings:
             string_def.identifier = self._rename_string_reference(string_def.identifier, mapping)
