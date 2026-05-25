@@ -75,6 +75,8 @@ def test_generator_formatting_helpers_cover_all_branches() -> None:
         format_regex_literal("ab+", "m")
     with pytest.raises(ValueError, match="Duplicate regex modifier: i"):
         format_regex_literal("ab+", "ii")
+    with pytest.raises(ValueError, match="Invalid regex modifier order"):
+        format_regex_literal("ab+", "si")
     assert escape_regex_delimiter("a/b") == "a\\/b"
     assert escape_regex_delimiter("a\\/b") == "a\\/b"
     assert format_regex_literal("a\\/b", "") == "/a\\/b/"

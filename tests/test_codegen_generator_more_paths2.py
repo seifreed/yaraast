@@ -436,6 +436,16 @@ def test_codegen_generator_rejects_duplicate_regex_suffix_modifiers() -> None:
         gen.generate(YaraFile(rules=[rule]))
 
 
+def test_codegen_generator_canonicalizes_regex_suffix_modifier_order() -> None:
+    rule = Rule(
+        name="regex_order",
+        strings=[RegexString("$r", regex="line", modifiers=["s", "i"])],
+        condition=StringIdentifier("$r"),
+    )
+
+    assert "$r = /line/is" in CodeGenerator().generate(YaraFile(rules=[rule]))
+
+
 def test_codegen_generator_rejects_unsupported_spaced_string_modifiers() -> None:
     gen = CodeGenerator()
     strings = [

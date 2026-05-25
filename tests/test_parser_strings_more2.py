@@ -265,8 +265,10 @@ def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:
     [
         "rule r { strings: $r = /ab+c/m condition: $r }",
         "rule r { strings: $r = /ab+c/ii condition: $r }",
+        "rule r { strings: $r = /ab+c/si condition: $r }",
         'rule r { condition: "abc" matches /ab+c/m }',
         'rule r { condition: "abc" matches /ab+c/ii }',
+        'rule r { condition: "abc" matches /ab+c/si }',
     ],
 )
 def test_parse_rejects_invalid_regex_literal_modifiers(source: str) -> None:

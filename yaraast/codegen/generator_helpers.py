@@ -19,6 +19,7 @@ from yaraast.ast.strings import (
     RegexString,
 )
 from yaraast.regex_literals import (
+    REGEX_MODIFIER_ORDER,
     VALID_REGEX_MODIFIERS,
     escape_regex_delimiter as _escape_regex_delimiter,
     validate_regex_modifiers,
@@ -594,8 +595,8 @@ def split_regex_modifiers(
     if not isinstance(modifiers, list | tuple):
         return "", []
 
-    suffix_parts = []
-    spaced_parts = []
+    suffix_parts: list[str] = []
+    spaced_parts: list[str] = []
     for mod in modifiers:
         name = _regex_modifier_name(mod)
         if name in _UNSUPPORTED_REGEX_MODIFIERS:
@@ -609,9 +610,19 @@ def split_regex_modifiers(
         else:
             spaced_parts.append(format_modifier(mod, visit))
 
-    suffix = "".join(suffix_parts)
+    suffix = _canonical_regex_suffix(suffix_parts)
     validate_regex_modifiers(suffix)
     return suffix, spaced_parts
+
+
+def _canonical_regex_suffix(suffix_parts: list[str]) -> str:
+    seen: set[str] = set()
+    for modifier in suffix_parts:
+        if modifier in seen:
+            msg = f"Duplicate regex modifier: {modifier}"
+            raise ValueError(msg)
+        seen.add(modifier)
+    return "".join(modifier for modifier in REGEX_MODIFIER_ORDER if modifier in seen)
 
 
 def _regex_modifier_name(modifier: object) -> str:

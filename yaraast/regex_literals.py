@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 VALID_REGEX_MODIFIERS = frozenset("is")
+REGEX_MODIFIER_ORDER = "is"
 
 
 def escape_regex_delimiter(pattern: str) -> str:
@@ -38,3 +39,7 @@ def validate_regex_modifiers(modifiers: str) -> None:
             msg = f"Duplicate regex modifier: {modifier}"
             raise ValueError(msg)
         seen.add(modifier)
+    ordered = "".join(modifier for modifier in REGEX_MODIFIER_ORDER if modifier in seen)
+    if modifiers != ordered:
+        msg = f"Invalid regex modifier order: {modifiers}"
+        raise ValueError(msg)
