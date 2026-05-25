@@ -62,6 +62,13 @@ class RuleTransformer:
     def __init__(self, rule: Rule) -> None:
         self.rule = CloneTransformer.clone_rule(rule)
 
+    @staticmethod
+    def _require_expression(value: object, context: str) -> Expression:
+        if isinstance(value, Expression):
+            return value
+        msg = f"{context}, got {type(value).__name__}"
+        raise TypeError(msg)
+
     def rename(self, new_name: str) -> RuleTransformer:
         """Rename the rule."""
         validate_identifier(new_name, "rule")
@@ -222,7 +229,10 @@ class RuleTransformer:
 
     def replace_condition(self, new_condition: Expression) -> RuleTransformer:
         """Replace the rule condition."""
-        self.rule.condition = new_condition
+        self.rule.condition = self._require_expression(
+            new_condition,
+            "Rule condition must be an Expression",
+        )
         return self
 
     def transform_condition(
@@ -230,8 +240,11 @@ class RuleTransformer:
         transformer_func: Callable[[Expression], Expression],
     ) -> RuleTransformer:
         """Transform the condition using a function."""
-        if self.rule.condition:
-            self.rule.condition = transformer_func(self.rule.condition)
+        if self.rule.condition is not None:
+            self.rule.condition = self._require_expression(
+                transformer_func(deepcopy(self.rule.condition)),
+                "Condition transformer must return an Expression",
+            )
         return self
 
     def build(self) -> Rule:

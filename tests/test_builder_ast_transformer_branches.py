@@ -179,6 +179,30 @@ def test_rule_transformer_prefix_suffix_and_condition_transform_paths() -> None:
     assert isinstance(replaced.condition, StringIdentifier)
 
 
+def test_rule_transformer_rejects_invalid_replacement_condition_without_partial_update() -> None:
+    transformer = RuleTransformer(_sample_rule("condition_rule"))
+
+    with pytest.raises(TypeError, match="Rule condition must be an Expression"):
+        transformer.replace_condition(cast(Any, None))
+
+    transformed = transformer.build()
+    assert isinstance(transformed.condition, StringIdentifier)
+    assert transformed.condition.name == "$a"
+
+
+def test_rule_transformer_rejects_invalid_condition_transform_results_without_partial_update() -> (
+    None
+):
+    transformer = RuleTransformer(_sample_rule("condition_rule"))
+
+    with pytest.raises(TypeError, match="Condition transformer must return an Expression"):
+        transformer.transform_condition(cast(Any, lambda expr: None))
+
+    transformed = transformer.build()
+    assert isinstance(transformed.condition, StringIdentifier)
+    assert transformed.condition.name == "$a"
+
+
 def test_rule_transformer_renames_nested_string_references() -> None:
     rule = Rule(
         name="nested_refs",
