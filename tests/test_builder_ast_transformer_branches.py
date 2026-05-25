@@ -458,6 +458,25 @@ def test_convenience_transform_functions_and_variant_collection_merge_paths() ->
     assert isinstance(deep_clone, Rule)
 
 
+@pytest.mark.parametrize(
+    ("changes", "message"),
+    [
+        ({"prefix": True}, "Variant prefix must be a string"),
+        ({"suffix": True}, "Variant suffix must be a string"),
+        ({"tags": "abc"}, "Variant tags must be an iterable of strings"),
+        ({"tags": ["ok", True]}, "Variant tags must be an iterable of strings"),
+        ({"author": True}, "Variant author must be a string"),
+        ({"description": True}, "Variant description must be a string"),
+        ({"private": "false"}, "Variant private flag must be a boolean"),
+    ],
+)
+def test_create_variant_rule_rejects_invalid_option_types(
+    changes: dict[str, object], message: str
+) -> None:
+    with pytest.raises(TypeError, match=message):
+        create_variant_rule(_sample_rule("base"), "variant", **changes)
+
+
 def test_yara_file_transformer_rejects_duplicate_rule_names_without_partial_update() -> None:
     existing = _sample_rule("duplicate")
     transformer = YaraFileTransformer(YaraFile(rules=[existing]))

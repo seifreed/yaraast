@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
@@ -594,23 +595,50 @@ def transform_yara_file(yara_file: YaraFile) -> YaraFileTransformer:
     return YaraFileTransformer(yara_file)
 
 
+def _require_variant_text(value: object, field: str) -> str:
+    if isinstance(value, str):
+        return value
+    msg = f"Variant {field} must be a string"
+    raise TypeError(msg)
+
+
+def _require_variant_tags(value: object) -> list[str]:
+    if isinstance(value, str) or not isinstance(value, Iterable):
+        msg = "Variant tags must be an iterable of strings"
+        raise TypeError(msg)
+    tags = list(value)
+    if all(isinstance(tag, str) for tag in tags):
+        return tags
+    msg = "Variant tags must be an iterable of strings"
+    raise TypeError(msg)
+
+
+def _require_variant_private(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    msg = "Variant private flag must be a boolean"
+    raise TypeError(msg)
+
+
 # Factory functions for common transformations
 def create_variant_rule(rule: Rule, variant_name: str, **changes) -> Rule:
     """Create a variant of a rule with changes."""
     transformer = RuleTransformer(rule).rename(variant_name)
 
     if "prefix" in changes:
-        transformer = transformer.add_prefix(changes["prefix"])
+        transformer = transformer.add_prefix(_require_variant_text(changes["prefix"], "prefix"))
     if "suffix" in changes:
-        transformer = transformer.add_suffix(changes["suffix"])
+        transformer = transformer.add_suffix(_require_variant_text(changes["suffix"], "suffix"))
     if "tags" in changes:
-        for tag in changes["tags"]:
+        for tag in _require_variant_tags(changes["tags"]):
             transformer = transformer.add_tag(tag)
     if "author" in changes:
-        transformer = transformer.set_author(changes["author"])
+        transformer = transformer.set_author(_require_variant_text(changes["author"], "author"))
     if "description" in changes:
-        transformer = transformer.set_description(changes["description"])
-    if changes.get("private"):
+        transformer = transformer.set_description(
+            _require_variant_text(changes["description"], "description")
+        )
+    if "private" in changes and _require_variant_private(changes["private"]):
         transformer = transformer.make_private()
 
     return transformer.build()
