@@ -69,6 +69,30 @@ def test_metrics_helper_text_functions(
     assert "Dependency Analysis" in captured
 
 
+def test_string_pattern_analysis_preserves_duplicate_rule_names() -> None:
+    ast = _parse_yara("""
+        rule dup {
+            strings:
+                $a = "one"
+            condition:
+                $a
+        }
+
+        rule dup {
+            strings:
+                $b = "two"
+            condition:
+                $b
+        }
+        """)
+
+    analysis = _analyze_string_patterns(ast)
+
+    assert list(analysis["rules"]) == ["dup#1", "dup#2"]
+    assert analysis["rules"]["dup#1"]["identifiers"] == ["$a"]
+    assert analysis["rules"]["dup#2"]["identifiers"] == ["$b"]
+
+
 def test_metrics_graphviz_error_detection() -> None:
     err = Exception("failed to execute PosixPath('dot')")
     assert metrics_cmd._is_graphviz_not_found_error(err) is True

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter, defaultdict
 from typing import Any
 
 
@@ -9,11 +10,15 @@ def _analyze_string_patterns(ast: Any) -> dict[str, Any]:
     """Analyze string patterns in AST and return analysis data."""
     analysis = _initialize_string_analysis()
     lengths: list[int] = []
+    rule_counts = Counter(rule.name for rule in ast.rules)
+    seen_rules: defaultdict[str, int] = defaultdict(int)
 
     for rule in ast.rules:
         if rule.strings:
+            seen_rules[rule.name] += 1
+            rule_key = _rule_analysis_key(rule.name, seen_rules[rule.name], rule_counts)
             rule_info = _analyze_rule_strings(rule, analysis, lengths)
-            analysis["rules"][rule.name] = rule_info
+            analysis["rules"][rule_key] = rule_info
 
     _calculate_length_statistics(analysis, lengths)
     return analysis
@@ -29,6 +34,12 @@ def _initialize_string_analysis() -> dict[str, Any]:
         "modifiers": {},
         "patterns": {"short_strings": 0, "hex_patterns": 0},
     }
+
+
+def _rule_analysis_key(rule_name: str, occurrence: int, counts: Counter[str]) -> str:
+    if counts[rule_name] == 1:
+        return rule_name
+    return f"{rule_name}#{occurrence}"
 
 
 def _analyze_rule_strings(
