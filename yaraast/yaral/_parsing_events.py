@@ -347,18 +347,20 @@ class YaraLEventsParsingMixin:
     def _parse_function_call_statement(self) -> EventStatement:
         """Parse function call statement like re.regex($e.field, `pattern`) nocase."""
         # Parse module.function identifier (could be "re.regex" as single token or separate tokens)
-        function_name = self._advance().value
+        raw_tokens = [self._advance()]
+        function_name = raw_tokens[0].value
 
         # If it's not a compound name like "re.regex", check for dot and function name
         if "." not in function_name and self._check(BaseTokenType.DOT):
-            self._advance()
+            raw_tokens.append(self._advance())
             # Parse function name
             if self._check(BaseTokenType.IDENTIFIER):
-                function_part = self._advance().value
+                raw_tokens.append(self._advance())
+                function_part = raw_tokens[-1].value
                 function_name = f"{function_name}.{function_part}"
 
         # Consume opening parenthesis
-        self._consume(BaseTokenType.LPAREN, "Expected '(' after function name")
+        raw_tokens.append(self._consume(BaseTokenType.LPAREN, "Expected '(' after function name"))
 
         # Parse arguments - skip all tokens until we find the closing paren
         # For now, just consume all tokens to skip the arguments
@@ -370,35 +372,31 @@ class YaraLEventsParsingMixin:
                 paren_depth -= 1
                 if paren_depth == 0:
                     break
-            self._advance()
+            raw_tokens.append(self._advance())
 
         # Consume closing parenthesis
         if self._check(BaseTokenType.RPAREN):
-            self._advance()
+            raw_tokens.append(self._advance())
 
         # Check for assignment: function(...) = $variable
         if self._check(BaseTokenType.EQ):
-            self._advance()  # Consume '='
+            raw_tokens.append(self._advance())  # Consume '='
             # The right-hand side should be a variable - just consume it
             if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
                 BaseTokenType.STRING_IDENTIFIER,
             ):
-                self._advance()  # Consume the variable
+                raw_tokens.append(self._advance())  # Consume the variable
 
         # Check for modifiers like 'nocase'
-        modifiers = []
         if self._check_keyword("nocase"):
-            modifiers.append("nocase")
-            self._advance()
+            raw_tokens.append(self._advance())
 
-        # Return a generic EventStatement for now
-        # In a full implementation, you'd parse the arguments properly
-        return EventStatement()
+        return EventStatement(text=_join_event_statement_tokens(raw_tokens))
 
     def _parse_boolean_expression(self) -> EventStatement:
         """Parse a parenthesized boolean expression like (expr or expr or ...)."""
         # Consume opening parenthesis
-        self._consume(BaseTokenType.LPAREN, "Expected '('")
+        raw_tokens = [self._consume(BaseTokenType.LPAREN, "Expected '('")]
 
         # Consume all tokens until matching closing parenthesis
         paren_depth = 1
@@ -409,12 +407,39 @@ class YaraLEventsParsingMixin:
                 paren_depth -= 1
                 if paren_depth == 0:
                     break
-            self._advance()
+            raw_tokens.append(self._advance())
 
         # Consume closing parenthesis
         if self._check(BaseTokenType.RPAREN):
-            self._advance()
+            raw_tokens.append(self._advance())
 
-        # Return a generic EventStatement
-        # In a full implementation, you'd parse the boolean logic properly
-        return EventStatement()
+        return EventStatement(text=_join_event_statement_tokens(raw_tokens))
+
+
+def _join_event_statement_tokens(tokens: list[Any]) -> str:
+    text = ""
+    for token in tokens:
+        piece = _event_statement_token_text(token)
+        if not piece:
+            continue
+        if piece == ",":
+            text = f"{text.rstrip()}, "
+        elif piece in {".", ")", "]", "}", "(", "[", "{"}:
+            text = f"{text.rstrip()}{piece}"
+        elif piece in {"=", "!=", "<", ">", "<=", ">=", "and", "or", "in"}:
+            text = f"{text.rstrip()} {piece} "
+        else:
+            if text and not text.endswith((" ", "(", "[", "{", ".")):
+                text += " "
+            text += piece
+    return text.strip()
+
+
+def _event_statement_token_text(token: Any) -> str:
+    value = token.value
+    if value is None:
+        return ""
+    if token.type == BaseTokenType.STRING:
+        escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{escaped}"'
+    return str(value)

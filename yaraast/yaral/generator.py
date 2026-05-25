@@ -174,6 +174,8 @@ class YaraLGenerator(YaraLVisitor[str]):
 
     def visit_event_statement(self, node: EventStatement) -> str:
         """Generate code for event statement."""
+        if node.text:
+            return f"{self._indent()}{node.text}"
         return ""
 
     def visit_event_variable(self, node: EventVariable) -> str:

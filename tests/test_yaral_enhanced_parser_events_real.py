@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as T
-from yaraast.yaral.ast_nodes import EventAssignment, JoinCondition
+from yaraast.yaral.ast_nodes import EventAssignment, EventStatement, JoinCondition
 from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
+from yaraast.yaral.generator import YaraLGenerator
 from yaraast.yaral.lexer import YaraLToken
 from yaraast.yaral.tokens import YaraLTokenType
 
@@ -98,3 +99,33 @@ def test_parse_events_section_real() -> None:
     )
     section = p._parse_events_section()
     assert section.statements
+
+
+def test_parse_function_event_statement_preserves_generated_text() -> None:
+    ast = EnhancedYaraLParser(
+        'rule regex_event { events: re.regex($e.target.hostname, "evil.*") nocase condition: $e }'
+    ).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventStatement)
+    assert statement.text == 're.regex($e.target.hostname, "evil.*") nocase'
+
+    generated = YaraLGenerator().generate(ast)
+    assert 're.regex($e.target.hostname, "evil.*") nocase' in generated
+
+
+def test_parse_parenthesized_event_statement_preserves_generated_text() -> None:
+    ast = EnhancedYaraLParser(
+        'rule bool_event { events: ($e.metadata.event_type = "LOGIN" or $e.metadata.event_type = "AUTH") condition: $e }'
+    ).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventStatement)
+    assert statement.text == '($e.metadata.event_type = "LOGIN" or $e.metadata.event_type = "AUTH")'
+
+    generated = YaraLGenerator().generate(ast)
+    assert '($e.metadata.event_type = "LOGIN" or $e.metadata.event_type = "AUTH")' in generated

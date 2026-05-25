@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
+from yaraast.yaral._parsing_events import _join_event_statement_tokens
 from yaraast.yaral.ast_nodes import (
     ConditionExpression,
     EventAssignment,
@@ -32,11 +33,47 @@ class EnhancedYaraLParserEventsMixin:
             elif self._check_keyword("join"):
                 join = self._parse_join_statement()
                 statements.append(join)
+            elif self._check(BaseTokenType.LPAREN) or self._is_raw_event_statement_start():
+                raw_statement = self._parse_raw_event_statement()
+                if raw_statement is not None:
+                    statements.append(raw_statement)
             else:
                 if self._parse_complex_event_pattern() is None:
                     self._advance()
 
         return EventsSection(statements=statements)
+
+    def _is_raw_event_statement_start(self) -> bool:
+        if not self._check(BaseTokenType.IDENTIFIER):
+            return False
+        identifier = str(self._peek().value)
+        return "." in identifier and identifier.split(".", 1)[0] in {
+            "arrays",
+            "math",
+            "net",
+            "re",
+            "strings",
+        }
+
+    def _parse_raw_event_statement(self) -> EventStatement | None:
+        tokens = []
+        paren_depth = 0
+        while not self._is_at_end():
+            if paren_depth == 0 and (
+                self._check_section_keyword() or self._check(BaseTokenType.RBRACE)
+            ):
+                break
+
+            token = self._peek()
+            if token.type == BaseTokenType.LPAREN:
+                paren_depth += 1
+            elif token.type == BaseTokenType.RPAREN and paren_depth > 0:
+                paren_depth -= 1
+            tokens.append(self._advance())
+
+        if not tokens:
+            return None
+        return EventStatement(text=_join_event_statement_tokens(tokens))
 
     def _parse_event_statement(self) -> list[EventStatement] | None:
         """Parse enhanced event statement with multiple conditions."""

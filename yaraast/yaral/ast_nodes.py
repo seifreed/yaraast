@@ -74,6 +74,8 @@ class EventsSection(ASTNode):
 class EventStatement(ASTNode):
     """Single event statement."""
 
+    text: str = field(default="", kw_only=True)
+
     def accept(self, visitor: _VisitorType) -> Any:
         return visitor.visit_yaral_event_statement(self)
 
