@@ -9,6 +9,7 @@ from lsprotocol.types import FileChangeType, FileEvent, Location, Position, Rang
 import pytest
 
 from yaraast.lsp.definition import DefinitionProvider
+from yaraast.lsp.document_types import SymbolRecord
 from yaraast.lsp.references import ReferencesProvider
 from yaraast.lsp.rename import RenameProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
@@ -115,6 +116,31 @@ def test_workspace_index_discovers_multidialect_extensions(tmp_path: Path) -> No
         "native.yaral",
         "native.yarax",
     }
+
+
+def test_workspace_index_search_rejects_invalid_query_and_exclusions() -> None:
+    index = WorkspaceIndex()
+    uri = "file:///sample.yar"
+    index.persisted_symbols[uri] = [
+        SymbolRecord(
+            "sample",
+            "rule",
+            uri,
+            Range(Position(line=0, character=0), Position(line=0, character=6)),
+        )
+    ]
+
+    with pytest.raises(TypeError, match="Workspace symbol query must be a string"):
+        index.search(cast(Any, object()))
+    with pytest.raises(TypeError, match="Workspace symbol query must be a string"):
+        index.search_records(cast(Any, object()))
+
+    with pytest.raises(TypeError, match="Excluded workspace symbol URIs must be a set of strings"):
+        index.search_records("", exclude_uris=cast(Any, uri))
+    with pytest.raises(TypeError, match="Excluded workspace symbol URIs must be a set of strings"):
+        index.search_records("", exclude_uris=cast(Any, {object()}))
+
+    assert [record.name for record in index.search_records("")] == ["sample"]
 
 
 def test_workspace_folder_setters_reject_invalid_inputs_without_partial_update(

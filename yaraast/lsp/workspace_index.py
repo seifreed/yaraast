@@ -21,6 +21,20 @@ def _normalize_workspace_folders(folders: object) -> list[Path]:
     return [Path(folder) for folder in folders if folder]
 
 
+def _require_workspace_symbol_query(query: object) -> str:
+    if not isinstance(query, str):
+        raise TypeError("Workspace symbol query must be a string")
+    return query
+
+
+def _normalize_excluded_uris(exclude_uris: object) -> set[str]:
+    if exclude_uris is None:
+        return set()
+    if not isinstance(exclude_uris, set) or not all(isinstance(uri, str) for uri in exclude_uris):
+        raise TypeError("Excluded workspace symbol URIs must be a set of strings")
+    return exclude_uris
+
+
 class WorkspaceIndex:
     """Workspace-wide view built on top of cached documents."""
 
@@ -92,17 +106,18 @@ class WorkspaceIndex:
         self.persisted_symbols.pop(uri, None)
         self.save()
 
-    def search(self, query: str) -> list[SymbolInformation]:
+    def search(self, query: object) -> list[SymbolInformation]:
         return [symbol.to_symbol_information() for symbol in self.search_records(query)]
 
     def search_records(
         self,
-        query: str,
+        query: object,
         *,
-        exclude_uris: set[str] | None = None,
+        exclude_uris: object = None,
     ) -> list[SymbolRecord]:
+        query = _require_workspace_symbol_query(query)
         query_lower = query.lower()
-        excluded = exclude_uris or set()
+        excluded = _normalize_excluded_uris(exclude_uris)
         result: list[SymbolRecord] = []
         for uri, symbols in self.persisted_symbols.items():
             if uri in excluded:
