@@ -67,6 +67,13 @@ class OutcomeArgumentParsingMixin:
         if self._check(BaseTokenType.STRING):
             return self._advance().value
 
+        if self._check(BaseTokenType.BOOLEAN_TRUE):
+            self._advance()
+            return True
+        if self._check(BaseTokenType.BOOLEAN_FALSE):
+            self._advance()
+            return False
+
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return parse_numeric_token_value(self._advance().value)
 
@@ -74,6 +81,8 @@ class OutcomeArgumentParsingMixin:
             ident = self._advance().value
             if self._check(BaseTokenType.LPAREN):
                 return self._parse_function_call_args(ident)
+            if ident in ("true", "false"):
+                return ident == "true"
             return ident
 
         msg = f"Unexpected token in outcome: {self._peek()}"
@@ -100,6 +109,13 @@ class OutcomeArgumentParsingMixin:
 
         if self._check(BaseTokenType.STRING):
             return self._advance().value
+
+        if self._check(BaseTokenType.BOOLEAN_TRUE):
+            self._advance()
+            return True
+        if self._check(BaseTokenType.BOOLEAN_FALSE):
+            self._advance()
+            return False
 
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return self._parse_outcome_integer()
@@ -165,6 +181,8 @@ class OutcomeArgumentParsingMixin:
         ident = str(token.value)
         if self._check(BaseTokenType.LPAREN):
             return self._parse_function_call_args(ident)
+        if ident in ("true", "false"):
+            return ident == "true"
         if getattr(token, "yaral_type", None) in _BARE_UDM_YARAL_TYPES:
             field_parts = self._parse_outcome_field_path_continuation(ident.split("."))
             return UDMFieldAccess(event=None, field=UDMFieldPath(parts=field_parts))

@@ -281,6 +281,28 @@ def test_enhanced_outcome_numeric_aggregation_arguments_roundtrip_as_numbers() -
     assert 'string_concat("a", "1", 2.5)' not in generated
 
 
+def test_enhanced_outcome_boolean_literals_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_outcome_booleans {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $direct = true
+            $func = string_concat("a", true, false)
+            $conditional = if $e.metadata.event_type = "LOGIN" then true else false
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    generated = YaraLGenerator().generate(ast)
+    assert "$direct = true" in generated
+    assert '$func = string_concat("a", true, false)' in generated
+    assert '$conditional = if($e.metadata.event_type = "LOGIN", true, false)' in generated
+
+
 def test_enhanced_outcome_bare_udm_references_roundtrip() -> None:
     parser = EnhancedYaraLParser("""
         rule outcome_bare_udm {

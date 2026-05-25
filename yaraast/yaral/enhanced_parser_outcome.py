@@ -93,6 +93,12 @@ class EnhancedYaraLParserOutcomeMixin:
 
         if self._check(BaseTokenType.STRING):
             return self._advance().value
+        if self._check(BaseTokenType.BOOLEAN_TRUE):
+            self._advance()
+            return True
+        if self._check(BaseTokenType.BOOLEAN_FALSE):
+            self._advance()
+            return False
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
             return parse_numeric_token_value(self._advance().value)
 
@@ -124,6 +130,12 @@ class EnhancedYaraLParserOutcomeMixin:
             ):
                 arg = self._advance().value
                 arguments.append(arg)
+            elif self._check(BaseTokenType.BOOLEAN_TRUE):
+                self._advance()
+                arguments.append(True)
+            elif self._check(BaseTokenType.BOOLEAN_FALSE):
+                self._advance()
+                arguments.append(False)
             elif self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):
                 arg = parse_numeric_token_value(self._advance().value)
                 arguments.append(arg)

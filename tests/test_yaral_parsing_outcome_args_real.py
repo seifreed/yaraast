@@ -130,6 +130,27 @@ def test_outcome_function_arguments_accept_double_literals_without_keyword_crash
     assert '$result = string_concat("a", 1, 2.5)' in generated
 
 
+def test_outcome_boolean_literals_roundtrip_in_values_and_arguments() -> None:
+    parser = YaraLParser("""
+        rule outcome_booleans {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $direct = true
+            $func = string_concat("a", true, false)
+            $conditional = if($e.metadata.event_type = "LOGIN", true, false)
+          condition:
+            $e
+        }
+        """)
+
+    generated = YaraLGenerator().generate(parser.parse())
+
+    assert "$direct = true" in generated
+    assert '$func = string_concat("a", true, false)' in generated
+    assert '$conditional = if($e.metadata.event_type = "LOGIN", true, false)' in generated
+
+
 def test_parse_outcome_argument_basic_identifier_call_and_error() -> None:
     parser = YaraLParser("")
     _set_tokens(
