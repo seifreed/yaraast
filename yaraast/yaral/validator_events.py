@@ -107,9 +107,10 @@ class EventValidationMixin:
             self._add_error("events", "Empty UDM field path")
             return
 
-        parts = node.parts
-        if len(parts) == 1 and "." in parts[0]:
-            parts = parts[0].split(".")
+        parts = _normalize_udm_validation_parts(node.parts)
+        if not parts:
+            self._add_error("events", "Empty UDM field path")
+            return
         namespace = parts[0]
         if namespace not in self.VALID_UDM_FIELDS:
             self._add_warning(
@@ -147,3 +148,37 @@ class EventValidationMixin:
 
     def visit_yaral_reference_list(self, node: ReferenceList) -> None:
         return
+
+
+def _normalize_udm_validation_parts(parts: list[str]) -> list[str]:
+    normalized = []
+    raw_parts = parts[0].split(".") if len(parts) == 1 and "." in parts[0] else parts
+    for part in raw_parts:
+        normalized.extend(_extract_udm_validation_segments(part))
+    return normalized
+
+
+def _extract_udm_validation_segments(part: str) -> list[str]:
+    segments = []
+    index = 0
+    while index < len(part):
+        bracket_index = part.find("[", index)
+        if bracket_index == -1:
+            segment = part[index:]
+            if segment:
+                segments.append(segment)
+            break
+
+        segment = part[index:bracket_index]
+        if segment:
+            segments.append(segment)
+
+        end_index = part.find("]", bracket_index)
+        if end_index == -1:
+            break
+
+        bracket_value = part[bracket_index + 1 : end_index]
+        if len(bracket_value) >= 2 and bracket_value[0] == '"' and bracket_value[-1] == '"':
+            segments.append(bracket_value[1:-1])
+        index = end_index + 1
+    return segments

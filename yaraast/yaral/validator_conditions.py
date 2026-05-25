@@ -48,10 +48,10 @@ class ConditionValidationMixin:
             self.visit(node.operand)
 
     def visit_yaral_event_count_condition(self, node: EventCountCondition) -> None:
-        self.used_events.add(node.event)
+        self.used_events.add(node.event.lstrip("$"))
 
     def visit_yaral_event_exists_condition(self, node: EventExistsCondition) -> None:
-        self.used_events.add(node.event)
+        self.used_events.add(node.event.lstrip("$"))
 
     def visit_yaral_variable_comparison_condition(self, node: VariableComparisonCondition) -> None:
         return

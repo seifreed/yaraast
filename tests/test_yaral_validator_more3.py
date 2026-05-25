@@ -14,6 +14,7 @@ from yaraast.yaral.ast_nodes import (
     YaraLFile,
     YaraLRule,
 )
+from yaraast.yaral.enhanced_parser import EnhancedYaraLParser
 from yaraast.yaral.parser import YaraLParser
 from yaraast.yaral.validator import YaraLValidator
 
@@ -43,7 +44,7 @@ def test_validate_returns_stable_error_and_warning_snapshots() -> None:
                 )
             ]
         ),
-        condition=ConditionSection(expression=EventExistsCondition(event="e")),
+        condition=ConditionSection(expression=EventExistsCondition(event="$e")),
     )
 
     first_errors, first_warnings = validator.validate(YaraLFile(rules=[bad_rule]))
@@ -55,6 +56,25 @@ def test_validate_returns_stable_error_and_warning_snapshots() -> None:
     assert second_errors == []
     assert second_warnings == []
     assert any("Rule must have a condition section" in err.message for err in first_errors)
+
+
+def test_validator_accepts_bracketed_udm_fields_and_dollar_event_conditions() -> None:
+    parser = EnhancedYaraLParser("""
+        rule bracketed_valid {
+            events:
+                $e.metadata["event_type"] = "LOGIN"
+            condition:
+                $e
+        }
+        """)
+    ast = parser.parse()
+
+    errors, warnings = YaraLValidator().validate(ast)
+
+    assert parser.errors == []
+    assert errors == []
+    assert not any("Unknown field" in warning.message for warning in warnings)
+    assert not any("Unused event variable" in warning.message for warning in warnings)
 
 
 def test_validator_event_assignment_checks() -> None:
