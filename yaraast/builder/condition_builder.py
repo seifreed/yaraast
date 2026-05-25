@@ -120,7 +120,7 @@ class ConditionBuilder:
     ) -> Self:
         """Array access (array[index])."""
         array_expr = self._to_expression(array)
-        index_expr = self._to_expression(index)
+        index_expr = self._to_integer_expression(index)
         return ConditionBuilder(ArrayAccess(array=array_expr, index=index_expr))
 
     # Logical operators

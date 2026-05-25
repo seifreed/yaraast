@@ -155,6 +155,12 @@ def test_condition_builder_rejects_boolean_offsets_and_range_bounds() -> None:
     with pytest.raises(TypeError, match="Invalid integer literal value"):
         ConditionBuilder().range(0, cast(Any, True))
 
+    with pytest.raises(TypeError, match="Invalid integer literal value"):
+        ConditionBuilder().array_access(ConditionBuilder().identifier("arr"), cast(Any, True))
+
+    with pytest.raises(TypeError, match=r"Cannot convert .* to integer expression"):
+        ConditionBuilder().array_access(ConditionBuilder().identifier("arr"), cast(Any, "0"))
+
 
 def test_condition_builder_errors_on_empty() -> None:
     with pytest.raises(ValidationError):
