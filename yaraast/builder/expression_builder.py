@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
@@ -21,6 +23,8 @@ from yaraast.ast.expressions import (
     UnaryExpression,
 )
 from yaraast.errors import ValidationError
+
+_STRING_REFERENCE_BODY_RE = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 class ExpressionBuilder:
@@ -42,6 +46,7 @@ class ExpressionBuilder:
     @staticmethod
     def string(identifier: str) -> StringIdentifier:
         """Create string identifier."""
+        ExpressionBuilder._validate_string_reference(identifier)
         return StringIdentifier(name=identifier)
 
     @staticmethod
@@ -187,6 +192,7 @@ class ExpressionBuilder:
     @staticmethod
     def at(string_id: str, offset: int | Expression) -> AtExpression:
         """Create 'at' expression."""
+        ExpressionBuilder._validate_string_reference(string_id)
         offset_expr = ExpressionBuilder._integer_or_expression(offset)
         return AtExpression(string_id=string_id, offset=offset_expr)
 
@@ -197,6 +203,7 @@ class ExpressionBuilder:
         end: int | Expression,
     ) -> InExpression:
         """Create 'in' expression."""
+        ExpressionBuilder._validate_string_reference(string_id)
         range_expr = ExpressionBuilder.range(start, end)
         return InExpression(subject=string_id, range=range_expr)
 
@@ -233,6 +240,20 @@ class ExpressionBuilder:
         if "them" in strings and not all(string == "them" for string in strings):
             msg = "'them' cannot be mixed with explicit string identifiers"
             raise ValidationError(msg)
+        for string in strings:
+            if string != "them":
+                ExpressionBuilder._validate_string_reference(string)
+
+    @staticmethod
+    def _validate_string_reference(identifier: object) -> None:
+        if not isinstance(identifier, str):
+            msg = f"Invalid string reference: {identifier}"
+            raise TypeError(msg)
+        body = identifier[1:] if identifier.startswith("$") else identifier
+        if body and _STRING_REFERENCE_BODY_RE.fullmatch(body) is not None:
+            return
+        msg = f"Invalid string reference: {identifier}"
+        raise ValidationError(msg)
 
     @staticmethod
     def _of_string_set(*strings: str) -> Expression:

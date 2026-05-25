@@ -87,6 +87,30 @@ def test_expression_builder_rejects_mixed_them_string_sets() -> None:
         ExpressionBuilder.n_of(1, "$a", "them")
 
 
+@pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$", ""])
+def test_expression_builder_rejects_invalid_string_references(identifier: str) -> None:
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        ExpressionBuilder.string(identifier)
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        ExpressionBuilder.string_set("$a", identifier)
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        ExpressionBuilder.any_of("$a", identifier)
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        ExpressionBuilder.all_of(identifier)
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        ExpressionBuilder.n_of(1, identifier)
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        ExpressionBuilder.at(identifier, 0)
+
+    with pytest.raises(ValidationError, match="Invalid string reference"):
+        ExpressionBuilder.in_(identifier, 0, 1)
+
+
 def test_expression_builder_treats_all_them_as_special_string_set() -> None:
     expr = ExpressionBuilder.any_of("them")
 
