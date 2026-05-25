@@ -517,6 +517,31 @@ def test_parse_condition_symbolic_regex_operators_preserve_generated_text(
     assert f"$e.target.hostname {operator} /admin.*/" in generated
 
 
+def test_parse_condition_double_equals_preserve_generated_text() -> None:
+    parser = YaraLParser('$e.target.hostname == "admin"')
+    condition = parser._parse_condition_expression()
+
+    assert isinstance(condition, VariableComparisonCondition)
+    assert condition.variable == "$e.target.hostname"
+    assert condition.operator == "=="
+    assert condition.value == "admin"
+    assert parser._is_at_end()
+    assert YaraLGenerator().visit(condition) == '$e.target.hostname == "admin"'
+
+    ast = YaraLParser("""
+        rule double_equals_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            #e == 0 or $e.target.hostname == "admin"
+        }
+        """).parse()
+
+    generated = YaraLGenerator().generate(ast)
+    assert "#e == 0" in generated
+    assert '$e.target.hostname == "admin"' in generated
+
+
 def test_parse_condition_function_values_preserve_generated_text() -> None:
     parser = YaraLParser("$risk_score > max(1, 2)")
     condition = parser._parse_condition_expression()

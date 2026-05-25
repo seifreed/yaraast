@@ -136,6 +136,7 @@ class YaraLEventsParsingMixin:
             or self._check(BaseTokenType.GE)
             or self._check(BaseTokenType.LE)
             or self._check_keyword("in")
+            or self._check(BaseTokenType.IEQUALS)
         )
 
     def _parse_event_var_comparison(self, event_var: EventVariable) -> EventStatement:
@@ -165,6 +166,7 @@ class YaraLEventsParsingMixin:
             or self._check(BaseTokenType.LT)
             or self._check(BaseTokenType.GT)
             or self._check(BaseTokenType.EQ)
+            or self._check(BaseTokenType.IEQUALS)
             or self._check(BaseTokenType.NEQ)
         )
 
@@ -202,6 +204,7 @@ class YaraLEventsParsingMixin:
             next_token = self.tokens[next_pos]
             return next_token.type in (
                 BaseTokenType.EQ,
+                BaseTokenType.IEQUALS,
                 BaseTokenType.DOT,
                 BaseTokenType.LE,
                 BaseTokenType.GE,
@@ -270,7 +273,11 @@ class YaraLEventsParsingMixin:
                 next_pos = self.current + 1
                 if next_pos < len(self.tokens):
                     next_token = self.tokens[next_pos]
-                    if next_token.type == BaseTokenType.EQ or next_token.type == BaseTokenType.DOT:
+                    if next_token.type in {
+                        BaseTokenType.EQ,
+                        BaseTokenType.IEQUALS,
+                        BaseTokenType.DOT,
+                    }:
                         break
 
             tokens.append(self._advance())
@@ -359,6 +366,7 @@ class YaraLEventsParsingMixin:
         """Parse event operator."""
         operator_map = {
             BaseTokenType.EQ: "=",
+            BaseTokenType.IEQUALS: "==",
             BaseTokenType.NEQ: "!=",
             BaseTokenType.GT: ">",
             BaseTokenType.LT: "<",

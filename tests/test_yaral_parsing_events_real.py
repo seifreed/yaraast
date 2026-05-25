@@ -537,6 +537,19 @@ def test_parse_event_variable_comparison_preserves_generated_text() -> None:
     assert "$left != $right" in generated
 
 
+def test_parse_event_double_equals_comparison_preserves_generated_text() -> None:
+    ast = YaraLParser("rule cmp_event { events: $left == $right condition: $left }").parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    statement = events.statements[0]
+    assert isinstance(statement, EventStatement)
+    assert statement.text == "$left == $right"
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$left == $right" in generated
+
+
 def test_parse_event_variable_reference_list_preserves_generated_text() -> None:
     ast = YaraLParser("rule list_event { events: $ip in %suspicious_ips% condition: $ip }").parse()
 

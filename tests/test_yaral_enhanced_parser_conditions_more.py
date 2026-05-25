@@ -117,3 +117,22 @@ def test_enhanced_field_null_checks_preserve_generated_text() -> None:
     generated = YaraLGenerator().generate(ast)
     assert "$e.principal.user.userid is null" in generated
     assert "principal.ip is not null" in generated
+
+
+def test_enhanced_double_equals_conditions_preserve_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule enhanced_double_equals {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            #e == 0 or $e.target.hostname == "admin"
+        }
+        """)
+
+    ast = parser.parse()
+
+    assert parser.errors == []
+    assert len(ast.rules) == 1
+    generated = YaraLGenerator().generate(ast)
+    assert "#e == 0" in generated
+    assert '$e.target.hostname == "admin"' in generated

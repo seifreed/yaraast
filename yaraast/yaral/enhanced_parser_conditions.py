@@ -145,6 +145,9 @@ class EnhancedYaraLParserConditionsMixin:
         if self._check(BaseTokenType.EQ):
             self._advance()
             return "="
+        if self._check(BaseTokenType.IEQUALS):
+            self._advance()
+            return "=="
         if self._check(BaseTokenType.NEQ):
             self._advance()
             return "!="

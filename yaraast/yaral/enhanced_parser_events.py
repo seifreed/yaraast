@@ -125,6 +125,7 @@ class EnhancedYaraLParserEventsMixin:
                 in {
                     BaseTokenType.DOT,
                     BaseTokenType.EQ,
+                    BaseTokenType.IEQUALS,
                     BaseTokenType.NEQ,
                     BaseTokenType.GT,
                     BaseTokenType.LT,
@@ -142,6 +143,7 @@ class EnhancedYaraLParserEventsMixin:
             BaseTokenType.COMMA,
             BaseTokenType.DOT,
             BaseTokenType.EQ,
+            BaseTokenType.IEQUALS,
             BaseTokenType.NEQ,
             BaseTokenType.GT,
             BaseTokenType.LT,
@@ -154,6 +156,7 @@ class EnhancedYaraLParserEventsMixin:
     def _is_event_var_comparison_start(self) -> bool:
         return (
             self._check(BaseTokenType.NEQ)
+            or self._check(BaseTokenType.IEQUALS)
             or self._check(BaseTokenType.GT)
             or self._check(BaseTokenType.LT)
             or self._check(BaseTokenType.GE)
@@ -175,7 +178,11 @@ class EnhancedYaraLParserEventsMixin:
                 or self._check(BaseTokenType.STRING_IDENTIFIER)
             ):
                 next_token = self._peek_ahead(1)
-                if next_token and next_token.type in {BaseTokenType.EQ, BaseTokenType.DOT}:
+                if next_token and next_token.type in {
+                    BaseTokenType.EQ,
+                    BaseTokenType.IEQUALS,
+                    BaseTokenType.DOT,
+                }:
                     break
 
             tokens.append(self._advance())

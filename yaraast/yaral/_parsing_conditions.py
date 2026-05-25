@@ -150,6 +150,7 @@ class YaraLConditionParsingMixin:
     def _consume_comparison_operator(self) -> str:
         """Consume and return a comparison operator token."""
         operator_map = {
+            BaseTokenType.IEQUALS: "==",
             BaseTokenType.GT: ">",
             BaseTokenType.LT: "<",
             BaseTokenType.GE: ">=",
@@ -248,6 +249,7 @@ class YaraLConditionParsingMixin:
             or self._check(BaseTokenType.GE)
             or self._check(BaseTokenType.LE)
             or self._check(BaseTokenType.EQ)
+            or self._check(BaseTokenType.IEQUALS)
             or self._check(BaseTokenType.NEQ)
         )
 
