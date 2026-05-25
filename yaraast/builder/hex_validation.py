@@ -5,8 +5,18 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from yaraast.ast.strings import HexAlternative, HexJump, HexToken
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexToken,
+    HexWildcard,
+)
 from yaraast.errors import ValidationError
+
+_HEX_CHARS = frozenset("0123456789abcdefABCDEF")
 
 
 def validate_hex_tokens_for_builder(tokens: Sequence[HexToken], identifier: str) -> None:
@@ -36,6 +46,14 @@ def _validate_hex_token_sequence(
         elif inside_alternative and isinstance(token, HexJump) and token.max_jump is None:
             msg = "Unbounded HexJump is not allowed inside hex alternatives"
             raise ValidationError(msg)
+        elif inside_alternative and isinstance(token, int | str):
+            _validate_hex_byte_value(token)
+        elif not isinstance(
+            token,
+            HexByte | HexNegatedByte | HexNibble | HexWildcard | HexJump,
+        ):
+            msg = f"Unsupported hex token '{type(token).__name__}'"
+            raise TypeError(msg)
 
     if isinstance(tokens[0], HexJump) or isinstance(tokens[-1], HexJump):
         msg = f"HexJump cannot appear at the beginning or end of {context} {identifier}"
@@ -59,3 +77,12 @@ def _validate_hex_alternative(token: HexAlternative, identifier: str) -> None:
             context="hex alternative branch",
             inside_alternative=True,
         )
+
+
+def _validate_hex_byte_value(value: int | str) -> None:
+    if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 0xFF:
+        return
+    if isinstance(value, str) and len(value) == 2 and all(char in _HEX_CHARS for char in value):
+        return
+    msg = "HexByte value must be a byte"
+    raise TypeError(msg)

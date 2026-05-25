@@ -6,6 +6,7 @@ import pytest
 
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.strings import HexAlternative
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 from yaraast.errors import ValidationError
@@ -62,3 +63,20 @@ def test_rule_builder_rejects_invalid_hex_alternatives() -> None:
             .alternative(HexStringBuilder().add(0x42).jump_any().add(0x43))
             .add(0x44),
         )
+
+
+def test_rule_builder_rejects_unsupported_raw_hex_tokens() -> None:
+    with pytest.raises(TypeError, match="Unsupported hex token"):
+        RuleBuilder("bad").with_hex_string("$h", [object()])
+
+    with pytest.raises(TypeError, match="HexByte value must be a byte"):
+        RuleBuilder("bad").with_hex_string("$h", [HexAlternative([True])])
+
+    assert (
+        RuleBuilder("ok")
+        .with_hex_string(
+            "$h",
+            [HexAlternative([0x90, "91"])],
+        )
+        .build()
+    )
