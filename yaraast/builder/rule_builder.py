@@ -125,6 +125,13 @@ def _validate_hex_pattern(pattern: object) -> str:
     raise TypeError(msg)
 
 
+def _require_bool_flag(value: bool, name: str) -> bool:
+    if not isinstance(value, bool):
+        msg = f"RuleBuilder {name} flag must be a boolean"
+        raise TypeError(msg)
+    return value
+
+
 class RuleBuilder:
     """Fluent builder for constructing YARA rules programmatically.
 
@@ -244,6 +251,10 @@ class RuleBuilder:
     ) -> Self:
         """Add a plain string."""
         value = _coerce_plain_string_value(value)
+        nocase = _require_bool_flag(nocase, "nocase")
+        wide = _require_bool_flag(wide, "wide")
+        ascii = _require_bool_flag(ascii, "ascii")
+        fullword = _require_bool_flag(fullword, "fullword")
         modifiers = []
         if nocase:
             modifiers.append(StringModifier.from_name_value("nocase"))
@@ -354,6 +365,9 @@ class RuleBuilder:
         from yaraast.ast.modifiers import StringModifier, StringModifierType
 
         pattern = _validate_regex_pattern(pattern)
+        case_insensitive = _require_bool_flag(case_insensitive, "case_insensitive")
+        dotall = _require_bool_flag(dotall, "dotall")
+        multiline = _require_bool_flag(multiline, "multiline")
         mods: list[StringModifier] = []
         if case_insensitive:
             mods.append(StringModifier(modifier_type=StringModifierType.NOCASE))
@@ -434,6 +448,7 @@ class RuleBuilder:
 
     def require_condition(self, require: bool = True) -> Self:
         """Require an explicit condition before build."""
+        require = _require_bool_flag(require, "require")
         self._require_condition = require
         return self
 

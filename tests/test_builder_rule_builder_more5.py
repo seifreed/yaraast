@@ -117,6 +117,20 @@ def test_rule_builder_rejects_invalid_string_content_types() -> None:
         RuleBuilder("string_rule").with_hex_string_raw("$h", cast(Any, True))
 
 
+def test_rule_builder_rejects_non_boolean_flags() -> None:
+    with pytest.raises(TypeError, match="RuleBuilder nocase flag must be a boolean"):
+        RuleBuilder("string_rule").with_plain_string("$a", "x", nocase=cast(Any, "yes"))
+
+    with pytest.raises(TypeError, match="RuleBuilder wide flag must be a boolean"):
+        RuleBuilder("string_rule").with_string("$a", "x", wide=cast(Any, "yes"))
+
+    with pytest.raises(TypeError, match="RuleBuilder dotall flag must be a boolean"):
+        RuleBuilder("regex_rule").with_regex("$r", "x", dotall=cast(Any, "yes"))
+
+    with pytest.raises(TypeError, match="RuleBuilder require flag must be a boolean"):
+        RuleBuilder("condition_rule").require_condition(cast(Any, "yes"))
+
+
 @pytest.mark.parametrize("identifier", ["$bad-key", "$bad space", "$", ""])
 def test_rule_builder_rejects_invalid_string_identifiers(identifier: str) -> None:
     with pytest.raises(ValidationError, match="Invalid string identifier"):
