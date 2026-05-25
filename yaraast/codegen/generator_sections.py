@@ -43,9 +43,9 @@ def write_meta_section(gen, meta) -> None:
 
 def write_strings_section(gen, strings, *, has_condition: bool) -> None:
     """Write strings section if present."""
+    validate_string_identifiers(strings)
     if not strings:
         return
-    validate_string_identifiers(strings)
     gen._writeline("strings:")
     gen._indent()
     for string in strings:

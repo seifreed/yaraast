@@ -25,6 +25,7 @@ from yaraast.codegen.generator_helpers import (
     output_string_identifier,
     validate_hex_alternative_token,
     validate_hex_string_tokens,
+    validate_string_identifiers,
 )
 
 _WORD_BINARY_OPERATORS = {
@@ -143,6 +144,7 @@ def calculate_string_alignment_column(ast) -> int:
     """Calculate alignment column for string identifiers."""
     max_length = 0
     for rule in ast.rules:
+        validate_string_identifiers(rule.strings)
         for string_def in rule.strings:
             max_length = max(max_length, len(output_string_identifier(string_def)))
     return max_length + 1

@@ -70,6 +70,7 @@ def visit_yara_file(generator, node) -> str:
 
 def visit_rule(generator, node) -> str:
     validate_rule_meta(node.meta)
+    validate_string_identifiers(node.strings)
     modifiers = format_rule_modifiers(node.modifiers)
     if modifiers:
         generator._write(f"{modifiers} ")

@@ -618,6 +618,30 @@ def test_codegen_generators_reject_unsupported_string_definitions() -> None:
         PrettyPrinter().pretty_print(ast)
 
 
+@pytest.mark.parametrize("invalid_strings", [False, 0, "", None])
+def test_codegen_generators_reject_invalid_rule_string_collections(
+    invalid_strings: Any,
+) -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_strings",
+                strings=invalid_strings,
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    with pytest.raises(TypeError, match="Rule strings must be a list or tuple"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule strings must be a list or tuple"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule strings must be a list or tuple"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(TypeError, match="Rule strings must be a list or tuple"):
+        PrettyPrinter().pretty_print(ast)
+
+
 _BAD_PLAIN_STRING_VALUE: Any = 123
 _BAD_REGEX_PATTERN: Any = 123
 

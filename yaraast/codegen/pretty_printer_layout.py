@@ -13,6 +13,7 @@ from yaraast.codegen.generator_helpers import (
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
+    validate_string_identifiers,
 )
 from yaraast.codegen.pretty_printer_helpers import (
     build_hex_pattern,
@@ -88,6 +89,7 @@ def visit_yara_file(printer, node) -> str:
 def visit_rule(printer, node) -> str:
     printer._write_comments(node.leading_comments)
     validate_rule_meta(node.meta)
+    validate_string_identifiers(node.strings)
     line_parts = []
     modifiers = format_rule_modifiers(node.modifiers)
     if modifiers:

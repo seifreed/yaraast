@@ -242,9 +242,9 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
     def _write_strings_section(self, node: Rule) -> None:
         """Write the strings section with comments."""
+        validate_string_identifiers(node.strings)
         if not node.strings:
             return
-        validate_string_identifiers(node.strings)
 
         self._writeline("strings:")
         self._indent()

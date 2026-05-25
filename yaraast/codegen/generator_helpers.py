@@ -165,6 +165,9 @@ def validate_string_set_item_text(item: Any) -> str:
 
 def validate_string_identifiers(strings) -> None:
     """Reject duplicate named string identifiers that libyara rejects."""
+    if not isinstance(strings, list | tuple):
+        msg = "Rule strings must be a list or tuple for libyara output"
+        raise TypeError(msg)
     if not strings:
         return
 
