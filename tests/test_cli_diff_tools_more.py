@@ -98,6 +98,26 @@ rule added {
     assert result.change_summary["added_rules"] == 1
 
 
+def test_ast_differ_detects_changed_duplicate_rule_occurrence() -> None:
+    ast1 = YaraFile(
+        rules=[
+            Rule("duplicate", condition=BooleanLiteral(True)),
+            Rule("duplicate", condition=BooleanLiteral(False)),
+        ],
+    )
+    ast2 = YaraFile(
+        rules=[
+            Rule("duplicate", condition=UnaryExpression("not", BooleanLiteral(True))),
+            Rule("duplicate", condition=BooleanLiteral(False)),
+        ],
+    )
+
+    result = ASTDiffer().diff_asts(ast1, ast2)
+
+    assert result.has_changes is True
+    assert any("Condition logic changed in rule 'duplicate#1'" in c for c in result.logical_changes)
+
+
 def test_ast_differ_public_change_lists_are_stably_sorted() -> None:
     ast1 = Parser().parse("""
 rule z_removed { condition: true }

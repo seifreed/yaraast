@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
 import hashlib
@@ -63,6 +64,8 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
         }
 
     def visit_yara_file(self, node: YaraFile) -> Any:
+        rule_counts = Counter(rule.name for rule in node.rules)
+        seen_rules: defaultdict[str, int] = defaultdict(int)
         self.structural_hash["file"] = self._hash_dict(
             {
                 "imports": [imp.module for imp in node.imports],
@@ -71,10 +74,16 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
             }
         )
         for rule in node.rules:
-            self.visit(rule)
-        return super().visit_yara_file(node)
+            seen_rules[rule.name] += 1
+            signature_key = self._occurrence_key(rule.name, seen_rules[rule.name], rule_counts)
+            self._record_rule(rule, signature_key)
+        return None
 
     def visit_rule(self, rule: Rule) -> Any:
+        self._record_rule(rule, rule.name)
+        return super().visit_rule(rule)
+
+    def _record_rule(self, rule: Rule, signature_key: str) -> None:
         meta_data = getattr(rule, "meta", [])
         meta_keys = sorted([getattr(m, "key", "") for m in meta_data if hasattr(m, "key")])
         meta_entries = sorted(
@@ -90,7 +99,7 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
             key=lambda item: (str(item["key"]), str(item["value"]), str(item["scope"])),
         )
 
-        self.rule_signatures[rule.name] = self._hash_dict(
+        self.rule_signatures[signature_key] = self._hash_dict(
             {
                 "name": rule.name,
                 "modifiers": sorted(str(m) for m in getattr(rule, "modifiers", [])),
@@ -102,13 +111,31 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
             }
         )
 
-        for string_def in getattr(rule, "strings", []):
-            self._analyze_string(string_def, rule.name)
+        strings = getattr(rule, "strings", [])
+        string_counts = Counter(string_def.identifier for string_def in strings)
+        seen_strings: defaultdict[str, int] = defaultdict(int)
+        for string_def in strings:
+            seen_strings[string_def.identifier] += 1
+            string_key = self._occurrence_key(
+                string_def.identifier,
+                seen_strings[string_def.identifier],
+                string_counts,
+            )
+            self._analyze_string(string_def, signature_key, string_key)
         if rule.condition:
-            self._analyze_condition(rule.condition, rule.name)
-        return super().visit_rule(rule)
+            self._analyze_condition(rule.condition, signature_key)
 
-    def _analyze_string(self, string_def: StringDef, rule_name: str = "") -> None:
+    def _occurrence_key(self, name: str, occurrence: int, counts: Counter[str]) -> str:
+        if counts[name] == 1:
+            return name
+        return f"{name}#{occurrence}"
+
+    def _analyze_string(
+        self,
+        string_def: StringDef,
+        rule_name: str = "",
+        string_key: str | None = None,
+    ) -> None:
         string_structure = {
             "identifier": string_def.identifier,
             "type": type(string_def).__name__,
@@ -131,7 +158,8 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
             tokens = getattr(string_def, "tokens", [])
             string_structure["token_count"] = str(len(tokens))
             string_structure["tokens"] = self._condition_value_structure(tokens)
-        sig_key = f"{rule_name}:{string_def.identifier}" if rule_name else string_def.identifier
+        identifier = string_key or string_def.identifier
+        sig_key = f"{rule_name}:{identifier}" if rule_name else identifier
         self.string_signatures[sig_key] = self._hash_dict(string_structure)
 
     def _analyze_condition(self, condition: Condition, rule_name: str) -> None:
