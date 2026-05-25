@@ -175,7 +175,7 @@ class TestEnhancedYamlSerializer:
         # Parse manifest
         data = yaml.safe_load(manifest)
 
-        assert data["manifest_version"] == "1.0"
+        assert data["manifest_version"] == "2.0"
         assert len(data["rules"]) == 2
         assert data["summary"]["total_rules"] == 2
         assert data["summary"]["private_rules"] == 1

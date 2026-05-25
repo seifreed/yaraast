@@ -76,5 +76,31 @@ def test_rules_manifest_preserves_meta_scopes() -> None:
     manifest_yaml = create_rules_manifest(ast)
     manifest = yaml.safe_load(manifest_yaml)
 
-    assert manifest["rules"][0]["meta"] == {"classification": "restricted"}
-    assert manifest["rules"][0]["meta_scopes"] == {"classification": "private"}
+    assert manifest["rules"][0]["meta"] == [
+        {"key": "classification", "value": "restricted", "scope": "private"}
+    ]
+    assert "meta_scopes" not in manifest["rules"][0]
+
+
+def test_rules_manifest_preserves_duplicate_meta_entries() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_meta",
+                meta=[
+                    MetaEntry.from_key_value("author", "alice"),
+                    MetaEntry.from_key_value("author", "bob", "private"),
+                ],
+                condition=BooleanLiteral(value=True),
+            ),
+        ],
+    )
+
+    manifest_yaml = create_rules_manifest(ast)
+    manifest = yaml.safe_load(manifest_yaml)
+
+    assert manifest["manifest_version"] == "2.0"
+    assert manifest["rules"][0]["meta"] == [
+        {"key": "author", "value": "alice", "scope": "public"},
+        {"key": "author", "value": "bob", "scope": "private"},
+    ]

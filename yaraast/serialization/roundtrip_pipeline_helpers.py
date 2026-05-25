@@ -86,7 +86,7 @@ def build_rules_manifest(ast) -> dict[str, Any]:
     includes = _validated_node_collection(ast.includes, "YaraFile includes", Include)
     rules = _validated_node_collection(ast.rules, "YaraFile rules", Rule)
     manifest = {
-        "manifest_version": "1.0",
+        "manifest_version": "2.0",
         "generated_at": datetime.now().isoformat(),
         "rules": [],
     }
@@ -114,9 +114,6 @@ def build_rules_manifest(ast) -> dict[str, Any]:
             "string_count": len(strings),
             "has_condition": rule.condition is not None,
         }
-        meta_scopes = _build_rule_meta_scopes(meta)
-        if meta_scopes:
-            rule_manifest["meta_scopes"] = meta_scopes
         manifest["rules"].append(rule_manifest)
     manifest["summary"] = {
         "total_rules": len(rules),
@@ -129,19 +126,18 @@ def build_rules_manifest(ast) -> dict[str, Any]:
     return manifest
 
 
-def _build_rule_meta(meta) -> dict[str, Any]:
+def _build_rule_meta(meta) -> list[dict[str, Any]]:
     if not meta:
-        return {}
-    return {entry.key: entry.value for entry in meta}
+        return []
 
-
-def _build_rule_meta_scopes(meta) -> dict[str, str]:
-    scopes = {}
+    entries = []
     for entry in meta:
         scope = getattr(entry, "scope", None)
+        entry_data = {"key": entry.key, "value": entry.value}
         if scope is not None:
-            scopes[entry.key] = getattr(scope, "value", str(scope))
-    return scopes
+            entry_data["scope"] = getattr(scope, "value", str(scope))
+        entries.append(entry_data)
+    return entries
 
 
 def collect_all_tags(ast) -> list[str]:
