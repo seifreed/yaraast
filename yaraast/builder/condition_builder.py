@@ -182,29 +182,29 @@ class ConditionBuilder:
         return self._integer_binary_op(">=", other)
 
     # String operations
-    def contains(self, pattern: str | ConditionBuilder) -> Self:
+    def contains(self, pattern: str | ConditionBuilder | Expression) -> Self:
         """String contains."""
-        return self._binary_op("contains", pattern)
+        return self._string_binary_op("contains", pattern)
 
-    def matches(self, pattern: str | ConditionBuilder) -> Self:
+    def matches(self, pattern: str | ConditionBuilder | Expression) -> Self:
         """String matches regex."""
-        return self._binary_op("matches", pattern)
+        return self._string_binary_op("matches", pattern)
 
-    def startswith(self, pattern: str | ConditionBuilder) -> Self:
+    def startswith(self, pattern: str | ConditionBuilder | Expression) -> Self:
         """String starts with."""
-        return self._binary_op("startswith", pattern)
+        return self._string_binary_op("startswith", pattern)
 
-    def endswith(self, pattern: str | ConditionBuilder) -> Self:
+    def endswith(self, pattern: str | ConditionBuilder | Expression) -> Self:
         """String ends with."""
-        return self._binary_op("endswith", pattern)
+        return self._string_binary_op("endswith", pattern)
 
-    def icontains(self, pattern: str | ConditionBuilder) -> Self:
+    def icontains(self, pattern: str | ConditionBuilder | Expression) -> Self:
         """Case-insensitive contains."""
-        return self._binary_op("icontains", pattern)
+        return self._string_binary_op("icontains", pattern)
 
-    def iequals(self, pattern: str | ConditionBuilder) -> Self:
+    def iequals(self, pattern: str | ConditionBuilder | Expression) -> Self:
         """Case-insensitive equals."""
-        return self._binary_op("iequals", pattern)
+        return self._string_binary_op("iequals", pattern)
 
     # Special conditions
     def at(self, offset: int | ConditionBuilder) -> Self:
@@ -406,6 +406,20 @@ class ConditionBuilder:
             BinaryExpression(left=self._expression, operator=op, right=right),
         )
 
+    def _string_binary_op(
+        self,
+        op: str,
+        pattern: ConditionBuilder | Expression | str,
+    ) -> Self:
+        if not self._expression:
+            msg = f"Cannot apply {op} to empty expression"
+            raise ValidationError(msg)
+
+        right = self._to_string_pattern(pattern)
+        return ConditionBuilder(
+            BinaryExpression(left=self._expression, operator=op, right=right),
+        )
+
     def _to_logical_operand(self, value: ConditionBuilder | Expression) -> Expression:
         if isinstance(value, ConditionBuilder):
             if not value._expression:
@@ -415,6 +429,22 @@ class ConditionBuilder:
         if isinstance(value, Expression):
             return value
         msg = "Logical operand must be a ConditionBuilder or Expression"
+        raise TypeError(msg)
+
+    def _to_string_pattern(
+        self,
+        value: ConditionBuilder | Expression | str,
+    ) -> Expression:
+        if isinstance(value, ConditionBuilder):
+            if not value._expression:
+                msg = "Empty condition builder"
+                raise ValidationError(msg)
+            return value._expression
+        if isinstance(value, Expression):
+            return value
+        if isinstance(value, str):
+            return StringLiteral(value=value)
+        msg = "String pattern must be a string, ConditionBuilder, or Expression"
         raise TypeError(msg)
 
     def _to_expression(

@@ -7,7 +7,12 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.conditions import ForExpression, InExpression
-from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, ParenthesesExpression
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    ParenthesesExpression,
+    StringLiteral,
+)
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.errors import ValidationError
 
@@ -178,6 +183,21 @@ def test_condition_builder_rejects_invalid_numeric_operands() -> None:
 
     with pytest.raises(TypeError, match=r"Cannot convert .* to integer expression"):
         arithmetic.sub(cast(Any, "1"))
+
+
+def test_condition_builder_rejects_invalid_string_operator_patterns() -> None:
+    builder = ConditionBuilder().identifier("filename")
+
+    dollar_pattern = builder.contains("$a").build()
+    assert isinstance(dollar_pattern, BinaryExpression)
+    assert isinstance(dollar_pattern.right, StringLiteral)
+    assert dollar_pattern.right.value == "$a"
+
+    with pytest.raises(TypeError, match="String pattern must be"):
+        builder.contains(cast(Any, 123))
+
+    with pytest.raises(TypeError, match="String pattern must be"):
+        builder.matches(cast(Any, True))
 
 
 def test_condition_builder_errors_on_empty() -> None:
