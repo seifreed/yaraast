@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 import time
 from typing import TYPE_CHECKING, Any
@@ -60,6 +61,12 @@ def _safe_output_stem(base_name: str, index: int, rule_name: str) -> str:
     return f"{base_name}_{index:04d}_{safe_rule_name or 'rule'}"
 
 
+def _single_rule_ast(parsed: YaraFile, rule: Rule) -> YaraFile:
+    split_ast = copy.copy(parsed)
+    split_ast.rules = [rule]
+    return split_ast
+
+
 def _large_file_asts(
     file_path: Path,
     parsed: YaraFile,
@@ -70,7 +77,7 @@ def _large_file_asts(
     return [
         (
             _safe_output_stem(file_path.stem, index, rule.name),
-            YaraFile(imports=parsed.imports, includes=parsed.includes, rules=[rule]),
+            _single_rule_ast(parsed, rule),
         )
         for index, rule in enumerate(parsed.rules, 1)
     ]

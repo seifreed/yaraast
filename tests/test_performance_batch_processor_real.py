@@ -5,9 +5,14 @@ from typing import Any, cast
 
 import pytest
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.extern import ExternImport, ExternNamespace, ExternRule
+from yaraast.ast.pragmas import CustomPragma
+from yaraast.ast.rules import Rule
 from yaraast.parser import Parser
 from yaraast.performance.batch_processor import BatchOperation, BatchProcessor, BatchResult
-from yaraast.performance.batch_processor_ops import parse_item
+from yaraast.performance.batch_processor_ops import _large_file_asts, parse_item
 
 
 def _yarax_rule() -> str:
@@ -87,6 +92,31 @@ def test_process_batch_parse_handles_invalid_item_without_exceptions() -> None:
 
 def test_parse_item_returns_none_for_invalid_rule_syntax() -> None:
     assert parse_item("rule bad { condition: }") is None
+
+
+def test_large_file_split_preserves_top_level_extensions() -> None:
+    parsed = YaraFile(
+        rules=[
+            Rule(name="first", condition=BooleanLiteral(value=True)),
+            Rule(name="second", condition=BooleanLiteral(value=True)),
+        ],
+        extern_rules=[ExternRule("ExternalRule")],
+        extern_imports=[ExternImport("external_rules")],
+        pragmas=[CustomPragma("vendor")],
+        namespaces=[ExternNamespace("corp")],
+    )
+
+    split_asts = _large_file_asts(Path("rules.yar"), parsed, split_rules=True)
+
+    assert len(split_asts) == 2
+    for index, (_stem, ast) in enumerate(split_asts):
+        assert ast is not parsed
+        assert ast.rules == [parsed.rules[index]]
+        assert ast.rules is not parsed.rules
+        assert ast.extern_rules == parsed.extern_rules
+        assert ast.extern_imports == parsed.extern_imports
+        assert ast.pragmas == parsed.pragmas
+        assert ast.namespaces == parsed.namespaces
 
 
 def test_batch_processor_accepts_yarax_sources_and_files(tmp_path: Path) -> None:
