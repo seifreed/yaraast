@@ -20,6 +20,14 @@ def build_base_metadata(ast: Any, fmt: str) -> dict[str, Any]:
     }
 
 
+def require_bool_option(value: object, name: str) -> bool:
+    """Validate a serializer boolean option."""
+    if not isinstance(value, bool):
+        msg = f"{name} must be a boolean"
+        raise TypeError(msg)
+    return value
+
+
 def read_text(path: str | Path) -> str:
     """Read text from a file path."""
     return read_utf8(path)

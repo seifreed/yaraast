@@ -17,6 +17,7 @@ from yaraast.serialization.protobuf_conversion import (
     convert_string_to_protobuf,
     protobuf_to_ast,
 )
+from yaraast.serialization.serializer_helpers import require_bool_option
 from yaraast.visitor.defaults import DefaultASTVisitor
 
 from . import yara_ast_pb2
@@ -38,7 +39,7 @@ class ProtobufSerializer(DefaultASTVisitor[Any]):
 
     def __init__(self, include_metadata: bool = True) -> None:
         super().__init__(default=None)
-        self.include_metadata = include_metadata
+        self.include_metadata = require_bool_option(include_metadata, "include_metadata")
 
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> bytes:
         """Serialize AST to Protobuf binary format."""

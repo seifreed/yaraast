@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import json
+from typing import Any, cast
 
 import pytest
 
@@ -10,6 +12,8 @@ from yaraast.ast.base import YaraFile
 from yaraast.errors import SerializationError
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
+from yaraast.serialization.protobuf_serializer import ProtobufSerializer
+from yaraast.serialization.yaml_serializer import YamlSerializer
 
 
 def _parse_yara(code: str) -> YaraFile:
@@ -57,6 +61,24 @@ def test_json_serializer_bad_ast_type() -> None:
     payload = json.dumps({"type": "NotYaraFile"})
     with pytest.raises(SerializationError, match="Expected YaraFile"):
         serializer.deserialize(payload)
+
+
+@pytest.mark.parametrize(
+    "constructor,args,match",
+    [
+        (JsonSerializer, {"include_metadata": cast(Any, "false")}, "include_metadata"),
+        (YamlSerializer, {"include_metadata": cast(Any, 1)}, "include_metadata"),
+        (YamlSerializer, {"flow_style": cast(Any, "true")}, "flow_style"),
+        (ProtobufSerializer, {"include_metadata": cast(Any, [])}, "include_metadata"),
+    ],
+)
+def test_serializers_reject_non_boolean_options(
+    constructor: Callable[..., object],
+    args: dict[str, Any],
+    match: str,
+) -> None:
+    with pytest.raises(TypeError, match=match):
+        constructor(**args)
 
 
 def test_json_serializer_unknown_string_and_token_types() -> None:

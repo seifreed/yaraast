@@ -76,7 +76,12 @@ from yaraast.serialization.json_serializer_deserialize import (
 )
 from yaraast.serialization.meta_scopes import serialize_meta_scope
 from yaraast.serialization.pragma_scopes import serialize_pragma_scope
-from yaraast.serialization.serializer_helpers import build_base_metadata, read_text, write_text
+from yaraast.serialization.serializer_helpers import (
+    build_base_metadata,
+    read_text,
+    require_bool_option,
+    write_text,
+)
 from yaraast.visitor.visitor import ASTVisitor
 
 if TYPE_CHECKING:
@@ -128,7 +133,7 @@ class JsonSerializer(JsonSerializerDeserializeMixin, ASTVisitor[dict[str, Any]])
     """Enhanced JSON serializer for YARA AST with metadata."""
 
     def __init__(self, include_metadata: bool = True) -> None:
-        self.include_metadata = include_metadata
+        self.include_metadata = require_bool_option(include_metadata, "include_metadata")
 
     def visit(self, node: ASTNode) -> dict[str, Any]:
         """Visit a node and attach common AST metadata when present."""

@@ -9,7 +9,7 @@ import yaml
 
 from yaraast.errors import SerializationError
 from yaraast.serialization.json_serializer import JsonSerializer
-from yaraast.serialization.serializer_helpers import read_text
+from yaraast.serialization.serializer_helpers import read_text, require_bool_option
 from yaraast.serialization.yaml_serializer_helpers import enrich_yaml_metadata, serialize_yaml
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ class YamlSerializer(JsonSerializer):
 
     def __init__(self, include_metadata: bool = True, flow_style: bool = False) -> None:
         super().__init__(include_metadata)
-        self.flow_style = flow_style
+        self.flow_style = require_bool_option(flow_style, "flow_style")
 
     def serialize(self, ast: YaraFile, output_path: str | Path | None = None) -> str:
         """Serialize AST to YAML format."""
