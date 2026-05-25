@@ -166,6 +166,24 @@ class EnhancedYaraLParserOutcomeMixin:
         """Parse conditional expression in outcome section."""
         self._consume_keyword("if")
 
+        if self._check(BaseTokenType.LPAREN):
+            self._advance()
+            condition = self._parse_condition_expression()
+            self._consume(BaseTokenType.COMMA, "Expected ',' after condition")
+            then_expr = self._parse_outcome_expression()
+
+            else_expr = None
+            if self._check(BaseTokenType.COMMA):
+                self._advance()
+                else_expr = self._parse_outcome_expression()
+
+            self._consume(BaseTokenType.RPAREN, "Expected ')' after if expression")
+            return ConditionalExpression(
+                condition=condition,
+                true_value=then_expr,
+                false_value=else_expr,
+            )
+
         condition = self._parse_condition_expression()
 
         self._consume_keyword("then")

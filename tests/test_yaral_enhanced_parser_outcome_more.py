@@ -267,6 +267,36 @@ def test_enhanced_outcome_assigned_conditional_expressions_roundtrip() -> None:
     assert '$fallback = if($e.metadata.event_type = "LOGIN", "yes")' in generated
 
 
+def test_enhanced_outcome_function_style_conditional_roundtrip() -> None:
+    parser = EnhancedYaraLParser("""
+        rule function_style_conditional {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          outcome:
+            $result = if($e.target.hostname matches /admin.*/ nocase, "yes", "no")
+            $fallback = if($e.target.hostname matches /admin.*/ nocase, "yes")
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    outcome = ast.rules[0].outcome
+    assert outcome is not None
+    assert all(
+        isinstance(assignment.expression, ConditionalExpression)
+        for assignment in outcome.assignments
+    )
+    fallback = outcome.assignments[1].expression
+    assert isinstance(fallback, ConditionalExpression)
+    assert fallback.false_value is None
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$result = if($e.target.hostname =~ /admin.*/ nocase, "yes", "no")' in generated
+    assert '$fallback = if($e.target.hostname =~ /admin.*/ nocase, "yes")' in generated
+
+
 def test_enhanced_outcome_numeric_aggregation_arguments_roundtrip_as_numbers() -> None:
     parser = EnhancedYaraLParser("""
         rule numeric_aggregation_args {
