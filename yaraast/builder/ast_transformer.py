@@ -525,7 +525,15 @@ class YaraFileTransformer:
 
     def filter_rules(self, predicate: Callable[[Rule], bool]) -> YaraFileTransformer:
         """Filter rules based on predicate."""
-        self.yara_file.rules = [rule for rule in self.yara_file.rules if predicate(rule)]
+        filtered_rules = []
+        for rule in self.yara_file.rules:
+            should_keep = predicate(CloneTransformer.clone_rule(rule))
+            if not isinstance(should_keep, bool):
+                msg = f"Rule filter predicate must return bool, got {type(should_keep).__name__}"
+                raise TypeError(msg)
+            if should_keep:
+                filtered_rules.append(rule)
+        self.yara_file.rules = filtered_rules
         return self
 
     def filter_by_tag(self, tag: str) -> YaraFileTransformer:

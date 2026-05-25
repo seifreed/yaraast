@@ -464,6 +464,28 @@ def test_yara_file_transformer_rejects_duplicate_all_rule_transform_names_withou
     assert [rule.name for rule in transformer.build().rules] == ["one", "two"]
 
 
+def test_yara_file_transformer_filter_predicates_receive_rule_copies() -> None:
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("keep"), _sample_rule("drop")]))
+
+    def predicate(rule: Rule) -> bool:
+        keep_rule = rule.name == "keep"
+        rule.name = "bad-name"
+        return keep_rule
+
+    transformed = transformer.filter_rules(predicate).build()
+
+    assert [rule.name for rule in transformed.rules] == ["keep"]
+
+
+def test_yara_file_transformer_rejects_non_bool_filter_results_without_partial_update() -> None:
+    transformer = YaraFileTransformer(YaraFile(rules=[_sample_rule("stable")]))
+
+    with pytest.raises(TypeError, match="Rule filter predicate must return bool"):
+        transformer.filter_rules(cast(Any, lambda rule: "truthy"))
+
+    assert [rule.name for rule in transformer.build().rules] == ["stable"]
+
+
 def test_yara_file_transformer_rejects_empty_imports_and_includes() -> None:
     transformer = YaraFileTransformer(YaraFile()).add_import("pe").add_include("common.yar")
 
