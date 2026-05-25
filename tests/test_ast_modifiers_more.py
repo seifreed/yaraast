@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Any, cast
+
 import pytest
 
 from yaraast.ast.modifiers import (
@@ -42,6 +45,7 @@ def test_meta_scope_fallback_and_meta_entry_str() -> None:
     private_entry = MetaEntry.from_key_value("k", "v", "private")
     escaped_entry = MetaEntry.from_key_value("description", 'a"\\b\n')
     public_entry = MetaEntry.from_key_value("n", 1)
+    float_entry = MetaEntry.from_key_value("score", 1.5)
     boolean_entry = MetaEntry.from_key_value("enabled", True)
     private_boolean_entry = MetaEntry.from_key_value("disabled", False, "private")
     assert private_entry.is_private is True
@@ -49,6 +53,7 @@ def test_meta_scope_fallback_and_meta_entry_str() -> None:
     assert str(private_entry).startswith("private:")
     assert str(escaped_entry) == 'description = "a\\"\\\\b\\n"'
     assert str(public_entry) == "n = 1"
+    assert str(float_entry) == "score = 1.5"
     assert str(boolean_entry) == "enabled = true"
     assert str(private_boolean_entry) == "private:disabled = false"
 
@@ -97,3 +102,72 @@ def test_modifier_accept_and_factory_helpers() -> None:
     meta_entry = create_meta_entry("author", "seifreed", "protected")
     assert meta_entry.scope == MetaScope.PROTECTED
     assert str(meta_entry) == 'protected:author = "seifreed"'
+
+
+def test_modifier_helpers_reject_invalid_inputs_at_creation_time() -> None:
+    invalid_cases: list[tuple[Callable[[], object], str]] = [
+        (
+            lambda: StringModifierType.from_string(cast(Any, object())),
+            "String modifier input must be a string",
+        ),
+        (
+            lambda: RuleModifierType.from_string(cast(Any, object())),
+            "Rule modifier input must be a string",
+        ),
+        (
+            lambda: MetaScope.from_string(cast(Any, object())),
+            "Meta scope input must be a string",
+        ),
+        (
+            lambda: StringModifier.from_name_value(cast(Any, object())),
+            "String modifier input must be a string",
+        ),
+        (
+            lambda: RuleModifier.from_string(cast(Any, object())),
+            "Rule modifier input must be a string",
+        ),
+        (
+            lambda: create_string_modifier(cast(Any, object())),
+            "String modifier input must be a string",
+        ),
+        (
+            lambda: create_rule_modifier(cast(Any, object())),
+            "Rule modifier input must be a string",
+        ),
+        (
+            lambda: MetaEntry.from_key_value(cast(Any, object()), "value"),
+            "Meta key must be a string",
+        ),
+        (
+            lambda: MetaEntry.from_key_value("key", cast(Any, object())),
+            "Meta value must be a string, integer, boolean, or finite float",
+        ),
+        (
+            lambda: MetaEntry.from_key_value("key", cast(Any, float("nan"))),
+            "Meta value must be a string, integer, boolean, or finite float",
+        ),
+        (
+            lambda: MetaEntry.from_key_value("key", "value", cast(Any, object())),
+            "Meta scope input must be a string",
+        ),
+        (
+            lambda: create_meta_entry(cast(Any, object()), "value"),
+            "Meta key must be a string",
+        ),
+        (
+            lambda: create_meta_entry("key", cast(Any, object())),
+            "Meta value must be a string, integer, boolean, or finite float",
+        ),
+        (
+            lambda: create_meta_entry("key", cast(Any, float("inf"))),
+            "Meta value must be a string, integer, boolean, or finite float",
+        ),
+        (
+            lambda: create_meta_entry("key", "value", cast(Any, object())),
+            "Meta scope input must be a string",
+        ),
+    ]
+
+    for factory, message in invalid_cases:
+        with pytest.raises(TypeError, match=message):
+            factory()

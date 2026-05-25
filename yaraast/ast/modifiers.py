@@ -2,12 +2,29 @@
 
 from dataclasses import dataclass
 from enum import Enum
+import math
 from typing import Any
 
 from yaraast.ast.base import ASTNode, _VisitorType
 from yaraast.errors import ValidationError
 from yaraast.string_escaping import escape_string_source_value
 from yaraast.xor_keys import parse_xor_key_text
+
+
+def _require_string(value: Any, field_name: str) -> str:
+    if not isinstance(value, str):
+        msg = f"{field_name} must be a string"
+        raise TypeError(msg)
+    return value
+
+
+def _require_meta_value(value: Any) -> str | int | bool | float:
+    if isinstance(value, str | bool | int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
+        return value
+    msg = "Meta value must be a string, integer, boolean, or finite float"
+    raise TypeError(msg)
 
 
 def _is_xor_modifier_text(value: str) -> bool:
@@ -61,11 +78,12 @@ class StringModifierType(Enum):
     @classmethod
     def from_string(cls, modifier_str: str) -> "StringModifierType":
         """Convert string to modifier enum, handling case insensitivity."""
+        modifier_text = _require_string(modifier_str, "String modifier input")
         try:
-            return cls(modifier_str.lower())
+            return cls(modifier_text.lower())
         except ValueError:
             # For unknown modifiers, we could either raise an error or create a custom type
-            msg = f"Unknown string modifier: {modifier_str}"
+            msg = f"Unknown string modifier: {modifier_text}"
             raise ValidationError(msg) from None
 
     def __str__(self) -> str:
@@ -82,10 +100,11 @@ class RuleModifierType(Enum):
     @classmethod
     def from_string(cls, modifier_str: str) -> "RuleModifierType":
         """Convert string to rule modifier enum."""
+        modifier_text = _require_string(modifier_str, "Rule modifier input")
         try:
-            return cls(modifier_str.lower())
+            return cls(modifier_text.lower())
         except ValueError:
-            msg = f"Unknown rule modifier: {modifier_str}"
+            msg = f"Unknown rule modifier: {modifier_text}"
             raise ValidationError(msg) from None
 
     def __str__(self) -> str:
@@ -102,8 +121,9 @@ class MetaScope(Enum):
     @classmethod
     def from_string(cls, scope_str: str) -> "MetaScope":
         """Convert string to meta scope enum."""
+        scope_text = _require_string(scope_str, "Meta scope input")
         try:
-            return cls(scope_str.lower())
+            return cls(scope_text.lower())
         except ValueError:
             return cls.PUBLIC  # Default to public if unknown
 
@@ -173,19 +193,21 @@ class MetaEntry:
     """Enhanced meta entry with scope support."""
 
     key: str
-    value: str | int | bool
+    value: str | int | bool | float
     scope: MetaScope = MetaScope.PUBLIC
 
     @classmethod
     def from_key_value(
         cls,
         key: str,
-        value: str | int | bool,
+        value: str | int | bool | float,
         scope: str | None = None,
     ) -> "MetaEntry":
         """Create MetaEntry from key, value, and optional scope."""
-        meta_scope = MetaScope.from_string(scope) if scope else MetaScope.PUBLIC
-        return cls(key=key, value=value, scope=meta_scope)
+        meta_key = _require_string(key, "Meta key")
+        meta_value = _require_meta_value(value)
+        meta_scope = MetaScope.from_string(scope) if scope is not None else MetaScope.PUBLIC
+        return cls(key=meta_key, value=meta_value, scope=meta_scope)
 
     @property
     def is_private(self) -> bool:
@@ -219,7 +241,11 @@ def create_rule_modifier(name: str) -> RuleModifier:
     return RuleModifier.from_string(name)
 
 
-def create_meta_entry(key: str, value: str | int | bool, scope: str | None = None) -> MetaEntry:
+def create_meta_entry(
+    key: str,
+    value: str | int | bool | float,
+    scope: str | None = None,
+) -> MetaEntry:
     """Create a meta entry with optional scope."""
     return MetaEntry.from_key_value(key, value, scope)
 
