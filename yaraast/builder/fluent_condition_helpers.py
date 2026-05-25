@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 
 from yaraast.ast.conditions import OfExpression
@@ -30,6 +31,23 @@ def make_integer_literal(value: int) -> IntegerLiteral:
         msg = f"Invalid integer literal value: {value}"
         raise TypeError(msg)
     return IntegerLiteral(value=value)
+
+
+def make_double_literal(value: float) -> DoubleLiteral:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        msg = "Double literal value must be numeric"
+        raise TypeError(msg)
+    if not math.isfinite(value):
+        msg = "Double literal value must be finite"
+        raise ValueError(msg)
+    return DoubleLiteral(value=value)
+
+
+def make_string_literal(value: str, kind: str) -> StringLiteral:
+    if isinstance(value, str):
+        return StringLiteral(value=value)
+    msg = f"{kind} must be a string"
+    raise TypeError(msg)
 
 
 def make_filesize_compare(operator: str, size: int) -> BinaryExpression:
@@ -107,5 +125,5 @@ def build_entropy_compare(
     return make_binary(
         build_entropy_call(offset, size),
         operator,
-        DoubleLiteral(value=threshold),
+        make_double_literal(threshold),
     )

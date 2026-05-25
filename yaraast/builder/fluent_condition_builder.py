@@ -13,7 +13,6 @@ from yaraast.ast.expressions import (
     MemberAccess,
     RangeExpression,
     StringIdentifier,
-    StringLiteral,
     UnaryExpression,
 )
 from yaraast.builder.condition_builder import ConditionBuilder
@@ -24,6 +23,7 @@ from yaraast.builder.fluent_condition_helpers import (
     make_filesize_compare,
     make_integer_literal,
     make_string_count_compare,
+    make_string_literal,
     validate_string_reference,
 )
 from yaraast.errors import ValidationError
@@ -277,7 +277,7 @@ class FluentConditionBuilder(ConditionBuilder):
             BinaryExpression(
                 left=FunctionCall(function="pe.imphash", arguments=[]),
                 operator="==",
-                right=StringLiteral(value=hash_value),
+                right=make_string_literal(hash_value, "PE imphash"),
             ),
         )
 
@@ -286,7 +286,7 @@ class FluentConditionBuilder(ConditionBuilder):
         return FluentConditionBuilder(
             FunctionCall(
                 function="pe.exports",
-                arguments=[StringLiteral(value=function_name)],
+                arguments=[make_string_literal(function_name, "PE export name")],
             ),
         )
 
@@ -296,8 +296,8 @@ class FluentConditionBuilder(ConditionBuilder):
             FunctionCall(
                 function="pe.imports",
                 arguments=[
-                    StringLiteral(value=dll_name),
-                    StringLiteral(value=function_name),
+                    make_string_literal(dll_name, "PE DLL name"),
+                    make_string_literal(function_name, "PE import name"),
                 ],
             ),
         )
