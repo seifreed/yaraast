@@ -80,6 +80,7 @@ from yaraast.serialization.simple_roundtrip_helpers import (
     serialize_rule,
     serialize_string,
     serialize_to_file,
+    serialize_yarafile,
     validate_roundtrip,
 )
 from yaraast.yarax.ast_nodes import (
@@ -693,6 +694,33 @@ def test_simple_roundtrip_serializers_reject_non_list_collections() -> None:
     cast(Any, plain).modifiers = "ascii"
     with pytest.raises(SerializationError, match="PlainString modifiers must be a list"):
         serialize_string(plain)
+
+
+def test_simple_roundtrip_serializers_reject_non_list_ast_collections() -> None:
+    yara_file = YaraFile()
+    cast(Any, yara_file).imports = False
+    with pytest.raises(SerializationError, match="YaraFile imports must be a list"):
+        serialize_yarafile(yara_file)
+
+    cast(Any, yara_file).imports = []
+    cast(Any, yara_file).rules = "rule"
+    with pytest.raises(SerializationError, match="YaraFile rules must be a list"):
+        serialize_yarafile(yara_file)
+
+    rule = Rule(name="r1", condition=BooleanLiteral(True))
+    cast(Any, rule).meta = "author"
+    with pytest.raises(SerializationError, match="Rule meta must be a list"):
+        serialize_rule(rule)
+
+    cast(Any, rule).meta = []
+    cast(Any, rule).strings = "$a"
+    with pytest.raises(SerializationError, match="Rule strings must be a list"):
+        serialize_rule(rule)
+
+    cast(Any, rule).strings = []
+    cast(Any, rule).pragmas = False
+    with pytest.raises(SerializationError, match="Rule pragmas must be a list"):
+        serialize_rule(rule)
 
 
 def test_simple_roundtrip_deserialize_string_requires_literal_true_for_anonymous_flag() -> None:

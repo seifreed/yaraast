@@ -663,6 +663,55 @@ def _serialize_modifiers(modifiers: Any, context: str) -> list[dict[str, Any]]:
     ]
 
 
+def _expected_type_names(expected_type: type[Any] | tuple[type[Any], ...]) -> str:
+    expected_types = expected_type if isinstance(expected_type, tuple) else (expected_type,)
+    return " or ".join(item_type.__name__ for item_type in expected_types)
+
+
+def _validated_node_collection(
+    values: Any,
+    context: str,
+    expected_type: type[Any] | tuple[type[Any], ...],
+) -> list[Any]:
+    if not isinstance(values, list | tuple):
+        msg = f"{context} must be a list"
+        raise SerializationError(msg)
+
+    for value in values:
+        if not isinstance(value, expected_type):
+            msg = f"{context} must contain {_expected_type_names(expected_type)} nodes"
+            raise SerializationError(msg)
+    return list(values)
+
+
+def _serialize_meta_entries(values: Any) -> list[dict[str, Any]]:
+    if not isinstance(values, list | tuple):
+        msg = "Rule meta must be a list"
+        raise SerializationError(msg)
+
+    serialized = []
+    for value in values:
+        if not isinstance(value, Meta | MetaEntry):
+            msg = "Rule meta must contain Meta or MetaEntry nodes"
+            raise SerializationError(msg)
+        serialized.append(serialize_meta(value))
+    return serialized
+
+
+def _serialize_string_definitions(values: Any) -> list[dict[str, Any]]:
+    if not isinstance(values, list | tuple):
+        msg = "Rule strings must be a list"
+        raise SerializationError(msg)
+
+    serialized = []
+    for value in values:
+        if not isinstance(value, StringDefinition):
+            msg = "Rule strings must contain StringDefinition nodes"
+            raise SerializationError(msg)
+        serialized.append(serialize_string(value))
+    return serialized
+
+
 def _format_unknown_modifier(name: str, value: Any) -> str:
     if value is None:
         return name
@@ -1242,20 +1291,39 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
 
 def serialize_yarafile(yf: YaraFile) -> dict[str, Any]:
     """Serialize a YaraFile."""
+    imports = _validated_node_collection(yf.imports, "YaraFile imports", Import)
+    includes = _validated_node_collection(yf.includes, "YaraFile includes", Include)
+    rules = _validated_node_collection(yf.rules, "YaraFile rules", Rule)
+    extern_rules = _validated_node_collection(
+        yf.extern_rules,
+        "YaraFile extern_rules",
+        ExternRule,
+    )
+    extern_imports = _validated_node_collection(
+        yf.extern_imports,
+        "YaraFile extern_imports",
+        ExternImport,
+    )
+    pragmas = _validated_node_collection(yf.pragmas, "YaraFile pragmas", Pragma)
+    namespaces = _validated_node_collection(
+        yf.namespaces,
+        "YaraFile namespaces",
+        ExternNamespace,
+    )
     data = {
         "type": "YaraFile",
-        "imports": [serialize_node(imp) for imp in (yf.imports or [])],
-        "includes": [serialize_node(inc) for inc in (yf.includes or [])],
-        "rules": [serialize_node(rule) for rule in (yf.rules or [])],
+        "imports": [serialize_node(imp) for imp in imports],
+        "includes": [serialize_node(inc) for inc in includes],
+        "rules": [serialize_node(rule) for rule in rules],
     }
-    if yf.extern_rules:
-        data["extern_rules"] = [serialize_extern_rule(rule) for rule in yf.extern_rules]
-    if yf.extern_imports:
-        data["extern_imports"] = [serialize_node(imp) for imp in yf.extern_imports]
-    if yf.pragmas:
-        data["pragmas"] = [serialize_pragma(pragma) for pragma in yf.pragmas]
-    if yf.namespaces:
-        data["namespaces"] = [serialize_node(namespace) for namespace in yf.namespaces]
+    if extern_rules:
+        data["extern_rules"] = [serialize_extern_rule(rule) for rule in extern_rules]
+    if extern_imports:
+        data["extern_imports"] = [serialize_node(imp) for imp in extern_imports]
+    if pragmas:
+        data["pragmas"] = [serialize_pragma(pragma) for pragma in pragmas]
+    if namespaces:
+        data["namespaces"] = [serialize_node(namespace) for namespace in namespaces]
     return data
 
 
@@ -1272,14 +1340,17 @@ def serialize_rule(rule: Rule) -> dict[str, Any]:
     if tags:
         data["tags"] = tags
 
-    if rule.meta:
-        data["meta"] = [serialize_meta(m) for m in rule.meta]
+    meta = _serialize_meta_entries(rule.meta)
+    if meta:
+        data["meta"] = meta
 
-    if rule.strings:
-        data["strings"] = [serialize_string(s) for s in rule.strings]
+    strings = _serialize_string_definitions(rule.strings)
+    if strings:
+        data["strings"] = strings
 
-    if rule.pragmas:
-        data["pragmas"] = [serialize_node(pragma) for pragma in rule.pragmas]
+    pragmas = _validated_node_collection(rule.pragmas, "Rule pragmas", InRulePragma)
+    if pragmas:
+        data["pragmas"] = [serialize_node(pragma) for pragma in pragmas]
 
     return data
 
