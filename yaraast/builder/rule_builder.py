@@ -17,9 +17,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.modifiers import RuleModifier, StringModifier
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import (
-    HexByte,
     HexString,
-    HexWildcard,
     PlainString,
     RegexString,
     StringDefinition,
@@ -30,6 +28,7 @@ from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.builder.string_identifier_validation import validate_new_string_definitions
 from yaraast.errors import ValidationError, YaraASTError
 from yaraast.lexer.lexer_tables import KEYWORDS
+from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 if TYPE_CHECKING:
     from yaraast.builder.hex_string_builder import HexStringBuilder
@@ -328,28 +327,13 @@ class RuleBuilder:
     def with_hex_string_raw(self, identifier: str, hex_pattern: str) -> Self:
         """Add a hex string from raw pattern."""
         hex_pattern = _validate_hex_pattern(hex_pattern)
-        # Parse hex pattern - simplified version
-        tokens = []
-        i = 0
-        hex_chars = "".join(hex_pattern.split()).upper()
-
-        while i < len(hex_chars):
-            if i + 1 >= len(hex_chars):
-                msg = f"Invalid trailing hex byte at offset {i}: {hex_chars[i:]}"
-                raise ValidationError(msg)
-
-            hex_pair = hex_chars[i : i + 2]
-            if hex_pair == "??":
-                tokens.append(HexWildcard())
-                i += 2
+        try:
+            tokens = HexStringParser().parse(hex_pattern)
+        except HexParseError as exc:
+            if exc.position is None and str(exc) == "Hex parse error: Empty hex string":
+                tokens = []
             else:
-                try:
-                    byte_val = int(hex_pair, 16)
-                except ValueError:
-                    msg = f"Invalid hex byte at offset {i}: {hex_pair}"
-                    raise ValidationError(msg) from None
-                tokens.append(HexByte(value=byte_val))
-                i += 2
+                raise ValidationError(str(exc)) from exc
 
         validate_hex_tokens_for_builder(tokens, identifier)
         self._append_string_definition(

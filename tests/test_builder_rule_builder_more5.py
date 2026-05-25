@@ -7,7 +7,17 @@ from typing import Any, cast
 import pytest
 
 from yaraast.ast.expressions import BinaryExpression, BooleanLiteral, StringIdentifier
-from yaraast.ast.strings import HexByte, HexString, HexWildcard, PlainString, RegexString
+from yaraast.ast.strings import (
+    HexAlternative,
+    HexByte,
+    HexJump,
+    HexNegatedByte,
+    HexNibble,
+    HexString,
+    HexWildcard,
+    PlainString,
+    RegexString,
+)
 from yaraast.builder.condition_builder import ConditionBuilder
 from yaraast.builder.rule_builder import RuleBuilder
 from yaraast.codegen.generator import CodeGenerator
@@ -248,11 +258,48 @@ def test_rule_builder_copies_direct_condition_expressions() -> None:
 
 
 def test_rule_builder_raw_hex_rejects_invalid_input() -> None:
-    with pytest.raises(ValidationError, match="Invalid hex byte at offset 2: ZZ"):
+    with pytest.raises(
+        ValidationError,
+        match="Hex parse error at position 3: Invalid character in hex string: Z",
+    ):
         RuleBuilder("invalid").with_hex_string_raw("$hex", "4D ZZ ??")
 
-    with pytest.raises(ValidationError, match="Invalid trailing hex byte at offset 2: F"):
+    with pytest.raises(
+        ValidationError,
+        match="Hex parse error at position 3: Incomplete hex byte",
+    ):
         RuleBuilder("invalid").with_hex_string_raw("$hex", "4D F")
+
+
+def test_rule_builder_raw_hex_uses_full_hex_parser() -> None:
+    rule = (
+        RuleBuilder("full_hex")
+        .with_hex_string_raw("$hex", "4D A? ?F [2-4] (~00 | 41) // comment\n 5A")
+        .build()
+    )
+
+    hex_string = rule.strings[0]
+    assert isinstance(hex_string, HexString)
+    tokens = hex_string.tokens
+    assert isinstance(tokens[0], HexByte)
+    assert tokens[0].value == 0x4D
+    assert isinstance(tokens[1], HexNibble)
+    assert tokens[1].high is True
+    assert tokens[1].value == 0xA
+    assert isinstance(tokens[2], HexNibble)
+    assert tokens[2].high is False
+    assert tokens[2].value == 0xF
+    assert isinstance(tokens[3], HexJump)
+    assert tokens[3].min_jump == 2
+    assert tokens[3].max_jump == 4
+    assert isinstance(tokens[4], HexAlternative)
+    assert isinstance(tokens[4].alternatives[0][0], HexNegatedByte)
+    assert tokens[4].alternatives[0][0].value == 0x00
+    assert isinstance(tokens[4].alternatives[1][0], HexByte)
+    assert tokens[4].alternatives[1][0].value == 0x41
+    assert isinstance(tokens[5], HexByte)
+    assert tokens[5].value == 0x5A
+    assert "$hex = { 4D A? ?F [2-4] ( ~00 | 41 ) 5A }" in CodeGenerator().generate(rule)
 
 
 def test_rule_builder_complex_conditions_and_lambda() -> None:
