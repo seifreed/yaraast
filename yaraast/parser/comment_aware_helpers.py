@@ -65,27 +65,9 @@ def _comment_location(token: Token) -> Location:
 
 
 def parse_hex_tokens(hex_content: str):
-    from yaraast.ast.strings import HexByte, HexWildcard
+    from yaraast.parser.hex_parser import HexStringParser
 
-    hex_tokens = []
-    hex_clean = hex_content.replace(" ", "").replace("\t", "").replace("\n", "")
-
-    i = 0
-    while i < len(hex_clean):
-        if i + 1 < len(hex_clean):
-            two_chars = hex_clean[i : i + 2]
-            if two_chars == "??":
-                hex_tokens.append(HexWildcard())
-                i += 2
-            elif all(c in "0123456789ABCDEFabcdef" for c in two_chars):
-                hex_tokens.append(HexByte(value=int(two_chars, 16)))
-                i += 2
-            else:
-                i += 1
-        else:
-            i += 1
-
-    return hex_tokens
+    return HexStringParser().parse(hex_content)
 
 
 def parse_regex_value(regex_val: str):

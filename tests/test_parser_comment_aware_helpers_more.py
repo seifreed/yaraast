@@ -12,6 +12,7 @@ from yaraast.parser.comment_aware_helpers import (
     parse_hex_tokens,
     parse_regex_value,
 )
+from yaraast.parser.hex_parser import HexParseError
 
 
 def _tok(tt: TokenType, value: str, line: int, col: int = 1) -> Token:
@@ -47,16 +48,11 @@ def test_extract_and_collect_comment_helpers() -> None:
 
 
 def test_parse_hex_tokens_with_invalid_pairs_and_trailing_nibble() -> None:
-    # Contains valid bytes, wildcard, invalid pair (G1), and trailing single nibble.
-    out = parse_hex_tokens("AA ?? G1 B")
-    assert len(out) == 3
-    assert out[0].__class__.__name__ == "HexByte"
-    assert out[1].__class__.__name__ == "HexWildcard"
+    with pytest.raises(HexParseError):
+        parse_hex_tokens("AA ?? G1 B")
 
-    # Force the final odd trailing nibble branch.
-    out2 = parse_hex_tokens("AA ?")
-    assert len(out2) == 1
-    assert out2[0].__class__.__name__ == "HexByte"
+    with pytest.raises(HexParseError):
+        parse_hex_tokens("AA ?")
 
 
 def test_parse_regex_value_branches() -> None:
