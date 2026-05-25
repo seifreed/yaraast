@@ -383,6 +383,12 @@ class YaraLEventsParsingMixin:
 
     def _parse_event_value(self) -> Any:
         """Parse event value."""
+        if self._check(BaseTokenType.BOOLEAN_TRUE):
+            self._advance()
+            return True
+        if self._check(BaseTokenType.BOOLEAN_FALSE):
+            self._advance()
+            return False
         if self._check(BaseTokenType.STRING):
             return self._advance().value
         if self._check(BaseTokenType.INTEGER) or self._check(BaseTokenType.DOUBLE):

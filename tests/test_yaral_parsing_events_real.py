@@ -503,6 +503,27 @@ def test_parse_field_event_assignment_function_call_value_preserves_generated_te
     assert "\n    ($e.msg" not in generated
 
 
+def test_parse_event_boolean_values_preserves_boolean_literals() -> None:
+    ast = YaraLParser(
+        'rule bool_event { events: $e.flag = true $e.combo = strings.concat("x", true, false) condition: $e }'
+    ).parse()
+
+    events = ast.rules[0].events
+    assert events is not None
+    direct = events.statements[0]
+    assert isinstance(direct, EventAssignment)
+    assert direct.value is True
+    function_assignment = events.statements[1]
+    assert isinstance(function_assignment, EventAssignment)
+    assert isinstance(function_assignment.value, FunctionCall)
+    assert function_assignment.value.arguments[1:] == [True, False]
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$e.flag = true" in generated
+    assert 'strings.concat("x", true, false)' in generated
+    assert 'strings.concat("x", "true", "false")' not in generated
+
+
 def test_parse_event_variable_comparison_preserves_generated_text() -> None:
     ast = YaraLParser("rule cmp_event { events: $left != $right condition: $left }").parse()
 
