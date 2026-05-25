@@ -384,3 +384,24 @@ def test_yara_file_transformer_rejects_empty_imports_and_includes() -> None:
 def test_yara_file_transformer_rejects_invalid_import_alias(alias: str) -> None:
     with pytest.raises(ValidationError, match="Invalid import alias identifier"):
         YaraFileTransformer(YaraFile()).add_import("pe", alias)
+
+
+@pytest.mark.parametrize(
+    ("operation", "argument"),
+    [
+        ("rename", "bad-name"),
+        ("rename", "for"),
+        ("add_prefix", "bad-"),
+        ("add_suffix", "-bad"),
+    ],
+)
+def test_rule_transformer_rejects_invalid_rule_names_without_partial_update(
+    operation: str,
+    argument: str,
+) -> None:
+    transformer = RuleTransformer(_sample_rule("valid_name"))
+
+    with pytest.raises(ValidationError, match="Invalid rule identifier"):
+        getattr(transformer, operation)(argument)
+
+    assert transformer.build().name == "valid_name"

@@ -28,9 +28,7 @@ def validate_nonempty_texts(values: Sequence[str], kind: str) -> None:
         validate_nonempty_text(value, kind)
 
 
-def validate_optional_identifier(value: object | None, kind: str) -> None:
-    if value is None:
-        return
+def validate_identifier(value: object, kind: str) -> None:
     if not isinstance(value, str):
         msg = f"Invalid {kind} identifier: {value}"
         raise TypeError(msg)
@@ -38,6 +36,12 @@ def validate_optional_identifier(value: object | None, kind: str) -> None:
         return
     msg = f"Invalid {kind} identifier: {value}"
     raise ValidationError(msg)
+
+
+def validate_optional_identifier(value: object | None, kind: str) -> None:
+    if value is None:
+        return
+    validate_identifier(value, kind)
 
 
 def validate_unique_rule_names(existing_rules: Sequence[Rule], new_rules: Sequence[Rule]) -> None:

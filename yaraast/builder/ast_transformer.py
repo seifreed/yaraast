@@ -22,6 +22,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Import, Include, Rule, Tag
 from yaraast.builder.file_builder_validation import (
+    validate_identifier,
     validate_nonempty_text,
     validate_optional_identifier,
     validate_unique_rule_names,
@@ -61,17 +62,22 @@ class RuleTransformer:
 
     def rename(self, new_name: str) -> RuleTransformer:
         """Rename the rule."""
+        validate_identifier(new_name, "rule")
         self.rule.name = new_name
         return self
 
     def add_prefix(self, prefix: str) -> RuleTransformer:
         """Add prefix to rule name."""
-        self.rule.name = f"{prefix}{self.rule.name}"
+        new_name = f"{prefix}{self.rule.name}"
+        validate_identifier(new_name, "rule")
+        self.rule.name = new_name
         return self
 
     def add_suffix(self, suffix: str) -> RuleTransformer:
         """Add suffix to rule name."""
-        self.rule.name = f"{self.rule.name}{suffix}"
+        new_name = f"{self.rule.name}{suffix}"
+        validate_identifier(new_name, "rule")
+        self.rule.name = new_name
         return self
 
     def add_tag(self, tag: str) -> RuleTransformer:
