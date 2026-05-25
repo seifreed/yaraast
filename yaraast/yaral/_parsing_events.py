@@ -142,16 +142,16 @@ class YaraLEventsParsingMixin:
 
     def _parse_integer_comparison_statement(self) -> EventStatement:
         """Parse a statement starting with an integer literal (e.g., 604800 <= $field1 - $field2)."""
-        self._advance()  # Consume integer
+        tokens = [self._advance()]
 
         # Expect comparison operator
         if self._check_comparison_operator():
-            self._advance()  # Consume operator
-            self._skip_to_next_statement()
-            return EventStatement()
+            tokens.append(self._advance())
+            tokens.extend(self._collect_rhs_expression_tokens())
+            return EventStatement(text=_join_event_statement_tokens(tokens))
 
         # Not a comparison, unexpected
-        return EventStatement()
+        return EventStatement(text=_join_event_statement_tokens(tokens))
 
     def _check_comparison_operator(self) -> bool:
         """Check if current token is a comparison operator."""

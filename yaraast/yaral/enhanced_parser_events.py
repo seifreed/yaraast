@@ -40,7 +40,12 @@ class EnhancedYaraLParserEventsMixin:
             elif self._check_keyword("join"):
                 join = self._parse_join_statement()
                 statements.append(join)
-            elif self._check(BaseTokenType.LPAREN) or self._is_raw_event_statement_start():
+            elif (
+                self._check(BaseTokenType.INTEGER)
+                or self._check(BaseTokenType.DOUBLE)
+                or self._check(BaseTokenType.LPAREN)
+                or self._is_raw_event_statement_start()
+            ):
                 raw_statement = self._parse_raw_event_statement()
                 if raw_statement is not None:
                     statements.append(raw_statement)
