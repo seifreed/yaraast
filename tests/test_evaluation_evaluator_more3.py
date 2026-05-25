@@ -701,6 +701,35 @@ def test_direct_evaluate_rule_clears_matcher_state_for_rules_without_strings() -
     assert ev.evaluate_rule(no_strings_rule) is True
 
 
+def test_evaluate_file_preserves_duplicate_rule_occurrences_and_references() -> None:
+    ast = Parser().parse("""
+rule dup {
+    strings:
+        $a = "a"
+    condition:
+        $a
+}
+
+rule dup {
+    strings:
+        $b = "b"
+    condition:
+        $b
+}
+
+rule caller {
+    condition:
+        dup
+}
+""")
+
+    assert YaraEvaluator(data=b"b").evaluate_file(ast) == {
+        "dup#1": False,
+        "dup#2": True,
+        "caller": True,
+    }
+
+
 def test_string_offset_length_indexed_parser_forms() -> None:
     ast = Parser().parse("""
         rule indexed {

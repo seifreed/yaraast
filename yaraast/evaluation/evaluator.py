@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 import contextlib
 from dataclasses import dataclass, field
@@ -82,10 +83,10 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
     def evaluate_file(self, yara_file: YaraFile) -> dict[str, bool]:
         """Evaluate all rules in a YARA file."""
-        results = {}
-        self._rule_results = {}  # Track evaluated rule results for cross-references
-        self._rule_map = {rule.name: rule for rule in yara_file.rules}
-        self._evaluating_rules = set()
+        results: dict[str, bool] = {}
+        self._rule_results: dict[str, bool] = {}
+        self._rule_map, self._rule_keys_by_name = self._build_rule_maps(yara_file.rules)
+        self._evaluating_rules: set[str] = set()
         self.context.modules = {}
 
         # Process imports
@@ -99,10 +100,49 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         # Evaluate each rule
         for rule in yara_file.rules:
-            result = self._evaluate_rule_by_name(rule.name)
-            results[rule.name] = result
+            rule_key = self._rule_key_for_rule(rule)
+            result = self._evaluate_rule_by_name(rule_key)
+            results[rule_key] = result
 
         return results
+
+    def _build_rule_maps(
+        self,
+        rules: list[Rule],
+    ) -> tuple[dict[str, Rule], dict[str, list[str]]]:
+        counts = Counter(rule.name for rule in rules)
+        seen_rules: defaultdict[str, int] = defaultdict(int)
+        rule_map: dict[str, Rule] = {}
+        rule_keys_by_name: dict[str, list[str]] = {}
+
+        for rule in rules:
+            seen_rules[rule.name] += 1
+            rule_key = self._rule_occurrence_key(
+                rule.name,
+                seen_rules[rule.name],
+                counts,
+            )
+            rule_map[rule_key] = rule
+            rule_keys_by_name.setdefault(rule.name, []).append(rule_key)
+
+        return rule_map, rule_keys_by_name
+
+    def _rule_occurrence_key(
+        self,
+        rule_name: str,
+        occurrence: int,
+        counts: Counter[str],
+    ) -> str:
+        if counts[rule_name] == 1:
+            return rule_name
+        return f"{rule_name}#{occurrence}"
+
+    def _rule_key_for_rule(self, rule: Rule) -> str:
+        rule_keys = self._rule_keys_by_name.get(rule.name, [])
+        for rule_key in rule_keys:
+            if self._rule_map.get(rule_key) is rule:
+                return rule_key
+        return rule.name
 
     def _evaluate_rule_by_name(self, rule_name: str) -> bool:
         if rule_name in self._rule_results:
@@ -132,6 +172,15 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             self._current_rule = saved_rule
             self.context.string_matches = saved_context_matches
             self.string_matcher.matches = saved_matcher_matches
+
+    def _evaluate_rule_reference(self, rule_name: str) -> bool:
+        if rule_name in self._rule_results:
+            return self._rule_results[rule_name]
+        if rule_name in self._rule_map:
+            return self._evaluate_rule_by_name(rule_name)
+
+        rule_keys = self._rule_keys_by_name.get(rule_name, [])
+        return any(self._evaluate_rule_by_name(rule_key) for rule_key in rule_keys)
 
     def evaluate_rule(self, rule: Rule) -> bool:
         """Evaluate a single rule."""
@@ -189,10 +238,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return self.context.modules[node.name]
 
         # Check rule references (condition: other_rule)
-        if hasattr(self, "_rule_results") and node.name in self._rule_results:
-            return self._rule_results[node.name]
-        if hasattr(self, "_rule_map") and node.name in self._rule_map:
-            return self._evaluate_rule_by_name(node.name)
+        if hasattr(self, "_rule_map"):
+            return self._evaluate_rule_reference(node.name)
 
         # Unknown identifier evaluates to false (graceful handling)
         return False
