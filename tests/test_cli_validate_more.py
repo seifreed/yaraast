@@ -44,3 +44,9 @@ def test_validate_parse_externals_and_roundtrip_skip_when_no_yara(tmp_path: Path
     empty_key = runner.invoke(validate, ["cross", dummy_rule, dummy_data, "--external", "=value"])
     assert empty_key.exit_code != 0
     assert "External variable name cannot be empty" in empty_key.output
+
+    blank_key = runner.invoke(
+        validate, ["cross", dummy_rule, dummy_data, "--external", "   =value"]
+    )
+    assert blank_key.exit_code != 0
+    assert "External variable name cannot be empty" in blank_key.output
