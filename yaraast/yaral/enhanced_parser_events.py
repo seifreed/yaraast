@@ -196,6 +196,11 @@ class EnhancedYaraLParserEventsMixin:
 
     def _parse_event_statement(self) -> list[EventStatement] | None:
         """Parse enhanced event statement with multiple conditions."""
+        if self._current_event_statement_has_top_level_or():
+            raw_statement = self._parse_raw_event_statement()
+            if raw_statement is not None:
+                return [raw_statement]
+
         event = None
         assignments: list[EventStatement] = []
 
@@ -258,6 +263,40 @@ class EnhancedYaraLParserEventsMixin:
                 break
 
         return assignments or None
+
+    def _current_event_statement_has_top_level_or(self) -> bool:
+        paren_depth = 0
+        start_line = self._peek().line if not self._is_at_end() else -1
+        index = self.current
+
+        while index < len(self.tokens):
+            token = self.tokens[index]
+            if self._token_ends_event_statement_scan(token, start_line, paren_depth):
+                return False
+            if token.type == BaseTokenType.LPAREN:
+                paren_depth += 1
+            elif token.type == BaseTokenType.RPAREN and paren_depth > 0:
+                paren_depth -= 1
+            elif paren_depth == 0 and _token_value_is(token, "or"):
+                return True
+            index += 1
+
+        return False
+
+    @staticmethod
+    def _token_ends_event_statement_scan(token: Any, start_line: int, paren_depth: int) -> bool:
+        if token.type in {BaseTokenType.EOF, BaseTokenType.RBRACE}:
+            return True
+        if paren_depth == 0 and token.line > start_line:
+            return True
+        if token.type in {BaseTokenType.META, BaseTokenType.CONDITION}:
+            return True
+        return getattr(token, "yaral_type", None) in {
+            YaraLTokenType.EVENTS,
+            YaraLTokenType.MATCH,
+            YaraLTokenType.OUTCOME,
+            YaraLTokenType.OPTIONS,
+        }
 
     def _parse_join_statement(self) -> JoinCondition:
         """Parse join statement for correlating events."""
