@@ -39,6 +39,7 @@ def test_enhanced_parser_preserves_regex_nocase_modifiers() -> None:
         rule enhanced_regex_nocase {
             events:
                 $e.metadata.event_type = /AUTH.*/ nocase
+                $e.principal.hostname = "ADMIN" nocase
             condition:
                 $e.target.hostname matches /admin.*/ nocase
         }
@@ -50,6 +51,7 @@ def test_enhanced_parser_preserves_regex_nocase_modifiers() -> None:
     assert parser.errors == []
     generated = YaraLGenerator().generate(ast)
     assert "$e.metadata.event_type = /AUTH.*/ nocase" in generated
+    assert '$e.principal.hostname = "ADMIN" nocase' in generated
     assert "$e.target.hostname =~ /admin.*/ nocase" in generated
 
 

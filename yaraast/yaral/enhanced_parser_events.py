@@ -235,6 +235,10 @@ class EnhancedYaraLParserEventsMixin:
             field_path = self._parse_udm_field_path()
             operator = self._parse_comparison_operator()
             value = self._parse_event_value()
+            modifiers = []
+            if self._check_keyword("nocase"):
+                modifiers.append("nocase")
+                self._advance()
 
             if event is None:
                 break
@@ -244,6 +248,7 @@ class EnhancedYaraLParserEventsMixin:
                     field_path=field_path,
                     operator=operator,
                     value=value,
+                    modifiers=modifiers,
                 )
             )
 
