@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from yaraast.ast.expressions import Expression, Identifier
+from yaraast.ast.expressions import Expression, Identifier, ParenthesesExpression
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -113,9 +113,9 @@ def test_tuple_parentheses_and_slice_paths() -> None:
             _tok(TokenType.LBRACKET, "["),
         ],
     )
-    single_tuple = parser._parse_tuple_or_parentheses()
-    assert isinstance(single_tuple, TupleExpression)
-    assert len(single_tuple.elements) == 1
+    single_parenthesized = parser._parse_tuple_or_parentheses()
+    assert isinstance(single_parenthesized, ParenthesesExpression)
+    assert single_parenthesized.expression == Identifier(name="x")
 
     parser = _manual_parser(
         [

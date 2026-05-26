@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.expressions import Identifier, IntegerLiteral, ParenthesesExpression
+from yaraast.ast.expressions import ArrayAccess, Identifier, IntegerLiteral, ParenthesesExpression
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -12,6 +12,7 @@ from yaraast.yarax.ast_nodes import (
     SliceExpression,
     TupleExpression,
 )
+from yaraast.yarax.generator import YaraXGenerator
 from yaraast.yarax.parser import YaraXParser
 
 
@@ -99,6 +100,12 @@ def test_parser_collections_regular_dict_parentheses_and_slice_variants() -> Non
 
     parenthesized = YaraXParser("(1)").parse_expression()
     assert isinstance(parenthesized, ParenthesesExpression)
+
+    indexed_parenthesized = YaraXParser("([x for x in arr])[0]").parse_expression()
+    assert isinstance(indexed_parenthesized, ArrayAccess)
+    assert isinstance(indexed_parenthesized.array, ParenthesesExpression)
+    assert isinstance(indexed_parenthesized.array.expression, ArrayComprehension)
+    assert YaraXGenerator().visit(indexed_parenthesized) == "([x for x in arr])[0]"
 
     trailing_tuple = YaraXParser("(1,)").parse_expression()
     assert isinstance(trailing_tuple, TupleExpression)

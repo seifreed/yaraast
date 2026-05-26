@@ -268,9 +268,6 @@ class YaraXParserCollectionsMixin:
 
         self._consume(TokenType.RPAREN, "Expected ')'")
 
-        if self._check(TokenType.LBRACKET):
-            return TupleExpression(elements=[first])
-
         from yaraast.ast.expressions import ParenthesesExpression
 
         return ParenthesesExpression(expression=first)
