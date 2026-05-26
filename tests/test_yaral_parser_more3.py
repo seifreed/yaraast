@@ -59,6 +59,35 @@ def test_parser_events_match_outcome_options() -> None:
     assert match_var.time_window.unit == "m"
 
 
+def test_parser_match_grouping_field_preserves_generated_text() -> None:
+    code = dedent(
+        """
+        rule grouped_match {
+            events:
+                $e.metadata.event_type = "LOGIN"
+            match:
+                $user = $e.principal.user.attribute.labels["id"] over 5m
+                $ip = principal.ip over 10m
+            condition:
+                $e
+        }
+        """,
+    )
+
+    ast = YaraLParser(code).parse()
+    match = ast.rules[0].match
+    assert match is not None
+    assert len(match.variables) == 2
+    assert match.variables[0].grouping_field is not None
+    assert match.variables[0].grouping_field.full_path == '$e.principal.user.attribute.labels["id"]'
+    assert match.variables[1].grouping_field is not None
+    assert match.variables[1].grouping_field.full_path == "principal.ip"
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$user = $e.principal.user.attribute.labels["id"] over 5m' in generated
+    assert "$ip = principal.ip over 10m" in generated
+
+
 def test_parser_event_assignment_value_can_be_udm_field_access() -> None:
     code = dedent(
         """

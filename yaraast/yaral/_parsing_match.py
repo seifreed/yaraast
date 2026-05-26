@@ -5,7 +5,14 @@ from __future__ import annotations
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 
 from ._shared import YaraLParserError
-from .ast_nodes import MatchSection, MatchVariable, TimeWindow
+from .ast_nodes import (
+    EventVariable,
+    MatchSection,
+    MatchVariable,
+    TimeWindow,
+    UDMFieldAccess,
+    UDMFieldPath,
+)
 from .tokens import YaraLTokenType
 
 
@@ -28,6 +35,15 @@ class YaraLMatchParsingMixin:
                 BaseTokenType.STRING_IDENTIFIER,
             ):
                 var_names = self._parse_match_variable_list()
+                grouping_field = None
+                if self._check(BaseTokenType.EQ):
+                    if len(var_names) != 1:
+                        raise YaraLParserError(
+                            "Expected single match variable before grouping field",
+                            self._peek(),
+                        )
+                    self._advance()
+                    grouping_field = self._parse_match_grouping_field()
 
                 self._consume_keyword("over", "Expected 'over' after match variable(s)")
 
@@ -39,7 +55,13 @@ class YaraLMatchParsingMixin:
                 time_window = self._parse_time_window(modifier)
 
                 for var_name in var_names:
-                    variables.append(MatchVariable(variable=var_name, time_window=time_window))
+                    variables.append(
+                        MatchVariable(
+                            variable=var_name,
+                            time_window=time_window,
+                            grouping_field=grouping_field,
+                        )
+                    )
             else:
                 self._advance()
 
@@ -61,6 +83,51 @@ class YaraLMatchParsingMixin:
                 break
 
         return var_names
+
+    def _parse_match_grouping_field(self) -> UDMFieldAccess:
+        event = None
+        if self._check_yaral_type(YaraLTokenType.EVENT_VAR) or self._check(
+            BaseTokenType.STRING_IDENTIFIER
+        ):
+            event = EventVariable(name=str(self._advance().value))
+            self._consume(BaseTokenType.DOT, "Expected field path after match grouping event")
+            field_parts = [
+                str(self._consume(BaseTokenType.IDENTIFIER, "Expected field name").value)
+            ]
+        elif self._check(BaseTokenType.IDENTIFIER):
+            field_parts = [str(self._advance().value)]
+        else:
+            raise YaraLParserError("Expected match grouping field", self._peek())
+
+        field = UDMFieldPath(parts=self._parse_match_field_path_continuation(field_parts))
+        return UDMFieldAccess(event=event, field=field)
+
+    def _parse_match_field_path_continuation(self, field_parts: list[str]) -> list[str]:
+        while self._check(BaseTokenType.DOT) or self._check(BaseTokenType.LBRACKET):
+            if self._check(BaseTokenType.DOT):
+                self._advance()
+                if self._check(BaseTokenType.IDENTIFIER):
+                    field_parts.append(str(self._advance().value))
+                elif self._check(BaseTokenType.LBRACKET):
+                    self._advance()
+                    field_parts.append(self._parse_match_bracket_part())
+                else:
+                    raise YaraLParserError("Expected field name", self._peek())
+            else:
+                self._advance()
+                field_parts.append(self._parse_match_bracket_part())
+        return field_parts
+
+    def _parse_match_bracket_part(self) -> str:
+        if self._check(BaseTokenType.STRING):
+            key = self._advance().value
+            self._consume(BaseTokenType.RBRACKET, "Expected ']'")
+            return f'["{key}"]'
+        if self._check(BaseTokenType.INTEGER):
+            index = self._advance().value
+            self._consume(BaseTokenType.RBRACKET, "Expected ']'")
+            return f"[{index}]"
+        raise YaraLParserError("Expected field key or index", self._peek())
 
     def _parse_time_window(self, modifier: str | None = None) -> TimeWindow:
         """Parse time window like 5m, 1h, 7d."""
