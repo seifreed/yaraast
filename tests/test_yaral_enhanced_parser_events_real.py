@@ -180,6 +180,48 @@ def test_parse_unparenthesized_or_event_statement_preserves_generated_text() -> 
     assert '$e.metadata.event_type = "LOGIN" or $e.metadata.event_type = "AUTH"' in generated
 
 
+def test_parse_multiline_or_event_statement_preserves_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+rule bool_event {
+    events:
+        $e.metadata.event_type = "LOGIN"
+            or $e.metadata.event_type = "AUTH"
+    condition:
+        $e
+}
+""")
+    ast = parser.parse()
+
+    assert parser.errors == []
+    events = ast.rules[0].events
+    assert events is not None
+    assert len(events.statements) == 1
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$e.metadata.event_type = "LOGIN" or $e.metadata.event_type = "AUTH"' in generated
+
+
+def test_parse_line_ending_or_event_statement_preserves_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+rule bool_event {
+    events:
+        $e.metadata.event_type = "LOGIN" or
+            $e.metadata.event_type = "AUTH"
+    condition:
+        $e
+}
+""")
+    ast = parser.parse()
+
+    assert parser.errors == []
+    events = ast.rules[0].events
+    assert events is not None
+    assert len(events.statements) == 1
+
+    generated = YaraLGenerator().generate(ast)
+    assert '$e.metadata.event_type = "LOGIN" or $e.metadata.event_type = "AUTH"' in generated
+
+
 def test_parse_function_event_assignment_preserves_generated_text() -> None:
     ast = EnhancedYaraLParser(
         'rule capture_event { events: $host = re.capture($e.target.hostname, "(.*)") condition: $e }'

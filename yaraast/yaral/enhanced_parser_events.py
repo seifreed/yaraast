@@ -100,6 +100,8 @@ class EnhancedYaraLParserEventsMixin:
             return False
 
         current_token = self._peek()
+        if current_token.line > start_line and _token_value_is(current_token, "or"):
+            return False
         if current_token.line <= start_line or self._previous_token_continues_statement(tokens):
             return False
 
@@ -141,6 +143,8 @@ class EnhancedYaraLParserEventsMixin:
             BaseTokenType.LE,
             BaseTokenType.IN,
             BaseTokenType.LPAREN,
+            BaseTokenType.AND,
+            BaseTokenType.OR,
         }
 
     def _is_event_var_comparison_start(self) -> bool:
@@ -271,14 +275,14 @@ class EnhancedYaraLParserEventsMixin:
 
         while index < len(self.tokens):
             token = self.tokens[index]
-            if self._token_ends_event_statement_scan(token, start_line, paren_depth):
-                return False
             if token.type == BaseTokenType.LPAREN:
                 paren_depth += 1
             elif token.type == BaseTokenType.RPAREN and paren_depth > 0:
                 paren_depth -= 1
             elif paren_depth == 0 and _token_value_is(token, "or"):
                 return True
+            if self._token_ends_event_statement_scan(token, start_line, paren_depth):
+                return False
             index += 1
 
         return False
