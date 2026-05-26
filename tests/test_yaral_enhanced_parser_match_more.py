@@ -128,3 +128,27 @@ def test_enhanced_match_dollar_grouping_field_preserves_bracketed_path() -> None
 
     generated = YaraLGenerator().generate(ast)
     assert '$m = $e.metadata["event_type"] over 5m' in generated
+
+
+def test_enhanced_match_variable_list_with_every_window_preserves_generated_text() -> None:
+    parser = EnhancedYaraLParser("""
+        rule grouped_match_list {
+          events:
+            $e.metadata.event_type = "v"
+          match:
+            $e, $f over every 5m
+          condition:
+            $e
+        }
+        """)
+    ast = parser.parse()
+
+    assert parser.errors == []
+    match_section = ast.rules[0].match
+    assert match_section is not None
+    assert [variable.variable for variable in match_section.variables] == ["e", "f"]
+    assert all(variable.time_window.modifier == "every" for variable in match_section.variables)
+
+    generated = YaraLGenerator().generate(ast)
+    assert "$e over every 5m" in generated
+    assert "$f over every 5m" in generated

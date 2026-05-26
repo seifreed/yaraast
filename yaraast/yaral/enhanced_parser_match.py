@@ -18,14 +18,13 @@ class EnhancedYaraLParserMatchMixin:
 
         while not self._check_section_keyword() and not self._check(BaseTokenType.RBRACE):
             if self._check_keyword("over"):
-                standalone_window = self._parse_time_window()
+                standalone_window = self._parse_match_time_window()
                 if variables:
                     variables[-1].time_window = standalone_window
             elif self._check(BaseTokenType.IDENTIFIER) or self._check(
                 BaseTokenType.STRING_IDENTIFIER
             ):
-                var = self._parse_match_variable()
-                variables.append(var)
+                variables.extend(self._parse_match_variables())
             else:
                 self._advance()
 
@@ -33,15 +32,38 @@ class EnhancedYaraLParserMatchMixin:
 
     def _parse_match_variable(self) -> MatchVariable:
         """Parse match variable with grouping conditions."""
+        variables = self._parse_match_variables()
+        return variables[0]
+
+    def _parse_match_variables(self) -> list[MatchVariable]:
+        names = [self._parse_match_variable_name()]
+        while self._check(BaseTokenType.COMMA):
+            self._advance()
+            names.append(self._parse_match_variable_name())
+
+        grouping_field = self._parse_match_grouping_field(len(names))
+        time_window = self._parse_optional_match_time_window()
+        return [
+            MatchVariable(
+                variable=name.lstrip("$"),
+                time_window=time_window,
+                grouping_field=grouping_field,
+            )
+            for name in names
+        ]
+
+    def _parse_match_variable_name(self) -> str:
         if self._check_yaral_type(self._get_event_var_type()) or self._check(
             BaseTokenType.STRING_IDENTIFIER
         ):
-            name = self._advance().value
-        else:
-            name = self._consume(BaseTokenType.IDENTIFIER, "Expected variable name").value
+            return str(self._advance().value)
+        return str(self._consume(BaseTokenType.IDENTIFIER, "Expected variable name").value)
 
+    def _parse_match_grouping_field(self, variable_count: int):
         grouping_field = None
         if self._check(BaseTokenType.EQ):
+            if variable_count != 1:
+                raise self._error("Expected single match variable before grouping field")
             self._advance()
 
             # Parse grouping field: variable = $e.metadata.event_type over 5m
@@ -49,19 +71,23 @@ class EnhancedYaraLParserMatchMixin:
                 self._get_event_var_type()
             ):
                 grouping_field = self._parse_udm_field_access()
+        return grouping_field
 
-        time_window = TimeWindow(duration=1, unit="m")
+    def _parse_optional_match_time_window(self) -> TimeWindow:
         if self._check_keyword("over"):
-            self._advance()
-            condition = self._parse_time_duration()
-            duration = int("".join(ch for ch in condition if ch.isdigit()))
-            unit = "".join(ch for ch in condition if ch.isalpha())
-            if duration > 0 and unit:
-                time_window = TimeWindow(duration=duration, unit=unit)
+            return self._parse_match_time_window()
+        return TimeWindow(duration=1, unit="m")
 
-        return MatchVariable(
-            variable=name.lstrip("$"), time_window=time_window, grouping_field=grouping_field
-        )
+    def _parse_match_time_window(self) -> TimeWindow:
+        self._consume_keyword("over")
+        modifier = None
+        if self._check_keyword("every"):
+            modifier = "every"
+            self._advance()
+        duration, unit = self._parse_duration_parts()
+        if duration > 0 and unit:
+            return TimeWindow(duration=duration, unit=unit, modifier=modifier)
+        return TimeWindow(duration=1, unit="m", modifier=modifier)
 
     def _get_event_var_type(self):
         """Get the YARA-L event variable token type."""
