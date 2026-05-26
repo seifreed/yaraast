@@ -4,6 +4,7 @@ import pytest
 
 from yaraast.ast.expressions import ArrayAccess, FunctionCall, Identifier, IntegerLiteral
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.parser._shared import ParserError
 from yaraast.yarax.ast_nodes import LambdaExpression, PatternMatch, SliceExpression, TupleIndexing
 from yaraast.yarax.parser import YaraXParser
 
@@ -82,6 +83,11 @@ def test_parse_pattern_match_supports_default_and_trailing_comma() -> None:
 def test_parse_pattern_match_requires_commas_between_cases() -> None:
     with pytest.raises(Exception, match="Expected ',' or '}' after match case"):
         YaraXParser("match x { 1 => 2 3 => 4 }").parse_expression()
+
+
+def test_parse_pattern_match_requires_contiguous_case_arrow() -> None:
+    with pytest.raises(ParserError, match="Expected contiguous '=>'"):
+        YaraXParser("match x { 1 = > true, _ => false }").parse_expression()
 
 
 def test_parse_pattern_match_requires_default_case_last() -> None:

@@ -6,8 +6,8 @@ from yaraast.lexer.tokens import Token, TokenType
 from yaraast.yarax.parser import YaraXParser
 
 
-def _tok(token_type: TokenType, value: str | int | None) -> Token:
-    return Token(token_type, value, 1, 1)
+def _tok(token_type: TokenType, value: str | int | None, column: int = 1) -> Token:
+    return Token(token_type, value, 1, column)
 
 
 def _manual_parser(tokens: list[Token]) -> YaraXParser:
@@ -35,12 +35,20 @@ def test_yarax_parser_helper_keyword_peek_and_consume_paths() -> None:
 
 
 def test_yarax_parser_helper_consume_arrow_and_consume_errors() -> None:
-    parser = _manual_parser([_tok(TokenType.ASSIGN, "="), _tok(TokenType.GT, ">")])
+    parser = _manual_parser([_tok(TokenType.ASSIGN, "="), _tok(TokenType.GT, ">", column=2)])
     parser._consume_arrow()
 
-    parser_bad_arrow = _manual_parser([_tok(TokenType.ASSIGN, "="), _tok(TokenType.INTEGER, 1)])
+    parser_bad_arrow = _manual_parser(
+        [_tok(TokenType.ASSIGN, "="), _tok(TokenType.INTEGER, 1, column=2)]
+    )
     with pytest.raises(Exception, match="Expected '>'"):
         parser_bad_arrow._consume_arrow()
+
+    parser_spaced_arrow = _manual_parser(
+        [_tok(TokenType.ASSIGN, "="), _tok(TokenType.GT, ">", column=3)]
+    )
+    with pytest.raises(Exception, match="Expected contiguous '=>'"):
+        parser_spaced_arrow._consume_arrow()
 
     parser_consume = _manual_parser([_tok(TokenType.INTEGER, 7)])
     assert parser_consume._consume(TokenType.INTEGER, "need integer").value == 7

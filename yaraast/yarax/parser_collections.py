@@ -75,9 +75,6 @@ class YaraXParserCollectionsMixin:
         self._advance()
         self._consume(TokenType.DOT, "Expected '...'")
 
-    def _tokens_are_adjacent(self, left, right) -> bool:
-        return left.line == right.line and left.column + left.length == right.column
-
     def _parse_spread_list(self) -> ListExpression:
         """Parse list with spread operators."""
         elements = []

@@ -37,10 +37,18 @@ class YaraXParserHelpersMixin:
         """Consume the '=>' arrow token sequence."""
         from yaraast.parser.parser import ParserError
 
-        if not self._match(TokenType.ASSIGN):
+        if not self._check(TokenType.ASSIGN):
             raise ParserError("Expected '=>'", self._peek())
-        if not self._match(TokenType.GT):
+        assign_token = self._advance()
+        if not self._check(TokenType.GT):
             raise ParserError("Expected '>' after '=' in '=>'", self._peek())
+        gt_token = self._peek()
+        if not self._tokens_are_adjacent(assign_token, gt_token):
+            raise ParserError("Expected contiguous '=>'", gt_token)
+        self._advance()
+
+    def _tokens_are_adjacent(self, left: Token, right: Token) -> bool:
+        return left.line == right.line and left.column + left.length == right.column
 
     def _peek_ahead(self, n: int) -> Token | None:
         """Peek ahead n tokens."""
