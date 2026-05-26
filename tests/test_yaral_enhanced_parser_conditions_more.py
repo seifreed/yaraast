@@ -338,6 +338,22 @@ def test_enhanced_arithmetic_condition_left_preserves_generated_text() -> None:
     assert "$e.network.sent_bytes + 1 > 5" in generated_field
     assert "math.abs($e.network.sent_bytes) > 2" in generated_field
 
+    parser_field_parenthesized = EnhancedYaraLParser("""
+        rule enhanced_parenthesized_field_left_arithmetic_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            ($e.network.sent_bytes + 1) > 5
+        }
+        """)
+
+    ast_field_parenthesized = parser_field_parenthesized.parse()
+
+    assert parser_field_parenthesized.errors == []
+    assert len(ast_field_parenthesized.rules) == 1
+    generated_field_parenthesized = YaraLGenerator().generate(ast_field_parenthesized)
+    assert "($e.network.sent_bytes + 1) > 5" in generated_field_parenthesized
+
     parser2 = EnhancedYaraLParser("""
         rule enhanced_parenthesized_left_arithmetic_condition {
           events:

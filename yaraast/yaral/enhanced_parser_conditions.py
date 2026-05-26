@@ -270,6 +270,8 @@ class EnhancedYaraLParserConditionsMixin:
             return self._parse_null_check(field)
         if self._check_event_arithmetic_operator():
             variable = self._parse_event_arithmetic_text(self._format_event_value_text(field))
+            if not self._check_condition_operator():
+                return EventExistsCondition(event=variable)
             operator = self._parse_condition_comparison_operator()
             value = self._parse_event_value()
             return VariableComparisonCondition(
