@@ -96,6 +96,10 @@ class YaraXParserExpressionsMixin:
                 self._consume_arrow()
                 default = self.parse_expression()
                 self._consume_match_case_separator()
+                if not self._check(TokenType.RBRACE):
+                    from yaraast.parser.parser import ParserError
+
+                    raise ParserError("Default match case must be last", self._peek())
             else:
                 pattern = self.parse_expression()
                 self._consume_arrow()

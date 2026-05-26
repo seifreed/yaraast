@@ -84,6 +84,11 @@ def test_parse_pattern_match_requires_commas_between_cases() -> None:
         YaraXParser("match x { 1 => 2 3 => 4 }").parse_expression()
 
 
+def test_parse_pattern_match_requires_default_case_last() -> None:
+    with pytest.raises(Exception, match="Default match case must be last"):
+        YaraXParser("match x { _ => 0, 1 => 1 }").parse_expression()
+
+
 def test_parse_bracket_access_supports_slice_tuple_indexing_and_array_access() -> None:
     parser = _manual_parser(
         [
