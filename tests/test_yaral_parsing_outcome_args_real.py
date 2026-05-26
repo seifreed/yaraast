@@ -308,6 +308,7 @@ def test_outcome_function_regex_first_argument_roundtrips() -> None:
             $e.metadata.event_type = "LOGIN"
           outcome:
             $result = custom(/evil.*/i, "tail")
+            $nocase = re.regex($e.target.hostname, /admin.*/ nocase)
           condition:
             $e
         }
@@ -316,6 +317,7 @@ def test_outcome_function_regex_first_argument_roundtrips() -> None:
     generated = YaraLGenerator().generate(parser.parse())
 
     assert '$result = custom(/evil.*/i, "tail")' in generated
+    assert "$nocase = re.regex($e.target.hostname, /admin.*/ nocase)" in generated
 
 
 def test_parse_outcome_argument_basic_identifier_call_and_error() -> None:

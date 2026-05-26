@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from yaraast.lexer.tokens import TokenType as BaseTokenType
-from yaraast.regex_literals import escape_regex_delimiter
 
 from ._shared import (
     EXPECTED_FIELD_NAME_ERROR,
@@ -124,9 +123,7 @@ class OutcomeArgumentParsingMixin:
             return self._parse_outcome_identifier()
 
         if self._check(BaseTokenType.REGEX):
-            pattern_token = self._advance()
-            pattern, flags = split_regex_token_value(pattern_token.value)
-            return RegexPattern(pattern=pattern, flags=flags)
+            return self._parse_outcome_regex_pattern()
 
         msg = f"Unexpected token in outcome: {self._peek()}"
         raise YaraLParserError(
@@ -176,6 +173,15 @@ class OutcomeArgumentParsingMixin:
             f"{left} {operator} "
             f"{self._format_outcome_argument_source(right_value, quote_strings=True)}{modifier}"
         )
+
+    def _parse_outcome_regex_pattern(self) -> RegexPattern:
+        pattern_token = self._advance()
+        pattern, flags = split_regex_token_value(pattern_token.value)
+        regex = RegexPattern(pattern=pattern, flags=flags)
+        if self._check_keyword("nocase") and "nocase" not in regex.flags:
+            regex.flags.append("nocase")
+            self._advance()
+        return regex
 
     def _parse_outcome_integer(self) -> Any:
         """Parse an integer literal with optional arithmetic operator."""
@@ -256,8 +262,7 @@ class OutcomeArgumentParsingMixin:
                 return field
             return f"{value.event.name}.{field}"
         if isinstance(value, RegexPattern):
-            flags = "".join(value.flags) if value.flags else ""
-            return f"/{escape_regex_delimiter(value.pattern)}/{flags}"
+            return value.as_string
         if isinstance(value, EventVariable):
             return value.name
         if isinstance(value, RawOutcomeExpression):
