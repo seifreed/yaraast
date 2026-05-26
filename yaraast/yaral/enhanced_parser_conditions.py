@@ -109,9 +109,21 @@ class EnhancedYaraLParserConditionsMixin:
             return EventExistsCondition(event=event_name)
 
         if self._check(BaseTokenType.IDENTIFIER):
+            if self._is_event_function_call_value_start():
+                return self._parse_value_comparison_condition()
             return self._parse_field_comparison()
 
         raise self._error("Expected condition expression")
+
+    def _parse_value_comparison_condition(self) -> VariableComparisonCondition:
+        left = self._parse_event_value()
+        operator = self._parse_condition_comparison_operator()
+        value = self._parse_event_value()
+        return VariableComparisonCondition(
+            variable=self._format_event_value_text(left),
+            operator=operator,
+            value=value,
+        )
 
     def _parse_parenthesized_comparison_condition(
         self,
@@ -256,6 +268,15 @@ class EnhancedYaraLParserConditionsMixin:
         field = self._parse_udm_field_access()
         if self._check_yaral_type(YaraLTokenType.IS) or self._check_keyword("is"):
             return self._parse_null_check(field)
+        if self._check_event_arithmetic_operator():
+            variable = self._parse_event_arithmetic_text(self._format_event_value_text(field))
+            operator = self._parse_condition_comparison_operator()
+            value = self._parse_event_value()
+            return VariableComparisonCondition(
+                variable=variable,
+                operator=operator,
+                value=value,
+            )
         operator = self._parse_condition_comparison_operator()
         value = self._parse_event_value()
 

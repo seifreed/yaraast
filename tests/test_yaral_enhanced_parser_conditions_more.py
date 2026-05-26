@@ -321,6 +321,23 @@ def test_enhanced_arithmetic_condition_left_preserves_generated_text() -> None:
     generated = YaraLGenerator().generate(ast)
     assert "$risk_score + 1 > 5" in generated
 
+    parser_field = EnhancedYaraLParser("""
+        rule enhanced_field_left_arithmetic_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            $e.network.sent_bytes + 1 > 5 and math.abs($e.network.sent_bytes) > 2
+        }
+        """)
+
+    ast_field = parser_field.parse()
+
+    assert parser_field.errors == []
+    assert len(ast_field.rules) == 1
+    generated_field = YaraLGenerator().generate(ast_field)
+    assert "$e.network.sent_bytes + 1 > 5" in generated_field
+    assert "math.abs($e.network.sent_bytes) > 2" in generated_field
+
     parser2 = EnhancedYaraLParser("""
         rule enhanced_parenthesized_left_arithmetic_condition {
           events:

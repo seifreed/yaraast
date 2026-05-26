@@ -276,6 +276,8 @@ def test_enhanced_outcome_function_style_conditional_roundtrip() -> None:
           outcome:
             $result = if($e.target.hostname matches /admin.*/ nocase, "yes", "no")
             $fallback = if($e.target.hostname matches /admin.*/ nocase, "yes")
+            $arithmetic = if($e.network.sent_bytes + 1 > 2, "yes", "no")
+            $function = if(math.abs($e.network.sent_bytes) > 2, "yes", "no")
           condition:
             $e
         }
@@ -296,6 +298,8 @@ def test_enhanced_outcome_function_style_conditional_roundtrip() -> None:
     generated = YaraLGenerator().generate(ast)
     assert '$result = if($e.target.hostname =~ /admin.*/ nocase, "yes", "no")' in generated
     assert '$fallback = if($e.target.hostname =~ /admin.*/ nocase, "yes")' in generated
+    assert '$arithmetic = if($e.network.sent_bytes + 1 > 2, "yes", "no")' in generated
+    assert '$function = if(math.abs($e.network.sent_bytes) > 2, "yes", "no")' in generated
 
 
 def test_enhanced_outcome_direct_boolean_expressions_roundtrip() -> None:
