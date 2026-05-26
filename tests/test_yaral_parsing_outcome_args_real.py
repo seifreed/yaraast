@@ -213,6 +213,11 @@ def test_outcome_direct_boolean_expressions_roundtrip() -> None:
             $and_chain = $e.target.hostname matches /admin.*/ and $e.principal.ip not in %blocked%
             $nocase_and_chain = $e.target.hostname matches /admin.*/ nocase and $e.principal.ip not in %blocked%
             $or_chain = $e.target.hostname matches /admin.*/ or $e.principal.ip not in %blocked%
+            $function_compare = strings.to_lower($e.target.hostname) = "admin"
+            $function_arg_compare = custom(strings.to_lower($e.target.hostname) = "admin", "x")
+            $function_chain = strings.to_lower($e.target.hostname) = "admin" and $e.principal.ip not in %blocked%
+            $aggregation_compare = count($e.principal.ip) > 1
+            $aggregation_arg_compare = custom(count($e.principal.ip) > 1, "x")
             $negated = not $e.target.hostname matches /admin.*/
             $grouped = ($e.target.hostname matches /admin.*/ and $e.principal.ip not in %blocked%)
           condition:
@@ -242,6 +247,17 @@ def test_outcome_direct_boolean_expressions_roundtrip() -> None:
         "$or_chain = $e.target.hostname =~ /admin.*/ or $e.principal.ip not in %blocked%"
         in generated
     )
+    assert '$function_compare = strings.to_lower($e.target.hostname) = "admin"' in generated
+    assert (
+        '$function_arg_compare = custom(strings.to_lower($e.target.hostname) = "admin", "x")'
+        in generated
+    )
+    assert (
+        '$function_chain = strings.to_lower($e.target.hostname) = "admin" '
+        "and $e.principal.ip not in %blocked%" in generated
+    )
+    assert "$aggregation_compare = count($e.principal.ip) > 1" in generated
+    assert '$aggregation_arg_compare = custom(count($e.principal.ip) > 1, "x")' in generated
     assert "$negated = not $e.target.hostname =~ /admin.*/" in generated
     assert (
         "$grouped = ($e.target.hostname =~ /admin.*/ and $e.principal.ip not in %blocked%)"

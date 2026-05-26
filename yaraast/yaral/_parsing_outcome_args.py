@@ -282,7 +282,22 @@ class OutcomeArgumentParsingMixin:
             self._advance()
             operand = self._parse_outcome_boolean_factor()
             return RawOutcomeExpression(f"not {self._format_outcome_argument_source(operand)}")
-        return self._parse_outcome_arithmetic_expression()
+        return self._parse_outcome_comparison_expression()
+
+    def _parse_outcome_comparison_expression(self) -> Any:
+        left = self._parse_outcome_arithmetic_expression()
+        operator = self._parse_outcome_comparison_operator()
+        if operator is None:
+            return left
+
+        right_value = self._parse_outcome_arithmetic_expression()
+        return RawOutcomeExpression(
+            self._format_outcome_operator_expression(
+                self._format_outcome_argument_source(left),
+                operator,
+                right_value,
+            )
+        )
 
     def _parse_outcome_argument_operator(self) -> str | None:
         operator = self._parse_outcome_comparison_operator()
