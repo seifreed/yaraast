@@ -73,6 +73,7 @@ from yaraast.yarax.ast_nodes import (
     DictExpression,
     LambdaExpression,
     ListExpression,
+    MatchCase,
     PatternMatch,
     TupleExpression,
     WithStatement,
@@ -83,6 +84,30 @@ from yaraast.yarax.generator import YaraXGenerator
 class _BrokenCondition(Condition):
     def accept(self, visitor: Any) -> Any:
         raise RuntimeError("broken condition")
+
+
+def test_alternate_generators_indent_nested_yarax_match_case_results() -> None:
+    nested = PatternMatch(
+        value=Identifier("y"),
+        cases=[],
+        default=BooleanLiteral(True),
+    )
+    condition = PatternMatch(
+        value=Identifier("x"),
+        cases=[MatchCase(pattern=IntegerLiteral(1), result=nested)],
+        default=BooleanLiteral(False),
+    )
+    expected = (
+        "match x {\n"
+        "    1 => match y {\n"
+        "        _ => true,\n"
+        "    },\n"
+        "    _ => false,\n"
+        "}"
+    )
+
+    assert AdvancedCodeGenerator().generate(condition) == expected
+    assert CommentAwareCodeGenerator().generate(condition) == expected
 
 
 def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules() -> None:

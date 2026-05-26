@@ -468,12 +468,18 @@ class CommentAwareCodeGenerator(CodeGenerator):
         case_indent = " " * self.indent_size
         lines.extend(f"{case_indent}{self.visit(case)}," for case in node.cases)
         if node.default:
-            lines.append(f"{case_indent}_ => {self.visit(node.default)},")
+            default_str = self._indent_continuation_lines(self.visit(node.default))
+            lines.append(f"{case_indent}_ => {default_str},")
         lines.append("}")
         return "\n".join(lines)
 
     def visit_match_case(self, node: MatchCase) -> str:
-        return f"{self.visit(node.pattern)} => {self.visit(node.result)}"
+        result = self._indent_continuation_lines(self.visit(node.result))
+        return f"{self.visit(node.pattern)} => {result}"
+
+    def _indent_continuation_lines(self, text: str) -> str:
+        continuation_indent = " " * self.indent_size
+        return text.replace("\n", f"\n{continuation_indent}")
 
     def visit_spread_operator(self, node: SpreadOperator) -> str:
         prefix = "**" if node.is_dict else "..."

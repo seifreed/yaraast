@@ -327,12 +327,17 @@ class _AdvancedConditionGenerator(CodeGenerator):
         nested_indent = self._nested_indent()
         lines.extend(f"{nested_indent}{self.visit(case)}," for case in node.cases)
         if node.default:
-            lines.append(f"{nested_indent}_ => {self.visit(node.default)},")
+            default_str = self._indent_continuation_lines(self.visit(node.default))
+            lines.append(f"{nested_indent}_ => {default_str},")
         lines.append("}")
         return "\n".join(lines)
 
     def visit_match_case(self, node) -> str:
-        return f"{self.visit(node.pattern)} => {self.visit(node.result)}"
+        result = self._indent_continuation_lines(self.visit(node.result))
+        return f"{self.visit(node.pattern)} => {result}"
+
+    def _indent_continuation_lines(self, text: str) -> str:
+        return text.replace("\n", f"\n{self._nested_indent()}")
 
     def visit_spread_operator(self, node) -> str:
         prefix = "**" if node.is_dict else "..."
