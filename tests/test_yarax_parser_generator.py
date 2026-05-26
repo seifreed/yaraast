@@ -235,6 +235,28 @@ def test_yarax_generator_uses_configured_indent_for_match_cases() -> None:
     assert "\n        1 => true,\n" not in output
 
 
+def test_yarax_generator_indents_nested_match_case_results() -> None:
+    nested = PatternMatch(
+        value=Identifier(name="y"),
+        cases=[],
+        default=BooleanLiteral(True),
+    )
+    condition = PatternMatch(
+        value=Identifier(name="x"),
+        cases=[MatchCase(pattern=IntegerLiteral(1), result=nested)],
+        default=BooleanLiteral(False),
+    )
+
+    assert YaraXGenerator().visit(condition) == (
+        "match x {\n"
+        "    1 => match y {\n"
+        "        _ => true,\n"
+        "    },\n"
+        "    _ => false,\n"
+        "}"
+    )
+
+
 def test_yarax_generator_tuple_indexing_parens() -> None:
     condition = TupleIndexing(tuple_expr=Identifier(name="foo"), index=IntegerLiteral(0))
     yarax_file = YaraFile(rules=[Rule(name="tuple_rule", condition=condition)])

@@ -186,7 +186,7 @@ class YaraXGenerator(BaseGenerator):
 
         # Generate default case if present
         if node.default:
-            default_str = self.visit(node.default)
+            default_str = self._indent_continuation_lines(self.visit(node.default))
             lines.append(f"{case_indent}_ => {default_str},")
 
         lines.append("}")
@@ -196,8 +196,12 @@ class YaraXGenerator(BaseGenerator):
     def visit_match_case(self, node: MatchCase) -> str:
         """Generate code for match case."""
         pattern_str = self.visit(node.pattern)
-        result_str = self.visit(node.result)
+        result_str = self._indent_continuation_lines(self.visit(node.result))
         return f"{pattern_str} => {result_str}"
+
+    def _indent_continuation_lines(self, text: str) -> str:
+        continuation_indent = " " * self.indent_size
+        return text.replace("\n", f"\n{continuation_indent}")
 
     def visit_spread_operator(self, node: SpreadOperator) -> str:
         """Generate code for spread operator."""
