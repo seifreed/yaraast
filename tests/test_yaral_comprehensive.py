@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import pytest
 
+from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.tokens import TokenType as BaseTokenType
 from yaraast.yaral.ast_nodes import (
     AggregationFunction,
@@ -239,14 +240,13 @@ class TestYaraLLexerComprehensive:
 
         assert len(udm_tokens) >= 2
 
-    def test_lexer_safety_limit(self) -> None:
-        """Test lexer safety limit to prevent infinite loops."""
-        # Create a pathological input that could cause issues
-        lexer = YaraLLexer("\x00" * 100)
-        tokens = lexer.tokenize()
+    def test_lexer_rejects_unknown_characters(self) -> None:
+        """Test lexer reports unsupported characters instead of dropping them."""
+        with pytest.raises(LexerError, match="Unexpected character"):
+            YaraLLexer("\x00").tokenize()
 
-        # Should terminate and return EOF
-        assert tokens[-1].type == BaseTokenType.EOF
+        with pytest.raises(LexerError, match="Unexpected character: ~"):
+            YaraLLexer('$e.metadata.event_type = ~ "LOGIN"').tokenize()
 
     def test_lexer_regex_context_detection(self) -> None:
         """Test regex context detection heuristic."""

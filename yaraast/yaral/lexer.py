@@ -2,6 +2,7 @@
 
 import attrs
 
+from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lexer.tokens import Token, TokenType as BaseTokenType
 
@@ -53,7 +54,10 @@ class YaraLLexer:
             token = self._next_token()
             if token:
                 self.tokens.append(token)
-            if self.position == previous_position or not token:
+            if self.position == previous_position and not token:
+                msg = f"Unexpected character: {self.text[self.position]}"
+                raise LexerError(msg, self.line, self.column)
+            if self.position == previous_position:
                 self._advance_one_character()
 
         # Create basic EOF token
