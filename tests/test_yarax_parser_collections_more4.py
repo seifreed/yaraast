@@ -16,8 +16,13 @@ from yaraast.yarax.generator import YaraXGenerator
 from yaraast.yarax.parser import YaraXParser
 
 
-def _tok(token_type: TokenType, value: str | int | None) -> Token:
-    return Token(token_type, value, 1, 1)
+def _tok(
+    token_type: TokenType,
+    value: str | int | None,
+    column: int = 1,
+    length: int = 1,
+) -> Token:
+    return Token(token_type, value, 1, column, length)
 
 
 def _manual_parser(tokens: list[Token]) -> YaraXParser:
@@ -31,13 +36,13 @@ def test_parser_collections_spread_dot_variant_and_regular_element_paths() -> No
     parser = _manual_parser(
         [
             _tok(TokenType.LBRACKET, "["),
-            _tok(TokenType.DOT, "."),
-            _tok(TokenType.DOT, "."),
-            _tok(TokenType.DOT, "."),
-            _tok(TokenType.IDENTIFIER, "arr"),
-            _tok(TokenType.COMMA, ","),
-            _tok(TokenType.INTEGER, 1),
-            _tok(TokenType.RBRACKET, "]"),
+            _tok(TokenType.DOT, ".", column=2),
+            _tok(TokenType.DOT, ".", column=3),
+            _tok(TokenType.DOT, ".", column=4),
+            _tok(TokenType.IDENTIFIER, "arr", column=5),
+            _tok(TokenType.COMMA, ",", column=8),
+            _tok(TokenType.INTEGER, 1, column=10),
+            _tok(TokenType.RBRACKET, "]", column=11),
         ],
     )
     expr = parser._parse_list_or_comprehension()
@@ -162,12 +167,12 @@ def test_parser_collections_spread_list_requires_separator() -> None:
     parser = _manual_parser(
         [
             _tok(TokenType.LBRACKET, "["),
-            _tok(TokenType.DOT, "."),
-            _tok(TokenType.DOT, "."),
-            _tok(TokenType.DOT, "."),
-            _tok(TokenType.IDENTIFIER, "arr"),
-            _tok(TokenType.INTEGER, 1),
-            _tok(TokenType.RBRACKET, "]"),
+            _tok(TokenType.DOT, ".", column=2),
+            _tok(TokenType.DOT, ".", column=3),
+            _tok(TokenType.DOT, ".", column=4),
+            _tok(TokenType.IDENTIFIER, "arr", column=5),
+            _tok(TokenType.INTEGER, 1, column=9),
+            _tok(TokenType.RBRACKET, "]", column=10),
         ],
     )
     with pytest.raises(Exception, match="Expected ',' or ']'"):

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import OfExpression
 from yaraast.ast.expressions import (
@@ -14,6 +16,7 @@ from yaraast.ast.expressions import (
     SetExpression,
 )
 from yaraast.ast.rules import Rule
+from yaraast.parser._shared import ParserError
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
     DictComprehension,
@@ -82,6 +85,14 @@ def test_yarax_list_and_spread_expression() -> None:
     expr = _parse_expr("[1, ...arr, 4]")
     assert isinstance(expr, ListExpression)
     assert any(isinstance(elem, SpreadOperator) for elem in expr.elements)
+
+
+def test_yarax_spread_operators_must_be_contiguous() -> None:
+    with pytest.raises(ParserError):
+        _parse_expr("[.. . arr]")
+
+    with pytest.raises(ParserError):
+        _parse_expr("{* * data}")
 
 
 def test_yarax_nested_extended_expressions_parse() -> None:

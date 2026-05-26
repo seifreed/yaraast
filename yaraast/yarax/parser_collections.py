@@ -46,12 +46,23 @@ class YaraXParserCollectionsMixin:
 
     def _is_spread_operator(self) -> bool:
         """Check if current position is a spread operator."""
+        current = self._peek()
+        next_token = self._peek_ahead(1)
         if self._check(TokenType.DOUBLE_DOT):
-            return bool(self._peek_ahead(1) and self._peek_ahead(1).type == TokenType.DOT)
+            return bool(
+                next_token
+                and next_token.type == TokenType.DOT
+                and self._tokens_are_adjacent(current, next_token)
+            )
+        third_token = self._peek_ahead(2)
         return (
             self._check(TokenType.DOT)
-            and self._peek_ahead(1)
-            and self._peek_ahead(1).type == TokenType.DOT
+            and next_token
+            and next_token.type == TokenType.DOT
+            and third_token
+            and third_token.type == TokenType.DOT
+            and self._tokens_are_adjacent(current, next_token)
+            and self._tokens_are_adjacent(next_token, third_token)
         )
 
     def _consume_spread_operator(self) -> None:
@@ -62,7 +73,10 @@ class YaraXParserCollectionsMixin:
             return
         self._advance()
         self._advance()
-        self._advance()
+        self._consume(TokenType.DOT, "Expected '...'")
+
+    def _tokens_are_adjacent(self, left, right) -> bool:
+        return left.line == right.line and left.column + left.length == right.column
 
     def _parse_spread_list(self) -> ListExpression:
         """Parse list with spread operators."""
@@ -150,10 +164,12 @@ class YaraXParserCollectionsMixin:
 
     def _is_dict_spread_operator(self) -> bool:
         """Check if current position is a dict spread operator."""
+        next_token = self._peek_ahead(1)
         return (
             self._check(TokenType.MULTIPLY)
-            and self._peek_ahead(1)
-            and self._peek_ahead(1).type == TokenType.MULTIPLY
+            and next_token
+            and next_token.type == TokenType.MULTIPLY
+            and self._tokens_are_adjacent(self._peek(), next_token)
         )
 
     def _parse_dict_with_spread(self) -> DictExpression:

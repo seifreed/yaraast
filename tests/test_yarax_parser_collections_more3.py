@@ -17,8 +17,13 @@ from yaraast.yarax.ast_nodes import (
 from yaraast.yarax.parser import YaraXParser
 
 
-def _tok(token_type: TokenType, value: str | int | None) -> Token:
-    return Token(token_type, value, 1, 1)
+def _tok(
+    token_type: TokenType,
+    value: str | int | None,
+    column: int = 1,
+    length: int = 1,
+) -> Token:
+    return Token(token_type, value, 1, column, length)
 
 
 def _manual_parser(tokens: list[Token]) -> YaraXParser:
@@ -56,10 +61,10 @@ def test_spread_and_keyword_keyword_fallback_paths() -> None:
     parser = _manual_parser(
         [
             _tok(TokenType.LBRACKET, "["),
-            _tok(TokenType.DOUBLE_DOT, ".."),
-            _tok(TokenType.DOT, "."),
-            _tok(TokenType.IDENTIFIER, "arr"),
-            _tok(TokenType.RBRACKET, "]"),
+            _tok(TokenType.DOUBLE_DOT, "..", column=2, length=2),
+            _tok(TokenType.DOT, ".", column=4),
+            _tok(TokenType.IDENTIFIER, "arr", column=5),
+            _tok(TokenType.RBRACKET, "]", column=8),
         ],
     )
     spread_list = parser._parse_list_or_comprehension()
