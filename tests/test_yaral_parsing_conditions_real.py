@@ -501,6 +501,17 @@ def test_parse_condition_arithmetic_comparisons_preserve_generated_text() -> Non
     generated = YaraLGenerator().generate(ast)
     assert "$count + 1 > 5" in generated
 
+    ast_func = YaraLParser("""
+        rule function_left_condition {
+          events:
+            $e.metadata.event_type = "LOGIN"
+          condition:
+            math.abs($e.network.sent_bytes) > 2
+        }
+        """).parse()
+    generated_func = YaraLGenerator().generate(ast_func)
+    assert "math.abs($e.network.sent_bytes) > 2" in generated_func
+
 
 def test_parse_condition_parenthesized_arithmetic_left_preserves_generated_text() -> None:
     parser = YaraLParser("($score + 1) * 2 > 4")

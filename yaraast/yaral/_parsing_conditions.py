@@ -447,7 +447,8 @@ class YaraLConditionParsingMixin:
 
     def _parse_identifier_condition(self) -> ConditionExpression:
         """Parse a condition starting with an identifier."""
-        name = self._parse_condition_reference_text(str(self._advance().value))
+        value = self._parse_condition_identifier_value()
+        name = self._format_condition_raw_value(value)
         name = self._parse_condition_arithmetic_text(name)
 
         if self._check_null_check_operator():
