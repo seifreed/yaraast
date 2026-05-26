@@ -148,9 +148,10 @@ class OutcomeArgumentParsingMixin:
             operator = self._parse_outcome_argument_operator()
             if operator is not None:
                 right_value = self._parse_outcome_argument()
-                return (
-                    f"{var_name}.{field.path} {operator} "
-                    f"{self._format_outcome_argument_source(right_value, quote_strings=True)}"
+                return self._format_outcome_operator_expression(
+                    f"{var_name}.{field.path}",
+                    operator,
+                    right_value,
                 )
 
             return UDMFieldAccess(event=event, field=field)
@@ -158,11 +159,23 @@ class OutcomeArgumentParsingMixin:
         operator = self._parse_outcome_argument_operator()
         if operator is not None:
             right_value = self._parse_outcome_argument()
-            return (
-                f"{var_name} {operator} "
-                f"{self._format_outcome_argument_source(right_value, quote_strings=True)}"
-            )
+            return self._format_outcome_operator_expression(var_name, operator, right_value)
         return var_name
+
+    def _format_outcome_operator_expression(
+        self,
+        left: str,
+        operator: str,
+        right_value: Any,
+    ) -> str:
+        modifier = ""
+        if operator in {"=~", "!~"} and self._check_keyword("nocase"):
+            modifier = " nocase"
+            self._advance()
+        return (
+            f"{left} {operator} "
+            f"{self._format_outcome_argument_source(right_value, quote_strings=True)}{modifier}"
+        )
 
     def _parse_outcome_integer(self) -> Any:
         """Parse an integer literal with optional arithmetic operator."""

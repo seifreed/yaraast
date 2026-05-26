@@ -206,8 +206,12 @@ def test_outcome_direct_boolean_expressions_roundtrip() -> None:
             $match = $e.target.hostname matches /admin.*/
             $not_match = $e.target.hostname not matches /admin.*/
             $regex_match = $e.target.hostname =~ /admin.*/
+            $nocase_match = $e.target.hostname matches /admin.*/ nocase
+            $nocase_not_match = $e.target.hostname not matches /admin.*/ nocase
             $func_arg = custom($e.target.hostname matches /admin.*/, "x")
+            $nocase_func_arg = custom($e.target.hostname matches /admin.*/ nocase, "x")
             $and_chain = $e.target.hostname matches /admin.*/ and $e.principal.ip not in %blocked%
+            $nocase_and_chain = $e.target.hostname matches /admin.*/ nocase and $e.principal.ip not in %blocked%
             $or_chain = $e.target.hostname matches /admin.*/ or $e.principal.ip not in %blocked%
             $negated = not $e.target.hostname matches /admin.*/
             $grouped = ($e.target.hostname matches /admin.*/ and $e.principal.ip not in %blocked%)
@@ -222,10 +226,17 @@ def test_outcome_direct_boolean_expressions_roundtrip() -> None:
     assert "$match = $e.target.hostname =~ /admin.*/" in generated
     assert "$not_match = $e.target.hostname !~ /admin.*/" in generated
     assert "$regex_match = $e.target.hostname =~ /admin.*/" in generated
+    assert "$nocase_match = $e.target.hostname =~ /admin.*/ nocase" in generated
+    assert "$nocase_not_match = $e.target.hostname !~ /admin.*/ nocase" in generated
     assert '$func_arg = custom($e.target.hostname =~ /admin.*/, "x")' in generated
+    assert '$nocase_func_arg = custom($e.target.hostname =~ /admin.*/ nocase, "x")' in generated
     assert (
         "$and_chain = $e.target.hostname =~ /admin.*/ and $e.principal.ip not in %blocked%"
         in generated
+    )
+    assert (
+        "$nocase_and_chain = "
+        "$e.target.hostname =~ /admin.*/ nocase and $e.principal.ip not in %blocked%" in generated
     )
     assert (
         "$or_chain = $e.target.hostname =~ /admin.*/ or $e.principal.ip not in %blocked%"
