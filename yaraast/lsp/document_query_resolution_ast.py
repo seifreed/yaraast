@@ -31,7 +31,7 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
     ast = ctx.ast()
     if ast is None:
         return None
-    node = find_node_at_position(ast, position)
+    node = find_node_at_position(ast, position, ctx.text)
     if node is None:
         return None
     node_location = getattr(node, "location", None)

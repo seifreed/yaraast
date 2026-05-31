@@ -643,6 +643,29 @@ rule beta {
     assert uses[0].end.character - uses[0].start.character == len("alpha")
 
 
+def test_document_context_rule_reference_ranges_use_utf16_columns() -> None:
+    runtime = LspRuntime()
+    text = """
+rule sample {
+  condition:
+    /* 😀😀 */ sample
+}
+""".lstrip()
+    line = text.splitlines()[2]
+    reference_start = line.index("sample")
+    reference_end = reference_start + len("sample")
+    doc = runtime.ensure_document("file:///rule-reference-utf16.yar", text)
+
+    uses = [
+        record.location.range
+        for record in doc.rule_reference_records("sample", include_declaration=False)
+    ]
+
+    assert len(uses) == 1
+    assert uses[0].start.character == utf8_col_to_utf16(line, reference_start)
+    assert uses[0].end.character == utf8_col_to_utf16(line, reference_end)
+
+
 def test_document_context_reference_records_use_ast_spans_for_string_count_and_length() -> None:
     runtime = LspRuntime()
     text = """
@@ -895,6 +918,56 @@ def test_runtime_resolve_symbol_checks_non_code_segments_with_utf16_columns() ->
     assert resolved is not None
     assert resolved.kind == "module_member"
     assert resolved.normalized_name == "pe.imphash"
+
+
+def test_runtime_resolve_ast_symbol_ranges_use_utf16_columns() -> None:
+    text = """
+import "pe"
+
+rule sample {
+  condition:
+    /* 😀😀 */ pe.is_pe
+}
+""".lstrip()
+    line = text.splitlines()[4]
+    member_start = line.index("pe.is_pe")
+    member_end = member_start + len("pe.is_pe")
+    doc = DocumentContext("file://utf16-ast-symbol.yar", text)
+
+    resolved = doc.resolve_symbol(
+        Position(line=4, character=utf8_col_to_utf16(line, member_start + 3))
+    )
+
+    assert resolved is not None
+    assert resolved.kind == "module_member"
+    assert resolved.normalized_name == "pe.is_pe"
+    assert resolved.range.start.character == utf8_col_to_utf16(line, member_start)
+    assert resolved.range.end.character == utf8_col_to_utf16(line, member_end)
+
+
+def test_runtime_resolve_string_operator_ranges_use_utf16_columns() -> None:
+    text = """
+rule sample {
+  strings:
+    $a = "x"
+  condition:
+    /* 😀😀 */ #a > 0
+}
+""".lstrip()
+    line = text.splitlines()[4]
+    reference_start = line.index("#a")
+    reference_end = reference_start + len("#a")
+    doc = DocumentContext("file://utf16-string-operator.yar", text)
+
+    resolved = doc.resolve_symbol(
+        Position(line=4, character=utf8_col_to_utf16(line, reference_start + 1))
+    )
+
+    assert resolved is not None
+    assert resolved.kind == "string"
+    assert resolved.normalized_name == "$a"
+    assert resolved.range.start.character == utf8_col_to_utf16(line, reference_start)
+    assert resolved.range.end.character == utf8_col_to_utf16(line, reference_end)
 
 
 def test_runtime_resolves_module_member_structurally(tmp_path: Path) -> None:

@@ -8,6 +8,7 @@ from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import BinaryExpression
 from yaraast.ast.rules import Rule
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.lsp.utils import (
     find_node_at_position,
     get_word_at_position,
@@ -23,8 +24,8 @@ def test_token_and_location_to_range() -> None:
     token = Token(type=TokenType.IDENTIFIER, value="rule", line=2, column=4)
     token_range = token_to_range(token)
     assert token_range.start.line == 1
-    assert token_range.start.character == 4
-    assert token_range.end.character == 8
+    assert token_range.start.character == 3
+    assert token_range.end.character == 7
 
     source_width_token = Token(
         type=TokenType.INTEGER,
@@ -34,16 +35,33 @@ def test_token_and_location_to_range() -> None:
         length=3,
     )
     source_width_range = token_to_range(source_width_token)
-    assert source_width_range.end.character == 13
+    assert source_width_range.end.character == 12
 
     loc = Location(line=3, column=2, file=None)
     loc_range = location_to_range(loc)
     assert loc_range.start.line == 2
     assert loc_range.end.character == loc_range.start.character + 1
 
-    text_loc = Location(line=1, column=5, file=None)
-    text_range = location_to_range(text_loc, source_text="rule alpha { condition: true }")
+    text = "rule alpha { condition: true }"
+    text_loc = Location(line=1, column=text.index("alpha") + 1, file=None)
+    text_range = location_to_range(text_loc, source_text=text)
     assert text_range.end.character > text_range.start.character + 1
+
+    emoji_line = "    /* 😀😀 */ sample"
+    sample_start = emoji_line.index("sample")
+    emoji_loc = Location(
+        line=1,
+        column=sample_start + 1,
+        end_line=1,
+        end_column=sample_start + len("sample") + 1,
+        file=None,
+    )
+    emoji_range = location_to_range(emoji_loc, source_text=emoji_line)
+    assert emoji_range.start.character == utf8_col_to_utf16(emoji_line, sample_start)
+    assert emoji_range.end.character == utf8_col_to_utf16(
+        emoji_line,
+        sample_start + len("sample"),
+    )
 
 
 def test_position_offset_roundtrip() -> None:

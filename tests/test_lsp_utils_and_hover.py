@@ -36,19 +36,20 @@ def test_token_and_location_to_range() -> None:
     token = Token(type=TokenType.IDENTIFIER, value="abc", line=2, column=3)
     token_range = token_to_range(token)
     assert token_range.start.line == 1
-    assert token_range.start.character == 3
+    assert token_range.start.character == 2
     assert token_range.end.line == 1
-    assert token_range.end.character == 6
+    assert token_range.end.character == 5
 
     location = Location(line=4, column=2)
     location_range = location_to_range(location)
     assert location_range.start.line == 3
-    assert location_range.start.character == 2
+    assert location_range.start.character == 1
     assert location_range.end.line == 3
-    assert location_range.end.character == 3
+    assert location_range.end.character == 2
 
-    inline_location = Location(line=1, column=5)
-    inline_range = location_to_range(inline_location, source_text="rule beta { condition: true }")
+    inline_text = "rule beta { condition: true }"
+    inline_location = Location(line=1, column=inline_text.index("beta") + 1)
+    inline_range = location_to_range(inline_location, source_text=inline_text)
     assert inline_range.end.character > inline_range.start.character + 1
 
 
@@ -82,13 +83,13 @@ def test_get_word_at_position_and_find_node() -> None:
     rule = Rule(name="test")
     rule.location = Location(line=1, column=1)
     ast = YaraFile(rules=[rule])
-    found = find_node_at_position(ast, Position(line=0, character=1))
+    found = find_node_at_position(ast, Position(line=0, character=0))
     assert found is rule
 
     child = BooleanLiteral(True)
     child.location = Location(line=2, column=5)
     rule.condition = child
-    found_child = find_node_at_position(ast, Position(line=1, character=5))
+    found_child = find_node_at_position(ast, Position(line=1, character=4))
     assert found_child is child
 
 

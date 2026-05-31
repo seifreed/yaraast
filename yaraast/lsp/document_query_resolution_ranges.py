@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from lsprotocol.types import Position, Range
 
 from yaraast.lsp.document_types import ResolvedSymbol
-from yaraast.lsp.structure import make_range
+from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
@@ -15,10 +15,21 @@ if TYPE_CHECKING:
 
 def narrow_range_to_name(ctx: DocumentContext, node_range: Range, name: str) -> Range:
     line = ctx.lines[node_range.start.line] if 0 <= node_range.start.line < len(ctx.lines) else ""
-    start = line.find(name, max(0, node_range.start.character - 1))
+    source_start = utf16_col_to_utf8(line, node_range.start.character)
+    start = line.find(name, max(0, source_start - 1))
     if start < 0:
         return node_range
-    return make_range(node_range.start.line, start, start + len(name))
+    end = start + len(name)
+    return Range(
+        start=Position(
+            line=node_range.start.line,
+            character=utf8_col_to_utf16(line, start),
+        ),
+        end=Position(
+            line=node_range.start.line,
+            character=utf8_col_to_utf16(line, end),
+        ),
+    )
 
 
 def range_contains_position(range_obj: Range, position: Position) -> bool:

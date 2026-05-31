@@ -15,7 +15,7 @@ from yaraast.ast.expressions import (
     StringLength,
     StringOffset,
 )
-from yaraast.lsp.utf16 import utf8_col_to_utf16
+from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
 from yaraast.lsp.utils import location_to_range
 
 if TYPE_CHECKING:
@@ -223,6 +223,8 @@ def _prefixed_reference_start_character(
     lines = source_text.split("\n")
     if 0 <= line_index < len(lines):
         line = lines[line_index]
-        if 0 < character <= len(line) and line[character - 1] in "$#@!":
-            return character - 1
+        source_character = utf16_col_to_utf8(line, character)
+        if 0 < source_character <= len(line) and line[source_character - 1] in "$#@!":
+            return source_character - 1
+        return source_character
     return character
