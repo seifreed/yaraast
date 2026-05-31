@@ -7,6 +7,8 @@ from typing import Any
 
 from yaraast.libyara.ast_optimizer import OptimizationStats
 
+__all__ = ["DirectCompilationResult", "OptimizationStats"]
+
 
 @dataclass
 class DirectCompilationResult:

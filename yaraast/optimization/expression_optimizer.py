@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import copy
-from typing import Any, overload
+from typing import Any, cast, overload
 
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import (
@@ -28,10 +29,19 @@ from yaraast.shared.integer_semantics import (
 )
 from yaraast.visitor.base import ASTTransformer
 
-_SENTINEL = object()
+
+class _Sentinel:
+    pass
 
 
-def _fold_boolean(left: BooleanLiteral, right: BooleanLiteral, operator: str):
+_SENTINEL = _Sentinel()
+
+
+def _fold_boolean(
+    left: BooleanLiteral,
+    right: BooleanLiteral,
+    operator: str,
+) -> BooleanLiteral | _Sentinel:
     """Fold constant boolean expressions. Returns result or _SENTINEL."""
     if operator == "and":
         return BooleanLiteral(value=left.value and right.value)
@@ -40,7 +50,7 @@ def _fold_boolean(left: BooleanLiteral, right: BooleanLiteral, operator: str):
     return _SENTINEL
 
 
-_COMPARISON_OPS: dict[str, Any] = {
+_COMPARISON_OPS: dict[str, Callable[[int, int], bool]] = {
     "==": lambda a, b: a == b,
     "!=": lambda a, b: a != b,
     "<": lambda a, b: a < b,
@@ -50,7 +60,7 @@ _COMPARISON_OPS: dict[str, Any] = {
 }
 
 
-def _fold_arithmetic(left_val: int, right_val: int, operator: str):
+def _fold_arithmetic(left_val: int, right_val: int, operator: str) -> IntegerLiteral | _Sentinel:
     """Fold constant integer arithmetic. Returns result or _SENTINEL."""
     if operator == "+":
         return IntegerLiteral(value=normalize_int64(left_val + right_val))
@@ -83,7 +93,7 @@ def _fold_arithmetic(left_val: int, right_val: int, operator: str):
     return _SENTINEL
 
 
-def _fold_comparison(left_val: int, right_val: int, operator: str):
+def _fold_comparison(left_val: int, right_val: int, operator: str) -> BooleanLiteral | _Sentinel:
     """Fold constant integer comparisons. Returns result or _SENTINEL."""
     fn = _COMPARISON_OPS.get(operator)
     if fn is not None:
@@ -177,7 +187,7 @@ class ExpressionOptimizer(ASTTransformer):
         """
         if isinstance(node, YaraFile):
             self.optimization_count = 0
-            optimized_rules = []
+            optimized_rules: list[Rule] = []
             for rule in node.rules:
                 optimized_rule = self._optimize_rule(rule)
                 optimized_rules.append(optimized_rule)
@@ -186,13 +196,13 @@ class ExpressionOptimizer(ASTTransformer):
             optimized_file.rules = optimized_rules
             return optimized_file, self.optimization_count
         # Single expression optimization
-        return self.visit(node)
+        return cast(Expression, self.visit(node))
 
     def _optimize_rule(self, rule: Rule) -> Rule:
         """Optimize expressions in a rule."""
         if rule.condition:
             # Reset count for this rule to track optimizations
-            optimized_condition = self.visit(rule.condition)
+            optimized_condition = cast(Expression, self.visit(rule.condition))
             # Count is incremented by visit methods for each optimization
             rule.condition = optimized_condition
         return rule
@@ -200,30 +210,30 @@ class ExpressionOptimizer(ASTTransformer):
     def visit_binary_expression(self, node: BinaryExpression) -> Expression:
         """Visit BinaryExpression and optimize."""
         # Optimize children first
-        node.left = self.visit(node.left)
-        node.right = self.visit(node.right)
+        node.left = cast(Expression, self.visit(node.left))
+        node.right = cast(Expression, self.visit(node.right))
 
         # Constant folding for boolean operations
         if isinstance(node.left, BooleanLiteral) and isinstance(node.right, BooleanLiteral):
-            result = _fold_boolean(node.left, node.right, node.operator)
-            if result is not _SENTINEL:
+            boolean_result = _fold_boolean(node.left, node.right, node.operator)
+            if isinstance(boolean_result, BooleanLiteral):
                 self.optimization_count += 1
-                return result
+                return boolean_result
 
         # Constant folding for integer arithmetic and comparisons
         if isinstance(node.left, IntegerLiteral) and isinstance(node.right, IntegerLiteral):
             left_val = node.left.value
             right_val = node.right.value
 
-            result = _fold_arithmetic(left_val, right_val, node.operator)
-            if result is not _SENTINEL:
+            arithmetic_result = _fold_arithmetic(left_val, right_val, node.operator)
+            if isinstance(arithmetic_result, IntegerLiteral):
                 self.optimization_count += 1
-                return result
+                return arithmetic_result
 
-            result = _fold_comparison(left_val, right_val, node.operator)
-            if result is not _SENTINEL:
+            comparison_result = _fold_comparison(left_val, right_val, node.operator)
+            if isinstance(comparison_result, BooleanLiteral):
                 self.optimization_count += 1
-                return result
+                return comparison_result
 
         # Identity operations
         identity, count = _simplify_identity(node)
@@ -242,7 +252,7 @@ class ExpressionOptimizer(ASTTransformer):
     def visit_unary_expression(self, node: UnaryExpression) -> Expression:
         """Visit UnaryExpression and optimize."""
         # Optimize operand first
-        node.operand = self.visit(node.operand)
+        node.operand = cast(Expression, self.visit(node.operand))
 
         # Constant folding
         if node.operator == "not" and isinstance(node.operand, BooleanLiteral):
@@ -271,7 +281,7 @@ class ExpressionOptimizer(ASTTransformer):
     def visit_parentheses_expression(self, node: ParenthesesExpression) -> Expression:
         """Visit ParenthesesExpression and optimize."""
         # Optimize inner expression
-        inner = self.visit(node.expression)
+        inner = cast(Expression, self.visit(node.expression))
 
         # Remove unnecessary parentheses around literals and identifiers
         if isinstance(inner, BooleanLiteral | IntegerLiteral | Identifier):

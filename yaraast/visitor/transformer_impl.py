@@ -203,13 +203,13 @@ class ASTTransformer(ASTVisitor[ASTNode]):
     def visit_boolean_literal(self, node: BooleanLiteral) -> BooleanLiteral:
         return self._transform_node(node)
 
-    def visit_binary_expression(self, node: BinaryExpression) -> BinaryExpression:
+    def visit_binary_expression(self, node: BinaryExpression) -> Expression:
         return self._transform_node(node)
 
-    def visit_unary_expression(self, node: UnaryExpression) -> UnaryExpression:
+    def visit_unary_expression(self, node: UnaryExpression) -> Expression:
         return self._transform_node(node)
 
-    def visit_parentheses_expression(self, node: ParenthesesExpression) -> ParenthesesExpression:
+    def visit_parentheses_expression(self, node: ParenthesesExpression) -> Expression:
         return self._transform_node(node)
 
     def visit_set_expression(self, node: SetExpression) -> SetExpression:

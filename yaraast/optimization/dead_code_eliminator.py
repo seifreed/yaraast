@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from fnmatch import fnmatchcase
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
+from yaraast.ast.base import YaraFile
 from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BooleanLiteral,
+    Expression,
     Identifier,
     MemberAccess,
     ParenthesesExpression,
@@ -20,11 +22,11 @@ from yaraast.ast.expressions import (
     StringOffset,
     StringWildcard,
 )
+from yaraast.ast.rules import Rule
 from yaraast.visitor.base import ASTTransformer
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import ASTNode, YaraFile
-    from yaraast.ast.rules import Rule
+    from yaraast.ast.base import ASTNode
 
 
 class DeadCodeEliminator(ASTTransformer):
@@ -88,7 +90,7 @@ class DeadCodeEliminator(ASTTransformer):
                 self.elimination_count += 1
 
         # Second pass: eliminate unused code
-        optimized_ast = self.visit(ast)
+        optimized_ast = cast(YaraFile, self.visit(ast))
 
         return optimized_ast, self.elimination_count
 
@@ -158,13 +160,13 @@ class DeadCodeEliminator(ASTTransformer):
 
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         """Visit YaraFile and remove unused rules."""
-        kept_rules = []
+        kept_rules: list[Rule] = []
 
         for rule in node.rules:
             if self._should_remove_rule(rule):
                 continue  # Remove this rule
 
-            kept_rules.append(self.visit(rule))
+            kept_rules.append(cast(Rule, self.visit(rule)))
 
         node.rules = kept_rules
         return node
@@ -336,7 +338,7 @@ class DeadCodeEliminator(ASTTransformer):
         # Optimize condition
         if node.condition:
             self.in_condition = True
-            node.condition = self.visit(node.condition)
+            node.condition = cast(Expression, self.visit(node.condition))
             self.in_condition = False
 
         return node
@@ -367,7 +369,7 @@ class DeadCodeEliminator(ASTTransformer):
     def visit_member_access(self, node: MemberAccess) -> MemberAccess:
         """Visit member access without treating a bare object root as a rule reference."""
         if not isinstance(node.object, Identifier):
-            node.object = self.visit(node.object)
+            node.object = cast(Expression, self.visit(node.object))
         return node
 
     # Pass-through methods for other node types
