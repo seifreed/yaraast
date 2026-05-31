@@ -182,7 +182,9 @@ class DeadCodeEliminator(ASTTransformer):
         return self._is_removable_false_rule(rule) or self._is_unreferenced_private_rule(rule)
 
     def _is_unreferenced_private_rule(self, rule: Rule) -> bool:
-        return self._is_private_rule(rule) and rule.name not in self.used_rules
+        return (
+            self._is_private_rule(rule) and not rule.is_global and rule.name not in self.used_rules
+        )
 
     def _is_private_rule(self, rule: Rule) -> bool:
         modifiers = getattr(rule, "modifiers", ())

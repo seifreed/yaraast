@@ -176,6 +176,28 @@ def test_global_false_rule_is_not_removed() -> None:
     assert YaraEvaluator().evaluate_file(optimized) == {"gate": False, "hit": False}
 
 
+def test_global_private_rule_is_not_removed_as_unreferenced_private() -> None:
+    ast = Parser().parse("""
+        global private rule gate {
+            condition:
+                false
+        }
+
+        rule hit {
+            condition:
+                true
+        }
+    """)
+
+    optimized, stats = RuleOptimizer().optimize(ast)
+    output = CodeGenerator().generate(optimized)
+
+    assert stats["dead_code_eliminations"] == 0
+    assert [rule.name for rule in optimized.rules] == ["gate", "hit"]
+    assert "global private rule gate" in output
+    assert YaraEvaluator().evaluate_file(optimized) == {"gate": False, "hit": False}
+
+
 def test_dead_code_eliminator_keeps_private_rules_referenced_by_rule_wildcard() -> None:
     ast = Parser().parse("""
         private rule a1 {
