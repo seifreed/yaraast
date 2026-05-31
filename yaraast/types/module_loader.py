@@ -12,6 +12,10 @@ from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
 from yaraast.types.module_definitions import load_builtin_modules
 
 
+class ModuleSpecError(ValueError):
+    """Raised when a module specification file cannot be loaded."""
+
+
 def _normalize_module_name(name: object) -> str:
     if not isinstance(name, str) or not name:
         raise ValueError("Module name must be a non-empty string")
@@ -84,60 +88,85 @@ class ModuleLoader:
         try:
             with Path(path).open(encoding="utf-8") as f:
                 data = json.load(f)
+        except json.JSONDecodeError as exc:
+            msg = f"Invalid JSON in module specification '{path}': {exc.msg}"
+            raise ModuleSpecError(msg) from exc
+        except OSError as exc:
+            msg = f"Unable to read module specification '{path}': {exc}"
+            raise ModuleSpecError(msg) from exc
 
+        loaded_modules: list[ModuleDefinition] = []
+        try:
             if isinstance(data, dict):
                 # Single module in file
                 module = self._parse_module(path.stem, data)
-                if module:
-                    self.modules[module.name] = module
+                loaded_modules.append(module)
             elif isinstance(data, list):
                 # Multiple modules in file
-                for module_data in data:
-                    if isinstance(module_data, dict) and "name" in module_data:
-                        module = self._parse_module(module_data["name"], module_data)
-                        if module:
-                            self.modules[module.name] = module
-        except (OSError, ValueError, TypeError, AttributeError):
-            pass
+                for index, module_data in enumerate(data):
+                    if not isinstance(module_data, dict):
+                        msg = f"Module specification list item {index} must be an object"
+                        raise ValueError(msg)
+                    module = self._parse_module(module_data.get("name"), module_data)
+                    loaded_modules.append(module)
+            else:
+                msg = "Module specification must be a JSON object or list of objects"
+                raise ValueError(msg)
+        except (ValueError, TypeError) as exc:
+            msg = f"Invalid module specification '{path}': {exc}"
+            raise ModuleSpecError(msg) from exc
 
-    def _parse_module(self, name: object, data: dict[str, Any]) -> ModuleDefinition | None:
+        for module in loaded_modules:
+            self.modules[module.name] = module
+
+    def _parse_module(self, name: object, data: dict[str, Any]) -> ModuleDefinition:
         """Parse module definition from JSON data."""
-        try:
-            module = ModuleDefinition(name=_normalize_module_name(data.get("name", name)))
+        module = ModuleDefinition(name=_normalize_module_name(data.get("name", name)))
 
-            # Parse attributes
-            if "attributes" in data:
-                for attr_name, attr_type in data["attributes"].items():
-                    module.attributes[attr_name] = self._parse_type(attr_type)
+        # Parse attributes
+        if "attributes" in data:
+            attributes = data["attributes"]
+            if not isinstance(attributes, dict):
+                raise TypeError("Module attributes must be an object")
+            for attr_name, attr_type in attributes.items():
+                if not isinstance(attr_name, str) or not attr_name:
+                    raise ValueError("Module attribute names must be non-empty strings")
+                module.attributes[attr_name] = self._parse_type(attr_type)
 
-            # Parse functions
-            if "functions" in data:
-                for func_name, func_data in data["functions"].items():
-                    if isinstance(func_data, dict):
-                        func_def = FunctionDefinition(
-                            name=func_name,
-                            return_type=self._parse_type(
-                                func_data.get("return", "any"),
-                            ),
-                            parameters=self._parse_parameters(
-                                func_data.get("parameters", []),
-                            ),
-                            min_parameters=_normalize_min_parameters(
-                                func_data.get("min_parameters")
-                            ),
-                            variadic=_normalize_variadic(func_data.get("variadic")),
-                        )
-                        module.functions[func_name] = func_def
+        # Parse functions
+        if "functions" in data:
+            functions = data["functions"]
+            if not isinstance(functions, dict):
+                raise TypeError("Module functions must be an object")
+            for func_name, func_data in functions.items():
+                if not isinstance(func_name, str) or not func_name:
+                    raise ValueError("Module function names must be non-empty strings")
+                if not isinstance(func_data, dict):
+                    raise TypeError(f"Module function '{func_name}' must be an object")
+                func_def = FunctionDefinition(
+                    name=func_name,
+                    return_type=self._parse_type(
+                        func_data.get("return", "any"),
+                    ),
+                    parameters=self._parse_parameters(
+                        func_data.get("parameters", []),
+                    ),
+                    min_parameters=_normalize_min_parameters(func_data.get("min_parameters")),
+                    variadic=_normalize_variadic(func_data.get("variadic")),
+                )
+                module.functions[func_name] = func_def
 
-            # Parse constants
-            if "constants" in data:
-                for const_name, const_type in data["constants"].items():
-                    module.constants[const_name] = self._parse_type(const_type)
+        # Parse constants
+        if "constants" in data:
+            constants = data["constants"]
+            if not isinstance(constants, dict):
+                raise TypeError("Module constants must be an object")
+            for const_name, const_type in constants.items():
+                if not isinstance(const_name, str) or not const_name:
+                    raise ValueError("Module constant names must be non-empty strings")
+                module.constants[const_name] = self._parse_type(const_type)
 
-            return module
-
-        except (ValueError, TypeError, AttributeError):
-            return None
+        return module
 
     def _parse_type(self, type_str: str | dict[str, Any]) -> YaraType:
         """Parse type from string or dict representation."""
@@ -200,7 +229,7 @@ class ModuleLoader:
 
     def _parse_parameters(
         self,
-        params: list[Any] | dict[str, Any],
+        params: object,
     ) -> list[tuple[str, YaraType]]:
         """Parse function parameters."""
         result: list[tuple[str, YaraType]] = []
@@ -219,6 +248,8 @@ class ModuleLoader:
                     name = _normalize_parameter_name(param.get("name"), len(result))
                     type_ = self._parse_type(param.get("type", "any"))
                     result.append((name, type_))
+                else:
+                    raise TypeError("Module function parameters must be strings or objects")
 
         elif isinstance(params, dict):
             # Dict of name: type
@@ -229,6 +260,8 @@ class ModuleLoader:
                         self._parse_type(type_str),
                     )
                 )
+        else:
+            raise TypeError("Module function parameters must be a list or object")
 
         return result
 

@@ -6,14 +6,25 @@ import json
 import os
 from pathlib import Path
 
-from yaraast.types.module_loader import ModuleLoader
+import pytest
+
+from yaraast.types.module_loader import ModuleLoader, ModuleSpecError
 from yaraast.types.type_system import AnyType, BooleanType, IntegerType
 
 
-def test_module_loader_handles_invalid_files_and_unknown_types(tmp_path: Path) -> None:
+def test_module_loader_rejects_invalid_json_specs(tmp_path: Path) -> None:
     invalid_json = tmp_path / "invalid.json"
     invalid_json.write_text("{ not valid json", encoding="utf-8")
 
+    os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"] = str(invalid_json)
+    try:
+        with pytest.raises(ModuleSpecError, match="Invalid JSON"):
+            ModuleLoader()
+    finally:
+        del os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"]
+
+
+def test_module_loader_rejects_malformed_module_sections(tmp_path: Path) -> None:
     bad_module = tmp_path / "bad_module.json"
     bad_module.write_text(
         json.dumps(
@@ -27,17 +38,16 @@ def test_module_loader_handles_invalid_files_and_unknown_types(tmp_path: Path) -
 
     os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"] = str(tmp_path)
     try:
-        loader = ModuleLoader()
+        with pytest.raises(ModuleSpecError, match="attributes must be an object"):
+            ModuleLoader()
     finally:
         del os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"]
 
-    assert "bad_module" not in loader.modules
-    assert loader.modules == {}
-
+    loader = ModuleLoader()
     assert isinstance(loader._parse_type({"type": "mystery"}), AnyType)
 
 
-def test_module_loader_skips_invalid_module_name_without_aborting_file(tmp_path: Path) -> None:
+def test_module_loader_rejects_invalid_module_name_without_partial_load(tmp_path: Path) -> None:
     json_path = tmp_path / "modules.json"
     json_path.write_text(
         json.dumps(
@@ -52,20 +62,23 @@ def test_module_loader_skips_invalid_module_name_without_aborting_file(tmp_path:
 
     os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"] = str(json_path)
     try:
-        loader = ModuleLoader()
+        with pytest.raises(ModuleSpecError, match="Module name must be a non-empty string"):
+            ModuleLoader()
     finally:
         del os.environ["YARAAST_MODULE_SPEC_PATH_EXCLUSIVE"]
 
-    assert loader.list_modules() == ["first", "last"]
-
-
-def test_module_loader_ignores_unreadable_module_specs(tmp_path: Path) -> None:
     loader = ModuleLoader()
     before = dict(loader.modules)
-
-    loader._load_module_file(tmp_path)
-
+    with pytest.raises(ModuleSpecError, match="Module name must be a non-empty string"):
+        loader._load_module_file(json_path)
     assert loader.modules == before
+
+
+def test_module_loader_rejects_unreadable_module_specs(tmp_path: Path) -> None:
+    loader = ModuleLoader()
+
+    with pytest.raises(ModuleSpecError, match="Unable to read module specification"):
+        loader._load_module_file(tmp_path)
 
 
 def test_module_loader_parses_parameter_forms_and_lists_modules(tmp_path: Path) -> None:
@@ -167,3 +180,13 @@ def test_module_loader_degrades_malformed_complex_type_without_aborting_module()
     assert module is not None
     assert isinstance(module.attributes["broken"], AnyType)
     assert isinstance(module.attributes["ok"], IntegerType)
+
+
+def test_module_loader_rejects_malformed_parameter_lists() -> None:
+    loader = ModuleLoader()
+
+    with pytest.raises(TypeError, match="parameters must be strings or objects"):
+        loader._parse_parameters(["ok", 1])
+
+    with pytest.raises(TypeError, match="parameters must be a list or object"):
+        loader._parse_parameters("not-a-parameter-list")
