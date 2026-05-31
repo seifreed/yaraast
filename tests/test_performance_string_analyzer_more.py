@@ -6,6 +6,7 @@ import json
 from textwrap import dedent
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.cli.utils import format_json
@@ -119,3 +120,24 @@ def test_analyze_rule_performance_issues() -> None:
 
     assert any(issue.issue_type == "short_string" for issue in issues)
     assert any(issue.issue_type == "expensive_regex" for issue in issues)
+
+
+def test_string_analyzer_uses_utf8_byte_lengths() -> None:
+    analyzer = StringPatternAnalyzer()
+
+    analysis = analyzer.analyze_patterns(["á", b"\xff\x00"])
+
+    assert analysis["length_statistics"]["min"] == 2
+    assert analysis["length_statistics"]["max"] == 2
+    assert analysis["length_statistics"]["average"] == 2.0
+    assert analysis["length_statistics"]["distribution"] == {2: 2}
+
+
+def test_rule_performance_short_string_uses_utf8_byte_length() -> None:
+    rule = Rule(
+        name="unicode_bytes",
+        strings=[PlainString(identifier="$u", value="éé")],
+        condition=BooleanLiteral(True),
+    )
+
+    assert analyze_rule_performance(rule) == []

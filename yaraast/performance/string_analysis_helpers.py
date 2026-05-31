@@ -18,6 +18,12 @@ def _string_report_value(value: StringValue) -> str:
     return value
 
 
+def string_value_length(value: StringValue) -> int:
+    if isinstance(value, bytes):
+        return len(value)
+    return len(value.encode())
+
+
 def find_duplicates(analyzer: Any, strings: Sequence[StringValue]) -> dict[str, int]:
     counter = Counter(strings)
     duplicates = {_string_report_value(s): count for s, count in counter.items() if count > 1}
@@ -62,7 +68,7 @@ def find_common_suffixes(
 def analyze_lengths(strings: Sequence[StringValue]) -> dict[str, Any]:
     if not strings:
         return {"min": 0, "max": 0, "average": 0, "distribution": {}}
-    lengths = [len(s) for s in strings]
+    lengths = [string_value_length(s) for s in strings]
     return {
         "min": min(lengths),
         "max": max(lengths),

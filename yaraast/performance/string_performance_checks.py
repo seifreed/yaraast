@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.performance.string_analysis_helpers import string_value_length
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
 
@@ -22,7 +23,7 @@ def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
                         suggestion="Consider using plain strings or hex patterns when possible",
                     ),
                 )
-            elif isinstance(string_def, PlainString) and len(string_def.value) < 3:
+            elif isinstance(string_def, PlainString) and string_value_length(string_def.value) < 3:
                 issues.append(
                     StringPerformanceIssue(
                         rule_name=rule.name,
