@@ -255,9 +255,7 @@ def read_identifier(lexer) -> Token:
     if len(value) > YARA_IDENTIFIER_MAX_LENGTH:
         msg = f"Identifier exceeds maximum length of {YARA_IDENTIFIER_MAX_LENGTH} characters"
         raise LexerError(msg, start_line, start_column)
-    return Token(
-        lexer.KEYWORDS.get(value.lower(), TokenType.IDENTIFIER), value, start_line, start_column
-    )
+    return Token(lexer.KEYWORDS.get(value, TokenType.IDENTIFIER), value, start_line, start_column)
 
 
 def read_string_identifier(lexer) -> Token:

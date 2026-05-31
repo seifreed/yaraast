@@ -280,6 +280,20 @@ def test_parse_rejects_non_ascii_identifiers(source: str) -> None:
         Parser(source).parse()
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        "RULE r { condition: true }",
+        "rule r { CONDITION: true }",
+        'rule r { strings: $a = "x" WIDE condition: $a }',
+    ],
+)
+def test_parse_rejects_uppercase_keywords(source: str) -> None:
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError):
+            parser_factory().parse(source)
+
+
 def test_parse_generated_extended_top_level_constructs() -> None:
     source = CodeGenerator().generate(
         YaraFile(
