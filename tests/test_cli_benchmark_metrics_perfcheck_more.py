@@ -416,6 +416,7 @@ def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[
     )
 
     _display_plain_string(PlainString(identifier="$p", value="x" * 40))
+    _display_plain_string(PlainString(identifier="$bytes", value=b"abc\xff"))
     _display_hex_string(HexString(identifier="$h", tokens=[1, 2, 3]))
     _display_regex_string(RegexString(identifier="$r", regex="ab+"))
     _display_text_statistics(
@@ -431,6 +432,8 @@ def test_metrics_reporting_direct_display_helpers(capsys: pytest.CaptureFixture[
 
     out = capsys.readouterr().out
     assert '"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx..."' in out
+    assert '$bytes: "abc\\xff"' in out
+    assert "b'abc" not in out
     assert "HEX pattern (3 tokens)" in out
     assert "/ab+/" in out
     assert "Total strings: 3" in out

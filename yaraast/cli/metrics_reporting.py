@@ -8,7 +8,7 @@ from typing import Any
 import click
 
 from yaraast.ast.base import YaraFile
-from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.cli.metrics_reporting_complexity import (
     complexity_quality_message,
     emit_text_output as _emit_text_output,
@@ -67,20 +67,26 @@ def _display_pattern_result(result_path: str) -> None:
         click.echo(result_path)
 
 
-def _display_plain_string(string_def: StringDef) -> None:
+def _format_plain_string_value(value: str | bytes) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="backslashreplace")
+    return value
+
+
+def _display_plain_string(string_def: PlainString) -> None:
     """Display plain string information."""
-    value_str = string_def.value
-    display_value = f'"{value_str[:30]}..."' if len(str(value_str)) > 30 else f'"{value_str}"'
+    value_str = _format_plain_string_value(string_def.value)
+    display_value = f'"{value_str[:30]}..."' if len(value_str) > 30 else f'"{value_str}"'
     click.echo(f"  📝 {string_def.identifier}: {display_value}")
 
 
-def _display_hex_string(string_def: StringDef) -> None:
+def _display_hex_string(string_def: HexString) -> None:
     """Display hex string information."""
     token_count = len(string_def.tokens)
     click.echo(f"  🔢 {string_def.identifier}: HEX pattern ({token_count} tokens)")
 
 
-def _display_regex_string(string_def: StringDef) -> None:
+def _display_regex_string(string_def: RegexString) -> None:
     """Display regex string information."""
     click.echo(f"  🔍 {string_def.identifier}: /{string_def.regex}/")
 
@@ -103,15 +109,17 @@ def _analyze_pattern_counts(ast: YaraFile) -> dict[str, int]:
         if rule.strings:
             click.echo(f"\n📁 Rule: {rule.name}")
             for string_def in rule.strings:
-                if hasattr(string_def, "value"):
+                if isinstance(string_def, PlainString):
                     counts["plain"] += 1
                     _display_plain_string(string_def)
-                elif hasattr(string_def, "tokens"):
+                elif isinstance(string_def, HexString):
                     counts["hex"] += 1
                     _display_hex_string(string_def)
-                elif hasattr(string_def, "regex"):
+                elif isinstance(string_def, RegexString):
                     counts["regex"] += 1
                     _display_regex_string(string_def)
+                elif isinstance(string_def, StringDefinition):
+                    continue
 
     return counts
 
