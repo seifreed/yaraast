@@ -220,6 +220,28 @@ def test_string_matcher_regex_fullword_filters_boundaries() -> None:
     ] == [(0, 1)]
 
 
+def test_string_matcher_regex_grouped_literal_alternation_matches_libyara_lengths() -> None:
+    matcher = StringMatcher()
+    regex = RegexString("$re", regex="(ab|a)b", modifiers=[])
+
+    regex_matches = matcher.match_string(regex, b"abb")
+
+    assert [(match.offset, match.length) for match in regex_matches] == [(0, 2)]
+
+
+def test_string_matcher_regex_grouped_literal_alternation_fullword_uses_long_match() -> None:
+    matcher = StringMatcher()
+    regex = RegexString(
+        "$re",
+        regex="(a|ab)b",
+        modifiers=[StringModifier.from_name_value("fullword")],
+    )
+
+    regex_matches = matcher.match_string(regex, b"abb")
+
+    assert [(match.offset, match.length) for match in regex_matches] == [(0, 3)]
+
+
 def test_string_matcher_wide_regex_fullword_keeps_suffixes_of_full_match() -> None:
     matcher = StringMatcher()
     regex = RegexString(

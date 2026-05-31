@@ -627,20 +627,33 @@ class StringMatcher:
         )
 
     def _longest_first_literal_alternation(self, pattern: str) -> str | None:
-        alternatives = pattern.split("|")
-        if len(alternatives) < 2:
-            return None
-        if not all(alternative.isalnum() for alternative in alternatives):
+        alternatives = self._literal_alternatives(pattern)
+        if alternatives is None:
             return None
         return "|".join(sorted(alternatives, key=len, reverse=True))
 
     def _shortest_first_literal_alternation(self, pattern: str) -> str | None:
-        alternatives = pattern.split("|")
-        if len(alternatives) < 2:
-            return None
-        if not all(alternative.isalnum() for alternative in alternatives):
+        alternatives = self._literal_alternatives(pattern)
+        if alternatives is None:
             return None
         return "|".join(sorted(alternatives, key=len))
+
+    def _literal_alternatives(self, pattern: str) -> list[str] | None:
+        alternatives = pattern.split("|")
+        if len(alternatives) > 1 and all(alternative.isalnum() for alternative in alternatives):
+            return alternatives
+
+        grouped = re.fullmatch(r"([A-Za-z0-9]*)\(([A-Za-z0-9|]+)\)([A-Za-z0-9]*)", pattern)
+        if grouped is None:
+            return None
+
+        prefix, alternatives_text, suffix = grouped.groups()
+        grouped_alternatives = alternatives_text.split("|")
+        if len(grouped_alternatives) < 2 or not all(
+            alternative.isalnum() for alternative in grouped_alternatives
+        ):
+            return None
+        return [f"{prefix}{alternative}{suffix}" for alternative in grouped_alternatives]
 
     def _find_overlapping_wide_regex_matches(
         self,
