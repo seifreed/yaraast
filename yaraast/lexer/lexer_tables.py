@@ -5,6 +5,8 @@ from __future__ import annotations
 from yaraast.lexer.tokens import TokenType
 
 YARA_IDENTIFIER_MAX_LENGTH = 128
+YARA_IDENTIFIER_START_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"
+YARA_IDENTIFIER_BODY_CHARS = YARA_IDENTIFIER_START_CHARS + "0123456789"
 
 KEYWORDS = {
     "rule": TokenType.RULE,

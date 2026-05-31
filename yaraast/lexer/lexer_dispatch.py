@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.lexer_helpers import _skip_line_continuation
-from yaraast.lexer.lexer_tables import SINGLE_CHAR_TOKENS, TWO_CHAR_OPERATORS
+from yaraast.lexer.lexer_tables import (
+    SINGLE_CHAR_TOKENS,
+    TWO_CHAR_OPERATORS,
+    YARA_IDENTIFIER_START_CHARS,
+)
 from yaraast.lexer.tokens import Token, TokenType
 
 
@@ -25,7 +29,7 @@ def read_next_token(lexer) -> Token | None:
         return lexer._read_regex()
     if char.isdigit() or (char == "0" and lexer._peek_char() in "xX"):
         return lexer._read_number()
-    if char.isalpha() or char == "_":
+    if char in YARA_IDENTIFIER_START_CHARS:
         return lexer._read_identifier()
     if char == "$":
         return lexer._read_string_identifier()

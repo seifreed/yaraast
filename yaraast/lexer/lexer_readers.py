@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from yaraast.lexer.lexer_errors import LexerError
-from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
+from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_BODY_CHARS, YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lexer.tokens import Token, TokenType
 
@@ -249,9 +249,7 @@ def read_identifier(lexer) -> Token:
     start_line = lexer.line
     start_column = lexer.column
     value = ""
-    while lexer._current_char() and (
-        lexer._current_char().isalnum() or lexer._current_char() == "_"
-    ):
+    while lexer._current_char() and lexer._current_char() in YARA_IDENTIFIER_BODY_CHARS:
         value += lexer._current_char()
         lexer._advance()
     if len(value) > YARA_IDENTIFIER_MAX_LENGTH:
@@ -270,9 +268,7 @@ def read_string_identifier(lexer) -> Token:
         lexer._advance()
         return Token(TokenType.STRING_IDENTIFIER, "$*", start_line, start_column)
     value = "$"
-    while lexer._current_char() and (
-        lexer._current_char().isalnum() or lexer._current_char() == "_"
-    ):
+    while lexer._current_char() and lexer._current_char() in YARA_IDENTIFIER_BODY_CHARS:
         value += lexer._current_char()
         lexer._advance()
     if lexer._current_char() == "*":
@@ -298,9 +294,7 @@ def _read_prefixed_identifier(lexer, prefix: str, token_type: TokenType) -> Toke
     start_column = lexer.column
     lexer._advance()
     value = prefix
-    while lexer._current_char() and (
-        lexer._current_char().isalnum() or lexer._current_char() == "_"
-    ):
+    while lexer._current_char() and lexer._current_char() in YARA_IDENTIFIER_BODY_CHARS:
         value += lexer._current_char()
         lexer._advance()
     return Token(token_type, value, start_line, start_column)

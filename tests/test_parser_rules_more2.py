@@ -243,6 +243,21 @@ def test_parse_rejects_identifiers_longer_than_libyara_limit(source_template: st
         Parser(source_template.format(identifier=long_identifier)).parse()
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        "rule café { condition: true }",
+        "rule r : café { condition: true }",
+        "rule r { meta: café = 1 condition: true }",
+        'import "pe" rule r { condition: pe.café == 1 }',
+        'rule r { strings: $café = "x" condition: $café }',
+    ],
+)
+def test_parse_rejects_non_ascii_identifiers(source: str) -> None:
+    with pytest.raises(LexerError, match="Unexpected character"):
+        Parser(source).parse()
+
+
 def test_parse_generated_extended_top_level_constructs() -> None:
     source = CodeGenerator().generate(
         YaraFile(

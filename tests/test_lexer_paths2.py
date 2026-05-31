@@ -52,6 +52,21 @@ def test_lexer_rejects_identifiers_longer_than_libyara_limit() -> None:
         Lexer(f"rule {long_name} {{ condition: true }}").tokenize()
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        "rule café { condition: true }",
+        'rule r { strings: $café = "x" condition: $café }',
+        'rule r { strings: $a = "x" condition: #café == 0 }',
+        'rule r { strings: $a = "x" condition: @café == 0 }',
+        'rule r { strings: $a = "x" condition: !café == 0 }',
+    ],
+)
+def test_lexer_rejects_non_ascii_identifiers(source: str) -> None:
+    with pytest.raises(LexerError, match="Unexpected character"):
+        Lexer(source).tokenize()
+
+
 def test_lexer_number_suffix_and_regex_context_and_hex_context_helpers() -> None:
     lex = Lexer("10KB")
     toks = lex.tokenize()
