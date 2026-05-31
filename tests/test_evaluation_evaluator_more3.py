@@ -836,6 +836,27 @@ def test_pe_invalid_files_leave_rich_signature_fields_undefined(data: bytes) -> 
     }
 
 
+def test_pe_absent_resource_and_rich_signature_fields_are_undefined() -> None:
+    ast = Parser().parse("""
+        import "pe"
+        rule absent_optional_pe_fields {
+            condition:
+                defined pe.resource_timestamp or
+                pe.resource_timestamp == 0 or
+                defined pe.rich_signature.offset or
+                pe.rich_signature.offset == 0 or
+                defined pe.rich_signature.clear_data or
+                pe.rich_signature.clear_data == "" or
+                defined pe.rich_signature.version(1) or
+                pe.rich_signature.version(1) == 0
+        }
+        """)
+
+    assert YaraEvaluator(data=_build_minimal_pe_with_entrypoint()).evaluate_file(ast) == {
+        "absent_optional_pe_fields": False
+    }
+
+
 @pytest.mark.parametrize("data", [b"", b"MZ"])
 def test_pe_invalid_files_leave_indexed_fields_undefined(data: bytes) -> None:
     ast = Parser().parse("""

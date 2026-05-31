@@ -212,15 +212,15 @@ def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
     assert pe.sections[0].number_of_line_numbers == 0
     assert pe.overlay.offset == 0x500
     assert pe.overlay.size == 3
-    assert pe.rich_signature.offset == 0
-    assert pe.rich_signature.length == 0
-    assert pe.rich_signature.clear_data == ""
-    assert pe.rich_signature.key == 0
-    assert pe.rich_signature.raw_data == ""
-    assert pe.rich_signature.version(1) == 0
-    assert pe.rich_signature.version(1, 2) == 0
-    assert pe.rich_signature.toolid(1) == 0
-    assert pe.rich_signature.toolid(1, 2) == 0
+    assert pe.rich_signature.offset is YARA_UNDEFINED
+    assert pe.rich_signature.length is YARA_UNDEFINED
+    assert pe.rich_signature.clear_data is YARA_UNDEFINED
+    assert pe.rich_signature.key is YARA_UNDEFINED
+    assert pe.rich_signature.raw_data is YARA_UNDEFINED
+    assert pe.rich_signature.version(1) is YARA_UNDEFINED
+    assert pe.rich_signature.version(1, 2) is YARA_UNDEFINED
+    assert pe.rich_signature.toolid(1) is YARA_UNDEFINED
+    assert pe.rich_signature.toolid(1, 2) is YARA_UNDEFINED
     assert pe.number_of_signatures == 0
     assert pe.signatures == []
     assert pe.rva_to_offset(0x100) == 0x100

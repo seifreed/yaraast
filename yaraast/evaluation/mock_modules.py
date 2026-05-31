@@ -290,12 +290,9 @@ class MockPE:
             ):
                 self.is_pe = True
                 self.number_of_resources = 0
-                self.resource_timestamp = 0
                 self.overlay_offset = 0
                 self.overlay_size = 0
                 self.overlay = PEOverlay(0, 0)
-                self.rich_signature_offset = 0
-                self.rich_signature = PERichSignature("", 0, 0, 0, "")
                 self.number_of_signatures = 0
                 self.signatures = []
                 coff_offset = pe_offset + 4
