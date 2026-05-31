@@ -7,6 +7,7 @@ from lsprotocol.types import Position
 from yaraast.lsp.completion import CompletionProvider
 from yaraast.lsp.definition import DefinitionProvider
 from yaraast.lsp.signature_help import SignatureHelpProvider
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def _pos(line: int, char: int) -> Position:
@@ -129,6 +130,17 @@ def test_signature_help_edge_cases_and_parameter_counting() -> None:
     assert rich_signature_sig is not None
     assert rich_signature_sig.active_parameter == 1
     assert "version" in rich_signature_sig.signatures[0].label
+
+
+def test_signature_help_uses_utf16_cursor_for_active_parameter() -> None:
+    provider = SignatureHelpProvider()
+    text = "rule a { condition: /* 😀 */ hash.md5(value, length) }"
+    cursor = text.index(",")
+
+    signature = provider.get_signature_help(text, _pos(0, utf8_col_to_utf16(text, cursor)))
+
+    assert signature is not None
+    assert signature.active_parameter == 0
 
     assert provider._calculate_active_parameter("uint32(1,", _pos(1, 0)) == 0
     assert provider._calculate_active_parameter("uint32(1", _pos(0, 99)) == 0

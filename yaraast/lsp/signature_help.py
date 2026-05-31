@@ -5,6 +5,7 @@ from __future__ import annotations
 from lsprotocol.types import ParameterInformation, Position, SignatureHelp, SignatureInformation
 
 from yaraast.lsp.structure import _starts_regex_literal
+from yaraast.lsp.utf16 import utf16_col_to_utf8
 
 
 def _function_name_before_open_paren(line: str, paren_index: int) -> str | None:
@@ -226,7 +227,7 @@ class SignatureHelpProvider:
             return None
 
         line = lines[position.line]
-        char_pos = min(position.character, len(line))
+        char_pos = utf16_col_to_utf8(line, position.character)
         stack: list[tuple[str, int]] = []
         in_string = False
         in_regex = False
