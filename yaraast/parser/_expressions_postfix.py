@@ -85,6 +85,9 @@ class ExpressionPostfixMixin:
     def _parse_bracket_access(self, expr: Expression) -> ArrayAccess | DictionaryAccess:
         """Parse bracket access expression (array[index] or dict['key'])."""
         start_token = self._previous()
+        if isinstance(expr, StringIdentifier):
+            msg = "String identifiers do not support bracket access"
+            raise ParserError(msg, start_token)
         index = self._parse_expression()
         if not self._match(TokenType.RBRACKET):
             msg = "Expected ']'"
