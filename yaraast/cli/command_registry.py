@@ -55,9 +55,7 @@ def register_commands(cli: click.Group) -> None:
             cli.add_command(command[0], name=command[1])
         else:
             cli.add_command(command)
-    try:
-        from yaraast.cli.commands.lsp import lsp
 
-        cli.add_command(lsp)
-    except ImportError:
-        pass
+    from yaraast.cli.commands.lsp import lsp
+
+    cli.add_command(lsp)
