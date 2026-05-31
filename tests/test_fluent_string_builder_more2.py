@@ -20,6 +20,7 @@ from yaraast.ast.strings import (
 from yaraast.builder.fluent_string_builder import FluentStringBuilder
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.errors import ValidationError
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 
 
 def test_fluent_string_builder_invalid_hex_inputs_and_trailing_nibble() -> None:
@@ -194,6 +195,9 @@ def test_fluent_string_builder_rejects_invalid_jump_pattern_bounds() -> None:
 
     with pytest.raises(ValidationError, match="Jump minimum 5 cannot exceed maximum 4"):
         FluentStringBuilder("$jump").jump_pattern(5, 4)
+
+    with pytest.raises(ValidationError, match="Jump maximum must not exceed"):
+        FluentStringBuilder("$jump").jump_pattern(1, LIBYARA_HEX_JUMP_MAX + 1)
 
 
 def test_fluent_string_builder_regex_specific_modifiers() -> None:

@@ -8,6 +8,7 @@ from typing import Self
 
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexToken, HexWildcard
 from yaraast.errors import ValidationError
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 
@@ -209,6 +210,12 @@ class HexStringBuilder:
             raise ValidationError(msg)
         if max_jump is not None and max_jump < 0:
             msg = f"Jump maximum must be non-negative, got {max_jump}"
+            raise ValidationError(msg)
+        if min_jump is not None and min_jump > LIBYARA_HEX_JUMP_MAX:
+            msg = f"Jump minimum must not exceed {LIBYARA_HEX_JUMP_MAX}"
+            raise ValidationError(msg)
+        if max_jump is not None and max_jump > LIBYARA_HEX_JUMP_MAX:
+            msg = f"Jump maximum must not exceed {LIBYARA_HEX_JUMP_MAX}"
             raise ValidationError(msg)
         if min_jump is not None and max_jump is not None and min_jump > max_jump:
             msg = f"Jump minimum {min_jump} cannot exceed maximum {max_jump}"

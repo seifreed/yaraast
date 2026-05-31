@@ -68,6 +68,7 @@ from yaraast.codegen.formatting import FormattingConfig, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.pretty_printer import PrettyPrinter
 from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.parser import Parser
 from yaraast.serialization.json_serializer import JsonSerializer
 from yaraast.yarax.ast_nodes import (
@@ -1128,6 +1129,33 @@ def test_codegen_generators_allow_mutated_none_rule_meta_collection() -> None:
     ):
         assert "meta:" not in output
         assert "condition:" in output
+
+
+def test_codegen_rejects_hex_jumps_above_libyara_limit() -> None:
+    rule = Rule(
+        name="large_jump",
+        strings=[
+            HexString(
+                "$a",
+                tokens=[
+                    HexByte(0xAA),
+                    HexJump(LIBYARA_HEX_JUMP_MAX + 1, LIBYARA_HEX_JUMP_MAX + 1),
+                    HexByte(0xBB),
+                ],
+            )
+        ],
+        condition=BooleanLiteral(True),
+    )
+    ast = YaraFile(rules=[rule])
+
+    with pytest.raises(ValueError, match="must not exceed"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="must not exceed"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="must not exceed"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match="must not exceed"):
+        PrettyPrinter().pretty_print(ast)
 
 
 @pytest.mark.parametrize("meta_value", [1.5, None, ["x"]])

@@ -18,6 +18,7 @@ from yaraast.ast.strings import (
     PlainString,
     RegexString,
 )
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.regex_literals import (
     REGEX_MODIFIER_ORDER,
     VALID_REGEX_MODIFIERS,
@@ -398,7 +399,13 @@ def _validate_hex_nibble_value(value: int | str) -> int | str:
 def _validate_hex_jump_bound(value: int | None, field: str) -> int | None:
     if value is None:
         return None
-    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+    if isinstance(value, int) and not isinstance(value, bool):
+        if value < 0:
+            msg = f"HexJump {field} must be a non-negative integer"
+            raise TypeError(msg)
+        if value > LIBYARA_HEX_JUMP_MAX:
+            msg = f"HexJump {field} must not exceed {LIBYARA_HEX_JUMP_MAX}"
+            raise ValueError(msg)
         return value
     msg = f"HexJump {field} must be a non-negative integer"
     raise TypeError(msg)

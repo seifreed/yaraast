@@ -8,6 +8,7 @@ from yaraast.ast.strings import HexNegatedByte, HexString, RegexString
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
 from yaraast.parser.parser import Parser
@@ -412,6 +413,16 @@ def test_parse_negated_hex_nibbles(
         assert token.value == expected_value
         assert SemanticValidator().validate(ast).is_valid
         assert expected_output in CodeGenerator().generate(ast)
+
+
+@pytest.mark.parametrize("pattern", ["AA [{too_large}] BB", "AA [1-{too_large}] BB"])
+def test_parse_rejects_hex_jumps_above_libyara_limit(pattern: str) -> None:
+    too_large = LIBYARA_HEX_JUMP_MAX + 1
+    source = f"rule r {{ strings: $a = {{ {pattern.format(too_large=too_large)} }} condition: $a }}"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="Invalid jump length"):
+            parser_factory().parse(source)
 
 
 def test_parse_regex_string_inline_modifiers_do_not_roundtrip_nul() -> None:

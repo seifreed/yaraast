@@ -20,6 +20,7 @@ from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.builder.hex_validation import validate_hex_tokens_for_builder
 from yaraast.builder.string_identifier_validation import normalize_string_identifier
 from yaraast.errors import ValidationError
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 
@@ -305,6 +306,12 @@ class FluentStringBuilder:
             raise ValidationError(msg)
         if max_bytes < 0:
             msg = f"Jump maximum must be non-negative, got {max_bytes}"
+            raise ValidationError(msg)
+        if min_bytes > LIBYARA_HEX_JUMP_MAX:
+            msg = f"Jump minimum must not exceed {LIBYARA_HEX_JUMP_MAX}"
+            raise ValidationError(msg)
+        if max_bytes > LIBYARA_HEX_JUMP_MAX:
+            msg = f"Jump maximum must not exceed {LIBYARA_HEX_JUMP_MAX}"
             raise ValidationError(msg)
         if min_bytes > max_bytes:
             msg = f"Jump minimum {min_bytes} cannot exceed maximum {max_bytes}"

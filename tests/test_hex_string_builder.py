@@ -22,6 +22,7 @@ from yaraast.ast.strings import (
 )
 from yaraast.builder.hex_string_builder import HexStringBuilder
 from yaraast.errors import ValidationError
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 
 
 def _byte_value(token: HexToken) -> int | str:
@@ -452,6 +453,12 @@ class TestHexStringBuilderJumps:
 
         with pytest.raises(ValidationError, match="cannot exceed maximum"):
             HexStringBuilder().jump_varying(5, 2)
+
+        with pytest.raises(ValidationError, match="Jump minimum must not exceed"):
+            HexStringBuilder().jump_at_least(LIBYARA_HEX_JUMP_MAX + 1)
+
+        with pytest.raises(ValidationError, match="Jump maximum must not exceed"):
+            HexStringBuilder().jump_up_to(LIBYARA_HEX_JUMP_MAX + 1)
 
     @pytest.mark.parametrize(
         ("method_name", "args"),

@@ -22,6 +22,7 @@ from yaraast.ast.strings import (
     HexWildcard,
 )
 from yaraast.errors import YaraASTError
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 
 if TYPE_CHECKING:
     from yaraast.lexer import Token
@@ -259,6 +260,11 @@ class HexStringParser:
             raise HexParseError(msg, self.pos)
         if max_jump is not None and max_jump < 0:
             msg = "Invalid jump range"
+            raise HexParseError(msg, self.pos)
+        if (min_jump is not None and min_jump > LIBYARA_HEX_JUMP_MAX) or (
+            max_jump is not None and max_jump > LIBYARA_HEX_JUMP_MAX
+        ):
+            msg = "Invalid jump length"
             raise HexParseError(msg, self.pos)
         if min_jump is not None and max_jump is not None and min_jump > max_jump:
             msg = "Invalid jump range"
