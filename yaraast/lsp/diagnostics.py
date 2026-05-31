@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 import contextlib
 from dataclasses import dataclass
+from pathlib import Path
 import re
 import time
 from typing import TYPE_CHECKING, Any, cast
@@ -29,6 +30,7 @@ from yaraast.lsp.diagnostics_helpers import (
     suggest_builtin_functions,
 )
 from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.parser._shared import ParserError
 from yaraast.types.semantic_validator import SemanticValidator
 from yaraast.unified_parser import UnifiedParser
@@ -184,10 +186,16 @@ class DiagnosticsProvider:
         """Convert a ValidationError to an LSP Diagnostic."""
         if error.location:
             line = error.location.line - 1 if error.location.line > 0 else 0
-            col = error.location.column - 1 if error.location.column > 0 else 0
+            source_col = error.location.column - 1 if error.location.column > 0 else 0
+            start_col = source_col
+            end_col = source_col + 10
+            source_line = _location_source_line(error.location, line)
+            if source_line:
+                start_col = utf8_col_to_utf16(source_line, source_col)
+                end_col = utf8_col_to_utf16(source_line, source_col + 10)
             diagnostic_range = Range(
-                start=Position(line=line, character=col),
-                end=Position(line=line, character=col + 10),
+                start=Position(line=line, character=start_col),
+                end=Position(line=line, character=end_col),
             )
         else:
             # No location information
@@ -343,3 +351,19 @@ class DiagnosticsProvider:
 
     def _suggest_builtin_functions(self, function_name: str) -> list[str]:
         return suggest_builtin_functions(function_name)
+
+
+def _location_source_line(location: Any, line: int) -> str:
+    file_name = getattr(location, "file", None)
+    if not file_name:
+        return ""
+    path = Path(file_name)
+    if not path.is_file():
+        return ""
+    try:
+        lines = path.read_text(encoding="utf-8").split("\n")
+    except OSError:
+        return ""
+    if 0 <= line < len(lines):
+        return lines[line]
+    return ""

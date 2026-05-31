@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -98,6 +99,24 @@ def test_diagnostics_validation_conversion_edges() -> None:
     diag2 = provider._validation_error_to_diagnostic(no_location, DiagnosticSeverity.Warning)
     assert diag2.range.start.line == 0
     assert diag2.range.end.character == 1
+
+
+def test_validation_error_diagnostic_range_uses_utf16_columns(tmp_path: Path) -> None:
+    provider = DiagnosticsProvider()
+    source = "rule bad { condition: 😀😀 }"
+    source_path = tmp_path / "bad.yar"
+    source_path.write_text(source, encoding="utf-8")
+    source_start = source.index("😀")
+    error = ValidationError(
+        "warn",
+        location=Location(line=1, column=source_start + 1, file=str(source_path)),
+        severity="warning",
+    )
+
+    diag = provider._validation_error_to_diagnostic(error, DiagnosticSeverity.Warning)
+
+    assert diag.range.start.character == utf8_col_to_utf16(source, source_start)
+    assert diag.range.end.character == utf8_col_to_utf16(source, source_start + 10)
 
 
 def test_diagnostics_unknown_function_warning() -> None:
