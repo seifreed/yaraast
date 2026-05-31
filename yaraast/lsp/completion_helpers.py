@@ -13,6 +13,7 @@ from yaraast.lsp.language_services import parse_source
 from yaraast.lsp.lsp_docs import BUILTIN_DOCS, KEYWORD_DOCS, MODULE_DOCS
 from yaraast.lsp.runtime import LanguageMode
 from yaraast.lsp.structure import RULE_DECLARATION_RE
+from yaraast.lsp.utf16 import utf16_col_to_utf8
 from yaraast.yarax.ast_nodes import WithStatement
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ def analyze_context(text: str, position: Position) -> str:
         return "general"
 
     current_line = lines[position.line]
-    before_cursor = current_line[: position.character]
+    before_cursor = current_line[: utf16_col_to_utf8(current_line, position.character)]
 
     if "$" in before_cursor and "=" in before_cursor:
         if any(mod in before_cursor for mod in ["nocase", "wide", "ascii", "xor"]):
@@ -113,7 +114,7 @@ def get_current_module(text: str, position: Position) -> str | None:
         return None
 
     current_line = lines[position.line]
-    before_cursor = current_line[: position.character]
+    before_cursor = current_line[: utf16_col_to_utf8(current_line, position.character)]
 
     return _active_module_name(before_cursor)
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from lsprotocol.types import Position
 
 from yaraast.lsp.completion import CompletionProvider
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def _pos(line: int, char: int) -> Position:
@@ -36,4 +37,15 @@ def test_completion_module_member_context() -> None:
 
     completions = provider.get_completions(text, _pos(0, len(text)))
     labels = [item.label for item in completions.items]
+    assert "imphash" in labels or "is_pe" in labels
+
+
+def test_completion_module_member_context_uses_utf16_cursor() -> None:
+    provider = CompletionProvider()
+    text = "rule r { condition: /* 😀 */ pe.1 }"
+    cursor = text.index("pe.") + len("pe.")
+
+    completions = provider.get_completions(text, _pos(0, utf8_col_to_utf16(text, cursor)))
+
+    labels = {item.label for item in completions.items}
     assert "imphash" in labels or "is_pe" in labels
