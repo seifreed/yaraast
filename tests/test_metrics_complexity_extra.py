@@ -172,6 +172,33 @@ def test_complexity_string_usage_tracks_condition_string_forms() -> None:
     }
 
 
+def test_complexity_string_usage_ignores_rule_wildcard_sets() -> None:
+    code = """
+    rule alpha_one {
+        condition:
+            true
+    }
+
+    rule alpha_two {
+        condition:
+            true
+    }
+
+    rule holder {
+        strings:
+            $alpha_local = "needle"
+        condition:
+            any of (alpha*)
+    }
+    """
+    ast = Parser().parse(dedent(code))
+
+    metrics = ComplexityAnalyzer().analyze(ast)
+
+    assert metrics.string_dependencies.get("holder", set()) == set()
+    assert metrics.unused_strings == ["holder:$alpha_local"]
+
+
 def test_complexity_metrics_preserve_duplicate_rule_occurrences() -> None:
     code = """
     rule dup_first {

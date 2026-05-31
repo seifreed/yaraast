@@ -197,6 +197,8 @@ class ComplexityAnalyzer(MetricsVisitorBase):
             return
 
         normalized = self._normalize_string_id(text)
+        if "*" in text and not text.startswith("$"):
+            return
         if "*" in normalized:
             self._mark_wildcard_usage(normalized)
             return
