@@ -354,8 +354,13 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert isinstance(console, ConsoleModule)
     assert console.log("x", 1) is True
     assert console.log(1.5) is True
+    assert console.hex(10) is True
+    assert console.hex(-1) is True
+    assert console.messages[-2:] == ["0xa", "0xffffffffffffffff"]
     with pytest.raises(EvaluationError, match=r"console\.log\(\) expects scalar arguments"):
         console.log(cast(Any, True))
+    with pytest.raises(EvaluationError, match=r"console\.hex\(\) expects an integer argument"):
+        console.hex(cast(Any, True))
     with pytest.raises(EvaluationError, match="expects at most two arguments"):
         console.log("x", 1, 1.5)
     with pytest.raises(EvaluationError, match="expects a string first argument"):

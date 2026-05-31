@@ -293,7 +293,12 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
         },
     },
     "time": {"funcs": {"now": ("i", [])}},
-    "console": {"funcs": {"log": ("b", [("message", "scalar"), ("value", "scalar")], 1)}},
+    "console": {
+        "funcs": {
+            "log": ("b", [("message", "scalar"), ("value", "scalar")], 1),
+            "hex": ("b", [("value", "i")]),
+        }
+    },
     "string": {
         "funcs": {
             "to_int": ("i", [("s", "s"), ("base", "i")], 1),

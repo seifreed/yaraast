@@ -264,6 +264,32 @@ class TestFunctionCallValidator:
             "expects at most 2 argument" in error.message for error in too_many_result.errors
         )
 
+    def test_console_hex_accepts_integer_argument(self) -> None:
+        ast = Parser().parse("""
+            import "console"
+            rule console_hex {
+                condition:
+                    console.hex(10)
+            }
+            """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+        assert result.errors == []
+
+    def test_console_hex_rejects_non_integer_arguments(self) -> None:
+        bool_ast = Parser().parse('import "console" rule r { condition: console.hex(true) }')
+        string_ast = Parser().parse('import "console" rule r { condition: console.hex("x") }')
+
+        bool_result = SemanticValidator().validate(bool_ast)
+        string_result = SemanticValidator().validate(string_ast)
+
+        assert bool_result.is_valid is False
+        assert any("must be integer, got boolean" in e.message for e in bool_result.errors)
+        assert string_result.is_valid is False
+        assert any("must be integer, got string" in e.message for e in string_result.errors)
+
     def test_string_to_int_accepts_optional_integer_base(self) -> None:
         ast = Parser().parse("""
             import "string"

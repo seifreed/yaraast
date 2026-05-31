@@ -1272,6 +1272,11 @@ class ConsoleModule:
         self.messages.append("".join(str(message) for message in messages))
         return True
 
+    def hex(self, value: object) -> bool:
+        _require_integer_arg("console.hex", value)
+        self.messages.append(f"0x{value & UINT64_MASK:x}")
+        return True
+
 
 # ---------------------------------------------------------------------------
 # Module registry

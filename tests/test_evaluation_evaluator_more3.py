@@ -577,6 +577,19 @@ def test_console_log_matches_libyara_scalar_arguments() -> None:
     assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"console_log_scalars": True}
 
 
+def test_console_hex_matches_libyara_integer_arguments() -> None:
+    ast = Parser().parse("""
+        import "console"
+        rule console_hex_integer {
+            condition:
+                console.hex(10) and
+                console.hex(-1)
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"console_hex_integer": True}
+
+
 def test_console_log_rejects_boolean_arguments() -> None:
     ast = Parser().parse("""
         import "console"
@@ -587,6 +600,19 @@ def test_console_log_rejects_boolean_arguments() -> None:
         """)
 
     with pytest.raises(EvaluationError, match=r"console\.log\(\) expects scalar arguments"):
+        YaraEvaluator(data=b"abc").evaluate_file(ast)
+
+
+def test_console_hex_rejects_non_integer_arguments() -> None:
+    ast = Parser().parse("""
+        import "console"
+        rule invalid_console_hex {
+            condition:
+                defined console.hex(true)
+        }
+        """)
+
+    with pytest.raises(EvaluationError, match=r"console\.hex\(\) expects an integer argument"):
         YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 
