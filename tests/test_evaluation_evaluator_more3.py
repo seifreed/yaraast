@@ -527,6 +527,27 @@ def test_pe_invalid_files_leave_rich_signature_fields_undefined(data: bytes) -> 
     }
 
 
+@pytest.mark.parametrize("data", [b"", b"MZ"])
+def test_pe_invalid_files_leave_indexed_fields_undefined(data: bytes) -> None:
+    ast = Parser().parse("""
+        import "pe"
+        rule invalid_pe_indexed_fields {
+            condition:
+                defined pe.sections[0].name or
+                defined pe.signatures[0].issuer or
+                defined pe.version_info["CompanyName"] or
+                not pe.sections[0].name or
+                not pe.signatures[0].issuer or
+                not pe.version_info["CompanyName"] or
+                pe.sections[0].name == "" or
+                pe.signatures[0].issuer == "" or
+                pe.version_info["CompanyName"] == ""
+        }
+        """)
+
+    assert YaraEvaluator(data=data).evaluate_file(ast) == {"invalid_pe_indexed_fields": False}
+
+
 def test_module_boolean_values_compare_as_numbers_like_libyara() -> None:
     ast = Parser().parse("""
         import "console"
@@ -1004,7 +1025,7 @@ def test_binary_unary_function_member_array_and_errors() -> None:
         ev.visit_array_access(
             ArrayAccess(array=Identifier(name="arr"), index=StringLiteral(value="x"))
         )
-        is None
+        is YARA_UNDEFINED
     )
 
     with pytest.raises(EvaluationError, match="Unknown operator"):
@@ -1040,7 +1061,10 @@ def test_evaluator_does_not_treat_boolean_results_as_integers() -> None:
     assert string_eval.visit_at_expression(AtExpression("$a", BooleanLiteral(True))) is False
 
     ev.context.variables["arr"] = [10, 20]
-    assert ev.visit_array_access(ArrayAccess(Identifier("arr"), BooleanLiteral(True))) is None
+    assert (
+        ev.visit_array_access(ArrayAccess(Identifier("arr"), BooleanLiteral(True)))
+        is YARA_UNDEFINED
+    )
     assert (
         ev.visit_tuple_indexing(
             TupleIndexing(

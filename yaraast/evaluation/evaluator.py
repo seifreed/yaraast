@@ -448,6 +448,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         if obj is None:
             return None
+        if is_yara_undefined(obj):
+            return YARA_UNDEFINED
 
         if isinstance(obj, Mapping) and node.member in obj:
             return obj[node.member]
@@ -467,13 +469,13 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Evaluate array access."""
         array = self.visit(node.array)
         index = self.visit(node.index)
-        if isinstance(index, bool):
-            return None
+        if is_yara_undefined(array) or is_yara_undefined(index) or isinstance(index, bool):
+            return YARA_UNDEFINED
 
         try:
             return array[index]
         except (IndexError, KeyError, ValueError, TypeError, AttributeError):
-            return None
+            return YARA_UNDEFINED
 
     def visit_dictionary_access(self, node) -> Any:
         """Evaluate dictionary-style access."""
@@ -482,6 +484,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         if obj is None:
             return None
+        if is_yara_undefined(obj) or is_yara_undefined(key):
+            return YARA_UNDEFINED
 
         try:
             return obj[key]
@@ -491,7 +495,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 if callable(value):
                     return YARA_UNDEFINED
                 return value
-            return None
+            return YARA_UNDEFINED
 
     def visit_list_expression(self, node) -> list[Any]:
         """Evaluate YARA-X list expression."""
