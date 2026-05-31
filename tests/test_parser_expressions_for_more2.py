@@ -37,10 +37,10 @@ def test_parse_for_expression_success_and_error_paths() -> None:
     assert node_all.quantifier == "all"
     assert node_all.variable == "j"
 
-    node_n = _expr_parser("3 of them")._parse_for_expression()
+    node_n = _expr_parser("3 of them : ( true )")._parse_for_expression()
     assert isinstance(node_n, ForOfExpression)
     assert node_n.quantifier == 3
-    assert node_n.condition is None
+    assert node_n.condition is not None
 
     node_for_of = _expr_parser("any of them : ( true )")._parse_for_expression()
     assert isinstance(node_for_of, ForOfExpression)
@@ -51,6 +51,10 @@ def test_parse_for_expression_success_and_error_paths() -> None:
         _expr_parser("them")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected variable name"):
         _expr_parser("any in 1 : ( true )")._parse_for_expression()
+    with pytest.raises(ParserError, match="Expected ':' after string set"):
+        _expr_parser("any of them")._parse_for_expression()
+    with pytest.raises(ParserError, match="Expected ':' after string set"):
+        _expr_parser("2 of ($a*)")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected second variable after ','"):
         _expr_parser("any i, in 1 : ( true )")._parse_for_expression()
     with pytest.raises(ParserError, match="Expected 'in' after variable"):
@@ -70,7 +74,7 @@ def test_parse_for_expression_success_and_error_paths() -> None:
 
 
 def test_parse_for_of_does_not_consume_outer_boolean_expression() -> None:
-    ast = Parser().parse('rule r { strings: $a = "a" condition: for any of them and true }')
+    ast = Parser().parse('rule r { strings: $a = "a" condition: for any of them : ($) and true }')
     condition = ast.rules[0].condition
 
     assert isinstance(condition, BinaryExpression)
@@ -78,6 +82,19 @@ def test_parse_for_of_does_not_consume_outer_boolean_expression() -> None:
     assert isinstance(condition.left, ForOfExpression)
     assert isinstance(condition.right, BooleanLiteral)
     assert condition.right.value is True
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        'rule r { strings: $a = "a" condition: for any of them }',
+        'rule r { strings: $a = "a" condition: for 2 of them }',
+        'rule r { strings: $a1 = "a" condition: for 2 of ($a*) }',
+    ],
+)
+def test_parser_rejects_for_of_without_body(source: str) -> None:
+    with pytest.raises(ParserError, match="Expected ':' after string set"):
+        Parser().parse(source)
 
 
 def test_parse_of_string_set_and_function_name_resolution_paths() -> None:

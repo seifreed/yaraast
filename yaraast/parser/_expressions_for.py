@@ -137,20 +137,21 @@ class ExpressionForMixin:
         start_token = start_token or self._peek()
         string_set = self._parse_of_string_set()
 
-        condition = None
-        if self._match(TokenType.COLON):
-            if not self._match(TokenType.LPAREN):
-                msg = "Expected '(' after ':'"
-                raise ParserError(msg, self._peek())
-            previous_allow_anonymous = getattr(self, "_allow_anonymous_string_reference", False)
-            self._allow_anonymous_string_reference = True
-            try:
-                condition = self._parse_expression()
-            finally:
-                self._allow_anonymous_string_reference = previous_allow_anonymous
-            if not self._match(TokenType.RPAREN):
-                msg = "Expected ')' after condition"
-                raise ParserError(msg, self._peek())
+        if not self._match(TokenType.COLON):
+            msg = "Expected ':' after string set"
+            raise ParserError(msg, self._peek())
+        if not self._match(TokenType.LPAREN):
+            msg = "Expected '(' after ':'"
+            raise ParserError(msg, self._peek())
+        previous_allow_anonymous = getattr(self, "_allow_anonymous_string_reference", False)
+        self._allow_anonymous_string_reference = True
+        try:
+            condition = self._parse_expression()
+        finally:
+            self._allow_anonymous_string_reference = previous_allow_anonymous
+        if not self._match(TokenType.RPAREN):
+            msg = "Expected ')' after condition"
+            raise ParserError(msg, self._peek())
 
         return self._set_node_location_from_tokens(
             ForOfExpression(
