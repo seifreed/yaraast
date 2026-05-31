@@ -373,6 +373,9 @@ class CommentAwareParser(Parser):
             string_def = None
             if self._match(TokenType.STRING):
                 value = self._previous().value
+                if value == "":
+                    msg = f'empty string "{identifier}"'
+                    raise ParserError(msg, self._previous())
                 modifiers = self._parse_string_modifiers()
                 string_def = PlainString(identifier=identifier, value=value, modifiers=modifiers)
             elif self._match(TokenType.HEX_STRING):

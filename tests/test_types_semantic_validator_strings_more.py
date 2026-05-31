@@ -235,20 +235,19 @@ def test_semantic_validator_respects_yarax_with_local_string_variables() -> None
 
 
 def test_semantic_validator_rejects_empty_text_and_hex_strings() -> None:
-    ast = Parser().parse("""
-        rule empty_strings {
-            strings:
-                $text = ""
-            condition:
-                any of them
-        }
-        """)
-    ast.rules.append(
-        Rule(
-            name="empty_hex",
-            strings=[HexString(identifier="$hex", tokens=[])],
-            condition=StringIdentifier("$hex"),
-        )
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="empty_strings",
+                strings=[PlainString(identifier="$text", value="")],
+                condition=StringIdentifier("$text"),
+            ),
+            Rule(
+                name="empty_hex",
+                strings=[HexString(identifier="$hex", tokens=[])],
+                condition=StringIdentifier("$hex"),
+            ),
+        ]
     )
 
     result = SemanticValidator().validate(ast)

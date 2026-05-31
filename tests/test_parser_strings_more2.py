@@ -198,6 +198,19 @@ def test_parse_accepts_libyara_valid_string_modifier_edges(modifiers: str) -> No
         assert ast.rules[0].strings[0].modifiers
 
 
+def test_parse_rejects_empty_plain_string_definitions() -> None:
+    invalid_sources = [
+        'rule r { strings: $a = "" condition: $a }',
+        'rule r { strings: $a = "" private condition: $a }',
+        'rule r { strings: $a = "" wide condition: $a }',
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="empty string"):
+                parser_factory().parse(source)
+
+
 @pytest.mark.parametrize(
     "modifier",
     [
