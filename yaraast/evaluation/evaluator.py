@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 import contextlib
 from dataclasses import dataclass, field
 from fnmatch import fnmatchcase
 import math
 import struct
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeGuard
 
 from yaraast.ast.conditions import *
 from yaraast.ast.expressions import *
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from yaraast.ast.rules import Rule
 
 
-def _is_evaluation_int(value: Any) -> bool:
+def _is_evaluation_int(value: Any) -> TypeGuard[int]:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
@@ -59,11 +59,11 @@ class EvaluationContext:
     data: bytes
     filesize: int = field(init=False)
     entrypoint: int | YaraUndefinedValue = field(init=False)
-    string_matches: dict[str, list] = field(default_factory=dict)
+    string_matches: dict[str, list[Any]] = field(default_factory=dict)
     modules: dict[str, object] = field(default_factory=dict)
     variables: dict[str, object] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.filesize = len(self.data)
         pe = MockPE(self.data)
         self.entrypoint = pe.entry_point if pe.is_pe else YARA_UNDEFINED
@@ -275,7 +275,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return self._missing_loop_value
         return self.context.variables.get(name, self._missing_loop_value)
 
-    def visit_string_wildcard(self, node) -> bool:
+    def visit_string_wildcard(self, node: Any) -> bool:
         """String wildcard ($*) evaluates to whether any strings matched."""
         return any(
             self.string_matcher.get_match_count(string_id) > 0
@@ -381,7 +381,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         """Evaluate parentheses expression."""
         return self.visit(node.expression)
 
-    def visit_set_expression(self, node: SetExpression) -> set:
+    def visit_set_expression(self, node: SetExpression) -> set[Any]:
         """Evaluate set expression."""
         return {self.visit(elem) for elem in node.elements}
 
@@ -490,7 +490,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         except (IndexError, KeyError, ValueError, TypeError, AttributeError):
             return YARA_UNDEFINED
 
-    def visit_dictionary_access(self, node) -> Any:
+    def visit_dictionary_access(self, node: Any) -> Any:
         """Evaluate dictionary-style access."""
         obj = self.visit(node.object)
         key = self.visit(node.key) if hasattr(node.key, "accept") else node.key
@@ -510,11 +510,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return value
             return YARA_UNDEFINED
 
-    def visit_list_expression(self, node) -> list[Any]:
+    def visit_list_expression(self, node: Any) -> list[Any]:
         """Evaluate YARA-X list expression."""
         from yaraast.yarax.ast_nodes import SpreadOperator
 
-        values = []
+        values: list[Any] = []
         for element in node.elements:
             if isinstance(element, SpreadOperator) and not element.is_dict:
                 spread_value = self.visit(element.expression)
@@ -524,15 +524,15 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 values.append(self.visit(element))
         return values
 
-    def visit_tuple_expression(self, node) -> tuple[Any, ...]:
+    def visit_tuple_expression(self, node: Any) -> tuple[Any, ...]:
         """Evaluate YARA-X tuple expression."""
         return tuple(self.visit(element) for element in node.elements)
 
-    def visit_dict_expression(self, node) -> dict[Any, Any]:
+    def visit_dict_expression(self, node: Any) -> dict[Any, Any]:
         """Evaluate YARA-X dictionary expression."""
         from yaraast.yarax.ast_nodes import SpreadOperator
 
-        values = {}
+        values: dict[Any, Any] = {}
         for item in node.items:
             if isinstance(item.value, SpreadOperator) and item.value.is_dict:
                 spread_value = self.visit(item.value.expression)
@@ -547,11 +547,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             values[key] = value
         return values
 
-    def visit_dict_item(self, node) -> tuple[Any, Any]:
+    def visit_dict_item(self, node: Any) -> tuple[Any, Any]:
         """Evaluate one YARA-X dictionary item."""
         return self.visit(node.key), self.visit(node.value)
 
-    def visit_tuple_indexing(self, node) -> Any:
+    def visit_tuple_indexing(self, node: Any) -> Any:
         """Evaluate YARA-X tuple indexing."""
         tuple_value = self.visit(node.tuple_expr)
         index = self.visit(node.index)
@@ -562,7 +562,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         except (IndexError, KeyError, ValueError, TypeError, AttributeError):
             return None
 
-    def visit_slice_expression(self, node) -> Any:
+    def visit_slice_expression(self, node: Any) -> Any:
         """Evaluate YARA-X slice expression."""
         target = self.visit(node.target)
         start = self.visit(node.start) if node.start is not None else None
@@ -575,14 +575,14 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         except (IndexError, KeyError, ValueError, TypeError, AttributeError):
             return None
 
-    def visit_array_comprehension(self, node) -> list[Any]:
+    def visit_array_comprehension(self, node: Any) -> list[Any]:
         """Evaluate YARA-X array comprehension."""
         iterable = self._evaluate_for_iterable(node.iterable)
         loop_items = self._loop_items_for_iterable(iterable, 1)
         if loop_items is None:
             return []
 
-        values = []
+        values: list[Any] = []
         for item in loop_items:
             previous_values = self._bind_loop_variables([node.variable], item)
             if previous_values is None:
@@ -595,7 +595,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 self._restore_loop_variables(previous_values)
         return values
 
-    def visit_dict_comprehension(self, node) -> dict[Any, Any]:
+    def visit_dict_comprehension(self, node: Any) -> dict[Any, Any]:
         """Evaluate YARA-X dictionary comprehension."""
         variable_names = [node.key_variable]
         if node.value_variable:
@@ -606,7 +606,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if loop_items is None:
             return {}
 
-        values = {}
+        values: dict[Any, Any] = {}
         for item in loop_items:
             previous_values = self._bind_loop_variables(variable_names, item)
             if previous_values is None:
@@ -619,9 +619,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 self._restore_loop_variables(previous_values)
         return values
 
-    def visit_with_statement(self, node) -> Any:
+    def visit_with_statement(self, node: Any) -> Any:
         """Evaluate YARA-X with statement with scoped declarations."""
-        previous_values = {}
+        previous_values: dict[str, object] = {}
         try:
             for declaration in node.declarations:
                 value = self.visit(declaration.value)
@@ -638,11 +638,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         finally:
             self._restore_loop_variables(previous_values)
 
-    def visit_with_declaration(self, node) -> Any:
+    def visit_with_declaration(self, node: Any) -> Any:
         """Evaluate a standalone YARA-X with declaration."""
         return self.visit(node.value)
 
-    def visit_pattern_match(self, node) -> Any:
+    def visit_pattern_match(self, node: Any) -> Any:
         """Evaluate YARA-X pattern match expression."""
         value = self.visit(node.value)
         for case in node.cases:
@@ -652,19 +652,19 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return self.visit(node.default)
         return None
 
-    def visit_match_case(self, node) -> Any:
+    def visit_match_case(self, node: Any) -> Any:
         """Evaluate a standalone YARA-X match case result."""
         return self.visit(node.result)
 
-    def visit_spread_operator(self, node) -> Any:
+    def visit_spread_operator(self, node: Any) -> Any:
         """Evaluate YARA-X spread operator."""
         return self.visit(node.expression)
 
-    def visit_lambda_expression(self, node):
+    def visit_lambda_expression(self, node: Any) -> Callable[..., Any]:
         """Evaluate YARA-X lambda expression as a Python callable."""
 
-        def lambda_callable(*args):
-            previous_values = {}
+        def lambda_callable(*args: Any) -> Any:
+            previous_values: dict[str, object] = {}
             for index, name in enumerate(node.parameters):
                 value = args[index] if index < len(args) else YARA_UNDEFINED
                 if name not in previous_values:
@@ -795,7 +795,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return False
 
         # Libyara uses numeric body values directly for for-in quantifier checks.
-        contributions: list[int | float] = []
+        contributions: list[int | float | YaraUndefinedValue] = []
         for item in loop_items:
             previous_values = self._bind_loop_variables(variable_names, item)
             if previous_values is None:
@@ -808,7 +808,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         return self._evaluate_for_vm_quantifier(quantifier, contributions)
 
-    def _evaluate_for_vm_quantifier(self, quantifier: Any, contributions: list[Any]) -> bool:
+    def _evaluate_for_vm_quantifier(
+        self,
+        quantifier: Any,
+        contributions: list[int | float | YaraUndefinedValue],
+    ) -> bool:
         if not contributions:
             return False
 
@@ -852,15 +856,20 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return count == 0
         return count >= minimum
 
-    def _for_vm_contribution(self, contribution: Any) -> tuple[int, int | None]:
+    def _for_vm_contribution(
+        self,
+        contribution: int | float | YaraUndefinedValue,
+    ) -> tuple[int, int | None]:
         if is_yara_undefined(contribution):
             return _YR_UNDEFINED_VM_INT, None
         if isinstance(contribution, float):
             value = struct.unpack("q", struct.pack("d", contribution))[0]
             return value, value
-        return contribution, contribution
+        if _is_evaluation_int(contribution):
+            return contribution, contribution
+        return 1 if _is_evaluation_truthy(contribution) else 0, None
 
-    def _for_body_contribution(self, value: Any) -> Any:
+    def _for_body_contribution(self, value: Any) -> int | float | YaraUndefinedValue:
         if is_yara_undefined(value):
             return YARA_UNDEFINED
         if isinstance(value, bool):
@@ -1088,7 +1097,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         # This will dispatch to the specific expression type visitor
         return self.visit(node)
 
-    def visit_module_reference(self, node) -> Any:
+    def visit_module_reference(self, node: Any) -> Any:
         """Visit module reference and return the module object."""
         from yaraast.ast.modules import ModuleReference
 
@@ -1099,7 +1108,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             raise EvaluationError(msg)
         return None
 
-    def visit_for_of_expression(self, node) -> bool:
+    def visit_for_of_expression(self, node: Any) -> bool:
         """Evaluate 'for ... of' expression (ForOfExpression: quantifier, string_set, condition)."""
         quantifier = self._resolve_quantifier(node.quantifier)
         rule_set = self._resolve_rule_set(node.string_set)
@@ -1114,7 +1123,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return False
 
         if node.condition is not None:
-            contributions = []
+            contributions: list[int | float | YaraUndefinedValue] = []
             for string_id in string_set:
                 old_value = self.context.variables.get("$", self._missing_loop_value)
                 self.context.variables["$"] = string_id
@@ -1152,13 +1161,13 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         return False
 
-    def visit_regex_literal(self, node) -> str:
+    def visit_regex_literal(self, node: Any) -> str:
         """Return regex pattern string."""
         # For regex literals, we'll return the pattern
         # The actual matching is handled by the binary expression "matches" operator
-        return node.pattern
+        return str(node.pattern)
 
-    def visit_defined_expression(self, node) -> bool:
+    def visit_defined_expression(self, node: Any) -> bool:
         """Evaluate 'defined' expression."""
         from yaraast.ast.modules import DictionaryAccess, ModuleReference
 
@@ -1198,7 +1207,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         value = self.visit(expr)
         return value is not None and not is_yara_undefined(value)
 
-    def visit_string_operator_expression(self, node) -> Any:
+    def visit_string_operator_expression(self, node: Any) -> Any:
         """Evaluate string-specific operators like contains, startswith, etc."""
         # This is handled in binary_expression for string operators
         # But we can add specific handling here if needed

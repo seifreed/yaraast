@@ -82,35 +82,35 @@ def test_provider_call_helpers_fall_back_for_legacy_signatures() -> None:
 
 
 def test_lexer_helpers_skip_whitespace_comments_and_line_continuation() -> None:
-    lex = Lexer("  \t\r\n// line comment\n/* block */rule")
+    lex: Lexer[object] = Lexer("  \t\r\n// line comment\n/* block */rule")
     skip_whitespace_and_comments(lex)
     assert lex._current_char() == "r"
 
-    combined = Lexer("\\  \n// c\n/* b */x")
+    combined: Lexer[object] = Lexer("\\  \n// c\n/* b */x")
     skip_whitespace_and_comments(combined)
     assert combined._current_char() == "x"
 
-    cont = Lexer("\\  \r\nx")
+    cont: Lexer[object] = Lexer("\\  \r\nx")
     _skip_line_continuation(cont)
     assert cont._current_char() == "x"
 
-    cont_cr = Lexer("\\\rx")
+    cont_cr: Lexer[object] = Lexer("\\\rx")
     _skip_line_continuation(cont_cr)
     assert cont_cr._current_char() == "x"
 
-    cont_lf = Lexer("\\\nx")
+    cont_lf: Lexer[object] = Lexer("\\\nx")
     _skip_line_continuation(cont_lf)
     assert cont_lf._current_char() == "x"
 
-    line = Lexer("// comment only\nx")
+    line: Lexer[object] = Lexer("// comment only\nx")
     _skip_line_comment(line)
     assert line._current_char() == "\n"
 
-    block = Lexer("/* comment */x")
+    block: Lexer[object] = Lexer("/* comment */x")
     _skip_block_comment(block)
     assert block._current_char() == "x"
 
-    unterminated = Lexer("/* unterminated")
+    unterminated: Lexer[object] = Lexer("/* unterminated")
     _skip_block_comment(unterminated)
     assert unterminated.position == len(unterminated.text)  # Consumes entire unterminated comment
 

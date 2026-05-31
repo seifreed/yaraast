@@ -34,7 +34,7 @@ def is_yara_undefined(value: object) -> bool:
 def read_struct(data: bytes, fmt: str, offset: int, size: int) -> int | YaraUndefinedValue:
     if offset < 0 or offset + size > len(data):
         return YARA_UNDEFINED
-    return struct.unpack(fmt, data[offset : offset + size])[0]
+    return int(struct.unpack(fmt, data[offset : offset + size])[0])
 
 
 def _read_uint8(data: bytes, offset: int) -> int | YaraUndefinedValue:

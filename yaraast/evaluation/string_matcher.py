@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 import re
 from typing import Any, overload
@@ -53,6 +53,7 @@ class StringMatcher:
         self,
         strings: Iterable[object],
         data: bytes,
+        /,
     ) -> dict[str, list[MatchResult]]: ...
 
     @overload
@@ -60,6 +61,7 @@ class StringMatcher:
         self,
         data: bytes,
         strings: Iterable[object],
+        /,
     ) -> dict[str, list[MatchResult]]: ...
 
     @overload
@@ -72,17 +74,17 @@ class StringMatcher:
         - match_all(strings, data)  # Original order from tests
         - match_all(data, strings)  # New order
         """
-        if len(args) == 2:
-            # Determine order based on type
-            if isinstance(args[0], bytes):
-                data = args[0]
-                strings = args[1]
-            else:
-                strings = args[0]
-                data = args[1]
-        else:
+        if len(args) != 2:
             msg = "match_all requires exactly 2 arguments"
             raise EvaluationError(msg)
+
+        # Determine order based on type.
+        if isinstance(args[0], bytes):
+            data: object = args[0]
+            strings: object = args[1]
+        else:
+            strings = args[0]
+            data = args[1]
 
         if not isinstance(data, bytes):
             msg = "match_all data argument must be bytes"
@@ -298,16 +300,16 @@ class StringMatcher:
             alphabet = self._modifier_value(modifier)
             for prefix_len in range(3):
                 encoded = base64.b64encode((b"\x00" * prefix_len) + pattern)
-                encoded = self._translate_base64_alphabet(encoded, alphabet)
-                if encoded is None:
+                translated = self._translate_base64_alphabet(encoded, alphabet)
+                if translated is None:
                     continue
-                encoded = self._trim_base64_alignment(encoded, prefix_len, len(pattern))
+                trimmed = self._trim_base64_alignment(translated, prefix_len, len(pattern))
                 if wide_output:
-                    encoded = b"".join(bytes([byte, 0]) for byte in encoded)
-                if not encoded or encoded in seen:
+                    trimmed = b"".join(bytes([byte, 0]) for byte in trimmed)
+                if not trimmed or trimmed in seen:
                     continue
-                seen.add(encoded)
-                patterns.append(encoded)
+                seen.add(trimmed)
+                patterns.append(trimmed)
         return patterns
 
     def _translate_base64_alphabet(self, encoded: bytes, alphabet: Any) -> bytes | None:
@@ -492,7 +494,7 @@ class StringMatcher:
             return default
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             return None
-        return value
+        return int(value)
 
     def _match_regex_string(self, data: bytes, string_def: RegexString) -> None:
         """Match regex string against data."""
@@ -600,7 +602,7 @@ class StringMatcher:
         regex: re.Pattern[bytes],
         data: bytes,
     ) -> list[re.Match[bytes]]:
-        matches = []
+        matches: list[re.Match[bytes]] = []
         for offset in range(len(data)):
             match = regex.match(data, offset)
             if match is None:
@@ -943,7 +945,7 @@ class StringMatcher:
         wildcards: list[bool],
     ) -> list[int]:
         """Find hex pattern with wildcards."""
-        matches = []
+        matches: list[int] = []
         data_len = len(data)
         pattern_len = len(pattern)
 
@@ -1003,7 +1005,13 @@ class StringMatcher:
             return not _is_word_byte(data[end])
         return True
 
-    def _is_fullword_wide(self, data: bytes, offset: int, length: int, is_word_byte) -> bool:
+    def _is_fullword_wide(
+        self,
+        data: bytes,
+        offset: int,
+        length: int,
+        is_word_byte: Callable[[int], bool],
+    ) -> bool:
         if offset >= 2 and data[offset - 1] == 0 and is_word_byte(data[offset - 2]):
             return False
 

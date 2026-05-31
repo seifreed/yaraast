@@ -12,7 +12,7 @@ import math
 import re
 import struct
 import time as time_mod
-from typing import Any
+from typing import Any, TypeGuard
 
 from yaraast.errors import EvaluationError
 from yaraast.evaluation.evaluation_helpers import (
@@ -25,7 +25,7 @@ SERIAL_CORRELATION_DEGENERATE = -100000.0
 UINT64_MASK = (1 << 64) - 1
 
 
-def _is_strict_int(value: object) -> bool:
+def _is_strict_int(value: object) -> TypeGuard[int]:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
@@ -43,10 +43,11 @@ def _require_strict_ints(function_name: str, *values: object) -> None:
         raise EvaluationError(msg)
 
 
-def _require_region_bounds(function_name: str, offset: object, size: object) -> None:
+def _require_region_bounds(function_name: str, offset: object, size: object) -> tuple[int, int]:
     if not _is_strict_int(offset) or not _is_strict_int(size):
         msg = f"{function_name}() offset and size must be integers"
         raise EvaluationError(msg)
+    return offset, size
 
 
 def _require_string_arg(function_name: str, value: object) -> None:
@@ -55,10 +56,11 @@ def _require_string_arg(function_name: str, value: object) -> None:
         raise EvaluationError(msg)
 
 
-def _require_integer_arg(function_name: str, value: object) -> None:
+def _require_integer_arg(function_name: str, value: object) -> int:
     if not _is_strict_int(value):
         msg = f"{function_name}() expects an integer argument"
         raise EvaluationError(msg)
+    return value
 
 
 def _require_scalar_args(function_name: str, values: tuple[object, ...]) -> None:
@@ -94,6 +96,10 @@ def _regex_flags(modifiers: str) -> int:
 def _regex_matches(pattern: object, values: list[str]) -> bool:
     pattern_text = getattr(pattern, "pattern", pattern)
     modifiers = getattr(pattern, "modifiers", "")
+    if not isinstance(pattern_text, str):
+        return False
+    if not isinstance(modifiers, str):
+        modifiers = ""
     try:
         regex = re.compile(pattern_text, _regex_flags(modifiers))
         return any(regex.search(value) is not None for value in values)
@@ -123,7 +129,7 @@ class Section:
     number_of_relocations: int = 0
     number_of_line_numbers: int = 0
 
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str) -> object:
         """Allow dictionary-style access."""
         return getattr(self, key)
 
@@ -245,31 +251,31 @@ class MockPE:
 
     def _parse_headers(self) -> None:
         """Parse PE headers from data."""
-        self.machine = YARA_UNDEFINED
-        self.number_of_sections = YARA_UNDEFINED
-        self.timestamp = YARA_UNDEFINED
-        self.characteristics = YARA_UNDEFINED
-        self.entry_point = YARA_UNDEFINED
-        self.entry_point_raw = YARA_UNDEFINED
-        self.image_base = YARA_UNDEFINED
-        self.size_of_image = YARA_UNDEFINED
-        self.size_of_headers = YARA_UNDEFINED
-        self.subsystem = YARA_UNDEFINED
-        self.dll_characteristics = YARA_UNDEFINED
+        self.machine: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.number_of_sections: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.timestamp: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.characteristics: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.entry_point: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.entry_point_raw: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.image_base: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.size_of_image: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.size_of_headers: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.subsystem: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.dll_characteristics: int | YaraUndefinedValue = YARA_UNDEFINED
         self.sections: list[Section] = []
         self.version_info: dict[str, str] = {}
-        self.number_of_resources = YARA_UNDEFINED
-        self.resource_timestamp = YARA_UNDEFINED
-        self._import_list = []
-        self._export_list = []
+        self.number_of_resources: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.resource_timestamp: int | YaraUndefinedValue = YARA_UNDEFINED
+        self._import_list: list[str] = []
+        self._export_list: list[str] = []
         self.is_pe = False
         self._is_dll: bool | YaraUndefinedValue = YARA_UNDEFINED
         self._is_32bit: bool | YaraUndefinedValue = YARA_UNDEFINED
         self._is_64bit: bool | YaraUndefinedValue = YARA_UNDEFINED
-        self.overlay_offset = YARA_UNDEFINED
-        self.overlay_size = YARA_UNDEFINED
+        self.overlay_offset: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.overlay_size: int | YaraUndefinedValue = YARA_UNDEFINED
         self.overlay = PEOverlay(YARA_UNDEFINED, YARA_UNDEFINED)
-        self.rich_signature_offset = YARA_UNDEFINED
+        self.rich_signature_offset: int | YaraUndefinedValue = YARA_UNDEFINED
         self.rich_signature = PERichSignature(
             YARA_UNDEFINED,
             YARA_UNDEFINED,
@@ -277,7 +283,7 @@ class MockPE:
             YARA_UNDEFINED,
             YARA_UNDEFINED,
         )
-        self.number_of_signatures = YARA_UNDEFINED
+        self.number_of_signatures: int | YaraUndefinedValue = YARA_UNDEFINED
         self.signatures: list[PESignature] | YaraUndefinedValue = YARA_UNDEFINED
 
         if len(self.data) >= 2 and self.data[:2] == b"MZ" and len(self.data) >= 0x40:
@@ -303,10 +309,11 @@ class MockPE:
                 self.timestamp = struct.unpack("<I", self.data[coff_offset + 4 : coff_offset + 8])[
                     0
                 ]
-                self.characteristics = struct.unpack(
+                characteristics = struct.unpack(
                     "<H", self.data[coff_offset + 18 : coff_offset + 20]
                 )[0]
-                self._is_dll = bool(self.characteristics & 0x2000)
+                self.characteristics = characteristics
+                self._is_dll = bool(characteristics & 0x2000)
                 size_of_optional_header = struct.unpack(
                     "<H", self.data[coff_offset + 16 : coff_offset + 18]
                 )[0]
@@ -355,7 +362,10 @@ class MockPE:
     def _parse_sections(self, section_table_offset: int) -> None:
         """Parse PE section headers."""
         section_header_size = 40
-        for index in range(self.number_of_sections):
+        section_count = self.number_of_sections
+        if not _is_strict_int(section_count):
+            return
+        for index in range(section_count):
             section_offset = section_table_offset + (index * section_header_size)
             section_end = section_offset + section_header_size
             if section_end > len(self.data):
@@ -430,7 +440,11 @@ class MockPE:
         if not self.is_pe or rva < 0:
             return YARA_UNDEFINED
 
-        if self.size_of_headers and rva < self.size_of_headers and rva < len(self.data):
+        if (
+            _is_strict_int(self.size_of_headers)
+            and rva < self.size_of_headers
+            and rva < len(self.data)
+        ):
             return rva
 
         first_section_rva = min(
@@ -594,20 +608,20 @@ class MockELF:
         self._parse_headers()
 
     def _parse_headers(self) -> None:
-        self.type = YARA_UNDEFINED
-        self.machine = YARA_UNDEFINED
-        self.entry_point = YARA_UNDEFINED
-        self.sh_offset = YARA_UNDEFINED
-        self.sh_entry_size = YARA_UNDEFINED
-        self.ph_offset = YARA_UNDEFINED
-        self.ph_entry_size = YARA_UNDEFINED
+        self.type: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.machine: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.entry_point: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.sh_offset: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.sh_entry_size: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.ph_offset: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.ph_entry_size: int | YaraUndefinedValue = YARA_UNDEFINED
         self.sections: list[Section] = []
         self.segments: list[dict[str, int]] = []
         self.symtab: list[dict[str, int | str]] = []
         self.dynsym: list[dict[str, int | str]] = []
         self.dynamic: list[dict[str, int]] = []
-        self.number_of_sections = YARA_UNDEFINED
-        self.number_of_segments = YARA_UNDEFINED
+        self.number_of_sections: int | YaraUndefinedValue = YARA_UNDEFINED
+        self.number_of_segments: int | YaraUndefinedValue = YARA_UNDEFINED
 
         if len(self.data) < 16 or self.data[:4] != b"\x7fELF":
             return
@@ -809,7 +823,7 @@ class MockMath:
         self, value_or_offset: object, size: object = _missing_arg
     ) -> float | YaraUndefinedValue:
         region = self._get_math_input("math.entropy", value_or_offset, size, min_size=0)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         if not region:
             return 0.0
@@ -831,7 +845,7 @@ class MockMath:
     ) -> float | YaraUndefinedValue:
         """Calculate mean byte value of data region."""
         region = self._get_math_input("math.mean", value_or_offset, size, min_size=1)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         return sum(region) / len(region)
 
@@ -852,7 +866,7 @@ class MockMath:
                 "math.deviation", value_or_offset, size_or_mean, min_size=1
             )
             mean_value = mean_val
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         if is_yara_undefined(mean_value):
             return YARA_UNDEFINED
@@ -866,7 +880,7 @@ class MockMath:
     ) -> float | YaraUndefinedValue:
         """Calculate serial correlation of data region."""
         region = self._get_math_input("math.serial_correlation", value_or_offset, size, min_size=0)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         n = len(region)
         if n < 2:
@@ -884,7 +898,7 @@ class MockMath:
     ) -> float | YaraUndefinedValue:
         """Estimate deviation from pi using Monte Carlo method."""
         region = self._get_math_input("math.monte_carlo_pi", value_or_offset, size, min_size=6)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         n_points = len(region) // 6
         inside = 0
@@ -899,30 +913,34 @@ class MockMath:
 
     def count(self, byte: object, offset: object, size: object) -> int | YaraUndefinedValue:
         """Count byte occurrences in a data region."""
-        _require_strict_ints("math.count", byte)
-        byte_value = int(byte)
+        if not _is_strict_int(byte):
+            msg = "math.count() expects integer arguments"
+            raise EvaluationError(msg)
+        byte_value = byte
         if not 0 <= byte_value <= 255:
             return YARA_UNDEFINED
         region = self._get_region("math.count", offset, size, min_size=0)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         return region.count(byte_value)
 
     def percentage(self, byte: object, offset: object, size: object) -> float | YaraUndefinedValue:
         """Calculate byte occurrence ratio in a data region."""
-        _require_strict_ints("math.percentage", byte)
-        byte_value = int(byte)
+        if not _is_strict_int(byte):
+            msg = "math.percentage() expects integer arguments"
+            raise EvaluationError(msg)
+        byte_value = byte
         if not 0 <= byte_value <= 255:
             return YARA_UNDEFINED
         region = self._get_region("math.percentage", offset, size, min_size=1)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         return region.count(byte_value) / len(region)
 
     def mode(self, offset: object, size: object) -> int | YaraUndefinedValue:
         """Return the most common byte in a data region."""
         region = self._get_region("math.mode", offset, size, min_size=0)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         if not region:
             return 0
@@ -947,17 +965,17 @@ class MockMath:
     def _get_region(
         self,
         function_name: str,
-        offset: int,
-        size: int,
+        offset: object,
+        size: object,
         *,
         min_size: int,
     ) -> bytes | YaraUndefinedValue:
         if is_yara_undefined(offset) or is_yara_undefined(size):
             return YARA_UNDEFINED
-        _require_region_bounds(function_name, offset, size)
-        if offset < 0 or offset >= len(self.data) or size < min_size:
+        off, sz = _require_region_bounds(function_name, offset, size)
+        if off < 0 or off >= len(self.data) or sz < min_size:
             return YARA_UNDEFINED
-        region = self.data[offset : min(offset + size, len(self.data))]
+        region = self.data[off : min(off + sz, len(self.data))]
         if len(region) < min_size:
             return YARA_UNDEFINED
         return region
@@ -1004,7 +1022,7 @@ class HashModule:
         self, offset: object = _missing_arg, size: object = _missing_arg
     ) -> str | YaraUndefinedValue:
         region = self._get_hash_input("md5", offset, size)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         return hashlib.md5(region, usedforsecurity=False).hexdigest()
 
@@ -1012,7 +1030,7 @@ class HashModule:
         self, offset: object = _missing_arg, size: object = _missing_arg
     ) -> str | YaraUndefinedValue:
         region = self._get_hash_input("sha1", offset, size)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         return hashlib.sha1(region, usedforsecurity=False).hexdigest()
 
@@ -1020,7 +1038,7 @@ class HashModule:
         self, offset: object = _missing_arg, size: object = _missing_arg
     ) -> str | YaraUndefinedValue:
         region = self._get_hash_input("sha256", offset, size)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         return hashlib.sha256(region).hexdigest()
 
@@ -1028,7 +1046,7 @@ class HashModule:
         self, offset: object = _missing_arg, size: object = _missing_arg
     ) -> int | YaraUndefinedValue:
         region = self._get_hash_input("checksum32", offset, size)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         return sum(region) & 0xFFFFFFFF
 
@@ -1038,7 +1056,7 @@ class HashModule:
         import binascii
 
         region = self._get_hash_input("crc32", offset, size)
-        if region is YARA_UNDEFINED:
+        if not isinstance(region, bytes):
             return YARA_UNDEFINED
         return binascii.crc32(region) & 0xFFFFFFFF
 
@@ -1295,8 +1313,8 @@ class ConsoleModule:
         return True
 
     def hex(self, value: object) -> bool:
-        _require_integer_arg("console.hex", value)
-        self.messages.append(f"0x{value & UINT64_MASK:x}")
+        integer = _require_integer_arg("console.hex", value)
+        self.messages.append(f"0x{integer & UINT64_MASK:x}")
         return True
 
 

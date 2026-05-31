@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import re
 import sys
-from typing import Any
+from typing import Any, TypeGuard
 
 from yaraast.evaluation.evaluation_helpers import YARA_UNDEFINED, is_yara_undefined
 from yaraast.shared.integer_semantics import (
@@ -18,7 +18,7 @@ from yaraast.shared.integer_semantics import (
 )
 
 
-def _is_runtime_int(value: Any) -> bool:
+def _is_runtime_int(value: Any) -> TypeGuard[int]:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
@@ -141,7 +141,7 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
             and (isinstance(left, float) or isinstance(right, float))
         ):
             return _compare_double_equality(left, right, operator)
-        return left == right
+        return bool(left == right)
     if operator == "!=":
         if not _types_match_for_equality(left, right):
             return True
@@ -151,7 +151,7 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
             and (isinstance(left, float) or isinstance(right, float))
         ):
             return _compare_double_equality(left, right, operator)
-        return left != right
+        return bool(left != right)
     if operator in ("<", "<=", ">", ">=") and not _types_support_ordered_comparison(
         left,
         right,
@@ -159,13 +159,13 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
         return False
     try:
         if operator == "<":
-            return left < right
+            return bool(left < right)
         if operator == "<=":
-            return left <= right
+            return bool(left <= right)
         if operator == ">":
-            return left > right
+            return bool(left > right)
         if operator == ">=":
-            return left >= right
+            return bool(left >= right)
     except TypeError:
         return False
     return None
@@ -194,15 +194,15 @@ def evaluate_string_operator(left: Any, right: Any, operator: str) -> bool | Non
     if operator == "icontains":
         return right.lower() in left.lower()
     if operator == "startswith":
-        return left.startswith(right)
+        return bool(left.startswith(right))
     if operator == "istartswith":
-        return left.lower().startswith(right.lower())
+        return bool(left.lower().startswith(right.lower()))
     if operator == "endswith":
-        return left.endswith(right)
+        return bool(left.endswith(right))
     if operator == "iendswith":
-        return left.lower().endswith(right.lower())
+        return bool(left.lower().endswith(right.lower()))
     if operator == "iequals":
-        return left.lower() == right.lower()
+        return bool(left.lower() == right.lower())
     if operator == "matches":
         pattern = getattr(right, "pattern", right)
         modifiers = getattr(right, "modifiers", "")
