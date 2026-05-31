@@ -34,7 +34,7 @@ rule bad1 {
         $aa = "zzz"
         $ab = "zzzz"
         $dup = { 01 ?? ?? ?? }
-        $dup = /(.+)+a.b/
+        $regex = /(.+)+a.b/
     condition:
         $a
 }
@@ -49,6 +49,7 @@ rule pe_only {
         pe.is_pe
 }
 """)
+    ast.rules[0].strings.append(PlainString(identifier="$dup", value="duplicate"))
     analyzer = BestPracticesAnalyzer()
     result = analyzer.analyze(ast)
 

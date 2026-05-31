@@ -47,6 +47,7 @@ class StringParsingMixin:
         strings: list[StringDefinition] = []
         anonymous_counter = 0
         used_identifiers = self._reserved_string_identifiers()
+        seen_named_identifiers: set[str] = set()
 
         while not self._check_any(TokenType.CONDITION, TokenType.RBRACE):
             if not self._check(TokenType.STRING_IDENTIFIER):
@@ -62,6 +63,11 @@ class StringParsingMixin:
                     anonymous_counter,
                     used_identifiers,
                 )
+            elif identifier in seen_named_identifiers:
+                msg = f'duplicated string identifier "{identifier}"'
+                raise ParserError(msg, start_token)
+            else:
+                seen_named_identifiers.add(str(identifier))
 
             if not self._match(TokenType.ASSIGN):
                 msg = "Expected '=' after string identifier"

@@ -14,11 +14,8 @@ from yaraast.libyara import YARA_AVAILABLE
 def _write_invalid_rule(tmp_path: Path) -> Path:
     rule_text = """
 rule bad_rule {
-    strings:
-        $a = "one"
-        $a = "two"
     condition:
-        any of them
+        true == true
 }
 """
     rule_path = tmp_path / "bad_rule.yar"

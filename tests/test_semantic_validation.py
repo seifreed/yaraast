@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.ast.base import Location
+from yaraast.ast.base import Location, YaraFile
 from yaraast.ast.expressions import FunctionCall, Identifier
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
@@ -1091,19 +1091,19 @@ class TestSemanticValidator:
 
     def test_duplicate_strings_in_rule(self) -> None:
         """Test detection of duplicate string identifiers."""
-        yara_code = """
-        rule test_rule {
-            strings:
-                $a = "hello"
-                $b = "world"
-                $a = "duplicate"
-            condition:
-                $a and $b
-        }
-        """
-
-        parser = Parser(yara_code)
-        ast = parser.parse()
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="test_rule",
+                    strings=[
+                        PlainString("$a", value="hello"),
+                        PlainString("$b", value="world"),
+                        PlainString("$a", value="duplicate"),
+                    ],
+                    condition=Identifier("$a"),
+                )
+            ]
+        )
 
         validator = SemanticValidator()
         result = validator.validate(ast)

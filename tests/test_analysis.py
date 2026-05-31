@@ -123,18 +123,18 @@ class TestBestPracticesAnalyzer:
 
     def test_duplicate_detection(self) -> None:
         """Test detection of duplicate names."""
-        rule_text = """
-        rule dup_test {
-            strings:
-                $a = "first"
-                $a = "duplicate"
-            condition:
-                $a
-        }
-        """
-
-        parser = Parser()
-        ast = parser.parse(rule_text)
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="dup_test",
+                    strings=[
+                        PlainString("$a", value="first"),
+                        PlainString("$a", value="duplicate"),
+                    ],
+                    condition=BooleanLiteral(True),
+                )
+            ]
+        )
 
         analyzer = BestPracticesAnalyzer()
         report = analyzer.analyze(ast)

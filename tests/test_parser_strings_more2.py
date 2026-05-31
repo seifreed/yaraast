@@ -211,6 +211,27 @@ def test_parse_rejects_empty_plain_string_definitions() -> None:
                 parser_factory().parse(source)
 
 
+def test_parse_rejects_duplicate_named_string_identifiers() -> None:
+    invalid_sources = [
+        'rule r { strings: $a = "x" $a = "y" condition: $a }',
+        'rule r { strings: $a = "x" $b = { 01 } $a = /x/ condition: any of them }',
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="duplicated string identifier"):
+                parser_factory().parse(source)
+
+
+def test_parse_allows_multiple_anonymous_strings() -> None:
+    source = 'rule r { strings: $ = "x" $ = "y" condition: all of them }'
+
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        identifiers = [string.identifier for string in ast.rules[0].strings]
+        assert identifiers == ["$anon_1", "$anon_2"]
+
+
 @pytest.mark.parametrize(
     "modifier",
     [

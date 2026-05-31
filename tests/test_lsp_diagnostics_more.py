@@ -55,10 +55,9 @@ def test_diagnostics_semantic_warning() -> None:
 
     diags = provider.get_diagnostics(text)
     assert diags
-    # Expect at least one warning or error for duplicate identifier
-    assert any(d.source == "yaraast-validator" for d in diags)
-    duplicate = next(d for d in diags if d.code == "semantic.duplicate_string_identifier")
-    assert _diagnostic_patches(duplicate)
+    duplicate = next(d for d in diags if d.code == "parser.syntax_error")
+    assert duplicate.source == "yaraast-parser"
+    assert "duplicated string identifier" in duplicate.message
 
 
 def test_diagnostics_validation_conversion_edges() -> None:
@@ -112,18 +111,11 @@ rule weird {
 
 def test_diagnostics_duplicate_identifier_contains_metadata() -> None:
     provider = DiagnosticsProvider()
-    text = """
-rule dup_strings {
-    strings:
-        $a = "abc"
-        $a = "def"
-    condition:
-        $a
-}
-""".lstrip()
 
-    diags = provider.get_diagnostics(text)
-    duplicate = next(d for d in diags if d.code == "semantic.duplicate_string_identifier")
+    duplicate = provider._validation_error_to_diagnostic(
+        ValidationError("Duplicate string identifier '$a' in rule 'dup_strings'"),
+        DiagnosticSeverity.Error,
+    )
     assert _diagnostic_metadata(duplicate)["identifier"] == "$a"
 
 
