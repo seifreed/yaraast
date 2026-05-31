@@ -153,6 +153,34 @@ def test_referenced_false_rule_is_not_removed() -> None:
     Parser().parse(output)
 
 
+def test_dead_code_eliminator_keeps_private_rules_referenced_by_rule_wildcard() -> None:
+    ast = Parser().parse("""
+        private rule a1 {
+            condition:
+                false
+        }
+
+        private rule a2 {
+            condition:
+                true
+        }
+
+        rule main {
+            condition:
+                any of (a*)
+        }
+    """)
+
+    optimized, count = DeadCodeEliminator().eliminate(ast)
+    output = CodeGenerator().generate(optimized)
+
+    assert count == 0
+    assert [rule.name for rule in optimized.rules] == ["a1", "a2", "main"]
+    assert "private rule a1" in output
+    assert "private rule a2" in output
+    Parser().parse(output)
+
+
 def test_dead_code_eliminator_removes_unreferenced_private_rules_without_other_references() -> None:
     ast = YaraFile(
         rules=[

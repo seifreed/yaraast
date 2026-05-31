@@ -42,6 +42,7 @@ class DeadCodeEliminator(ASTTransformer):
         self.current_rule_anonymous_strings: set[str] = set()
         self.anonymous_strings_by_rule: dict[str, set[str]] = {}
         self.rule_usage_keys: dict[int, str] = {}
+        self.rule_names: set[str] = set()
         self.elimination_count = 0
 
     def eliminate(self, ast: YaraFile) -> tuple[YaraFile, int]:
@@ -61,6 +62,7 @@ class DeadCodeEliminator(ASTTransformer):
         self.current_rule_anonymous_strings = set()
         self.anonymous_strings_by_rule.clear()
         self.rule_usage_keys.clear()
+        self.rule_names.clear()
         self.elimination_count = 0
 
         # First pass: collect used strings and rules
@@ -93,6 +95,7 @@ class DeadCodeEliminator(ASTTransformer):
     def _collect_usage(self, ast: YaraFile) -> None:
         """Collect usage information."""
         rule_counts = Counter(rule.name for rule in ast.rules)
+        self.rule_names = set(rule_counts)
         seen_rules: defaultdict[str, int] = defaultdict(int)
         for rule in ast.rules:
             seen_rules[rule.name] += 1
@@ -129,7 +132,7 @@ class DeadCodeEliminator(ASTTransformer):
         if isinstance(expr, StringIdentifier):
             self._mark_used_string(expr.name)
         elif isinstance(expr, StringWildcard):
-            self._mark_used_string(expr.pattern)
+            self._mark_used_wildcard(expr.pattern)
         elif isinstance(expr, StringCount | StringOffset | StringLength):
             self._mark_used_string(expr.string_id)
         elif isinstance(expr, AtExpression):
@@ -232,6 +235,27 @@ class DeadCodeEliminator(ASTTransformer):
         if self.current_rule_key:
             self.used_strings_by_rule.setdefault(self.current_rule_key, set()).add(normalized)
 
+    def _mark_used_wildcard(self, pattern: str) -> None:
+        if pattern.startswith("$"):
+            self._mark_used_string(pattern)
+            return
+
+        self.used_rules.update(self._matching_rule_wildcard_names(pattern))
+
+    def _matching_rule_wildcard_names(self, pattern: str) -> tuple[str, ...]:
+        if not pattern.endswith("*"):
+            return ()
+        prefix = pattern[:-1]
+        if not prefix:
+            return ()
+        return tuple(
+            sorted(
+                rule_name
+                for rule_name in self.rule_names
+                if rule_name.startswith(prefix) and rule_name != self.current_rule
+            )
+        )
+
     def _mark_all_current_rule_strings(self) -> None:
         for identifier in self.current_rule_strings:
             self._mark_used_string(identifier)
@@ -257,7 +281,7 @@ class DeadCodeEliminator(ASTTransformer):
             self._mark_used_string(value.name)
             return
         if isinstance(value, StringWildcard):
-            self._mark_used_string(value.pattern)
+            self._mark_used_wildcard(value.pattern)
             return
         if isinstance(value, ParenthesesExpression):
             self._collect_string_set_value(value.expression)
@@ -328,7 +352,7 @@ class DeadCodeEliminator(ASTTransformer):
     def visit_string_wildcard(self, node: StringWildcard) -> StringWildcard:
         """Visit StringWildcard node."""
         if self.in_condition:
-            self._mark_used_string(node.pattern)
+            self._mark_used_wildcard(node.pattern)
         return node
 
     def visit_identifier(self, node: Identifier) -> Identifier:
