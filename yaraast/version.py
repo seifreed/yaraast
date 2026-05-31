@@ -26,7 +26,7 @@ def get_version_string() -> str:
     return f"YARAAST {YARAAST_VERSION} (YARA {YARA_SYNTAX_VERSION} compatible)"
 
 
-def get_version_info() -> dict:
+def get_version_info() -> dict[str, dict[str, int | str | bool]]:
     """Get version information as dictionary."""
     return {
         "yaraast": {
