@@ -336,6 +336,23 @@ def test_math_to_number_rejects_non_boolean_arguments() -> None:
         YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 
+def test_string_to_int_base_zero_uses_c_style_octal_prefixes() -> None:
+    ast = Parser().parse("""
+        import "string"
+        rule string_to_int_base_zero_octal {
+            condition:
+                string.to_int("010", 0) == 8 and
+                string.to_int("-010", 0) == -8 and
+                string.to_int(" 010", 0) == 8 and
+                not defined string.to_int("08", 0) and
+                not defined string.to_int("10 ", 0) and
+                not defined string.to_int("1_0", 0)
+        }
+        """)
+
+    assert YaraEvaluator().evaluate_file(ast) == {"string_to_int_base_zero_octal": True}
+
+
 def test_math_to_string_matches_libyara_supported_bases() -> None:
     ast = Parser().parse("""
         import "math"

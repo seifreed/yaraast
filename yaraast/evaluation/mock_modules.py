@@ -1219,10 +1219,26 @@ class StringModule:
         if not _is_strict_int(base):
             msg = "string.to_int() base must be an integer"
             raise EvaluationError(msg)
+        if s != s.rstrip() or "_" in s:
+            return YARA_UNDEFINED
         try:
+            if base == 0:
+                return self._to_int_autodetect_base(s)
             return int(s, base)
         except ValueError:
             return YARA_UNDEFINED
+
+    def _to_int_autodetect_base(self, s: str) -> int:
+        sign = ""
+        digits = s.lstrip()
+        if digits.startswith(("+", "-")):
+            sign = digits[0]
+            digits = digits[1:]
+        if digits.startswith(("0x", "0X")):
+            return int(f"{sign}{digits[2:]}", 16)
+        if digits.startswith("0") and len(digits) > 1:
+            return int(f"{sign}{digits}", 8)
+        return int(s, 10)
 
     def length(self, s: str) -> int:
         _require_string_arg("string.length", s)

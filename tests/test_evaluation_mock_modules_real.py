@@ -361,7 +361,14 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert string.to_int("10") == 10
     assert string.to_int("10", 16) == 16
     assert string.to_int("0x10", 0) == 16
+    assert string.to_int("010", 0) == 8
+    assert string.to_int("-010", 0) == -8
+    assert string.to_int(" 010", 0) == 8
     assert string.to_int("x") is YARA_UNDEFINED
+    assert string.to_int("08", 0) is YARA_UNDEFINED
+    assert string.to_int("10 ", 0) is YARA_UNDEFINED
+    assert string.to_int("10 ", 10) is YARA_UNDEFINED
+    assert string.to_int("1_0", 0) is YARA_UNDEFINED
     assert string.to_int("10", 1) is YARA_UNDEFINED
     with pytest.raises(EvaluationError, match=r"string\.to_int\(\) expects a string argument"):
         string.to_int(cast(Any, True))
