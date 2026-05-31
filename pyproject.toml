@@ -236,7 +236,6 @@ module = [
     "yaraast.cli.*",
     "yaraast.builder.*",
     "yaraast.shared.*",
-    "yaraast.dialects.*",
 ]
 ignore_errors = true
 
