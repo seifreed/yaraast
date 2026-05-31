@@ -15,6 +15,25 @@ from lsprotocol.types import (
 )
 
 from yaraast.lsp.structure import _starts_regex_literal
+from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8
+
+
+def _diagnostic_python_range(line: str, diagnostic: Diagnostic) -> tuple[int, int]:
+    return (
+        utf16_col_to_utf8(line, diagnostic.range.start.character),
+        utf16_col_to_utf8(line, diagnostic.range.end.character),
+    )
+
+
+def _same_line_position(line_num: int, line: str, col: int) -> Position:
+    return Position(line=line_num, character=utf8_col_to_utf16(line, col))
+
+
+def _same_line_range(line_num: int, line: str, start: int, end: int) -> Range:
+    return Range(
+        start=_same_line_position(line_num, line, start),
+        end=_same_line_position(line_num, line, end),
+    )
 
 
 def _scan_quoted_end(text: str, start: int, delimiter: str) -> int:
@@ -59,8 +78,7 @@ def _find_diagnostic_call(
     diagnostic: Diagnostic,
 ) -> tuple[int, int, int] | None:
     needle = f"{function_name}("
-    range_start = diagnostic.range.start.character
-    range_end = diagnostic.range.end.character
+    range_start, range_end = _diagnostic_python_range(line, diagnostic)
     fallback: tuple[int, int, int] | None = None
     search_start = 0
     while True:
@@ -80,8 +98,7 @@ def _find_diagnostic_call(
 
 
 def _find_diagnostic_occurrence(line: str, needle: str, diagnostic: Diagnostic) -> int:
-    range_start = diagnostic.range.start.character
-    range_end = diagnostic.range.end.character
+    range_start, range_end = _diagnostic_python_range(line, diagnostic)
     fallback = line.find(needle)
     if fallback < 0:
         return -1
@@ -166,9 +183,8 @@ def create_replace_module_function_actions(
                     changes={
                         uri: [
                             TextEdit(
-                                range=Range(
-                                    start=Position(line=line_num, character=start_col),
-                                    end=Position(line=line_num, character=start_col + len(needle)),
+                                range=_same_line_range(
+                                    line_num, line, start_col, start_col + len(needle)
                                 ),
                                 new_text=replacement,
                             )
@@ -211,11 +227,11 @@ def create_replace_builtin_function_actions(
                     changes={
                         uri: [
                             TextEdit(
-                                range=Range(
-                                    start=Position(line=line_num, character=start_col),
-                                    end=Position(
-                                        line=line_num, character=start_col + len(function_name)
-                                    ),
+                                range=_same_line_range(
+                                    line_num,
+                                    line,
+                                    start_col,
+                                    start_col + len(function_name),
                                 ),
                                 new_text=replacement_name,
                             )
@@ -249,8 +265,8 @@ def create_add_placeholder_argument_action(
 
     edit = TextEdit(
         range=Range(
-            start=Position(line=line_num, character=open_paren + 1),
-            end=Position(line=line_num, character=open_paren + 1),
+            start=_same_line_position(line_num, line, open_paren + 1),
+            end=_same_line_position(line_num, line, open_paren + 1),
         ),
         new_text="0",
     )
@@ -294,8 +310,8 @@ def create_add_missing_arguments_action(
                     uri: [
                         TextEdit(
                             range=Range(
-                                start=Position(line=line_num, character=close_paren),
-                                end=Position(line=line_num, character=close_paren),
+                                start=_same_line_position(line_num, line, close_paren),
+                                end=_same_line_position(line_num, line, close_paren),
                             ),
                             new_text=insertion,
                         )
@@ -338,9 +354,11 @@ def create_trim_arguments_action(
                 changes={
                     uri: [
                         TextEdit(
-                            range=Range(
-                                start=Position(line=line_num, character=open_paren + 1),
-                                end=Position(line=line_num, character=close_paren),
+                            range=_same_line_range(
+                                line_num,
+                                line,
+                                open_paren + 1,
+                                close_paren,
                             ),
                             new_text=replacement,
                         )
@@ -395,10 +413,7 @@ def create_rename_duplicate_action(
         col = _find_diagnostic_occurrence(line, f"${base_name}", diagnostic)
         if col >= 0:
             edit = TextEdit(
-                range=Range(
-                    start=Position(line=line_num, character=col),
-                    end=Position(line=line_num, character=col + len(f"${base_name}")),
-                ),
+                range=_same_line_range(line_num, line, col, col + len(f"${base_name}")),
                 new_text=new_name,
             )
             return [

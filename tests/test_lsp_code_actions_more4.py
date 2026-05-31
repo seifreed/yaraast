@@ -6,6 +6,7 @@ from lsprotocol.types import CodeActionKind, Diagnostic, Position, Range, TextEd
 
 from yaraast.lsp.code_actions import CodeActionsProvider
 from yaraast.lsp.diagnostics import DiagnosticData, DiagnosticPatch
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def _range(line: int, start: int, end: int) -> Range:
@@ -358,6 +359,45 @@ rule sample {
     assert action.edit is not None
     change = _change_set(action.edit, "file://test.yar")[0]
     assert change.range.start.character == call_start
+    assert change.new_text == "uint32"
+
+
+def test_code_action_replace_builtin_ranges_use_utf16_columns() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule sample {
+    condition:
+        /* 😀😀 */ uint33(0)
+}
+""".lstrip()
+    call_line = text.splitlines()[2]
+    call_start = call_line.index("uint33")
+    diag_range = _range(
+        2,
+        utf8_col_to_utf16(call_line, call_start),
+        utf8_col_to_utf16(call_line, call_start + len("uint33")),
+    )
+    diag = Diagnostic(
+        range=diag_range,
+        message="Unknown function uint33",
+        data=DiagnosticData(
+            code="semantic.unknown_function",
+            severity="error",
+            error_type="semantic",
+            metadata={"function": "uint33", "suggested_functions": ["uint32"]},
+        ).to_dict(),
+    )
+
+    actions = provider.get_code_actions(text, diag_range, [diag], "file://test.yar")
+
+    action = next(action for action in actions if action.title == "Replace with uint32()")
+    assert action.edit is not None
+    change = _change_set(action.edit, "file://test.yar")[0]
+    assert change.range.start.character == utf8_col_to_utf16(call_line, call_start)
+    assert change.range.end.character == utf8_col_to_utf16(
+        call_line,
+        call_start + len("uint33"),
+    )
     assert change.new_text == "uint32"
 
 
