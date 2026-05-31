@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypeVar, cast
 
-from yaraast.ast.base import YaraFile
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString, StringDefinition
@@ -12,7 +12,10 @@ from yaraast.visitor import ASTTransformer
 from yaraast.yarax.feature_flags import YaraXFeatures
 
 if TYPE_CHECKING:
+    from yaraast.ast.pragmas import InRulePragma
     from yaraast.yarax.compatibility_checker import CompatibilityIssue
+
+_ASTNodeT = TypeVar("_ASTNodeT", bound=ASTNode)
 
 
 class YaraXSyntaxAdapter(ASTTransformer):
@@ -33,6 +36,12 @@ class YaraXSyntaxAdapter(ASTTransformer):
         self.features = features or YaraXFeatures.yarax_strict()
         self.target = target
         self.adaptations_count = 0
+
+    def _copy_node_metadata(self, source: ASTNode, target: _ASTNodeT) -> _ASTNodeT:
+        target.location = source.location
+        target.leading_comments = list(source.leading_comments)
+        target.trailing_comment = source.trailing_comment
+        return target
 
     def adapt(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
         """Adapt YARA file syntax and return adapted file with adaptation count."""
@@ -59,17 +68,22 @@ class YaraXSyntaxAdapter(ASTTransformer):
         # Visit components
         meta = [self.visit(m) for m in node.meta]
         strings = [cast(StringDefinition, self.visit(s)) for s in node.strings]
+        pragmas = [cast("InRulePragma", self.visit(pragma)) for pragma in node.pragmas]
         condition = (
             cast(Expression, self.visit(node.condition)) if node.condition is not None else None
         )
 
-        return Rule(
-            name=node.name,
-            modifiers=modifiers,
-            tags=node.tags,
-            meta=meta,
-            strings=strings,
-            condition=condition,
+        return self._copy_node_metadata(
+            node,
+            Rule(
+                name=node.name,
+                modifiers=modifiers,
+                tags=node.tags,
+                meta=meta,
+                strings=strings,
+                condition=condition,
+                pragmas=pragmas,
+            ),
         )
 
     def visit_plain_string(self, node: PlainString) -> PlainString:
@@ -91,10 +105,14 @@ class YaraXSyntaxAdapter(ASTTransformer):
                 else:
                     new_value = node.value + ("\x00" * padding_needed)
                 self.adaptations_count += 1
-                return PlainString(
-                    identifier=node.identifier,
-                    value=new_value,
-                    modifiers=modifiers,
+                return self._copy_node_metadata(
+                    node,
+                    PlainString(
+                        identifier=node.identifier,
+                        value=new_value,
+                        modifiers=modifiers,
+                        is_anonymous=node.is_anonymous,
+                    ),
                 )
 
         return node
@@ -109,10 +127,14 @@ class YaraXSyntaxAdapter(ASTTransformer):
             adapted_regex = self._escape_braces(node.regex)
             if adapted_regex != node.regex:
                 self.adaptations_count += 1
-                return RegexString(
-                    identifier=node.identifier,
-                    regex=adapted_regex,
-                    modifiers=node.modifiers,
+                return self._copy_node_metadata(
+                    node,
+                    RegexString(
+                        identifier=node.identifier,
+                        regex=adapted_regex,
+                        modifiers=node.modifiers,
+                        is_anonymous=node.is_anonymous,
+                    ),
                 )
 
         elif self.target == "yara" and not self.features.strict_regex_escaping:
@@ -120,10 +142,14 @@ class YaraXSyntaxAdapter(ASTTransformer):
             adapted_regex = self._unescape_braces(node.regex)
             if adapted_regex != node.regex:
                 self.adaptations_count += 1
-                return RegexString(
-                    identifier=node.identifier,
-                    regex=adapted_regex,
-                    modifiers=node.modifiers,
+                return self._copy_node_metadata(
+                    node,
+                    RegexString(
+                        identifier=node.identifier,
+                        regex=adapted_regex,
+                        modifiers=node.modifiers,
+                        is_anonymous=node.is_anonymous,
+                    ),
                 )
 
         return node
@@ -196,10 +222,14 @@ class YaraXSyntaxAdapter(ASTTransformer):
 
         tokens = [cast("HexToken", self.visit(token)) for token in node.tokens]
 
-        return HexString(
-            identifier=node.identifier,
-            tokens=tokens,
-            modifiers=node.modifiers,
+        return self._copy_node_metadata(
+            node,
+            HexString(
+                identifier=node.identifier,
+                tokens=tokens,
+                modifiers=node.modifiers,
+                is_anonymous=node.is_anonymous,
+            ),
         )
 
     def visit_hex_jump(self, node: HexJump) -> HexJump:

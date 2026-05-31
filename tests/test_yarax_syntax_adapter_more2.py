@@ -3,6 +3,7 @@ from __future__ import annotations
 from yaraast.ast.base import YaraFile
 from yaraast.ast.expressions import BooleanLiteral
 from yaraast.ast.modifiers import StringModifier, StringModifierType
+from yaraast.ast.pragmas import CustomPragma, InRulePragma
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexJump, HexString, PlainString, RegexString
 from yaraast.yarax.compatibility_checker import CompatibilityIssue
@@ -16,6 +17,7 @@ def test_adapt_with_count_and_passthrough_paths() -> None:
             Rule(
                 name="plain",
                 modifiers=["private", "private"],
+                pragmas=[InRulePragma(CustomPragma("vendor"))],
                 strings=[PlainString(identifier="$a", value="abcd")],
                 condition=BooleanLiteral(True),
             ),
@@ -32,6 +34,7 @@ def test_adapt_with_count_and_passthrough_paths() -> None:
     adapted_string = adapted.rules[0].strings[0]
     assert isinstance(adapted_string, PlainString)
     assert adapted_string.value == "abcd"
+    assert [pragma.pragma.name for pragma in adapted.rules[0].pragmas] == ["vendor"]
 
 
 def test_regex_adaptation_helpers_cover_escape_unescape_and_quantifiers() -> None:
@@ -58,9 +61,15 @@ def test_hex_nodes_and_plain_string_passthrough_are_preserved() -> None:
     plain = PlainString(identifier="$a", value="abcdef", modifiers=[])
     assert adapter.visit_plain_string(plain) is plain
 
-    hex_string = HexString(identifier="$h", tokens=[HexByte(0x41), HexJump(1, 2)], modifiers=[])
+    hex_string = HexString(
+        identifier="$anon_1",
+        tokens=[HexByte(0x41), HexJump(1, 2)],
+        modifiers=[],
+        is_anonymous=True,
+    )
     adapted_hex = adapter.visit_hex_string(hex_string)
     assert adapted_hex.tokens == hex_string.tokens
+    assert adapted_hex.is_anonymous is True
 
     jump = HexJump(2, 4)
     assert adapter.visit_hex_jump(jump) is jump
@@ -102,12 +111,24 @@ def test_base64_padding_and_regex_noop_paths() -> None:
     assert adapted.value == "aa\x00\x00"  # Padded with null bytes for semantic neutrality
 
     byte_base64_string = PlainString(
-        identifier="$bb",
+        identifier="$anon_1",
         value=b"aa",
         modifiers=["base64"],
+        is_anonymous=True,
     )
     adapted_bytes = adapter.visit_plain_string(byte_base64_string)
     assert adapted_bytes.value == b"aa\x00\x00"
+    assert adapted_bytes.is_anonymous is True
 
-    regex = RegexString(identifier="$r", regex=r"a\{2\}", modifiers=[])
+    regex = RegexString(identifier="$anon_2", regex=r"a\{2\}", modifiers=[], is_anonymous=True)
     assert adapter.visit_regex_string(regex) is regex
+
+
+def test_adapted_regex_preserves_anonymous_flag() -> None:
+    adapter = YaraXSyntaxAdapter(YaraXFeatures.yarax_strict(), target="yarax")
+    regex = RegexString(identifier="$anon_1", regex="a{b", modifiers=[], is_anonymous=True)
+
+    adapted = adapter.visit_regex_string(regex)
+
+    assert adapted.regex == r"a\{b"
+    assert adapted.is_anonymous is True
