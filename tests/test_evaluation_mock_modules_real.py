@@ -317,6 +317,7 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert m.mean(-1, 1) is YARA_UNDEFINED
     assert m.mean(10, 100) == 255.0
     assert m.deviation(-1, 1, 0.0) is YARA_UNDEFINED
+    assert m.percentage(0, 0, 0) is YARA_UNDEFINED
     with pytest.raises(EvaluationError, match=r"math\.mean\(\) offset and size must be integers"):
         m.mean(cast(Any, True), 1)
     with pytest.raises(

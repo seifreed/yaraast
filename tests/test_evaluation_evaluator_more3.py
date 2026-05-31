@@ -254,6 +254,18 @@ def test_math_module_accepts_string_arguments_and_byte_statistics() -> None:
     assert YaraEvaluator(data=b"aabc").evaluate_file(ast) == {"math_string_and_statistics": True}
 
 
+def test_math_percentage_empty_region_is_undefined() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule empty_percentage_region {
+            condition:
+                not defined math.percentage(97, 0, 0)
+        }
+        """)
+
+    assert YaraEvaluator(data=b"a").evaluate_file(ast) == {"empty_percentage_region": True}
+
+
 def test_math_serial_correlation_returns_libyara_sentinel_for_degenerate_regions() -> None:
     ast = Parser().parse("""
         import "math"

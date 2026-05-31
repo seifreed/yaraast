@@ -885,10 +885,10 @@ class MockMath:
         byte_value = int(byte)
         if not 0 <= byte_value <= 255:
             return YARA_UNDEFINED
-        region = self._get_region("math.percentage", offset, size, min_size=0)
+        region = self._get_region("math.percentage", offset, size, min_size=1)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
-        return region.count(byte_value) / len(region) if region else 0.0
+        return region.count(byte_value) / len(region)
 
     def mode(self, offset: object, size: object) -> int | YaraUndefinedValue:
         """Return the most common byte in a data region."""
