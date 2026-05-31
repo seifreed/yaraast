@@ -7,6 +7,7 @@ from collections.abc import Callable, Iterable
 from lsprotocol.types import Range
 
 from yaraast.lexer.tokens import Token, TokenType
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 TOKEN_TYPE_MAPPING = {
     TokenType.RULE: "keyword",
@@ -114,11 +115,13 @@ def encode_tokens(
     tokens: Iterable[Token],
     map_type: Callable[[TokenType], str | None],
     token_types: list[str],
+    source_text: str = "",
 ) -> list[int]:
     """Encode lexer tokens into LSP semantic token delta format."""
     tokens_data: list[int] = []
     prev_line = 0
     prev_char = 0
+    lines = source_text.split("\n") if source_text else []
 
     for token in tokens:
         if token.type == TokenType.EOF:
@@ -126,13 +129,14 @@ def encode_tokens(
         semantic_type = map_type(token.type)
         if semantic_type is None:
             continue
-        delta_line = token.line - 1 - prev_line
-        delta_char = token.column if delta_line > 0 else token.column - prev_char
-        length = token_source_length(token)
+        token_line = token.line - 1
+        token_start, length = token_lsp_span(token, lines)
+        delta_line = token_line - prev_line
+        delta_char = token_start if delta_line > 0 else token_start - prev_char
         token_type_idx = token_types.index(semantic_type)
         tokens_data.extend([delta_line, delta_char, length, token_type_idx, 0])
-        prev_line = token.line - 1
-        prev_char = token.column + length
+        prev_line = token_line
+        prev_char = token_start + length
     return tokens_data
 
 
@@ -141,19 +145,20 @@ def encode_tokens_in_range(
     range_: Range,
     map_type: Callable[[TokenType], str | None],
     token_types: list[str],
+    source_text: str = "",
 ) -> list[int]:
     """Encode tokens within a requested range."""
     tokens_data: list[int] = []
     prev_line = 0
     prev_char = 0
+    lines = source_text.split("\n") if source_text else []
 
     for token in tokens:
         if token.type == TokenType.EOF:
             break
 
         token_line = token.line - 1
-        token_start = token.column
-        length = token_source_length(token)
+        token_start, length = token_lsp_span(token, lines)
         token_end = token_start + length
         if not _token_overlaps_range(token_line, token_start, token_end, range_):
             continue
@@ -169,3 +174,18 @@ def encode_tokens_in_range(
         prev_char = token_start + length
 
     return tokens_data
+
+
+def token_lsp_span(token: Token, lines: list[str]) -> tuple[int, int]:
+    """Return token start and length in LSP UTF-16 columns."""
+    source_length = token_source_length(token)
+    line_index = token.line - 1
+    if line_index < 0 or line_index >= len(lines):
+        return max(0, token.column - 1), source_length
+
+    line = lines[line_index]
+    start_python = max(0, token.column - 1)
+    end_python = min(len(line), start_python + source_length)
+    start = utf8_col_to_utf16(line, start_python)
+    end = utf8_col_to_utf16(line, end_python)
+    return start, max(1, end - start)

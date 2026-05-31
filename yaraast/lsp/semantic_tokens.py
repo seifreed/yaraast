@@ -106,7 +106,7 @@ class SemanticTokensProvider:
         try:
             lexer: Lexer[list[Token]] = Lexer[list[Token]](text)
             tokens = lexer.tokenize()
-            tokens_data = encode_tokens(tokens, self._map_token_type, TOKEN_TYPES)
+            tokens_data = encode_tokens(tokens, self._map_token_type, TOKEN_TYPES, text)
 
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
@@ -144,7 +144,9 @@ class SemanticTokensProvider:
         try:
             lexer: Lexer[list[Token]] = Lexer[list[Token]](text)
             tokens = lexer.tokenize()
-            tokens_data = encode_tokens_in_range(tokens, range_, self._map_token_type, TOKEN_TYPES)
+            tokens_data = encode_tokens_in_range(
+                tokens, range_, self._map_token_type, TOKEN_TYPES, text
+            )
 
         except Exception:
             logger.debug("Operation failed in %s", __name__, exc_info=True)
