@@ -410,11 +410,9 @@ class RuleParsingMixin:
             msg = f"Expected ':' after '{section_name}'"
             raise ParserError(msg, self._peek())
 
-    def _parse_meta_section(self) -> dict[str, Any] | list[MetaEntry]:
+    def _parse_meta_section(self) -> list[MetaEntry]:
         """Parse meta section."""
-        meta: dict[str, Any] = {}
         entries: list[MetaEntry] = []
-        has_scoped_meta = False
 
         while not self._check_any(
             TokenType.STRINGS,
@@ -436,11 +434,9 @@ class RuleParsingMixin:
 
             value = self._parse_meta_value()
 
-            meta[key] = value
             entries.append(MetaEntry.from_key_value(key, value, scope))
-            has_scoped_meta = has_scoped_meta or scope is not None
 
-        return entries if has_scoped_meta else meta
+        return entries
 
     def _parse_meta_scope_prefix(self) -> str | None:
         saved_current = self.current

@@ -118,12 +118,12 @@ def test_parse_rule_helpers_and_meta_section_variants() -> None:
             _t(TokenType.RBRACE, "}"),
         ]
     )
-    assert parser6._parse_meta_section() == {
-        "neg": -7,
-        "txt": "v",
-        "yes": True,
-        "no": False,
-    }
+    assert [(entry.key, entry.value) for entry in parser6._parse_meta_section()] == [
+        ("neg", -7),
+        ("txt", "v"),
+        ("yes", True),
+        ("no", False),
+    ]
 
     parser7 = _parser_with_tokens(
         [
@@ -147,7 +147,16 @@ def test_parse_rule_helpers_and_meta_section_variants() -> None:
         parser9._parse_meta_section()
 
     parser10 = _parser_with_tokens([_t(TokenType.STRING, "not-a-key")])
-    assert parser10._parse_meta_section() == {}
+    assert parser10._parse_meta_section() == []
+
+
+def test_parse_rule_preserves_duplicate_meta_entries() -> None:
+    ast = Parser().parse("rule duplicated_meta { meta: a = 1 a = 2 condition: true }")
+    generated = CodeGenerator().generate(ast)
+
+    assert [(entry.key, entry.value) for entry in ast.rules[0].meta] == [("a", 1), ("a", 2)]
+    assert "a = 1" in generated
+    assert "a = 2" in generated
 
 
 def test_parse_rule_and_sections_error_paths() -> None:
