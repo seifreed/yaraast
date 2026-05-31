@@ -108,6 +108,22 @@ def test_analysis_mixin_handles_byte_plain_strings_in_graphs() -> None:
     assert "$np" in dot
 
 
+def test_analysis_mixin_uses_utf8_byte_length_for_text_plain_strings() -> None:
+    gen = StringDiagramGenerator()
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="unicode_plain",
+                strings=[PlainString(identifier="$u", value="á", modifiers=[])],
+            )
+        ]
+    )
+
+    gen._analyze_patterns(ast)
+
+    assert gen.string_patterns["pattern_1"]["length"] == 2
+
+
 def test_analysis_similarity_and_grouping_paths() -> None:
     gen = StringDiagramGenerator()
     gen.string_patterns = {

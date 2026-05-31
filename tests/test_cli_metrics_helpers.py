@@ -8,6 +8,8 @@ from types import SimpleNamespace
 import pytest
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
 from yaraast.cli.commands import metrics as metrics_cmd
 from yaraast.cli.metrics_reporting import (
     _display_module_usage,
@@ -93,6 +95,21 @@ def test_string_pattern_analysis_preserves_duplicate_rule_names() -> None:
     assert list(analysis["rules"]) == ["dup#1", "dup#2"]
     assert analysis["rules"]["dup#1"]["identifiers"] == ["$a"]
     assert analysis["rules"]["dup#2"]["identifiers"] == ["$b"]
+
+
+def test_string_pattern_analysis_uses_utf8_byte_lengths() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="unicode_plain",
+                strings=[PlainString(identifier="$u", value="á", modifiers=[])],
+            )
+        ]
+    )
+
+    analysis = _analyze_string_patterns(ast)
+
+    assert analysis["length_stats"] == {"min": 2, "max": 2, "avg": 2.0}
 
 
 def test_metrics_graphviz_error_detection() -> None:

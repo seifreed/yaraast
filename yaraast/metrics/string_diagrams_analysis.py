@@ -10,6 +10,7 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.metrics.string_diagrams_common import (
     modifier_names,
     plain_printable_ratio,
+    plain_value_length,
     plain_value_text,
 )
 
@@ -46,7 +47,7 @@ class StringDiagramAnalysisMixin:
                         {
                             "type": "plain",
                             "value": plain_value_text(string_def.value),
-                            "length": len(string_def.value),
+                            "length": plain_value_length(string_def.value),
                             "printable_ratio": self._calculate_printable_ratio(
                                 string_def.value,
                             ),

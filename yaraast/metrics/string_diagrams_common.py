@@ -10,6 +10,13 @@ def plain_value_text(value: str | bytes) -> str:
     return "".join(chr(byte) if 32 <= byte <= 126 else f"\\x{byte:02x}" for byte in value)
 
 
+def plain_value_length(value: str | bytes) -> int:
+    """Return the byte length used by YARA for a plain string value."""
+    if isinstance(value, bytes):
+        return len(value)
+    return len(value.encode())
+
+
 def plain_printable_ratio(value: str | bytes) -> float:
     """Calculate the printable, non-whitespace ratio for plain string values."""
     if not value:

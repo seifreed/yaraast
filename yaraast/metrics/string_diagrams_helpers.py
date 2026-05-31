@@ -10,6 +10,7 @@ from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.metrics.string_diagrams_common import (
     format_hex_token_for_diagram,
     modifier_names,
+    plain_value_length,
     plain_value_text,
     string_pattern_identity,
 )
@@ -154,7 +155,7 @@ def generate_pattern_report(strings: list) -> dict[str, Any]:
 
         if isinstance(string_def, PlainString):
             detail["value"] = plain_value_text(string_def.value)
-            detail["length"] = len(string_def.value)
+            detail["length"] = plain_value_length(string_def.value)
         elif isinstance(string_def, HexString):
             detail["tokens"] = len(string_def.tokens)
         elif isinstance(string_def, RegexString):

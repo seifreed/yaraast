@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from typing import Any
 
+from yaraast.metrics.string_diagrams_common import plain_value_length
+
 
 def _analyze_string_patterns(ast: Any) -> dict[str, Any]:
     """Analyze string patterns in AST and return analysis data."""
@@ -73,7 +75,7 @@ def _process_plain_string(
     analysis["type_distribution"]["plain"] += 1
     rule_info["types"].append("plain")
 
-    str_len = len(string_def.value)
+    str_len = plain_value_length(string_def.value)
     lengths.append(str_len)
 
     if str_len < 4:

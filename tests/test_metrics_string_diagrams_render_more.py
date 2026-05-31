@@ -69,6 +69,16 @@ def test_render_helpers_handle_byte_plain_strings() -> None:
     assert "ab\\x00" in values
 
 
+def test_plain_string_metrics_use_utf8_byte_length_for_text_values() -> None:
+    strings = [PlainString(identifier="$u", value="á", modifiers=[])]
+
+    diagram = generate_string_diagram(strings[0])
+    report = generate_pattern_report(strings)
+
+    assert "Length: 2" in diagram
+    assert report["details"][0]["length"] == 2
+
+
 def test_analyze_and_report_patterns() -> None:
     strings = [
         PlainString(identifier="$a", value="abc-common", modifiers=["ascii"]),
