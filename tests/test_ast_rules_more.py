@@ -32,6 +32,18 @@ def test_rule_modifier_flags_and_meta_entries() -> None:
     assert [m.key for m in rule.get_public_meta()] == ["pub"]
 
 
+def test_rule_get_meta_value_uses_last_duplicate_key_value() -> None:
+    rule = Rule(
+        name="duplicate_meta",
+        meta=[
+            MetaEntry.from_key_value("owner", "first"),
+            MetaEntry.from_key_value("owner", "last"),
+        ],
+    )
+
+    assert rule.get_meta_value("owner") == "last"
+
+
 def test_rule_pragmas_by_position() -> None:
     rule = Rule(name="r2")
     pragma_before = InRulePragma(

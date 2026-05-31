@@ -150,7 +150,7 @@ class Rule(ASTNode):
 
     def get_meta_value(self, key: str, default: Any = None) -> Any:
         """Get the value of a meta entry by key."""
-        for entry in self.meta:
+        for entry in reversed(self.meta):
             if hasattr(entry, "key") and entry.key == key:
                 return entry.value
         return default
