@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Rule
-from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString
+from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString, StringDefinition
 from yaraast.visitor import ASTTransformer
 from yaraast.yarax.feature_flags import YaraXFeatures
 
 if TYPE_CHECKING:
-    from yaraast.ast.base import YaraFile
     from yaraast.yarax.compatibility_checker import CompatibilityIssue
 
 
@@ -36,13 +37,13 @@ class YaraXSyntaxAdapter(ASTTransformer):
     def adapt(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
         """Adapt YARA file syntax and return adapted file with adaptation count."""
         self.adaptations_count = 0
-        adapted = self.visit(yara_file)
+        adapted = cast(YaraFile, self.visit(yara_file))
         return adapted, self.adaptations_count
 
     def adapt_with_count(self, yara_file: YaraFile) -> tuple[YaraFile, int]:
         """Adapt YARA file syntax and return adapted file with adaptation count."""
         self.adaptations_count = 0
-        adapted = self.visit(yara_file)
+        adapted = cast(YaraFile, self.visit(yara_file))
         return adapted, self.adaptations_count
 
     def visit_rule(self, node: Rule) -> Rule:
@@ -57,8 +58,10 @@ class YaraXSyntaxAdapter(ASTTransformer):
 
         # Visit components
         meta = [self.visit(m) for m in node.meta]
-        strings = [self.visit(s) for s in node.strings]
-        condition = self.visit(node.condition)
+        strings = [cast(StringDefinition, self.visit(s)) for s in node.strings]
+        condition = (
+            cast(Expression, self.visit(node.condition)) if node.condition is not None else None
+        )
 
         return Rule(
             name=node.name,
@@ -83,12 +86,10 @@ class YaraXSyntaxAdapter(ASTTransformer):
                 # Pad with null bytes (\x00) to preserve semantic neutrality
                 # Using 'A' would change the base64-decoded result
                 padding_needed = self.features.minimum_base64_length - len(node.value)
-                padding = (
-                    b"\x00" * padding_needed
-                    if isinstance(node.value, bytes)
-                    else "\x00" * padding_needed
-                )
-                new_value = node.value + padding
+                if isinstance(node.value, bytes):
+                    new_value: str | bytes = node.value + (b"\x00" * padding_needed)
+                else:
+                    new_value = node.value + ("\x00" * padding_needed)
                 self.adaptations_count += 1
                 return PlainString(
                     identifier=node.identifier,

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from textwrap import dedent
 
+import pytest
+
 from yaraast.ast.expressions import Identifier, IntegerLiteral, StringLiteral
 from yaraast.yarax.ast_nodes import (
     ArrayComprehension,
@@ -96,3 +98,8 @@ def test_yarax_generator_features() -> None:
     assert "lambda x:" in gen.visit(lambda_expr)
     assert "match val" in gen.visit(match_expr)
     assert "with $x = 1" in gen.visit(with_stmt)
+
+
+def test_yarax_generator_rejects_incomplete_comprehension_ast() -> None:
+    with pytest.raises(ValueError, match="Array comprehension expression is required"):
+        YaraXGenerator().visit_array_comprehension(ArrayComprehension())

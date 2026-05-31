@@ -219,7 +219,6 @@ ignore_errors = false
 module = [
     "yaraast.parser.*",
     "yaraast.serialization.*",
-    "yaraast.yarax.*",
     "yaraast.yaral.*",
     "yaraast.metrics.*",
     "yaraast.cli.*",

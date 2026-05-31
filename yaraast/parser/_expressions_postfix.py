@@ -113,7 +113,7 @@ class ExpressionPostfixMixin:
                 return f"{prefix}.{expr.member}"
         return None
 
-    def _parse_bracket_access(self, expr: Expression) -> ArrayAccess | DictionaryAccess:
+    def _parse_bracket_access(self, expr: Expression) -> Expression:
         """Parse bracket access expression (array[index] or dict['key'])."""
         start_token = self._previous()
         self._reject_string_reference_postfix(expr, start_token)

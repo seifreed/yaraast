@@ -50,6 +50,12 @@ def test_check_returns_stable_issue_snapshot() -> None:
     assert any(issue.issue_type == "duplicate_modifier" for issue in first_issues)
 
 
+def test_checker_handles_rules_without_condition() -> None:
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yarax_strict())
+
+    assert checker.check(YaraFile(rules=[Rule(name="partial")])) == []
+
+
 def test_checker_covers_plain_regex_hex_and_quantifier_helpers() -> None:
     checker = YaraXCompatibilityChecker(YaraXFeatures.yarax_strict())
 

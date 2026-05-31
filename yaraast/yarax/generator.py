@@ -8,6 +8,7 @@ from yaraast import CodeGenerator as BaseGenerator
 from yaraast.codegen.generator_expression_visitors import validate_expression_collection
 
 if TYPE_CHECKING:
+    from yaraast.ast.expressions import Expression
     from yaraast.yarax.ast_nodes import (
         ArrayComprehension,
         DictComprehension,
@@ -28,6 +29,12 @@ if TYPE_CHECKING:
 
 class YaraXGenerator(BaseGenerator):
     """Code generator for YARA-X with support for new syntax features."""
+
+    def _visit_required_expression(self, expression: Expression | None, field_name: str) -> str:
+        if expression is None:
+            msg = f"{field_name} is required for YARA-X code generation"
+            raise ValueError(msg)
+        return self.visit(expression)
 
     def visit_with_statement(self, node: WithStatement) -> str:
         """Generate code for with statement."""
@@ -51,8 +58,10 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_array_comprehension(self, node: ArrayComprehension) -> str:
         """Generate code for array comprehension."""
-        expr_str = self.visit(node.expression)
-        iter_str = self.visit(node.iterable)
+        expr_str = self._visit_required_expression(
+            node.expression, "Array comprehension expression"
+        )
+        iter_str = self._visit_required_expression(node.iterable, "Array comprehension iterable")
 
         result = f"[{expr_str} for {node.variable} in {iter_str}"
 
@@ -65,9 +74,11 @@ class YaraXGenerator(BaseGenerator):
 
     def visit_dict_comprehension(self, node: DictComprehension) -> str:
         """Generate code for dict comprehension."""
-        key_str = self.visit(node.key_expression)
-        value_str = self.visit(node.value_expression)
-        iter_str = self.visit(node.iterable)
+        key_str = self._visit_required_expression(node.key_expression, "Dict comprehension key")
+        value_str = self._visit_required_expression(
+            node.value_expression, "Dict comprehension value"
+        )
+        iter_str = self._visit_required_expression(node.iterable, "Dict comprehension iterable")
 
         if node.value_variable:
             # Two variables (k, v pattern)

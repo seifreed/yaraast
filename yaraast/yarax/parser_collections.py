@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.expressions import Expression, StringLiteral
 from yaraast.lexer.tokens import TokenType
 from yaraast.yarax.ast_nodes import (
@@ -26,7 +28,7 @@ from yaraast.yarax.parser_helpers import (
 class YaraXParserCollectionsMixin:
     """Collection parsing helpers for YARA-X."""
 
-    def _parse_list_or_comprehension(self) -> Expression:
+    def _parse_list_or_comprehension(self: Any) -> Expression:
         """Parse list literal or array comprehension."""
         self._consume(TokenType.LBRACKET, "Expected '['")
 
@@ -35,37 +37,37 @@ class YaraXParserCollectionsMixin:
             return ListExpression(elements=[])
 
         if self._is_spread_operator():
-            return self._parse_spread_list()
+            return cast(Expression, self._parse_spread_list())
 
         first_expr = self.parse_expression()
 
         if self._check(TokenType.FOR) or self._check_keyword("for"):
-            return self._parse_array_comprehension_body(first_expr)
+            return cast(Expression, self._parse_array_comprehension_body(first_expr))
 
-        return self._parse_regular_list(first_expr)
+        return cast(Expression, self._parse_regular_list(first_expr))
 
-    def _is_spread_operator(self) -> bool:
+    def _is_spread_operator(self: Any) -> bool:
         """Check if current position is a spread operator."""
         current = self._peek()
         next_token = self._peek_ahead(1)
         if self._check(TokenType.DOUBLE_DOT):
             return bool(
-                next_token
+                next_token is not None
                 and next_token.type == TokenType.DOT
                 and self._tokens_are_adjacent(current, next_token)
             )
         third_token = self._peek_ahead(2)
         return (
             self._check(TokenType.DOT)
-            and next_token
+            and next_token is not None
             and next_token.type == TokenType.DOT
-            and third_token
+            and third_token is not None
             and third_token.type == TokenType.DOT
             and self._tokens_are_adjacent(current, next_token)
             and self._tokens_are_adjacent(next_token, third_token)
         )
 
-    def _consume_spread_operator(self) -> None:
+    def _consume_spread_operator(self: Any) -> None:
         """Consume a spread operator token sequence."""
         if self._check(TokenType.DOUBLE_DOT):
             self._advance()
@@ -75,9 +77,9 @@ class YaraXParserCollectionsMixin:
         self._advance()
         self._consume(TokenType.DOT, "Expected '...'")
 
-    def _parse_spread_list(self) -> ListExpression:
+    def _parse_spread_list(self: Any) -> ListExpression:
         """Parse list with spread operators."""
-        elements = []
+        elements: list[Expression] = []
         while not self._check(TokenType.RBRACKET):
             if self._is_spread_operator():
                 self._consume_spread_operator()
@@ -92,9 +94,9 @@ class YaraXParserCollectionsMixin:
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
         return ListExpression(elements=elements)
 
-    def _parse_regular_list(self, first_expr: Expression) -> ListExpression:
+    def _parse_regular_list(self: Any, first_expr: Expression) -> ListExpression:
         """Parse regular list elements after first expression."""
-        elements = [first_expr]
+        elements: list[Expression] = [first_expr]
         while self._check(TokenType.COMMA):
             self._advance()
             if self._check(TokenType.RBRACKET):
@@ -109,7 +111,7 @@ class YaraXParserCollectionsMixin:
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
         return ListExpression(elements=elements)
 
-    def _parse_array_comprehension_body(self, expression: Expression) -> ArrayComprehension:
+    def _parse_array_comprehension_body(self: Any, expression: Expression) -> ArrayComprehension:
         """Parse array comprehension after initial expression."""
         if self._check(TokenType.FOR):
             self._advance()
@@ -139,7 +141,7 @@ class YaraXParserCollectionsMixin:
             condition=condition,
         )
 
-    def _parse_dict_or_comprehension(self) -> Expression:
+    def _parse_dict_or_comprehension(self: Any) -> Expression:
         """Parse dict literal or dict comprehension."""
         self._consume(TokenType.LBRACE, "Expected '{'")
 
@@ -148,30 +150,30 @@ class YaraXParserCollectionsMixin:
             return DictExpression(items=[])
 
         if self._is_dict_spread_operator():
-            return self._parse_dict_with_spread()
+            return cast(Expression, self._parse_dict_with_spread())
 
         first_key = self.parse_expression()
         self._consume(TokenType.COLON, ERROR_EXPECTED_COLON_DICT)
         first_value = self.parse_expression()
 
         if self._check(TokenType.FOR) or self._check_keyword("for"):
-            return self._parse_dict_comprehension_body(first_key, first_value)
+            return cast(Expression, self._parse_dict_comprehension_body(first_key, first_value))
 
-        return self._parse_regular_dict(first_key, first_value)
+        return cast(Expression, self._parse_regular_dict(first_key, first_value))
 
-    def _is_dict_spread_operator(self) -> bool:
+    def _is_dict_spread_operator(self: Any) -> bool:
         """Check if current position is a dict spread operator."""
         next_token = self._peek_ahead(1)
         return (
             self._check(TokenType.MULTIPLY)
-            and next_token
+            and next_token is not None
             and next_token.type == TokenType.MULTIPLY
             and self._tokens_are_adjacent(self._peek(), next_token)
         )
 
-    def _parse_dict_with_spread(self) -> DictExpression:
+    def _parse_dict_with_spread(self: Any) -> DictExpression:
         """Parse dict with spread operators."""
-        items = []
+        items: list[DictItem] = []
         while not self._check(TokenType.RBRACE):
             if self._is_dict_spread_operator():
                 items.append(self._parse_dict_spread_item())
@@ -187,7 +189,7 @@ class YaraXParserCollectionsMixin:
         self._consume(TokenType.RBRACE, ERROR_EXPECTED_BRACE_CLOSE)
         return DictExpression(items=items)
 
-    def _parse_dict_spread_item(self) -> DictItem:
+    def _parse_dict_spread_item(self: Any) -> DictItem:
         self._advance()
         self._advance()
         expr = self.parse_expression()
@@ -196,9 +198,11 @@ class YaraXParserCollectionsMixin:
             value=SpreadOperator(expression=expr, is_dict=True),
         )
 
-    def _parse_regular_dict(self, first_key: Expression, first_value: Expression) -> DictExpression:
+    def _parse_regular_dict(
+        self: Any, first_key: Expression, first_value: Expression
+    ) -> DictExpression:
         """Parse regular dict after first key-value pair."""
-        items = [DictItem(key=first_key, value=first_value)]
+        items: list[DictItem] = [DictItem(key=first_key, value=first_value)]
 
         while self._check(TokenType.COMMA):
             self._advance()
@@ -217,7 +221,7 @@ class YaraXParserCollectionsMixin:
         return DictExpression(items=items)
 
     def _parse_dict_comprehension_body(
-        self, key_expr: Expression, value_expr: Expression
+        self: Any, key_expr: Expression, value_expr: Expression
     ) -> DictComprehension:
         """Parse dict comprehension after initial key-value pair."""
         if self._check(TokenType.FOR):
@@ -258,7 +262,7 @@ class YaraXParserCollectionsMixin:
             condition=condition,
         )
 
-    def _parse_tuple_or_parentheses(self) -> Expression:
+    def _parse_tuple_or_parentheses(self: Any) -> Expression:
         """Parse tuple or parenthesized expression."""
         self._consume(TokenType.LPAREN, "Expected '('")
 
@@ -269,7 +273,7 @@ class YaraXParserCollectionsMixin:
         first = self.parse_expression()
 
         if self._check(TokenType.COMMA):
-            elements = [first]
+            elements: list[Expression] = [first]
             while self._check(TokenType.COMMA):
                 self._advance()
                 if self._check(TokenType.RPAREN):
@@ -285,24 +289,24 @@ class YaraXParserCollectionsMixin:
 
         return ParenthesesExpression(expression=first)
 
-    def _parse_tuple_indexing_postfix(self, tuple_expr: Expression) -> TupleIndexing:
+    def _parse_tuple_indexing_postfix(self: Any, tuple_expr: Expression) -> Expression:
         """Parse tuple indexing on an expression."""
         self._consume(TokenType.LBRACKET, "Expected '['")
 
         if self._check(TokenType.COLON):
-            return self._parse_slice_expression(tuple_expr, None)
+            return cast(Expression, self._parse_slice_expression(tuple_expr, None))
 
         index = self.parse_expression()
 
         if self._check(TokenType.COLON):
-            return self._parse_slice_expression(tuple_expr, index)
+            return cast(Expression, self._parse_slice_expression(tuple_expr, index))
 
         self._consume(TokenType.RBRACKET, ERROR_EXPECTED_BRACKET_CLOSE)
 
         return TupleIndexing(tuple_expr=tuple_expr, index=index)
 
     def _parse_slice_expression(
-        self, target: Expression, start: Expression | None
+        self: Any, target: Expression, start: Expression | None
     ) -> SliceExpression:
         """Parse slice expression after target and optional start."""
         if start is None:

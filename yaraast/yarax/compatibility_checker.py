@@ -101,7 +101,8 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
         for string_def in node.strings:
             self.visit(string_def)
 
-        self.visit(node.condition)
+        if node.condition is not None:
+            self.visit(node.condition)
 
         self.current_rule = None
 
@@ -119,7 +120,7 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
             self._add_issue(
                 "error",
                 "base64_too_short",
-                f"Base64 pattern '{node.value}' is shorter than minimum length {self.features.minimum_base64_length}",
+                f"Base64 pattern '{self._format_string_value(node.value)}' is shorter than minimum length {self.features.minimum_base64_length}",
                 f"Use a base64 pattern with at least {self.features.minimum_base64_length} characters",
                 node.location,
             )
@@ -139,13 +140,18 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
             self._add_issue(
                 "warning",
                 "xor_fullword_boundary",
-                f"String '{node.value}' with XOR and fullword may have stricter boundary checking in YARA-X",
+                f"String '{self._format_string_value(node.value)}' with XOR and fullword may have stricter boundary checking in YARA-X",
                 "Ensure string has proper alphanumeric boundaries",
                 node.location,
             )
 
     def _modifier_name(self, modifier: object) -> str:
         return str(getattr(modifier, "name", modifier))
+
+    def _format_string_value(self, value: str | bytes) -> str:
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="backslashreplace")
+        return value
 
     def _has_alnum_boundaries(self, value: str | bytes) -> bool:
         if isinstance(value, bytes):
@@ -307,7 +313,7 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
             getattr(node, "location", None),
         )
 
-    def visit_with_statement(self, node) -> None:
+    def visit_with_statement(self, node: Any) -> None:
         """Check YARA-X with statement compatibility."""
         if not self.features.allow_with_statement:
             self._add_yarax_feature(
@@ -319,120 +325,120 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
             self.visit(declaration)
         self.visit(node.body)
 
-    def visit_with_declaration(self, node) -> None:
+    def visit_with_declaration(self, node: Any) -> None:
         self._visit_ast_value(node.value)
 
-    def visit_binary_expression(self, node) -> None:
+    def visit_binary_expression(self, node: Any) -> None:
         self._visit_ast_value(node.left)
         self._visit_ast_value(node.right)
 
-    def visit_unary_expression(self, node) -> None:
+    def visit_unary_expression(self, node: Any) -> None:
         self._visit_ast_value(node.operand)
 
-    def visit_parentheses_expression(self, node) -> None:
+    def visit_parentheses_expression(self, node: Any) -> None:
         self._visit_ast_value(node.expression)
 
-    def visit_set_expression(self, node) -> None:
+    def visit_set_expression(self, node: Any) -> None:
         self._visit_ast_value(node.elements)
 
-    def visit_range_expression(self, node) -> None:
+    def visit_range_expression(self, node: Any) -> None:
         self._visit_ast_value(node.low)
         self._visit_ast_value(node.high)
 
-    def visit_function_call(self, node) -> None:
+    def visit_function_call(self, node: Any) -> None:
         self._visit_ast_value(node.arguments)
 
-    def visit_array_access(self, node) -> None:
+    def visit_array_access(self, node: Any) -> None:
         self._visit_ast_value(node.array)
         self._visit_ast_value(node.index)
 
-    def visit_member_access(self, node) -> None:
+    def visit_member_access(self, node: Any) -> None:
         self._visit_ast_value(node.object)
 
-    def visit_dictionary_access(self, node) -> None:
+    def visit_dictionary_access(self, node: Any) -> None:
         self._visit_ast_value(node.object)
         self._visit_ast_value(node.key)
 
-    def visit_defined_expression(self, node) -> None:
+    def visit_defined_expression(self, node: Any) -> None:
         self._visit_ast_value(node.expression)
 
-    def visit_string_operator_expression(self, node) -> None:
+    def visit_string_operator_expression(self, node: Any) -> None:
         self._visit_ast_value(node.left)
         self._visit_ast_value(node.right)
 
-    def visit_for_expression(self, node) -> None:
+    def visit_for_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.iterable)
         self._visit_ast_value(node.body)
 
-    def visit_for_of_expression(self, node) -> None:
+    def visit_for_of_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
         self._visit_ast_value(node.condition)
 
-    def visit_at_expression(self, node) -> None:
+    def visit_at_expression(self, node: Any) -> None:
         self._visit_ast_value(node.offset)
 
-    def visit_in_expression(self, node) -> None:
+    def visit_in_expression(self, node: Any) -> None:
         self._visit_ast_value(node.subject)
         self._visit_ast_value(node.range)
 
-    def visit_array_comprehension(self, node) -> None:
+    def visit_array_comprehension(self, node: Any) -> None:
         self._add_yarax_feature("array comprehensions", node)
         self._visit_ast_value(node.expression)
         self._visit_ast_value(node.iterable)
         self._visit_ast_value(node.condition)
 
-    def visit_dict_comprehension(self, node) -> None:
+    def visit_dict_comprehension(self, node: Any) -> None:
         self._add_yarax_feature("dict comprehensions", node)
         self._visit_ast_value(node.key_expression)
         self._visit_ast_value(node.value_expression)
         self._visit_ast_value(node.iterable)
         self._visit_ast_value(node.condition)
 
-    def visit_tuple_expression(self, node) -> None:
+    def visit_tuple_expression(self, node: Any) -> None:
         self._add_yarax_feature("tuple expressions", node)
         self._visit_ast_value(node.elements)
 
-    def visit_tuple_indexing(self, node) -> None:
+    def visit_tuple_indexing(self, node: Any) -> None:
         self._add_yarax_feature("tuple indexing", node)
         self._visit_ast_value(node.tuple_expr)
         self._visit_ast_value(node.index)
 
-    def visit_list_expression(self, node) -> None:
+    def visit_list_expression(self, node: Any) -> None:
         self._add_yarax_feature("list expressions", node)
         self._visit_ast_value(node.elements)
 
-    def visit_dict_expression(self, node) -> None:
+    def visit_dict_expression(self, node: Any) -> None:
         self._add_yarax_feature("dict expressions", node)
         self._visit_ast_value(node.items)
 
-    def visit_dict_item(self, node) -> None:
+    def visit_dict_item(self, node: Any) -> None:
         self._visit_ast_value(node.key)
         self._visit_ast_value(node.value)
 
-    def visit_slice_expression(self, node) -> None:
+    def visit_slice_expression(self, node: Any) -> None:
         self._add_yarax_feature("slice expressions", node)
         self._visit_ast_value(node.target)
         self._visit_ast_value(node.start)
         self._visit_ast_value(node.stop)
         self._visit_ast_value(node.step)
 
-    def visit_lambda_expression(self, node) -> None:
+    def visit_lambda_expression(self, node: Any) -> None:
         self._add_yarax_feature("lambda expressions", node)
         self._visit_ast_value(node.body)
 
-    def visit_pattern_match(self, node) -> None:
+    def visit_pattern_match(self, node: Any) -> None:
         self._add_yarax_feature("pattern matching", node)
         self._visit_ast_value(node.value)
         self._visit_ast_value(node.cases)
         self._visit_ast_value(node.default)
 
-    def visit_match_case(self, node) -> None:
+    def visit_match_case(self, node: Any) -> None:
         self._visit_ast_value(node.pattern)
         self._visit_ast_value(node.result)
 
-    def visit_spread_operator(self, node) -> None:
+    def visit_spread_operator(self, node: Any) -> None:
         self._add_yarax_feature("spread operators", node)
         self._visit_ast_value(node.expression)
 
@@ -498,7 +504,7 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
         return "difficult"
 
     # Implement all required abstract methods with default behavior
-    def visit_yara_file(self, node) -> None:
+    def visit_yara_file(self, node: YaraFile) -> None:
         """Visit YARA file."""
         for rule in node.rules:
             self.visit(rule)
