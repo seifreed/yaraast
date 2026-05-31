@@ -36,6 +36,16 @@ def test_html_tree_import_alias_and_include_nodes() -> None:
     assert include_node["label"] == 'Include: "common.yar"'
 
 
+def test_html_tree_byte_plain_string_uses_yara_literal_text() -> None:
+    gen = HtmlTreeGenerator()
+    plain = PlainString(identifier="$bytes", value=b'ab"\x00\xff', modifiers=[])
+
+    string_node = gen.visit_plain_string(plain)
+
+    assert string_node["value"] == '"ab\\"\\x00\\xff"'
+    assert "b'" not in string_node["value"]
+
+
 def test_ast_dumper_direct_visitors_for_remaining_nodes() -> None:
     dumper = ASTDumper()
 

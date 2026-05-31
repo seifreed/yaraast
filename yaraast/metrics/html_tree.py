@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from yaraast.codegen.generator_helpers import escape_plain_string_value
 from yaraast.metrics.html_tree_helpers import rule_children, rule_details
 from yaraast.metrics.html_tree_nodes import HtmlTreeNodesMixin
 from yaraast.metrics.html_tree_nodes_extra import HtmlTreeNodesExtraMixin
@@ -120,7 +121,7 @@ class HtmlTreeGenerator(
 
         return self._string_node(
             f"Plain String: {node.identifier}",
-            value=f'"{node.value}"',
+            value=f'"{escape_plain_string_value(node.value)}"',
             children=children if children else None,
         )
 
