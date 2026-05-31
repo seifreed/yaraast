@@ -363,6 +363,8 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         normalized = self._normalize_string_id(text)
         if self._is_local(normalized):
             return
+        if "*" in text and not text.startswith("$"):
+            return
         if "*" in normalized:
             self._mark_wildcard_usage(normalized)
             return

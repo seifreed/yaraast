@@ -138,6 +138,29 @@ rule them_usage {
     assert unused_messages == []
 
 
+def test_best_practices_keeps_rule_wildcard_sets_out_of_string_usage() -> None:
+    ast = Parser().parse("""
+rule alpha_one {
+    condition:
+        true
+}
+
+rule holder {
+    strings:
+        $alpha_local = "needle"
+    condition:
+        any of (alpha*)
+}
+""")
+
+    report = BestPracticesAnalyzer().analyze(ast)
+
+    assert any(
+        "String '$alpha_local' is defined but never used" in suggestion.message
+        for suggestion in report.suggestions
+    )
+
+
 def test_best_practices_respects_yarax_with_local_string_shadowing() -> None:
     ast = parse_yara_source("""
 rule shadowed_string {

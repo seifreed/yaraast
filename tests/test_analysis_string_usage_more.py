@@ -384,6 +384,33 @@ rule wildcard_usage {
     assert analyzer.used_strings["manual"] == {"$api1", "$api2"}
 
 
+def test_string_usage_analyzer_ignores_rule_wildcard_sets() -> None:
+    ast = Parser().parse("""
+rule alpha_one {
+    condition:
+        true
+}
+
+rule alpha_two {
+    condition:
+        true
+}
+
+rule holder {
+    strings:
+        $alpha_local = "needle"
+    condition:
+        any of (alpha*)
+}
+""")
+
+    result = StringUsageAnalyzer().analyze(ast)["holder"]
+
+    assert result["used"] == []
+    assert result["unused"] == ["$alpha_local"]
+    assert result["undefined"] == []
+
+
 def test_string_usage_analyzer_named_wildcard_ignores_anonymous_internal_ids() -> None:
     ast = YaraFile(
         rules=[
