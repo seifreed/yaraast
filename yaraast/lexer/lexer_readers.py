@@ -2,24 +2,28 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_BODY_CHARS, YARA_IDENTIFIER_MAX_LENGTH
+from yaraast.lexer.protocols import LexerLike
 from yaraast.lexer.string_escape import StringEscapeHandler
 from yaraast.lexer.tokens import Token, TokenType
 
 INT64_MAX = (1 << 63) - 1
 
 
-def read_string(lexer) -> Token:
+def read_string(lexer: LexerLike) -> Token:
     start_line = lexer.line
     start_column = lexer.column
     start_position = lexer.position
     value_chars: list[str] = []
     lexer._advance()
-    while lexer._current_char() and lexer._current_char() != '"':
-        if lexer._current_char() in "\n\r":
+    char = lexer._current_char()
+    while char is not None and char != '"':
+        if char in "\n\r":
             raise LexerError("Unterminated string", start_line, start_column)
-        if lexer._current_char() == "\\":
+        if char == "\\":
             lexer._advance()
             handler = StringEscapeHandler(lexer.text, lexer.position)
             try:
@@ -32,9 +36,10 @@ def read_string(lexer) -> Token:
             if result.ends_string:
                 break
         else:
-            value_chars.append(lexer._current_char())
+            value_chars.append(char)
         lexer._advance()
-    if not lexer._current_char():
+        char = lexer._current_char()
+    if char is None:
         raise LexerError("Unterminated string", start_line, start_column)
     lexer._advance()
     return Token(
@@ -46,11 +51,11 @@ def read_string(lexer) -> Token:
     )
 
 
-def read_hex_string(lexer) -> Token:
+def read_hex_string(lexer: LexerLike) -> Token:
     start_line = lexer.line
     start_column = lexer.column
     start_position = lexer.position
-    value_chars = []
+    value_chars: list[str] = []
     lexer._advance()
     while lexer._current_char():
         if lexer._current_char() == "}":
@@ -76,7 +81,7 @@ def read_hex_string(lexer) -> Token:
                     value_chars.append("\n")
                 lexer._advance()
             continue
-        value_chars.append(lexer._current_char())
+        value_chars.append(cast(str, lexer._current_char()))
         lexer._advance()
     if not lexer._current_char() or lexer._current_char() != "}":
         raise LexerError("Unterminated hex string", start_line, start_column)
@@ -90,17 +95,18 @@ def read_hex_string(lexer) -> Token:
     )
 
 
-def read_regex(lexer) -> Token:
+def read_regex(lexer: LexerLike) -> Token:
     start_line = lexer.line
     start_column = lexer.column
     start_position = lexer.position
-    value_chars = []
+    value_chars: list[str] = []
     lexer._advance()
-    while lexer._current_char() and lexer._current_char() != "/":
-        if lexer._current_char() == "\n":
+    char = lexer._current_char()
+    while char is not None and char != "/":
+        if char == "\n":
             raise LexerError("Unterminated regex", start_line, start_column)
-        if lexer._current_char() == "\\":
-            value_chars.append(lexer._current_char())
+        if char == "\\":
+            value_chars.append(char)
             lexer._advance()
             current = lexer._current_char()
             if current == "\n":
@@ -108,15 +114,18 @@ def read_regex(lexer) -> Token:
             if current:
                 value_chars.append(current)
         else:
-            value_chars.append(lexer._current_char())
+            value_chars.append(char)
         lexer._advance()
-    if not lexer._current_char():
+        char = lexer._current_char()
+    if char is None:
         raise LexerError("Unterminated regex", start_line, start_column)
     lexer._advance()
     modifiers = ""
-    while lexer._current_char() and lexer._current_char() in "is":
-        modifiers += lexer._current_char()
+    char = lexer._current_char()
+    while char is not None and char in "is":
+        modifiers += char
         lexer._advance()
+        char = lexer._current_char()
     value = "".join(value_chars)
     if modifiers:
         return Token(
@@ -153,7 +162,7 @@ def _validate_digit_separators(raw_digits: str, literal_kind: str, line: int, co
         raise LexerError(msg, line, column)
 
 
-def _read_size_suffix(lexer, value: str, line: int, column: int) -> Token | None:
+def _read_size_suffix(lexer: LexerLike, value: str, line: int, column: int) -> Token | None:
     suffix = lexer._current_char()
     if suffix is None or suffix not in "KkMm":
         return None
@@ -161,73 +170,81 @@ def _read_size_suffix(lexer, value: str, line: int, column: int) -> Token | None
         raise LexerError("Invalid size suffix", line, column)
     lexer._advance()
     lexer._advance()
-    if lexer._current_char() and (lexer._current_char().isalnum() or lexer._current_char() == "_"):
+    char = lexer._current_char()
+    if char is not None and (char.isalnum() or char == "_"):
         raise LexerError("Invalid size suffix", line, column)
     multiplier = 1024 if suffix == "K" else 1024 * 1024
     return _integer_token(int(value) * multiplier, line, column, lexer.column - column)
 
 
-def read_number(lexer) -> Token:
+def read_number(lexer: LexerLike) -> Token:
     start_line = lexer.line
     start_column = lexer.column
     value = ""
     next_char = lexer._peek_char()
     # Hexadecimal: 0x1A, 0xFF_FF
     if lexer._current_char() == "0" and next_char is not None and next_char in "xX":
-        value += lexer._current_char()
+        value += "0"
         lexer._advance()
-        value += lexer._current_char()
+        value += next_char
         lexer._advance()
         raw_digits = ""
-        while lexer._current_char() and lexer._current_char() in "0123456789abcdefABCDEF_":
-            raw_digits += lexer._current_char()
-            if lexer._current_char() != "_":
-                value += lexer._current_char()
+        char = lexer._current_char()
+        while char is not None and char in "0123456789abcdefABCDEF_":
+            raw_digits += char
+            if char != "_":
+                value += char
             lexer._advance()
+            char = lexer._current_char()
         _validate_digit_separators(raw_digits, "hexadecimal", start_line, start_column)
-        if lexer._current_char() and lexer._current_char().isalnum():
+        char = lexer._current_char()
+        if char is not None and char.isalnum():
             msg = "Invalid hexadecimal integer literal"
             raise LexerError(msg, start_line, start_column)
         return _integer_token(int(value, 16), start_line, start_column, lexer.column - start_column)
     # Octal: 0o77, 0o123
     if lexer._current_char() == "0" and next_char is not None and next_char in "oO":
-        value += lexer._current_char()
+        value += "0"
         lexer._advance()
-        value += lexer._current_char()
+        value += next_char
         lexer._advance()
         raw_digits = ""
-        while lexer._current_char() and lexer._current_char() in "01234567_":
-            raw_digits += lexer._current_char()
-            if lexer._current_char() != "_":
-                value += lexer._current_char()
+        char = lexer._current_char()
+        while char is not None and char in "01234567_":
+            raw_digits += char
+            if char != "_":
+                value += char
             lexer._advance()
+            char = lexer._current_char()
         _validate_digit_separators(raw_digits, "octal", start_line, start_column)
-        if lexer._current_char() and lexer._current_char().isalnum():
+        char = lexer._current_char()
+        if char is not None and char.isalnum():
             msg = "Invalid octal integer literal"
             raise LexerError(msg, start_line, start_column)
         return _integer_token(int(value, 8), start_line, start_column, lexer.column - start_column)
     # Decimal (with underscore separators): 1_000_000
     raw_digits = ""
-    while lexer._current_char() and (
-        lexer._current_char().isdigit() or lexer._current_char() == "_"
-    ):
-        raw_digits += lexer._current_char()
-        if lexer._current_char() != "_":
-            value += lexer._current_char()
+    char = lexer._current_char()
+    while char is not None and (char.isdigit() or char == "_"):
+        raw_digits += char
+        if char != "_":
+            value += char
         lexer._advance()
+        char = lexer._current_char()
     _validate_digit_separators(raw_digits, "decimal", start_line, start_column)
     # Float: 3.14, 1_000.5
-    if lexer._current_char() == "." and lexer._peek_char() and lexer._peek_char().isdigit():
-        value += lexer._current_char()
+    next_char = lexer._peek_char()
+    if char == "." and next_char is not None and next_char.isdigit():
+        value += char
         lexer._advance()
         raw_fraction = ""
-        while lexer._current_char() and (
-            lexer._current_char().isdigit() or lexer._current_char() == "_"
-        ):
-            raw_fraction += lexer._current_char()
-            if lexer._current_char() != "_":
-                value += lexer._current_char()
+        char = lexer._current_char()
+        while char is not None and (char.isdigit() or char == "_"):
+            raw_fraction += char
+            if char != "_":
+                value += char
             lexer._advance()
+            char = lexer._current_char()
         if raw_fraction.endswith("_") or "__" in raw_fraction:
             msg = "Invalid decimal floating-point literal"
             raise LexerError(msg, start_line, start_column)
@@ -245,20 +262,22 @@ def read_number(lexer) -> Token:
     return _integer_token(int(value), start_line, start_column, lexer.column - start_column)
 
 
-def read_identifier(lexer) -> Token:
+def read_identifier(lexer: LexerLike) -> Token:
     start_line = lexer.line
     start_column = lexer.column
     value = ""
-    while lexer._current_char() and lexer._current_char() in YARA_IDENTIFIER_BODY_CHARS:
-        value += lexer._current_char()
+    char = lexer._current_char()
+    while char is not None and char in YARA_IDENTIFIER_BODY_CHARS:
+        value += char
         lexer._advance()
+        char = lexer._current_char()
     if len(value) > YARA_IDENTIFIER_MAX_LENGTH:
         msg = f"Identifier exceeds maximum length of {YARA_IDENTIFIER_MAX_LENGTH} characters"
         raise LexerError(msg, start_line, start_column)
     return Token(lexer.KEYWORDS.get(value, TokenType.IDENTIFIER), value, start_line, start_column)
 
 
-def read_string_identifier(lexer) -> Token:
+def read_string_identifier(lexer: LexerLike) -> Token:
     start_line = lexer.line
     start_column = lexer.column
     lexer._advance()
@@ -266,39 +285,43 @@ def read_string_identifier(lexer) -> Token:
         lexer._advance()
         return Token(TokenType.STRING_IDENTIFIER, "$*", start_line, start_column)
     value = "$"
-    while lexer._current_char() and lexer._current_char() in YARA_IDENTIFIER_BODY_CHARS:
-        value += lexer._current_char()
+    char = lexer._current_char()
+    while char is not None and char in YARA_IDENTIFIER_BODY_CHARS:
+        value += char
         lexer._advance()
+        char = lexer._current_char()
     if lexer._current_char() == "*":
         value += "*"
         lexer._advance()
     return Token(TokenType.STRING_IDENTIFIER, value, start_line, start_column)
 
 
-def read_string_count(lexer) -> Token:
+def read_string_count(lexer: LexerLike) -> Token:
     return _read_prefixed_identifier(lexer, "#", TokenType.STRING_COUNT)
 
 
-def read_string_offset(lexer) -> Token:
+def read_string_offset(lexer: LexerLike) -> Token:
     return _read_prefixed_identifier(lexer, "@", TokenType.STRING_OFFSET)
 
 
-def read_string_length(lexer) -> Token:
+def read_string_length(lexer: LexerLike) -> Token:
     return _read_prefixed_identifier(lexer, "!", TokenType.STRING_LENGTH)
 
 
-def _read_prefixed_identifier(lexer, prefix: str, token_type: TokenType) -> Token:
+def _read_prefixed_identifier(lexer: LexerLike, prefix: str, token_type: TokenType) -> Token:
     start_line = lexer.line
     start_column = lexer.column
     lexer._advance()
     value = prefix
-    while lexer._current_char() and lexer._current_char() in YARA_IDENTIFIER_BODY_CHARS:
-        value += lexer._current_char()
+    char = lexer._current_char()
+    while char is not None and char in YARA_IDENTIFIER_BODY_CHARS:
+        value += char
         lexer._advance()
+        char = lexer._current_char()
     return Token(token_type, value, start_line, start_column)
 
 
-def is_regex_context(lexer) -> bool:
+def is_regex_context(lexer: LexerLike) -> bool:
     if not lexer.tokens:
         return True
     expression_end_tokens = {
@@ -344,7 +367,7 @@ def is_regex_context(lexer) -> bool:
     return True
 
 
-def is_hex_string_context(lexer) -> bool:
+def is_hex_string_context(lexer: LexerLike) -> bool:
     if len(lexer.tokens) >= 2:
         non_comment_tokens = []
         for token in reversed(lexer.tokens):

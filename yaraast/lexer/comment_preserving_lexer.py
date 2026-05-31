@@ -6,7 +6,7 @@ from yaraast.lexer.lexer import Lexer
 from yaraast.lexer.tokens import Token, TokenType
 
 
-class CommentPreservingLexer(Lexer):
+class CommentPreservingLexer(Lexer[list[Token]]):
     """YARA lexer that preserves comments."""
 
     def __init__(self, text: str) -> None:
@@ -14,14 +14,16 @@ class CommentPreservingLexer(Lexer):
         self.preserve_comments = True
         self.comments: list[Token] = []
 
-    def tokenize(self) -> list[Token]:
+    def tokenize(self, text: str | None = None) -> list[Token]:
         """Tokenize input text and preserve comments."""
+        if text is not None:
+            self.text = text
         # First pass: extract comments and their positions
         comment_tokens, text_without_comments = self._strip_comments()
 
         # Second pass: tokenize text without comments using base lexer
         modified_text = "".join(text_without_comments)
-        base_lexer = Lexer(modified_text)
+        base_lexer: Lexer[list[Token]] = Lexer(modified_text)
         regular_tokens = base_lexer.tokenize()
 
         # Merge comment tokens into the regular token stream
@@ -224,9 +226,11 @@ class CommentPreservingLexer(Lexer):
 
         # Read until end of line
         comment_text = "//"
-        while self._current_char() and self._current_char() != "\n":
-            comment_text += self._current_char()
+        char = self._current_char()
+        while char is not None and char != "\n":
+            comment_text += char
             self._advance()
+            char = self._current_char()
 
         return Token(
             TokenType.COMMENT,
@@ -254,12 +258,16 @@ class CommentPreservingLexer(Lexer):
                 self._advance()
                 self._advance()
                 break
-            comment_text += self._current_char()
+            char = self._current_char()
+            if char is None:
+                break
+            comment_text += char
             self._advance()
 
         # Preserve the trailing character for unterminated block comments.
-        if self.position == len(self.text) - 1 and self._current_char() is not None:
-            comment_text += self._current_char()
+        char = self._current_char()
+        if self.position == len(self.text) - 1 and char is not None:
+            comment_text += char
             self._advance()
 
         return Token(

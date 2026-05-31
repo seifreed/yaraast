@@ -7,6 +7,8 @@ https://www.gnu.org/licenses/gpl-3.0.html
 
 from __future__ import annotations
 
+from typing import TypeVar, cast
+
 from yaraast.lexer.lexer_dispatch import (
     get_single_char_token,
     get_two_char_operator,
@@ -30,8 +32,10 @@ from yaraast.lexer.lexer_state import LexerState
 from yaraast.lexer.lexer_tables import KEYWORDS as LEXER_KEYWORDS
 from yaraast.lexer.tokens import Token, TokenType
 
+TokenizeResult = TypeVar("TokenizeResult")
 
-class Lexer:
+
+class Lexer[TokenizeResult]:
     """YARA lexer for tokenizing YARA rules.
 
     Implements the ILexer protocol for dependency injection support.
@@ -84,7 +88,7 @@ class Lexer:
     def column(self, value: int) -> None:
         self.state.column = value
 
-    def tokenize(self, text: str | None = None) -> list[Token]:
+    def tokenize(self, text: str | None = None) -> TokenizeResult:
         """Tokenize the input text and return list of tokens.
 
         Args:
@@ -109,7 +113,7 @@ class Lexer:
                 self.tokens.append(token)
 
         self.tokens.append(Token(TokenType.EOF, None, self.line, self.column))
-        return list(self.tokens)
+        return cast(TokenizeResult, list(self.tokens))
 
     def _current_char(self) -> str | None:
         """Get current character."""

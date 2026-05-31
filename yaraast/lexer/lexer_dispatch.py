@@ -9,10 +9,11 @@ from yaraast.lexer.lexer_tables import (
     TWO_CHAR_OPERATORS,
     YARA_IDENTIFIER_START_CHARS,
 )
+from yaraast.lexer.protocols import LexerLike
 from yaraast.lexer.tokens import Token, TokenType
 
 
-def read_next_token(lexer) -> Token | None:
+def read_next_token(lexer: LexerLike) -> Token | None:
     """Read the next token from a lexer instance."""
     start_line = lexer.line
     start_column = lexer.column
@@ -27,7 +28,8 @@ def read_next_token(lexer) -> Token | None:
         return lexer._read_hex_string()
     if char == "/" and lexer._is_regex_context():
         return lexer._read_regex()
-    if char.isdigit() or (char == "0" and lexer._peek_char() in "xX"):
+    next_char = lexer._peek_char()
+    if char.isdigit() or (char == "0" and next_char is not None and next_char in "xX"):
         return lexer._read_number()
     if char in YARA_IDENTIFIER_START_CHARS:
         return lexer._read_identifier()

@@ -47,7 +47,7 @@ class LexerErrorInfo:
         return "\n".join(lines)
 
 
-class ErrorTolerantLexer(Lexer):
+class ErrorTolerantLexer(Lexer[tuple[list[Token], list[LexerErrorInfo]]]):
     """Lexer that collects errors and continues parsing."""
 
     def __init__(self, text: str, max_errors: int = MAX_PARSER_ERRORS) -> None:
@@ -56,8 +56,11 @@ class ErrorTolerantLexer(Lexer):
         self.max_errors = max_errors
         self.original_text = text
 
-    def tokenize(self) -> tuple[list[Token], list[LexerErrorInfo]]:
+    def tokenize(self, text: str | None = None) -> tuple[list[Token], list[LexerErrorInfo]]:
         """Tokenize text and return both tokens and errors."""
+        if text is not None:
+            self.text = text
+            self.original_text = text
         self.tokens = []  # Use self.tokens so _is_hex_string_context() works
         self.position = 0
         self.line = 1
@@ -148,16 +151,20 @@ class ErrorTolerantLexer(Lexer):
     def _recover_from_unterminated_string(self) -> None:
         """Recover from unterminated string error."""
         # Skip to end of line or next string delimiter
-        while self._current_char() and self._current_char() not in '\n"':
+        char = self._current_char()
+        while char is not None and char not in '\n"':
             self._advance()
+            char = self._current_char()
 
-        if self._current_char() in ('"', "\n"):
+        if char is not None and char in ('"', "\n"):
             self._advance()  # Skip the quote or newline
 
     def _skip_to_whitespace(self) -> None:
         """Skip to next whitespace character."""
-        while self._current_char() and not self._current_char().isspace():
+        char = self._current_char()
+        while char is not None and not char.isspace():
             self._advance()
+            char = self._current_char()
 
     def _skip_to_char(self, target: str) -> None:
         """Skip to target character."""
@@ -172,16 +179,18 @@ class ErrorTolerantLexer(Lexer):
 
         self._advance()  # skip opening quote
 
-        while self._current_char() and self._current_char() != '"':
-            if self._current_char() == "\\":
+        char = self._current_char()
+        while char is not None and char != '"':
+            if char == "\\":
                 result, should_break = self._handle_escape_sequence()
                 value += result
                 if should_break:
                     break
             else:
-                value += self._current_char()
+                value += char
 
             self._advance()
+            char = self._current_char()
 
         if not self._current_char():
             # Unterminated string
