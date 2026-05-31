@@ -233,8 +233,26 @@ class TestParserComparison:
             Small file comparison establishes baseline overhead of
             streaming architecture.
         """
-        # This test uses benchmark groups for comparison
-        pass  # Implementation depends on pytest-benchmark version
+        content = small_test_file.read_text(encoding="utf-8")
+
+        def parse_with_both_parsers() -> tuple[int, int, list[str], list[str]]:
+            standard_ast = standard_parser(content).parse()
+            streaming_rules = list(streaming_parser(buffer_size=8192).parse_file(small_test_file))
+            return (
+                len(standard_ast.rules),
+                len(streaming_rules),
+                [rule.name for rule in standard_ast.rules],
+                [rule.name for rule in streaming_rules],
+            )
+
+        standard_count, streaming_count, standard_names, streaming_names = benchmark.pedantic(
+            parse_with_both_parsers,
+            iterations=3,
+            rounds=2,
+        )
+        assert standard_count > 0
+        assert streaming_count == standard_count
+        assert streaming_names == standard_names
 
     def test_memory_efficiency_comparison(
         self,
