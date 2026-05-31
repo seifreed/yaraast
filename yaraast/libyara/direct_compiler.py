@@ -27,6 +27,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
+    from yaraast.libyara.ast_optimizer import OptimizationStats
 
 
 class DirectASTCompiler:
@@ -149,7 +150,7 @@ class DirectASTCompiler:
                 compilation_time=compilation_time,
             )
 
-    def _apply_optimizations(self, ast):
+    def _apply_optimizations(self, ast: YaraFile) -> tuple[YaraFile, OptimizationStats | None]:
         """Apply AST optimizations if enabled. Returns (optimized_ast, stats)."""
         import time
 
@@ -213,7 +214,11 @@ class OptimizedMatcher:
         }
 
     def _prepare_scan_args(
-        self, data: bytes | str | Path | int, fast_mode: bool, timeout: int | None, **kwargs
+        self,
+        data: bytes | str | Path | int,
+        fast_mode: bool,
+        timeout: int | None,
+        **kwargs: Any,
     ) -> tuple[dict[str, Any], int]:
         """Build scan arguments and compute data size."""
         scan_args: dict[str, Any] = {"fast": fast_mode, **kwargs}
@@ -238,7 +243,7 @@ class OptimizedMatcher:
         data: bytes | str | Path | int,
         timeout: int | None = None,
         fast_mode: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Optimized scan using AST structure.
 
@@ -337,7 +342,7 @@ class OptimizedMatcher:
 
         return None
 
-    def _estimate_condition_complexity(self, condition) -> int:
+    def _estimate_condition_complexity(self, condition: Any) -> int:
         """Estimate condition complexity for optimization hints."""
         if not condition:
             return 0

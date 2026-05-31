@@ -218,12 +218,12 @@ class EquivalenceTester:
 
     def _compile_and_compare(
         self,
-        result,
-        original_code,
-        regenerated_code,
-        original_ast,
-        reparsed_ast,
-        test_data,
+        result: EquivalenceResult,
+        original_code: str,
+        regenerated_code: str,
+        original_ast: YaraFile,
+        reparsed_ast: YaraFile,
+        test_data: bytes | None,
     ) -> None:
         """Compile both versions, scan test data, and compare evaluation results."""
         orig_comp = self.compiler.compile_source(original_code)

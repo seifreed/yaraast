@@ -5,16 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-
-@dataclass
-class OptimizationStats:
-    """Statistics about AST optimizations performed."""
-
-    rules_optimized: int = 0
-    strings_optimized: int = 0
-    conditions_simplified: int = 0
-    dead_code_removed: int = 0
-    constant_folded: int = 0
+from yaraast.libyara.ast_optimizer import OptimizationStats
 
 
 @dataclass

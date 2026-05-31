@@ -27,7 +27,7 @@ class MatchInfo:
     strings: list[dict[str, Any]]
 
     @classmethod
-    def from_yara_match(cls, match) -> MatchInfo:
+    def from_yara_match(cls, match: Any) -> MatchInfo:
         """Create from yara match object."""
         return cls(
             rule=match.rule,

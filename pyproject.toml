@@ -229,7 +229,6 @@ module = [
     "yaraast.performance.*",
     "yaraast.optimization.*",
     "yaraast.metrics.*",
-    "yaraast.libyara.*",
     "yaraast.evaluation.*",
     "yaraast.cli.*",
     "yaraast.builder.*",

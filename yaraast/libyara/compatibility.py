@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from yaraast.ast.base import YaraFile
 from yaraast.yarax.compatibility_checker import YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
 
 
 def libyara_incompatible_features(ast: object) -> list[str]:
     """Return YARA-X-only features that libyara cannot compile."""
-    if not hasattr(ast, "accept") or not hasattr(ast, "rules"):
+    if not isinstance(ast, YaraFile):
         return []
 
     checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())

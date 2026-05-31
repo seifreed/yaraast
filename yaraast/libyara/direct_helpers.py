@@ -7,13 +7,14 @@ from pathlib import Path
 import tempfile
 from typing import Any
 
+from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.libyara.compatibility import ensure_libyara_compatible_ast
 from yaraast.libyara.compiler import LibyaraCompiler
 from yaraast.libyara.direct_models import DirectCompilationResult
 
 
-def generate_source(ast) -> str:
+def generate_source(ast: YaraFile) -> str:
     ensure_libyara_compatible_ast(ast, action="compile")
     generator = CodeGenerator()
     return generator.generate(ast)
@@ -79,10 +80,10 @@ def compile_source_with_file_context(
     )
 
 
-def count_ast_nodes(ast) -> int:
+def count_ast_nodes(ast: ASTNode) -> int:
     count = 1
 
-    def count_node(node) -> int:
+    def count_node(node: ASTNode) -> int:
         node_count = 1
         for child in node.children():
             node_count += count_node(child)

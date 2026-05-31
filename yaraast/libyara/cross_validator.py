@@ -124,7 +124,12 @@ class CrossValidator:
         self._compare_results(ast, yaraast_results, result)
         return result
 
-    def _compare_results(self, ast, yaraast_results, result) -> None:
+    def _compare_results(
+        self,
+        ast: YaraFile,
+        yaraast_results: dict[str, bool],
+        result: ValidationResult,
+    ) -> None:
         """Compare yaraast vs libyara results, skipping private rules."""
         private_rules = {rule.name for rule in ast.rules if rule.is_private}
         result.rules_tested = len(yaraast_results) - len(private_rules)

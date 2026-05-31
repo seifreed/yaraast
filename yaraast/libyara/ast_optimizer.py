@@ -3,8 +3,8 @@
 import copy
 from dataclasses import dataclass
 
-from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.ast.expressions import BinaryExpression, IntegerLiteral, UnaryExpression
+from yaraast.ast.base import YaraFile
+from yaraast.ast.expressions import BinaryExpression, Expression, IntegerLiteral, UnaryExpression
 from yaraast.ast.rules import Rule
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
 from yaraast.optimization.expression_optimizer import ExpressionOptimizer
@@ -89,7 +89,7 @@ class ASTOptimizer:
 
         self.stats.rules_optimized += 1
 
-    def _optimize_condition(self, condition: ASTNode) -> ASTNode:
+    def _optimize_condition(self, condition: Expression) -> Expression:
         """Optimize condition expressions."""
         # Constant folding for binary operations
         if isinstance(condition, BinaryExpression):

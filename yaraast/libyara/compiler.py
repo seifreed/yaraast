@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -38,15 +38,9 @@ class CompilationResult:
 
     success: bool
     compiled_rules: Any | None = None  # yara.Rules object
-    errors: list[str] = None
-    warnings: list[str] = None
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     source_code: str | None = None
-
-    def __post_init__(self):
-        if self.errors is None:
-            self.errors = []
-        if self.warnings is None:
-            self.warnings = []
 
 
 class LibyaraCompiler:
