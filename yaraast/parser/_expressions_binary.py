@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
-from yaraast.ast.expressions import BinaryExpression, Expression, RangeExpression, UnaryExpression
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    Expression,
+    ParenthesesExpression,
+    RangeExpression,
+    StringIdentifier,
+    UnaryExpression,
+)
 from yaraast.ast.operators import DefinedExpression
 from yaraast.lexer import TokenType
 
@@ -75,8 +82,10 @@ class ExpressionBinaryMixin:
         expr = self._parse_range_expression()
 
         if self._match(*RELATIONAL_TOKEN_TYPES):
-            operator = self._previous().value.lower()
+            operator_token = self._previous()
+            operator = operator_token.value.lower()
             right = self._parse_range_expression()
+            self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
                 expr,
@@ -108,8 +117,10 @@ class ExpressionBinaryMixin:
         expr = self._parse_bitwise_xor_expression()
 
         while self._match(TokenType.BITWISE_OR):
-            operator = self._previous().value
+            operator_token = self._previous()
+            operator = operator_token.value
             right = self._parse_bitwise_xor_expression()
+            self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
                 expr,
@@ -123,8 +134,10 @@ class ExpressionBinaryMixin:
         expr = self._parse_bitwise_and_expression()
 
         while self._match(TokenType.XOR):
-            operator = self._previous().value
+            operator_token = self._previous()
+            operator = operator_token.value
             right = self._parse_bitwise_and_expression()
+            self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
                 expr,
@@ -138,8 +151,10 @@ class ExpressionBinaryMixin:
         expr = self._parse_shift_expression()
 
         while self._match(TokenType.BITWISE_AND):
-            operator = self._previous().value
+            operator_token = self._previous()
+            operator = operator_token.value
             right = self._parse_shift_expression()
+            self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
                 expr,
@@ -153,8 +168,10 @@ class ExpressionBinaryMixin:
         expr = self._parse_additive_expression()
 
         while self._match(TokenType.SHIFT_LEFT, TokenType.SHIFT_RIGHT):
-            operator = self._previous().value
+            operator_token = self._previous()
+            operator = operator_token.value
             right = self._parse_additive_expression()
+            self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
                 expr,
@@ -168,8 +185,10 @@ class ExpressionBinaryMixin:
         expr = self._parse_multiplicative_expression()
 
         while self._match(TokenType.PLUS, TokenType.MINUS):
-            operator = self._previous().value
+            operator_token = self._previous()
+            operator = operator_token.value
             right = self._parse_multiplicative_expression()
+            self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
                 expr,
@@ -183,8 +202,10 @@ class ExpressionBinaryMixin:
         expr = self._parse_unary_expression()
 
         while self._match(TokenType.MULTIPLY, TokenType.DIVIDE, TokenType.MODULO):
-            operator = self._previous().value
+            operator_token = self._previous()
+            operator = operator_token.value
             right = self._parse_unary_expression()
+            self._reject_string_identifier_non_logical_operand(expr, right, operator_token)
             expr = self._set_node_location_from_nodes(
                 BinaryExpression(left=expr, operator=operator, right=right),
                 expr,
@@ -192,6 +213,23 @@ class ExpressionBinaryMixin:
             )
 
         return expr
+
+    def _reject_string_identifier_non_logical_operand(
+        self,
+        left: Expression,
+        right: Expression,
+        token,
+    ) -> None:
+        if getattr(self, "_allow_string_identifier_non_logical_binary", False):
+            return
+        if self._is_string_identifier_operand(left) or self._is_string_identifier_operand(right):
+            msg = "String identifiers can only be used as boolean operands or with at/in"
+            raise ParserError(msg, token)
+
+    def _is_string_identifier_operand(self, expr: Expression) -> bool:
+        while isinstance(expr, ParenthesesExpression):
+            expr = expr.expression
+        return isinstance(expr, StringIdentifier)
 
     def _parse_unary_expression(self) -> Expression:
         """Parse unary expression."""

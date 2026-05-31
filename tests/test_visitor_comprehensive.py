@@ -542,7 +542,7 @@ class TestBaseVisitorComprehensive:
             strings:
                 $a = "test"
             condition:
-                defined $a and $a contains "es"
+                defined $a and "test" contains "es"
         }
         """
 

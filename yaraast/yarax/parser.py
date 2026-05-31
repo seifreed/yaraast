@@ -18,6 +18,8 @@ class YaraXParser(
 ):
     """Enhanced parser for YARA-X with support for new syntax features."""
 
+    _allow_string_identifier_non_logical_binary = True
+
     def __init__(self, text: str) -> None:
         """Initialize YARA-X parser.
 

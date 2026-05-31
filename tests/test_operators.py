@@ -33,11 +33,8 @@ def test_iequals_operator() -> None:
     """Test iequals operator."""
     yara_code = """
 rule test_iequals {
-    strings:
-        $test = "TEST"
-
     condition:
-        $test iequals "test"
+        "TEST" iequals "test"
 }
 """
 

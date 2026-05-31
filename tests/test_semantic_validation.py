@@ -5,7 +5,14 @@ from __future__ import annotations
 import pytest
 
 from yaraast.ast.base import Location, YaraFile
-from yaraast.ast.expressions import FunctionCall, Identifier
+from yaraast.ast.expressions import (
+    BinaryExpression,
+    BooleanLiteral,
+    FunctionCall,
+    Identifier,
+    StringIdentifier,
+    StringLiteral,
+)
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import PlainString
 from yaraast.parser.parser import Parser
@@ -855,21 +862,24 @@ class TestSemanticValidator:
         assert result.is_valid is True
 
     def test_validate_rejects_raw_string_identifier_binary_operands(self) -> None:
-        ast = Parser().parse("""
-            rule raw_string_identifier_comparison {
-                strings:
-                    $a = "abc"
-                condition:
-                    $a == true
-            }
-
-            rule raw_string_identifier_string_operator {
-                strings:
-                    $a = "abc"
-                condition:
-                    $a contains "a"
-            }
-        """)
+        ast = YaraFile(
+            rules=[
+                Rule(
+                    name="raw_string_identifier_comparison",
+                    strings=[PlainString(identifier="$a", value="abc")],
+                    condition=BinaryExpression(StringIdentifier("$a"), "==", BooleanLiteral(True)),
+                ),
+                Rule(
+                    name="raw_string_identifier_string_operator",
+                    strings=[PlainString(identifier="$a", value="abc")],
+                    condition=BinaryExpression(
+                        StringIdentifier("$a"),
+                        "contains",
+                        StringLiteral("a"),
+                    ),
+                ),
+            ]
+        )
 
         result = SemanticValidator().validate(ast)
 

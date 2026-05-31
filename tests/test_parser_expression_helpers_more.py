@@ -356,6 +356,38 @@ def test_classic_parsers_reject_invalid_builtin_integer_function_arity() -> None
                 parser_factory().parse(source)
 
 
+def test_classic_parsers_reject_string_identifier_non_logical_binary_operators() -> None:
+    invalid_sources = [
+        'rule r { strings: $a = "x" condition: $a + 1 }',
+        'rule r { strings: $a = "x" condition: $a - 1 }',
+        'rule r { strings: $a = "x" condition: $a * 2 }',
+        'rule r { strings: $a = "x" condition: $a % 2 }',
+        'rule r { strings: $a = "x" condition: $a << 1 }',
+        'rule r { strings: $a = "x" condition: $a & 1 }',
+        'rule r { strings: $a = "x" condition: $a == true }',
+        'rule r { strings: $a = "x" condition: ($a) + 1 }',
+        'rule r { strings: $a = "x" condition: for any of them : ($ + 1) }',
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="String identifiers can only"):
+                parser_factory().parse(source)
+
+    valid_sources = [
+        'rule r { strings: $a = "x" condition: $a and true }',
+        'rule r { strings: $a = "x" condition: true or $a }',
+        'rule r { strings: $a = "x" condition: not $a }',
+        'rule r { strings: $a = "x" condition: #a + 1 > 0 }',
+        'rule r { strings: $a = "x" condition: @a + 1 > 0 }',
+        'rule r { strings: $a = "x" condition: !a + 1 > 0 }',
+    ]
+
+    for source in valid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            parser_factory().parse(source)
+
+
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:
     p = _parser_with_tokens([_t(TokenType.INTEGER, 7)])
     assert isinstance(p._parse_primary_expression(), IntegerLiteral)
