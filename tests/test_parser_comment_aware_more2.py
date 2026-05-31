@@ -6,6 +6,7 @@ import pytest
 
 from yaraast.ast.comments import CommentGroup
 from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.strings import RegexString
 from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
@@ -191,6 +192,14 @@ def test_comment_aware_parser_preserves_parameterized_string_modifiers() -> None
     assert "xor(1-2) private" in generated
     assert f'base64("{alphabet}")' in generated
     assert f'base64wide("{alphabet}")' in generated
+
+
+def test_comment_aware_parser_preserves_escaped_line_comment_marker_in_regex() -> None:
+    ast = CommentAwareParser().parse(r"rule r { strings: $a = /\/\// condition: $a }")
+    string_def = ast.rules[0].strings[0]
+
+    assert isinstance(string_def, RegexString)
+    assert string_def.regex == r"\/\/"
 
 
 def test_comment_aware_parser_rejects_empty_base64_parameters() -> None:

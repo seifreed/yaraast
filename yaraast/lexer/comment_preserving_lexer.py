@@ -82,6 +82,11 @@ class CommentPreservingLexer(Lexer):
                     text_without_comments.append(c if c == "\n" else " ")
                 continue
 
+            if self.text[i] == "/":
+                literal_text, i, line_num, col_num = self._read_regex_text(i, line_num, col_num)
+                text_without_comments.extend(literal_text)
+                continue
+
             text_without_comments.append(self.text[i])
             i += 1
             if self.text[i - 1] == "\n":
@@ -123,6 +128,42 @@ class CommentPreservingLexer(Lexer):
             is_opening_quote = False
 
         return string_text, i, line, col
+
+    def _read_regex_text(self, i: int, line: int, col: int) -> tuple[str, int, int, int]:
+        """Copy a regex so comment markers inside it stay literal."""
+        regex_text = "/"
+        i += 1
+        col += 1
+
+        while i < len(self.text):
+            char = self.text[i]
+            regex_text += char
+            i += 1
+            if char == "\n":
+                line += 1
+                col = 1
+                break
+            col += 1
+
+            if char == "\\" and i < len(self.text):
+                escaped = self.text[i]
+                regex_text += escaped
+                i += 1
+                if escaped == "\n":
+                    line += 1
+                    col = 1
+                    break
+                col += 1
+                continue
+
+            if char == "/":
+                while i < len(self.text) and self.text[i] in "is":
+                    regex_text += self.text[i]
+                    i += 1
+                    col += 1
+                break
+
+        return regex_text, i, line, col
 
     def _read_line_comment_text(self, i: int, col: int) -> tuple[str, int, int]:
         """Read a // comment. Returns (text, new_i, new_col)."""
