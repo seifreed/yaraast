@@ -136,6 +136,37 @@ rule caller {
     assert analyzer.get_dependents("helper") == ["dup#2"]
 
 
+def test_dependency_analyzer_tracks_rule_wildcard_sets() -> None:
+    ast = Parser().parse("""
+rule a1 {
+    condition:
+        true
+}
+
+rule a2 {
+    condition:
+        true
+}
+
+rule other {
+    condition:
+        true
+}
+
+rule caller {
+    condition:
+        any of (a*)
+}
+""")
+
+    results = DependencyAnalyzer().analyze(ast)
+
+    assert results["dependencies"]["caller"] == ["a1", "a2"]
+    assert results["dependency_graph"]["a1"]["depended_by"] == ["caller"]
+    assert results["dependency_graph"]["a2"]["depended_by"] == ["caller"]
+    assert results["dependency_graph"]["other"]["is_independent"] is True
+
+
 def test_dependency_analyzer_does_not_treat_function_name_as_rule_dependency() -> None:
     ast = Parser().parse("""
 rule helper {

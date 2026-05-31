@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from yaraast.ast.base import ASTNode
-from yaraast.ast.expressions import Identifier
+from yaraast.ast.expressions import Identifier, StringWildcard
 from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
@@ -288,6 +288,33 @@ class DependencyAnalyzer(BaseVisitor[None]):
             and not self._is_local(node.name)
         ):
             self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(node.name))
+
+    def visit_string_wildcard(self, node: StringWildcard) -> None:
+        if node.pattern.startswith("$"):
+            return
+
+        rule_key = self._active_rule_key()
+        if not rule_key:
+            return
+
+        for rule_name in self._matching_rule_wildcard_names(node.pattern):
+            self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(rule_name))
+
+    def _matching_rule_wildcard_names(self, pattern: str) -> tuple[str, ...]:
+        if not pattern.endswith("*"):
+            return ()
+        prefix = pattern[:-1]
+        if not prefix:
+            return ()
+        return tuple(
+            sorted(
+                rule_name
+                for rule_name in self._known_raw_rule_names()
+                if rule_name.startswith(prefix)
+                and rule_name != self.current_rule
+                and not self._is_local(rule_name)
+            )
+        )
 
     def visit_function_call(self, node: FunctionCall) -> None:
         # Function callees are not rule references; only their arguments can contain them.

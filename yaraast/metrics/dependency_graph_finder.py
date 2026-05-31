@@ -103,7 +103,21 @@ class DependencyFinder(MetricsVisitorBase):
         self.visit(node.right)
 
     def visit_string_wildcard(self, node) -> None:
-        pass
+        pattern = str(node.pattern)
+        if pattern.startswith("$") or not pattern.endswith("*"):
+            return
+
+        prefix = pattern[:-1]
+        if not prefix:
+            return
+
+        self.dependencies.update(
+            rule_name
+            for rule_name in sorted(self.all_rules)
+            if rule_name.startswith(prefix)
+            and rule_name != self.current_rule
+            and not self._is_local(rule_name)
+        )
 
     def visit_with_statement(self, node) -> None:
         self._push_local_scope()

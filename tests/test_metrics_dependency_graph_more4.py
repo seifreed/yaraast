@@ -224,6 +224,36 @@ rule caller {
     assert graph.get_dependencies("caller") == {"dup#1", "dup#2"}
 
 
+def test_dependency_graph_generator_tracks_rule_wildcard_sets() -> None:
+    ast = Parser().parse("""
+rule a1 {
+    condition:
+        true
+}
+
+rule a2 {
+    condition:
+        true
+}
+
+rule other {
+    condition:
+        true
+}
+
+rule caller {
+    condition:
+        any of (a*)
+}
+""")
+    gen = DependencyGraphGenerator()
+
+    gen.visit(ast)
+
+    assert gen.dependencies["caller"] == {"a1", "a2"}
+    assert gen.dependencies.get("other", set()) == set()
+
+
 def test_dependency_graph_generator_complexity_graph(tmp_path: Path) -> None:
     ast = Parser().parse("rule a { condition: true }")
     out = DependencyGraphGenerator().generate_complexity_graph(

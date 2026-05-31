@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import graphviz
 
-from yaraast.ast.expressions import Identifier
+from yaraast.ast.expressions import Identifier, StringWildcard
 from yaraast.metrics._visitor_base import MetricsVisitorBase
 from yaraast.metrics.dependency_graph_generation import (
     generate_complexity_graph as dependency_generate_complexity_graph,
@@ -331,6 +331,33 @@ class DependencyGraphGenerator(MetricsVisitorBase):
             and not self._is_local(node.name)
         ):
             self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(node.name))
+
+    def visit_string_wildcard(self, node: StringWildcard) -> None:
+        if node.pattern.startswith("$") or not self._current_rule:
+            return
+
+        rule_key = self._active_rule_key()
+        if not rule_key:
+            return
+
+        for rule_name in self._matching_rule_wildcard_names(node.pattern):
+            self.dependencies[rule_key].update(self._dependency_targets_for_rule_name(rule_name))
+
+    def _matching_rule_wildcard_names(self, pattern: str) -> tuple[str, ...]:
+        if not pattern.endswith("*"):
+            return ()
+        prefix = pattern[:-1]
+        if not prefix:
+            return ()
+        return tuple(
+            sorted(
+                rule_name
+                for rule_name in self._rule_names
+                if rule_name.startswith(prefix)
+                and rule_name != self._current_rule
+                and not self._is_local(rule_name)
+            )
+        )
 
     def visit_dictionary_access(self, node) -> None:
         self.visit(node.object)
