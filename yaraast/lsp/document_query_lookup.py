@@ -9,6 +9,7 @@ from lsprotocol.types import Position, Range
 
 from yaraast.codegen.generator_helpers import escape_plain_string_value
 from yaraast.lsp.document_types import path_to_uri
+from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8, utf16_len
 from yaraast.types.module_loader import ModuleLoader
 
 if TYPE_CHECKING:
@@ -163,13 +164,14 @@ def get_dotted_symbol_at_position(
     if position.line < 0 or position.line >= len(ctx.lines):
         return None
     line = ctx.lines[position.line]
-    if position.character < 0 or position.character > len(line):
+    if position.character < 0 or position.character > utf16_len(line):
         return None
     allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.")
-    start = position.character
+    position_character = utf16_col_to_utf8(line, position.character)
+    start = position_character
     while start > 0 and line[start - 1] in allowed:
         start -= 1
-    end = position.character
+    end = position_character
     while end < len(line) and line[end] in allowed:
         end += 1
     token = line[start:end]
@@ -179,6 +181,6 @@ def get_dotted_symbol_at_position(
     if not left or not right:
         return None
     return token, Range(
-        start=Position(line=position.line, character=start),
-        end=Position(line=position.line, character=end),
+        start=Position(line=position.line, character=utf8_col_to_utf16(line, start)),
+        end=Position(line=position.line, character=utf8_col_to_utf16(line, end)),
     )

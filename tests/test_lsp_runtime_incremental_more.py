@@ -16,6 +16,7 @@ from yaraast.lsp.diagnostics import DiagnosticsProvider
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.runtime import DocumentContext, LspRuntime, path_to_uri
 from yaraast.lsp.semantic_tokens import SemanticTokensProvider
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def _cache_stats(status: dict[str, object]) -> dict[str, Any]:
@@ -740,6 +741,27 @@ def test_document_context_exposes_dotted_symbol_at_position() -> None:
     trailing_token, trailing_range = trailing_dotted
     assert trailing_token == "pe.imphash"
     assert trailing_range.end.character == len(trailing_line)
+
+
+def test_dotted_symbol_lookup_uses_utf16_position_and_range() -> None:
+    text = 'import "pe"\nrule sample { condition: /* 😀 */ pe.imphash() }\n'
+    line = text.splitlines()[1]
+    token_start = line.index("pe.imphash")
+    token_end = token_start + len("pe.imphash")
+    lsp_token_start = utf8_col_to_utf16(line, token_start)
+    lsp_token_end = utf8_col_to_utf16(line, token_end)
+    runtime = LspRuntime()
+    uri = "file://sample.yar"
+    runtime.open_document(uri, text)
+    doc = runtime.ensure_document(uri, text)
+
+    dotted = doc.get_dotted_symbol_at_position(Position(line=1, character=lsp_token_end))
+
+    assert dotted is not None
+    token, dotted_range = dotted
+    assert token == "pe.imphash"
+    assert dotted_range.start.character == lsp_token_start
+    assert dotted_range.end.character == lsp_token_end
 
 
 def test_runtime_indexes_import_and_include_with_quoted_ranges(tmp_path: Path) -> None:
