@@ -102,6 +102,7 @@ def test_yarax_real_paths(tmp_path: Path) -> None:
     playground_default = runner.invoke(yarax, ["playground"])
     assert playground_default.exit_code == 0
     assert "Example YARA-X code" in playground_default.output
+    assert "Successfully parsed" in playground_default.output
 
     playground_bad = runner.invoke(yarax, ["playground", _invalid_rule()])
     assert playground_bad.exit_code == 0

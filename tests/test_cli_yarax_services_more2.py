@@ -29,7 +29,11 @@ def test_yarax_services_detection_helpers() -> None:
 
     default_code = ys.get_default_playground_code()
     assert "rule yarax_demo" in default_code
-    assert "with $count" in default_code
+    assert "with count" in default_code
+    _default_ast, default_generated = ys.parse_yarax_content(default_code)
+    assert "rule yarax_demo" in default_generated
+    assert "match count" in default_generated
+    assert "array comprehensions" in ys.detect_playground_features(default_code)
 
 
 def test_yarax_services_detect_collection_only_features() -> None:

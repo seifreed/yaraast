@@ -133,12 +133,8 @@ rule yarax_demo {
         $str2 = /pattern/i
 
     condition:
-        // With statement for local variables
-        with $count = #str1, $threshold = 5:
-            $count > $threshold and
-
-            // Array comprehension
-            any of [s for s in ($str1, $str2) if s]
+        with count = #str1, threshold = 5, xs = [s for s in ($str1, $str2) if s]:
+            count > threshold and match count { 0 => false, _ => true }
 }
 """.lstrip()
 
