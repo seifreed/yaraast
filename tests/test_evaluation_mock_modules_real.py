@@ -85,10 +85,10 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
 
     pe64.sections = [Section(".text", 0x1000, 0x200, 0x400, 0x200)]
     assert pe64.section_index(".text") == 0
-    assert pe64.section_index(0x1000) == 0
-    assert pe64.section_index(0x11FF) == 0
     assert pe64.section_index(0x400) == 0
     assert pe64.section_index(0x5FF) == 0
+    assert pe64.section_index(0x1000) is YARA_UNDEFINED
+    assert pe64.section_index(0x11FF) is YARA_UNDEFINED
     assert pe64.section_index(0x1200) is YARA_UNDEFINED
     assert pe64.section_index(0x600) is YARA_UNDEFINED
     assert pe64.section_index(".rdata") is YARA_UNDEFINED
@@ -201,8 +201,10 @@ def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
 
     assert pe.number_of_sections == 2
     assert pe.section_index(".text") == 0
-    assert pe.section_index(0x1000) == 0
-    assert pe.section_index(0x2000) == 1
+    assert pe.section_index(0x200) == 0
+    assert pe.section_index(0x400) == 1
+    assert pe.section_index(0x1000) is YARA_UNDEFINED
+    assert pe.section_index(0x2000) is YARA_UNDEFINED
     assert pe.sections[0] == Section(".text", 0x1000, 0x180, 0x200, 0x200, 0x60000020)
     assert pe.sections[0].pointer_to_relocations == 0
     assert pe.sections[0].pointer_to_line_numbers == 0

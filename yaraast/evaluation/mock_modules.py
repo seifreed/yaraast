@@ -409,22 +409,22 @@ class MockPE:
     def is_64bit(self) -> bool | YaraUndefinedValue:
         return self._is_64bit
 
-    def section_index(self, name_or_rva: object) -> int | YaraUndefinedValue:
-        if not isinstance(name_or_rva, str) and not _is_strict_int(name_or_rva):
+    def section_index(self, name_or_offset: object) -> int | YaraUndefinedValue:
+        if not isinstance(name_or_offset, str) and not _is_strict_int(name_or_offset):
             msg = "pe.section_index() expects a string or integer argument"
             raise EvaluationError(msg)
         if not self.is_pe:
             return YARA_UNDEFINED
-        if _is_strict_int(name_or_rva):
-            rva = name_or_rva
-            if rva < 0:
+        if _is_strict_int(name_or_offset):
+            file_offset = name_or_offset
+            if file_offset < 0:
                 return YARA_UNDEFINED
             for i, section in enumerate(self.sections):
-                if _section_contains_address(section, rva):
+                if _section_contains_file_offset(section, file_offset):
                     return i
             return YARA_UNDEFINED
         for i, section in enumerate(self.sections):
-            if section.name == name_or_rva:
+            if section.name == name_or_offset:
                 return i
         return YARA_UNDEFINED
 
@@ -554,13 +554,8 @@ def _matches_import_dll(imported_dll: str, requested_dll: object) -> bool:
     return isinstance(requested_dll, str) and imported_dll.casefold() == requested_dll.casefold()
 
 
-def _section_contains_address(section: Section, address: int) -> bool:
-    virtual_span = max(section.virtual_size, section.raw_data_size)
-    return _address_in_span(
-        address,
-        section.virtual_address,
-        virtual_span,
-    ) or _address_in_span(address, section.raw_data_offset, section.raw_data_size)
+def _section_contains_file_offset(section: Section, file_offset: int) -> bool:
+    return _address_in_span(file_offset, section.raw_data_offset, section.raw_data_size)
 
 
 def _address_in_span(address: int, start: int, size: int) -> bool:

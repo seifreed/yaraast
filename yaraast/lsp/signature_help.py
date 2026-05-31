@@ -38,9 +38,9 @@ _SIGNATURE_SPECS: dict[str, tuple[str, str, list[tuple[str, str]]]] = {
         [("dll_name", "Name of the DLL"), ("function_name", "Name of the function")],
     ),
     "pe.section_index": (
-        "section_index(name_or_rva: string | int) -> int",
-        "Get the index of a section by name or RVA",
-        [("name_or_rva", "Section name or RVA")],
+        "section_index(name_or_offset: string | int) -> int",
+        "Get the index of a section by name or file offset",
+        [("name_or_offset", "Section name or file offset")],
     ),
     "pe.rich_signature.version": (
         "version(toolid: int, version: int = optional) -> int",

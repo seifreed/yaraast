@@ -98,7 +98,7 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
         },
         "funcs": {
             "imphash": ("s", []),
-            "section_index": ("i", [("name", "s")]),
+            "section_index": ("i", [("name_or_offset", "scalar")]),
             "exports": ("b", [("name_or_ordinal", "scalar")]),
             "imports": (
                 "b",
