@@ -8,6 +8,7 @@ from lsprotocol.types import Position, Range
 
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.structure import _starts_regex_literal, make_range
+from yaraast.lsp.utf16 import utf16_col_to_utf8
 from yaraast.lsp.utils import get_word_at_position
 
 if TYPE_CHECKING:
@@ -49,12 +50,15 @@ def position_is_in_non_code_segment(ctx: Any, position: Position) -> bool:
     in_block_comment = False
     for line_num in range(position.line + 1):
         line = ctx.lines[line_num]
+        target_character = (
+            utf16_col_to_utf8(line, position.character) if line_num == position.line else len(line)
+        )
         in_string = False
         in_regex = False
         escape = False
         idx = 0
         while idx < len(line):
-            if line_num == position.line and idx >= position.character:
+            if line_num == position.line and idx >= target_character:
                 return in_block_comment or in_string or in_regex
 
             char = line[idx]
@@ -62,7 +66,7 @@ def position_is_in_non_code_segment(ctx: Any, position: Position) -> bool:
 
             if in_block_comment:
                 if char == "*" and nxt == "/":
-                    if line_num == position.line and position.character < idx + 2:
+                    if line_num == position.line and target_character < idx + 2:
                         return True
                     in_block_comment = False
                     idx += 2
@@ -83,24 +87,26 @@ def position_is_in_non_code_segment(ctx: Any, position: Position) -> bool:
             if not in_string and not in_regex:
                 if char == "/" and nxt == "/":
                     if line_num == position.line:
-                        return position.character >= idx
+                        return target_character > idx
                     break
                 if char == "/" and nxt == "*":
-                    if line_num == position.line and position.character >= idx:
-                        return True
+                    if line_num == position.line and target_character > idx:
+                        comment_end = line.find("*/", idx + 2)
+                        if comment_end < 0 or target_character < comment_end + 2:
+                            return True
                     in_block_comment = True
                     idx += 2
                     continue
 
             if char == '"' and not in_regex:
-                if line_num == position.line and position.character == idx:
+                if line_num == position.line and target_character == idx:
                     return True
                 in_string = not in_string
             elif char == "/" and not in_string:
                 starts_regex = _starts_regex_literal(line, idx)
                 if (
                     line_num == position.line
-                    and position.character == idx
+                    and target_character == idx
                     and (in_regex or starts_regex)
                 ):
                     return True

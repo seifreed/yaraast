@@ -11,6 +11,7 @@ from lsprotocol.types import Position
 from yaraast.lsp.document_query_common import whole_word_positions
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.structure import SECTION_NAMES, get_rule_text_range
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 if TYPE_CHECKING:
     from yaraast.lsp.document_context import DocumentContext
@@ -59,7 +60,11 @@ def section_for_occurrence(
             marker_idx = lines[idx].find(marker)
             while 0 <= marker_idx <= stop_col:
                 if not position_is_in_non_code_segment(
-                    ctx, Position(line=idx, character=marker_idx)
+                    ctx,
+                    Position(
+                        line=idx,
+                        character=utf8_col_to_utf16(lines[idx], marker_idx),
+                    ),
                 ):
                     inline_sections.append((marker_idx, section_name))
                 marker_idx = lines[idx].find(marker, marker_idx + len(marker))

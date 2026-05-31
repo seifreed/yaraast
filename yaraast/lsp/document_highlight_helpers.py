@@ -18,7 +18,10 @@ def _is_identifier_boundary(line: str, start: int, end: int) -> bool:
 
 
 def _is_code_occurrence(ctx: SimpleNamespace, line_num: int, character: int) -> bool:
-    return not position_is_in_non_code_segment(ctx, Position(line=line_num, character=character))
+    line = ctx.lines[line_num]
+    return not position_is_in_non_code_segment(
+        ctx, Position(line=line_num, character=utf8_col_to_utf16(line, character))
+    )
 
 
 def _highlight_range(line: str, line_num: int, start: int, end: int) -> Range:

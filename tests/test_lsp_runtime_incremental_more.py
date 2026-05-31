@@ -862,6 +862,19 @@ rule sample {
     )
 
 
+def test_runtime_resolve_symbol_checks_non_code_segments_with_utf16_columns() -> None:
+    text = 'import "pe"\nrule sample { condition: /* 😀 */ pe.imphash/*comment*/ }\n'
+    line = text.splitlines()[1]
+    member_end = line.index("pe.imphash") + len("pe.imphash")
+    doc = DocumentContext("file://utf16-non-code.yar", text)
+
+    resolved = doc.resolve_symbol(Position(line=1, character=utf8_col_to_utf16(line, member_end)))
+
+    assert resolved is not None
+    assert resolved.kind == "module_member"
+    assert resolved.normalized_name == "pe.imphash"
+
+
 def test_runtime_resolves_module_member_structurally(tmp_path: Path) -> None:
     doc_path = tmp_path / "doc.yar"
     text = """
