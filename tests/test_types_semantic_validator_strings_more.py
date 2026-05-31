@@ -260,21 +260,65 @@ def test_semantic_validator_rejects_empty_text_and_hex_strings() -> None:
 
 
 def test_semantic_validator_rejects_invalid_string_modifier_compatibility() -> None:
-    ast = Parser().parse("""
-        rule invalid_modifiers {
-            strings:
-                $hex = { 41 } wide
-                $regex = /abc/ base64
-                $combo1 = "abc" base64 nocase
-                $combo2 = "abc" base64 fullword
-                $combo3 = "abc" xor nocase
-                $badalpha = "abc" base64("abc")
-                $badxor = "abc" xor(0x100)
-                $badrange = "abc" xor(5-1)
-            condition:
-                any of them
-        }
-        """)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="invalid_modifiers",
+                strings=[
+                    HexString(
+                        identifier="$hex",
+                        tokens=[HexByte(value=0x41)],
+                        modifiers=[StringModifier.from_name_value("wide")],
+                    ),
+                    RegexString(
+                        identifier="$regex",
+                        regex="abc",
+                        modifiers=[StringModifier.from_name_value("base64")],
+                    ),
+                    PlainString(
+                        identifier="$combo1",
+                        value="abc",
+                        modifiers=[
+                            StringModifier.from_name_value("base64"),
+                            StringModifier.from_name_value("nocase"),
+                        ],
+                    ),
+                    PlainString(
+                        identifier="$combo2",
+                        value="abc",
+                        modifiers=[
+                            StringModifier.from_name_value("base64"),
+                            StringModifier.from_name_value("fullword"),
+                        ],
+                    ),
+                    PlainString(
+                        identifier="$combo3",
+                        value="abc",
+                        modifiers=[
+                            StringModifier.from_name_value("xor"),
+                            StringModifier.from_name_value("nocase"),
+                        ],
+                    ),
+                    PlainString(
+                        identifier="$badalpha",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("base64", "abc")],
+                    ),
+                    PlainString(
+                        identifier="$badxor",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("xor", 0x100)],
+                    ),
+                    PlainString(
+                        identifier="$badrange",
+                        value="abc",
+                        modifiers=[StringModifier.from_name_value("xor", (5, 1))],
+                    ),
+                ],
+                condition=StringIdentifier("$hex"),
+            )
+        ]
+    )
 
     result = SemanticValidator().validate(ast)
     messages = [error.message for error in result.errors]
@@ -303,17 +347,48 @@ def test_semantic_validator_rejects_invalid_string_modifier_compatibility() -> N
 
 
 def test_semantic_validator_rejects_duplicate_string_modifiers() -> None:
-    ast = Parser().parse("""
-        rule duplicate_modifiers {
-            strings:
-                $plain = "abc" ascii ascii
-                $xor = "abc" xor xor(1-3)
-                $hex = { 41 } private private
-                $regex = /abc/ nocase nocase
-            condition:
-                any of them
-        }
-        """)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="duplicate_modifiers",
+                strings=[
+                    PlainString(
+                        identifier="$plain",
+                        value="abc",
+                        modifiers=[
+                            StringModifier.from_name_value("ascii"),
+                            StringModifier.from_name_value("ascii"),
+                        ],
+                    ),
+                    PlainString(
+                        identifier="$xor",
+                        value="abc",
+                        modifiers=[
+                            StringModifier.from_name_value("xor"),
+                            StringModifier.from_name_value("xor", (1, 3)),
+                        ],
+                    ),
+                    HexString(
+                        identifier="$hex",
+                        tokens=[HexByte(value=0x41)],
+                        modifiers=[
+                            StringModifier.from_name_value("private"),
+                            StringModifier.from_name_value("private"),
+                        ],
+                    ),
+                    RegexString(
+                        identifier="$regex",
+                        regex="abc",
+                        modifiers=[
+                            StringModifier.from_name_value("nocase"),
+                            StringModifier.from_name_value("nocase"),
+                        ],
+                    ),
+                ],
+                condition=StringIdentifier("$plain"),
+            )
+        ]
+    )
 
     result = SemanticValidator().validate(ast)
     messages = [error.message for error in result.errors]

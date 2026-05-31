@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
+from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.errors import YaraASTError
 from yaraast.interfaces import IToken
 from yaraast.regex_literals import validate_regex_modifiers
@@ -26,6 +29,77 @@ _HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
 _REGEX_QUANTIFIERS = frozenset("*+?")
 _REGEX_ZERO_WIDTH_ESCAPES = frozenset("bB")
 _MAX_REGEX_REPEAT_INTERVAL = 32767
+_MAX_XOR_KEY = 0xFF
+_BASE64_ALPHABET_LENGTH = 64
+
+
+def validate_string_modifiers(modifiers: Sequence[StringModifier]) -> None:
+    """Reject string modifier combinations and parameters that libyara rejects."""
+    seen: set[StringModifierType] = set()
+    modifier_types: list[StringModifierType] = []
+    for modifier in modifiers:
+        modifier_type = modifier.modifier_type
+        if modifier_type in seen:
+            msg = f"duplicated modifier: {modifier_type.value}"
+            raise ValueError(msg)
+        seen.add(modifier_type)
+        modifier_types.append(modifier_type)
+        _validate_string_modifier_value(modifier)
+
+    modifier_set = set(modifier_types)
+    if StringModifierType.XOR in modifier_set:
+        if StringModifierType.NOCASE in modifier_set:
+            msg = "invalid modifier combination: xor nocase"
+            raise ValueError(msg)
+        if StringModifierType.BASE64 in modifier_set:
+            msg = "invalid modifier combination: base64 xor"
+            raise ValueError(msg)
+        if StringModifierType.BASE64WIDE in modifier_set:
+            msg = "invalid modifier combination: base64wide xor"
+            raise ValueError(msg)
+
+    for base64_type in (StringModifierType.BASE64, StringModifierType.BASE64WIDE):
+        if base64_type not in modifier_set:
+            continue
+        if StringModifierType.NOCASE in modifier_set:
+            msg = f"invalid modifier combination: {base64_type.value} nocase"
+            raise ValueError(msg)
+        if StringModifierType.FULLWORD in modifier_set:
+            msg = f"invalid modifier combination: {base64_type.value} fullword"
+            raise ValueError(msg)
+
+
+def _validate_string_modifier_value(modifier: StringModifier) -> None:
+    if modifier.modifier_type == StringModifierType.XOR:
+        _validate_xor_modifier_value(modifier.value)
+    elif modifier.modifier_type in (StringModifierType.BASE64, StringModifierType.BASE64WIDE):
+        _validate_base64_modifier_value(modifier.value)
+
+
+def _validate_xor_modifier_value(value: str | int | float | tuple[int, int] | None) -> None:
+    if value is None:
+        return
+    if isinstance(value, int):
+        if value > _MAX_XOR_KEY:
+            msg = "invalid xor range"
+            raise ValueError(msg)
+        return
+    if isinstance(value, tuple):
+        min_value, max_value = value
+        if min_value > max_value:
+            msg = "xor lower bound exceeds upper bound"
+            raise ValueError(msg)
+        if max_value > _MAX_XOR_KEY:
+            msg = f"upper bound for xor range exceeded (max: {_MAX_XOR_KEY})"
+            raise ValueError(msg)
+
+
+def _validate_base64_modifier_value(value: str | int | float | tuple[int, int] | None) -> None:
+    if value is None:
+        return
+    if isinstance(value, str) and len(value) != _BASE64_ALPHABET_LENGTH:
+        msg = "length of base64 alphabet must be 64"
+        raise ValueError(msg)
 
 
 def parse_regex_value(regex_val: str) -> tuple[str, list[str]]:

@@ -7,7 +7,7 @@ from yaraast.ast.strings import HexString, HexToken, PlainString, RegexString, S
 from yaraast.lexer import TokenType
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
-from ._shared import ParserError, parse_regex_value
+from ._shared import ParserError, parse_regex_value, validate_string_modifiers
 
 
 class StringParsingMixin:
@@ -153,6 +153,10 @@ class StringParsingMixin:
             else:
                 modifiers.append(StringModifier.from_name_value(mod_name))
 
+        try:
+            validate_string_modifiers(modifiers)
+        except ValueError as e:
+            raise ParserError(str(e), self._previous()) from e
         return modifiers
 
     def _parse_hex_string(self, hex_content: str) -> list[HexToken]:

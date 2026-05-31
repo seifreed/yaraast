@@ -410,7 +410,7 @@ class CommentAwareParser(Parser):
         """Parse string modifiers (nocase, wide, etc.)."""
         from yaraast.ast.modifiers import StringModifier
         from yaraast.lexer.tokens import TokenType
-        from yaraast.parser._shared import ParserError
+        from yaraast.parser._shared import ParserError, validate_string_modifiers
 
         modifiers: list[StringModifier] = []
         while self._peek() and self._peek().type in (
@@ -437,6 +437,10 @@ class CommentAwareParser(Parser):
             else:
                 modifiers.append(StringModifier.from_name_value(mod_name))
 
+        try:
+            validate_string_modifiers(modifiers)
+        except ValueError as e:
+            raise ParserError(str(e), self._previous()) from e
         return modifiers
 
     def _parse_string_modifier_parameter(self, mod_name: str) -> object:

@@ -160,6 +160,45 @@ def test_parse_rejects_regex_repeat_intervals_above_libyara_limit(pattern: str) 
 
 
 @pytest.mark.parametrize(
+    "modifiers",
+    [
+        "ascii ascii",
+        "nocase xor",
+        "fullword base64",
+        "xor base64wide",
+        "xor(256)",
+        "xor(2-1)",
+        "xor(0-256)",
+        'base64("short")',
+    ],
+)
+def test_parse_rejects_libyara_invalid_string_modifiers(modifiers: str) -> None:
+    source = f'rule r {{ strings: $a = "abc" {modifiers} condition: $a }}'
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError):
+            parser_factory().parse(source)
+
+
+@pytest.mark.parametrize(
+    "modifiers",
+    [
+        "xor(0)",
+        "xor(255)",
+        "xor(0x0-0xff)",
+        "base64 base64wide",
+        "base64 ascii wide private",
+    ],
+)
+def test_parse_accepts_libyara_valid_string_modifier_edges(modifiers: str) -> None:
+    source = f'rule r {{ strings: $a = "abc" {modifiers} condition: $a }}'
+
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        assert ast.rules[0].strings[0].modifiers
+
+
+@pytest.mark.parametrize(
     "pattern",
     [
         "a*?",
@@ -305,7 +344,6 @@ def test_parse_rejects_invalid_regex_literal_modifiers(source: str) -> None:
 def test_parse_string_modifiers_xor_variants_and_errors() -> None:
     p = _parser_with_tokens(
         [
-            _t(TokenType.NOCASE, "nocase"),
             _t(TokenType.WIDE, "wide"),
             _t(TokenType.XOR_MOD, "xor"),
             _t(TokenType.LPAREN, "("),
@@ -316,9 +354,9 @@ def test_parse_string_modifiers_xor_variants_and_errors() -> None:
         ],
     )
     mods = p._parse_string_modifiers()
-    assert [m.name for m in mods[:2]] == ["nocase", "wide"]
-    assert mods[2].name == "xor"
-    assert mods[2].value == (3, 9)
+    assert mods[0].name == "wide"
+    assert mods[1].name == "xor"
+    assert mods[1].value == (3, 9)
 
     p = _parser_with_tokens(
         [
