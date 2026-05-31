@@ -204,6 +204,26 @@ class TestOfInSyntax:
 
         assert TypeChecker().check(ast) == []
 
+    def test_imported_module_name_is_not_scalar_rule_reference(self) -> None:
+        yara_code = """
+        import "pe"
+        rule pe {
+            condition:
+                true
+        }
+        rule probe {
+            condition:
+                pe
+        }
+        """
+
+        ast = Parser().parse(yara_code)
+
+        assert TypeChecker().check(ast) == [
+            "Rule condition must be boolean, integer, double, regex, string, "
+            "or string identifier, got module(pe)"
+        ]
+
     @pytest.mark.parametrize(
         "condition",
         [
