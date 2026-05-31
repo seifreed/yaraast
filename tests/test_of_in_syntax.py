@@ -181,6 +181,29 @@ class TestOfInSyntax:
         assert isinstance(condition.string_set.elements[0], StringIdentifier)
         assert TypeChecker().check(ast) == ["'of' requires string set or rule set, got mixed set"]
 
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "pe",
+            "any of (pe)",
+        ],
+    )
+    def test_module_named_rules_can_be_referenced_as_rules(self, condition: str) -> None:
+        yara_code = f"""
+        rule pe {{
+            condition:
+                true
+        }}
+        rule probe {{
+            condition:
+                {condition}
+        }}
+        """
+
+        ast = Parser().parse(yara_code)
+
+        assert TypeChecker().check(ast) == []
+
     @pytest.mark.parametrize("condition", ["@a in (0..100)", "!a in (0..100)"])
     def test_string_offset_and_length_do_not_support_in_range(self, condition: str) -> None:
         yara_code = f"""

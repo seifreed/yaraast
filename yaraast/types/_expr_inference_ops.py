@@ -948,6 +948,8 @@ def _define_for_iteration_variables(ctx, variable_names: list[str], iter_type) -
 
 def infer_module_or_condition(ctx, node):
     if isinstance(node, ModuleReference) or hasattr(node, "module"):
+        if ctx.env.has_rule(node.module):
+            return BooleanType()
         module_type = ctx._resolve_module_type(node.module)
         if module_type:
             return module_type
