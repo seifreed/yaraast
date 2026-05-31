@@ -93,6 +93,9 @@ class ExpressionBinaryMixin:
         expr = self._parse_bitwise_or_expression()
 
         if self._match(TokenType.DOUBLE_DOT):
+            if not getattr(self, "_allow_range_expression", False):
+                msg = "Unexpected range expression"
+                raise ParserError(msg, self._previous())
             high = self._parse_bitwise_or_expression()
             expr = self._set_node_location_from_nodes(
                 RangeExpression(low=expr, high=high), expr, high

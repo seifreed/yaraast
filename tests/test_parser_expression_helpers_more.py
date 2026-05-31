@@ -237,6 +237,21 @@ def test_classic_parsers_reject_unparenthesized_in_ranges() -> None:
                 parser_factory().parse(source)
 
 
+def test_classic_parsers_reject_range_expressions_outside_range_contexts() -> None:
+    invalid_sources = [
+        "rule r { condition: 1..2 }",
+        "rule r { condition: (1..2) }",
+        "rule r { condition: true and (1..2) }",
+        "rule r { condition: for any i in (0..2) : (1..2) }",
+        "rule r { condition: uint8(1..2) == 0 }",
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="range"):
+                parser_factory().parse(source)
+
+
 def test_classic_parsers_reject_nested_parenthesized_ranges() -> None:
     invalid_sources = [
         'rule r { strings: $a = "x" condition: $a in ((0..10)) }',

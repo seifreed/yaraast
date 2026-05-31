@@ -65,7 +65,12 @@ class ExpressionForMixin:
             msg = "Expected identifier or '(' after 'in'"
             raise ParserError(msg, self._peek())
 
-        iterable = self._parse_expression()
+        previous_allow_range = getattr(self, "_allow_range_expression", False)
+        self._allow_range_expression = True
+        try:
+            iterable = self._parse_expression()
+        finally:
+            self._allow_range_expression = previous_allow_range
         if self._is_nested_parenthesized_range(iterable):
             msg = "Unexpected parenthesized range"
             raise ParserError(msg, self._previous())
