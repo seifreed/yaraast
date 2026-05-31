@@ -217,7 +217,6 @@ ignore_errors = false
 
 [[tool.mypy.overrides]]
 module = [
-    "yaraast",
     "yaraast.parser.*",
     "yaraast.serialization.*",
     "yaraast.yarax.*",
