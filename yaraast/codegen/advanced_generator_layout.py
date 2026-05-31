@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from yaraast.codegen.formatting import BraceStyle, IndentStyle, StringStyle
+from typing import Any
+
+from yaraast.codegen.formatting import BraceStyle, FormattingConfig, IndentStyle, StringStyle
 from yaraast.codegen.generator import CodeGenerator
 from yaraast.codegen.generator_expression_visitors import (
     _render_binary_operator,
@@ -25,14 +27,14 @@ from yaraast.codegen.generator_formatting import (
 from yaraast.codegen.generator_helpers import validate_string_identifiers
 
 
-def _emit_top_level_line(generator, node) -> None:
+def _emit_top_level_line(generator: Any, node: Any) -> None:
     rendered = generator.visit(node)
     if rendered:
         generator._write(rendered)
     generator._writeline()
 
 
-def _emit_top_level_section(generator, nodes) -> None:
+def _emit_top_level_section(generator: Any, nodes: list[Any] | tuple[Any, ...]) -> None:
     if not nodes:
         return
     for node in nodes:
@@ -40,7 +42,7 @@ def _emit_top_level_section(generator, nodes) -> None:
     generator._write_blank_lines(generator.config.blank_lines_between_sections)
 
 
-def visit_yara_file(generator, node) -> str:
+def visit_yara_file(generator: Any, node: Any) -> str:
     validate_yara_file_collections(node)
     validate_rule_identifiers(node.rules)
     validate_extern_rule_identifiers(node.rules, node.extern_rules, node.namespaces)
@@ -62,7 +64,7 @@ def visit_yara_file(generator, node) -> str:
         rules = sorted(rules, key=lambda item: item.name)
     elif generator.config.sort_meta:
 
-        def sort_key(rule):
+        def sort_key(rule: Any) -> tuple[bool, Any]:
             has_meta = bool(rule.meta and (bool(rule.meta)))
             return (not has_meta, rule.name)
 
@@ -72,10 +74,10 @@ def visit_yara_file(generator, node) -> str:
         if index > 0:
             generator._write_blank_lines(generator.config.blank_lines_between_rules)
         generator.visit(rule)
-    return generator.buffer.getvalue()
+    return str(generator.buffer.getvalue())
 
 
-def visit_rule(generator, node) -> str:
+def visit_rule(generator: Any, node: Any) -> str:
     validate_rule_collections(node)
     validate_rule_meta(node.meta)
     validate_string_identifiers(node.strings)
@@ -126,10 +128,10 @@ def visit_rule(generator, node) -> str:
 
     generator._dedent()
     generator._write("}")
-    return generator.buffer.getvalue()
+    return str(generator.buffer.getvalue())
 
 
-def write_strings_section(generator, strings) -> None:
+def write_strings_section(generator: Any, strings: list[Any]) -> None:
     validate_string_identifiers(strings)
     generator._writeline("strings:")
     generator._indent()
@@ -146,7 +148,7 @@ def write_strings_section(generator, strings) -> None:
     generator._dedent()
 
 
-def write_aligned_strings(generator) -> None:
+def write_aligned_strings(generator: Any) -> None:
     if not generator._string_definitions:
         return
     max_id_len = max(len(identifier) for identifier, _, _ in generator._string_definitions)
@@ -165,7 +167,7 @@ def write_aligned_strings(generator) -> None:
         generator._writeline()
 
 
-def write_condition_section(generator, condition) -> None:
+def write_condition_section(generator: Any, condition: Any) -> None:
     generator._writeline("condition:")
     generator._indent()
     condition_str = generate_condition_string(condition, generator.config)
@@ -173,7 +175,7 @@ def write_condition_section(generator, condition) -> None:
     generator._dedent()
 
 
-def write_wrapped_condition(generator, condition: str) -> None:
+def write_wrapped_condition(generator: Any, condition: str) -> None:
     if "\n" in condition:
         for line in condition.splitlines():
             generator._writeline(line)
@@ -202,14 +204,14 @@ def write_wrapped_condition(generator, condition: str) -> None:
         generator._writeline(current_line)
 
 
-def _write_in_rule_pragmas(generator, node, position: str) -> None:
+def _write_in_rule_pragmas(generator: Any, node: Any, position: str) -> None:
     for pragma in getattr(node, "pragmas", []):
         if pragma.position == position:
             generator._writeline(generator.visit(pragma))
 
 
 class _AdvancedConditionGenerator(CodeGenerator):
-    def __init__(self, config) -> None:
+    def __init__(self, config: FormattingConfig) -> None:
         super().__init__(getattr(config, "indent_size", 4))
         self.config = config
 
@@ -221,34 +223,34 @@ class _AdvancedConditionGenerator(CodeGenerator):
     def _comma_separator(self) -> str:
         return ", " if self.config.space_after_comma else ","
 
-    def visit_binary_expression(self, node) -> str:
+    def visit_binary_expression(self, node: Any) -> str:
         left = _visit_binary_operand(self, node, node.left, is_right=False)
         right = _visit_binary_operand(self, node, node.right, is_right=True)
         operator = _render_binary_operator(node.operator)
         separator = " " if self.config.space_around_operators or operator.isalpha() else ""
         return f"{left}{separator}{operator}{separator}{right}"
 
-    def visit_set_expression(self, node) -> str:
+    def visit_set_expression(self, node: Any) -> str:
         validate_set_expression_elements(node)
         separator = self._comma_separator()
         return f"({separator.join(self.visit(elem) for elem in node.elements)})"
 
-    def visit_function_call(self, node) -> str:
+    def visit_function_call(self, node: Any) -> str:
         separator = self._comma_separator()
         function = validate_yara_identifier_path(node.function, "function")
         validate_function_call_arguments(node)
         return f"{function}({separator.join(self.visit(arg) for arg in node.arguments)})"
 
-    def visit_with_statement(self, node) -> str:
+    def visit_with_statement(self, node: Any) -> str:
         separator = self._comma_separator()
         validate_expression_collection(node.declarations, "WithStatement declarations")
         declarations = separator.join(self.visit(declaration) for declaration in node.declarations)
         return f"with {declarations}: {self.visit(node.body)}"
 
-    def visit_with_declaration(self, node) -> str:
+    def visit_with_declaration(self, node: Any) -> str:
         return f"{node.identifier} = {self.visit(node.value)}"
 
-    def visit_array_comprehension(self, node) -> str:
+    def visit_array_comprehension(self, node: Any) -> str:
         result = (
             f"[{self.visit(node.expression)} for {node.variable} " f"in {self.visit(node.iterable)}"
         )
@@ -256,7 +258,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
             result += f" if {self.visit(node.condition)}"
         return f"{result}]"
 
-    def visit_dict_comprehension(self, node) -> str:
+    def visit_dict_comprehension(self, node: Any) -> str:
         variables = node.key_variable
         if node.value_variable:
             variables = f"{variables}, {node.value_variable}"
@@ -268,7 +270,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
             result += f" if {self.visit(node.condition)}"
         return f"{result}}}"
 
-    def visit_tuple_expression(self, node) -> str:
+    def visit_tuple_expression(self, node: Any) -> str:
         validate_expression_collection(node.elements, "TupleExpression elements")
         if not node.elements:
             return "()"
@@ -277,7 +279,7 @@ class _AdvancedConditionGenerator(CodeGenerator):
             return f"({elements[0]},)"
         return f"({self._comma_separator().join(elements)})"
 
-    def visit_tuple_indexing(self, node) -> str:
+    def visit_tuple_indexing(self, node: Any) -> str:
         from yaraast.ast.expressions import FunctionCall, Identifier
         from yaraast.yarax.ast_nodes import TupleExpression
 
@@ -287,16 +289,16 @@ class _AdvancedConditionGenerator(CodeGenerator):
             return f"{tuple_str}[{index_str}]"
         return f"({tuple_str})[{index_str}]"
 
-    def visit_list_expression(self, node) -> str:
+    def visit_list_expression(self, node: Any) -> str:
         separator = self._comma_separator()
         validate_expression_collection(node.elements, "ListExpression elements")
         return f"[{separator.join(self.visit(element) for element in node.elements)}]"
 
-    def visit_dict_expression(self, node) -> str:
+    def visit_dict_expression(self, node: Any) -> str:
         from yaraast.yarax.ast_nodes import SpreadOperator
 
         validate_expression_collection(node.items, "DictExpression items")
-        items = []
+        items: list[str] = []
         for item in node.items:
             if isinstance(item.value, SpreadOperator):
                 items.append(self.visit(item.value))
@@ -304,10 +306,10 @@ class _AdvancedConditionGenerator(CodeGenerator):
                 items.append(self.visit(item))
         return f"{{{self._comma_separator().join(items)}}}"
 
-    def visit_dict_item(self, node) -> str:
+    def visit_dict_item(self, node: Any) -> str:
         return f"{self.visit(node.key)}: {self.visit(node.value)}"
 
-    def visit_slice_expression(self, node) -> str:
+    def visit_slice_expression(self, node: Any) -> str:
         parts = [
             self.visit(node.start) if node.start is not None else "",
             self.visit(node.stop) if node.stop is not None else "",
@@ -316,14 +318,14 @@ class _AdvancedConditionGenerator(CodeGenerator):
             parts.append(self.visit(node.step))
         return f"{self.visit(node.target)}[{':'.join(parts)}]"
 
-    def visit_lambda_expression(self, node) -> str:
+    def visit_lambda_expression(self, node: Any) -> str:
         validate_expression_collection(node.parameters, "LambdaExpression parameters")
         parameters = ", ".join(node.parameters)
         if parameters:
             return f"lambda {parameters}: {self.visit(node.body)}"
         return f"lambda: {self.visit(node.body)}"
 
-    def visit_pattern_match(self, node) -> str:
+    def visit_pattern_match(self, node: Any) -> str:
         validate_expression_collection(node.cases, "PatternMatch cases")
         lines = [f"match {self.visit(node.value)} {{"]
         nested_indent = self._nested_indent()
@@ -334,18 +336,18 @@ class _AdvancedConditionGenerator(CodeGenerator):
         lines.append("}")
         return "\n".join(lines)
 
-    def visit_match_case(self, node) -> str:
+    def visit_match_case(self, node: Any) -> str:
         result = self._indent_continuation_lines(self.visit(node.result))
         return f"{self.visit(node.pattern)} => {result}"
 
     def _indent_continuation_lines(self, text: str) -> str:
         return text.replace("\n", f"\n{self._nested_indent()}")
 
-    def visit_spread_operator(self, node) -> str:
+    def visit_spread_operator(self, node: Any) -> str:
         prefix = "**" if node.is_dict else "..."
         return f"{prefix}{self.visit(node.expression)}"
 
 
-def generate_condition_string(expr, config=None) -> str:
+def generate_condition_string(expr: Any, config: FormattingConfig | None = None) -> str:
     temp_gen = _AdvancedConditionGenerator(config) if config is not None else CodeGenerator()
     return temp_gen.visit(expr)

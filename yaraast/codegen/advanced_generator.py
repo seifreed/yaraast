@@ -44,7 +44,6 @@ from yaraast.codegen.generator_formatting import (
 if TYPE_CHECKING:
     from yaraast.ast.base import ASTNode, YaraFile
     from yaraast.ast.expressions import BinaryExpression, Expression, SetExpression
-    from yaraast.ast.meta import Meta
     from yaraast.ast.rules import Import, Include, Rule
 
 
@@ -54,7 +53,7 @@ class AdvancedCodeGenerator(CodeGenerator):
     def __init__(self, config: FormattingConfig | None = None) -> None:
         self.config = config or FormattingConfig()
         super().__init__(self.config.indent_size)
-        self._string_definitions: list[tuple[str, Any]] = []
+        self._string_definitions: list[tuple[str, str, list[str]]] = []
 
     def generate(self, node: ASTNode) -> str:
         """Generate code with advanced formatting."""
@@ -94,27 +93,29 @@ class AdvancedCodeGenerator(CodeGenerator):
     def visit_rule(self, node: Rule) -> str:
         return render_advanced_rule(self, node)
 
-    def _process_meta_data(self, meta_data: dict[str, Any] | list) -> list:
+    def _process_meta_data(
+        self, meta_data: dict[str, Any] | list[Any] | tuple[Any, ...]
+    ) -> list[Any]:
         """Process meta data into normalized format."""
         return process_meta_data(meta_data)
 
-    def _get_sorted_meta(self, meta_list: list) -> list:
+    def _get_sorted_meta(self, meta_list: list[Any]) -> list[Any]:
         """Sort meta list if configured."""
         return get_sorted_meta(meta_list, sort_meta=self.config.sort_meta)
 
-    def _get_max_key_length(self, meta_list: list) -> int:
+    def _get_max_key_length(self, meta_list: list[Any]) -> int:
         """Get maximum key length for alignment."""
         return get_max_key_length(meta_list)
 
-    def _write_meta_key(self, meta, max_key_len: int) -> None:
+    def _write_meta_key(self, meta: Any, max_key_len: int) -> None:
         """Write meta key with proper formatting."""
         write_meta_key(self, meta, max_key_len)
 
-    def _write_meta_value(self, meta) -> None:
+    def _write_meta_value(self, meta: Any) -> None:
         """Write meta value with proper formatting."""
         write_meta_value(self, meta)
 
-    def _write_meta_section(self, meta_data: dict[str, Any] | list[Meta]) -> None:
+    def _write_meta_section(self, meta_data: Any) -> None:
         """Write meta section with formatting."""
         validate_rule_meta(meta_data)
         self._writeline("meta:")
@@ -136,7 +137,7 @@ class AdvancedCodeGenerator(CodeGenerator):
 
         self._dedent()
 
-    def _write_strings_section(self, strings: list[StringDefinition]) -> None:
+    def _write_strings_section(self, strings: Any, *, has_condition: bool = False) -> None:
         write_advanced_strings_section(self, strings)
 
     def _collect_string_definitions(self, strings: list[StringDefinition]) -> None:
@@ -180,7 +181,7 @@ class AdvancedCodeGenerator(CodeGenerator):
     def visit_set_expression(self, node: SetExpression) -> str:
         """Generate set expression with spacing."""
         validate_set_expression_elements(node)
-        elements = []
+        elements: list[str] = []
         for elem in node.elements:
             elem_str = self.visit(elem)
             elements.append(elem_str)

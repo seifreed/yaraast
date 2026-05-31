@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.codegen.generator_formatting import (
     validate_yara_identifier,
     validate_yara_identifier_path,
@@ -60,10 +62,10 @@ def _render_unary_operator(operator: str) -> str:
     raise ValueError(msg)
 
 
-def _visit_binary_operand(generator, parent, operand, *, is_right: bool) -> str:
+def _visit_binary_operand(generator: Any, parent: Any, operand: Any, *, is_right: bool) -> str:
     from yaraast.ast.expressions import BinaryExpression
 
-    rendered = generator.visit(operand)
+    rendered = cast(str, generator.visit(operand))
     if isinstance(operand, BinaryExpression) and (
         _precedence(operand.operator) < _precedence(parent.operator)
         or (is_right and _precedence(operand.operator) == _precedence(parent.operator))
@@ -72,14 +74,14 @@ def _visit_binary_operand(generator, parent, operand, *, is_right: bool) -> str:
     return rendered
 
 
-def visit_binary_expression(generator, node) -> str:
+def visit_binary_expression(generator: Any, node: Any) -> str:
     left = _visit_binary_operand(generator, node, node.left, is_right=False)
     right = _visit_binary_operand(generator, node, node.right, is_right=True)
     operator = _render_binary_operator(node.operator)
     return f"{left} {operator} {right}"
 
 
-def visit_unary_expression(generator, node) -> str:
+def visit_unary_expression(generator: Any, node: Any) -> str:
     operator = _render_unary_operator(node.operator)
     operand = generator.visit(node.operand)
     from yaraast.ast.expressions import BinaryExpression
@@ -91,53 +93,53 @@ def visit_unary_expression(generator, node) -> str:
     return f"{operator}{operand}"
 
 
-def visit_parentheses_expression(generator, node) -> str:
+def visit_parentheses_expression(generator: Any, node: Any) -> str:
     return f"({generator.visit(node.expression)})"
 
 
-def visit_set_expression(generator, node) -> str:
+def visit_set_expression(generator: Any, node: Any) -> str:
     validate_set_expression_elements(node)
     return f"({', '.join(generator.visit(elem) for elem in node.elements)})"
 
 
-def validate_set_expression_elements(node) -> None:
+def validate_set_expression_elements(node: Any) -> None:
     validate_expression_collection(node.elements, "SetExpression elements")
     if not node.elements:
         msg = "Set expression must contain at least one element for libyara output"
         raise ValueError(msg)
 
 
-def validate_function_call_arguments(node) -> None:
+def validate_function_call_arguments(node: Any) -> None:
     validate_expression_collection(node.arguments, "FunctionCall arguments")
 
 
-def validate_expression_collection(value, field_name: str) -> None:
+def validate_expression_collection(value: Any, field_name: str) -> None:
     if isinstance(value, list | tuple):
         return
     msg = f"{field_name} must be a list or tuple for libyara output"
     raise TypeError(msg)
 
 
-def visit_range_expression(generator, node) -> str:
+def visit_range_expression(generator: Any, node: Any) -> str:
     return f"{generator.visit(node.low)}..{generator.visit(node.high)}"
 
 
-def visit_function_call(generator, node) -> str:
+def visit_function_call(generator: Any, node: Any) -> str:
     function = validate_yara_identifier_path(node.function, "function")
     validate_function_call_arguments(node)
     return f"{function}({', '.join(generator.visit(arg) for arg in node.arguments)})"
 
 
-def visit_array_access(generator, node) -> str:
+def visit_array_access(generator: Any, node: Any) -> str:
     return f"{generator.visit(node.array)}[{generator.visit(node.index)}]"
 
 
-def visit_member_access(generator, node) -> str:
+def visit_member_access(generator: Any, node: Any) -> str:
     member = validate_yara_identifier(node.member, "member")
     return f"{generator.visit(node.object)}.{member}"
 
 
-def visit_for_expression(generator, node) -> str:
+def visit_for_expression(generator: Any, node: Any) -> str:
     from yaraast.ast.expressions import RangeExpression
 
     iterable = generator.visit(node.iterable)
@@ -149,7 +151,7 @@ def visit_for_expression(generator, node) -> str:
     return f"for {quantifier} {variable} in {iterable} : ({body})"
 
 
-def _render_for_quantifier(generator, quantifier) -> str:
+def _render_for_quantifier(generator: Any, quantifier: Any) -> str:
     from yaraast.ast.expressions import (
         BooleanLiteral,
         DoubleLiteral,
@@ -177,7 +179,7 @@ def _render_for_quantifier(generator, quantifier) -> str:
         raise ValueError(msg)
     if isinstance(quantifier, Identifier):
         return _validate_for_quantifier_text(quantifier.name)
-    return generator.visit(quantifier)
+    return cast(str, generator.visit(quantifier))
 
 
 def _validate_for_quantifier_text(quantifier: str) -> str:
@@ -191,7 +193,7 @@ def _validate_for_quantifier_text(quantifier: str) -> str:
     return validate_yara_identifier(quantifier, "for quantifier")
 
 
-def visit_at_expression(generator, node) -> str:
+def visit_at_expression(generator: Any, node: Any) -> str:
     if hasattr(node.string_id, "accept"):
         string_id = generator.visit(node.string_id)
     else:

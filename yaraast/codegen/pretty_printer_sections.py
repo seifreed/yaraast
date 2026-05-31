@@ -11,6 +11,7 @@ from yaraast.codegen.generator_formatting import (
     validate_rule_meta,
 )
 from yaraast.codegen.generator_helpers import (
+    output_string_identifier,
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
@@ -23,12 +24,11 @@ from yaraast.codegen.pretty_printer_helpers import (
     format_regex_string,
     indent_unit,
     modifiers_to_string,
-    output_string_identifier,
     regex_modifiers_to_string,
 )
 
 
-def write_meta_section(printer, meta: list) -> None:
+def write_meta_section(printer: Any, meta: list[Any]) -> None:
     """Write meta entries preserving PrettyPrinter behavior."""
     validate_rule_meta(meta)
     entries = list(meta)
@@ -45,7 +45,12 @@ def write_meta_section(printer, meta: list) -> None:
             )
 
 
-def write_meta_entry(printer, key: str, value: Any, trailing_comment=None) -> None:
+def write_meta_entry(
+    printer: Any,
+    key: str,
+    value: Any,
+    trailing_comment: Any = None,
+) -> None:
     """Write a single meta entry with alignment handling."""
     printer._write(current_indent(printer))
     if printer.options.align_meta_values and printer._meta_alignment_column > 0:
@@ -63,14 +68,14 @@ def write_meta_entry(printer, key: str, value: Any, trailing_comment=None) -> No
     printer._writeline()
 
 
-def write_strings_section(printer, strings: list[StringDefinition]) -> None:
+def write_strings_section(printer: Any, strings: list[StringDefinition]) -> None:
     """Write all string definitions."""
     validate_string_identifiers(strings)
     for string_def in strings:
         printer._write_string_definition(string_def)
 
 
-def write_plain_string_aligned(printer, node: PlainString) -> None:
+def write_plain_string_aligned(printer: Any, node: PlainString) -> None:
     """Write a plain string honoring alignment options."""
     validate_plain_string_modifiers(node.modifiers)
     printer._write_comments(getattr(node, "leading_comments", None))
@@ -87,7 +92,7 @@ def write_plain_string_aligned(printer, node: PlainString) -> None:
     printer._writeline()
 
 
-def write_hex_string_aligned(printer, node: HexString) -> None:
+def write_hex_string_aligned(printer: Any, node: HexString) -> None:
     """Write a hex string honoring alignment and casing options."""
     validate_hex_string_modifiers(node.modifiers)
     printer._write_comments(getattr(node, "leading_comments", None))
@@ -110,7 +115,7 @@ def write_hex_string_aligned(printer, node: HexString) -> None:
     printer._writeline()
 
 
-def write_regex_string_aligned(printer, node: RegexString) -> None:
+def write_regex_string_aligned(printer: Any, node: RegexString) -> None:
     """Write a regex string honoring alignment options."""
     validate_regex_string_modifiers(node.modifiers)
     printer._write_comments(getattr(node, "leading_comments", None))
@@ -127,7 +132,7 @@ def write_regex_string_aligned(printer, node: RegexString) -> None:
     printer._writeline()
 
 
-def write_wrapped_condition(printer, condition_str: str) -> None:
+def write_wrapped_condition(printer: Any, condition_str: str) -> None:
     """Write condition with simple wrapping on token boundaries."""
     current_line = ""
     for word in condition_str.split():

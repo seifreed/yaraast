@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.codegen.generator_formatting import (
     format_nonempty_quoted_value,
     validate_extern_rule_identifiers,
@@ -12,20 +14,20 @@ from yaraast.codegen.generator_formatting import (
 )
 
 
-def _emit_comments(generator, node) -> None:
+def _emit_comments(generator: Any, node: Any) -> None:
     """Emit leading comments for an AST node."""
     if hasattr(node, "leading_comments") and node.leading_comments:
         for comment in node.leading_comments:
             generator._writeline(comment.text)
 
 
-def _emit_trailing(generator, node) -> None:
+def _emit_trailing(generator: Any, node: Any) -> None:
     """Emit trailing comment for an AST node."""
     if hasattr(node, "trailing_comment") and node.trailing_comment:
         generator._write(f"  {node.trailing_comment.text}")
 
 
-def _emit_top_level_line(generator, node) -> None:
+def _emit_top_level_line(generator: Any, node: Any) -> None:
     _emit_comments(generator, node)
     rendered = generator.visit(node)
     if rendered:
@@ -33,7 +35,7 @@ def _emit_top_level_line(generator, node) -> None:
     generator._writeline()
 
 
-def _emit_top_level_section(generator, nodes) -> bool:
+def _emit_top_level_section(generator: Any, nodes: list[Any] | tuple[Any, ...]) -> bool:
     if not nodes:
         return False
     for node in nodes:
@@ -42,7 +44,7 @@ def _emit_top_level_section(generator, nodes) -> bool:
     return True
 
 
-def visit_yara_file(generator, node) -> str:
+def visit_yara_file(generator: Any, node: Any) -> str:
     validate_yara_file_collections(node)
     validate_rule_identifiers(node.rules)
     validate_extern_rule_identifiers(node.rules, node.extern_rules, node.namespaces)
@@ -57,10 +59,10 @@ def visit_yara_file(generator, node) -> str:
             generator._writeline()
         _emit_comments(generator, rule)
         generator.visit(rule)
-    return generator.buffer.getvalue()
+    return str(generator.buffer.getvalue())
 
 
-def visit_import(node) -> str:
+def visit_import(node: Any) -> str:
     value = f"import \"{format_nonempty_quoted_value(node.module, 'Import module')}\""
     if node.alias:
         msg = "Import aliases are not supported for libyara output"
@@ -68,11 +70,11 @@ def visit_import(node) -> str:
     return value
 
 
-def visit_include(node) -> str:
+def visit_include(node: Any) -> str:
     return f"include \"{format_nonempty_quoted_value(node.path, 'Include path')}\""
 
 
-def visit_rule(generator, node) -> str:
+def visit_rule(generator: Any, node: Any) -> str:
     validate_rule_collections(node)
     generator._write_rule_header(node)
     generator._writeline(" {")
@@ -90,15 +92,15 @@ def visit_rule(generator, node) -> str:
     return ""
 
 
-def visit_tag(node) -> str:
+def visit_tag(node: Any) -> str:
     return validate_yara_identifier(node.name, "tag")
 
 
-def visit_string_definition(_node) -> str:
+def visit_string_definition(_node: Any) -> str:
     return ""
 
 
-def _write_in_rule_pragmas(generator, node, position: str) -> None:
+def _write_in_rule_pragmas(generator: Any, node: Any, position: str) -> None:
     for pragma in getattr(node, "pragmas", []):
         if pragma.position == position:
             generator._writeline(generator.visit(pragma))

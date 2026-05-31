@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from io import StringIO
+from typing import Any
 
 from yaraast.ast.base import ASTNode, YaraFile
 from yaraast.ast.conditions import (
@@ -43,6 +44,8 @@ from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
     HexJump,
+    HexNegatedByte,
+    HexNibble,
     HexString,
     HexToken,
     HexWildcard,
@@ -176,7 +179,7 @@ class CodeGenerator(ASTVisitor[str]):
         """Decrease indentation level."""
         self.indent_level = max(0, self.indent_level - 1)
 
-    def _write_modifiers(self, modifiers) -> None:
+    def _write_modifiers(self, modifiers: object) -> None:
         """Write string modifiers to buffer.
 
         Handles modifiers in various forms: list/tuple, string, or AST nodes.
@@ -222,7 +225,7 @@ class CodeGenerator(ASTVisitor[str]):
             return ""
         return format_rule_modifiers(node.modifiers)
 
-    def _write_rule_tags(self, tags) -> None:
+    def _write_rule_tags(self, tags: list[Any] | tuple[Any, ...] | None) -> None:
         """Write rule tags."""
         tag_value = format_rule_tags(tags)
         if not tag_value:
@@ -230,30 +233,38 @@ class CodeGenerator(ASTVisitor[str]):
         self._write(" : ")
         self._write(tag_value)
 
-    def _write_meta_section(self, meta) -> None:
+    def _write_meta_section(
+        self,
+        meta: object,
+    ) -> None:
         """Write meta section if present."""
         write_meta_section(self, meta)
 
-    def _write_meta_dict(self, meta: dict) -> None:
+    def _write_meta_dict(self, meta: dict[str, Any]) -> None:
         """Write meta entries from dictionary."""
         for key, value in meta.items():
             self._writeline(self._format_meta_value(key, value))
 
-    def _write_meta_list(self, meta: list) -> None:
+    def _write_meta_list(self, meta: list[Any]) -> None:
         """Write meta entries from list of Meta objects."""
         for m in meta:
             if hasattr(m, "key") and hasattr(m, "value"):
                 self._writeline(self._format_meta_value(m.key, m.value, getattr(m, "scope", None)))
 
-    def _format_meta_value(self, key: str, value, scope: object | None = None) -> str:
+    def _format_meta_value(self, key: str, value: Any, scope: object | None = None) -> str:
         """Format a single meta key-value pair."""
         return format_meta_value(key, value, scope)
 
-    def _write_strings_section(self, strings, *, has_condition: bool) -> None:
+    def _write_strings_section(
+        self,
+        strings: list[Any] | tuple[Any, ...],
+        *,
+        has_condition: bool,
+    ) -> None:
         """Write strings section if present."""
         write_strings_section(self, strings, has_condition=has_condition)
 
-    def _write_condition_section(self, condition) -> None:
+    def _write_condition_section(self, condition: Any) -> None:
         """Write condition section if present."""
         write_condition_section(self, condition)
 
@@ -288,7 +299,7 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_hex_byte(self, node: HexByte) -> str:
         return render_hex_byte(node)
 
-    def visit_hex_negated_byte(self, node) -> str:
+    def visit_hex_negated_byte(self, node: HexNegatedByte) -> str:
         value = format_hex_negated_value(
             node.value,
             uppercase=True,
@@ -304,7 +315,7 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_hex_alternative(self, node: HexAlternative) -> str:
         return render_hex_alternative(self, node)
 
-    def visit_hex_nibble(self, node) -> str:
+    def visit_hex_nibble(self, node: HexNibble) -> str:
         return render_hex_nibble(node)
 
     def visit_expression(self, node: Expression) -> str:
@@ -399,10 +410,10 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_meta(self, node: Meta) -> str:
         return render_meta(node)
 
-    def visit_module_reference(self, node) -> str:
+    def visit_module_reference(self, node: Any) -> str:
         return render_module_reference(node)
 
-    def visit_dictionary_access(self, node) -> str:
+    def visit_dictionary_access(self, node: Any) -> str:
         return render_dictionary_access(self, node)
 
     def visit_defined_expression(self, node: DefinedExpression) -> str:
@@ -411,29 +422,29 @@ class CodeGenerator(ASTVisitor[str]):
     def visit_string_operator_expression(self, node: StringOperatorExpression) -> str:
         return render_string_operator_expression(self, node)
 
-    def visit_comment(self, node) -> str:
+    def visit_comment(self, node: Any) -> str:
         return render_comment(node)
 
-    def visit_comment_group(self, node) -> str:
+    def visit_comment_group(self, node: Any) -> str:
         return render_comment_group(node)
 
-    def visit_extern_import(self, node) -> str:
+    def visit_extern_import(self, node: Any) -> str:
         return render_extern_import(node)
 
-    def visit_extern_namespace(self, node) -> str:
+    def visit_extern_namespace(self, node: Any) -> str:
         return render_extern_namespace(node)
 
-    def visit_extern_rule(self, node) -> str:
+    def visit_extern_rule(self, node: Any) -> str:
         return render_extern_rule(node)
 
-    def visit_extern_rule_reference(self, node) -> str:
+    def visit_extern_rule_reference(self, node: Any) -> str:
         return render_extern_rule_reference(node)
 
-    def visit_in_rule_pragma(self, node) -> str:
+    def visit_in_rule_pragma(self, node: Any) -> str:
         return render_in_rule_pragma(node)
 
-    def visit_pragma(self, node) -> str:
+    def visit_pragma(self, node: Any) -> str:
         return render_pragma(node)
 
-    def visit_pragma_block(self, node) -> str:
+    def visit_pragma_block(self, node: Any) -> str:
         return render_pragma_block(self, node)

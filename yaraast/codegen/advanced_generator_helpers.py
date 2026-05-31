@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
@@ -15,7 +17,7 @@ from yaraast.ast.strings import (
     RegexString,
     StringDefinition,
 )
-from yaraast.codegen.formatting import HexStyle, StringStyle
+from yaraast.codegen.formatting import FormattingConfig, HexStyle, StringStyle
 from yaraast.codegen.generator_formatting import format_rule_tags
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
@@ -38,7 +40,7 @@ from yaraast.codegen.generator_helpers import (
 
 def collect_string_definitions(
     strings: list[StringDefinition],
-    config,
+    config: FormattingConfig,
 ) -> list[tuple[str, str, list[str]]]:
     validate_string_identifiers(strings)
     collected: list[tuple[str, str, list[str]]] = []
@@ -70,7 +72,7 @@ def collect_string_definitions(
     return collected
 
 
-def format_hex_string(node: HexString, config) -> str:
+def format_hex_string(node: HexString, config: FormattingConfig) -> str:
     validate_hex_string_tokens(node.tokens)
     parts = []
 
@@ -106,7 +108,7 @@ def format_hex_string(node: HexString, config) -> str:
     return f"{{ {hex_content} }}"
 
 
-def format_hex_token(token: HexToken, config) -> str:
+def format_hex_token(token: HexToken, config: FormattingConfig) -> str:
     if isinstance(token, int | str):
         return _format_hex_byte_value(token, config)
     if isinstance(token, HexByte):
@@ -126,20 +128,20 @@ def format_hex_token(token: HexToken, config) -> str:
     raise TypeError(msg)
 
 
-def _coerce_hex_token(token) -> HexToken:
+def _coerce_hex_token(token: Any) -> HexToken:
     if isinstance(token, int | str):
         return HexByte(token)
-    return token
+    return cast(HexToken, token)
 
 
-def _format_hex_byte_value(value: int | str, config) -> str:
+def _format_hex_byte_value(value: int | str, config: FormattingConfig) -> str:
     return format_hex_byte_value(
         value,
         uppercase=config.hex_style == HexStyle.UPPERCASE,
     )
 
 
-def _format_hex_nibble(token: HexNibble, config) -> str:
+def _format_hex_nibble(token: HexNibble, config: FormattingConfig) -> str:
     nibble_str = format_hex_nibble_value(
         token.value,
         uppercase=config.hex_style == HexStyle.UPPERCASE,
@@ -147,7 +149,7 @@ def _format_hex_nibble(token: HexNibble, config) -> str:
     return f"{nibble_str}?" if token.high else f"?{nibble_str}"
 
 
-def get_tag_string(tags, config) -> str:
+def get_tag_string(tags: list[Any] | tuple[Any, ...], config: FormattingConfig) -> str:
     if not tags:
         return ""
     if config.string_style == StringStyle.COMPACT:

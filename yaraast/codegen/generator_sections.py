@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.codegen.generator_formatting import validate_rule_meta
 from yaraast.codegen.generator_helpers import (
     escape_regex_delimiter,
@@ -15,17 +17,22 @@ from yaraast.codegen.generator_helpers import (
 )
 
 
-def _emit_comments(gen, node) -> None:
+def _emit_comments(gen: Any, node: Any) -> None:
     """Emit leading comments for an AST node."""
     if hasattr(node, "leading_comments") and node.leading_comments:
         for comment in node.leading_comments:
             gen._writeline(comment.text)
 
 
-def write_meta_section(gen, meta) -> None:
+def write_meta_section(
+    gen: Any,
+    meta: object,
+) -> None:
     """Write meta section if present."""
     validate_rule_meta(meta)
     if not meta:
+        return
+    if not isinstance(meta, dict | list | tuple):
         return
     gen._writeline("meta:")
     gen._indent()
@@ -41,7 +48,12 @@ def write_meta_section(gen, meta) -> None:
     gen._writeline()
 
 
-def write_strings_section(gen, strings, *, has_condition: bool) -> None:
+def write_strings_section(
+    gen: Any,
+    strings: list[Any] | tuple[Any, ...],
+    *,
+    has_condition: bool,
+) -> None:
     """Write strings section if present."""
     validate_string_identifiers(strings)
     if not strings:
@@ -57,7 +69,7 @@ def write_strings_section(gen, strings, *, has_condition: bool) -> None:
         gen._writeline()
 
 
-def write_condition_section(gen, condition) -> None:
+def write_condition_section(gen: Any, condition: Any) -> None:
     """Write condition section if present."""
     if not condition:
         return
@@ -72,7 +84,7 @@ def write_condition_section(gen, condition) -> None:
     gen._dedent()
 
 
-def write_plain_string(gen, node) -> str:
+def write_plain_string(gen: Any, node: Any) -> str:
     """Render a plain string definition."""
     validate_plain_string_modifiers(node.modifiers)
     indent = " " * (gen.indent_level * gen.indent_size)
@@ -84,7 +96,7 @@ def write_plain_string(gen, node) -> str:
     return ""
 
 
-def write_hex_string(gen, node) -> str:
+def write_hex_string(gen: Any, node: Any) -> str:
     """Render a hex string definition."""
     validate_hex_string_modifiers(node.modifiers)
     validate_hex_string_tokens(node.tokens)
@@ -100,7 +112,7 @@ def write_hex_string(gen, node) -> str:
     return ""
 
 
-def write_regex_string(gen, node) -> str:
+def write_regex_string(gen: Any, node: Any) -> str:
     """Render a regex string definition."""
     validate_regex_string_modifiers(node.modifiers)
     indent = " " * (gen.indent_level * gen.indent_size)

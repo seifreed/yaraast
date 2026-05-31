@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.ast.strings import (
     HexAlternative,
     HexByte,
@@ -9,6 +11,7 @@ from yaraast.ast.strings import (
     HexNegatedByte,
     HexNibble,
     HexString,
+    HexToken,
     HexWildcard,
     PlainString,
     RegexString,
@@ -48,7 +51,7 @@ def build_hex_pattern(node: HexString, *, hex_uppercase: bool, hex_spacing: bool
     return " ".join(hex_parts) if hex_spacing else "".join(hex_parts)
 
 
-def _format_hex_token(token, hex_uppercase: bool, hex_spacing: bool) -> str:
+def _format_hex_token(token: HexToken | int | str, hex_uppercase: bool, hex_spacing: bool) -> str:
     if isinstance(token, int | str):
         return _format_hex_byte_value(token, hex_uppercase)
     if isinstance(token, HexByte):
@@ -94,7 +97,7 @@ def _format_hex_jump(token: HexJump) -> str:
     return format_hex_jump_bounds(token.min_jump, token.max_jump)
 
 
-def _coerce_hex_alternative_branch(alternative) -> list:
+def _coerce_hex_alternative_branch(alternative: Any) -> list[HexToken | int | str]:
     if isinstance(alternative, list):
         return alternative
     return [HexByte(alternative)]
@@ -116,31 +119,34 @@ def format_regex_string(node: RegexString, padding: int) -> str:
     return f"{identifier} = /{escaped}/"
 
 
-def modifiers_to_string(modifiers) -> str:
+def modifiers_to_string(modifiers: list[Any] | tuple[Any, ...] | None) -> str:
     return format_modifiers(modifiers)
 
 
-def regex_modifiers_to_string(modifiers) -> str:
+def regex_modifiers_to_string(modifiers: list[Any] | tuple[Any, ...] | None) -> str:
     if not modifiers:
         return ""
     return format_regex_modifiers(modifiers)
 
 
-def current_indent(printer) -> str:
+def current_indent(printer: Any) -> str:
     options = getattr(printer, "options", None)
+    indent_level = int(printer.indent_level)
+    indent_size = int(printer.indent_size)
     if getattr(options, "indent_with_tabs", False):
-        return "\t" * printer.indent_level
-    return " " * (printer.indent_level * printer.indent_size)
+        return "\t" * indent_level
+    return " " * (indent_level * indent_size)
 
 
-def indent_unit(printer) -> str:
+def indent_unit(printer: Any) -> str:
     options = getattr(printer, "options", None)
+    indent_size = int(printer.indent_size)
     if getattr(options, "indent_with_tabs", False):
         return "\t"
-    return " " * printer.indent_size
+    return " " * indent_size
 
 
-def calculate_string_alignment_column(ast) -> int:
+def calculate_string_alignment_column(ast: Any) -> int:
     """Calculate alignment column for string identifiers."""
     max_length = 0
     for rule in ast.rules:
@@ -150,7 +156,7 @@ def calculate_string_alignment_column(ast) -> int:
     return max_length + 1
 
 
-def calculate_meta_alignment_column(ast, min_alignment_column: int) -> int:
+def calculate_meta_alignment_column(ast: Any, min_alignment_column: int) -> int:
     """Calculate alignment column for meta values."""
     from yaraast.codegen.generator_formatting import format_meta_key, validate_rule_meta
 
@@ -166,7 +172,7 @@ def calculate_meta_alignment_column(ast, min_alignment_column: int) -> int:
     return max(max_length + 2, min_alignment_column)
 
 
-def expression_to_string(expr, options=None) -> str:
+def expression_to_string(expr: Any, options: Any = None) -> str:
     """Render an expression with the comment-aware generator."""
     from yaraast.codegen.comment_aware_generator import CommentAwareCodeGenerator
     from yaraast.codegen.generator_expression_visitors import (
@@ -182,7 +188,7 @@ def expression_to_string(expr, options=None) -> str:
         def _comma_separator(self) -> str:
             return ", " if getattr(options, "space_after_comma", True) else ","
 
-        def visit_binary_expression(self, node) -> str:
+        def visit_binary_expression(self, node: Any) -> str:
             left = _visit_binary_operand(self, node, node.left, is_right=False)
             right = _visit_binary_operand(self, node, node.right, is_right=True)
             operator = _render_binary_operator(node.operator)
@@ -192,18 +198,18 @@ def expression_to_string(expr, options=None) -> str:
                 separator = " " if operator in _WORD_BINARY_OPERATORS else ""
             return f"{left}{separator}{operator}{separator}{right}"
 
-        def visit_set_expression(self, node) -> str:
+        def visit_set_expression(self, node: Any) -> str:
             validate_set_expression_elements(node)
             separator = self._comma_separator()
             return f"({separator.join(self.visit(elem) for elem in node.elements)})"
 
-        def visit_function_call(self, node) -> str:
+        def visit_function_call(self, node: Any) -> str:
             separator = self._comma_separator()
             function = validate_yara_identifier_path(node.function, "function")
             validate_function_call_arguments(node)
             return f"{function}({separator.join(self.visit(arg) for arg in node.arguments)})"
 
-        def visit_with_statement(self, node) -> str:
+        def visit_with_statement(self, node: Any) -> str:
             separator = self._comma_separator()
             validate_expression_collection(node.declarations, "WithStatement declarations")
             declarations = separator.join(
@@ -211,7 +217,7 @@ def expression_to_string(expr, options=None) -> str:
             )
             return f"with {declarations}: {self.visit(node.body)}"
 
-        def visit_dict_comprehension(self, node) -> str:
+        def visit_dict_comprehension(self, node: Any) -> str:
             separator = self._comma_separator()
             variables = (
                 separator.join([node.key_variable, node.value_variable])
@@ -226,7 +232,7 @@ def expression_to_string(expr, options=None) -> str:
                 result += f" if {self.visit(node.condition)}"
             return result + "}"
 
-        def visit_tuple_expression(self, node) -> str:
+        def visit_tuple_expression(self, node: Any) -> str:
             validate_expression_collection(node.elements, "TupleExpression elements")
             if not node.elements:
                 return "()"
@@ -236,12 +242,12 @@ def expression_to_string(expr, options=None) -> str:
             separator = self._comma_separator()
             return f"({separator.join(elements)})"
 
-        def visit_list_expression(self, node) -> str:
+        def visit_list_expression(self, node: Any) -> str:
             separator = self._comma_separator()
             validate_expression_collection(node.elements, "ListExpression elements")
             return f"[{separator.join(self.visit(element) for element in node.elements)}]"
 
-        def visit_dict_expression(self, node) -> str:
+        def visit_dict_expression(self, node: Any) -> str:
             from yaraast.yarax.ast_nodes import SpreadOperator
 
             separator = self._comma_separator()
@@ -256,7 +262,7 @@ def expression_to_string(expr, options=None) -> str:
             ]
             return f"{{{separator.join(items)}}}"
 
-        def visit_lambda_expression(self, node) -> str:
+        def visit_lambda_expression(self, node: Any) -> str:
             validate_expression_collection(node.parameters, "LambdaExpression parameters")
             parameters = self._comma_separator().join(node.parameters)
             if parameters:

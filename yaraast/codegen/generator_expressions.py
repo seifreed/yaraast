@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any, cast
 
 from yaraast.codegen.generator_formatting import validate_yara_identifier
 from yaraast.codegen.generator_helpers import (
@@ -16,7 +17,7 @@ _QUANTIFIER_PERCENT_MIN = 1
 _QUANTIFIER_PERCENT_MAX = 100
 
 
-def _render_string_set(gen, string_set) -> str:
+def _render_string_set(gen: Any, string_set: Any) -> str:
     from yaraast.ast.expressions import (
         Identifier,
         ParenthesesExpression,
@@ -50,7 +51,7 @@ def _render_string_set(gen, string_set) -> str:
         rendered_items = [_render_string_set_item(gen, item) for item in string_set.elements]
         return f"({', '.join(rendered_items)})"
     if hasattr(string_set, "accept"):
-        return gen.visit(string_set)
+        return cast(str, gen.visit(string_set))
     if isinstance(string_set, list | tuple):
         rendered_items = [_render_string_set_item(gen, item) for item in string_set]
         return f"({', '.join(rendered_items)})"
@@ -62,17 +63,17 @@ def _render_string_set(gen, string_set) -> str:
     return _render_single_string_set_text(string_set)
 
 
-def _is_rule_set_items(items) -> bool:
+def _is_rule_set_items(items: list[Any] | tuple[Any, ...]) -> bool:
     return bool(items) and all(_is_rule_set_item(item) for item in items)
 
 
-def _has_mixed_rule_and_string_set_items(items) -> bool:
+def _has_mixed_rule_and_string_set_items(items: list[Any] | tuple[Any, ...]) -> bool:
     has_rule_item = any(_is_rule_set_item(item) for item in items)
     has_string_item = any(_is_string_set_item(item) for item in items)
     return has_rule_item and has_string_item
 
 
-def _is_rule_set_item(item) -> bool:
+def _is_rule_set_item(item: Any) -> bool:
     from yaraast.ast.expressions import Identifier, StringWildcard
 
     if isinstance(item, Identifier):
@@ -80,7 +81,7 @@ def _is_rule_set_item(item) -> bool:
     return isinstance(item, StringWildcard) and not item.pattern.startswith("$")
 
 
-def _is_string_set_item(item) -> bool:
+def _is_string_set_item(item: Any) -> bool:
     from yaraast.ast.expressions import Identifier, StringIdentifier, StringLiteral, StringWildcard
 
     if isinstance(item, Identifier):
@@ -94,7 +95,7 @@ def _is_string_set_item(item) -> bool:
     return bool(isinstance(item, str))
 
 
-def _render_rule_set_item(item) -> str:
+def _render_rule_set_item(item: Any) -> str:
     from yaraast.ast.expressions import Identifier, StringWildcard
 
     if isinstance(item, Identifier):
@@ -130,17 +131,17 @@ def _render_single_string_set_text(string_set: object) -> str:
     return f"({validate_string_set_item_text(text)})"
 
 
-def _render_string_set_item(gen, item) -> str:
+def _render_string_set_item(gen: Any, item: Any) -> str:
     from yaraast.ast.expressions import StringLiteral
 
     if isinstance(item, StringLiteral):
         return validate_string_set_item_text(item.value)
     if hasattr(item, "accept"):
-        return gen.visit(item)
+        return cast(str, gen.visit(item))
     return validate_string_set_item_text(item)
 
 
-def _render_quantifier(gen, quantifier, *, allow_percentage: bool = False) -> str:
+def _render_quantifier(gen: Any, quantifier: Any, *, allow_percentage: bool = False) -> str:
     from yaraast.ast.expressions import (
         BooleanLiteral,
         DoubleLiteral,
@@ -172,7 +173,7 @@ def _render_quantifier(gen, quantifier, *, allow_percentage: bool = False) -> st
         return _format_fractional_percentage_quantifier(quantifier.value)
     if isinstance(quantifier, Identifier):
         return _validate_quantifier_text(quantifier.name, allow_percentage=allow_percentage)
-    return gen.visit(quantifier)
+    return cast(str, gen.visit(quantifier))
 
 
 def _validate_quantifier_text(text: str, *, allow_percentage: bool) -> str:
@@ -210,7 +211,7 @@ def _validate_percentage_quantifier(percent: int, raw_value: object) -> None:
     raise ValueError(msg)
 
 
-def render_for_of_expression(gen, node) -> str:
+def render_for_of_expression(gen: Any, node: Any) -> str:
     """Render a for-of expression."""
     quantifier = _render_quantifier(gen, node.quantifier, allow_percentage=True)
     string_set = _render_string_set(gen, node.string_set)
@@ -225,7 +226,7 @@ def render_for_of_expression(gen, node) -> str:
     return f"{quantifier} of {string_set}"
 
 
-def render_in_expression(gen, node) -> str:
+def render_in_expression(gen: Any, node: Any) -> str:
     """Render an in-expression with parenthesis normalization."""
     from yaraast.ast.expressions import (
         ParenthesesExpression,
@@ -262,7 +263,7 @@ def render_in_expression(gen, node) -> str:
     return f"{subject} in {range_expr}"
 
 
-def render_of_expression(gen, node) -> str:
+def render_of_expression(gen: Any, node: Any) -> str:
     """Render an of-expression."""
     quantifier = _render_quantifier(gen, node.quantifier, allow_percentage=True)
     string_set = _render_string_set(gen, node.string_set)

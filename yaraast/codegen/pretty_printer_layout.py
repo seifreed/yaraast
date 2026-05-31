@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
     validate_extern_rule_identifiers,
@@ -13,6 +15,7 @@ from yaraast.codegen.generator_formatting import (
     validate_yara_identifier,
 )
 from yaraast.codegen.generator_helpers import (
+    output_string_identifier,
     validate_hex_string_modifiers,
     validate_plain_string_modifiers,
     validate_regex_string_modifiers,
@@ -26,12 +29,11 @@ from yaraast.codegen.pretty_printer_helpers import (
     format_regex_string,
     indent_unit,
     modifiers_to_string,
-    output_string_identifier,
     regex_modifiers_to_string,
 )
 
 
-def _emit_top_level_line(printer, node) -> None:
+def _emit_top_level_line(printer: Any, node: Any) -> None:
     printer._write_comments(getattr(node, "leading_comments", None))
     rendered = printer.visit(node)
     if rendered:
@@ -42,7 +44,7 @@ def _emit_top_level_line(printer, node) -> None:
     printer._writeline()
 
 
-def _write_line(printer, text: str, trailing_comment=None) -> None:
+def _write_line(printer: Any, text: str, trailing_comment: Any = None) -> None:
     printer._write(current_indent(printer))
     printer._write(text)
     if trailing_comment:
@@ -50,7 +52,11 @@ def _write_line(printer, text: str, trailing_comment=None) -> None:
     printer._writeline()
 
 
-def _emit_top_level_section(printer, nodes, blank_lines: int = 1) -> None:
+def _emit_top_level_section(
+    printer: Any,
+    nodes: list[Any] | tuple[Any, ...],
+    blank_lines: int = 1,
+) -> None:
     if not nodes:
         return
     for node in nodes:
@@ -59,7 +65,7 @@ def _emit_top_level_section(printer, nodes, blank_lines: int = 1) -> None:
         printer._writeline()
 
 
-def visit_yara_file(printer, node) -> str:
+def visit_yara_file(printer: Any, node: Any) -> str:
     validate_yara_file_collections(node)
     validate_rule_identifiers(node.rules)
     validate_extern_rule_identifiers(node.rules, node.extern_rules, node.namespaces)
@@ -88,15 +94,15 @@ def visit_yara_file(printer, node) -> str:
                 printer._writeline()
         printer.visit_rule(rule)
         printer._writeline()
-    return printer.buffer.getvalue()
+    return str(printer.buffer.getvalue())
 
 
-def visit_rule(printer, node) -> str:
+def visit_rule(printer: Any, node: Any) -> str:
     printer._write_comments(node.leading_comments)
     validate_rule_collections(node)
     validate_rule_meta(node.meta)
     validate_string_identifiers(node.strings)
-    line_parts = []
+    line_parts: list[str] = []
     modifiers = format_rule_modifiers(node.modifiers)
     if modifiers:
         line_parts.append(modifiers)
@@ -142,10 +148,10 @@ def visit_rule(printer, node) -> str:
 
     printer._dedent()
     printer._writeline("}")
-    return printer.buffer.getvalue()
+    return str(printer.buffer.getvalue())
 
 
-def _write_in_rule_pragmas(printer, node, position: str) -> None:
+def _write_in_rule_pragmas(printer: Any, node: Any, position: str) -> None:
     for pragma in getattr(node, "pragmas", []):
         if pragma.position == position:
             printer._write_comments(getattr(pragma, "leading_comments", None))
@@ -158,7 +164,7 @@ def _write_in_rule_pragmas(printer, node, position: str) -> None:
                     printer._write_comment(trailing_comment)
 
 
-def write_string_definition(printer, string_def) -> None:
+def write_string_definition(printer: Any, string_def: Any) -> None:
     from yaraast.ast.strings import HexString, PlainString, RegexString
 
     printer._write_comments(getattr(string_def, "leading_comments", None))
@@ -223,14 +229,14 @@ def write_string_definition(printer, string_def) -> None:
     printer._writeline()
 
 
-def write_condition_section(printer, condition) -> None:
+def write_condition_section(printer: Any, condition: Any) -> None:
     printer._write_comments(getattr(condition, "leading_comments", None))
     condition_str = expression_to_string(condition, printer.options)
     trailing_comment = getattr(condition, "trailing_comment", None)
     if "\n" in condition_str:
-        lines = condition_str.splitlines()
-        for index, line in enumerate(lines):
-            comment = trailing_comment if index == len(lines) - 1 else None
+        split_lines = condition_str.splitlines()
+        for index, line in enumerate(split_lines):
+            comment = trailing_comment if index == len(split_lines) - 1 else None
             _write_line(printer, line, comment)
         return
 
@@ -239,7 +245,7 @@ def write_condition_section(printer, condition) -> None:
         and len(condition_str) > printer.options.max_line_length
     ):
         current_line = ""
-        lines = []
+        lines: list[str] = []
         for word in condition_str.split():
             if len(current_line + " " + word) > printer.options.max_line_length:
                 if current_line:

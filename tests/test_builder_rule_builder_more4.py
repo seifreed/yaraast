@@ -68,8 +68,9 @@ def test_rule_builder_rejects_invalid_hex_alternatives() -> None:
 
 
 def test_rule_builder_rejects_unsupported_raw_hex_tokens() -> None:
+    bad_tokens: list[Any] = [object()]
     with pytest.raises(TypeError, match="Unsupported hex token"):
-        RuleBuilder("bad").with_hex_string("$h", [object()])
+        RuleBuilder("bad").with_hex_string("$h", bad_tokens)
 
     with pytest.raises(TypeError, match="HexByte value must be a byte"):
         RuleBuilder("bad").with_hex_string("$h", [HexAlternative([True])])

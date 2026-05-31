@@ -2,14 +2,22 @@ from __future__ import annotations
 
 import pytest
 
-from yaraast.lexer.lexer import Lexer
+from yaraast.lexer.lexer import Lexer as _Lexer
 from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.lexer_tables import YARA_IDENTIFIER_MAX_LENGTH
 from yaraast.lexer.tokens import Token, TokenType
 
 
+def _lexer(source: str) -> _Lexer[list[Token]]:
+    return _Lexer[list[Token]](source)
+
+
+def _tokens(source: str) -> list[Token]:
+    return _lexer(source).tokenize()
+
+
 def test_lexer_properties_reset_and_basic_helpers() -> None:
-    lex = Lexer("rule a { condition: true }")
+    lex = _lexer("rule a { condition: true }")
     _ = lex.tokenize()
 
     lex.text = "rule b { condition: true }"
@@ -22,13 +30,13 @@ def test_lexer_properties_reset_and_basic_helpers() -> None:
     tokens = lex.tokenize("rule c { condition: true }")
     assert any(t.value == "c" for t in tokens if t.type == TokenType.IDENTIFIER)
 
-    lex2 = Lexer("")
+    lex2 = _lexer("")
     assert lex2._next_token() is None
     assert lex2._peek_char() is None
 
 
 def test_lexer_tokenize_reuse_resets_previous_tokens() -> None:
-    lex = Lexer("rule a { condition: true }")
+    lex = _lexer("rule a { condition: true }")
 
     first = lex.tokenize()
     first_types = [token.type for token in first]
@@ -45,11 +53,11 @@ def test_lexer_rejects_identifiers_longer_than_libyara_limit() -> None:
     valid_name = "a" * YARA_IDENTIFIER_MAX_LENGTH
     long_name = "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)
 
-    tokens = Lexer(f"rule {valid_name} {{ condition: true }}").tokenize()
+    tokens = _tokens(f"rule {valid_name} {{ condition: true }}")
     assert tokens[1].value == valid_name
 
     with pytest.raises(LexerError, match="Identifier exceeds maximum length"):
-        Lexer(f"rule {long_name} {{ condition: true }}").tokenize()
+        _tokens(f"rule {long_name} {{ condition: true }}")
 
 
 @pytest.mark.parametrize(
@@ -64,27 +72,27 @@ def test_lexer_rejects_identifiers_longer_than_libyara_limit() -> None:
 )
 def test_lexer_rejects_non_ascii_identifiers(source: str) -> None:
     with pytest.raises(LexerError, match="Unexpected character"):
-        Lexer(source).tokenize()
+        _tokens(source)
 
 
 def test_lexer_number_suffix_and_regex_context_and_hex_context_helpers() -> None:
-    lex = Lexer("10KB")
+    lex = _lexer("10KB")
     toks = lex.tokenize()
     nums = [t for t in toks if t.type == TokenType.INTEGER]
     assert nums[0].value == 10 * 1024
 
-    lex2 = Lexer("\\ \n")
+    lex2 = _lexer("\\ \n")
     assert lex2._is_line_continuation() is True
 
-    lex3 = Lexer("/")
+    lex3 = _lexer("/")
     lex3.tokens = [Token(TokenType.RPAREN, ")", 1, 1)]
     assert lex3._is_regex_context() is False
 
-    lex4 = Lexer("/")
+    lex4 = _lexer("/")
     lex4.tokens = [Token(TokenType.CONDITION, "condition", 1, 1)]
     assert lex4._is_regex_context() is True
 
-    lex5 = Lexer("{")
+    lex5 = _lexer("{")
     lex5.tokens = [
         Token(TokenType.COMMENT, "//", 1, 1),
         Token(TokenType.STRING_IDENTIFIER, "$a", 1, 1),
@@ -92,18 +100,18 @@ def test_lexer_number_suffix_and_regex_context_and_hex_context_helpers() -> None
     ]
     assert lex5._is_hex_string_context() is True
 
-    lex6 = Lexer("/")
+    lex6 = _lexer("/")
     assert lex6._is_regex_context() is True
 
-    lex7 = Lexer("/")
+    lex7 = _lexer("/")
     lex7.tokens = [Token(TokenType.MATCHES, "matches", 1, 1)]
     assert lex7._is_regex_context() is True
 
-    lex8 = Lexer("{")
+    lex8 = _lexer("{")
     lex8.tokens = [Token(TokenType.IDENTIFIER, "x", 1, 1), Token(TokenType.ASSIGN, "=", 1, 2)]
     assert lex8._is_hex_string_context() is False
 
-    lex9 = Lexer("\\  x")
+    lex9 = _lexer("\\  x")
     assert lex9._is_line_continuation() is False
 
 
@@ -115,7 +123,7 @@ def test_lexer_rejects_integer_literals_above_int64_maximum() -> None:
         "0o777777777777777777777",
     ]
     for value in valid_values:
-        tokens = Lexer(value).tokenize()
+        tokens = _tokens(value)
         assert tokens[0].type == TokenType.INTEGER
 
     invalid_values = [
@@ -125,58 +133,58 @@ def test_lexer_rejects_integer_literals_above_int64_maximum() -> None:
     ]
     for value in invalid_values:
         with pytest.raises(LexerError, match="Integer literal exceeds int64 maximum"):
-            Lexer(value).tokenize()
+            _tokens(value)
 
 
 def test_lexer_reports_malformed_prefixed_integer_literals_as_lexer_errors() -> None:
     malformed_hex_values = ["0x", "0x_", "0x1_", "0x1__2", "0xg", "0x1g"]
     for value in malformed_hex_values:
         with pytest.raises(LexerError, match="Invalid hexadecimal integer literal"):
-            Lexer(value).tokenize()
+            _tokens(value)
 
     malformed_octal_values = ["0o", "0o_", "0o7_", "0o7__1", "0o8", "0o78"]
     for value in malformed_octal_values:
         with pytest.raises(LexerError, match="Invalid octal integer literal"):
-            Lexer(value).tokenize()
+            _tokens(value)
 
 
 def test_lexer_reports_malformed_decimal_separators_as_lexer_errors() -> None:
     valid_values = ["1_000", "1_000.5"]
     for value in valid_values:
-        tokens = Lexer(value).tokenize()
+        tokens = _tokens(value)
         assert tokens[0].type in {TokenType.INTEGER, TokenType.DOUBLE}
 
     malformed_decimal_values = ["1_", "1__2", "1_.5", "1.5_", "1.5__2"]
     for value in malformed_decimal_values:
         with pytest.raises(LexerError, match="Invalid decimal"):
-            Lexer(value).tokenize()
+            _tokens(value)
 
 
 def test_lexer_reports_invalid_size_suffixes_as_lexer_errors() -> None:
     valid_values = {"10KB": 10 * 1024, "10MB": 10 * 1024 * 1024}
     for value, expected in valid_values.items():
-        tokens = Lexer(value).tokenize()
+        tokens = _tokens(value)
         assert tokens[0].type == TokenType.INTEGER
         assert tokens[0].value == expected
 
     invalid_values = ["10K", "10M", "10kb", "10Kb", "10kB", "10mb", "10MBps"]
     for value in invalid_values:
         with pytest.raises(LexerError, match="Invalid size suffix"):
-            Lexer(value).tokenize()
+            _tokens(value)
 
 
 def test_lexer_string_and_hex_error_paths() -> None:
     with pytest.raises(LexerError, match="Unterminated string"):
-        Lexer('"unterminated').tokenize()
+        _tokens('"unterminated')
 
     with pytest.raises(LexerError, match="Invalid escape sequence"):
-        Lexer(r'rule r { strings: $a = "\z" condition: $a }').tokenize()
+        _tokens(r'rule r { strings: $a = "\z" condition: $a }')
 
     with pytest.raises(LexerError, match="Invalid hex escape sequence"):
-        Lexer(r'rule r { strings: $a = "\x4" condition: $a }').tokenize()
+        _tokens(r'rule r { strings: $a = "\x4" condition: $a }')
 
     with pytest.raises(LexerError, match="Unterminated string"):
-        Lexer('rule r { strings: $a = "abc\nreal" condition: $a }').tokenize()
+        _tokens('rule r { strings: $a = "abc\nreal" condition: $a }')
 
     code = """
 rule r {
@@ -184,11 +192,11 @@ rule r {
    $a = { 4D // comment with }
 """
     with pytest.raises(LexerError, match="Unterminated hex string"):
-        Lexer(code).tokenize()
+        _tokens(code)
 
 
 def test_lexer_regex_and_backslash_division_paths() -> None:
-    tokens = Lexer(r"rule r { condition: /a\/b/i }").tokenize()
+    tokens = _tokens(r"rule r { condition: /a\/b/i }")
     regex_tokens = [t for t in tokens if t.type == TokenType.REGEX]
     assert regex_tokens
     regex_value = regex_tokens[0].value
@@ -196,20 +204,20 @@ def test_lexer_regex_and_backslash_division_paths() -> None:
     assert "\x00i" in regex_value
 
     # Backslash followed by a non-newline expression is YARA integer division.
-    tokens2 = Lexer("10 \\ 2").tokenize()
+    tokens2 = _tokens("10 \\ 2")
     assert any(t.type == TokenType.DIVIDE and t.value == "\\" for t in tokens2)
 
-    tokens3 = Lexer("rule r { condition: true \\ \n and false }").tokenize()
+    tokens3 = _tokens("rule r { condition: true \\ \n and false }")
     assert not any(t.type == TokenType.DIVIDE for t in tokens3)
 
 
 def test_lexer_rejects_raw_newline_inside_regex() -> None:
     with pytest.raises(LexerError, match="Unterminated regex"):
-        Lexer("rule r { condition: /a\n/ }").tokenize()
+        _tokens("rule r { condition: /a\n/ }")
 
 
 def test_lexer_accepts_carriage_return_inside_regex() -> None:
-    tokens = Lexer("rule r { condition: /a\r/ and /a\\\r/ }").tokenize()
+    tokens = _tokens("rule r { condition: /a\r/ and /a\\\r/ }")
     regex_values = [token.value for token in tokens if token.type == TokenType.REGEX]
 
     assert regex_values == ["a\r", "a\\\r"]
@@ -217,9 +225,9 @@ def test_lexer_accepts_carriage_return_inside_regex() -> None:
 
 def test_lexer_rejects_slash_as_division_operator() -> None:
     with pytest.raises(LexerError, match="Unexpected character: /"):
-        Lexer("rule r { condition: 4 / 2 == 2 }").tokenize()
+        _tokens("rule r { condition: 4 / 2 == 2 }")
 
-    tokens = Lexer("rule r { condition: 4 \\ 2 == 2 and filesize \\ 2 >= 1 }").tokenize()
+    tokens = _tokens("rule r { condition: 4 \\ 2 == 2 and filesize \\ 2 >= 1 }")
 
     assert [token.type for token in tokens].count(TokenType.DIVIDE) == 2
     assert all(token.value == "\\" for token in tokens if token.type == TokenType.DIVIDE)
@@ -235,7 +243,7 @@ rule r {
    $a
 }
 """
-    tokens = Lexer(code).tokenize()
+    tokens = _tokens(code)
     hex_tokens = [t for t in tokens if t.type == TokenType.HEX_STRING]
     assert len(hex_tokens) == 1
     hex_value = hex_tokens[0].value
@@ -246,7 +254,7 @@ rule r {
     assert "5A" in hex_value
     assert "90" in hex_value
 
-    regex_tokens = Lexer(r"rule r { condition: /ab+c/is }").tokenize()
+    regex_tokens = _tokens(r"rule r { condition: /ab+c/is }")
     assert any(
         t.type == TokenType.REGEX and isinstance(t.value, str) and t.value.endswith("\x00is")
         for t in regex_tokens
@@ -257,18 +265,18 @@ def test_lexer_reports_unterminated_regex_and_handles_hex_numbers_and_line_conti
     None
 ):
     with pytest.raises(LexerError, match="Unterminated regex"):
-        Lexer("rule r { condition: /abc }").tokenize()
+        _tokens("rule r { condition: /abc }")
 
-    tokens = Lexer("0x10").tokenize()
+    tokens = _tokens("0x10")
     integer_tokens = [t for t in tokens if t.type == TokenType.INTEGER]
     assert integer_tokens[0].value == 16
 
-    lex = Lexer("\\\r")
+    lex = _lexer("\\\r")
     assert lex._is_line_continuation() is True
 
 
 def test_lexer_covers_valid_escape_sequences() -> None:
-    string_tokens = [t for t in Lexer(r"""
+    string_tokens = [t for t in _tokens(r"""
 rule r {
  strings:
    $a = "line\n\t\r\""
@@ -277,7 +285,7 @@ rule r {
  condition:
    all of them
 }
-""").tokenize() if t.type == TokenType.STRING]
+""") if t.type == TokenType.STRING]
 
     assert string_tokens[0].value == 'line\n\t\r"'
     assert string_tokens[1].value == "A"
@@ -285,12 +293,12 @@ rule r {
 
 
 def test_lexer_reads_two_char_operators_numbers_and_string_markers() -> None:
-    tokens = Lexer("""
+    tokens = _tokens("""
 rule r {
  condition:
    $* and $name* and #hits > 1 and @off >= 10KB and !len <= 2MB and 1.5 != 2
 }
-""").tokenize()
+""")
 
     by_type: dict[TokenType, list[Token]] = {}
     for token in tokens:
@@ -309,45 +317,45 @@ rule r {
 
 def test_lexer_reports_unexpected_character_and_edge_regex_comment_paths() -> None:
     with pytest.raises(LexerError, match="Unexpected character: `"):
-        Lexer("`").tokenize()
+        _tokens("`")
 
     with pytest.raises(LexerError, match="Unterminated regex"):
-        Lexer("rule r { condition: /abc\\").tokenize()
+        _tokens("rule r { condition: /abc\\")
 
     with pytest.raises(LexerError, match="Unterminated hex string"):
-        Lexer("""
+        _tokens("""
 rule r {
  strings:
-   $a = { 4D // eof comment""").tokenize()
+   $a = { 4D // eof comment""")
 
     with pytest.raises(LexerError, match="Unterminated hex string"):
-        Lexer("""
+        _tokens("""
 rule r {
  strings:
-   $a = { 4D /* eof block""").tokenize()
+   $a = { 4D /* eof block""")
 
 
 def test_lexer_context_helpers_cover_default_regex_and_comment_only_hex_cases() -> None:
-    lex = Lexer("x")
+    lex = _lexer("x")
     lex.position = len(lex.text)
     lex._advance()
     assert lex.position == len(lex.text)
 
-    lex2 = Lexer("x")
+    lex2 = _lexer("x")
     assert lex2._is_line_continuation() is False
 
-    lex3 = Lexer("/")
+    lex3 = _lexer("/")
     lex3.tokens = [Token(TokenType.IDENTIFIER, "x", 1, 1)]
     assert lex3._is_regex_context() is False
 
-    lex3b = Lexer("/")
+    lex3b = _lexer("/")
     lex3b.tokens = [
         Token(TokenType.COMMENT, "// one", 1, 1),
         Token(TokenType.NEWLINE, "\n", 1, 2),
     ]
     assert lex3b._is_regex_context() is True
 
-    lex4 = Lexer("{")
+    lex4 = _lexer("{")
     lex4.tokens = [
         Token(TokenType.COMMENT, "// one", 1, 1),
         Token(TokenType.COMMENT, "// two", 1, 2),

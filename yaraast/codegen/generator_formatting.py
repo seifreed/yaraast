@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from yaraast.codegen.generator_helpers import (
     escape_plain_string_value,
@@ -34,7 +35,7 @@ _RULE_COLLECTION_FIELDS = (
 )
 
 
-def format_rule_modifiers(modifiers) -> str:
+def format_rule_modifiers(modifiers: list[Any] | tuple[Any, ...] | None) -> str:
     if modifiers is None:
         return ""
     if not isinstance(modifiers, list | tuple):
@@ -46,7 +47,7 @@ def format_rule_modifiers(modifiers) -> str:
     return " ".join(str(m) for m in modifiers)
 
 
-def validate_rule_modifiers(modifiers) -> None:
+def validate_rule_modifiers(modifiers: list[Any] | tuple[Any, ...]) -> None:
     for modifier in modifiers:
         name = str(modifier)
         if name in _YARA_RULE_MODIFIERS:
@@ -55,7 +56,7 @@ def validate_rule_modifiers(modifiers) -> None:
         raise ValueError(msg)
 
 
-def validate_rule_identifiers(rules) -> None:
+def validate_rule_identifiers(rules: list[Any] | tuple[Any, ...]) -> None:
     if not rules:
         return
 
@@ -69,7 +70,11 @@ def validate_rule_identifiers(rules) -> None:
         seen.add(name)
 
 
-def validate_extern_rule_identifiers(rules, extern_rules, namespaces) -> None:
+def validate_extern_rule_identifiers(
+    rules: list[Any] | tuple[Any, ...],
+    extern_rules: list[Any] | tuple[Any, ...],
+    namespaces: list[Any] | tuple[Any, ...],
+) -> None:
     rule_names = {str(getattr(rule, "name", "")) for rule in rules}
     seen: set[tuple[str | None, str]] = set()
 
@@ -91,7 +96,7 @@ def validate_extern_rule_identifiers(rules, extern_rules, namespaces) -> None:
 
 
 def _validate_extern_rule_identifier(
-    extern_rule,
+    extern_rule: Any,
     default_namespace: str | None,
     rule_names: set[str],
     seen: set[tuple[str | None, str]],
@@ -113,7 +118,7 @@ def _validate_extern_rule_identifier(
     seen.add(key)
 
 
-def validate_yara_file_collections(node) -> None:
+def validate_yara_file_collections(node: Any) -> None:
     for field_name in _YARA_FILE_COLLECTION_FIELDS:
         value = getattr(node, field_name)
         if isinstance(value, list | tuple):
@@ -122,7 +127,7 @@ def validate_yara_file_collections(node) -> None:
         raise TypeError(msg)
 
 
-def validate_rule_collections(node) -> None:
+def validate_rule_collections(node: Any) -> None:
     for field_name, display_name in _RULE_COLLECTION_FIELDS:
         value = getattr(node, field_name)
         if isinstance(value, list | tuple):
@@ -131,7 +136,7 @@ def validate_rule_collections(node) -> None:
         raise TypeError(msg)
 
 
-def format_rule_tags(tags) -> str:
+def format_rule_tags(tags: list[Any] | tuple[Any, ...] | None) -> str:
     if tags is None:
         return ""
     if not isinstance(tags, list | tuple):
@@ -144,7 +149,7 @@ def format_rule_tags(tags) -> str:
     return " ".join(tag_names)
 
 
-def validate_rule_tags(tags) -> None:
+def validate_rule_tags(tags: list[Any] | tuple[Any, ...]) -> None:
     if not tags:
         return
 
@@ -158,7 +163,7 @@ def validate_rule_tags(tags) -> None:
         seen.add(name)
 
 
-def validate_rule_meta(meta) -> None:
+def validate_rule_meta(meta: object) -> None:
     if meta is None:
         return
     if not isinstance(meta, dict | list | tuple):
@@ -175,7 +180,7 @@ def validate_rule_meta(meta) -> None:
         format_meta_value(entry.key, entry.value, getattr(entry, "scope", None))
 
 
-def _rule_tag_name(tag) -> str:
+def _rule_tag_name(tag: Any) -> str:
     if isinstance(tag, str):
         return tag
     return str(tag.name if hasattr(tag, "name") else tag)
@@ -225,7 +230,7 @@ def format_meta_key(key: str, scope: object | None = None) -> str:
     return key
 
 
-def format_meta_literal(value, *, preserve_quoted: bool = False) -> str:
+def format_meta_literal(value: Any, *, preserve_quoted: bool = False) -> str:
     if isinstance(value, str):
         if preserve_quoted and value.startswith('"') and value.endswith('"'):
             return value
@@ -238,7 +243,7 @@ def format_meta_literal(value, *, preserve_quoted: bool = False) -> str:
     raise TypeError(msg)
 
 
-def format_meta_value(key: str, value, scope: object | None = None) -> str:
+def format_meta_value(key: str, value: Any, scope: object | None = None) -> str:
     rendered_key = format_meta_key(key, scope)
     return f"{rendered_key} = {format_meta_literal(value)}"
 
@@ -270,5 +275,5 @@ def format_boolean_literal(value: bool) -> str:
     return "true" if value else "false"
 
 
-def format_hex_jump(min_jump, max_jump) -> str:
+def format_hex_jump(min_jump: int | None, max_jump: int | None) -> str:
     return format_hex_jump_bounds(min_jump, max_jump)

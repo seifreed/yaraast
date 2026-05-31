@@ -147,13 +147,13 @@ class PrettyPrinter(CommentAwareCodeGenerator):
     def visit_rule(self, node: Rule) -> str:
         return layout_visit_rule(self, node)
 
-    def _write_meta_section(self, meta: dict[str, Any] | list[Any]) -> None:
+    def _write_meta_section(self, meta: Any) -> None:
         section_write_meta_section(self, meta)
 
     def _write_meta_entry(self, key: str, value: Any) -> None:
         section_write_meta_entry(self, key, value)
 
-    def _write_strings_section(self, strings: list[StringDefinition]) -> None:
+    def _write_strings_section(self, strings: Any, *, has_condition: bool = False) -> None:
         section_write_strings_section(self, strings)
 
     def _write_string_definition(self, string_def: StringDefinition) -> None:
@@ -168,7 +168,7 @@ class PrettyPrinter(CommentAwareCodeGenerator):
     def _write_regex_string_aligned(self, node: RegexString) -> None:
         section_write_regex_string_aligned(self, node)
 
-    def _write_condition_section(self, condition: Expression) -> None:
+    def _write_condition_section(self, condition: Any) -> None:
         layout_write_condition_section(self, condition)
 
     def _write_wrapped_condition(self, condition_str: str) -> None:

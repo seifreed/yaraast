@@ -224,7 +224,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
             if trailing:
                 self._write_comment(trailing, inline=True)
 
-    def _write_meta_section(self, node: Rule) -> None:
+    def _write_meta_section(self, node: Any) -> None:
         """Write the meta section with comments."""
         validate_rule_meta(node.meta)
         if not node.meta:
@@ -247,7 +247,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         self._dedent()
 
-    def _write_strings_section(self, node: Rule) -> None:
+    def _write_strings_section(self, node: Any, *, has_condition: bool = False) -> None:
         """Write the strings section with comments."""
         validate_string_identifiers(node.strings)
         if not node.strings:
@@ -265,19 +265,20 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         self._dedent()
 
-    def _write_condition_section(self, node: Rule) -> None:
+    def _write_condition_section(self, node: Any) -> None:
         """Write the condition section with comments."""
-        if not node.condition:
+        condition = node.condition
+        if not condition:
             return
 
         self._writeline("condition:")
         self._indent()
 
-        if hasattr(node.condition, "leading_comments"):
-            self._write_leading_comments(node.condition.leading_comments)
+        if hasattr(condition, "leading_comments"):
+            self._write_leading_comments(condition.leading_comments)
 
-        condition_str = self.visit(node.condition)
-        trailing = getattr(node.condition, "trailing_comment", None)
+        condition_str = self.visit(condition)
+        trailing = getattr(condition, "trailing_comment", None)
         if condition_str:
             indent = " " * (self.indent_level * self.indent_size)
             if "\n" in condition_str:
@@ -301,7 +302,7 @@ class CommentAwareCodeGenerator(CodeGenerator):
 
         self._dedent()
 
-    def _write_meta_item(self, key: str, value: any, scope: object | None = None) -> None:
+    def _write_meta_item(self, key: str, value: Any, scope: object | None = None) -> None:
         """Write a meta item."""
         # Add indentation manually
         indent = " " * (self.indent_level * self.indent_size)
@@ -391,6 +392,9 @@ class CommentAwareCodeGenerator(CodeGenerator):
         return f"{node.identifier} = {self.visit(node.value)}"
 
     def visit_array_comprehension(self, node: ArrayComprehension) -> str:
+        if node.expression is None or node.iterable is None:
+            msg = "Array comprehension requires expression and iterable for libyara output"
+            raise ValueError(msg)
         result = (
             f"[{self.visit(node.expression)} for {node.variable} " f"in {self.visit(node.iterable)}"
         )
@@ -399,6 +403,9 @@ class CommentAwareCodeGenerator(CodeGenerator):
         return result + "]"
 
     def visit_dict_comprehension(self, node: DictComprehension) -> str:
+        if node.key_expression is None or node.value_expression is None or node.iterable is None:
+            msg = "Dict comprehension requires key, value, and iterable for libyara output"
+            raise ValueError(msg)
         variables = (
             f"{node.key_variable}, {node.value_variable}"
             if node.value_variable
@@ -469,8 +476,9 @@ class CommentAwareCodeGenerator(CodeGenerator):
         lines = [f"match {self.visit(node.value)} {{"]
         case_indent = " " * self.indent_size
         lines.extend(f"{case_indent}{self.visit(case)}," for case in node.cases)
-        if node.default:
-            default_str = self._indent_continuation_lines(self.visit(node.default))
+        default = node.default
+        if default is not None:
+            default_str = self._indent_continuation_lines(self.visit(default))
             lines.append(f"{case_indent}_ => {default_str},")
         lines.append("}")
         return "\n".join(lines)

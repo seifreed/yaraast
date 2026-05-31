@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.codegen.formatting import StringStyle
 from yaraast.codegen.generator_formatting import format_meta_key, format_meta_literal
 from yaraast.codegen.generator_helpers import (
@@ -15,24 +17,27 @@ from yaraast.codegen.generator_helpers import (
 )
 
 
-def process_meta_data(meta_data) -> list:
+def process_meta_data(meta_data: dict[str, Any] | list[Any] | tuple[Any, ...]) -> list[Any]:
     """Normalize meta data into a list of meta-like objects."""
 
-    processed_meta = []
+    if isinstance(meta_data, dict):
+        return []
+
+    processed_meta: list[Any] = []
     for item in meta_data:
         if hasattr(item, "key"):
             processed_meta.append(item)
     return processed_meta
 
 
-def get_sorted_meta(meta_list: list, *, sort_meta: bool) -> list:
+def get_sorted_meta(meta_list: list[Any], *, sort_meta: bool) -> list[Any]:
     """Sort meta entries when configured."""
     if sort_meta and meta_list:
         return sorted(meta_list, key=lambda x: x.key if hasattr(x, "key") else str(x))
     return meta_list
 
 
-def get_max_key_length(meta_list: list) -> int:
+def get_max_key_length(meta_list: list[Any]) -> int:
     """Return the maximum meta key length used for alignment."""
     if not meta_list:
         return 0
@@ -42,7 +47,7 @@ def get_max_key_length(meta_list: list) -> int:
     )
 
 
-def write_meta_key(gen, meta, max_key_len: int) -> None:
+def write_meta_key(gen: Any, meta: Any, max_key_len: int) -> None:
     """Write a formatted meta key."""
     key = format_meta_key(meta.key, getattr(meta, "scope", None))
     if gen.config.string_style == StringStyle.TABULAR:
@@ -54,7 +59,7 @@ def write_meta_key(gen, meta, max_key_len: int) -> None:
         gen._write(f"{key} = ")
 
 
-def write_meta_value(gen, meta) -> None:
+def write_meta_value(gen: Any, meta: Any) -> None:
     """Write a formatted meta value."""
     if not hasattr(meta, "value"):
         gen._write('""')
@@ -63,7 +68,7 @@ def write_meta_value(gen, meta) -> None:
     gen._write(format_meta_literal(meta.value))
 
 
-def render_advanced_plain_string(gen, node) -> str:
+def render_advanced_plain_string(gen: Any, node: Any) -> str:
     """Render a plain string in advanced generator styles."""
     from yaraast.codegen.generator_helpers import escape_plain_string_value
 
@@ -78,7 +83,7 @@ def render_advanced_plain_string(gen, node) -> str:
     return ""
 
 
-def render_advanced_hex_string(gen, node) -> str:
+def render_advanced_hex_string(gen: Any, node: Any) -> str:
     """Render a hex string in advanced generator styles."""
     validate_hex_string_modifiers(node.modifiers)
     hex_str = gen._format_hex_string(node)
@@ -91,7 +96,7 @@ def render_advanced_hex_string(gen, node) -> str:
     return ""
 
 
-def render_advanced_regex_string(gen, node) -> str:
+def render_advanced_regex_string(gen: Any, node: Any) -> str:
     """Render a regex string in advanced generator styles."""
     validate_regex_string_modifiers(node.modifiers)
     regex = escape_regex_delimiter(node.regex)

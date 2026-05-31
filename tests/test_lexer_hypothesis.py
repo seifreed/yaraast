@@ -5,11 +5,19 @@ from __future__ import annotations
 from hypothesis import assume, given, settings, strategies as st
 import pytest
 
-from yaraast.lexer.lexer import Lexer
+from yaraast.lexer.lexer import Lexer as _Lexer
 from yaraast.lexer.lexer_tables import KEYWORDS as _LEXER_KEYWORDS
-from yaraast.lexer.tokens import TokenType
+from yaraast.lexer.tokens import Token, TokenType
 
 _ALL_KEYWORDS = frozenset(_LEXER_KEYWORDS.keys())
+
+
+def _lexer(source: str) -> _Lexer[list[Token]]:
+    return _Lexer[list[Token]](source)
+
+
+def _tokens(source: str) -> list[Token]:
+    return _lexer(source).tokenize()
 
 
 def _yara_keyword() -> st.SearchStrategy[str]:
@@ -54,7 +62,7 @@ class TestLexerProperties:
     @settings(max_examples=5, deadline=5000)
     def test_lexer_always_ends_with_eof(self, rule_text: str) -> None:
         """Every token stream ends with EOF."""
-        lexer = Lexer(rule_text)
+        lexer = _lexer(rule_text)
         tokens = lexer.tokenize()
         assert tokens[-1].type == TokenType.EOF
 
@@ -64,7 +72,7 @@ class TestLexerProperties:
         """Simple rules always produce valid token streams."""
         assume(name.lower() not in _ALL_KEYWORDS)
         text = f"rule {name} {{ condition: true }}"
-        lexer = Lexer(text)
+        lexer = _lexer(text)
         tokens = lexer.tokenize()
         assert len(tokens) >= 5  # rule, name, {, condition, :, true, }, EOF
         assert tokens[0].type == TokenType.RULE
@@ -73,12 +81,12 @@ class TestLexerProperties:
     @settings(max_examples=30, deadline=5000)
     def test_keywords_recognized(self, text: str) -> None:
         """All YARA keywords are recognized as keyword tokens (not identifiers)."""
-        lexer = Lexer(text)
+        lexer = _lexer(text)
         tokens = lexer.tokenize()
         # Should have at least keyword + EOF
         assert len(tokens) >= 2
         # The keyword should not be tokenized as IDENTIFIER
-        assert tokens[0].type != TokenType.IDENTIFIER or text not in Lexer.KEYWORDS
+        assert tokens[0].type != TokenType.IDENTIFIER or text not in _Lexer.KEYWORDS
 
     @given(
         name=_valid_identifier(),
@@ -89,8 +97,8 @@ class TestLexerProperties:
         """Tokenizing the same text multiple times produces identical results."""
         assume(name.lower() not in _ALL_KEYWORDS)
         text = f"rule {name} {{ condition: true }}"
-        tokens1 = Lexer(text).tokenize()
-        tokens2 = Lexer(text).tokenize()
+        tokens1 = _tokens(text)
+        tokens2 = _tokens(text)
         assert len(tokens1) == len(tokens2)
         for t1, t2 in zip(tokens1, tokens2, strict=True):
             assert t1.type == t2.type

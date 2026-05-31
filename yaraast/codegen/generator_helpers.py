@@ -164,7 +164,7 @@ def validate_string_set_item_text(item: Any) -> str:
     return validate_string_identifier_text(text)
 
 
-def validate_string_identifiers(strings) -> None:
+def validate_string_identifiers(strings: object) -> None:
     """Reject duplicate named string identifiers that libyara rejects."""
     if not isinstance(strings, list | tuple):
         msg = "Rule strings must be a list or tuple for libyara output"
@@ -192,7 +192,7 @@ def _validate_supported_string_definition(string_def: object) -> None:
     raise TypeError(msg)
 
 
-def format_integer_literal(value) -> str:
+def format_integer_literal(value: object) -> str:
     """Format integer literals with common hex values preserved."""
     if isinstance(value, bool):
         msg = "Integer literal value must be an integer"
@@ -383,7 +383,8 @@ def _validate_hex_negated_value(value: int | str) -> int | str:
 def _is_negated_nibble_pattern(value: str) -> bool:
     if len(value) != 2:
         return False
-    first, second = value
+    first = value[0]
+    second = value[1]
     return (first == "?" and second in _HEX_CHARS) or (first in _HEX_CHARS and second == "?")
 
 
@@ -509,10 +510,15 @@ def _parse_xor_key(value: object) -> _XorKey | None:
     return None
 
 
-def format_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> str:
+def format_modifiers(
+    modifiers: object,
+    visit: Callable[[Any], str] | None = None,
+) -> str:
     """Format modifiers into a string with leading spaces."""
     _validate_string_modifier_collection(modifiers)
     if not modifiers:
+        return ""
+    if not isinstance(modifiers, list | tuple):
         return ""
     validate_duplicate_string_modifiers(modifiers)
     parts = []
@@ -521,7 +527,7 @@ def format_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> st
     return "".join(f" {part}" for part in parts)
 
 
-def validate_plain_string_modifiers(modifiers) -> None:
+def validate_plain_string_modifiers(modifiers: object) -> None:
     """Reject plain string modifier combinations that libyara rejects."""
     _validate_string_modifier_collection(modifiers)
     validate_duplicate_string_modifiers(modifiers)
@@ -545,7 +551,7 @@ def validate_plain_string_modifiers(modifiers) -> None:
         raise ValueError(msg)
 
 
-def validate_hex_string_modifiers(modifiers) -> None:
+def validate_hex_string_modifiers(modifiers: object) -> None:
     """Reject hex string modifiers that libyara rejects."""
     _validate_string_modifier_collection(modifiers)
     validate_duplicate_string_modifiers(modifiers)
@@ -556,7 +562,7 @@ def validate_hex_string_modifiers(modifiers) -> None:
         raise ValueError(msg)
 
 
-def validate_regex_string_modifiers(modifiers) -> None:
+def validate_regex_string_modifiers(modifiers: object) -> None:
     """Reject regex string modifiers that libyara rejects."""
     _validate_string_modifier_collection(modifiers)
     validate_duplicate_string_modifiers(modifiers)
@@ -567,13 +573,13 @@ def validate_regex_string_modifiers(modifiers) -> None:
         raise ValueError(msg)
 
 
-def _modifier_names(modifiers) -> set[str]:
+def _modifier_names(modifiers: object) -> set[str]:
     if not isinstance(modifiers, list | tuple):
         return set()
     return {_regex_modifier_name(modifier) for modifier in modifiers}
 
 
-def _validate_string_modifier_collection(modifiers) -> None:
+def _validate_string_modifier_collection(modifiers: object) -> None:
     if modifiers is None:
         return
     if isinstance(modifiers, list | tuple):
@@ -582,7 +588,7 @@ def _validate_string_modifier_collection(modifiers) -> None:
     raise TypeError(msg)
 
 
-def validate_duplicate_string_modifiers(modifiers) -> None:
+def validate_duplicate_string_modifiers(modifiers: object) -> None:
     """Reject duplicate string modifiers that libyara rejects."""
     if not isinstance(modifiers, list | tuple):
         return
@@ -599,12 +605,14 @@ def validate_duplicate_string_modifiers(modifiers) -> None:
 
 
 def split_regex_modifiers(
-    modifiers,
+    modifiers: object,
     visit: Callable[[Any], str] | None = None,
 ) -> tuple[str, list[str]]:
     """Split regex inline flags from spaced string modifiers."""
     _validate_string_modifier_collection(modifiers)
     if not modifiers:
+        return "", []
+    if not isinstance(modifiers, list | tuple):
         return "", []
 
     suffix_parts: list[str] = []
@@ -644,7 +652,10 @@ def _regex_modifier_name(modifier: object) -> str:
     return str(name)
 
 
-def format_regex_modifiers(modifiers, visit: Callable[[Any], str] | None = None) -> str:
+def format_regex_modifiers(
+    modifiers: object,
+    visit: Callable[[Any], str] | None = None,
+) -> str:
     """Format regex modifiers, keeping inline regex flags adjacent to the literal."""
     validate_regex_string_modifiers(modifiers)
     suffix, spaced_parts = split_regex_modifiers(modifiers, visit)
