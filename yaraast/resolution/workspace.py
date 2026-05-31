@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 import hashlib
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -160,11 +161,11 @@ class Workspace:
                     return (file_path, rule)
         return None
 
-    def _iter_resolved_files(self):
+    def _iter_resolved_files(self) -> Iterator[tuple[str, ResolvedFile]]:
         """Iterate explicit workspace files and their resolved includes once."""
         seen: set[Path] = set()
 
-        def walk(resolved: ResolvedFile, file_path: str):
+        def walk(resolved: ResolvedFile, file_path: str) -> Iterator[tuple[str, ResolvedFile]]:
             if resolved.path in seen:
                 return
             seen.add(resolved.path)

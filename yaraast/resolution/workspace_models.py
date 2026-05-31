@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from yaraast.resolution.dependency_graph import DependencyGraph
 from yaraast.resolution.include_resolver import ResolvedFile
@@ -18,7 +19,7 @@ class FileAnalysisResult:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     type_errors: list[str] = field(default_factory=list)
-    analysis_results: dict = field(default_factory=dict)
+    analysis_results: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -32,4 +33,4 @@ class WorkspaceReport:
     dependency_graph: DependencyGraph
     file_results: dict[str, FileAnalysisResult]
     global_errors: list[str] = field(default_factory=list)
-    statistics: dict = field(default_factory=dict)
+    statistics: dict[str, Any] = field(default_factory=dict)

@@ -162,7 +162,7 @@ class WorkspaceAnalyzer:
             else:
                 report.statistics[key] = value
 
-        rule_names = {}
+        rule_names: dict[str, list[str]] = {}
         for rule_name, file_path in self.workspace.get_all_rules():
             if rule_name not in rule_names:
                 rule_names[rule_name] = []
@@ -198,8 +198,9 @@ class WorkspaceAnalyzer:
                             f"File '{file_path}': Cannot resolve include '{include.path}'",
                         )
 
-        conflicts = report.statistics.get("conflicting_rules", {})
-        for rule_name, files in conflicts.items():
-            report.global_errors.append(
-                f"Rule '{rule_name}' defined in multiple files: {', '.join(files)}",
-            )
+        conflicts = report.statistics.get("conflicting_rules")
+        if isinstance(conflicts, dict):
+            for rule_name, files in conflicts.items():
+                report.global_errors.append(
+                    f"Rule '{rule_name}' defined in multiple files: {', '.join(files)}",
+                )

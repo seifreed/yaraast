@@ -142,7 +142,7 @@ class DependencyNode:
     file_path: Path | None = None
     dependencies: set[str] = field(default_factory=set)
     dependents: set[str] = field(default_factory=set)
-    metadata: dict = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class DependencyGraph:
@@ -480,7 +480,7 @@ class DependencyGraph:
                 isolated.add(node_key)
         return isolated
 
-    def get_statistics(self) -> dict:
+    def get_statistics(self) -> dict[str, int]:
         """Get graph statistics."""
         file_nodes = [n for n in self.nodes.values() if n.type == "file"]
         rule_nodes = [n for n in self.nodes.values() if n.type == "rule"]

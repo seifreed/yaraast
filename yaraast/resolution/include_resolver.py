@@ -7,13 +7,20 @@ from dataclasses import dataclass, field
 import hashlib
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from yaraast.parser.source import parse_yara_source
 
 if TYPE_CHECKING:
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
+
+
+class IncludeTree(TypedDict):
+    """Serializable include tree node."""
+
+    path: str
+    includes: list[IncludeTree]
 
 
 @dataclass
@@ -52,12 +59,12 @@ class IncludeResolver:
 
     def _init_search_paths(self, search_paths: list[str] | None) -> list[Path]:
         """Initialize search paths from config and environment."""
-        paths = []
+        paths: list[Path] = []
 
         # Add provided paths
         if search_paths is not None:
             if not isinstance(search_paths, list) or not all(
-                isinstance(path, str) for path in search_paths
+                isinstance(search_path, str) for search_path in search_paths
             ):
                 msg = "IncludeResolver search_paths must be a list of strings"
                 raise TypeError(msg)
@@ -69,17 +76,17 @@ class IncludeResolver:
         # Add paths from environment variable
         env_paths = os.environ.get("YARA_INCLUDE_PATH", "")
         if env_paths:
-            for path in env_paths.split(os.pathsep):
-                if path:
-                    paths.append(Path(path).resolve())
+            for env_path in env_paths.split(os.pathsep):
+                if env_path:
+                    paths.append(Path(env_path).resolve())
 
         # Remove duplicates while preserving order
-        seen = set()
-        unique_paths = []
-        for path in paths:
-            if path not in seen:
-                seen.add(path)
-                unique_paths.append(path)
+        seen: set[Path] = set()
+        unique_paths: list[Path] = []
+        for candidate_path in paths:
+            if candidate_path not in seen:
+                seen.add(candidate_path)
+                unique_paths.append(candidate_path)
 
         return unique_paths
 
@@ -199,7 +206,7 @@ class IncludeResolver:
             msg,
         )
 
-    def _includes_unchanged(self, resolved) -> bool:
+    def _includes_unchanged(self, resolved: ResolvedFile) -> bool:
         """Check if all included files still have the same checksum."""
         for included in resolved.includes:
             try:
@@ -236,7 +243,7 @@ class IncludeResolver:
         """Get all resolved files from cache."""
         return [deepcopy(resolved) for resolved in self.cache.values()]
 
-    def get_include_tree(self, file_path: str) -> dict:
+    def get_include_tree(self, file_path: str) -> IncludeTree:
         """Get include tree structure for a file.
 
         Returns:
@@ -246,11 +253,12 @@ class IncludeResolver:
         resolved = self.resolve_file(file_path)
         return self._build_include_tree(resolved)
 
-    def _build_include_tree(self, resolved: ResolvedFile) -> dict:
+    def _build_include_tree(self, resolved: ResolvedFile) -> IncludeTree:
         """Build include tree structure."""
-        tree = {"path": str(resolved.path), "includes": []}
+        includes: list[IncludeTree] = []
+        tree: IncludeTree = {"path": str(resolved.path), "includes": includes}
 
         for include in resolved.includes:
-            tree["includes"].append(self._build_include_tree(include))
+            includes.append(self._build_include_tree(include))
 
         return tree
