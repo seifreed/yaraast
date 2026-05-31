@@ -70,7 +70,7 @@ def location_to_symbol_range(location: Location, source_text: str) -> Range:
     if location.end_line is not None and location.end_column is not None:
         end_line = location.end_line - 1
         end_line_text = lines[end_line] if 0 <= end_line < len(lines) else ""
-        end_character = utf8_col_to_utf16(end_line_text, location.end_column)
+        end_character = utf8_col_to_utf16(end_line_text, max(0, location.end_column - 1))
         if end_line == start_line:
             end_character = max(start_character + 1, end_character)
         return Range(

@@ -945,6 +945,18 @@ rule sample {
     assert resolved.range.end.character == utf8_col_to_utf16(line, member_end)
 
 
+def test_runtime_ast_symbol_ranges_use_exclusive_end_columns() -> None:
+    text = "rule sample { condition: /* 😀😀 */ 1 + 2 }\n"
+    line = text.splitlines()[0]
+    expression_end = line.index("2") + len("2")
+    doc = DocumentContext("file://exclusive-ast-symbol.yar", text)
+
+    condition = doc.find_symbol_record("condition", "condition", "sample")
+
+    assert condition is not None
+    assert condition.range.end.character == utf8_col_to_utf16(line, expression_end)
+
+
 def test_runtime_resolve_string_operator_ranges_use_utf16_columns() -> None:
     text = """
 rule sample {
