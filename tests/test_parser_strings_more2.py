@@ -148,6 +148,17 @@ def test_parse_rejects_libyara_invalid_regex_patterns(pattern: str) -> None:
                 parser_factory().parse(source)
 
 
+@pytest.mark.parametrize("pattern", ["a{32768}", "a{0,32768}", "a{32768,}"])
+def test_parse_rejects_regex_repeat_intervals_above_libyara_limit(pattern: str) -> None:
+    string_source = f"rule r {{ strings: $a = /{pattern}/ condition: $a }}"
+    condition_source = f'rule r {{ condition: "abc" matches /{pattern}/ }}'
+
+    for source in (string_source, condition_source):
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="repeat interval"):
+                parser_factory().parse(source)
+
+
 @pytest.mark.parametrize(
     "pattern",
     [
@@ -156,6 +167,9 @@ def test_parse_rejects_libyara_invalid_regex_patterns(pattern: str) -> None:
         "a??",
         "a{,2}",
         "a{2,}",
+        "a{32767}",
+        "a{0,32767}",
+        "a{32767,}",
         "a{x}",
         "a{1,2,3}",
         "a|",

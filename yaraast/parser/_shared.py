@@ -25,6 +25,7 @@ KNOWN_MODULES: frozenset[str] = frozenset(
 _HEX_DIGITS = frozenset("0123456789abcdefABCDEF")
 _REGEX_QUANTIFIERS = frozenset("*+?")
 _REGEX_ZERO_WIDTH_ESCAPES = frozenset("bB")
+_MAX_REGEX_REPEAT_INTERVAL = 32767
 
 
 def parse_regex_value(regex_val: str) -> tuple[str, list[str]]:
@@ -127,6 +128,11 @@ def validate_regex_pattern(pattern: str) -> None:
                 min_value, max_value = interval
                 if min_value is not None and max_value is not None and min_value > max_value:
                     msg = "Invalid regex pattern: bad repeat interval"
+                    raise ValueError(msg)
+                if (min_value is not None and min_value > _MAX_REGEX_REPEAT_INTERVAL) or (
+                    max_value is not None and max_value > _MAX_REGEX_REPEAT_INTERVAL
+                ):
+                    msg = "Invalid regex pattern: repeat interval too large"
                     raise ValueError(msg)
                 consume_quantifier()
                 i = end + 1
