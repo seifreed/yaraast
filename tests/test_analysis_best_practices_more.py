@@ -88,6 +88,27 @@ def test_best_practices_analyzer_handles_byte_plain_strings() -> None:
     assert any("consider regex?" in message for message in messages)
 
 
+def test_best_practices_short_string_uses_utf8_byte_length() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="unicode_rule",
+                strings=[
+                    PlainString(identifier="$short", value="á", modifiers=[]),
+                    PlainString(identifier="$long", value="éé", modifiers=[]),
+                ],
+                condition=BooleanLiteral(value=True),
+            )
+        ]
+    )
+
+    report = BestPracticesAnalyzer().analyze(ast)
+    messages = [suggestion.message for suggestion in report.suggestions]
+
+    assert any("Short string '$short' (2 bytes)" in message for message in messages)
+    assert not any("Short string '$long'" in message for message in messages)
+
+
 def test_best_practices_treats_string_count_as_string_usage() -> None:
     ast = YaraFile(
         rules=[

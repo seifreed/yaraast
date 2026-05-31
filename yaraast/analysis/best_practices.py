@@ -29,6 +29,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
+from yaraast.metrics.string_diagrams_common import plain_value_length
 from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
@@ -240,14 +241,15 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def _analyze_plain_string(self, rule: Rule, string: PlainString) -> None:
         """Analyze plain string patterns."""
         pattern_chars = b"*?[]" if isinstance(string.value, bytes) else "*?[]"
+        value_length = plain_value_length(string.value)
 
         # Check for very short strings without modifiers
-        if len(string.value) < 4 and not string.modifiers:
+        if value_length < 4 and not string.modifiers:
             self.report.add_suggestion(
                 rule.name,
                 "optimization",
                 "info",
-                f"Short string '{string.identifier}' ({len(string.value)} chars) might cause false positives",
+                f"Short string '{string.identifier}' ({value_length} bytes) might cause false positives",
                 f"string {string.identifier}",
             )
 
