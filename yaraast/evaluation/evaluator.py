@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from collections.abc import Mapping
 import contextlib
 from dataclasses import dataclass, field
+from fnmatch import fnmatchcase
 import math
 from typing import TYPE_CHECKING, Any
 
@@ -706,6 +707,16 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         # Get quantifier value - could be int, string ("all", "any"), or expression
         quantifier = self._resolve_quantifier(node.quantifier)
 
+        if match_range is None and match_offset is None:
+            rule_set = self._resolve_rule_set(node.string_set)
+            if rule_set is not None:
+                if not rule_set:
+                    return False
+                matched_rules = sum(
+                    1 for rule_key in rule_set if self._evaluate_rule_by_name(rule_key)
+                )
+                return self._evaluate_quantifier(quantifier, len(rule_set), matched_rules)
+
         string_set = self._resolve_string_set(node.string_set)
         if not string_set:
             return False
@@ -728,9 +739,12 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 matched += 1
 
         # Evaluate quantifier
+        return self._evaluate_quantifier(quantifier, len(string_set), matched)
+
+    def _evaluate_quantifier(self, quantifier: Any, total: int, matched: int) -> bool:
         if isinstance(quantifier, str):
             if quantifier == "all":
-                return matched == len(string_set)
+                return matched == total
             if quantifier == "any":
                 return matched > 0
             if quantifier == "none":
@@ -742,7 +756,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 return matched == 0
             return matched >= quantifier
         elif isinstance(quantifier, float):
-            return len(string_set) > 0 and (matched / len(string_set)) >= quantifier
+            return total > 0 and (matched / total) >= quantifier
 
         return False
 
@@ -860,6 +874,50 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if isinstance(quantifier, int | str | float):
             return quantifier
         return self.visit(quantifier)
+
+    def _resolve_rule_set(self, rule_set_node: Any) -> list[str] | None:
+        if not hasattr(self, "_rule_keys_by_name"):
+            return None
+
+        def expand_text(text: str) -> list[str] | None:
+            if text.startswith("$") or text == "them":
+                return None
+            if "*" in text:
+                return [
+                    rule_key
+                    for rule_name, rule_keys in self._rule_keys_by_name.items()
+                    if fnmatchcase(rule_name, text)
+                    for rule_key in rule_keys
+                ]
+            return self._rule_keys_by_name.get(text)
+
+        def resolve_value(value: Any) -> list[str] | None:
+            if isinstance(value, str):
+                return expand_text(value)
+            if isinstance(value, StringWildcard):
+                return expand_text(value.pattern)
+            if isinstance(value, Identifier):
+                return expand_text(value.name)
+            if isinstance(value, ParenthesesExpression):
+                return resolve_value(value.expression)
+            if isinstance(value, SetExpression):
+                return resolve_values(value.elements)
+            if isinstance(value, list | tuple | set | frozenset):
+                return resolve_values(value)
+            return None
+
+        def resolve_values(values: Any) -> list[str] | None:
+            result: list[str] = []
+            resolved_any = False
+            for elem in values:
+                resolved = resolve_value(elem)
+                if resolved is None:
+                    return None
+                result.extend(resolved)
+                resolved_any = True
+            return result if resolved_any else None
+
+        return resolve_value(rule_set_node)
 
     def _resolve_string_set(self, string_set_node: Any) -> list[str]:
         """Resolve a string set to a list of string identifiers for 'of'/'for...of' evaluation."""
