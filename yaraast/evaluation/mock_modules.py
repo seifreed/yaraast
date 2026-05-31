@@ -645,17 +645,6 @@ class MockELF:
             section_header_size = struct.unpack(f"{endian}H", self.data[58:60])[0]
             section_header_count = struct.unpack(f"{endian}H", self.data[60:62])[0]
 
-        if (
-            section_header_offset == 0
-            or section_header_size == 0
-            or section_header_count == 0
-            or section_header_offset + (section_header_size * section_header_count) > len(self.data)
-        ):
-            self.type = YARA_UNDEFINED
-            self.machine = YARA_UNDEFINED
-            self.entry_point = YARA_UNDEFINED
-            return
-
         self.sh_offset = section_header_offset
         self.sh_entry_size = section_header_size
         self.ph_offset = program_header_offset
@@ -769,8 +758,6 @@ class MockELF:
 
     def _virtual_address_to_offset(self, virtual_address: int) -> int | YaraUndefinedValue:
         for segment in self.segments:
-            if segment["type"] != 1:
-                continue
             segment_start = segment["virtual_address"]
             segment_size = segment["memory_size"]
             if segment_size <= 0:

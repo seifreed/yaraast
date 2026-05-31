@@ -120,12 +120,15 @@ def _build_minimal_elf32(
     *,
     entrypoint: int = 0x8048000,
     load_segment: bool,
+    section_headers: bool = True,
+    segment_type: int = 1,
 ) -> bytes:
     data = bytearray(0x240)
     data[:16] = b"\x7fELF" + bytes([1, 1, 1]) + b"\x00" * 9
     program_header_offset = 0x34 if load_segment else 0
     program_header_count = 1 if load_segment else 0
-    section_header_offset = 0x100
+    section_header_offset = 0x100 if section_headers else 0
+    section_header_count = 2 if section_headers else 0
     struct.pack_into(
         "<HHIIIIIHHHHHH",
         data,
@@ -141,7 +144,7 @@ def _build_minimal_elf32(
         32,
         program_header_count,
         40,
-        2,
+        section_header_count,
         0,
     )
     if load_segment:
@@ -149,7 +152,7 @@ def _build_minimal_elf32(
             "<IIIIIIII",
             data,
             program_header_offset,
-            1,
+            segment_type,
             0x200,
             0x8048000,
             0x8048000,
@@ -158,21 +161,22 @@ def _build_minimal_elf32(
             5,
             0x1000,
         )
-    struct.pack_into(
-        "<IIIIIIIIII",
-        data,
-        section_header_offset + 40,
-        0,
-        1,
-        6,
-        0x8048000,
-        0x200,
-        0x20,
-        0,
-        0,
-        16,
-        0,
-    )
+    if section_headers:
+        struct.pack_into(
+            "<IIIIIIIIII",
+            data,
+            section_header_offset + 40,
+            0,
+            1,
+            6,
+            0x8048000,
+            0x200,
+            0x20,
+            0,
+            0,
+            16,
+            0,
+        )
     return bytes(data)
 
 
@@ -916,6 +920,49 @@ def test_elf_entry_point_maps_virtual_address_through_load_segment() -> None:
 
     data = _build_minimal_elf32(entrypoint=0x8048100, load_segment=True)
     assert YaraEvaluator(data=data).evaluate_file(ast) == {"mapped_elf_entrypoint": True}
+
+
+def test_elf_entry_point_maps_through_non_load_program_header() -> None:
+    ast = Parser().parse("""
+        import "elf"
+        rule non_load_elf_entrypoint {
+            condition:
+                elf.segments[0].type == 2 and elf.entry_point == 0x300
+        }
+        """)
+
+    data = _build_minimal_elf32(
+        entrypoint=0x8048100,
+        load_segment=True,
+        segment_type=2,
+    )
+    assert YaraEvaluator(data=data).evaluate_file(ast) == {"non_load_elf_entrypoint": True}
+
+
+def test_elf_header_and_segments_do_not_require_section_table() -> None:
+    ast = Parser().parse("""
+        import "elf"
+        rule sectionless_elf_headers {
+            condition:
+                elf.type == 2 and
+                elf.machine == 3 and
+                elf.number_of_sections == 0 and
+                elf.number_of_segments == 1 and
+                elf.sh_offset == 0 and
+                elf.ph_offset == 0x34 and
+                elf.segments[0].type == 1 and
+                elf.segments[0].offset == 0x200 and
+                elf.entry_point == 0x300 and
+                not defined elf.sections[0].type
+        }
+        """)
+
+    data = _build_minimal_elf32(
+        entrypoint=0x8048100,
+        load_segment=True,
+        section_headers=False,
+    )
+    assert YaraEvaluator(data=data).evaluate_file(ast) == {"sectionless_elf_headers": True}
 
 
 def test_dotnet_invalid_files_leave_dotnet_scalar_fields_undefined() -> None:
