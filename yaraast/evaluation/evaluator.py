@@ -17,6 +17,7 @@ from yaraast.evaluation.evaluation_helpers import (
     BUILTIN_READERS,
     LITTLE_ENDIAN_ALIASES,
     YARA_UNDEFINED,
+    YaraUndefinedValue,
     is_yara_undefined,
 )
 from yaraast.evaluation.evaluator_ops import (
@@ -25,7 +26,7 @@ from yaraast.evaluation.evaluator_ops import (
     evaluate_regex_match,
     evaluate_string_operator,
 )
-from yaraast.evaluation.mock_modules import MockModuleRegistry
+from yaraast.evaluation.mock_modules import MockModuleRegistry, MockPE
 from yaraast.evaluation.string_matcher import StringMatcher
 from yaraast.shared.integer_semantics import normalize_int64
 from yaraast.visitor.defaults import DefaultASTVisitor
@@ -53,13 +54,15 @@ class EvaluationContext:
 
     data: bytes
     filesize: int = field(init=False)
-    entrypoint: int = 0
+    entrypoint: int | YaraUndefinedValue = field(init=False)
     string_matches: dict[str, list] = field(default_factory=dict)
     modules: dict[str, object] = field(default_factory=dict)
     variables: dict[str, object] = field(default_factory=dict)
 
     def __post_init__(self):
         self.filesize = len(self.data)
+        pe = MockPE(self.data)
+        self.entrypoint = pe.entry_point if pe.is_pe else YARA_UNDEFINED
 
 
 class YaraEvaluator(DefaultASTVisitor[Any]):
@@ -1118,7 +1121,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             # Check if it's a variable
             if expr.name in self.context.variables:
                 return True
-            if expr.name in {"filesize", "entrypoint", "all", "any", "them"}:
+            if expr.name == "entrypoint":
+                return not is_yara_undefined(self.context.entrypoint)
+            if expr.name in {"filesize", "all", "any", "them"}:
                 return True
             return hasattr(self, "_rule_map") and expr.name in self._rule_map
         if isinstance(expr, ModuleReference):

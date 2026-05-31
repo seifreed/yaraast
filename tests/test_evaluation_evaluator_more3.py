@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import struct
 from types import SimpleNamespace
 
 import pytest
@@ -61,6 +62,37 @@ from yaraast.yarax.ast_nodes import (
 )
 
 
+def _build_minimal_pe_with_entrypoint(entrypoint: int = 0x1000) -> bytes:
+    data = bytearray(b"MZ" + b"\x00" * 0x3A + b"\x80\x00\x00\x00")
+    if len(data) < 0x80:
+        data.extend(b"\x00" * (0x80 - len(data)))
+    data.extend(b"PE\x00\x00")
+    data.extend(struct.pack("<H", 0x14C))
+    data.extend(struct.pack("<H", 1))
+    data.extend(struct.pack("<I", 1))
+    data.extend(b"\x00" * 8)
+    data.extend(struct.pack("<H", 0xE0))
+    data.extend(struct.pack("<H", 0x0002))
+    optional_header = bytearray(0xE0)
+    struct.pack_into("<H", optional_header, 0, 0x10B)
+    struct.pack_into("<I", optional_header, 16, entrypoint)
+    struct.pack_into("<I", optional_header, 28, 0x400000)
+    struct.pack_into("<I", optional_header, 60, 0x200)
+    data.extend(optional_header)
+    data.extend(b".text\x00\x00\x00")
+    data.extend(struct.pack("<I", 0x100))
+    data.extend(struct.pack("<I", 0x1000))
+    data.extend(struct.pack("<I", 0x100))
+    data.extend(struct.pack("<I", 0x200))
+    data.extend(b"\x00" * 8)
+    data.extend(struct.pack("<H", 0))
+    data.extend(struct.pack("<H", 0))
+    data.extend(struct.pack("<I", 0x60000020))
+    if len(data) < 0x300:
+        data.extend(b"\x00" * (0x300 - len(data)))
+    return bytes(data)
+
+
 def test_identifier_and_literal_paths() -> None:
     ev = YaraEvaluator(data=b"abc")
     ev.context.variables["x"] = 7
@@ -68,7 +100,7 @@ def test_identifier_and_literal_paths() -> None:
     ev.context.string_matches = {"$a": []}
 
     assert ev.visit_identifier(Identifier(name="filesize")) == 3
-    assert ev.visit_identifier(Identifier(name="entrypoint")) == 0
+    assert ev.visit_identifier(Identifier(name="entrypoint")) is YARA_UNDEFINED
     assert ev.visit_identifier(Identifier(name="all")) == "all"
     assert ev.visit_identifier(Identifier(name="any")) == "any"
     assert ev.visit_identifier(Identifier(name="them")) == ["$a"]
@@ -77,6 +109,33 @@ def test_identifier_and_literal_paths() -> None:
 
     # Unknown identifiers return False (could be unresolved rule references)
     assert ev.visit_identifier(Identifier(name="zzz")) is False
+
+
+def test_entrypoint_builtin_is_undefined_without_valid_pe() -> None:
+    ast = Parser().parse("""
+        rule invalid_entrypoint {
+            condition:
+                defined entrypoint or
+                entrypoint == 0 or
+                not entrypoint
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"invalid_entrypoint": False}
+    assert YaraEvaluator(data=b"MZ").evaluate_file(ast) == {"invalid_entrypoint": False}
+
+
+def test_entrypoint_builtin_uses_pe_entry_point_without_import() -> None:
+    ast = Parser().parse("""
+        rule valid_entrypoint {
+            condition:
+                defined entrypoint and entrypoint == 0x200
+        }
+    """)
+
+    assert YaraEvaluator(data=_build_minimal_pe_with_entrypoint()).evaluate_file(ast) == {
+        "valid_entrypoint": True
+    }
 
 
 def test_evaluator_normalizes_direct_ast_string_identifiers() -> None:
