@@ -80,19 +80,28 @@ class ExpressionPrimaryMixin:
         """Parse string reference expressions ($, #, @, !)."""
         if self._match(TokenType.STRING_IDENTIFIER):
             token = self._previous()
-            name = self._previous().value
+            name = token.value
+            if name == "$" and not self._can_use_anonymous_string_reference():
+                msg = "wrong use of anonymous string"
+                raise ParserError(msg, token)
             if name.endswith("*"):
                 return self._set_node_location_from_token(StringWildcard(pattern=name), token)
             return self._set_node_location_from_token(StringIdentifier(name=name), token)
 
         if self._match(TokenType.STRING_COUNT):
-            return self._set_node_location_from_token(
-                StringCount(string_id=self._previous().value[1:]), self._previous()
-            )
+            token = self._previous()
+            string_id = token.value[1:]
+            if not string_id and not self._can_use_anonymous_string_reference():
+                msg = "wrong use of anonymous string"
+                raise ParserError(msg, token)
+            return self._set_node_location_from_token(StringCount(string_id=string_id), token)
 
         if self._match(TokenType.STRING_OFFSET):
             start_token = self._previous()
             string_id = start_token.value[1:]
+            if not string_id and not self._can_use_anonymous_string_reference():
+                msg = "wrong use of anonymous string"
+                raise ParserError(msg, start_token)
             index = None
             if self._match(TokenType.LBRACKET):
                 index = self._parse_expression()
@@ -107,6 +116,9 @@ class ExpressionPrimaryMixin:
         if self._match(TokenType.STRING_LENGTH):
             start_token = self._previous()
             string_id = start_token.value[1:]
+            if not string_id and not self._can_use_anonymous_string_reference():
+                msg = "wrong use of anonymous string"
+                raise ParserError(msg, start_token)
             index = None
             if self._match(TokenType.LBRACKET):
                 index = self._parse_expression()
@@ -119,6 +131,9 @@ class ExpressionPrimaryMixin:
             )
 
         return None
+
+    def _can_use_anonymous_string_reference(self) -> bool:
+        return bool(getattr(self, "_allow_anonymous_string_reference", False))
 
     def _parse_keyword_expression(self) -> Expression | None:
         """Parse keyword expressions (filesize, entrypoint, them)."""

@@ -298,6 +298,33 @@ def test_classic_parsers_reject_ranges_inside_for_iterable_sets() -> None:
                 parser_factory().parse(source)
 
 
+def test_classic_parsers_reject_bare_anonymous_string_references() -> None:
+    invalid_sources = [
+        "rule r { condition: $ }",
+        'rule r { strings: $ = "x" condition: $ }',
+        'rule r { strings: $ = "x" condition: # }',
+        'rule r { strings: $a = "x" condition: # }',
+        'rule r { strings: $a = "x" condition: @ }',
+        'rule r { strings: $a = "x" condition: ! }',
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="anonymous string"):
+                parser_factory().parse(source)
+
+    valid_sources = [
+        'rule r { strings: $a = "x" condition: for any of them : ($) }',
+        'rule r { strings: $a = "x" condition: for any of them : (# > 0) }',
+        'rule r { strings: $a = "x" condition: for any of them : (@ >= 0) }',
+        'rule r { strings: $a = "x" condition: for any of them : (! > 0) }',
+    ]
+
+    for source in valid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            parser_factory().parse(source)
+
+
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:
     p = _parser_with_tokens([_t(TokenType.INTEGER, 7)])
     assert isinstance(p._parse_primary_expression(), IntegerLiteral)

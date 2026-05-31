@@ -139,7 +139,12 @@ class ExpressionForMixin:
             if not self._match(TokenType.LPAREN):
                 msg = "Expected '(' after ':'"
                 raise ParserError(msg, self._peek())
-            condition = self._parse_expression()
+            previous_allow_anonymous = getattr(self, "_allow_anonymous_string_reference", False)
+            self._allow_anonymous_string_reference = True
+            try:
+                condition = self._parse_expression()
+            finally:
+                self._allow_anonymous_string_reference = previous_allow_anonymous
             if not self._match(TokenType.RPAREN):
                 msg = "Expected ')' after condition"
                 raise ParserError(msg, self._peek())
