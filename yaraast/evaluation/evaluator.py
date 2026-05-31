@@ -49,6 +49,9 @@ def _is_evaluation_truthy(value: Any) -> bool:
     return bool(value)
 
 
+_YR_UNDEFINED_VM_INT = normalize_int64(0xFFFABADAFABADAFF)
+
+
 @dataclass
 class EvaluationContext:
     """Context for evaluating YARA conditions."""
@@ -805,9 +808,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         return self._evaluate_for_vm_quantifier(quantifier, contributions)
 
-    def _evaluate_for_vm_quantifier(
-        self, quantifier: Any, contributions: list[int | float]
-    ) -> bool:
+    def _evaluate_for_vm_quantifier(self, quantifier: Any, contributions: list[Any]) -> bool:
         if not contributions:
             return False
 
@@ -818,10 +819,11 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if quantifier == "all":
             count = 0
             total = 0
-            for contribution in vm_contributions:
+            for condition_value, add_value in vm_contributions:
                 total += 1
-                should_continue = contribution != 0
-                count = normalize_int64(count + contribution)
+                should_continue = condition_value != 0
+                if add_value is not None:
+                    count = normalize_int64(count + add_value)
                 if not should_continue:
                     break
             return count == total
@@ -838,9 +840,10 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return False
 
         count = 0
-        for contribution in vm_contributions:
-            candidate_count = normalize_int64(count + contribution)
-            should_continue = contribution != 1 if minimum == 0 else candidate_count < minimum
+        for condition_value, add_value in vm_contributions:
+            condition_count = normalize_int64(count + condition_value)
+            candidate_count = count if add_value is None else normalize_int64(count + add_value)
+            should_continue = condition_value != 1 if minimum == 0 else condition_count < minimum
             count = candidate_count
             if not should_continue:
                 break
@@ -849,14 +852,17 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return count == 0
         return count >= minimum
 
-    def _for_vm_contribution(self, contribution: int | float) -> int:
+    def _for_vm_contribution(self, contribution: Any) -> tuple[int, int | None]:
+        if is_yara_undefined(contribution):
+            return _YR_UNDEFINED_VM_INT, None
         if isinstance(contribution, float):
-            return struct.unpack("q", struct.pack("d", contribution))[0]
-        return contribution
+            value = struct.unpack("q", struct.pack("d", contribution))[0]
+            return value, value
+        return contribution, contribution
 
-    def _for_body_contribution(self, value: Any) -> int | float:
+    def _for_body_contribution(self, value: Any) -> Any:
         if is_yara_undefined(value):
-            return 0
+            return YARA_UNDEFINED
         if isinstance(value, bool):
             return 1 if value else 0
         if isinstance(value, int | float):

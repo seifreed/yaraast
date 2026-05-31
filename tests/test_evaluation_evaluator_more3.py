@@ -245,17 +245,28 @@ def test_for_of_expression_numeric_body_uses_libyara_accumulator() -> None:
             condition:
                 not for all of them : (!)
         }
+
+        rule undefined_length_for_of_body {
+            strings:
+                $a = "a"
+                $b = "b"
+                $c = "ab"
+            condition:
+                not for all of them : (! + 1)
+        }
     """)
 
     assert YaraEvaluator(data=b"aa").evaluate_file(ast) == {
         "numeric_for_of_body": True,
         "offset_for_of_body": True,
         "length_for_of_body": True,
+        "undefined_length_for_of_body": True,
     }
     assert YaraEvaluator(data=b"xxabxx").evaluate_file(ast) == {
         "numeric_for_of_body": True,
         "offset_for_of_body": True,
         "length_for_of_body": True,
+        "undefined_length_for_of_body": True,
     }
 
 
