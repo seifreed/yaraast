@@ -3,6 +3,7 @@
 import pytest
 
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
+from yaraast.ast.expressions import StringCount
 from yaraast.parser import Parser
 from yaraast.parser._shared import ParserError
 
@@ -25,6 +26,34 @@ class TestOfInSyntax:
         assert isinstance(ast.rules[0].condition, InExpression)
         assert isinstance(ast.rules[0].condition.subject, str)
         assert ast.rules[0].condition.subject == "$a"
+
+    def test_string_count_in_range(self) -> None:
+        """Test that #string in (range) parses as a count range check."""
+        yara_code = """
+        rule test {
+            strings:
+                $a = "test"
+            condition:
+                #a in (0..100)
+        }
+        """
+        ast = Parser().parse(yara_code)
+        assert len(ast.rules) == 1
+        assert isinstance(ast.rules[0].condition, InExpression)
+        assert isinstance(ast.rules[0].condition.subject, StringCount)
+
+    @pytest.mark.parametrize("condition", ["@a in (0..100)", "!a in (0..100)"])
+    def test_string_offset_and_length_do_not_support_in_range(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+        with pytest.raises(ParserError, match="IN keyword can only be used"):
+            Parser().parse(yara_code)
 
     def test_all_of_wildcard_in_range(self) -> None:
         """Test 'all of ($a*) in (range)' syntax."""

@@ -66,7 +66,7 @@ class AtExpression(Condition):
 
 @dataclass
 class InExpression(Condition):
-    """In expression ($a in (offset..offset) or all of ($a*) in (offset..offset))."""
+    """In expression ($a in range, #a in range, or all of ($a*) in range)."""
 
     subject: str | Expression  # Either string_id (str) or OfExpression
     range: Expression

@@ -154,6 +154,12 @@ def test_codegen_in_expression_parentheses_paths() -> None:
     )
     assert gen.visit(in_of_direct_range) == "1 of them in (0..10)"
 
+    in_count_direct_range = InExpression(
+        subject=StringCount("a"),
+        range=RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
+    )
+    assert gen.visit(in_count_direct_range) == "#a in (0..10)"
+
     at_of_direct_offset = AtExpression(
         string_id=OfExpression(IntegerLiteral(1), Identifier("them")),
         offset=IntegerLiteral(0),

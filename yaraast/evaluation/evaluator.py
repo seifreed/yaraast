@@ -687,6 +687,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             )
         if isinstance(node.subject, OfExpression):
             return self._evaluate_of_expression(node.subject, match_range=range_val)
+        subject = self.visit(node.subject)
+        if _is_evaluation_int(subject):
+            return subject in range_val
         return False
 
     def visit_of_expression(self, node: OfExpression) -> bool:

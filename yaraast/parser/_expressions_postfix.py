@@ -218,11 +218,12 @@ class ExpressionPostfixMixin:
         raise ParserError(msg, self._peek())
 
     def _parse_in_postfix(self, expr: Expression) -> InExpression:
-        """Parse IN postfix expression ($string in range)."""
-        if isinstance(expr, StringIdentifier):
+        """Parse IN postfix expression ($string, #string, or N of set in range)."""
+        if isinstance(expr, StringIdentifier | StringCount):
             start_token = self._previous()
             range_expr = self._parse_parenthesized_range_after_in()
-            node = InExpression(subject=expr.name, range=range_expr)
+            subject: str | Expression = expr.name if isinstance(expr, StringIdentifier) else expr
+            node = InExpression(subject=subject, range=range_expr)
             if getattr(expr, "location", None) is not None:
                 node.location = self._location_from_tokens(
                     self._synthetic_token_from_location(expr.location),
@@ -242,7 +243,7 @@ class ExpressionPostfixMixin:
                 )
                 return node
             return self._set_node_location_from_tokens(node, start_token, self._previous())
-        msg = "IN keyword can only be used with string identifiers or 'of' expressions"
+        msg = "IN keyword can only be used with string identifiers, string counts, or 'of' expressions"
         raise ParserError(msg, self._peek())
 
     def _reject_percentage_of_postfix(self, expr: OfExpression, token) -> None:

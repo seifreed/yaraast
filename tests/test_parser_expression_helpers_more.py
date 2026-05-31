@@ -174,7 +174,8 @@ def test_parse_postfix_helpers_cover_success_and_error_paths() -> None:
     p.tokens = [_t(TokenType.INTEGER, 1), _t(TokenType.EOF, None)]
     p.current = 0
     with pytest.raises(
-        ParserError, match="IN keyword can only be used with string identifiers or 'of' expressions"
+        ParserError,
+        match="IN keyword can only be used with string identifiers, string counts, or 'of' expressions",
     ):
         p._parse_in_postfix(Identifier("x"))
 
