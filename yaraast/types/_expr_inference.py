@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.conditions import (
     AtExpression,
@@ -252,7 +254,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
     def visit_for_of_expression(self, node: ForOfExpression) -> YaraType:
         return ops.infer_module_or_condition(self, node)
 
-    def visit_with_statement(self, node) -> YaraType:
+    def visit_with_statement(self, node: Any) -> YaraType:
         self.env.push_scope()
         for declaration in node.declarations:
             self.visit(declaration)
@@ -260,14 +262,14 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         self.env.pop_scope()
         return body_type
 
-    def visit_with_declaration(self, node) -> YaraType:
+    def visit_with_declaration(self, node: Any) -> YaraType:
         value_type = self.visit(node.value)
         self.env.define(node.identifier, value_type)
         self.env.define(node.identifier.lstrip("$"), value_type)
         return value_type
 
-    def visit_list_expression(self, node) -> YaraType:
-        element_types = []
+    def visit_list_expression(self, node: Any) -> YaraType:
+        element_types: list[YaraType] = []
         for element in node.elements:
             element_type = self.visit(element)
             if isinstance(element, SpreadOperator) and not element.is_dict:
@@ -280,12 +282,12 @@ class ExpressionTypeInference(_TypeBaseVisitor):
             element_types.append(element_type)
         return ArrayType(self._infer_common_type_from_types(element_types))
 
-    def visit_tuple_expression(self, node) -> YaraType:
+    def visit_tuple_expression(self, node: Any) -> YaraType:
         return ArrayType(self._infer_common_type(node.elements))
 
-    def visit_dict_expression(self, node) -> YaraType:
-        key_types = []
-        value_types = []
+    def visit_dict_expression(self, node: Any) -> YaraType:
+        key_types: list[YaraType] = []
+        value_types: list[YaraType] = []
         for item in node.items:
             if isinstance(item.value, SpreadOperator) and item.value.is_dict:
                 spread_type = self.visit(item.value)
@@ -304,10 +306,10 @@ class ExpressionTypeInference(_TypeBaseVisitor):
             self._infer_common_type_from_types(value_types),
         )
 
-    def visit_dict_item(self, node) -> YaraType:
+    def visit_dict_item(self, node: Any) -> YaraType:
         return self.visit(node.value)
 
-    def visit_array_comprehension(self, node) -> YaraType:
+    def visit_array_comprehension(self, node: Any) -> YaraType:
         self.env.push_scope()
         self._define_iteration_variable(node.variable, node.iterable)
         if node.condition is not None:
@@ -320,7 +322,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         self.env.pop_scope()
         return ArrayType(element_type)
 
-    def visit_dict_comprehension(self, node) -> YaraType:
+    def visit_dict_comprehension(self, node: Any) -> YaraType:
         self.env.push_scope()
         self._define_dict_comprehension_variables(
             node.key_variable,
@@ -344,7 +346,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         self.env.pop_scope()
         return DictionaryType(key_type, value_type)
 
-    def visit_tuple_indexing(self, node) -> YaraType:
+    def visit_tuple_indexing(self, node: Any) -> YaraType:
         tuple_type = self.visit(node.tuple_expr)
         index_type = self.visit(node.index)
         if not isinstance(index_type, IntegerType):
@@ -354,7 +356,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         self.errors.append(f"Cannot index non-tuple type: {tuple_type}")
         return UnknownType()
 
-    def visit_slice_expression(self, node) -> YaraType:
+    def visit_slice_expression(self, node: Any) -> YaraType:
         target_type = self.visit(node.target)
         for bound in (node.start, node.stop, node.step):
             if bound is not None and not isinstance(self.visit(bound), IntegerType):
@@ -364,7 +366,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         self.errors.append(f"Cannot slice non-array or string type: {target_type}")
         return UnknownType()
 
-    def visit_lambda_expression(self, node) -> YaraType:
+    def visit_lambda_expression(self, node: Any) -> YaraType:
         self.env.push_scope()
         for parameter in node.parameters:
             self.env.define(parameter, UnknownType())
@@ -372,9 +374,9 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         self.env.pop_scope()
         return UnknownType()
 
-    def visit_pattern_match(self, node) -> YaraType:
+    def visit_pattern_match(self, node: Any) -> YaraType:
         self.visit(node.value)
-        result_nodes = []
+        result_nodes: list[Any] = []
         for case in node.cases:
             self.visit(case.pattern)
             result_nodes.append(case.result)
@@ -382,18 +384,18 @@ class ExpressionTypeInference(_TypeBaseVisitor):
             result_nodes.append(node.default)
         return self._infer_common_type(result_nodes)
 
-    def visit_match_case(self, node) -> YaraType:
+    def visit_match_case(self, node: Any) -> YaraType:
         self.visit(node.pattern)
         return self.visit(node.result)
 
-    def visit_spread_operator(self, node) -> YaraType:
+    def visit_spread_operator(self, node: Any) -> YaraType:
         return self.visit(node.expression)
 
     def _define_dict_comprehension_variables(
         self,
         key_variable: str,
         value_variable: str | None,
-        iterable,
+        iterable: Any,
     ) -> None:
         iter_type = self.visit(iterable) if iterable is not None else UnknownType()
         if isinstance(iter_type, DictionaryType):
@@ -406,7 +408,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
         if value_variable:
             self.env.define(value_variable, UnknownType())
 
-    def _define_iteration_variable(self, variable: str, iterable) -> None:
+    def _define_iteration_variable(self, variable: str, iterable: Any) -> None:
         iter_type = self.visit(iterable) if iterable is not None else UnknownType()
         self._define_iteration_variable_from_type(variable, iter_type)
 
@@ -421,7 +423,7 @@ class ExpressionTypeInference(_TypeBaseVisitor):
             self.errors.append(f"Cannot iterate over type: {iter_type}")
             self.env.define(variable, UnknownType())
 
-    def _infer_common_type(self, nodes: list) -> YaraType:
+    def _infer_common_type(self, nodes: list[Any]) -> YaraType:
         if not nodes:
             return UnknownType()
         return self._infer_common_type_from_types([self.visit(node) for node in nodes])

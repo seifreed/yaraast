@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 from yaraast.ast.conditions import AtExpression, ForExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
@@ -50,7 +52,7 @@ from ._registry import (
 )
 
 
-def infer_identifier(ctx, node: Identifier):
+def infer_identifier(ctx: Any, node: Identifier) -> YaraType:
     if node.name in {"filesize", "entrypoint"}:
         return IntegerType()
     if node.name == "them":
@@ -59,16 +61,21 @@ def infer_identifier(ctx, node: Identifier):
         return StringType()
     var_type = ctx.env.lookup(node.name)
     if var_type:
-        return var_type
+        return cast(YaraType, var_type)
     if ctx.env.has_rule(node.name):
         return BooleanType()
     module_type = ctx._resolve_module_type(node.name)
     if module_type:
-        return module_type
+        return cast(YaraType, module_type)
     return UnknownType()
 
 
-def infer_string_count_like(ctx, string_id: str, label: str, index=None):
+def infer_string_count_like(
+    ctx: Any,
+    string_id: str,
+    label: str,
+    index: Any = None,
+) -> YaraType:
     normalized = ctx._normalize_string_id(string_id)
     if normalized == "$" and ctx.env.lookup("$"):
         return IntegerType()
@@ -82,7 +89,7 @@ def infer_string_count_like(ctx, string_id: str, label: str, index=None):
     return UnknownType()
 
 
-def infer_binary_expression(ctx, node: BinaryExpression):
+def infer_binary_expression(ctx: Any, node: BinaryExpression) -> YaraType:
     left_type = ctx.visit(node.left)
     right_type = ctx.visit(node.right)
 
@@ -127,7 +134,12 @@ _MATH_STRING_REGION_FUNCTIONS = frozenset(
 _MATH_INTEGER_REGION_FUNCTIONS = frozenset(("count", "percentage", "mode"))
 
 
-def _infer_logical_op(ctx, operator, left_type, right_type):
+def _infer_logical_op(
+    ctx: Any,
+    operator: str,
+    left_type: YaraType,
+    right_type: YaraType,
+) -> YaraType:
     truthy_types = (
         BooleanType
         | StringIdentifierType
@@ -144,7 +156,14 @@ def _infer_logical_op(ctx, operator, left_type, right_type):
     return BooleanType()
 
 
-def _infer_comparison_op(ctx, operator, left_node, left_type, right_node, right_type):
+def _infer_comparison_op(
+    ctx: Any,
+    operator: str,
+    left_node: Any,
+    left_type: YaraType,
+    right_node: Any,
+    right_type: YaraType,
+) -> YaraType:
     if _has_unknown_comparison_operand(
         ctx, operator, "Left", left_node, left_type
     ) or _has_unknown_comparison_operand(ctx, operator, "Right", right_node, right_type):
@@ -171,7 +190,13 @@ def _infer_comparison_op(ctx, operator, left_node, left_type, right_node, right_
     return BooleanType()
 
 
-def _has_unknown_comparison_operand(ctx, operator, side, operand, operand_type):
+def _has_unknown_comparison_operand(
+    ctx: Any,
+    operator: str,
+    side: str,
+    operand: Any,
+    operand_type: YaraType,
+) -> bool:
     if not isinstance(operand_type, UnknownType):
         return False
     if isinstance(operand, StringIdentifier):
@@ -183,7 +208,12 @@ def _has_unknown_comparison_operand(ctx, operator, side, operand, operand_type):
     return True
 
 
-def _infer_string_op(ctx, operator, left_type, right_type):
+def _infer_string_op(
+    ctx: Any,
+    operator: str,
+    left_type: YaraType,
+    right_type: YaraType,
+) -> YaraType:
     if isinstance(left_type, StringIdentifierType):
         ctx.errors.append(f"Left operand of '{operator}' must be string, got {left_type}")
         return BooleanType()
@@ -207,7 +237,7 @@ def _infer_string_op(ctx, operator, left_type, right_type):
     return BooleanType()
 
 
-def _constant_integer_value(node) -> int | None:
+def _constant_integer_value(node: Any) -> int | None:
     if isinstance(node, IntegerLiteral) and not isinstance(node.value, bool):
         return node.value
     if isinstance(node, ParenthesesExpression):
@@ -252,7 +282,12 @@ def _constant_integer_value(node) -> int | None:
     return None
 
 
-def _is_zero_integer_divisor(operator, left_type, right_type, right_node) -> bool:
+def _is_zero_integer_divisor(
+    operator: str,
+    left_type: YaraType,
+    right_type: YaraType,
+    right_node: Any,
+) -> bool:
     if operator not in {"/", "\\", "%"}:
         return False
     if not isinstance(left_type, IntegerType) or not isinstance(right_type, IntegerType):
@@ -260,7 +295,13 @@ def _is_zero_integer_divisor(operator, left_type, right_type, right_node) -> boo
     return _constant_integer_value(right_node) == 0
 
 
-def _infer_arithmetic_op(ctx, operator, left_type, right_type, right_node):
+def _infer_arithmetic_op(
+    ctx: Any,
+    operator: str,
+    left_type: YaraType,
+    right_type: YaraType,
+    right_node: Any,
+) -> YaraType:
     if _is_zero_integer_divisor(operator, left_type, right_type, right_node):
         ctx.errors.append(f"Right operand of '{operator}' cannot be zero")
 
@@ -279,7 +320,13 @@ def _infer_arithmetic_op(ctx, operator, left_type, right_type, right_node):
     return IntegerType()
 
 
-def _infer_bitwise_op(ctx, operator, left_type, right_type, right_node):
+def _infer_bitwise_op(
+    ctx: Any,
+    operator: str,
+    left_type: YaraType,
+    right_type: YaraType,
+    right_node: Any,
+) -> YaraType:
     if not isinstance(left_type, IntegerType):
         ctx.errors.append(f"Left operand of '{operator}' must be integer, got {left_type}")
     if not isinstance(right_type, IntegerType):
@@ -291,7 +338,7 @@ def _infer_bitwise_op(ctx, operator, left_type, right_type, right_node):
     return IntegerType()
 
 
-def infer_unary_expression(ctx, node: UnaryExpression):
+def infer_unary_expression(ctx: Any, node: UnaryExpression) -> YaraType:
     operand_type = ctx.visit(node.operand)
 
     if node.operator == "not":
@@ -310,7 +357,7 @@ def infer_unary_expression(ctx, node: UnaryExpression):
     if node.operator == "-":
         if not operand_type.is_numeric():
             ctx.errors.append(f"Operand of '-' must be numeric, got {operand_type}")
-        return operand_type
+        return cast(YaraType, operand_type)
     if node.operator == "~":
         if not isinstance(operand_type, IntegerType):
             ctx.errors.append(f"Operand of '~' must be integer, got {operand_type}")
@@ -319,7 +366,7 @@ def infer_unary_expression(ctx, node: UnaryExpression):
     return UnknownType()
 
 
-def infer_function_call(ctx, node: FunctionCall):
+def infer_function_call(ctx: Any, node: FunctionCall) -> YaraType:
     if "." in node.function:
         parts = node.function.split(".", 1)
         if len(parts) == 2:
@@ -402,7 +449,12 @@ def infer_function_call(ctx, node: FunctionCall):
     return UnknownType()
 
 
-def _validate_function_argument_types(ctx, func_name: str, parameters, arguments) -> None:
+def _validate_function_argument_types(
+    ctx: Any,
+    func_name: str,
+    parameters: FunctionDefinition | list[tuple[str, YaraType]],
+    arguments: list[Any],
+) -> None:
     arg_types = [ctx.visit(argument) for argument in arguments]
     variadic = isinstance(parameters, FunctionDefinition) and parameters.variadic
     parameter_list = (
@@ -440,12 +492,12 @@ def _is_function_argument_compatible(param_type: YaraType, arg_type: YaraType) -
     return param_type.is_compatible_with(arg_type)
 
 
-def _visit_function_arguments(ctx, arguments) -> None:
+def _visit_function_arguments(ctx: Any, arguments: list[Any]) -> None:
     for argument in arguments:
         ctx.visit(argument)
 
 
-def _argument_types(ctx, arguments) -> list[YaraType]:
+def _argument_types(ctx: Any, arguments: list[Any]) -> list[YaraType]:
     return [ctx.visit(argument) for argument in arguments]
 
 
@@ -477,7 +529,7 @@ def _is_console_log_scalar(arg_type: YaraType) -> bool:
     return isinstance(arg_type, StringType | IntegerType | DoubleType | FloatType)
 
 
-def _validate_console_log_arguments(ctx, arguments) -> None:
+def _validate_console_log_arguments(ctx: Any, arguments: list[Any]) -> None:
     arg_types = _argument_types(ctx, arguments)
     if not 1 <= len(arg_types) <= 2:
         ctx.errors.append(f"Function 'log' expects 1 to 2 arguments, got {len(arg_types)}")
@@ -495,7 +547,7 @@ def _validate_console_log_arguments(ctx, arguments) -> None:
         )
 
 
-def _validate_pe_exports_arguments(ctx, arguments) -> None:
+def _validate_pe_exports_arguments(ctx: Any, arguments: list[Any]) -> None:
     arg_types = _argument_types(ctx, arguments)
     if len(arg_types) != 1:
         ctx.errors.append(f"Function 'exports' expects 1 arguments, got {len(arg_types)}")
@@ -507,7 +559,7 @@ def _validate_pe_exports_arguments(ctx, arguments) -> None:
         )
 
 
-def _validate_pe_section_index_arguments(ctx, arguments) -> None:
+def _validate_pe_section_index_arguments(ctx: Any, arguments: list[Any]) -> None:
     arg_types = _argument_types(ctx, arguments)
     if len(arg_types) != 1:
         ctx.errors.append(f"Function 'section_index' expects 1 arguments, got {len(arg_types)}")
@@ -519,7 +571,7 @@ def _validate_pe_section_index_arguments(ctx, arguments) -> None:
         )
 
 
-def _validate_hash_function_arguments(ctx, func_name: str, arguments) -> None:
+def _validate_hash_function_arguments(ctx: Any, func_name: str, arguments: list[Any]) -> None:
     arg_types = _argument_types(ctx, arguments)
     if len(arg_types) not in {1, 2}:
         ctx.errors.append(
@@ -540,7 +592,7 @@ def _validate_hash_function_arguments(ctx, func_name: str, arguments) -> None:
         )
 
 
-def _validate_math_function_arguments(ctx, func_name: str, arguments) -> None:
+def _validate_math_function_arguments(ctx: Any, func_name: str, arguments: list[Any]) -> None:
     arg_types = _argument_types(ctx, arguments)
     if not _all_known(arg_types):
         return
@@ -585,7 +637,7 @@ def _matches_math_deviation_signature(arg_types: list[YaraType]) -> bool:
     return False
 
 
-def _validate_pe_imports_arguments(ctx, arguments) -> None:
+def _validate_pe_imports_arguments(ctx: Any, arguments: list[Any]) -> None:
     arg_types = _argument_types(ctx, arguments)
     if not 1 <= len(arg_types) <= 3:
         ctx.errors.append(f"Function 'imports' expects 1 to 3 arguments, got {len(arg_types)}")
@@ -612,7 +664,7 @@ def _validate_pe_imports_arguments(ctx, arguments) -> None:
         )
 
 
-def infer_member_access(ctx, node: MemberAccess):
+def infer_member_access(ctx: Any, node: MemberAccess) -> YaraType:
     obj_type = _infer_member_object_type(ctx, node.object)
 
     if isinstance(obj_type, ModuleType):
@@ -632,18 +684,18 @@ def infer_member_access(ctx, node: MemberAccess):
     return UnknownType()
 
 
-def _infer_member_object_type(ctx, obj):
+def _infer_member_object_type(ctx: Any, obj: Any) -> YaraType:
     if isinstance(obj, Identifier):
         scoped_type = ctx.env.lookup(obj.name)
         if scoped_type:
-            return scoped_type
+            return cast(YaraType, scoped_type)
         module_type = ctx._resolve_module_type(obj.name)
         if module_type:
-            return module_type
-    return ctx.visit(obj)
+            return cast(YaraType, module_type)
+    return cast(YaraType, ctx.visit(obj))
 
 
-def infer_collection_access(ctx, node):
+def infer_collection_access(ctx: Any, node: ArrayAccess | Any) -> YaraType:
     if isinstance(node, ArrayAccess):
         array_type = ctx.visit(node.array)
         index_type = ctx.visit(node.index)
@@ -665,9 +717,9 @@ def infer_collection_access(ctx, node):
     return UnknownType()
 
 
-def _infer_dictionary_key_type(ctx, key):
+def _infer_dictionary_key_type(ctx: Any, key: Any) -> YaraType:
     if hasattr(key, "accept"):
-        return ctx.visit(key)
+        return cast(YaraType, ctx.visit(key))
     if isinstance(key, bool):
         return BooleanType()
     if isinstance(key, int):
@@ -679,7 +731,7 @@ def _infer_dictionary_key_type(ctx, key):
     return UnknownType()
 
 
-def infer_set_or_range(ctx, node):
+def infer_set_or_range(ctx: Any, node: SetExpression | Any) -> YaraType:
     if isinstance(node, SetExpression):
         if _is_string_set_expression(node):
             for elem in node.elements:
@@ -697,11 +749,11 @@ def infer_set_or_range(ctx, node):
     return RangeType()
 
 
-def _infer_set_element_type(ctx, elements):
+def _infer_set_element_type(ctx: Any, elements: list[Any]) -> YaraType:
     if not elements:
         return UnknownType()
 
-    first_type = ctx.visit(elements[0])
+    first_type = cast(YaraType, ctx.visit(elements[0]))
     for elem in elements[1:]:
         elem_type = ctx.visit(elem)
         if not first_type.is_compatible_with(elem_type):
@@ -715,7 +767,7 @@ def _is_string_set_expression(node: SetExpression) -> bool:
     return all(_is_string_set_element(element) for element in node.elements)
 
 
-def _is_string_set_element(element) -> bool:
+def _is_string_set_element(element: Any) -> bool:
     if isinstance(element, StringIdentifier | StringWildcard):
         return not isinstance(element, StringWildcard) or element.pattern.startswith("$")
     if isinstance(element, StringLiteral):
@@ -733,9 +785,9 @@ def _is_condition_type(value_type: YaraType) -> bool:
     )
 
 
-def _infer_quantifier_value(ctx, value):
+def _infer_quantifier_value(ctx: Any, value: Any) -> YaraType:
     if hasattr(value, "accept"):
-        return ctx.visit(value)
+        return cast(YaraType, ctx.visit(value))
     if isinstance(value, bool):
         return BooleanType()
     if isinstance(value, int):
@@ -747,7 +799,7 @@ def _infer_quantifier_value(ctx, value):
     return UnknownType()
 
 
-def _infer_string_set_value(ctx, value):
+def _infer_string_set_value(ctx: Any, value: Any) -> YaraType:
     if isinstance(value, ParenthesesExpression):
         return _infer_string_set_value(ctx, value.expression)
     if isinstance(value, StringIdentifier | StringLiteral):
@@ -755,17 +807,17 @@ def _infer_string_set_value(ctx, value):
     if isinstance(value, StringWildcard) and value.pattern.startswith("$"):
         return StringSetType()
     if hasattr(value, "accept"):
-        return ctx.visit(value)
+        return cast(YaraType, ctx.visit(value))
     if isinstance(value, str | list | tuple | set | frozenset):
         return StringSetType()
     return UnknownType()
 
 
-def _should_validate_raw_string_refs(ctx) -> bool:
+def _should_validate_raw_string_refs(ctx: Any) -> bool:
     return bool(ctx.env.strings)
 
 
-def _validate_raw_string_ref(ctx, value: str) -> None:
+def _validate_raw_string_ref(ctx: Any, value: str) -> None:
     if not _should_validate_raw_string_refs(ctx):
         return
 
@@ -779,7 +831,7 @@ def _validate_raw_string_ref(ctx, value: str) -> None:
         ctx.errors.append(f"Undefined string: {normalized}")
 
 
-def _validate_string_set_refs(ctx, value) -> None:
+def _validate_string_set_refs(ctx: Any, value: Any) -> None:
     if isinstance(value, str):
         if value != "them":
             _validate_raw_string_ref(ctx, value)
@@ -816,7 +868,7 @@ def _validate_string_set_refs(ctx, value) -> None:
         ctx.visit(value)
 
 
-def _classify_of_set_value(value) -> str | None:
+def _classify_of_set_value(value: Any) -> str | None:
     if isinstance(value, ParenthesesExpression):
         return _classify_of_set_value(value.expression)
 
@@ -835,7 +887,7 @@ def _classify_of_set_value(value) -> str | None:
     return None
 
 
-def _classify_of_set_items(values) -> str | None:
+def _classify_of_set_items(values: Any) -> str | None:
     kinds = {_classify_of_set_value(value) for value in values}
     if len(kinds) == 1:
         return kinds.pop()
@@ -844,7 +896,7 @@ def _classify_of_set_items(values) -> str | None:
     return None
 
 
-def _is_string_set_value(value) -> bool:
+def _is_string_set_value(value: Any) -> bool:
     if isinstance(value, StringIdentifier):
         return True
     if isinstance(value, StringWildcard):
@@ -856,13 +908,13 @@ def _is_string_set_value(value) -> bool:
     return bool(isinstance(value, str))
 
 
-def _is_rule_set_value(value) -> bool:
+def _is_rule_set_value(value: Any) -> bool:
     if isinstance(value, Identifier):
         return value.name != "them" and not value.name.startswith("$")
     return isinstance(value, StringWildcard) and not value.pattern.startswith("$")
 
 
-def _validate_rule_set_refs(ctx, value) -> None:
+def _validate_rule_set_refs(ctx: Any, value: Any) -> None:
     if isinstance(value, ParenthesesExpression):
         _validate_rule_set_refs(ctx, value.expression)
         return
@@ -890,7 +942,7 @@ def _validate_rule_set_refs(ctx, value) -> None:
         ctx.errors.append(f"Undefined rule pattern: {value.pattern}")
 
 
-def _percentage_quantifier_value(value):
+def _percentage_quantifier_value(value: Any) -> float | None:
     if isinstance(value, DoubleLiteral):
         return value.value
     if isinstance(value, float):
@@ -903,12 +955,16 @@ def _loop_variable_names(variable: str) -> list[str]:
     return names or [variable]
 
 
-def _define_unknown_loop_variables(ctx, variable_names: list[str]) -> None:
+def _define_unknown_loop_variables(ctx: Any, variable_names: list[str]) -> None:
     for name in variable_names:
         ctx.env.define(name, UnknownType())
 
 
-def _define_for_iteration_variables(ctx, variable_names: list[str], iter_type) -> None:
+def _define_for_iteration_variables(
+    ctx: Any,
+    variable_names: list[str],
+    iter_type: YaraType,
+) -> None:
     if isinstance(iter_type, RangeType):
         if len(variable_names) == 1:
             ctx.env.define(variable_names[0], IntegerType())
@@ -947,11 +1003,11 @@ def _define_for_iteration_variables(ctx, variable_names: list[str], iter_type) -
     _define_unknown_loop_variables(ctx, variable_names)
 
 
-def infer_module_or_condition(ctx, node):
+def infer_module_or_condition(ctx: Any, node: Any) -> YaraType:
     if isinstance(node, ModuleReference) or hasattr(node, "module"):
         module_type = ctx._resolve_module_type(node.module)
         if module_type:
-            return module_type
+            return cast(YaraType, module_type)
         if ctx.env.has_rule(node.module):
             return BooleanType()
         ctx.errors.append(f"Module '{node.module}' not imported")
@@ -975,7 +1031,7 @@ def infer_module_or_condition(ctx, node):
     if isinstance(node, InExpression):
         if isinstance(node.subject, str):
             _validate_raw_string_ref(ctx, node.subject)
-            result_type = BooleanType()
+            result_type: YaraType = BooleanType()
         elif isinstance(node.subject, StringCount):
             subject_type = ctx.visit(node.subject)
             if not isinstance(subject_type, IntegerType):

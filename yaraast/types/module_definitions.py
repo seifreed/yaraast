@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from yaraast.types._registry_base import YaraType
 from yaraast.types.module_contracts import FunctionDefinition, ModuleDefinition
 
 # Declarative module specs: type strings -> actual types resolved at load time.
@@ -333,10 +334,11 @@ _MODULE_SPECS: dict[str, dict[str, Any]] = {
 }
 
 
-def _resolve_type(spec):
+def _resolve_type(spec: Any) -> YaraType:
     """Map a type spec to an actual YaraType instance."""
     from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
     from yaraast.types._registry_primitives import (
+        AnyType,
         BooleanType,
         DoubleType,
         IntegerType,
@@ -345,16 +347,18 @@ def _resolve_type(spec):
         StringType,
     )
 
-    primitives = {
-        "i": IntegerType,
-        "s": StringType,
-        "b": BooleanType,
-        "d": DoubleType,
-        "r": RegexType,
-        "scalar": ScalarType,
+    primitives: dict[str, YaraType] = {
+        "i": IntegerType(),
+        "s": StringType(),
+        "b": BooleanType(),
+        "d": DoubleType(),
+        "r": RegexType(),
+        "scalar": ScalarType(),
     }
     if isinstance(spec, str):
-        return primitives[spec]()
+        return primitives.get(spec, AnyType())
+    if not isinstance(spec, tuple) or not spec:
+        return AnyType()
     tag = spec[0]
     if tag == "array":
         return ArrayType(_resolve_type(spec[1]))

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.modifiers import StringModifierType
@@ -56,13 +56,13 @@ class StringIdentifierValidator(DefaultASTVisitor[None]):
         else:
             self.current_rule_strings.add(identifier)
 
-    def visit_plain_string(self, node) -> None:
+    def visit_plain_string(self, node: PlainString) -> None:
         self.visit_string_definition(node)
 
-    def visit_hex_string(self, node) -> None:
+    def visit_hex_string(self, node: HexString) -> None:
         self.visit_string_definition(node)
 
-    def visit_regex_string(self, node) -> None:
+    def visit_regex_string(self, node: RegexString) -> None:
         self.visit_string_definition(node)
 
 
@@ -340,8 +340,8 @@ class UndefinedStringDetector:
         self._local_string_scopes.clear()
 
         # Collect defined string identifiers (normalized to $name format)
-        defined = set()
-        anonymous = set()
+        defined: set[str] = set()
+        anonymous: set[str] = set()
         for string_def in rule.strings:
             sid = string_def.identifier
             if not sid.startswith("$"):
@@ -351,7 +351,7 @@ class UndefinedStringDetector:
                 anonymous.add(sid)
 
         # Walk condition to find string references
-        referenced = set()
+        referenced: set[str] = set()
         self._collect_string_refs(rule.condition, referenced)
 
         # Report undefined strings
@@ -372,7 +372,7 @@ class UndefinedStringDetector:
 
         self._check_invalid_string_sets(rule.condition, defined, rule.name)
 
-        used = set()
+        used: set[str] = set()
         self._local_string_scopes.clear()
         self._collect_used_string_defs(rule.condition, defined, anonymous, used)
         for sid in sorted(defined - used):
@@ -395,7 +395,7 @@ class UndefinedStringDetector:
 
     def _collect_with_statement_refs(
         self,
-        node: ASTNode,
+        node: Any,
         refs: set[str],
         implicit_string_allowed: bool,
     ) -> None:
@@ -410,7 +410,7 @@ class UndefinedStringDetector:
 
     def _collect_with_statement_used(
         self,
-        node: ASTNode,
+        node: Any,
         defined: set[str],
         anonymous: set[str],
         used: set[str],
@@ -446,7 +446,7 @@ class UndefinedStringDetector:
         return any(sid.startswith(prefix) for sid in defined - anonymous)
 
     def _collect_string_refs(
-        self, node: ASTNode, refs: set[str], implicit_string_allowed: bool = False
+        self, node: Any, refs: set[str], implicit_string_allowed: bool = False
     ) -> None:
         """Recursively collect string identifier references from an expression."""
         from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
@@ -501,8 +501,9 @@ class UndefinedStringDetector:
             return
 
         # Recurse into children
-        for child in node.children():
-            self._collect_string_refs(child, refs, implicit_string_allowed)
+        if isinstance(node, ASTNode):
+            for child in node.children():
+                self._collect_string_refs(child, refs, implicit_string_allowed)
 
     def _collect_string_set_refs(self, string_set: object, refs: set[str]) -> None:
         from yaraast.ast.expressions import (
@@ -544,7 +545,7 @@ class UndefinedStringDetector:
             for element in string_set.elements:
                 self._collect_string_set_refs(element, refs)
 
-    def _check_invalid_string_sets(self, node: ASTNode, defined: set[str], rule_name: str) -> None:
+    def _check_invalid_string_sets(self, node: Any, defined: set[str], rule_name: str) -> None:
         from yaraast.ast.conditions import ForOfExpression, OfExpression
 
         if isinstance(node, ForOfExpression | OfExpression):
@@ -559,8 +560,9 @@ class UndefinedStringDetector:
                     suggestion="Define at least one string or remove the 'of them' condition.",
                 )
 
-        for child in node.children():
-            self._check_invalid_string_sets(child, defined, rule_name)
+        if isinstance(node, ASTNode):
+            for child in node.children():
+                self._check_invalid_string_sets(child, defined, rule_name)
 
     def _is_parenthesized_them(self, string_set: object) -> bool:
         from yaraast.ast.expressions import Identifier, ParenthesesExpression
@@ -580,7 +582,7 @@ class UndefinedStringDetector:
 
     def _collect_used_string_defs(
         self,
-        node: ASTNode,
+        node: Any,
         defined: set[str],
         anonymous: set[str],
         used: set[str],
@@ -648,8 +650,11 @@ class UndefinedStringDetector:
             )
             return
 
-        for child in node.children():
-            self._collect_used_string_defs(child, defined, anonymous, used, implicit_string_allowed)
+        if isinstance(node, ASTNode):
+            for child in node.children():
+                self._collect_used_string_defs(
+                    child, defined, anonymous, used, implicit_string_allowed
+                )
 
     def _mark_used_string_set(
         self, string_set: object, defined: set[str], anonymous: set[str], used: set[str]

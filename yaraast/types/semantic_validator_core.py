@@ -25,7 +25,7 @@ class ValidationError:
         return f"{self.severity}: {self.message}"
 
     def to_dict(self) -> dict[str, Any]:
-        result = {
+        result: dict[str, Any] = {
             "message": self.message,
             "error_type": self.error_type,
             "severity": self.severity,

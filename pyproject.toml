@@ -224,7 +224,6 @@ module = [
     "yaraast.yarax.*",
     "yaraast.yaral.*",
     "yaraast.lsp.*",
-    "yaraast.types.*",
     "yaraast.metrics.*",
     "yaraast.cli.*",
 ]

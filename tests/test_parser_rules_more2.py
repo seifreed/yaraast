@@ -245,7 +245,7 @@ def test_parse_import_include_and_rule_via_full_parse() -> None:
     assert ast.rules[0].name == "sample"
     assert [str(m) for m in ast.rules[0].modifiers] == ["private"]
 
-    tokens = Lexer("rule only_condition { condition: true }").tokenize()
+    tokens: list[Token] = Lexer[list[Token]]("rule only_condition { condition: true }").tokenize()
     parser = Parser("rule seed { condition: true }")
     parser.tokens = tokens
     parser.current = 0

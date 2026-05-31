@@ -139,7 +139,7 @@ class ModuleLoader:
         except (ValueError, TypeError, AttributeError):
             return None
 
-    def _parse_type(self, type_str: str | dict) -> YaraType:
+    def _parse_type(self, type_str: str | dict[str, Any]) -> YaraType:
         """Parse type from string or dict representation."""
         from yaraast.types._registry_collections import ArrayType, DictionaryType, StructType
         from yaraast.types._registry_primitives import (
@@ -198,9 +198,12 @@ class ModuleLoader:
 
         return AnyType()
 
-    def _parse_parameters(self, params: list | dict) -> list[tuple[str, YaraType]]:
+    def _parse_parameters(
+        self,
+        params: list[Any] | dict[str, Any],
+    ) -> list[tuple[str, YaraType]]:
         """Parse function parameters."""
-        result = []
+        result: list[tuple[str, YaraType]] = []
 
         if isinstance(params, list):
             # List of parameter names (assume any type)

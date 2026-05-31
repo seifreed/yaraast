@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from yaraast.types.module_contracts import FunctionDefinition
 from yaraast.types.module_loader import ModuleLoader
@@ -125,133 +125,133 @@ class FunctionCallValidator(DefaultASTVisitor[None]):
             )
             return
 
-    def visit_binary_expression(self, node) -> None:
+    def visit_binary_expression(self, node: Any) -> None:
         self.visit(node.left)
         self.visit(node.right)
 
-    def visit_unary_expression(self, node) -> None:
+    def visit_unary_expression(self, node: Any) -> None:
         self.visit(node.operand)
 
-    def visit_member_access(self, node) -> None:
+    def visit_member_access(self, node: Any) -> None:
         self.visit(node.object)
 
-    def visit_parentheses_expression(self, node) -> None:
+    def visit_parentheses_expression(self, node: Any) -> None:
         self.visit(node.expression)
 
-    def visit_set_expression(self, node) -> None:
+    def visit_set_expression(self, node: Any) -> None:
         for elem in node.elements:
             self.visit(elem)
 
-    def visit_range_expression(self, node) -> None:
+    def visit_range_expression(self, node: Any) -> None:
         self.visit(node.low)
         self.visit(node.high)
 
-    def visit_array_access(self, node) -> None:
+    def visit_array_access(self, node: Any) -> None:
         self.visit(node.array)
         self.visit(node.index)
 
-    def visit_dictionary_access(self, node) -> None:
+    def visit_dictionary_access(self, node: Any) -> None:
         self.visit(node.object)
         self._visit_ast_value(node.key)
 
-    def visit_string_offset(self, node) -> None:
+    def visit_string_offset(self, node: Any) -> None:
         self._visit_ast_value(node.index)
 
-    def visit_string_length(self, node) -> None:
+    def visit_string_length(self, node: Any) -> None:
         self._visit_ast_value(node.index)
 
-    def visit_defined_expression(self, node) -> None:
+    def visit_defined_expression(self, node: Any) -> None:
         self.visit(node.expression)
 
-    def visit_string_operator_expression(self, node) -> None:
+    def visit_string_operator_expression(self, node: Any) -> None:
         self.visit(node.left)
         self.visit(node.right)
 
-    def visit_for_expression(self, node) -> None:
+    def visit_for_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self.visit(node.iterable)
         self.visit(node.body)
 
-    def visit_for_of_expression(self, node) -> None:
+    def visit_for_of_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
         if node.condition:
             self.visit(node.condition)
 
-    def visit_at_expression(self, node) -> None:
+    def visit_at_expression(self, node: Any) -> None:
         self.visit(node.offset)
 
-    def visit_in_expression(self, node) -> None:
+    def visit_in_expression(self, node: Any) -> None:
         if not isinstance(node.subject, str):
             self._visit_ast_value(node.subject)
         self.visit(node.range)
 
-    def visit_of_expression(self, node) -> None:
+    def visit_of_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self._visit_ast_value(node.string_set)
 
-    def visit_with_statement(self, node) -> None:
+    def visit_with_statement(self, node: Any) -> None:
         for declaration in node.declarations:
             self.visit(declaration)
         self.visit(node.body)
 
-    def visit_with_declaration(self, node) -> None:
+    def visit_with_declaration(self, node: Any) -> None:
         self.visit(node.value)
 
-    def visit_array_comprehension(self, node) -> None:
+    def visit_array_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.expression)
         self._visit_ast_value(node.iterable)
         self._visit_ast_value(node.condition)
 
-    def visit_dict_comprehension(self, node) -> None:
+    def visit_dict_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.key_expression)
         self._visit_ast_value(node.value_expression)
         self._visit_ast_value(node.iterable)
         self._visit_ast_value(node.condition)
 
-    def visit_tuple_expression(self, node) -> None:
+    def visit_tuple_expression(self, node: Any) -> None:
         for element in node.elements:
             self.visit(element)
 
-    def visit_tuple_indexing(self, node) -> None:
+    def visit_tuple_indexing(self, node: Any) -> None:
         self.visit(node.tuple_expr)
         self.visit(node.index)
 
-    def visit_list_expression(self, node) -> None:
+    def visit_list_expression(self, node: Any) -> None:
         for element in node.elements:
             self.visit(element)
 
-    def visit_dict_expression(self, node) -> None:
+    def visit_dict_expression(self, node: Any) -> None:
         for item in node.items:
             self.visit(item)
 
-    def visit_dict_item(self, node) -> None:
+    def visit_dict_item(self, node: Any) -> None:
         self.visit(node.key)
         self.visit(node.value)
 
-    def visit_slice_expression(self, node) -> None:
+    def visit_slice_expression(self, node: Any) -> None:
         self.visit(node.target)
         self._visit_ast_value(node.start)
         self._visit_ast_value(node.stop)
         self._visit_ast_value(node.step)
 
-    def visit_lambda_expression(self, node) -> None:
+    def visit_lambda_expression(self, node: Any) -> None:
         self.visit(node.body)
 
-    def visit_pattern_match(self, node) -> None:
+    def visit_pattern_match(self, node: Any) -> None:
         self.visit(node.value)
         for case in node.cases:
             self.visit(case)
         self._visit_ast_value(node.default)
 
-    def visit_match_case(self, node) -> None:
+    def visit_match_case(self, node: Any) -> None:
         self.visit(node.pattern)
         self.visit(node.result)
 
-    def visit_spread_operator(self, node) -> None:
+    def visit_spread_operator(self, node: Any) -> None:
         self.visit(node.expression)
 
-    def _visit_ast_value(self, value) -> None:
+    def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
         elif isinstance(value, Mapping):
