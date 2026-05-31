@@ -203,10 +203,15 @@ class CommentAwareParser(Parser):
             if not self._peek() or self._peek().type != TokenType.IDENTIFIER:
                 msg = "Expected tag name after ':'"
                 raise ParserError(msg, self._peek())
+            seen_tags: set[str] = set()
             while self._peek() and self._peek().type == TokenType.IDENTIFIER:
-                tags.append(
-                    self._set_node_location_from_token(Tag(name=self._peek().value), self._peek())
-                )
+                tag_token = self._peek()
+                tag_name = str(tag_token.value)
+                if tag_name in seen_tags:
+                    msg = f'duplicated tag identifier "{tag_name}"'
+                    raise ParserError(msg, tag_token)
+                seen_tags.add(tag_name)
+                tags.append(self._set_node_location_from_token(Tag(name=tag_name), tag_token))
                 self._advance()
         return tags
 

@@ -19,7 +19,7 @@ from yaraast.ast.expressions import (
     StringIdentifier,
     StringLiteral,
 )
-from yaraast.ast.rules import Rule
+from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import PlainString
 from yaraast.parser import Parser
 from yaraast.types.semantic_validator import (
@@ -151,12 +151,15 @@ def test_validate_file_rejects_duplicate_rule_names() -> None:
 
 
 def test_validate_file_rejects_duplicate_rule_tags() -> None:
-    ast = Parser().parse("""
-        rule tagged : alpha alpha {
-            condition:
-                true
-        }
-        """)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="tagged",
+                tags=[Tag("alpha"), Tag("alpha")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
 
     result = SemanticValidator().validate(ast)
 

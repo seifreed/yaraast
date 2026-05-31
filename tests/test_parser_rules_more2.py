@@ -164,6 +164,8 @@ def test_parse_rule_and_sections_error_paths() -> None:
     for parser in (Parser(), CommentAwareParser()):
         with pytest.raises(ParserError, match="Expected tag name after ':'"):
             parser.parse("rule empty_tags : { condition: true }")
+        with pytest.raises(ParserError, match="duplicated tag identifier"):
+            parser.parse("rule duplicated_tags : tag tag { condition: true }")
 
     parser = Parser("rule r { junk: true }")
     parser.current = 3  # position on junk

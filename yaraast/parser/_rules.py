@@ -292,11 +292,15 @@ class RuleParsingMixin:
             if not self._check(TokenType.IDENTIFIER):
                 msg = "Expected tag name after ':'"
                 raise ParserError(msg, self._peek())
+            seen_tags: set[str] = set()
             while self._check(TokenType.IDENTIFIER):
                 tag_token = self._advance()
-                tags.append(
-                    self._set_node_location_from_token(Tag(name=tag_token.value), tag_token)
-                )
+                tag_name = str(tag_token.value)
+                if tag_name in seen_tags:
+                    msg = f'duplicated tag identifier "{tag_name}"'
+                    raise ParserError(msg, tag_token)
+                seen_tags.add(tag_name)
+                tags.append(self._set_node_location_from_token(Tag(name=tag_name), tag_token))
         return tags
 
     def _parse_rule_sections(
