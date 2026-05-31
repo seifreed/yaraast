@@ -1107,25 +1107,25 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if not string_set:
             return False
 
-        # Count how many strings match
-        matches = 0
-        for string_id in string_set:
-            if node.condition is not None:
-                # Set up implicit $ variable for the condition body
+        if node.condition is not None:
+            contributions = []
+            for string_id in string_set:
                 old_value = self.context.variables.get("$", self._missing_loop_value)
                 self.context.variables["$"] = string_id
                 try:
-                    if _is_evaluation_truthy(self.visit(node.condition)):
-                        matches += 1
+                    contributions.append(self._for_body_contribution(self.visit(node.condition)))
                 finally:
                     if old_value is not self._missing_loop_value:
                         self.context.variables["$"] = old_value
                     else:
                         self.context.variables.pop("$", None)
-            else:
-                # No condition — just check if the string matched
-                if self.string_matcher.get_match_count(string_id) > 0:
-                    matches += 1
+
+            return self._evaluate_for_vm_quantifier(quantifier, contributions)
+
+        matches = 0
+        for string_id in string_set:
+            if self.string_matcher.get_match_count(string_id) > 0:
+                matches += 1
 
         # Evaluate quantifier
         if isinstance(quantifier, str):

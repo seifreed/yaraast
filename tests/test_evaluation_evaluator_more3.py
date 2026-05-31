@@ -216,6 +216,49 @@ def test_for_expression_double_body_with_loop_variables_matches_libyara() -> Non
     assert YaraEvaluator(data=b"").evaluate_file(ast) == {"double_loop_variable_body": True}
 
 
+def test_for_of_expression_numeric_body_uses_libyara_accumulator() -> None:
+    ast = Parser().parse("""
+        rule numeric_for_of_body {
+            strings:
+                $a = "a"
+                $b = "b"
+                $c = "ab"
+            condition:
+                for all of them : (#) and
+                for 2 of them : (#)
+        }
+
+        rule offset_for_of_body {
+            strings:
+                $a = "a"
+                $b = "b"
+                $c = "ab"
+            condition:
+                not for all of them : (@)
+        }
+
+        rule length_for_of_body {
+            strings:
+                $a = "a"
+                $b = "b"
+                $c = "ab"
+            condition:
+                not for all of them : (!)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"aa").evaluate_file(ast) == {
+        "numeric_for_of_body": True,
+        "offset_for_of_body": True,
+        "length_for_of_body": True,
+    }
+    assert YaraEvaluator(data=b"xxabxx").evaluate_file(ast) == {
+        "numeric_for_of_body": True,
+        "offset_for_of_body": True,
+        "length_for_of_body": True,
+    }
+
+
 def test_evaluator_normalizes_direct_ast_string_identifiers() -> None:
     ast = YaraFile(
         rules=[
