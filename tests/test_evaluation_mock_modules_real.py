@@ -332,7 +332,11 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     assert m.serial_correlation(0, 0) == -100000.0
     assert m.serial_correlation(0, 1) == -100000.0
     assert m.serial_correlation(0, 10) == -100000.0
+    assert MockMath(b"abcde").serial_correlation(0, 5) == 0.0
+    assert MockMath(b"abcdef").serial_correlation(0, 6) == pytest.approx(1 / 7)
     assert m.monte_carlo_pi(0, 5) is YARA_UNDEFINED
+    assert m.mode(0, 0) == 0
+    assert MockMath(b"").mode(0, 0) is YARA_UNDEFINED
 
     dotnet = MockDotNet(b"")
     assert dotnet.version is YARA_UNDEFINED

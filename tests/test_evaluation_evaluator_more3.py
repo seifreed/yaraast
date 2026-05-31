@@ -266,6 +266,21 @@ def test_math_percentage_empty_region_is_undefined() -> None:
     assert YaraEvaluator(data=b"a").evaluate_file(ast) == {"empty_percentage_region": True}
 
 
+def test_math_mode_empty_region_inside_file_returns_zero() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule empty_mode_region {
+            condition:
+                defined math.mode(0, 0) and
+                math.mode(0, 0) == 0 and
+                not math.mode(0, 0)
+        }
+        """)
+
+    assert YaraEvaluator(data=b"a").evaluate_file(ast) == {"empty_mode_region": True}
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"empty_mode_region": False}
+
+
 def test_math_serial_correlation_returns_libyara_sentinel_for_degenerate_regions() -> None:
     ast = Parser().parse("""
         import "math"
@@ -280,6 +295,19 @@ def test_math_serial_correlation_returns_libyara_sentinel_for_degenerate_regions
         """)
 
     assert YaraEvaluator(data=b"aa").evaluate_file(ast) == {"degenerate_serial_correlation": True}
+
+
+def test_math_serial_correlation_uses_circular_byte_pairs() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule circular_serial_correlation {
+            condition:
+                math.serial_correlation(0, 5) == 0.0 and
+                math.serial_correlation(0, 6) > 0.0
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abcdef").evaluate_file(ast) == {"circular_serial_correlation": True}
 
 
 def test_math_to_number_matches_libyara_boolean_conversion() -> None:

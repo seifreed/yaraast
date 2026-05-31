@@ -845,10 +845,13 @@ class MockMath:
         n = len(region)
         if n < 2:
             return SERIAL_CORRELATION_DEGENERATE
-        mean_val = sum(region) / n
-        num = sum((region[i] - mean_val) * (region[i + 1] - mean_val) for i in range(n - 1))
-        den = sum((b - mean_val) ** 2 for b in region)
-        return num / den if den != 0 else SERIAL_CORRELATION_DEGENERATE
+        byte_sum = sum(region)
+        squared_sum = sum(byte * byte for byte in region)
+        pair_sum = sum(region[index] * region[(index + 1) % n] for index in range(n))
+        denominator = n * squared_sum - byte_sum * byte_sum
+        if denominator == 0:
+            return SERIAL_CORRELATION_DEGENERATE
+        return (n * pair_sum - byte_sum * byte_sum) / denominator
 
     def monte_carlo_pi(
         self, value_or_offset: object, size: object = _missing_arg
@@ -892,9 +895,11 @@ class MockMath:
 
     def mode(self, offset: object, size: object) -> int | YaraUndefinedValue:
         """Return the most common byte in a data region."""
-        region = self._get_region("math.mode", offset, size, min_size=1)
+        region = self._get_region("math.mode", offset, size, min_size=0)
         if region is YARA_UNDEFINED:
             return YARA_UNDEFINED
+        if not region:
+            return 0
         return max(range(256), key=region.count)
 
     def _get_math_input(
