@@ -31,12 +31,22 @@ def _render_string_set(gen, string_set) -> str:
     if isinstance(string_set, StringIdentifier):
         return f"({gen.visit(string_set)})"
     if isinstance(string_set, StringWildcard):
+        if not string_set.pattern.startswith("$"):
+            return f"({_render_rule_wildcard(string_set.pattern)})"
         return f"({gen.visit(string_set)})"
     if isinstance(string_set, Identifier):
+        if string_set.name != "them" and not string_set.name.startswith("$"):
+            return f"({_render_rule_identifier(string_set.name)})"
         return _render_single_string_set_text(string_set.name)
     if isinstance(string_set, ParenthesesExpression):
         return _render_string_set(gen, string_set.expression)
     if isinstance(string_set, SetExpression):
+        if _is_rule_set_items(string_set.elements):
+            rendered_items = [_render_rule_set_item(item) for item in string_set.elements]
+            return f"({', '.join(rendered_items)})"
+        if _has_mixed_rule_and_string_set_items(string_set.elements):
+            msg = "Mixed string and rule set items are not valid for libyara output"
+            raise ValueError(msg)
         rendered_items = [_render_string_set_item(gen, item) for item in string_set.elements]
         return f"({', '.join(rendered_items)})"
     if hasattr(string_set, "accept"):
@@ -50,6 +60,67 @@ def _render_string_set(gen, string_set) -> str:
         ]
         return f"({', '.join(rendered_items)})"
     return _render_single_string_set_text(string_set)
+
+
+def _is_rule_set_items(items) -> bool:
+    return bool(items) and all(_is_rule_set_item(item) for item in items)
+
+
+def _has_mixed_rule_and_string_set_items(items) -> bool:
+    has_rule_item = any(_is_rule_set_item(item) for item in items)
+    has_string_item = any(_is_string_set_item(item) for item in items)
+    return has_rule_item and has_string_item
+
+
+def _is_rule_set_item(item) -> bool:
+    from yaraast.ast.expressions import Identifier, StringWildcard
+
+    if isinstance(item, Identifier):
+        return item.name != "them" and not item.name.startswith("$")
+    return isinstance(item, StringWildcard) and not item.pattern.startswith("$")
+
+
+def _is_string_set_item(item) -> bool:
+    from yaraast.ast.expressions import Identifier, StringIdentifier, StringLiteral, StringWildcard
+
+    if isinstance(item, Identifier):
+        return item.name == "them" or item.name.startswith("$")
+    if isinstance(item, StringIdentifier):
+        return True
+    if isinstance(item, StringWildcard):
+        return item.pattern.startswith("$")
+    if isinstance(item, StringLiteral):
+        return item.value == "them" or item.value.startswith("$")
+    return bool(isinstance(item, str))
+
+
+def _render_rule_set_item(item) -> str:
+    from yaraast.ast.expressions import Identifier, StringWildcard
+
+    if isinstance(item, Identifier):
+        return _render_rule_identifier(item.name)
+    if isinstance(item, StringWildcard):
+        return _render_rule_wildcard(item.pattern)
+    msg = f"Unsupported rule set item '{type(item).__name__}' for libyara output"
+    raise ValueError(msg)
+
+
+def _render_rule_identifier(name: object) -> str:
+    text = str(name)
+    try:
+        return validate_yara_identifier(text, "rule")
+    except ValueError as exc:
+        msg = f"Invalid string or rule set identifier '{text}' for libyara output"
+        raise ValueError(msg) from exc
+
+
+def _render_rule_wildcard(pattern: object) -> str:
+    text = str(pattern)
+    if text.startswith("$") or not text.endswith("*") or text == "*":
+        msg = f"Invalid string or rule set wildcard '{text}' for libyara output"
+        raise ValueError(msg)
+    _render_rule_identifier(text[:-1])
+    return text
 
 
 def _render_single_string_set_text(string_set: object) -> str:

@@ -3,9 +3,17 @@
 import pytest
 
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
-from yaraast.ast.expressions import StringCount
+from yaraast.ast.expressions import (
+    ParenthesesExpression,
+    SetExpression,
+    StringCount,
+    StringIdentifier,
+    StringWildcard,
+)
+from yaraast.codegen import CodeGenerator
 from yaraast.parser import Parser
 from yaraast.parser._shared import ParserError
+from yaraast.types import TypeChecker
 
 
 class TestOfInSyntax:
@@ -86,6 +94,92 @@ class TestOfInSyntax:
         """
         ast = Parser().parse(yara_code)
         assert len(ast.rules) == 1
+
+    @pytest.mark.parametrize(
+        ("condition", "expected"),
+        [
+            ("1 of (alpha)", "1 of (alpha)"),
+            ("all of (alpha, beta)", "all of (alpha, beta)"),
+            ("any of (alpha*)", "any of (alpha*)"),
+        ],
+    )
+    def test_of_expression_accepts_rule_sets(
+        self,
+        condition: str,
+        expected: str,
+    ) -> None:
+        yara_code = f"""
+        rule alpha {{
+            condition:
+                true
+        }}
+        rule beta {{
+            condition:
+                true
+        }}
+        rule probe {{
+            condition:
+                {condition}
+        }}
+        """
+        ast = Parser().parse(yara_code)
+
+        assert TypeChecker().check(ast) == []
+        assert expected in CodeGenerator().generate(ast)
+
+    def test_rule_wildcard_set_parses_as_bare_wildcard(self) -> None:
+        yara_code = """
+        rule alpha {
+            condition:
+                true
+        }
+        rule probe {
+            condition:
+                any of (alpha*)
+        }
+        """
+
+        ast = Parser().parse(yara_code)
+        condition = ast.rules[-1].condition
+
+        assert isinstance(condition, OfExpression)
+        assert isinstance(condition.string_set, ParenthesesExpression)
+        assert isinstance(condition.string_set.expression, StringWildcard)
+        assert condition.string_set.expression.pattern == "alpha*"
+
+    def test_rule_set_rejects_unresolved_rule_references(self) -> None:
+        yara_code = """
+        rule probe {
+            condition:
+                any of (missing)
+        }
+        """
+
+        ast = Parser().parse(yara_code)
+
+        assert TypeChecker().check(ast) == ["Undefined rule: missing"]
+
+    def test_mixed_string_and_rule_sets_are_rejected(self) -> None:
+        yara_code = """
+        rule alpha {
+            condition:
+                true
+        }
+        rule probe {
+            strings:
+                $a = "test"
+            condition:
+                any of ($a, alpha)
+        }
+        """
+
+        ast = Parser().parse(yara_code)
+        condition = ast.rules[-1].condition
+
+        assert isinstance(condition, OfExpression)
+        assert isinstance(condition.string_set, SetExpression)
+        assert isinstance(condition.string_set.elements[0], StringIdentifier)
+        assert TypeChecker().check(ast) == ["'of' requires string set or rule set, got mixed set"]
 
     @pytest.mark.parametrize("condition", ["@a in (0..100)", "!a in (0..100)"])
     def test_string_offset_and_length_do_not_support_in_range(self, condition: str) -> None:

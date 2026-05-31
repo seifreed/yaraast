@@ -113,3 +113,12 @@ class TypeEnvironment:
     def has_rule(self, rule_name: str) -> bool:
         rule_name = _require_string(rule_name, "TypeEnvironment rule name")
         return rule_name in self.rules
+
+    def has_rule_pattern(self, pattern: str) -> bool:
+        pattern = _require_string(pattern, "TypeEnvironment rule pattern")
+        if not pattern.endswith("*"):
+            return self.has_rule(pattern)
+        prefix = pattern[:-1]
+        if not prefix:
+            return False
+        return any(rule_name.startswith(prefix) for rule_name in self.rules)

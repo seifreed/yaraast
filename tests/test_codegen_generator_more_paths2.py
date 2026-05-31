@@ -1355,7 +1355,7 @@ def test_codegen_generators_reject_invalid_string_references(condition: Conditio
         (StringLiteral("a*"), "any of ($a*)"),
         (StringIdentifier("$a"), "any of ($a)"),
         (Identifier("$a"), "any of ($a)"),
-        (Identifier("a"), "any of ($a)"),
+        (Identifier("a"), "any of (a)"),
         (Identifier("them"), "any of them"),
     ],
 )

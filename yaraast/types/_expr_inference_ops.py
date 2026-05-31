@@ -716,12 +716,12 @@ def _is_string_set_expression(node: SetExpression) -> bool:
 
 def _is_string_set_element(element) -> bool:
     if isinstance(element, StringIdentifier | StringWildcard):
-        return True
+        return not isinstance(element, StringWildcard) or element.pattern.startswith("$")
     if isinstance(element, StringLiteral):
         value = element.value
         return value == "them" or value.startswith("$")
     if isinstance(element, Identifier):
-        return element.name == "them"
+        return element.name == "them" or element.name.startswith("$")
     return False
 
 
@@ -749,7 +749,9 @@ def _infer_quantifier_value(ctx, value):
 def _infer_string_set_value(ctx, value):
     if isinstance(value, ParenthesesExpression):
         return _infer_string_set_value(ctx, value.expression)
-    if isinstance(value, StringIdentifier | StringLiteral | StringWildcard):
+    if isinstance(value, StringIdentifier | StringLiteral):
+        return StringSetType()
+    if isinstance(value, StringWildcard) and value.pattern.startswith("$"):
         return StringSetType()
     if hasattr(value, "accept"):
         return ctx.visit(value)
@@ -800,7 +802,8 @@ def _validate_string_set_refs(ctx, value) -> None:
         return
 
     if isinstance(value, StringWildcard):
-        _validate_raw_string_ref(ctx, value.pattern)
+        if value.pattern.startswith("$"):
+            _validate_raw_string_ref(ctx, value.pattern)
         return
 
     if isinstance(value, SetExpression):
@@ -810,6 +813,80 @@ def _validate_string_set_refs(ctx, value) -> None:
 
     if hasattr(value, "accept"):
         ctx.visit(value)
+
+
+def _classify_of_set_value(value) -> str | None:
+    if isinstance(value, ParenthesesExpression):
+        return _classify_of_set_value(value.expression)
+
+    if isinstance(value, SetExpression):
+        return _classify_of_set_items(value.elements)
+
+    if isinstance(value, list | tuple | set | frozenset):
+        return _classify_of_set_items(value)
+
+    if _is_string_set_value(value):
+        return "string"
+
+    if _is_rule_set_value(value):
+        return "rule"
+
+    return None
+
+
+def _classify_of_set_items(values) -> str | None:
+    kinds = {_classify_of_set_value(value) for value in values}
+    if len(kinds) == 1:
+        return kinds.pop()
+    if "string" in kinds and "rule" in kinds:
+        return "mixed"
+    return None
+
+
+def _is_string_set_value(value) -> bool:
+    if isinstance(value, StringIdentifier):
+        return True
+    if isinstance(value, StringWildcard):
+        return value.pattern.startswith("$")
+    if isinstance(value, StringLiteral):
+        return value.value == "them" or value.value.startswith("$")
+    if isinstance(value, Identifier):
+        return value.name == "them" or value.name.startswith("$")
+    return bool(isinstance(value, str))
+
+
+def _is_rule_set_value(value) -> bool:
+    if isinstance(value, Identifier):
+        return value.name != "them" and not value.name.startswith("$")
+    return isinstance(value, StringWildcard) and not value.pattern.startswith("$")
+
+
+def _validate_rule_set_refs(ctx, value) -> None:
+    if isinstance(value, ParenthesesExpression):
+        _validate_rule_set_refs(ctx, value.expression)
+        return
+
+    if isinstance(value, SetExpression):
+        for element in value.elements:
+            _validate_rule_set_refs(ctx, element)
+        return
+
+    if isinstance(value, list | tuple | set | frozenset):
+        for item in value:
+            _validate_rule_set_refs(ctx, item)
+        return
+
+    if isinstance(value, Identifier):
+        if not ctx.env.has_rule(value.name):
+            ctx.errors.append(f"Undefined rule: {value.name}")
+        return
+
+    if (
+        isinstance(value, StringWildcard)
+        and not value.pattern.startswith("$")
+        and not ctx.env.has_rule_pattern(value.pattern)
+    ):
+        ctx.errors.append(f"Undefined rule pattern: {value.pattern}")
 
 
 def _percentage_quantifier_value(value):
@@ -923,10 +1000,20 @@ def infer_module_or_condition(ctx, node):
         percentage = _percentage_quantifier_value(node.quantifier)
         if percentage is not None and not 0 < percentage <= 1:
             ctx.errors.append("'of' percentage quantifier must be between 1 and 100")
-        _validate_string_set_refs(ctx, node.string_set)
-        set_type = _infer_string_set_value(ctx, node.string_set)
-        if not isinstance(set_type, StringSetType):
-            ctx.errors.append(f"'of' requires string set, got {set_type}")
+        set_kind = _classify_of_set_value(node.string_set)
+        if set_kind == "string":
+            _validate_string_set_refs(ctx, node.string_set)
+            set_type = _infer_string_set_value(ctx, node.string_set)
+            if not isinstance(set_type, StringSetType):
+                ctx.errors.append(f"'of' requires string set, got {set_type}")
+        elif set_kind == "rule":
+            _validate_rule_set_refs(ctx, node.string_set)
+        elif set_kind == "mixed":
+            ctx.errors.append("'of' requires string set or rule set, got mixed set")
+        else:
+            _validate_string_set_refs(ctx, node.string_set)
+            set_type = _infer_string_set_value(ctx, node.string_set)
+            ctx.errors.append(f"'of' requires string set or rule set, got {set_type}")
         return BooleanType()
 
     if isinstance(node, ForExpression):

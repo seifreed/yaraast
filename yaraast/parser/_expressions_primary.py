@@ -279,6 +279,10 @@ class ExpressionPrimaryMixin:
             return None
         token = self._previous()
         name = self._previous().value
+        if self._can_use_string_wildcard_reference() and self._match(TokenType.MULTIPLY):
+            return self._set_node_location_from_tokens(
+                StringWildcard(pattern=f"{name}*"), token, self._previous()
+            )
         if self._is_extern_rule_reference(str(name)):
             return self._set_node_location_from_token(
                 ExternRuleReference(rule_name=str(name)), token
