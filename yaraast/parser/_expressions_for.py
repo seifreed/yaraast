@@ -180,6 +180,7 @@ class ExpressionForMixin:
         self._allow_string_wildcard_reference = True
         try:
             expr = self._parse_primary_expression()
+            self._reject_parenthesized_them_set(expr)
 
             while True:
                 if self._match(TokenType.DOT):
@@ -194,6 +195,15 @@ class ExpressionForMixin:
             self._allow_string_wildcard_reference = previous_allow_wildcard
 
         return expr
+
+    def _reject_parenthesized_them_set(self, expr: Expression) -> None:
+        if (
+            isinstance(expr, ParenthesesExpression)
+            and isinstance(expr.expression, Identifier)
+            and expr.expression.name == "them"
+        ):
+            msg = "'them' cannot be parenthesized in an of-expression string set"
+            raise ParserError(msg, self._previous())
 
     def _parse_of_member_access(self, expr: Expression) -> MemberAccess:
         """Parse member access within 'of' string set context."""

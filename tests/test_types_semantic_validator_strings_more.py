@@ -575,13 +575,6 @@ def test_semantic_validator_rejects_invalid_them_string_sets() -> None:
             condition:
                 any of them
         }
-
-        rule parenthesized_them {
-            strings:
-                $a = "abc"
-            condition:
-                any of (them)
-        }
         """)
 
     result = SemanticValidator().validate(ast)
@@ -590,10 +583,6 @@ def test_semantic_validator_rejects_invalid_them_string_sets() -> None:
     assert result.is_valid is False
     assert any(
         "Undefined string pattern '$*' in rule 'no_strings'" in message for message in messages
-    )
-    assert any(
-        "Invalid parenthesized 'them' string set in rule 'parenthesized_them'" in message
-        for message in messages
     )
 
 

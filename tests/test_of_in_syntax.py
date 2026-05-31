@@ -204,6 +204,47 @@ class TestOfInSyntax:
 
         assert TypeChecker().check(ast) == []
 
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "any of (them)",
+            "for any of (them) : ( $ )",
+        ],
+    )
+    def test_parenthesized_them_set_is_rejected(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+
+        with pytest.raises(ParserError, match="'them' cannot be parenthesized"):
+            Parser().parse(yara_code)
+
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "any of them",
+            "for any of them : ( $ )",
+        ],
+    )
+    def test_unparenthesized_them_set_still_parses(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+
+        ast = Parser().parse(yara_code)
+
+        assert TypeChecker().check(ast) == []
+
     @pytest.mark.parametrize("condition", ["@a in (0..100)", "!a in (0..100)"])
     def test_string_offset_and_length_do_not_support_in_range(self, condition: str) -> None:
         yara_code = f"""
