@@ -4,6 +4,7 @@ from lsprotocol.types import CodeAction, CodeActionKind, Diagnostic, Position, R
 
 from yaraast.lsp.authoring import AuthoringActions
 from yaraast.lsp.code_actions import CodeActionsProvider
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def _range(line: int, start: int, end: int) -> Range:
@@ -570,6 +571,28 @@ rule demo {
     assert actions.sort_meta_by_key(text, _range(0, 0, 4)) is None
     assert actions.sort_tags_alphabetically(text, _range(0, 0, 4)) is None
     assert actions.compress_of_them(text, _range(4, 8, 10)) is None
+
+
+def test_authoring_line_rewrite_ranges_use_utf16_columns() -> None:
+    actions = AuthoringActions()
+    text = """
+rule demo {
+    strings:
+        $a = "😀" wide ascii wide
+        $b = "😀"
+    condition:
+        true
+}
+""".lstrip()
+    lines = text.splitlines()
+
+    normalize = actions.normalize_string_modifiers(text, _range(2, 8, 32))
+    convert = actions.convert_plain_string_to_hex(text, _range(3, 8, 18))
+
+    assert normalize is not None
+    assert normalize.edit.range.end.character == utf8_col_to_utf16(lines[2], len(lines[2]))
+    assert convert is not None
+    assert convert.edit.range.end.character == utf8_col_to_utf16(lines[3], len(lines[3]))
 
 
 def test_create_missing_string_action_appends_to_existing_strings_section() -> None:

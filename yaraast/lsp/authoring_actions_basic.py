@@ -12,9 +12,17 @@ from yaraast.lsp.authoring_support import (
     modifier_start,
     normalize_modifiers,
 )
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 if TYPE_CHECKING:
     from yaraast.lsp.authoring_actions import StructuralEdit
+
+
+def _whole_line_range(line_num: int, line: str) -> Range:
+    return Range(
+        start=Position(line=line_num, character=0),
+        end=Position(line=line_num, character=utf8_col_to_utf16(line, len(line))),
+    )
 
 
 def _hex_escape_byte(value: str, position: int) -> int | None:
@@ -125,10 +133,7 @@ def normalize_string_modifiers(text: str, selection: Range) -> StructuralEdit | 
     return StructuralEdit(
         title="Normalize string modifiers",
         edit=TextEdit(
-            range=Range(
-                start=Position(line=line_num, character=0),
-                end=Position(line=line_num, character=len(line)),
-            ),
+            range=_whole_line_range(line_num, line),
             new_text=new_line,
         ),
         preview="Deduplicate and reorder modifiers",
@@ -159,10 +164,7 @@ def convert_plain_string_to_hex(text: str, selection: Range) -> StructuralEdit |
     return StructuralEdit(
         title="Convert string to hex",
         edit=TextEdit(
-            range=Range(
-                start=Position(line=line_num, character=0),
-                end=Position(line=line_num, character=len(line)),
-            ),
+            range=_whole_line_range(line_num, line),
             new_text=new_line,
         ),
         preview=f'"{value}" -> {{ {hex_bytes} }}',
