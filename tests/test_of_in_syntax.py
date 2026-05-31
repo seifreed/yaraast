@@ -5,9 +5,7 @@ import pytest
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ParenthesesExpression,
-    SetExpression,
     StringCount,
-    StringIdentifier,
     StringWildcard,
 )
 from yaraast.codegen import CodeGenerator
@@ -173,13 +171,33 @@ class TestOfInSyntax:
         }
         """
 
-        ast = Parser().parse(yara_code)
-        condition = ast.rules[-1].condition
+        with pytest.raises(ParserError, match="Mixed string and rule sets"):
+            Parser().parse(yara_code)
 
-        assert isinstance(condition, OfExpression)
-        assert isinstance(condition.string_set, SetExpression)
-        assert isinstance(condition.string_set.elements[0], StringIdentifier)
-        assert TypeChecker().check(ast) == ["'of' requires string set or rule set, got mixed set"]
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "any of (1)",
+            "any of (true)",
+            'any of ("$a")',
+            "any of (/x/)",
+            "any of (filesize)",
+            "any of (pe.is_32bit())",
+        ],
+    )
+    def test_of_expression_rejects_non_identifier_string_sets(self, condition: str) -> None:
+        yara_code = f"""
+        import "pe"
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+
+        with pytest.raises(ParserError, match="Expected string or rule identifier"):
+            Parser().parse(yara_code)
 
     @pytest.mark.parametrize(
         "condition",

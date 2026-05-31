@@ -11,7 +11,10 @@ from yaraast.ast.expressions import (
     MemberAccess,
     ParenthesesExpression,
     RangeExpression,
+    SetExpression,
+    StringIdentifier,
     StringLiteral,
+    StringWildcard,
 )
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.lexer import TokenType
@@ -197,11 +200,49 @@ class ExpressionForMixin:
                     expr = self._parse_of_function_call(expr)
                 else:
                     break
+            self._validate_of_string_set(expr)
         finally:
             self._allow_string_wildcard_reference = previous_allow_wildcard
             self._allow_set_expression = previous_allow_set
 
         return expr
+
+    def _validate_of_string_set(self, expr: Expression) -> None:
+        kind = self._of_string_set_kind(expr, top_level=True)
+        if kind is not None:
+            return
+        msg = "Expected string or rule identifier in of string set"
+        raise ParserError(msg, self._previous())
+
+    def _of_string_set_kind(self, expr: Expression, *, top_level: bool = False) -> str | None:
+        if isinstance(expr, StringIdentifier):
+            return "string"
+        if isinstance(expr, StringWildcard):
+            return "string" if expr.pattern.startswith("$") else "rule"
+        if isinstance(expr, Identifier):
+            if expr.name == "them":
+                return "string" if top_level else None
+            if expr.name in {"filesize", "entrypoint"}:
+                return None
+            return "rule"
+        if isinstance(expr, ParenthesesExpression):
+            return self._of_string_set_kind(expr.expression)
+        if isinstance(expr, SetExpression):
+            return self._of_set_expression_kind(expr)
+        return None
+
+    def _of_set_expression_kind(self, expr: SetExpression) -> str | None:
+        kind: str | None = None
+        for element in expr.elements:
+            element_kind = self._of_string_set_kind(element)
+            if element_kind is None:
+                return None
+            if kind is None:
+                kind = element_kind
+            elif kind != element_kind:
+                msg = "Mixed string and rule sets are not valid in of string sets"
+                raise ParserError(msg, self._previous())
+        return kind
 
     def _reject_parenthesized_them_set(self, expr: Expression) -> None:
         if (

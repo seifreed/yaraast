@@ -6,14 +6,12 @@ import pytest
 
 from yaraast.ast.conditions import ForExpression, ForOfExpression
 from yaraast.ast.expressions import (
-    ArrayAccess,
     BinaryExpression,
     BooleanLiteral,
-    FunctionCall,
     MemberAccess,
     StringLiteral,
 )
-from yaraast.ast.modules import DictionaryAccess, ModuleReference
+from yaraast.ast.modules import ModuleReference
 from yaraast.lexer import Lexer
 from yaraast.parser._shared import ParserError
 from yaraast.parser.parser import Parser
@@ -103,28 +101,9 @@ def test_parse_of_string_set_and_function_name_resolution_paths() -> None:
     assert isinstance(of_expr.quantifier, StringLiteral)
     assert of_expr.quantifier.value == "any"
 
-    member = _expr_parser("foo.bar")._parse_of_string_set()
-    assert isinstance(member, MemberAccess)
-    assert member.member == "bar"
-
-    dict_access = _expr_parser('foo["k"]')._parse_of_string_set()
-    assert isinstance(dict_access, DictionaryAccess)
-    assert dict_access.key == "k"
-
-    arr_access = _expr_parser("foo[1]")._parse_of_string_set()
-    assert isinstance(arr_access, ArrayAccess)
-
-    fn_simple = _expr_parser("foo(1,2)")._parse_of_string_set()
-    assert isinstance(fn_simple, FunctionCall)
-    assert fn_simple.function == "foo"
-
-    fn_module = _expr_parser("pe.section(1)")._parse_of_string_set()
-    assert isinstance(fn_module, FunctionCall)
-    assert fn_module.function == "pe.section"
-
-    fn_nested = _expr_parser("a.b.c(1)")._parse_of_string_set()
-    assert isinstance(fn_nested, FunctionCall)
-    assert fn_nested.function == "a.b.c"
+    for invalid_set in ("foo.bar", 'foo["k"]', "foo[1]", "foo(1,2)", "pe.section(1)"):
+        with pytest.raises(ParserError, match="Expected string or rule identifier"):
+            _expr_parser(invalid_set)._parse_of_string_set()
 
     with pytest.raises(ParserError, match="Expected member name after"):
         _expr_parser("foo.")._parse_of_string_set()
