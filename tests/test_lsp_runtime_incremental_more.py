@@ -831,6 +831,28 @@ rule sample {
     assert header_record.range.end.character == utf8_col_to_utf16(line, header_end)
 
 
+def test_runtime_indexes_string_symbol_ranges_as_utf16_columns() -> None:
+    text = """
+rule sample {
+  strings:
+    /* 😀 */ $a = "x"
+  condition:
+    $a
+}
+""".lstrip()
+    line = text.splitlines()[2]
+    string_start = line.index("$a")
+    string_end = string_start + len("$a")
+    doc = DocumentContext("file://utf16-string-symbol.yar", text)
+
+    string_record = next(
+        symbol for symbol in doc.symbols() if symbol.kind == "string" and symbol.name == "$a"
+    )
+
+    assert string_record.range.start.character == utf8_col_to_utf16(line, string_start)
+    assert string_record.range.end.character == utf8_col_to_utf16(line, string_end)
+
+
 def test_runtime_resolve_symbol_prefers_symbol_records(tmp_path: Path) -> None:
     doc_path = tmp_path / "doc.yar"
     text = """
