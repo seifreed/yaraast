@@ -353,6 +353,19 @@ def test_string_to_int_base_zero_uses_c_style_octal_prefixes() -> None:
     assert YaraEvaluator().evaluate_file(ast) == {"string_to_int_base_zero_octal": True}
 
 
+def test_string_length_counts_utf8_bytes() -> None:
+    ast = Parser().parse("""
+        import "string"
+        rule string_length_bytes {
+            condition:
+                string.length("á") == 2 and
+                string.length("😀") == 4
+        }
+        """)
+
+    assert YaraEvaluator().evaluate_file(ast) == {"string_length_bytes": True}
+
+
 def test_math_to_string_matches_libyara_supported_bases() -> None:
     ast = Parser().parse("""
         import "math"

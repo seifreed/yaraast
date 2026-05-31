@@ -376,6 +376,8 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
         string.to_int("10", cast(Any, True))
     with pytest.raises(EvaluationError, match=r"string\.length\(\) expects a string argument"):
         string.length(cast(Any, 1))
+    assert string.length("á") == 2
+    assert string.length("😀") == 4
 
     cuckoo = CuckooModule(b"abc")
     cuckoo.network.http_requests = ["http://evil.example/path"]

@@ -1242,7 +1242,7 @@ class StringModule:
 
     def length(self, s: str) -> int:
         _require_string_arg("string.length", s)
-        return len(s)
+        return len(s.encode())
 
 
 # ---------------------------------------------------------------------------
