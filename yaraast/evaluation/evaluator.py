@@ -1032,6 +1032,13 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
     def visit_for_of_expression(self, node) -> bool:
         """Evaluate 'for ... of' expression (ForOfExpression: quantifier, string_set, condition)."""
         quantifier = self._resolve_quantifier(node.quantifier)
+        rule_set = self._resolve_rule_set(node.string_set)
+        if rule_set is not None:
+            if not rule_set:
+                return False
+            matches = sum(1 for rule_key in rule_set if self._evaluate_rule_by_name(rule_key))
+            return self._evaluate_quantifier(quantifier, len(rule_set), matches)
+
         string_set = self._resolve_string_set(node.string_set)
         if not string_set:
             return False
