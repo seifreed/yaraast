@@ -58,17 +58,17 @@ def _shallow[Node: ASTNode](node: Node) -> Node:
     return copied
 
 
-def _pool_text(transformer, value: str | None) -> str | None:
+def _pool_text(transformer: Any, value: str | None) -> str | None:
     if value is None:
         return None
     return pooled_value(transformer.string_pool, value)
 
 
-def _pool_text_list(transformer, values: list[str]) -> list[str]:
+def _pool_text_list(transformer: Any, values: list[str]) -> list[str]:
     return [pooled_value(transformer.string_pool, value) for value in values]
 
 
-def _pool_parameter_value(transformer, value: Any) -> Any:
+def _pool_parameter_value(transformer: Any, value: Any) -> Any:
     if isinstance(value, str):
         return pooled_value(transformer.string_pool, value)
     if hasattr(value, "accept"):
@@ -89,43 +89,43 @@ def _pool_parameter_value(transformer, value: Any) -> Any:
     return value
 
 
-def _visit_items(transformer, values: list[Any]) -> list[Any]:
+def _visit_items(transformer: Any, values: list[Any]) -> list[Any]:
     return [transformer.visit(value) if hasattr(value, "accept") else value for value in values]
 
 
-def visit_string_literal(transformer, node: StringLiteral) -> StringLiteral:
+def visit_string_literal(transformer: Any, node: StringLiteral) -> StringLiteral:
     node = _shallow(node)
     if hasattr(node, "value") and isinstance(node.value, str):
         node.value = pooled_value(transformer.string_pool, node.value)
     return node
 
 
-def visit_boolean_literal(transformer, node: BooleanLiteral) -> BooleanLiteral:
+def visit_boolean_literal(transformer: Any, node: BooleanLiteral) -> BooleanLiteral:
     return _shallow(node)
 
 
-def visit_integer_literal(transformer, node: IntegerLiteral) -> IntegerLiteral:
+def visit_integer_literal(transformer: Any, node: IntegerLiteral) -> IntegerLiteral:
     return _shallow(node)
 
 
-def visit_double_literal(transformer, node: DoubleLiteral) -> DoubleLiteral:
+def visit_double_literal(transformer: Any, node: DoubleLiteral) -> DoubleLiteral:
     return _shallow(node)
 
 
-def visit_regex_literal(transformer, node: RegexLiteral) -> RegexLiteral:
+def visit_regex_literal(transformer: Any, node: RegexLiteral) -> RegexLiteral:
     node = _shallow(node)
     node.pattern = pooled_value(transformer.string_pool, node.pattern)
     node.modifiers = pooled_value(transformer.string_pool, node.modifiers)
     return node
 
 
-def visit_string_count(transformer, node: StringCount) -> StringCount:
+def visit_string_count(transformer: Any, node: StringCount) -> StringCount:
     node = _shallow(node)
     node.string_id = pooled_value(transformer.string_pool, node.string_id)
     return node
 
 
-def visit_string_offset(transformer, node: StringOffset) -> StringOffset:
+def visit_string_offset(transformer: Any, node: StringOffset) -> StringOffset:
     node = _shallow(node)
     node.string_id = pooled_value(transformer.string_pool, node.string_id)
     if node.index:
@@ -133,7 +133,7 @@ def visit_string_offset(transformer, node: StringOffset) -> StringOffset:
     return node
 
 
-def visit_string_length(transformer, node: StringLength) -> StringLength:
+def visit_string_length(transformer: Any, node: StringLength) -> StringLength:
     node = _shallow(node)
     node.string_id = pooled_value(transformer.string_pool, node.string_id)
     if node.index:
@@ -142,7 +142,7 @@ def visit_string_length(transformer, node: StringLength) -> StringLength:
 
 
 def visit_parentheses_expression(
-    transformer,
+    transformer: Any,
     node: ParenthesesExpression,
 ) -> ParenthesesExpression:
     node = _shallow(node)
@@ -150,48 +150,48 @@ def visit_parentheses_expression(
     return node
 
 
-def visit_set_expression(transformer, node: SetExpression) -> SetExpression:
+def visit_set_expression(transformer: Any, node: SetExpression) -> SetExpression:
     node = _shallow(node)
     node.elements = [transformer.visit(element) for element in node.elements]
     return node
 
 
-def visit_range_expression(transformer, node: RangeExpression) -> RangeExpression:
+def visit_range_expression(transformer: Any, node: RangeExpression) -> RangeExpression:
     node = _shallow(node)
     node.low = transformer.visit(node.low)
     node.high = transformer.visit(node.high)
     return node
 
 
-def visit_function_call(transformer, node: FunctionCall) -> FunctionCall:
+def visit_function_call(transformer: Any, node: FunctionCall) -> FunctionCall:
     node = _shallow(node)
     node.function = pooled_value(transformer.string_pool, node.function)
     node.arguments = [transformer.visit(argument) for argument in node.arguments]
     return node
 
 
-def visit_array_access(transformer, node: ArrayAccess) -> ArrayAccess:
+def visit_array_access(transformer: Any, node: ArrayAccess) -> ArrayAccess:
     node = _shallow(node)
     node.array = transformer.visit(node.array)
     node.index = transformer.visit(node.index)
     return node
 
 
-def visit_member_access(transformer, node: MemberAccess) -> MemberAccess:
+def visit_member_access(transformer: Any, node: MemberAccess) -> MemberAccess:
     node = _shallow(node)
     node.object = transformer.visit(node.object)
     node.member = pooled_value(transformer.string_pool, node.member)
     return node
 
 
-def visit_identifier(transformer, node: Identifier) -> Identifier:
+def visit_identifier(transformer: Any, node: Identifier) -> Identifier:
     node = _shallow(node)
     if hasattr(node, "name") and isinstance(node.name, str):
         node.name = pooled_value(transformer.string_pool, node.name)
     return node
 
 
-def visit_rule(transformer, node: Rule) -> Rule:
+def visit_rule(transformer: Any, node: Rule) -> Rule:
     node = _shallow(node)
     if node.name:
         node.name = pooled_value(transformer.string_pool, node.name)
@@ -215,7 +215,7 @@ def visit_rule(transformer, node: Rule) -> Rule:
     return node
 
 
-def visit_plain_string(transformer, node: PlainString) -> PlainString:
+def visit_plain_string(transformer: Any, node: PlainString) -> PlainString:
     node = _shallow(node)
     node.modifiers = _visit_items(transformer, node.modifiers)
     if hasattr(node, "value") and isinstance(node.value, str):
@@ -225,7 +225,7 @@ def visit_plain_string(transformer, node: PlainString) -> PlainString:
     return node
 
 
-def visit_meta(transformer, node: Meta) -> Meta:
+def visit_meta(transformer: Any, node: Meta) -> Meta:
     node = _shallow(node)
     if hasattr(node, "key") and isinstance(node.key, str):
         node.key = pooled_value(transformer.string_pool, node.key)
@@ -234,14 +234,14 @@ def visit_meta(transformer, node: Meta) -> Meta:
     return node
 
 
-def visit_tag(transformer, node: Tag) -> Tag:
+def visit_tag(transformer: Any, node: Tag) -> Tag:
     node = _shallow(node)
     if hasattr(node, "name") and isinstance(node.name, str):
         node.name = pooled_value(transformer.string_pool, node.name)
     return node
 
 
-def visit_yara_file(transformer, node: YaraFile) -> YaraFile:
+def visit_yara_file(transformer: Any, node: YaraFile) -> YaraFile:
     node = _shallow(node)
     if node.imports:
         node.imports = [transformer.visit(imp) for imp in node.imports]
@@ -260,35 +260,35 @@ def visit_yara_file(transformer, node: YaraFile) -> YaraFile:
     return node
 
 
-def visit_import(transformer, node: Import) -> Import:
+def visit_import(transformer: Any, node: Import) -> Import:
     node = _shallow(node)
     if hasattr(node, "module") and isinstance(node.module, str):
         node.module = pooled_value(transformer.string_pool, node.module)
     return node
 
 
-def visit_include(transformer, node: Include) -> Include:
+def visit_include(transformer: Any, node: Include) -> Include:
     node = _shallow(node)
     if hasattr(node, "path") and isinstance(node.path, str):
         node.path = pooled_value(transformer.string_pool, node.path)
     return node
 
 
-def visit_string_identifier(transformer, node: StringIdentifier) -> StringIdentifier:
+def visit_string_identifier(transformer: Any, node: StringIdentifier) -> StringIdentifier:
     node = _shallow(node)
     if hasattr(node, "name") and isinstance(node.name, str):
         node.name = pooled_value(transformer.string_pool, node.name)
     return node
 
 
-def visit_string_wildcard(transformer, node: StringWildcard) -> StringWildcard:
+def visit_string_wildcard(transformer: Any, node: StringWildcard) -> StringWildcard:
     node = _shallow(node)
     if hasattr(node, "pattern") and isinstance(node.pattern, str):
         node.pattern = pooled_value(transformer.string_pool, node.pattern)
     return node
 
 
-def visit_binary_expression(transformer, node: BinaryExpression) -> BinaryExpression:
+def visit_binary_expression(transformer: Any, node: BinaryExpression) -> BinaryExpression:
     node = _shallow(node)
     if hasattr(node, "left"):
         node.left = transformer.visit(node.left)
@@ -299,7 +299,7 @@ def visit_binary_expression(transformer, node: BinaryExpression) -> BinaryExpres
     return node
 
 
-def visit_unary_expression(transformer, node: UnaryExpression) -> UnaryExpression:
+def visit_unary_expression(transformer: Any, node: UnaryExpression) -> UnaryExpression:
     node = _shallow(node)
     if hasattr(node, "operand"):
         node.operand = transformer.visit(node.operand)
@@ -308,7 +308,7 @@ def visit_unary_expression(transformer, node: UnaryExpression) -> UnaryExpressio
     return node
 
 
-def visit_for_expression(transformer, node: ForExpression) -> ForExpression:
+def visit_for_expression(transformer: Any, node: ForExpression) -> ForExpression:
     node = _shallow(node)
     node.quantifier = _pool_parameter_value(transformer, node.quantifier)
     node.variable = pooled_value(transformer.string_pool, node.variable)
@@ -317,7 +317,7 @@ def visit_for_expression(transformer, node: ForExpression) -> ForExpression:
     return node
 
 
-def visit_for_of_expression(transformer, node: ForOfExpression) -> ForOfExpression:
+def visit_for_of_expression(transformer: Any, node: ForOfExpression) -> ForOfExpression:
     node = _shallow(node)
     node.quantifier = _pool_parameter_value(transformer, node.quantifier)
     node.string_set = _pool_parameter_value(transformer, node.string_set)
@@ -326,48 +326,48 @@ def visit_for_of_expression(transformer, node: ForOfExpression) -> ForOfExpressi
     return node
 
 
-def visit_at_expression(transformer, node: AtExpression) -> AtExpression:
+def visit_at_expression(transformer: Any, node: AtExpression) -> AtExpression:
     node = _shallow(node)
     node.string_id = _pool_parameter_value(transformer, node.string_id)
     node.offset = transformer.visit(node.offset)
     return node
 
 
-def visit_in_expression(transformer, node: InExpression) -> InExpression:
+def visit_in_expression(transformer: Any, node: InExpression) -> InExpression:
     node = _shallow(node)
     node.subject = _pool_parameter_value(transformer, node.subject)
     node.range = transformer.visit(node.range)
     return node
 
 
-def visit_of_expression(transformer, node: OfExpression) -> OfExpression:
+def visit_of_expression(transformer: Any, node: OfExpression) -> OfExpression:
     node = _shallow(node)
     node.quantifier = _pool_parameter_value(transformer, node.quantifier)
     node.string_set = _pool_parameter_value(transformer, node.string_set)
     return node
 
 
-def visit_module_reference(transformer, node: ModuleReference) -> ModuleReference:
+def visit_module_reference(transformer: Any, node: ModuleReference) -> ModuleReference:
     node = _shallow(node)
     node.module = pooled_value(transformer.string_pool, node.module)
     return node
 
 
-def visit_dictionary_access(transformer, node: DictionaryAccess) -> DictionaryAccess:
+def visit_dictionary_access(transformer: Any, node: DictionaryAccess) -> DictionaryAccess:
     node = _shallow(node)
     node.object = transformer.visit(node.object)
     node.key = _pool_parameter_value(transformer, node.key)
     return node
 
 
-def visit_defined_expression(transformer, node: DefinedExpression) -> DefinedExpression:
+def visit_defined_expression(transformer: Any, node: DefinedExpression) -> DefinedExpression:
     node = _shallow(node)
     node.expression = transformer.visit(node.expression)
     return node
 
 
 def visit_string_operator_expression(
-    transformer,
+    transformer: Any,
     node: StringOperatorExpression,
 ) -> StringOperatorExpression:
     node = _shallow(node)
@@ -377,7 +377,7 @@ def visit_string_operator_expression(
     return node
 
 
-def visit_hex_string(transformer, node: HexString) -> HexString:
+def visit_hex_string(transformer: Any, node: HexString) -> HexString:
     node = _shallow(node)
     node.modifiers = _visit_items(transformer, node.modifiers)
     node.tokens = _visit_items(transformer, node.tokens)
@@ -386,7 +386,7 @@ def visit_hex_string(transformer, node: HexString) -> HexString:
     return node
 
 
-def visit_regex_string(transformer, node: RegexString) -> RegexString:
+def visit_regex_string(transformer: Any, node: RegexString) -> RegexString:
     node = _shallow(node)
     node.modifiers = _visit_items(transformer, node.modifiers)
     if hasattr(node, "identifier") and isinstance(node.identifier, str):
@@ -396,7 +396,7 @@ def visit_regex_string(transformer, node: RegexString) -> RegexString:
     return node
 
 
-def visit_extern_rule(transformer, node: ExternRule) -> ExternRule:
+def visit_extern_rule(transformer: Any, node: ExternRule) -> ExternRule:
     node = _shallow(node)
     node.name = pooled_value(transformer.string_pool, node.name)
     node.modifiers = _visit_items(transformer, node.modifiers)
@@ -405,7 +405,7 @@ def visit_extern_rule(transformer, node: ExternRule) -> ExternRule:
 
 
 def visit_extern_rule_reference(
-    transformer,
+    transformer: Any,
     node: ExternRuleReference,
 ) -> ExternRuleReference:
     node = _shallow(node)
@@ -414,7 +414,7 @@ def visit_extern_rule_reference(
     return node
 
 
-def visit_extern_import(transformer, node: ExternImport) -> ExternImport:
+def visit_extern_import(transformer: Any, node: ExternImport) -> ExternImport:
     node = _shallow(node)
     node.module_path = pooled_value(transformer.string_pool, node.module_path)
     node.alias = _pool_text(transformer, node.alias)
@@ -422,57 +422,59 @@ def visit_extern_import(transformer, node: ExternImport) -> ExternImport:
     return node
 
 
-def visit_extern_namespace(transformer, node: ExternNamespace) -> ExternNamespace:
+def visit_extern_namespace(transformer: Any, node: ExternNamespace) -> ExternNamespace:
     node = _shallow(node)
     node.name = pooled_value(transformer.string_pool, node.name)
     node.extern_rules = [transformer.visit(rule) for rule in node.extern_rules]
     return node
 
 
-def visit_pragma(transformer, node: Pragma) -> Pragma:
+def visit_pragma(transformer: Any, node: Pragma) -> Pragma:
     node = _shallow(node)
+    dynamic_node = cast(Any, node)
     node.name = pooled_value(transformer.string_pool, node.name)
     node.arguments = _pool_text_list(transformer, node.arguments)
 
     macro_name = getattr(node, "macro_name", None)
     if isinstance(macro_name, str):
-        node.macro_name = pooled_value(transformer.string_pool, macro_name)
+        dynamic_node.macro_name = pooled_value(transformer.string_pool, macro_name)
 
     macro_value = getattr(node, "macro_value", None)
     if isinstance(macro_value, str):
-        node.macro_value = pooled_value(transformer.string_pool, macro_value)
+        dynamic_node.macro_value = pooled_value(transformer.string_pool, macro_value)
 
     condition = getattr(node, "condition", None)
     if isinstance(condition, str):
-        node.condition = pooled_value(transformer.string_pool, condition)
+        dynamic_node.condition = pooled_value(transformer.string_pool, condition)
 
     parameters = getattr(node, "parameters", None)
     if isinstance(parameters, dict):
-        node.parameters = {
+        pooled_parameters = {
             pooled_value(transformer.string_pool, key): _pool_parameter_value(
                 transformer,
                 value,
             )
             for key, value in cast(dict[str, Any], parameters).items()
         }
+        dynamic_node.parameters = pooled_parameters
 
     return node
 
 
-def visit_in_rule_pragma(transformer, node: InRulePragma) -> InRulePragma:
+def visit_in_rule_pragma(transformer: Any, node: InRulePragma) -> InRulePragma:
     node = _shallow(node)
     node.pragma = transformer.visit(node.pragma)
     node.position = pooled_value(transformer.string_pool, node.position)
     return node
 
 
-def visit_pragma_block(transformer, node: PragmaBlock) -> PragmaBlock:
+def visit_pragma_block(transformer: Any, node: PragmaBlock) -> PragmaBlock:
     node = _shallow(node)
     node.pragmas = [transformer.visit(pragma) for pragma in node.pragmas]
     return node
 
 
-def visit_string_modifier(transformer, node: StringModifier) -> StringModifier:
+def visit_string_modifier(transformer: Any, node: StringModifier) -> StringModifier:
     node = _shallow(node)
     if isinstance(node.value, str):
         node.value = pooled_value(transformer.string_pool, node.value)

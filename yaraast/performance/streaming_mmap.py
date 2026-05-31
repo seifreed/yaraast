@@ -6,7 +6,7 @@ from collections.abc import Iterator
 import mmap
 
 from yaraast.lexer.lexer import Lexer
-from yaraast.lexer.tokens import TokenType
+from yaraast.lexer.tokens import Token, TokenType
 
 
 def iter_rule_text_spans_from_text(content: str) -> Iterator[tuple[str, int, int]]:
@@ -19,7 +19,7 @@ def iter_rule_text_spans_from_text(content: str) -> Iterator[tuple[str, int, int
     def get_char_pos(line: int, column: int) -> int:
         return line_starts[line - 1] + (column - 1)
 
-    tokens = list(Lexer(content).tokenize())
+    tokens: list[Token] = Lexer[list[Token]](content).tokenize()
     index = 0
     while index < len(tokens):
         token = tokens[index]

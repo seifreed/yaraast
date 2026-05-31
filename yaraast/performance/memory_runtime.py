@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import AbstractContextManager, contextmanager
 import gc
-from typing import Any
+from typing import Any, cast
 import weakref
 
 from yaraast.ast.base import ASTNode, YaraFile
@@ -85,7 +85,7 @@ def force_cleanup(optimizer: Any) -> int:
 
 def create_memory_efficient_ast(optimizer: Any) -> ASTNode:
     if optimizer._ast_pool:
-        return optimizer._ast_pool.pop()
+        return cast(ASTNode, optimizer._ast_pool.pop())
     return YaraFile(imports=[], includes=[], rules=[])
 
 

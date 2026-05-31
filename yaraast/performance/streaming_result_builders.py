@@ -7,6 +7,7 @@ import time
 from typing import Any
 
 from yaraast.ast.base import YaraFile
+from yaraast.ast.rules import Rule
 from yaraast.performance.streaming_results import ParseResult, ParseStatus
 
 
@@ -23,7 +24,7 @@ def default_streaming_stats() -> dict[str, Any]:
     }
 
 
-def build_rule_parse_result(file_path: Path, rule, parse_time: float) -> ParseResult:
+def build_rule_parse_result(file_path: str | Path, rule: Rule, parse_time: float) -> ParseResult:
     """Create a per-rule successful parse result."""
     ast = YaraFile(imports=[], includes=[], rules=[rule])
     return ParseResult(
@@ -38,7 +39,7 @@ def build_rule_parse_result(file_path: Path, rule, parse_time: float) -> ParseRe
     )
 
 
-def build_file_parse_result(file_path: Path, ast, parse_time: float) -> ParseResult:
+def build_file_parse_result(file_path: str | Path, ast: YaraFile, parse_time: float) -> ParseResult:
     """Create a per-file successful parse result."""
     return ParseResult(
         file_path=str(file_path),
@@ -52,7 +53,7 @@ def build_file_parse_result(file_path: Path, ast, parse_time: float) -> ParseRes
     )
 
 
-def build_error_parse_result(file_path: Path, error: Exception | str) -> ParseResult:
+def build_error_parse_result(file_path: str | Path, error: Exception | str) -> ParseResult:
     """Create a failed parse result."""
     return ParseResult(
         file_path=str(file_path),

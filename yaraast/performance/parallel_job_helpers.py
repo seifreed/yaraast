@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from pathlib import Path
 import time
+from typing import TYPE_CHECKING, Any
 import uuid
 
 from yaraast.performance.parallel_models import Job, JobStatus, ParseErrorMarker
@@ -11,6 +13,9 @@ from yaraast.performance.validation import (
     validate_file_path_sequence,
     validate_positive_int_setting,
 )
+
+if TYPE_CHECKING:
+    from yaraast.ast.base import YaraFile
 
 
 def default_parallel_stats() -> dict[str, float | int]:
@@ -35,7 +40,7 @@ def start_job(job_type: str) -> Job:
     return Job(job_id=str(uuid.uuid4()), job_type=job_type, status=JobStatus.RUNNING)
 
 
-def complete_job(job: Job, result) -> Job:
+def complete_job(job: Job, result: Any) -> Job:
     """Mark a job as completed with result payload."""
     job.result = result
     job.status = JobStatus.COMPLETED
@@ -51,7 +56,7 @@ def fail_job(job: Job, error: Exception | str) -> Job:
     return job
 
 
-def analyze_file_path(path: str, analyzer) -> dict:
+def analyze_file_path(path: str, analyzer: Any) -> dict[str, Any]:
     """Parse and analyze a file path using a provided analyzer instance."""
     from yaraast.parser.source import parse_yara_source
 
@@ -59,13 +64,13 @@ def analyze_file_path(path: str, analyzer) -> dict:
         content = f.read()
 
     yara_file = parse_yara_source(content)
-    analysis = analyzer.analyze_file(yara_file)
+    analysis: dict[str, Any] = dict(analyzer.analyze_file(yara_file))
     analysis["file"] = path
     return analysis
 
 
 def export_graph_files(
-    asts, output_dir: str | Path, graph_types: list[str] | None = None
+    asts: Sequence[YaraFile], output_dir: str | Path, graph_types: list[str] | None = None
 ) -> list[Job]:
     """Generate dependency graph export jobs for ASTs."""
     from yaraast.metrics.dependency_graph_utils import (
@@ -84,7 +89,7 @@ def export_graph_files(
         try:
             graph = build_dependency_graph(ast)
             rule_name = ast.rules[0].name if getattr(ast, "rules", None) else f"ast_{index}"
-            output_files = []
+            output_files: list[str] = []
             for graph_type in graph_types:
                 output_path = output_dir / f"{rule_name}_{graph_type}.json"
                 export_dependency_graph(graph, output_path, format="json")
@@ -95,7 +100,7 @@ def export_graph_files(
     return jobs
 
 
-def parse_file_chunks(file_paths: list, chunk_size: int = 10) -> list[Job]:
+def parse_file_chunks(file_paths: Sequence[str | Path], chunk_size: int = 10) -> list[Job]:
     """Parse file paths in chunks and return job objects."""
     normalized_file_paths = validate_file_path_sequence(file_paths)
     validate_positive_int_setting(chunk_size, "chunk_size")
@@ -111,8 +116,8 @@ def parse_file_chunks(file_paths: list, chunk_size: int = 10) -> list[Job]:
     for chunk in chunks:
         job = start_job("parse_files")
         jobs.append(job)
-        results = []
-        errors = []
+        results: list[YaraFile | ParseErrorMarker] = []
+        errors: list[str] = []
         try:
             for file_path in chunk:
                 try:
@@ -134,7 +139,10 @@ def parse_file_chunks(file_paths: list, chunk_size: int = 10) -> list[Job]:
 
 
 def process_items(
-    items: list, worker_func, job_type: str = "batch", parameters: dict | None = None
+    items: list[Any],
+    worker_func: Callable[[Any, dict[str, Any]], Any],
+    job_type: str = "batch",
+    parameters: dict[str, Any] | None = None,
 ) -> list[Job]:
     """Process items via a worker function and return tracked jobs."""
     jobs: list[Job] = []

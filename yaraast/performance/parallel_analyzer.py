@@ -29,7 +29,7 @@ from yaraast.performance.parallel_models import Job
 from yaraast.performance.validation import validate_positive_int_setting
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
     from yaraast.ast.base import YaraFile
     from yaraast.ast.rules import Rule
@@ -243,7 +243,7 @@ class ParallelAnalyzer:
 
     def parse_files_parallel(
         self,
-        file_paths: list,
+        file_paths: Sequence[str | Path],
         chunk_size: int = 10,
     ) -> list[Job]:
         """Parse multiple files in parallel and return jobs.
@@ -260,10 +260,10 @@ class ParallelAnalyzer:
 
     def process_batch(
         self,
-        items: list,
-        worker_func: Callable,
+        items: list[Any],
+        worker_func: Callable[[Any, dict[str, Any]], Any],
         job_type: str = "batch",
-        parameters: dict | None = None,
+        parameters: dict[str, Any] | None = None,
     ) -> list[Job]:
         """Process a batch of items with a custom worker function.
 

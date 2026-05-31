@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from yaraast.performance.parallel_job_helpers import (
     complete_job,
@@ -16,7 +16,7 @@ from yaraast.performance.parallel_job_helpers import (
 from yaraast.performance.parallel_models import Job, JobStatus
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
     from yaraast.ast.base import YaraFile
     from yaraast.performance.parallel_analyzer import ParallelAnalyzer
@@ -28,7 +28,7 @@ def analyze_complexity_parallel(
     max_workers: int | None = None,
 ) -> list[Job]:
     """Create tracked complexity jobs for ASTs."""
-    jobs = []
+    jobs: list[Job] = []
     for ast in asts:
         job = start_job("complexity")
         jobs.append(job)
@@ -68,7 +68,7 @@ def generate_graphs_parallel(
 
 def parse_files_parallel(
     analyzer: ParallelAnalyzer,
-    file_paths: list,
+    file_paths: Sequence[str | Path],
     chunk_size: int = 10,
 ) -> list[Job]:
     """Parse file chunks into tracked jobs."""
@@ -84,10 +84,10 @@ def parse_files_parallel(
 
 def process_batch(
     analyzer: ParallelAnalyzer,
-    items: list,
-    worker_func: Callable,
+    items: list[Any],
+    worker_func: Callable[[Any, dict[str, Any]], Any],
     job_type: str = "batch",
-    parameters: dict | None = None,
+    parameters: dict[str, Any] | None = None,
 ) -> list[Job]:
     """Process arbitrary items through tracked job helpers."""
     jobs = process_items(items, worker_func, job_type=job_type, parameters=parameters)

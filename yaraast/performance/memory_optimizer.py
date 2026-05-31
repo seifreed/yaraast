@@ -142,6 +142,11 @@ class MemoryOptimizer:
         self.memory_limit_mb = memory_limit_mb
         self.gc_threshold = gc_threshold if gc_threshold is not None else 10
         self.enable_tracking = enable_tracking
+        self._cache: Any
+        self._string_pool: dict[str, str]
+        self._tracked_objects: list[object]
+        self._ast_pool: list[ASTNode]
+        self._stats: dict[str, int]
         init_optimizer_state(self)
 
     def optimize(self, yara_file: YaraFile) -> YaraFile:
@@ -173,7 +178,7 @@ class MemoryOptimizer:
     def optimize_rules(self, rules: list[Rule]) -> list[Rule]:
         """Optimize memory usage for a list of rules."""
         self._string_pool.clear()
-        optimized_rules = []
+        optimized_rules: list[Rule] = []
         nodes_processed = 0
         for rule in rules:
             optimizer = MemoryOptimizerTransformer(self._string_pool, self.aggressive)

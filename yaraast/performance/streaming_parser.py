@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import codecs
+from collections.abc import Callable, Iterator
 import mmap
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
+from yaraast.ast.rules import Rule
 from yaraast.dialects import YaraDialect
 from yaraast.parser.parser import Parser
 from yaraast.parser.source import parse_yara_source
@@ -28,10 +30,7 @@ from yaraast.performance.validation import (
 from yaraast.shared.file_patterns import FilePatterns, iter_matching_files
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
     import io
-
-    from yaraast.ast.rules import Rule
 
 
 class StreamingParser:
@@ -42,9 +41,9 @@ class StreamingParser:
         buffer_size: int = 8192,
         max_memory_mb: int | None = None,
         enable_gc: bool = False,
-        progress_callback: Callable | None = None,
+        progress_callback: Callable[[int, int, str], None] | None = None,
         dialect: YaraDialect | None = None,
-        dialect_parser_factory: Callable | None = None,
+        dialect_parser_factory: Callable[[str, YaraDialect | None], Any] | None = None,
     ) -> None:
         """Initialize streaming parser.
 
@@ -167,7 +166,7 @@ class StreamingParser:
         """
         validate_positive_int_setting(chunk_size, "chunk_size")
 
-        chunk = []
+        chunk: list[Rule] = []
 
         for rule in self.parse_file(file_path):
             chunk.append(rule)
@@ -261,7 +260,7 @@ class StreamingParser:
         """
         file_path = Path(file_path)
         file_size = file_path.stat().st_size
-        rules = []
+        rules: list[Rule] = []
 
         def rule_callback(rule: Rule) -> None:
             rules.append(rule)
@@ -288,7 +287,7 @@ class StreamingParser:
 
             process = psutil.Process(os.getpid())
             rss_mb = process.memory_info().rss / 1024 / 1024
-            return rss_mb > self.max_memory_mb
+            return bool(rss_mb > self.max_memory_mb)
         except Exception:
             return False
 
@@ -339,7 +338,7 @@ class StreamingParser:
         try:
             yara_file = self._parse_content(rule_text)
             if yara_file.rules:
-                return yara_file.rules[0]
+                return cast(Rule, yara_file.rules[0])
         except Exception:
             self._stats["parse_errors"] += 1
 

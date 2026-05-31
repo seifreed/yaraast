@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.performance.string_analyzer import StringPerformanceIssue
 
 
-def analyze_rule_performance(rule) -> list[StringPerformanceIssue]:
-    issues = []
+def analyze_rule_performance(rule: Rule) -> list[StringPerformanceIssue]:
+    issues: list[StringPerformanceIssue] = []
     if rule.strings:
         for string_def in rule.strings:
             if isinstance(string_def, RegexString):
@@ -35,7 +36,7 @@ def analyze_rule_performance(rule) -> list[StringPerformanceIssue]:
     return issues
 
 
-def estimate_rule_cost(rule) -> int:
+def estimate_rule_cost(rule: Rule) -> int:
     cost = 0
     if rule.strings:
         for string_def in rule.strings:

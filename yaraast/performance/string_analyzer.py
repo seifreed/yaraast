@@ -165,7 +165,7 @@ class StringPatternAnalyzer:
 
     def _categorize_patterns(
         self,
-        patterns: list[StringValue | StringDefinition],
+        patterns: Sequence[StringValue | StringDefinition],
     ) -> dict[str, int]:
         return categorize_patterns(self, patterns)
 

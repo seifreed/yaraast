@@ -18,7 +18,7 @@ def _string_report_value(value: StringValue) -> str:
     return value
 
 
-def find_duplicates(analyzer, strings: Sequence[StringValue]) -> dict[str, int]:
+def find_duplicates(analyzer: Any, strings: Sequence[StringValue]) -> dict[str, int]:
     counter = Counter(strings)
     duplicates = {_string_report_value(s): count for s, count in counter.items() if count > 1}
     analyzer._stats["duplicate_values"] = len(duplicates)
@@ -26,7 +26,7 @@ def find_duplicates(analyzer, strings: Sequence[StringValue]) -> dict[str, int]:
 
 
 def find_common_prefixes(
-    analyzer, strings: Sequence[StringValue], min_length: int = 3
+    analyzer: Any, strings: Sequence[StringValue], min_length: int = 3
 ) -> dict[str, list[str]]:
     prefixes = defaultdict(list)
     for string in strings:
@@ -43,7 +43,7 @@ def find_common_prefixes(
 
 
 def find_common_suffixes(
-    analyzer, strings: Sequence[StringValue], min_length: int = 3
+    analyzer: Any, strings: Sequence[StringValue], min_length: int = 3
 ) -> dict[str, list[str]]:
     suffixes = defaultdict(list)
     for string in strings:
@@ -71,7 +71,7 @@ def analyze_lengths(strings: Sequence[StringValue]) -> dict[str, Any]:
     }
 
 
-def categorize_patterns(analyzer, patterns) -> dict[str, int]:
+def categorize_patterns(analyzer: Any, patterns: Sequence[StringValue | object]) -> dict[str, int]:
     categories = {"plain": 0, "hex": 0, "regex": 0, "other": 0}
     for pattern in patterns:
         if isinstance(pattern, PlainString):
@@ -94,7 +94,7 @@ def find_optimizations(
     prefixes: dict[str, list[str]],
     suffixes: dict[str, list[str]],
 ) -> list[dict[str, Any]]:
-    optimizations = []
+    optimizations: list[dict[str, Any]] = []
     if duplicates:
         optimizations.append(
             {
@@ -136,8 +136,8 @@ def find_optimizations(
     return optimizations
 
 
-def analyze_cross_rule_patterns(rules) -> dict[str, Any]:
-    string_to_rules = defaultdict(list)
+def analyze_cross_rule_patterns(rules: Sequence[Any]) -> dict[str, Any]:
+    string_to_rules: defaultdict[str, list[str]] = defaultdict(list)
     for rule in rules:
         if rule.strings:
             for string_def in rule.strings:
