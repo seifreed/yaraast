@@ -1732,7 +1732,7 @@ def test_of_expression_in_range_uses_match_offsets() -> None:
     assert evaluate("all of them in (0..3)") is False
 
 
-def test_string_count_in_range_uses_match_count() -> None:
+def test_string_count_in_range_counts_matches_inside_range() -> None:
     def evaluate(condition: str, data: bytes = b"abxxab") -> bool:
         ast = Parser().parse(f"""
             rule r {{
@@ -1744,9 +1744,11 @@ def test_string_count_in_range_uses_match_count() -> None:
             """)
         return YaraEvaluator(data=data).evaluate_file(ast)["r"]
 
-    assert evaluate("#a in (2..3)") is True
-    assert evaluate("#a in (0..1)") is False
-    assert evaluate("#a in (0..1)", data=b"zz") is True
+    assert evaluate("#a in (0..1)", data=b"zz") is False
+    assert evaluate("#a in (0..1)", data=b"ab") is True
+    assert evaluate("#a in (0..1) == 2", data=b"abab") is False
+    assert evaluate("#a in (0..2) == 2", data=b"abab") is True
+    assert evaluate("#a in (3..5) == 1", data=b"xxxab") is True
 
 
 def test_of_expression_at_offset_uses_exact_match_offsets() -> None:

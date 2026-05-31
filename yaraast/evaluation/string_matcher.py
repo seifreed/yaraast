@@ -872,6 +872,12 @@ class StringMatcher:
         identifier = identifier if identifier.startswith("$") else f"${identifier}"
         return len(self.matches.get(identifier, []))
 
+    def get_match_count_in_range(self, identifier: str, start: int, end: int) -> int:
+        """Get number of matches whose offsets are within a half-open range."""
+        identifier = identifier if identifier.startswith("$") else f"${identifier}"
+        matches = self.matches.get(identifier, [])
+        return sum(1 for match in matches if start <= match.offset < end)
+
     def get_match_offset(self, identifier: str, index: int = 0) -> int | None:
         """Get offset of a specific match."""
         identifier = identifier if identifier.startswith("$") else f"${identifier}"

@@ -787,7 +787,7 @@ def test_expr_inference_at_in_and_of_error_paths() -> None:
                 range=RangeExpression(IntegerLiteral(value=0), IntegerLiteral(value=1)),
             )
         ),
-        BooleanType,
+        IntegerType,
     )
     assert in_count.errors == []
 

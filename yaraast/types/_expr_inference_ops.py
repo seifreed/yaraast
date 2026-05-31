@@ -974,12 +974,14 @@ def infer_module_or_condition(ctx, node):
     if isinstance(node, InExpression):
         if isinstance(node.subject, str):
             _validate_raw_string_ref(ctx, node.subject)
+            result_type = BooleanType()
         elif isinstance(node.subject, StringCount):
             subject_type = ctx.visit(node.subject)
             if not isinstance(subject_type, IntegerType):
                 ctx.errors.append(
                     f"'in' expression string count subject must be integer, got {subject_type}"
                 )
+            result_type = IntegerType()
         else:
             subject_type = ctx.visit(node.subject)
             if not isinstance(subject_type, BooleanType):
@@ -988,10 +990,11 @@ def infer_module_or_condition(ctx, node):
                     f"or of-expression, "
                     f"got {subject_type}"
                 )
+            result_type = BooleanType()
         range_type = ctx.visit(node.range)
         if not isinstance(range_type, RangeType):
             ctx.errors.append(f"'in' expression requires range, got {range_type}")
-        return BooleanType()
+        return result_type
 
     if isinstance(node, OfExpression):
         quant_type = _infer_quantifier_value(ctx, node.quantifier)
