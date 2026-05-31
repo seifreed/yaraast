@@ -504,6 +504,24 @@ def test_pe_invalid_files_leave_pe_fields_undefined(data: bytes) -> None:
     assert YaraEvaluator(data=data).evaluate_file(ast) == {"invalid_pe_fields": False}
 
 
+def test_module_boolean_values_compare_as_numbers_like_libyara() -> None:
+    ast = Parser().parse("""
+        import "console"
+        import "pe"
+        rule module_boolean_numeric_comparisons {
+            condition:
+                pe.is_pe == 0 and
+                pe.is_pe < 1 and
+                console.log("x") == 1 and
+                console.log("x") > 0
+        }
+        """)
+
+    assert YaraEvaluator(data=b"not pe").evaluate_file(ast) == {
+        "module_boolean_numeric_comparisons": True
+    }
+
+
 def test_pe_predicates_are_callable_not_member_values() -> None:
     ast = Parser().parse("""
         import "pe"

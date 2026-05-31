@@ -110,11 +110,14 @@ def test_evaluate_comparison_all_operators() -> None:
     assert evaluate_comparison(1, 2, "??") is None
 
 
-def test_evaluate_comparison_keeps_booleans_distinct_from_integers() -> None:
-    assert evaluate_comparison(True, 1, "==") is False
-    assert evaluate_comparison(False, 0, "==") is False
-    assert evaluate_comparison(True, 1, "!=") is True
-    assert evaluate_comparison(False, 0, "!=") is True
+def test_evaluate_comparison_treats_booleans_as_numbers_like_libyara_runtime_values() -> None:
+    assert evaluate_comparison(True, 1, "==") is True
+    assert evaluate_comparison(False, 0, "==") is True
+    assert evaluate_comparison(True, 1.0, "==") is True
+    assert evaluate_comparison(False, 0, "!=") is False
+    assert evaluate_comparison(True, 2, "<") is True
+    assert evaluate_comparison(False, True, "<") is True
+    assert evaluate_comparison(True, True, ">=") is True
 
 
 def test_evaluate_float_equality_uses_libyara_epsilon() -> None:
@@ -137,10 +140,6 @@ def test_evaluate_comparison_incompatible_ordered_operands_are_false(
 @pytest.mark.parametrize(
     ("left", "right", "operator"),
     [
-        (False, True, "<"),
-        (False, False, "<="),
-        (True, False, ">"),
-        (True, True, ">="),
         ([], [1], "<"),
         ((1,), (2,), "<"),
     ],

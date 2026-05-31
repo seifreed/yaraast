@@ -26,14 +26,18 @@ def _is_runtime_number(value: Any) -> bool:
     return _is_runtime_int(value) or isinstance(value, float)
 
 
+def _is_comparison_number(value: Any) -> bool:
+    return isinstance(value, int | float)
+
+
 def _types_match_for_equality(left: Any, right: Any) -> bool:
     if isinstance(left, bool) or isinstance(right, bool):
-        return isinstance(left, bool) and isinstance(right, bool)
+        return _is_comparison_number(left) and _is_comparison_number(right)
     return True
 
 
 def _types_support_ordered_comparison(left: Any, right: Any) -> bool:
-    return (_is_runtime_number(left) and _is_runtime_number(right)) or (
+    return (_is_comparison_number(left) and _is_comparison_number(right)) or (
         isinstance(left, str) and isinstance(right, str)
     )
 
@@ -132,8 +136,8 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
         if not _types_match_for_equality(left, right):
             return False
         if (
-            _is_runtime_number(left)
-            and _is_runtime_number(right)
+            _is_comparison_number(left)
+            and _is_comparison_number(right)
             and (isinstance(left, float) or isinstance(right, float))
         ):
             return _compare_double_equality(left, right, operator)
@@ -142,8 +146,8 @@ def evaluate_comparison(left: Any, right: Any, operator: str) -> bool | None:
         if not _types_match_for_equality(left, right):
             return True
         if (
-            _is_runtime_number(left)
-            and _is_runtime_number(right)
+            _is_comparison_number(left)
+            and _is_comparison_number(right)
             and (isinstance(left, float) or isinstance(right, float))
         ):
             return _compare_double_equality(left, right, operator)

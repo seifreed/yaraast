@@ -941,6 +941,24 @@ class TestSemanticValidator:
         messages = [error.message for error in result.errors]
         assert sum("Boolean operands cannot be used with" in message for message in messages) == 3
 
+    def test_validate_allows_module_boolean_numeric_comparisons(self) -> None:
+        ast = Parser().parse("""
+            import "console"
+            import "pe"
+            rule module_boolean_numeric_comparisons {
+                condition:
+                    pe.is_pe == 0 and
+                    pe.is_pe < 1 and
+                    console.log("x") == 1 and
+                    console.log("x") > 0
+            }
+        """)
+
+        result = SemanticValidator().validate(ast)
+
+        assert result.is_valid is True
+        assert result.errors == []
+
     def test_validate_rejects_invalid_regex_string_operations(self) -> None:
         ast = Parser().parse("""
             rule invalid_regex_string_operations {

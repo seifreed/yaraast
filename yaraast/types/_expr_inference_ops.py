@@ -154,7 +154,7 @@ def _infer_comparison_op(ctx, operator, left_node, left_type, right_node, right_
         ctx.errors.append(f"String identifiers cannot be used with '{operator}' comparisons")
         return BooleanType()
 
-    if isinstance(left_type, BooleanType) or isinstance(right_type, BooleanType):
+    if isinstance(left_type, BooleanType) and isinstance(right_type, BooleanType):
         ctx.errors.append(f"Boolean operands cannot be used with '{operator}' comparisons")
         return BooleanType()
 
@@ -162,9 +162,10 @@ def _infer_comparison_op(ctx, operator, left_node, left_type, right_node, right_
         ctx.errors.append(f"Regex operands cannot be used with '{operator}' comparisons")
         return BooleanType()
 
-    if (left_type.is_numeric() and right_type.is_numeric()) or left_type.is_compatible_with(
-        right_type
-    ):
+    if (
+        isinstance(left_type, BooleanType | IntegerType | DoubleType | FloatType)
+        and isinstance(right_type, BooleanType | IntegerType | DoubleType | FloatType)
+    ) or left_type.is_compatible_with(right_type):
         return BooleanType()
     ctx.errors.append(f"Incompatible types for '{operator}': {left_type} and {right_type}")
     return BooleanType()
