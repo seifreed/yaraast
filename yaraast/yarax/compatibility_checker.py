@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from yaraast.ast.expressions import BinaryExpression, Identifier, SetExpression
 from yaraast.visitor import DefaultASTVisitor
 from yaraast.yarax.feature_flags import YaraXFeatures
+from yaraast.yarax.string_lengths import plain_string_byte_length
 
 if TYPE_CHECKING:
     from yaraast.ast.base import Location, YaraFile
@@ -115,7 +116,7 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
         if (
             has_base64
             and self.features.minimum_base64_length > 0
-            and len(node.value) < self.features.minimum_base64_length
+            and plain_string_byte_length(node.value) < self.features.minimum_base64_length
         ):
             self._add_issue(
                 "error",

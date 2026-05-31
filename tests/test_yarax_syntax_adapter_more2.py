@@ -120,6 +120,15 @@ def test_base64_padding_and_regex_noop_paths() -> None:
     assert adapted_bytes.value == b"aa\x00\x00"
     assert adapted_bytes.is_anonymous is True
 
+    utf8_base64_string = PlainString(identifier="$utf8", value="éé", modifiers=["base64"])
+    assert adapter.visit_plain_string(utf8_base64_string) is utf8_base64_string
+
+    short_utf8_base64_string = PlainString(
+        identifier="$short_utf8", value="é", modifiers=["base64"]
+    )
+    adapted_utf8 = adapter.visit_plain_string(short_utf8_base64_string)
+    assert adapted_utf8.value == "é\x00\x00"
+
     regex = RegexString(identifier="$anon_2", regex=r"a\{2\}", modifiers=[], is_anonymous=True)
     assert adapter.visit_regex_string(regex) is regex
 

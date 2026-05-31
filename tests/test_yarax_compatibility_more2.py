@@ -88,6 +88,10 @@ def test_checker_covers_plain_regex_hex_and_quantifier_helpers() -> None:
     assert any(i.issue_type == "base64_too_short" for i in checker.issues)
 
     checker.issues.clear()
+    checker.visit_plain_string(PlainString(identifier="$utf8", value="éé", modifiers=["base64"]))
+    assert not any(i.issue_type == "base64_too_short" for i in checker.issues)
+
+    checker.issues.clear()
     checker.visit_plain_string(
         PlainString(
             identifier="$xb",

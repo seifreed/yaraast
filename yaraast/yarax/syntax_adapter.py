@@ -10,6 +10,7 @@ from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexJump, HexString, PlainString, RegexString, StringDefinition
 from yaraast.visitor import ASTTransformer
 from yaraast.yarax.feature_flags import YaraXFeatures
+from yaraast.yarax.string_lengths import plain_string_byte_length
 
 if TYPE_CHECKING:
     from yaraast.ast.pragmas import InRulePragma
@@ -95,11 +96,12 @@ class YaraXSyntaxAdapter(ASTTransformer):
             has_base64 = any(
                 self._modifier_name(modifier) in ("base64", "base64wide") for modifier in modifiers
             )
-            if has_base64 and len(node.value) < self.features.minimum_base64_length:
+            byte_length = plain_string_byte_length(node.value)
+            if has_base64 and byte_length < self.features.minimum_base64_length:
                 # Pad the string to minimum length
                 # Pad with null bytes (\x00) to preserve semantic neutrality
                 # Using 'A' would change the base64-decoded result
-                padding_needed = self.features.minimum_base64_length - len(node.value)
+                padding_needed = self.features.minimum_base64_length - byte_length
                 if isinstance(node.value, bytes):
                     new_value: str | bytes = node.value + (b"\x00" * padding_needed)
                 else:
