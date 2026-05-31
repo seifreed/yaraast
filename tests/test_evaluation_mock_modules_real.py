@@ -307,6 +307,10 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
         m.min(cast(Any, False), 2)
     with pytest.raises(EvaluationError, match=r"math\.max\(\) expects integer arguments"):
         m.max(1, cast(Any, True))
+    assert m.min(1, -2) == 1
+    assert m.max(1, -2) == -2
+    assert m.min(-2, -1) == -2
+    assert m.max(-2, -1) == -1
     assert m.to_number(True) == 1
     assert m.to_number(False) == 0
     with pytest.raises(EvaluationError, match=r"math\.to_number\(\) expects a boolean argument"):

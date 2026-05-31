@@ -33,6 +33,10 @@ def _unsigned_for_non_decimal_base(value: int) -> int:
     return value & UINT64_MASK if value < 0 else value
 
 
+def _uint64_order_key(value: int) -> int:
+    return value & UINT64_MASK
+
+
 def _require_strict_ints(function_name: str, *values: object) -> None:
     if not all(_is_strict_int(value) for value in values):
         msg = f"{function_name}() expects integer arguments"
@@ -756,11 +760,11 @@ class MockMath:
 
     def min(self, a: int, b: int) -> int:
         _require_strict_ints("math.min", a, b)
-        return min(a, b)
+        return min(a, b, key=_uint64_order_key)
 
     def max(self, a: int, b: int) -> int:
         _require_strict_ints("math.max", a, b)
-        return max(a, b)
+        return max(a, b, key=_uint64_order_key)
 
     def to_string(self, n: int, base: int = 10) -> str | YaraUndefinedValue:
         _require_strict_ints("math.to_string", n, base)

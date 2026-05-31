@@ -412,6 +412,21 @@ def test_math_integer_helpers_reject_boolean_arguments() -> None:
         YaraEvaluator(data=b"abc").evaluate_file(ast)
 
 
+def test_math_min_max_use_libyara_uint64_ordering() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule min_max_uint64_order {
+            condition:
+                math.min(1, -2) == 1 and
+                math.max(1, -2) == -2 and
+                math.min(-2, -1) == -2 and
+                math.max(-2, -1) == -1
+        }
+        """)
+
+    assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"min_max_uint64_order": True}
+
+
 def test_math_region_helpers_reject_boolean_offsets_and_sizes() -> None:
     for expression in (
         "math.entropy(true, 1)",
