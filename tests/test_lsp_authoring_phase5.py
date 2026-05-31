@@ -304,6 +304,29 @@ rule demo {
     assert edit.new_text.index('$a = "a"') < edit.new_text.index('$z = "z"')
 
 
+def test_authoring_rule_rewrite_range_uses_utf16_columns() -> None:
+    provider = CodeActionsProvider()
+    text = """
+rule demo {
+    strings:
+        $z = "z"
+        $a = "a"
+    condition:
+        $z or $a
+} // 😀😀
+""".lstrip()
+    end_line = text.splitlines()[6]
+
+    actions = provider.get_code_actions(text, _range(2, 8, 18), [], "file://test.yar")
+    action = next(
+        action for action in actions if action.title.startswith("Sort strings by identifier")
+    )
+
+    edit = _first_edit(action)
+    assert edit.range.end.line == 6
+    assert edit.range.end.character == utf8_col_to_utf16(end_line, len(end_line))
+
+
 def test_sort_strings_by_identifier_hidden_for_anonymous_strings() -> None:
     provider = CodeActionsProvider()
     text = """

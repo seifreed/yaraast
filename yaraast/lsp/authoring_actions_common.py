@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from lsprotocol.types import Position, Range, TextEdit
 
 from yaraast.lsp.authoring_support import RuleContext, get_rule_context
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 if TYPE_CHECKING:
     from yaraast.lsp.authoring_actions import StructuralEdit
@@ -33,7 +34,10 @@ def replace_rule_text(
                 start=Position(line=rule_context.start, character=0),
                 end=Position(
                     line=rule_context.end,
-                    character=len(rule_context.lines[rule_context.end]),
+                    character=utf8_col_to_utf16(
+                        rule_context.lines[rule_context.end],
+                        len(rule_context.lines[rule_context.end]),
+                    ),
                 ),
             ),
             new_text=new_text,
