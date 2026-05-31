@@ -113,12 +113,7 @@ def test_parse_strings_section_branches_and_modifier_parsing() -> None:
         _t(TokenType.STRING_IDENTIFIER, "$r", 4),
         _t(TokenType.ASSIGN, "=", 4),
         _t(TokenType.REGEX, "abc\\x00is", 4),
-        _t(TokenType.XOR_MOD, "xor", 4),
-        _t(TokenType.LPAREN, "(", 4),
-        _t(TokenType.INTEGER, 1, 4),
-        _t(TokenType.MINUS, "-", 4),
-        _t(TokenType.INTEGER, 2, 4),
-        _t(TokenType.RPAREN, ")", 4),
+        _t(TokenType.WIDE, "wide", 4),
         _t(TokenType.EOF, "", 5),
     ]
     p.current = 0

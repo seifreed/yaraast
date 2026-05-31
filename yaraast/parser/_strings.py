@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
-from yaraast.ast.modifiers import StringModifier
+from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.strings import HexString, HexToken, PlainString, RegexString, StringDefinition
 from yaraast.lexer import TokenType
 from yaraast.parser.hex_parser import HexParseError, HexStringParser
 
 from ._shared import ParserError, parse_regex_value, validate_string_modifiers
+
+HEX_STRING_MODIFIER_TYPES = frozenset({StringModifierType.PRIVATE})
+REGEX_STRING_MODIFIER_TYPES = frozenset(
+    {
+        StringModifierType.ASCII,
+        StringModifierType.WIDE,
+        StringModifierType.NOCASE,
+        StringModifierType.FULLWORD,
+        StringModifierType.PRIVATE,
+    }
+)
 
 
 class StringParsingMixin:
@@ -71,7 +82,10 @@ class StringParsingMixin:
             elif self._match(TokenType.HEX_STRING):
                 hex_value = self._previous().value
                 tokens = self._parse_hex_string(hex_value)
-                modifiers = self._parse_string_modifiers()
+                modifiers = self._parse_string_modifiers(
+                    allowed_modifier_types=HEX_STRING_MODIFIER_TYPES,
+                    modifier_context="hex strings",
+                )
                 string_def = self._set_node_location_from_tokens(
                     HexString(identifier=identifier, tokens=tokens, modifiers=modifiers),
                     start_token,
@@ -85,7 +99,11 @@ class StringParsingMixin:
                     regex, regex_modifiers = parse_regex_value(self._previous().value)
                 except ValueError as e:
                     raise ParserError(str(e), self._previous()) from e
-                modifiers = [*regex_modifiers, *self._parse_string_modifiers()]
+                parsed_modifiers = self._parse_string_modifiers(
+                    allowed_modifier_types=REGEX_STRING_MODIFIER_TYPES,
+                    modifier_context="regex strings",
+                )
+                modifiers = [*regex_modifiers, *parsed_modifiers]
                 string_def = self._set_node_location_from_tokens(
                     RegexString(identifier=identifier, regex=regex, modifiers=modifiers),
                     start_token,
@@ -100,7 +118,12 @@ class StringParsingMixin:
 
         return strings
 
-    def _parse_string_modifiers(self) -> list[StringModifier]:
+    def _parse_string_modifiers(
+        self,
+        *,
+        allowed_modifier_types: frozenset[StringModifierType] | None = None,
+        modifier_context: str = "strings",
+    ) -> list[StringModifier]:
         """Parse string modifiers."""
         modifiers: list[StringModifier] = []
 
@@ -116,6 +139,10 @@ class StringParsingMixin:
         ):
             mod_token = self._advance()
             mod_name = mod_token.value.lower()
+            modifier_type = StringModifierType.from_string(mod_name)
+            if allowed_modifier_types is not None and modifier_type not in allowed_modifier_types:
+                msg = f"String modifier '{mod_name}' is not valid on {modifier_context}"
+                raise ParserError(msg, mod_token)
 
             # Some modifiers can have parameters
             if mod_name in ("xor", "base64", "base64wide") and self._match(TokenType.LPAREN):

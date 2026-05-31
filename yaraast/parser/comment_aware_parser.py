@@ -8,10 +8,11 @@ from yaraast.ast.base import ASTNode, Location, YaraFile
 from yaraast.ast.comments import Comment, CommentGroup
 from yaraast.ast.extern import ExternImport
 from yaraast.ast.meta import Meta
-from yaraast.ast.modifiers import MetaScope
+from yaraast.ast.modifiers import MetaScope, StringModifier, StringModifierType
 from yaraast.lexer.comment_preserving_lexer import CommentPreservingLexer
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
+from yaraast.parser._strings import HEX_STRING_MODIFIER_TYPES, REGEX_STRING_MODIFIER_TYPES
 from yaraast.parser.comment_aware_helpers import (
     collect_leading_comments,
     collect_trailing_comment,
@@ -375,7 +376,10 @@ class CommentAwareParser(Parser):
                 if not hex_tokens:
                     msg = "Empty hex string"
                     raise ParserError(msg, self._previous())
-                modifiers = self._parse_string_modifiers()
+                modifiers = self._parse_string_modifiers(
+                    allowed_modifier_types=HEX_STRING_MODIFIER_TYPES,
+                    modifier_context="hex strings",
+                )
                 string_def = HexString(
                     identifier=identifier, tokens=hex_tokens, modifiers=modifiers
                 )
@@ -383,7 +387,12 @@ class CommentAwareParser(Parser):
                 regex_val = self._previous().value
                 pattern, modifiers = self._parse_regex_value(regex_val)
                 # Parse additional YARA modifiers
-                modifiers.extend(self._parse_string_modifiers())
+                modifiers.extend(
+                    self._parse_string_modifiers(
+                        allowed_modifier_types=REGEX_STRING_MODIFIER_TYPES,
+                        modifier_context="regex strings",
+                    )
+                )
                 string_def = RegexString(identifier=identifier, regex=pattern, modifiers=modifiers)
             else:
                 msg = "Expected string value"
@@ -406,9 +415,13 @@ class CommentAwareParser(Parser):
 
         return strings
 
-    def _parse_string_modifiers(self) -> list:
+    def _parse_string_modifiers(
+        self,
+        *,
+        allowed_modifier_types: frozenset[StringModifierType] | None = None,
+        modifier_context: str = "strings",
+    ) -> list[StringModifier]:
         """Parse string modifiers (nocase, wide, etc.)."""
-        from yaraast.ast.modifiers import StringModifier
         from yaraast.lexer.tokens import TokenType
         from yaraast.parser._shared import ParserError, validate_string_modifiers
 
@@ -423,9 +436,14 @@ class CommentAwareParser(Parser):
             TokenType.XOR_MOD,
             TokenType.PRIVATE,
         ):
-            mod_name = self._peek().value
+            mod_token = self._peek()
+            mod_name = mod_token.value
             self._advance()
             mod_name_lower = str(mod_name).lower()
+            modifier_type = StringModifierType.from_string(mod_name_lower)
+            if allowed_modifier_types is not None and modifier_type not in allowed_modifier_types:
+                msg = f"String modifier '{mod_name_lower}' is not valid on {modifier_context}"
+                raise ParserError(msg, mod_token)
 
             if mod_name_lower in {"xor", "base64", "base64wide"} and self._match(TokenType.LPAREN):
                 value = self._parse_string_modifier_parameter(mod_name_lower)
@@ -435,7 +453,7 @@ class CommentAwareParser(Parser):
                     raise ParserError(msg, self._peek())
                 modifiers.append(StringModifier.from_name_value(mod_name_lower, value))
             else:
-                modifiers.append(StringModifier.from_name_value(mod_name))
+                modifiers.append(StringModifier.from_name_value(mod_name_lower))
 
         try:
             validate_string_modifiers(modifiers)

@@ -199,6 +199,53 @@ def test_parse_accepts_libyara_valid_string_modifier_edges(modifiers: str) -> No
 
 
 @pytest.mark.parametrize(
+    "modifier",
+    [
+        "ascii",
+        "wide",
+        "nocase",
+        "fullword",
+        "xor",
+        "xor(1)",
+        "base64",
+        "base64wide",
+    ],
+)
+def test_parse_rejects_libyara_invalid_hex_string_modifiers(modifier: str) -> None:
+    source = f"rule r {{ strings: $a = {{ 01 }} {modifier} condition: $a }}"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="not valid on hex strings"):
+            parser_factory().parse(source)
+
+
+def test_parse_accepts_private_hex_string_modifier() -> None:
+    source = "rule r { strings: $a = { 01 } private condition: $a }"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        assert ast.rules[0].strings[0].modifiers[0].name == "private"
+
+
+@pytest.mark.parametrize("modifier", ["xor", "xor(1)", "base64", "base64wide"])
+def test_parse_rejects_libyara_invalid_regex_string_modifiers(modifier: str) -> None:
+    source = f"rule r {{ strings: $a = /abc/ {modifier} condition: $a }}"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match="not valid on regex strings"):
+            parser_factory().parse(source)
+
+
+@pytest.mark.parametrize("modifier", ["ascii", "wide", "nocase", "fullword", "private"])
+def test_parse_accepts_libyara_valid_regex_string_modifiers(modifier: str) -> None:
+    source = f"rule r {{ strings: $a = /abc/ {modifier} condition: $a }}"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        assert ast.rules[0].strings[0].modifiers
+
+
+@pytest.mark.parametrize(
     "pattern",
     [
         "a*?",

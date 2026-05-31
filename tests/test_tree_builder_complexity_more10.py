@@ -60,7 +60,7 @@ def test_complexity_analyzer_remaining_visitors_and_complex_rule() -> None:
     rule very_complex {
         strings:
             $a = "abc"
-            $b = { 6A 40 ?? } nocase
+            $b = { 6A 40 ?? } private
             $c = /a(b|c)+/ wide
         condition:
             (((($a and $a) and ($a and $a)) and (($a and $a) and ($a and $a))) and (($a and $a) and ($a and $a)))
