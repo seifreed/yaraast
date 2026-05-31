@@ -790,8 +790,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if loop_items is None:
             return False
 
-        # Count true evaluations
-        true_count = 0
+        # Libyara uses numeric body values directly for for-in quantifier checks.
+        contributions: list[int | float] = []
         total_count = 0
         for item in loop_items:
             total_count += 1
@@ -800,27 +800,39 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 continue
 
             try:
-                if _is_evaluation_truthy(self.visit(node.body)):
-                    true_count += 1
+                contributions.append(self._for_body_contribution(self.visit(node.body)))
             finally:
                 self._restore_loop_variables(previous_values)
 
         # Evaluate quantifier
+        match_score = sum(contributions)
         if isinstance(quantifier, str):
             if quantifier == "all":
-                return true_count == total_count
+                return total_count > 0 and all(
+                    contribution == 1 and not isinstance(contribution, float)
+                    for contribution in contributions
+                )
             if quantifier == "any":
-                return true_count > 0
+                return match_score > 0
             if quantifier == "none":
-                return true_count == 0
+                return match_score == 0
         elif _is_evaluation_int(quantifier):
             if quantifier < 0:
                 return False
             if quantifier == 0:
-                return true_count == 0
-            return true_count >= quantifier
+                return match_score == 0
+            return match_score >= quantifier
 
         return False
+
+    def _for_body_contribution(self, value: Any) -> int | float:
+        if is_yara_undefined(value):
+            return 0
+        if isinstance(value, bool):
+            return 1 if value else 0
+        if isinstance(value, int | float):
+            return value
+        return 1 if _is_evaluation_truthy(value) else 0
 
     def _loop_variable_names(self, variable: str) -> list[str]:
         return [name.strip() for name in variable.split(",") if name.strip()]
@@ -830,6 +842,10 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return YARA_UNDEFINED
         if isinstance(node, SetExpression):
             return [self._evaluate_for_iterable(element) for element in node.elements]
+        if isinstance(node, ParenthesesExpression) and not isinstance(
+            node.expression, RangeExpression
+        ):
+            return [self.visit(node.expression)]
         return self.visit(node)
 
     def _loop_items_for_iterable(self, iterable: Any, variable_count: int) -> Any | None:

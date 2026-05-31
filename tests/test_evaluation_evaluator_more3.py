@@ -138,6 +138,36 @@ def test_entrypoint_builtin_uses_pe_entry_point_without_import() -> None:
     }
 
 
+def test_for_expression_parenthesized_scalar_iterates_as_singleton() -> None:
+    ast = Parser().parse("""
+        rule singleton_loop {
+            condition:
+                for any i in (1) : (i == 1) and
+                for all i in (1) : (i == 1) and
+                for none i in (1) : (false) and
+                for 0 i in (1) : (false)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"singleton_loop": True}
+
+
+def test_for_expression_numeric_body_contributes_to_quantifier_score() -> None:
+    ast = Parser().parse("""
+        rule numeric_body_loop {
+            condition:
+                for 3 i in (1, 2) : (i) and
+                not for 4 i in (1, 2) : (i) and
+                not for all i in (2) : (i) and
+                for all i in (2) : (i != 0) and
+                not for any i in (1, 2, 3) : (i * -1) and
+                not for none i in (1, 2, 3) : (i * -1)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"numeric_body_loop": True}
+
+
 def test_evaluator_normalizes_direct_ast_string_identifiers() -> None:
     ast = YaraFile(
         rules=[
