@@ -93,6 +93,29 @@ def _build_minimal_pe_with_entrypoint(entrypoint: int = 0x1000) -> bytes:
     return bytes(data)
 
 
+def _build_minimal_pe_without_size_of_headers(entrypoint: int = 0x200) -> bytes:
+    data = bytearray(0x400)
+    data[0:2] = b"MZ"
+    struct.pack_into("<I", data, 0x3C, 0x80)
+    data[0x80:0x84] = b"PE\x00\x00"
+    struct.pack_into("<H", data, 0x84, 0x14C)
+    struct.pack_into("<H", data, 0x86, 1)
+    struct.pack_into("<H", data, 0x94, 0xE0)
+    struct.pack_into("<H", data, 0x96, 0x010F)
+    optional_header_offset = 0x98
+    struct.pack_into("<H", data, optional_header_offset, 0x10B)
+    struct.pack_into("<I", data, optional_header_offset + 16, entrypoint)
+    struct.pack_into("<I", data, optional_header_offset + 28, 0x400000)
+    struct.pack_into("<I", data, optional_header_offset + 56, 0x1000)
+    section_offset = optional_header_offset + 0xE0
+    data[section_offset : section_offset + 8] = b".text\x00\x00\x00"
+    struct.pack_into("<I", data, section_offset + 8, 0x200)
+    struct.pack_into("<I", data, section_offset + 12, 0x1000)
+    struct.pack_into("<I", data, section_offset + 16, 0x200)
+    struct.pack_into("<I", data, section_offset + 20, 0x200)
+    return bytes(data)
+
+
 def test_identifier_and_literal_paths() -> None:
     ev = YaraEvaluator(data=b"abc")
     ev.context.variables["x"] = 7
@@ -135,6 +158,22 @@ def test_entrypoint_builtin_uses_pe_entry_point_without_import() -> None:
 
     assert YaraEvaluator(data=_build_minimal_pe_with_entrypoint()).evaluate_file(ast) == {
         "valid_entrypoint": True
+    }
+
+
+def test_pe_header_rva_entry_point_maps_to_file_offset_without_size_of_headers() -> None:
+    ast = Parser().parse("""
+        import "pe"
+        rule valid_header_entrypoint {
+            condition:
+                pe.rva_to_offset(0x200) == 0x200 and
+                pe.entry_point == 0x200 and
+                entrypoint == 0x200
+        }
+    """)
+
+    assert YaraEvaluator(data=_build_minimal_pe_without_size_of_headers()).evaluate_file(ast) == {
+        "valid_header_entrypoint": True
     }
 
 

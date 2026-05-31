@@ -436,6 +436,13 @@ class MockPE:
         if self.size_of_headers and rva < self.size_of_headers and rva < len(self.data):
             return rva
 
+        first_section_rva = min(
+            (section.virtual_address for section in self.sections),
+            default=None,
+        )
+        if first_section_rva is not None and rva < first_section_rva and rva < len(self.data):
+            return rva
+
         for section in self.sections:
             span = max(section.virtual_size, section.raw_data_size)
             if span <= 0:
