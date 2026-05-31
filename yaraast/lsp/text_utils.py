@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from lsprotocol.types import Position, Range
 
+from yaraast.lsp.utf16 import utf8_col_to_utf16, utf16_col_to_utf8, utf16_len
+
 
 def position_to_offset(text: str, position: Position) -> int:
     lines = text.split("\n")
@@ -12,7 +14,7 @@ def position_to_offset(text: str, position: Position) -> int:
         if i < len(lines):
             offset += len(lines[i]) + 1
     if position.line < len(lines):
-        offset += min(position.character, len(lines[position.line]))
+        offset += utf16_col_to_utf8(lines[position.line], position.character)
     return offset
 
 
@@ -22,9 +24,12 @@ def offset_to_position(text: str, offset: int) -> Position:
     for line_num, line in enumerate(lines):
         line_length = len(line) + 1
         if current_offset + line_length > offset:
-            return Position(line=line_num, character=offset - current_offset)
+            return Position(
+                line=line_num,
+                character=utf8_col_to_utf16(line, offset - current_offset),
+            )
         current_offset += line_length
-    return Position(line=len(lines) - 1, character=len(lines[-1]) if lines else 0)
+    return Position(line=len(lines) - 1, character=utf16_len(lines[-1]) if lines else 0)
 
 
 def get_word_at_position(text: str, position: Position) -> tuple[str, Range]:
@@ -33,11 +38,12 @@ def get_word_at_position(text: str, position: Position) -> tuple[str, Range]:
         return "", Range(start=position, end=position)
 
     line = lines[position.line]
-    if position.character > len(line):
+    if position.character > utf16_len(line):
         return "", Range(start=position, end=position)
 
-    start = position.character
-    end = position.character
+    position_character = utf16_col_to_utf8(line, position.character)
+    start = position_character
+    end = position_character
     while start > 0 and (line[start - 1].isalnum() or line[start - 1] in "._$#@!"):
         start -= 1
     while end < len(line) and (line[end].isalnum() or line[end] in "._$#@!"):
@@ -46,7 +52,7 @@ def get_word_at_position(text: str, position: Position) -> tuple[str, Range]:
     return (
         line[start:end],
         Range(
-            start=Position(line=position.line, character=start),
-            end=Position(line=position.line, character=end),
+            start=Position(line=position.line, character=utf8_col_to_utf16(line, start)),
+            end=Position(line=position.line, character=utf8_col_to_utf16(line, end)),
         ),
     )

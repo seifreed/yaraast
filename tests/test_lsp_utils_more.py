@@ -55,6 +55,16 @@ def test_position_offset_roundtrip() -> None:
     assert roundtrip.character == pos.character
 
 
+def test_position_offset_roundtrip_uses_lsp_utf16_columns() -> None:
+    text = "a😀b\nnext"
+
+    after_emoji = Position(line=0, character=3)
+    offset = position_to_offset(text, after_emoji)
+
+    assert offset == 2
+    assert offset_to_position(text, offset) == after_emoji
+
+
 def test_get_word_at_position_and_find_node() -> None:
     text = "rule $a"
     pos = Position(line=0, character=6)
@@ -68,6 +78,14 @@ def test_get_word_at_position_and_find_node() -> None:
 
     found = find_node_at_position(ast, Position(line=0, character=0))
     assert found is rule
+
+
+def test_get_word_at_position_returns_lsp_utf16_range() -> None:
+    word, word_range = get_word_at_position("😀 $a", Position(line=0, character=3))
+
+    assert word == "$a"
+    assert word_range.start.character == 3
+    assert word_range.end.character == 5
 
 
 def test_location_to_range_uses_parser_span_when_available() -> None:
