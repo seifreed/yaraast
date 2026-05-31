@@ -61,6 +61,7 @@ class Parser(
         self.tokens: Sequence[IToken] = []
         self.current = 0
         self._extern_rule_names: set[tuple[str | None, str]] = set()
+        self._extern_rule_declarations: set[tuple[str | None, str]] = set()
         self._rule_names: set[str] = set()
 
         if text is not None:
@@ -107,6 +108,7 @@ class Parser(
         pragmas = []
         top_level_nodes = []
         self._extern_rule_names = set()
+        self._extern_rule_declarations = set()
         self._rule_names = set()
 
         while not self._is_at_end():
@@ -132,8 +134,8 @@ class Parser(
                 top_level_nodes.append(namespace)
             elif self._check_identifier_value("extern"):
                 extern_rule = self._parse_extern_rule()
+                self._register_extern_rule(extern_rule, self._previous())
                 self._append_extern_rule(namespaces, extern_rules, extern_rule)
-                self._register_extern_rule(extern_rule)
                 top_level_nodes.append(extern_rule)
             elif (
                 self._check(TokenType.RULE)

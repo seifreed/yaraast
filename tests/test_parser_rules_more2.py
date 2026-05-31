@@ -212,6 +212,20 @@ def test_parse_rejects_duplicate_rule_identifiers() -> None:
             parser_factory().parse(source)
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        "extern rule dup\nextern rule dup\nrule r { condition: true }",
+        "extern rule dup\nrule dup { condition: true }",
+        "rule dup { condition: true }\nextern rule dup",
+    ],
+)
+def test_parse_rejects_conflicting_extern_rule_identifiers(source: str) -> None:
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(ParserError, match='duplicated identifier "dup"'):
+            parser_factory().parse(source)
+
+
 def test_parse_import_include_and_rule_via_full_parse() -> None:
     ast = Parser(
         'import "pe" include "common.yar" private rule sample : t1 { meta: score = 1 strings: $a = "x" condition: true }'

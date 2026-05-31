@@ -169,8 +169,21 @@ class RuleParsingMixin:
                 if namespace:
                     self._extern_rule_names.add((f"{extern_import.alias}.{namespace}", name))
 
-    def _register_extern_rule(self, extern_rule: ExternRule) -> None:
-        self._extern_rule_names.add((extern_rule.namespace, extern_rule.name))
+    def _register_extern_rule(self, extern_rule: ExternRule, rule_token: Any) -> None:
+        key = (extern_rule.namespace, extern_rule.name)
+        conflicts_regular_rule = (
+            extern_rule.namespace is None and extern_rule.name in self._rule_names
+        )
+        if key in self._extern_rule_declarations or conflicts_regular_rule:
+            qualified_name = (
+                f"{extern_rule.namespace}.{extern_rule.name}"
+                if extern_rule.namespace
+                else extern_rule.name
+            )
+            msg = f'duplicated identifier "{qualified_name}"'
+            raise ParserError(msg, rule_token)
+        self._extern_rule_declarations.add(key)
+        self._extern_rule_names.add(key)
 
     def _is_extern_rule_reference(self, rule_name: str, namespace: str | None = None) -> bool:
         return (namespace, rule_name) in self._extern_rule_names
@@ -292,7 +305,7 @@ class RuleParsingMixin:
         return rule_name
 
     def _register_rule_name(self, rule_name: str, rule_token: Any) -> None:
-        if rule_name in self._rule_names:
+        if rule_name in self._rule_names or (None, rule_name) in self._extern_rule_declarations:
             msg = f'duplicated identifier "{rule_name}"'
             raise ParserError(msg, rule_token)
         self._rule_names.add(rule_name)
