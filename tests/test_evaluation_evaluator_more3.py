@@ -168,6 +168,23 @@ def test_for_expression_numeric_body_contributes_to_quantifier_score() -> None:
     assert YaraEvaluator(data=b"").evaluate_file(ast) == {"numeric_body_loop": True}
 
 
+def test_for_expression_integer_body_uses_libyara_accumulator() -> None:
+    ast = Parser().parse("""
+        rule signed_integer_loop {
+            condition:
+                for any i in (1, -1) : (i) and
+                not for any i in (-1, 1) : (i) and
+                for none i in (-1, 1) : (i) and
+                for 1 i in (-1, 1) : (i * -1) and
+                not for 2 i in (-1, 1) : (i * -1) and
+                for all i in (-2, 2) : (i + 1) and
+                not for all i in (1, 2, 3) : (i)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"signed_integer_loop": True}
+
+
 def test_for_expression_double_body_matches_libyara_quantifier_semantics() -> None:
     ast = Parser().parse("""
         rule double_body_loop {

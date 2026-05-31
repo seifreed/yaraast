@@ -792,9 +792,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         # Libyara uses numeric body values directly for for-in quantifier checks.
         contributions: list[int | float] = []
-        total_count = 0
         for item in loop_items:
-            total_count += 1
             previous_values = self._bind_loop_variables(variable_names, item)
             if previous_values is None:
                 continue
@@ -807,26 +805,46 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if any(isinstance(contribution, float) for contribution in contributions):
             return self._evaluate_for_float_quantifier(quantifier, contributions)
 
-        # Evaluate quantifier
-        match_score = sum(contributions)
-        if isinstance(quantifier, str):
-            if quantifier == "all":
-                return total_count > 0 and all(
-                    contribution == 1 and not isinstance(contribution, float)
-                    for contribution in contributions
-                )
-            if quantifier == "any":
-                return match_score > 0
-            if quantifier == "none":
-                return match_score == 0
+        return self._evaluate_for_integer_quantifier(quantifier, contributions)
+
+    def _evaluate_for_integer_quantifier(
+        self, quantifier: Any, contributions: list[int | float]
+    ) -> bool:
+        if not contributions:
+            return False
+
+        if quantifier == "all":
+            count: int | float = 0
+            total = 0
+            for contribution in contributions:
+                total += 1
+                should_continue = contribution != 0
+                count += contribution
+                if not should_continue:
+                    break
+            return count == total
+
+        if quantifier == "any":
+            minimum = 1
+        elif quantifier == "none":
+            minimum = 0
         elif _is_evaluation_int(quantifier):
             if quantifier < 0:
                 return False
-            if quantifier == 0:
-                return match_score == 0
-            return match_score >= quantifier
+            minimum = quantifier
+        else:
+            return False
 
-        return False
+        count = 0
+        for contribution in contributions:
+            should_continue = contribution != 1 if minimum == 0 else count + contribution < minimum
+            count += contribution
+            if not should_continue:
+                break
+
+        if minimum == 0:
+            return count == 0
+        return count >= minimum
 
     def _for_body_contribution(self, value: Any) -> int | float:
         if is_yara_undefined(value):
