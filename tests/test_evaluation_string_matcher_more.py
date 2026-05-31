@@ -242,6 +242,32 @@ def test_string_matcher_regex_grouped_literal_alternation_fullword_uses_long_mat
     assert [(match.offset, match.length) for match in regex_matches] == [(0, 3)]
 
 
+def test_string_matcher_regex_quantified_grouped_literal_alternation_uses_long_match() -> None:
+    matcher = StringMatcher()
+    regex = RegexString("$re", regex="(a|ab)+", modifiers=[])
+
+    assert [(match.offset, match.length) for match in matcher.match_string(regex, b"abb")] == [
+        (0, 2)
+    ]
+    assert [(match.offset, match.length) for match in matcher.match_string(regex, b"abab")] == [
+        (0, 4),
+        (2, 2),
+    ]
+
+
+def test_string_matcher_regex_quantified_grouped_literal_alternation_fullword() -> None:
+    matcher = StringMatcher()
+    regex = RegexString(
+        "$re",
+        regex="(a|ab)+",
+        modifiers=[StringModifier.from_name_value("fullword")],
+    )
+
+    regex_matches = matcher.match_string(regex, b"abab")
+
+    assert [(match.offset, match.length) for match in regex_matches] == [(0, 4)]
+
+
 def test_string_matcher_wide_regex_fullword_keeps_suffixes_of_full_match() -> None:
     matcher = StringMatcher()
     regex = RegexString(

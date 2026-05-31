@@ -515,7 +515,11 @@ class StringMatcher:
         ascii_mod = "ascii" in modifier_names
         fullword = "fullword" in modifier_names
 
-        regex_pattern = self._shortest_first_literal_alternation(str(pattern)) or str(pattern)
+        regex_pattern = (
+            self._shortest_first_literal_alternation(str(pattern))
+            or self._longest_first_quantified_literal_group(str(pattern))
+            or str(pattern)
+        )
 
         # Compile regex
         try:
@@ -654,6 +658,21 @@ class StringMatcher:
         ):
             return None
         return [f"{prefix}{alternative}{suffix}" for alternative in grouped_alternatives]
+
+    def _longest_first_quantified_literal_group(self, pattern: str) -> str | None:
+        grouped = re.fullmatch(
+            r"([A-Za-z0-9]*)\(([A-Za-z0-9|]+)\)(\+)([A-Za-z0-9]*)",
+            pattern,
+        )
+        if grouped is None:
+            return None
+
+        prefix, alternatives_text, quantifier, suffix = grouped.groups()
+        alternatives = alternatives_text.split("|")
+        if len(alternatives) < 2 or not all(alternative.isalnum() for alternative in alternatives):
+            return None
+        ordered_alternatives = "|".join(sorted(alternatives, key=len, reverse=True))
+        return f"{prefix}({ordered_alternatives}){quantifier}{suffix}"
 
     def _find_overlapping_wide_regex_matches(
         self,
