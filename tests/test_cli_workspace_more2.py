@@ -40,9 +40,8 @@ include "a.yar"
     )
 
     no_tree = runner.invoke(workspace, ["resolve", str(missing_include), "--no-tree"])
-    assert no_tree.exit_code == 0
-    assert "Successfully resolved" in no_tree.output
-    assert "Total files in resolution cache" in no_tree.output
+    assert no_tree.exit_code != 0
+    assert "Cannot find include file 'nope.yar'" in no_tree.output
 
     recursive = runner.invoke(workspace, ["resolve", str(recursive_a)])
     assert recursive.exit_code != 0

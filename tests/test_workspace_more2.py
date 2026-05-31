@@ -231,8 +231,8 @@ def test_include_resolver_rechecks_cached_files_with_missing_includes(tmp_path: 
     )
     resolver = IncludeResolver([str(tmp_path)])
 
-    first = resolver.resolve_file(str(parent))
-    assert first.includes == []
+    with pytest.raises(FileNotFoundError, match=r"Cannot find include file 'child\.yar'"):
+        resolver.resolve_file(str(parent))
 
     child = _write(tmp_path / "child.yar", "rule child { condition: true }")
 
@@ -277,14 +277,13 @@ def test_include_resolver_rechecks_nested_cached_files_with_missing_includes(
     )
     resolver = IncludeResolver([str(tmp_path)])
 
-    first = resolver.resolve_file(str(parent))
-    assert first.includes[0].includes == []
+    with pytest.raises(FileNotFoundError, match=r"Cannot find include file 'grandchild\.yar'"):
+        resolver.resolve_file(str(parent))
 
     grandchild = _write(tmp_path / "grandchild.yar", "rule grandchild { condition: true }")
 
     second = resolver.resolve_file(str(parent))
 
-    assert second is not first
     assert [included.path for included in second.includes[0].includes] == [grandchild.resolve()]
 
 
@@ -300,6 +299,18 @@ def test_include_resolver_allows_parent_relative_includes(tmp_path: Path) -> Non
     resolved = IncludeResolver().resolve_file(str(main))
 
     assert [included.path for included in resolved.includes] == [shared.resolve()]
+
+
+def test_include_resolver_reports_missing_nested_includes(tmp_path: Path) -> None:
+    main = _write(
+        tmp_path / "main.yar",
+        'include "missing.yar"\nrule main { condition: true }',
+    )
+
+    resolver = IncludeResolver([str(tmp_path)])
+
+    with pytest.raises(FileNotFoundError, match=r"Cannot find include file 'missing\.yar'"):
+        resolver.resolve_file(str(main))
 
 
 def test_workspace_add_directory_default_includes_yara_extension(tmp_path: Path) -> None:

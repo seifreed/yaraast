@@ -149,8 +149,6 @@ class IncludeResolver:
                 resolved.include_path_map[include.path] = included_file.path
             except RecursionError:
                 raise
-            except FileNotFoundError:
-                pass
 
         self.cache[cache_key] = resolved
         return resolved

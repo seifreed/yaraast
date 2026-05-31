@@ -94,9 +94,9 @@ def resolve(file, search_path, show_tree) -> None:
         for resolved_file in all_files:
             click.echo(f"  - {resolved_file.path}")
 
-    except RecursionError as e:
+    except (FileNotFoundError, RecursionError) as e:
         click.echo(f"Error: {e}", err=True)
-        raise click.Abort from None
+        raise click.Abort() from None
 
 
 @workspace.command()

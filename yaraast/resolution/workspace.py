@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from yaraast.parser.source import parse_yara_source
 from yaraast.resolution.dependency_graph import DependencyGraph
 from yaraast.resolution.include_resolver import IncludeResolver, ResolvedFile
 from yaraast.resolution.workspace_analysis import WorkspaceAnalyzer
@@ -61,6 +63,8 @@ class Workspace:
 
         except FileNotFoundError as e:
             result.errors.append(f"File not found: {e}")
+            if path.is_file():
+                result.resolved = self._resolve_main_file_without_includes(path)
         except RecursionError as e:
             result.errors.append(f"Circular include: {e}")
         except Exception as e:
@@ -70,6 +74,15 @@ class Workspace:
         if rebuild_graph:
             self._rebuild_dependency_graph()
         return result
+
+    def _resolve_main_file_without_includes(self, path: Path) -> ResolvedFile:
+        content = path.read_text(encoding="utf-8")
+        return ResolvedFile(
+            path=path.resolve(),
+            content=content,
+            ast=parse_yara_source(content),
+            checksum=hashlib.sha256(content.encode()).hexdigest(),
+        )
 
     def add_directory(
         self,
