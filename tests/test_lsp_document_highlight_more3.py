@@ -5,6 +5,7 @@ from __future__ import annotations
 from lsprotocol.types import Position
 
 from yaraast.lsp.document_highlight import DocumentHighlightProvider
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def _pos(line: int, char: int) -> Position:
@@ -23,6 +24,30 @@ def test_document_highlight_fallback_on_parse_error() -> None:
     provider = DocumentHighlightProvider()
     highlights = provider.get_highlights(text, _pos(0, 1))
     assert len(highlights) >= 2
+
+
+def test_document_highlight_fallback_returns_utf16_ranges() -> None:
+    text = "😀 alpha alpha"
+    line = text.splitlines()[0]
+    first_start = line.index("alpha")
+    second_start = line.index("alpha", first_start + len("alpha"))
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(0, utf8_col_to_utf16(line, first_start)))
+
+    positions = {
+        (highlight.range.start.character, highlight.range.end.character) for highlight in highlights
+    }
+    assert positions == {
+        (
+            utf8_col_to_utf16(line, first_start),
+            utf8_col_to_utf16(line, first_start + len("alpha")),
+        ),
+        (
+            utf8_col_to_utf16(line, second_start),
+            utf8_col_to_utf16(line, second_start + len("alpha")),
+        ),
+    }
 
 
 def test_document_highlight_fallback_ignores_string_identifier_in_non_code() -> None:

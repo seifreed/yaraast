@@ -8,6 +8,7 @@ from lsprotocol.types import DocumentHighlight, DocumentHighlightKind, Position,
 
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.structure import find_section_range, get_rule_text_range
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def _is_identifier_boundary(line: str, start: int, end: int) -> bool:
@@ -18,6 +19,13 @@ def _is_identifier_boundary(line: str, start: int, end: int) -> bool:
 
 def _is_code_occurrence(ctx: SimpleNamespace, line_num: int, character: int) -> bool:
     return not position_is_in_non_code_segment(ctx, Position(line=line_num, character=character))
+
+
+def _highlight_range(line: str, line_num: int, start: int, end: int) -> Range:
+    return Range(
+        start=Position(line=line_num, character=utf8_col_to_utf16(line, start)),
+        end=Position(line=line_num, character=utf8_col_to_utf16(line, end)),
+    )
 
 
 def simple_highlight(text: str, word: str) -> list[DocumentHighlight]:
@@ -35,10 +43,7 @@ def simple_highlight(text: str, word: str) -> list[DocumentHighlight]:
                 continue
             highlights.append(
                 DocumentHighlight(
-                    range=Range(
-                        start=Position(line=line_num, character=idx),
-                        end=Position(line=line_num, character=idx + len(word)),
-                    ),
+                    range=_highlight_range(line, line_num, idx, idx + len(word)),
                     kind=DocumentHighlightKind.Text,
                 )
             )
@@ -65,10 +70,7 @@ def highlight_identifier(text: str, identifier: str) -> list[DocumentHighlight]:
                 continue
             highlights.append(
                 DocumentHighlight(
-                    range=Range(
-                        start=Position(line=line_num, character=idx),
-                        end=Position(line=line_num, character=end_idx),
-                    ),
+                    range=_highlight_range(line, line_num, idx, end_idx),
                     kind=DocumentHighlightKind.Text,
                 )
             )
@@ -104,10 +106,7 @@ def highlight_string_identifier(text: str, identifier: str) -> list[DocumentHigh
                     kind = DocumentHighlightKind.Write
                 highlights.append(
                     DocumentHighlight(
-                        range=Range(
-                            start=Position(line=line_num, character=idx),
-                            end=Position(line=line_num, character=end_idx),
-                        ),
+                        range=_highlight_range(line, line_num, idx, end_idx),
                         kind=kind,
                     )
                 )
