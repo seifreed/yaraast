@@ -18,6 +18,7 @@ from yaraast.ast.expressions import (
     SetExpression,
     StringIdentifier,
     StringLiteral,
+    StringWildcard,
 )
 from yaraast.ast.rules import Rule, Tag
 from yaraast.ast.strings import PlainString
@@ -123,6 +124,37 @@ def test_validate_rule_accepts_parenthesized_string_set_item() -> None:
 
     assert result.is_valid is True
     assert result.errors == []
+
+
+def test_validate_rule_accepts_rule_wildcard_of_expression() -> None:
+    ast = Parser().parse("""
+        rule a1 { condition: true }
+        rule a2 { condition: true }
+        rule b { condition: any of (a*) }
+        """)
+
+    result = SemanticValidator().validate(ast)
+
+    assert result.is_valid is True
+    assert result.errors == []
+
+
+def test_validate_rule_wildcard_does_not_report_string_pattern_error() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="b",
+                condition=OfExpression("any", ParenthesesExpression(StringWildcard("a*"))),
+            ),
+        ]
+    )
+
+    result = SemanticValidator().validate(ast)
+    messages = [error.message for error in result.errors]
+
+    assert result.is_valid is False
+    assert any("Undefined rule pattern: a*" in message for message in messages)
+    assert not any("Undefined string pattern '$a*'" in message for message in messages)
 
 
 def test_validate_rule_detects_invalid_condition_type() -> None:

@@ -532,7 +532,9 @@ class UndefinedStringDetector:
             if not self._is_local_string_ref(string_set.name):
                 refs.add(string_set.name)
         elif isinstance(string_set, StringWildcard):
-            if not self._is_local_string_ref(string_set.pattern):
+            if string_set.pattern.startswith("$") and not self._is_local_string_ref(
+                string_set.pattern
+            ):
                 refs.add(string_set.pattern)
         elif isinstance(string_set, StringLiteral):
             self._collect_string_set_refs(string_set.value, refs)
@@ -679,7 +681,9 @@ class UndefinedStringDetector:
             if not self._is_local_string_ref(string_set.name):
                 self._mark_used_string_ref(string_set.name, defined, anonymous, used)
         elif isinstance(string_set, StringWildcard):
-            if not self._is_local_string_ref(string_set.pattern):
+            if string_set.pattern.startswith("$") and not self._is_local_string_ref(
+                string_set.pattern
+            ):
                 self._mark_used_string_ref(string_set.pattern, defined, anonymous, used)
         elif isinstance(string_set, StringLiteral):
             self._mark_used_string_set(string_set.value, defined, anonymous, used)
