@@ -61,6 +61,29 @@ def test_parser_error_diagnostic_end_uses_utf16_columns() -> None:
     assert diagnostic.range.end.character == utf8_col_to_utf16(source, source_start + 10)
 
 
+def test_provider_parser_error_diagnostic_uses_source_text_for_utf16_columns() -> None:
+    provider = DiagnosticsProvider()
+    text = """
+rule dup {
+  strings:
+    /* 😀😀 */ $a = "x"
+    /* 😀😀 */ $a = "y"
+  condition:
+    $a
+}
+""".lstrip()
+    line = text.splitlines()[3]
+    duplicate_start = line.index("$a")
+
+    diagnostics = provider.get_diagnostics(text)
+
+    duplicate = next(
+        diagnostic for diagnostic in diagnostics if diagnostic.source == "yaraast-parser"
+    )
+    assert duplicate.range.start.character == utf8_col_to_utf16(line, duplicate_start)
+    assert duplicate.range.end.character == utf8_col_to_utf16(line, duplicate_start + 10)
+
+
 def test_diagnostics_semantic_warning() -> None:
     provider = DiagnosticsProvider()
     text = """

@@ -121,7 +121,7 @@ class DiagnosticsProvider:
             return ast
 
         except ParserError as e:
-            diagnostics.append(self._parser_error_to_diagnostic(e))
+            diagnostics.append(self._parser_error_to_diagnostic(e, text))
         except Exception as e:
             diagnostics.append(
                 Diagnostic(
@@ -172,8 +172,12 @@ class DiagnosticsProvider:
                     self._validate_rule_names(ast, self.runtime.config.rule_name_validation)
                 )
 
-    def _parser_error_to_diagnostic(self, error: ParserError) -> Diagnostic:
-        return parser_error_to_diagnostic(error, DiagnosticData)
+    def _parser_error_to_diagnostic(
+        self,
+        error: ParserError,
+        source_text: str | None = None,
+    ) -> Diagnostic:
+        return parser_error_to_diagnostic(error, DiagnosticData, source_text)
 
     def _compiler_error_to_diagnostic(self, message: str) -> Diagnostic:
         return compiler_error_to_diagnostic(message, DiagnosticData)

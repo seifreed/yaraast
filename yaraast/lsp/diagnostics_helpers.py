@@ -19,13 +19,17 @@ from yaraast.lsp.lsp_docs import BUILTIN_DOCS, MODULE_DOCS
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
-def parser_error_to_diagnostic(error: Any, diagnostic_data_cls: Any) -> Diagnostic:
+def parser_error_to_diagnostic(
+    error: Any,
+    diagnostic_data_cls: Any,
+    source_text: str | None = None,
+) -> Diagnostic:
     line = error.line - 1 if error.line > 0 else 0
     source_col = error.column - 1 if error.column > 0 else 0
     start_col = source_col
     end_col = source_col + 10
     source_line = ""
-    source = getattr(error, "source", None) or getattr(error, "text", None) or ""
+    source = source_text or getattr(error, "source", None) or getattr(error, "text", None) or ""
     if source:
         lines = source.split("\n")
         if 0 <= line < len(lines):
