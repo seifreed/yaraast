@@ -99,11 +99,17 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
                 if import_stmt.alias:
                     self.context.modules[import_stmt.alias] = module
 
-        # Evaluate each rule
+        evaluated_rules: list[tuple[str, Rule, bool]] = []
         for rule in yara_file.rules:
             rule_key = self._rule_key_for_rule(rule)
             result = self._evaluate_rule_by_name(rule_key)
-            results[rule_key] = result
+            evaluated_rules.append((rule_key, rule, result))
+
+        global_rules_match = all(
+            result for _rule_key, rule, result in evaluated_rules if rule.is_global
+        )
+        for rule_key, rule, result in evaluated_rules:
+            results[rule_key] = global_rules_match and result and not rule.is_private
 
         return results
 

@@ -2073,6 +2073,74 @@ def test_evaluate_file_resolves_forward_rule_references() -> None:
     assert YaraEvaluator(data=b"abc").evaluate_file(ast) == {"first": True, "second": True}
 
 
+def test_evaluate_file_uses_private_rules_without_reporting_them() -> None:
+    ast = Parser().parse("""
+        private rule helper {
+            condition:
+                true
+        }
+
+        rule visible {
+            condition:
+                helper
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {
+        "helper": False,
+        "visible": True,
+    }
+
+
+def test_evaluate_file_global_rules_gate_reported_matches() -> None:
+    passing_global = Parser().parse("""
+        global rule gate {
+            condition:
+                true
+        }
+
+        rule visible {
+            condition:
+                true
+        }
+    """)
+    failing_global = Parser().parse("""
+        global rule gate {
+            condition:
+                false
+        }
+
+        rule visible {
+            condition:
+                true
+        }
+    """)
+    private_global = Parser().parse("""
+        private global rule gate {
+            condition:
+                false
+        }
+
+        rule visible {
+            condition:
+                true
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(passing_global) == {
+        "gate": True,
+        "visible": True,
+    }
+    assert YaraEvaluator(data=b"").evaluate_file(failing_global) == {
+        "gate": False,
+        "visible": False,
+    }
+    assert YaraEvaluator(data=b"").evaluate_file(private_global) == {
+        "gate": False,
+        "visible": False,
+    }
+
+
 def test_evaluate_file_resets_imported_modules_between_files() -> None:
     evaluator = YaraEvaluator(data=b"abc")
     with_import = Parser().parse("""
