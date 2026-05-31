@@ -62,6 +62,32 @@ def test_ast_structural_analyzer_collects_signatures_and_empty_condition() -> No
     assert cond["right"]["type"] == "BooleanLiteral"
 
 
+def test_ast_diff_distinguishes_byte_literal_from_matching_repr_text() -> None:
+    old_ast = YaraFile(
+        rules=[
+            Rule(
+                name="literal_collision",
+                strings=[PlainString("$a", value=b"abc")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+    new_ast = YaraFile(
+        rules=[
+            Rule(
+                name="literal_collision",
+                strings=[PlainString("$a", value="b'abc'")],
+                condition=BooleanLiteral(True),
+            )
+        ]
+    )
+
+    result = ASTDiffer().diff_asts(old_ast, new_ast)
+
+    assert result.has_changes
+    assert "String 'literal_collision:$a' content modified" in result.logical_changes
+
+
 def test_ast_differ_diff_asts_detects_structural_logical_and_condition_changes() -> None:
     ast1 = Parser().parse("""
 import "pe"

@@ -143,10 +143,7 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
         }
         if hasattr(string_def, "value"):
             string_structure["content_type"] = "literal"
-            string_structure["content_hash"] = hashlib.md5(
-                str(string_def.value).encode(),
-                usedforsecurity=False,
-            ).hexdigest()
+            string_structure["content_hash"] = self._literal_content_hash(string_def.value)
         elif hasattr(string_def, "regex"):
             string_structure["content_type"] = "regex"
             string_structure["content_hash"] = hashlib.md5(
@@ -198,6 +195,16 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
         if isinstance(value, str | int | float | bool) or value is None:
             return value
         return str(value)
+
+    def _literal_content_hash(self, value: str | bytes) -> str:
+        hasher = hashlib.md5(usedforsecurity=False)
+        if isinstance(value, bytes):
+            hasher.update(b"bytes\0")
+            hasher.update(value)
+        else:
+            hasher.update(b"str\0")
+            hasher.update(value.encode())
+        return hasher.hexdigest()
 
     def _hash_dict(self, data: dict[str, Any]) -> str:
         payload = json.dumps(data, sort_keys=True, default=str, separators=(",", ":"))
