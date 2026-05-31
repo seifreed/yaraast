@@ -15,6 +15,7 @@ from yaraast.ast.expressions import (
     StringLength,
     StringOffset,
 )
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.lsp.utils import location_to_range
 
 if TYPE_CHECKING:
@@ -180,12 +181,11 @@ def string_reference_range(node: ASTNode, source_text: str) -> Range:
             full_range.start.line,
             full_range.start.character,
         )
-        return Range(
-            start=Position(line=full_range.start.line, character=start_character),
-            end=Position(
-                line=full_range.start.line,
-                character=start_character + 1 + len(suffix),
-            ),
+        return _same_line_utf16_range(
+            source_text,
+            full_range.start.line,
+            start_character,
+            start_character + 1 + len(suffix),
         )
     if isinstance(node, StringCount | StringOffset | StringLength):
         suffix = node.string_id[1:] if node.string_id.startswith("$") else node.string_id
@@ -194,14 +194,25 @@ def string_reference_range(node: ASTNode, source_text: str) -> Range:
             full_range.start.line,
             full_range.start.character,
         )
-        return Range(
-            start=Position(line=full_range.start.line, character=start_character),
-            end=Position(
-                line=full_range.start.line,
-                character=start_character + 1 + len(suffix),
-            ),
+        return _same_line_utf16_range(
+            source_text,
+            full_range.start.line,
+            start_character,
+            start_character + 1 + len(suffix),
         )
     return full_range
+
+
+def _same_line_utf16_range(source_text: str, line_index: int, start: int, end: int) -> Range:
+    lines = source_text.split("\n")
+    if 0 <= line_index < len(lines):
+        line = lines[line_index]
+        start = utf8_col_to_utf16(line, start)
+        end = utf8_col_to_utf16(line, end)
+    return Range(
+        start=Position(line=line_index, character=start),
+        end=Position(line=line_index, character=end),
+    )
 
 
 def _prefixed_reference_start_character(

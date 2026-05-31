@@ -50,6 +50,39 @@ def test_document_highlight_fallback_returns_utf16_ranges() -> None:
     }
 
 
+def test_document_highlight_ast_records_return_utf16_ranges() -> None:
+    text = """
+rule r {
+    strings:
+        $a = "abc"
+    condition:
+        /* 😀 */ $a and $a
+}
+""".lstrip()
+    line = text.splitlines()[4]
+    first_start = line.index("$a")
+    second_start = line.index("$a", first_start + len("$a"))
+    provider = DocumentHighlightProvider()
+
+    highlights = provider.get_highlights(text, _pos(4, utf8_col_to_utf16(line, first_start)))
+
+    positions = {
+        (highlight.range.start.character, highlight.range.end.character)
+        for highlight in highlights
+        if highlight.range.start.line == 4
+    }
+    assert positions == {
+        (
+            utf8_col_to_utf16(line, first_start),
+            utf8_col_to_utf16(line, first_start + len("$a")),
+        ),
+        (
+            utf8_col_to_utf16(line, second_start),
+            utf8_col_to_utf16(line, second_start + len("$a")),
+        ),
+    }
+
+
 def test_document_highlight_fallback_ignores_string_identifier_in_non_code() -> None:
     text = """
 rule r {
