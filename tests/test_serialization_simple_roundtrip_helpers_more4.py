@@ -1783,6 +1783,10 @@ def test_simple_roundtrip_helpers_preserve_extended_expression_nodes() -> None:
             SetExpression([StringIdentifier("$a")]),
             condition=AtExpression("$a", IntegerLiteral(0)),
         ),
+        AtExpression(
+            OfExpression("all", Identifier("them")),
+            IntegerLiteral(0),
+        ),
         InExpression(
             OfExpression("any", Identifier("them")),
             RangeExpression(IntegerLiteral(0), IntegerLiteral(20)),

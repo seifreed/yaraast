@@ -56,7 +56,8 @@ class StringReferenceRewriter(ASTTransformer):
 
     def visit_at_expression(self, node: AtExpression):
         node = self._transform_node(node)
-        node.string_id = self._replace_id(node.string_id)
+        if isinstance(node.string_id, str):
+            node.string_id = self._replace_id(node.string_id)
         return node
 
     def visit_in_expression(self, node: InExpression):

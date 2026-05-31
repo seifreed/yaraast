@@ -204,7 +204,10 @@ class StringUsageAnalyzer(BaseVisitor[None]):
             self.visit(node.index)
 
     def visit_at_expression(self, node: AtExpression) -> None:
-        self._mark_condition_string_ref(node.string_id)
+        if isinstance(node.string_id, str):
+            self._mark_condition_string_ref(node.string_id)
+        else:
+            self.visit(node.string_id)
         self.visit(node.offset)
 
     def visit_in_expression(self, node: InExpression) -> None:

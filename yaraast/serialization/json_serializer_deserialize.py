@@ -656,8 +656,13 @@ def _deser_for_of_expression(self, data: dict[str, Any]):
 def _deser_at_expression(self, data: dict[str, Any]):
     from yaraast.ast.conditions import AtExpression
 
+    raw_subject = data.get("string_id")
+    if isinstance(raw_subject, dict):
+        subject = _deserialize_required_expression(self, data, "string_id", "AtExpression")
+    else:
+        subject = _deserialize_string_field(data, "string_id", "AtExpression")
     return AtExpression(
-        string_id=_deserialize_string_field(data, "string_id", "AtExpression"),
+        string_id=subject,
         offset=_deserialize_required_expression(self, data, "offset", "AtExpression"),
     )
 

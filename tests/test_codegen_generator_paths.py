@@ -3,7 +3,13 @@ from __future__ import annotations
 import pytest
 
 from yaraast.ast.comments import Comment, CommentGroup
-from yaraast.ast.conditions import ForExpression, ForOfExpression, InExpression, OfExpression
+from yaraast.ast.conditions import (
+    AtExpression,
+    ForExpression,
+    ForOfExpression,
+    InExpression,
+    OfExpression,
+)
 from yaraast.ast.expressions import (
     BooleanLiteral,
     DoubleLiteral,
@@ -147,6 +153,12 @@ def test_codegen_in_expression_parentheses_paths() -> None:
         range=RangeExpression(IntegerLiteral(0), IntegerLiteral(10)),
     )
     assert gen.visit(in_of_direct_range) == "1 of them in (0..10)"
+
+    at_of_direct_offset = AtExpression(
+        string_id=OfExpression(IntegerLiteral(1), Identifier("them")),
+        offset=IntegerLiteral(0),
+    )
+    assert gen.visit(at_of_direct_offset) == "1 of them at 0"
 
     in_single_ref = InExpression(
         subject="$a",

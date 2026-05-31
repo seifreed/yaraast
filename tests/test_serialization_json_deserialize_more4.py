@@ -1325,6 +1325,20 @@ def test_deserialize_expression_condition_module_operator_paths() -> None:
     )
     assert isinstance(at_expr, AtExpression)
 
+    at_of_expr = s._deserialize_expression(
+        {
+            "type": "AtExpression",
+            "string_id": {
+                "type": "OfExpression",
+                "quantifier": "all",
+                "string_set": {"type": "Identifier", "name": "them"},
+            },
+            "offset": {"type": "IntegerLiteral", "value": 10},
+        }
+    )
+    assert isinstance(at_of_expr, AtExpression)
+    assert isinstance(at_of_expr.string_id, OfExpression)
+
     in_str = s._deserialize_expression(
         {
             "type": "InExpression",

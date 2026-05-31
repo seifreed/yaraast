@@ -328,7 +328,7 @@ def visit_for_of_expression(transformer, node: ForOfExpression) -> ForOfExpressi
 
 def visit_at_expression(transformer, node: AtExpression) -> AtExpression:
     node = _shallow(node)
-    node.string_id = pooled_value(transformer.string_pool, node.string_id)
+    node.string_id = _pool_parameter_value(transformer, node.string_id)
     node.offset = transformer.visit(node.offset)
     return node
 

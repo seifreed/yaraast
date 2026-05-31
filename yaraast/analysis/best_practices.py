@@ -452,7 +452,8 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         super().visit_string_length(node)
 
     def visit_at_expression(self, node: AtExpression) -> None:
-        self._mark_condition_string_usage(node.string_id)
+        if isinstance(node.string_id, str):
+            self._mark_condition_string_usage(node.string_id)
         super().visit_at_expression(node)
 
     def visit_in_expression(self, node: InExpression) -> None:

@@ -130,8 +130,13 @@ class DeadCodeEliminator(ASTTransformer):
             self._mark_used_string(expr.name)
         elif isinstance(expr, StringWildcard):
             self._mark_used_string(expr.pattern)
-        elif isinstance(expr, StringCount | StringOffset | StringLength | AtExpression):
+        elif isinstance(expr, StringCount | StringOffset | StringLength):
             self._mark_used_string(expr.string_id)
+        elif isinstance(expr, AtExpression):
+            if isinstance(expr.string_id, str):
+                self._mark_used_string(expr.string_id)
+            else:
+                self._collect_from_expression(expr.string_id)
         elif isinstance(expr, InExpression) and isinstance(expr.subject, str):
             self._mark_used_string(expr.subject)
         elif isinstance(expr, OfExpression | ForOfExpression):

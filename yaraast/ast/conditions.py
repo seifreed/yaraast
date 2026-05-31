@@ -55,9 +55,9 @@ class ForOfExpression(Condition):
 
 @dataclass
 class AtExpression(Condition):
-    """At expression ($a at offset)."""
+    """At expression ($a at offset or all of them at offset)."""
 
-    string_id: str
+    string_id: str | Expression
     offset: Expression
 
     def accept(self, visitor: _VisitorType) -> Any:

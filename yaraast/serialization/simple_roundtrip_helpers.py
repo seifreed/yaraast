@@ -491,6 +491,15 @@ def _serialize_required_string(value: Any, context: str) -> str:
     raise SerializationError(msg)
 
 
+def _serialize_string_or_expression(value: Any, context: str) -> str | dict[str, Any]:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, Expression):
+        return serialize_node(value)
+    msg = f"{context} must be a string"
+    raise SerializationError(msg)
+
+
 def _serialize_nullable_string(value: Any, context: str) -> str | None:
     if value is None:
         return None
@@ -1171,7 +1180,10 @@ def _serialize_node_payload(node: ASTNode) -> dict[str, Any]:
     if isinstance(node, AtExpression):
         return {
             "type": "AtExpression",
-            "string_id": _serialize_required_string(node.string_id, "AtExpression string_id"),
+            "string_id": _serialize_string_or_expression(
+                node.string_id,
+                "AtExpression string_id",
+            ),
             "offset": serialize_node(node.offset),
         }
     if isinstance(node, InExpression):
@@ -1720,8 +1732,15 @@ def _deserialize_node_payload(data: dict[str, Any]) -> ASTNode:
             _deserialize_optional_node_field(data, "condition", "ForOfExpression condition"),
         )
     if node_type == "AtExpression":
+        raw_subject = data.get("string_id")
+        if isinstance(raw_subject, dict):
+            subject = _deserialize_required_node_value(raw_subject, "AtExpression string_id")
+        elif isinstance(raw_subject, str):
+            subject = raw_subject
+        else:
+            subject = _deserialize_string_field(data, "string_id", "AtExpression")
         return AtExpression(
-            _deserialize_string_field(data, "string_id", "AtExpression"),
+            subject,
             _deserialize_required_node(data, "offset", "AtExpression"),
         )
     if node_type == "InExpression":

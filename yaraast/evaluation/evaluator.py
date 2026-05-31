@@ -670,6 +670,8 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         offset = self.visit(node.offset)
         if not _is_evaluation_int(offset):
             return False
+        if isinstance(node.string_id, OfExpression):
+            return self._evaluate_of_expression(node.string_id, match_offset=offset)
         return self.string_matcher.string_at(self._normalize_string_id(node.string_id), offset)
 
     def visit_in_expression(self, node: InExpression) -> bool:
@@ -695,6 +697,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         self,
         node: OfExpression,
         match_range: range | None = None,
+        match_offset: int | None = None,
     ) -> bool:
         """Evaluate an of-expression, optionally restricted to match offsets."""
         # Get quantifier value - could be int, string ("all", "any"), or expression
@@ -708,7 +711,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         matched = 0
         for string_id in string_set:
             normalized_id = self._normalize_string_id(string_id)
-            if match_range is None:
+            if match_offset is not None:
+                has_match = self.string_matcher.string_at(normalized_id, match_offset)
+            elif match_range is None:
                 has_match = self.string_matcher.get_match_count(normalized_id) > 0
             else:
                 has_match = self.string_matcher.string_in(

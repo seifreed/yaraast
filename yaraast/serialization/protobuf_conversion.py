@@ -1228,6 +1228,9 @@ def convert_expression_to_protobuf(expr, pb_expr) -> None:
         if expr.condition is not None:
             convert_expression_to_protobuf(expr.condition, pb_expr.for_of_expression.condition)
     elif isinstance(expr, AtExpression):
+        if not isinstance(expr.string_id, str):
+            msg = "AtExpression string_id must be a string for protobuf serialization"
+            raise SerializationError(msg)
         pb_expr.at_expression.string_id = _protobuf_required_string(
             expr.string_id,
             "AtExpression string_id",

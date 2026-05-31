@@ -192,8 +192,11 @@ def _validate_for_quantifier_text(quantifier: str) -> str:
 
 
 def visit_at_expression(generator, node) -> str:
-    string_id = format_string_reference_identifier(
-        node.string_id,
-        allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
-    )
+    if hasattr(node.string_id, "accept"):
+        string_id = generator.visit(node.string_id)
+    else:
+        string_id = format_string_reference_identifier(
+            node.string_id,
+            allow_placeholder=getattr(generator, "_allow_string_placeholder", False),
+        )
     return f"{string_id} at {generator.visit(node.offset)}"

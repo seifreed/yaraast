@@ -1730,6 +1730,42 @@ def test_of_expression_in_range_uses_match_offsets() -> None:
     assert evaluate("all of them in (0..3)") is False
 
 
+def test_of_expression_at_offset_uses_exact_match_offsets() -> None:
+    def evaluate(condition: str, data: bytes = b"xxabyycd") -> bool:
+        ast = Parser().parse(f"""
+            rule r {{
+                strings:
+                    $a = "ab"
+                    $b = "cd"
+                condition:
+                    {condition}
+            }}
+            """)
+        return YaraEvaluator(data=data).evaluate_file(ast)["r"]
+
+    def evaluate_duplicates(condition: str) -> bool:
+        ast = Parser().parse(f"""
+            rule r {{
+                strings:
+                    $a = "ab"
+                    $b = "ab"
+                condition:
+                    {condition}
+            }}
+            """)
+        return YaraEvaluator(data=b"xxab").evaluate_file(ast)["r"]
+
+    assert evaluate("any of them at 2") is True
+    assert evaluate("any of them at 6") is True
+    assert evaluate("2 of them at 2") is False
+    assert evaluate("all of them at 2") is False
+
+    assert evaluate("all of them at 2", data=b"xxabcd") is False
+    assert evaluate_duplicates("2 of them at 2") is True
+    assert evaluate_duplicates("all of them at 2") is True
+    assert evaluate_duplicates("none of them at 0") is True
+
+
 def test_percentage_of_expression_uses_ratio_threshold() -> None:
     def evaluate(condition: str, data: bytes) -> bool:
         ast = Parser().parse(f"""

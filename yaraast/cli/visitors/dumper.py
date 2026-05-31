@@ -332,7 +332,7 @@ class ASTDumper(ASTVisitor[dict]):
     def visit_at_expression(self, node: AtExpression) -> dict:
         return {
             "type": "AtExpression",
-            "string_id": node.string_id,
+            "string_id": self._dump_value(node.string_id),
             "offset": self.visit(node.offset),
         }
 

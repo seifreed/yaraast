@@ -1,8 +1,8 @@
-"""Tests for 'of ... in (range)' syntax support."""
+"""Tests for 'of ... in (range)' and 'of ... at offset' syntax support."""
 
 import pytest
 
-from yaraast.ast.conditions import InExpression, OfExpression
+from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.parser import Parser
 
 
@@ -89,6 +89,38 @@ class TestOfInSyntax:
         assert len(ast.rules) == 1
         assert isinstance(ast.rules[0].condition, InExpression)
         assert isinstance(ast.rules[0].condition.subject, OfExpression)
+
+    def test_all_of_them_at_offset(self) -> None:
+        """Test 'all of them at offset' syntax."""
+        yara_code = """
+        rule test {
+            strings:
+                $a = "test1"
+                $b = "test2"
+            condition:
+                all of them at 0
+        }
+        """
+        ast = Parser().parse(yara_code)
+        assert len(ast.rules) == 1
+        assert isinstance(ast.rules[0].condition, AtExpression)
+        assert isinstance(ast.rules[0].condition.string_id, OfExpression)
+
+    def test_numeric_of_wildcard_at_offset(self) -> None:
+        """Test 'N of ($a*) at offset' syntax."""
+        yara_code = """
+        rule test {
+            strings:
+                $a1 = "test1"
+                $a2 = "test2"
+            condition:
+                1 of ($a*) at 0
+        }
+        """
+        ast = Parser().parse(yara_code)
+        assert len(ast.rules) == 1
+        assert isinstance(ast.rules[0].condition, AtExpression)
+        assert isinstance(ast.rules[0].condition.string_id, OfExpression)
 
     def test_complex_range_expression(self) -> None:
         """Test 'of' expression with complex range using offsets."""

@@ -648,7 +648,11 @@ def visit_for_of_expression(serializer, node) -> dict[str, Any]:
 def visit_at_expression(serializer, node) -> dict[str, Any]:
     return {
         "type": "AtExpression",
-        "string_id": _serialize_required_string(node.string_id, "AtExpression string_id"),
+        "string_id": _serialize_string_or_expression(
+            serializer,
+            node.string_id,
+            "AtExpression string_id",
+        ),
         "offset": _serialize_required_expression(serializer, node.offset, "AtExpression offset"),
     }
 

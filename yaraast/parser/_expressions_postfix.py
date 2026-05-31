@@ -198,11 +198,12 @@ class ExpressionPostfixMixin:
         return f"unknown.{expr.member}"
 
     def _parse_at_postfix(self, expr: Expression) -> AtExpression:
-        """Parse AT postfix expression ($string at offset)."""
-        if isinstance(expr, StringIdentifier):
+        """Parse AT postfix expression ($string at offset or N of set at offset)."""
+        if isinstance(expr, StringIdentifier | OfExpression):
             start_token = self._previous()
             offset = self._parse_additive_expression()
-            node = AtExpression(string_id=expr.name, offset=offset)
+            subject: str | Expression = expr.name if isinstance(expr, StringIdentifier) else expr
+            node = AtExpression(string_id=subject, offset=offset)
             if getattr(expr, "location", None) is not None:
                 node.location = self._location_from_tokens(
                     self._synthetic_token_from_location(expr.location),
@@ -210,7 +211,7 @@ class ExpressionPostfixMixin:
                 )
                 return node
             return self._set_node_location_from_tokens(node, start_token, self._previous())
-        msg = "AT keyword can only be used with string identifiers"
+        msg = "AT keyword can only be used with string identifiers or 'of' expressions"
         raise ParserError(msg, self._peek())
 
     def _parse_in_postfix(self, expr: Expression) -> InExpression:

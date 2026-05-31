@@ -307,7 +307,10 @@ class RuleTransformer:
             return expr
 
         if isinstance(expr, AtExpression):
-            expr.string_id = self._rename_string_reference(expr.string_id, mapping)
+            if isinstance(expr.string_id, str):
+                expr.string_id = self._rename_string_reference(expr.string_id, mapping)
+            else:
+                expr.string_id = self._rename_expression_value(expr.string_id, mapping)
             expr.offset = self._rename_expression_value(expr.offset, mapping)
             return expr
 

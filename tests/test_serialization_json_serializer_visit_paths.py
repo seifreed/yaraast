@@ -154,6 +154,10 @@ def test_json_serializer_visit_methods_cover_remaining_nodes() -> None:
         == "ForOfExpression"
     )
     assert s.visit_at_expression(AtExpression("$a", IntegerLiteral(0)))["type"] == "AtExpression"
+    serialized_at_of = s.visit_at_expression(
+        AtExpression(OfExpression("all", Identifier("them")), IntegerLiteral(0))
+    )
+    assert serialized_at_of["string_id"]["type"] == "OfExpression"
     assert (
         s.visit_in_expression(
             InExpression(
