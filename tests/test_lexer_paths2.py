@@ -176,6 +176,11 @@ def test_lexer_regex_and_backslash_division_paths() -> None:
     assert not any(t.type == TokenType.DIVIDE for t in tokens3)
 
 
+def test_lexer_rejects_raw_newline_inside_regex() -> None:
+    with pytest.raises(LexerError, match="Unterminated regex"):
+        Lexer("rule r { condition: /a\n/ }").tokenize()
+
+
 def test_lexer_rejects_slash_as_division_operator() -> None:
     with pytest.raises(LexerError, match="Unexpected character: /"):
         Lexer("rule r { condition: 4 / 2 == 2 }").tokenize()

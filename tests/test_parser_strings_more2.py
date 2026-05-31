@@ -6,6 +6,7 @@ import pytest
 
 from yaraast.ast.strings import HexNegatedByte, HexString, RegexString
 from yaraast.codegen.generator import CodeGenerator
+from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
@@ -108,6 +109,19 @@ def test_parse_rejects_comment_or_space_joined_hex_tokens(hex_pattern: str) -> N
 def test_parse_rejects_invalid_regex_patterns(source: str) -> None:
     for parser_factory in (Parser, CommentAwareParser):
         with pytest.raises(ParserError, match="regex"):
+            parser_factory().parse(source)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "rule r { strings: $a = /a\n/ condition: $a }",
+        'rule r { condition: "abc" matches /a\n/ }',
+    ],
+)
+def test_parse_rejects_raw_newline_inside_regex(source: str) -> None:
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(LexerError, match="Unterminated regex"):
             parser_factory().parse(source)
 
 
