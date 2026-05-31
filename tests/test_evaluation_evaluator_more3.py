@@ -206,6 +206,8 @@ def test_for_expression_double_body_with_loop_variables_matches_libyara() -> Non
         rule double_loop_variable_body {
             condition:
                 not for any i in (-1, 1) : (i + 0.5) and
+                for any i in (1, -1) : (i + 0.5) and
+                for any i in (1, -1) : (i * 0.5) and
                 for any i in (-1, 0, 1) : (i + 0.5) and
                 not for any i in (-1, 0, 1) : (i * 0.5)
         }

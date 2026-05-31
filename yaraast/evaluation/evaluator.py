@@ -8,6 +8,7 @@ import contextlib
 from dataclasses import dataclass, field
 from fnmatch import fnmatchcase
 import math
+import struct
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.conditions import *
@@ -802,24 +803,25 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             finally:
                 self._restore_loop_variables(previous_values)
 
-        if any(isinstance(contribution, float) for contribution in contributions):
-            return self._evaluate_for_float_quantifier(quantifier, contributions)
+        return self._evaluate_for_vm_quantifier(quantifier, contributions)
 
-        return self._evaluate_for_integer_quantifier(quantifier, contributions)
-
-    def _evaluate_for_integer_quantifier(
+    def _evaluate_for_vm_quantifier(
         self, quantifier: Any, contributions: list[int | float]
     ) -> bool:
         if not contributions:
             return False
 
+        vm_contributions = [
+            self._for_vm_contribution(contribution) for contribution in contributions
+        ]
+
         if quantifier == "all":
-            count: int | float = 0
+            count = 0
             total = 0
-            for contribution in contributions:
+            for contribution in vm_contributions:
                 total += 1
                 should_continue = contribution != 0
-                count += contribution
+                count = normalize_int64(count + contribution)
                 if not should_continue:
                     break
             return count == total
@@ -836,15 +838,21 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             return False
 
         count = 0
-        for contribution in contributions:
-            should_continue = contribution != 1 if minimum == 0 else count + contribution < minimum
-            count += contribution
+        for contribution in vm_contributions:
+            candidate_count = normalize_int64(count + contribution)
+            should_continue = contribution != 1 if minimum == 0 else candidate_count < minimum
+            count = candidate_count
             if not should_continue:
                 break
 
         if minimum == 0:
             return count == 0
         return count >= minimum
+
+    def _for_vm_contribution(self, contribution: int | float) -> int:
+        if isinstance(contribution, float):
+            return struct.unpack("q", struct.pack("d", contribution))[0]
+        return contribution
 
     def _for_body_contribution(self, value: Any) -> int | float:
         if is_yara_undefined(value):
@@ -854,53 +862,6 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if isinstance(value, int | float):
             return value
         return 1 if _is_evaluation_truthy(value) else 0
-
-    def _evaluate_for_float_quantifier(
-        self, quantifier: Any, contributions: list[int | float]
-    ) -> bool:
-        float_values = [
-            contribution for contribution in contributions if isinstance(contribution, float)
-        ]
-        if not float_values:
-            return False
-
-        positive_zero_count = sum(
-            1 for value in float_values if value == 0.0 and math.copysign(1.0, value) > 0.0
-        )
-        negative_zero_count = sum(
-            1 for value in float_values if value == 0.0 and math.copysign(1.0, value) < 0.0
-        )
-        positive_count = sum(1 for value in float_values if value > 0.0)
-        negative_count = sum(1 for value in float_values if value < 0.0)
-
-        if positive_count == 0 and negative_count == 0:
-            score_is_zero = positive_zero_count > 0 or negative_zero_count % 2 == 0
-            has_match = False
-        elif positive_count > 0 and negative_count == 0:
-            score_is_zero = False
-            has_match = True
-        elif negative_count > 0 and positive_count == 0:
-            score_is_zero = False
-            has_match = len(float_values) > 1
-        else:
-            score_is_zero = False
-            has_match = len(float_values) > 2 and not math.isclose(sum(float_values), 0.0)
-
-        if isinstance(quantifier, str):
-            if quantifier == "all":
-                return False
-            if quantifier == "any":
-                return has_match
-            if quantifier == "none":
-                return score_is_zero
-        elif _is_evaluation_int(quantifier):
-            if quantifier < 0:
-                return False
-            if quantifier == 0:
-                return score_is_zero
-            return has_match
-
-        return False
 
     def _loop_variable_names(self, variable: str) -> list[str]:
         return [name.strip() for name in variable.split(",") if name.strip()]
