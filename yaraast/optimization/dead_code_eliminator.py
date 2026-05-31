@@ -174,6 +174,7 @@ class DeadCodeEliminator(ASTTransformer):
             rule.condition is not None
             and isinstance(rule.condition, BooleanLiteral)
             and not rule.condition.value
+            and not rule.is_global
             and rule.name not in self.used_rules
         )
 
