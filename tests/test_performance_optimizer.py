@@ -45,6 +45,21 @@ def test_performance_optimizer_rule_sorting() -> None:
     assert stats["rules_optimized"] == 1
 
 
+def test_performance_optimizer_string_sorting_uses_utf8_byte_length() -> None:
+    parser = Parser()
+    ast = parser.parse(_sample_rule())
+    rule = ast.rules[0]
+    rule.strings = [
+        PlainString(identifier="$unicode", value="éé"),
+        PlainString(identifier="$ascii", value="abc"),
+    ]
+
+    optimizer = PerformanceOptimizer()
+    optimized = optimizer.optimize_rule(rule, strategy="speed")
+
+    assert [string.identifier for string in optimized.strings] == ["$ascii", "$unicode"]
+
+
 def test_performance_optimizer_file(tmp_path: Path) -> None:
     file_path = tmp_path / "rules.yar"
     file_path.write_text(_sample_rule(), encoding="utf-8")

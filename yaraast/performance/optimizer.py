@@ -9,6 +9,7 @@ from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString, StringDefinition
 from yaraast.optimization.rule_optimizer import RuleOptimizer
 from yaraast.performance.memory_optimizer import MemoryOptimizer
+from yaraast.performance.string_analysis_helpers import string_value_length
 
 _Target = TypeVar("_Target")
 
@@ -134,7 +135,7 @@ class PerformanceOptimizer:
         """Estimate relative runtime cost for checking a string definition."""
         if isinstance(string_def, PlainString):
             value = string_def.value
-            return len(value) if isinstance(value, str | bytes) else 300
+            return string_value_length(value) if isinstance(value, str | bytes) else 300
         if isinstance(string_def, HexString):
             return 100 + len(string_def.tokens)
         if isinstance(string_def, RegexString):
