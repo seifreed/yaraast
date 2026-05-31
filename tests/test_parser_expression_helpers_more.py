@@ -388,6 +388,29 @@ def test_classic_parsers_reject_string_identifier_non_logical_binary_operators()
             parser_factory().parse(source)
 
 
+def test_classic_parsers_reject_string_wildcards_outside_of_sets() -> None:
+    invalid_sources = [
+        'rule r { strings: $a = "x" condition: $a* }',
+        'rule r { strings: $a = "x" condition: $a* and true }',
+        'rule r { strings: $a = "x" condition: not $a* }',
+        'rule r { strings: $a = "x" condition: ($a*) }',
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="wildcard"):
+                parser_factory().parse(source)
+
+    valid_sources = [
+        'rule r { strings: $a = "x" condition: any of ($a*) }',
+        'rule r { strings: $a = "x" condition: for any of ($a*) : ($) }',
+    ]
+
+    for source in valid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            parser_factory().parse(source)
+
+
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:
     p = _parser_with_tokens([_t(TokenType.INTEGER, 7)])
     assert isinstance(p._parse_primary_expression(), IntegerLiteral)
@@ -416,6 +439,7 @@ def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> Non
     assert isinstance(p._parse_primary_expression(), StringIdentifier)
 
     p = _parser_with_tokens([_t(TokenType.STRING_IDENTIFIER, "$a*")])
+    p._allow_string_wildcard_reference = True
     assert isinstance(p._parse_primary_expression(), StringWildcard)
 
     p = _parser_with_tokens([_t(TokenType.STRING_COUNT, "#a")])

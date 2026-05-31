@@ -176,17 +176,22 @@ class ExpressionForMixin:
 
     def _parse_of_string_set(self) -> Expression:
         """Parse string set for 'of' expression without consuming IN/AT postfix operators."""
-        expr = self._parse_primary_expression()
+        previous_allow_wildcard = getattr(self, "_allow_string_wildcard_reference", False)
+        self._allow_string_wildcard_reference = True
+        try:
+            expr = self._parse_primary_expression()
 
-        while True:
-            if self._match(TokenType.DOT):
-                expr = self._parse_of_member_access(expr)
-            elif self._match(TokenType.LBRACKET):
-                expr = self._parse_of_bracket_access(expr)
-            elif self._match(TokenType.LPAREN):
-                expr = self._parse_of_function_call(expr)
-            else:
-                break
+            while True:
+                if self._match(TokenType.DOT):
+                    expr = self._parse_of_member_access(expr)
+                elif self._match(TokenType.LBRACKET):
+                    expr = self._parse_of_bracket_access(expr)
+                elif self._match(TokenType.LPAREN):
+                    expr = self._parse_of_function_call(expr)
+                else:
+                    break
+        finally:
+            self._allow_string_wildcard_reference = previous_allow_wildcard
 
         return expr
 

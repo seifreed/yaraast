@@ -85,6 +85,9 @@ class ExpressionPrimaryMixin:
                 msg = "wrong use of anonymous string"
                 raise ParserError(msg, token)
             if name.endswith("*"):
+                if not self._can_use_string_wildcard_reference():
+                    msg = "String wildcards can only be used in of string sets"
+                    raise ParserError(msg, token)
                 return self._set_node_location_from_token(StringWildcard(pattern=name), token)
             return self._set_node_location_from_token(StringIdentifier(name=name), token)
 
@@ -134,6 +137,9 @@ class ExpressionPrimaryMixin:
 
     def _can_use_anonymous_string_reference(self) -> bool:
         return bool(getattr(self, "_allow_anonymous_string_reference", False))
+
+    def _can_use_string_wildcard_reference(self) -> bool:
+        return bool(getattr(self, "_allow_string_wildcard_reference", False))
 
     def _parse_keyword_expression(self) -> Expression | None:
         """Parse keyword expressions (filesize, entrypoint, them)."""

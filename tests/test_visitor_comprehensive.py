@@ -359,7 +359,7 @@ class TestBaseVisitorComprehensive:
                 $a = "test"
                 $b = "hello"
             condition:
-                #a > 2 and @a[1] < 100 and !a[0] > 10 and $*
+                #a > 2 and @a[1] < 100 and !a[0] > 10 and any of ($*)
         }
         """
 
