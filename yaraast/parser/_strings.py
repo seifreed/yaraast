@@ -55,6 +55,7 @@ class StringParsingMixin:
 
             start_token = self._advance()
             identifier = start_token.value
+            self._validate_string_definition_identifier(str(identifier), start_token)
 
             # Handle anonymous strings (just "$")
             is_anonymous = identifier == "$"
@@ -126,6 +127,13 @@ class StringParsingMixin:
                 raise ParserError(msg, self._peek())
 
         return strings
+
+    @staticmethod
+    def _validate_string_definition_identifier(identifier: str, token) -> None:
+        if identifier == "$" or not identifier.endswith("*"):
+            return
+        msg = f'Invalid string definition identifier "{identifier}"'
+        raise ParserError(msg, token)
 
     def _parse_string_modifiers(
         self,

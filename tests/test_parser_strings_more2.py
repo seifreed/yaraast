@@ -82,6 +82,16 @@ def test_anonymous_string_internal_names_do_not_collide_with_explicit_names(
     assert "$anon_2" not in CodeGenerator().generate(ast)
 
 
+@pytest.mark.parametrize("parser", [Parser(), CommentAwareParser()])
+def test_parse_rejects_wildcard_string_definition_identifier(
+    parser: Parser | CommentAwareParser,
+) -> None:
+    source = 'rule r { strings: $* = "x" condition: all of them }'
+
+    with pytest.raises(ParserError, match="Invalid string definition identifier"):
+        parser.parse(source)
+
+
 def test_parse_rejects_empty_hex_strings() -> None:
     source = "rule r { strings: $a = { } condition: $a }"
 

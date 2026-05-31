@@ -357,6 +357,7 @@ class CommentAwareParser(Parser):
 
             identifier = self._peek().value
             self._advance()
+            self._validate_string_definition_identifier(str(identifier), start_token)
 
             # Generate unique identifier for anonymous strings
             is_anonymous = identifier == "$"
