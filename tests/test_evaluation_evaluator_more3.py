@@ -116,6 +116,66 @@ def _build_minimal_pe_without_size_of_headers(entrypoint: int = 0x200) -> bytes:
     return bytes(data)
 
 
+def _build_minimal_elf32(
+    *,
+    entrypoint: int = 0x8048000,
+    load_segment: bool,
+) -> bytes:
+    data = bytearray(0x240)
+    data[:16] = b"\x7fELF" + bytes([1, 1, 1]) + b"\x00" * 9
+    program_header_offset = 0x34 if load_segment else 0
+    program_header_count = 1 if load_segment else 0
+    section_header_offset = 0x100
+    struct.pack_into(
+        "<HHIIIIIHHHHHH",
+        data,
+        16,
+        2,
+        3,
+        1,
+        entrypoint,
+        program_header_offset,
+        section_header_offset,
+        0,
+        52,
+        32,
+        program_header_count,
+        40,
+        2,
+        0,
+    )
+    if load_segment:
+        struct.pack_into(
+            "<IIIIIIII",
+            data,
+            program_header_offset,
+            1,
+            0x200,
+            0x8048000,
+            0x8048000,
+            0x20,
+            0x1000,
+            5,
+            0x1000,
+        )
+    struct.pack_into(
+        "<IIIIIIIIII",
+        data,
+        section_header_offset + 40,
+        0,
+        1,
+        6,
+        0x8048000,
+        0x200,
+        0x20,
+        0,
+        0,
+        16,
+        0,
+    )
+    return bytes(data)
+
+
 def test_identifier_and_literal_paths() -> None:
     ev = YaraEvaluator(data=b"abc")
     ev.context.variables["x"] = 7
@@ -828,6 +888,34 @@ def test_elf_invalid_files_leave_elf_fields_undefined(data: bytes) -> None:
         """)
 
     assert YaraEvaluator(data=data).evaluate_file(ast) == {"invalid_elf_fields": False}
+
+
+def test_elf_entry_point_is_undefined_without_load_segment() -> None:
+    ast = Parser().parse("""
+        import "elf"
+        rule unmapped_elf_entrypoint {
+            condition:
+                defined elf.entry_point or elf.entry_point == 0x8048000
+        }
+        """)
+
+    data = _build_minimal_elf32(load_segment=False)
+    assert YaraEvaluator(data=data).evaluate_file(ast) == {"unmapped_elf_entrypoint": False}
+
+
+def test_elf_entry_point_maps_virtual_address_through_load_segment() -> None:
+    ast = Parser().parse("""
+        import "elf"
+        rule mapped_elf_entrypoint {
+            condition:
+                defined elf.entry_point and
+                elf.entry_point == 0x300 and
+                elf.entry_point != 0x8048100
+        }
+        """)
+
+    data = _build_minimal_elf32(entrypoint=0x8048100, load_segment=True)
+    assert YaraEvaluator(data=data).evaluate_file(ast) == {"mapped_elf_entrypoint": True}
 
 
 def test_dotnet_invalid_files_leave_dotnet_scalar_fields_undefined() -> None:

@@ -629,7 +629,7 @@ class MockELF:
         self.type = struct.unpack(f"{endian}H", self.data[16:18])[0]
         self.machine = struct.unpack(f"{endian}H", self.data[18:20])[0]
         if elf_class == 1:
-            self.entry_point = struct.unpack(f"{endian}I", self.data[24:28])[0]
+            entry_point = struct.unpack(f"{endian}I", self.data[24:28])[0]
             program_header_offset = struct.unpack(f"{endian}I", self.data[28:32])[0]
             section_header_offset = struct.unpack(f"{endian}I", self.data[32:36])[0]
             program_header_size = struct.unpack(f"{endian}H", self.data[42:44])[0]
@@ -637,7 +637,7 @@ class MockELF:
             section_header_size = struct.unpack(f"{endian}H", self.data[46:48])[0]
             section_header_count = struct.unpack(f"{endian}H", self.data[48:50])[0]
         else:
-            self.entry_point = struct.unpack(f"{endian}Q", self.data[24:32])[0]
+            entry_point = struct.unpack(f"{endian}Q", self.data[24:32])[0]
             program_header_offset = struct.unpack(f"{endian}Q", self.data[32:40])[0]
             section_header_offset = struct.unpack(f"{endian}Q", self.data[40:48])[0]
             program_header_size = struct.unpack(f"{endian}H", self.data[54:56])[0]
@@ -676,6 +676,7 @@ class MockELF:
             program_header_size,
             program_header_count,
         )
+        self.entry_point = self._virtual_address_to_offset(entry_point)
 
     def _parse_section_headers(
         self,
@@ -765,6 +766,18 @@ class MockELF:
                     "alignment": alignment,
                 }
             )
+
+    def _virtual_address_to_offset(self, virtual_address: int) -> int | YaraUndefinedValue:
+        for segment in self.segments:
+            if segment["type"] != 1:
+                continue
+            segment_start = segment["virtual_address"]
+            segment_size = segment["memory_size"]
+            if segment_size <= 0:
+                continue
+            if segment_start <= virtual_address < segment_start + segment_size:
+                return segment["offset"] + (virtual_address - segment_start)
+        return YARA_UNDEFINED
 
 
 # ---------------------------------------------------------------------------

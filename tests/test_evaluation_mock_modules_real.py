@@ -301,7 +301,7 @@ def test_mock_elf_math_dotnet_and_registry_branches() -> None:
     elf = MockELF(elf_data)
     assert elf.type == 3
     assert elf.machine == 0x3E
-    assert elf.entry_point == 0
+    assert elf.entry_point is YARA_UNDEFINED
     assert elf.sh_offset == 52
     assert elf.sh_entry_size == 40
     assert elf.ph_offset == 0
