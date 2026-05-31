@@ -792,6 +792,21 @@ def test_runtime_indexes_import_and_include_with_quoted_ranges(tmp_path: Path) -
     assert include_record.range.end.character == 19
 
 
+def test_runtime_indexes_import_ranges_as_utf16_columns() -> None:
+    text = '/* 😀 */ import "pe"\nrule sample { condition: true }\n'
+    line = text.splitlines()[0]
+    module_start = line.index("pe")
+    module_end = module_start + len("pe")
+    doc = DocumentContext("file://utf16-import.yar", text)
+
+    import_record = next(
+        symbol for symbol in doc.symbols() if symbol.kind == "import" and symbol.name == "pe"
+    )
+
+    assert import_record.range.start.character == utf8_col_to_utf16(line, module_start)
+    assert import_record.range.end.character == utf8_col_to_utf16(line, module_end)
+
+
 def test_runtime_resolve_symbol_prefers_symbol_records(tmp_path: Path) -> None:
     doc_path = tmp_path / "doc.yar"
     text = """

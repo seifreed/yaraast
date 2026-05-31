@@ -7,6 +7,8 @@ import re
 
 from lsprotocol.types import Position, Range
 
+from yaraast.lsp.utf16 import utf8_col_to_utf16
+
 SECTION_NAMES = ("meta", "strings", "condition", "events", "match", "outcome", "options")
 RULE_DECLARATION_RE = re.compile(r"\s*(?:(?:global|private)\s+)*rule\s+")
 REGEX_CONTEXT_CHARS = frozenset("([{,=!:<>~&|?+-*")
@@ -324,7 +326,10 @@ def find_quoted_value_range(lines: list[str], line_num: int, value: str) -> Rang
     start = line.find(quoted)
     if start < 0:
         return None
-    return make_range(line_num, start + 1, start + 1 + len(value))
+    return Range(
+        start=Position(line=line_num, character=utf8_col_to_utf16(line, start + 1)),
+        end=Position(line=line_num, character=utf8_col_to_utf16(line, start + 1 + len(value))),
+    )
 
 
 def make_range(line: int, start: int, end: int) -> Range:
