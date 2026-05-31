@@ -703,14 +703,14 @@ def test_direct_evaluate_rule_clears_matcher_state_for_rules_without_strings() -
 
 def test_evaluate_file_preserves_duplicate_rule_occurrences_and_references() -> None:
     ast = Parser().parse("""
-rule dup {
+rule dup_first {
     strings:
         $a = "a"
     condition:
         $a
 }
 
-rule dup {
+rule dup_second {
     strings:
         $b = "b"
     condition:
@@ -722,6 +722,8 @@ rule caller {
         dup
 }
 """)
+    ast.rules[0].name = "dup"
+    ast.rules[1].name = "dup"
 
     assert YaraEvaluator(data=b"b").evaluate_file(ast) == {
         "dup#1": False,

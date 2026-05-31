@@ -174,7 +174,7 @@ def test_complexity_string_usage_tracks_condition_string_forms() -> None:
 
 def test_complexity_metrics_preserve_duplicate_rule_occurrences() -> None:
     code = """
-    rule dup {
+    rule dup_first {
         strings:
             $a = "a"
             $unused_first = "unused"
@@ -182,7 +182,7 @@ def test_complexity_metrics_preserve_duplicate_rule_occurrences() -> None:
             $a
     }
 
-    rule dup {
+    rule dup_second {
         strings:
             $b = "b"
             $unused_second = "unused"
@@ -191,6 +191,8 @@ def test_complexity_metrics_preserve_duplicate_rule_occurrences() -> None:
     }
     """
     ast = Parser().parse(dedent(code))
+    ast.rules[0].name = "dup"
+    ast.rules[1].name = "dup"
 
     metrics = ComplexityAnalyzer().analyze(ast)
 

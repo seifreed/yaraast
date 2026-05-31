@@ -119,7 +119,7 @@ def test_large_file_split_preserves_top_level_extensions() -> None:
         assert ast.namespaces == parsed.namespaces
 
 
-def test_complexity_summary_preserves_duplicate_rule_names(tmp_path: Path) -> None:
+def test_complexity_summary_rejects_duplicate_rule_names(tmp_path: Path) -> None:
     rule_file = tmp_path / "duplicates.yar"
     rule_file.write_text(
         """
@@ -133,8 +133,10 @@ rule dup { condition: false }
 
     result = processor.process_files([rule_file], BatchOperation.COMPLEXITY)
 
-    assert result.successful_count == 1
-    assert list(result.summary) == ["dup#1", "dup#2"]
+    assert result.successful_count == 0
+    assert result.failed_count == 1
+    assert result.summary == {}
+    assert "Failed to parse" in result.errors[0]
 
     large_results = processor.process_large_file(
         rule_file,
@@ -142,10 +144,12 @@ rule dup { condition: false }
         output_dir=tmp_path / "out",
         split_rules=True,
     )
-    large_summary = large_results[BatchOperation.COMPLEXITY].summary
+    large_result = large_results[BatchOperation.COMPLEXITY]
 
-    assert large_results[BatchOperation.COMPLEXITY].successful_count == 2
-    assert list(large_summary) == ["dup#1", "dup#2"]
+    assert large_result.successful_count == 0
+    assert large_result.failed_count == 1
+    assert large_result.summary == {}
+    assert "Failed to parse" in large_result.errors[0]
 
 
 def test_batch_processor_accepts_yarax_sources_and_files(tmp_path: Path) -> None:

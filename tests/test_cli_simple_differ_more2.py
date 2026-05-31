@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from yaraast.ast.base import YaraFile
 from yaraast.cli.simple_differ import (
     SimpleASTDiffer,
     SimpleDiffer,
@@ -15,6 +16,22 @@ from yaraast.cli.simple_differ import (
 )
 from yaraast.parser import Parser
 from yaraast.yarax.parser import YaraXParser
+
+
+class _QueuedParser(Parser):
+    def __init__(self, asts: list[YaraFile]) -> None:
+        super().__init__()
+        self.asts = asts
+
+    def parse(self, text: str | None = None) -> YaraFile:
+        return self.asts.pop(0)
+
+
+def _duplicate_named_ast(source: str, duplicate_name: str) -> YaraFile:
+    ast = Parser().parse(source)
+    for rule in ast.rules:
+        rule.name = duplicate_name
+    return ast
 
 
 def test_simple_differ_line_changes() -> None:
@@ -64,16 +81,18 @@ def test_simple_ast_differ_diff_files_detects_changed_duplicate_rule_occurrence(
     file1 = tmp_path / "old.yar"
     file2 = tmp_path / "new.yar"
 
-    file1.write_text(
-        "rule dup { condition: true }\nrule dup { condition: 1 }\n",
-        encoding="utf-8",
+    file1.write_text("old", encoding="utf-8")
+    file2.write_text("new", encoding="utf-8")
+    old_ast = _duplicate_named_ast(
+        "rule dup_first { condition: true }\nrule dup_second { condition: 1 }\n",
+        "dup",
     )
-    file2.write_text(
-        "rule dup { condition: false }\nrule dup { condition: 1 }\n",
-        encoding="utf-8",
+    new_ast = _duplicate_named_ast(
+        "rule dup_first { condition: false }\nrule dup_second { condition: 1 }\n",
+        "dup",
     )
 
-    result = SimpleASTDiffer().diff_files(file1, file2)
+    result = SimpleASTDiffer(parser=_QueuedParser([old_ast, new_ast])).diff_files(file1, file2)
 
     assert result.has_changes is True
     assert result.modified_rules == ["dup#1"]
@@ -87,28 +106,32 @@ def test_simple_ast_differ_diff_files_preserves_duplicate_rule_adds_and_removals
     file1 = tmp_path / "old.yar"
     file2 = tmp_path / "new.yar"
 
-    file1.write_text(
+    file1.write_text("old", encoding="utf-8")
+    file2.write_text("new", encoding="utf-8")
+    old_ast = Parser().parse(
         "\n".join(
             [
                 "rule adddup { condition: true }",
-                "rule remdup { condition: true }",
-                "rule remdup { condition: false }",
+                "rule remdup_first { condition: true }",
+                "rule remdup_second { condition: false }",
             ]
-        ),
-        encoding="utf-8",
+        )
     )
-    file2.write_text(
+    old_ast.rules[1].name = "remdup"
+    old_ast.rules[2].name = "remdup"
+    new_ast = Parser().parse(
         "\n".join(
             [
-                "rule adddup { condition: true }",
-                "rule adddup { condition: false }",
+                "rule adddup_first { condition: true }",
+                "rule adddup_second { condition: false }",
                 "rule remdup { condition: true }",
             ]
-        ),
-        encoding="utf-8",
+        )
     )
+    new_ast.rules[0].name = "adddup"
+    new_ast.rules[1].name = "adddup"
 
-    result = SimpleASTDiffer().diff_files(file1, file2)
+    result = SimpleASTDiffer(parser=_QueuedParser([old_ast, new_ast])).diff_files(file1, file2)
 
     assert result.added_rules == ["adddup#2"]
     assert result.removed_rules == ["remdup#2"]

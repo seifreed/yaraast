@@ -71,20 +71,22 @@ def test_metrics_helper_text_functions(
 
 def test_string_pattern_analysis_preserves_duplicate_rule_names() -> None:
     ast = _parse_yara("""
-        rule dup {
+        rule dup_first {
             strings:
                 $a = "one"
             condition:
                 $a
         }
 
-        rule dup {
+        rule dup_second {
             strings:
                 $b = "two"
             condition:
                 $b
         }
         """)
+    ast.rules[0].name = "dup"
+    ast.rules[1].name = "dup"
 
     analysis = _analyze_string_patterns(ast)
 

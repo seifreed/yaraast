@@ -39,7 +39,7 @@ rule bad1 {
         $a
 }
 
-rule bad1 {
+rule bad1_extra {
     condition:
         true
 }
@@ -49,6 +49,7 @@ rule pe_only {
         pe.is_pe
 }
 """)
+    ast.rules[1].name = "bad1"
     ast.rules[0].strings.append(PlainString(identifier="$dup", value="duplicate"))
     analyzer = BestPracticesAnalyzer()
     result = analyzer.analyze(ast)

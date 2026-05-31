@@ -286,7 +286,16 @@ class RuleParsingMixin:
             msg = "Expected rule name"
             raise ParserError(msg, self._peek())
 
-        return self._previous().value
+        rule_token = self._previous()
+        rule_name = str(rule_token.value)
+        self._register_rule_name(rule_name, rule_token)
+        return rule_name
+
+    def _register_rule_name(self, rule_name: str, rule_token: Any) -> None:
+        if rule_name in self._rule_names:
+            msg = f'duplicated identifier "{rule_name}"'
+            raise ParserError(msg, rule_token)
+        self._rule_names.add(rule_name)
 
     def _parse_rule_tags(self) -> list[Tag]:
         """Parse rule tags after colon."""

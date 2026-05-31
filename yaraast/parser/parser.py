@@ -61,6 +61,7 @@ class Parser(
         self.tokens: Sequence[IToken] = []
         self.current = 0
         self._extern_rule_names: set[tuple[str | None, str]] = set()
+        self._rule_names: set[str] = set()
 
         if text is not None:
             if self._injected_lexer is not None:
@@ -106,6 +107,7 @@ class Parser(
         pragmas = []
         top_level_nodes = []
         self._extern_rule_names = set()
+        self._rule_names = set()
 
         while not self._is_at_end():
             if self._check_file_pragma():

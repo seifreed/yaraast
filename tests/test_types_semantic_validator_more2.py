@@ -139,10 +139,12 @@ def test_validate_rule_detects_invalid_condition_type() -> None:
 
 
 def test_validate_file_rejects_duplicate_rule_names() -> None:
-    ast = Parser().parse("""
-        rule dup { condition: true }
-        rule dup { condition: true }
-        """)
+    ast = YaraFile(
+        rules=[
+            Rule(name="dup", condition=BooleanLiteral(True)),
+            Rule(name="dup", condition=BooleanLiteral(True)),
+        ]
+    )
 
     result = SemanticValidator().validate(ast)
 

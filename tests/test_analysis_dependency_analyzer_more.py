@@ -101,12 +101,12 @@ rule caller {
 
 def test_dependency_analyzer_preserves_duplicate_rule_occurrences() -> None:
     ast = Parser().parse("""
-rule dup {
+rule dup_first {
     condition:
         true
 }
 
-rule dup {
+rule dup_second {
     condition:
         helper
 }
@@ -121,6 +121,8 @@ rule caller {
         dup
 }
 """)
+    ast.rules[0].name = "dup"
+    ast.rules[1].name = "dup"
     analyzer = DependencyAnalyzer()
 
     results = analyzer.analyze(ast)

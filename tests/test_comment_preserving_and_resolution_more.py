@@ -141,12 +141,12 @@ def test_dependency_graph_analyzes_rule_module_and_duplicate_dependencies() -> N
     ast = Parser().parse("""
 import "pe"
 
-rule dup {
+rule dup_first {
     condition:
         true
 }
 
-rule dup {
+rule dup_second {
     condition:
         helper
 }
@@ -161,6 +161,8 @@ rule caller {
         dup and pe.number_of_sections > 0
 }
 """)
+    ast.rules[0].name = "dup"
+    ast.rules[1].name = "dup"
     graph = DependencyGraph()
 
     graph.add_file(Path("rules.yar"), ast)

@@ -56,6 +56,7 @@ class CommentAwareParser(Parser):
         pragmas = []
         top_level_nodes = []
         self._extern_rule_names = set()
+        self._rule_names = set()
 
         while not self._is_at_end():
             if self._check_file_pragma():
@@ -190,7 +191,9 @@ class CommentAwareParser(Parser):
             msg = "Expected rule name"
             raise Exception(msg)
 
-        name = self._peek().value
+        name_token = self._peek()
+        name = str(name_token.value)
+        self._register_rule_name(name, name_token)
         self._advance()
         return name
 

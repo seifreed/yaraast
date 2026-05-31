@@ -177,14 +177,14 @@ rule two {
 
 def test_string_usage_analyzer_preserves_duplicate_rule_occurrences() -> None:
     ast = Parser().parse("""
-rule dup {
+rule dup_first {
     strings:
         $a = "a"
         $unused_first = "unused"
     condition:
         $a
 }
-rule dup {
+rule dup_second {
     strings:
         $b = "b"
         $unused_second = "unused"
@@ -192,6 +192,8 @@ rule dup {
         $b
 }
 """)
+    ast.rules[0].name = "dup"
+    ast.rules[1].name = "dup"
 
     analyzer = StringUsageAnalyzer()
     results = analyzer.analyze(ast)

@@ -178,14 +178,14 @@ def test_dependency_graph_preserves_duplicate_rule_occurrences() -> None:
     ast = Parser().parse("""
 import "pe"
 
-rule dup {
+rule dup_first {
     strings:
         $a = "a"
     condition:
         $a and pe.number_of_sections > 0
 }
 
-rule dup {
+rule dup_second {
     strings:
         $b = "b"
     condition:
@@ -202,6 +202,8 @@ rule caller {
         dup
 }
 """)
+    ast.rules[0].name = "dup"
+    ast.rules[1].name = "dup"
     gen = DependencyGraphGenerator()
 
     gen.visit(ast)
