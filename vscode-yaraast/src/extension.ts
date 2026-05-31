@@ -28,14 +28,19 @@ let extensionContextRef: ExtensionContext | undefined;
 let outputChannel: OutputChannel | undefined;
 let traceChannel: OutputChannel | undefined;
 
+const INDENT_SIZE_KEY = 'indent_size';
+const BRACE_STYLE_KEY = 'brace_style';
+const SORT_META_KEY = 'sort_meta';
+const SORT_STRINGS_KEY = 'sort_strings';
+
 type RuntimeSettings = {
     cacheWorkspace: boolean;
     dialectMode: string;
     codeFormatting: {
-        indent_size: number;
-        brace_style: string;
-        sort_meta: boolean;
-        sort_strings: boolean;
+        [INDENT_SIZE_KEY]: number;
+        [BRACE_STYLE_KEY]: string;
+        [SORT_META_KEY]: boolean;
+        [SORT_STRINGS_KEY]: boolean;
     };
 };
 
@@ -100,14 +105,14 @@ export function activate(context: ExtensionContext): void {
         })
     );
 
-    void startLanguageServer(context);
+    void startLanguageServer();
 }
 
-export function deactivate(): Thenable<void> | undefined {
+export function deactivate(): Promise<void> | undefined {
     return stopLanguageServer();
 }
 
-async function startLanguageServer(context: ExtensionContext): Promise<void> {
+async function startLanguageServer(): Promise<void> {
     const config = getExtensionConfig();
 
     if (!config.enabled) {
@@ -184,7 +189,7 @@ async function restartServer(): Promise<void> {
 
     outputChannel?.appendLine('[info] restarting language server');
     await stopLanguageServer();
-    await startLanguageServer(extensionContextRef);
+    await startLanguageServer();
     void window.showInformationMessage('YARAAST Language Server restarted');
 }
 
@@ -634,10 +639,10 @@ function buildRuntimeSettings(): RuntimeSettings {
 
     const codeFormatting = {
         ...styleDefaults(formattingStyle),
-        indent_size: indentSize,
-        brace_style: braceStyle,
-        sort_meta: sortMeta,
-        sort_strings: sortStrings
+        [INDENT_SIZE_KEY]: indentSize,
+        [BRACE_STYLE_KEY]: braceStyle,
+        [SORT_META_KEY]: sortMeta,
+        [SORT_STRINGS_KEY]: sortStrings
     };
 
     return {
@@ -650,32 +655,32 @@ function buildRuntimeSettings(): RuntimeSettings {
 function styleDefaults(style: string): RuntimeSettings['codeFormatting'] {
     if (style === 'compact') {
         return {
-            indent_size: 2,
-            brace_style: 'same_line',
-            sort_meta: false,
-            sort_strings: false
+            [INDENT_SIZE_KEY]: 2,
+            [BRACE_STYLE_KEY]: 'same_line',
+            [SORT_META_KEY]: false,
+            [SORT_STRINGS_KEY]: false
         };
     }
     if (style === 'verbose') {
         return {
-            indent_size: 4,
-            brace_style: 'new_line',
-            sort_meta: true,
-            sort_strings: true
+            [INDENT_SIZE_KEY]: 4,
+            [BRACE_STYLE_KEY]: 'new_line',
+            [SORT_META_KEY]: true,
+            [SORT_STRINGS_KEY]: true
         };
     }
     if (style === 'readable') {
         return {
-            indent_size: 4,
-            brace_style: 'same_line',
-            sort_meta: false,
-            sort_strings: false
+            [INDENT_SIZE_KEY]: 4,
+            [BRACE_STYLE_KEY]: 'same_line',
+            [SORT_META_KEY]: false,
+            [SORT_STRINGS_KEY]: false
         };
     }
     return {
-        indent_size: 4,
-        brace_style: 'same_line',
-        sort_meta: false,
-        sort_strings: false
+        [INDENT_SIZE_KEY]: 4,
+        [BRACE_STYLE_KEY]: 'same_line',
+        [SORT_META_KEY]: false,
+        [SORT_STRINGS_KEY]: false
     };
 }

@@ -232,9 +232,9 @@
     "@types/vscode": "^1.75.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "@vscode/vsce": "^3.9.1",
     "eslint": "^9.0.0",
-    "typescript": "^5.0.0",
-    "@vscode/vsce": "^2.19.0"
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"

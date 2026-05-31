@@ -11,12 +11,12 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_JSON = ROOT / "package.json"
 EXPECTED_FILES = {
-    "extension/CHANGELOG.md",
     "extension/LICENSE.txt",
-    "extension/README.md",
+    "extension/changelog.md",
     "extension/language-configuration.json",
     "extension/out/extension.js",
     "extension/package.json",
+    "extension/readme.md",
     "extension/snippets/yara.code-snippets",
     "extension/syntaxes/yara.tmLanguage.json",
     "extension/icons/yara-dark.png",

@@ -13,6 +13,10 @@ let client;
 let extensionContextRef;
 let outputChannel;
 let traceChannel;
+const INDENT_SIZE_KEY = 'indent_size';
+const BRACE_STYLE_KEY = 'brace_style';
+const SORT_META_KEY = 'sort_meta';
+const SORT_STRINGS_KEY = 'sort_strings';
 function activate(context) {
     extensionContextRef = context;
     outputChannel = vscode_1.window.createOutputChannel('YARAAST Language Server');
@@ -57,12 +61,12 @@ function activate(context) {
     }), vscode_1.workspace.onDidChangeConfiguration(async (event) => {
         await handleConfigurationChange(event);
     }));
-    void startLanguageServer(context);
+    void startLanguageServer();
 }
 function deactivate() {
     return stopLanguageServer();
 }
-async function startLanguageServer(context) {
+async function startLanguageServer() {
     const config = getExtensionConfig();
     if (!config.enabled) {
         outputChannel?.appendLine('[info] language server disabled by configuration');
@@ -124,7 +128,7 @@ async function restartServer() {
     }
     outputChannel?.appendLine('[info] restarting language server');
     await stopLanguageServer();
-    await startLanguageServer(extensionContextRef);
+    await startLanguageServer();
     void vscode_1.window.showInformationMessage('YARAAST Language Server restarted');
 }
 async function selectDialectMode() {
@@ -506,10 +510,10 @@ function buildRuntimeSettings() {
     const sortStrings = config.get('yaraast.formatting.sortStrings', false);
     const codeFormatting = {
         ...styleDefaults(formattingStyle),
-        indent_size: indentSize,
-        brace_style: braceStyle,
-        sort_meta: sortMeta,
-        sort_strings: sortStrings
+        [INDENT_SIZE_KEY]: indentSize,
+        [BRACE_STYLE_KEY]: braceStyle,
+        [SORT_META_KEY]: sortMeta,
+        [SORT_STRINGS_KEY]: sortStrings
     };
     return {
         cacheWorkspace: config.get('yaraast.lsp.cacheWorkspace', true),
@@ -520,33 +524,33 @@ function buildRuntimeSettings() {
 function styleDefaults(style) {
     if (style === 'compact') {
         return {
-            indent_size: 2,
-            brace_style: 'same_line',
-            sort_meta: false,
-            sort_strings: false
+            [INDENT_SIZE_KEY]: 2,
+            [BRACE_STYLE_KEY]: 'same_line',
+            [SORT_META_KEY]: false,
+            [SORT_STRINGS_KEY]: false
         };
     }
     if (style === 'verbose') {
         return {
-            indent_size: 4,
-            brace_style: 'new_line',
-            sort_meta: true,
-            sort_strings: true
+            [INDENT_SIZE_KEY]: 4,
+            [BRACE_STYLE_KEY]: 'new_line',
+            [SORT_META_KEY]: true,
+            [SORT_STRINGS_KEY]: true
         };
     }
     if (style === 'readable') {
         return {
-            indent_size: 4,
-            brace_style: 'same_line',
-            sort_meta: false,
-            sort_strings: false
+            [INDENT_SIZE_KEY]: 4,
+            [BRACE_STYLE_KEY]: 'same_line',
+            [SORT_META_KEY]: false,
+            [SORT_STRINGS_KEY]: false
         };
     }
     return {
-        indent_size: 4,
-        brace_style: 'same_line',
-        sort_meta: false,
-        sort_strings: false
+        [INDENT_SIZE_KEY]: 4,
+        [BRACE_STYLE_KEY]: 'same_line',
+        [SORT_META_KEY]: false,
+        [SORT_STRINGS_KEY]: false
     };
 }
 //# sourceMappingURL=extension.js.map
