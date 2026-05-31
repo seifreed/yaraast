@@ -181,6 +181,13 @@ def test_lexer_rejects_raw_newline_inside_regex() -> None:
         Lexer("rule r { condition: /a\n/ }").tokenize()
 
 
+def test_lexer_accepts_carriage_return_inside_regex() -> None:
+    tokens = Lexer("rule r { condition: /a\r/ and /a\\\r/ }").tokenize()
+    regex_values = [token.value for token in tokens if token.type == TokenType.REGEX]
+
+    assert regex_values == ["a\r", "a\\\r"]
+
+
 def test_lexer_rejects_slash_as_division_operator() -> None:
     with pytest.raises(LexerError, match="Unexpected character: /"):
         Lexer("rule r { condition: 4 / 2 == 2 }").tokenize()

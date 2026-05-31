@@ -126,6 +126,19 @@ def test_parse_rejects_raw_newline_inside_regex(source: str) -> None:
 
 
 @pytest.mark.parametrize(
+    "source",
+    [
+        "rule r { strings: $a = /a\r/ condition: $a }",
+        'rule r { condition: "abc" matches /a\\\r/ }',
+    ],
+)
+def test_parse_accepts_carriage_return_inside_regex(source: str) -> None:
+    for parser_factory in (Parser, CommentAwareParser):
+        ast = parser_factory().parse(source)
+        assert len(ast.rules) == 1
+
+
+@pytest.mark.parametrize(
     "pattern",
     [
         "+",

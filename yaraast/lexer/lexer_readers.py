@@ -96,13 +96,13 @@ def read_regex(lexer) -> Token:
     value_chars = []
     lexer._advance()
     while lexer._current_char() and lexer._current_char() != "/":
-        if lexer._current_char() in "\n\r":
+        if lexer._current_char() == "\n":
             raise LexerError("Unterminated regex", start_line, start_column)
         if lexer._current_char() == "\\":
             value_chars.append(lexer._current_char())
             lexer._advance()
             current = lexer._current_char()
-            if current in ("\n", "\r"):
+            if current == "\n":
                 raise LexerError("Unterminated regex", start_line, start_column)
             if current:
                 value_chars.append(current)
