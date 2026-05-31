@@ -6,6 +6,7 @@ from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     BinaryExpression,
     Expression,
+    IntegerLiteral,
     ParenthesesExpression,
     RangeExpression,
     StringIdentifier,
@@ -110,6 +111,7 @@ class ExpressionBinaryMixin:
             expr = self._set_node_location_from_nodes(
                 RangeExpression(low=expr, high=high), expr, high
             )
+            self._validate_static_range_bounds(expr, self._previous())
 
         return expr
 
@@ -253,6 +255,39 @@ class ExpressionBinaryMixin:
         from yaraast.ast.expressions import StringCount
 
         return isinstance(operand.subject, StringCount)
+
+    def _validate_static_range_bounds(self, range_expr: RangeExpression, token) -> None:
+        low = self._static_integer_value(range_expr.low)
+        high = self._static_integer_value(range_expr.high)
+        if low is not None and low < 0:
+            msg = "Range lower bound can not be negative"
+            raise ParserError(msg, token)
+        if low is not None and high is not None and high < low:
+            msg = "Range lower bound must be less than upper bound"
+            raise ParserError(msg, token)
+
+    def _static_integer_value(self, expr: Expression) -> int | None:
+        while isinstance(expr, ParenthesesExpression):
+            expr = expr.expression
+        if isinstance(expr, IntegerLiteral):
+            return expr.value
+        if isinstance(expr, UnaryExpression):
+            value = self._static_integer_value(expr.operand)
+            if value is None:
+                return None
+            if expr.operator == "-":
+                return -value
+            if expr.operator == "~":
+                return ~value
+        if isinstance(expr, BinaryExpression) and expr.operator in {"+", "-"}:
+            left = self._static_integer_value(expr.left)
+            right = self._static_integer_value(expr.right)
+            if left is None or right is None:
+                return None
+            if expr.operator == "+":
+                return left + right
+            return left - right
+        return None
 
     def _parse_unary_expression(self) -> Expression:
         """Parse unary expression."""

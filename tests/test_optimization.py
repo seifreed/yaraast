@@ -1,5 +1,10 @@
 """Test optimization functionality."""
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import InExpression
+from yaraast.ast.expressions import BinaryExpression, IntegerLiteral, RangeExpression
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
 from yaraast.codegen import CodeGenerator
 from yaraast.optimization import DeadCodeEliminator, ExpressionOptimizer, RuleOptimizer
 from yaraast.parser import Parser
@@ -164,19 +169,19 @@ rule nested_test {
 
 def test_range_optimization() -> None:
     """Test range expression optimization."""
-    yara_code = """
-rule range_test {
-    strings:
-        $a = "test"
-
-    condition:
-        $a in (100..50) or    // Invalid range, always false
-        $a in (0..1000)
-}
-"""
-
-    parser = Parser()
-    ast = parser.parse(yara_code)
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="range_test",
+                strings=[PlainString("$a", value="test")],
+                condition=BinaryExpression(
+                    InExpression("$a", RangeExpression(IntegerLiteral(100), IntegerLiteral(50))),
+                    "or",
+                    InExpression("$a", RangeExpression(IntegerLiteral(0), IntegerLiteral(1000))),
+                ),
+            )
+        ]
+    )
 
     optimizer = RuleOptimizer()
     _, stats = optimizer.optimize(ast)

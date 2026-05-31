@@ -74,7 +74,7 @@ class TestOfInSyntax:
         with pytest.raises(ParserError, match="Invalid operand for numeric unary operator"):
             Parser().parse(yara_code)
 
-    @pytest.mark.parametrize("condition", ["-#a in (-1..0)", "~#a < 0", "not 1 of them"])
+    @pytest.mark.parametrize("condition", ["-#a in (0..1)", "~#a < 0", "not 1 of them"])
     def test_valid_unary_quantifier_neighbors_still_parse(self, condition: str) -> None:
         yara_code = f"""
         rule test {{
@@ -99,6 +99,71 @@ class TestOfInSyntax:
         """
         with pytest.raises(ParserError, match="IN keyword can only be used"):
             Parser().parse(yara_code)
+
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "$a in (-1..0)",
+            "#a in (-1..0)",
+            "all of them in (-1..0)",
+            "$a in (0-1..0)",
+            "for any i in (-1..1) : (true)",
+        ],
+    )
+    def test_static_ranges_reject_negative_lower_bounds(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+        with pytest.raises(ParserError, match="Range lower bound can not be negative"):
+            Parser().parse(yara_code)
+
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "$a in (0..-1)",
+            "#a in (0..-1)",
+            "all of them in (0..-1)",
+            "$a in (0..0-1)",
+            "for any i in (0..-1) : (true)",
+        ],
+    )
+    def test_static_ranges_reject_inverted_bounds(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+        with pytest.raises(ParserError, match="Range lower bound must be less than upper bound"):
+            Parser().parse(yara_code)
+
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "$a at -1",
+            "all of them at -1",
+            "$a in (uint8(0)-1..0)",
+            "$a in (0..uint8(0)-1)",
+        ],
+    )
+    def test_negative_offsets_and_dynamic_ranges_still_parse(self, condition: str) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test"
+            condition:
+                {condition}
+        }}
+        """
+        ast = Parser().parse(yara_code)
+        assert len(ast.rules) == 1
 
     def test_all_of_wildcard_in_range(self) -> None:
         """Test 'all of ($a*) in (range)' syntax."""

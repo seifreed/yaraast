@@ -272,9 +272,11 @@ class ExpressionPostfixMixin:
             msg = "Expected ')' after range"
             raise ParserError(msg, self._peek())
 
-        return self._set_node_location_from_tokens(
+        range_expr = self._set_node_location_from_tokens(
             RangeExpression(low=low, high=high), start_token, self._previous()
         )
+        self._validate_static_range_bounds(range_expr, self._previous())
+        return range_expr
 
     def _is_parenthesized_range_bound(self, expr: Expression) -> bool:
         return isinstance(expr, ParenthesesExpression) and isinstance(
