@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+import copy
 from fnmatch import fnmatchcase
 from typing import TYPE_CHECKING, Any, cast
 
@@ -160,6 +161,7 @@ class DeadCodeEliminator(ASTTransformer):
 
     def visit_yara_file(self, node: YaraFile) -> YaraFile:
         """Visit YaraFile and remove unused rules."""
+        node = copy.copy(node)
         kept_rules: list[Rule] = []
 
         for rule in node.rules:
@@ -318,8 +320,10 @@ class DeadCodeEliminator(ASTTransformer):
 
     def visit_rule(self, node: Rule) -> Rule:
         """Visit Rule and remove unused strings."""
+        usage_key = self._usage_key_for_rule(node)
+        node = copy.copy(node)
         self.current_rule = node.name
-        self.current_rule_key = self._usage_key_for_rule(node)
+        self.current_rule_key = usage_key
 
         # Remove unused strings
         if node.strings:

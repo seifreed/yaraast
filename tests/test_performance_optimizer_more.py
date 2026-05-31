@@ -44,7 +44,8 @@ def test_performance_optimizer_rule_and_file() -> None:
     assert isinstance(optimized_rule.strings[-1], RegexString)
 
     optimized_file = optimizer.optimize(ast, strategy="speed")
-    assert optimized_file is ast
+    assert optimized_file is not ast
+    assert [string.identifier for string in ast.rules[0].strings] == ["$a", "$b", "$c"]
 
     stats = optimizer.get_statistics()
     assert stats["rules_optimized"] >= 1

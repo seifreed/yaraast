@@ -24,7 +24,8 @@ def test_performance_optimizer_dispatch_and_complexity_paths() -> None:
 
     empty_rule = Rule(name="empty")
     optimized_rule = optimizer.optimize(empty_rule, strategy="speed")
-    assert optimized_rule is empty_rule
+    assert optimized_rule is not empty_rule
+    assert optimized_rule == empty_rule
 
     yara_file = YaraFile(
         rules=[Rule(name="a"), Rule(name="b", condition=Identifier(name="for loop and or"))]
@@ -60,7 +61,8 @@ def test_performance_optimizer_handles_unexpected_string_values() -> None:
     )
 
     optimized = optimizer.optimize_rule(rule, strategy="speed")
-    assert optimized is rule
+    assert optimized is not rule
+    assert optimized == rule
     assert optimizer.get_statistics()["strings_optimized"] == 0
 
     first_value = _fresh_text("abc")

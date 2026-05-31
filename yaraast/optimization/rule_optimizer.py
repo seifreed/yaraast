@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import TYPE_CHECKING, Any
 
 from yaraast.optimization.dead_code_eliminator import DeadCodeEliminator
@@ -39,7 +40,7 @@ class RuleOptimizer:
         total_dead_elims = 0
         original_rule_count = len(yara_file.rules)
 
-        current = yara_file
+        current = copy.deepcopy(yara_file)
         passes_performed = 0
         for _ in range(passes):
             # Expression optimization pass - for now just count rules with conditions
@@ -105,6 +106,7 @@ class RuleOptimizer:
 
     def optimize_rule(self, rule: Rule) -> Rule:
         """Optimize a single rule."""
+        rule = copy.deepcopy(rule)
         if rule.condition:
             rule.condition = self.expression_optimizer.optimize(rule.condition)
         return rule

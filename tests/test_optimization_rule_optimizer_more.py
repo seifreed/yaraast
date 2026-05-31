@@ -32,11 +32,12 @@ def test_rule_optimizer_does_not_count_unchanged_conditions() -> None:
 
 
 def test_rule_optimizer_counts_actual_identity_simplifications() -> None:
+    original_condition = BinaryExpression(Identifier("filesize"), "+", IntegerLiteral(0))
     ast = YaraFile(
         rules=[
             Rule(
                 name="identity",
-                condition=BinaryExpression(Identifier("filesize"), "+", IntegerLiteral(0)),
+                condition=original_condition,
             )
         ]
     )
@@ -44,6 +45,7 @@ def test_rule_optimizer_counts_actual_identity_simplifications() -> None:
     optimized, stats = RuleOptimizer().optimize(ast)
 
     assert optimized.rules[0].condition == Identifier("filesize")
+    assert ast.rules[0].condition is original_condition
     assert stats["expression_optimizations"] == 1
     assert stats["total_optimizations"] == 1
 

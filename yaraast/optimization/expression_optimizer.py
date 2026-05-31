@@ -200,6 +200,7 @@ class ExpressionOptimizer(ASTTransformer):
 
     def _optimize_rule(self, rule: Rule) -> Rule:
         """Optimize expressions in a rule."""
+        rule = copy.deepcopy(rule)
         if rule.condition:
             # Reset count for this rule to track optimizations
             optimized_condition = cast(Expression, self.visit(rule.condition))

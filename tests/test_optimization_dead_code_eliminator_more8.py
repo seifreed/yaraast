@@ -448,6 +448,27 @@ def test_dead_code_eliminator_tracks_string_usage_per_duplicate_rule_name() -> N
     assert [string.identifier for string in optimized.rules[1].strings] == ["$b"]
 
 
+def test_dead_code_eliminator_does_not_mutate_source_rules() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="strings",
+                strings=[
+                    PlainString(identifier="$used", value="used"),
+                    PlainString(identifier="$unused", value="unused"),
+                ],
+                condition=StringIdentifier("$used"),
+            )
+        ]
+    )
+
+    optimized, count = DeadCodeEliminator().eliminate(ast)
+
+    assert count == 1
+    assert [string.identifier for string in optimized.rules[0].strings] == ["$used"]
+    assert [string.identifier for string in ast.rules[0].strings] == ["$used", "$unused"]
+
+
 def test_eliminate_dead_code_single_rule_and_convenience_wrapper() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(
