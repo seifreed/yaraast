@@ -15,8 +15,8 @@ def should_be_hex(plain: PlainString) -> bool:
     return non_printable > len(values) * 0.3
 
 
-def get_hex_prefix(hex_str: HexString, length: int) -> tuple | None:
-    prefix = []
+def get_hex_prefix(hex_str: HexString, length: int) -> tuple[int | str, ...] | None:
+    prefix: list[int | str] = []
     for token in hex_str.tokens[:length]:
         if isinstance(token, HexByte):
             prefix.append(token.value)
@@ -34,8 +34,9 @@ def extract_comparison(expr: Expression) -> dict[str, Any] | None:
 
 
 def get_variable_name(expr: Expression) -> str | None:
-    if hasattr(expr, "name"):
-        return expr.name
+    name = getattr(expr, "name", None)
+    if isinstance(name, str):
+        return name
     if isinstance(expr, StringCount):
         string_id = expr.string_id
         if string_id.startswith("#"):

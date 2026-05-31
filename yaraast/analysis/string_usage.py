@@ -233,7 +233,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         self._visit_ast_value(node.quantifier)
         self._visit_string_set_value(node.string_set)
 
-    def visit_for_expression(self, node) -> None:
+    def visit_for_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self.visit(node.iterable)
         self._push_local_scope(node.variable)
@@ -242,7 +242,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         finally:
             self._pop_local_scope()
 
-    def visit_with_statement(self, node) -> None:
+    def visit_with_statement(self, node: Any) -> None:
         self._push_local_scope()
         try:
             for declaration in node.declarations:
@@ -251,11 +251,11 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         finally:
             self._pop_local_scope()
 
-    def visit_with_declaration(self, node) -> None:
+    def visit_with_declaration(self, node: Any) -> None:
         self._visit_ast_value(node.value)
         self._define_local(node.identifier)
 
-    def visit_array_comprehension(self, node) -> None:
+    def visit_array_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.iterable)
         self._push_local_scope(node.variable)
         try:
@@ -264,7 +264,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         finally:
             self._pop_local_scope()
 
-    def visit_dict_comprehension(self, node) -> None:
+    def visit_dict_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.iterable)
         names = [node.key_variable]
         if node.value_variable:
@@ -277,7 +277,7 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         finally:
             self._pop_local_scope()
 
-    def visit_lambda_expression(self, node) -> None:
+    def visit_lambda_expression(self, node: Any) -> None:
         self._push_local_scope(*node.parameters)
         try:
             self._visit_ast_value(node.body)
@@ -305,14 +305,14 @@ class StringUsageAnalyzer(BaseVisitor[None]):
         names = [part.strip() for part in name.split(",")]
         return {local_name for local_name in names if local_name}
 
-    def _visit_ast_value(self, value) -> None:
+    def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
         elif isinstance(value, list):
             for item in value:
                 self._visit_ast_value(item)
 
-    def _visit_string_set_value(self, string_set) -> None:
+    def _visit_string_set_value(self, string_set: Any) -> None:
         if isinstance(string_set, str):
             self._mark_string_set_text(string_set)
             return

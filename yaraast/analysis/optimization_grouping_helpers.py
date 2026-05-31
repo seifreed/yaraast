@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
 
+from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString
 
@@ -21,8 +23,8 @@ def hex_to_string(hex_str: HexString) -> str:
     return " ".join(parts)
 
 
-def group_duplicate_strings(rules: list[Rule]) -> dict[tuple[str, str], list[str]]:
-    string_to_rules = defaultdict(list)
+def group_duplicate_strings(rules: list[Rule]) -> dict[tuple[str, str | bytes], list[str]]:
+    string_to_rules: dict[tuple[str, str | bytes], list[str]] = defaultdict(list)
     for rule in rules:
         for string_def in rule.strings:
             if isinstance(string_def, PlainString):
@@ -36,7 +38,7 @@ def group_duplicate_strings(rules: list[Rule]) -> dict[tuple[str, str], list[str
 
 
 def group_rules_by_pattern(
-    rules: list[Rule], pattern_func
+    rules: list[Rule], pattern_func: Callable[[Expression], str]
 ) -> dict[tuple[int, str | None], list[str]]:
     rule_patterns: dict[tuple[int, str | None], list[str]] = {}
     for rule in rules:

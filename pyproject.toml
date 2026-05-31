@@ -220,7 +220,6 @@ module = [
     "yaraast",
     "yaraast.parser.*",
     "yaraast.lexer.*",
-    "yaraast.analysis.*",
     "yaraast.codegen.*",
     "yaraast.serialization.*",
     "yaraast.yarax.*",

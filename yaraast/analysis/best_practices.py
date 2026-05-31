@@ -33,6 +33,7 @@ from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
     from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
+    from yaraast.ast.expressions import StringCount, StringLength, StringOffset
 
 
 @dataclass
@@ -398,7 +399,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         for string_def in self._current_rule.strings:
             self._mark_string_usage(string_def.identifier)
 
-    def _visit_ast_value(self, value) -> None:
+    def _visit_ast_value(self, value: Any) -> None:
         if hasattr(value, "accept"):
             self.visit(value)
             return
@@ -406,7 +407,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
             for item in value:
                 self._visit_ast_value(item)
 
-    def _visit_string_set_value(self, string_set) -> None:
+    def _visit_string_set_value(self, string_set: Any) -> None:
         if isinstance(string_set, str):
             self._mark_string_set_text(string_set)
             return
@@ -442,14 +443,14 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
     def visit_string_wildcard(self, node: StringWildcard) -> None:
         self._mark_string_set_text(node.pattern)
 
-    def visit_string_count(self, node) -> None:
+    def visit_string_count(self, node: StringCount) -> None:
         self._mark_condition_string_usage(node.string_id)
 
-    def visit_string_offset(self, node) -> None:
+    def visit_string_offset(self, node: StringOffset) -> None:
         self._mark_condition_string_usage(node.string_id)
         super().visit_string_offset(node)
 
-    def visit_string_length(self, node) -> None:
+    def visit_string_length(self, node: StringLength) -> None:
         self._mark_condition_string_usage(node.string_id)
         super().visit_string_length(node)
 
@@ -475,7 +476,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         self._visit_ast_value(node.quantifier)
         self._visit_string_set_value(node.string_set)
 
-    def visit_for_expression(self, node) -> None:
+    def visit_for_expression(self, node: Any) -> None:
         self._visit_ast_value(node.quantifier)
         self.visit(node.iterable)
         self._push_local_scope(node.variable)
@@ -484,7 +485,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         finally:
             self._pop_local_scope()
 
-    def visit_with_statement(self, node) -> None:
+    def visit_with_statement(self, node: Any) -> None:
         self._push_local_scope()
         try:
             for declaration in node.declarations:
@@ -493,11 +494,11 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         finally:
             self._pop_local_scope()
 
-    def visit_with_declaration(self, node) -> None:
+    def visit_with_declaration(self, node: Any) -> None:
         self._visit_ast_value(node.value)
         self._define_local(node.identifier)
 
-    def visit_array_comprehension(self, node) -> None:
+    def visit_array_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.iterable)
         self._push_local_scope(node.variable)
         try:
@@ -506,7 +507,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         finally:
             self._pop_local_scope()
 
-    def visit_dict_comprehension(self, node) -> None:
+    def visit_dict_comprehension(self, node: Any) -> None:
         self._visit_ast_value(node.iterable)
         names = [node.key_variable]
         if node.value_variable:
@@ -519,7 +520,7 @@ class BestPracticesAnalyzer(BaseVisitor[None]):
         finally:
             self._pop_local_scope()
 
-    def visit_lambda_expression(self, node) -> None:
+    def visit_lambda_expression(self, node: Any) -> None:
         self._push_local_scope(*node.parameters)
         try:
             self._visit_ast_value(node.body)

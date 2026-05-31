@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Sequence
+from typing import Any
 
 from yaraast.analysis.optimization_grouping_helpers import (
     group_duplicate_strings,
@@ -13,6 +15,7 @@ from yaraast.analysis.optimization_helpers import (
     get_hex_prefix,
     should_be_hex,
 )
+from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString
 
 LOWER_BOUND_OPERATORS = frozenset({">", ">="})
@@ -33,9 +36,9 @@ def _plain_value_hex(value: str | bytes) -> str:
     return " ".join(f"{byte:02X}" for byte in _plain_value_bytes(value))
 
 
-def analyze_string_definitions(analyzer, rule) -> None:
-    hex_strings = []
-    plain_strings = []
+def analyze_string_definitions(analyzer: Any, rule: Rule) -> None:
+    hex_strings: list[HexString] = []
+    plain_strings: list[PlainString] = []
     for string_def in rule.strings:
         if isinstance(string_def, HexString):
             hex_strings.append(string_def)
@@ -59,8 +62,8 @@ def analyze_string_definitions(analyzer, rule) -> None:
     check_overlapping_patterns(analyzer, rule, rule.strings)
 
 
-def check_hex_consolidation(analyzer, rule, hex_strings: list[HexString]) -> None:
-    groups = defaultdict(list)
+def check_hex_consolidation(analyzer: Any, rule: Rule, hex_strings: list[HexString]) -> None:
+    groups: dict[tuple[int | str, ...], list[HexString]] = defaultdict(list)
     for hex_str in hex_strings:
         prefix = get_hex_prefix(hex_str, min(5, max(0, len(hex_str.tokens) - 1)))
         if prefix and len(prefix) >= 4:
@@ -76,7 +79,7 @@ def check_hex_consolidation(analyzer, rule, hex_strings: list[HexString]) -> Non
             )
 
 
-def check_overlapping_patterns(analyzer, rule, strings: list[object]) -> None:
+def check_overlapping_patterns(analyzer: Any, rule: Rule, strings: Sequence[object]) -> None:
     plain_strings = [(s.identifier, s.value) for s in strings if isinstance(s, PlainString)]
     for i, (id1, val1) in enumerate(plain_strings):
         for id2, val2 in plain_strings[i + 1 :]:
@@ -98,7 +101,7 @@ def check_overlapping_patterns(analyzer, rule, strings: list[object]) -> None:
                 )
 
 
-def analyze_condition_patterns(analyzer, rule) -> None:
+def analyze_condition_patterns(analyzer: Any, rule: Rule) -> None:
     for string_id, refs in analyzer._string_refs.items():
         if len(refs) > 3:
             analyzer.report.add_suggestion(
@@ -116,7 +119,7 @@ def analyze_condition_patterns(analyzer, rule) -> None:
         )
 
 
-def visit_binary_expression(analyzer, node) -> None:
+def visit_binary_expression(analyzer: Any, node: Any) -> None:
     analyzer._condition_depth += 1
     analyzer._max_condition_depth = max(analyzer._max_condition_depth, analyzer._condition_depth)
     if node.operator == "and":
@@ -152,7 +155,7 @@ def visit_binary_expression(analyzer, node) -> None:
     analyzer._condition_depth -= 1
 
 
-def analyze_cross_rule_patterns(analyzer, rules) -> None:
+def analyze_cross_rule_patterns(analyzer: Any, rules: list[Rule]) -> None:
     string_to_rules = group_duplicate_strings(rules)
     for (str_type, _value), rule_names in string_to_rules.items():
         if len(rule_names) > 2:
@@ -165,7 +168,7 @@ def analyze_cross_rule_patterns(analyzer, rules) -> None:
     find_similar_rules(analyzer, rules)
 
 
-def find_similar_rules(analyzer, rules) -> None:
+def find_similar_rules(analyzer: Any, rules: list[Rule]) -> None:
     rule_patterns = group_rules_by_pattern(rules, get_condition_pattern)
     for pattern, names in rule_patterns.items():
         if len(names) > 3 and pattern[0] > 0:

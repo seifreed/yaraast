@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from yaraast.ast.base import ASTNode
-from yaraast.ast.expressions import Identifier, StringWildcard
+from yaraast.ast.expressions import Identifier, MemberAccess, StringWildcard
 from yaraast.visitor.base import BaseVisitor
 
 if TYPE_CHECKING:
@@ -150,7 +150,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
     def _find_circular_dependencies(self) -> list[list[str]]:
         """Find circular dependencies using DFS."""
         dfs_state = self._init_dfs_state()
-        cycles = []
+        cycles: list[list[str]] = []
 
         for rule in sorted(self.rule_names):
             if dfs_state["color"][rule] == dfs_state["white"]:
@@ -320,7 +320,7 @@ class DependencyAnalyzer(BaseVisitor[None]):
         # Function callees are not rule references; only their arguments can contain them.
         super().visit_function_call(node)
 
-    def visit_member_access(self, node) -> None:
+    def visit_member_access(self, node: MemberAccess) -> None:
         # Member roots are modules/objects, not bare rule references.
         if not isinstance(node.object, Identifier):
             self.visit(node.object)

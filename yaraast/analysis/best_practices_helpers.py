@@ -5,8 +5,10 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
+from yaraast.ast.strings import HexString
 
-def analyze_global_patterns(analyzer) -> None:
+
+def analyze_global_patterns(analyzer: Any) -> None:
     if len(analyzer._hex_patterns) <= 1:
         return
     pattern_groups = defaultdict(list)
@@ -25,7 +27,7 @@ def analyze_global_patterns(analyzer) -> None:
             )
 
 
-def get_hex_prefix(hex_string, length: int) -> tuple[Any, ...]:
+def get_hex_prefix(hex_string: HexString, length: int) -> tuple[Any, ...]:
     prefix = []
     for token in hex_string.tokens[:length]:
         prefix.append(token.value if hasattr(token, "value") else None)
@@ -37,7 +39,7 @@ def levenshtein_distance(s1: str, s2: str) -> int:
         return levenshtein_distance(s2, s1)
     if len(s2) == 0:
         return len(s1)
-    previous_row = range(len(s2) + 1)
+    previous_row = list(range(len(s2) + 1))
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
