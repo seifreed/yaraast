@@ -7,12 +7,13 @@ from collections.abc import Callable
 from lsprotocol.types import Position, Range, SelectionRange
 
 from yaraast.lsp.structure import find_section_range, get_rule_text_range
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def line_range(lines: list[str], line: int) -> Range:
     return Range(
         start=Position(line=line, character=0),
-        end=Position(line=line, character=len(lines[line])),
+        end=Position(line=line, character=utf8_col_to_utf16(lines[line], len(lines[line]))),
     )
 
 
@@ -50,7 +51,11 @@ def find_enclosing_rule_range(text: str, position: Position) -> Range | None:
     return Range(
         start=Position(line=rule_text_range.start, character=0),
         end=Position(
-            line=rule_text_range.end, character=len(rule_text_range.lines[rule_text_range.end])
+            line=rule_text_range.end,
+            character=utf8_col_to_utf16(
+                rule_text_range.lines[rule_text_range.end],
+                len(rule_text_range.lines[rule_text_range.end]),
+            ),
         ),
     )
 

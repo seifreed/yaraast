@@ -301,7 +301,10 @@ def find_section_range(
         return None
     return Range(
         start=Position(line=section_line, character=0),
-        end=Position(line=end_line, character=len(lines[end_line])),
+        end=Position(
+            line=end_line,
+            character=utf8_col_to_utf16(lines[end_line], len(lines[end_line])),
+        ),
     )
 
 

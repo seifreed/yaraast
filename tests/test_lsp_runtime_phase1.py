@@ -14,6 +14,7 @@ from yaraast.lsp.references import ReferencesProvider
 from yaraast.lsp.rename import RenameProvider
 from yaraast.lsp.runtime import LspRuntime, path_to_uri
 from yaraast.lsp.selection_range import SelectionRangeProvider
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.lsp.workspace_index import WorkspaceIndex
 from yaraast.lsp.workspace_symbols import WorkspaceSymbolsProvider
 
@@ -512,3 +513,30 @@ rule sample {
     assert selection.parent.parent is not None  # section range
     assert selection.parent.parent.range.start.line == 1  # strings section starts at line 1
     assert selection.parent.parent.parent is not None  # rule range
+
+
+def test_selection_range_provider_parent_ranges_use_utf16_columns() -> None:
+    text = """
+rule sample {
+  condition:
+    /* 😀😀 */ true
+}
+""".lstrip()
+    line = text.splitlines()[2]
+    runtime = LspRuntime()
+    uri = "file:///utf16-selection.yar"
+    runtime.open_document(uri, text)
+    provider = SelectionRangeProvider(runtime)
+
+    selections = provider.get_selection_ranges(
+        text,
+        [Position(line=2, character=utf8_col_to_utf16(line, line.index("true")))],
+        uri,
+    )
+
+    assert len(selections) == 1
+    selection = selections[0]
+    assert selection.parent is not None
+    assert selection.parent.range.end.character == utf8_col_to_utf16(line, len(line))
+    assert selection.parent.parent is not None
+    assert selection.parent.parent.range.end.character == utf8_col_to_utf16(line, len(line))
