@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from yaraast.ast.base import YaraFile
+from yaraast.ast.conditions import OfExpression
+from yaraast.ast.expressions import BooleanLiteral
+from yaraast.ast.rules import Rule
+from yaraast.ast.strings import PlainString
 from yaraast.evaluation.evaluator import YaraEvaluator
 from yaraast.parser import Parser
 
@@ -48,6 +53,24 @@ rule holder {
 
     assert YaraEvaluator(data=b"needle").evaluate_file(ast) == {
         "alpha_one": False,
+        "holder": True,
+    }
+
+
+def test_evaluator_raw_string_set_text_stays_string_reference_when_rule_name_matches() -> None:
+    ast = YaraFile(
+        rules=[
+            Rule(name="alpha", condition=BooleanLiteral(False)),
+            Rule(
+                name="holder",
+                strings=[PlainString(identifier="$alpha", value="needle")],
+                condition=OfExpression("any", "alpha"),
+            ),
+        ]
+    )
+
+    assert YaraEvaluator(data=b"needle").evaluate_file(ast) == {
+        "alpha": False,
         "holder": True,
     }
 

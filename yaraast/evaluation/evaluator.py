@@ -893,7 +893,7 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
 
         def resolve_value(value: Any) -> list[str] | None:
             if isinstance(value, str):
-                return expand_text(value)
+                return None
             if isinstance(value, StringWildcard):
                 return expand_text(value.pattern)
             if isinstance(value, Identifier):
