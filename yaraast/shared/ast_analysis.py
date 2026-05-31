@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from yaraast.ast.base import ASTNode, YaraFile
-from yaraast.ast.conditions import Condition
+from yaraast.ast.expressions import Expression
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexString, PlainString, RegexString
 from yaraast.codegen.pretty_printer import PrettyPrinter
@@ -162,7 +162,7 @@ class ASTStructuralAnalyzer(BaseVisitor[Any]):
         sig_key = f"{rule_name}:{identifier}" if rule_name else identifier
         self.string_signatures[sig_key] = self._hash_dict(string_structure)
 
-    def _analyze_condition(self, condition: Condition, rule_name: str) -> None:
+    def _analyze_condition(self, condition: Expression, rule_name: str) -> None:
         self.condition_signatures[f"{rule_name}.condition"] = self._hash_dict(
             self._get_condition_structure(condition)
         )
