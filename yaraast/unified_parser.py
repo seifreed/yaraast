@@ -50,7 +50,7 @@ class UnifiedParser:
     # To use StreamingParser: Set force_streaming=True explicitly
     DEFAULT_STREAMING_THRESHOLD_MB = _DEFAULT_STREAMING_THRESHOLD_MB
 
-    def __init__(self, text: str, dialect: YaraDialect = None) -> None:
+    def __init__(self, text: str, dialect: YaraDialect | None = None) -> None:
         """Initialize unified parser.
 
         Args:

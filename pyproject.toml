@@ -241,7 +241,6 @@ module = [
     "yaraast.shared.*",
     "yaraast.interfaces.*",
     "yaraast.dialects.*",
-    "yaraast.unified_parser",
 ]
 ignore_errors = true
 
