@@ -51,7 +51,7 @@ def test_display_export_import_and_diff_messages(tmp_path: Path) -> None:
     assert "AST serialized successfully" in out
     assert "AST exported to out.json" in out
     assert "AST imported from in.json" in out
-    assert "Code generation not yet implemented" in out
+    assert "YARA code written to out.yar" in out
     assert "No differences found" in out
     assert "Patch file created" in out
     assert "Diff saved to" in out

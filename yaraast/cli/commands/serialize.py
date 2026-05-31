@@ -10,6 +10,7 @@ from yaraast.cli.serialize_command_services import (
     build_diff_output_path,
     diff_serialized,
     export_serialized,
+    generate_imported_yara,
     import_serialized,
     validate_serialized_error,
     validate_serialized_input,
@@ -66,7 +67,7 @@ def export(input_file: str, output: str | None, format: str, minimal: bool, pret
         raise click.Abort from e
 
 
-@serialize.command()
+@serialize.command(name="import")
 @click.argument("input_file", type=click.Path(exists=True))
 @click.option(
     "-f",
@@ -79,16 +80,16 @@ def export(input_file: str, output: str | None, format: str, minimal: bool, pret
 def import_ast(input_file: str, format: str, output: str | None) -> None:
     """Import AST from serialized format back to YARA code.
 
-    Note: Full round-trip import is not yet implemented.
-    This command validates the serialized format.
-
     Examples:
         yaraast serialize import rules.json -f json
         yaraast serialize import rules.yaml -f yaml
+        yaraast serialize import rules.json -f json -o rules.yar
 
     """
     try:
         ast = import_serialized(input_file, format)
+        if output:
+            generate_imported_yara(ast, output)
 
         display_import_result(console, input_file, format, ast, output)
 

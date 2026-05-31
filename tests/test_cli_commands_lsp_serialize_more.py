@@ -67,6 +67,30 @@ def test_serialize_diff_patch_and_json_output_real(tmp_path: Path) -> None:
     assert json_out.read_text(encoding="utf-8")
 
 
+def test_serialize_import_writes_yara_output_real(tmp_path: Path) -> None:
+    runner = CliRunner()
+    yara_file = tmp_path / "sample.yar"
+    yara_file.write_text(_rule("imported_rule"), encoding="utf-8")
+    json_file = tmp_path / "sample.json"
+    output_file = tmp_path / "imported.yar"
+
+    export_result = runner.invoke(
+        ser_cmd.serialize,
+        ["export", str(yara_file), "-o", str(json_file), "-f", "json"],
+    )
+    assert export_result.exit_code == 0
+
+    import_result = runner.invoke(
+        ser_cmd.serialize,
+        ["import", str(json_file), "-f", "json", "-o", str(output_file)],
+    )
+
+    assert import_result.exit_code == 0
+    assert "YARA code written" in import_result.output
+    assert output_file.exists()
+    assert "rule imported_rule" in output_file.read_text(encoding="utf-8")
+
+
 def test_serialize_error_paths_real(tmp_path: Path) -> None:
     runner = CliRunner()
     bad = tmp_path / "bad.yar"

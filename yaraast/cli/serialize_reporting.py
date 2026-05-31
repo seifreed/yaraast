@@ -40,7 +40,7 @@ def display_import_result(
     console.print(f"✅ AST imported from {input_file} ({fmt} format)")
     console.print(f"📊 Rules: {len(ast.rules)}, Imports: {len(ast.imports)}")
     if output:
-        console.print("⚠️  Code generation not yet implemented")
+        console.print(f"✅ YARA code written to {output}")
 
 
 def display_diff_no_changes(console: Console) -> None:

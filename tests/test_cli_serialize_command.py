@@ -44,7 +44,7 @@ def test_serialize_export_import_validate_info(tmp_path: Path) -> None:
     # import json
     result = runner.invoke(
         serialize,
-        ["import-ast", str(json_path), "-f", "json"],
+        ["import", str(json_path), "-f", "json"],
     )
     assert result.exit_code == 0
 
@@ -74,7 +74,7 @@ def test_serialize_import_invalid(tmp_path: Path) -> None:
 
     result = runner.invoke(
         serialize,
-        ["import-ast", str(bad_path), "-f", "json"],
+        ["import", str(bad_path), "-f", "json"],
     )
     assert result.exit_code != 0
 
