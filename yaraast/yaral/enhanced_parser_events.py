@@ -102,6 +102,14 @@ class EnhancedYaraLParserEventsMixin:
         current_token = self._peek()
         if current_token.line > start_line and _token_value_is(current_token, "or"):
             return False
+        if current_token.line > start_line and _token_value_is(current_token, "and"):
+            return False
+        if (
+            current_token.line > start_line
+            and current_token.type == BaseTokenType.LPAREN
+            and _is_raw_event_function_identifier(tokens[-1])
+        ):
+            return False
         if current_token.line <= start_line or self._previous_token_continues_statement(tokens):
             return False
 
@@ -351,3 +359,10 @@ class EnhancedYaraLParserEventsMixin:
     def _parse_join_condition(self) -> ConditionExpression:
         """Parse join condition for event correlation."""
         return self._parse_condition_expression()
+
+
+def _is_raw_event_function_identifier(token: Any) -> bool:
+    if token.type != BaseTokenType.IDENTIFIER:
+        return False
+    identifier = str(token.value)
+    return "." in identifier and identifier.split(".", 1)[0] in _RAW_EVENT_MODULES

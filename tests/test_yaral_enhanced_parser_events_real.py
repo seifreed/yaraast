@@ -222,6 +222,31 @@ rule bool_event {
     assert '$e.metadata.event_type = "LOGIN" or $e.metadata.event_type = "AUTH"' in generated
 
 
+def test_parse_multiline_raw_function_event_with_boolean_operator_preserves_text() -> None:
+    for operator in ("and", "or"):
+        parser = EnhancedYaraLParser(f"""
+rule raw_function_event {{
+    events:
+        re.regex($e.target.hostname, "admin")
+            {operator} re.regex($e.principal.hostname, "admin")
+    condition:
+        $e
+}}
+""")
+        ast = parser.parse()
+
+        assert parser.errors == []
+        events = ast.rules[0].events
+        assert events is not None
+        assert len(events.statements) == 1
+
+        generated = YaraLGenerator().generate(ast)
+        assert (
+            f're.regex($e.target.hostname, "admin") {operator} '
+            're.regex($e.principal.hostname, "admin")'
+        ) in generated
+
+
 def test_parse_function_event_assignment_preserves_generated_text() -> None:
     ast = EnhancedYaraLParser(
         'rule capture_event { events: $host = re.capture($e.target.hostname, "(.*)") condition: $e }'
