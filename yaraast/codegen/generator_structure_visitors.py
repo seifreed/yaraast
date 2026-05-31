@@ -61,8 +61,8 @@ def visit_yara_file(generator, node) -> str:
 def visit_import(node) -> str:
     value = f"import \"{format_nonempty_quoted_value(node.module, 'Import module')}\""
     if node.alias:
-        alias = validate_yara_identifier(node.alias, "import alias")
-        value += f" as {alias}"
+        msg = "Import aliases are not supported for libyara output"
+        raise ValueError(msg)
     return value
 
 

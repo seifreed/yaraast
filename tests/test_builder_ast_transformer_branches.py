@@ -615,9 +615,9 @@ def test_yara_file_transformer_rejects_empty_imports_and_includes() -> None:
     assert [inc.path for inc in transformed.includes] == ["common.yar"]
 
 
-@pytest.mark.parametrize("alias", ["bad alias", "bad-alias", "for", "1bad", ""])
-def test_yara_file_transformer_rejects_invalid_import_alias(alias: str) -> None:
-    with pytest.raises(ValidationError, match="Invalid import alias identifier"):
+@pytest.mark.parametrize("alias", ["p", "bad alias", "bad-alias", "for", "1bad", ""])
+def test_yara_file_transformer_rejects_import_alias(alias: str) -> None:
+    with pytest.raises(ValidationError, match="Import aliases are not supported"):
         YaraFileTransformer(YaraFile()).add_import("pe", alias)
 
 

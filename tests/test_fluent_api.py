@@ -199,18 +199,14 @@ class TestYaraFileBuilder:
     def test_basic_file(self) -> None:
         """Test basic YARA file creation."""
         yara_ast = (
-            yara_file()
-            .import_module("pe")
-            .import_module("math", "m")
-            .include_file("common.yar")
-            .build()
+            yara_file().import_module("pe").import_module("math").include_file("common.yar").build()
         )
 
         assert isinstance(yara_ast, YaraFile)
         assert len(yara_ast.imports) == 2
         assert yara_ast.imports[0].module == "pe"
         assert yara_ast.imports[1].module == "math"
-        assert yara_ast.imports[1].alias == "m"
+        assert yara_ast.imports[1].alias is None
         assert len(yara_ast.includes) == 1
         assert yara_ast.includes[0].path == "common.yar"
 

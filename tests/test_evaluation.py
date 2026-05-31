@@ -338,15 +338,15 @@ class TestYaraEvaluator:
 
         assert results["for_test"] is True
 
-    def test_module_alias(self) -> None:
-        """Test module import with alias."""
+    def test_module_reference(self) -> None:
+        """Test module import references."""
         parser = Parser()
         rule_text = """
-        import "pe" as windows
+        import "pe"
 
-        rule alias_test {
+        rule module_test {
             condition:
-                windows.is_pe
+                pe.is_pe
         }
         """
         ast = parser.parse(rule_text)
@@ -358,7 +358,7 @@ class TestYaraEvaluator:
         evaluator = YaraEvaluator(data)
         results = evaluator.evaluate_file(ast)
 
-        assert results["alias_test"] is True
+        assert results["module_test"] is True
 
     def test_complex_condition(self) -> None:
         """Test complex nested conditions."""

@@ -14,7 +14,7 @@ from yaraast.unified_parser import UnifiedParser
 def _sample_with_preamble() -> str:
     return """
 import "pe"
-import "math" as m
+import "math"
 include "common.yar"
 
 rule r1 {
@@ -109,7 +109,7 @@ def test_extract_preamble_fast_real(tmp_path: Path) -> None:
 import "pe"
 /* block
 comment */
-import "elf" as e
+import "elf"
 include "a.yar"
 rule x { condition: true }
 """,
@@ -120,7 +120,7 @@ rule x { condition: true }
     assert len(imports) == 2
     assert imports[0].module == "pe"
     assert imports[1].module == "elf"
-    assert imports[1].alias == "e"
+    assert imports[1].alias is None
     assert len(includes) == 1
     assert includes[0].path == "a.yar"
 

@@ -61,14 +61,14 @@ rule classic_hex_jump {
     assert detect_dialect(source) == YaraDialect.YARA
 
 
-def test_extract_preamble_fast_handles_comments_and_aliases() -> None:
+def test_extract_preamble_fast_handles_comments_and_imports() -> None:
     with TemporaryDirectory() as tmp:
         p = Path(tmp) / "r.yar"
         p.write_text(
             """
 /* top block
 still in comment */
-import "pe" as pe_mod
+import "pe"
 import "hash" /* inline block comment */
 include "base.yar"
 /* closed block */ include "extra.yar"
@@ -82,7 +82,7 @@ rule r { condition: true }
         imports, includes = UnifiedParser._extract_preamble_fast(p)
         assert len(imports) == 2
         assert imports[0].module == "pe"
-        assert imports[0].alias == "pe_mod"
+        assert imports[0].alias is None
         assert imports[1].module == "hash"
         assert len(includes) == 3
         assert includes[0].path == "base.yar"

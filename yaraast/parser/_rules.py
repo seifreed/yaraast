@@ -39,6 +39,9 @@ class RuleParsingMixin:
 
         # Check for 'as alias'
         if self._match(TokenType.AS):
+            if rules is None:
+                msg = "Import aliases are not supported"
+                raise ParserError(msg, self._previous())
             if not self._match(TokenType.IDENTIFIER):
                 msg = "Expected alias after 'as'"
                 raise ParserError(msg, self._peek())

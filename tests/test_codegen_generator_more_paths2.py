@@ -113,7 +113,7 @@ def test_alternate_generators_indent_nested_yarax_match_case_results() -> None:
 def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules() -> None:
     gen = CodeGenerator()
     ast = YaraFile(
-        imports=[Import(module="pe", alias="p")],
+        imports=[Import(module="pe")],
         extern_imports=[ExternImport("external.yar", alias="ext", rules=["ExternalRule"])],
         includes=[Include(path="common.yar")],
         pragmas=[IncludeOncePragma()],
@@ -128,7 +128,7 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     out = gen.generate(ast)
 
     assert "#include_once" in out
-    assert 'import "pe" as p' in out
+    assert 'import "pe"' in out
     assert 'import "external.yar" (ExternalRule) as ext' in out
     assert 'include "common.yar"' in out
     assert "namespace corp" in out
@@ -138,15 +138,15 @@ def test_codegen_generator_visit_yara_file_imports_includes_and_multiple_rules()
     assert CodeGenerator().visit_import(Import(module="elf")) == ""
 
     escaped_ast = YaraFile(
-        imports=[Import(module='mod"\\path', alias="m")],
+        imports=[Import(module='mod"\\path')],
         includes=[Include(path='dir"\\common.yar')],
     )
     escaped = CodeGenerator().generate(escaped_ast)
     advanced_escaped = AdvancedCodeGenerator().generate(escaped_ast)
 
-    assert 'import "mod\\"\\\\path" as m' in escaped
+    assert 'import "mod\\"\\\\path"' in escaped
     assert 'include "dir\\"\\\\common.yar"' in escaped
-    assert 'import "mod\\"\\\\path" as m' in advanced_escaped
+    assert 'import "mod\\"\\\\path"' in advanced_escaped
     assert 'include "dir\\"\\\\common.yar"' in advanced_escaped
 
 
@@ -937,7 +937,7 @@ def test_codegen_tag_visitors_reject_invalid_rule_tags(tag_name: str) -> None:
 @pytest.mark.parametrize(
     ("node", "message"),
     [
-        (Import("pe", alias="bad-alias"), "Invalid import alias identifier"),
+        (Import("pe", alias="p"), "Import aliases are not supported"),
         (ExternImport("mods.yar", alias="bad-alias"), "Invalid import alias identifier"),
         (ExternImport("mods.yar", rules=["bad-rule"]), "Invalid extern rule identifier"),
         (ExternNamespace("bad-ns"), "Invalid namespace identifier"),

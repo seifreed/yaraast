@@ -174,13 +174,13 @@ rule caller {
     assert "rule:caller" in graph.nodes["rule:dup#1"].dependents
 
 
-def test_dependency_graph_resolves_import_alias_module_dependencies() -> None:
+def test_dependency_graph_resolves_import_module_dependencies() -> None:
     ast = Parser().parse("""
-import "pe" as p
+import "pe"
 
 rule caller {
     condition:
-        p.number_of_sections > 0
+        pe.number_of_sections > 0
 }
 """)
     graph = DependencyGraph()

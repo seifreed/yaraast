@@ -26,7 +26,6 @@ from yaraast.builder.file_builder_validation import (
     validate_identifier,
     validate_meta_value,
     validate_nonempty_text,
-    validate_optional_identifier,
     validate_unique_rule_names,
     validate_version_value,
 )
@@ -460,10 +459,12 @@ class YaraFileTransformer:
     def add_import(self, module: str, alias: str | None = None) -> YaraFileTransformer:
         """Add an import statement."""
         validate_nonempty_text(module, "Import module")
-        validate_optional_identifier(alias, "import alias")
+        if alias is not None:
+            msg = "Import aliases are not supported"
+            raise ValidationError(msg)
         # Check if already imported
         if not any(imp.module == module for imp in self.yara_file.imports):
-            self.yara_file.imports.append(Import(module=module, alias=alias))
+            self.yara_file.imports.append(Import(module=module))
         return self
 
     def remove_import(self, module: str) -> YaraFileTransformer:

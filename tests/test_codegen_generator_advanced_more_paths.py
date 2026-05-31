@@ -47,7 +47,7 @@ def test_codegen_generator_additional_visit_paths() -> None:
     gen = CodeGenerator()
 
     yara_file = YaraFile(
-        imports=[Import(module="pe", alias="p")],
+        imports=[Import(module="pe")],
         includes=[Include(path="common.yar")],
         rules=[
             Rule(
@@ -67,7 +67,7 @@ def test_codegen_generator_additional_visit_paths() -> None:
         ],
     )
     out = gen.generate(yara_file)
-    assert 'import "pe" as p' in out
+    assert 'import "pe"' in out
     assert 'include "common.yar"' in out
     assert "private rule r1 : t1 {" in out
 

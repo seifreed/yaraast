@@ -29,12 +29,12 @@ class _AsText:
 
 def test_advanced_generator_brace_styles_and_section_layout() -> None:
     rule = Rule(name="r", condition=BooleanLiteral(True))
-    yara_file = YaraFile(imports=[Import("pe", alias="p")], rules=[rule])
+    yara_file = YaraFile(imports=[Import("pe")], rules=[rule])
 
     same = AdvancedCodeGenerator(FormattingConfig(brace_style=BraceStyle.SAME_LINE)).generate(
         yara_file
     )
-    assert 'import "pe" as p' in same
+    assert 'import "pe"' in same
     assert "rule r {" in same
 
     new_line = AdvancedCodeGenerator(FormattingConfig(brace_style=BraceStyle.NEW_LINE)).generate(

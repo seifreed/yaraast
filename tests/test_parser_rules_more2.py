@@ -36,16 +36,16 @@ def _parser_with_tokens(tokens: list[Token]) -> Parser:
 
 
 def test_parse_import_and_include_success_and_errors() -> None:
-    parser = _parser_with_tokens(
-        [_t(TokenType.STRING, "pe"), _t(TokenType.AS, "as"), _t(TokenType.IDENTIFIER, "pe_mod")]
-    )
+    parser = _parser_with_tokens([_t(TokenType.STRING, "pe")])
     imp = parser._parse_import()
     assert isinstance(imp, Import)
     assert imp.module == "pe"
-    assert imp.alias == "pe_mod"
+    assert imp.alias is None
 
-    parser2 = _parser_with_tokens([_t(TokenType.STRING, "pe"), _t(TokenType.AS, "as")])
-    with pytest.raises(ParserError, match="Expected alias after 'as'"):
+    parser2 = _parser_with_tokens(
+        [_t(TokenType.STRING, "pe"), _t(TokenType.AS, "as"), _t(TokenType.IDENTIFIER, "pe_mod")]
+    )
+    with pytest.raises(ParserError, match="Import aliases are not supported"):
         parser2._parse_import()
 
     parser3 = _parser_with_tokens([_t(TokenType.IDENTIFIER, "pe")])
@@ -204,10 +204,10 @@ def test_parse_rule_rejects_invalid_section_order_and_missing_sections() -> None
 
 def test_parse_import_include_and_rule_via_full_parse() -> None:
     ast = Parser(
-        'import "pe" as pe_mod include "common.yar" private rule sample : t1 { meta: score = 1 strings: $a = "x" condition: true }'
+        'import "pe" include "common.yar" private rule sample : t1 { meta: score = 1 strings: $a = "x" condition: true }'
     ).parse()
     assert ast.imports[0].module == "pe"
-    assert ast.imports[0].alias == "pe_mod"
+    assert ast.imports[0].alias is None
     assert ast.includes[0].path == "common.yar"
     assert ast.rules[0].name == "sample"
     assert [str(m) for m in ast.rules[0].modifiers] == ["private"]
@@ -218,6 +218,11 @@ def test_parse_import_include_and_rule_via_full_parse() -> None:
     parser.current = 0
     rule = parser._parse_rule()
     assert rule.name == "only_condition"
+
+
+def test_parse_rejects_standard_import_alias() -> None:
+    with pytest.raises(ParserError, match="Import aliases are not supported"):
+        Parser('import "pe" as pe_mod rule r { condition: true }').parse()
 
 
 def test_parse_generated_extended_top_level_constructs() -> None:

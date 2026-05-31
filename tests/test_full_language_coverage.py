@@ -9,17 +9,17 @@ from yaraast.ast.expressions import BinaryExpression, RegexLiteral, StringLitera
 from yaraast.types import TypeValidator
 
 
-def test_import_with_alias() -> None:
-    """Test import statements with aliases."""
+def test_import_without_alias() -> None:
+    """Test import statements."""
     yara_code = """
-    import "pe" as windows
-    import "elf" as linux
+    import "pe"
+    import "elf"
     import "math"
 
     rule test_imports {
         condition:
-            windows.machine == 0x14c and
-            linux.type == 0x02 and
+            pe.machine == 0x14c and
+            elf.type == 0x02 and
             math.entropy(0, filesize) > 7.0
     }
     """
@@ -30,18 +30,20 @@ def test_import_with_alias() -> None:
     # Check imports
     assert len(ast.imports) == 3
     assert ast.imports[0].module == "pe"
-    assert ast.imports[0].alias == "windows"
+    assert ast.imports[0].alias is None
     assert ast.imports[1].module == "elf"
-    assert ast.imports[1].alias == "linux"
+    assert ast.imports[1].alias is None
     assert ast.imports[2].module == "math"
     assert ast.imports[2].alias is None
 
     # Generate code and verify
     generator = CodeGenerator()
     output = generator.generate(ast)
-    assert 'import "pe" as windows' in output
-    assert 'import "elf" as linux' in output
+    assert 'import "pe"' in output
+    assert 'import "elf"' in output
     assert 'import "math"' in output
+    assert "as pe" not in output
+    assert "as elf" not in output
     assert "as math" not in output
 
 
@@ -188,8 +190,8 @@ def test_string_matches_dynamic_regex() -> None:
 def test_mixed_features() -> None:
     """Test combination of all new features."""
     yara_code = r"""
-    import "pe" as peformat
-    import "math" as m
+    import "pe"
+    import "math"
 
     rule advanced_detection {
         meta:
@@ -204,8 +206,8 @@ def test_mixed_features() -> None:
             $mz at 0 and
             uint16be(0) == 0x4D5A and
             uint32le(uint32(0x3c)) == 0x00004550 and
-            peformat.machine == 0x14c and
-            m.entropy(0, 1024) > 6.5 and
+            pe.machine == 0x14c and
+            math.entropy(0, 1024) > 6.5 and
             "malicious" matches /mal[a-z]+/ and
             "https://example.test/download/file" matches /.*\/download\//i and
             "ABCDE" matches /[A-Z]+/
@@ -217,8 +219,8 @@ def test_mixed_features() -> None:
 
     # Should parse without errors
     assert len(ast.imports) == 2
-    assert ast.imports[0].alias == "peformat"
-    assert ast.imports[1].alias == "m"
+    assert ast.imports[0].alias is None
+    assert ast.imports[1].alias is None
 
     # Type check
     is_valid, errors = TypeValidator.validate(ast)
@@ -229,12 +231,12 @@ def test_mixed_features() -> None:
     output = generator.generate(ast)
 
     # Verify all features are present
-    assert 'import "pe" as peformat' in output
-    assert 'import "math" as m' in output
+    assert 'import "pe"' in output
+    assert 'import "math"' in output
     assert "uint16be(0) == 0x4D5A" in output
     assert "uint32le(uint32(0x3c))" in output
-    assert "peformat.machine" in output
-    assert "m.entropy" in output
+    assert "pe.machine" in output
+    assert "math.entropy" in output
     assert '"malicious" matches /mal[a-z]+/' in output
     assert '"ABCDE" matches /[A-Z]+/' in output
 
