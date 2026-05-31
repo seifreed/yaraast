@@ -342,6 +342,20 @@ def test_classic_parsers_reject_postfix_access_on_string_references() -> None:
                 parser_factory().parse(source)
 
 
+def test_classic_parsers_reject_invalid_builtin_integer_function_arity() -> None:
+    invalid_sources = [
+        "rule r { condition: uint8() == 0 }",
+        "rule r { condition: uint8(0, 1) == 0 }",
+        "rule r { condition: int32be() == 0 }",
+        "rule r { condition: int32be(0, 1) == 0 }",
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="expects exactly 1 argument"):
+                parser_factory().parse(source)
+
+
 def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> None:
     p = _parser_with_tokens([_t(TokenType.INTEGER, 7)])
     assert isinstance(p._parse_primary_expression(), IntegerLiteral)

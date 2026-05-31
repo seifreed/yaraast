@@ -24,6 +24,27 @@ from yaraast.lexer import TokenType
 
 from ._shared import ParserError
 
+_BUILTIN_INTEGER_READ_FUNCTIONS: frozenset[str] = frozenset(
+    {
+        "uint8",
+        "uint16",
+        "uint32",
+        "int8",
+        "int16",
+        "int32",
+        "uint8be",
+        "uint16be",
+        "uint32be",
+        "int8be",
+        "int16be",
+        "int32be",
+        "uint16le",
+        "uint32le",
+        "int16le",
+        "int32le",
+    }
+)
+
 
 class ExpressionPostfixMixin:
     """Mixin with postfix expression parsing helpers."""
@@ -130,17 +151,25 @@ class ExpressionPostfixMixin:
             msg = "Invalid function call"
             raise ParserError(msg, self._peek())
         if getattr(expr, "location", None) is not None:
+            self._validate_builtin_integer_read_arity(node, start_token)
             node.location = self._location_from_tokens(
                 self._synthetic_token_from_location(expr.location),
                 self._previous(),
             )
             return node
         if isinstance(expr, Identifier):
+            self._validate_builtin_integer_read_arity(node, start_token)
             return self._set_node_location_from_tokens(node, start_token, self._previous())
         msg = "Invalid function call"
         if isinstance(expr, MemberAccess):
+            self._validate_builtin_integer_read_arity(node, start_token)
             return self._set_node_location_from_tokens(node, start_token, self._previous())
         raise ParserError(msg, self._peek())
+
+    def _validate_builtin_integer_read_arity(self, node: FunctionCall, token) -> None:
+        if node.function in _BUILTIN_INTEGER_READ_FUNCTIONS and len(node.arguments) != 1:
+            msg = f"{node.function}() expects exactly 1 argument"
+            raise ParserError(msg, token)
 
     def _parse_function_arguments(self) -> list[Expression]:
         """Parse function call arguments."""

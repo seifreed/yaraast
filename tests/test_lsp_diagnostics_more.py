@@ -126,22 +126,22 @@ import "pe"
 
 rule weird {
     condition:
-        pe.missing_func() and uint8()
+        pe.missing_func()
 }
 """.lstrip()
 
     diags = provider.get_diagnostics(text)
     missing_func = next(d for d in diags if d.code == "semantic.module_function_not_found")
-    invalid_arity = next(d for d in diags if d.code == "semantic.invalid_arity")
     missing_func_metadata = _diagnostic_metadata(missing_func)
-    invalid_arity_metadata = _diagnostic_metadata(invalid_arity)
     assert missing_func_metadata["module"] == "pe"
     assert missing_func_metadata["function"] == "missing_func"
     assert "available_functions" in missing_func_metadata
-    assert invalid_arity_metadata["function"] == "uint8"
-    assert invalid_arity_metadata["actual_args"] == 0
-    assert invalid_arity_metadata["arity_kind"] == "min"
-    assert invalid_arity_metadata["expected_min"] == 1
+
+    parser_diags = provider.get_diagnostics("rule bad { condition: uint8() == 0 }")
+    assert any(
+        diag.code == "parser.syntax_error" and "expects exactly 1 argument" in diag.message
+        for diag in parser_diags
+    )
 
 
 def test_diagnostics_undefined_string_identifier_is_structured() -> None:
