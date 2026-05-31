@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+from lsprotocol.types import Position, Range
+
 from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.structure import _starts_regex_literal, make_range
 from yaraast.lsp.utils import get_word_at_position
 
+if TYPE_CHECKING:
+    from yaraast.lsp.document_context import DocumentContext
+
 
 def resolve_symbol_from_text_fallback(
-    ctx,
-    position,
+    ctx: DocumentContext,
+    position: Position,
     *,
     allow_generic_identifier: bool = True,
 ) -> ResolvedSymbol | None:
@@ -35,7 +42,7 @@ def resolve_symbol_from_text_fallback(
     return ResolvedSymbol(ctx.uri, word, word, "identifier", word_range)
 
 
-def position_is_in_non_code_segment(ctx, position) -> bool:
+def position_is_in_non_code_segment(ctx: Any, position: Position) -> bool:
     if position.line < 0 or position.line >= len(ctx.lines):
         return False
 
@@ -109,7 +116,9 @@ def position_is_in_non_code_segment(ctx, position) -> bool:
     return False
 
 
-def find_module_member_at_position(ctx, position) -> ResolvedSymbol | None:
+def find_module_member_at_position(
+    ctx: DocumentContext, position: Position
+) -> ResolvedSymbol | None:
     word, word_range = get_word_at_position(ctx.text, position)
     dotted_from_word = resolve_dotted_word(ctx, word, word_range)
     if dotted_from_word is not None:
@@ -147,7 +156,9 @@ def find_module_member_at_position(ctx, position) -> ResolvedSymbol | None:
     return None
 
 
-def resolve_dotted_word(ctx, word: str, word_range) -> ResolvedSymbol | None:
+def resolve_dotted_word(
+    ctx: DocumentContext, word: str, word_range: Range
+) -> ResolvedSymbol | None:
     if "." not in word:
         return None
     root, _sep, _rest = word.partition(".")

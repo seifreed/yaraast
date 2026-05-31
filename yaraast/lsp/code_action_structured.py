@@ -80,9 +80,15 @@ class StructuredCodeActionMixin:
         start_char = start.get("character")
         end_line = end.get("line")
         end_char = end.get("character")
-        if not all(
-            isinstance(v, int) and not isinstance(v, bool)
-            for v in [start_line, start_char, end_line, end_char]
+        if (
+            not isinstance(start_line, int)
+            or isinstance(start_line, bool)
+            or not isinstance(start_char, int)
+            or isinstance(start_char, bool)
+            or not isinstance(end_line, int)
+            or isinstance(end_line, bool)
+            or not isinstance(end_char, int)
+            or isinstance(end_char, bool)
         ):
             return None
         if start_line < 0 or start_char < 0 or end_line < 0 or end_char < 0:

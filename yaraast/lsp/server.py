@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-try:
+if TYPE_CHECKING:
     from pygls.lsp.server import LanguageServer  # pygls >= 2.0
-except ImportError:
-    from pygls.server import LanguageServer  # pygls < 2.0
+else:
+    try:
+        from pygls.lsp.server import LanguageServer  # pygls >= 2.0
+    except ImportError:
+        from pygls.server import LanguageServer  # pygls < 2.0
 
 from yaraast.lsp.server_factory import configure_providers, create_runtime
 from yaraast.lsp.server_features import register_initialize, register_server_features
@@ -70,12 +73,18 @@ class YaraLanguageServer(LanguageServer):
     if not hasattr(LanguageServer, "show_message_log"):
 
         def show_message_log(self, message: str, msg_type: Any = None) -> None:
-            self.window_log_message({"type": 4, "message": message})
+            from lsprotocol.types import LogMessageParams, MessageType
+
+            self.window_log_message(LogMessageParams(type=MessageType.Log, message=message))
 
     if not hasattr(LanguageServer, "publish_diagnostics"):
 
         def publish_diagnostics(self, uri: str, diagnostics: Any = None) -> None:
-            self.text_document_publish_diagnostics({"uri": uri, "diagnostics": diagnostics or []})
+            from lsprotocol.types import PublishDiagnosticsParams
+
+            self.text_document_publish_diagnostics(
+                PublishDiagnosticsParams(uri=uri, diagnostics=diagnostics or [])
+            )
 
 
 def create_server() -> YaraLanguageServer:

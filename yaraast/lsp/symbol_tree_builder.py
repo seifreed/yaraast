@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from lsprotocol.types import DocumentSymbol, Position, Range, SymbolKind
 
 from yaraast.ast.rules import Rule
 
+if TYPE_CHECKING:
+    from yaraast.lsp.document_context import DocumentContext
 
-def build_document_symbols(doc, lines: list[str]) -> list[DocumentSymbol]:
+
+def build_document_symbols(doc: DocumentContext, lines: list[str]) -> list[DocumentSymbol]:
     symbols: list[DocumentSymbol] = []
     _append_import_symbols(symbols, doc, lines)
     _append_include_symbols(symbols, doc, lines)
@@ -24,7 +27,9 @@ def build_document_symbols(doc, lines: list[str]) -> list[DocumentSymbol]:
     return symbols
 
 
-def _append_import_symbols(symbols: list[DocumentSymbol], doc, lines: list[str]) -> None:
+def _append_import_symbols(
+    symbols: list[DocumentSymbol], doc: DocumentContext, lines: list[str]
+) -> None:
     for module_name in doc.get_import_modules():
         record = doc.find_symbol_record("import", module_name)
         if record is not None:
@@ -50,7 +55,9 @@ def _append_import_symbols(symbols: list[DocumentSymbol], doc, lines: list[str])
             )
 
 
-def _append_include_symbols(symbols: list[DocumentSymbol], doc, lines: list[str]) -> None:
+def _append_include_symbols(
+    symbols: list[DocumentSymbol], doc: DocumentContext, lines: list[str]
+) -> None:
     for include_path in doc.get_include_paths():
         record = doc.find_symbol_record("include", include_path)
         if record is not None:
@@ -76,7 +83,9 @@ def _append_include_symbols(symbols: list[DocumentSymbol], doc, lines: list[str]
             )
 
 
-def _build_rule_symbol(doc, lines: list[str], rule: Any, rule_name: str) -> DocumentSymbol | None:
+def _build_rule_symbol(
+    doc: DocumentContext, lines: list[str], rule: Any, rule_name: str
+) -> DocumentSymbol | None:
     rule_record = doc.find_symbol_record("rule", rule_name)
     rule_block_record = doc.find_symbol_record("rule_block", rule_name)
     rule_line = (
@@ -116,18 +125,19 @@ def _build_rule_symbol(doc, lines: list[str], rule: Any, rule_name: str) -> Docu
     )
 
     section_names = set(doc.get_rule_sections(rule_name))
-    _append_meta_section(rule_symbol, doc, lines, rule, rule_name, rule_line, section_names)
-    _append_strings_section(rule_symbol, doc, lines, rule, rule_name, rule_line, section_names)
+    rule_children = cast(list[DocumentSymbol], rule_symbol.children)
+    _append_meta_section(rule_children, doc, lines, rule, rule_name, rule_line, section_names)
+    _append_strings_section(rule_children, doc, lines, rule, rule_name, rule_line, section_names)
     _append_condition_section(
-        rule_symbol, doc, lines, rule, rule_name, rule_line, rule_end, section_names
+        rule_children, doc, lines, rule, rule_name, rule_line, rule_end, section_names
     )
-    _append_extra_sections(rule_symbol, doc, lines, rule, rule_name, rule_line, section_names)
+    _append_extra_sections(rule_children, doc, lines, rule, rule_name, rule_line, section_names)
     return rule_symbol
 
 
 def _append_meta_section(
-    rule_symbol: DocumentSymbol,
-    doc,
+    rule_children: list[DocumentSymbol],
+    doc: DocumentContext,
     lines: list[str],
     rule: Rule,
     rule_name: str,
@@ -147,7 +157,7 @@ def _append_meta_section(
         return
     meta_children = _build_meta_children(doc, lines, rule, rule_name, meta_line)
     if meta_children:
-        rule_symbol.children.append(
+        rule_children.append(
             DocumentSymbol(
                 name="meta",
                 kind=SymbolKind.Namespace,
@@ -167,7 +177,7 @@ def _append_meta_section(
 
 
 def _build_meta_children(
-    doc, lines: list[str], rule: Any, rule_name: str, meta_line: int
+    doc: DocumentContext, lines: list[str], rule: Any, rule_name: str, meta_line: int
 ) -> list[DocumentSymbol]:
     """Build DocumentSymbol children for each meta key-value pair."""
     children: list[DocumentSymbol] = []
@@ -201,8 +211,8 @@ def _build_meta_children(
 
 
 def _append_strings_section(
-    rule_symbol: DocumentSymbol,
-    doc,
+    rule_children: list[DocumentSymbol],
+    doc: DocumentContext,
     lines: list[str],
     rule: Rule,
     rule_name: str,
@@ -238,10 +248,11 @@ def _append_strings_section(
             )
     else:
         for string_id in doc.get_rule_string_identifiers(rule_name):
-            string_record = doc.find_symbol_record("string", string_id, rule_name)
-            if string_record is not None:
-                string_line = string_record.range.start.line
-                string_range = string_record.range
+            found_string_record = doc.find_symbol_record("string", string_id, rule_name)
+            string_range: Range | None
+            if found_string_record is not None:
+                string_line = found_string_record.range.start.line
+                string_range = found_string_record.range
             else:
                 string_line = find_line_containing(lines, string_id, strings_line)
                 string_range = (
@@ -259,7 +270,7 @@ def _append_strings_section(
                     )
                 )
     if string_children:
-        rule_symbol.children.append(
+        rule_children.append(
             DocumentSymbol(
                 name="strings",
                 kind=SymbolKind.Namespace,
@@ -279,8 +290,8 @@ def _append_strings_section(
 
 
 def _append_condition_section(
-    rule_symbol: DocumentSymbol,
-    doc,
+    rule_children: list[DocumentSymbol],
+    doc: DocumentContext,
     lines: list[str],
     rule: Rule,
     rule_name: str,
@@ -299,7 +310,7 @@ def _append_condition_section(
     )
     if condition_line < 0:
         return
-    rule_symbol.children.append(
+    rule_children.append(
         DocumentSymbol(
             name="condition",
             kind=SymbolKind.Function,
@@ -318,8 +329,8 @@ def _append_condition_section(
 
 
 def _append_extra_sections(
-    rule_symbol: DocumentSymbol,
-    doc,
+    rule_children: list[DocumentSymbol],
+    doc: DocumentContext,
     lines: list[str],
     rule: Rule,
     rule_name: str,
@@ -348,7 +359,7 @@ def _append_extra_sections(
             else find_line_containing(lines, f"{section_name}:", rule_line)
         )
         if section_line >= 0:
-            rule_symbol.children.append(
+            rule_children.append(
                 DocumentSymbol(
                     name=section_name,
                     kind=kind,

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
+
 from lsprotocol.types import Range
 
-from yaraast.lexer.tokens import TokenType
+from yaraast.lexer.tokens import Token, TokenType
 
 TOKEN_TYPE_MAPPING = {
     TokenType.RULE: "keyword",
@@ -82,7 +84,7 @@ def map_token_type(token_type: TokenType) -> str | None:
     return TOKEN_TYPE_MAPPING.get(token_type)
 
 
-def token_source_length(token) -> int:
+def token_source_length(token: Token) -> int:
     length = getattr(token, "length", 0) or 0
     if length > 1:
         return length
@@ -108,7 +110,11 @@ def _token_overlaps_range(token_line: int, token_start: int, token_end: int, ran
     return not (token_line == range_.end.line and token_start >= range_.end.character)
 
 
-def encode_tokens(tokens, map_type, token_types: list[str]) -> list[int]:
+def encode_tokens(
+    tokens: Iterable[Token],
+    map_type: Callable[[TokenType], str | None],
+    token_types: list[str],
+) -> list[int]:
     """Encode lexer tokens into LSP semantic token delta format."""
     tokens_data: list[int] = []
     prev_line = 0
@@ -130,7 +136,12 @@ def encode_tokens(tokens, map_type, token_types: list[str]) -> list[int]:
     return tokens_data
 
 
-def encode_tokens_in_range(tokens, range_: Range, map_type, token_types: list[str]) -> list[int]:
+def encode_tokens_in_range(
+    tokens: Iterable[Token],
+    range_: Range,
+    map_type: Callable[[TokenType], str | None],
+    token_types: list[str],
+) -> list[int]:
     """Encode tokens within a requested range."""
     tokens_data: list[int] = []
     prev_line = 0

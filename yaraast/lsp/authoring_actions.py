@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from lsprotocol.types import Range, TextEdit
 
@@ -52,40 +53,46 @@ class StructuralEdit:
     preview: str | None = None
 
 
-def optimize_rule(authoring, text: str, selection: Range) -> StructuralEdit | None:
+def optimize_rule(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     return rewrite_optimize_rule(authoring, text, selection)
 
 
-def roundtrip_rewrite_rule(authoring, text: str, selection: Range) -> StructuralEdit | None:
+def roundtrip_rewrite_rule(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     return rewrite_roundtrip_rule(authoring, text, selection)
 
 
-def deduplicate_identical_strings(authoring, text: str, selection: Range) -> StructuralEdit | None:
+def deduplicate_identical_strings(
+    authoring: Any, text: str, selection: Range
+) -> StructuralEdit | None:
     return rewrite_deduplicate_identical_strings(authoring, text, selection)
 
 
-def sort_strings_by_identifier(authoring, text: str, selection: Range) -> StructuralEdit | None:
+def sort_strings_by_identifier(
+    authoring: Any, text: str, selection: Range
+) -> StructuralEdit | None:
     return sort_sort_strings_by_identifier(authoring, text, selection)
 
 
-def sort_meta_by_key(authoring, text: str, selection: Range) -> StructuralEdit | None:
+def sort_meta_by_key(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     return sort_sort_meta_by_key(authoring, text, selection)
 
 
-def sort_tags_alphabetically(authoring, text: str, selection: Range) -> StructuralEdit | None:
+def sort_tags_alphabetically(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     return sort_sort_tags_alphabetically(authoring, text, selection)
 
 
-def canonicalize_rule_structure(authoring, text: str, selection: Range) -> StructuralEdit | None:
+def canonicalize_rule_structure(
+    authoring: Any, text: str, selection: Range
+) -> StructuralEdit | None:
     return sort_canonicalize_rule_structure(authoring, text, selection)
 
 
-def pretty_print_rule(authoring, text: str, selection: Range) -> StructuralEdit | None:
+def pretty_print_rule(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     return sort_pretty_print_rule(authoring, text, selection)
 
 
 def rewrite_of_them(
-    authoring, text: str, selection: Range, *, mode: str, title: str
+    authoring: Any, text: str, selection: Range, *, mode: str, title: str
 ) -> StructuralEdit | None:
     return rewrite_of_them_action(authoring, text, selection, mode=mode, title=title)
 

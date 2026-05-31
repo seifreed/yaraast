@@ -2,28 +2,37 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any, cast
+
+from lsprotocol.types import Range
+
 from yaraast.ast.rules import Tag
 from yaraast.lsp.authoring_actions_common import replace_rule_text, require_rule_context
 from yaraast.lsp.authoring_support import diff_preview, impact_title
 from yaraast.lsp.safe_handler import lsp_safe_handler
 
+if TYPE_CHECKING:
+    from yaraast.lsp.authoring_actions import StructuralEdit
+
 
 @lsp_safe_handler
-def _safe_parse(parser, text):
+def _safe_parse(parser: Any, text: str) -> Any:
     return parser.parse(text)
 
 
 @lsp_safe_handler
-def _safe_generate(generator, node):
-    return generator.generate(node)
+def _safe_generate(generator: Any, node: Any) -> str | None:
+    return cast(str | None, generator.generate(node))
 
 
 @lsp_safe_handler
-def _safe_format_ast(formatter, ast, *, style: str):
-    return formatter.format_ast(ast, style=style)
+def _safe_format_ast(formatter: Any, ast: Any, *, style: str) -> str | None:
+    return cast(str | None, formatter.format_ast(ast, style=style))
 
 
-def sort_strings_by_identifier(authoring, text: str, selection) -> object | None:
+def sort_strings_by_identifier(
+    authoring: Any, text: str, selection: Range
+) -> StructuralEdit | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
@@ -55,7 +64,7 @@ def sort_strings_by_identifier(authoring, text: str, selection) -> object | None
     )
 
 
-def sort_meta_by_key(authoring, text: str, selection) -> object | None:
+def sort_meta_by_key(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
@@ -86,7 +95,7 @@ def sort_meta_by_key(authoring, text: str, selection) -> object | None:
     )
 
 
-def sort_tags_alphabetically(authoring, text: str, selection) -> object | None:
+def sort_tags_alphabetically(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
@@ -116,7 +125,9 @@ def sort_tags_alphabetically(authoring, text: str, selection) -> object | None:
     )
 
 
-def canonicalize_rule_structure(authoring, text: str, selection) -> object | None:
+def canonicalize_rule_structure(
+    authoring: Any, text: str, selection: Range
+) -> StructuralEdit | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
@@ -147,7 +158,7 @@ def canonicalize_rule_structure(authoring, text: str, selection) -> object | Non
     )
 
 
-def pretty_print_rule(authoring, text: str, selection) -> object | None:
+def pretty_print_rule(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None

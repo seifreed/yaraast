@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 from lsprotocol.types import Position, Range
@@ -48,6 +49,7 @@ def append_meta_symbols(
         symbols.append(
             SymbolRecord("meta", "section_header", ctx.uri, meta_header_range, rule_name)
         )
+    items: Iterable[tuple[Any, Any]]
     if isinstance(meta, list):
         items = ((getattr(m, "key", ""), getattr(m, "value", "")) for m in meta)
     elif hasattr(meta, "entries"):

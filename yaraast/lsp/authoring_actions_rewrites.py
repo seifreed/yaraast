@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any, cast
+
+from lsprotocol.types import Range
 
 from yaraast.ast.base import ASTNode
 from yaraast.ast.conditions import ForOfExpression, OfExpression
@@ -11,25 +14,28 @@ from yaraast.lsp.authoring_rewriters import OfThemTransformer, StringReferenceRe
 from yaraast.lsp.authoring_support import diff_preview, impact_title, string_signature
 from yaraast.lsp.safe_handler import lsp_safe_handler
 
+if TYPE_CHECKING:
+    from yaraast.lsp.authoring_actions import StructuralEdit
+
 
 @lsp_safe_handler
-def _safe_parse(parser, text):
+def _safe_parse(parser: Any, text: str) -> Any:
     return parser.parse(text)
 
 
 @lsp_safe_handler
-def _safe_roundtrip(roundtrip, text):
+def _safe_roundtrip(roundtrip: Any, text: str) -> tuple[Any, Any, str] | None:
     original_ast, serialized = roundtrip.parse_and_serialize(text)
     reconstructed_ast, regenerated = roundtrip.deserialize_and_generate(serialized)
     return original_ast, reconstructed_ast, regenerated
 
 
 @lsp_safe_handler
-def _safe_generate(generator, node):
-    return generator.generate(node)
+def _safe_generate(generator: Any, node: Any) -> str | None:
+    return cast(str | None, generator.generate(node))
 
 
-def optimize_rule(authoring, text: str, selection) -> object | None:
+def optimize_rule(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
@@ -53,7 +59,7 @@ def optimize_rule(authoring, text: str, selection) -> object | None:
     )
 
 
-def roundtrip_rewrite_rule(authoring, text: str, selection) -> object | None:
+def roundtrip_rewrite_rule(authoring: Any, text: str, selection: Range) -> StructuralEdit | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
@@ -75,7 +81,9 @@ def roundtrip_rewrite_rule(authoring, text: str, selection) -> object | None:
     )
 
 
-def deduplicate_identical_strings(authoring, text: str, selection) -> object | None:
+def deduplicate_identical_strings(
+    authoring: Any, text: str, selection: Range
+) -> StructuralEdit | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None
@@ -95,7 +103,7 @@ def deduplicate_identical_strings(authoring, text: str, selection) -> object | N
         return None
     seen: dict[tuple[object, ...], str] = {}
     replacements: dict[str, str] = {}
-    unique_strings = []
+    unique_strings: list[Any] = []
     changed = False
     for string_def in rule.strings:
         signature = string_signature(string_def)
@@ -140,7 +148,9 @@ def _iter_ast_nodes(node: object) -> Iterator[ASTNode]:
         yield from _iter_ast_nodes(child)
 
 
-def rewrite_of_them(authoring, text: str, selection, *, mode: str, title: str) -> object | None:
+def rewrite_of_them(
+    authoring: Any, text: str, selection: Range, *, mode: str, title: str
+) -> StructuralEdit | None:
     rule_context = require_rule_context(text, selection.start.line)
     if rule_context is None:
         return None

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import difflib
 import re
+from typing import Any
 
 from lsprotocol.types import (
     Diagnostic,
@@ -18,7 +19,7 @@ from yaraast.lsp.lsp_docs import BUILTIN_DOCS, MODULE_DOCS
 from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
-def parser_error_to_diagnostic(error, diagnostic_data_cls) -> Diagnostic:
+def parser_error_to_diagnostic(error: Any, diagnostic_data_cls: Any) -> Diagnostic:
     line = error.line - 1 if error.line > 0 else 0
     col = error.column - 1 if error.column > 0 else 0
     # Convert column to UTF-16 code units for LSP compliance
@@ -48,7 +49,7 @@ def parser_error_to_diagnostic(error, diagnostic_data_cls) -> Diagnostic:
     )
 
 
-def compiler_error_to_diagnostic(message: str, diagnostic_data_cls) -> Diagnostic:
+def compiler_error_to_diagnostic(message: str, diagnostic_data_cls: Any) -> Diagnostic:
     code = "compiler.compilation_error"
     metadata: dict[str, object] = {"backend": "libyara", "message": message}
     syntax_error = re.search(r"syntax error", message, re.IGNORECASE)
@@ -92,7 +93,7 @@ def compiler_error_to_diagnostic(message: str, diagnostic_data_cls) -> Diagnosti
     )
 
 
-def error_code(error) -> str:
+def error_code(error: Any) -> str:
     message = error.message.lower()
     if "undefined variable" in message:
         return (
@@ -115,7 +116,7 @@ def error_code(error) -> str:
     return "semantic.validation_error"
 
 
-def related_info(error, diagnostic_range: Range) -> list[DiagnosticRelatedInformation] | None:
+def related_info(error: Any, diagnostic_range: Range) -> list[DiagnosticRelatedInformation] | None:
     if not error.location or not error.location.file:
         return None
     return [
@@ -126,7 +127,9 @@ def related_info(error, diagnostic_range: Range) -> list[DiagnosticRelatedInform
     ]
 
 
-def patches_for_error(error, diagnostic_range: Range, diagnostic_patch_cls) -> list[object]:
+def patches_for_error(
+    error: Any, diagnostic_range: Range, diagnostic_patch_cls: Any
+) -> list[object]:
     message = error.message
     if "Duplicate string identifier" in message:
         match = re.search(r"'\$(\w+)'", message)
@@ -146,7 +149,7 @@ def patches_for_error(error, diagnostic_range: Range, diagnostic_patch_cls) -> l
     return []
 
 
-def metadata_for_error(error) -> dict[str, object]:
+def metadata_for_error(error: Any) -> dict[str, object]:
     message = error.message
     metadata: dict[str, object] = {}
 
@@ -178,8 +181,9 @@ def metadata_for_error(error) -> dict[str, object]:
 
     unknown_function = re.search(r"Unknown function '(\w+)'", message)
     if unknown_function:
-        metadata["function"] = unknown_function.group(1)
-        suggestions = suggest_builtin_functions(metadata["function"])
+        function_name = unknown_function.group(1)
+        metadata["function"] = function_name
+        suggestions = suggest_builtin_functions(function_name)
         if suggestions:
             metadata["suggested_functions"] = suggestions
 

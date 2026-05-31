@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from lsprotocol.types import CodeAction, CodeActionKind, Position, Range, WorkspaceEdit
 
 from yaraast.lsp.utils import get_word_at_position
@@ -11,13 +13,13 @@ class RefactorCodeActionMixin:
     """Helpers for refactor-oriented code actions."""
 
     def _get_refactoring_actions(
-        self,
+        self: Any,
         text: str,
         range_: Range,
         uri: str,
     ) -> list[CodeAction]:
         """Get refactoring actions for the given range."""
-        actions = []
+        actions: list[CodeAction] = []
 
         get_word_at_position(text, range_.start)
 
@@ -48,7 +50,7 @@ class RefactorCodeActionMixin:
 
         return actions
 
-    def _authoring_action(self, uri: str, structural_edit) -> CodeAction:
+    def _authoring_action(self, uri: str, structural_edit: Any) -> CodeAction:
         data = {"provider": "authoring"}
         if getattr(structural_edit, "preview", None):
             data["preview"] = structural_edit.preview

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any, cast
+
 from lsprotocol.types import CodeAction, Diagnostic
 
 from yaraast.lsp.code_action_semantic_quickfixes import (
@@ -16,7 +19,7 @@ from yaraast.lsp.lsp_docs import MODULE_DOCS
 
 
 def handle_module_not_imported(
-    _provider, _text: str, diagnostic: Diagnostic, uri: str, metadata
+    _provider: Any, _text: str, diagnostic: Diagnostic, uri: str, metadata: Mapping[str, object]
 ) -> list[CodeAction]:
     module_name = metadata.get("module")
     if isinstance(module_name, str):
@@ -25,7 +28,7 @@ def handle_module_not_imported(
 
 
 def handle_module_function_not_found(
-    provider, text: str, diagnostic: Diagnostic, uri: str, metadata
+    provider: Any, text: str, diagnostic: Diagnostic, uri: str, metadata: Mapping[str, object]
 ) -> list[CodeAction]:
     module_name = metadata.get("module")
     function_name = metadata.get("function")
@@ -47,7 +50,7 @@ def handle_module_function_not_found(
 
 
 def handle_invalid_arity(
-    _provider, text: str, diagnostic: Diagnostic, uri: str, metadata
+    _provider: Any, text: str, diagnostic: Diagnostic, uri: str, metadata: Mapping[str, object]
 ) -> list[CodeAction]:
     function_name = metadata.get("function")
     arity_kind = metadata.get("arity_kind")
@@ -97,7 +100,7 @@ def handle_invalid_arity(
 
 
 def handle_unknown_function(
-    _provider, text: str, diagnostic: Diagnostic, uri: str, metadata
+    _provider: Any, text: str, diagnostic: Diagnostic, uri: str, metadata: Mapping[str, object]
 ) -> list[CodeAction]:
     function_name = metadata.get("function")
     suggested = metadata.get("suggested_functions")
@@ -113,22 +116,28 @@ def handle_unknown_function(
 
 
 def handle_duplicate_string_identifier(
-    provider, text: str, diagnostic: Diagnostic, uri: str, metadata
+    provider: Any, text: str, diagnostic: Diagnostic, uri: str, metadata: Mapping[str, object]
 ) -> list[CodeAction]:
     identifier = metadata.get("identifier")
     if isinstance(identifier, str):
-        return provider._create_rename_duplicate_action_from_identifier(
-            text, diagnostic, uri, identifier
+        return cast(
+            list[CodeAction],
+            provider._create_rename_duplicate_action_from_identifier(
+                text, diagnostic, uri, identifier
+            ),
         )
     return []
 
 
 def handle_validation_or_undefined(
-    provider, text: str, diagnostic: Diagnostic, uri: str, metadata
+    provider: Any, text: str, diagnostic: Diagnostic, uri: str, metadata: Mapping[str, object]
 ) -> list[CodeAction]:
     identifier = metadata.get("identifier")
     if isinstance(identifier, str) and identifier.startswith("$"):
-        return provider._create_add_string_action_from_identifier(text, diagnostic, uri, identifier)
+        return cast(
+            list[CodeAction],
+            provider._create_add_string_action_from_identifier(text, diagnostic, uri, identifier),
+        )
     module_name = metadata.get("module")
     if isinstance(module_name, str) and module_name in MODULE_DOCS:
         return create_import_module_action(module_name, diagnostic, uri)

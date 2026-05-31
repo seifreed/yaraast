@@ -9,6 +9,7 @@ from yaraast.codegen.generator import CodeGenerator
 import yaraast.lsp.authoring_actions as authoring_actions
 from yaraast.lsp.authoring_actions import StructuralEdit
 from yaraast.lsp.authoring_support import (
+    RuleContext,
     canonical_config,
     get_rule_context,
     modifier_start,
@@ -95,7 +96,7 @@ class AuthoringActions:
     def _find_rule_start(self, lines: list[str], current_line: int) -> int:
         return find_rule_start(lines, current_line)
 
-    def _get_rule_context(self, text: str, current_line: int):
+    def _get_rule_context(self, text: str, current_line: int) -> RuleContext | None:
         return get_rule_context(text, current_line)
 
     def _find_rule_end(self, lines: list[str], start_line: int) -> int:

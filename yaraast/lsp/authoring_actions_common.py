@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from lsprotocol.types import Position, Range, TextEdit
 
 from yaraast.lsp.authoring_support import RuleContext, get_rule_context
+
+if TYPE_CHECKING:
+    from yaraast.lsp.authoring_actions import StructuralEdit
 
 
 def require_rule_context(text: str, current_line: int) -> RuleContext | None:
@@ -17,7 +22,7 @@ def replace_rule_text(
     new_text: str,
     title: str,
     preview: str,
-):
+) -> StructuralEdit:
     """Build a TextEdit replacing the current rule body."""
     from yaraast.lsp.authoring_actions import StructuralEdit
 

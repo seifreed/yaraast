@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any, cast
 
 from lsprotocol.types import CodeAction, CodeActionKind, Diagnostic, WorkspaceEdit
 
@@ -22,7 +23,7 @@ class SemanticCodeActionMixin:
     """Helpers for diagnostic-driven quick fixes."""
 
     def _create_semantic_actions(
-        self,
+        self: Any,
         text: str,
         diagnostic: Diagnostic,
         uri: str,
@@ -30,7 +31,7 @@ class SemanticCodeActionMixin:
         return create_semantic_actions(self, text, diagnostic, uri)
 
     def _create_replace_module_function_actions(
-        self,
+        self: Any,
         text: str,
         diagnostic: Diagnostic,
         uri: str,
@@ -43,7 +44,7 @@ class SemanticCodeActionMixin:
         )
 
     def _create_replace_builtin_function_actions(
-        self,
+        self: Any,
         text: str,
         diagnostic: Diagnostic,
         uri: str,
@@ -55,7 +56,7 @@ class SemanticCodeActionMixin:
         )
 
     def _create_add_placeholder_argument_action(
-        self,
+        self: Any,
         text: str,
         diagnostic: Diagnostic,
         uri: str,
@@ -64,7 +65,7 @@ class SemanticCodeActionMixin:
         return create_add_placeholder_argument_action(text, diagnostic, uri, function_name)
 
     def _create_add_missing_arguments_action(
-        self,
+        self: Any,
         text: str,
         diagnostic: Diagnostic,
         uri: str,
@@ -76,7 +77,7 @@ class SemanticCodeActionMixin:
         )
 
     def _create_trim_arguments_action(
-        self,
+        self: Any,
         text: str,
         diagnostic: Diagnostic,
         uri: str,
@@ -86,7 +87,7 @@ class SemanticCodeActionMixin:
         return create_trim_arguments_action(text, diagnostic, uri, function_name, keep_args)
 
     def _create_add_string_actions(
-        self,
+        self: Any,
         text: str,
         diagnostic: Diagnostic,
         uri: str,
@@ -95,10 +96,13 @@ class SemanticCodeActionMixin:
         match = re.search(r"\$\w+", diagnostic.message)
         if not match:
             return []
-        return self._create_add_string_action_from_identifier(text, diagnostic, uri, match.group(0))
+        return cast(
+            list[CodeAction],
+            self._create_add_string_action_from_identifier(text, diagnostic, uri, match.group(0)),
+        )
 
     def _create_add_string_action_from_identifier(
-        self,
+        self: Any,
         text: str,
         diagnostic: Diagnostic,
         uri: str,
@@ -118,7 +122,7 @@ class SemanticCodeActionMixin:
         ]
 
     def _create_import_module_actions(
-        self,
+        self: Any,
         text: str,
         diagnostic: Diagnostic,
         uri: str,
@@ -127,7 +131,10 @@ class SemanticCodeActionMixin:
         match = re.search(r"Module '(\w+)' not imported", diagnostic.message)
         if not match:
             return []
-        return self._create_import_module_action_from_name(match.group(1), diagnostic, uri)
+        return cast(
+            list[CodeAction],
+            self._create_import_module_action_from_name(match.group(1), diagnostic, uri),
+        )
 
     def _create_import_module_action_from_name(
         self,

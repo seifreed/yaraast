@@ -42,14 +42,14 @@ class SelectionRangeProvider:
                 parent = build_selection_parent(
                     doc.text,
                     position,
-                    line_range,
+                    current_line_range,
                     self._find_enclosing_rule_range,
                     self._find_enclosing_section_range,
                 )
 
             if word:
                 result.append(SelectionRange(range=word_range, parent=parent))
-            else:
+            elif parent is not None:
                 result.append(parent)
         return result
 

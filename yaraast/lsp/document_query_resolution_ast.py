@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
@@ -22,7 +22,7 @@ from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.utils import find_node_at_position, get_word_at_position, location_to_range
 
 if TYPE_CHECKING:
-    from lsprotocol.types import Position
+    from lsprotocol.types import Position, Range
 
     from yaraast.lsp.document_context import DocumentContext
 
@@ -48,8 +48,8 @@ def resolve_symbol_from_ast(ctx: DocumentContext, position: Position) -> Resolve
 def _resolve_typed_node(
     ctx: DocumentContext,
     position: Position,
-    node,
-    node_range,
+    node: Any,
+    node_range: Range,
 ) -> ResolvedSymbol | None:
     if isinstance(node, StringIdentifier):
         reference_range = string_reference_range(node, ctx.text)
@@ -115,7 +115,7 @@ def _resolve_typed_node(
 def _resolve_expression_context(
     ctx: DocumentContext,
     position: Position,
-    node,
+    node: Any,
 ) -> ResolvedSymbol | None:
     if isinstance(node, AtExpression | InExpression | OfExpression):
         word, word_range = get_word_at_position(ctx.text, position)

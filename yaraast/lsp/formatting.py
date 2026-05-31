@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from lsprotocol.types import Position, Range, TextEdit
 
@@ -78,10 +79,12 @@ class FormattingProvider:
         config_data = dict(self.runtime.config.code_formatting)
         return FormattingConfig.from_dict(config_data)
 
-    def _parse(self, text: str, uri: str | None):
+    def _parse(self, text: str, uri: str | None) -> Any:
         return parse_for_lsp(text, uri=uri, runtime=self.runtime)
 
-    def _find_enclosing_rule(self, text: str, ast, start: Position, end: Position):
+    def _find_enclosing_rule(
+        self, text: str, ast: Any, start: Position, end: Position
+    ) -> tuple[Any, Range] | None:
         lines = text.split("\n")
         for rule in getattr(ast, "rules", []):
             rule_line = find_rule_line(lines, rule.name)

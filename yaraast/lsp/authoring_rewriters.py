@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from yaraast.ast.conditions import AtExpression, ForOfExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     Identifier,
@@ -34,33 +36,33 @@ class StringReferenceRewriter(ASTTransformer):
             return string_id
         return replacement.removeprefix("$")
 
-    def visit_string_identifier(self, node: StringIdentifier):
+    def visit_string_identifier(self, node: StringIdentifier) -> Any:
         node = self._transform_node(node)
         node.name = self._replace_id(node.name)
         return node
 
-    def visit_string_count(self, node: StringCount):
+    def visit_string_count(self, node: StringCount) -> Any:
         node = self._transform_node(node)
         node.string_id = self._replace_id(node.string_id)
         return node
 
-    def visit_string_offset(self, node: StringOffset):
+    def visit_string_offset(self, node: StringOffset) -> Any:
         node = self._transform_node(node)
         node.string_id = self._replace_id(node.string_id)
         return node
 
-    def visit_string_length(self, node: StringLength):
+    def visit_string_length(self, node: StringLength) -> Any:
         node = self._transform_node(node)
         node.string_id = self._replace_id(node.string_id)
         return node
 
-    def visit_at_expression(self, node: AtExpression):
+    def visit_at_expression(self, node: AtExpression) -> Any:
         node = self._transform_node(node)
         if isinstance(node.string_id, str):
             node.string_id = self._replace_id(node.string_id)
         return node
 
-    def visit_in_expression(self, node: InExpression):
+    def visit_in_expression(self, node: InExpression) -> Any:
         node = self._transform_node(node)
         if isinstance(node.subject, str):
             node.subject = self._replace_id(node.subject)
@@ -80,7 +82,7 @@ class OfThemTransformer(ASTTransformer):
             elements=[StringIdentifier(name=string_id) for string_id in self.string_ids]
         )
 
-    def _can_compress(self, string_set) -> bool:
+    def _can_compress(self, string_set: object) -> bool:
         if not isinstance(string_set, SetExpression):
             return False
         values = []
@@ -93,7 +95,7 @@ class OfThemTransformer(ASTTransformer):
                 return False
         return sorted(values) == sorted(self.string_ids)
 
-    def visit_of_expression(self, node: OfExpression):
+    def visit_of_expression(self, node: OfExpression) -> Any:
         node = self._transform_node(node)
         if self.mode == "expand":
             if isinstance(node.string_set, Identifier) and node.string_set.name == "them":
@@ -102,7 +104,7 @@ class OfThemTransformer(ASTTransformer):
             node.string_set = Identifier(name="them")
         return node
 
-    def visit_for_of_expression(self, node: ForOfExpression):
+    def visit_for_of_expression(self, node: ForOfExpression) -> Any:
         node = self._transform_node(node)
         if self.mode == "expand":
             if isinstance(node.string_set, Identifier) and node.string_set.name == "them":

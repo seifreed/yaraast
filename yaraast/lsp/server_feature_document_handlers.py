@@ -28,18 +28,18 @@ logger = logging.getLogger(__name__)
 
 def _changed_document_text(ls: Any, uri: str, changes: Any) -> str:
     try:
-        return ls.workspace.get_text_document(uri).source
+        return str(ls.workspace.get_text_document(uri).source)
     except Exception:
         logger.debug("Operation failed in %s", __name__, exc_info=True)
     if changes:
-        return changes[-1].text
+        return str(changes[-1].text)
     return ""
 
 
 def register_document_handlers(server: FeatureRegistrationServer) -> None:
     # Length is due to 7 short handler registrations; splitting would reduce locality.
     @server.feature(TEXT_DOCUMENT_DID_OPEN)
-    async def did_open(ls, params: DidOpenTextDocumentParams) -> None:
+    async def did_open(ls: Any, params: DidOpenTextDocumentParams) -> None:
         ls.show_message_log("Document opened")
         runtime = getattr(ls, "runtime", None)
         if runtime is not None:
@@ -52,7 +52,7 @@ def register_document_handlers(server: FeatureRegistrationServer) -> None:
         ls.publish_diagnostics(params.text_document.uri, diagnostics)
 
     @server.feature(TEXT_DOCUMENT_DID_CHANGE)
-    async def did_change(ls, params: DidChangeTextDocumentParams) -> None:
+    async def did_change(ls: Any, params: DidChangeTextDocumentParams) -> None:
         uri = params.text_document.uri
         changes = getattr(params, "content_changes", None)
         text = _changed_document_text(ls, uri, changes)
@@ -67,7 +67,7 @@ def register_document_handlers(server: FeatureRegistrationServer) -> None:
         ls.publish_diagnostics(uri, diagnostics)
 
     @server.feature(TEXT_DOCUMENT_DID_SAVE)
-    async def did_save(ls, params: DidSaveTextDocumentParams) -> None:
+    async def did_save(ls: Any, params: DidSaveTextDocumentParams) -> None:
         uri = params.text_document.uri
         text = getattr(params, "text", None)
         if text is None:
@@ -79,26 +79,26 @@ def register_document_handlers(server: FeatureRegistrationServer) -> None:
         ls.publish_diagnostics(uri, diagnostics)
 
     @server.feature(TEXT_DOCUMENT_DID_CLOSE)
-    async def did_close(ls, params: DidCloseTextDocumentParams) -> None:
+    async def did_close(ls: Any, params: DidCloseTextDocumentParams) -> None:
         ls.show_message_log("Document closed")
         runtime = getattr(ls, "runtime", None)
         if runtime is not None:
             runtime.close_document(params.text_document.uri)
 
     @server.feature(WORKSPACE_DID_CHANGE_CONFIGURATION)
-    async def did_change_configuration(ls, params: DidChangeConfigurationParams) -> None:
+    async def did_change_configuration(ls: Any, params: DidChangeConfigurationParams) -> None:
         runtime = getattr(ls, "runtime", None)
         if runtime is not None:
             runtime.update_config(getattr(params, "settings", {}))
 
     @server.feature(WORKSPACE_DID_CHANGE_WATCHED_FILES)
-    async def did_change_watched_files(ls, params: DidChangeWatchedFilesParams) -> None:
+    async def did_change_watched_files(ls: Any, params: DidChangeWatchedFilesParams) -> None:
         runtime = getattr(ls, "runtime", None)
         if runtime is not None:
             runtime.handle_watched_files(getattr(params, "changes", []))
 
     @server.feature(YARAAST_RUNTIME_STATUS)
-    async def runtime_status(ls, _params: object | None = None) -> dict[str, object]:
+    async def runtime_status(ls: Any, _params: object | None = None) -> dict[str, object]:
         runtime = getattr(ls, "runtime", None)
         if runtime is None:
             return {"available": False}

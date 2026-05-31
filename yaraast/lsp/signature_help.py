@@ -227,7 +227,7 @@ class SignatureHelpProvider:
 
         line = lines[position.line]
         char_pos = min(position.character, len(line))
-        stack: list[list[object]] = []
+        stack: list[tuple[str, int]] = []
         in_string = False
         in_regex = False
         escaped = False
@@ -270,20 +270,21 @@ class SignatureHelpProvider:
                 stack = []
             elif char == "(":
                 function_name = _function_name_before_open_paren(line, index)
-                stack.append([function_name or "", 0])
+                stack.append((function_name or "", 0))
             elif char == ")":
                 if stack:
                     stack.pop()
             elif char == "," and stack:
-                stack[-1][1] = int(stack[-1][1]) + 1
+                function_name, active_parameter = stack[-1]
+                stack[-1] = (function_name, active_parameter + 1)
             index += 1
 
         if not stack:
             return None
         function_name, active_parameter = stack[-1]
-        if not isinstance(function_name, str) or not function_name:
+        if not function_name:
             return None
-        return function_name, int(active_parameter)
+        return function_name, active_parameter
 
     def _calculate_active_parameter(self, text: str, position: Position) -> int:
         """Calculate which parameter the cursor is on."""

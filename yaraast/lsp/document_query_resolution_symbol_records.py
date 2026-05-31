@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+from lsprotocol.types import Position, Range
+
 from yaraast.lsp.document_types import ResolvedSymbol
 
+if TYPE_CHECKING:
+    from yaraast.lsp.document_context import DocumentContext
 
-def resolve_symbol_from_symbol_records(ctx, position) -> ResolvedSymbol | None:
+
+def resolve_symbol_from_symbol_records(
+    ctx: DocumentContext, position: Position
+) -> ResolvedSymbol | None:
     best_result: ResolvedSymbol | None = None
     best_span: int | None = None
     for symbol in ctx.symbols():
@@ -45,14 +54,14 @@ def prefer_symbol_resolution(
     return bool(symbol_span == ast_span and symbol_resolved.kind != ast_resolved.kind)
 
 
-def range_span_size(range_obj) -> int:
+def range_span_size(range_obj: Range) -> int:
     return ((range_obj.end.line - range_obj.start.line) * 10_000) + max(
         1,
         range_obj.end.character - range_obj.start.character,
     )
 
 
-def _symbol_contains_position(symbol, position) -> bool:
+def _symbol_contains_position(symbol: Any, position: Position) -> bool:
     if not (symbol.range.start.line <= position.line <= symbol.range.end.line):
         return False
     if (

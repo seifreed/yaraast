@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import contextlib
 from dataclasses import dataclass
 import re
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from lsprotocol.types import (
     Diagnostic,
@@ -28,7 +29,7 @@ from yaraast.lsp.diagnostics_helpers import (
     suggest_builtin_functions,
 )
 from yaraast.lsp.runtime import LspRuntime
-from yaraast.parser.parser import ParserError
+from yaraast.parser._shared import ParserError
 from yaraast.types.semantic_validator import SemanticValidator
 from yaraast.unified_parser import UnifiedParser
 
@@ -107,7 +108,7 @@ class DiagnosticsProvider:
             self.runtime.record_latency("diagnostics", (time.perf_counter() - started) * 1000.0)
         return list(diagnostics)
 
-    def _parse_and_validate(self, text: str, ctx, diagnostics: list[Diagnostic]):
+    def _parse_and_validate(self, text: str, ctx: Any, diagnostics: list[Diagnostic]) -> Any:
         """Parse text, run semantic validation and optional compilation."""
         try:
             dialect = ctx.dialect() if ctx is not None else None
@@ -132,7 +133,9 @@ class DiagnosticsProvider:
             )
         return None
 
-    def _collect_validation_diagnostics(self, ast, text: str, diagnostics: list[Diagnostic]):
+    def _collect_validation_diagnostics(
+        self, ast: Any, text: str, diagnostics: list[Diagnostic]
+    ) -> None:
         """Run semantic validation and optional libyara compilation."""
         validation_result = self.semantic_validator.validate(ast)
         if validation_result is not None:
@@ -154,7 +157,7 @@ class DiagnosticsProvider:
                     self._compiler_error_to_diagnostic(err) for err in compilation.errors
                 )
 
-    def _run_configurable_checks(self, ast, diagnostics: list[Diagnostic]):
+    def _run_configurable_checks(self, ast: Any, diagnostics: list[Diagnostic]) -> None:
         """Run optional metadata and rule name validation if parsing succeeded."""
         if ast is None or not self.runtime:
             return
@@ -231,7 +234,10 @@ class DiagnosticsProvider:
         error: ValidationError,
         diagnostic_range: Range,
     ) -> list[DiagnosticPatch]:
-        return patches_for_error(error, diagnostic_range, DiagnosticPatch)
+        return cast(
+            list[DiagnosticPatch],
+            patches_for_error(error, diagnostic_range, DiagnosticPatch),
+        )
 
     def _metadata_for_error(self, error: ValidationError) -> dict[str, object]:
         return metadata_for_error(error)
@@ -241,7 +247,7 @@ class DiagnosticsProvider:
         results: list[Diagnostic] = []
         if ast is None or not hasattr(ast, "rules"):
             return results
-        type_checkers = {
+        type_checkers: dict[str, Callable[[object], bool]] = {
             "string": lambda v: isinstance(v, str),
             "int": lambda v: isinstance(v, int) and not isinstance(v, bool),
             "integer": lambda v: isinstance(v, int) and not isinstance(v, bool),

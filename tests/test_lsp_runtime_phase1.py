@@ -505,6 +505,10 @@ rule sample {
     selection = selections[0]
     # Hierarchy: word → line → section → rule
     assert selection.parent is not None  # line range
+    assert selection.parent.range == Range(
+        start=Position(line=2, character=0),
+        end=Position(line=2, character=12),
+    )
     assert selection.parent.parent is not None  # section range
     assert selection.parent.parent.range.start.line == 1  # strings section starts at line 1
     assert selection.parent.parent.parent is not None  # rule range

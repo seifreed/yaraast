@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any
 
 from lsprotocol.types import CodeAction, Diagnostic
 
@@ -17,7 +18,7 @@ from yaraast.lsp.code_action_semantic_handlers import (
 
 
 def create_semantic_actions(
-    provider, text: str, diagnostic: Diagnostic, uri: str
+    provider: Any, text: str, diagnostic: Diagnostic, uri: str
 ) -> list[CodeAction]:
     """Create semantic quick fixes from structured diagnostic data."""
     data = provider._get_diagnostic_data(diagnostic)

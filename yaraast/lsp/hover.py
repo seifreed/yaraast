@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import logging
 from typing import Any
 
 from lsprotocol.types import Hover, MarkupContent, MarkupKind, Position, Range
 
+from yaraast.lsp.document_types import ResolvedSymbol
 from yaraast.lsp.hover_renderers import (
     include_hover as render_include_hover,
     meta_hover as render_meta_hover,
@@ -61,7 +63,15 @@ class HoverProvider:
                 return result
         return None
 
-    def _hover_checkers(self, doc, resolved, word, word_range, position, uri):
+    def _hover_checkers(
+        self,
+        doc: DocumentContext,
+        resolved: ResolvedSymbol | None,
+        word: str,
+        word_range: Range,
+        position: Position,
+        uri: str | None,
+    ) -> list[Callable[[], Hover | None]]:
         """Yield hover check callables in priority order."""
         return [
             lambda: self._hover_for_module(doc, resolved, word_range),
@@ -84,7 +94,9 @@ class HoverProvider:
             lambda: self._hover_for_rule(doc, resolved, word, word_range, uri) if word else None,
         ]
 
-    def _hover_for_module(self, doc, resolved, word_range):
+    def _hover_for_module(
+        self, doc: DocumentContext, resolved: ResolvedSymbol | None, word_range: Range
+    ) -> Hover | None:
         """Get hover for a resolved module symbol."""
         if resolved and resolved.kind == "module":
             module_info = doc.get_module_info(resolved.normalized_name)
@@ -106,7 +118,14 @@ class HoverProvider:
                 )
         return None
 
-    def _hover_for_module_member(self, doc, resolved, word, word_range, position):
+    def _hover_for_module_member(
+        self,
+        doc: DocumentContext,
+        resolved: ResolvedSymbol | None,
+        word: str,
+        word_range: Range,
+        position: Position,
+    ) -> Hover | None:
         """Get hover for a module member (e.g., pe.imphash)."""
         if resolved and resolved.kind == "module_member":
             return self._get_module_member_hover(doc, resolved.normalized_name, resolved.range)
@@ -123,7 +142,9 @@ class HoverProvider:
                     return self._get_module_member_hover(parts[0], parts[1], word_range)
         return None
 
-    def _hover_for_string(self, doc, resolved, word, word_range):
+    def _hover_for_string(
+        self, doc: DocumentContext, resolved: ResolvedSymbol | None, word: str, word_range: Range
+    ) -> Hover | None:
         """Get hover for a string identifier."""
         if resolved and resolved.kind == "string":
             return self._get_string_identifier_hover(doc, resolved.normalized_name, resolved.range)
@@ -131,7 +152,7 @@ class HoverProvider:
             return self._get_string_identifier_hover(doc, word, word_range)
         return None
 
-    def _hover_for_section(self, resolved):
+    def _hover_for_section(self, resolved: ResolvedSymbol | None) -> Hover | None:
         """Get hover for a section keyword."""
         if resolved and resolved.kind == "section":
             return Hover(
@@ -146,7 +167,7 @@ class HoverProvider:
             )
         return None
 
-    def _hover_for_keyword(self, word, word_range):
+    def _hover_for_keyword(self, word: str, word_range: Range) -> Hover | None:
         """Get hover for a YARA keyword."""
         if word in self.keyword_docs:
             return Hover(
@@ -158,7 +179,7 @@ class HoverProvider:
             )
         return None
 
-    def _hover_for_builtin(self, word, word_range):
+    def _hover_for_builtin(self, word: str, word_range: Range) -> Hover | None:
         """Get hover for a built-in function."""
         if word in self.builtin_docs:
             return Hover(
@@ -170,7 +191,9 @@ class HoverProvider:
             )
         return None
 
-    def _hover_for_module_by_word(self, doc, word, word_range):
+    def _hover_for_module_by_word(
+        self, doc: DocumentContext, word: str, word_range: Range
+    ) -> Hover | None:
         """Get hover for a module matched by word text."""
         module_info = doc.get_module_info(word)
         if module_info is not None:
@@ -182,7 +205,14 @@ class HoverProvider:
             )
         return None
 
-    def _hover_for_rule(self, doc, resolved, word, word_range, uri):
+    def _hover_for_rule(
+        self,
+        doc: DocumentContext,
+        resolved: ResolvedSymbol | None,
+        word: str,
+        word_range: Range,
+        uri: str | None,
+    ) -> Hover | None:
         """Get hover for a rule name, including workspace rules."""
         rule_hover = self._get_rule_hover(
             doc,

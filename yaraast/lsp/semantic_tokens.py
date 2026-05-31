@@ -8,7 +8,7 @@ import time
 from lsprotocol.types import Range, SemanticTokens, SemanticTokensLegend
 
 from yaraast.lexer.lexer import Lexer
-from yaraast.lexer.tokens import TokenType
+from yaraast.lexer.tokens import Token, TokenType
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.semantic_tokens_helpers import (
     encode_tokens,
@@ -104,7 +104,7 @@ class SemanticTokensProvider:
         started = time.perf_counter()
 
         try:
-            lexer = Lexer(text)
+            lexer: Lexer[list[Token]] = Lexer[list[Token]](text)
             tokens = lexer.tokenize()
             tokens_data = encode_tokens(tokens, self._map_token_type, TOKEN_TYPES)
 
@@ -142,7 +142,7 @@ class SemanticTokensProvider:
         started = time.perf_counter()
 
         try:
-            lexer = Lexer(text)
+            lexer: Lexer[list[Token]] = Lexer[list[Token]](text)
             tokens = lexer.tokenize()
             tokens_data = encode_tokens_in_range(tokens, range_, self._map_token_type, TOKEN_TYPES)
 

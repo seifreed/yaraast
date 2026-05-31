@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
+from typing import Any, cast
+
 from yaraast.lsp.lsp_types import (
     TEXT_DOCUMENT_CODE_ACTION,
     TEXT_DOCUMENT_COMPLETION,
@@ -75,83 +78,113 @@ from yaraast.lsp.server_protocol import FeatureRegistrationServer
 # ── Top-level handler functions ──────────────────────────────────────────
 
 
-async def _completions(ls, params: CompletionParams) -> CompletionList:
+async def _completions(ls: Any, params: CompletionParams) -> CompletionList:
     doc = get_document_source(ls, params.text_document.uri)
-    return ls.completion_provider.get_completions(doc, params.position, params.text_document.uri)
-
-
-async def _hover(ls, params: HoverParams) -> Hover | None:
-    uri = params.text_document.uri
-    return ls.hover_provider.get_hover(get_document_source(ls, uri), params.position, uri)
-
-
-async def _definition(ls, params: DefinitionParams) -> Location | list[Location] | None:
-    uri = params.text_document.uri
-    return ls.definition_provider.get_definition(get_document_source(ls, uri), params.position, uri)
-
-
-async def _references(ls, params: ReferenceParams) -> list[Location]:
-    uri = params.text_document.uri
-    doc = get_document_source(ls, uri)
-    return ls.references_provider.get_references(
-        doc, params.position, uri, params.context.include_declaration
+    return cast(
+        CompletionList,
+        ls.completion_provider.get_completions(doc, params.position, params.text_document.uri),
     )
 
 
-async def _document_symbol(ls, params: DocumentSymbolParams) -> list[DocumentSymbol]:
+async def _hover(ls: Any, params: HoverParams) -> Hover | None:
     uri = params.text_document.uri
-    return ls.symbols_provider.get_symbols(get_document_source(ls, uri), uri)
-
-
-async def _formatting(ls, params: DocumentFormattingParams) -> list[TextEdit]:
-    uri = params.text_document.uri
-    return ls.formatting_provider.format_document(get_document_source(ls, uri), uri)
-
-
-async def _range_formatting(ls, params: DocumentRangeFormattingParams) -> list[TextEdit]:
-    uri = params.text_document.uri
-    doc = get_document_source(ls, uri)
-    return ls.formatting_provider.format_range(doc, params.range.start, params.range.end, uri)
-
-
-async def _code_action(ls, params: CodeActionParams) -> list[CodeAction]:
-    uri = params.text_document.uri
-    doc = get_document_source(ls, uri)
-    return ls.code_actions_provider.get_code_actions(
-        doc, params.range, params.context.diagnostics, uri
+    return cast(
+        Hover | None,
+        ls.hover_provider.get_hover(get_document_source(ls, uri), params.position, uri),
     )
 
 
-async def _prepare_rename(ls, params: PrepareRenameParams) -> Range | None:
+async def _definition(ls: Any, params: DefinitionParams) -> Location | list[Location] | None:
     uri = params.text_document.uri
-    return ls.rename_provider.prepare_rename(get_document_source(ls, uri), params.position, uri)
+    return cast(
+        Location | list[Location] | None,
+        ls.definition_provider.get_definition(get_document_source(ls, uri), params.position, uri),
+    )
 
 
-async def _rename(ls, params: RenameParams) -> WorkspaceEdit | None:
+async def _references(ls: Any, params: ReferenceParams) -> list[Location]:
     uri = params.text_document.uri
     doc = get_document_source(ls, uri)
-    return ls.rename_provider.rename(doc, params.position, params.new_name, uri)
+    return cast(
+        list[Location],
+        ls.references_provider.get_references(
+            doc, params.position, uri, params.context.include_declaration
+        ),
+    )
 
 
-async def _semantic_tokens_full(ls, params: SemanticTokensParams) -> SemanticTokens:
+async def _document_symbol(ls: Any, params: DocumentSymbolParams) -> list[DocumentSymbol]:
+    uri = params.text_document.uri
+    return cast(
+        list[DocumentSymbol], ls.symbols_provider.get_symbols(get_document_source(ls, uri), uri)
+    )
+
+
+async def _formatting(ls: Any, params: DocumentFormattingParams) -> list[TextEdit]:
+    uri = params.text_document.uri
+    return cast(
+        list[TextEdit], ls.formatting_provider.format_document(get_document_source(ls, uri), uri)
+    )
+
+
+async def _range_formatting(ls: Any, params: DocumentRangeFormattingParams) -> list[TextEdit]:
+    uri = params.text_document.uri
+    doc = get_document_source(ls, uri)
+    return cast(
+        list[TextEdit],
+        ls.formatting_provider.format_range(doc, params.range.start, params.range.end, uri),
+    )
+
+
+async def _code_action(ls: Any, params: CodeActionParams) -> list[CodeAction]:
+    uri = params.text_document.uri
+    doc = get_document_source(ls, uri)
+    return cast(
+        list[CodeAction],
+        ls.code_actions_provider.get_code_actions(
+            doc, params.range, params.context.diagnostics, uri
+        ),
+    )
+
+
+async def _prepare_rename(ls: Any, params: PrepareRenameParams) -> Range | None:
+    uri = params.text_document.uri
+    return cast(
+        Range | None,
+        ls.rename_provider.prepare_rename(get_document_source(ls, uri), params.position, uri),
+    )
+
+
+async def _rename(ls: Any, params: RenameParams) -> WorkspaceEdit | None:
+    uri = params.text_document.uri
+    doc = get_document_source(ls, uri)
+    return cast(
+        WorkspaceEdit | None, ls.rename_provider.rename(doc, params.position, params.new_name, uri)
+    )
+
+
+async def _semantic_tokens_full(ls: Any, params: SemanticTokensParams) -> SemanticTokens:
     doc = get_document_source(ls, params.text_document.uri)
     return get_semantic_tokens(ls, doc, params.text_document.uri)
 
 
-async def _semantic_tokens_range(ls, params: SemanticTokensRangeParams) -> SemanticTokens:
+async def _semantic_tokens_range(ls: Any, params: SemanticTokensRangeParams) -> SemanticTokens:
     doc = get_document_source(ls, params.text_document.uri)
     return get_semantic_tokens_range(ls, doc, params.text_document.uri, params.range)
 
 
-async def _selection_range(ls, params: SelectionRangeParams) -> list[SelectionRange]:
+async def _selection_range(ls: Any, params: SelectionRangeParams) -> list[SelectionRange]:
     uri = params.text_document.uri
-    return ls.selection_range_provider.get_selection_ranges(
-        get_document_source(ls, uri), params.positions, uri
+    return cast(
+        list[SelectionRange],
+        ls.selection_range_provider.get_selection_ranges(
+            get_document_source(ls, uri), params.positions, uri
+        ),
     )
 
 
 async def _document_diagnostic(
-    ls, params: DocumentDiagnosticParams
+    ls: Any, params: DocumentDiagnosticParams
 ) -> RelatedFullDocumentDiagnosticReport:
     uri = params.text_document.uri
     diagnostics = get_diagnostics(ls, get_document_source(ls, uri), uri)
@@ -168,35 +201,47 @@ async def _document_diagnostic(
     )
 
 
-async def _signature_help(ls, params: SignatureHelpParams) -> SignatureHelp | None:
+async def _signature_help(ls: Any, params: SignatureHelpParams) -> SignatureHelp | None:
     doc = get_document_source(ls, params.text_document.uri)
-    return ls.signature_help_provider.get_signature_help(doc, params.position)
-
-
-async def _document_highlight(ls, params: DocumentHighlightParams) -> list[DocumentHighlight]:
-    doc = get_document_source(ls, params.text_document.uri)
-    return ls.document_highlight_provider.get_highlights(doc, params.position)
-
-
-async def _folding_range(ls, params: FoldingRangeParams) -> list[FoldingRange]:
-    return ls.folding_ranges_provider.get_folding_ranges(
-        get_document_source(ls, params.text_document.uri)
+    return cast(
+        SignatureHelp | None, ls.signature_help_provider.get_signature_help(doc, params.position)
     )
 
 
-async def _document_link(ls, params: DocumentLinkParams) -> list[DocumentLink]:
+async def _document_highlight(ls: Any, params: DocumentHighlightParams) -> list[DocumentHighlight]:
+    doc = get_document_source(ls, params.text_document.uri)
+    return cast(
+        list[DocumentHighlight], ls.document_highlight_provider.get_highlights(doc, params.position)
+    )
+
+
+async def _folding_range(ls: Any, params: FoldingRangeParams) -> list[FoldingRange]:
+    return cast(
+        list[FoldingRange],
+        ls.folding_ranges_provider.get_folding_ranges(
+            get_document_source(ls, params.text_document.uri)
+        ),
+    )
+
+
+async def _document_link(ls: Any, params: DocumentLinkParams) -> list[DocumentLink]:
     uri = params.text_document.uri
-    return ls.document_links_provider.get_document_links(get_document_source(ls, uri), uri)
+    return cast(
+        list[DocumentLink],
+        ls.document_links_provider.get_document_links(get_document_source(ls, uri), uri),
+    )
 
 
-async def _workspace_symbol(ls, params: WorkspaceSymbolParams) -> list[SymbolInformation]:
-    return ls.workspace_symbols_provider.get_workspace_symbols(params.query)
+async def _workspace_symbol(ls: Any, params: WorkspaceSymbolParams) -> list[SymbolInformation]:
+    return cast(
+        list[SymbolInformation], ls.workspace_symbols_provider.get_workspace_symbols(params.query)
+    )
 
 
 # ── Declarative registration ─────────────────────────────────────────────
 
 # Simple handlers: (protocol_constant, handler_function)
-_SIMPLE_HANDLERS = [
+_SIMPLE_HANDLERS: list[tuple[str, Callable[..., Awaitable[Any]]]] = [
     (TEXT_DOCUMENT_HOVER, _hover),
     (TEXT_DOCUMENT_DEFINITION, _definition),
     (TEXT_DOCUMENT_REFERENCES, _references),

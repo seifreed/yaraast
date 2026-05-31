@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from lsprotocol.types import Position, Range, SelectionRange
 
 from yaraast.lsp.structure import find_section_range, get_rule_text_range
@@ -18,8 +20,8 @@ def build_selection_parent(
     doc_text: str,
     position: Position,
     line_range_value: Range,
-    find_rule_range_fn,
-    find_section_range_fn,
+    find_rule_range_fn: Callable[[str, Position], Range | None],
+    find_section_range_fn: Callable[[str, Position], Range | None],
 ) -> SelectionRange:
     """Build containment parents: line → section → rule (smallest to largest)."""
     rule_range = find_rule_range_fn(doc_text, position)

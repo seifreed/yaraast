@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 from lsprotocol.types import Position
 
@@ -11,9 +12,12 @@ from yaraast.lsp.document_query_common import whole_word_positions
 from yaraast.lsp.document_query_resolution_text import position_is_in_non_code_segment
 from yaraast.lsp.structure import SECTION_NAMES, get_rule_text_range
 
+if TYPE_CHECKING:
+    from yaraast.lsp.document_context import DocumentContext
+
 
 def iter_reference_occurrences(
-    ctx, variants: Iterable[str], *, allowed_sections: tuple[str, ...]
+    ctx: DocumentContext, variants: Iterable[str], *, allowed_sections: tuple[str, ...]
 ) -> Iterable[tuple[int, int, str, str | None]]:
     for rule_start, rule_end in iter_rule_text_ranges(ctx):
         for line_num in range(rule_start, rule_end + 1):
@@ -26,7 +30,7 @@ def iter_reference_occurrences(
                     yield line_num, col, variant, section_name
 
 
-def iter_rule_text_ranges(ctx) -> Iterable[tuple[int, int]]:
+def iter_rule_text_ranges(ctx: DocumentContext) -> Iterable[tuple[int, int]]:
     seen: set[tuple[int, int]] = set()
     for symbol in ctx._symbols_of_kind("rule_block"):
         start = symbol.range.start.line
@@ -97,7 +101,11 @@ def line_has_assignment(line: str, end_idx: int) -> bool:
 
 
 def matches_resolved_symbol(
-    ctx, position: Position, *, kind: str | tuple[str, ...], normalized_name: str
+    ctx: DocumentContext,
+    position: Position,
+    *,
+    kind: str | tuple[str, ...],
+    normalized_name: str,
 ) -> bool:
     resolved = ctx.resolve_symbol(position)
     valid_kinds = (kind,) if isinstance(kind, str) else kind

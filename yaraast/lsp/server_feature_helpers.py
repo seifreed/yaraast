@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+from lsprotocol.types import Diagnostic, SemanticTokens
 
 from yaraast.lsp.document_types import uri_to_path
 from yaraast.lsp.lsp_types import InitializeParams, Range
@@ -17,26 +19,31 @@ def get_document_source(ls: YaraLanguageServer, uri: str, fallback_text: str | N
     if runtime is not None:
         document = runtime.get_document(uri, load_workspace=False)
         if document is not None:
-            return document.text
+            return str(document.text)
     if fallback_text is not None:
         return fallback_text
     document = ls.workspace.get_text_document(uri)
-    return document.source
+    return str(document.source)
 
 
-def get_diagnostics(ls: YaraLanguageServer, text: str, uri: str) -> list:
+def get_diagnostics(ls: YaraLanguageServer, text: str, uri: str) -> list[Diagnostic]:
     provider = ls.diagnostics_provider
-    return call_with_optional_uri(provider.get_diagnostics, text, uri)
+    return cast(list[Diagnostic], call_with_optional_uri(provider.get_diagnostics, text, uri))
 
 
-def get_semantic_tokens(ls: YaraLanguageServer, text: str, uri: str):
+def get_semantic_tokens(ls: YaraLanguageServer, text: str, uri: str) -> SemanticTokens:
     provider = ls.semantic_tokens_provider
-    return call_with_optional_uri(provider.get_semantic_tokens, text, uri)
+    return cast(SemanticTokens, call_with_optional_uri(provider.get_semantic_tokens, text, uri))
 
 
-def get_semantic_tokens_range(ls: YaraLanguageServer, text: str, uri: str, range_: Range):
+def get_semantic_tokens_range(
+    ls: YaraLanguageServer, text: str, uri: str, range_: Range
+) -> SemanticTokens:
     provider = ls.semantic_tokens_provider
-    return call_range_with_optional_uri(provider.get_semantic_tokens_range, text, range_, uri)
+    return cast(
+        SemanticTokens,
+        call_range_with_optional_uri(provider.get_semantic_tokens_range, text, range_, uri),
+    )
 
 
 def get_workspace_folders(params: InitializeParams) -> list[str]:

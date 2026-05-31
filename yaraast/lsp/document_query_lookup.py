@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from lsprotocol.types import Position, Range
 
@@ -52,7 +52,7 @@ def get_string_definition_node(ctx: DocumentContext, identifier: str) -> tuple[A
     cache_key = f"string_definition_node:{identifier}"
     cached = ctx.get_cached(cache_key)
     if cached is not None:
-        return cached
+        return cast(tuple[Any, Any], cached)
     ast = ctx.ast()
     if ast is None:
         return None
