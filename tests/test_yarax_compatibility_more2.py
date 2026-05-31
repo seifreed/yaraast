@@ -12,6 +12,7 @@ from yaraast.ast.expressions import (
 from yaraast.ast.modifiers import StringModifier, StringModifierType
 from yaraast.ast.rules import Rule
 from yaraast.ast.strings import HexByte, HexJump, HexString, PlainString, RegexString
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.yarax.compatibility_checker import CompatibilityIssue, YaraXCompatibilityChecker
 from yaraast.yarax.feature_flags import YaraXFeatures
 from yaraast.yarax.parser import YaraXParser
@@ -119,6 +120,27 @@ def test_checker_covers_plain_regex_hex_and_quantifier_helpers() -> None:
     checker.visit_hex_jump(HexJump(2, 4))
     checker_no_hex = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
     checker_no_hex.visit_hex_jump(HexJump(3, 5))
+
+
+def test_checker_validates_hex_jump_bounds_when_enabled() -> None:
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yarax_strict())
+
+    checker.visit_hex_jump(HexJump(True, 1))
+    checker.visit_hex_jump(HexJump(-1, 1))
+    checker.visit_hex_jump(HexJump(5, 2))
+    checker.visit_hex_jump(HexJump(1, LIBYARA_HEX_JUMP_MAX + 1))
+
+    issue_types = [issue.issue_type for issue in checker.issues]
+    assert issue_types.count("hex_jump_invalid_bound") == 3
+    assert issue_types.count("hex_jump_invalid_bounds") == 1
+
+
+def test_checker_skips_hex_jump_validation_when_disabled() -> None:
+    checker = YaraXCompatibilityChecker(YaraXFeatures.yara_compatible())
+
+    checker.visit_hex_jump(HexJump(-1, LIBYARA_HEX_JUMP_MAX + 1))
+
+    assert checker.issues == []
 
 
 def test_checker_reports_yarax_features_with_identifier_and_of_expression() -> None:

@@ -6,6 +6,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from yaraast.ast.expressions import BinaryExpression, Identifier, SetExpression
+from yaraast.limits import LIBYARA_HEX_JUMP_MAX
 from yaraast.visitor import DefaultASTVisitor
 from yaraast.yarax.feature_flags import YaraXFeatures
 from yaraast.yarax.string_lengths import plain_string_byte_length
@@ -262,9 +263,52 @@ class YaraXCompatibilityChecker(DefaultASTVisitor[None]):
     def visit_hex_jump(self, node: HexJump) -> None:
         """Check hex jump compatibility."""
         if self.features.validate_hex_bounds:
-            # YARA-X accepts hex and octal values in bounds
-            # This is actually an enhancement, so we might want to note it
-            pass
+            self._check_hex_jump_bound(node, "minimum", node.min_jump)
+            self._check_hex_jump_bound(node, "maximum", node.max_jump)
+            if (
+                isinstance(node.min_jump, int)
+                and not isinstance(node.min_jump, bool)
+                and isinstance(node.max_jump, int)
+                and not isinstance(node.max_jump, bool)
+                and node.min_jump > node.max_jump
+            ):
+                self._add_issue(
+                    "error",
+                    "hex_jump_invalid_bounds",
+                    f"Hex jump minimum {node.min_jump} exceeds maximum {node.max_jump}",
+                    "Use a hex jump range where the minimum is less than or equal to the maximum",
+                    node.location,
+                )
+
+    def _check_hex_jump_bound(self, node: HexJump, label: str, value: object) -> None:
+        if value is None:
+            return
+        if not isinstance(value, int) or isinstance(value, bool):
+            self._add_issue(
+                "error",
+                "hex_jump_invalid_bound",
+                f"Hex jump {label} bound must be a non-negative integer",
+                "Use an integer bound or omit it for an unbounded jump",
+                node.location,
+            )
+            return
+        if value < 0:
+            self._add_issue(
+                "error",
+                "hex_jump_invalid_bound",
+                f"Hex jump {label} bound must be non-negative",
+                "Use a non-negative integer bound",
+                node.location,
+            )
+            return
+        if value > LIBYARA_HEX_JUMP_MAX:
+            self._add_issue(
+                "error",
+                "hex_jump_invalid_bound",
+                f"Hex jump {label} bound must not exceed {LIBYARA_HEX_JUMP_MAX}",
+                f"Use a bound no larger than {LIBYARA_HEX_JUMP_MAX}",
+                node.location,
+            )
 
     def visit_of_expression(self, node: OfExpression) -> None:
         """Check 'of' expression compatibility."""
