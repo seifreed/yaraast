@@ -314,8 +314,17 @@ def find_section_header_range(
     line = lines[line_num]
     start = column if column is not None else line.find(section_name)
     if start < 0:
-        return make_range(line_num, 0, len(line))
-    return make_range(line_num, start, start + len(section_name))
+        return Range(
+            start=Position(line=line_num, character=0),
+            end=Position(line=line_num, character=utf8_col_to_utf16(line, len(line))),
+        )
+    return Range(
+        start=Position(line=line_num, character=utf8_col_to_utf16(line, start)),
+        end=Position(
+            line=line_num,
+            character=utf8_col_to_utf16(line, start + len(section_name)),
+        ),
+    )
 
 
 def find_quoted_value_range(lines: list[str], line_num: int, value: str) -> Range | None:

@@ -807,6 +807,30 @@ def test_runtime_indexes_import_ranges_as_utf16_columns() -> None:
     assert import_record.range.end.character == utf8_col_to_utf16(line, module_end)
 
 
+def test_runtime_indexes_section_header_ranges_as_utf16_columns() -> None:
+    text = """
+rule sample {
+  /* 😀 */ strings:
+    $a = "x"
+  condition:
+    true
+}
+""".lstrip()
+    line = text.splitlines()[1]
+    header_start = line.index("strings")
+    header_end = header_start + len("strings")
+    doc = DocumentContext("file://utf16-section.yar", text)
+
+    header_record = next(
+        symbol
+        for symbol in doc.symbols()
+        if symbol.kind == "section_header" and symbol.name == "strings"
+    )
+
+    assert header_record.range.start.character == utf8_col_to_utf16(line, header_start)
+    assert header_record.range.end.character == utf8_col_to_utf16(line, header_end)
+
+
 def test_runtime_resolve_symbol_prefers_symbol_records(tmp_path: Path) -> None:
     doc_path = tmp_path / "doc.yar"
     text = """
