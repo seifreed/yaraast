@@ -13,6 +13,7 @@ from yaraast.lsp.parsing import parse_for_lsp
 from yaraast.lsp.runtime import LspRuntime
 from yaraast.lsp.safe_handler import lsp_safe_handler
 from yaraast.lsp.structure import find_rule_end, find_rule_line
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class FormattingProvider:
         lines = text.split("\n")
         doc_range = Range(
             start=Position(line=0, character=0),
-            end=Position(line=max(len(lines) - 1, 0), character=len(lines[-1]) if lines else 0),
+            end=_line_end_position(lines, max(len(lines) - 1, 0)),
         )
 
         return [TextEdit(range=doc_range, new_text=formatted_text)]
@@ -99,7 +100,16 @@ class FormattingProvider:
                 rule,
                 Range(
                     start=Position(line=rule_line, character=0),
-                    end=Position(line=rule_end, character=len(lines[rule_end])),
+                    end=_line_end_position(lines, rule_end),
                 ),
             )
         return None
+
+
+def _line_end_position(lines: list[str], line_num: int) -> Position:
+    if not lines or line_num < 0 or line_num >= len(lines):
+        return Position(line=0, character=0)
+    return Position(
+        line=line_num,
+        character=utf8_col_to_utf16(lines[line_num], len(lines[line_num])),
+    )

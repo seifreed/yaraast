@@ -6,6 +6,7 @@ from lsprotocol.types import Position
 
 from yaraast.lsp.formatting import FormattingProvider
 from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 
 def test_formatting_returns_edit() -> None:
@@ -83,3 +84,22 @@ rule b { condition: true }
     assert len(edits) == 1
     assert edits[0].range.start.line == 2
     assert edits[0].range.end.line == 2
+
+
+def test_formatting_edit_ranges_use_utf16_columns() -> None:
+    provider = FormattingProvider()
+    text = "rule a { condition: true } // 😀😀"
+    line = text.splitlines()[0]
+
+    document_edits = provider.format_document(text)
+    range_edits = provider.format_range(
+        text,
+        Position(line=0, character=8),
+        Position(line=0, character=12),
+    )
+
+    expected_end = utf8_col_to_utf16(line, len(line))
+    assert document_edits
+    assert document_edits[0].range.end.character == expected_end
+    assert range_edits
+    assert range_edits[0].range.end.character == expected_end
