@@ -21,8 +21,9 @@ from yaraast.lsp.utf16 import utf8_col_to_utf16
 
 def parser_error_to_diagnostic(error: Any, diagnostic_data_cls: Any) -> Diagnostic:
     line = error.line - 1 if error.line > 0 else 0
-    col = error.column - 1 if error.column > 0 else 0
-    # Convert column to UTF-16 code units for LSP compliance
+    source_col = error.column - 1 if error.column > 0 else 0
+    start_col = source_col
+    end_col = source_col + 10
     source_line = ""
     source = getattr(error, "source", None) or getattr(error, "text", None) or ""
     if source:
@@ -30,11 +31,12 @@ def parser_error_to_diagnostic(error: Any, diagnostic_data_cls: Any) -> Diagnost
         if 0 <= line < len(lines):
             source_line = lines[line]
     if source_line:
-        col = utf8_col_to_utf16(source_line, col)
+        start_col = utf8_col_to_utf16(source_line, source_col)
+        end_col = utf8_col_to_utf16(source_line, source_col + 10)
     return Diagnostic(
         range=Range(
-            start=Position(line=line, character=col),
-            end=Position(line=line, character=col + 10),
+            start=Position(line=line, character=start_col),
+            end=Position(line=line, character=end_col),
         ),
         message=str(error),
         severity=DiagnosticSeverity.Error,
@@ -44,7 +46,7 @@ def parser_error_to_diagnostic(error: Any, diagnostic_data_cls: Any) -> Diagnost
             code="parser.syntax_error",
             severity="error",
             error_type="parser",
-            metadata={"line": line, "column": col},
+            metadata={"line": line, "column": start_col},
         ).to_dict(),
     )
 

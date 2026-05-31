@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any
 
 from lsprotocol.types import Diagnostic, DiagnosticSeverity
 
 from yaraast.ast.base import Location
-from yaraast.lsp.diagnostics import DiagnosticsProvider
+from yaraast.lsp.diagnostics import DiagnosticData, DiagnosticsProvider
+from yaraast.lsp.diagnostics_helpers import parser_error_to_diagnostic
 from yaraast.lsp.runtime import LspRuntime
+from yaraast.lsp.utf16 import utf8_col_to_utf16
 from yaraast.types.semantic_validator_core import ValidationError
 
 
@@ -39,6 +42,22 @@ def test_diagnostics_parser_error() -> None:
     assert diags[0].source in {"yaraast-parser", "yaraast"}
     assert diags[0].code == "parser.syntax_error"
     assert _diagnostic_data(diags[0])["code"] == "parser.syntax_error"
+
+
+def test_parser_error_diagnostic_end_uses_utf16_columns() -> None:
+    source = "rule bad { condition: 😀😀 }"
+    source_start = source.index("😀")
+    error = SimpleNamespace(
+        line=1,
+        column=source_start + 1,
+        source=source,
+        __str__=lambda self: "syntax",
+    )
+
+    diagnostic = parser_error_to_diagnostic(error, DiagnosticData)
+
+    assert diagnostic.range.start.character == utf8_col_to_utf16(source, source_start)
+    assert diagnostic.range.end.character == utf8_col_to_utf16(source, source_start + 10)
 
 
 def test_diagnostics_semantic_warning() -> None:
