@@ -69,6 +69,50 @@ def validate_rule_identifiers(rules) -> None:
         seen.add(name)
 
 
+def validate_extern_rule_identifiers(rules, extern_rules, namespaces) -> None:
+    rule_names = {str(getattr(rule, "name", "")) for rule in rules}
+    seen: set[tuple[str | None, str]] = set()
+
+    for extern_rule in extern_rules:
+        _validate_extern_rule_identifier(extern_rule, None, rule_names, seen)
+
+    for namespace in namespaces:
+        namespace_name = validate_yara_identifier_path(getattr(namespace, "name", ""), "namespace")
+        namespace_rules = getattr(namespace, "extern_rules", [])
+        if not isinstance(namespace_rules, list | tuple):
+            continue
+        for extern_rule in namespace_rules:
+            _validate_extern_rule_identifier(
+                extern_rule,
+                namespace_name,
+                rule_names,
+                seen,
+            )
+
+
+def _validate_extern_rule_identifier(
+    extern_rule,
+    default_namespace: str | None,
+    rule_names: set[str],
+    seen: set[tuple[str | None, str]],
+) -> None:
+    name = validate_yara_identifier(getattr(extern_rule, "name", ""), "extern rule")
+    namespace = getattr(extern_rule, "namespace", None) or default_namespace
+    if namespace is not None:
+        namespace = validate_yara_identifier_path(namespace, "namespace")
+
+    if namespace is None and name in rule_names:
+        msg = f"Duplicate rule identifier '{name}' for libyara output"
+        raise ValueError(msg)
+
+    key = (namespace, name)
+    if key in seen:
+        qualified_name = f"{namespace}.{name}" if namespace else name
+        msg = f"Duplicate extern rule identifier '{qualified_name}' for libyara output"
+        raise ValueError(msg)
+    seen.add(key)
+
+
 def validate_yara_file_collections(node) -> None:
     for field_name in _YARA_FILE_COLLECTION_FIELDS:
         value = getattr(node, field_name)

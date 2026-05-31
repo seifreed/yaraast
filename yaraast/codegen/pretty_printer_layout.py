@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from yaraast.codegen.generator_formatting import (
     format_rule_modifiers,
+    validate_extern_rule_identifiers,
     validate_rule_collections,
     validate_rule_identifiers,
     validate_rule_meta,
@@ -61,6 +62,7 @@ def _emit_top_level_section(printer, nodes, blank_lines: int = 1) -> None:
 def visit_yara_file(printer, node) -> str:
     validate_yara_file_collections(node)
     validate_rule_identifiers(node.rules)
+    validate_extern_rule_identifiers(node.rules, node.extern_rules, node.namespaces)
     _emit_top_level_section(printer, node.pragmas)
 
     imports = (

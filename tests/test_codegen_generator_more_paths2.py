@@ -995,6 +995,38 @@ def test_codegen_generators_reject_duplicate_rule_identifiers() -> None:
 
 
 @pytest.mark.parametrize(
+    "ast",
+    [
+        YaraFile(
+            extern_rules=[
+                ExternRule(name="duplicate"),
+                ExternRule(name="duplicate"),
+            ],
+            rules=[Rule(name="r", condition=BooleanLiteral(True))],
+        ),
+        YaraFile(
+            extern_rules=[ExternRule(name="duplicate")],
+            rules=[Rule(name="duplicate", condition=BooleanLiteral(True))],
+        ),
+        YaraFile(
+            extern_rules=[ExternRule(name="Nested", namespace="corp")],
+            namespaces=[ExternNamespace(name="corp", extern_rules=[ExternRule(name="Nested")])],
+            rules=[Rule(name="r", condition=BooleanLiteral(True))],
+        ),
+    ],
+)
+def test_codegen_generators_reject_conflicting_extern_rule_identifiers(ast: YaraFile) -> None:
+    with pytest.raises(ValueError, match=r"Duplicate .*rule identifier"):
+        CodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=r"Duplicate .*rule identifier"):
+        AdvancedCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=r"Duplicate .*rule identifier"):
+        CommentAwareCodeGenerator().generate(ast)
+    with pytest.raises(ValueError, match=r"Duplicate .*rule identifier"):
+        PrettyPrinter().pretty_print(ast)
+
+
+@pytest.mark.parametrize(
     "rule_name", ["bad name", "for", "1bad", "a" * (YARA_IDENTIFIER_MAX_LENGTH + 1)]
 )
 def test_codegen_generators_reject_invalid_rule_identifiers(rule_name: str) -> None:
