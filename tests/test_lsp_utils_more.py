@@ -26,6 +26,16 @@ def test_token_and_location_to_range() -> None:
     assert token_range.start.character == 4
     assert token_range.end.character == 8
 
+    source_width_token = Token(
+        type=TokenType.INTEGER,
+        value=1,
+        line=2,
+        column=10,
+        length=3,
+    )
+    source_width_range = token_to_range(source_width_token)
+    assert source_width_range.end.character == 13
+
     loc = Location(line=3, column=2, file=None)
     loc_range = location_to_range(loc)
     assert loc_range.start.line == 2

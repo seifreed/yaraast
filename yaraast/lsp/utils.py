@@ -8,6 +8,7 @@ from lsprotocol.types import Position, Range
 
 from yaraast.ast.base import ASTNode, Location
 from yaraast.lexer.tokens import Token
+from yaraast.lsp.semantic_tokens_helpers import token_source_length
 from yaraast.lsp.text_utils import (
     get_word_at_position as text_get_word_at_position,
     offset_to_position as text_offset_to_position,
@@ -18,8 +19,7 @@ from yaraast.lsp.text_utils import (
 def token_to_range(token: Token) -> Range:
     """Convert a token to an LSP Range."""
     start = Position(line=token.line - 1, character=token.column)
-    # Estimate end position (token length)
-    end = Position(line=token.line - 1, character=token.column + len(str(token.value)))
+    end = Position(line=token.line - 1, character=token.column + token_source_length(token))
     return Range(start=start, end=end)
 
 
