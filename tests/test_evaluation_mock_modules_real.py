@@ -143,6 +143,47 @@ def test_section_getitem_and_mock_pe_extended_branches() -> None:
     )
 
 
+def test_mock_pe_invalid_data_keeps_optional_fields_and_imphash_undefined() -> None:
+    ast = Parser().parse("""
+        import "pe"
+        rule invalid_pe_optional_values {
+            condition:
+                defined pe.subsystem or
+                pe.subsystem != 0 or
+                not pe.dll_characteristics or
+                pe.size_of_image != 0 or
+                defined pe.imphash() or
+                not pe.imphash() or
+                pe.imphash() == ""
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"invalid_pe_optional_values": False}
+    assert YaraEvaluator(data=b"MZ").evaluate_file(ast) == {"invalid_pe_optional_values": False}
+
+
+def test_mock_pe_parses_optional_header_fields_and_empty_import_hash() -> None:
+    data = bytearray(_build_pe_data(dll=False, magic=0x10B))
+    optional_header_offset = 0x80 + 4 + 20
+    struct.pack_into("<I", data, optional_header_offset + 56, 0x1234)
+    struct.pack_into("<H", data, optional_header_offset + 68, 3)
+    struct.pack_into("<H", data, optional_header_offset + 70, 0x40)
+
+    ast = Parser().parse("""
+        import "pe"
+        rule valid_pe_optional_values {
+            condition:
+                defined pe.subsystem and pe.subsystem == 3 and
+                defined pe.dll_characteristics and pe.dll_characteristics == 0x40 and
+                defined pe.size_of_image and pe.size_of_image == 0x1234 and
+                defined pe.imphash() and
+                pe.imphash() == "d41d8cd98f00b204e9800998ecf8427e"
+        }
+    """)
+
+    assert YaraEvaluator(data=bytes(data)).evaluate_file(ast) == {"valid_pe_optional_values": True}
+
+
 def test_mock_pe_parses_sections_and_resolves_rva_to_offset() -> None:
     data = (
         _build_pe_data(

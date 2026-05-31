@@ -252,7 +252,10 @@ class MockPE:
         self.entry_point = YARA_UNDEFINED
         self.entry_point_raw = YARA_UNDEFINED
         self.image_base = YARA_UNDEFINED
+        self.size_of_image = YARA_UNDEFINED
         self.size_of_headers = YARA_UNDEFINED
+        self.subsystem = YARA_UNDEFINED
+        self.dll_characteristics = YARA_UNDEFINED
         self.sections: list[Section] = []
         self.version_info: dict[str, str] = {}
         self.number_of_resources = YARA_UNDEFINED
@@ -331,9 +334,20 @@ class MockPE:
                         self.image_base = struct.unpack(
                             "<Q", self.data[opt_offset + 24 : opt_offset + 32]
                         )[0]
+                    if len(self.data) >= opt_offset + 60:
+                        self.size_of_image = struct.unpack(
+                            "<I", self.data[opt_offset + 56 : opt_offset + 60]
+                        )[0]
                     if len(self.data) >= opt_offset + 64:
                         self.size_of_headers = struct.unpack(
                             "<I", self.data[opt_offset + 60 : opt_offset + 64]
+                        )[0]
+                    if len(self.data) >= opt_offset + 72:
+                        self.subsystem = struct.unpack(
+                            "<H", self.data[opt_offset + 68 : opt_offset + 70]
+                        )[0]
+                        self.dll_characteristics = struct.unpack(
+                            "<H", self.data[opt_offset + 70 : opt_offset + 72]
                         )[0]
                 self._parse_sections(opt_offset + size_of_optional_header)
                 self._update_overlay()
@@ -379,14 +393,12 @@ class MockPE:
             self.overlay_size = len(self.data) - overlay_offset
             self.overlay = PEOverlay(self.overlay_offset, self.overlay_size)
 
-    def imphash(self) -> str:
+    def imphash(self) -> str | YaraUndefinedValue:
         """Compute a pefile-compatible import hash."""
+        if not self.is_pe:
+            return YARA_UNDEFINED
         import_str = ",".join(_normalized_imphash_imports(self._import_list))
-        return (
-            hashlib.md5(import_str.encode(), usedforsecurity=False).hexdigest()
-            if import_str
-            else ""
-        )
+        return hashlib.md5(import_str.encode(), usedforsecurity=False).hexdigest()
 
     def is_dll(self) -> bool | YaraUndefinedValue:
         return self._is_dll
