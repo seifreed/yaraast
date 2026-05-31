@@ -268,6 +268,42 @@ def test_string_matcher_regex_quantified_grouped_literal_alternation_fullword() 
     assert [(match.offset, match.length) for match in regex_matches] == [(0, 4)]
 
 
+def test_string_matcher_regex_bounded_grouped_literal_alternation_matches_libyara() -> None:
+    matcher = StringMatcher()
+    regex = RegexString("$re", regex="(a|ab){1,2}", modifiers=[])
+
+    assert [(match.offset, match.length) for match in matcher.match_string(regex, b"abb")] == [
+        (0, 2)
+    ]
+    assert [(match.offset, match.length) for match in matcher.match_string(regex, b"abab")] == [
+        (0, 3),
+        (2, 2),
+    ]
+
+
+def test_string_matcher_regex_bounded_grouped_literal_alternation_honors_order() -> None:
+    matcher = StringMatcher()
+    regex = RegexString("$re", regex="(ab|a){1,2}", modifiers=[])
+
+    assert [(match.offset, match.length) for match in matcher.match_string(regex, b"abab")] == [
+        (0, 4),
+        (2, 2),
+    ]
+
+
+def test_string_matcher_regex_bounded_grouped_literal_alternation_wide() -> None:
+    matcher = StringMatcher()
+    regex = RegexString(
+        "$re",
+        regex="(a|ab){1,2}",
+        modifiers=[StringModifier.from_name_value("wide")],
+    )
+
+    regex_matches = matcher.match_string(regex, b"a\x00b\x00a\x00b\x00")
+
+    assert [(match.offset, match.length) for match in regex_matches] == [(0, 6), (4, 4)]
+
+
 def test_string_matcher_wide_regex_fullword_keeps_suffixes_of_full_match() -> None:
     matcher = StringMatcher()
     regex = RegexString(

@@ -520,34 +520,55 @@ class StringMatcher:
             or self._longest_first_quantified_literal_group(str(pattern))
             or str(pattern)
         )
+        bounded_group_matches = self._find_bounded_literal_group_matches(
+            str(pattern),
+            data,
+            flags,
+        )
 
-        # Compile regex
-        try:
-            regex = re.compile(regex_pattern.encode("utf-8"), flags)
-        except (re.error, ValueError, TypeError, AttributeError):
-            # Invalid regex, no matches
-            self.matches[self._string_identifier(string_def)] = []
-            return
-        regexes = [regex]
-        longest_first_pattern = self._longest_first_literal_alternation(str(pattern))
-        if (
-            fullword
-            and longest_first_pattern is not None
-            and longest_first_pattern != regex_pattern
-        ):
-            regexes.append(re.compile(longest_first_pattern.encode("utf-8"), flags))
-
-        # YARA reports overlapping regex matches, unlike Python's finditer().
-        raw_matches: list[tuple[int, int, bool]] = []
-        for candidate_regex in regexes:
-            if not wide or ascii_mod:
-                raw_matches.extend(
-                    (match.start(), match.end() - match.start(), False)
-                    for match in self._find_overlapping_regex_matches(candidate_regex, data)
-                )
+        if bounded_group_matches is not None:
+            regexes: list[re.Pattern[bytes]] = []
+            raw_matches = (
+                [(offset, length, False) for offset, length in bounded_group_matches]
+                if not wide or ascii_mod
+                else []
+            )
             if wide:
-                raw_matches.extend(self._find_overlapping_wide_regex_matches(candidate_regex, data))
-                raw_matches.extend(self._find_wide_zero_length_regex_matches(candidate_regex, data))
+                raw_matches.extend(
+                    self._find_bounded_literal_group_wide_matches(str(pattern), data, flags)
+                )
+        else:
+            # Compile regex
+            try:
+                regex = re.compile(regex_pattern.encode("utf-8"), flags)
+            except (re.error, ValueError, TypeError, AttributeError):
+                # Invalid regex, no matches
+                self.matches[self._string_identifier(string_def)] = []
+                return
+            regexes = [regex]
+            longest_first_pattern = self._longest_first_literal_alternation(str(pattern))
+            if (
+                fullword
+                and longest_first_pattern is not None
+                and longest_first_pattern != regex_pattern
+            ):
+                regexes.append(re.compile(longest_first_pattern.encode("utf-8"), flags))
+
+            # YARA reports overlapping regex matches, unlike Python's finditer().
+            raw_matches = []
+            for candidate_regex in regexes:
+                if not wide or ascii_mod:
+                    raw_matches.extend(
+                        (match.start(), match.end() - match.start(), False)
+                        for match in self._find_overlapping_regex_matches(candidate_regex, data)
+                    )
+                if wide:
+                    raw_matches.extend(
+                        self._find_overlapping_wide_regex_matches(candidate_regex, data)
+                    )
+                    raw_matches.extend(
+                        self._find_wide_zero_length_regex_matches(candidate_regex, data)
+                    )
 
         if fullword:
             raw_matches = self._filter_fullword_regex_matches(
@@ -586,6 +607,96 @@ class StringMatcher:
                 continue
             matches.append(match)
         return matches
+
+    def _find_bounded_literal_group_matches(
+        self,
+        pattern: str,
+        data: bytes,
+        flags: int,
+    ) -> list[tuple[int, int]] | None:
+        spec = self._bounded_literal_group_spec(pattern)
+        if spec is None:
+            return None
+
+        prefix, alternatives, minimum, maximum, suffix = spec
+        match_data = data.lower() if flags & re.IGNORECASE else data
+        match_prefix = prefix.lower() if flags & re.IGNORECASE else prefix
+        match_alternatives = [
+            alternative.lower() if flags & re.IGNORECASE else alternative
+            for alternative in alternatives
+        ]
+        match_suffix = suffix.lower() if flags & re.IGNORECASE else suffix
+        longest_first_indices = sorted(
+            range(len(match_alternatives)),
+            key=lambda index: len(match_alternatives[index]),
+            reverse=True,
+        )
+
+        matches: list[tuple[int, int]] = []
+        for offset in range(len(data)):
+            if not match_data.startswith(match_prefix, offset):
+                continue
+            position = offset + len(match_prefix)
+            count = 0
+            while count < maximum:
+                candidate_indices = (
+                    longest_first_indices if count == 0 else range(len(match_alternatives))
+                )
+                matched_index = None
+                for index in candidate_indices:
+                    if match_data.startswith(match_alternatives[index], position):
+                        matched_index = index
+                        break
+                if matched_index is None:
+                    break
+                position += len(match_alternatives[matched_index])
+                count += 1
+
+            if count >= minimum and match_data.startswith(match_suffix, position):
+                matches.append((offset, position + len(match_suffix) - offset))
+        return matches
+
+    def _find_bounded_literal_group_wide_matches(
+        self,
+        pattern: str,
+        data: bytes,
+        flags: int,
+    ) -> list[tuple[int, int, bool]]:
+        matches: list[tuple[int, int, bool]] = []
+        for segment, offsets in self._wide_regex_segments(data):
+            segment_matches = self._find_bounded_literal_group_matches(pattern, segment, flags)
+            if segment_matches is None:
+                return []
+            matches.extend((offsets[start], length * 2, True) for start, length in segment_matches)
+        return matches
+
+    def _bounded_literal_group_spec(
+        self,
+        pattern: str,
+    ) -> tuple[bytes, list[bytes], int, int, bytes] | None:
+        grouped = re.fullmatch(
+            r"([A-Za-z0-9]*)\(([A-Za-z0-9|]+)\)\{(\d+),(\d+)\}([A-Za-z0-9]*)",
+            pattern,
+        )
+        if grouped is None:
+            return None
+
+        prefix, alternatives_text, minimum_text, maximum_text, suffix = grouped.groups()
+        alternatives = alternatives_text.split("|")
+        if len(alternatives) < 2 or not all(alternative.isalnum() for alternative in alternatives):
+            return None
+
+        minimum = int(minimum_text)
+        maximum = int(maximum_text)
+        if minimum <= 0 or maximum < minimum:
+            return None
+        return (
+            prefix.encode(),
+            [alternative.encode() for alternative in alternatives],
+            minimum,
+            maximum,
+            suffix.encode(),
+        )
 
     def _filter_fullword_regex_matches(
         self,
