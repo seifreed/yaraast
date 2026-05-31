@@ -862,8 +862,7 @@ class MockMath:
         if not isinstance(mean_value, float):
             msg = "math.deviation() expects a floating-point mean argument"
             raise EvaluationError(msg)
-        variance = sum((b - mean_value) ** 2 for b in region) / len(region)
-        return math.sqrt(variance)
+        return sum(abs(b - mean_value) for b in region) / len(region)
 
     def serial_correlation(
         self, value_or_offset: object, size: object = _missing_arg

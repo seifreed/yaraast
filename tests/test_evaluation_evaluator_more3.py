@@ -548,6 +548,21 @@ def test_math_module_accepts_string_arguments_and_byte_statistics() -> None:
     assert YaraEvaluator(data=b"aabc").evaluate_file(ast) == {"math_string_and_statistics": True}
 
 
+def test_math_deviation_uses_mean_absolute_deviation() -> None:
+    ast = Parser().parse("""
+        import "math"
+        rule mean_absolute_deviation {
+            condition:
+                math.deviation(0, filesize, 1.5) == 1.0 and
+                math.deviation(0, filesize, math.mean(0, filesize)) == 1.0
+        }
+        """)
+
+    assert YaraEvaluator(data=bytes([0, 1, 2, 3])).evaluate_file(ast) == {
+        "mean_absolute_deviation": True
+    }
+
+
 def test_math_percentage_empty_region_is_undefined() -> None:
     ast = Parser().parse("""
         import "math"
