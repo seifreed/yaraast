@@ -11,8 +11,12 @@ from yaraast.ast.expressions import (
     MemberAccess,
     ParenthesesExpression,
     RangeExpression,
+    StringCount,
     StringIdentifier,
+    StringLength,
     StringLiteral,
+    StringOffset,
+    StringWildcard,
 )
 from yaraast.ast.extern import ExternRuleReference
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
@@ -47,6 +51,7 @@ class ExpressionPostfixMixin:
     def _parse_member_access(self, expr: Expression) -> MemberAccess | ExternRuleReference:
         """Parse member access expression (object.member)."""
         dot_token = self._previous()
+        self._reject_string_reference_postfix(expr, dot_token)
         if not self._match(TokenType.IDENTIFIER):
             msg = "Expected member name after '.'"
             raise ParserError(msg, self._peek())
@@ -85,9 +90,7 @@ class ExpressionPostfixMixin:
     def _parse_bracket_access(self, expr: Expression) -> ArrayAccess | DictionaryAccess:
         """Parse bracket access expression (array[index] or dict['key'])."""
         start_token = self._previous()
-        if isinstance(expr, StringIdentifier):
-            msg = "String identifiers do not support bracket access"
-            raise ParserError(msg, start_token)
+        self._reject_string_reference_postfix(expr, start_token)
         index = self._parse_expression()
         if not self._match(TokenType.RBRACKET):
             msg = "Expected ']'"
@@ -104,6 +107,14 @@ class ExpressionPostfixMixin:
             )
             return node
         return self._set_node_location_from_tokens(node, start_token, self._previous())
+
+    def _reject_string_reference_postfix(self, expr: Expression, token) -> None:
+        if isinstance(
+            expr,
+            (StringIdentifier, StringWildcard, StringCount, StringOffset, StringLength),
+        ):
+            msg = "String references do not support postfix access"
+            raise ParserError(msg, token)
 
     def _parse_function_call_postfix(self, expr: Expression) -> FunctionCall:
         """Parse function call expression (func(args))."""

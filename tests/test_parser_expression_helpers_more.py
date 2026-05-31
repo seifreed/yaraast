@@ -325,15 +325,20 @@ def test_classic_parsers_reject_bare_anonymous_string_references() -> None:
             parser_factory().parse(source)
 
 
-def test_classic_parsers_reject_string_identifier_bracket_access() -> None:
+def test_classic_parsers_reject_postfix_access_on_string_references() -> None:
     invalid_sources = [
         'rule r { strings: $a = "x" condition: $a[0] }',
         'rule r { strings: $a = "x" condition: $a["key"] }',
+        'rule r { strings: $a = "x" condition: #a[0] }',
+        'rule r { strings: $a = "x" condition: $a.foo }',
+        'rule r { strings: $a = "x" condition: #a.foo }',
+        'rule r { strings: $a = "x" condition: @a.foo }',
+        'rule r { strings: $a = "x" condition: !a.foo }',
     ]
 
     for source in invalid_sources:
         for parser_factory in (Parser, CommentAwareParser):
-            with pytest.raises(ParserError, match="bracket access"):
+            with pytest.raises(ParserError, match="postfix access"):
                 parser_factory().parse(source)
 
 
