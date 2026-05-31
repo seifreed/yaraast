@@ -4,6 +4,7 @@ import pytest
 
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.parser import Parser
+from yaraast.parser._shared import ParserError
 
 
 class TestOfInSyntax:
@@ -121,6 +122,46 @@ class TestOfInSyntax:
         assert len(ast.rules) == 1
         assert isinstance(ast.rules[0].condition, AtExpression)
         assert isinstance(ast.rules[0].condition.string_id, OfExpression)
+
+    def test_percentage_of_expression_without_offset_restriction(self) -> None:
+        """Test percentage 'of' syntax without offset or range restrictions."""
+        yara_code = """
+        rule test {
+            strings:
+                $a = "test1"
+                $b = "test2"
+            condition:
+                50% of them
+        }
+        """
+        ast = Parser().parse(yara_code)
+        assert len(ast.rules) == 1
+        assert isinstance(ast.rules[0].condition, OfExpression)
+
+    @pytest.mark.parametrize(
+        "condition",
+        [
+            "50% of them in (0..100)",
+            "50% of ($a*) in (0..100)",
+            "50% of them at 0",
+            "50% of ($a*) at 0",
+        ],
+    )
+    def test_percentage_of_expression_rejects_offset_restrictions(
+        self,
+        condition: str,
+    ) -> None:
+        yara_code = f"""
+        rule test {{
+            strings:
+                $a = "test1"
+                $b = "test2"
+            condition:
+                {condition}
+        }}
+        """
+        with pytest.raises(ParserError, match="Percentage of-expressions do not support"):
+            Parser().parse(yara_code)
 
     def test_complex_range_expression(self) -> None:
         """Test 'of' expression with complex range using offsets."""

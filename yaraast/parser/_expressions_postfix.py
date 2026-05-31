@@ -5,6 +5,7 @@ from __future__ import annotations
 from yaraast.ast.conditions import AtExpression, InExpression, OfExpression
 from yaraast.ast.expressions import (
     ArrayAccess,
+    DoubleLiteral,
     Expression,
     FunctionCall,
     Identifier,
@@ -201,6 +202,8 @@ class ExpressionPostfixMixin:
         """Parse AT postfix expression ($string at offset or N of set at offset)."""
         if isinstance(expr, StringIdentifier | OfExpression):
             start_token = self._previous()
+            if isinstance(expr, OfExpression):
+                self._reject_percentage_of_postfix(expr, start_token)
             offset = self._parse_additive_expression()
             subject: str | Expression = expr.name if isinstance(expr, StringIdentifier) else expr
             node = AtExpression(string_id=subject, offset=offset)
@@ -229,6 +232,7 @@ class ExpressionPostfixMixin:
             return self._set_node_location_from_tokens(node, start_token, self._previous())
         if isinstance(expr, OfExpression):
             start_token = self._previous()
+            self._reject_percentage_of_postfix(expr, start_token)
             range_expr = self._parse_parenthesized_range_after_in()
             node = InExpression(subject=expr, range=range_expr)
             if getattr(expr, "location", None) is not None:
@@ -240,6 +244,11 @@ class ExpressionPostfixMixin:
             return self._set_node_location_from_tokens(node, start_token, self._previous())
         msg = "IN keyword can only be used with string identifiers or 'of' expressions"
         raise ParserError(msg, self._peek())
+
+    def _reject_percentage_of_postfix(self, expr: OfExpression, token) -> None:
+        if isinstance(expr.quantifier, DoubleLiteral | float):
+            msg = "Percentage of-expressions do not support 'in' or 'at' restrictions"
+            raise ParserError(msg, token)
 
     def _parse_parenthesized_range_after_in(self) -> RangeExpression:
         if not self._match(TokenType.LPAREN):
