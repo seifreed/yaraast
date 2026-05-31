@@ -1000,11 +1000,6 @@ def test_boolean_operators_coerce_undefined_to_defined_false() -> None:
 
 def test_division_operator_parses_and_evaluates() -> None:
     ast = Parser().parse("""
-        rule integer_division {
-            condition:
-                5 / 2 == 2 and filesize / 2 == 2
-        }
-
         rule yara_integer_division {
             condition:
                 5 \\ 2 == 2 and filesize \\ 2 == 2
@@ -1012,7 +1007,6 @@ def test_division_operator_parses_and_evaluates() -> None:
     """)
 
     assert YaraEvaluator(data=b"abcd").evaluate_file(ast) == {
-        "integer_division": True,
         "yara_integer_division": True,
     }
 

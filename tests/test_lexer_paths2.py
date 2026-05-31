@@ -176,11 +176,14 @@ def test_lexer_regex_and_backslash_division_paths() -> None:
     assert not any(t.type == TokenType.DIVIDE for t in tokens3)
 
 
-def test_lexer_slash_after_expression_operand_is_division() -> None:
-    tokens = Lexer("rule r { condition: 4 / 2 == 2 and filesize / 2 >= 1 }").tokenize()
+def test_lexer_rejects_slash_as_division_operator() -> None:
+    with pytest.raises(LexerError, match="Unexpected character: /"):
+        Lexer("rule r { condition: 4 / 2 == 2 }").tokenize()
+
+    tokens = Lexer("rule r { condition: 4 \\ 2 == 2 and filesize \\ 2 >= 1 }").tokenize()
 
     assert [token.type for token in tokens].count(TokenType.DIVIDE) == 2
-    assert not any(token.type == TokenType.REGEX for token in tokens)
+    assert all(token.value == "\\" for token in tokens if token.type == TokenType.DIVIDE)
 
 
 def test_lexer_skips_comments_inside_hex_string_and_reads_regex_modifiers() -> None:

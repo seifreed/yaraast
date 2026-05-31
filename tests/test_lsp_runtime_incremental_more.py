@@ -628,7 +628,7 @@ rule alpha {
 
 rule beta {
   condition:
-    filesize / 2 > alpha
+    filesize \\ 2 > alpha
 }
 """.lstrip()
     doc = runtime.ensure_document("file:///rule-reference-range.yar", text)
@@ -831,7 +831,7 @@ def test_text_resolution_does_not_treat_division_as_regex(tmp_path: Path) -> Non
     text = """
 rule sample {
   condition:
-    filesize / 2 > 0 and other_rule
+    filesize \\ 2 > 0 and other_rule
 }
 rule other_rule { condition: true }
 """.lstrip()

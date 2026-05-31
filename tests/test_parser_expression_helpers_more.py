@@ -25,6 +25,7 @@ from yaraast.ast.expressions import (
 )
 from yaraast.ast.modules import DictionaryAccess, ModuleReference
 from yaraast.ast.strings import HexAlternative, HexByte, HexJump, HexNibble, HexWildcard
+from yaraast.lexer.lexer_errors import LexerError
 from yaraast.lexer.tokens import Token, TokenType
 from yaraast.parser._shared import ParserError
 from yaraast.parser.comment_aware_parser import CommentAwareParser
@@ -250,6 +251,14 @@ def test_classic_parsers_reject_range_expressions_outside_range_contexts() -> No
         for parser_factory in (Parser, CommentAwareParser):
             with pytest.raises(ParserError, match="range"):
                 parser_factory().parse(source)
+
+
+def test_classic_parsers_reject_slash_division_operator() -> None:
+    source = "rule r { condition: 4 / 2 == 2 }"
+
+    for parser_factory in (Parser, CommentAwareParser):
+        with pytest.raises(LexerError, match="Unexpected character: /"):
+            parser_factory().parse(source)
 
 
 def test_classic_parsers_reject_nested_parenthesized_ranges() -> None:
