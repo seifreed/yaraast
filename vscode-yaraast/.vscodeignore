@@ -4,6 +4,9 @@ src/**
 .gitignore
 .yarnrc
 vsc-extension-quickstart.md
+**/AGENTS.md
+**/CLAUDE.md
+**/claude.md
 **/tsconfig.json
 **/.eslintrc.json
 **/eslint.config.js

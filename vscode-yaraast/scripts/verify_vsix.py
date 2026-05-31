@@ -23,6 +23,7 @@ EXPECTED_FILES = {
     "extension/icons/yara-light.png",
     "extension/icons/yaraast.png",
 }
+FORBIDDEN_BASENAMES = {"AGENTS.md", "CLAUDE.md", "claude.md"}
 
 
 def read_version() -> str:
@@ -47,6 +48,13 @@ def main() -> int:
     if missing:
         print("VSIX is missing required files:", file=sys.stderr)
         for name in missing:
+            print(f"  - {name}", file=sys.stderr)
+        return 1
+
+    forbidden = sorted(name for name in names if Path(name).name in FORBIDDEN_BASENAMES)
+    if forbidden:
+        print("VSIX contains local agent instruction files:", file=sys.stderr)
+        for name in forbidden:
             print(f"  - {name}", file=sys.stderr)
         return 1
 
