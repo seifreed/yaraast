@@ -275,6 +275,7 @@ class ExpressionOptimizer(ASTTransformer):
 
         # Remove unnecessary parentheses around literals and identifiers
         if isinstance(inner, BooleanLiteral | IntegerLiteral | Identifier):
+            self.optimization_count += 1
             return inner
 
         node.expression = inner

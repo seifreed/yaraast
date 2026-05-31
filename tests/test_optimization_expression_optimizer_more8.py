@@ -108,6 +108,15 @@ def test_integer_division_and_modulo_by_zero_do_not_fold() -> None:
     assert opt.visit(mod) is mod
 
 
+def test_parentheses_elimination_counts_as_optimization() -> None:
+    opt = ExpressionOptimizer()
+
+    optimized = opt.optimize(ParenthesesExpression(BooleanLiteral(True)))
+
+    assert optimized == BooleanLiteral(True)
+    assert opt.optimization_count == 1
+
+
 def test_large_integer_division_and_modulo_fold_without_float_conversion() -> None:
     opt = ExpressionOptimizer()
     large = 10**400 + 1
