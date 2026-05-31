@@ -210,6 +210,9 @@ class ExpressionPrimaryMixin:
         exprs = [self._parse_expression()]
 
         if self._match(TokenType.COMMA):
+            if not getattr(self, "_allow_set_expression", False):
+                msg = "Unexpected set expression"
+                raise ParserError(msg, start_token)
             if self._check(TokenType.RPAREN) or self._is_at_end():
                 msg = "Expected expression after ',' in set"
                 raise ParserError(msg, self._peek())

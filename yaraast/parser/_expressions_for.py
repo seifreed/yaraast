@@ -66,11 +66,14 @@ class ExpressionForMixin:
             raise ParserError(msg, self._peek())
 
         previous_allow_range = getattr(self, "_allow_range_expression", False)
+        previous_allow_set = getattr(self, "_allow_set_expression", False)
         self._allow_range_expression = True
+        self._allow_set_expression = True
         try:
             iterable = self._parse_expression()
         finally:
             self._allow_range_expression = previous_allow_range
+            self._allow_set_expression = previous_allow_set
         if self._is_nested_parenthesized_range(iterable):
             msg = "Unexpected parenthesized range"
             raise ParserError(msg, self._previous())
@@ -177,7 +180,9 @@ class ExpressionForMixin:
     def _parse_of_string_set(self) -> Expression:
         """Parse string set for 'of' expression without consuming IN/AT postfix operators."""
         previous_allow_wildcard = getattr(self, "_allow_string_wildcard_reference", False)
+        previous_allow_set = getattr(self, "_allow_set_expression", False)
         self._allow_string_wildcard_reference = True
+        self._allow_set_expression = True
         try:
             expr = self._parse_primary_expression()
             self._reject_parenthesized_them_set(expr)
@@ -193,6 +198,7 @@ class ExpressionForMixin:
                     break
         finally:
             self._allow_string_wildcard_reference = previous_allow_wildcard
+            self._allow_set_expression = previous_allow_set
 
         return expr
 

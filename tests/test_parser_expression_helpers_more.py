@@ -254,6 +254,20 @@ def test_classic_parsers_reject_range_expressions_outside_range_contexts() -> No
                 parser_factory().parse(source)
 
 
+def test_classic_parsers_reject_set_expressions_outside_set_contexts() -> None:
+    invalid_sources = [
+        "rule r { condition: (1, 2, 3) }",
+        "rule r { condition: (1, 2, 3) contains 2 }",
+        "rule r { condition: true and (1, 2, 3) }",
+        "rule r { condition: uint8((1, 2, 3)) == 0 }",
+    ]
+
+    for source in invalid_sources:
+        for parser_factory in (Parser, CommentAwareParser):
+            with pytest.raises(ParserError, match="set expression"):
+                parser_factory().parse(source)
+
+
 def test_classic_parsers_reject_slash_division_operator() -> None:
     source = "rule r { condition: 4 / 2 == 2 }"
 
@@ -498,6 +512,7 @@ def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> Non
             _t(TokenType.RPAREN, ")"),
         ]
     )
+    p._allow_set_expression = True
     expr = p._parse_primary_expression()
     assert isinstance(expr, SetExpression)
     assert len(expr.elements) == 2
@@ -596,6 +611,7 @@ def test_parse_primary_helpers_cover_literals_strings_keywords_and_sets() -> Non
             _t(TokenType.INTEGER, 2),
         ]
     )
+    p._allow_set_expression = True
     with pytest.raises(ParserError, match="Expected '\\)' after set elements"):
         p._parse_primary_expression()
 
