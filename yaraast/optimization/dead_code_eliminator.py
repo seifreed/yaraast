@@ -321,7 +321,7 @@ class DeadCodeEliminator(ASTTransformer):
     def visit_rule(self, node: Rule) -> Rule:
         """Visit Rule and remove unused strings."""
         usage_key = self._usage_key_for_rule(node)
-        node = copy.copy(node)
+        node = copy.deepcopy(node)
         self.current_rule = node.name
         self.current_rule_key = usage_key
 

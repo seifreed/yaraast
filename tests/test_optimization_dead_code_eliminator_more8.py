@@ -469,6 +469,36 @@ def test_dead_code_eliminator_does_not_mutate_source_rules() -> None:
     assert [string.identifier for string in ast.rules[0].strings] == ["$used", "$unused"]
 
 
+def test_dead_code_eliminator_does_not_mutate_source_conditions() -> None:
+    inner = BinaryExpression(BooleanLiteral(True), "and", BooleanLiteral(False))
+    original_condition = BinaryExpression(inner, "or", StringIdentifier("$used"))
+    ast = YaraFile(
+        rules=[
+            Rule(
+                name="condition_tree",
+                strings=[PlainString(identifier="$used", value="used")],
+                condition=original_condition,
+            )
+        ]
+    )
+
+    optimized, count = DeadCodeEliminator().eliminate(ast)
+
+    assert count == 0
+    assert optimized.rules[0].condition == BinaryExpression(
+        BooleanLiteral(False),
+        "or",
+        StringIdentifier("$used"),
+    )
+    assert ast.rules[0].condition is original_condition
+    assert original_condition.left is inner
+    assert original_condition.left == BinaryExpression(
+        BooleanLiteral(True),
+        "and",
+        BooleanLiteral(False),
+    )
+
+
 def test_eliminate_dead_code_single_rule_and_convenience_wrapper() -> None:
     dce = DeadCodeEliminator()
     rule = Rule(
