@@ -168,6 +168,35 @@ def test_for_expression_numeric_body_contributes_to_quantifier_score() -> None:
     assert YaraEvaluator(data=b"").evaluate_file(ast) == {"numeric_body_loop": True}
 
 
+def test_for_expression_double_body_matches_libyara_quantifier_semantics() -> None:
+    ast = Parser().parse("""
+        rule double_body_loop {
+            condition:
+                for 100 i in (0) : (0.5) and
+                for any i in (1, 2) : (-0.5) and
+                not for any i in (1) : (-0.5) and
+                for none i in (1, 2) : (-0.0) and
+                not for none i in (1, 2, 3) : (-0.0) and
+                not for all i in (1, 2, 3) : (1.0)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"double_body_loop": True}
+
+
+def test_for_expression_double_body_with_loop_variables_matches_libyara() -> None:
+    ast = Parser().parse("""
+        rule double_loop_variable_body {
+            condition:
+                not for any i in (-1, 1) : (i + 0.5) and
+                for any i in (-1, 0, 1) : (i + 0.5) and
+                not for any i in (-1, 0, 1) : (i * 0.5)
+        }
+    """)
+
+    assert YaraEvaluator(data=b"").evaluate_file(ast) == {"double_loop_variable_body": True}
+
+
 def test_evaluator_normalizes_direct_ast_string_identifiers() -> None:
     ast = YaraFile(
         rules=[

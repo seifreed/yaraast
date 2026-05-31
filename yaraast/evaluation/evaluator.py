@@ -804,6 +804,9 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
             finally:
                 self._restore_loop_variables(previous_values)
 
+        if any(isinstance(contribution, float) for contribution in contributions):
+            return self._evaluate_for_float_quantifier(quantifier, contributions)
+
         # Evaluate quantifier
         match_score = sum(contributions)
         if isinstance(quantifier, str):
@@ -833,6 +836,53 @@ class YaraEvaluator(DefaultASTVisitor[Any]):
         if isinstance(value, int | float):
             return value
         return 1 if _is_evaluation_truthy(value) else 0
+
+    def _evaluate_for_float_quantifier(
+        self, quantifier: Any, contributions: list[int | float]
+    ) -> bool:
+        float_values = [
+            contribution for contribution in contributions if isinstance(contribution, float)
+        ]
+        if not float_values:
+            return False
+
+        positive_zero_count = sum(
+            1 for value in float_values if value == 0.0 and math.copysign(1.0, value) > 0.0
+        )
+        negative_zero_count = sum(
+            1 for value in float_values if value == 0.0 and math.copysign(1.0, value) < 0.0
+        )
+        positive_count = sum(1 for value in float_values if value > 0.0)
+        negative_count = sum(1 for value in float_values if value < 0.0)
+
+        if positive_count == 0 and negative_count == 0:
+            score_is_zero = positive_zero_count > 0 or negative_zero_count % 2 == 0
+            has_match = False
+        elif positive_count > 0 and negative_count == 0:
+            score_is_zero = False
+            has_match = True
+        elif negative_count > 0 and positive_count == 0:
+            score_is_zero = False
+            has_match = len(float_values) > 1
+        else:
+            score_is_zero = False
+            has_match = len(float_values) > 2 and not math.isclose(sum(float_values), 0.0)
+
+        if isinstance(quantifier, str):
+            if quantifier == "all":
+                return False
+            if quantifier == "any":
+                return has_match
+            if quantifier == "none":
+                return score_is_zero
+        elif _is_evaluation_int(quantifier):
+            if quantifier < 0:
+                return False
+            if quantifier == 0:
+                return score_is_zero
+            return has_match
+
+        return False
 
     def _loop_variable_names(self, variable: str) -> list[str]:
         return [name.strip() for name in variable.split(",") if name.strip()]
